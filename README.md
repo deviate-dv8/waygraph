@@ -7,6 +7,54 @@ flat pile of ad hoc helper functions - see
 This repo is the `waygraph` npm package itself. Consumer projects proving it against real
 sites/apps (saucedemo.com, zsign-app) live in the sibling `projects_waygraph/` repo, not here.
 
+## Install
+
+```bash
+npm install waygraph @playwright/test
+```
+
+`@playwright/test` is a peer dependency, not bundled - you bring your own version (`^1.40.0`
+or later) since it's also what drives the rest of your test suite. Requires Node 22+ (uses
+`URL`/`URLPattern` from `@types/node` for `Trait.url`'s type checking).
+
+## Quick start
+
+A Block wraps one `act`/`resolve` step (add `observe`/`verify` once you need them); a `Flow`
+chains several into a run:
+
+```typescript
+import { Engine, start, end, MemPage, key, checkpoint, Trait } from "waygraph";
+import type { Block, Checkpoint } from "waygraph";
+
+type Start = Checkpoint<"__start__">;
+type LoggedIn = Checkpoint<"LoggedIn">;
+
+const Username = key<string>("username");
+
+const Login: Block<Start, LoggedIn> = {
+  name: "login",
+  instruction: {
+    async act(page, _input, mem) {
+      await page.goto("https://example.com/login");
+      await page.getByLabel("Username").fill(mem.get(Username));
+      await page.getByRole("button", { name: "Sign in" }).click();
+    },
+    resolve: () => checkpoint("LoggedIn"),
+    verify: [Trait.url({ pathname: "/dashboard" })],
+  },
+};
+
+const mem = new MemPage();
+mem.set(Username, "alice");
+
+const flow = new Engine().defineFlow([start, Login, end]);
+const result = await flow.run(mem); // Engine launches its own browser
+// result === { __state: "LoggedIn" }
+```
+
+Inside an existing `@playwright/test` file, reuse its `context` fixture instead of having the
+Engine launch its own browser: `await flow.run(context, mem)`.
+
 **Status:** `Checkpoint`, `MemPage`, `Instruction`/`Block` (`act`/`observe`/`resolve`/`verify`),
 `connect()`, `Trait`, `Engine.defineFlow([start, ...blocks, end])`, and `branch()`/self-loops
 with a `maxSteps` safety cap. A Block's output type is the only contract the next Block can
@@ -110,9 +158,11 @@ for real. The lower-level `connect()`/`runGraph()` still exist and are what `def
 builds on - reach for them directly only if you need a shape `defineFlow`'s array can't
 express yet.
 
-## Commands
+## Developing this package
 
 ```bash
+git clone git@github.com:deviate-dv8/waygraph.git
+cd waygraph
 npm install
 npm run typecheck   # tsc --noEmit
 npm run test        # playwright test
