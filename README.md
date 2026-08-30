@@ -1,8 +1,7 @@
 # Waygraph
 
 A typed graph of reusable Blocks for driving a browser through E2E flows, in place of a
-flat pile of ad hoc helper functions - see
-`openspec/changes/archive/2026-08-27-core-spine/proposal.md` for the full motivation.
+flat pile of ad hoc helper functions.
 
 This repo is the `waygraph` npm package itself. Consumer projects proving it against real
 sites/apps (saucedemo.com, zsign-app) live in the sibling `projects_waygraph/` repo, not here.
@@ -84,8 +83,7 @@ separate flag needed for that. Once Blocks are composed into a `Flow`, `flow.wit
 finished flow, addressed by the Block reference (preferred), its name, or its numeric
 position in the flow - without editing the flow's own file.
 
-Deliberately **not yet implemented** (each tracked as its own future OpenSpec change,
-building on this one):
+Deliberately **not yet implemented** (tracked on the project board):
 - Interstitials/Watchers - background overlay handling (cookie banners, popups).
 - `spawnTab` - a second browser tab.
 - A patchable way to compose several Blocks into one named unit with per-step verify
@@ -183,7 +181,6 @@ typecheck/                 compile-time-only fixtures (assignability, @ts-expect
 tests/                      runtime unit + integration tests (@playwright/test)
 tsconfig.json                base config - typecheck script includes src/ + typecheck/ + tests/
 tsconfig.build.json          extends base, src/ only, emits to dist/
-openspec/                  the OpenSpec change history for this repo (propose -> apply per change)
 ```
 
 Consumer projects (saucedemo.com proof, zsign-app integration) live in the sibling
