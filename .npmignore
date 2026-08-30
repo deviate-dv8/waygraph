@@ -1,0 +1,17 @@
+# Belt-and-suspenders alongside package.json's "files": ["dist"] allowlist -
+# that alone already restricts the published tarball to dist/ + package.json +
+# README.md, but this makes the exclusion explicit and keeps it enforced even
+# if "files" is ever removed or edited by mistake.
+src/
+tests/
+typecheck/
+openspec/
+.claude/
+node_modules/
+test-results/
+playwright-report/
+tsconfig.json
+tsconfig.build.json
+playwright.config.ts
+waygraph-artifact.html
+*.tgz

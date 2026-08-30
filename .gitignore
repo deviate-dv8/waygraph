@@ -2,3 +2,9 @@ node_modules/
 dist/
 test-results/
 playwright-report/
+
+# Local tooling/scratch, not part of the package or its history:
+.claude/
+waygraph-artifact.html
+*.tgz
+.npm-debug.log*
