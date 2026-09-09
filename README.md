@@ -89,11 +89,18 @@ overridable, not one giant Block with no per-step confirmation. `composedBlock.w
 `modStepVerify` patch one step from outside, addressed the same three ways
 `withBlockVerify`/`modBlockVerify` already are - a `composeBlock` result is a plain Block,
 so it drops straight into `defineFlow([start, ..., composed, ..., end])` like any other.
+`spawnTab(entry, page, mem)` drives a genuinely separate second tab through its own
+Block/Flow, in the same browser context an existing `page` already belongs to - the
+pattern `observe()` could already reach for (it's the only phase allowed to touch
+`page.context()`), now a named, discoverable, tested primitive instead of something
+you'd have to already know to hand-roll.
+
+[`create-waygraph`](https://github.com/deviate-dv8/create-waygraph) scaffolds a new
+project (package.json, tsconfig, playwright.config, one working example flow) in one
+command - built and proven end-to-end, not yet published to npm.
 
 Deliberately **not yet implemented** (tracked on the project board):
 - Interstitials/Watchers - background overlay handling (cookie banners, popups).
-- `spawnTab` - a second browser tab.
-- `create-waygraph` - a scaffold CLI for starting a new project (`npx create-waygraph`).
 
 ## Example
 
@@ -178,7 +185,7 @@ src/
   types.ts                 Checkpoint, Instruction, Block, connect()
   mem-page.ts               MemKey, key(), MemPage
   trait.ts                   Trait (type + discoverable Trait.url/.text/.visible), runVerify()
-  engine.ts                   runGraph(), Engine, start, end, Flow (+ withBlockVerify/modBlockVerify)
+  engine.ts                   runGraph(), spawnTab(), composeBlock(), Engine, start, end, Flow
   index.ts                     public barrel
 typecheck/                 compile-time-only fixtures (assignability, @ts-expect-error cases)
 tests/                      runtime unit + integration tests (@playwright/test)
