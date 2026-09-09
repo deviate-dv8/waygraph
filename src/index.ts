@@ -4,6 +4,7 @@ export { MemKey, MemPage, key, keyGroup } from "./mem-page.js";
 export { Trait, urlMatches, textEquals, visible } from "./trait.js";
 export {
   runGraph,
+  spawnTab,
   Engine,
   start,
   end,

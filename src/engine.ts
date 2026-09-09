@@ -1,5 +1,5 @@
 import { chromium, firefox, webkit } from "@playwright/test";
-import type { Browser, BrowserContext } from "@playwright/test";
+import type { Browser, BrowserContext, Page } from "@playwright/test";
 import type { Block, Checkpoint, Instruction, DefinedBlock } from "./types.js";
 import { connect, checkpoint } from "./types.js";
 import { MemPage } from "./mem-page.js";
@@ -89,6 +89,31 @@ export async function runGraph<TOut extends Checkpoint<string>>(
   } finally {
     await page.close();
   }
+}
+
+/**
+ * Drives a genuinely separate second tab through its own Block/Flow, in the
+ * same browser context an existing `page` already belongs to - the primitive
+ * `observe()` is specifically allowed to reach for (see {@link Instruction.observe}),
+ * since `act`/`resolve` can't touch `page.context()` at all. A thin, named
+ * wrapper around `runGraph` (which already opens its own page from whatever
+ * context it's given) rather than a new mechanism - the point is making the
+ * pattern discoverable and giving it a real name, not inventing new tab-lifecycle
+ * logic. The spawned tab is closed (by `runGraph`'s own `finally`) before this
+ * resolves; the original `page` is never touched.
+ * @example
+ * async observe(page, mem) {
+ *   const receipt = await spawnTab(EmailReceiptFlow, page, mem);
+ *   mem.set(ReceiptCode, receipt.__state);
+ * }
+ */
+export async function spawnTab<TOut extends Checkpoint<string>>(
+  entry: Block<Checkpoint<"__start__">, TOut>,
+  page: Page,
+  mem: MemPage,
+  maxSteps = 5000,
+): Promise<TOut> {
+  return runGraph<TOut>(entry, undefined, page.context(), mem, maxSteps);
 }
 
 /** Reserved markers bookending a `defineFlow([start, ...blocks, end])` call. */
