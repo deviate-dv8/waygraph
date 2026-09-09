@@ -81,16 +81,19 @@ components you leave out default to "match anything," so `Trait.url({ pathname:
 separate flag needed for that. Once Blocks are composed into a `Flow`, `flow.withBlockVerify`/
 `flow.modBlockVerify` patch one Block's verify from outside - a spec that only imports the
 finished flow, addressed by the Block reference (preferred), its name, or its numeric
-position in the flow - without editing the flow's own file.
+position in the flow - without editing the flow's own file. `composeBlock(name, steps)`
+chains several Blocks into one named unit the same way `connect()` already does - the
+multi-step-form case (a government form with several stepper pages, say), which is
+naturally "one feature" but still wants each step's own real `verify` independently
+overridable, not one giant Block with no per-step confirmation. `composedBlock.withStepVerify`/
+`modStepVerify` patch one step from outside, addressed the same three ways
+`withBlockVerify`/`modBlockVerify` already are - a `composeBlock` result is a plain Block,
+so it drops straight into `defineFlow([start, ..., composed, ..., end])` like any other.
 
 Deliberately **not yet implemented** (tracked on the project board):
 - Interstitials/Watchers - background overlay handling (cookie banners, popups).
 - `spawnTab` - a second browser tab.
-- A patchable way to compose several Blocks into one named unit with per-step verify
-  addressable from outside (`connect()`-composed chains don't get `withVerify`/`modVerify`
-  attached the way `defineBlock()`/`branch()`/`Flow` outputs do) - useful for a multi-step
-  form (e.g. a government form with several stepper pages) that's naturally "one feature" but
-  still wants each step's own confirmation independently overridable.
+- `create-waygraph` - a scaffold CLI for starting a new project (`npx create-waygraph`).
 
 ## Example
 

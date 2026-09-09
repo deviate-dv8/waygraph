@@ -12,6 +12,7 @@ export {
   modVerify,
   modVerifyAll,
   defineBlock,
+  composeBlock,
   preflight,
 } from "./engine.js";
-export type { Flow, EngineConfig } from "./engine.js";
+export type { Flow, EngineConfig, ComposedBlock } from "./engine.js";
