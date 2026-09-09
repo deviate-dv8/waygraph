@@ -196,10 +196,18 @@ function buildFlow<Out extends Checkpoint<string>>(
         // before a page opens - the same "fail loud, cheaply" guarantee
         // run(context, mem) already has via an existing context.
         preflight(mem, chain);
-        const launch = LAUNCHERS[config.browserName ?? "chromium"];
+        const browserName = config.browserName ?? "chromium";
+        const launch = LAUNCHERS[browserName];
+        // If CHROME_PATH/CHROMIUM_PATH is set in the environment (e.g. a system
+        // or Flatpak Chromium), launch that instead of Playwright's own bundled
+        // binary - only for chromium (the env var names a Chromium build, not a
+        // Firefox/WebKit one), and a no-op default anywhere that env var isn't set.
+        const executablePath =
+          browserName === "chromium" ? process.env.CHROME_PATH || process.env.CHROMIUM_PATH : undefined;
         const browser: Browser = await launch.launch({
           headless: config.headless ?? true,
           ...(config.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
+          ...(executablePath ? { executablePath } : {}),
         });
         try {
           const context = await browser.newContext();
