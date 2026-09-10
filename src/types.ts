@@ -18,6 +18,17 @@ export function checkpoint<Tag extends string>(tag: Tag): Checkpoint<Tag> {
 }
 
 /**
+ * The type every entry Block's `In` must be - `runGraph` always seeds a fresh
+ * run with `checkpoint("__start__")` as the fake initial input, so a Block
+ * meant to lead off a Flow needs exactly this type. Exported so no project
+ * has to know or hand-type the `"__start__"` literal itself - the same reason
+ * `checkpoint()` exists instead of every call site spelling `{ __state: tag }`
+ * by hand.
+ * @example export const LoginBlock: Block<Start, LoggedIn> = { ... }
+ */
+export type Start = Checkpoint<"__start__">;
+
+/**
  * The four-phase pipeline every Block runs. Most Blocks only need `act` + a
  * one-line `resolve` - add `observe` only once a Block genuinely branches, add
  * `verify` only once you want to confirm the reached state, not just classify it.

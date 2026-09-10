@@ -1,4 +1,4 @@
-export type { Checkpoint, Instruction, Block, DefinedBlock } from "./types.js";
+export type { Checkpoint, Instruction, Block, DefinedBlock, Start } from "./types.js";
 export { connect, checkpoint } from "./types.js";
 export { MemKey, MemPage, key, keyGroup } from "./mem-page.js";
 export { Trait, urlMatches, textEquals, visible } from "./trait.js";
