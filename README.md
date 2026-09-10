@@ -23,9 +23,8 @@ chains several into a run:
 
 ```typescript
 import { Engine, start, end, MemPage, key, checkpoint, Trait } from "waygraph";
-import type { Block, Checkpoint } from "waygraph";
+import type { Block, Checkpoint, Start } from "waygraph";
 
-type Start = Checkpoint<"__start__">;
 type LoggedIn = Checkpoint<"LoggedIn">;
 
 const Username = key<string>("username");
@@ -110,9 +109,8 @@ real page:
 
 ```typescript
 import { Engine, start, end, MemPage, key, checkpoint } from "waygraph";
-import type { Block, Checkpoint } from "waygraph";
+import type { Block, Checkpoint, Start } from "waygraph";
 
-type Start = Checkpoint<"__start__">;
 type FormLoaded = Checkpoint<"FormLoaded">;
 type Submitted = Checkpoint<"Submitted">;
 
