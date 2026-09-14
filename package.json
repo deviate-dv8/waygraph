@@ -12,7 +12,7 @@
     }
   },
   "bin": {
-    "waygraph": "./bin/waygraph"
+    "waygraph": "bin/waygraph"
   },
   "files": [
     "dist",
