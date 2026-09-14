@@ -361,14 +361,40 @@ const RING_CSS =
   "#wg-ring{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
   "border:2.5px solid #7C3AED;border-radius:10px;" +
   "box-shadow:0 0 0 4px rgba(124,58,237,.16);transition:opacity .3s ease;}" +
-  "#wg-ring::after{content:attr(data-label);position:absolute;left:0;top:calc(100% + 8px);" +
+  // A real element, not a ::after pseudo-element - a pseudo-element's
+  // position is CSS-relative to the ring's own box (left:0 always meant
+  // "the ring's own left edge"), so it had no way to be clamped back onto
+  // screen when that box sat near a viewport edge - the label's text just
+  // ran off, invisibly, with no overflow guard at all. A real sibling can
+  // be measured (its actual rendered width) and repositioned in JS -
+  // pushed back onto screen, same width, never shrunk. See
+  // window.__wgPositionRing in installOverlay.
+  "#wg-ring-label{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
   "white-space:nowrap;padding:4px 9px;border-radius:7px;background:#7C3AED;color:#fff;" +
-  "font:600 12px/1.2 system-ui,sans-serif;}" +
+  "font:600 12px/1.2 system-ui,sans-serif;transition:opacity .3s ease;}" +
+  // Mouse cursor icon that travels to a target before it's acted on, plus a
+  // quick expanding ripple at the moment of a click - same idea as
+  // help-center-clip-engine's #clip-cursor/#clip-ring (video-pipeline), a
+  // real mouse pointer shape via clip-path so no separate image asset is
+  // needed. Travel duration is JS-driven per call via --wg-cursor-ms, same
+  // reason the clip engine's own comment gives: a hardcoded CSS duration
+  // would make the speed param a no-op.
+  "#wg-cursor{position:fixed;z-index:2147483647;width:22px;height:22px;pointer-events:none;" +
+  "left:0;top:0;opacity:0;margin:0;" +
+  "transition:transform var(--wg-cursor-ms,600ms) cubic-bezier(.22,1,.36,1),opacity .2s ease;" +
+  "background:#fff;" +
+  "clip-path:polygon(0 0, 0 70%, 22% 55%, 35% 85%, 48% 79%, 35% 50%, 62% 50%);" +
+  "filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));}" +
+  "#wg-click-pulse{position:fixed;z-index:2147483647;width:14px;height:14px;" +
+  "margin-left:-7px;margin-top:-7px;border-radius:50%;pointer-events:none;opacity:0;" +
+  "border:2px solid #7C3AED;background:rgba(124,58,237,.25);}" +
+  "#wg-click-pulse.wg-pulse{animation:wg-pulse .5s ease-out;}" +
+  "@keyframes wg-pulse{0%{opacity:.9;transform:scale(.4);}100%{opacity:0;transform:scale(2.4);}}" +
   "#wg-panel{position:fixed;z-index:2147483647;left:50%;bottom:12px;transform:translateX(-50%);" +
   "max-width:min(92vw,640px);max-height:calc(100vh - 24px);overflow-y:auto;box-sizing:border-box;" +
   "background:rgba(20,10,40,.94);color:#fff;border-radius:14px;" +
   "padding:16px 20px;font:14px/1.4 system-ui,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,.35);" +
-  "opacity:0;transition:opacity .25s ease;}" +
+  "opacity:0;transition:opacity .06s ease;}" +
   "#wg-panel.wg-in{opacity:1;}" +
   "#wg-panel .wg-auto{margin-top:10px;font:600 13px system-ui,sans-serif;color:#c9a6ff;}" +
   "#wg-panel h3{margin:0 0 8px;font-size:13px;color:#c9a6ff;font-weight:700;" +
@@ -430,6 +456,97 @@ async function installOverlay(page, title) {
           ring.id = "wg-ring";
           document.documentElement.appendChild(ring);
         }
+        if (!document.getElementById("wg-ring-label")) {
+          const ringLabel = document.createElement("div");
+          ringLabel.id = "wg-ring-label";
+          document.documentElement.appendChild(ringLabel);
+        }
+        if (!document.getElementById("wg-cursor")) {
+          const cursor = document.createElement("div");
+          cursor.id = "wg-cursor";
+          document.documentElement.appendChild(cursor);
+        }
+        if (!document.getElementById("wg-click-pulse")) {
+          const pulse = document.createElement("div");
+          pulse.id = "wg-click-pulse";
+          document.documentElement.appendChild(pulse);
+        }
+        window.__wgMoveCursorTo = (x, y, ms, instant) => {
+          const cursor = document.getElementById("wg-cursor");
+          if (!cursor) return;
+          cursor.style.setProperty("--wg-cursor-ms", (ms || 600) + "ms");
+          if (instant) {
+            const prev = cursor.style.transition;
+            cursor.style.transition = "none";
+            cursor.style.transform = "translate(" + x + "px," + y + "px)";
+            void cursor.offsetWidth;
+            cursor.style.transition = prev || "";
+          } else {
+            cursor.style.transform = "translate(" + x + "px," + y + "px)";
+          }
+          cursor.style.opacity = "1";
+        };
+        window.__wgHideCursor = () => {
+          const cursor = document.getElementById("wg-cursor");
+          if (cursor) cursor.style.opacity = "0";
+        };
+        window.__wgClickPulse = (x, y) => {
+          const pulse = document.getElementById("wg-click-pulse");
+          if (!pulse) return;
+          pulse.style.left = x + "px";
+          pulse.style.top = y + "px";
+          pulse.classList.remove("wg-pulse");
+          void pulse.offsetWidth;
+          pulse.classList.add("wg-pulse");
+        };
+        // Clamps the ring AND its label to stay fully on-screen, same
+        // width/height always - only the position moves. A target near a
+        // viewport edge (real case: "login success" highlight landing top
+        // right) used to just run the label text off-screen with no guard
+        // at all - same mistake as the banner had before its own
+        // left/center/right positions existed, not repeating it here by
+        // shrinking anything, only repositioning.
+        window.__wgPositionRing = (box, label) => {
+          const ring = document.getElementById("wg-ring");
+          const ringLabel = document.getElementById("wg-ring-label");
+          if (!ring || !ringLabel) return;
+          const margin = 6;
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+          let left = box.x - 6;
+          let top = box.y - 6;
+          const width = box.width + 12;
+          const height = box.height + 12;
+          if (left < margin) left = margin;
+          if (top < margin) top = margin;
+          if (left + width > vw - margin) left = Math.max(margin, vw - margin - width);
+          if (top + height > vh - margin) top = Math.max(margin, vh - margin - height);
+          ring.style.left = left + "px";
+          ring.style.top = top + "px";
+          ring.style.width = width + "px";
+          ring.style.height = height + "px";
+          ring.style.opacity = "1";
+          ringLabel.textContent = label;
+          ringLabel.style.opacity = "1";
+          // Measure the label's own natural width/height (its real
+          // rendered size, unchanged) before deciding where it fits.
+          const lw = ringLabel.offsetWidth;
+          const lh = ringLabel.offsetHeight;
+          let labelLeft = left;
+          let labelTop = top + height + 8;
+          if (labelTop + lh > vh - margin) labelTop = top - lh - 8; // flip above if it'd overflow the bottom
+          if (labelTop < margin) labelTop = margin;
+          if (labelLeft + lw > vw - margin) labelLeft = Math.max(margin, vw - margin - lw);
+          if (labelLeft < margin) labelLeft = margin;
+          ringLabel.style.left = labelLeft + "px";
+          ringLabel.style.top = labelTop + "px";
+        };
+        window.__wgHideRing = () => {
+          const ring = document.getElementById("wg-ring");
+          const ringLabel = document.getElementById("wg-ring-label");
+          if (ring) ring.style.opacity = "0";
+          if (ringLabel) ringLabel.style.opacity = "0";
+        };
         const POSITIONS = ["left", "center", "right"];
         const applyPos = (el, pos) => {
           el.dataset.pos = pos;
@@ -498,8 +615,8 @@ async function renderBeforeStep(page, info) {
         window.removeEventListener("scroll", window.__wgRingTrack, true);
         window.__wgRingTrack = null;
       }
-      const ring = document.getElementById("wg-ring");
-      if (ring) ring.style.opacity = "0";
+      if (window.__wgHideRing) window.__wgHideRing();
+      if (window.__wgHideCursor) window.__wgHideCursor();
     })
     .catch(() => {});
   await page
@@ -591,21 +708,14 @@ async function renderAfterStep(page, info) {
     const last = highlights[highlights.length - 1];
     await page
       .evaluate((h) => {
-        const ring = document.getElementById("wg-ring");
-        if (!ring) return;
+        if (!window.__wgPositionRing) return;
         const reposition = () => {
           const el = document.querySelector(h.selector);
           if (!el) {
-            ring.style.opacity = "0";
+            if (window.__wgHideRing) window.__wgHideRing();
             return;
           }
-          const box = el.getBoundingClientRect();
-          ring.style.left = box.x - 6 + "px";
-          ring.style.top = box.y - 6 + "px";
-          ring.style.width = box.width + 12 + "px";
-          ring.style.height = box.height + 12 + "px";
-          ring.setAttribute("data-label", h.label);
-          ring.style.opacity = "1";
+          window.__wgPositionRing(el.getBoundingClientRect(), h.label);
         };
         reposition();
         window.__wgRingTrack = reposition;
@@ -751,14 +861,7 @@ async function showRing(page, box, label) {
   await page
     .evaluate(
       ({ box, label }) => {
-        const ring = document.getElementById("wg-ring");
-        if (!ring) return;
-        ring.style.left = box.x - 6 + "px";
-        ring.style.top = box.y - 6 + "px";
-        ring.style.width = box.width + 12 + "px";
-        ring.style.height = box.height + 12 + "px";
-        ring.setAttribute("data-label", label);
-        ring.style.opacity = "1";
+        if (window.__wgPositionRing) window.__wgPositionRing(box, label);
       },
       { box, label },
     )
@@ -768,10 +871,44 @@ async function showRing(page, box, label) {
 async function hideRing(page) {
   await page
     .evaluate(() => {
-      const ring = document.getElementById("wg-ring");
-      if (ring) ring.style.opacity = "0";
+      if (window.__wgHideRing) window.__wgHideRing();
     })
     .catch(() => {});
+}
+
+async function moveCursorTo(page, box, ms) {
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page
+    .evaluate(({ x, y, ms }) => {
+      if (window.__wgMoveCursorTo) window.__wgMoveCursorTo(x, y, ms);
+    }, { x, y, ms })
+    .catch(() => {});
+  return { x, y };
+}
+
+async function clickPulseAt(page, x, y) {
+  await page
+    .evaluate(({ x, y }) => {
+      if (window.__wgClickPulse) window.__wgClickPulse(x, y);
+    }, { x, y })
+    .catch(() => {});
+}
+
+/**
+ * True if the engine's own narrate() (waygraph's public export, for a Block
+ * author explicitly captioning one action) JUST positioned the ring for
+ * THIS action, moments ago - the automatic per-fill/per-click narration
+ * below should not immediately overwrite an author's own explicit caption
+ * with its generic guess.
+ */
+async function wasJustNarrated(page) {
+  return page
+    .evaluate(() => {
+      const w = window;
+      return typeof w.__wgLastNarrate === "number" && Date.now() - w.__wgLastNarrate < 500;
+    })
+    .catch(() => false);
 }
 
 function instrumentInteractionHighlighting(page, mem, slowMo) {
@@ -813,15 +950,20 @@ function instrumentInteractionHighlighting(page, mem, slowMo) {
       try {
         await installOverlay(page);
         const box = await this.boundingBox();
-        if (box) {
+        if (box && !(await wasJustNarrated(page))) {
           // Only trust the "last mem.get()" as THIS fill's source if it
           // happened recently - a stale read from several actions ago is
           // more likely unrelated than actually describing this field.
           const label = memTrack.lastKeyName && Date.now() - memTrack.at < 3000
             ? "from mem: " + memTrack.lastKeyName
             : "writing from mem";
+          await moveCursorTo(page, box, 500);
           await showRing(page, box, label);
           await new Promise((res) => setTimeout(res, 200));
+        } else if (box) {
+          // Ring/caption already handled by narrate() - still move the
+          // cursor there, just skip re-showing the ring with a generic label.
+          await moveCursorTo(page, box, 200);
         }
       } catch {
         // best-effort - element not visible/attached yet is not this
@@ -853,10 +995,12 @@ function instrumentInteractionHighlighting(page, mem, slowMo) {
     proto.__wgClickPatched = true;
     const originalClick = proto.click;
     proto.click = async function (options) {
+      let clickPoint = null;
       try {
         await installOverlay(page);
         const box = await this.boundingBox();
-        if (box) {
+        const narrated = box ? await wasJustNarrated(page) : false;
+        if (box && !narrated) {
           let label = "click";
           try {
             const text = (await this.textContent())?.trim();
@@ -864,15 +1008,21 @@ function instrumentInteractionHighlighting(page, mem, slowMo) {
           } catch {
             // element has no simple text (an icon button, say) - generic label is fine
           }
+          clickPoint = await moveCursorTo(page, box, 600);
           await showRing(page, box, label);
           // "pop for a few seconds" - Dan's own phrase, matching the
           // zsign demo-engine's ring-before-click pattern in
           // services/help-center-clip-engine's video-pipeline.
           await new Promise((res) => setTimeout(res, clickPrePop));
+        } else if (box) {
+          // Ring/caption already handled by narrate() - still move the
+          // cursor + pulse the click point, just skip re-showing the ring.
+          clickPoint = await moveCursorTo(page, box, 200);
         }
       } catch {
         // best-effort - the real click below still runs either way
       }
+      if (clickPoint) await clickPulseAt(page, clickPoint.x, clickPoint.y);
       const result = await originalClick.call(this, options);
       await new Promise((res) => setTimeout(res, clickPostPop));
       await hideRing(page);
@@ -898,7 +1048,12 @@ function instrumentInteractionHighlighting(page, mem, slowMo) {
   // (3 consecutive real login runs, no failures) that those legitimate
   // waits actually resolve in well under a second in practice - the cap
   // was never close to touching them - so it's safe to tighten further.
-  const WAIT_CAP_MS = 1500;
+  // Pushed lower than the earlier 1500ms pass: empirical data (3
+  // consecutive real login runs) already showed every legitimate wait in
+  // this codebase resolves in well under 100ms - nothing observed has
+  // needed headroom anywhere near 1500ms, let alone this. Still re-verified
+  // at this new value before shipping, same as every prior tightening.
+  const WAIT_CAP_MS = 700;
   if (!proto.__wgWaitForPatched) {
     proto.__wgWaitForPatched = true;
     const originalWaitFor = proto.waitFor;

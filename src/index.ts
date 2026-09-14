@@ -5,6 +5,7 @@ export { Trait, urlMatches, textEquals, visible } from "./trait.js";
 export {
   runGraph,
   spawnTab,
+  narrate,
   Engine,
   start,
   end,

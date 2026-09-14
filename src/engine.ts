@@ -1,5 +1,5 @@
 import { chromium, firefox, webkit } from "@playwright/test";
-import type { Browser, BrowserContext, Page } from "@playwright/test";
+import type { Browser, BrowserContext, Page, Locator } from "@playwright/test";
 import type { Block, Checkpoint, Instruction, DefinedBlock } from "./types.js";
 import { connect, checkpoint } from "./types.js";
 import { MemPage } from "./mem-page.js";
@@ -140,6 +140,60 @@ export async function spawnTab<TOut extends Checkpoint<string>>(
   maxSteps = 5000,
 ): Promise<TOut> {
   return runGraph<TOut>(entry, undefined, page.context(), mem, maxSteps);
+}
+
+/**
+ * Wraps one `act()` interaction with a caption and highlight, for a Block
+ * author who wants to explicitly narrate a specific step rather than rely
+ * on the generic per-fill/per-click narration `waygraph chain
+ * WAYGRAPH_STEP=1` already does automatically -
+ * `await narrate(submitButton, "confirms the order", () => submitButton.click())`
+ * reads at the call site instead of being inferred.
+ *
+ * A true no-op everywhere except inside a `WAYGRAPH_STEP=1` run: it checks
+ * for a `window.__wgPositionRing` hook the step-mode overlay installs on
+ * the page before doing anything, so a headless/CI/automated run (nobody
+ * watching, per-character delays and highlight pauses would just be wasted
+ * time) pays zero extra cost - not even the boundingBox() lookup runs. The
+ * `action` itself always runs regardless; only the narration is
+ * conditional.
+ * @example await narrate(submitButton, "confirms the order", () => submitButton.click())
+ */
+export async function narrate<T>(
+  locator: Locator,
+  caption: string,
+  action: () => Promise<T>,
+): Promise<T> {
+  const page = locator.page();
+  const active = await page
+    .evaluate(() => typeof (globalThis as unknown as { __wgPositionRing?: unknown }).__wgPositionRing === "function")
+    .catch(() => false);
+  if (!active) return action();
+  try {
+    const box = await locator.boundingBox();
+    if (box) {
+      await page
+        .evaluate(
+          ({ box, caption }) => {
+            const w = globalThis as unknown as {
+              __wgPositionRing?: (box: unknown, label: string) => void;
+              __wgLastNarrate?: number;
+            };
+            if (w.__wgPositionRing) w.__wgPositionRing(box, caption);
+            // The CLI's own automatic per-fill/per-click narration checks
+            // this before showing (and overwriting) its own guess - an
+            // explicitly authored caption should win, not get immediately
+            // replaced a moment later by the generic one.
+            w.__wgLastNarrate = Date.now();
+          },
+          { box, caption },
+        )
+        .catch(() => {});
+    }
+  } catch {
+    // best-effort - the real action below still runs either way
+  }
+  return action();
 }
 
 /** Reserved markers bookending a `defineFlow([start, ...blocks, end])` call. */
