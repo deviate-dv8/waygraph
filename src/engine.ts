@@ -638,6 +638,7 @@ function stripMethods<In extends Checkpoint<string>, Out extends Checkpoint<stri
   block: Block<In, Out>,
 ): {
   name: string;
+  description?: Block<In, Out>["description"];
   instruction: Block<In, Out>["instruction"];
   next?: Block<In, Out>["next"];
   requires?: Block<In, Out>["requires"];
@@ -646,6 +647,7 @@ function stripMethods<In extends Checkpoint<string>, Out extends Checkpoint<stri
   return {
     name: block.name,
     instruction: block.instruction,
+    ...(block.description ? { description: block.description } : {}),
     ...(block.next ? { next: block.next } : {}),
     ...(block.requires ? { requires: block.requires } : {}),
     ...(block.routes ? { routes: block.routes } : {}),
@@ -663,6 +665,7 @@ function stripMethods<In extends Checkpoint<string>, Out extends Checkpoint<stri
  */
 export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(base: {
   name: string;
+  description?: Block<In, Out>["description"];
   instruction: Instruction<In, Out, any>;
   next?: Block<In, Out>["next"];
   requires?: Block<In, Out>["requires"];
@@ -671,6 +674,7 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
   const plain: Block<In, Out> = {
     name: base.name,
     instruction: base.instruction,
+    ...(base.description ? { description: base.description } : {}),
     ...(base.next ? { next: base.next } : {}),
     ...(base.requires ? { requires: base.requires } : {}),
     ...(base.routes ? { routes: base.routes } : {}),

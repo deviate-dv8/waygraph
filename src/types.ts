@@ -60,6 +60,25 @@ export interface Instruction<
    * {@link Block.modVerify} for changing this from outside the Block's own file.
    */
   verify?: Trait[] | ((out: Out) => Trait[]);
+  /**
+   * Optional. Arbitrary highlight points for step-mode tooling to show, in
+   * order, after this Block resolves - independent of `verify`, for
+   * calling out something worth a human's attention regardless of whether
+   * it's also being asserted ("remember this signature ID" isn't a
+   * pass/fail check). A function form picks different highlights per
+   * resolved `Out`, same as `verify`. Purely additive UI narration - never
+   * consulted by `runGraph`/`connect`/anything that decides behavior.
+   * @example highlights: (out) => [{ selector: "#signature-id", label: "remember this ID" }]
+   */
+  highlights?: readonly WaygraphHighlight[] | ((out: Out) => readonly WaygraphHighlight[]);
+}
+
+/** One arbitrary highlight point - see {@link Instruction.highlights}. */
+export interface WaygraphHighlight {
+  /** CSS selector for the element to highlight. */
+  selector: string;
+  /** Caption shown next to the highlight ring. */
+  label: string;
 }
 
 /**
@@ -81,6 +100,16 @@ export interface Instruction<
 export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<string>> {
   /** A short, stable label - shows up in every error this Block can produce ("trait X failed after Y"). */
   name: string;
+  /**
+   * A human-readable sentence describing what this Block actually tests or
+   * does - "the outsider case: a user outside a request's audience is
+   * denied its detail page," not a restatement of the code. Purely
+   * additive, optional narration for a human watching a run (step-mode
+   * tooling shows it before the Block runs) - never read by
+   * `runGraph`/`connect`/anything that decides behavior. A Block with none
+   * just shows its `name` instead.
+   */
+  description?: string;
   /** The act/observe/resolve/verify pipeline itself. See {@link Instruction}. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   instruction: Instruction<In, Out, any>;

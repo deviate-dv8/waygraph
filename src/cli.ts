@@ -373,6 +373,7 @@ const RING_CSS =
   "#wg-panel .wg-auto{margin-top:10px;font:600 13px system-ui,sans-serif;color:#c9a6ff;}" +
   "#wg-panel h3{margin:0 0 8px;font-size:13px;color:#c9a6ff;font-weight:700;" +
   "letter-spacing:.02em;text-transform:uppercase;}" +
+  "#wg-panel .wg-narration{margin:0 0 12px;font:italic 14px/1.4 system-ui,sans-serif;color:#f0e8ff;}" +
   "#wg-progress{height:4px;background:#2a1650;border-radius:2px;margin:0 0 12px;overflow:hidden;}" +
   "#wg-progress-bar{height:100%;background:#7C3AED;border-radius:2px;transition:width .3s ease;}" +
   "#wg-modules{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}" +
@@ -380,6 +381,12 @@ const RING_CSS =
   "#wg-modules .wg-mod-done{background:#2a1650;color:#9a7ad1;}" +
   "#wg-modules .wg-mod-current{background:#7C3AED;color:#fff;}" +
   "#wg-modules .wg-mod-upcoming{background:transparent;color:#5a4a80;border:1px solid #3a2a60;}" +
+  "#wg-banner{position:fixed;z-index:2147483647;top:14px;right:14px;max-width:320px;" +
+  "background:rgba(20,10,40,.94);color:#fff;border-radius:12px;padding:10px 16px;" +
+  "font:14px/1.4 system-ui,sans-serif;box-shadow:0 8px 20px rgba(0,0,0,.3);" +
+  "border:1px solid rgba(124,58,237,.4);}" +
+  "#wg-banner .wg-banner-tag{display:block;font-size:10px;font-weight:700;color:#c9a6ff;" +
+  "letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px;}" +
   "#wg-panel .wg-key{margin:8px 0;}" +
   "#wg-panel label{display:block;font-size:12px;color:#d8c8ff;margin-bottom:3px;}" +
   "#wg-panel textarea{width:100%;box-sizing:border-box;background:#0f0620;color:#fff;" +
@@ -395,21 +402,59 @@ const RING_CSS =
   "background:transparent;border:1px solid #4b2a80;color:#9a7ad1;border-radius:6px;}" +
   "#wg-panel .wg-toggle button.wg-active{background:#4b2a80;color:#fff;}";
 
-async function installOverlay(page) {
+// Purple dot favicon (matches the overlay's own theme color) - the tab-bar
+// signal that "this Chromium window is a waygraph run," even at a glance
+// across a taskbar/alt-tab, not just something visible inside the page.
+const WAYGRAPH_FAVICON =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>" +
+      "<circle cx='16' cy='16' r='14' fill='#7C3AED'/></svg>",
+  );
+
+async function installOverlay(page, title) {
   await page.addStyleTag({ content: RING_CSS }).catch(() => {});
   await page
-    .evaluate(() => {
-      if (!document.getElementById("wg-ring")) {
-        const ring = document.createElement("div");
-        ring.id = "wg-ring";
-        document.documentElement.appendChild(ring);
-      }
-    })
+    .evaluate(
+      ({ title, favicon }) => {
+        if (!document.getElementById("wg-ring")) {
+          const ring = document.createElement("div");
+          ring.id = "wg-ring";
+          document.documentElement.appendChild(ring);
+        }
+        if (title && !document.getElementById("wg-banner")) {
+          const banner = document.createElement("div");
+          banner.id = "wg-banner";
+          const tag = document.createElement("span");
+          tag.className = "wg-banner-tag";
+          tag.textContent = "waygraph demo";
+          const text = document.createElement("span");
+          text.textContent = title;
+          banner.appendChild(tag);
+          banner.appendChild(text);
+          document.documentElement.appendChild(banner);
+        }
+        // Tab title/favicon: a real navigation resets document.title and any
+        // <link rel="icon"> the new document brings, so re-check (not
+        // re-append) on every call instead of a one-time flag.
+        if (!document.title.startsWith("[waygraph] ")) {
+          document.title = "[waygraph] " + document.title;
+        }
+        let iconLink = document.querySelector("link[rel~='icon']");
+        if (!iconLink) {
+          iconLink = document.createElement("link");
+          iconLink.rel = "icon";
+          document.head.appendChild(iconLink);
+        }
+        if (iconLink.href !== favicon) iconLink.href = favicon;
+      },
+      { title, favicon: WAYGRAPH_FAVICON },
+    )
     .catch(() => {});
 }
 
 async function renderBeforeStep(page, info) {
-  await installOverlay(page);
+  await installOverlay(page, info.title);
   // A ring left highlighting the PREVIOUS step's element (and its live
   // resize/scroll tracker) shouldn't linger once a new step's own panel is
   // up - only relevant when a Block's act() doesn't navigate away, since a
@@ -432,16 +477,23 @@ async function renderBeforeStep(page, info) {
       const panel = document.createElement("div");
       panel.id = "wg-panel";
       const pct = Math.round((info.index / info.total) * 100);
+      const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
       const modulesHtml = info.allNames
         .map((name, idx) => {
           const cls = idx < info.index ? "wg-mod-done" : idx === info.index ? "wg-mod-current" : "wg-mod-upcoming";
-          return "<span class=\\"wg-mod " + cls + "\\">" + name + "</span>";
+          const desc = info.allDescriptions && info.allDescriptions[idx];
+          const titleAttr = desc ? " title=\\"" + esc(desc) + "\\"" : "";
+          return "<span class=\\"wg-mod " + cls + "\\"" + titleAttr + ">" + name + "</span>";
         })
         .join("");
+      const narrationHtml = info.description
+        ? "<div class=\\"wg-narration\\">" + esc(info.description) + "</div>"
+        : "";
       let html =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
         "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
-        "<h3>Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + "</h3>";
+        "<h3>Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + "</h3>" +
+        narrationHtml;
       if (info.keys.length === 0) {
         html += "<div class=\\"wg-key\\">(no MemKeys required)</div>";
       }
@@ -472,46 +524,66 @@ async function renderBeforeStep(page, info) {
 }
 
 async function renderAfterStep(page, info) {
-  await installOverlay(page);
-  // Tracks the highlighted element live (recomputes on resize/scroll)
-  // instead of a one-time Node-side boundingBox() snapshot - a resized
-  // window used to leave the ring frozen at its stale old position.
-  // Only the first recovered selector is drawn (one ring); best-effort - a
-  // selector that never resolves just leaves the ring hidden.
+  await installOverlay(page, info.title);
+  // Clear any tracker from a previous highlight before cycling through this
+  // step's own.
   await page
-    .evaluate((highlights) => {
+    .evaluate(() => {
       if (window.__wgRingTrack) {
         window.removeEventListener("resize", window.__wgRingTrack);
         window.removeEventListener("scroll", window.__wgRingTrack, true);
         window.__wgRingTrack = null;
       }
-      const ring = document.getElementById("wg-ring");
-      if (!ring) return;
-      const h = highlights[0];
-      if (!h) {
-        ring.style.opacity = "0";
-        return;
-      }
-      const reposition = () => {
-        const el = document.querySelector(h.selector);
-        if (!el) {
-          ring.style.opacity = "0";
-          return;
-        }
-        const box = el.getBoundingClientRect();
-        ring.style.left = box.x - 6 + "px";
-        ring.style.top = box.y - 6 + "px";
-        ring.style.width = box.width + 12 + "px";
-        ring.style.height = box.height + 12 + "px";
-        ring.setAttribute("data-label", h.label);
-        ring.style.opacity = "1";
-      };
-      reposition();
-      window.__wgRingTrack = reposition;
-      window.addEventListener("resize", reposition);
-      window.addEventListener("scroll", reposition, true);
-    }, info.highlights)
+    })
     .catch(() => {});
+  const highlights = info.highlights || [];
+  // Cycle through EVERY declared/recovered highlight in order, each shown
+  // long enough to actually register - "it highlights something [...] then
+  // it highlights something [else] and next," not just the first one.
+  for (let i = 0; i < highlights.length; i++) {
+    const h = highlights[i];
+    try {
+      const box = await page.locator(h.selector).first().boundingBox();
+      if (box) {
+        await showRing(page, box, h.label);
+        await new Promise((res) => setTimeout(res, i === highlights.length - 1 ? 200 : 900));
+      }
+    } catch {
+      // best-effort - a selector that doesn't resolve just gets skipped
+    }
+  }
+  if (highlights.length > 0) {
+    // The LAST highlight is the one that stays lit while the human reads
+    // the after-step panel - give THAT one live resize/scroll tracking,
+    // same as before.
+    const last = highlights[highlights.length - 1];
+    await page
+      .evaluate((h) => {
+        const ring = document.getElementById("wg-ring");
+        if (!ring) return;
+        const reposition = () => {
+          const el = document.querySelector(h.selector);
+          if (!el) {
+            ring.style.opacity = "0";
+            return;
+          }
+          const box = el.getBoundingClientRect();
+          ring.style.left = box.x - 6 + "px";
+          ring.style.top = box.y - 6 + "px";
+          ring.style.width = box.width + 12 + "px";
+          ring.style.height = box.height + 12 + "px";
+          ring.setAttribute("data-label", h.label);
+          ring.style.opacity = "1";
+        };
+        reposition();
+        window.__wgRingTrack = reposition;
+        window.addEventListener("resize", reposition);
+        window.addEventListener("scroll", reposition, true);
+      }, last)
+      .catch(() => {});
+  } else {
+    await hideRing(page);
+  }
   await page
     .evaluate((info) => {
       const old = document.getElementById("wg-panel");
@@ -523,10 +595,13 @@ async function renderAfterStep(page, info) {
         ? "End of chain - " + info.total + " / " + info.total + " blocks covered - " + info.blockName + " done"
         : "Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + " done";
       const buttonLabel = info.isLast ? "Finish" : "Next \\u25B6";
+      const escA = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
       const modulesHtml = info.allNames
         .map((name, idx) => {
           const cls = idx <= info.index ? "wg-mod-done" : "wg-mod-upcoming";
-          return "<span class=\\"wg-mod " + cls + "\\">" + name + "</span>";
+          const desc = info.allDescriptions && info.allDescriptions[idx];
+          const titleAttr = desc ? " title=\\"" + escA(desc) + "\\"" : "";
+          return "<span class=\\"wg-mod " + cls + "\\"" + titleAttr + ">" + name + "</span>";
         })
         .join("");
       // QA-friendly by default ("LoginSuccess" -> "Login Success") - raw
@@ -573,13 +648,36 @@ async function renderAfterStep(page, info) {
 }
 
 /**
+ * A Block's own explicit instruction.highlights, if it declared any -
+ * arbitrary, author-controlled highlight points, independent of verify
+ * ("remember this ID" isn't a pass/fail check). Takes priority over
+ * anything recovered from verify traits below.
+ */
+function resolveDeclaredHighlights(block, resultTag) {
+  let highlights = block.instruction && block.instruction.highlights;
+  if (typeof highlights === "function") {
+    try {
+      highlights = highlights({ __state: resultTag });
+    } catch {
+      highlights = [];
+    }
+  }
+  if (!Array.isArray(highlights)) return [];
+  return highlights.filter((h) => h && typeof h.selector === "string" && typeof h.label === "string");
+}
+
+/**
  * Recovers a DOM selector from a built-in Trait's own .name string -
  * visible(sel) / text-equals(sel, "...") - since Trait.check itself is
  * an opaque closure with no selector field of its own. Best-effort only: a
  * hand-written bespoke Trait, or url-matches(...) (no DOM target), yields
  * nothing to highlight, which is fine - the panel still shows the result.
+ * Only used as a FALLBACK when the Block declared no explicit
+ * instruction.highlights of its own - see resolveDeclaredHighlights.
  */
 function extractVerifyHighlights(block, resultTag) {
+  const declared = resolveDeclaredHighlights(block, resultTag);
+  if (declared.length > 0) return declared;
   let verify = block.instruction && block.instruction.verify;
   if (typeof verify === "function") {
     try {
@@ -761,14 +859,14 @@ function instrumentInteractionHighlighting(page, mem, slowMo) {
   // helpers some Blocks use for their own pacing are NOT Playwright calls
   // at all and can't be touched this way - a real, disclosed limit, not
   // silently ignored.
-  // Conservative on purpose: this exact codebase has documented real
-  // flakiness around slow-but-legitimate hydration waits (see
-  // login.block.ts's own waitForActionable comment). A too-aggressive cap
-  // would trade "one annoying 5s dead wait" for "logins that sometimes
-  // fail outright" - worse. 3000ms still meaningfully shortens the
-  // "waiting for something that will never happen" case without giving a
-  // real, slow-but-genuine wait much less room than before.
-  const WAIT_CAP_MS = 3000;
+  // 3000ms was the first, deliberately conservative pass (this codebase
+  // has documented real flakiness around slow-but-legitimate hydration
+  // waits, so a too-aggressive cap risks trading "one annoying dead wait"
+  // for "logins that sometimes fail outright"). Verified empirically
+  // (3 consecutive real login runs, no failures) that those legitimate
+  // waits actually resolve in well under a second in practice - the cap
+  // was never close to touching them - so it's safe to tighten further.
+  const WAIT_CAP_MS = 1500;
   if (!proto.__wgWaitForPatched) {
     proto.__wgWaitForPatched = true;
     const originalWaitFor = proto.waitFor;
@@ -787,7 +885,7 @@ function instrumentInteractionHighlighting(page, mem, slowMo) {
   }
 }
 
-async function runStepMode(engine, start, end, context, page, mem, resolved, slowMo) {
+async function runStepMode(engine, start, end, context, page, mem, resolved, slowMo, title) {
   instrumentInteractionHighlighting(page, mem, slowMo);
   // Some real Blocks (e.g. zsign-all's login.block.ts) call
   // page.setViewportSize({ width: 1280, height: 720 }) inside their own
@@ -817,6 +915,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   const autoplayMs = process.env.WAYGRAPH_AUTOPLAY_MS ? Number(process.env.WAYGRAPH_AUTOPLAY_MS) : 1800;
   const gate = () => (autoplay ? new Promise((res) => setTimeout(() => res({}), autoplayMs)) : waitForNext());
   const allNames = resolved.map((r) => r.block.name);
+  const allDescriptions = resolved.map((r) => r.block.description || "");
 
   let result;
   for (let i = 0; i < resolved.length; i++) {
@@ -831,7 +930,17 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       }
       return { name: k.name, value };
     });
-    await renderBeforeStep(page, { index: i, total: resolved.length, blockName: r.block.name, keys, allNames, autoplay });
+    await renderBeforeStep(page, {
+      index: i,
+      total: resolved.length,
+      blockName: r.block.name,
+      description: r.block.description || "",
+      keys,
+      allNames,
+      allDescriptions,
+      autoplay,
+      title,
+    });
     const edits = await gate();
     for (const k of requires) {
       if (edits[k.name] !== undefined) {
@@ -859,7 +968,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       highlights,
       isLast: i === resolved.length - 1,
       allNames,
+      allDescriptions,
       autoplay,
+      title,
     });
     await gate();
   }
@@ -915,6 +1026,7 @@ async function main() {
       ? 350
       : undefined;
   const baseURL = process.env.WAYGRAPH_BASE_URL;
+  const title = process.env.WAYGRAPH_TITLE;
   const engine = new Engine({ headless: !headed, slowMo });
   let result;
   if (step || baseURL) {
@@ -940,7 +1052,7 @@ async function main() {
         if (baseURL) {
           await page.goto(baseURL).catch(() => {});
         }
-        result = await runStepMode(engine, start, end, context, page, mem, resolved, slowMo);
+        result = await runStepMode(engine, start, end, context, page, mem, resolved, slowMo, title);
       } else {
         const blocks = resolved.map((r) => r.block);
         const chained = blocks.reduce((a, b) => connect(a, b));
@@ -1089,6 +1201,11 @@ Usage:
                           just confirmed, then "Next" before moving on.
                           Implies headed - stepping through headless defeats
                           the point.
+      WAYGRAPH_AUTOPLAY=1     step mode only - hands-off, advances on a
+                          timer instead of waiting for clicks
+      WAYGRAPH_AUTOPLAY_MS=ms delay between auto-advances (default 1800)
+      WAYGRAPH_TITLE="..."    step mode only - a persistent top-right
+                          banner naming what this whole run is about
 
 "project" defaults to the current directory.
 `);
