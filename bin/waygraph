@@ -1,0 +1,13 @@
+#!/bin/sh
+# Two cwd/symlink pitfalls this resolves, both real, both hit in practice:
+#  - `--import tsx/esm` is a bare specifier - Node resolves it as if from an
+#    unnamed module at the CALLER's cwd, not this script's install
+#    directory, so it broke when invoked from anywhere else.
+#  - `npm link` makes this script reachable via a SYMLINK (e.g.
+#    ~/.nvm/.../bin/waygraph) - `dirname "$0"` alone follows argv[0], not the
+#    symlink target, so it resolved to the nvm bin dir instead of this
+#    package. `readlink -f` follows the symlink to the real file first.
+SOURCE="$(readlink -f "$0")"
+DIR="$(cd "$(dirname "$SOURCE")/.." && pwd)"
+TSX_ESM="$(cd "$DIR" && node -e "console.log(require.resolve('tsx/esm'))")"
+exec node --import "$TSX_ESM" "$DIR/dist/cli.js" "$@"

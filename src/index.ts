@@ -16,4 +16,4 @@ export {
   composeBlock,
   preflight,
 } from "./engine.js";
-export type { Flow, EngineConfig, ComposedBlock } from "./engine.js";
+export type { Flow, EngineConfig, ComposedBlock, RunGraphOptions } from "./engine.js";

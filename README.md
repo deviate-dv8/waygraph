@@ -92,7 +92,14 @@ so it drops straight into `defineFlow([start, ..., composed, ..., end])` like an
 Block/Flow, in the same browser context an existing `page` already belongs to - the
 pattern `observe()` could already reach for (it's the only phase allowed to touch
 `page.context()`), now a named, discoverable, tested primitive instead of something
-you'd have to already know to hand-roll.
+you'd have to already know to hand-roll. `flow.run(context, mem, options)` also accepts a
+trailing optional options object - additively, so `flow.run(context, mem)` still behaves
+byte-for-byte as before: `options.page` drives that already-open page instead of opening
+a fresh tab (the run won't close a page you handed it unless you say so), and
+`options.closeOnFinish: false` leaves the run's page open and returns `{ result, page }`
+so the caller can keep driving it - hands a run tab back instead of losing it. See
+"Recipes" for capture-on-popup, which stays a documented pattern until a second real use
+case promotes it to an engine API.
 
 [`create-waygraph`](https://github.com/deviate-dv8/create-waygraph) scaffolds a new
 project (package.json, tsconfig, playwright.config, one working example flow) in one
@@ -163,6 +170,47 @@ See `tests/define-flow.spec.ts` here, and `saucedemo/tests/checkout-flow.spec.ts
 for real. The lower-level `connect()`/`runGraph()` still exist and are what `defineFlow`
 builds on - reach for them directly only if you need a shape `defineFlow`'s array can't
 express yet.
+
+## Recipes
+
+### Detect / drive the surviving tab after a run
+
+The default run closes the page it opened, and a page you hand in via `options.page`
+survives. For a flow that must BE the surviving tab after it returns (an interactive demo,
+a hand-back to a caller), ask for the page back explicitly:
+
+```typescript
+const { result, page } = await registerFlow.run(context, mem, { closeOnFinish: false });
+// `result.__state` reached the terminal Checkpoint; `page` is still open where the
+// flow left it - the caller keeps driving it, and closes it whenever IT is done.
+```
+
+### Capture a popup (`target=_blank` click)
+
+Frameworks and email UIs routinely rewrite links to `target="_blank"`, so a click that
+"should navigate" actually opens a second, engine-invisible tab. Until a second real use
+case promotes this to an engine API, capture it in userland with a context-level page
+event armed before the click that is expected to open exactly one popup:
+
+```typescript
+let popup: Page | undefined;
+context.once("page", (p) => { popup = p; });
+await linkHandle.click();          // the block that causes the popup (e.g. the
+                                   // MailHog email's real verify link)
+if (popup) {
+  await popup.waitForLoadState();  // fully loaded before calling into the engine
+  await verifyLinkFlow.run(context, mem, { page: popup, closeOnFinish: false });
+  // popup is now the caller's page - close it when done, or leave it as the
+  // surviving tab of a demo.
+}
+```
+
+`context.once` (not `.on`) guarantees a second stray popup won't re-fire the handler and
+clobber your handle; if a page truly can open more than one popup, this recipe needs to
+collect them instead. The popup is a normal Playwright `Page` from the same context, so
+anything `Flow.run(context, mem, { page })` can drive is available to keep driving here,
+and `closeOnFinish: false` hands it back into your ownership instead of the run closing
+it out from under you.
 
 ## Developing this package
 

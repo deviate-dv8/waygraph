@@ -51,9 +51,11 @@ export async function runGraph<TOut extends Checkpoint<string>>(
   context: BrowserContext,
   mem: MemPage,
   maxSteps = 5000,
+  options?: RunGraphOptions,
 ): Promise<TOut> {
   preflight(mem, entry);
-  const page = await context.newPage();
+  const page = options?.page ?? (await context.newPage());
+  const closeOnFinish = options?.closeOnFinish ?? true;
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let current: Block<any, any> = entry;
@@ -87,8 +89,32 @@ export async function runGraph<TOut extends Checkpoint<string>>(
       input = checkpoint;
     }
   } finally {
-    await page.close();
+    if (closeOnFinish) {
+      await page.close();
+    }
   }
+}
+
+/** Options for `runGraph`'s trailing `options` arg and for {@link Flow.run}'s `options` overload. */
+export interface RunGraphOptions {
+  /**
+   * Drive this already-open page instead of opening a new one via
+   * `context.newPage()`. Lets a run continue on a tab the caller already
+   * has open (e.g. one that's already logged in), instead of every run
+   * being forced to start its own fresh tab and lose access to whatever was
+   * already there.
+   */
+  page?: Page;
+  /**
+   * `Flow.run` defaults this to `true` only when it opened the page itself
+   * (no `page` given) - matching every call from before this option
+   * existed. If you pass your own `page`, it defaults to `false` instead:
+   * a page you opened is yours to close, not this run's to close out from
+   * under you. Either way an explicit value here always wins. `runGraph`
+   * itself has no such page-aware default (its caller already decided
+   * `page` and `closeOnFinish` together) - it just does what you ask.
+   */
+  closeOnFinish?: boolean;
 }
 
 /**
@@ -156,6 +182,23 @@ type EndMarker = typeof end;
  */
 export interface Flow<Out extends Checkpoint<string>> {
   run(context: BrowserContext, mem: MemPage): Promise<Out>;
+  /**
+   * `options.closeOnFinish: false` hands the driven page back instead of
+   * closing it - use this overload (a literal `false`, not a `boolean`) to
+   * get the `{ result, page }` shape typed correctly.
+   * @example const { result, page } = await loginFlow.run(context, mem, { closeOnFinish: false });
+   */
+  run(
+    context: BrowserContext,
+    mem: MemPage,
+    options: RunGraphOptions & { closeOnFinish: false },
+  ): Promise<{ result: Out; page: Page }>;
+  /**
+   * `options.page` drives that already-open page instead of opening a new
+   * one - see {@link RunGraphOptions}.
+   * @example await loginFlow.run(context, mem, { page: existingPage });
+   */
+  run(context: BrowserContext, mem: MemPage, options?: RunGraphOptions): Promise<Out>;
   run(mem: MemPage, config?: EngineConfig): Promise<Out>;
   /**
    * Replaces the given Block's whole verify list, wherever it sits in this
@@ -208,41 +251,80 @@ function buildFlow<Out extends Checkpoint<string>>(
     Checkpoint<"__start__">,
     Out
   >;
-  return {
-    async run(
-      contextOrMem: BrowserContext | MemPage,
-      memOrConfig?: MemPage | EngineConfig,
-    ): Promise<Out> {
-      if (contextOrMem instanceof MemPage) {
-        const mem = contextOrMem;
-        const config: EngineConfig = { ...engineConfig, ...(memOrConfig as EngineConfig | undefined) };
-        // Checked again inside runGraph too, but doing it here first means a
-        // missing key fails before a browser process even launches, not just
-        // before a page opens - the same "fail loud, cheaply" guarantee
-        // run(context, mem) already has via an existing context.
-        preflight(mem, chain);
-        const browserName = config.browserName ?? "chromium";
-        const launch = LAUNCHERS[browserName];
-        // If CHROME_PATH/CHROMIUM_PATH is set in the environment (e.g. a system
-        // or Flatpak Chromium), launch that instead of Playwright's own bundled
-        // binary - only for chromium (the env var names a Chromium build, not a
-        // Firefox/WebKit one), and a no-op default anywhere that env var isn't set.
-        const executablePath =
-          browserName === "chromium" ? process.env.CHROME_PATH || process.env.CHROMIUM_PATH : undefined;
-        const browser: Browser = await launch.launch({
-          headless: config.headless ?? true,
-          ...(config.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
-          ...(executablePath ? { executablePath } : {}),
-        });
-        try {
-          const context = await browser.newContext();
-          return await runGraph<Out>(chain, undefined, context, mem);
-        } finally {
-          await browser.close();
-        }
+  // Declared separately (not as the object-literal method below) so the
+  // three-overload `Flow.run` signature can be checked against the actual
+  // per-call-shape behavior, then attached with a cast - object-literal
+  // methods can't satisfy TS's per-overload implementation check the way a
+  // standalone function assigned to the property can.
+  const run = async function run(
+    contextOrMem: BrowserContext | MemPage,
+    memOrConfig?: MemPage | EngineConfig,
+    options?: RunGraphOptions,
+  ): Promise<Out | { result: Out; page: Page }> {
+    if (contextOrMem instanceof MemPage) {
+      const mem = contextOrMem;
+      const config: EngineConfig = { ...engineConfig, ...(memOrConfig as EngineConfig | undefined) };
+      // Checked again inside runGraph too, but doing it here first means a
+      // missing key fails before a browser process even launches, not just
+      // before a page opens - the same "fail loud, cheaply" guarantee
+      // run(context, mem) already has via an existing context.
+      preflight(mem, chain);
+      const browserName = config.browserName ?? "chromium";
+      const launch = LAUNCHERS[browserName];
+      // If CHROME_PATH/CHROMIUM_PATH is set in the environment (e.g. a system
+      // or Flatpak Chromium), launch that instead of Playwright's own bundled
+      // binary - only for chromium (the env var names a Chromium build, not a
+      // Firefox/WebKit one), and a no-op default anywhere that env var isn't set.
+      const executablePath =
+        browserName === "chromium" ? process.env.CHROME_PATH || process.env.CHROMIUM_PATH : undefined;
+      const browser: Browser = await launch.launch({
+        headless: config.headless ?? true,
+        ...(config.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
+        ...(executablePath ? { executablePath } : {}),
+      });
+      try {
+        const context = await browser.newContext();
+        return await runGraph<Out>(chain, undefined, context, mem);
+      } finally {
+        await browser.close();
       }
-      return runGraph<Out>(chain, undefined, contextOrMem, memOrConfig as MemPage);
-    },
+    }
+    const context = contextOrMem;
+    const mem = memOrConfig as MemPage;
+    // Open (or reuse) the page here, not inside runGraph, so this method -
+    // not runGraph - decides whether to close it once the run is over; the
+    // page reference has to survive past runGraph's own return either way.
+    const gotOwnPage = options?.page === undefined;
+    const page = options?.page ?? (await context.newPage());
+    // Defaulting close-on-finish to `true` unconditionally would close a
+    // page the *caller* opened and handed in via `options.page` - the exact
+    // thing this option exists to let a caller keep driving. Only default to
+    // closing when this call opened the page itself (no `options.page`
+    // given), which is the one case that matches every `run(context, mem)`
+    // call from before this option existed. An explicit `closeOnFinish`
+    // always wins either way.
+    const closeOnFinish = options?.closeOnFinish ?? gotOwnPage;
+    const result = await runGraph<Out>(chain, undefined, context, mem, 5000, {
+      page,
+      closeOnFinish: false,
+    });
+    if (closeOnFinish) {
+      await page.close();
+    }
+    // The return *shape* only changes on an explicit `closeOnFinish: false`
+    // (the literal the `{ result, page }` overload is typed against) - not
+    // on the computed `closeOnFinish` default above. A caller who passed
+    // their own `page` and left `closeOnFinish` unset already holds that
+    // page reference; handing it back again in a different return shape
+    // would silently break the plain-`Out` overload their call actually
+    // matched at the type level.
+    if (options?.closeOnFinish === false) {
+      return { result, page };
+    }
+    return result;
+  };
+  return {
+    run: run as Flow<Out>["run"],
     withBlockVerify(block, verify) {
       const index = findBlockIndex(middle, block);
       const patched = [...middle];
