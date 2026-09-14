@@ -1068,10 +1068,16 @@ async function main() {
     // launched at Chromium's own default size/position, which stayed put
     // where it was for a previous, larger monitor and looked chopped off on
     // a smaller one. Maximizing fills whatever screen it's actually on.
+    // Same CHROME_PATH/CHROMIUM_PATH rule as Engine.run(mem): prefer the
+    // system/Flatpak Chromium when set, otherwise Playwright's bundled build.
+    // Without this, STEP mode always launched a different-looking browser than
+    // headed Engine runs / waygraph-demo.mjs (which already resolve Flatpak).
+    const executablePath = process.env.CHROME_PATH || process.env.CHROMIUM_PATH || undefined;
     const browser = await chromium.launch({
       headless: !headed,
       slowMo,
       args: step ? ["--start-maximized"] : [],
+      ...(executablePath ? { executablePath } : {}),
     });
     const context = await browser.newContext(
       step ? { baseURL, viewport: null } : { baseURL, viewport: { width: 1280, height: 720 } },
