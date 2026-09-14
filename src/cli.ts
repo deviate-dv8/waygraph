@@ -381,10 +381,13 @@ const RING_CSS =
   "#wg-modules .wg-mod-done{background:#2a1650;color:#9a7ad1;}" +
   "#wg-modules .wg-mod-current{background:#7C3AED;color:#fff;}" +
   "#wg-modules .wg-mod-upcoming{background:transparent;color:#5a4a80;border:1px solid #3a2a60;}" +
-  "#wg-banner{position:fixed;z-index:2147483647;top:14px;right:14px;max-width:320px;" +
+  "#wg-banner{position:fixed;z-index:2147483647;top:14px;max-width:320px;" +
   "background:rgba(20,10,40,.94);color:#fff;border-radius:12px;padding:10px 16px;" +
   "font:14px/1.4 system-ui,sans-serif;box-shadow:0 8px 20px rgba(0,0,0,.3);" +
-  "border:1px solid rgba(124,58,237,.4);}" +
+  "border:1px solid rgba(124,58,237,.4);cursor:pointer;user-select:none;}" +
+  "#wg-banner[data-pos=left]{left:14px;right:auto;transform:none;}" +
+  "#wg-banner[data-pos=center]{left:50%;right:auto;transform:translateX(-50%);}" +
+  "#wg-banner[data-pos=right]{right:14px;left:auto;transform:none;}" +
   "#wg-banner .wg-banner-tag{display:block;font-size:10px;font-weight:700;color:#c9a6ff;" +
   "letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px;}" +
   "#wg-panel .wg-key{margin:8px 0;}" +
@@ -414,17 +417,46 @@ const WAYGRAPH_FAVICON =
 
 async function installOverlay(page, title) {
   await page.addStyleTag({ content: RING_CSS }).catch(() => {});
+  // Default top-left; override with WAYGRAPH_TITLE_POS=left|center|right.
+  // Click cycles left -> center -> right (persisted in localStorage so a
+  // navigation that rebuilds the banner keeps the human's last pick).
+  const envPos = (process.env.WAYGRAPH_TITLE_POS || "left").toLowerCase();
+  const bannerPos = envPos === "center" || envPos === "right" ? envPos : "left";
   await page
     .evaluate(
-      ({ title, favicon }) => {
+      ({ title, favicon, bannerPos }) => {
         if (!document.getElementById("wg-ring")) {
           const ring = document.createElement("div");
           ring.id = "wg-ring";
           document.documentElement.appendChild(ring);
         }
+        const POSITIONS = ["left", "center", "right"];
+        const applyPos = (el, pos) => {
+          el.dataset.pos = pos;
+          try {
+            localStorage.setItem("wg-banner-pos", pos);
+          } catch {
+            /* private mode / blocked storage - position still applies this page */
+          }
+        };
         if (title && !document.getElementById("wg-banner")) {
           const banner = document.createElement("div");
           banner.id = "wg-banner";
+          let saved = null;
+          try {
+            saved = localStorage.getItem("wg-banner-pos");
+          } catch {
+            /* ignore */
+          }
+          const startPos =
+            saved && POSITIONS.includes(saved) ? saved : bannerPos;
+          applyPos(banner, startPos);
+          banner.title = "Click to move: top left / center / right";
+          banner.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const i = POSITIONS.indexOf(banner.dataset.pos || "left");
+            applyPos(banner, POSITIONS[(i + 1) % POSITIONS.length]);
+          });
           const tag = document.createElement("span");
           tag.className = "wg-banner-tag";
           tag.textContent = "waygraph demo";
@@ -448,7 +480,7 @@ async function installOverlay(page, title) {
         }
         if (iconLink.href !== favicon) iconLink.href = favicon;
       },
-      { title, favicon: WAYGRAPH_FAVICON },
+      { title, favicon: WAYGRAPH_FAVICON, bannerPos },
     )
     .catch(() => {});
 }
@@ -1204,10 +1236,15 @@ Usage:
       WAYGRAPH_AUTOPLAY=1     step mode only - hands-off, advances on a
                           timer instead of waiting for clicks
       WAYGRAPH_AUTOPLAY_MS=ms delay between auto-advances (default 1800)
-      WAYGRAPH_TITLE="..."    step mode only - a persistent top-right
-                          banner naming what this whole run is about
+      WAYGRAPH_TITLE="..."    step mode only - a persistent top banner
+                          naming what this whole run is about (default
+                          top-left; click the banner to cycle left /
+                          center / right)
+      WAYGRAPH_TITLE_POS=left|center|right
+                          initial banner position (default left); click
+                          still cycles and remembers via localStorage
 
-"project" defaults to the current directory.
+  "project" defaults to the current directory.
 `);
   process.exit(0);
 }

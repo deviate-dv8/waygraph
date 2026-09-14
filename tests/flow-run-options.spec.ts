@@ -39,7 +39,9 @@ test("Flow.run(context, mem, { page }) drives the given page instead of opening 
 
   expect(result).toEqual(checkpoint("Done"));
   // Same page object, navigated by the flow, no new tab opened for the run.
+  // Caller-owned page stays open by default (explicit isClosed, not tab-count alone).
   expect(page.url()).toBe(URL_A);
+  expect(page.isClosed()).toBe(false);
   expect(context.pages().length).toBe(before);
 });
 
@@ -57,6 +59,19 @@ test("Flow.run(context, mem, { closeOnFinish: false }) leaves the page open and 
   expect(context.pages().length).toBe(before + 1);
 
   await page.close();
+});
+
+test("Flow.run(context, mem, { page, closeOnFinish: true }) closes the caller-owned page", async ({ context, page }) => {
+  await page.goto(URL_B);
+  const before = context.pages().length;
+
+  // Explicit true wins over the page-aware default (leave caller page open).
+  // Risky path: close out from under the caller's handle - must be intentional.
+  const result = await AFlow.run(context, new MemPage(), { page, closeOnFinish: true });
+
+  expect(result).toEqual(checkpoint("Done"));
+  expect(page.isClosed()).toBe(true);
+  expect(context.pages().length).toBe(before - 1);
 });
 
 test("Flow.run(context, mem) with no options still closes its own page, unchanged", async ({ context }) => {
