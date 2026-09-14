@@ -265,6 +265,31 @@ async function findBlock(projectDir, ref) {
   throw new Error("waygraph chain: no Block named \\"" + ref + "\\" found under " + projectDir);
 }
 
+/**
+ * Finds an already-defined Flow by its export name (e.g. loginFlow) among
+ * the project's *.flow.ts files - "I already have this wired up, just point
+ * the stepper at it, no chain spec to hand-write." Flows have no runtime
+ * .name of their own (unlike Blocks), so this only matches by export
+ * identifier. Returns null (not a throw) when nothing matches - the caller
+ * falls back to ordinary block-chain spec parsing.
+ */
+async function findFlow(projectDir, flowName) {
+  const files = walkDir(projectDir, /\\.flow\\.ts$/);
+  for (const file of files) {
+    let mod;
+    try {
+      mod = await import("file://" + file);
+    } catch {
+      continue;
+    }
+    const candidate = mod[flowName];
+    if (candidate && typeof candidate.run === "function") {
+      return candidate;
+    }
+  }
+  return null;
+}
+
 function parseChainSpec(spec) {
   return spec
     .split(/\\bthen\\b/)
@@ -323,43 +348,475 @@ function seedMemForBlock(mem, resolved, json) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// WAYGRAPH_STEP=1 - human-verification overlay: one Block at a time, a
+// browser-injected panel showing/editing that Block's MemKeys, a "Run this
+// step" gate, then a highlight ring over whatever its own verify Traits just
+// confirmed, then a "Next" gate before moving on. Ring CSS borrowed from
+// help-center-clip-engine's video-pipeline overlay (same purple ring +
+// label-under-box language, minus everything camera/narration-specific).
+// Purely CLI-level orchestration - no engine changes, no change to the
+// non-STEP path above.
+const RING_CSS =
+  "#wg-ring{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
+  "border:2.5px solid #7C3AED;border-radius:10px;" +
+  "box-shadow:0 0 0 4px rgba(124,58,237,.16);transition:opacity .3s ease;}" +
+  "#wg-ring::after{content:attr(data-label);position:absolute;left:0;top:calc(100% + 8px);" +
+  "white-space:nowrap;padding:4px 9px;border-radius:7px;background:#7C3AED;color:#fff;" +
+  "font:600 12px/1.2 system-ui,sans-serif;}" +
+  "#wg-panel{position:fixed;z-index:2147483647;left:50%;bottom:12px;transform:translateX(-50%);" +
+  "max-width:min(92vw,640px);max-height:calc(100vh - 24px);overflow-y:auto;box-sizing:border-box;" +
+  "background:rgba(20,10,40,.94);color:#fff;border-radius:14px;" +
+  "padding:16px 20px;font:14px/1.4 system-ui,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,.35);" +
+  "opacity:0;transition:opacity .25s ease;}" +
+  "#wg-panel.wg-in{opacity:1;}" +
+  "#wg-panel .wg-auto{margin-top:10px;font:600 13px system-ui,sans-serif;color:#c9a6ff;}" +
+  "#wg-panel h3{margin:0 0 8px;font-size:13px;color:#c9a6ff;font-weight:700;" +
+  "letter-spacing:.02em;text-transform:uppercase;}" +
+  "#wg-progress{height:4px;background:#2a1650;border-radius:2px;margin:0 0 12px;overflow:hidden;}" +
+  "#wg-progress-bar{height:100%;background:#7C3AED;border-radius:2px;transition:width .3s ease;}" +
+  "#wg-modules{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}" +
+  "#wg-modules .wg-mod{padding:3px 9px;border-radius:6px;font:600 11px system-ui,sans-serif;}" +
+  "#wg-modules .wg-mod-done{background:#2a1650;color:#9a7ad1;}" +
+  "#wg-modules .wg-mod-current{background:#7C3AED;color:#fff;}" +
+  "#wg-modules .wg-mod-upcoming{background:transparent;color:#5a4a80;border:1px solid #3a2a60;}" +
+  "#wg-panel .wg-key{margin:8px 0;}" +
+  "#wg-panel label{display:block;font-size:12px;color:#d8c8ff;margin-bottom:3px;}" +
+  "#wg-panel textarea{width:100%;box-sizing:border-box;background:#0f0620;color:#fff;" +
+  "border:1px solid #4b2a80;border-radius:8px;padding:6px 8px;font:12px/1.3 monospace;resize:vertical;}" +
+  "#wg-panel button{margin-top:10px;background:#7C3AED;color:#fff;border:none;border-radius:8px;" +
+  "padding:8px 16px;font:600 13px system-ui,sans-serif;cursor:pointer;}" +
+  "#wg-panel button:hover{background:#6b2fd6;}" +
+  "#wg-panel .wg-result{font:12px/1.4 monospace;background:#0f0620;border-radius:8px;padding:8px;" +
+  "margin:8px 0;white-space:pre-wrap;}" +
+  "#wg-panel .wg-result-pretty{font:600 14px/1.4 system-ui,sans-serif;}" +
+  "#wg-panel .wg-toggle{display:flex;gap:4px;margin:0 0 4px;}" +
+  "#wg-panel .wg-toggle button{margin:0;padding:3px 10px;font:600 11px system-ui,sans-serif;" +
+  "background:transparent;border:1px solid #4b2a80;color:#9a7ad1;border-radius:6px;}" +
+  "#wg-panel .wg-toggle button.wg-active{background:#4b2a80;color:#fff;}";
+
+async function installOverlay(page) {
+  await page.addStyleTag({ content: RING_CSS }).catch(() => {});
+  await page
+    .evaluate(() => {
+      if (!document.getElementById("wg-ring")) {
+        const ring = document.createElement("div");
+        ring.id = "wg-ring";
+        document.documentElement.appendChild(ring);
+      }
+    })
+    .catch(() => {});
+}
+
+async function renderBeforeStep(page, info) {
+  await installOverlay(page);
+  // A ring left highlighting the PREVIOUS step's element (and its live
+  // resize/scroll tracker) shouldn't linger once a new step's own panel is
+  // up - only relevant when a Block's act() doesn't navigate away, since a
+  // real navigation already wipes document.documentElement's children.
+  await page
+    .evaluate(() => {
+      if (window.__wgRingTrack) {
+        window.removeEventListener("resize", window.__wgRingTrack);
+        window.removeEventListener("scroll", window.__wgRingTrack, true);
+        window.__wgRingTrack = null;
+      }
+      const ring = document.getElementById("wg-ring");
+      if (ring) ring.style.opacity = "0";
+    })
+    .catch(() => {});
+  await page
+    .evaluate((info) => {
+      const old = document.getElementById("wg-panel");
+      if (old) old.remove();
+      const panel = document.createElement("div");
+      panel.id = "wg-panel";
+      const pct = Math.round((info.index / info.total) * 100);
+      const modulesHtml = info.allNames
+        .map((name, idx) => {
+          const cls = idx < info.index ? "wg-mod-done" : idx === info.index ? "wg-mod-current" : "wg-mod-upcoming";
+          return "<span class=\\"wg-mod " + cls + "\\">" + name + "</span>";
+        })
+        .join("");
+      let html =
+        "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
+        "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
+        "<h3>Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + "</h3>";
+      if (info.keys.length === 0) {
+        html += "<div class=\\"wg-key\\">(no MemKeys required)</div>";
+      }
+      for (const k of info.keys) {
+        html +=
+          "<div class=\\"wg-key\\"><label>" + k.name + "</label>" +
+          "<textarea data-key=\\"" + k.name + "\\" rows=\\"2\\">" +
+          k.value.replace(/</g, "&lt;") + "</textarea></div>";
+      }
+      html += info.autoplay
+        ? "<div class=\\"wg-auto\\">Auto-advancing...</div>"
+        : "<button id=\\"wg-run\\">Run this step \\u25B6</button>";
+      panel.innerHTML = html;
+      document.documentElement.appendChild(panel);
+      requestAnimationFrame(() => panel.classList.add("wg-in"));
+      const runBtn = document.getElementById("wg-run");
+      if (runBtn) {
+        runBtn.addEventListener("click", () => {
+          const edits = {};
+          panel.querySelectorAll("textarea[data-key]").forEach((el) => {
+            edits[el.getAttribute("data-key")] = el.value;
+          });
+          window.__wgNext(edits);
+        });
+      }
+    }, info)
+    .catch(() => {});
+}
+
+async function renderAfterStep(page, info) {
+  await installOverlay(page);
+  // Tracks the highlighted element live (recomputes on resize/scroll)
+  // instead of a one-time Node-side boundingBox() snapshot - a resized
+  // window used to leave the ring frozen at its stale old position.
+  // Only the first recovered selector is drawn (one ring); best-effort - a
+  // selector that never resolves just leaves the ring hidden.
+  await page
+    .evaluate((highlights) => {
+      if (window.__wgRingTrack) {
+        window.removeEventListener("resize", window.__wgRingTrack);
+        window.removeEventListener("scroll", window.__wgRingTrack, true);
+        window.__wgRingTrack = null;
+      }
+      const ring = document.getElementById("wg-ring");
+      if (!ring) return;
+      const h = highlights[0];
+      if (!h) {
+        ring.style.opacity = "0";
+        return;
+      }
+      const reposition = () => {
+        const el = document.querySelector(h.selector);
+        if (!el) {
+          ring.style.opacity = "0";
+          return;
+        }
+        const box = el.getBoundingClientRect();
+        ring.style.left = box.x - 6 + "px";
+        ring.style.top = box.y - 6 + "px";
+        ring.style.width = box.width + 12 + "px";
+        ring.style.height = box.height + 12 + "px";
+        ring.setAttribute("data-label", h.label);
+        ring.style.opacity = "1";
+      };
+      reposition();
+      window.__wgRingTrack = reposition;
+      window.addEventListener("resize", reposition);
+      window.addEventListener("scroll", reposition, true);
+    }, info.highlights)
+    .catch(() => {});
+  await page
+    .evaluate((info) => {
+      const old = document.getElementById("wg-panel");
+      if (old) old.remove();
+      const panel = document.createElement("div");
+      panel.id = "wg-panel";
+      const pct = Math.round(((info.index + 1) / info.total) * 100);
+      const heading = info.isLast
+        ? "End of chain - " + info.total + " / " + info.total + " blocks covered - " + info.blockName + " done"
+        : "Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + " done";
+      const buttonLabel = info.isLast ? "Finish" : "Next \\u25B6";
+      const modulesHtml = info.allNames
+        .map((name, idx) => {
+          const cls = idx <= info.index ? "wg-mod-done" : "wg-mod-upcoming";
+          return "<span class=\\"wg-mod " + cls + "\\">" + name + "</span>";
+        })
+        .join("");
+      // QA-friendly by default ("LoginSuccess" -> "Login Success") - raw
+      // JSON is one click away for whoever actually wants __state.
+      const stateTag = info.result && info.result.__state ? info.result.__state : "";
+      const prettyText = stateTag
+        .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+        .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2") || info.resultTag;
+      const pretty = window.__wgPretty !== false;
+      const resultHtml =
+        "<div class=\\"wg-toggle\\">" +
+        "<button class=\\"wg-toggle-btn" + (pretty ? " wg-active" : "") + "\\" data-mode=\\"pretty\\">Pretty</button>" +
+        "<button class=\\"wg-toggle-btn" + (pretty ? "" : " wg-active") + "\\" data-mode=\\"json\\">JSON</button>" +
+        "</div>" +
+        "<div class=\\"wg-result wg-result-pretty\\" style=\\"display:" + (pretty ? "block" : "none") + "\\">" +
+        prettyText + "</div>" +
+        "<div class=\\"wg-result wg-result-json\\" style=\\"display:" + (pretty ? "none" : "block") + "\\">" +
+        info.resultTag + "</div>";
+      const gateHtml = info.autoplay
+        ? "<div class=\\"wg-auto\\">Auto-advancing...</div>"
+        : "<button id=\\"wg-run\\">" + buttonLabel + "</button>";
+      panel.innerHTML =
+        "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
+        "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
+        "<h3>" + heading + "</h3>" +
+        resultHtml +
+        gateHtml;
+      document.documentElement.appendChild(panel);
+      requestAnimationFrame(() => panel.classList.add("wg-in"));
+      panel.querySelectorAll(".wg-toggle-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const wantPretty = btn.getAttribute("data-mode") === "pretty";
+          window.__wgPretty = wantPretty;
+          panel.querySelectorAll(".wg-toggle-btn").forEach((b) => b.classList.remove("wg-active"));
+          btn.classList.add("wg-active");
+          panel.querySelector(".wg-result-pretty").style.display = wantPretty ? "block" : "none";
+          panel.querySelector(".wg-result-json").style.display = wantPretty ? "none" : "block";
+        });
+      });
+      const runBtn = document.getElementById("wg-run");
+      if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
+    }, info)
+    .catch(() => {});
+}
+
+/**
+ * Recovers a DOM selector from a built-in Trait's own .name string -
+ * visible(sel) / text-equals(sel, "...") - since Trait.check itself is
+ * an opaque closure with no selector field of its own. Best-effort only: a
+ * hand-written bespoke Trait, or url-matches(...) (no DOM target), yields
+ * nothing to highlight, which is fine - the panel still shows the result.
+ */
+function extractVerifyHighlights(block, resultTag) {
+  let verify = block.instruction && block.instruction.verify;
+  if (typeof verify === "function") {
+    try {
+      verify = verify({ __state: resultTag });
+    } catch {
+      verify = [];
+    }
+  }
+  if (!Array.isArray(verify)) return [];
+  const highlights = [];
+  for (const t of verify) {
+    const name = t && t.name;
+    if (typeof name !== "string") continue;
+    let m = /^visible\\((.+)\\)$/.exec(name);
+    if (m) {
+      highlights.push({ selector: m[1], label: name });
+      continue;
+    }
+    m = /^text-equals\\((.+?),\\s*"/.exec(name);
+    if (m) {
+      highlights.push({ selector: m[1], label: name });
+      continue;
+    }
+  }
+  return highlights;
+}
+
+/**
+ * Patches Locator.prototype.fill (via any real locator's own prototype
+ * chain - Playwright doesn't export the class directly) so every fill(),
+ * regardless of how the Block built that locator (page.locator, chained
+ * .getByLabel off a scoped form locator, etc.), highlights the real target
+ * first, then types it out character by character instead of snapping the
+ * whole value in - "when something is written from mem, it should
+ * highlight then slowly input." One-time patch (idempotent - guarded so a
+ * multi-step chain doesn't re-wrap an already-wrapped fill).
+ */
+function instrumentFillHighlighting(page) {
+  const proto = Object.getPrototypeOf(page.locator("html"));
+  if (proto.__wgFillPatched) return;
+  proto.__wgFillPatched = true;
+  const originalFill = proto.fill;
+  proto.fill = async function (value, options) {
+    try {
+      await installOverlay(page);
+      const box = await this.boundingBox();
+      if (box) {
+        await page.evaluate(
+          (box) => {
+            const ring = document.getElementById("wg-ring");
+            if (!ring) return;
+            ring.style.left = box.x - 6 + "px";
+            ring.style.top = box.y - 6 + "px";
+            ring.style.width = box.width + 12 + "px";
+            ring.style.height = box.height + 12 + "px";
+            ring.setAttribute("data-label", "writing from mem");
+            ring.style.opacity = "1";
+          },
+          box,
+        );
+        await new Promise((res) => setTimeout(res, 200));
+      }
+    } catch {
+      // best-effort - element not visible/attached yet is not this
+      // instrumentation's problem, the real fill below still runs
+    }
+    try {
+      // NOT this.clear() - Locator.clear() is itself implemented as
+      // fill(""), and since fill is patched on the shared prototype, that
+      // call would resolve back to THIS same patched function and recurse
+      // forever. Call the real original fill directly to clear instead.
+      await originalFill.call(this, "", { timeout: options && options.timeout });
+      return await this.pressSequentially(String(value), { delay: 45, timeout: options && options.timeout });
+    } catch {
+      // pressSequentially unsupported on this element (e.g. a
+      // contenteditable div, or a locator .fill() genuinely needs to
+      // handle specially) - fall back to the real, unpatched fill.
+      return await originalFill.call(this, value, options);
+    }
+  };
+}
+
+async function runStepMode(engine, start, end, context, page, mem, resolved) {
+  instrumentFillHighlighting(page);
+  let resolveNext = null;
+  await page.exposeFunction("__wgNext", (edits) => {
+    if (resolveNext) {
+      const r = resolveNext;
+      resolveNext = null;
+      r(edits);
+    }
+  });
+  const waitForNext = () => new Promise((res) => (resolveNext = res));
+  // WAYGRAPH_AUTOPLAY=1 - hands-off, matching the existing
+  // scripts/waygraph-demo.mjs pattern (plain slowMo, no clicks, just watch)
+  // but keeping this overlay's progress bar/module breadcrumb/highlight.
+  const autoplay = process.env.WAYGRAPH_AUTOPLAY === "1";
+  const autoplayMs = process.env.WAYGRAPH_AUTOPLAY_MS ? Number(process.env.WAYGRAPH_AUTOPLAY_MS) : 1800;
+  const gate = () => (autoplay ? new Promise((res) => setTimeout(() => res({}), autoplayMs)) : waitForNext());
+  const allNames = resolved.map((r) => r.block.name);
+
+  let result;
+  for (let i = 0; i < resolved.length; i++) {
+    const r = resolved[i];
+    const requires = r.block.requires ?? [];
+    const keys = requires.map((k) => {
+      let value = "<not yet set>";
+      try {
+        value = JSON.stringify(mem.get(k));
+      } catch {
+        // not written yet - shown as a placeholder, not a crash
+      }
+      return { name: k.name, value };
+    });
+    await renderBeforeStep(page, { index: i, total: resolved.length, blockName: r.block.name, keys, allNames, autoplay });
+    const edits = await gate();
+    for (const k of requires) {
+      if (edits[k.name] !== undefined) {
+        try {
+          mem.set(k, JSON.parse(edits[k.name]));
+        } catch {
+          // left as-authored if the human's edit isn't valid JSON
+        }
+      }
+    }
+    const stepFlow = engine.defineFlow([start, r.block, end]);
+    // { closeOnFinish: false } makes Flow.run return { result, page }, not
+    // the plain checkpoint - destructure it, don't treat the wrapper as the
+    // checkpoint itself (caught via the standalone verify script: this used
+    // to serialize the whole { result, page } object into the panel/log).
+    const stepOutcome = await stepFlow.run(context, mem, { page, closeOnFinish: false });
+    result = stepOutcome.result;
+    const highlights = extractVerifyHighlights(r.block, result.__state);
+    await renderAfterStep(page, {
+      index: i,
+      total: resolved.length,
+      blockName: r.block.name,
+      result,
+      resultTag: JSON.stringify(result),
+      highlights,
+      isLast: i === resolved.length - 1,
+      allNames,
+      autoplay,
+    });
+    await gate();
+  }
+  return result;
+}
+
 async function main() {
   const projectDir = process.argv[2];
   const spec = process.argv[3];
-  const segments = parseChainSpec(spec);
-  if (segments.length === 0) {
-    throw new Error("waygraph chain: empty spec - give at least one block name");
-  }
   const { connect, MemPage, Engine, start, end } = await import("waygraph");
   const mem = new MemPage();
-  const resolved = [];
-  for (const seg of segments) {
-    const r = await findBlock(projectDir, seg.ref);
-    seedMemForBlock(mem, r, seg.json);
-    resolved.push(r);
+  let resolved = [];
+  // A bare identifier (no "(", no "then") might name an existing Flow
+  // that's already wired up (e.g. loginFlow) - try that FIRST so pointing
+  // at real, already-built flows needs no chain-spec typing at all. Falls
+  // through to ordinary block-chain parsing if nothing matches.
+  const bareRef = /^[A-Za-z_$][\\w]*$/.test(spec.trim()) ? spec.trim() : null;
+  if (bareRef) {
+    const flow = await findFlow(projectDir, bareRef);
+    if (flow && typeof flow.blocks === "function") {
+      resolved = flow.blocks().map((bi) => ({ block: bi.block, exportName: bi.name }));
+      console.log(
+        "waygraph: running existing flow \\"" + bareRef + "\\" - " +
+          resolved.map((r) => r.block.name).join(" -> ") + " (" + resolved.length + " block" +
+          (resolved.length === 1 ? "" : "s") + ", no chain spec needed)",
+      );
+    }
   }
-  console.log(
-    "waygraph: chaining " + resolved.map((r) => r.block.name).join(" -> ") +
-      " (" + resolved.length + " block" + (resolved.length === 1 ? "" : "s") + ")",
-  );
-  const blocks = resolved.map((r) => r.block);
-  const chained = blocks.reduce((a, b) => connect(a, b));
-  const headed = process.env.WAYGRAPH_HEADED === "1";
-  const slowMo = process.env.WAYGRAPH_SLOWMO ? Number(process.env.WAYGRAPH_SLOWMO) : undefined;
+  if (resolved.length === 0) {
+    const segments = parseChainSpec(spec);
+    if (segments.length === 0) {
+      throw new Error("waygraph chain: empty spec - give at least one block name");
+    }
+    for (const seg of segments) {
+      const r = await findBlock(projectDir, seg.ref);
+      seedMemForBlock(mem, r, seg.json);
+      resolved.push(r);
+    }
+    console.log(
+      "waygraph: chaining " + resolved.map((r) => r.block.name).join(" -> ") +
+        " (" + resolved.length + " block" + (resolved.length === 1 ? "" : "s") + ")",
+    );
+  }
+  const step = process.env.WAYGRAPH_STEP === "1";
+  // Stepping through headless defeats the point - a human can't watch it.
+  const headed = process.env.WAYGRAPH_HEADED === "1" || step;
+  // Step mode defaults to a visible pace (each fill/click actually shows on
+  // screen instead of snapping in) unless the human overrides it - an
+  // explicit WAYGRAPH_SLOWMO=0 still means "off".
+  const slowMo = process.env.WAYGRAPH_SLOWMO !== undefined
+    ? Number(process.env.WAYGRAPH_SLOWMO)
+    : step
+      ? 350
+      : undefined;
   const baseURL = process.env.WAYGRAPH_BASE_URL;
   const engine = new Engine({ headless: !headed, slowMo });
-  const flow = engine.defineFlow([start, chained, end]);
   let result;
-  if (baseURL) {
+  if (step || baseURL) {
     const { chromium } = await import("playwright");
-    const browser = await chromium.launch({ headless: !headed, slowMo });
-    const context = await browser.newContext({ baseURL, viewport: { width: 1280, height: 720 } });
+    // --start-maximized (step mode only): viewport: null alone only made
+    // the PAGE content track the window - the actual browser WINDOW still
+    // launched at Chromium's own default size/position, which stayed put
+    // where it was for a previous, larger monitor and looked chopped off on
+    // a smaller one. Maximizing fills whatever screen it's actually on.
+    const browser = await chromium.launch({
+      headless: !headed,
+      slowMo,
+      args: step ? ["--start-maximized"] : [],
+    });
+    const context = await browser.newContext(
+      step ? { baseURL, viewport: null } : { baseURL, viewport: { width: 1280, height: 720 } },
+    );
     try {
-      result = await flow.run(context, mem);
+      if (step) {
+        const page = await context.newPage();
+        // Step 1's "before" panel used to sit over a blank about:blank page
+        // until the human clicked Run - show the real destination first.
+        if (baseURL) {
+          await page.goto(baseURL).catch(() => {});
+        }
+        result = await runStepMode(engine, start, end, context, page, mem, resolved);
+      } else {
+        const blocks = resolved.map((r) => r.block);
+        const chained = blocks.reduce((a, b) => connect(a, b));
+        const flow = engine.defineFlow([start, chained, end]);
+        result = await flow.run(context, mem);
+      }
     } finally {
       await browser.close();
     }
   } else {
+    const blocks = resolved.map((r) => r.block);
+    const chained = blocks.reduce((a, b) => connect(a, b));
+    const flow = engine.defineFlow([start, chained, end]);
     result = await flow.run(mem);
   }
   console.log("waygraph: chain finished -- " + JSON.stringify(result));
@@ -488,6 +945,13 @@ Usage:
       WAYGRAPH_BASE_URL   base URL for Blocks using relative page.goto()
       WAYGRAPH_HEADED=1   show the browser instead of headless
       WAYGRAPH_SLOWMO=ms  slow down each Playwright action, for watching a run
+      WAYGRAPH_STEP=1     human-verification mode - one Block at a time, a
+                          browser overlay shows/lets you edit that Block's
+                          MemKeys, a "Run this step" button gates it, then a
+                          highlight ring shows whatever its verify Traits
+                          just confirmed, then "Next" before moving on.
+                          Implies headed - stepping through headless defeats
+                          the point.
 
 "project" defaults to the current directory.
 `);

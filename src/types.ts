@@ -92,6 +92,18 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   next?(checkpoint: Out): Block<any, any> | null | undefined;
   /**
+   * `branch()`'s routing table as plain, readable data - Checkpoint tag ->
+   * target Block's `.name` (`null` for a terminal tag) - alongside {@link next}
+   * itself, which stays the actual runtime dispatch. `next` is an opaque
+   * closure a graph-introspection tool can't read; this is `next`'s own
+   * routing decisions exposed as data instead, purely additive and never
+   * consulted by `runGraph`/`connect` - it exists only for tools like
+   * `Flow`'s inspection method (and, eventually, `toMermaid`) to walk without
+   * executing anything. A route back to the Block itself (a self-loop) maps
+   * to that same Block's own name, not `null`.
+   */
+  routes?: Readonly<Record<string, string | null>>;
+  /**
    * MemKeys this Block's `act` reads from `mem` and needs already set.
    * Declaring it lets {@link preflight} (built into `runGraph`) catch a missing
    * value before any browser action runs, instead of failing loud deep inside

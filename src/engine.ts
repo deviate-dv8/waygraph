@@ -180,7 +180,36 @@ type EndMarker = typeof end;
  * each call, so it's still correct after a patch too. Returns a new Flow -
  * the original is untouched, same as every other decorator in this module.
  */
+/**
+ * One Block's identity as exposed by graph introspection - {@link Flow.blocks},
+ * {@link ComposedBlock.steps} - without needing to execute anything. Does not
+ * include the Block's literal Checkpoint `In`/`Out` tags: those are TypeScript
+ * literal types, erased at runtime, and can only be recovered by a build-time
+ * static-analysis tool reading the source's own type annotations - see the
+ * `graph-visualization` openspec change for that piece.
+ */
+export interface BlockInfo {
+  name: string;
+  /** `branch()`'s routing table, if this Block has one - see {@link Block.routes}. */
+  routes?: Readonly<Record<string, string | null>>;
+  /**
+   * The actual Block, re-runnable on its own via
+   * `engine.defineFlow([start, info.block, end])` - e.g. step-through
+   * tooling that runs a Flow's Blocks one at a time. Introspection that only
+   * wants to read the shape (a visualizer) can ignore this and use `name`/
+   * `routes` alone.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  block: Block<any, any>;
+}
+
 export interface Flow<Out extends Checkpoint<string>> {
+  /**
+   * This Flow's constituent Blocks, in order between `start`/`end`, as plain
+   * data - for introspection/visualization tools, without running anything.
+   * @example loginFlow.blocks() // [{ name: "login" }, { name: "add-to-cart", routes: {...} }]
+   */
+  blocks(): readonly BlockInfo[];
   run(context: BrowserContext, mem: MemPage): Promise<Out>;
   /**
    * `options.closeOnFinish: false` hands the driven page back instead of
@@ -324,6 +353,7 @@ function buildFlow<Out extends Checkpoint<string>>(
     return result;
   };
   return {
+    blocks: () => middle.map((b) => ({ name: b.name, block: b, ...(b.routes ? { routes: b.routes } : {}) })),
     run: run as Flow<Out>["run"],
     withBlockVerify(block, verify) {
       const index = findBlockIndex(middle, block);
@@ -348,6 +378,12 @@ function buildFlow<Out extends Checkpoint<string>>(
  */
 export interface ComposedBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>
   extends Block<In, Out> {
+  /**
+   * This composed Block's constituent steps, in order, as plain data - same
+   * shape and purpose as {@link Flow.blocks}.
+   * @example GovFormBlock.steps() // [{ name: "step-1-name" }, { name: "step-2-address" }, ...]
+   */
+  steps(): readonly BlockInfo[];
   /**
    * Replaces one step's whole verify list, wherever it sits in this composed
    * Block - same rules as {@link withVerify}. Throws if no step matches.
@@ -447,6 +483,7 @@ export function composeBlock(
   return {
     ...chain,
     name,
+    steps: () => steps.map((b) => ({ name: b.name, block: b, ...(b.routes ? { routes: b.routes } : {}) })),
     withStepVerify(step, verify) {
       const index = findBlockIndex(steps, step);
       const patched = [...steps];
@@ -568,6 +605,10 @@ export function branch<In extends Checkpoint<string>, Out extends Checkpoint<str
   const base = stripMethods(block);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let routed!: DefinedBlock<In, any>;
+  const routesAsData: Record<string, string | null> = {};
+  for (const [tag, target] of Object.entries(routes as Record<string, Block<any, any> | null>)) {
+    routesAsData[tag] = target === null ? null : target === block ? base.name : target.name;
+  }
   routed = defineBlock({
     ...base,
     next: (checkpoint: Out) => {
@@ -578,6 +619,7 @@ export function branch<In extends Checkpoint<string>, Out extends Checkpoint<str
       // the routed Block, not the original with no `next` of its own.
       return target === block ? routed : target;
     },
+    routes: routesAsData,
   });
   return routed;
 }
@@ -594,12 +636,19 @@ export function branch<In extends Checkpoint<string>, Out extends Checkpoint<str
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stripMethods<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   block: Block<In, Out>,
-): { name: string; instruction: Block<In, Out>["instruction"]; next?: Block<In, Out>["next"]; requires?: Block<In, Out>["requires"] } {
+): {
+  name: string;
+  instruction: Block<In, Out>["instruction"];
+  next?: Block<In, Out>["next"];
+  requires?: Block<In, Out>["requires"];
+  routes?: Block<In, Out>["routes"];
+} {
   return {
     name: block.name,
     instruction: block.instruction,
     ...(block.next ? { next: block.next } : {}),
     ...(block.requires ? { requires: block.requires } : {}),
+    ...(block.routes ? { routes: block.routes } : {}),
   };
 }
 
@@ -617,12 +666,14 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
   instruction: Instruction<In, Out, any>;
   next?: Block<In, Out>["next"];
   requires?: Block<In, Out>["requires"];
+  routes?: Block<In, Out>["routes"];
 }): DefinedBlock<In, Out> {
   const plain: Block<In, Out> = {
     name: base.name,
     instruction: base.instruction,
     ...(base.next ? { next: base.next } : {}),
     ...(base.requires ? { requires: base.requires } : {}),
+    ...(base.routes ? { routes: base.routes } : {}),
   };
   return {
     ...plain,
