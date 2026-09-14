@@ -189,6 +189,12 @@ export async function narrate<T>(
           { box, caption },
         )
         .catch(() => {});
+      // The ring alone is pointless if action() fires on the very next
+      // tick - a click that navigates (e.g. a form submit) wipes the ring
+      // before a human can read the caption at all. Give it the same
+      // "pop for a few seconds" dwell as the CLI's own auto-highlight
+      // clicks before the real action runs.
+      await new Promise((resolve) => setTimeout(resolve, 650));
     }
   } catch {
     // best-effort - the real action below still runs either way
