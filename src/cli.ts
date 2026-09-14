@@ -617,53 +617,190 @@ function extractVerifyHighlights(block, resultTag) {
  * highlight then slowly input." One-time patch (idempotent - guarded so a
  * multi-step chain doesn't re-wrap an already-wrapped fill).
  */
-function instrumentFillHighlighting(page) {
-  const proto = Object.getPrototypeOf(page.locator("html"));
-  if (proto.__wgFillPatched) return;
-  proto.__wgFillPatched = true;
-  const originalFill = proto.fill;
-  proto.fill = async function (value, options) {
-    try {
-      await installOverlay(page);
-      const box = await this.boundingBox();
-      if (box) {
-        await page.evaluate(
-          (box) => {
-            const ring = document.getElementById("wg-ring");
-            if (!ring) return;
-            ring.style.left = box.x - 6 + "px";
-            ring.style.top = box.y - 6 + "px";
-            ring.style.width = box.width + 12 + "px";
-            ring.style.height = box.height + 12 + "px";
-            ring.setAttribute("data-label", "writing from mem");
-            ring.style.opacity = "1";
-          },
-          box,
-        );
-        await new Promise((res) => setTimeout(res, 200));
-      }
-    } catch {
-      // best-effort - element not visible/attached yet is not this
-      // instrumentation's problem, the real fill below still runs
-    }
-    try {
-      // NOT this.clear() - Locator.clear() is itself implemented as
-      // fill(""), and since fill is patched on the shared prototype, that
-      // call would resolve back to THIS same patched function and recurse
-      // forever. Call the real original fill directly to clear instead.
-      await originalFill.call(this, "", { timeout: options && options.timeout });
-      return await this.pressSequentially(String(value), { delay: 45, timeout: options && options.timeout });
-    } catch {
-      // pressSequentially unsupported on this element (e.g. a
-      // contenteditable div, or a locator .fill() genuinely needs to
-      // handle specially) - fall back to the real, unpatched fill.
-      return await originalFill.call(this, value, options);
-    }
-  };
+async function showRing(page, box, label) {
+  await page
+    .evaluate(
+      ({ box, label }) => {
+        const ring = document.getElementById("wg-ring");
+        if (!ring) return;
+        ring.style.left = box.x - 6 + "px";
+        ring.style.top = box.y - 6 + "px";
+        ring.style.width = box.width + 12 + "px";
+        ring.style.height = box.height + 12 + "px";
+        ring.setAttribute("data-label", label);
+        ring.style.opacity = "1";
+      },
+      { box, label },
+    )
+    .catch(() => {});
 }
 
-async function runStepMode(engine, start, end, context, page, mem, resolved) {
-  instrumentFillHighlighting(page);
+async function hideRing(page) {
+  await page
+    .evaluate(() => {
+      const ring = document.getElementById("wg-ring");
+      if (ring) ring.style.opacity = "0";
+    })
+    .catch(() => {});
+}
+
+function instrumentInteractionHighlighting(page, mem, slowMo) {
+  // Playwright's own slowMo ALREADY pauses after every single low-level
+  // action it dispatches - and pressSequentially() fires one such action
+  // PER CHARACTER. Also giving pressSequentially its own fixed delay
+  // double-paces every keystroke (45ms + slowMo's own ~350ms, per
+  // character) - an ordinary 22-character email alone stretched past 8
+  // seconds. When slowMo is already doing the pacing, add none of our own;
+  // only fall back to a small typing delay when slowMo is off entirely.
+  const typeDelay = slowMo ? 0 : 30;
+  // Click is a single action, not per-character, so it doesn't compound
+  // the same way - but slowMo still adds its own pause around the actual
+  // click, so trim our own explicit "pop" pauses when it's already active
+  // rather than stacking a full 1.2s on top of that.
+  const clickPrePop = slowMo ? 300 : 700;
+  const clickPostPop = slowMo ? 200 : 500;
+  // Locator.fill()/click() only ever see a raw call, no context of where
+  // the value came from. Patching mem.get() to remember the most recently
+  // read key's name (Blocks read-then-immediately-fill, e.g. const { email
+  // } = mem.get(LoginInput.key); ...fill(email)) lets the fill patch below
+  // label the ring with the real key, not a generic "writing from mem".
+  // Patches this ONE mem instance only, not MemPage's shared prototype -
+  // there's exactly one mem per chain run.
+  const memTrack = { lastKeyName: null, at: 0 };
+  const originalGet = mem.get.bind(mem);
+  mem.get = (key) => {
+    memTrack.lastKeyName = key && key.name;
+    memTrack.at = Date.now();
+    return originalGet(key);
+  };
+
+  const proto = Object.getPrototypeOf(page.locator("html"));
+
+  if (!proto.__wgFillPatched) {
+    proto.__wgFillPatched = true;
+    const originalFill = proto.fill;
+    proto.fill = async function (value, options) {
+      try {
+        await installOverlay(page);
+        const box = await this.boundingBox();
+        if (box) {
+          // Only trust the "last mem.get()" as THIS fill's source if it
+          // happened recently - a stale read from several actions ago is
+          // more likely unrelated than actually describing this field.
+          const label = memTrack.lastKeyName && Date.now() - memTrack.at < 3000
+            ? "from mem: " + memTrack.lastKeyName
+            : "writing from mem";
+          await showRing(page, box, label);
+          await new Promise((res) => setTimeout(res, 200));
+        }
+      } catch {
+        // best-effort - element not visible/attached yet is not this
+        // instrumentation's problem, the real fill below still runs
+      }
+      let result;
+      try {
+        // NOT this.clear() - Locator.clear() is itself implemented as
+        // fill(""), and since fill is patched on the shared prototype,
+        // that call would resolve back to THIS same patched function and
+        // recurse forever. Call the real original fill directly instead.
+        await originalFill.call(this, "", { timeout: options && options.timeout });
+        result = await this.pressSequentially(String(value), { delay: typeDelay, timeout: options && options.timeout });
+      } catch {
+        // pressSequentially unsupported on this element (e.g. a
+        // contenteditable div, or a locator .fill() genuinely needs to
+        // handle specially) - fall back to the real, unpatched fill.
+        result = await originalFill.call(this, value, options);
+      }
+      // Fade the ring back out once this field is actually done, instead
+      // of leaving it lit until the next Block's own before-panel clears
+      // it - it was sticking around through the whole rest of the step.
+      await hideRing(page);
+      return result;
+    };
+  }
+
+  if (!proto.__wgClickPatched) {
+    proto.__wgClickPatched = true;
+    const originalClick = proto.click;
+    proto.click = async function (options) {
+      try {
+        await installOverlay(page);
+        const box = await this.boundingBox();
+        if (box) {
+          let label = "click";
+          try {
+            const text = (await this.textContent())?.trim();
+            if (text && text.length > 0 && text.length <= 30) label = text;
+          } catch {
+            // element has no simple text (an icon button, say) - generic label is fine
+          }
+          await showRing(page, box, label);
+          // "pop for a few seconds" - Dan's own phrase, matching the
+          // zsign demo-engine's ring-before-click pattern in
+          // services/help-center-clip-engine's video-pipeline.
+          await new Promise((res) => setTimeout(res, clickPrePop));
+        }
+      } catch {
+        // best-effort - the real click below still runs either way
+      }
+      const result = await originalClick.call(this, options);
+      await new Promise((res) => setTimeout(res, clickPostPop));
+      await hideRing(page);
+      return result;
+    };
+  }
+
+  // Caps any Locator.waitFor()/page.waitForTimeout() timeout during step
+  // mode - a Block polling for something that will NEVER happen (e.g. "is
+  // there an unverified-account banner" on an account that IS verified)
+  // has no choice but to wait out its own hardcoded timeout in full before
+  // concluding "no". Only the WAIT gets capped, never the real outcome -
+  // if the thing genuinely appears at 800ms into a 5000ms wait, waitFor
+  // still resolves at 800ms same as always; this only shortens the "it's
+  // just never going to happen" case. Plain setTimeout()-based sleep()
+  // helpers some Blocks use for their own pacing are NOT Playwright calls
+  // at all and can't be touched this way - a real, disclosed limit, not
+  // silently ignored.
+  // Conservative on purpose: this exact codebase has documented real
+  // flakiness around slow-but-legitimate hydration waits (see
+  // login.block.ts's own waitForActionable comment). A too-aggressive cap
+  // would trade "one annoying 5s dead wait" for "logins that sometimes
+  // fail outright" - worse. 3000ms still meaningfully shortens the
+  // "waiting for something that will never happen" case without giving a
+  // real, slow-but-genuine wait much less room than before.
+  const WAIT_CAP_MS = 3000;
+  if (!proto.__wgWaitForPatched) {
+    proto.__wgWaitForPatched = true;
+    const originalWaitFor = proto.waitFor;
+    proto.waitFor = function (options) {
+      const capped = { ...(options || {}), timeout: Math.min((options && options.timeout) || 30000, WAIT_CAP_MS) };
+      return originalWaitFor.call(this, capped);
+    };
+  }
+  const pageProto = Object.getPrototypeOf(page);
+  if (!pageProto.__wgWaitForTimeoutPatched) {
+    pageProto.__wgWaitForTimeoutPatched = true;
+    const originalWaitForTimeout = pageProto.waitForTimeout;
+    pageProto.waitForTimeout = function (ms) {
+      return originalWaitForTimeout.call(this, Math.min(ms, WAIT_CAP_MS));
+    };
+  }
+}
+
+async function runStepMode(engine, start, end, context, page, mem, resolved, slowMo) {
+  instrumentInteractionHighlighting(page, mem, slowMo);
+  // Some real Blocks (e.g. zsign-all's login.block.ts) call
+  // page.setViewportSize({ width: 1280, height: 720 }) inside their own
+  // act() - a hardcoded override for THEIR OWN testing consistency, with no
+  // idea an interactive human session is watching. Restoring the size
+  // AFTER each step (the first attempt at this) was still just repairing
+  // damage after the fact, on a delay, per-step - not the real fix. The
+  // real fix is to stop the override from ever landing at all: no-op
+  // setViewportSize entirely for the duration of step mode. Blocks that
+  // call it don't need it to actually do anything here - their own
+  // selectors/layouts still work fine at whatever size the real window
+  // already is.
+  page.setViewportSize = async () => {};
   let resolveNext = null;
   await page.exposeFunction("__wgNext", (edits) => {
     if (resolveNext) {
@@ -803,7 +940,7 @@ async function main() {
         if (baseURL) {
           await page.goto(baseURL).catch(() => {});
         }
-        result = await runStepMode(engine, start, end, context, page, mem, resolved);
+        result = await runStepMode(engine, start, end, context, page, mem, resolved, slowMo);
       } else {
         const blocks = resolved.map((r) => r.block);
         const chained = blocks.reduce((a, b) => connect(a, b));
