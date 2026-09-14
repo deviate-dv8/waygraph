@@ -101,9 +101,13 @@ so the caller can keep driving it - hands a run tab back instead of losing it. S
 "Recipes" for capture-on-popup, which stays a documented pattern until a second real use
 case promotes it to an engine API.
 
+```bash
+npx create-waygraph my-project && cd my-project && npm install && npm test
+```
+
 [`create-waygraph`](https://github.com/deviate-dv8/create-waygraph) scaffolds a new
 project (package.json, tsconfig, playwright.config, one working example flow) in one
-command - built and proven end-to-end, not yet published to npm.
+command, published on npm - the above runs a real green test with no manual edits.
 
 Deliberately **not yet implemented** (tracked on the project board):
 - Interstitials/Watchers - background overlay handling (cookie banners, popups).
