@@ -16,5 +16,8 @@ export {
   defineBlock,
   composeBlock,
   preflight,
+  withSessionReset,
+  withTitle,
+  chainFlow,
 } from "./engine.js";
 export type { Flow, EngineConfig, ComposedBlock, RunGraphOptions, BlockInfo } from "./engine.js";

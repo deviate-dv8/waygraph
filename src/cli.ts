@@ -308,27 +308,26 @@ function parseChainSpec(spec) {
     });
 }
 
-function seedMemForBlock(mem, resolved, json) {
-  const requires = resolved.block.requires ?? [];
+function seedMemFromRequires(mem, requires, json, label) {
   if (requires.length === 0) {
     if (json !== undefined) {
       throw new Error(
-        "waygraph chain: \\"" + resolved.exportName + "\\" takes no input (empty requires) but got a payload: " + json,
+        "waygraph chain: \\"" + label + "\\" takes no input (empty requires) but got a payload: " + json,
       );
     }
     return;
   }
   if (json === undefined) {
     throw new Error(
-      "waygraph chain: \\"" + resolved.exportName + "\\" requires " + requires.map((k) => k.name).join(", ") +
-        " - give a JSON payload, e.g. " + resolved.exportName + "({...})",
+      "waygraph chain: \\"" + label + "\\" requires " + requires.map((k) => k.name).join(", ") +
+        " - give a JSON payload, e.g. " + label + "({...})",
     );
   }
   let parsed;
   try {
     parsed = JSON.parse(json);
   } catch (err) {
-    throw new Error("waygraph chain: \\"" + resolved.exportName + "\\" payload is not valid JSON - " + String(err));
+    throw new Error("waygraph chain: \\"" + label + "\\" payload is not valid JSON - " + String(err));
   }
   if (requires.length === 1) {
     mem.set(requires[0], parsed);
@@ -336,16 +335,37 @@ function seedMemForBlock(mem, resolved, json) {
   }
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new Error(
-      "waygraph chain: \\"" + resolved.exportName + "\\" requires " + requires.length + " keys (" +
+      "waygraph chain: \\"" + label + "\\" requires " + requires.length + " keys (" +
         requires.map((k) => k.name).join(", ") + ") - payload must be an object keyed by each key's name",
     );
   }
   for (const k of requires) {
     if (!(k.name in parsed)) {
-      throw new Error("waygraph chain: \\"" + resolved.exportName + "\\" payload is missing required key \\"" + k.name + "\\"");
+      throw new Error("waygraph chain: \\"" + label + "\\" payload is missing required key \\"" + k.name + "\\"");
     }
     mem.set(k, parsed[k.name]);
   }
+}
+
+function seedMemForBlock(mem, resolved, json) {
+  seedMemFromRequires(mem, resolved.block.requires ?? [], json, resolved.exportName);
+}
+
+/**
+ * Same idea as seedMemForBlock, but for a whole Flow segment
+ * ("loginFlow({...}) then ...") - a Flow has no single .requires of its
+ * own, so this unions every constituent Block's requires (deduped by key
+ * name) and seeds them all from one JSON payload, same keyed-by-name shape
+ * as a multi-key Block payload already uses.
+ */
+function seedMemForFlow(mem, flowBlocks, json, label) {
+  const seen = new Map();
+  for (const bi of flowBlocks) {
+    for (const k of bi.block.requires ?? []) {
+      if (!seen.has(k.name)) seen.set(k.name, k);
+    }
+  }
+  seedMemFromRequires(mem, Array.from(seen.values()), json, label);
 }
 
 // ---------------------------------------------------------------------------
@@ -374,17 +394,18 @@ const RING_CSS =
   "font:600 12px/1.2 system-ui,sans-serif;transition:opacity .3s ease;}" +
   // Mouse cursor icon that travels to a target before it's acted on, plus a
   // quick expanding ripple at the moment of a click - same idea as
-  // help-center-clip-engine's #clip-cursor/#clip-ring (video-pipeline), a
-  // real mouse pointer shape via clip-path so no separate image asset is
-  // needed. Travel duration is JS-driven per call via --wg-cursor-ms, same
-  // reason the clip engine's own comment gives: a hardcoded CSS duration
-  // would make the speed param a no-op.
-  "#wg-cursor{position:fixed;z-index:2147483647;width:22px;height:22px;pointer-events:none;" +
+  // help-center-clip-engine's #clip-cursor/#clip-ring (video-pipeline). The
+  // shape itself is an inline SVG set as innerHTML in installOverlay below
+  // (dark fill + white stroke, same as the clip-engine's own cursor) - a
+  // plain solid-white CSS clip-path (the first attempt here) had no outline
+  // at all and all but disappeared against this app's light background.
+  // Travel duration is JS-driven per call via --wg-cursor-ms, same reason
+  // the clip engine's own comment gives: a hardcoded CSS duration would
+  // make the speed param a no-op.
+  "#wg-cursor{position:fixed;z-index:2147483647;width:24px;height:24px;pointer-events:none;" +
   "left:0;top:0;opacity:0;margin:0;" +
   "transition:transform var(--wg-cursor-ms,600ms) cubic-bezier(.22,1,.36,1),opacity .2s ease;" +
-  "background:#fff;" +
-  "clip-path:polygon(0 0, 0 70%, 22% 55%, 35% 85%, 48% 79%, 35% 50%, 62% 50%);" +
-  "filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));}" +
+  "filter:drop-shadow(0 2px 4px rgba(12,12,26,.4));}" +
   "#wg-click-pulse{position:fixed;z-index:2147483647;width:14px;height:14px;" +
   "margin-left:-7px;margin-top:-7px;border-radius:50%;pointer-events:none;opacity:0;" +
   "border:2px solid #7C3AED;background:rgba(124,58,237,.25);}" +
@@ -397,8 +418,19 @@ const RING_CSS =
   "opacity:0;transition:opacity .06s ease;}" +
   "#wg-panel.wg-in{opacity:1;}" +
   "#wg-panel .wg-auto{margin-top:10px;font:600 13px system-ui,sans-serif;color:#c9a6ff;}" +
+  "#wg-panel .wg-autoplay-row{margin-top:8px;}" +
+  "#wg-panel .wg-autoplay-row label{display:inline-flex;align-items:center;gap:6px;" +
+  "font:12px system-ui,sans-serif;color:#b8a0e0;cursor:pointer;user-select:none;}" +
+  "#wg-panel .wg-autoplay-row input{margin:0;cursor:pointer;}" +
   "#wg-panel h3{margin:0 0 8px;font-size:13px;color:#c9a6ff;font-weight:700;" +
   "letter-spacing:.02em;text-transform:uppercase;}" +
+  // Sits ABOVE the per-Block "Step i/N" heading - the episode/scenario
+  // this Block belongs to, not another block-level label. Only rendered
+  // when the chain spec actually named a real Flow (chainFlow tags it via
+  // BlockInfo.resetSessionBefore's sibling metadata) - a plain ad hoc
+  // block chain shows no episode heading at all.
+  "#wg-panel .wg-episode{margin:0 0 6px;font:700 15px system-ui,sans-serif;color:#fff;" +
+  "padding-bottom:6px;border-bottom:1px solid rgba(124,58,237,.35);}" +
   "#wg-panel .wg-narration{margin:0 0 12px;font:italic 14px/1.4 system-ui,sans-serif;color:#f0e8ff;}" +
   "#wg-progress{height:4px;background:#2a1650;border-radius:2px;margin:0 0 12px;overflow:hidden;}" +
   "#wg-progress-bar{height:100%;background:#7C3AED;border-radius:2px;transition:width .3s ease;}" +
@@ -429,7 +461,13 @@ const RING_CSS =
   "#wg-panel .wg-toggle{display:flex;gap:4px;margin:0 0 4px;}" +
   "#wg-panel .wg-toggle button{margin:0;padding:3px 10px;font:600 11px system-ui,sans-serif;" +
   "background:transparent;border:1px solid #4b2a80;color:#9a7ad1;border-radius:6px;}" +
-  "#wg-panel .wg-toggle button.wg-active{background:#4b2a80;color:#fff;}";
+  "#wg-panel .wg-toggle button.wg-active{background:#4b2a80;color:#fff;}" +
+  "#wg-panel.wg-error{border:1.5px solid #e0475c;}" +
+  "#wg-panel .wg-error-heading{color:#ff8fa0;}" +
+  "#wg-panel .wg-error-msg{font:12px/1.5 monospace;background:#2a0f16;color:#ffc7cf;" +
+  "border-radius:8px;padding:10px;margin:0 0 12px;white-space:pre-wrap;max-height:200px;overflow-y:auto;}" +
+  "#wg-panel .wg-error-stop{background:#e0475c;}" +
+  "#wg-panel .wg-error-stop:hover{background:#c33a4c;}";
 
 // Purple dot favicon (matches the overlay's own theme color) - the tab-bar
 // signal that "this Chromium window is a waygraph run," even at a glance
@@ -448,9 +486,20 @@ async function installOverlay(page, title) {
   // navigation that rebuilds the banner keeps the human's last pick).
   const envPos = (process.env.WAYGRAPH_TITLE_POS || "left").toLowerCase();
   const bannerPos = envPos === "center" || envPos === "right" ? envPos : "left";
+  const envAutoplay = process.env.WAYGRAPH_AUTOPLAY === "1";
   await page
     .evaluate(
-      ({ title, favicon, bannerPos }) => {
+      ({ title, favicon, bannerPos, envAutoplay }) => {
+        // Seed the live autoplay toggle from the env default on first ever
+        // load only - a real navigation re-runs this, and re-stamping here
+        // would silently undo a human's mid-run checkbox click.
+        try {
+          if (localStorage.getItem("wg-autoplay") === null) {
+            localStorage.setItem("wg-autoplay", envAutoplay ? "1" : "0");
+          }
+        } catch {
+          /* private mode / blocked storage - falls back to manual gating */
+        }
         if (!document.getElementById("wg-ring")) {
           const ring = document.createElement("div");
           ring.id = "wg-ring";
@@ -464,6 +513,13 @@ async function installOverlay(page, title) {
         if (!document.getElementById("wg-cursor")) {
           const cursor = document.createElement("div");
           cursor.id = "wg-cursor";
+          // Dark fill + white stroke, same as help-center-clip-engine's own
+          // #clip-cursor - visible against any page background, light or
+          // dark, unlike a plain solid-white shape.
+          cursor.innerHTML =
+            "<svg viewBox='0 0 32 32' width='24' height='24'>" +
+            "<path fill='#0C0C1A' stroke='#fff' stroke-width='1.4' stroke-linejoin='round' " +
+            "d='M6 3.5l1.4 22.5 5.8-5.4 4.2 9.4 3.6-1.6-4.2-9.2H26z'/></svg>";
           document.documentElement.appendChild(cursor);
         }
         if (!document.getElementById("wg-click-pulse")) {
@@ -542,6 +598,11 @@ async function installOverlay(page, title) {
           ringLabel.style.top = labelTop + "px";
         };
         window.__wgHideRing = () => {
+          // While a narrate() call owns the ring (mid multi-step action),
+          // the auto-highlight click/fill patches' own end-of-step hide is
+          // a no-op - narrate() itself clears it once the WHOLE wrapped
+          // action finishes, not just its first sub-step.
+          if (window.__wgNarrateOwnsRing) return;
           const ring = document.getElementById("wg-ring");
           const ringLabel = document.getElementById("wg-ring-label");
           if (ring) ring.style.opacity = "0";
@@ -597,7 +658,7 @@ async function installOverlay(page, title) {
         }
         if (iconLink.href !== favicon) iconLink.href = favicon;
       },
-      { title, favicon: WAYGRAPH_FAVICON, bannerPos },
+      { title, favicon: WAYGRAPH_FAVICON, bannerPos, envAutoplay },
     )
     .catch(() => {});
 }
@@ -638,9 +699,13 @@ async function renderBeforeStep(page, info) {
       const narrationHtml = info.description
         ? "<div class=\\"wg-narration\\">" + esc(info.description) + "</div>"
         : "";
+      const episodeHtml = info.episodeNumber
+        ? "<div class=\\"wg-episode\\">Episode " + info.episodeNumber + ": " + esc(info.episodeTitle || "") + "</div>"
+        : "";
       let html =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
         "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
+        episodeHtml +
         "<h3>Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + "</h3>" +
         narrationHtml;
       if (info.keys.length === 0) {
@@ -652,9 +717,20 @@ async function renderBeforeStep(page, info) {
           "<textarea data-key=\\"" + k.name + "\\" rows=\\"2\\">" +
           k.value.replace(/</g, "&lt;") + "</textarea></div>";
       }
-      html += info.autoplay
-        ? "<div class=\\"wg-auto\\">Auto-advancing...</div>"
-        : "<button id=\\"wg-run\\">Run this step \\u25B6</button>";
+      let autoNow = false;
+      try {
+        autoNow = localStorage.getItem("wg-autoplay") === "1";
+      } catch {
+        /* private mode / blocked storage - defaults to manual */
+      }
+      html +=
+        "<div class=\\"wg-autoplay-row\\"><label><input type=\\"checkbox\\" id=\\"wg-autoplay-cb\\"" +
+        (autoNow ? " checked" : "") +
+        "> Auto-advance</label></div>" +
+        "<div id=\\"wg-gate-manual\\"" + (autoNow ? " style=\\"display:none\\"" : "") +
+        "><button id=\\"wg-run\\">Run this step \\u25B6</button></div>" +
+        "<div id=\\"wg-gate-auto\\" class=\\"wg-auto\\"" + (autoNow ? "" : " style=\\"display:none\\"") +
+        ">Auto-advancing...</div>";
       panel.innerHTML = html;
       document.documentElement.appendChild(panel);
       requestAnimationFrame(() => panel.classList.add("wg-in"));
@@ -666,6 +742,26 @@ async function renderBeforeStep(page, info) {
             edits[el.getAttribute("data-key")] = el.value;
           });
           window.__wgNext(edits);
+        });
+      }
+      // Live toggle - flips localStorage immediately so an in-flight gate()
+      // poll (on the Node side) picks it up within its next poll slice,
+      // without needing this whole panel to re-render. A manual click
+      // still always wins over an active autoplay wait, whichever the
+      // checkbox says - this is the "hybrid" control: autoplay is a
+      // default, not a lockout.
+      const cb = document.getElementById("wg-autoplay-cb");
+      if (cb) {
+        cb.addEventListener("change", () => {
+          try {
+            localStorage.setItem("wg-autoplay", cb.checked ? "1" : "0");
+          } catch {
+            /* private mode / blocked storage - toggle still works this page */
+          }
+          const manual = document.getElementById("wg-gate-manual");
+          const auto = document.getElementById("wg-gate-auto");
+          if (manual) manual.style.display = cb.checked ? "none" : "";
+          if (auto) auto.style.display = cb.checked ? "" : "none";
         });
       }
     }, info)
@@ -762,12 +858,27 @@ async function renderAfterStep(page, info) {
         prettyText + "</div>" +
         "<div class=\\"wg-result wg-result-json\\" style=\\"display:" + (pretty ? "none" : "block") + "\\">" +
         info.resultTag + "</div>";
-      const gateHtml = info.autoplay
-        ? "<div class=\\"wg-auto\\">Auto-advancing...</div>"
-        : "<button id=\\"wg-run\\">" + buttonLabel + "</button>";
+      let autoNow = false;
+      try {
+        autoNow = localStorage.getItem("wg-autoplay") === "1";
+      } catch {
+        /* private mode / blocked storage - defaults to manual */
+      }
+      const gateHtml =
+        "<div class=\\"wg-autoplay-row\\"><label><input type=\\"checkbox\\" id=\\"wg-autoplay-cb\\"" +
+        (autoNow ? " checked" : "") +
+        "> Auto-advance</label></div>" +
+        "<div id=\\"wg-gate-manual\\"" + (autoNow ? " style=\\"display:none\\"" : "") +
+        "><button id=\\"wg-run\\">" + buttonLabel + "</button></div>" +
+        "<div id=\\"wg-gate-auto\\" class=\\"wg-auto\\"" + (autoNow ? "" : " style=\\"display:none\\"") +
+        ">Auto-advancing...</div>";
+      const episodeHtml = info.episodeNumber
+        ? "<div class=\\"wg-episode\\">Episode " + info.episodeNumber + ": " + escA(info.episodeTitle || "") + "</div>"
+        : "";
       panel.innerHTML =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
         "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
+        episodeHtml +
         "<h3>" + heading + "</h3>" +
         resultHtml +
         gateHtml;
@@ -783,6 +894,58 @@ async function renderAfterStep(page, info) {
           panel.querySelector(".wg-result-json").style.display = wantPretty ? "none" : "block";
         });
       });
+      const runBtn = document.getElementById("wg-run");
+      if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
+      const cb = document.getElementById("wg-autoplay-cb");
+      if (cb) {
+        cb.addEventListener("change", () => {
+          try {
+            localStorage.setItem("wg-autoplay", cb.checked ? "1" : "0");
+          } catch {
+            /* private mode / blocked storage - toggle still works this page */
+          }
+          const manual = document.getElementById("wg-gate-manual");
+          const auto = document.getElementById("wg-gate-auto");
+          if (manual) manual.style.display = cb.checked ? "none" : "";
+          if (auto) auto.style.display = cb.checked ? "" : "none";
+        });
+      }
+    }, info)
+    .catch(() => {});
+}
+
+/**
+ * A Block threw - act()/observe() rejected, or Flow.run's own verify Trait
+ * check failed. Shown instead of letting it crash the whole Node process
+ * silently from a human's point of view (the browser closes right after
+ * regardless - main()'s own try/finally - but not before this is visible).
+ */
+async function renderStepError(page, info) {
+  await installOverlay(page, info.title);
+  await page
+    .evaluate((info) => {
+      const old = document.getElementById("wg-panel");
+      if (old) old.remove();
+      const panel = document.createElement("div");
+      panel.id = "wg-panel";
+      panel.className = "wg-error";
+      const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+      const modulesHtml = info.allNames
+        .map((name, idx) => {
+          const cls = idx === info.index ? "wg-mod-current" : idx < info.index ? "wg-mod-done" : "wg-mod-upcoming";
+          const desc = info.allDescriptions && info.allDescriptions[idx];
+          const titleAttr = desc ? " title=\\"" + esc(desc) + "\\"" : "";
+          return "<span class=\\"wg-mod " + cls + "\\"" + titleAttr + ">" + name + "</span>";
+        })
+        .join("");
+      panel.innerHTML =
+        "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
+        "<h3 class=\\"wg-error-heading\\">Step " + (info.index + 1) + " / " + info.total + " - " +
+        info.blockName + " threw</h3>" +
+        "<div class=\\"wg-error-msg\\">" + esc(info.message) + "</div>" +
+        "<button id=\\"wg-run\\" class=\\"wg-error-stop\\">Stop</button>";
+      document.documentElement.appendChild(panel);
+      requestAnimationFrame(() => panel.classList.add("wg-in"));
       const runBtn = document.getElementById("wg-run");
       if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
     }, info)
@@ -876,6 +1039,32 @@ async function hideRing(page) {
     .catch(() => {});
 }
 
+/**
+ * Removes every overlay element (panel, ring, ring-label, cursor,
+ * click-pulse, banner) and stops the live resize/scroll ring tracker, once
+ * the whole chain is genuinely done - "I want to see the same page just
+ * like the demo opened for the first time," not the last step's panel and
+ * highlight ring stuck over the real app forever. installOverlay only ever
+ * ADDS these elements back on demand (idempotent, per-page-load) - nothing
+ * re-creates them once torn down here unless another Block/fill/click runs.
+ */
+async function teardownOverlay(page) {
+  await page
+    .evaluate(() => {
+      if (window.__wgRingTrack) {
+        window.removeEventListener("resize", window.__wgRingTrack);
+        window.removeEventListener("scroll", window.__wgRingTrack, true);
+        window.__wgRingTrack = null;
+      }
+      window.__wgNarrateOwnsRing = false;
+      for (const id of ["wg-panel", "wg-ring", "wg-ring-label", "wg-cursor", "wg-click-pulse", "wg-banner"]) {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+      }
+    })
+    .catch(() => {});
+}
+
 async function moveCursorTo(page, box, ms) {
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
@@ -911,7 +1100,7 @@ async function wasJustNarrated(page) {
     .catch(() => false);
 }
 
-function instrumentInteractionHighlighting(page, mem, slowMo) {
+function instrumentInteractionHighlighting(page, mem, slowMo, pacing) {
   // Playwright's own slowMo ALREADY pauses after every single low-level
   // action it dispatches - and pressSequentially() fires one such action
   // PER CHARACTER. Also giving pressSequentially its own fixed delay
@@ -919,13 +1108,20 @@ function instrumentInteractionHighlighting(page, mem, slowMo) {
   // character) - an ordinary 22-character email alone stretched past 8
   // seconds. When slowMo is already doing the pacing, add none of our own;
   // only fall back to a small typing delay when slowMo is off entirely.
-  const typeDelay = slowMo ? 0 : 30;
+  //
+  // Each is a function, not a plain const, and reads pacing.fast fresh
+  // on every call - pacing is a shared mutable object runStepMode flips
+  // per-block (WAYGRAPH_FAST_BLOCKS), and the Locator.fill/click patches
+  // below are installed once on the shared prototype but invoked once per
+  // real interaction, long after this closure was created.
+  const typeDelay = () => (pacing.fast ? 0 : slowMo ? 0 : 30);
   // Click is a single action, not per-character, so it doesn't compound
   // the same way - but slowMo still adds its own pause around the actual
   // click, so trim our own explicit "pop" pauses when it's already active
   // rather than stacking a full 1.2s on top of that.
-  const clickPrePop = slowMo ? 300 : 700;
-  const clickPostPop = slowMo ? 200 : 500;
+  const clickPrePop = () => (pacing.fast ? 0 : slowMo ? 300 : 700);
+  const clickPostPop = () => (pacing.fast ? 0 : slowMo ? 200 : 500);
+  const cursorMs = (full) => (pacing.fast ? Math.min(120, full) : full);
   // Locator.fill()/click() only ever see a raw call, no context of where
   // the value came from. Patching mem.get() to remember the most recently
   // read key's name (Blocks read-then-immediately-fill, e.g. const { email
@@ -957,13 +1153,13 @@ function instrumentInteractionHighlighting(page, mem, slowMo) {
           const label = memTrack.lastKeyName && Date.now() - memTrack.at < 3000
             ? "from mem: " + memTrack.lastKeyName
             : "writing from mem";
-          await moveCursorTo(page, box, 500);
+          await moveCursorTo(page, box, cursorMs(500));
           await showRing(page, box, label);
-          await new Promise((res) => setTimeout(res, 200));
+          await new Promise((res) => setTimeout(res, pacing.fast ? 0 : 200));
         } else if (box) {
           // Ring/caption already handled by narrate() - still move the
           // cursor there, just skip re-showing the ring with a generic label.
-          await moveCursorTo(page, box, 200);
+          await moveCursorTo(page, box, cursorMs(200));
         }
       } catch {
         // best-effort - element not visible/attached yet is not this
@@ -976,7 +1172,7 @@ function instrumentInteractionHighlighting(page, mem, slowMo) {
         // that call would resolve back to THIS same patched function and
         // recurse forever. Call the real original fill directly instead.
         await originalFill.call(this, "", { timeout: options && options.timeout });
-        result = await this.pressSequentially(String(value), { delay: typeDelay, timeout: options && options.timeout });
+        result = await this.pressSequentially(String(value), { delay: typeDelay(), timeout: options && options.timeout });
       } catch {
         // pressSequentially unsupported on this element (e.g. a
         // contenteditable div, or a locator .fill() genuinely needs to
@@ -1008,23 +1204,23 @@ function instrumentInteractionHighlighting(page, mem, slowMo) {
           } catch {
             // element has no simple text (an icon button, say) - generic label is fine
           }
-          clickPoint = await moveCursorTo(page, box, 600);
+          clickPoint = await moveCursorTo(page, box, cursorMs(600));
           await showRing(page, box, label);
           // "pop for a few seconds" - Dan's own phrase, matching the
           // zsign demo-engine's ring-before-click pattern in
           // services/help-center-clip-engine's video-pipeline.
-          await new Promise((res) => setTimeout(res, clickPrePop));
+          await new Promise((res) => setTimeout(res, clickPrePop()));
         } else if (box) {
           // Ring/caption already handled by narrate() - still move the
           // cursor + pulse the click point, just skip re-showing the ring.
-          clickPoint = await moveCursorTo(page, box, 200);
+          clickPoint = await moveCursorTo(page, box, cursorMs(200));
         }
       } catch {
         // best-effort - the real click below still runs either way
       }
       if (clickPoint) await clickPulseAt(page, clickPoint.x, clickPoint.y);
       const result = await originalClick.call(this, options);
-      await new Promise((res) => setTimeout(res, clickPostPop));
+      await new Promise((res) => setTimeout(res, clickPostPop()));
       await hideRing(page);
       return result;
     };
@@ -1041,24 +1237,42 @@ function instrumentInteractionHighlighting(page, mem, slowMo) {
   // helpers some Blocks use for their own pacing are NOT Playwright calls
   // at all and can't be touched this way - a real, disclosed limit, not
   // silently ignored.
-  // 3000ms was the first, deliberately conservative pass (this codebase
-  // has documented real flakiness around slow-but-legitimate hydration
-  // waits, so a too-aggressive cap risks trading "one annoying dead wait"
-  // for "logins that sometimes fail outright"). Verified empirically
-  // (3 consecutive real login runs, no failures) that those legitimate
-  // waits actually resolve in well under a second in practice - the cap
-  // was never close to touching them - so it's safe to tighten further.
-  // Pushed lower than the earlier 1500ms pass: empirical data (3
-  // consecutive real login runs) already showed every legitimate wait in
-  // this codebase resolves in well under 100ms - nothing observed has
-  // needed headroom anywhere near 1500ms, let alone this. Still re-verified
-  // at this new value before shipping, same as every prior tightening.
-  const WAIT_CAP_MS = 700;
+  // Pushed down to 700ms earlier this session based on login.block.ts
+  // alone - every waitFor() there is a "give up gracefully" pattern
+  // (wrapped in .catch()/Promise.race, a timeout IS the expected negative
+  // result). That's a different kind of wait than a REQUIRED
+  // synchronization point with no catch - e.g. overview-metrics.block.ts
+  // waits (uncaught) for a "Loading pending actions..." placeholder to
+  // actually appear before it's safe to check for an error, a real
+  // hydration signal the block's own comment calls "deterministic,"
+  // not a probe. A flat 700ms cap broke that block outright on this
+  // shared, loaded box (a real 3-block chain run threw instead of
+  // catching). Bumping the SAME flat cap to 4000ms to cover it just
+  // reintroduced most of the original torture on login.block.ts's own
+  // 5000ms unverified-email check - 4000ms is barely better than the real
+  // 5000ms it's capping.
+  //
+  // A single flat number can't serve both: it has no way to tell "safe to
+  // cut short" from "must actually happen" apart from the outside. But
+  // each call site's OWN declared timeout is already a real signal of
+  // which kind it is - a Block author who wrote timeout: 5000 for a quick
+  // conditional check and one who wrote timeout: 15000 for a real
+  // hydration wait weren't picking the same number by accident. Scale the
+  // cap off that instead of a single constant: 30% of whatever was
+  // declared, never below a 700ms floor (the value already proven safe
+  // for the fast/common case), and never above what was declared in the
+  // first place. login's 5000ms check -> 1500ms (still 3.5s faster than
+  // uncapped). overview-metrics' 15000ms wait -> 4500ms (more headroom
+  // than the flat 4000ms fix, not less).
+  const WAIT_CAP_FLOOR_MS = 700;
+  const WAIT_CAP_FRACTION = 0.3;
+  const scaledWaitCap = (declared) => Math.max(WAIT_CAP_FLOOR_MS, declared * WAIT_CAP_FRACTION);
   if (!proto.__wgWaitForPatched) {
     proto.__wgWaitForPatched = true;
     const originalWaitFor = proto.waitFor;
     proto.waitFor = function (options) {
-      const capped = { ...(options || {}), timeout: Math.min((options && options.timeout) || 30000, WAIT_CAP_MS) };
+      const declared = (options && options.timeout) || 30000;
+      const capped = { ...(options || {}), timeout: Math.min(declared, scaledWaitCap(declared)) };
       return originalWaitFor.call(this, capped);
     };
   }
@@ -1067,13 +1281,23 @@ function instrumentInteractionHighlighting(page, mem, slowMo) {
     pageProto.__wgWaitForTimeoutPatched = true;
     const originalWaitForTimeout = pageProto.waitForTimeout;
     pageProto.waitForTimeout = function (ms) {
-      return originalWaitForTimeout.call(this, Math.min(ms, WAIT_CAP_MS));
+      // A plain sleep (not a "wait for condition X") never has a hidden
+      // "must actually happen" requirement attached - always safe to cut
+      // to the floor, no scaling needed.
+      return originalWaitForTimeout.call(this, Math.min(ms, WAIT_CAP_FLOOR_MS));
     };
   }
 }
 
-async function runStepMode(engine, start, end, context, page, mem, resolved, slowMo, title) {
-  instrumentInteractionHighlighting(page, mem, slowMo);
+async function runStepMode(engine, start, end, context, page, mem, resolved, slowMo, title, fastBlockNames, clearSession, baseURL) {
+  // A shared, mutable pacing knob the interaction patches read live (per
+  // call, not once at setup) - flipped per-block below so one block (e.g.
+  // WAYGRAPH_FAST_BLOCKS=login) can run through with none of the overlay's
+  // own added dwell while the rest of the chain keeps the full theatrical
+  // pace. Playwright's own slowMo is process-wide and untouched by this -
+  // only OUR added pauses (ring pop, cursor travel, typing delay) shrink.
+  const pacing = { fast: false };
+  instrumentInteractionHighlighting(page, mem, slowMo, pacing);
   // Some real Blocks (e.g. zsign-all's login.block.ts) call
   // page.setViewportSize({ width: 1280, height: 720 }) inside their own
   // act() - a hardcoded override for THEIR OWN testing consistency, with no
@@ -1095,18 +1319,92 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     }
   });
   const waitForNext = () => new Promise((res) => (resolveNext = res));
-  // WAYGRAPH_AUTOPLAY=1 - hands-off, matching the existing
-  // scripts/waygraph-demo.mjs pattern (plain slowMo, no clicks, just watch)
-  // but keeping this overlay's progress bar/module breadcrumb/highlight.
-  const autoplay = process.env.WAYGRAPH_AUTOPLAY === "1";
+  // WAYGRAPH_AUTOPLAY=1 only sets the STARTING checkbox state now - the
+  // panel's own "Auto-advance" checkbox can flip it live, mid-run, and a
+  // manual click always wins over an in-flight autoplay wait regardless of
+  // which way the checkbox is set. That's the hybrid Dan asked for: some
+  // steps auto-advance, some get a manual click, toggled as the demo goes,
+  // not fixed for the whole run from a single env var.
   const autoplayMs = process.env.WAYGRAPH_AUTOPLAY_MS ? Number(process.env.WAYGRAPH_AUTOPLAY_MS) : 1800;
-  const gate = () => (autoplay ? new Promise((res) => setTimeout(() => res({}), autoplayMs)) : waitForNext());
+  const currentAutoplay = () =>
+    page
+      .evaluate(() => {
+        try {
+          return localStorage.getItem("wg-autoplay") === "1";
+        } catch {
+          return false;
+        }
+      })
+      .catch(() => false);
+  const gate = async () => {
+    const next = waitForNext();
+    // WAYGRAPH_FAST_BLOCKS names a block that should blow past its own
+    // gates too, not just skip its interaction dwell - otherwise autoplay
+    // still stalls the full autoplayMs admiring a step that intentionally
+    // ran too fast to watch.
+    const ms = pacing.fast ? Math.min(400, autoplayMs) : autoplayMs;
+    let elapsed = 0;
+    for (;;) {
+      // Re-read the checkbox EVERY loop tick, not once up front - a human
+      // starting a step in manual mode and then checking "Auto-advance"
+      // mid-wait must actually start counting down from that moment, not
+      // get stuck on whatever mode was live when gate() was first called.
+      const auto = await currentAutoplay();
+      const slice = auto
+        ? Math.min(250, Math.max(50, ms - elapsed))
+        : 250; // manual: just a cheap poll tick, waiting on either a click or the box getting checked
+      const winner = await Promise.race([
+        next.then((edits) => ({ clicked: true, edits })),
+        new Promise((res) => setTimeout(() => res({ clicked: false }), slice)),
+      ]);
+      if (winner.clicked) return winner.edits;
+      if (!auto) continue;
+      elapsed += slice;
+      if (elapsed >= ms) return {};
+    }
+  };
   const allNames = resolved.map((r) => r.block.name);
   const allDescriptions = resolved.map((r) => r.block.description || "");
 
   let result;
   for (let i = 0; i < resolved.length; i++) {
     const r = resolved[i];
+    // Reset session state before this block if EITHER: the blanket
+    // WAYGRAPH_CLEAR_SESSION=1 override is set (a manual, always-on-after-
+    // the-first-block stopgap for ad hoc block chains with no real Flow
+    // object), OR this specific block is a Flow's own declared entry point
+    // (defineFlow(...) wrapped in withSessionReset) reached via a
+    // multi-flow chain spec - the proper, opt-in-per-Flow mechanism. Never
+    // resets before the very first block - there's no prior state yet.
+    //
+    // Done HERE, before this step's own "before" panel is even shown - not
+    // after the human clicks "Run this step" - so the panel for the new
+    // episode appears over an already-fresh page, not the PREVIOUS
+    // episode's stale final page (e.g. still showing /dashboard) with the
+    // new episode's panel merely floating on top of it ("overlapping",
+    // Dan's own word for this). The explicit re-navigate (not just
+    // clearing cookies/storage) is what actually makes the page itself
+    // look fresh again - clearing storage alone doesn't change what's
+    // still rendered on screen.
+    if ((clearSession || r.resetSession) && i > 0) {
+      await context.clearCookies().catch(() => {});
+      await page
+        .evaluate(() => {
+          try {
+            localStorage.clear();
+            sessionStorage.clear();
+          } catch {
+            /* storage blocked (e.g. about:blank) - nothing to clear anyway */
+          }
+        })
+        .catch(() => {});
+      if (baseURL) {
+        await page.goto(baseURL).catch(() => {});
+      } else {
+        await page.goto("about:blank").catch(() => {});
+      }
+    }
+    pacing.fast = fastBlockNames.has(r.block.name);
     const requires = r.block.requires ?? [];
     const keys = requires.map((k) => {
       let value = "<not yet set>";
@@ -1125,8 +1423,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       keys,
       allNames,
       allDescriptions,
-      autoplay,
       title,
+      episodeNumber: r.episodeNumber,
+      episodeTitle: r.episodeTitle,
     });
     const edits = await gate();
     for (const k of requires) {
@@ -1143,7 +1442,26 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     // the plain checkpoint - destructure it, don't treat the wrapper as the
     // checkpoint itself (caught via the standalone verify script: this used
     // to serialize the whole { result, page } object into the panel/log).
-    const stepOutcome = await stepFlow.run(context, mem, { page, closeOnFinish: false });
+    let stepOutcome;
+    try {
+      stepOutcome = await stepFlow.run(context, mem, { page, closeOnFinish: false });
+    } catch (err) {
+      // A thrown act()/observe()/a failed verify Trait used to just crash
+      // the whole Node process with a raw stack trace - the browser closes
+      // (main()'s own try/finally) before a human watching ever sees WHY.
+      // Show it on-screen and let a real click acknowledge it first.
+      await renderStepError(page, {
+        index: i,
+        total: resolved.length,
+        blockName: r.block.name,
+        message: err && err.message ? err.message : String(err),
+        allNames,
+        allDescriptions,
+        title,
+      });
+      await gate();
+      throw err;
+    }
     result = stepOutcome.result;
     const highlights = extractVerifyHighlights(r.block, result.__state);
     await renderAfterStep(page, {
@@ -1156,18 +1474,20 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       isLast: i === resolved.length - 1,
       allNames,
       allDescriptions,
-      autoplay,
       title,
+      episodeNumber: r.episodeNumber,
+      episodeTitle: r.episodeTitle,
     });
     await gate();
   }
+  await teardownOverlay(page);
   return result;
 }
 
 async function main() {
   const projectDir = process.argv[2];
   const spec = process.argv[3];
-  const { connect, MemPage, Engine, start, end } = await import("waygraph");
+  const { connect, MemPage, Engine, start, end, chainFlow } = await import("waygraph");
   const mem = new MemPage();
   let resolved = [];
   // A bare identifier (no "(", no "then") might name an existing Flow
@@ -1191,11 +1511,58 @@ async function main() {
     if (segments.length === 0) {
       throw new Error("waygraph chain: empty spec - give at least one block name");
     }
+    // Each "then"-separated segment can ALSO name an existing Flow (a
+    // Flow's own requires, unioned across its Blocks, take the same
+    // JSON-payload shape a single Block's requires would), not just a
+    // Block. "loginFlow then dashboardFlow" chains two whole Flows one
+    // after another - a bare Block segment gets wrapped as its own
+    // trivial one-Block Flow so the whole spec reduces to one thing:
+    // chainFlow(...) does the actual sequencing (session-reset boundaries
+    // included) that used to be hand-rolled here - this is a thin wrapper
+    // over the real engine primitive, not a second copy of its logic.
+    const wrapEngine = new Engine();
+    const flows = [];
+    // Parallel to flows - only a REAL named Flow (found via findFlow)
+    // counts as an "episode" a human would want labeled; a bare Block
+    // segment gets wrapped as its own trivial one-Block Flow so it can
+    // still flow through chainFlow's sequencing uniformly, but it's not
+    // an authored scenario and gets no episode number - keeps the plain
+    // "quick ad hoc block chain" case free of meaningless "Episode 1"/
+    // "Episode 2" labels on things that were never episodes to begin with.
+    const flowMeta = [];
+    let episodeCounter = 0;
     for (const seg of segments) {
-      const r = await findBlock(projectDir, seg.ref);
-      seedMemForBlock(mem, r, seg.json);
-      resolved.push(r);
+      const flow = await findFlow(projectDir, seg.ref);
+      if (flow && typeof flow.blocks === "function") {
+        seedMemForFlow(mem, flow.blocks(), seg.json, seg.ref);
+        flows.push(flow);
+        episodeCounter += 1;
+        flowMeta.push({ episodeNumber: episodeCounter, episodeTitle: flow.title || seg.ref });
+      } else {
+        const r = await findBlock(projectDir, seg.ref);
+        seedMemForBlock(mem, r, seg.json);
+        flows.push(wrapEngine.defineFlow([start, r.block, end]));
+        flowMeta.push(null);
+      }
     }
+    const combinedBlocks = chainFlow(...flows).blocks();
+    let fi = 0;
+    let remainingInFlow = flows[0].blocks().length;
+    resolved = combinedBlocks.map((bi) => {
+      while (remainingInFlow === 0) {
+        fi += 1;
+        remainingInFlow = flows[fi].blocks().length;
+      }
+      remainingInFlow -= 1;
+      const meta = flowMeta[fi];
+      return {
+        block: bi.block,
+        exportName: bi.name,
+        resetSession: bi.resetSessionBefore === true,
+        episodeNumber: meta ? meta.episodeNumber : undefined,
+        episodeTitle: meta ? meta.episodeTitle : undefined,
+      };
+    });
     console.log(
       "waygraph: chaining " + resolved.map((r) => r.block.name).join(" -> ") +
         " (" + resolved.length + " block" + (resolved.length === 1 ? "" : "s") + ")",
@@ -1214,6 +1581,23 @@ async function main() {
       : undefined;
   const baseURL = process.env.WAYGRAPH_BASE_URL;
   const title = process.env.WAYGRAPH_TITLE;
+  // Comma-separated Block names (their real .name, e.g. "login") that
+  // should blow past the overlay's own added dwell (ring pop, cursor
+  // travel, typing delay, and that block's own gates) - "I want the login
+  // block to be faster than the rest of the demo," Dan's own phrase.
+  // Playwright's real slowMo is untouched; this only trims what waygraph
+  // itself adds on top of it.
+  const fastBlockNames = new Set(
+    (process.env.WAYGRAPH_FAST_BLOCKS || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+  // Off by default - a same-user chain (login -> dashboard -> ...) needs
+  // to STAY authenticated across its own blocks. Only a chain deliberately
+  // re-visiting an auth entry point (e.g. "login" appearing twice, to
+  // demo the same flow starting fresh each time) needs this.
+  const clearSession = process.env.WAYGRAPH_CLEAR_SESSION === "1";
   const engine = new Engine({ headless: !headed, slowMo });
   let result;
   if (step || baseURL) {
@@ -1245,7 +1629,7 @@ async function main() {
         if (baseURL) {
           await page.goto(baseURL).catch(() => {});
         }
-        result = await runStepMode(engine, start, end, context, page, mem, resolved, slowMo, title);
+        result = await runStepMode(engine, start, end, context, page, mem, resolved, slowMo, title, fastBlockNames, clearSession, baseURL);
       } else {
         const blocks = resolved.map((r) => r.block);
         const chained = blocks.reduce((a, b) => connect(a, b));
@@ -1394,9 +1778,30 @@ Usage:
                           just confirmed, then "Next" before moving on.
                           Implies headed - stepping through headless defeats
                           the point.
-      WAYGRAPH_AUTOPLAY=1     step mode only - hands-off, advances on a
-                          timer instead of waiting for clicks
+      WAYGRAPH_AUTOPLAY=1     step mode only - starting state for the panel's
+                          own "Auto-advance" checkbox (advances on a timer
+                          instead of waiting for clicks). The checkbox can
+                          be flipped live mid-run - some steps auto, some
+                          manual - and a manual click always wins over an
+                          in-flight autoplay wait either way.
       WAYGRAPH_AUTOPLAY_MS=ms delay between auto-advances (default 1800)
+      WAYGRAPH_FAST_BLOCKS=name1,name2
+                          step mode only - these Blocks' own .name (e.g.
+                          "login") blow past the overlay's added dwell -
+                          ring pop, cursor travel, typing delay, and that
+                          block's own gates - while the rest of the chain
+                          keeps the full pace. Playwright's own slowMo is
+                          untouched.
+      WAYGRAPH_CLEAR_SESSION=1
+                          step mode only - clears cookies + storage before
+                          every block AFTER the first. Off by default - a
+                          normal chain (login -> dashboard) needs to STAY
+                          authenticated across its own blocks. Only turn
+                          this on for a chain that deliberately re-visits
+                          an auth entry point as a fresh visitor each time
+                          (e.g. "login" appearing more than once) - without
+                          it the second visit is still authenticated, so
+                          the app redirects away before the form renders.
       WAYGRAPH_TITLE="..."    step mode only - a persistent top banner
                           naming what this whole run is about (default
                           top-left; click the banner to cycle left /

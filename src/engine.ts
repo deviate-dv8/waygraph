@@ -169,6 +169,7 @@ export async function narrate<T>(
     .evaluate(() => typeof (globalThis as unknown as { __wgPositionRing?: unknown }).__wgPositionRing === "function")
     .catch(() => false);
   if (!active) return action();
+  let owning = false;
   try {
     const box = await locator.boundingBox();
     if (box) {
@@ -178,6 +179,7 @@ export async function narrate<T>(
             const w = globalThis as unknown as {
               __wgPositionRing?: (box: unknown, label: string) => void;
               __wgLastNarrate?: number;
+              __wgNarrateOwnsRing?: boolean;
             };
             if (w.__wgPositionRing) w.__wgPositionRing(box, caption);
             // The CLI's own automatic per-fill/per-click narration checks
@@ -185,21 +187,56 @@ export async function narrate<T>(
             // explicitly authored caption should win, not get immediately
             // replaced a moment later by the generic one.
             w.__wgLastNarrate = Date.now();
+            // Also claim the ring itself: the auto-highlight click/fill
+            // patches each hide the ring right after THEIR own step
+            // finishes, which - if action() below does more than one thing
+            // (e.g. a click then a wait for a toast) - would wipe this
+            // caption after just the first sub-step instead of the whole
+            // narrated action. Their hideRing() calls no-op while this is
+            // true; narrate() below is the one that actually clears it.
+            w.__wgNarrateOwnsRing = true;
           },
           { box, caption },
         )
         .catch(() => {});
+      owning = true;
       // The ring alone is pointless if action() fires on the very next
       // tick - a click that navigates (e.g. a form submit) wipes the ring
       // before a human can read the caption at all. Give it the same
       // "pop for a few seconds" dwell as the CLI's own auto-highlight
       // clicks before the real action runs.
       await new Promise((resolve) => setTimeout(resolve, 650));
+      // Re-stamp __wgLastNarrate right before handing off to action() - the
+      // CLI's auto-highlight patches only treat a narrate() as "just
+      // handled" within a short window (500ms), which the dwell above
+      // already burned through. Without this, action()'s own click/fill
+      // (same patched Locator prototype) would stomp this caption with its
+      // own generic one a moment after it finally became visible.
+      await page
+        .evaluate(() => {
+          (globalThis as unknown as { __wgLastNarrate?: number }).__wgLastNarrate = Date.now();
+        })
+        .catch(() => {});
     }
   } catch {
     // best-effort - the real action below still runs either way
   }
-  return action();
+  try {
+    return await action();
+  } finally {
+    if (owning) {
+      await page
+        .evaluate(() => {
+          const w = globalThis as unknown as {
+            __wgNarrateOwnsRing?: boolean;
+            __wgHideRing?: () => void;
+          };
+          w.__wgNarrateOwnsRing = false;
+          if (w.__wgHideRing) w.__wgHideRing();
+        })
+        .catch(() => {});
+    }
+  }
 }
 
 /** Reserved markers bookending a `defineFlow([start, ...blocks, end])` call. */
@@ -253,6 +290,14 @@ export interface BlockInfo {
   /** `branch()`'s routing table, if this Block has one - see {@link Block.routes}. */
   routes?: Readonly<Record<string, string | null>>;
   /**
+   * True when {@link chainFlow} inserted a session-reset boundary
+   * immediately before this Block - i.e. this is the first Block of a
+   * sub-flow that was wrapped in {@link withSessionReset}, and it isn't
+   * the very first sub-flow in the chain. Absent (not just false) from
+   * `Flow.blocks()` on an ordinary, non-chained Flow.
+   */
+  resetSessionBefore?: boolean;
+  /**
    * The actual Block, re-runnable on its own via
    * `engine.defineFlow([start, info.block, end])` - e.g. step-through
    * tooling that runs a Flow's Blocks one at a time. Introspection that only
@@ -264,6 +309,22 @@ export interface BlockInfo {
 }
 
 export interface Flow<Out extends Checkpoint<string>> {
+  /**
+   * True once this Flow has been wrapped in {@link withSessionReset} - a
+   * hint for `chainFlow`, not something `run()` itself checks: it marks
+   * this Flow as one that expects to start from a genuinely fresh,
+   * unauthenticated browser state (e.g. a login flow meant to be
+   * re-entered later in a longer chain). `chainFlow` clears cookies and
+   * storage right before this Flow's first Block runs, but only when this
+   * Flow isn't the very first thing in the chain (nothing to reset yet).
+   */
+  readonly resetSession: boolean;
+  /**
+   * Set once this Flow has been wrapped in {@link withTitle} - a display
+   * hint for a step-through overlay/showcase (e.g. "Ticket #123"), not
+   * something `run()` itself uses.
+   */
+  readonly title?: string;
   /**
    * This Flow's constituent Blocks, in order between `start`/`end`, as plain
    * data - for introspection/visualization tools, without running anything.
@@ -336,6 +397,11 @@ function buildFlow<Out extends Checkpoint<string>>(
   middle: readonly Block<any, any>[],
   engineConfig: EngineConfig,
 ): Flow<Out> {
+  // resetSession/title start false/unset here - defineFlow itself carries
+  // no such options anymore. They're set by wrapping the result in
+  // withSessionReset()/withTitle() instead (non-destructive decorators,
+  // same pattern as withVerify), which also re-apply themselves after any
+  // further withBlockVerify/modBlockVerify patch so the flag survives.
   const chain = middle.reduce((a, b) => connect(a, b)) as unknown as Block<
     Checkpoint<"__start__">,
     Out
@@ -413,6 +479,7 @@ function buildFlow<Out extends Checkpoint<string>>(
     return result;
   };
   return {
+    resetSession: false,
     blocks: () => middle.map((b) => ({ name: b.name, block: b, ...(b.routes ? { routes: b.routes } : {}) })),
     run: run as Flow<Out>["run"],
     withBlockVerify(block, verify) {
@@ -426,6 +493,178 @@ function buildFlow<Out extends Checkpoint<string>>(
       const patched = [...middle];
       patched[index] = modVerify(middle[index]!, nameOrIndex, newCheck);
       return buildFlow<Out>(patched, engineConfig);
+    },
+  };
+}
+
+/**
+ * Marks a Flow as expecting to start from a genuinely fresh, unauthenticated
+ * browser state - e.g. a login flow meant to be re-entered later in a longer
+ * showcase. Non-destructive, same pattern as {@link withVerify}: returns a
+ * new Flow: the original is untouched, and the flag survives any further
+ * `withBlockVerify`/`modBlockVerify` patch applied to the result.
+ *
+ * By itself this does nothing - `Flow.run()` never reads `resetSession`.
+ * It's a hint {@link chainFlow} looks for: right before this Flow's first
+ * Block runs (skipped if it's the very first thing in the chain - nothing
+ * to reset yet), chainFlow clears cookies and storage so this Flow starts
+ * exactly as if a human had opened the app fresh, not wherever the
+ * previous Flow in the chain happened to leave the page.
+ * @example const loginFlow = withSessionReset(engine.defineFlow([start, LoginBlock, end]));
+ */
+export function withSessionReset<Out extends Checkpoint<string>>(flow: Flow<Out>): Flow<Out> {
+  return {
+    ...flow,
+    resetSession: true,
+    withBlockVerify: (block, verify) => withSessionReset(flow.withBlockVerify(block, verify)),
+    modBlockVerify: (block, nameOrIndex, newCheck) => withSessionReset(flow.modBlockVerify(block, nameOrIndex, newCheck)),
+  };
+}
+
+/**
+ * Names a Flow for display - a step-through overlay/showcase (waygraph's
+ * `chain --step`) shows this as the running banner while this Flow's own
+ * Blocks are executing, instead of one fixed title for the whole run.
+ * Non-destructive, same pattern as {@link withSessionReset}.
+ * @example const ticket123 = withTitle(loginFlow, "Ticket #123 - Sales rep signs in");
+ */
+export function withTitle<Out extends Checkpoint<string>>(flow: Flow<Out>, title: string): Flow<Out> {
+  return {
+    ...flow,
+    title,
+    withBlockVerify: (block, verify) => withTitle(flow.withBlockVerify(block, verify), title),
+    modBlockVerify: (block, nameOrIndex, newCheck) => withTitle(flow.modBlockVerify(block, nameOrIndex, newCheck), title),
+  };
+}
+
+function locateInChain(
+  flows: readonly Flow<any>[],
+  block: Block<any, any> | string | number,
+): { flowIndex: number; localIndex: number } {
+  if (typeof block === "number") {
+    let remaining = block;
+    for (let fi = 0; fi < flows.length; fi++) {
+      const len = flows[fi]!.blocks().length;
+      if (remaining < len) return { flowIndex: fi, localIndex: remaining };
+      remaining -= len;
+    }
+    throw new Error(`chainFlow: no Block at index ${block} across ${flows.length} chained flows`);
+  }
+  const blockName = typeof block === "string" ? block : block.name;
+  for (let fi = 0; fi < flows.length; fi++) {
+    const localIndex = flows[fi]!.blocks().findIndex((bi) => bi.name === blockName);
+    if (localIndex !== -1) return { flowIndex: fi, localIndex };
+  }
+  throw new Error(`chainFlow: no Block named "${blockName}" in any chained flow`);
+}
+
+async function clearSessionState(context: BrowserContext, page: Page): Promise<void> {
+  await context.clearCookies().catch(() => {});
+  await page
+    .evaluate(() => {
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch {
+        /* storage blocked (e.g. about:blank) - nothing to clear anyway */
+      }
+    })
+    .catch(() => {});
+}
+
+/**
+ * Runs several complete, independent Flows one after another, reusing the
+ * same page/context/mem in order - each remains its own validated
+ * start-to-end unit (a Flow's own `[start, ...blocks, end]` contract is
+ * untouched), this only sequences whole Flows. Deliberately NOT the same
+ * thing as {@link composeBlock}: composeBlock nests several Blocks into
+ * one Block that can drop back into another `defineFlow([...])` - a
+ * chainFlow result is a Flow, but not meant to be nested inside another
+ * Flow's own Block list. Recursive nesting stays composeBlock's job alone;
+ * chainFlow is a flat, one-level sequencing of complete showcases (e.g.
+ * "ticket #123 end to end, then ticket #456 end to end").
+ *
+ * A sub-flow wrapped in {@link withSessionReset} gets its cookies/storage
+ * cleared right before it runs (skipped for the very first flow in the
+ * chain - nothing to reset yet). The combined result is whatever the LAST
+ * flow resolved to.
+ * @example chainFlow(ticket123Flow, ticket456Flow).run(context, mem)
+ */
+export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
+  if (flows.length === 0) {
+    throw new Error("chainFlow: give at least one Flow");
+  }
+  const run = async function run(
+    contextOrMem: BrowserContext | MemPage,
+    memOrConfig?: MemPage | EngineConfig,
+    options?: RunGraphOptions,
+  ): Promise<unknown> {
+    if (contextOrMem instanceof MemPage) {
+      const mem = contextOrMem;
+      const config = memOrConfig as EngineConfig | undefined;
+      // One browser for the WHOLE chain - each sub-flow's own run(mem,
+      // config) would otherwise each launch a separate browser, defeating
+      // the point of sequencing them (a fresh browser is itself a full
+      // session reset, silently making withSessionReset a no-op).
+      const browserName = config?.browserName ?? "chromium";
+      const launch = LAUNCHERS[browserName];
+      const executablePath =
+        browserName === "chromium" ? process.env.CHROME_PATH || process.env.CHROMIUM_PATH : undefined;
+      const browser: Browser = await launch.launch({
+        headless: config?.headless ?? true,
+        ...(config?.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
+        ...(executablePath ? { executablePath } : {}),
+      });
+      try {
+        const context = await browser.newContext();
+        return await run(context, mem, { closeOnFinish: true });
+      } finally {
+        await browser.close();
+      }
+    }
+    const context = contextOrMem;
+    const mem = memOrConfig as MemPage;
+    const gotOwnPage = options?.page === undefined;
+    const page = options?.page ?? (await context.newPage());
+    const closeOnFinish = options?.closeOnFinish ?? gotOwnPage;
+    let result: unknown;
+    for (let i = 0; i < flows.length; i++) {
+      const flow = flows[i]!;
+      if (i > 0 && flow.resetSession) {
+        await clearSessionState(context, page);
+      }
+      const outcome = (await flow.run(context, mem, { page, closeOnFinish: false })) as { result: unknown };
+      result = outcome.result;
+    }
+    if (closeOnFinish) {
+      await page.close();
+    }
+    if (options?.closeOnFinish === false) {
+      return { result, page };
+    }
+    return result;
+  };
+  return {
+    resetSession: false,
+    blocks: () =>
+      flows.flatMap((flow, idx) =>
+        flow.blocks().map((bi, i) => ({
+          ...bi,
+          ...(i === 0 && idx > 0 && flow.resetSession ? { resetSessionBefore: true } : {}),
+        })),
+      ),
+    run: run as Flow<any>["run"],
+    withBlockVerify(block, verify) {
+      const { flowIndex, localIndex } = locateInChain(flows, block);
+      const patched = [...flows];
+      patched[flowIndex] = patched[flowIndex]!.withBlockVerify(localIndex, verify);
+      return chainFlow(...patched);
+    },
+    modBlockVerify(block, nameOrIndex, newCheck) {
+      const { flowIndex, localIndex } = locateInChain(flows, block);
+      const patched = [...flows];
+      patched[flowIndex] = patched[flowIndex]!.modBlockVerify(localIndex, nameOrIndex, newCheck);
+      return chainFlow(...patched);
     },
   };
 }
@@ -590,7 +829,9 @@ export class Engine {
    * reliably checked as `connect<A,B,C>` itself.
    * @example engine.defineFlow([start, LoginBlock, AddToCartBlock, end])
    */
-  defineFlow<B extends Checkpoint<string>>(blocks: readonly [StartMarker, Block<S, B>, EndMarker]): Flow<B>;
+  defineFlow<B extends Checkpoint<string>>(
+    blocks: readonly [StartMarker, Block<S, B>, EndMarker],
+  ): Flow<B>;
   defineFlow<B extends Checkpoint<string>, C extends Checkpoint<string>>(
     blocks: readonly [StartMarker, Block<S, B>, Block<B, C>, EndMarker],
   ): Flow<C>;
