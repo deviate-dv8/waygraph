@@ -511,8 +511,11 @@ const RING_CSS =
   "#wg-panel .wg-error-heading{color:#ff8fa0;}" +
   "#wg-panel .wg-error-msg{font:12px/1.5 monospace;background:#2a0f16;color:#ffc7cf;" +
   "border-radius:8px;padding:10px;margin:0 0 12px;white-space:pre-wrap;max-height:200px;overflow-y:auto;}" +
-  "#wg-panel .wg-error-stop{background:#e0475c;}" +
-  "#wg-panel .wg-error-stop:hover{background:#c33a4c;}";
+  "#wg-panel .wg-error-actions{display:flex;gap:8px;}" +
+  "#wg-panel .wg-error-stop{background:#e0475c;margin-top:0;}" +
+  "#wg-panel .wg-error-stop:hover{background:#c33a4c;}" +
+  "#wg-panel .wg-error-retry{background:#2a9d6f;margin-top:0;}" +
+  "#wg-panel .wg-error-retry:hover{background:#22855e;}";
 
 // Purple dot favicon (matches the overlay's own theme color) - the tab-bar
 // signal that "this Chromium window is a waygraph run," even at a glance
@@ -1090,19 +1093,25 @@ async function renderStepError(page, info) {
           return "<span class=\\"wg-mod " + cls + "\\"" + titleAttr + ">" + name + "</span>";
         })
         .join("");
+      const retryLabel = info.episodeNumber !== undefined ? "Retry Episode " + info.episodeNumber : "Retry";
       panel.innerHTML =
         episodesHtml +
         "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
         "<h3 class=\\"wg-error-heading\\">Step " + (info.index + 1) + " / " + info.total + " - " +
         info.blockName + " threw</h3>" +
         "<div class=\\"wg-error-msg\\">" + esc(info.message) + "</div>" +
-        "<button id=\\"wg-run\\" class=\\"wg-error-stop\\">Stop</button>";
+        "<div class=\\"wg-error-actions\\">" +
+        "<button id=\\"wg-error-retry\\" class=\\"wg-error-retry\\">" + esc(retryLabel) + "</button>" +
+        "<button id=\\"wg-run\\" class=\\"wg-error-stop\\">Stop</button>" +
+        "</div>";
       if (isNewPanel) {
         document.documentElement.appendChild(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
       }
       const runBtn = document.getElementById("wg-run");
       if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
+      const retryBtn = document.getElementById("wg-error-retry");
+      if (retryBtn) retryBtn.addEventListener("click", () => window.__wgNext({ __wgRetry: "1" }));
     }, info)
     .catch(() => {});
 }
@@ -1482,6 +1491,28 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing) {
   }
 }
 
+/**
+ * Clears cookies + storage and re-navigates to a known-fresh page. Shared by
+ * the per-block session-reset check below and by the error panel's own
+ * "Retry Episode" button - a retry needs the exact same clean slate a normal
+ * episode boundary gets, not just re-running the failed block against
+ * whatever broken/half-navigated state it left the page in.
+ */
+async function resetPageState(context, page, baseURL) {
+  await context.clearCookies().catch(() => {});
+  await page
+    .evaluate(() => {
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch {
+        /* storage blocked (e.g. about:blank) - nothing to clear anyway */
+      }
+    })
+    .catch(() => {});
+  await page.goto(baseURL || "about:blank").catch(() => {});
+}
+
 async function runStepMode(engine, start, end, context, page, mem, resolved, slowMo, title, fastBlockNames, clearSession, baseURL) {
   // A shared, mutable pacing knob the interaction patches read live (per
   // call, not once at setup) - flipped per-block below so one block (e.g.
@@ -1585,6 +1616,11 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     const moduleNames = episodeBlockIndices.map((idx) => allNames[idx]);
     const moduleDescriptions = episodeBlockIndices.map((idx) => allDescriptions[idx]);
     const moduleIndex = episodeBlockIndices.indexOf(i);
+    // Where a "Retry Episode" click (see the catch block below) rewinds to -
+    // the current episode's own first block, or the whole chain's first
+    // block when there's no real episode (episodeBlockIndices degrades to
+    // the full resolved array in that case, so this is just 0).
+    const episodeStartIndex = episodeBlockIndices[0];
     // True only on an episode's own first block - the one moment worth a
     // gentle "you're here now" signal, not every step inside it.
     const justEnteredEpisode = moduleIndex === 0 && r.episodeNumber !== undefined;
@@ -1611,22 +1647,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     // look fresh again - clearing storage alone doesn't change what's
     // still rendered on screen.
     if ((clearSession || r.resetSession) && i > 0) {
-      await context.clearCookies().catch(() => {});
-      await page
-        .evaluate(() => {
-          try {
-            localStorage.clear();
-            sessionStorage.clear();
-          } catch {
-            /* storage blocked (e.g. about:blank) - nothing to clear anyway */
-          }
-        })
-        .catch(() => {});
-      if (baseURL) {
-        await page.goto(baseURL).catch(() => {});
-      } else {
-        await page.goto("about:blank").catch(() => {});
-      }
+      await resetPageState(context, page, baseURL);
     }
     pacing.fast = fastBlockNames.has(r.block.name);
     const requires = r.block.requires ?? [];
@@ -1691,7 +1712,15 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         episodeNumber: r.episodeNumber,
         episodeTitle: r.episodeTitle,
       });
-      await gate();
+      const errEdits = await gate();
+      if (errEdits && errEdits.__wgRetry) {
+        // Same clean slate a normal episode boundary gets - not just
+        // re-running the failed block against whatever broken/half-
+        // navigated state it left the page in.
+        await resetPageState(context, page, baseURL);
+        i = episodeStartIndex - 1;
+        continue;
+      }
       throw err;
     }
     result = stepOutcome.result;
