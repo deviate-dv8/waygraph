@@ -415,7 +415,15 @@ const RING_CSS =
   "max-width:min(92vw,640px);max-height:calc(100vh - 24px);overflow-y:auto;box-sizing:border-box;" +
   "background:rgba(20,10,40,.94);color:#fff;border-radius:14px;" +
   "padding:16px 20px;font:14px/1.4 system-ui,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,.35);" +
-  "opacity:0;transition:opacity .06s ease;}" +
+  // .06s was tuned back when the panel was removed and recreated on
+  // EVERY step - fast was the only way to avoid feeling laggy. Now that
+  // routine per-step updates reuse the same element (no fade at all - see
+  // the panel-reuse fix), this only ever fires for a genuinely fresh DOM
+  // (first load, or a real navigation - which is exactly what an episode
+  // boundary is). Slower and smoother reads as a real, comfortable
+  // transition instead of an instant pop - "eyes friendly," not laggy,
+  // since it no longer costs anything on the common case.
+  "opacity:0;transition:opacity .35s ease;}" +
   "#wg-panel.wg-in{opacity:1;}" +
   "#wg-panel .wg-auto{margin-top:10px;font:600 13px system-ui,sans-serif;color:#c9a6ff;}" +
   "#wg-panel .wg-autoplay-row{margin-top:8px;}" +
@@ -447,6 +455,15 @@ const RING_CSS =
   "#wg-episodes .wg-ep-current{color:#fff;border-bottom-color:#7C3AED;}" +
   "#wg-episodes .wg-ep-done{color:#9a7ad1;}" +
   "#wg-episodes .wg-ep-upcoming{color:#5a4a80;}" +
+  // A one-time, gentle signal for "you just entered this episode" - Dan:
+  // "i want a clear ui eyes friendly to remind me that i am on next
+  // episode." A slow outward glow, not an opacity blink/strobe (that's
+  // exactly the kind of flashing that already caused the original
+  // complaint) - plays once (no loop), 1.1s, only on the FIRST block of a
+  // newly-entered episode, not on every step within it.
+  "@keyframes wg-ep-enter{0%{box-shadow:0 0 0 0 rgba(124,58,237,.55);}" +
+  "100%{box-shadow:0 0 0 10px rgba(124,58,237,0);}}" +
+  "#wg-episodes .wg-ep-entered{border-radius:6px;animation:wg-ep-enter 1.1s ease-out;}" +
   // The block breadcrumb below it is scoped to the CURRENT episode's own
   // blocks only, not the whole chain - "in episode 2 it shows 2nd to the
   // last... it should start from the first block" (Dan). An ad hoc block
@@ -725,7 +742,12 @@ async function renderBeforeStep(page, info) {
               const cls = e.episodeNumber < info.episodeNumber ? "wg-ep-done"
                 : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
                 : "wg-ep-upcoming";
-              return "<span class=\\"wg-ep-tab " + cls + "\\">Episode " + e.episodeNumber + ": " +
+              // The gentle one-time glow only plays on the tab actually
+              // being entered right now, not on every render of it.
+              const enteredCls = info.justEnteredEpisode && e.episodeNumber === info.episodeNumber
+                ? " wg-ep-entered"
+                : "";
+              return "<span class=\\"wg-ep-tab " + cls + enteredCls + "\\">Episode " + e.episodeNumber + ": " +
                 esc(e.episodeTitle || "") + "</span>";
             })
             .join("") +
@@ -1473,6 +1495,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     const moduleNames = episodeBlockIndices.map((idx) => allNames[idx]);
     const moduleDescriptions = episodeBlockIndices.map((idx) => allDescriptions[idx]);
     const moduleIndex = episodeBlockIndices.indexOf(i);
+    // True only on an episode's own first block - the one moment worth a
+    // gentle "you're here now" signal, not every step inside it.
+    const justEnteredEpisode = moduleIndex === 0 && r.episodeNumber !== undefined;
     // Seed THIS segment's own json payload now, not earlier - see the long
     // comment where seedMem closures are built, in main()'s resolution
     // loop. Must run before "keys" below reads mem.get() for the panel
@@ -1534,6 +1559,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       allDescriptions: moduleDescriptions,
       moduleIndex,
       allEpisodes,
+      justEnteredEpisode,
       title,
       episodeNumber: r.episodeNumber,
       episodeTitle: r.episodeTitle,
