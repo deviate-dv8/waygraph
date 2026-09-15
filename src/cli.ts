@@ -2015,16 +2015,20 @@ function packageRoot(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..");
 }
 
+interface TryPrereqStatus {
+  ok: boolean;
+  missing?: "waygraph" | "playwright-test" | "browser" | "unknown";
+  detail?: string;
+}
+
 /**
  * Runs a throwaway probe script rooted at `projectDir` - the exact same
  * directory the real demo files get copied into, so it resolves "waygraph"
  * and "@playwright/test" exactly as they will - and actually launches (then
  * immediately closes) chromium, a real check rather than a guess at whether
- * the browser's installed. Returns null when everything's ready, or a
- * friendly, actionable message naming exactly what to install when it
- * isn't. Never leaves the probe script behind.
+ * the browser's installed. Never leaves the probe script behind.
  */
-async function checkTryPrereqs(projectDir: string): Promise<string | null> {
+async function probeTryPrereqs(projectDir: string): Promise<TryPrereqStatus> {
   const tsxEsm = import.meta.resolve("tsx/esm");
   const probeScript = [
     "try {",
@@ -2066,27 +2070,80 @@ async function checkTryPrereqs(projectDir: string): Promise<string | null> {
       child.on("error", rej);
       child.on("exit", (code) => res({ code: code ?? 1, stderr: stderrBuf }));
     });
-    if (result.code === 0) return null;
+    if (result.code === 0) return { ok: true };
     const stderr = result.stderr;
-    if (stderr.includes("WAYGRAPH_TRY_MISSING_WAYGRAPH")) {
-      return `"waygraph" isn't resolvable as a dependency from ${projectDir}.\nRun this first, inside that directory:\n  npm install waygraph\n  npm install -D @playwright/test\n  npx playwright install chromium`;
-    }
-    if (stderr.includes("WAYGRAPH_TRY_MISSING_PLAYWRIGHT_TEST")) {
-      return `"@playwright/test" isn't resolvable as a dependency from ${projectDir}.\nRun this first, inside that directory:\n  npm install -D @playwright/test\n  npx playwright install chromium`;
-    }
-    if (stderr.includes("WAYGRAPH_TRY_MISSING_BROWSER")) {
-      return "Playwright's chromium browser isn't installed yet.\nRun this first:\n  npx playwright install chromium";
-    }
-    return `couldn't verify prerequisites:\n${stderr.trim()}`;
+    if (stderr.includes("WAYGRAPH_TRY_MISSING_WAYGRAPH")) return { ok: false, missing: "waygraph" };
+    if (stderr.includes("WAYGRAPH_TRY_MISSING_PLAYWRIGHT_TEST")) return { ok: false, missing: "playwright-test" };
+    if (stderr.includes("WAYGRAPH_TRY_MISSING_BROWSER")) return { ok: false, missing: "browser" };
+    return { ok: false, missing: "unknown", detail: stderr.trim() || `probe exited with code ${result.code}` };
   } finally {
     rmSync(probePath, { force: true });
   }
 }
 
+/** Spawns with inherited stdio (the real npm/playwright output, visible) and resolves to its exit code. */
+function runInherited(cmd: string, args: string[], cwd: string): Promise<number> {
+  return new Promise((res, rej) => {
+    const child = spawn(cmd, args, { cwd, stdio: "inherit", env: process.env });
+    child.on("error", rej);
+    child.on("exit", (code) => res(code ?? 1));
+  });
+}
+
+/**
+ * `waygraph try` is meant to be a genuine one-shot `npx waygraph try` -
+ * no separate init/install step the human has to remember, the same shape
+ * as `npm create vite@latest`. Probes first; anything missing gets
+ * installed right here (a minimal package.json if none exists, then
+ * `npm install waygraph @playwright/test`, then Playwright's own chromium
+ * download), with the real install output visible the whole time - not
+ * silent, just not a separate step you have to run yourself first. Returns
+ * null once everything's actually ready, or a message naming whatever
+ * still isn't after really trying.
+ */
+async function ensureTryPrereqs(projectDir: string): Promise<string | null> {
+  let status = await probeTryPrereqs(projectDir);
+  if (status.ok) return null;
+  if (status.missing === "unknown") {
+    return `couldn't verify prerequisites:\n${status.detail}`;
+  }
+
+  if (status.missing === "waygraph" || status.missing === "playwright-test") {
+    if (!existsSync(join(projectDir, "package.json"))) {
+      writeFileSync(
+        join(projectDir, "package.json"),
+        JSON.stringify({ name: basename(projectDir) || "waygraph-quickstart", private: true, type: "module" }, null, 2) + "\n",
+      );
+      console.log(`waygraph try: no package.json in ${projectDir} - created a minimal one.`);
+    }
+    console.log(`waygraph try: installing waygraph + @playwright/test in ${projectDir} ...`);
+    const installCode = await runInherited("npm", ["install", "waygraph", "@playwright/test"], projectDir);
+    if (installCode !== 0) {
+      return `npm install exited with code ${installCode} - see the output above.`;
+    }
+    status = await probeTryPrereqs(projectDir);
+    if (status.ok) return null;
+    if (status.missing === "unknown") return `couldn't verify prerequisites:\n${status.detail}`;
+  }
+
+  // Only the browser can still be missing at this point.
+  console.log("waygraph try: downloading Playwright's chromium browser ...");
+  const localPlaywrightBin = join(projectDir, "node_modules", ".bin", "playwright");
+  const browserCode = existsSync(localPlaywrightBin)
+    ? await runInherited(localPlaywrightBin, ["install", "chromium"], projectDir)
+    : await runInherited("npx", ["--yes", "playwright", "install", "chromium"], projectDir);
+  if (browserCode !== 0) {
+    return `"playwright install chromium" exited with code ${browserCode} - see the output above.`;
+  }
+  status = await probeTryPrereqs(projectDir);
+  if (status.ok) return null;
+  return status.detail ?? "prerequisites still aren't ready after attempting to install them.";
+}
+
 async function runTry(projectDir: string): Promise<void> {
-  const problem = await checkTryPrereqs(projectDir);
+  const problem = await ensureTryPrereqs(projectDir);
   if (problem) {
-    console.error(`waygraph try: not ready yet.\n${problem}`);
+    console.error(`waygraph try: couldn't get ready.\n${problem}`);
     process.exitCode = 1;
     return;
   }
@@ -2247,16 +2304,20 @@ Usage:
   waygraph run <flow> [project]   Run a named flow
   waygraph chain <spec> [project] Run one or more Blocks by name, ad hoc
   waygraph check   [project]      Warn about navigation outside a NavBlock
-  waygraph try     [project]      Quickstart showcase - no setup beyond
-                                  "waygraph" + "@playwright/test" installed
-                                  in [project] (default: cwd) and its
-                                  chromium browser downloaded. Checks both
-                                  for real (a real launch+close, not a
-                                  guess) and tells you exactly what to run
-                                  if either's missing, instead of a raw
-                                  Playwright stack trace. If ready, copies a
-                                  small real Flow (nav/action Blocks, Trait
-                                  verify, narrate()) into
+  waygraph try     [project]      One-shot quickstart showcase - genuinely
+                                  "npx waygraph try", no separate init step.
+                                  Checks (a real launch+close, not a guess)
+                                  whether "waygraph" + "@playwright/test"
+                                  resolve from [project] (default: cwd) and
+                                  its chromium browser is downloaded; if
+                                  anything's missing, installs it right
+                                  there (writes a minimal package.json if
+                                  [project] doesn't have one yet, then
+                                  npm install, then the browser download),
+                                  real output visible the whole time. Once
+                                  ready, copies a small real Flow
+                                  (nav/action Blocks, Trait verify,
+                                  narrate()) into
                                   [project]/.waygraph-quickstart/ and runs
                                   it in step mode against a public demo
                                   site - then prints the absolute path to
