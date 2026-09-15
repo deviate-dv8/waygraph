@@ -80,7 +80,15 @@ takes a structured `URLPatternInit` (`{ pathname, hostname, search, hash, ... }`
 shape the standard `URLPattern` Web API takes), not a hand-written regex - whichever
 components you leave out default to "match anything," so `Trait.url({ pathname:
 "/inventory.html" })` already ignores whatever query params a hybrid SPA tacks on, with no
-separate flag needed for that. Once Blocks are composed into a `Flow`, `flow.withBlockVerify`/
+separate flag needed for that. A hand-written `Trait` isn't limited to the page, either - its
+`check(page, mem)` receives `mem` too, for the same-Checkpoint case: an action that doesn't
+navigate anywhere at all (clicking "+" to bump a cart item's quantity, say) has `In === Out`,
+which `defineBlock`/`defineFlow` already accept with no special-casing - `act()` updates `mem`
+alongside the real click (`mem.set(Quantity, mem.get(Quantity) + 1)`), and a bespoke `verify`
+Trait confirms the page's own displayed value actually matches what `mem` now expects
+(`shown === String(mem.get(Quantity))`), not just that *some* number is showing. `resolve()`
+itself stays exactly as pure as ever - it never sees `mem`, only `verify` does. Once Blocks are
+composed into a `Flow`, `flow.withBlockVerify`/
 `flow.modBlockVerify` patch one Block's verify from outside - a spec that only imports the
 finished flow, addressed by the Block reference (preferred), its name, or its numeric
 position in the flow - without editing the flow's own file. `composeBlock(name, steps)`
