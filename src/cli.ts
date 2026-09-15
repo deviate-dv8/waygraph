@@ -1402,7 +1402,16 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing) {
       } catch {
         // best-effort - the real click below still runs either way
       }
-      if (clickPoint) await clickPulseAt(page, clickPoint.x, clickPoint.y);
+      if (clickPoint) {
+        await clickPulseAt(page, clickPoint.x, clickPoint.y);
+        // clickPulseAt only triggers the CSS animation class - it doesn't
+        // wait for it. Without a pause here, the real click (and any
+        // resulting navigation/DOM change) fires while the ripple is still
+        // mid-animation, sometimes cutting it off before it's even visible.
+        // Wait out the same .5s the "@keyframes wg-pulse" rule uses, so the
+        // mock click visually completes before the real one fires.
+        await new Promise((res) => setTimeout(res, pacing.fast ? 0 : 500));
+      }
       const result = await originalClick.call(this, options);
       await new Promise((res) => setTimeout(res, clickPostPop()));
       await hideRing(page);
