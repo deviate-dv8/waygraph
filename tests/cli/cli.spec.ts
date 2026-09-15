@@ -6,7 +6,7 @@ import { join } from "node:path";
 
 const exec = promisify(execFile);
 const node = process.execPath;
-const CLI = join(import.meta.dirname, "..", "dist", "cli.js");
+const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
 
 // Plain object literals, no `import { ... } from "waygraph"` - a Flow is a
 // duck-typed shape (`.run`), and these fixtures avoid needing their own

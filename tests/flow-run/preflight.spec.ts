@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, Block } from "../src/index.js";
-import { connect, runGraph, preflight, MemPage, key, checkpoint } from "../src/index.js";
+import type { Checkpoint, Block } from "../../src/index.js";
+import { connect, runGraph, preflight, MemPage, key, checkpoint } from "../../src/index.js";
 
 type Start = Checkpoint<"__start__">;
 type LoggedIn = Checkpoint<"LoggedIn">;

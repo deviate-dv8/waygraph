@@ -6,8 +6,8 @@ import { join } from "node:path";
 
 const exec = promisify(execFile);
 const node = process.execPath;
-const CLI = join(import.meta.dirname, "..", "dist", "cli.js");
-const WAYGRAPH_ROOT = join(import.meta.dirname, "..");
+const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
+const WAYGRAPH_ROOT = join(import.meta.dirname, "..", "..");
 
 // `requires` must hold a real `MemKey` instance - `chain`'s runner script
 // calls `mem.set(key, value)`, and `MemPage.set()` does `instanceof MemKey`

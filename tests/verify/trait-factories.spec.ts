@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, Block } from "../src/index.js";
-import { runGraph, MemPage, urlMatches, textEquals, visible, checkpoint, Trait } from "../src/index.js";
+import type { Checkpoint, Block } from "../../src/index.js";
+import { runGraph, MemPage, urlMatches, textEquals, visible, checkpoint, Trait } from "../../src/index.js";
 
 const FORM_URL = `data:text/html,${encodeURIComponent(
   `<!doctype html><html><body><h1 id="h">Hello</h1></body></html>`,

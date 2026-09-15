@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, Block } from "../src/types.js";
-import { connect, checkpoint } from "../src/types.js";
-import { MemPage } from "../src/mem-page.js";
+import type { Checkpoint, Block } from "../../src/types.js";
+import { connect, checkpoint } from "../../src/types.js";
+import { MemPage } from "../../src/mem-page.js";
 
 // A stand-in for Playwright's Page in tests that never touch the real browser -
 // these Blocks only exercise act/observe/resolve wiring, not real page interaction.

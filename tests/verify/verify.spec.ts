@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, Block, Trait } from "../src/index.js";
-import { connect, runGraph, MemPage, checkpoint } from "../src/index.js";
+import type { Checkpoint, Block, Trait } from "../../src/index.js";
+import { connect, runGraph, MemPage, checkpoint } from "../../src/index.js";
 
 const fakePage = { close: async () => {} } as unknown as import("@playwright/test").Page;
 

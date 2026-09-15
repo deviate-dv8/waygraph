@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { checkpoint } from "../src/types.js";
+import { checkpoint } from "../../src/types.js";
 
 test.describe("resolve purity", () => {
   test("resolve produces the same output Checkpoint given the same evidence, every time", () => {

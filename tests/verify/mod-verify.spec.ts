@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, Block } from "../src/index.js";
-import { runGraph, modVerify, modVerifyAll, MemPage, checkpoint } from "../src/index.js";
+import type { Checkpoint, Block } from "../../src/index.js";
+import { runGraph, modVerify, modVerifyAll, MemPage, checkpoint } from "../../src/index.js";
 
 const fakePage = { close: async () => {} } as unknown as import("@playwright/test").Page;
 const fakeContext = { newPage: async () => fakePage } as any;

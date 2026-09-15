@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, Block } from "../src/index.js";
-import { runGraph, MemPage, checkpoint } from "../src/index.js";
+import type { Checkpoint, Block } from "../../src/index.js";
+import { runGraph, MemPage, checkpoint } from "../../src/index.js";
 
 // Two distinct real pages - proves this against actual navigation, not a mock.
 const PAGE_A = `data:text/html,${encodeURIComponent("<h1>Page A</h1>")}`;

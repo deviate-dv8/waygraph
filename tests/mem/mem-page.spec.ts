@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { MemPage, key, keyGroup } from "../src/mem-page.js";
+import { MemPage, key, keyGroup } from "../../src/mem-page.js";
 
 test.describe("MemPage", () => {
   test("get after set returns the exact value written", () => {

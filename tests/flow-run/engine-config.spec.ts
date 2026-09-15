@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, Block } from "../src/index.js";
-import { Engine, start, end, MemPage, checkpoint } from "../src/index.js";
+import type { Checkpoint, Block } from "../../src/index.js";
+import { Engine, start, end, MemPage, checkpoint } from "../../src/index.js";
 
 const FORM_URL = `data:text/html,${encodeURIComponent(`<h1 id="h">Hello</h1>`)}`;
 
