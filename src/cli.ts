@@ -434,6 +434,23 @@ const RING_CSS =
   "#wg-panel .wg-narration{margin:0 0 12px;font:italic 14px/1.4 system-ui,sans-serif;color:#f0e8ff;}" +
   "#wg-progress{height:4px;background:#2a1650;border-radius:2px;margin:0 0 12px;overflow:hidden;}" +
   "#wg-progress-bar{height:100%;background:#7C3AED;border-radius:2px;transition:width .3s ease;}" +
+  // A real tab bar for episodes - the currently-active episode reads as
+  // active (filled underline, full-brightness text), every other episode
+  // reads as inactive (dimmed, no underline) - Dan's own ask: "if episode
+  // 1 is active, the episode 2 tab is inactive." Only rendered when the
+  // chain spec actually named real Flows (chainFlow tags each via
+  // BlockInfo - same gate the "Episode N:" heading already uses); an
+  // ad hoc block chain with no episodes shows no tab bar at all.
+  "#wg-episodes{display:flex;gap:4px;margin:0 0 10px;border-bottom:1px solid #3a2a60;}" +
+  "#wg-episodes .wg-ep-tab{padding:6px 14px 8px;font:600 12px system-ui,sans-serif;" +
+  "border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;}" +
+  "#wg-episodes .wg-ep-current{color:#fff;border-bottom-color:#7C3AED;}" +
+  "#wg-episodes .wg-ep-done{color:#9a7ad1;}" +
+  "#wg-episodes .wg-ep-upcoming{color:#5a4a80;}" +
+  // The block breadcrumb below it is scoped to the CURRENT episode's own
+  // blocks only, not the whole chain - "in episode 2 it shows 2nd to the
+  // last... it should start from the first block" (Dan). An ad hoc block
+  // chain with no episodes still shows the whole chain here, unchanged.
   "#wg-modules{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}" +
   "#wg-modules .wg-mod{padding:3px 9px;border-radius:6px;font:600 11px system-ui,sans-serif;}" +
   "#wg-modules .wg-mod-done{background:#2a1650;color:#9a7ad1;}" +
@@ -697,9 +714,31 @@ async function renderBeforeStep(page, info) {
       }
       const pct = Math.round((info.index / info.total) * 100);
       const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+      // A real tab bar, not a single text line - every episode this chain
+      // touches, the current one reading as active (Dan: "if episode 1 is
+      // active, the episode 2 tab is inactive"). Absent entirely for an ad
+      // hoc block chain with no named Flows.
+      const episodesHtml = info.allEpisodes && info.allEpisodes.length > 0
+        ? "<div id=\\"wg-episodes\\">" +
+          info.allEpisodes
+            .map((e) => {
+              const cls = e.episodeNumber < info.episodeNumber ? "wg-ep-done"
+                : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
+                : "wg-ep-upcoming";
+              return "<span class=\\"wg-ep-tab " + cls + "\\">Episode " + e.episodeNumber + ": " +
+                esc(e.episodeTitle || "") + "</span>";
+            })
+            .join("") +
+          "</div>"
+        : "";
+      // Scoped to THIS episode's own blocks (info.allNames is already the
+      // episode-local subset the caller computed) - moduleIndex is this
+      // step's position WITHIN that subset, not the whole chain's index -
+      // "in episode 2 it shows 2nd to the last... it should start from the
+      // first block" (Dan).
       const modulesHtml = info.allNames
         .map((name, idx) => {
-          const cls = idx < info.index ? "wg-mod-done" : idx === info.index ? "wg-mod-current" : "wg-mod-upcoming";
+          const cls = idx < info.moduleIndex ? "wg-mod-done" : idx === info.moduleIndex ? "wg-mod-current" : "wg-mod-upcoming";
           const desc = info.allDescriptions && info.allDescriptions[idx];
           const titleAttr = desc ? " title=\\"" + esc(desc) + "\\"" : "";
           return "<span class=\\"wg-mod " + cls + "\\"" + titleAttr + ">" + name + "</span>";
@@ -708,13 +747,10 @@ async function renderBeforeStep(page, info) {
       const narrationHtml = info.description
         ? "<div class=\\"wg-narration\\">" + esc(info.description) + "</div>"
         : "";
-      const episodeHtml = info.episodeNumber
-        ? "<div class=\\"wg-episode\\">Episode " + info.episodeNumber + ": " + esc(info.episodeTitle || "") + "</div>"
-        : "";
       let html =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
+        episodesHtml +
         "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
-        episodeHtml +
         "<h3>Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + "</h3>" +
         narrationHtml;
       if (info.keys.length === 0) {
@@ -850,7 +886,7 @@ async function renderAfterStep(page, info) {
       const escA = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
       const modulesHtml = info.allNames
         .map((name, idx) => {
-          const cls = idx <= info.index ? "wg-mod-done" : "wg-mod-upcoming";
+          const cls = idx <= info.moduleIndex ? "wg-mod-done" : "wg-mod-upcoming";
           const desc = info.allDescriptions && info.allDescriptions[idx];
           const titleAttr = desc ? " title=\\"" + escA(desc) + "\\"" : "";
           return "<span class=\\"wg-mod " + cls + "\\"" + titleAttr + ">" + name + "</span>";
@@ -886,13 +922,23 @@ async function renderAfterStep(page, info) {
         "><button id=\\"wg-run\\">" + buttonLabel + "</button></div>" +
         "<div id=\\"wg-gate-auto\\" class=\\"wg-auto\\"" + (autoNow ? "" : " style=\\"display:none\\"") +
         ">Auto-advancing...</div>";
-      const episodeHtml = info.episodeNumber
-        ? "<div class=\\"wg-episode\\">Episode " + info.episodeNumber + ": " + escA(info.episodeTitle || "") + "</div>"
+      const episodesHtml = info.allEpisodes && info.allEpisodes.length > 0
+        ? "<div id=\\"wg-episodes\\">" +
+          info.allEpisodes
+            .map((e) => {
+              const cls = e.episodeNumber < info.episodeNumber ? "wg-ep-done"
+                : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
+                : "wg-ep-upcoming";
+              return "<span class=\\"wg-ep-tab " + cls + "\\">Episode " + e.episodeNumber + ": " +
+                escA(e.episodeTitle || "") + "</span>";
+            })
+            .join("") +
+          "</div>"
         : "";
       panel.innerHTML =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
+        episodesHtml +
         "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
-        episodeHtml +
         "<h3>" + heading + "</h3>" +
         resultHtml +
         gateHtml;
@@ -949,15 +995,29 @@ async function renderStepError(page, info) {
       }
       panel.className = isNewPanel ? "wg-error" : "wg-error wg-in";
       const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+      const episodesHtml = info.allEpisodes && info.allEpisodes.length > 0
+        ? "<div id=\\"wg-episodes\\">" +
+          info.allEpisodes
+            .map((e) => {
+              const cls = e.episodeNumber < info.episodeNumber ? "wg-ep-done"
+                : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
+                : "wg-ep-upcoming";
+              return "<span class=\\"wg-ep-tab " + cls + "\\">Episode " + e.episodeNumber + ": " +
+                esc(e.episodeTitle || "") + "</span>";
+            })
+            .join("") +
+          "</div>"
+        : "";
       const modulesHtml = info.allNames
         .map((name, idx) => {
-          const cls = idx === info.index ? "wg-mod-current" : idx < info.index ? "wg-mod-done" : "wg-mod-upcoming";
+          const cls = idx === info.moduleIndex ? "wg-mod-current" : idx < info.moduleIndex ? "wg-mod-done" : "wg-mod-upcoming";
           const desc = info.allDescriptions && info.allDescriptions[idx];
           const titleAttr = desc ? " title=\\"" + esc(desc) + "\\"" : "";
           return "<span class=\\"wg-mod " + cls + "\\"" + titleAttr + ">" + name + "</span>";
         })
         .join("");
       panel.innerHTML =
+        episodesHtml +
         "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
         "<h3 class=\\"wg-error-heading\\">Step " + (info.index + 1) + " / " + info.total + " - " +
         info.blockName + " threw</h3>" +
@@ -1386,10 +1446,33 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   };
   const allNames = resolved.map((r) => r.block.name);
   const allDescriptions = resolved.map((r) => r.block.description || "");
+  // Deduped, in-order list of every real episode this chain touches - for
+  // the episode tab bar. Ad hoc block segments (no named Flow) carry no
+  // episodeNumber and never appear here, same gate the "Episode N:"
+  // heading already used.
+  const allEpisodes = [];
+  for (const r of resolved) {
+    if (r.episodeNumber && !allEpisodes.some((e) => e.episodeNumber === r.episodeNumber)) {
+      allEpisodes.push({ episodeNumber: r.episodeNumber, episodeTitle: r.episodeTitle });
+    }
+  }
 
   let result;
   for (let i = 0; i < resolved.length; i++) {
     const r = resolved[i];
+    // The block breadcrumb is scoped to THIS step's own episode, not the
+    // whole chain - within episode 2, step 1 should read as "1st of 2,"
+    // not "6th of 7." Falls back to the whole chain when this block has no
+    // episode (an ad hoc chain with no named Flows), unchanged from before.
+    const episodeBlockIndices = r.episodeNumber
+      ? resolved.reduce((acc, x, idx) => {
+          if (x.episodeNumber === r.episodeNumber) acc.push(idx);
+          return acc;
+        }, [])
+      : resolved.map((_x, idx) => idx);
+    const moduleNames = episodeBlockIndices.map((idx) => allNames[idx]);
+    const moduleDescriptions = episodeBlockIndices.map((idx) => allDescriptions[idx]);
+    const moduleIndex = episodeBlockIndices.indexOf(i);
     // Seed THIS segment's own json payload now, not earlier - see the long
     // comment where seedMem closures are built, in main()'s resolution
     // loop. Must run before "keys" below reads mem.get() for the panel
@@ -1447,8 +1530,10 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       blockName: r.block.name,
       description: r.block.description || "",
       keys,
-      allNames,
-      allDescriptions,
+      allNames: moduleNames,
+      allDescriptions: moduleDescriptions,
+      moduleIndex,
+      allEpisodes,
       title,
       episodeNumber: r.episodeNumber,
       episodeTitle: r.episodeTitle,
@@ -1481,9 +1566,13 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         total: resolved.length,
         blockName: r.block.name,
         message: err && err.message ? err.message : String(err),
-        allNames,
-        allDescriptions,
+        allNames: moduleNames,
+        allDescriptions: moduleDescriptions,
+        moduleIndex,
+        allEpisodes,
         title,
+        episodeNumber: r.episodeNumber,
+        episodeTitle: r.episodeTitle,
       });
       await gate();
       throw err;
@@ -1498,8 +1587,10 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       resultTag: JSON.stringify(result),
       highlights,
       isLast: i === resolved.length - 1,
-      allNames,
-      allDescriptions,
+      allNames: moduleNames,
+      allDescriptions: moduleDescriptions,
+      moduleIndex,
+      allEpisodes,
       title,
       episodeNumber: r.episodeNumber,
       episodeTitle: r.episodeTitle,
