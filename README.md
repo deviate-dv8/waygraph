@@ -6,6 +6,9 @@ flat pile of ad hoc helper functions.
 This repo is the `waygraph` npm package itself. Consumer projects proving it against real
 sites/apps (saucedemo.com, zsign-app) live in the sibling `projects_waygraph/` repo, not here.
 
+See [ROADMAP.md](./ROADMAP.md) for what's shipped, spec'd, and planned by version, and
+`openspec/changes/` for the actual planning artifacts behind each roadmap item.
+
 ## Install
 
 ```bash
