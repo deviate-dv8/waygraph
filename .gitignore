@@ -5,7 +5,6 @@ playwright-report/
 
 # Local tooling/scratch, not part of the package or its history:
 .claude/
-openspec/
 waygraph-artifact.html
 *.tgz
 .npm-debug.log*
