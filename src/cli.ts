@@ -682,10 +682,19 @@ async function renderBeforeStep(page, info) {
     .catch(() => {});
   await page
     .evaluate((info) => {
-      const old = document.getElementById("wg-panel");
-      if (old) old.remove();
-      const panel = document.createElement("div");
-      panel.id = "wg-panel";
+      // Reused in place, not removed + recreated, every step - the old
+      // remove()-then-fade-back-in cycle was a real flash on every single
+      // transition (Dan: "the appear and disappear... hurts eyes and
+      // dizzy"). Updating one persistent element's content has nothing to
+      // flash - it only ever fades in ONCE, the first time this page
+      // genuinely has no panel yet (a real navigation wiped the whole
+      // document, or this is the very first step).
+      let panel = document.getElementById("wg-panel");
+      const isNewPanel = !panel;
+      if (!panel) {
+        panel = document.createElement("div");
+        panel.id = "wg-panel";
+      }
       const pct = Math.round((info.index / info.total) * 100);
       const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
       const modulesHtml = info.allNames
@@ -732,8 +741,10 @@ async function renderBeforeStep(page, info) {
         "<div id=\\"wg-gate-auto\\" class=\\"wg-auto\\"" + (autoNow ? "" : " style=\\"display:none\\"") +
         ">Auto-advancing...</div>";
       panel.innerHTML = html;
-      document.documentElement.appendChild(panel);
-      requestAnimationFrame(() => panel.classList.add("wg-in"));
+      if (isNewPanel) {
+        document.documentElement.appendChild(panel);
+        requestAnimationFrame(() => panel.classList.add("wg-in"));
+      }
       const runBtn = document.getElementById("wg-run");
       if (runBtn) {
         runBtn.addEventListener("click", () => {
@@ -824,10 +835,13 @@ async function renderAfterStep(page, info) {
   }
   await page
     .evaluate((info) => {
-      const old = document.getElementById("wg-panel");
-      if (old) old.remove();
-      const panel = document.createElement("div");
-      panel.id = "wg-panel";
+      // Reused in place - see renderBeforeStep's own comment on this.
+      let panel = document.getElementById("wg-panel");
+      const isNewPanel = !panel;
+      if (!panel) {
+        panel = document.createElement("div");
+        panel.id = "wg-panel";
+      }
       const pct = Math.round(((info.index + 1) / info.total) * 100);
       const heading = info.isLast
         ? "End of chain - " + info.total + " / " + info.total + " blocks covered - " + info.blockName + " done"
@@ -882,8 +896,10 @@ async function renderAfterStep(page, info) {
         "<h3>" + heading + "</h3>" +
         resultHtml +
         gateHtml;
-      document.documentElement.appendChild(panel);
-      requestAnimationFrame(() => panel.classList.add("wg-in"));
+      if (isNewPanel) {
+        document.documentElement.appendChild(panel);
+        requestAnimationFrame(() => panel.classList.add("wg-in"));
+      }
       panel.querySelectorAll(".wg-toggle-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
           const wantPretty = btn.getAttribute("data-mode") === "pretty";
@@ -924,11 +940,14 @@ async function renderStepError(page, info) {
   await installOverlay(page, info.title);
   await page
     .evaluate((info) => {
-      const old = document.getElementById("wg-panel");
-      if (old) old.remove();
-      const panel = document.createElement("div");
-      panel.id = "wg-panel";
-      panel.className = "wg-error";
+      // Reused in place - see renderBeforeStep's own comment on this.
+      let panel = document.getElementById("wg-panel");
+      const isNewPanel = !panel;
+      if (!panel) {
+        panel = document.createElement("div");
+        panel.id = "wg-panel";
+      }
+      panel.className = isNewPanel ? "wg-error" : "wg-error wg-in";
       const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
       const modulesHtml = info.allNames
         .map((name, idx) => {
@@ -944,8 +963,10 @@ async function renderStepError(page, info) {
         info.blockName + " threw</h3>" +
         "<div class=\\"wg-error-msg\\">" + esc(info.message) + "</div>" +
         "<button id=\\"wg-run\\" class=\\"wg-error-stop\\">Stop</button>";
-      document.documentElement.appendChild(panel);
-      requestAnimationFrame(() => panel.classList.add("wg-in"));
+      if (isNewPanel) {
+        document.documentElement.appendChild(panel);
+        requestAnimationFrame(() => panel.classList.add("wg-in"));
+      }
       const runBtn = document.getElementById("wg-run");
       if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
     }, info)
