@@ -1369,6 +1369,11 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   let result;
   for (let i = 0; i < resolved.length; i++) {
     const r = resolved[i];
+    // Seed THIS segment's own json payload now, not earlier - see the long
+    // comment where seedMem closures are built, in main()'s resolution
+    // loop. Must run before "keys" below reads mem.get() for the panel
+    // display, and before this segment's own first block executes.
+    if (r.seedMem) r.seedMem();
     // Reset session state before this block if EITHER: the blanket
     // WAYGRAPH_CLEAR_SESSION=1 override is set (a manual, always-on-after-
     // the-first-block stopgap for ad hoc block chains with no real Flow
@@ -1531,37 +1536,60 @@ async function main() {
     // "Episode 2" labels on things that were never episodes to begin with.
     const flowMeta = [];
     let episodeCounter = 0;
+    // seedMem is a closure, NOT called here - seeding every segment's own
+    // json payload eagerly, all upfront during resolution, was a real bug:
+    // mem is one shared object, so when two segments require the SAME key
+    // (e.g. two segments both requiring LoginCreds, each with a DIFFERENT
+    // payload - "login as standard_user then login as locked_out_user"),
+    // the LAST segment resolved silently overwrote the first's value
+    // before either segment had even started running - so the FIRST
+    // segment's own blocks would run against the SECOND segment's
+    // credentials. Deferred to execution time instead (runStepMode calls
+    // this exactly once, right as each segment's first block is reached -
+    // see resolved[i].seedMem below), same moment session-reset already
+    // happens for the same reason.
     for (const seg of segments) {
       const flow = await findFlow(projectDir, seg.ref);
       if (flow && typeof flow.blocks === "function") {
-        seedMemForFlow(mem, flow.blocks(), seg.json, seg.ref);
         flows.push(flow);
         episodeCounter += 1;
-        flowMeta.push({ episodeNumber: episodeCounter, episodeTitle: flow.title || seg.ref });
+        flowMeta.push({
+          episodeNumber: episodeCounter,
+          episodeTitle: flow.title || seg.ref,
+          seedMem: () => seedMemForFlow(mem, flow.blocks(), seg.json, seg.ref),
+        });
       } else {
         const r = await findBlock(projectDir, seg.ref);
-        seedMemForBlock(mem, r, seg.json);
         flows.push(wrapEngine.defineFlow([start, r.block, end]));
-        flowMeta.push(null);
+        flowMeta.push({
+          episodeNumber: undefined,
+          episodeTitle: undefined,
+          seedMem: () => seedMemForBlock(mem, r, seg.json),
+        });
       }
     }
     const combinedBlocks = chainFlow(...flows).blocks();
     let fi = 0;
     let remainingInFlow = flows[0].blocks().length;
+    let isFirstOfSegment = true;
     resolved = combinedBlocks.map((bi) => {
       while (remainingInFlow === 0) {
         fi += 1;
         remainingInFlow = flows[fi].blocks().length;
+        isFirstOfSegment = true;
       }
-      remainingInFlow -= 1;
       const meta = flowMeta[fi];
-      return {
+      const entry = {
         block: bi.block,
         exportName: bi.name,
         resetSession: bi.resetSessionBefore === true,
-        episodeNumber: meta ? meta.episodeNumber : undefined,
-        episodeTitle: meta ? meta.episodeTitle : undefined,
+        episodeNumber: meta.episodeNumber,
+        episodeTitle: meta.episodeTitle,
+        seedMem: isFirstOfSegment ? meta.seedMem : undefined,
       };
+      remainingInFlow -= 1;
+      isFirstOfSegment = false;
+      return entry;
     });
     console.log(
       "waygraph: chaining " + resolved.map((r) => r.block.name).join(" -> ") +
@@ -1600,6 +1628,19 @@ async function main() {
   const clearSession = process.env.WAYGRAPH_CLEAR_SESSION === "1";
   const engine = new Engine({ headless: !headed, slowMo });
   let result;
+  // Non-interactive execution (no --step) runs the whole chain as one
+  // composed flow with no per-block loop of its own to defer seeding
+  // into - it can't support two segments needing DIFFERENT values for the
+  // SAME mem key (e.g. two segments both requiring LoginCreds, each with
+  // its own payload). Fall back to seeding every segment eagerly, upfront -
+  // the same limitation "chain" always had; only --step's own runStepMode
+  // loop actually needs (and correctly supports, via resolved[i].seedMem)
+  // per-segment differentiated values.
+  if (!step) {
+    for (const r of resolved) {
+      if (r.seedMem) r.seedMem();
+    }
+  }
   if (step || baseURL) {
     const { chromium } = await import("playwright");
     // --start-maximized (step mode only): viewport: null alone only made
