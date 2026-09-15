@@ -19,6 +19,7 @@ export {
   preflight,
   withSessionReset,
   withTitle,
+  withExpectedFailure,
   chainFlow,
 } from "./engine.js";
 export type { Flow, EngineConfig, ComposedBlock, RunGraphOptions, BlockInfo, NavBlock } from "./engine.js";

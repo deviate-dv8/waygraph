@@ -345,6 +345,16 @@ export interface Flow<Out extends Checkpoint<string>> {
    */
   readonly title?: string;
   /**
+   * Set once this Flow has been wrapped in {@link withExpectedFailure} - a
+   * display hint for a step-through overlay: this Flow is DESIGNED to throw
+   * (e.g. a blocked user's login attempt genuinely failing), not a bug in
+   * the demo itself. `run()` never reads this - the Flow still throws
+   * exactly as it would otherwise; only the overlay's error panel reads it,
+   * to show an informational "this is the point" panel instead of an
+   * alarming one indistinguishable from a real break.
+   */
+  readonly expectedFailureReason?: string;
+  /**
    * This Flow's constituent Blocks, in order between `start`/`end`, as plain
    * data - for introspection/visualization tools, without running anything.
    * @example loginFlow.blocks() // [{ name: "login" }, { name: "add-to-cart", routes: {...} }]
@@ -553,6 +563,34 @@ export function withTitle<Out extends Checkpoint<string>>(flow: Flow<Out>, title
     title,
     withBlockVerify: (block, verify) => withTitle(flow.withBlockVerify(block, verify), title),
     modBlockVerify: (block, nameOrIndex, newCheck) => withTitle(flow.modBlockVerify(block, nameOrIndex, newCheck), title),
+  };
+}
+
+/**
+ * Marks a Flow as one that's SUPPOSED to throw - e.g. a locked-out user's
+ * login attempt genuinely failing, demonstrating the app's own real
+ * behavior rather than a bug in the demo. Non-destructive, same pattern as
+ * {@link withTitle}.
+ *
+ * By itself this changes nothing about how the Flow runs - it still throws
+ * exactly as it would otherwise. It's a hint a step-through overlay
+ * (waygraph's `chain --step`) reads when that throw happens, to show an
+ * informational "this is the point" panel instead of one indistinguishable
+ * from a genuine break - the distinction a demo author needs so a viewer
+ * (or the author, mid-build) can tell "the app just did what it's supposed
+ * to" apart from "something in this demo is actually broken."
+ * @example const viewerBlockedFlow = withExpectedFailure(
+ *   engine.defineFlow([start, NavLoginBlock, blockedLoginCheck, end]),
+ *   "locked_out_user can never reach /inventory.html - this is the block working as intended.",
+ * );
+ */
+export function withExpectedFailure<Out extends Checkpoint<string>>(flow: Flow<Out>, reason: string): Flow<Out> {
+  return {
+    ...flow,
+    expectedFailureReason: reason,
+    withBlockVerify: (block, verify) => withExpectedFailure(flow.withBlockVerify(block, verify), reason),
+    modBlockVerify: (block, nameOrIndex, newCheck) =>
+      withExpectedFailure(flow.modBlockVerify(block, nameOrIndex, newCheck), reason),
   };
 }
 

@@ -515,7 +515,11 @@ const RING_CSS =
   "#wg-panel .wg-error-stop{background:#e0475c;margin-top:0;}" +
   "#wg-panel .wg-error-stop:hover{background:#c33a4c;}" +
   "#wg-panel .wg-error-retry{background:#2a9d6f;margin-top:0;}" +
-  "#wg-panel .wg-error-retry:hover{background:#22855e;}";
+  "#wg-panel .wg-error-retry:hover{background:#22855e;}" +
+  "#wg-panel.wg-expected{border:1.5px solid #e0a53e;}" +
+  "#wg-panel .wg-expected-heading{color:#ffcf7a;}" +
+  "#wg-panel .wg-expected-reason{font:600 12.5px/1.5 system-ui,sans-serif;background:#2a2410;" +
+  "color:#ffe6ae;border-radius:8px;padding:10px;margin:0 0 8px;}";
 
 // Purple dot favicon (matches the overlay's own theme color) - the tab-bar
 // signal that "this Chromium window is a waygraph run," even at a glance
@@ -1070,7 +1074,9 @@ async function renderStepError(page, info) {
         panel = document.createElement("div");
         panel.id = "wg-panel";
       }
-      panel.className = isNewPanel ? "wg-error" : "wg-error wg-in";
+      const isExpected = !!info.expectedFailureReason;
+      const errClass = isExpected ? "wg-expected" : "wg-error";
+      panel.className = isNewPanel ? errClass : errClass + " wg-in";
       const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
       const episodesHtml = info.allEpisodes && info.allEpisodes.length > 0
         ? "<div id=\\"wg-episodes\\">" +
@@ -1094,11 +1100,17 @@ async function renderStepError(page, info) {
         })
         .join("");
       const retryLabel = info.episodeNumber !== undefined ? "Retry Episode " + info.episodeNumber : "Retry";
+      const headingText = isExpected
+        ? "Expected outcome - Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + " failed as intended"
+        : "Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + " threw";
+      const reasonHtml = isExpected
+        ? "<div class=\\"wg-expected-reason\\">" + esc(info.expectedFailureReason) + "</div>"
+        : "";
       panel.innerHTML =
         episodesHtml +
         "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
-        "<h3 class=\\"wg-error-heading\\">Step " + (info.index + 1) + " / " + info.total + " - " +
-        info.blockName + " threw</h3>" +
+        "<h3 class=\\"" + (isExpected ? "wg-expected-heading" : "wg-error-heading") + "\\">" + headingText + "</h3>" +
+        reasonHtml +
         "<div class=\\"wg-error-msg\\">" + esc(info.message) + "</div>" +
         "<div class=\\"wg-error-actions\\">" +
         "<button id=\\"wg-error-retry\\" class=\\"wg-error-retry\\">" + esc(retryLabel) + "</button>" +
@@ -1711,6 +1723,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         title,
         episodeNumber: r.episodeNumber,
         episodeTitle: r.episodeTitle,
+        expectedFailureReason: r.expectedFailureReason,
       });
       const errEdits = await gate();
       if (errEdits && errEdits.__wgRetry) {
@@ -1761,7 +1774,11 @@ async function main() {
   if (bareRef) {
     const flow = await findFlow(projectDir, bareRef);
     if (flow && typeof flow.blocks === "function") {
-      resolved = flow.blocks().map((bi) => ({ block: bi.block, exportName: bi.name }));
+      resolved = flow.blocks().map((bi) => ({
+        block: bi.block,
+        exportName: bi.name,
+        expectedFailureReason: flow.expectedFailureReason,
+      }));
       console.log(
         "waygraph: running existing flow \\"" + bareRef + "\\" - " +
           resolved.map((r) => r.block.name).join(" -> ") + " (" + resolved.length + " block" +
@@ -1814,6 +1831,7 @@ async function main() {
         flowMeta.push({
           episodeNumber: episodeCounter,
           episodeTitle: flow.title || seg.ref,
+          expectedFailureReason: flow.expectedFailureReason,
           seedMem: () => seedMemForFlow(mem, flow.blocks(), seg.json, seg.ref),
         });
       } else {
@@ -1843,6 +1861,7 @@ async function main() {
         resetSession: bi.resetSessionBefore === true,
         episodeNumber: meta.episodeNumber,
         episodeTitle: meta.episodeTitle,
+        expectedFailureReason: meta.expectedFailureReason,
         seedMem: isFirstOfSegment ? meta.seedMem : undefined,
       };
       remainingInFlow -= 1;
