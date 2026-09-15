@@ -1076,41 +1076,78 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
 export type NavBlock<Out extends Checkpoint<string>> = DefinedBlock<Checkpoint<string>, Out>;
 
 /**
- * Builds a {@link NavBlock}. `url` accepts a plain string or a function
- * `(mem) => string` for parameterized routes (e.g. `/dashboard/requests/:id`
- * with a real id read from mem). `checkpoint` is the tag this NavBlock
+ * `defineNavBlock`'s own options - exactly one of `url`/`click` required,
+ * enforced at compile time (giving both, or neither, is a type error - see
+ * `typecheck/nav-block.types.ts`). `checkpoint` is the tag this NavBlock
  * resolves to once navigation completes - a NavBlock never branches on
  * observed evidence the way a regular Block can, so there's no `resolve`
  * logic to author; it always just declares "arrived."
- *
- * The generated `act()` is always exactly `page.goto(url)` - never anything
- * else, never author-supplied. Callers get a real `Page` here internally
- * (the one legitimate place navigation belongs); `defineBlock`'s own
- * `ActionPage` narrowing is what discourages navigation everywhere else,
- * and never applies to this generated function since no author ever writes
- * it by hand.
- * @example defineNavBlock({ name: "nav-web-login", checkpoint: "LoginForm", url: "/login" })
- * @example defineNavBlock({ name: "nav-web-request-detail", checkpoint: "RequestDetail", url: (mem) => `/dashboard/requests/${mem.get(RequestId.key)}` })
  */
-export function defineNavBlock<Out extends Checkpoint<string>>(options: {
+export type NavBlockOptions<Out extends Checkpoint<string>> = {
   name: string;
   description?: string;
   checkpoint: Out["__state"];
-  url: string | ((mem: MemPage) => string);
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
   highlights?:
     | readonly WaygraphHighlight[]
     | ((out: Out) => readonly WaygraphHighlight[]);
-}): NavBlock<Out> {
+} & (
+  | {
+      /**
+       * Direct URL navigation. Accepts a plain string or a function
+       * `(mem) => string` for parameterized routes (e.g.
+       * `/dashboard/requests/:id` with a real id read from mem). The
+       * escape hatch for the few real cases with no click path to get
+       * there (a deep link from an email, a public share link) - not for
+       * skipping past navigation an agent didn't feel like finding. Prefer
+       * `click` whenever the target app actually has one.
+       */
+      url: string | ((mem: MemPage) => string);
+      click?: never;
+    }
+  | {
+      /**
+       * Navigates by clicking a real element already on the page (a nav
+       * link, a sidebar item) instead of teleporting straight to a URL -
+       * the opinionated default. Accepts a Playwright selector string, or
+       * a function `(mem) => selector` for a target that depends on mem
+       * (e.g. clicking the row for a specific id). Verifying arrival is
+       * `verify`'s job (typically `Trait.url(...)`), same as a `url`-based
+       * NavBlock - the click itself is only ever awaited for its own
+       * completion, not for whatever navigation it triggers.
+       */
+      click: string | ((mem: MemPage) => string);
+      url?: never;
+    }
+);
+
+/**
+ * Builds a {@link NavBlock}. The generated `act()` is always exactly
+ * `page.goto(url)` or `page.locator(click).click()` - never anything else,
+ * never author-supplied. Callers get a real `Page` here internally (the one
+ * legitimate place navigation belongs); `defineBlock`'s own `ActionPage`
+ * narrowing is what discourages navigation everywhere else, and never
+ * applies to this generated function since no author ever writes it by
+ * hand.
+ * @example defineNavBlock({ name: "nav-web-login", checkpoint: "LoginForm", url: "/login" })
+ * @example defineNavBlock({ name: "nav-web-request-detail", checkpoint: "RequestDetail", url: (mem) => `/dashboard/requests/${mem.get(RequestId.key)}` })
+ * @example defineNavBlock({ name: "nav-web-documents", checkpoint: "DocumentsList", click: "nav >> text=Documents" })
+ */
+export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlockOptions<Out>): NavBlock<Out> {
   const built = defineBlock<Checkpoint<string>, Out>({
     name: options.name,
     ...(options.description ? { description: options.description } : {}),
     ...(options.requires ? { requires: options.requires } : {}),
     instruction: {
       async act(page, _input, mem) {
-        const url = typeof options.url === "function" ? options.url(mem) : options.url;
-        await (page as unknown as Page).goto(url);
+        if (options.url !== undefined) {
+          const url = typeof options.url === "function" ? options.url(mem) : options.url;
+          await (page as unknown as Page).goto(url);
+        } else {
+          const selector = typeof options.click === "function" ? options.click(mem) : options.click;
+          await (page as unknown as Page).locator(selector).click();
+        }
       },
       resolve: () => checkpoint(options.checkpoint) as Out,
       ...(options.verify ? { verify: options.verify } : {}),

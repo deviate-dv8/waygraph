@@ -22,5 +22,5 @@ export {
   withExpectedFailure,
   chainFlow,
 } from "./engine.js";
-export type { Flow, EngineConfig, ComposedBlock, RunGraphOptions, BlockInfo, NavBlock } from "./engine.js";
+export type { Flow, EngineConfig, ComposedBlock, RunGraphOptions, BlockInfo, NavBlock, NavBlockOptions } from "./engine.js";
 export type { ActionPage } from "./types.js";

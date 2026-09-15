@@ -43,6 +43,59 @@ test.describe("defineNavBlock", () => {
     expect(page.url()).toBe("data:text/html,<h1>request 42</h1>");
   });
 
+  test("a click-based NavBlock clicks a real element instead of teleporting to a URL", async ({ page }) => {
+    // A real <a href="data:..."> click is blocked by Chromium's own
+    // top-frame data: URL navigation policy - goto() bypasses it (a
+    // browser-driven API call, not a user click), which is itself a real
+    // reason act()'s generated click path is a genuinely different code
+    // path from url, not just a cosmetic alternative. A plain button + a
+    // same-page DOM update sidesteps that policy while still proving the
+    // generated act() does a real Locator.click(), not a goto in disguise.
+    await page.setContent(
+      '<button id="go">Go</button><h1 id="label">before</h1>' +
+        '<script>document.getElementById("go").addEventListener("click", () => { document.getElementById("label").textContent = "arrived"; });</script>',
+    );
+    const nav = defineNavBlock<Arrived>({
+      name: "nav-click",
+      checkpoint: "Arrived",
+      click: "#go",
+    });
+
+    const engine = new Engine();
+    const flow = engine.defineFlow([start, nav, end]);
+    const fakeContext = { newPage: async () => page } as any;
+    const outcome = await flow.run(fakeContext, new MemPage(), { page, closeOnFinish: false });
+
+    expect(outcome.result).toEqual(checkpoint("Arrived"));
+    await expect(page.locator("#label")).toHaveText("arrived");
+  });
+
+  test("a mem-function click selector resolves from mem at run time", async ({ page }) => {
+    await page.setContent(
+      '<button id="row-42">42</button><button id="row-7">7</button><h1 id="label">before</h1>' +
+        "<script>" +
+        'document.getElementById("row-42").addEventListener("click", () => { document.getElementById("label").textContent = "row 42"; });' +
+        'document.getElementById("row-7").addEventListener("click", () => { document.getElementById("label").textContent = "row 7"; });' +
+        "</script>",
+    );
+    const RowId = key<string>("test.row-id");
+    const nav = defineNavBlock<Arrived>({
+      name: "nav-row",
+      checkpoint: "Arrived",
+      click: (mem) => `#row-${mem.get(RowId)}`,
+      requires: [RowId],
+    });
+
+    const mem = new MemPage();
+    mem.set(RowId, "42");
+    const engine = new Engine();
+    const flow = engine.defineFlow([start, nav, end]);
+    const fakeContext = { newPage: async () => page } as any;
+    await flow.run(fakeContext, mem, { page, closeOnFinish: false });
+
+    await expect(page.locator("#label")).toHaveText("row 42");
+  });
+
   test("drops into defineFlow, connect, and composeBlock unmodified", async () => {
     const nav = defineNavBlock<Arrived>({ name: "nav-x", checkpoint: "Arrived", url: "about:blank" });
     const after: Block<Arrived, A> = {
