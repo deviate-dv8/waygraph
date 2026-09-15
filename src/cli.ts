@@ -483,12 +483,23 @@ const RING_CSS =
   "#wg-banner .wg-banner-tag{display:block;font-size:10px;font-weight:700;color:#c9a6ff;" +
   "letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px;}" +
   "#wg-panel .wg-key{margin:8px 0;}" +
+  // A live, human-readable preview of what's about to be written for this
+  // MemKey - Dan: "i want pretty to exist in memkeys too... it shows what
+  // input its gonig to be written." Same global Pretty/JSON preference the
+  // result display already has (window.__wgPretty) - hidden entirely in
+  // JSON mode, since the raw textarea already speaks for itself there.
+  "#wg-panel .wg-key-pretty{margin-top:4px;font:12px/1.5 system-ui,sans-serif;" +
+  "background:#0f0620;border-radius:6px;padding:6px 8px;}" +
+  "#wg-panel .wg-key-pretty-row{color:#f0e8ff;}" +
+  "#wg-panel .wg-key-pretty-label{color:#9a7ad1;font-weight:600;}" +
   "#wg-panel label{display:block;font-size:12px;color:#d8c8ff;margin-bottom:3px;}" +
   "#wg-panel textarea{width:100%;box-sizing:border-box;background:#0f0620;color:#fff;" +
   "border:1px solid #4b2a80;border-radius:8px;padding:6px 8px;font:12px/1.3 monospace;resize:vertical;}" +
   "#wg-panel button{margin-top:10px;background:#7C3AED;color:#fff;border:none;border-radius:8px;" +
   "padding:8px 16px;font:600 13px system-ui,sans-serif;cursor:pointer;}" +
   "#wg-panel button:hover{background:#6b2fd6;}" +
+  "#wg-panel button:disabled{background:#4b2a80;cursor:default;opacity:.7;}" +
+  "#wg-panel textarea:disabled{opacity:.6;}" +
   "#wg-panel .wg-result{font:12px/1.4 monospace;background:#0f0620;border-radius:8px;padding:8px;" +
   "margin:8px 0;white-space:pre-wrap;}" +
   "#wg-panel .wg-result-pretty{font:600 14px/1.4 system-ui,sans-serif;}" +
@@ -782,7 +793,9 @@ async function renderBeforeStep(page, info) {
         html +=
           "<div class=\\"wg-key\\"><label>" + k.name + "</label>" +
           "<textarea data-key=\\"" + k.name + "\\" rows=\\"2\\">" +
-          k.value.replace(/</g, "&lt;") + "</textarea></div>";
+          k.value.replace(/</g, "&lt;") + "</textarea>" +
+          "<div class=\\"wg-key-pretty\\" data-pretty-for=\\"" + esc(k.name) + "\\"></div>" +
+          "</div>";
       }
       let autoNow = false;
       try {
@@ -803,6 +816,45 @@ async function renderBeforeStep(page, info) {
         document.documentElement.appendChild(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
       }
+      // Live, human-readable preview of what a MemKey's raw JSON will
+      // actually write - object fields become "Field: value" lines
+      // (camelCase split the same way state tags already are); a
+      // non-object payload (a plain string/number/array) is shown as-is.
+      // Hidden entirely in JSON mode - shares the SAME global toggle the
+      // result display's own Pretty/JSON buttons already set, not a
+      // second, separate preference.
+      const prettyMemValue = (raw) => {
+        let parsed;
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          return "<em>(invalid JSON)</em>";
+        }
+        if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+          return esc(JSON.stringify(parsed));
+        }
+        return Object.entries(parsed)
+          .map(([field, value]) => {
+            const label = field.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+            return "<div class=\\"wg-key-pretty-row\\"><span class=\\"wg-key-pretty-label\\">" +
+              esc(label) + ":</span> " + esc(String(value)) + "</div>";
+          })
+          .join("");
+      };
+      const applyKeyPretty = () => {
+        const prettyOn = window.__wgPretty !== false;
+        panel.querySelectorAll("textarea[data-key]").forEach((ta) => {
+          const key = ta.getAttribute("data-key");
+          const previewEl = panel.querySelector(".wg-key-pretty[data-pretty-for=\\"" + key + "\\"]");
+          if (!previewEl) return;
+          previewEl.style.display = prettyOn ? "" : "none";
+          if (prettyOn) previewEl.innerHTML = prettyMemValue(ta.value);
+        });
+      };
+      applyKeyPretty();
+      panel.querySelectorAll("textarea[data-key]").forEach((ta) => {
+        ta.addEventListener("input", applyKeyPretty);
+      });
       const runBtn = document.getElementById("wg-run");
       if (runBtn) {
         runBtn.addEventListener("click", () => {
@@ -1123,6 +1175,35 @@ function extractVerifyHighlights(block, resultTag) {
  * highlight then slowly input." One-time patch (idempotent - guarded so a
  * multi-step chain doesn't re-wrap an already-wrapped fill).
  */
+/**
+ * Called once the gate resolves - manual click OR autoplay timeout, both
+ * covered from here rather than duplicating this in the in-page click
+ * handler - right before the Block's own act() actually starts. Dan: "i
+ * want the button, step is running thing. so i wont be able to interrupt
+ * the playwright automation" - the "Run this step" button used to sit
+ * there still looking clickable for the entire multi-second duration a
+ * real act()/observe() takes, inviting a confusing extra click (harmless -
+ * __wgNext no-ops once already consumed - but looked live when it wasn't).
+ * Disables the button and mem-key textareas, and swaps whichever gate
+ * text was showing (manual button or "Auto-advancing...") to "Running...".
+ */
+async function markStepRunning(page) {
+  await page
+    .evaluate(() => {
+      const runBtn = document.getElementById("wg-run");
+      if (runBtn) {
+        runBtn.disabled = true;
+        runBtn.textContent = "Running \\u25B6";
+      }
+      const autoEl = document.getElementById("wg-gate-auto");
+      if (autoEl) autoEl.textContent = "Running...";
+      document.querySelectorAll("#wg-panel textarea[data-key]").forEach((ta) => {
+        ta.disabled = true;
+      });
+    })
+    .catch(() => {});
+}
+
 async function showRing(page, box, label) {
   await page
     .evaluate(
@@ -1574,6 +1655,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         }
       }
     }
+    await markStepRunning(page);
     const stepFlow = engine.defineFlow([start, r.block, end]);
     // { closeOnFinish: false } makes Flow.run return { result, page }, not
     // the plain checkpoint - destructure it, don't treat the wrapper as the
