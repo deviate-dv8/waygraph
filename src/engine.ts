@@ -1,12 +1,31 @@
 import { chromium, firefox, webkit } from "@playwright/test";
-import type { Browser, BrowserContext, Page, Locator } from "@playwright/test";
-import type { Block, Checkpoint, Instruction, DefinedBlock } from "./types.js";
+import type { Browser, BrowserContext, BrowserType, Page, Locator } from "@playwright/test";
+import type { Block, Checkpoint, Instruction, DefinedBlock, ActionPage, WaygraphHighlight } from "./types.js";
 import { connect, checkpoint } from "./types.js";
 import { MemPage } from "./mem-page.js";
+import type { MemKey } from "./mem-page.js";
 import type { Trait } from "./trait.js";
 import { runVerify } from "./trait.js";
 
 const LAUNCHERS = { chromium, firefox, webkit };
+
+/**
+ * Resolves which `BrowserType` actually launches for a `mem`-only run (no
+ * caller-supplied context) - `config.browsers[browserName]` if given,
+ * otherwise the real `@playwright/test` export. Waygraph is deliberately
+ * "just an opinionated Playwright" - it doesn't own browser automation
+ * itself, so it shouldn't force every consumer onto the vanilla launcher.
+ * A stealth-patched or otherwise customized launcher (e.g. `playwright-extra`
+ * plus a stealth plugin) is a drop-in replacement for `chromium`/`firefox`/
+ * `webkit` - same `.launch()` shape - so accepting one here costs nothing for
+ * a consumer who never sets it.
+ */
+function resolveLauncher(
+  browserName: "chromium" | "firefox" | "webkit",
+  config: EngineConfig | undefined,
+): BrowserType {
+  return config?.browsers?.[browserName] ?? LAUNCHERS[browserName];
+}
 
 /**
  * Checks `block.requires` against `mem` and throws, naming every missing key at
@@ -425,7 +444,7 @@ function buildFlow<Out extends Checkpoint<string>>(
       // run(context, mem) already has via an existing context.
       preflight(mem, chain);
       const browserName = config.browserName ?? "chromium";
-      const launch = LAUNCHERS[browserName];
+      const launch = resolveLauncher(browserName, config);
       // If CHROME_PATH/CHROMIUM_PATH is set in the environment (e.g. a system
       // or Flatpak Chromium), launch that instead of Playwright's own bundled
       // binary - only for chromium (the env var names a Chromium build, not a
@@ -607,7 +626,7 @@ export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
       // the point of sequencing them (a fresh browser is itself a full
       // session reset, silently making withSessionReset a no-op).
       const browserName = config?.browserName ?? "chromium";
-      const launch = LAUNCHERS[browserName];
+      const launch = resolveLauncher(browserName, config);
       const executablePath =
         browserName === "chromium" ? process.env.CHROME_PATH || process.env.CHROMIUM_PATH : undefined;
       const browser: Browser = await launch.launch({
@@ -806,6 +825,18 @@ export interface EngineConfig {
   browserName?: "chromium" | "firefox" | "webkit";
   /** Milliseconds Playwright pauses before each operation - for watching a non-headless run with your own eyes, not for real runs. Default `0`. */
   slowMo?: number;
+  /**
+   * Overrides which `BrowserType` actually launches, per browser name -
+   * default is the real `@playwright/test` export for whichever one
+   * `browserName` picks. Accepts anything shaped like Playwright's own
+   * `chromium`/`firefox`/`webkit` (same `.launch()` signature) - a
+   * stealth-patched or otherwise customized launcher (e.g. `playwright-extra`
+   * plus a stealth plugin) drops in here unmodified. Puppeteer is a
+   * different `Page`/`BrowserContext` shape entirely and isn't supported by
+   * this seam.
+   * @example new Engine({ browsers: { chromium: stealthChromium } })
+   */
+  browsers?: Partial<Record<"chromium" | "firefox" | "webkit", BrowserType>>;
 }
 
 type S = Checkpoint<"__start__">;
@@ -967,7 +998,15 @@ function stripMethods<In extends Checkpoint<string>, Out extends Checkpoint<stri
 export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(base: {
   name: string;
   description?: Block<In, Out>["description"];
-  instruction: Instruction<In, Out, any>;
+  // Narrower than Instruction<In,Out,any>'s own act() - page is typed as
+  // ActionPage here (the @deprecated-tagged navigation methods), not the
+  // real Page. A real Page is still what's passed at runtime (Page is
+  // assignable to ActionPage - same members, only the JSDoc tag differs -
+  // so this satisfies Instruction.act's own wider signature structurally);
+  // this only affects what an AUTHOR sees while writing act() by hand.
+  instruction: Omit<Instruction<In, Out, any>, "act"> & {
+    act(page: ActionPage, input: In, mem: MemPage): Promise<void>;
+  };
   next?: Block<In, Out>["next"];
   requires?: Block<In, Out>["requires"];
   routes?: Block<In, Out>["routes"];
@@ -986,6 +1025,71 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
     modVerify: (nameOrIndex, newCheck) => modVerify(plain, nameOrIndex, newCheck),
     modVerifyAll: (patches) => modVerifyAll(plain, patches),
   };
+}
+
+/**
+ * A Block whose only possible action is navigating to a URL - built via
+ * {@link defineNavBlock}, never with a hand-authored `act()`. Extends `Block`
+ * (same shape `DefinedBlock`/`ComposedBlock` already use), so it drops into
+ * `defineFlow([...])`, `connect()`, `composeBlock()` exactly like any other
+ * Block - no special-casing needed anywhere that only expects a `Block`.
+ * See `openspec/changes/nav-block-and-check/` for why this exists.
+ */
+export type NavBlock<Out extends Checkpoint<string>> = DefinedBlock<Checkpoint<string>, Out>;
+
+/**
+ * Builds a {@link NavBlock}. `url` accepts a plain string or a function
+ * `(mem) => string` for parameterized routes (e.g. `/dashboard/requests/:id`
+ * with a real id read from mem). `checkpoint` is the tag this NavBlock
+ * resolves to once navigation completes - a NavBlock never branches on
+ * observed evidence the way a regular Block can, so there's no `resolve`
+ * logic to author; it always just declares "arrived."
+ *
+ * The generated `act()` is always exactly `page.goto(url)` - never anything
+ * else, never author-supplied. Callers get a real `Page` here internally
+ * (the one legitimate place navigation belongs); `defineBlock`'s own
+ * `ActionPage` narrowing is what discourages navigation everywhere else,
+ * and never applies to this generated function since no author ever writes
+ * it by hand.
+ * @example defineNavBlock({ name: "nav-web-login", checkpoint: "LoginForm", url: "/login" })
+ * @example defineNavBlock({ name: "nav-web-request-detail", checkpoint: "RequestDetail", url: (mem) => `/dashboard/requests/${mem.get(RequestId.key)}` })
+ */
+export function defineNavBlock<Out extends Checkpoint<string>>(options: {
+  name: string;
+  description?: string;
+  checkpoint: Out["__state"];
+  url: string | ((mem: MemPage) => string);
+  requires?: readonly MemKey<any>[];
+  verify?: Trait[] | ((out: Out) => Trait[]);
+  highlights?:
+    | readonly WaygraphHighlight[]
+    | ((out: Out) => readonly WaygraphHighlight[]);
+}): NavBlock<Out> {
+  const built = defineBlock<Checkpoint<string>, Out>({
+    name: options.name,
+    ...(options.description ? { description: options.description } : {}),
+    ...(options.requires ? { requires: options.requires } : {}),
+    instruction: {
+      async act(page, _input, mem) {
+        const url = typeof options.url === "function" ? options.url(mem) : options.url;
+        await (page as unknown as Page).goto(url);
+      },
+      resolve: () => checkpoint(options.checkpoint) as Out,
+      ...(options.verify ? { verify: options.verify } : {}),
+      ...(options.highlights ? { highlights: options.highlights } : {}),
+    },
+  });
+  // Non-enumerable so it never shows up in Object.keys/JSON/autocomplete -
+  // purely a runtime marker `waygraph check` (or anything else walking a
+  // project's Blocks) can test for to tell a NavBlock apart from a regular
+  // one, since the TypeScript type alone (NavBlock = DefinedBlock) doesn't
+  // survive to runtime.
+  Object.defineProperty(built, "__waygraphKind", {
+    value: "nav",
+    enumerable: false,
+    configurable: false,
+  });
+  return built;
 }
 
 /**

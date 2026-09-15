@@ -1713,6 +1713,71 @@ async function validateFlows(projectDir: string): Promise<FlowInfo[]> {
 }
 
 // ---------------------------------------------------------------------------
+// `check` - secondary/complementary to the ActionPage @deprecated warning
+// (src/types.ts). That's the primary, always-on signal an editor shows the
+// instant a regular Block's act() calls a navigation method; this command
+// sweeps a whole project in one shot for contexts with no editor watching
+// (CI, an autonomous agent writing Block files without a language server).
+// See openspec/changes/nav-block-and-check/ for the full rationale.
+// ---------------------------------------------------------------------------
+
+function discoverBlocks(projectDir: string): string[] {
+  return walkDir(projectDir, /\.block\.ts$/);
+}
+
+function isBlockLike(val: unknown): val is { name: string; instruction: { act: unknown } } {
+  if (val === null || typeof val !== "object") return false;
+  const obj = val as Record<string, unknown>;
+  if (typeof obj.name !== "string") return false;
+  const instruction = obj.instruction as Record<string, unknown> | undefined;
+  return instruction !== null && typeof instruction === "object" && typeof instruction?.act === "function";
+}
+
+/** Set by `defineNavBlock` (non-enumerable) - see src/engine.ts. */
+function isNavBlockMarked(val: Record<string, unknown>): boolean {
+  return (val as { __waygraphKind?: string }).__waygraphKind === "nav";
+}
+
+const NAV_METHOD_CALLS = ["page.goto(", "page.reload(", "page.goBack(", "page.goForward("] as const;
+
+interface CheckWarning {
+  file: string;
+  blockName: string;
+  exportName: string;
+}
+
+/**
+ * Walks every `*.block.ts` file under `projectDir`, imports each to find its
+ * exported Blocks, and for any Block NOT built via `defineNavBlock`, scans
+ * that file's own source text for a navigation call. Warning only - never
+ * throws, never changes the caller's exit code on its own account (a Block
+ * file that fails to import for unrelated reasons is silently skipped here;
+ * `validate` is the command that reports import failures).
+ */
+async function checkCommand(projectDir: string): Promise<CheckWarning[]> {
+  const files = discoverBlocks(projectDir);
+  const warnings: CheckWarning[] = [];
+  for (const file of files) {
+    let mod: Record<string, unknown>;
+    try {
+      mod = await importModule(file);
+    } catch {
+      continue;
+    }
+    let src: string | undefined;
+    for (const [exportName, exported] of Object.entries(mod)) {
+      if (!isBlockLike(exported)) continue;
+      if (isNavBlockMarked(exported as Record<string, unknown>)) continue;
+      src ??= readFileSync(file, "utf-8");
+      if (NAV_METHOD_CALLS.some((needle) => src!.includes(needle))) {
+        warnings.push({ file, blockName: exported.name, exportName });
+      }
+    }
+  }
+  return warnings;
+}
+
+// ---------------------------------------------------------------------------
 // `run`
 // ---------------------------------------------------------------------------
 
@@ -1753,6 +1818,13 @@ Usage:
   waygraph validate [project]     Import and validate all flows
   waygraph run <flow> [project]   Run a named flow
   waygraph chain <spec> [project] Run one or more Blocks by name, ad hoc
+  waygraph check   [project]      Warn about navigation outside a NavBlock
+
+    "check" is a secondary sweep, complementary to the always-on TypeScript
+    warning every regular Block's act() already gets (a struck-through
+    page.goto/reload/goBack/goForward, pointing at defineNavBlock) - useful
+    where nothing is watching in an editor (CI, generated code). Warning
+    only, never fails - see openspec/changes/nav-block-and-check/.
 
     "chain" needs no .flow.ts file - reference Blocks (by their own
     runtime .name, or their export identifier) straight from the command
@@ -1874,6 +1946,23 @@ async function main(): Promise<void> {
       }
       const proj = resolve(args[2] ?? process.cwd());
       await runChain(proj, spec);
+      break;
+    }
+
+    case "check": {
+      const proj = resolve(args[1] ?? process.cwd());
+      const warnings = await checkCommand(proj);
+      if (warnings.length === 0) {
+        console.log(`waygraph check: no navigation found outside NavBlocks under ${proj}`);
+      } else {
+        for (const w of warnings) {
+          const rel = relative(proj, w.file);
+          console.warn(`waygraph check: ${rel} (${w.blockName}) calls page.goto/reload/goBack/goForward outside a NavBlock - consider defineNavBlock instead`);
+        }
+        console.log(`waygraph check: ${warnings.length} warning${warnings.length === 1 ? "" : "s"}`);
+      }
+      // Warning only - never fails the command, matching the spec's
+      // "never a build failure" requirement.
       break;
     }
 

@@ -103,6 +103,22 @@ a fresh tab (the run won't close a page you handed it unless you say so), and
 so the caller can keep driving it - hands a run tab back instead of losing it. See
 "Recipes" for capture-on-popup, which stays a documented pattern until a second real use
 case promotes it to an engine API.
+`defineNavBlock({ name, checkpoint, url })` builds a Block whose only possible action is
+navigating - `url` accepts a plain string or `(mem) => string` for parameterized routes,
+and the generated `act()` is always exactly `page.goto(url)`, never author-supplied. A
+regular `defineBlock`'s `act()` receives its `page` typed as `ActionPage` instead of raw
+`Page` - structurally identical, every method still fully present and callable, except
+`goto`/`reload`/`goBack`/`goForward` are re-declared `@deprecated`, so a TypeScript-aware
+editor shows navigation struck through the instant it's typed in a regular Block, pointing
+at `defineNavBlock` - nothing is blocked, no build ever fails, existing code that already
+navigates from a regular Block keeps compiling and running unchanged. `waygraph check
+[project]` is the complementary whole-project sweep for contexts with no editor watching
+(CI, generated code) - same warning, on demand, across every `*.block.ts` file at once.
+`new Engine({ browsers: { chromium, firefox, webkit } })` overrides which `BrowserType`
+actually launches for a `mem`-only run, per browser name - waygraph is deliberately "just
+an opinionated Playwright," so a stealth-patched or otherwise customized launcher (e.g.
+`playwright-extra` plus a stealth plugin) drops in unmodified, since those already expose
+the same `.launch()` shape as Playwright's own `chromium`/`firefox`/`webkit`.
 
 ```bash
 npx create-waygraph my-project && cd my-project && npm install && npm test

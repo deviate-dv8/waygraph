@@ -63,7 +63,7 @@ any build) to fail on existing code that already calls these methods from a regu
 ### Requirement: waygraph check sweeps a whole project as a complementary check
 `waygraph check <project>` SHALL walk every `*.block.ts` file under the target project
 and, for each Block not built via `defineNavBlock`, SHALL scan that file's own source text
-for `page.goto(`, `page.reload(`, or `page.goBack(`. On a match, it SHALL print a warning
+for `page.goto(`, `page.reload(`, `page.goBack(`, or `page.goForward(`. On a match, it SHALL print a warning
 naming the file and the Block. This SHALL be a warning only - it SHALL NOT fail the
 process or change its exit code. This exists alongside the `ActionPage` deprecation above,
 not instead of it: `check` covers contexts with no editor watching (CI, an autonomous
@@ -82,7 +82,7 @@ authoring.
 
 #### Scenario: A clean action Block produces no warning
 - **WHEN** a Block not built via `defineNavBlock` contains no `page.goto(`, `page.reload(`,
-  or `page.goBack(` in its own file
+  `page.goBack(`, or `page.goForward(` in its own file
 - **THEN** `waygraph check` SHALL NOT warn about it
 
 #### Scenario: Navigation hidden behind a shared helper is a known blind spot

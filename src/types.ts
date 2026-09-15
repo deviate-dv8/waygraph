@@ -29,6 +29,30 @@ export function checkpoint<Tag extends string>(tag: Tag): Checkpoint<Tag> {
 export type Start = Checkpoint<"__start__">;
 
 /**
+ * The `page` a regular Block's `act()` is typed against via `defineBlock` -
+ * structurally identical to Playwright's own `Page` (the same real object is
+ * passed at runtime; this is a type-only narrowing), except `goto`, `reload`,
+ * `goBack`, and `goForward` are re-declared under `@deprecated`. Nothing is
+ * blocked - every method is still fully present and callable, and this never
+ * causes a build to fail - but a TypeScript-aware editor shows the call
+ * struck through with a hover warning the instant it's typed, pointing at
+ * `defineNavBlock` instead. `NavBlock`'s own generated `act()` (the one place
+ * navigation actually belongs) uses the real `Page`, not this type - that
+ * distinction lives entirely inside `defineNavBlock` and never reaches a
+ * NavBlock's own author, who never writes its `act()` by hand.
+ */
+export type ActionPage = Omit<Page, "goto" | "reload" | "goBack" | "goForward"> & {
+  /** @deprecated Navigation doesn't belong in a regular Block's act() - use defineNavBlock instead. */
+  goto: Page["goto"];
+  /** @deprecated Navigation doesn't belong in a regular Block's act() - use defineNavBlock instead. */
+  reload: Page["reload"];
+  /** @deprecated Navigation doesn't belong in a regular Block's act() - use defineNavBlock instead. */
+  goBack: Page["goBack"];
+  /** @deprecated Navigation doesn't belong in a regular Block's act() - use defineNavBlock instead. */
+  goForward: Page["goForward"];
+};
+
+/**
  * The four-phase pipeline every Block runs. Most Blocks only need `act` + a
  * one-line `resolve` - add `observe` only once a Block genuinely branches, add
  * `verify` only once you want to confirm the reached state, not just classify it.
