@@ -87,8 +87,15 @@ which `defineBlock`/`defineFlow` already accept with no special-casing - `act()`
 alongside the real click (`mem.set(Quantity, mem.get(Quantity) + 1)`), and a bespoke `verify`
 Trait confirms the page's own displayed value actually matches what `mem` now expects
 (`shown === String(mem.get(Quantity))`), not just that *some* number is showing. `resolve()`
-itself stays exactly as pure as ever - it never sees `mem`, only `verify` does. Once Blocks are
-composed into a `Flow`, `flow.withBlockVerify`/
+itself stays exactly as pure as ever - it never sees `mem`, only `verify` does. `verify` only
+ever confirms what a Block itself just did, though - nothing previously checked whether the
+page was STILL there by the time the NEXT Block's `act()` starts. A `precondition` (same
+`Trait[]`/`(input) => Trait[]` shape as `verify`, checked automatically by `connect()`/
+`runGraph` right before `act()` runs, never called directly) closes that gap: a session
+timeout, a redirect, an interstitial popup - anything that changes the page in the moment
+between one Block finishing and the next one starting - fails loud with a clear "trait X
+failed before Y," instead of a confusing error deep inside `act()` trying to click something
+that's no longer there. Once Blocks are composed into a `Flow`, `flow.withBlockVerify`/
 `flow.modBlockVerify` patch one Block's verify from outside - a spec that only imports the
 finished flow, addressed by the Block reference (preferred), its name, or its numeric
 position in the flow - without editing the flow's own file. `composeBlock(name, steps)`

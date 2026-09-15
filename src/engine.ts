@@ -5,7 +5,7 @@ import { connect, checkpoint } from "./types.js";
 import { MemPage } from "./mem-page.js";
 import type { MemKey } from "./mem-page.js";
 import type { Trait } from "./trait.js";
-import { runVerify } from "./trait.js";
+import { runVerify, runPrecondition } from "./trait.js";
 
 const LAUNCHERS = { chromium, firefox, webkit };
 
@@ -86,6 +86,7 @@ export async function runGraph<TOut extends Checkpoint<string>>(
         throw new Error(`runGraph: exceeded ${maxSteps} steps - check for an unintended self-loop`);
       }
 
+      await runPrecondition(current.instruction.precondition, input, page, mem, current.name);
       await current.instruction.act(page, input, mem);
       const observed = current.instruction.observe
         ? await current.instruction.observe(page, mem)

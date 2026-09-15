@@ -104,3 +104,27 @@ export async function runVerify<Out>(
     }
   }
 }
+
+/**
+ * Runs every Trait for a Block that's ABOUT to run, throwing on the first
+ * failure with the failing Trait's own name and the Block's name - before
+ * `act` ever touches the page, not after. `precondition` may be a flat list
+ * or a function of the incoming Checkpoint (same shape `verify` already
+ * takes of the resolved one). Called automatically by `connect()`/`runGraph`
+ * right before a Block's own `act` - not something a Block normally calls
+ * directly.
+ */
+export async function runPrecondition<In>(
+  precondition: Trait[] | ((input: In) => Trait[]) | undefined,
+  input: In,
+  page: Page,
+  mem: MemPage,
+  blockName: string,
+): Promise<void> {
+  const traits = typeof precondition === "function" ? precondition(input) : (precondition ?? []);
+  for (const trait of traits) {
+    if (!(await trait.check(page, mem))) {
+      throw new Error(`trait "${trait.name}" failed before "${blockName}"`);
+    }
+  }
+}

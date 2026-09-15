@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 import type { MemPage, MemKey } from "./mem-page.js";
 import type { Trait } from "./trait.js";
-import { runVerify } from "./trait.js";
+import { runVerify, runPrecondition } from "./trait.js";
 
 /**
  * A Checkpoint is identified solely by its string tag - a phantom marker with no
@@ -64,6 +64,19 @@ export interface Instruction<
 > {
   /** Drives the browser only, this tab only. Never touches `context` - see `observe` for that. */
   act(page: Page, input: In, mem: MemPage): Promise<void>;
+  /**
+   * Optional. Runs once, right before `act` starts - confirms the page is
+   * still in the state this Block is about to assume, before touching it.
+   * `verify` only ever confirms what a Block ITSELF just did; nothing
+   * previously checked whether the page is STILL there by the time the
+   * NEXT Block starts (a redirect, a popup, a session timeout between two
+   * Blocks - the gap `verify` alone can't see, since it only ever runs
+   * right after the PREVIOUS Block's own resolve, not right before THIS
+   * one's act). A function form picks different checks per incoming `In`,
+   * same as `verify` does per resolved `Out`.
+   * @example precondition: [Trait.visible("#checkout-form")]
+   */
+  precondition?: Trait[] | ((input: In) => Trait[]);
   /**
    * Optional. Gathers evidence for `resolve` to classify, runs assertions,
    * writes memory - the only phase allowed to look at the DOM before a
@@ -230,12 +243,14 @@ export function connect<
     ...(requires.length > 0 ? { requires } : {}),
     instruction: {
       async act(page, input, mem) {
+        await runPrecondition(a.instruction.precondition, input, page, mem, a.name);
         await a.instruction.act(page, input, mem);
         const aObserved = a.instruction.observe
           ? await a.instruction.observe(page, mem)
           : undefined;
         const mid = await a.instruction.resolve(aObserved);
         await runVerify(a.instruction.verify, mid, page, mem, a.name);
+        await runPrecondition(b.instruction.precondition, mid, page, mem, b.name);
         await b.instruction.act(page, mid, mem);
       },
       resolve: (observed) => b.instruction.resolve(observed),
