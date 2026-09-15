@@ -14,8 +14,9 @@
  * A project is any directory containing *.flow.ts files (typically under src/flows/).
  */
 
-import { existsSync, readdirSync, readFileSync, writeFileSync, rmSync, type Dirent } from "node:fs";
-import { resolve, relative, join, basename } from "node:path";
+import { existsSync, readdirSync, readFileSync, writeFileSync, rmSync, cpSync, type Dirent } from "node:fs";
+import { resolve, relative, join, basename, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { MemPage } from "./mem-page.js";
 
@@ -2001,6 +2002,115 @@ async function runChain(projectDir: string, spec: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// `try` - a bundled, self-contained showcase. No .flow.ts to write, no
+// scenario to design - copies a small real Flow (nav/action Blocks, Trait
+// verify, narrate()) into the target project and runs it in step mode
+// against a public demo site, so a curious dev sees the real overlay/panel
+// experience in under a minute, then gets pointed at the plain waygraph
+// source that produced it.
+// ---------------------------------------------------------------------------
+
+/** This package's own installed root - dist/cli.js -> .. */
+function packageRoot(): string {
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..");
+}
+
+/**
+ * Runs a throwaway probe script rooted at `projectDir` - the exact same
+ * directory the real demo files get copied into, so it resolves "waygraph"
+ * and "@playwright/test" exactly as they will - and actually launches (then
+ * immediately closes) chromium, a real check rather than a guess at whether
+ * the browser's installed. Returns null when everything's ready, or a
+ * friendly, actionable message naming exactly what to install when it
+ * isn't. Never leaves the probe script behind.
+ */
+async function checkTryPrereqs(projectDir: string): Promise<string | null> {
+  const tsxEsm = import.meta.resolve("tsx/esm");
+  const probeScript = [
+    "try {",
+    '  await import("waygraph");',
+    "} catch {",
+    '  console.error("WAYGRAPH_TRY_MISSING_WAYGRAPH");',
+    "  process.exit(1);",
+    "}",
+    "let mod;",
+    "try {",
+    '  mod = await import("@playwright/test");',
+    "} catch {",
+    '  console.error("WAYGRAPH_TRY_MISSING_PLAYWRIGHT_TEST");',
+    "  process.exit(1);",
+    "}",
+    "try {",
+    "  const browser = await mod.chromium.launch({ headless: true });",
+    "  await browser.close();",
+    "} catch (err) {",
+    "  if (String(err && err.message).includes(\"Executable doesn't exist\")) {",
+    '    console.error("WAYGRAPH_TRY_MISSING_BROWSER");',
+    "    process.exit(1);",
+    "  }",
+    "  console.error(String((err && err.stack) || err));",
+    "  process.exit(1);",
+    "}",
+  ].join("\n");
+  const probePath = join(projectDir, `.waygraph-try-probe-${process.pid}.mjs`);
+  writeFileSync(probePath, probeScript);
+  try {
+    const result = await new Promise<{ code: number; stderr: string }>((res, rej) => {
+      const child = spawn(process.execPath, ["--import", tsxEsm, probePath], {
+        cwd: projectDir,
+        stdio: ["ignore", "ignore", "pipe"],
+        env: process.env,
+      });
+      let stderrBuf = "";
+      child.stderr?.on("data", (d) => { stderrBuf += d.toString(); });
+      child.on("error", rej);
+      child.on("exit", (code) => res({ code: code ?? 1, stderr: stderrBuf }));
+    });
+    if (result.code === 0) return null;
+    const stderr = result.stderr;
+    if (stderr.includes("WAYGRAPH_TRY_MISSING_WAYGRAPH")) {
+      return `"waygraph" isn't resolvable as a dependency from ${projectDir}.\nRun this first, inside that directory:\n  npm install waygraph\n  npm install -D @playwright/test\n  npx playwright install chromium`;
+    }
+    if (stderr.includes("WAYGRAPH_TRY_MISSING_PLAYWRIGHT_TEST")) {
+      return `"@playwright/test" isn't resolvable as a dependency from ${projectDir}.\nRun this first, inside that directory:\n  npm install -D @playwright/test\n  npx playwright install chromium`;
+    }
+    if (stderr.includes("WAYGRAPH_TRY_MISSING_BROWSER")) {
+      return "Playwright's chromium browser isn't installed yet.\nRun this first:\n  npx playwright install chromium";
+    }
+    return `couldn't verify prerequisites:\n${stderr.trim()}`;
+  } finally {
+    rmSync(probePath, { force: true });
+  }
+}
+
+async function runTry(projectDir: string): Promise<void> {
+  const problem = await checkTryPrereqs(projectDir);
+  if (problem) {
+    console.error(`waygraph try: not ready yet.\n${problem}`);
+    process.exitCode = 1;
+    return;
+  }
+  const destDir = join(projectDir, ".waygraph-quickstart");
+  // Regenerated fresh every run (like chain's own .waygraph-chain-<pid>.mjs)
+  // so an updated waygraph version's demo never goes stale - not meant to be
+  // hand-edited and kept, just a real, readable copy to point people at.
+  cpSync(join(packageRoot(), "templates", "quickstart"), destDir, { recursive: true });
+  process.env.WAYGRAPH_HEADED ??= "1";
+  process.env.WAYGRAPH_STEP ??= "1";
+  process.env.WAYGRAPH_AUTOPLAY ??= "1";
+  process.env.WAYGRAPH_BASE_URL ??= "https://www.saucedemo.com";
+  await runChain(destDir, "quickstartFlow");
+  if (!process.exitCode) {
+    console.log(
+      "\nwaygraph try: that's plain waygraph - defineNavBlock, defineBlock, Trait, connect() - nothing hidden.\n" +
+        "See the code that just ran:\n" +
+        "  " + join(destDir, "src", "flows", "quickstart.flow.ts") + "\n" +
+        "  " + join(destDir, "src", "blocks"),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // `validate`
 // ---------------------------------------------------------------------------
 
@@ -2137,6 +2247,21 @@ Usage:
   waygraph run <flow> [project]   Run a named flow
   waygraph chain <spec> [project] Run one or more Blocks by name, ad hoc
   waygraph check   [project]      Warn about navigation outside a NavBlock
+  waygraph try     [project]      Quickstart showcase - no setup beyond
+                                  "waygraph" + "@playwright/test" installed
+                                  in [project] (default: cwd) and its
+                                  chromium browser downloaded. Checks both
+                                  for real (a real launch+close, not a
+                                  guess) and tells you exactly what to run
+                                  if either's missing, instead of a raw
+                                  Playwright stack trace. If ready, copies a
+                                  small real Flow (nav/action Blocks, Trait
+                                  verify, narrate()) into
+                                  [project]/.waygraph-quickstart/ and runs
+                                  it in step mode against a public demo
+                                  site - then prints the absolute path to
+                                  that plain waygraph source, so whoever's
+                                  watching can go read exactly how it works.
 
     "check" is a secondary sweep, complementary to the always-on TypeScript
     warning every regular Block's act() already gets (a struck-through
@@ -2264,6 +2389,16 @@ async function main(): Promise<void> {
       }
       const proj = resolve(args[2] ?? process.cwd());
       await runChain(proj, spec);
+      break;
+    }
+
+    case "try": {
+      const proj = resolve(args[1] ?? process.cwd());
+      if (!existsSync(proj)) {
+        console.error(`waygraph: no such directory: ${proj}`);
+        process.exit(1);
+      }
+      await runTry(proj);
       break;
     }
 
