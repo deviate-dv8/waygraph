@@ -43,13 +43,18 @@
           </tr>
           <tr>
             <td><strong>Try auto</strong></td>
-            <td>Temp Sauce Demo CLI explorer (creds pre-seeded)</td>
+            <td>Temp Sauce Demo headed explorer (creds pre-seeded)</td>
+            <td><code>npx waygraph try auto</code></td>
+          </tr>
+          <tr>
+            <td><strong>Try auto:cli</strong></td>
+            <td>Same explorer, terminal menu</td>
             <td><code>npx waygraph try auto:cli</code></td>
           </tr>
           <tr>
             <td><strong>In-repo example</strong></td>
-            <td>Permanent Sauce Demo - start with <code>auto:cli</code></td>
-            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npm run auto:cli</code></td>
+            <td>Permanent Sauce Demo - headed <code>auto</code></td>
+            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npm run auto</code></td>
           </tr>
           <tr>
             <td><strong>create-waygraph</strong></td>
@@ -70,17 +75,20 @@
 npm install
 npx playwright install chromium
 npm test          # offline example flow - green immediately
+npm run list      # .flow.ts → export map
 npm run check     # nav hygiene + orphan Blocks
-npm run demo      # watch exampleFlow (manual Next)</code></pre>
+npm run demo      # watch example.flow.ts (manual Next)
+npm run auto      # headed explore
+npm run auto:cli  # same menus in the terminal</code></pre>
       <p>
         Package link:
         <a href="https://github.com/deviate-dv8/create-waygraph">deviate-dv8/create-waygraph</a>
         ·
         <a href="https://www.npmjs.com/package/create-waygraph">npm</a>.
-        <code>try demo</code> / <code>try auto:cli</code> use the live saucedemo quickstart
+        <code>try demo</code> / <code>try auto</code> use the live saucedemo quickstart
         template, not the offline scaffold.
         Flags: <a href="./demo.html">Demo / run</a>.
-        Explore: <a href="./auto.html">Auto explore</a> (prefer <code>auto --cli</code>).
+        Explore: <a href="./auto.html">Auto explore</a> (headed by default; <code>--cli</code> for terminal).
       </p>
 
       <h2 id="demo">Watch / run / explore (0.10+)</h2>

@@ -2595,27 +2595,28 @@ const TRY_AUTO_DATA =
 
 /**
  * `waygraph try auto` / `try auto:cli` - temp Sauce Demo explore.
- * Default is CLI menu (same as `npm run auto:cli`). Pass `--headed` for the browser panel.
+ * Default is the **headed** browser panel. Pass `auto:cli` or `--cli` for the
+ * terminal menu (same rows).
  *
  * Runs as a child in the temp project so Block imports share that install's
  * `@playwright/test`. In-process explore from the outer CLI against a packed
  * `file:*.tgz` copy double-loads Playwright and silently yields 0 graph edges
  * ("LoginPage / No moves").
  */
-async function runTryAuto(opts: { cli: boolean } = { cli: true }): Promise<void> {
+async function runTryAuto(opts: { cli: boolean } = { cli: false }): Promise<void> {
   const destDir = await prepareTryQuickstart("waygraph-try-auto");
   if (!destDir) return;
 
   process.env.WAYGRAPH_BASE_URL ??= "https://www.saucedemo.com";
-  const cli = opts.cli !== false;
+  const cli = opts.cli === true;
   console.log(
     cli
       ? "waygraph try auto: CLI explore on Sauce Demo (temp dir).\n" +
           "  Creds pre-seeded (saucedemo.credentials).\n" +
           "  Pick [1] submit-login, then inventory Add/Remove / Open details.\n" +
-          "  Type q to quit. Headed panel: waygraph try auto --headed\n"
+          "  Type q to quit. Headed panel: waygraph try auto\n"
       : "waygraph try auto: headed explore on Sauce Demo (temp dir).\n" +
-          "  Creds pre-seeded. Prefer CLI: waygraph try auto:cli\n" +
+          "  Creds pre-seeded. CLI menu: waygraph try auto:cli\n" +
           "  Pick submit-login, then inventory menus. Quit from the panel.\n",
   );
 
@@ -2630,8 +2631,8 @@ async function runTryAuto(opts: { cli: boolean } = { cli: true }): Promise<void>
     "\nwaygraph try auto: explorer closed.\n\n" +
       `Temp project:\n  ${destDir}\n\n` +
       "Run again:\n" +
-      `  cd ${destDir} && npm run auto:cli\n` +
-      `  cd ${destDir} && npm run auto\n\n` +
+      `  cd ${destDir} && npm run auto\n` +
+      `  cd ${destDir} && npm run auto:cli\n\n` +
       "In-package: examples/saucedemo\n" +
       "Docs: https://deviate-dv8.github.io/waygraph/auto.html\n",
   );
@@ -2790,8 +2791,11 @@ function initCommand(projectName: string): void {
   console.log("  npm install");
   console.log("  npx playwright install chromium");
   console.log("  npm test");
+  console.log("  waygraph list        # .flow.ts → export map");
   console.log("  waygraph check       # nav hygiene + orphan Blocks");
-  console.log("  waygraph auto        # interactive explore (headful picker)");
+  console.log("  waygraph auto        # interactive explore (headed panel)");
+  console.log("  waygraph auto --cli  # same menus in the terminal");
+  console.log("  waygraph demo src/flows/example.flow.ts");
   console.log("  waygraph graph       # static state graph JSON");
 }
 
@@ -2840,7 +2844,7 @@ interface RunFlags {
   /** auto path-find: --blocks <fromCheckpoint> <toCheckpoint>. */
   blocksFromTo?: [string, string];
   cli?: boolean;
-  /** try auto / auto: browser panel instead of CLI (default for try auto is CLI). */
+  /** Force headed panel (compat; bare try auto / auto already headed). */
   headed?: boolean;
   mermaid?: boolean;
   map?: boolean;
@@ -3157,13 +3161,16 @@ Primary (less is more):
 Also:
   waygraph list | nav | validate | check | graph | init <name>
   waygraph try [demo|auto|auto:cli]        One-shot saucedemo in a temp dir
-                 try auto --headed         Browser panel instead of CLI
+                 try auto                  Headed browser panel (default)
+                 try auto:cli / --cli      Terminal menu instead
+                 try auto --headed         Same as try auto (compat)
 
 Examples:
   waygraph list                                          # file → export map
   waygraph run src/flows/shop.flow.ts --data '{...}'
   waygraph run --blocks shopFlow --non-headless --video
   waygraph demo --blocks src/flows/cart-bulk.flow.ts --auto-next
+  waygraph try auto
   waygraph try auto:cli
   waygraph auto src/flows/shop.flow.ts --data '{...}'   # run by file (same as run)
   waygraph auto --cli --data '{"saucedemo.credentials":{...}}'
@@ -3417,7 +3424,7 @@ async function main(): Promise<void> {
       const flags = parseRunFlags(args.slice(1));
       applyRunFlags(flags);
       const modeRaw = (flags.positionals[0] ?? "demo").toLowerCase();
-      // auto:cli / auto-cli = CLI explore; auto --headed = browser panel; auto = CLI default
+      // auto:cli / --cli = CLI; bare try auto = headed panel
       const mode =
         modeRaw === "auto:cli" || modeRaw === "auto-cli"
           ? "auto:cli"
@@ -3425,13 +3432,12 @@ async function main(): Promise<void> {
             ? "auto"
             : modeRaw;
       if (mode === "auto" || mode === "auto:cli") {
-        // CLI is the default for try auto (same menus as headed). --headed = panel.
         const cli =
           mode === "auto:cli" || flags.cli === true
             ? true
             : flags.headed === true || flags.nonHeadless === true
               ? false
-              : true;
+              : false; // try auto default = headed
         await runTryAuto({ cli });
       } else if (mode === "demo" || mode === "") {
         await runTryDemo();

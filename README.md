@@ -3,7 +3,7 @@
 A typed graph of reusable Blocks for driving a browser through E2E flows, in place of a
 flat pile of ad hoc helper functions.
 
-**Current:** `0.10.5` — CLI less-is-more (`auto` / `demo` / `run` + `.flow.ts` paths). Page hubs still as in 0.9.0.
+**Current:** `0.10.6` — `try auto` headed by default; `init` / create-waygraph scaffolds on 0.10 + `.flow.ts` scripts.
 
 This repo is the `waygraph` npm package itself. The full live **Sauce Demo** example
 (Page inventory hub, Effect Add/Remove, MemNav Open details, `waygraph auto`) ships

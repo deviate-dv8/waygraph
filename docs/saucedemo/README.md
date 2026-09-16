@@ -23,8 +23,8 @@ useful authoring shape. The engine does not have a separate Effect or Nav runtim
 cd examples/saucedemo
 npm install && npx playwright install chromium
 
-npm run auto:cli      # terminal menu - start here (same menus as headed)
-npm run auto          # headed panel
+npm run auto          # headed panel - start here
+npm run auto:cli      # terminal menu (same menus)
 npm run demo          # stepper, manual Next
 npm run demo:auto-next
 npm test              # headless Playwright suite
@@ -33,6 +33,7 @@ npm test              # headless Playwright suite
 Or one-shot without a permanent folder:
 
 ```bash
+npx waygraph@latest try auto
 npx waygraph@latest try auto:cli
 npx waygraph@latest try demo   # stepper + test
 ```

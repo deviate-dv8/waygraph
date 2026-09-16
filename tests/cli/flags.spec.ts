@@ -27,9 +27,11 @@ test("run rejects --auto-play-video (demo only)", async () => {
   });
 });
 
-test("help lists try auto:cli", async () => {
+test("help lists try auto headed + auto:cli", async () => {
   const { stdout } = await exec(node, [CLI, "--help"]);
+  expect(stdout).toMatch(/try auto/);
   expect(stdout).toMatch(/try auto:cli/);
+  expect(stdout).toMatch(/Headed browser panel/);
   expect(stdout).toMatch(/\.flow\.ts/);
 });
 

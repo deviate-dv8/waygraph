@@ -61,16 +61,16 @@
             <td><code>npx waygraph auto --blocks LoginPage OrderComplete</code></td>
           </tr>
           <tr>
+            <td>One-shot Sauce Demo headed panel</td>
+            <td><code>npx waygraph try auto</code></td>
+          </tr>
+          <tr>
             <td>One-shot Sauce Demo CLI (temp dir)</td>
             <td><code>npx waygraph try auto:cli</code></td>
           </tr>
           <tr>
-            <td>One-shot Sauce Demo headed panel</td>
-            <td><code>npx waygraph try auto --headed</code></td>
-          </tr>
-          <tr>
             <td>In-repo Sauce Demo</td>
-            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npm run auto:cli</code></td>
+            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npm run auto</code></td>
           </tr>
         </tbody>
       </table>
@@ -79,7 +79,8 @@
         <code>WAYGRAPH_AUTO_MEM</code>. Project path optional (defaults to cwd).
         Pass a <code>.flow.ts</code> path to <strong>run</strong> that flow (not explore).
         On Sauce Demo LoginPage you should see <code>submit-login</code> (needs
-        <code>waygraph@0.10.5+</code> for file-path <code>auto</code> / <code>try auto:cli</code>).
+        <code>waygraph@0.10.6+</code> for headed <code>try auto</code> / file-path
+        <code>auto</code>).
       </p>
 
       <h2>What you see (CLI and GUI)</h2>

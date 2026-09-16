@@ -91,7 +91,7 @@ npx waygraph demo --blocks shopFlow --auto-play-video   # QA
 npx waygraph run  src/flows/shop.flow.ts --data '{…}'
 npx waygraph run  --blocks "a then b" --data '{…}'
 npx waygraph run  --blocks shopFlow --non-headless --video
-npx waygraph try demo | try auto:cli
+npx waygraph try demo | try auto | try auto:cli
 npx waygraph check | graph --mermaid | init my-app</code></pre>
       <p>
         Compat: <code>chain</code> -&gt; <code>run --blocks</code>; <code>--autoplay</code> -&gt; <code>--auto-next</code>.
@@ -135,8 +135,9 @@ instruction: {
         <thead><tr><th>Command</th><th>What you get</th></tr></thead>
         <tbody>
           <tr><td><code>npx waygraph try demo</code></td><td>Temp Sauce Demo stepper + headless test</td></tr>
-          <tr><td><code>npx waygraph try auto:cli</code></td><td>Temp Sauce Demo CLI explore (creds pre-seeded; <code>--headed</code> for panel)</td></tr>
-          <tr><td><code>cd examples/saucedemo &amp;&amp; npm run auto:cli</code></td><td>In-repo CLI explore (same menus as headed)</td></tr>
+          <tr><td><code>npx waygraph try auto</code></td><td>Temp Sauce Demo headed explore (creds pre-seeded)</td></tr>
+          <tr><td><code>npx waygraph try auto:cli</code></td><td>Same explorer, terminal menu</td></tr>
+          <tr><td><code>cd examples/saucedemo &amp;&amp; npm run auto</code></td><td>In-repo headed explore</td></tr>
           <tr><td><code>npx create-waygraph my-app</code></td><td>Offline scaffold on npm - same template as <code>init</code></td></tr>
           <tr><td><code>npx waygraph init my-app</code></td><td>Same offline scaffold, built into waygraph CLI</td></tr>
         </tbody>

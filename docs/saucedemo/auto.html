@@ -26,7 +26,7 @@
     <main>
       <h1>waygraph auto on Sauce Demo</h1>
       <p class="lede">
-        Prefer <code>auto --cli</code> first - same menu rows as the headed panel
+        Prefer headed <code>auto</code> first - same menu rows as <code>auto --cli</code>
         (Add all / per-item Add / Open details / logout).
       </p>
 
@@ -34,11 +34,12 @@
       <pre><code># In-repo (creds via --data)
 cd examples/saucedemo
 npm install
-npm run auto:cli          # terminal menu - start here
-npm run auto              # headed panel (same graph)
+npm run auto              # headed panel - start here
+npm run auto:cli          # terminal menu (same graph)
 npm run prove:auto-cli    # scripted login -&gt; add-all -&gt; remove-all
 
 # One-shot temp copy:
+npx waygraph@latest try auto
 npx waygraph@latest try auto:cli</code></pre>
 
       <h2>Typical CLI path</h2>
