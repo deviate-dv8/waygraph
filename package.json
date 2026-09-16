@@ -1,8 +1,9 @@
 {
   "name": "waygraph",
-  "version": "0.7.6",
+  "version": "0.7.7",
   "type": "module",
   "description": "A typed graph of reusable Blocks for driving a browser through E2E flows.",
+  "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
