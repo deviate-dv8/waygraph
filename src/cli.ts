@@ -2278,7 +2278,29 @@ async function ensureDirPrereqs(dir: string, label: string): Promise<string | nu
 }
 
 const TRY_DEMO_CHAIN =
-  'loginFlow({"username":"standard_user","password":"secret_sauce"}) then shopFlow';
+  'loginFlow({"username":"standard_user","password":"secret_sauce"}) then viewerBlockedFlow({"username":"locked_out_user","password":"secret_sauce"})';
+
+/**
+ * Point a copied quickstart at this checkout's waygraph build (not npm registry).
+ * Uses `npm pack` into destDir - a file: symlink to the dev tree can double-load
+ * @playwright/test when sibling projects also install Playwright.
+ */
+async function wireQuickstartToPackageRoot(destDir: string): Promise<void> {
+  const root = packageRoot();
+  const version = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version as string;
+  const packCode = await runInherited("npm", ["pack", "--pack-destination", destDir, "--silent"], root);
+  if (packCode !== 0) {
+    throw new Error(`waygraph try demo: npm pack failed with exit code ${packCode}`);
+  }
+  const tgz = join(destDir, `waygraph-${version}.tgz`);
+  const pkgPath = join(destDir, "package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as {
+    dependencies?: Record<string, string>;
+  };
+  if (!pkg.dependencies) pkg.dependencies = {};
+  pkg.dependencies.waygraph = `file:${tgz}`;
+  writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+}
 
 /**
  * `waygraph try demo` - copy a self-contained saucedemo project into a temp
@@ -2288,6 +2310,13 @@ const TRY_DEMO_CHAIN =
 async function runTryDemo(): Promise<void> {
   const destDir = mkdtempSync(join(tmpdir(), "waygraph-try-demo-"));
   cpSync(join(packageRoot(), "templates", "quickstart"), destDir, { recursive: true });
+  try {
+    await wireQuickstartToPackageRoot(destDir);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
+    process.exitCode = 1;
+    return;
+  }
 
   const problem = await ensureDirPrereqs(destDir, "waygraph try demo");
   if (problem) {
@@ -2303,7 +2332,7 @@ async function runTryDemo(): Promise<void> {
   process.env.WAYGRAPH_BASE_URL ??= "https://www.saucedemo.com";
 
   console.log(
-    "waygraph try demo: step-through chainFlow (Episode 1: Sign In -> Episode 2: Shop & Checkout) - click Next for each step ...",
+    "waygraph try demo: step-through chainFlow (Episode 1: Sign In -> Episode 2: Viewer blocked login) - click Next for each step ...",
   );
   await runChain(destDir, TRY_DEMO_CHAIN);
   if (process.exitCode) return;
@@ -2317,7 +2346,7 @@ async function runTryDemo(): Promise<void> {
 
   const testFile = join(destDir, "tests", "chain-flow.spec.ts");
   const loginFlowFile = join(destDir, "src", "flows", "login.flow.ts");
-  const shopFlowFile = join(destDir, "src", "flows", "shop.flow.ts");
+  const viewerBlockedFlowFile = join(destDir, "src", "flows", "viewer-blocked.flow.ts");
 
   console.log(
     "\nwaygraph try demo: done.\n\n" +
@@ -2325,7 +2354,7 @@ async function runTryDemo(): Promise<void> {
       `  ${destDir}\n\n` +
       "Episodes you just watched (same Flow objects the test imports):\n" +
       `  ${loginFlowFile}\n` +
-      `  ${shopFlowFile}\n\n` +
+      `  ${viewerBlockedFlowFile}\n\n` +
       "Headless chainFlow test (automated - no clicking):\n" +
       `  ${testFile}\n\n` +
       "Run again in that temp folder:\n" +

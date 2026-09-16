@@ -25,42 +25,45 @@
     <main>
       <h1>Consumer layout</h1>
       <p class="lede">
-        Route folders mirror the app's URL folders — not a parallel invented tree.
-        This is the consumer contract; the <a href="./handout.html">engine handout</a>
+        Route folders mirror the app's real URLs — not a parallel invented tree.
+        Reference consumer: <strong>Sauce Demo</strong> (Swag Labs checkout) in
+        <code>projects_waygraph/saucedemo</code>. The <a href="./handout.html">engine handout</a>
         covers the package API.
       </p>
 
       <h2>The rule</h2>
       <table>
         <thead>
-          <tr><th>App Router</th><th>Waygraph blocks</th></tr>
+          <tr><th>Sauce Demo URL</th><th>Waygraph blocks</th></tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>app/page.tsx</code> (URL <code>/</code>)</td>
-            <td>Namespace root: <code>NAV.md</code> + <code>nav-*-root.block.ts</code> — no <code>landing/</code> folder</td>
+            <td><code>/</code> (login)</td>
+            <td><code>saucedemo-web/</code> namespace root: <code>NAV.md</code> + <code>nav-login.block.ts</code></td>
           </tr>
           <tr>
-            <td><code>app/(auth)/login/page.tsx</code></td>
-            <td><code>…/login/</code> — route groups vanish (URL-invisible)</td>
+            <td><code>/inventory.html</code></td>
+            <td><code>saucedemo-web/inventory/</code> — <code>nav-item-detail</code>, <code>add-to-cart</code>, …</td>
           </tr>
           <tr>
-            <td>Folder with no <code>page.tsx</code></td>
-            <td>Grouping only — no NAV.md, no nav block</td>
+            <td><code>/cart.html</code></td>
+            <td><code>saucedemo-web/cart/</code> — <code>nav-cart</code>, <code>nav-checkout-info</code>, …</td>
           </tr>
           <tr>
-            <td><code>app/(app)/layout.tsx</code> (Sidebar)</td>
-            <td><code>shared/chrome/</code> — chrome, not a route</td>
+            <td><code>/checkout-step-one.html</code></td>
+            <td><code>saucedemo-web/checkout-step-one/</code> — <code>submit-checkout-info</code>, …</td>
           </tr>
           <tr>
-            <td><code>app/api/**</code></td>
-            <td>No UI block</td>
+            <td>Path with no page of its own</td>
+            <td>Grouping only — no <code>NAV.md</code>, no nav block</td>
           </tr>
         </tbody>
       </table>
       <p>
         <strong>Test:</strong> a folder gets <code>NAV.md</code> + a nav block if and only if
-        the app has a <code>page.tsx</code> at that URL.
+        the app has a real page at that URL.
+        On Next.js, swap URLs for <code>app/…/page.tsx</code> paths — route groups like
+        <code>(auth)</code> vanish; layout chrome goes in <code>shared/chrome/</code>, not a second route tree.
       </p>
 
       <h2>Block kinds</h2>
@@ -76,33 +79,62 @@
       </table>
       <p>
         Every route folder with nav or actions must have <code>NAV.md</code>.
-        Namespaces by origin (do not mix): <code>*-web/</code> for the app FE,
-        <code>*-external/</code> for MailHog/Mailpit, Studio, probes.
+        Namespace the app under <code>saucedemo-web/</code> (or <code>&lt;product&gt;-web/</code>).
+        Non-app hosts (MailHog, probes) go in <code>&lt;product&gt;-external/</code> if you add them.
       </p>
 
-      <h2>Correct shape (sketch)</h2>
+      <h2>Example layout (Sauce Demo)</h2>
       <pre><code>src/blocks/
   SITE-MAP.md
-  shared/chrome/                 # (app)/layout — sidebar, dismiss toast
-  pia-web/                       # === app/  · THIS FOLDER IS "/"
+  saucedemo-web/                 # Swag Labs — THIS FOLDER IS "/"
     NAV.md
-    nav-pia-root.block.ts        # /
+    nav-login.block.ts           # url: /
     actions/
-    login/                       # /login
+      submit-login.action.block.ts
+    inventory/                   # /inventory.html
       NAV.md
-      nav-pia-login.block.ts
+      nav-item-detail.block.ts   # click → /inventory-item.html
+      nav-back-to-inventory.block.ts
       actions/
-    dashboard/                   # /dashboard
-    demo/                        # NO page.tsx → grouping ONLY
-      command-center/            # /demo/command-center → NAV + nav + actions/
-  pia-external/
-    mailpit/                     # external host — not under *-web/</code></pre>
+        add-to-cart.action.block.ts
+    inventory-item/              # /inventory-item.html
+      NAV.md
+      nav-continue-shopping.block.ts
+    cart/                        # /cart.html
+      NAV.md
+      nav-cart.block.ts          # click: .shopping_cart_link
+      nav-checkout-info.block.ts
+    checkout-step-one/           # /checkout-step-one.html
+      NAV.md
+      actions/
+        submit-checkout-info.action.block.ts
+    checkout-step-two/           # /checkout-step-two.html
+      actions/
+        finish-order.action.block.ts</code></pre>
+      <p>
+        Block names match the live <code>projects_waygraph/saucedemo</code> project; folders show
+        how to group them by URL. Nav uses <code>url</code> or <code>click</code> (see
+        <code>nav-cart</code> — header link, not a separate <code>goto</code> in actions).
+      </p>
 
-      <h2>Do not teach</h2>
+      <h2>Conventions</h2>
       <ul>
-        <li><code>pia-web/root/</code> or <code>pia-web/landing/</code> for <code>/</code></li>
-        <li><code>shell/nav/…</code> as a second map of routes (sidebar = edges + chrome)</li>
-        <li>Putting Mailpit under <code>*-web/</code></li>
+        <li>
+          <strong>Namespace root is <code>/</code>.</strong>
+          Login lives at <code>saucedemo-web/</code> with <code>nav-login</code> — not
+          <code>saucedemo-web/root/</code> or <code>saucedemo-web/landing/</code>.
+        </li>
+        <li>
+          <strong>One nav per route.</strong>
+          Header links (<code>nav-cart</code>, <code>nav-checkout-info</code>) are nav blocks on
+          the route that owns that URL — not a parallel <code>shell/nav/…</code> tree.
+        </li>
+        <li>
+          <strong>Actions never navigate.</strong>
+          <code>submit-login</code>, <code>add-to-cart</code>, and friends stay in
+          <code>actions/</code>; only <code>defineNavBlock</code> blocks call
+          <code>page.goto</code> or encoded clicks.
+        </li>
       </ul>
 
       <h2>Same checkpoint + mem</h2>
@@ -115,8 +147,8 @@
       </p>
 
       <p class="meta" style="margin-top:2rem">
-        One-liner: Waygraph maps the app the way App Router maps URLs — one nav (+ actions)
-        per <code>page.tsx</code>, <code>/</code> at the namespace root, mem can change without
+        One-liner: Waygraph maps Sauce Demo (and any app) the way URLs map in the browser — one
+        nav (+ actions) per page, <code>/</code> at the namespace root, mem can change without
         changing the Checkpoint.
       </p>
 

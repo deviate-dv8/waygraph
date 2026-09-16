@@ -20,7 +20,8 @@
         <li><a href="./consumer.html">Consumer layout</a></li>
         <li><a href="./deploy.html">Deploy / preview</a></li>
         <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
-        <li><a href="https://www.npmjs.com/package/waygraph">npm</a></li>
+        <li><a href="https://www.npmjs.com/package/waygraph">npm (waygraph)</a></li>
+        <li><a href="https://www.npmjs.com/package/create-waygraph">npm (create-waygraph)</a></li>
       </ul>
     </nav>
     <main>
@@ -37,9 +38,13 @@
       </p>
 
       <div class="cards">
+        <a href="./quickstart.html#paths">
+          <strong>Getting started</strong>
+          <span>Try demo, scaffold (<code>create-waygraph</code> / <code>init</code>), first Flow.</span>
+        </a>
         <a href="./quickstart.html">
           <strong>Quick start</strong>
-          <span>Install, first Block + Flow, develop the package.</span>
+          <span>Install, minimal Block + Flow, develop the package.</span>
         </a>
         <a href="./handout.html">
           <strong>Engine handout</strong>
@@ -55,12 +60,44 @@
         </a>
       </div>
 
-      <h2>Install</h2>
-      <pre><code>npm install waygraph @playwright/test
-npx create-waygraph my-project &amp;&amp; cd my-project &amp;&amp; npm install &amp;&amp; npm test</code></pre>
+      <h2 id="paths">Getting started (pick one)</h2>
+      <table>
+        <thead>
+          <tr><th>Goal</th><th>Command</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Watch the 2-episode saucedemo in a browser (no project folder, temp dir only)</td>
+            <td><code>npx waygraph try demo</code></td>
+          </tr>
+          <tr>
+            <td>Scaffold a new offline project (green <code>npm test</code> on a <code>data:</code> URL)</td>
+            <td><code>npx create-waygraph my-app</code> <strong>or</strong> <code>npx waygraph init my-app</code></td>
+          </tr>
+          <tr>
+            <td>Add waygraph to an existing repo</td>
+            <td><code>npm install waygraph @playwright/test</code></td>
+          </tr>
+        </tbody>
+      </table>
       <p>
-        Requires Node 22+. <code>@playwright/test</code> is a peer dependency
-        (^1.40). Pin a published version for product work until you intentionally upgrade.
+        <strong>Scaffold lives in two places on purpose.</strong>
+        <a href="https://www.npmjs.com/package/create-waygraph"><code>create-waygraph</code></a>
+        is its own npm package (same offline template as
+        <code>waygraph init</code> since 0.7.5) - scaffolding never pulls generator code into
+        your app's runtime <code>node_modules</code>.
+        <code>waygraph init</code> is the same shape when you already have the CLI installed.
+        After either scaffold: <code>cd my-app &amp;&amp; npm install &amp;&amp; npx playwright install chromium &amp;&amp; npm test</code>.
+      </p>
+      <p>
+        <code>try demo</code> is different: it copies the live saucedemo quickstart into an OS
+        temp folder, runs step-through Episode 1 (Sign In) + Episode 2 (blocked Viewer login),
+        then headless tests. Keep a permanent tree with <code>init</code> / <code>create-waygraph</code>,
+        not <code>try demo</code> alone.
+      </p>
+      <p>
+        Requires Node 22+. <code>@playwright/test</code> is a peer dependency (^1.40).
+        Pin a published waygraph version for product work until you intentionally upgrade.
       </p>
 
       <h2>This site vs the package README</h2>

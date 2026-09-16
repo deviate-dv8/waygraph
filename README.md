@@ -21,6 +21,28 @@ Browser docs (quick start, engine handout, consumer layout, deploy path):
 This README stays the in-repo API narrative; Pages is the same material for eyeballing and cross-mesh handoff.
 
 
+## Getting started (pick one)
+
+| Goal | Command |
+|------|---------|
+| Watch the 2-episode saucedemo demo (temp dir only, no scaffold in cwd) | `npx waygraph try demo` |
+| Scaffold a new **offline** project (green `npm test` on a `data:` URL) | `npx create-waygraph my-app` **or** `npx waygraph init my-app` |
+| Add waygraph to an existing repo | `npm install waygraph @playwright/test` |
+
+**Scaffold is not hidden inside waygraph alone** - the offline starter also ships as
+[`create-waygraph`](https://github.com/deviate-dv8/create-waygraph) on npm (same template as
+`waygraph init` since 0.7.5). Use whichever entry you already have: `npx create-waygraph my-app`
+when reading the GitHub Pages docs, or `npx waygraph init my-app` when the CLI is already
+installed. After either:
+
+```bash
+cd my-app && npm install && npx playwright install chromium && npm test
+```
+
+`try demo` is different: live saucedemo.com quickstart, step-through Episode 1 (Sign In) +
+Episode 2 (blocked Viewer login), then headless tests. For a permanent tree, use
+`init` / `create-waygraph`, not `try demo` alone.
+
 ## Install
 
 ```bash
@@ -154,13 +176,9 @@ an opinionated Playwright," so a stealth-patched or otherwise customized launche
 `playwright-extra` plus a stealth plugin) drops in unmodified, since those already expose
 the same `.launch()` shape as Playwright's own `chromium`/`firefox`/`webkit`.
 
-```bash
-npx waygraph init my-project && cd my-project && npm install && npx playwright install chromium && npm test
-```
-
-`waygraph init` scaffolds a new project (package.json, tsconfig, playwright.config,
-one offline example flow + `npm run check` / `npm run auto`). [`create-waygraph`](https://github.com/deviate-dv8/create-waygraph)
-is the same shape as a standalone package if you prefer `npx create-waygraph`.
+See **Getting started** above for `try demo`, `create-waygraph`, and `waygraph init`.
+Both scaffold commands emit the same offline tree (package.json, tsconfig, playwright.config,
+one example flow + `npm run check` / `npm run auto` / `npm run demo`).
 
 **Consumer layout (Next.js App Router):** block folders mirror `app/` page routes (`/`
 at the namespace root; no invented `landing/`/`root/`; sidebar = chrome + edges). See
@@ -183,7 +201,7 @@ back to `package.json` `waygraph.baseUrl` then `playwright.config` `baseURL`. Pr
 flags (or `npm run demo*`) over a pile of `WAYGRAPH_*` vars. NavBlock `click` shows
 demo cursor travel + pulse before the real click; `url` NavBlocks still `goto`.
 
-**Flow video (headless OK):** `waygraph chain "loginFlow then shopFlow" . --video`
+**Flow video (headless OK):** `waygraph chain "loginFlow({...}) then viewerBlockedFlow({...})" . --video`
 uses Playwright `recordVideo` and prints the `.webm` path when done (default dir:
 `.waygraph-videos/`). Lighter than help-center-clip-engine (no overlay/ffmpeg pipeline).
 Same flag works on `waygraph demo`. Programmatic: `Engine({ recordVideo: { dir: "./videos" } })`.

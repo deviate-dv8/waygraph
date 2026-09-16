@@ -15,7 +15,7 @@
     "baseUrl": "https://example.com"
   },
   "dependencies": {
-    "waygraph": "^0.7.5"
+    "waygraph": "^0.7.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

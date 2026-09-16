@@ -20,18 +20,55 @@
         <li><a href="./consumer.html">Consumer layout</a></li>
         <li><a href="./deploy.html">Deploy / preview</a></li>
         <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
+        <li><a href="https://www.npmjs.com/package/create-waygraph">create-waygraph (npm)</a></li>
       </ul>
     </nav>
     <main>
       <h1>Quick start</h1>
-      <p class="lede">From the package README — first Block, Flow, and scaffold.</p>
+      <p class="lede">Three entry paths, then your first Block + Flow.</p>
 
-      <h2>Install</h2>
-      <pre><code>npm install waygraph @playwright/test</code></pre>
+      <h2 id="paths">Three ways in</h2>
+      <table>
+        <thead>
+          <tr><th>Path</th><th>When</th><th>Command</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Try demo</strong></td>
+            <td>Onboarding - watch chainFlow on saucedemo.com; nothing written to your cwd</td>
+            <td><code>npx waygraph try demo</code></td>
+          </tr>
+          <tr>
+            <td><strong>create-waygraph</strong></td>
+            <td>New repo - offline scaffold (recommended if docs only mention one scaffold command)</td>
+            <td><code>npx create-waygraph my-app</code></td>
+          </tr>
+          <tr>
+            <td><strong>waygraph init</strong></td>
+            <td>Same offline scaffold as <code>create-waygraph</code>, built into waygraph since 0.7.5</td>
+            <td><code>npx waygraph init my-app</code></td>
+          </tr>
+        </tbody>
+      </table>
       <p>
-        Scaffold a green starter:
+        After <code>create-waygraph</code> or <code>init</code>:
       </p>
-      <pre><code>npx create-waygraph my-project &amp;&amp; cd my-project &amp;&amp; npm install &amp;&amp; npm test</code></pre>
+      <pre><code>cd my-app
+npm install
+npx playwright install chromium
+npm test          # offline example flow - green immediately
+npm run check     # nav hygiene + orphan Blocks
+npm run demo      # step-through exampleFlow in the browser</code></pre>
+      <p>
+        Package link:
+        <a href="https://github.com/deviate-dv8/create-waygraph">deviate-dv8/create-waygraph</a>
+        ·
+        <a href="https://www.npmjs.com/package/create-waygraph">npm</a>.
+        <code>try demo</code> uses the live saucedemo quickstart template, not the offline scaffold.
+      </p>
+
+      <h2>Install into an existing repo</h2>
+      <pre><code>npm install waygraph @playwright/test</code></pre>
 
       <h2>Minimal flow</h2>
       <p>
