@@ -3,7 +3,7 @@
 A typed graph of reusable Blocks for driving a browser through E2E flows, in place of a
 flat pile of ad hoc helper functions.
 
-**Current:** `0.10.3` — CLI less-is-more (`auto` / `demo` / `run` + flags). Page hubs still as in 0.9.0.
+**Current:** `0.10.4` — CLI less-is-more (`auto` / `demo` / `run` + `.flow.ts` paths). Page hubs still as in 0.9.0.
 
 This repo is the `waygraph` npm package itself. The full live **Sauce Demo** example
 (Page inventory hub, Effect Add/Remove, MemNav Open details, `waygraph auto`) ships
@@ -22,7 +22,7 @@ Browser docs (quick start, **demo / run**, **auto explore**, engine handout, con
 - **Source:** [`docs/`](./docs/) — static HTML, no build step
 - **Local preview:** `npm run docs:preview` → http://127.0.0.1:4173/
 - **Deploy:** push to `main` touching `docs/**` runs [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) (`workflow_dispatch` also works)
-- **Demo / run contract:** [`docs/demo.html`](./docs/demo.html) — `demo` / `run` / flags (`--auto-next`, `--auto-play-video`)
+- **Demo / run contract:** [`docs/demo.html`](./docs/demo.html) — `list` / `.flow.ts` path / export / flags
 - **Auto explore:** [`docs/auto.html`](./docs/auto.html) — prefer `auto --cli` / `npm run auto:cli` (same menus as headed)
 - **In-repo example:** [`examples/saucedemo`](./examples/saucedemo) — full Sauce Demo project
 - **Convention showcase (Pages):** [`docs/saucedemo/`](./docs/saucedemo/) —
@@ -262,11 +262,14 @@ Deliberately **not yet implemented** (tracked on the project board):
 Mermaid) is `waygraph graph [project]` (`--mermaid`). Unattended JSON execution is
 `chain` + `WAYGRAPH_JSON=1`.
 
-**Friendly demo / run / auto (0.10.3 — less is more):**
+**Friendly demo / run / auto (0.10.4 — flows are files):**
 
 | Want | Command |
 |------|---------|
-| Manual watch | `waygraph demo --blocks shopFlow` |
+| List flows | `waygraph list` → `src/flows/shop.flow.ts  shopFlow` |
+| Run by file | `waygraph run src/flows/shop.flow.ts --data '{…}'` |
+| Run by export | `waygraph run --blocks shopFlow` |
+| Manual watch | `waygraph demo src/flows/shop.flow.ts` |
 | Auto-advance | `waygraph demo --blocks shopFlow --auto-next` |
 | QA watch + record | `waygraph demo --blocks shopFlow --auto-play-video` |
 | Ad-hoc Blocks | `waygraph run --blocks "login then nav-cart" --data '{…}'` |
@@ -274,6 +277,7 @@ Mermaid) is `waygraph graph [project]` (`--mermaid`). Unattended JSON execution 
 | Explore | `waygraph auto` / `waygraph auto --cli` |
 | Path-find | `waygraph auto --blocks LoginPage OrderComplete` |
 
+`--blocks` / positional accepts a Flow export, a `.flow.ts` path, or `"a then b"`.
 `--auto-next` (alias `--autoplay`) = panel Auto-advance. `--auto-play-video` is **demo only**.
 `chain` remains a compat alias for `run --blocks` / `auto --blocks`.
 

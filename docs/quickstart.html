@@ -90,8 +90,16 @@ npm run demo      # watch exampleFlow (manual Next)</code></pre>
         </thead>
         <tbody>
           <tr>
+            <td>List flows (file → export)</td>
+            <td><code>npx waygraph list</code></td>
+          </tr>
+          <tr>
+            <td>Run a flow file</td>
+            <td><code>npx waygraph run src/flows/shop.flow.ts --data '{…}'</code></td>
+          </tr>
+          <tr>
             <td>Manual Next (default)</td>
-            <td><code>npx waygraph demo --blocks shopFlow</code></td>
+            <td><code>npx waygraph demo src/flows/shop.flow.ts</code></td>
           </tr>
           <tr>
             <td>Auto-advance timer</td>

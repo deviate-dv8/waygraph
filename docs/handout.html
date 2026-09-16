@@ -31,7 +31,7 @@
         Package API summary for product meshes. Prefer the package README if this page and
         the repo diverge. Not v1.0 - minors may break until then.
       </p>
-      <p class="meta">Mirrored from shared mesh handout · tip tracks package <code>0.10.3</code></p>
+      <p class="meta">Mirrored from shared mesh handout · tip tracks package <code>0.10.4</code></p>
 
       <h2>Core model</h2>
       <p>
@@ -80,16 +80,18 @@ const NavDeepLink = defineNavBlock({
       <h2>CLI</h2>
       <p>Primary verbs (0.10+). Full contract: <a href="./demo.html">Demo / run</a>.
         Project path optional.</p>
-      <pre><code>npx waygraph auto --cli --data '{…}'     # explore: terminal menu first
+      <pre><code>npx waygraph list                            # file → export
+npx waygraph auto --cli --data '{…}'     # explore: terminal menu first
 npx waygraph auto                        # explore: headed panel (same menus)
 npx waygraph auto --blocks LoginPage OrderComplete
-npx waygraph demo --blocks shopFlow              # watch: step ON, auto-next OFF
+npx waygraph demo src/flows/shop.flow.ts             # watch by file
 npx waygraph demo --blocks shopFlow --auto-next
 npx waygraph demo --blocks shopFlow --auto-play-video   # QA
+npx waygraph run  src/flows/shop.flow.ts --data '{…}'
 npx waygraph run  --blocks "a then b" --data '{…}'
 npx waygraph run  --blocks shopFlow --non-headless --video
 npx waygraph try demo | try auto:cli
-npx waygraph list | check | graph --mermaid | init my-app</code></pre>
+npx waygraph check | graph --mermaid | init my-app</code></pre>
       <p>
         Compat: <code>chain</code> -&gt; <code>run --blocks</code>; <code>--autoplay</code> -&gt; <code>--auto-next</code>.
         Unattended JSON: <code>run</code>/<code>chain</code> + <code>WAYGRAPH_JSON=1</code>.

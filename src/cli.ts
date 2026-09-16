@@ -2034,9 +2034,14 @@ async function main() {
     const flow = await findFlow(projectDir, bareRef);
     if (flow && typeof flow.blocks === "function") {
       const blockInfos = flow.blocks();
+      // Same --data / WAYGRAPH_DATA seeding as the multi-segment path.
+      // Without this, \`waygraph run shop.flow.ts --data '{...}'\` (and bare
+      // export names) hit preflight with an empty MemPage.
+      const seedMem = () => seedMemForFlow(mem, blockInfos, undefined, bareRef);
       resolved = blockInfos.map((bi, idx) => ({
         block: bi.block,
         exportName: bi.name,
+        seedMem: idx === 0 ? seedMem : undefined,
         expectedFailureReason:
           flow.expectedFailureReason && idx === blockInfos.length - 1
             ? flow.expectedFailureReason
@@ -2306,6 +2311,7 @@ main().catch((err) => {
  * `WAYGRAPH_SLOWMO=<ms>` pass straight through from this process's own env.
  */
 async function runChain(projectDir: string, spec: string): Promise<void> {
+  const expanded = await expandSpecFlowFiles(projectDir, spec);
   if (process.env.WAYGRAPH_VIDEO && !process.env.WAYGRAPH_BASE_URL) {
     const resolved = resolveBaseUrl(projectDir);
     if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
@@ -2315,7 +2321,7 @@ async function runChain(projectDir: string, spec: string): Promise<void> {
   writeFileSync(scriptPath, CHAIN_RUNNER_SCRIPT);
   try {
     const code = await new Promise<number>((res, rej) => {
-      const child = spawn(process.execPath, ["--import", tsxEsm, scriptPath, projectDir, spec], {
+      const child = spawn(process.execPath, ["--import", tsxEsm, scriptPath, projectDir, expanded], {
         stdio: "inherit",
         env: process.env,
       });
@@ -3045,6 +3051,87 @@ function resolveSpec(flags: RunFlags): string | undefined {
   return flags.blocks ?? flags.positionals[0];
 }
 
+/** `shop.flow.ts` / `src/flows/cart-bulk.flow.ts` / absolute path — not a Checkpoint or export id. */
+function looksLikeFlowFileRef(ref: string): boolean {
+  if (!ref || ref.includes("then") || ref.includes("(")) return false;
+  return /\.flow\.ts$/i.test(ref) || (/\.ts$/i.test(ref) && (ref.includes("/") || ref.includes("\\")));
+}
+
+function flowExportNameFromBasename(filePath: string): string {
+  const base = basename(filePath).replace(/\.flow\.ts$/i, "").replace(/\.ts$/i, "");
+  const camel = base.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+  return /Flow$/i.test(camel) ? camel : `${camel}Flow`;
+}
+
+/**
+ * Map a `.flow.ts` path (relative to project or absolute) to its Flow export
+ * name so the chain runner can `findFlow(exportName)`. Prefers
+ * `shop.flow.ts` → `shopFlow`. Reads source only (no import) so the outer CLI
+ * does not dual-load `@playwright/test` against the project tree.
+ */
+async function resolveFlowFileToExport(projectDir: string, fileArg: string): Promise<string> {
+  let abs = resolve(projectDir, fileArg);
+  if (!existsSync(abs)) {
+    const want = basename(fileArg);
+    const hits = walkDir(projectDir, new RegExp(`${want.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`));
+    if (hits.length === 1) abs = hits[0]!;
+    else if (hits.length === 0) {
+      throw new Error(`waygraph: no flow file "${fileArg}" under ${projectDir}`);
+    } else {
+      throw new Error(
+        `waygraph: "${fileArg}" matches ${hits.length} files - use a path from \`waygraph list\``,
+      );
+    }
+  }
+  const expected = flowExportNameFromBasename(abs);
+  const src = readFileSync(abs, "utf-8");
+  if (new RegExp(`\\bexport\\s+(?:const|let|var|async\\s+function|function)\\s+${expected}\\b`).test(src)) {
+    return expected;
+  }
+  if (new RegExp(`\\bexport\\s*\\{[^}]*\\b${expected}\\b`).test(src)) {
+    return expected;
+  }
+  const flowNames = [
+    ...src.matchAll(/\bexport\s+(?:const|let|var|async\s+function|function)\s+(\w*Flow)\b/g),
+  ].map((m) => m[1]!);
+  const unique = [...new Set(flowNames)];
+  if (unique.length === 1) return unique[0]!;
+  if (unique.includes(expected)) return expected;
+  if (unique.length === 0) {
+    throw new Error(
+      `waygraph: ${relative(projectDir, abs)} has no exported *Flow (expected ${expected})`,
+    );
+  }
+  throw new Error(
+    `waygraph: ${relative(projectDir, abs)} exports ${unique.join(", ")} - pass the export name or rename to ${expected}`,
+  );
+}
+
+/**
+ * Expand `.flow.ts` path segments in a run/demo spec to export names.
+ * `src/flows/shop.flow.ts` → `shopFlow`; leaves `loginFlow then nav-cart` alone.
+ */
+async function expandSpecFlowFiles(projectDir: string, spec: string): Promise<string> {
+  const parts = spec.split(/\bthen\b/).map((s) => s.trim()).filter((s) => s.length > 0);
+  const out: string[] = [];
+  for (const part of parts) {
+    const m = /^([^\s(]+)(\s*\([\s\S]*\))?$/.exec(part);
+    if (!m) {
+      out.push(part);
+      continue;
+    }
+    const ref = m[1]!;
+    const payload = m[2] ?? "";
+    if (looksLikeFlowFileRef(ref)) {
+      const exportName = await resolveFlowFileToExport(projectDir, ref);
+      out.push(exportName + payload);
+    } else {
+      out.push(part);
+    }
+  }
+  return out.join(" then ");
+}
+
 const args = process.argv.slice(2);
 const command = args[0];
 
@@ -3056,12 +3143,12 @@ Primary (less is more):
                  --cli                     Terminal menu instead of browser panel
                  --blocks <From> <To>      Graph path-find From->To, then run
                  --data '{...}'            Mem seed (same as demo/run)
-  waygraph demo  [--blocks <flow|spec>]    Watch with step overlay (QA path)
+  waygraph demo  [--blocks <flow|file|spec>]  Watch with step overlay (QA path)
                  --data '{...}'            Mem seed JSON (or inline flow({...}))
                  --auto-next               Auto-advance steps (alias: --autoplay)
                  --auto-play-video         QA: --auto-next + --video (+ step)
                  --title / --base-url
-  waygraph run   [--blocks <flow|spec>]    Execute (no overlay unless --step)
+  waygraph run   [--blocks <flow|file|spec>]  Execute (no overlay unless --step)
                  --data '{...}'
                  --non-headless            Show browser
                  --video [dir]             Record .webm
@@ -3072,18 +3159,20 @@ Also:
                  try auto --headed         Browser panel instead of CLI
 
 Examples:
+  waygraph list                                          # file → export map
+  waygraph run src/flows/shop.flow.ts --data '{...}'
+  waygraph run --blocks shopFlow --non-headless --video
+  waygraph demo --blocks src/flows/cart-bulk.flow.ts --auto-next
   waygraph try auto:cli
   waygraph auto --cli --data '{"saucedemo.credentials":{...}}'
   waygraph auto --blocks LoginPage OrderComplete
-  waygraph demo --blocks shopFlow --auto-next
-  waygraph demo --blocks cartBulkFlow --data '{"saucedemo.credentials":{...}}' --auto-play-video
   waygraph run  --blocks "loginFlow then add-all-to-cart" --data '{...}' --video
-  waygraph run  --blocks shopFlow --non-headless --video
 
 Aliases (compat): \`chain <spec>\` -> run --blocks; \`chain auto A B\` -> auto --blocks A B;
   --autoplay -> --auto-next. Prefer the primary verbs above.
 
 Project path optional (defaults to cwd). Flags beat WAYGRAPH_* env.
+\`--blocks\` / positional: Flow export (shopFlow), .flow.ts path, or "a then b" chain.
 `);
   process.exit(0);
 }
@@ -3134,7 +3223,10 @@ async function main(): Promise<void> {
       const spec = resolveSpec(flags);
       if (!spec) {
         console.error(
-          'waygraph run: missing flow/spec — e.g. waygraph run --blocks shopFlow\n' +
+          "waygraph run: missing flow/spec — e.g.\n" +
+            "  waygraph run src/flows/shop.flow.ts\n" +
+            "  waygraph run --blocks shopFlow\n" +
+            "  waygraph list   # file → export map\n" +
             "  Flags: --blocks --data --non-headless --video [dir] --step/--no-step",
         );
         process.exit(1);
@@ -3209,7 +3301,9 @@ async function main(): Promise<void> {
       const spec = resolveSpec(flags);
       if (!spec) {
         console.error(
-          'waygraph demo: missing flow/spec — e.g. waygraph demo --blocks shopFlow\n' +
+          "waygraph demo: missing flow/spec — e.g.\n" +
+            "  waygraph demo src/flows/shop.flow.ts\n" +
+            "  waygraph demo --blocks shopFlow\n" +
             "  Flags: --blocks --data --auto-next --auto-play-video --title --base-url --video",
         );
         process.exit(1);

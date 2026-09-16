@@ -29,7 +29,50 @@
       <h1>Demo / run (less is more)</h1>
       <p class="lede">
         Three primary verbs: <code>auto</code>, <code>demo</code>, <code>run</code>.
-        Flags compose. Prefer <code>--blocks</code> + <code>--data</code> over a flag forest.
+        Flows live as <code>*.flow.ts</code> files - list them, then run by
+        <strong>file path</strong> or <strong>export name</strong>.
+      </p>
+
+      <h2>Flows are files</h2>
+      <p>
+        Each Flow is a TypeScript module under <code>src/flows/</code> (or anywhere
+        ending in <code>.flow.ts</code>). <code>waygraph list</code> prints the map:
+      </p>
+      <pre><code>npx waygraph list
+# src/flows/shop.flow.ts  shopFlow
+# src/flows/login.flow.ts  loginFlow
+# …</code></pre>
+      <table>
+        <thead>
+          <tr><th>Want</th><th>Command</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Run by file path</td>
+            <td><code>npx waygraph run src/flows/shop.flow.ts</code></td>
+          </tr>
+          <tr>
+            <td>Same via flag</td>
+            <td><code>npx waygraph run --blocks src/flows/shop.flow.ts</code></td>
+          </tr>
+          <tr>
+            <td>Run by export name</td>
+            <td><code>npx waygraph run --blocks shopFlow</code></td>
+          </tr>
+          <tr>
+            <td>Watch that file</td>
+            <td><code>npx waygraph demo src/flows/shop.flow.ts</code></td>
+          </tr>
+          <tr>
+            <td>Chain two flows</td>
+            <td><code>npx waygraph run --blocks "loginFlow then shopFlow" --data '{…}'</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        File path → export: <code>shop.flow.ts</code> resolves to <code>shopFlow</code>
+        (or the sole <code>*Flow</code> export in that file). Needs mem?
+        Pass <code>--data '{"saucedemo.credentials":{…}}'</code>.
       </p>
 
       <h2>Pick the command</h2>
@@ -40,7 +83,7 @@
         <tbody>
           <tr>
             <td>Watch a flow (manual Next)</td>
-            <td><code>npx waygraph demo --blocks shopFlow</code></td>
+            <td><code>npx waygraph demo src/flows/shop.flow.ts</code></td>
           </tr>
           <tr>
             <td>Auto-advance steps</td>
@@ -56,7 +99,7 @@
           </tr>
           <tr>
             <td>Headed execute + video</td>
-            <td><code>npx waygraph run --blocks shopFlow --non-headless --video</code></td>
+            <td><code>npx waygraph run src/flows/shop.flow.ts --non-headless --video</code></td>
           </tr>
           <tr>
             <td>Explore (CLI first)</td>
@@ -69,8 +112,8 @@
         </tbody>
       </table>
       <p>
-        Positional flow/spec still works (<code>demo shopFlow</code>) - prefer
-        <code>--blocks</code> for clarity. Compat: <code>chain</code> -&gt; <code>run --blocks</code>;
+        Prefer <code>--blocks</code> or a <code>.flow.ts</code> path. Compat:
+        <code>chain</code> -&gt; <code>run --blocks</code>;
         <code>--autoplay</code> -&gt; <code>--auto-next</code>.
       </p>
 
@@ -84,8 +127,8 @@
             <td><code>--blocks</code></td>
             <td>demo / run / auto</td>
             <td>
-              Flow or <code>"a then b"</code> spec. On <code>auto</code> only:
-              <code>--blocks From To</code> = graph path-find between Checkpoints.
+              Flow export, <code>.flow.ts</code> path, or <code>"a then b"</code> spec.
+              On <code>auto</code> only: <code>--blocks From To</code> = Checkpoint path-find.
             </td>
           </tr>
           <tr>
@@ -121,14 +164,16 @@
         </tbody>
       </table>
 
-      <pre><code># Manual watch (default)
+      <pre><code># See file → export
+npx waygraph list
+
+# Run / watch by file
+npx waygraph run src/flows/shop.flow.ts --data '{"saucedemo.credentials":{…}}'
+npx waygraph demo src/flows/cart-bulk.flow.ts --auto-next
+
+# Or by export name
 npx waygraph demo --blocks shopFlow
-
-# QA record
-npx waygraph demo --blocks cartBulkFlow --data '{"saucedemo.credentials":{…}}' --auto-play-video
-
-# Ad-hoc execute
-npx waygraph run --blocks "loginFlow then add-all-to-cart then remove-all-from-cart" --data '{…}'
+npx waygraph run --blocks "loginFlow then add-all-to-cart" --data '{…}'
 </code></pre>
 
       <h2>Explore next</h2>
