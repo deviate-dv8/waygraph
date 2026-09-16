@@ -4,7 +4,7 @@
  * waygraph CLI -- tooling around this same package's engine.
  *
  * Primary verbs (less is more):
- *   auto   Explore picker; `--blocks From To` = graph path-find + run
+ *   auto   Explore picker; `.flow.ts` / `--blocks From To` = run that path
  *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--auto-play-video`
  *   run    Execute; `--blocks` `--data` `--non-headless` `--video`
  *
@@ -14,7 +14,7 @@
  * "project" defaults to cwd. Flags beat WAYGRAPH_* env.
  */
 
-import { existsSync, readdirSync, readFileSync, writeFileSync, rmSync, cpSync, mkdirSync, mkdtempSync, type Dirent } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync, rmSync, cpSync, mkdirSync, mkdtempSync, statSync, type Dirent } from "node:fs";
 import { resolve, relative, join, basename, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -3139,10 +3139,11 @@ function usage(): void {
   console.log(`waygraph -- graph project tool + engine CLI
 
 Primary (less is more):
-  waygraph auto  [project]                 Interactive explore (picker)
+  waygraph auto  [project|.flow.ts]        Interactive explore (picker)
                  --cli                     Terminal menu instead of browser panel
                  --blocks <From> <To>      Graph path-find From->To, then run
                  --data '{...}'            Mem seed (same as demo/run)
+                 (pass a .flow.ts to run that flow - same as run)
   waygraph demo  [--blocks <flow|file|spec>]  Watch with step overlay (QA path)
                  --data '{...}'            Mem seed JSON (or inline flow({...}))
                  --auto-next               Auto-advance steps (alias: --autoplay)
@@ -3164,6 +3165,7 @@ Examples:
   waygraph run --blocks shopFlow --non-headless --video
   waygraph demo --blocks src/flows/cart-bulk.flow.ts --auto-next
   waygraph try auto:cli
+  waygraph auto src/flows/shop.flow.ts --data '{...}'   # run by file (same as run)
   waygraph auto --cli --data '{"saucedemo.credentials":{...}}'
   waygraph auto --blocks LoginPage OrderComplete
   waygraph run  --blocks "loginFlow then add-all-to-cart" --data '{...}' --video
@@ -3172,7 +3174,7 @@ Aliases (compat): \`chain <spec>\` -> run --blocks; \`chain auto A B\` -> auto -
   --autoplay -> --auto-next. Prefer the primary verbs above.
 
 Project path optional (defaults to cwd). Flags beat WAYGRAPH_* env.
-\`--blocks\` / positional: Flow export (shopFlow), .flow.ts path, or "a then b" chain.
+\`run\`/\`demo\`/\`auto\`: Flow export, .flow.ts path, or "a then b" chain (auto also explores).
 `);
   process.exit(0);
 }
@@ -3337,9 +3339,36 @@ async function main(): Promise<void> {
       const mermaid = flags.mermaid === true;
       const mapOnly = command === "graph" || flags.map === true;
       const cliPicker = flags.cli === true;
-      const proj = resolve(flags.positionals[0] ?? process.cwd());
+      const firstPos = flags.positionals[0];
+
+      // auto src/flows/shop.flow.ts → run that flow (same as `run`). Do not
+      // treat a .flow.ts path as a project directory (existsSync is true for files).
+      if (command === "auto" && firstPos && looksLikeFlowFileRef(firstPos) && !flags.blocksFromTo) {
+        const proj = resolve(process.cwd());
+        if (!existsSync(proj) || !statSync(proj).isDirectory()) {
+          console.error(`waygraph: no such directory: ${proj}`);
+          process.exit(1);
+        }
+        if (!process.env.WAYGRAPH_BASE_URL) {
+          const resolved = resolveBaseUrl(proj);
+          if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
+        }
+        await runChain(proj, firstPos);
+        break;
+      }
+
+      const proj = resolve(firstPos ?? process.cwd());
       if (!existsSync(proj)) {
         console.error(`waygraph: no such directory: ${proj}`);
+        process.exit(1);
+      }
+      if (!statSync(proj).isDirectory()) {
+        console.error(
+          `waygraph ${command}: "${firstPos}" is a file, not a project directory\n` +
+            "  run a flow:  waygraph auto src/flows/shop.flow.ts\n" +
+            "  or explore:  waygraph auto\n" +
+            "  or path-find: waygraph auto --blocks LoginPage OrderComplete",
+        );
         process.exit(1);
       }
 
@@ -3353,7 +3382,8 @@ async function main(): Promise<void> {
         console.error(
           "waygraph auto --blocks expects <fromCheckpoint> <toCheckpoint>\n" +
             '  e.g. waygraph auto --blocks LoginPage OrderComplete\n' +
-            '  for a hand-named chain use: waygraph run --blocks "a then b"',
+            '  for a hand-named chain use: waygraph run --blocks "a then b"\n' +
+            "  or: waygraph auto src/flows/shop.flow.ts",
         );
         process.exit(1);
       }

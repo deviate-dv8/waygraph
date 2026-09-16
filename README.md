@@ -3,7 +3,7 @@
 A typed graph of reusable Blocks for driving a browser through E2E flows, in place of a
 flat pile of ad hoc helper functions.
 
-**Current:** `0.10.4` — CLI less-is-more (`auto` / `demo` / `run` + `.flow.ts` paths). Page hubs still as in 0.9.0.
+**Current:** `0.10.5` — CLI less-is-more (`auto` / `demo` / `run` + `.flow.ts` paths). Page hubs still as in 0.9.0.
 
 This repo is the `waygraph` npm package itself. The full live **Sauce Demo** example
 (Page inventory hub, Effect Add/Remove, MemNav Open details, `waygraph auto`) ships
@@ -262,12 +262,13 @@ Deliberately **not yet implemented** (tracked on the project board):
 Mermaid) is `waygraph graph [project]` (`--mermaid`). Unattended JSON execution is
 `chain` + `WAYGRAPH_JSON=1`.
 
-**Friendly demo / run / auto (0.10.4 — flows are files):**
+**Friendly demo / run / auto (0.10.5 — flows are files):**
 
 | Want | Command |
 |------|---------|
 | List flows | `waygraph list` → `src/flows/shop.flow.ts  shopFlow` |
 | Run by file | `waygraph run src/flows/shop.flow.ts --data '{…}'` |
+| Same via `auto` | `waygraph auto src/flows/shop.flow.ts --data '{…}'` |
 | Run by export | `waygraph run --blocks shopFlow` |
 | Manual watch | `waygraph demo src/flows/shop.flow.ts` |
 | Auto-advance | `waygraph demo --blocks shopFlow --auto-next` |
@@ -278,6 +279,7 @@ Mermaid) is `waygraph graph [project]` (`--mermaid`). Unattended JSON execution 
 | Path-find | `waygraph auto --blocks LoginPage OrderComplete` |
 
 `--blocks` / positional accepts a Flow export, a `.flow.ts` path, or `"a then b"`.
+`auto <file.flow.ts>` **runs** that flow (same as `run`); bare `auto` still explores.
 `--auto-next` (alias `--autoplay`) = panel Auto-advance. `--auto-play-video` is **demo only**.
 `chain` remains a compat alias for `run --blocks` / `auto --blocks`.
 

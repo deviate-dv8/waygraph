@@ -45,6 +45,10 @@
         </thead>
         <tbody>
           <tr>
+            <td>Run a <code>.flow.ts</code> file (same as <code>run</code>)</td>
+            <td><code>npx waygraph auto src/flows/shop.flow.ts --data '{...}'</code></td>
+          </tr>
+          <tr>
             <td>Terminal menu (start here)</td>
             <td><code>npx waygraph auto --cli --data '{...}'</code></td>
           </tr>
@@ -73,8 +77,9 @@
       <p>
         <code>--data</code> seeds MemKeys (same JSON shape as demo/run). Alias env:
         <code>WAYGRAPH_AUTO_MEM</code>. Project path optional (defaults to cwd).
+        Pass a <code>.flow.ts</code> path to <strong>run</strong> that flow (not explore).
         On Sauce Demo LoginPage you should see <code>submit-login</code> (needs
-        <code>waygraph@0.10.4+</code> for <code>try auto</code> / <code>try auto:cli</code>).
+        <code>waygraph@0.10.5+</code> for file-path <code>auto</code> / <code>try auto:cli</code>).
       </p>
 
       <h2>What you see (CLI and GUI)</h2>

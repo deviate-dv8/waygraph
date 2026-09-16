@@ -51,3 +51,18 @@ test("run bare flow asks for --data (not silent empty Mem)", async () => {
     stderr: expect.stringMatching(/--data|WAYGRAPH_DATA|requires/),
   });
 });
+
+test("auto .flow.ts runs the flow (not explore with 0 edges)", async () => {
+  const saucedemo = join(import.meta.dirname, "..", "..", "examples", "saucedemo");
+  await expect(
+    exec(node, [CLI, "auto", "src/flows/login.flow.ts"], { cwd: saucedemo, env: { ...process.env } }),
+  ).rejects.toMatchObject({
+    // Must resolve to loginFlow + ask for mem — not "0 checkpoint(s)" explore
+    stderr: expect.stringMatching(/--data|WAYGRAPH_DATA|requires/),
+  });
+  await expect(
+    exec(node, [CLI, "auto", "src/flows/login.flow.ts"], { cwd: saucedemo, env: { ...process.env } }),
+  ).rejects.toMatchObject({
+    stderr: expect.not.stringMatching(/0 checkpoint/),
+  });
+});
