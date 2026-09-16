@@ -23,7 +23,7 @@
     "baseUrl": "https://www.saucedemo.com"
   },
   "dependencies": {
-    "waygraph": "^0.10.2"
+    "waygraph": "^0.10.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
