@@ -3,7 +3,7 @@
 A typed graph of reusable Blocks for driving a browser through E2E flows, in place of a
 flat pile of ad hoc helper functions.
 
-**Current:** `0.10.1` — CLI less-is-more (`auto` / `demo` / `run` + flags). Page hubs still as in 0.9.0.
+**Current:** `0.10.2` — CLI less-is-more (`auto` / `demo` / `run` + flags). Page hubs still as in 0.9.0.
 
 This repo is the `waygraph` npm package itself. The full live **Sauce Demo** example
 (Page inventory hub, Effect Add/Remove, MemNav Open details, `waygraph auto`) ships
@@ -262,7 +262,7 @@ Deliberately **not yet implemented** (tracked on the project board):
 Mermaid) is `waygraph graph [project]` (`--mermaid`). Unattended JSON execution is
 `chain` + `WAYGRAPH_JSON=1`.
 
-**Friendly demo / run / auto (0.10.1 — less is more):**
+**Friendly demo / run / auto (0.10.2 — less is more):**
 
 | Want | Command |
 |------|---------|

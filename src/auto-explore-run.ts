@@ -589,9 +589,15 @@ export async function runAutoExplore(projectDir: string, options: AutoExploreOpt
       const menu = await buildExploreMenu(page, graph, library, here);
       if (cli) console.error(`waygraph auto: ${menu.flat.length} move(s) available`);
       if (menu.flat.length === 0) {
+        const fromHere = graph.edges.filter((e) => e.from === here).map((e) => e.block);
+        const missing = [...new Set(fromHere)].filter((b) => !library.byName.has(b));
         console.error(
           here
-            ? `waygraph auto: no runnable Blocks on "${here}" - nothing on this page matches the graph.`
+            ? `waygraph auto: no runnable Blocks on "${here}"` +
+                (fromHere.length
+                  ? ` (graph has: ${[...new Set(fromHere)].join(", ")}${missing.length ? `; not loaded: ${missing.join(", ")}` : ""})`
+                  : " - nothing on this page matches the graph.") +
+                (cli ? "" : " Tip: waygraph auto --cli")
             : "waygraph auto: location unknown - pick nav-login (Start here) if shown.",
         );
         if (cli) break;

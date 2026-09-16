@@ -2584,27 +2584,46 @@ async function runTryDemo(): Promise<void> {
   );
 }
 
+const TRY_AUTO_DATA =
+  '{"saucedemo.credentials":{"username":"standard_user","password":"secret_sauce"}}';
+
 /**
- * `waygraph try auto` - same temp Sauce Demo as try demo, then headed
- * `waygraph auto` (same menus as `npm run auto:cli`).
+ * `waygraph try auto` / `try auto:cli` - temp Sauce Demo explore.
+ * Default is CLI menu (same as `npm run auto:cli`). Pass `--headed` for the browser panel.
+ *
+ * Runs as a child in the temp project so Block imports share that install's
+ * `@playwright/test`. In-process explore from the outer CLI against a packed
+ * `file:*.tgz` copy double-loads Playwright and silently yields 0 graph edges
+ * ("LoginPage / No moves").
  */
-async function runTryAuto(): Promise<void> {
+async function runTryAuto(opts: { cli: boolean } = { cli: true }): Promise<void> {
   const destDir = await prepareTryQuickstart("waygraph-try-auto");
   if (!destDir) return;
 
   process.env.WAYGRAPH_BASE_URL ??= "https://www.saucedemo.com";
+  const cli = opts.cli !== false;
   console.log(
-    "waygraph try auto: headed explore on Sauce Demo (temp dir).\n" +
-      "  Prefer CLI next time: cd <temp> && npm run auto:cli\n" +
-      "  Pick LoginPage / submit-login (creds pre-seeded via --data on auto:cli).\n" +
-      "  On inventory: Add/Remove Effect rows + Open details MemNav.\n" +
-      "  Quit from the panel when done.\n",
+    cli
+      ? "waygraph try auto: CLI explore on Sauce Demo (temp dir).\n" +
+          "  Creds pre-seeded (saucedemo.credentials).\n" +
+          "  Pick [1] submit-login, then inventory Add/Remove / Open details.\n" +
+          "  Type q to quit. Headed panel: waygraph try auto --headed\n"
+      : "waygraph try auto: headed explore on Sauce Demo (temp dir).\n" +
+          "  Creds pre-seeded. Prefer CLI: waygraph try auto:cli\n" +
+          "  Pick submit-login, then inventory menus. Quit from the panel.\n",
   );
-  await runAutoExplore(destDir, { baseURL: process.env.WAYGRAPH_BASE_URL });
+
+  const bin = join(destDir, "node_modules", ".bin", "waygraph");
+  const args = ["auto"];
+  if (cli) args.push("--cli");
+  args.push("--data", TRY_AUTO_DATA);
+  const code = await runInherited(bin, args, destDir);
+  if (code !== 0) process.exitCode = code;
+
   console.log(
     "\nwaygraph try auto: explorer closed.\n\n" +
       `Temp project:\n  ${destDir}\n\n` +
-      "Run again (CLI first):\n" +
+      "Run again:\n" +
       `  cd ${destDir} && npm run auto:cli\n` +
       `  cd ${destDir} && npm run auto\n\n` +
       "In-package: examples/saucedemo\n" +
@@ -2815,6 +2834,8 @@ interface RunFlags {
   /** auto path-find: --blocks <fromCheckpoint> <toCheckpoint>. */
   blocksFromTo?: [string, string];
   cli?: boolean;
+  /** try auto / auto: browser panel instead of CLI (default for try auto is CLI). */
+  headed?: boolean;
   mermaid?: boolean;
   map?: boolean;
   /** Positional args with run flags stripped. */
@@ -2867,6 +2888,8 @@ function parseRunFlags(argv: string[]): RunFlags {
       out.nonHeadless = true;
     } else if (a === "--cli") {
       out.cli = true;
+    } else if (a === "--headed") {
+      out.headed = true;
     } else if (a === "--mermaid") {
       out.mermaid = true;
     } else if (a === "--map") {
@@ -3045,10 +3068,12 @@ Primary (less is more):
 
 Also:
   waygraph list | nav | validate | check | graph | init <name>
-  waygraph try [demo|auto]                 One-shot saucedemo in a temp dir
+  waygraph try [demo|auto|auto:cli]        One-shot saucedemo in a temp dir
+                 try auto --headed         Browser panel instead of CLI
 
 Examples:
-  waygraph auto --cli
+  waygraph try auto:cli
+  waygraph auto --cli --data '{"saucedemo.credentials":{...}}'
   waygraph auto --blocks LoginPage OrderComplete
   waygraph demo --blocks shopFlow --auto-next
   waygraph demo --blocks cartBulkFlow --data '{"saucedemo.credentials":{...}}' --auto-play-video
@@ -3267,13 +3292,29 @@ async function main(): Promise<void> {
     case "try": {
       const flags = parseRunFlags(args.slice(1));
       applyRunFlags(flags);
-      const mode = (flags.positionals[0] ?? "demo").toLowerCase();
-      if (mode === "auto") {
-        await runTryAuto();
+      const modeRaw = (flags.positionals[0] ?? "demo").toLowerCase();
+      // auto:cli / auto-cli = CLI explore; auto --headed = browser panel; auto = CLI default
+      const mode =
+        modeRaw === "auto:cli" || modeRaw === "auto-cli"
+          ? "auto:cli"
+          : modeRaw === "auto"
+            ? "auto"
+            : modeRaw;
+      if (mode === "auto" || mode === "auto:cli") {
+        // CLI is the default for try auto (same menus as headed). --headed = panel.
+        const cli =
+          mode === "auto:cli" || flags.cli === true
+            ? true
+            : flags.headed === true || flags.nonHeadless === true
+              ? false
+              : true;
+        await runTryAuto({ cli });
       } else if (mode === "demo" || mode === "") {
         await runTryDemo();
       } else {
-        console.error(`waygraph try: unknown mode "${mode}" - use "demo" or "auto"`);
+        console.error(
+          `waygraph try: unknown mode "${modeRaw}" - use "demo", "auto", or "auto:cli"`,
+        );
         process.exitCode = 1;
       }
       break;

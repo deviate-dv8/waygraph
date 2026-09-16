@@ -349,7 +349,12 @@ export async function discoverGraph(projectDir: string): Promise<WaygraphGraph> 
     let mod: Record<string, unknown>;
     try {
       mod = await importModule(file);
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Dual @playwright/test installs fail here - surface instead of empty graph.
+      if (/second time|playwright/i.test(msg)) {
+        console.error(`waygraph graph: skip ${relFile}: ${msg.split("\n")[0]}`);
+      }
       continue;
     }
     const src = readFileSync(file, "utf-8");

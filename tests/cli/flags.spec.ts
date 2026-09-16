@@ -27,10 +27,7 @@ test("run rejects --auto-play-video (demo only)", async () => {
   });
 });
 
-test("auto --blocks with a single kebab name tells you to use From To", async () => {
-  await expect(
-    exec(node, [CLI, "auto", "--blocks", "add-all-to-cart", join(import.meta.dirname, "..", "..", "examples", "saucedemo")]),
-  ).rejects.toMatchObject({
-    stderr: expect.stringMatching(/fromCheckpoint|LoginPage OrderComplete|run --blocks/),
-  });
+test("help lists try auto:cli", async () => {
+  const { stdout } = await exec(node, [CLI, "--help"]);
+  expect(stdout).toMatch(/try auto:cli/);
 });

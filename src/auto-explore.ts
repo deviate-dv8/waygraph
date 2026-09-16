@@ -121,13 +121,17 @@ export async function loadBlockLibrary(projectDir: string): Promise<{
   const byName = new Map<string, BlockEntry>();
   const navBlocks: BlockEntry[] = [];
   for (const file of walkDir(projectDir, /\.block\.ts$/)) {
+    const relFile = relative(projectDir, file);
     let mod: Record<string, unknown>;
     try {
       mod = await importModule(file);
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/second time|playwright/i.test(msg)) {
+        console.error(`waygraph auto: skip ${relFile}: ${msg.split("\n")[0]}`);
+      }
       continue;
     }
-    const relFile = relative(projectDir, file);
     for (const [exportName, exported] of Object.entries(mod)) {
       if (!isBlockLike(exported)) continue;
       const kind = isNavBlockMarked(exported) ? "nav" : "action";
@@ -319,6 +323,31 @@ export async function buildExploreMenu(
   }
 
   const flat = sections.flatMap((s) => s.edges);
+
+  // Stuck screen: graph knows actions from `here` but none made it into the menu
+  // (failed library load, empty instanceOptions, etc.). Surface them so LoginPage
+  // never shows a dead "No moves" when submit-login is in the graph.
+  if (here !== null && flat.length === 0) {
+    const rescue: ExploreEdge[] = [];
+    const rescued = new Set<string>();
+    for (const edge of graph.edges) {
+      if (edge.kind !== "action" || edge.from !== here) continue;
+      if (rescued.has(edge.block)) continue;
+      const entry = library.byName.get(edge.block);
+      if (!entry) continue;
+      if (entry.block.instanceOptions) continue; // still need live rows
+      rescued.add(edge.block);
+      rescue.push(edge);
+    }
+    if (rescue.length > 0) {
+      sections.push({
+        title: `Methods from ${here}`,
+        edges: rescue.sort((a, b) => a.block.localeCompare(b.block)),
+      });
+      return { here, sections, flat: sections.flatMap((s) => s.edges) };
+    }
+  }
+
   return { here, sections, flat };
 }
 
@@ -326,6 +355,10 @@ export async function buildExploreContext(projectDir: string): Promise<{
   graph: WaygraphGraph;
   library: Awaited<ReturnType<typeof loadBlockLibrary>>;
 }> {
-  const [graph, library] = await Promise.all([discoverGraph(projectDir), loadBlockLibrary(projectDir)]);
+  // Sequential: parallel import of the same *.block.ts tree raced Playwright's
+  // dual-copy guard in some installs and left graph edges without library entries
+  // (LoginPage → "No moves").
+  const library = await loadBlockLibrary(projectDir);
+  const graph = await discoverGraph(projectDir);
   return { graph, library };
 }
