@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>waygraph auto · Sauce Demo · Waygraph</title>
+  <link rel="stylesheet" href="../css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="../index.html">waygraph</a>
+      <ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="./index.html">Sauce Demo</a></li>
+        <li><a href="./kinds.html">Block kinds</a></li>
+        <li><a href="./layout.html">Route layout</a></li>
+        <li><a href="./auto.html" aria-current="page">waygraph auto</a></li>
+        <li><a href="./comments.html">Source comments</a></li>
+        <li><a href="../auto.html">Package auto docs</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>waygraph auto on Sauce Demo</h1>
+      <p class="lede">
+        Prefer <code>auto --cli</code> first - same menu rows as the headed panel
+        (Add all / per-item Add / Open details / logout).
+      </p>
+
+      <h2>Commands</h2>
+      <pre><code># In-repo (creds via --data)
+cd examples/saucedemo
+npm install
+npm run auto:cli          # terminal menu - start here
+npm run auto              # headed panel (same graph)
+npm run prove:auto-cli    # scripted login -&gt; add-all -&gt; remove-all
+
+# One-shot temp copy:
+npx waygraph@latest try auto</code></pre>
+
+      <h2>Typical CLI path</h2>
+      <ol>
+        <li><strong>LoginPage</strong> - <code>[1] submit-login</code></li>
+        <li><strong>LoggedIn</strong> - Add rows + <code>Add all to cart</code></li>
+        <li>After add-all - Remove rows + <code>Remove all from cart</code></li>
+        <li><code>q</code> to quit</li>
+      </ol>
+
+      <h2>How the inventory menu appears</h2>
+      <ol>
+        <li>
+          Effects <code>add-to-cart</code> / <code>remove-from-cart</code> expose
+          <code>instanceOptions(page)</code> - one labeled row per live button.
+        </li>
+        <li>
+          Bulk Methods <code>add-all-to-cart</code> / <code>remove-all-from-cart</code>
+          are one row each when matching buttons exist.
+        </li>
+        <li>
+          <code>nav-item-detail</code> (MemNav) lists Open details per card.
+        </li>
+        <li>CLI and GUI share the same scanner - GUI adds hover rings + Hide/Show.</li>
+      </ol>
+
+      <h2>Related</h2>
+      <ul>
+        <li><a href="../auto.html">Package-level auto contract</a></li>
+        <li><a href="../demo.html">Demo / run flags</a></li>
+        <li><a href="./kinds.html">Effect vs MemNav helpers</a></li>
+      </ul>
+
+      <footer class="site">
+        <a href="./comments.html">next: Source comments</a> ·
+        <a href="./index.html">Sauce Demo home</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

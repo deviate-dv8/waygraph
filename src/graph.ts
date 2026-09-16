@@ -125,7 +125,8 @@ function exportNameToBlockName(exportName: string): string {
 /**
  * Blocks present on disk but never wired into a `.flow.ts` defineFlow array.
  * Required before `chain auto` can build a path from the discovered graph -
- * orphan Blocks are intentionally excluded from auto shorthand.
+ * orphan Blocks are intentionally excluded from auto shorthand. Arrival-only
+ * Page hubs and Blocks listed on a Page's `methods` are not orphans.
  */
 export async function findOrphanBlocks(projectDir: string): Promise<OrphanBlock[]> {
   const blockFiles = discoverBlocks(projectDir);
@@ -134,6 +135,24 @@ export async function findOrphanBlocks(projectDir: string): Promise<OrphanBlock[
   for (const flowFile of flowFiles) {
     for (const ref of extractFlowBlockRefs(readFileSync(flowFile, "utf-8"))) {
       referenced.add(ref);
+    }
+  }
+
+  const pageMethodNames = new Set<string>();
+  for (const file of blockFiles) {
+    let mod: Record<string, unknown>;
+    try {
+      mod = await importModule(file);
+    } catch {
+      continue;
+    }
+    for (const exported of Object.values(mod)) {
+      if (!exported || typeof exported !== "object") continue;
+      if ((exported as { __waygraphKind?: string }).__waygraphKind !== "page") continue;
+      const names = (exported as { __waygraphMethods?: readonly string[] }).__waygraphMethods;
+      if (Array.isArray(names)) {
+        for (const n of names) pageMethodNames.add(n);
+      }
     }
   }
 
@@ -146,12 +165,23 @@ export async function findOrphanBlocks(projectDir: string): Promise<OrphanBlock[
     while ((m = exportRe.exec(src)) !== null) {
       const exportName = m[1]!;
       if (referenced.has(exportName)) continue;
-      if (!/defineBlock|defineNavBlock/.test(src)) continue;
+      if (!/defineBlock|defineMethodBlock|defineActionBlock|definePageBlock|defineEffectBlock|defineMemEffectBlock|defineNavBlock|defineNavClickBlock|defineMemNavBlock/.test(src)) continue;
+      // Arrival-only Page hubs are never orphans (even if import fails without tsx).
+      const assignSlice = src.slice(m.index, m.index + exportName.length + 80);
+      if (/=\s*definePageBlock\b/.test(assignSlice)) continue;
       let block = exportNameToBlockName(exportName);
       try {
         const mod = await importModule(file);
         const exported = mod[exportName];
         if (isBlockLike(exported)) block = exported.name;
+        if (
+          exported &&
+          typeof exported === "object" &&
+          (exported as { __waygraphKind?: string }).__waygraphKind === "page"
+        ) {
+          continue;
+        }
+        if (pageMethodNames.has(block)) continue;
       } catch {
         // import may fail in partial projects - keep derived name
       }
@@ -201,7 +231,8 @@ function isBlockLike(val: unknown): val is { name: string; instruction: { act: u
 
 /** Set by `defineNavBlock` (non-enumerable) - see src/engine.ts. */
 function isNavBlockMarked(val: Record<string, unknown>): boolean {
-  return (val as { __waygraphKind?: string }).__waygraphKind === "nav";
+  const kind = (val as { __waygraphKind?: string }).__waygraphKind;
+  return kind === "nav" || kind === "page";
 }
 
 /**
@@ -275,14 +306,20 @@ function resolveGenericArg(blockFilePath: string, arg: string): string[] {
   return resolveTypeToTags(blockFilePath, arg);
 }
 
-/** Every `defineBlock<In, Out>(` call site in a file's own source, in order. */
+/** Every `defineBlock` / `defineEffectBlock` / `defineMemEffectBlock` `<In, Out>` call site. */
 function extractDefineBlockGenerics(src: string): { in: string; out: string }[] {
   // Each argument is either a plain identifier or an inline `Checkpoint<...>`
-  // (its own angle brackets, so the outer defineBlock<...> pair alone won't
+  // (its own angle brackets, so the outer defineX<...> pair alone won't
   // balance correctly against a naive greedy match) - captured as a single
   // alternation so both shapes come out of the same two capture groups.
+  // Effect helpers are TypeScript salt over defineBlock - same In/Out edges.
   const arg = String.raw`(Checkpoint<[^>]*>|[A-Za-z_$][\w]*)`;
-  const re = new RegExp(String.raw`defineBlock<\s*${arg}\s*,\s*${arg}\s*>`, "g");
+  const re = new RegExp(
+    String.raw`define(?:(?:Mem)?Effect|Method|Action)?Block<\s*${arg}\s*,\s*${arg}\s*>`,
+    "g",
+  );
+  // Matches: defineBlock | defineMethodBlock | defineActionBlock | defineEffectBlock |
+  // defineMemEffectBlock (Nav / NavClick / Page use runtime markers, not this regex.)
   const calls: { in: string; out: string }[] = [];
   let m: RegExpExecArray | null;
   while ((m = re.exec(src)) !== null) {
@@ -329,22 +366,33 @@ export async function discoverGraph(projectDir: string): Promise<WaygraphGraph> 
 
       if (isNavBlockMarked(exported as Record<string, unknown>)) {
         try {
-          // NavBlock's own resolve() ignores whatever it's called with -
-          // always exactly `checkpoint(options.checkpoint)`.
+          // NavBlock / PageBlock resolve() ignores input - always checkpoint(tag).
           const resolveFn = exported.instruction.resolve as (input: unknown) => Promise<{ __state: string }> | { __state: string };
           const resolved = await resolveFn(undefined);
           const to = resolved.__state;
           nodeTags.add(to);
-          edges.push({ block: blockName, file: relFile, from: "*", to, kind: "nav" });
+          // Arrival-only Page hubs register the Checkpoint node but do not emit
+          // a Start-here edge (no deep link). Methods own the action edges.
+          const isPage = (exported as { __waygraphKind?: string }).__waygraphKind === "page";
+          const deepLink =
+            !isPage ||
+            (exported as { __waygraphPageDeepLink?: boolean }).__waygraphPageDeepLink === true;
+          if (deepLink) {
+            edges.push({ block: blockName, file: relFile, from: "*", to, kind: "nav" });
+          }
         } catch {
-          skipped.push({ block: blockName, file: relFile, reason: "NavBlock's own resolve() threw" });
+          skipped.push({ block: blockName, file: relFile, reason: "NavBlock/PageBlock resolve() threw" });
         }
         continue;
       }
 
       const call = calls[callIndex++];
       if (!call) {
-        skipped.push({ block: blockName, file: relFile, reason: "no defineBlock<In, Out> generic call found" });
+        skipped.push({
+          block: blockName,
+          file: relFile,
+          reason: "no defineBlock/defineMethodBlock/defineEffectBlock<In, Out> generic call found",
+        });
         continue;
       }
       const fromTags = resolveGenericArg(file, call.in);

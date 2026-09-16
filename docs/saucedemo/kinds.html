@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Block kinds · Sauce Demo · Waygraph</title>
+  <link rel="stylesheet" href="../css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="../index.html">waygraph</a>
+      <ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="./index.html">Sauce Demo</a></li>
+        <li><a href="./kinds.html" aria-current="page">Block kinds</a></li>
+        <li><a href="./layout.html">Route layout</a></li>
+        <li><a href="./auto.html">waygraph auto</a></li>
+        <li><a href="./comments.html">Source comments</a></li>
+        <li><a href="../handout.html">Engine handout</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>Block kinds (TypeScript salt)</h1>
+      <p class="lede">
+        Three file conventions. One runtime type: <code>Block</code>.
+      </p>
+
+      <h2>The salt rule</h2>
+      <p>
+            <tr><td>Page</td><td><code>*.page.block.ts</code></td><td><code>definePageBlock</code></td><td>Optional deep-link; hub + methods</td></tr>
+        <code>defineNavBlock</code>, <code>defineEffectBlock</code>, and
+        <code>defineBlock</code> only constrain what you must author
+        (<code>url</code>/<code>click</code>, or <code>requires</code> +
+        <code>instanceOptions</code>, or a free <code>instruction</code>).
+        After build, flows and <code>waygraph auto</code> see ordinary Blocks.
+        Prefer <code>defineEffectBlock</code> over the older alias
+        <code>defineMemEffectBlock</code>.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Kind</th><th>File</th><th>Helper</th><th>Sauce Demo example</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Nav (url)</strong></td>
+            <td><code>nav-*.block.ts</code></td>
+            <tr><td>Page</td><td><code>*.page.block.ts</code></td><td><code>definePageBlock</code></td><td>Optional deep-link; hub + methods</td></tr>
+            <td><code>defineNavBlock</code></td>
+            <td><code>nav-login</code> - <code>url: "/"</code></td>
+          </tr>
+          <tr>
+            <td><strong>Nav (click)</strong></td>
+            <td><code>nav-*.block.ts</code></td>
+            <td><code>defineNavClickBlock</code></td>
+            <td><code>nav-cart</code>, continue / back</td>
+          </tr>
+          <tr>
+            <td><strong>Nav (instance)</strong></td>
+            <td><code>nav-*.block.ts</code></td>
+            <td><code>defineMemNavBlock</code></td>
+            <td><code>nav-item-detail</code> - one Open-details row per product</td>
+          </tr>
+          <tr>
+            <td><strong>Method</strong></td>
+            <td><code>*.method.block.ts</code></td>
+            <td><code>defineMethodBlock</code></td>
+            <td><code>submit-login</code>, <code>finish-order</code></td>
+          </tr>
+          <tr>
+            <td><strong>Effect</strong></td>
+            <td><code>*.effect.block.ts</code></td>
+            <td><code>defineEffectBlock</code></td>
+            <td><code>add-to-cart</code> / <code>remove-from-cart</code></td>
+          </tr>
+          <tr>
+            <td><strong>Block (escape)</strong></td>
+            <td>any</td>
+            <td><code>defineBlock</code></td>
+            <td>tests / unsure / probes</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Effect vs Action</h2>
+      <p>
+        Both live under the route's <code>actions/</code> folder. Use
+        <strong>Effect</strong> when the Block mutates a <em>live instance</em>
+        and <code>waygraph auto</code> should list one menu row per DOM match
+        (<code>instanceOptions</code> + mem key). Use <strong>Method</strong>
+        for forms, submit, logout, and other one-shot business steps without
+        that instance menu.
+      </p>
+
+      <h2>Navigation stays in Nav</h2>
+      <p>
+        Only NavBlocks may <code>page.goto</code> or encoded nav
+        <code>click</code>. Effects and Actions stay on the page (URL may
+        change as an app side effect of a button - that still is not a Nav).
+      </p>
+
+      <footer class="site">
+        <a href="./layout.html">next: Route layout</a> ·
+        <a href="./index.html">Sauce Demo home</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

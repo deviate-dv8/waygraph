@@ -1,6 +1,6 @@
 import { Engine, start, end, withTitle } from "waygraph";
-import { NavCartBlock } from "../blocks/nav-cart.block.js";
-import { NavContinueShoppingBlock } from "../blocks/nav-continue-shopping.block.js";
+import { NavCartBlock } from "../blocks/saucedemo-web/cart/nav-cart.block.js";
+import { NavContinueShoppingBlock } from "../blocks/saucedemo-web/inventory-item/nav-continue-shopping.block.js";
 
 const engine = new Engine();
 

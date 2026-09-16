@@ -6,17 +6,17 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
-    "flows": "waygraph list .",
-    "check": "waygraph check .",
-    "auto": "waygraph auto .",
-    "graph": "waygraph graph .",
-    "demo": "waygraph demo exampleFlow ."
+    "flows": "waygraph list",
+    "check": "waygraph check",
+    "auto": "waygraph auto",
+    "graph": "waygraph graph",
+    "demo": "waygraph demo exampleFlow"
   },
   "waygraph": {
     "baseUrl": "https://example.com"
   },
   "dependencies": {
-    "waygraph": "^0.7.9"
+    "waygraph": "^0.9.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

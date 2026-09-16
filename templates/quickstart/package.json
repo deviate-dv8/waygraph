@@ -6,20 +6,24 @@
   "scripts": {
     "test": "playwright test",
     "typecheck": "tsc --noEmit",
-    "check": "waygraph check .",
-    "auto": "waygraph auto .",
-    "auto:cli": "waygraph auto . --cli",
-    "graph": "waygraph graph .",
-    "graph:mermaid": "waygraph graph . --mermaid",
-    "demo": "waygraph chain \"loginFlow({\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}}) then shopFlow({\\\"saucedemo.selectedItem\\\":{\\\"id\\\":\\\"sauce-labs-backpack\\\",\\\"name\\\":\\\"Sauce Labs Backpack\\\"}}) then viewerBlockedFlow({\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"locked_out_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}})\" . --step --no-autoplay",
-    "demo:autoplay": "waygraph chain \"loginFlow({\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}}) then shopFlow({\\\"saucedemo.selectedItem\\\":{\\\"id\\\":\\\"sauce-labs-backpack\\\",\\\"name\\\":\\\"Sauce Labs Backpack\\\"}}) then viewerBlockedFlow({\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"locked_out_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}})\" . --step --autoplay",
-    "record": "waygraph chain \"loginFlow({\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}}) then shopFlow({\\\"saucedemo.selectedItem\\\":{\\\"id\\\":\\\"sauce-labs-backpack\\\",\\\"name\\\":\\\"Sauce Labs Backpack\\\"}}) then viewerBlockedFlow({\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"locked_out_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}})\" . --video --no-step"
+    "check": "waygraph check",
+    "auto": "waygraph auto",
+    "auto:cli": "waygraph auto --cli --data \"{\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}}\"",
+    "graph": "waygraph graph",
+    "graph:mermaid": "waygraph graph --mermaid",
+    "demo": "waygraph demo --blocks \"loginFlow then shopFlow({\\\"saucedemo.selectedItem\\\":{\\\"id\\\":\\\"sauce-labs-backpack\\\",\\\"name\\\":\\\"Sauce Labs Backpack\\\"}}) then viewerBlockedFlow({\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"locked_out_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}})\" --data \"{\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}}\"",
+    "demo:auto-next": "waygraph demo --blocks \"loginFlow then shopFlow({\\\"saucedemo.selectedItem\\\":{\\\"id\\\":\\\"sauce-labs-backpack\\\",\\\"name\\\":\\\"Sauce Labs Backpack\\\"}}) then viewerBlockedFlow({\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"locked_out_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}})\" --data \"{\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}}\" --auto-next",
+    "record": "waygraph run --blocks \"loginFlow then shopFlow({\\\"saucedemo.selectedItem\\\":{\\\"id\\\":\\\"sauce-labs-backpack\\\",\\\"name\\\":\\\"Sauce Labs Backpack\\\"}}) then viewerBlockedFlow({\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"locked_out_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}})\" --data \"{\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}}\" --video --no-step",
+    "demo:bulk": "waygraph demo --blocks cartBulkFlow --data \"{\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}}\"",
+    "demo:bulk:auto-next": "waygraph demo --blocks cartBulkFlow --data \"{\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}}\" --auto-next --title \"Cart bulk demo\"",
+    "demo:bulk:video": "waygraph demo --blocks cartBulkFlow --data \"{\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}}\" --auto-play-video --title \"Cart bulk demo\"",
+    "run:bulk": "waygraph run --blocks \"loginFlow then add-all-to-cart then remove-all-from-cart\" --data \"{\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}}\""
   },
   "waygraph": {
     "baseUrl": "https://www.saucedemo.com"
   },
   "dependencies": {
-    "waygraph": "^0.7.11"
+    "waygraph": "^0.10.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

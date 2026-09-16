@@ -13,9 +13,9 @@ await import(require.resolve("tsx/esm"));
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const waygraphDist = join(root, "../../dist");
 const { Engine, start, end, MemPage } = await import(pathToFileURL(join(waygraphDist, "index.js")).href);
-const { NavLoginBlock } = await import(pathToFileURL(join(root, "src/blocks/nav-login.block.js")).href);
+const { NavLoginBlock } = await import(pathToFileURL(join(root, "src/blocks/saucedemo-web/nav-login.block.js")).href);
 const { SubmitLoginActionBlock } = await import(
-  pathToFileURL(join(root, "src/blocks/actions/submit-login.action.block.js")).href
+  pathToFileURL(join(root, "src/blocks/saucedemo-web/methods/submit-login.method.block.js")).href
 );
 const { LoginCreds } = await import(pathToFileURL(join(root, "src/states/checkout.mem-keys.js")).href);
 

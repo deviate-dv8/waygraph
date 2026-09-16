@@ -16,8 +16,9 @@
       <ul>
         <li><a href="./index.html">Home</a></li>
         <li><a href="./quickstart.html" aria-current="page">Quick start</a></li>
-        <li><a href="./demo.html">Demo / step</a></li>
+        <li><a href="./demo.html">Demo / run</a></li>
         <li><a href="./auto.html">Auto explore</a></li>
+        <li><a href="./saucedemo/index.html">Sauce Demo</a></li>
         <li><a href="./handout.html">Engine handout</a></li>
         <li><a href="./consumer.html">Consumer layout</a></li>
         <li><a href="./deploy.html">Deploy / preview</a></li>
@@ -41,9 +42,14 @@
             <td><code>npx waygraph try demo</code></td>
           </tr>
           <tr>
+            <td><strong>Try auto</strong></td>
+            <td>Temp Sauce Demo explorer (prefer CLI menu first)</td>
+            <td><code>npx waygraph try auto</code></td>
+          </tr>
+          <tr>
             <td><strong>In-repo example</strong></td>
-            <td>Permanent Sauce Demo with <code>auto</code> + full Playwright suite</td>
-            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npm run auto</code></td>
+            <td>Permanent Sauce Demo - start with <code>auto:cli</code></td>
+            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npm run auto:cli</code></td>
           </tr>
           <tr>
             <td><strong>create-waygraph</strong></td>
@@ -65,18 +71,19 @@ npm install
 npx playwright install chromium
 npm test          # offline example flow - green immediately
 npm run check     # nav hygiene + orphan Blocks
-npm run demo      # step-through exampleFlow (manual Next; --step --no-autoplay)</code></pre>
+npm run demo      # watch exampleFlow (manual Next)</code></pre>
       <p>
         Package link:
         <a href="https://github.com/deviate-dv8/create-waygraph">deviate-dv8/create-waygraph</a>
         ·
         <a href="https://www.npmjs.com/package/create-waygraph">npm</a>.
-        <code>try demo</code> uses the live saucedemo quickstart template, not the offline scaffold.
-        How step vs autoplay works: <a href="./demo.html">Demo / step / autoplay</a>.
-        Interactive picker: <a href="./auto.html">Auto explore</a>.
+        <code>try demo</code> / <code>try auto</code> use the live saucedemo quickstart
+        template, not the offline scaffold.
+        Flags: <a href="./demo.html">Demo / run</a>.
+        Explore: <a href="./auto.html">Auto explore</a> (prefer <code>auto --cli</code>).
       </p>
 
-      <h2 id="demo">Watch a demo (step / autoplay)</h2>
+      <h2 id="demo">Watch / run / explore (0.10+)</h2>
       <table>
         <thead>
           <tr><th>Want</th><th>Command</th></tr>
@@ -84,26 +91,26 @@ npm run demo      # step-through exampleFlow (manual Next; --step --no-autoplay)
         <tbody>
           <tr>
             <td>Manual Next (default)</td>
-            <td><code>npx waygraph demo shopFlow .</code></td>
+            <td><code>npx waygraph demo --blocks shopFlow</code></td>
           </tr>
           <tr>
             <td>Auto-advance timer</td>
-            <td><code>npx waygraph demo shopFlow . --autoplay</code></td>
+            <td><code>npx waygraph demo --blocks shopFlow --auto-next</code></td>
           </tr>
           <tr>
-            <td>Overlay on a chain</td>
-            <td><code>npx waygraph chain "login then nav-cart" . --step</code></td>
+            <td>Execute ad-hoc Blocks</td>
+            <td><code>npx waygraph run --blocks "login then nav-cart" --data '{…}'</code></td>
           </tr>
           <tr>
-            <td>No overlay</td>
-            <td><code>npx waygraph demo shopFlow . --no-step</code></td>
+            <td>CLI explore (same menus as headed)</td>
+            <td><code>npx waygraph auto --cli --data '{…}'</code></td>
           </tr>
         </tbody>
       </table>
       <p>
-        Two knobs: <code>--step</code> (overlay on/off) and <code>--autoplay</code>
-        (Auto-advance checkbox start state). Details:
-        <a href="./demo.html">demo page</a>.
+        Details: <a href="./demo.html">Demo / run</a> ·
+        <a href="./auto.html">Auto explore</a>.
+        Alias: <code>--autoplay</code> -&gt; <code>--auto-next</code>.
       </p>
 
       <h2>Install into an existing repo</h2>

@@ -1,7 +1,7 @@
 import { Engine, start, end, withTitle } from "waygraph";
-import { NavItemDetailBlock } from "../blocks/nav-item-detail.block.js";
-import { NavBackToInventoryBlock } from "../blocks/nav-back-to-inventory.block.js";
-import { SubmitLogoutBlock } from "../blocks/actions/submit-logout.action.block.js";
+import { NavItemDetailBlock } from "../blocks/saucedemo-web/inventory/nav-item-detail.block.js";
+import { NavBackToInventoryBlock } from "../blocks/saucedemo-web/inventory-item/nav-back-to-inventory.block.js";
+import { SubmitLogoutBlock } from "../blocks/saucedemo-web/methods/submit-logout.method.block.js";
 
 const engine = new Engine();
 

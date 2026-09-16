@@ -16,8 +16,9 @@
       <ul>
         <li><a href="./index.html" aria-current="page">Home</a></li>
         <li><a href="./quickstart.html">Quick start</a></li>
-        <li><a href="./demo.html">Demo / step</a></li>
+        <li><a href="./demo.html">Demo / run</a></li>
         <li><a href="./auto.html">Auto explore</a></li>
+        <li><a href="./saucedemo/index.html">Sauce Demo</a></li>
         <li><a href="./handout.html">Engine handout</a></li>
         <li><a href="./consumer.html">Consumer layout</a></li>
         <li><a href="./deploy.html">Deploy / preview</a></li>
@@ -45,12 +46,16 @@
           <span>Try demo, scaffold (<code>create-waygraph</code> / <code>init</code>), first Flow.</span>
         </a>
         <a href="./demo.html">
-          <strong>Demo / step / autoplay</strong>
-          <span>How to watch a flow: <code>--step</code> vs <code>--autoplay</code> (agents read this).</span>
+          <strong>Demo / run</strong>
+          <span><code>demo</code> / <code>run</code> / <code>auto</code> + <code>--blocks</code> <code>--data</code> <code>--auto-next</code>.</span>
         </a>
         <a href="./auto.html">
           <strong>Auto explore</strong>
-          <span>Interactive Effect / MemNav picker on the live page (still just Blocks).</span>
+          <span>Prefer <code>auto --cli</code> first - same menus as the headed panel.</span>
+        </a>
+        <a href="./saucedemo/index.html">
+          <strong>Sauce Demo showcase</strong>
+          <span>Convention reference - route folders, Effect, auto menus.</span>
         </a>
         <a href="./quickstart.html">
           <strong>Quick start</strong>
@@ -81,8 +86,12 @@
             <td><code>npx waygraph try demo</code></td>
           </tr>
           <tr>
-            <td>Interactive explore (in-repo example)</td>
-            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npx waygraph auto .</code></td>
+            <td>Interactive explore Sauce Demo (temp dir; try <code>auto --cli</code> in that folder)</td>
+            <td><code>npx waygraph try auto</code></td>
+          </tr>
+          <tr>
+            <td>Interactive explore CLI (in-repo)</td>
+            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npm run auto:cli</code></td>
           </tr>
           <tr>
             <td>Scaffold a new offline project (green <code>npm test</code> on a <code>data:</code> URL)</td>
@@ -109,7 +118,7 @@
         then headless tests. Permanent tree:
         <code>examples/saucedemo</code> in this package. Offline empty scaffold:
         <code>init</code> / <code>create-waygraph</code>.
-        Overlay details: <a href="./demo.html">Demo / step</a> ·
+        Overlay details: <a href="./demo.html">Demo / run</a> ·
         <a href="./auto.html">Auto explore</a>.
       </p>
       <p>

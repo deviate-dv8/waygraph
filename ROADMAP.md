@@ -31,6 +31,7 @@ internal boundaries, is an open decision - not committed to either way yet.
 | 0.7.2 | `precondition` + tip polish | Shipped |
 | 0.7.3 | (staged on npm, never went live - E409) | Skipped - do not pin |
 | 0.7.4 | `waygraph demo` + run flags; NavBlock click demo cursor | **This release** (not 1.0.0) |
+| 0.9.0 | PageBlock + methods/ + Sel; Action→Method | **This release** |
 | 1.0.0 | Stability declaration | Hold for Dan go-ahead once auto is used for real on consumers |
 
 ### 0.5.0 - NavBlock + ActionPage + waygraph check + pluggable browser provider

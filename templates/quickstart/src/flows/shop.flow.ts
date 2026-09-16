@@ -1,9 +1,9 @@
 import { Engine, start, end, withTitle } from "waygraph";
-import { AddToCartBlock } from "../blocks/actions/add-to-cart.effect.block.js";
-import { NavCartBlock } from "../blocks/nav-cart.block.js";
-import { NavCheckoutInfoBlock } from "../blocks/nav-checkout-info.block.js";
-import { SubmitCheckoutInfoBlock } from "../blocks/actions/submit-checkout-info.action.block.js";
-import { FinishOrderBlock } from "../blocks/actions/finish-order.action.block.js";
+import { AddToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.js";
+import { NavCartBlock } from "../blocks/saucedemo-web/cart/nav-cart.block.js";
+import { NavCheckoutInfoBlock } from "../blocks/saucedemo-web/cart/nav-checkout-info.block.js";
+import { SubmitCheckoutInfoBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/submit-checkout-info.method.block.js";
+import { FinishOrderBlock } from "../blocks/saucedemo-web/checkout-step-two/methods/finish-order.method.block.js";
 
 const engine = new Engine();
 

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Source comments · Sauce Demo · Waygraph</title>
+  <link rel="stylesheet" href="../css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="../index.html">waygraph</a>
+      <ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="./index.html">Sauce Demo</a></li>
+        <li><a href="./kinds.html">Block kinds</a></li>
+        <li><a href="./layout.html">Route layout</a></li>
+        <li><a href="./auto.html">waygraph auto</a></li>
+        <li><a href="./comments.html" aria-current="page">Source comments</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>Detailed source comments</h1>
+      <p class="lede">
+        Every showcase Block file opens with a short convention header so the
+        kind, helper, and URL folder are obvious without leaving the editor.
+      </p>
+
+      <h2>Comment contract</h2>
+      <p>Each <code>*.block.ts</code> / <code>*.effect.block.ts</code> /
+        <code>*.method.block.ts</code> should state:</p>
+      <ol>
+        <li><strong>Kind</strong> - Nav | Effect | Action</li>
+        <li><strong>Helper</strong> - which define* salt (or plain Block)</li>
+        <li><strong>Route</strong> - which URL folder owns this file</li>
+        <li><strong>Why</strong> - one line (navigates, instance menu, form submit)</li>
+      </ol>
+
+      <h2>Example shape (Effect)</h2>
+      <pre><code>/**
+ * Kind: Effect
+ * Helper: defineEffectBlock (TS salt over Block)
+ * Route: saucedemo-web/inventory/  (= /inventory.html)
+ *
+ * Mutates cart for the mem-picked product. waygraph auto lists one
+ * "Add ..." row per live Add button via instanceOptions.
+ */
+export const AddToCartBlock = defineEffectBlock&lt;...&gt;({ ... });</code></pre>
+
+      <h2>Example shape (Nav)</h2>
+      <pre><code>/**
+ * Kind: Nav
+ * Helper: defineNavBlock
+ * Route: saucedemo-web/  (= /)
+ *
+ * page.goto lives here only - submit-login Action never navigates.
+ */
+export const NavLoginBlock = defineNavBlock&lt;...&gt;({ ... });</code></pre>
+
+      <h2>Example shape (Action)</h2>
+      <pre><code>/**
+ * Kind: Action
+ * Helper: defineBlock
+ * Route: saucedemo-web/methods/  (page URL /)
+ *
+ * Fills credentials and submits - never page.goto (nav-login owns that).
+ * Branches: good creds -&gt; LoggedIn; bad/locked -&gt; LoginPage with error banner.
+ */
+export const SubmitLoginActionBlock = defineBlock&lt;...&gt;({ ... });</code></pre>
+
+      <h2>NAV.md per route</h2>
+      <p>
+        Each route folder ships a <code>NAV.md</code> listing URL, nav Blocks,
+        effects/actions, and mem keys / checkpoints. That is the human map;
+        <code>waygraph auto</code> still discovers from compiled Blocks.
+      </p>
+
+      <h2>Where to read in source</h2>
+      <ul>
+        <li>
+          <a href="https://github.com/deviate-dv8/waygraph/blob/main/examples/saucedemo/src/blocks/saucedemo-web/nav-login.block.ts">nav-login.block.ts</a>
+        </li>
+        <li>
+          <a href="https://github.com/deviate-dv8/waygraph/blob/main/examples/saucedemo/src/blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.ts">add-to-cart.effect.block.ts</a>
+        </li>
+        <li>
+          <a href="https://github.com/deviate-dv8/waygraph/blob/main/examples/saucedemo/src/blocks/saucedemo-web/methods/submit-login.action.block.ts">submit-login.action.block.ts</a>
+        </li>
+        <li>
+          <a href="https://github.com/deviate-dv8/waygraph/blob/main/examples/saucedemo/src/blocks/SITE-MAP.md">SITE-MAP.md</a>
+        </li>
+      </ul>
+
+      <footer class="site">
+        <a href="./index.html">Sauce Demo home</a> ·
+        <a href="https://github.com/deviate-dv8/waygraph/tree/main/examples/saucedemo">browse source on GitHub</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 import { Engine, start, end, withTitle, withSessionReset } from "waygraph";
-import { NavLoginBlock } from "../blocks/nav-login.block.js";
-import { SubmitLoginActionBlock } from "../blocks/actions/submit-login.action.block.js";
+import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
+import { SubmitLoginActionBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
 
 const engine = new Engine();
 

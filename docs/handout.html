@@ -16,8 +16,9 @@
       <ul>
         <li><a href="./index.html">Home</a></li>
         <li><a href="./quickstart.html">Quick start</a></li>
-        <li><a href="./demo.html">Demo / step</a></li>
+        <li><a href="./demo.html">Demo / run</a></li>
         <li><a href="./auto.html">Auto explore</a></li>
+        <li><a href="./saucedemo/index.html">Sauce Demo</a></li>
         <li><a href="./handout.html" aria-current="page">Engine handout</a></li>
         <li><a href="./consumer.html">Consumer layout</a></li>
         <li><a href="./deploy.html">Deploy / preview</a></li>
@@ -30,7 +31,7 @@
         Package API summary for product meshes. Prefer the package README if this page and
         the repo diverge. Not v1.0 - minors may break until then.
       </p>
-      <p class="meta">Mirrored from shared mesh handout · tip tracks package <code>0.7.11</code></p>
+      <p class="meta">Mirrored from shared mesh handout · tip tracks package <code>0.10.0</code></p>
 
       <h2>Core model</h2>
       <p>
@@ -77,24 +78,21 @@ const NavDeepLink = defineNavBlock({
       </p>
 
       <h2>CLI</h2>
-      <p>Order for agents (watch -> run -> inspect -> scaffold). Full demo contract:
-        <a href="./demo.html">Demo / step / autoplay</a>.</p>
-      <pre><code>npx waygraph demo shopFlow .              # watch: step ON, autoplay OFF
-npx waygraph demo shopFlow . --autoplay   # watch: auto-advance timer
-npx waygraph try demo                     # Sauce Demo onboarding (temp dir)
-npx waygraph chain "login then nav-cart" . --step
-npx waygraph run shopFlow .
-npx waygraph list .
-npx waygraph check .
-npx waygraph auto .                       # interactive explore
-npx waygraph graph . --mermaid
-npx waygraph init my-app</code></pre>
+      <p>Primary verbs (0.10+). Full contract: <a href="./demo.html">Demo / run</a>.
+        Project path optional.</p>
+      <pre><code>npx waygraph auto --cli --data '{…}'     # explore: terminal menu first
+npx waygraph auto                        # explore: headed panel (same menus)
+npx waygraph auto --blocks LoginPage OrderComplete
+npx waygraph demo --blocks shopFlow              # watch: step ON, auto-next OFF
+npx waygraph demo --blocks shopFlow --auto-next
+npx waygraph demo --blocks shopFlow --auto-play-video   # QA
+npx waygraph run  --blocks "a then b" --data '{…}'
+npx waygraph run  --blocks shopFlow --non-headless --video
+npx waygraph try demo | try auto
+npx waygraph list | check | graph --mermaid | init my-app</code></pre>
       <p>
-        <code>--step</code> = headed overlay. <code>--autoplay</code> = Auto-advance checkbox
-        starts ON (only with step). Mid-run: flip the checkbox; manual click wins.
-        <code>chain</code> does <em>not</em> default to step - pass <code>--step</code>.
-        Unattended JSON is <code>chain</code> + <code>WAYGRAPH_JSON=1</code>, not <code>auto</code>.
-        <code>locate(page, library)</code> reverse-matches a live page against NavBlock verify Traits.
+        Compat: <code>chain</code> -&gt; <code>run --blocks</code>; <code>--autoplay</code> -&gt; <code>--auto-next</code>.
+        Unattended JSON: <code>run</code>/<code>chain</code> + <code>WAYGRAPH_JSON=1</code>.
       </p>
 
       <h2>Pluggable browsers</h2>
@@ -133,8 +131,9 @@ instruction: {
       <table>
         <thead><tr><th>Command</th><th>What you get</th></tr></thead>
         <tbody>
-          <tr><td><code>npx waygraph try demo</code></td><td>Live Sauce Demo step-through (Sign In + Shop + blocked Viewer) + headless test (temp dir)</td></tr>
-          <tr><td><code>cd examples/saucedemo &amp;&amp; npm run auto</code></td><td>In-repo interactive explore</td></tr>
+          <tr><td><code>npx waygraph try demo</code></td><td>Temp Sauce Demo stepper + headless test</td></tr>
+          <tr><td><code>npx waygraph try auto</code></td><td>Temp Sauce Demo explorer (then <code>npm run auto:cli</code> in that folder)</td></tr>
+          <tr><td><code>cd examples/saucedemo &amp;&amp; npm run auto:cli</code></td><td>In-repo CLI explore (same menus as headed)</td></tr>
           <tr><td><code>npx create-waygraph my-app</code></td><td>Offline scaffold on npm - same template as <code>init</code></td></tr>
           <tr><td><code>npx waygraph init my-app</code></td><td>Same offline scaffold, built into waygraph CLI</td></tr>
         </tbody>

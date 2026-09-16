@@ -64,6 +64,22 @@ export const MysteryBlock = defineBlock({
 });
 `;
 
+const ADD_TO_CART_EFFECT_BLOCK = `
+import { defineEffectBlock, checkpoint } from "waygraph";
+import type { Checkpoint } from "waygraph";
+import type { CartPage } from "../states.js";
+
+export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, CartPage>({
+  name: "add-to-cart",
+  requires: [],
+  instruction: {
+    async act() {},
+    resolve: () => checkpoint("CartPage"),
+  },
+  async instanceOptions() { return []; },
+});
+`;
+
 async function withFixtureProject(name: string, files: Record<string, string>, run: (dir: string) => Promise<void>) {
   const tmpDir = join(import.meta.dirname, `.tmp-${name}`);
   await mkdir(join(tmpDir, "src", "blocks"), { recursive: true });
@@ -116,12 +132,28 @@ test("discoverGraph: an inline Checkpoint<string> wildcard In resolves to '*', s
   });
 });
 
+test("discoverGraph: defineEffectBlock<In, Out> is discovered like defineBlock (TS salt)", async () => {
+  await withFixtureProject("effect-salt", { "add-to-cart.effect.block.ts": ADD_TO_CART_EFFECT_BLOCK }, async (dir) => {
+    const graph = await discoverGraph(dir);
+    expect(graph.skipped).toEqual([]);
+    expect(graph.edges).toEqual([
+      {
+        block: "add-to-cart",
+        file: "src/blocks/add-to-cart.effect.block.ts",
+        from: "*",
+        to: "CartPage",
+        kind: "action",
+      },
+    ]);
+  });
+});
+
 test("discoverGraph: a Block with no defineBlock<In, Out> generic is skipped, not crashed", async () => {
   await withFixtureProject("unresolvable", { "mystery.block.ts": UNRESOLVABLE_BLOCK }, async (dir) => {
     const graph = await discoverGraph(dir);
     expect(graph.edges).toEqual([]);
     expect(graph.skipped).toEqual([
-      { block: "mystery", file: "src/blocks/mystery.block.ts", reason: "no defineBlock<In, Out> generic call found" },
+      { block: "mystery", file: "src/blocks/mystery.block.ts", reason: "no defineBlock/defineMethodBlock/defineEffectBlock<In, Out> generic call found" },
     ]);
   });
 });

@@ -102,7 +102,7 @@ function defaultMemValueForKey(keyName: string): unknown | undefined {
 }
 
 function seedMemFromEnv(mem: MemPage, entry: BlockEntry): boolean {
-  const raw = process.env.WAYGRAPH_AUTO_MEM;
+  const raw = process.env.WAYGRAPH_DATA ?? process.env.WAYGRAPH_AUTO_MEM;
   if (!raw) return false;
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -115,9 +115,9 @@ function seedMemFromEnv(mem: MemPage, entry: BlockEntry): boolean {
   }
 }
 
-/** Pre-seed known demo keys (saucedemo creds) so headful does not stop for mem forms. */
+/** Pre-seed known demo keys (saucedemo creds) so headful/cli do not stop for mem forms. */
 function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage): void {
-  const raw = process.env.WAYGRAPH_AUTO_MEM;
+  const raw = process.env.WAYGRAPH_DATA ?? process.env.WAYGRAPH_AUTO_MEM;
   let envParsed: Record<string, unknown> = {};
   if (raw) {
     try {
@@ -165,7 +165,7 @@ async function ensureMem(entry: BlockEntry, mem: MemPage, cli: boolean): Promise
     return;
   }
   throw new Error(
-    `Block "${entry.block.name}" needs MemPage keys - set WAYGRAPH_AUTO_MEM JSON or use --cli to enter values`,
+    `Block "${entry.block.name}" needs MemPage keys - pass --data '{...}' / WAYGRAPH_DATA (or WAYGRAPH_AUTO_MEM), or enter values in --cli`,
   );
 }
 
@@ -211,7 +211,27 @@ async function runOneBlock(
   }
   if (headful) await setAutoPanelRunning(page, entry.block.name);
   const flow = engine.defineFlow([start, entry.block, end]);
-  await flow.run(context, mem, { page, closeOnFinish: false });
+  const BLOCK_TIMEOUT_MS = 45_000;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      flow.run(context, mem, { page, closeOnFinish: false }),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () =>
+            reject(
+              new Error(
+                `Block "${entry.block.name}" timed out after ${BLOCK_TIMEOUT_MS / 1000}s - ` +
+                  "click Quit and retry, or check network / mem credentials",
+              ),
+            ),
+          BLOCK_TIMEOUT_MS,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
   await page.evaluate("delete window.__wgPendingNavClickLabel").catch(() => {});
 }
 
@@ -479,7 +499,7 @@ function printCliMenu(menu: ExploreMenu, library: Map<string, BlockEntry>): void
         console.log(`  [${n}] ${c.label}`);
       } else {
         const desc = entry?.description ? ` - ${entry.description}` : "";
-        console.log(`  [${n}] ${c.block} (${c.kind}) → ${c.to}${desc}`);
+        console.log(`  [${n}] ${c.block} (${c.kind}) -> ${c.to}${desc}`);
       }
     }
   }
@@ -565,7 +585,9 @@ export async function runAutoExplore(projectDir: string, options: AutoExploreOpt
       const pickWait = armPickWait();
       pickSlot.resolve = pickWait.resolve;
       const here = await detectHere(page, library.navBlocks);
+      if (cli) console.error("waygraph auto: scanning page for moves ...");
       const menu = await buildExploreMenu(page, graph, library, here);
+      if (cli) console.error(`waygraph auto: ${menu.flat.length} move(s) available`);
       if (menu.flat.length === 0) {
         console.error(
           here
@@ -602,10 +624,12 @@ export async function runAutoExplore(projectDir: string, options: AutoExploreOpt
         } else {
           await ensureMem(entry, mem, cli);
         }
+        const pickLabel = edge.label ?? entry.block.name;
+        console.error(`waygraph auto: running [${pick.index + 1}] ${pickLabel} ...`);
         await runOneBlock(engine, entry, context, page, mem, !cli);
         const landed = await detectHere(page, library.navBlocks);
-        lastRunNote = `${entry.block.name} → ${landed ?? edge.to}`;
-        console.error(`waygraph auto: ran ${entry.block.name} → ${landed ?? edge.to}`);
+        lastRunNote = `${entry.block.name} -> ${landed ?? edge.to}`;
+        console.error(`waygraph auto: ran ${entry.block.name} -> ${landed ?? edge.to}`);
       } catch (err) {
         lastRunNote = `${entry.block.name} failed`;
         console.error(`waygraph auto: ${entry.block.name} failed - ${err instanceof Error ? err.message : String(err)}`);

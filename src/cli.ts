@@ -3,19 +3,15 @@
 /**
  * waygraph CLI -- tooling around this same package's engine.
  *
- * Commands (watch first, then run, then inspect, then scaffold):
- *   demo <flow|spec> [project]   Watch a flow/chain with step overlay (default STEP+headed)
- *   try [demo]                   One-shot saucedemo onboarding in an OS temp dir
- *   chain <spec> [project]       Ad-hoc Blocks by name (+ --step/--autoplay like demo)
- *   run <flow> [project]         Run a named flow (no overlay unless --step)
- *   list / nav / validate        Discover and inspect flows
- *   check / auto / graph         Hygiene + state graph
- *   init <name>                  Offline scaffold
+ * Primary verbs (less is more):
+ *   auto   Explore picker; `--blocks From To` = graph path-find + run
+ *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--auto-play-video`
+ *   run    Execute; `--blocks` `--data` `--non-headless` `--video`
  *
- * "project" defaults to the current directory.
- * A project is any directory containing *.flow.ts files (typically under src/flows/).
- * Run flags (--step/--autoplay/--base-url/--title/--video) beat WAYGRAPH_* env when present.
- * demo defaults: --step on, --autoplay off (manual "Run this step" / "Next").
+ * Also: list / nav / validate / check / graph / init / try
+ * Aliases (one release): `chain` -> run/demo --blocks; `--autoplay` -> `--auto-next`
+ *
+ * "project" defaults to cwd. Flags beat WAYGRAPH_* env.
  */
 
 import { existsSync, readdirSync, readFileSync, writeFileSync, rmSync, cpSync, mkdirSync, mkdtempSync, type Dirent } from "node:fs";
@@ -23,7 +19,6 @@ import { resolve, relative, join, basename, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
-import { MemPage } from "./mem-page.js";
 import { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./graph.js";
 import { runAutoExplore } from "./auto-explore-run.js";
 
@@ -327,16 +322,31 @@ function seedMemFromRequires(mem, requires, json, label) {
     return;
   }
   if (json === undefined) {
-    throw new Error(
-      "waygraph chain: \\"" + label + "\\" requires " + requires.map((k) => k.name).join(", ") +
-        " - give a JSON payload, e.g. " + label + "({...})",
-    );
+    // --data / WAYGRAPH_DATA supplies the same payload shape as blockName({...}).
+    const fromEnv = process.env.WAYGRAPH_DATA;
+    if (fromEnv && fromEnv.trim()) {
+      json = fromEnv;
+    } else {
+      throw new Error(
+        "waygraph chain: \\"" + label + "\\" requires " + requires.map((k) => k.name).join(", ") +
+          " - give a JSON payload (inline blockName({...}) or --data '{...}')",
+      );
+    }
   }
   let parsed;
   try {
     parsed = JSON.parse(json);
   } catch (err) {
     throw new Error("waygraph chain: \\"" + label + "\\" payload is not valid JSON - " + String(err));
+  }
+  // Keyed-by-name when every require name is a top-level key (preferred for
+  // --data and for {"saucedemo.credentials":{...}} even with one require).
+  if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+    const keyed = requires.every((k) => k.name in parsed);
+    if (keyed) {
+      for (const k of requires) mem.set(k, parsed[k.name]);
+      return;
+    }
   }
   if (requires.length === 1) {
     mem.set(requires[0], parsed);
@@ -2487,15 +2497,12 @@ async function wireQuickstartToPackageRoot(destDir: string): Promise<void> {
 }
 
 /**
- * `waygraph try demo` - copy a self-contained saucedemo project into a temp
- * dir (never the caller's cwd), run a chainFlow step demo (Sign In + Shop +
- * blocked Viewer), then run the headless Playwright test, and print where
- * everything lives.
+ * Copy templates/quickstart into a fresh OS temp dir and wire it to this
+ * package build. Returns destDir, or null after setting exitCode on failure.
  */
-async function runTryDemo(): Promise<void> {
-  const destDir = mkdtempSync(join(tmpdir(), "waygraph-try-demo-"));
+async function prepareTryQuickstart(label: string): Promise<string | null> {
+  const destDir = mkdtempSync(join(tmpdir(), `${label}-`));
   cpSync(join(packageRoot(), "templates", "quickstart"), destDir, { recursive: true });
-  // Never copy dev node_modules / test output into the temp demo (Playwright double-load).
   rmSync(join(destDir, "node_modules"), { recursive: true, force: true });
   rmSync(join(destDir, "test-results"), { recursive: true, force: true });
   rmSync(join(destDir, "package-lock.json"), { force: true });
@@ -2504,15 +2511,26 @@ async function runTryDemo(): Promise<void> {
   } catch (err) {
     console.error(err instanceof Error ? err.message : String(err));
     process.exitCode = 1;
-    return;
+    return null;
   }
-
-  const problem = await ensureDirPrereqs(destDir, "waygraph try demo");
+  const problem = await ensureDirPrereqs(destDir, label);
   if (problem) {
-    console.error(`waygraph try demo: couldn't get ready.\n${problem}`);
+    console.error(`${label}: couldn't get ready.\n${problem}`);
     process.exitCode = 1;
-    return;
+    return null;
   }
+  return destDir;
+}
+
+/**
+ * `waygraph try demo` - copy a self-contained saucedemo project into a temp
+ * dir (never the caller's cwd), run a chainFlow step demo (Sign In + Shop +
+ * blocked Viewer), then run the headless Playwright test, and print where
+ * everything lives.
+ */
+async function runTryDemo(): Promise<void> {
+  const destDir = await prepareTryQuickstart("waygraph-try-demo");
+  if (!destDir) return;
 
   process.env.WAYGRAPH_BASE_URL ??= "https://www.saucedemo.com";
   // Default: headed stepper, manual Next. --video records that session (not headless rush).
@@ -2563,6 +2581,34 @@ async function runTryDemo(): Promise<void> {
       "  npm test        # playwright chainFlow test\n\n" +
       "Permanent full example in this package: examples/saucedemo\n" +
       "Keep a permanent scaffold in your tree: waygraph init my-app\n",
+  );
+}
+
+/**
+ * `waygraph try auto` - same temp Sauce Demo as try demo, then headed
+ * `waygraph auto` (same menus as `npm run auto:cli`).
+ */
+async function runTryAuto(): Promise<void> {
+  const destDir = await prepareTryQuickstart("waygraph-try-auto");
+  if (!destDir) return;
+
+  process.env.WAYGRAPH_BASE_URL ??= "https://www.saucedemo.com";
+  console.log(
+    "waygraph try auto: headed explore on Sauce Demo (temp dir).\n" +
+      "  Prefer CLI next time: cd <temp> && npm run auto:cli\n" +
+      "  Pick LoginPage / submit-login (creds pre-seeded via --data on auto:cli).\n" +
+      "  On inventory: Add/Remove Effect rows + Open details MemNav.\n" +
+      "  Quit from the panel when done.\n",
+  );
+  await runAutoExplore(destDir, { baseURL: process.env.WAYGRAPH_BASE_URL });
+  console.log(
+    "\nwaygraph try auto: explorer closed.\n\n" +
+      `Temp project:\n  ${destDir}\n\n` +
+      "Run again (CLI first):\n" +
+      `  cd ${destDir} && npm run auto:cli\n` +
+      `  cd ${destDir} && npm run auto\n\n` +
+      "In-package: examples/saucedemo\n" +
+      "Docs: https://deviate-dv8.github.io/waygraph/auto.html\n",
   );
 }
 
@@ -2719,9 +2765,9 @@ function initCommand(projectName: string): void {
   console.log("  npm install");
   console.log("  npx playwright install chromium");
   console.log("  npm test");
-  console.log("  waygraph check .     # nav hygiene + orphan Blocks");
-  console.log("  waygraph auto .      # interactive explore (headful picker)");
-  console.log("  waygraph graph .     # static state graph JSON");
+  console.log("  waygraph check       # nav hygiene + orphan Blocks");
+  console.log("  waygraph auto        # interactive explore (headful picker)");
+  console.log("  waygraph graph       # static state graph JSON");
 }
 
 async function checkCommand(projectDir: string): Promise<CheckWarning[]> {
@@ -2748,50 +2794,60 @@ async function checkCommand(projectDir: string): Promise<CheckWarning[]> {
 }
 
 // ---------------------------------------------------------------------------
-// `run`
-// ---------------------------------------------------------------------------
-
-async function runFlow(projectDir: string, flowName: string): Promise<void> {
-  const files = discoverFlows(projectDir);
-  for (const file of files) {
-    let mod: Record<string, unknown>;
-    try {
-      mod = await importFlowFile(file);
-    } catch {
-      continue;
-    }
-    for (const [exportName, exported] of Object.entries(mod)) {
-      if (!isFlowLike(exported) || exportName !== flowName) continue;
-      console.log(`waygraph: running flow "${flowName}" from ${relative(projectDir, file)}`);
-      const result = await exported.run(new MemPage());
-      console.log(`waygraph: flow finished -- ${JSON.stringify(result)}`);
-      return;
-    }
-  }
-  console.error(`waygraph: no flow named "${flowName}" found under ${projectDir}`);
-  process.exitCode = 1;
-}
-
-// ---------------------------------------------------------------------------
 // CLI plumbing - run flags (flags beat WAYGRAPH_* env)
 // ---------------------------------------------------------------------------
 
 interface RunFlags {
   step?: boolean;
   autoplay?: boolean;
+  /** demo only: --auto-next + --video (+ step). */
+  autoPlayVideo?: boolean;
+  /** run/demo: show browser (WAYGRAPH_HEADED=1). */
+  nonHeadless?: boolean;
   baseUrl?: string;
   title?: string;
   /** Set when --video present; empty string = default dir under project. */
   video?: string;
+  /** Global Mem seed JSON (--data). */
+  data?: string;
+  /** Flow/chain spec from --blocks <spec>. */
+  blocks?: string;
+  /** auto path-find: --blocks <fromCheckpoint> <toCheckpoint>. */
+  blocksFromTo?: [string, string];
+  cli?: boolean;
+  mermaid?: boolean;
+  map?: boolean;
   /** Positional args with run flags stripped. */
   positionals: string[];
 }
 
+function takeFlagValue(argv: string[], i: number, a: string, flag: string): { value: string; nextI: number } {
+  if (a.startsWith(flag + "=")) {
+    return { value: a.slice(flag.length + 1), nextI: i };
+  }
+  const v = argv[i + 1];
+  if (v === undefined || (v.startsWith("-") && !a.includes("="))) {
+    console.error(`waygraph: ${flag} needs a value`);
+    process.exit(1);
+  }
+  return { value: v, nextI: i + 1 };
+}
+
 /**
- * Pulls `--step` / `--no-step` / `--autoplay` / `--no-autoplay` /
- * `--base-url <url>` / `--title <text>` out of argv. Unknown `--*` stay as
- * positionals so callers like `auto --mermaid` keep working when they parse
- * their own flags.
+ * Looks like a Checkpoint tag for auto --blocks From To (PascalCase).
+ * Kebab-case Block names must not trigger path-find mode.
+ */
+function looksLikeCheckpointArg(s: string): boolean {
+  if (!s || s.startsWith("-")) return false;
+  if (s.includes("then") || s.includes("(") || s.includes("{") || s.includes("/")) return false;
+  if (s === "." || s.includes(".")) return false;
+  return /^[A-Z][A-Za-z0-9_]*$/.test(s);
+}
+
+/**
+ * Pulls run/demo/auto flags out of argv. Unknown bare `--*` that are not
+ * recognized stay as positionals only when they are project paths; known
+ * explore flags (--cli/--mermaid/--map) are parsed here.
  */
 function parseRunFlags(argv: string[]): RunFlags {
   const out: RunFlags = { positionals: [] };
@@ -2801,30 +2857,60 @@ function parseRunFlags(argv: string[]): RunFlags {
       out.step = true;
     } else if (a === "--no-step") {
       out.step = false;
-    } else if (a === "--autoplay") {
+    } else if (a === "--auto-next" || a === "--autoplay") {
       out.autoplay = true;
-    } else if (a === "--no-autoplay") {
+    } else if (a === "--no-auto-next" || a === "--no-autoplay") {
       out.autoplay = false;
+    } else if (a === "--auto-play-video") {
+      out.autoPlayVideo = true;
+    } else if (a === "--non-headless") {
+      out.nonHeadless = true;
+    } else if (a === "--cli") {
+      out.cli = true;
+    } else if (a === "--mermaid") {
+      out.mermaid = true;
+    } else if (a === "--map") {
+      out.map = true;
     } else if (a === "--base-url" || a.startsWith("--base-url=")) {
-      const v = a.includes("=") ? a.slice("--base-url=".length) : argv[++i];
-      if (!v || v.startsWith("-")) {
-        console.error("waygraph: --base-url needs a URL value");
-        process.exit(1);
-      }
-      out.baseUrl = v;
+      const t = takeFlagValue(argv, i, a, "--base-url");
+      out.baseUrl = t.value;
+      i = t.nextI;
     } else if (a === "--title" || a.startsWith("--title=")) {
-      const v = a.includes("=") ? a.slice("--title=".length) : argv[++i];
-      if (v === undefined || (v.startsWith("-") && !a.includes("="))) {
-        console.error('waygraph: --title needs a string value');
-        process.exit(1);
-      }
-      out.title = v;
+      const t = takeFlagValue(argv, i, a, "--title");
+      out.title = t.value;
+      i = t.nextI;
+    } else if (a === "--data" || a.startsWith("--data=")) {
+      const t = takeFlagValue(argv, i, a, "--data");
+      out.data = t.value;
+      i = t.nextI;
     } else if (a === "--video" || a.startsWith("--video=")) {
-      const v = a.includes("=") ? a.slice("--video=".length) : argv[++i];
-      if (v === undefined || (v.startsWith("-") && !a.includes("="))) {
-        out.video = "";
+      if (a.startsWith("--video=")) {
+        out.video = a.slice("--video=".length);
       } else {
-        out.video = v;
+        const v = argv[i + 1];
+        if (v === undefined || v.startsWith("-")) {
+          out.video = "";
+        } else {
+          out.video = v;
+          i++;
+        }
+      }
+    } else if (a === "--blocks" || a.startsWith("--blocks=")) {
+      if (a.startsWith("--blocks=")) {
+        out.blocks = a.slice("--blocks=".length);
+      } else {
+        const v1 = argv[++i];
+        if (!v1 || v1.startsWith("-")) {
+          console.error("waygraph: --blocks needs a flow/spec or <from> <to> checkpoints");
+          process.exit(1);
+        }
+        const v2 = argv[i + 1];
+        if (v2 && looksLikeCheckpointArg(v1) && looksLikeCheckpointArg(v2)) {
+          out.blocksFromTo = [v1, v2];
+          i++;
+        } else {
+          out.blocks = v1;
+        }
       }
     } else {
       out.positionals.push(a);
@@ -2834,7 +2920,16 @@ function parseRunFlags(argv: string[]): RunFlags {
 }
 
 /** Writes flag values into process.env so the chain child inherits them. Flags beat prior env. */
-function applyRunFlags(flags: RunFlags): void {
+function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean }): void {
+  if (flags.autoPlayVideo) {
+    if (!opts?.allowAutoPlayVideo) {
+      console.error("waygraph: --auto-play-video is a demo-only flag (QA watch + record)");
+      process.exit(1);
+    }
+    if (flags.autoplay === undefined) flags.autoplay = true;
+    if (flags.video === undefined) flags.video = "";
+    if (flags.step === undefined) flags.step = true;
+  }
   if (flags.step === true) {
     process.env.WAYGRAPH_STEP = "1";
     process.env.WAYGRAPH_HEADED = "1";
@@ -2846,6 +2941,9 @@ function applyRunFlags(flags: RunFlags): void {
   } else if (flags.autoplay === false) {
     process.env.WAYGRAPH_AUTOPLAY = "0";
   }
+  if (flags.nonHeadless) {
+    process.env.WAYGRAPH_HEADED = "1";
+  }
   if (flags.baseUrl !== undefined) {
     process.env.WAYGRAPH_BASE_URL = flags.baseUrl;
   }
@@ -2854,6 +2952,9 @@ function applyRunFlags(flags: RunFlags): void {
   }
   if (flags.video !== undefined) {
     process.env.WAYGRAPH_VIDEO = flags.video || "1";
+  }
+  if (flags.data !== undefined) {
+    process.env.WAYGRAPH_DATA = flags.data;
   }
 }
 
@@ -2898,8 +2999,7 @@ function applyDemoDefaults(projectDir: string): void {
   if (process.env.WAYGRAPH_STEP === "1" && process.env.WAYGRAPH_HEADED === undefined) {
     process.env.WAYGRAPH_HEADED = "1";
   }
-  // Manual Next by default. --autoplay flips this; --no-step --video (unattended)
-  // still prefers autoplay when the caller did not set it.
+  // Manual Next by default. --auto-next / --auto-play-video flip this.
   if (process.env.WAYGRAPH_AUTOPLAY === undefined) {
     if (process.env.WAYGRAPH_VIDEO && process.env.WAYGRAPH_STEP === "0") {
       process.env.WAYGRAPH_AUTOPLAY = "1";
@@ -2913,167 +3013,52 @@ function applyDemoDefaults(projectDir: string): void {
   }
 }
 
+function resolveProjectDir(flags: RunFlags, fallbackIndex = 0): string {
+  const cand = flags.positionals[fallbackIndex] ?? process.cwd();
+  return resolve(cand);
+}
+
+function resolveSpec(flags: RunFlags): string | undefined {
+  return flags.blocks ?? flags.positionals[0];
+}
+
 const args = process.argv.slice(2);
 const command = args[0];
 
 function usage(): void {
   console.log(`waygraph -- graph project tool + engine CLI
 
-Usage (watch -> run -> inspect -> scaffold):
-  waygraph demo <flow|spec> [project]
-                                  Watch a flow or chain with the step overlay.
-                                  Defaults: --step ON, --autoplay OFF (manual
-                                  "Run this step" / "Next"). BASE_URL from
-                                  --base-url, else WAYGRAPH_BASE_URL, else
-                                  package.json waygraph.baseUrl, else
-                                  playwright.config baseURL.
-  waygraph try [demo]             One-shot saucedemo (temp dir) + npm test
-  waygraph chain <spec> [project] Ad-hoc Blocks by name ("a then b"); add
-                                  --step / --autoplay for the same overlay
-  waygraph run <flow> [project]   Run a named flow (no overlay unless --step)
-  waygraph list    [project]      List discovered flows
-  waygraph nav     [flow] [project]  Print flow chain + navigation steps
-  waygraph validate [project]     Import and validate all flows
-  waygraph check   [project]      Nav hygiene + orphan Blocks
-  waygraph auto    [project]      Interactive explore (picker; --cli terminal)
-  waygraph graph   [project]      Static state graph (JSON or --mermaid)
-  waygraph init <name>            Offline scaffold (same as create-waygraph)
+Primary (less is more):
+  waygraph auto  [project]                 Interactive explore (picker)
+                 --cli                     Terminal menu instead of browser panel
+                 --blocks <From> <To>      Graph path-find From->To, then run
+                 --data '{...}'            Mem seed (same as demo/run)
+  waygraph demo  [--blocks <flow|spec>]    Watch with step overlay (QA path)
+                 --data '{...}'            Mem seed JSON (or inline flow({...}))
+                 --auto-next               Auto-advance steps (alias: --autoplay)
+                 --auto-play-video         QA: --auto-next + --video (+ step)
+                 --title / --base-url
+  waygraph run   [--blocks <flow|spec>]    Execute (no overlay unless --step)
+                 --data '{...}'
+                 --non-headless            Show browser
+                 --video [dir]             Record .webm
 
-Demo / step / autoplay (read this - agents get this wrong):
-  --step                          headed overlay: gate each Block, edit MemKeys,
-                                  highlight verify Traits, then Next
-  --no-step                       no overlay; run straight through
-  --autoplay                      start with "Auto-advance" CHECKED (timer)
-  --no-autoplay                   start with Auto-advance UNCHECKED (manual)
-  Mid-run: flip the panel checkbox anytime. A manual click always wins over
-  an in-flight autoplay wait. Flags beat WAYGRAPH_* and reset the checkbox
-  at process start (so --no-autoplay after a prior --autoplay session works).
-
-  Manual watch (default):     waygraph demo shopFlow .
-  Auto-advance watch:         waygraph demo shopFlow . --autoplay
-  Same overlay on a chain:    waygraph chain "login then nav-cart" . --step
-  Unattended (no overlay):    waygraph demo shopFlow . --no-step
-  Onboarding (temp dir):      npx waygraph try demo
-
-Other run flags (chain / demo / try) - flags beat WAYGRAPH_* env:
-  --base-url <url>                base URL for relative page.goto()
-  --title <text>                  persistent overlay banner title
-  --video [dir]                   Playwright recordVideo (.webm); headless OK;
-                                  default dir: <project>/.waygraph-videos/
-
-Prefer flags (or npm scripts that pass them) over an ENV soup of WAYGRAPH_*.
-
-    WAYGRAPH_JSON=1 reports for a script/agent instead of a human: no
-    --step overlay, no informational console.log, headless by default -
-    ONE JSON object on stdout, nothing else. Success: { ok: true, result,
-    steps: [{name, checkpoint, ms}, ...] }. Failure: { ok: false, failedAt,
-    stepIndex, totalSteps, error, steps (every EARLIER Block that
-    succeeded), screenshot (a PNG path captured at the exact moment of
-    failure - there's no live browser for anyone to glance at instead) }.
-    Exit code matches ok. Same session-reset boundaries and per-segment
-    mem-seeding --step already has.
-
-  waygraph auto    [project]      Walks every *.block.ts in [project]
-                                  (default: cwd) and builds the app's own
-                                  state graph: Checkpoints are nodes, Blocks
-                                  are edges. A NavBlock's own runtime
-                                  "checkpoint" gives its Out tag for free
-                                  (In is always "*" - reachable from
-                                  anywhere); a regular defineBlock<In, Out>
-                                  gets its tags via the same lightweight
-                                  regex source-reading list/nav/check
-                                  already do, resolving each type identifier
-                                  back to its literal Checkpoint tag (a
-                                  union Out - a branching action Block -
-                                  becomes one edge per member). Prints the
-                                  graph as JSON by default, or --mermaid for
-                                  a stateDiagram-v2 text export. Reports how
-                                  many Blocks' Out couldn't be resolved
-                                  (skipped, not crashed).
-  waygraph try [demo]             One-shot saucedemo onboarding - "npx waygraph
-                                  try demo" (bare "try" is the same). Copies
-                                  into an OS temp dir (never your cwd),
-                                  npm installs there, runs chainFlow(loginFlow,
-                                  shopFlow) in step mode (Episode 1 + 2,
-                                  manual Next by default), then npm test,
-                                  then prints the temp path + source files.
-                                  Permanent scaffold: waygraph init <name>
-
-    "check" is a secondary sweep, complementary to the always-on TypeScript
-    warning every regular Block's act() already gets (a struck-through
-    page.goto/reload/goBack/goForward, pointing at defineNavBlock) - useful
-    where nothing is watching in an editor (CI, generated code). Warning
-    only, never fails - see openspec/changes/nav-block-and-check/.
-
-    "chain" needs no .flow.ts file - reference Blocks (by their own
-    runtime .name, or their export identifier) straight from the command
-    line, chained with "then", each optionally given a JSON payload for
-    whatever it requires:
-
-      waygraph chain "login({\\"email\\":\\"a@b.com\\",\\"password\\":\\"x\\"}) then overview-metrics"
-
-    "chain auto" builds the spec from waygraph auto's graph (requires zero
-    orphan Blocks - run waygraph check first):
-
-      waygraph chain auto LoggedIn OrderComplete .
-
-    A Block with no requires needs no payload. One with several required
-    keys takes one JSON object keyed by each key's own name instead of a
-    flat payload.
-
-    Runs in a child process rooted at "project" (its own waygraph/playwright,
-    never this CLI's) so a project's real Blocks resolve against its own
-    node_modules. Env vars still work (flags override them when both set):
-      WAYGRAPH_BASE_URL   base URL for Blocks using relative page.goto()
-      WAYGRAPH_HEADED=1   show the browser instead of headless
-      WAYGRAPH_SLOWMO=ms  slow down each Playwright action, for watching a run
-      WAYGRAPH_STEP=1     human-verification mode - one Block at a time, a
-                          browser overlay shows/lets you edit that Block's
-                          MemKeys, a "Run this step" button gates it, then a
-                          highlight ring shows whatever its verify Traits
-                          just confirmed, then "Next" before moving on.
-                          Implies headed - stepping through headless defeats
-                          the point.
-      WAYGRAPH_AUTOPLAY=1     step mode only - starting state for the panel's
-                          own "Auto-advance" checkbox (advances on a timer
-                          instead of waiting for clicks). The checkbox can
-                          be flipped live mid-run - some steps auto, some
-                          manual - and a manual click always wins over an
-                          in-flight autoplay wait either way.
-      WAYGRAPH_AUTOPLAY_MS=ms delay between auto-advances (default 1800)
-      WAYGRAPH_FAST_BLOCKS=name1,name2
-                          step mode only - these Blocks' own .name (e.g.
-                          "login") blow past the overlay's added dwell -
-                          ring pop, cursor travel, typing delay, and that
-                          block's own gates - while the rest of the chain
-                          keeps the full pace. Playwright's own slowMo is
-                          untouched.
-      WAYGRAPH_CLEAR_SESSION=1
-                          step mode only - clears cookies + storage before
-                          every block AFTER the first. Off by default - a
-                          normal chain (login -> dashboard) needs to STAY
-                          authenticated across its own blocks. Only turn
-                          this on for a chain that deliberately re-visits
-                          an auth entry point as a fresh visitor each time
-                          (e.g. "login" appearing more than once) - without
-                          it the second visit is still authenticated, so
-                          the app redirects away before the form renders.
-      WAYGRAPH_TITLE="..."    step mode only - a persistent top banner
-                          naming what this whole run is about (default
-                          top-left; click the banner to cycle left /
-                          center / right)
-      WAYGRAPH_TITLE_POS=left|center|right
-                          initial banner position (default left); click
-                          still cycles and remembers via localStorage
-
-  "project" defaults to the current directory.
+Also:
+  waygraph list | nav | validate | check | graph | init <name>
+  waygraph try [demo|auto]                 One-shot saucedemo in a temp dir
 
 Examples:
-  waygraph demo shopFlow .
-  waygraph demo shopFlow . --autoplay --title "Shop demo"
-  waygraph demo loginFlow . --base-url https://www.saucedemo.com
-  waygraph chain "login then nav-cart" . --step --no-autoplay
-  npm run demo                  # scaffold: waygraph demo exampleFlow .
+  waygraph auto --cli
+  waygraph auto --blocks LoginPage OrderComplete
+  waygraph demo --blocks shopFlow --auto-next
+  waygraph demo --blocks cartBulkFlow --data '{"saucedemo.credentials":{...}}' --auto-play-video
+  waygraph run  --blocks "loginFlow then add-all-to-cart" --data '{...}' --video
+  waygraph run  --blocks shopFlow --non-headless --video
+
+Aliases (compat): \`chain <spec>\` -> run --blocks; \`chain auto A B\` -> auto --blocks A B;
+  --autoplay -> --auto-next. Prefer the primary verbs above.
+
+Project path optional (defaults to cwd). Flags beat WAYGRAPH_* env.
 `);
   process.exit(0);
 }
@@ -3119,13 +3104,28 @@ async function main(): Promise<void> {
     }
 
     case "run": {
-      const flowName = args[1];
-      if (!flowName) {
-        console.error("waygraph run: missing <flow>, e.g. waygraph run LoginFlow");
+      const flags = parseRunFlags(args.slice(1));
+      applyRunFlags(flags);
+      const spec = resolveSpec(flags);
+      if (!spec) {
+        console.error(
+          'waygraph run: missing flow/spec — e.g. waygraph run --blocks shopFlow\n' +
+            "  Flags: --blocks --data --non-headless --video [dir] --step/--no-step",
+        );
         process.exit(1);
       }
-      const proj = resolve(args[2] ?? process.cwd());
-      await runFlow(proj, flowName);
+      const proj = flags.blocks
+        ? resolveProjectDir(flags, 0)
+        : resolve(flags.positionals[1] ?? process.cwd());
+      if (!existsSync(proj)) {
+        console.error(`waygraph: no such directory: ${proj}`);
+        process.exit(1);
+      }
+      if (!process.env.WAYGRAPH_BASE_URL) {
+        const resolved = resolveBaseUrl(proj);
+        if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
+      }
+      await runChain(proj, spec);
       break;
     }
 
@@ -3135,6 +3135,7 @@ async function main(): Promise<void> {
     }
 
     case "chain": {
+      // Compat alias: chain auto A B -> auto --blocks A B; else -> run --blocks.
       const flags = parseRunFlags(args.slice(1));
       applyRunFlags(flags);
       const first = flags.positionals[0];
@@ -3143,7 +3144,7 @@ async function main(): Promise<void> {
         const toTag = flags.positionals[2];
         if (!fromTag || !toTag) {
           console.error("waygraph chain auto: missing <fromCheckpoint> <toCheckpoint> [project]");
-          console.error('  e.g. waygraph chain auto LoggedIn OrderComplete .');
+          console.error("  prefer: waygraph auto --blocks LoggedIn OrderComplete");
           process.exit(1);
         }
         const proj = resolve(flags.positionals[3] ?? process.cwd());
@@ -3154,18 +3155,24 @@ async function main(): Promise<void> {
         await runChainAuto(proj, fromTag, toTag);
         break;
       }
-      const spec = first;
+      const spec = flags.blocks ?? first;
       if (!spec) {
         console.error(
-          'waygraph chain: missing <spec>, e.g. waygraph chain "login({...}) then overview-metrics"\n' +
-            "  or: waygraph chain auto <fromCheckpoint> <toCheckpoint> [project]",
+          'waygraph chain: missing <spec> — prefer: waygraph run --blocks "a then b"\n' +
+            "  or: waygraph auto --blocks <fromCheckpoint> <toCheckpoint>",
         );
         process.exit(1);
       }
-      const proj = resolve(flags.positionals[1] ?? process.cwd());
+      const proj = resolve(
+        flags.blocks ? (flags.positionals[0] ?? process.cwd()) : (flags.positionals[1] ?? process.cwd()),
+      );
       if (!process.env.WAYGRAPH_BASE_URL) {
         const resolved = resolveBaseUrl(proj);
         if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
+      }
+      // If caller asked for step overlay, behave like demo; else like run.
+      if (flags.step === true || process.env.WAYGRAPH_STEP === "1") {
+        applyDemoDefaults(proj);
       }
       await runChain(proj, spec);
       break;
@@ -3173,29 +3180,31 @@ async function main(): Promise<void> {
 
     case "demo": {
       const flags = parseRunFlags(args.slice(1));
-      applyRunFlags(flags);
-      const spec = flags.positionals[0];
+      applyRunFlags(flags, { allowAutoPlayVideo: true });
+      const spec = resolveSpec(flags);
       if (!spec) {
         console.error(
-          'waygraph demo: missing <flow|spec>, e.g. waygraph demo shopFlow .\n' +
-            "  Flags: --step/--no-step --autoplay/--no-autoplay --base-url <url> --title <text> --video [dir]",
+          'waygraph demo: missing flow/spec — e.g. waygraph demo --blocks shopFlow\n' +
+            "  Flags: --blocks --data --auto-next --auto-play-video --title --base-url --video",
         );
         process.exit(1);
       }
-      const proj = resolve(flags.positionals[1] ?? process.cwd());
+      const proj = flags.blocks
+        ? resolveProjectDir(flags, 0)
+        : resolve(flags.positionals[1] ?? process.cwd());
       if (!existsSync(proj)) {
         console.error(`waygraph: no such directory: ${proj}`);
         process.exit(1);
       }
-      // Friendly defaults after flags: STEP+headed on; BASE_URL from package/playwright.
       if (flags.step === undefined && process.env.WAYGRAPH_STEP === undefined) {
         process.env.WAYGRAPH_STEP = "1";
       }
       applyDemoDefaults(proj);
       console.error(
         `waygraph demo: STEP=${process.env.WAYGRAPH_STEP === "1" ? "on" : "off"}` +
-          ` AUTOPLAY=${process.env.WAYGRAPH_AUTOPLAY === "1" ? "on" : "off"}` +
+          ` AUTO_NEXT=${process.env.WAYGRAPH_AUTOPLAY === "1" ? "on" : "off"}` +
           ` BASE_URL=${process.env.WAYGRAPH_BASE_URL ?? "(unset)"}` +
+          (process.env.WAYGRAPH_VIDEO ? ` VIDEO=${process.env.WAYGRAPH_VIDEO}` : "") +
           (process.env.WAYGRAPH_TITLE ? ` TITLE=${JSON.stringify(process.env.WAYGRAPH_TITLE)}` : ""),
       );
       await runChain(proj, spec);
@@ -3204,16 +3213,32 @@ async function main(): Promise<void> {
 
     case "graph":
     case "auto": {
-      const mermaid = args.includes("--mermaid");
-      const mapOnly = command === "graph" || args.includes("--map");
-      const cliPicker = args.includes("--cli");
-      const proj = resolve(
-        args.find((a, i) => i >= 1 && !a.startsWith("--") && a !== "graph") ?? process.cwd(),
-      );
+      const flags = parseRunFlags(args.slice(1));
+      applyRunFlags(flags);
+      const mermaid = flags.mermaid === true;
+      const mapOnly = command === "graph" || flags.map === true;
+      const cliPicker = flags.cli === true;
+      const proj = resolve(flags.positionals[0] ?? process.cwd());
       if (!existsSync(proj)) {
         console.error(`waygraph: no such directory: ${proj}`);
         process.exit(1);
       }
+
+      // auto --blocks From To  (graph path-find + run)
+      if (command === "auto" && (flags.blocksFromTo || flags.blocks)) {
+        if (flags.blocksFromTo) {
+          const [fromTag, toTag] = flags.blocksFromTo;
+          await runChainAuto(proj, fromTag, toTag);
+          break;
+        }
+        console.error(
+          "waygraph auto --blocks expects <fromCheckpoint> <toCheckpoint>\n" +
+            '  e.g. waygraph auto --blocks LoginPage OrderComplete\n' +
+            '  for a hand-named chain use: waygraph run --blocks "a then b"',
+        );
+        process.exit(1);
+      }
+
       if (mapOnly || mermaid) {
         const orphans = await findOrphanBlocks(proj);
         const graph = await discoverGraph(proj);
@@ -3229,15 +3254,12 @@ async function main(): Promise<void> {
         );
         if (orphans.length > 0) {
           console.error(
-            "waygraph graph: orphan Blocks block chain auto shorthand - wire each into a .flow.ts (waygraph check .)",
+            "waygraph graph: orphan Blocks block auto --blocks path-find - wire each into a .flow.ts (waygraph check)",
           );
         }
         break;
       }
-      const baseURL =
-        args.find((a, i) => args[i - 1] === "--base-url") ??
-        process.env.WAYGRAPH_BASE_URL ??
-        resolveBaseUrl(proj);
+      const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? resolveBaseUrl(proj);
       await runAutoExplore(proj, baseURL ? { cli: cliPicker, baseURL } : { cli: cliPicker });
       break;
     }
@@ -3245,7 +3267,15 @@ async function main(): Promise<void> {
     case "try": {
       const flags = parseRunFlags(args.slice(1));
       applyRunFlags(flags);
-      await runTryDemo();
+      const mode = (flags.positionals[0] ?? "demo").toLowerCase();
+      if (mode === "auto") {
+        await runTryAuto();
+      } else if (mode === "demo" || mode === "") {
+        await runTryDemo();
+      } else {
+        console.error(`waygraph try: unknown mode "${mode}" - use "demo" or "auto"`);
+        process.exitCode = 1;
+      }
       break;
     }
 

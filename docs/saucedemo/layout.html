@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Route layout · Sauce Demo · Waygraph</title>
+  <link rel="stylesheet" href="../css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="../index.html">waygraph</a>
+      <ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="./index.html">Sauce Demo</a></li>
+        <li><a href="./kinds.html">Block kinds</a></li>
+        <li><a href="./layout.html" aria-current="page">Route layout</a></li>
+        <li><a href="./auto.html">waygraph auto</a></li>
+        <li><a href="./comments.html">Source comments</a></li>
+        <li><a href="../consumer.html">Consumer layout</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>Route folders = URLs</h1>
+      <p class="lede">
+        <code>saucedemo-web/</code> is the namespace root for URL
+        <code>/</code>. Child folders match Swag Labs paths.
+      </p>
+
+      <h2>Mapping</h2>
+      <table>
+        <thead>
+          <tr><th>Swag Labs URL</th><th>Block folder</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>/</code></td><td><code>saucedemo-web/</code></td></tr>
+          <tr><td><code>/inventory.html</code></td><td><code>saucedemo-web/inventory/</code></td></tr>
+          <tr><td><code>/inventory-item.html</code></td><td><code>saucedemo-web/inventory-item/</code></td></tr>
+          <tr><td><code>/cart.html</code></td><td><code>saucedemo-web/cart/</code></td></tr>
+          <tr><td><code>/checkout-step-one.html</code></td><td><code>saucedemo-web/checkout-step-one/</code></td></tr>
+          <tr><td><code>/checkout-step-two.html</code></td><td><code>saucedemo-web/checkout-step-two/</code></td></tr>
+        </tbody>
+      </table>
+      <p>
+        A folder gets <code>NAV.md</code> + nav Blocks if and only if that URL
+        is a real page. Do not invent <code>root/</code>, <code>landing/</code>,
+        or a parallel <code>shell/nav/</code> tree.
+      </p>
+
+      <h2>Where each kind lives</h2>
+      <ul>
+        <li>Nav files at the <strong>route folder root</strong>.</li>
+        <li>Effect and Action files under that route's <code>actions/</code>.</li>
+        <li>Header links that navigate <em>to</em> a URL (cart, checkout) live
+          on the destination route - e.g. <code>nav-cart</code> under
+          <code>cart/</code>.</li>
+      </ul>
+
+      <h2>Annotated tree</h2>
+      <pre><code>src/blocks/
+  SITE-MAP.md
+  saucedemo-web/                      # URL /
+    NAV.md
+    nav-login.block.ts                # Nav  defineNavBlock url:/
+    actions/
+      submit-login.action.block.ts    # Action
+      submit-logout.action.block.ts
+    inventory/                        # URL /inventory.html
+      nav-item-detail.block.ts        # MemNav + instanceOptions
+      actions/
+        add-to-cart.effect.block.ts   # Effect
+        remove-from-cart.effect.block.ts
+    inventory-item/                   # URL /inventory-item.html
+    cart/                             # URL /cart.html
+    checkout-step-one/
+    checkout-step-two/</code></pre>
+      <p>Full list: <a href="./SITE-MAP.md">SITE-MAP.md</a> (mirrors
+        <code>examples/saucedemo/src/blocks/SITE-MAP.md</code>).</p>
+
+      <footer class="site">
+        <a href="./auto.html">next: waygraph auto</a> ·
+        <a href="./index.html">Sauce Demo home</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

@@ -55,7 +55,7 @@ test("buildExploreMenu at LoginPage groups forward actions", async ({ page }) =>
   };
   const menu = await buildExploreMenu(page, sample, library, "LoginPage");
   expect(menu.here).toBe("LoginPage");
-  expect(menu.sections[0]?.title).toBe("Forward from LoginPage");
+  expect(menu.sections[0]?.title).toBe("Methods from LoginPage");
   expect(menu.flat.map((e) => e.block)).toEqual(["submit-login"]);
 });
 

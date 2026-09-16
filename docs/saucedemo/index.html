@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sauce Demo showcase · Waygraph docs</title>
+  <link rel="stylesheet" href="../css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="../index.html">waygraph</a>
+      <ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../quickstart.html">Quick start</a></li>
+        <li><a href="../demo.html">Demo / run</a></li>
+        <li><a href="../auto.html">Auto explore</a></li>
+        <li><a href="./index.html" aria-current="page">Sauce Demo</a></li>
+        <li><a href="../handout.html">Engine handout</a></li>
+        <li><a href="../consumer.html">Consumer layout</a></li>
+        <li><a href="../deploy.html">Deploy / preview</a></li>
+        <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
+      </ul>
+      <p class="meta" style="margin-top:1.25rem;font-size:0.85rem">In this folder</p>
+      <ul>
+        <li><a href="./index.html" aria-current="page">Overview</a></li>
+        <li><a href="./kinds.html">Block kinds</a></li>
+        <li><a href="./layout.html">Route layout</a></li>
+        <li><a href="./auto.html">waygraph auto</a></li>
+        <li><a href="./comments.html">Source comments</a></li>
+        <li><a href="./README.md">README.md</a></li>
+        <li><a href="./SITE-MAP.md">SITE-MAP.md</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>Sauce Demo showcase</h1>
+      <p class="lede">
+        The in-package consumer that teaches waygraph conventions against live
+        saucedemo.com - Nav, Effect, Action, route folders, and
+        <code>waygraph auto</code>.
+      </p>
+      <p class="meta">
+        Source:
+        <a href="https://github.com/deviate-dv8/waygraph/tree/main/examples/saucedemo">examples/saucedemo</a>
+        · Pages folder:
+        <a href="https://github.com/deviate-dv8/waygraph/tree/main/docs/saucedemo">docs/saucedemo</a>
+        · npm <code>waygraph@0.10.0+</code>
+      </p>
+
+      <h2>What this showcase is for</h2>
+      <ol>
+        <li>
+          <strong>Convention, not a toy API sample.</strong>
+          Folder layout and file suffixes match the
+          <a href="../consumer.html">consumer layout</a> contract.
+        </li>
+        <li>
+          <strong>TypeScript salt, real Blocks.</strong>
+          Helpers force shape; the engine still runs plain
+          <code>Block</code>s - see <a href="./kinds.html">Block kinds</a>.
+        </li>
+        <li>
+          <strong>Runnable proof.</strong>
+          Prefer <code>npm run auto:cli</code> first (same menus as headed
+          <code>auto</code>), then demos and Playwright.
+        </li>
+      </ol>
+
+      <h2>Quick commands</h2>
+      <pre><code>cd examples/saucedemo
+npm install &amp;&amp; npx playwright install chromium
+npm run auto:cli      # terminal menu - start here
+npm run auto          # headed panel (same menus)
+npm run demo          # headed stepper
+npm test              # headless
+
+# Or temp copy:
+npx waygraph@latest try auto   # then npm run auto:cli in that folder
+npx waygraph@latest try demo   # stepper + test</code></pre>
+
+      <div class="cards">
+        <a href="./kinds.html">
+          <strong>Block kinds</strong>
+          <span>Nav / Effect / Action - helpers are salt.</span>
+        </a>
+        <a href="./layout.html">
+          <strong>Route layout</strong>
+          <span><code>saucedemo-web/</code> folders = Swag Labs URLs.</span>
+        </a>
+        <a href="./auto.html">
+          <strong>waygraph auto</strong>
+          <span>Prefer <code>auto:cli</code>; same menus as headed panel.</span>
+        </a>
+        <a href="./comments.html">
+          <strong>Source comments</strong>
+          <span>How each Block file documents its kind.</span>
+        </a>
+      </div>
+
+      <h2>Read next</h2>
+      <ul>
+        <li><a href="./SITE-MAP.md">SITE-MAP.md</a> - full block tree</li>
+        <li><a href="./README.md">README.md</a> - same story in markdown</li>
+        <li><a href="../auto.html">Package auto explore</a> - CLI contract</li>
+      </ul>
+
+      <footer class="site">
+        ASCII docs · showcase tracks <code>examples/saucedemo</code>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

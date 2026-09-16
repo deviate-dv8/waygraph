@@ -1207,7 +1207,8 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
  * hand.
  * @example defineNavBlock({ name: "nav-web-login", checkpoint: "LoginForm", url: "/login" })
  * @example defineNavBlock({ name: "nav-web-request-detail", checkpoint: "RequestDetail", url: (mem) => `/dashboard/requests/${mem.get(RequestId.key)}` })
- * @example defineNavBlock({ name: "nav-web-documents", checkpoint: "DocumentsList", click: "nav >> text=Documents" })
+ * @example defineNavClickBlock({ name: "nav-web-documents", checkpoint: "DocumentsList", click: "nav >> text=Documents" })
+ * For click-nav in app code prefer {@link defineNavClickBlock} (url stays here).
  */
 export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlockOptions<Out>): NavBlock<Out> {
   const built = defineBlock<Checkpoint<string>, Out>({
@@ -1245,6 +1246,198 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
   });
   // Demo/step tooling: remember the click selector (or factory) so
   // overlays can label "nav click" without re-parsing source.
+  if (options.click !== undefined) {
+    Object.defineProperty(built, "__waygraphNavClick", {
+      value: options.click,
+      enumerable: false,
+      configurable: false,
+    });
+  }
+  return built;
+}
+
+/**
+ * Click-only {@link NavBlock}. Same runtime as {@link defineNavBlock} with
+ * `click` - use this in app code so you never wonder whether a Nav is url or
+ * click (no `__waygraphNavClick` sniffing at author time). Prefer
+ * {@link defineNavBlock} only for `url` / `goto` deep links.
+ */
+export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
+  name: string;
+  description?: string;
+  checkpoint: Out["__state"];
+  click: string | ((mem: MemPage) => string);
+  requires?: readonly MemKey<any>[];
+  verify?: Trait[] | ((out: Out) => Trait[]);
+  highlights?:
+    | readonly WaygraphHighlight[]
+    | ((out: Out) => readonly WaygraphHighlight[]);
+  instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
+};
+
+export type NavClickBlock<Out extends Checkpoint<string>> = NavBlock<Out>;
+
+/** @see {@link NavClickBlockOptions} */
+export function defineNavClickBlock<Out extends Checkpoint<string>>(
+  options: NavClickBlockOptions<Out>,
+): NavClickBlock<Out> {
+  return defineNavBlock({
+    name: options.name,
+    checkpoint: options.checkpoint,
+    click: options.click,
+    ...(options.description ? { description: options.description } : {}),
+    ...(options.requires ? { requires: options.requires } : {}),
+    ...(options.verify ? { verify: options.verify } : {}),
+    ...(options.highlights ? { highlights: options.highlights } : {}),
+    ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
+  });
+}
+
+/**
+ * TypeScript salt over {@link defineBlock} for one-shot non-nav app steps
+ * (submit, upload, finish, logout) - **methods** on a page. Same runtime Block;
+ * marks `__waygraphSalt = "method"` so auto/docs can tell Method from bare
+ * {@link defineBlock}. Does not force `instanceOptions` - use
+ * {@link defineEffectBlock} when the auto menu should spawn one row per live
+ * DOM instance. Prefer hanging methods off a {@link definePageBlock} hub.
+ */
+export type MethodBlock<
+  In extends Checkpoint<string>,
+  Out extends Checkpoint<string>,
+> = DefinedBlock<In, Out>;
+
+/** @deprecated Prefer {@link MethodBlock} - same type; Action was the 0.7 name. */
+export type ActionBlock<
+  In extends Checkpoint<string>,
+  Out extends Checkpoint<string>,
+> = MethodBlock<In, Out>;
+
+export function defineMethodBlock<
+  In extends Checkpoint<string>,
+  Out extends Checkpoint<string>,
+>(base: Parameters<typeof defineBlock<In, Out>>[0]): MethodBlock<In, Out> {
+  const built = defineBlock(base) as MethodBlock<In, Out>;
+  Object.defineProperty(built, "__waygraphSalt", {
+    value: "method",
+    enumerable: false,
+    configurable: false,
+  });
+  return built;
+}
+
+/** @deprecated Prefer {@link defineMethodBlock} - identical helper (0.7 name). */
+export const defineActionBlock = defineMethodBlock;
+
+/** One Block (or lazy factory) registered on a {@link PageBlock}. */
+export type PageMethodEntry =
+  | DefinedBlock<any, any>
+  | (() => DefinedBlock<any, any>);
+
+export type PageBlockOptions<Out extends Checkpoint<string>> = {
+  name: string;
+  description?: string;
+  /** Checkpoint tag for this screen (hub). */
+  checkpoint: Out["__state"];
+  verify?: Trait[] | ((out: Out) => Trait[]);
+  highlights?:
+    | readonly WaygraphHighlight[]
+    | ((out: Out) => readonly WaygraphHighlight[]);
+  requires?: readonly MemKey<any>[];
+  /**
+   * Methods available on this page. Array, or a record of Blocks / `() => Block`
+   * factories (lazy so the page object can colocate method definitions).
+   */
+  methods?: readonly PageMethodEntry[] | Record<string, PageMethodEntry>;
+  /**
+   * Optional deep-link onto this page (`goto`). XOR with `click`. Omit when the
+   * hub is arrival-only (previous Block already resolved here).
+   */
+  url?: string | ((mem: MemPage) => string);
+  /** Optional click-nav onto this page. XOR with `url`. */
+  click?: string | ((mem: MemPage) => string);
+  instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
+};
+
+/**
+ * Page hub Block: one Checkpoint = this screen; methods hang off the hub for
+ * readability / auto grouping. Runtime is still a Block (`__waygraphKind = "page"`).
+ * `act` is goto/click when `url`/`click` is set, otherwise a no-op (already here).
+ * Child methods stay ordinary Blocks for graph edges - the page only registers them.
+ */
+export type PageBlock<Out extends Checkpoint<string>> = NavBlock<Out> & {
+  /** Resolved method Blocks registered at define time. */
+  readonly methods: readonly DefinedBlock<any, any>[];
+};
+
+function resolvePageMethods(
+  methods?: readonly PageMethodEntry[] | Record<string, PageMethodEntry>,
+): DefinedBlock<any, any>[] {
+  if (!methods) return [];
+  const entries = Array.isArray(methods) ? methods : Object.values(methods);
+  return entries.map((entry) => (typeof entry === "function" ? entry() : entry));
+}
+
+/** @see {@link PageBlockOptions} */
+export function definePageBlock<Out extends Checkpoint<string>>(
+  options: PageBlockOptions<Out>,
+): PageBlock<Out> {
+  if (options.url !== undefined && options.click !== undefined) {
+    throw new Error(
+      `definePageBlock("${options.name}"): pass url XOR click (or neither for arrival-only hub)`,
+    );
+  }
+  const methodList = resolvePageMethods(options.methods);
+  const built = defineBlock<Checkpoint<string>, Out>({
+    name: options.name,
+    ...(options.description ? { description: options.description } : {}),
+    ...(options.requires ? { requires: options.requires } : {}),
+    ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
+    instruction: {
+      async act(page, _input, mem) {
+        if (options.url !== undefined) {
+          const url = typeof options.url === "function" ? options.url(mem) : options.url;
+          await (page as unknown as Page).goto(url);
+        } else if (options.click !== undefined) {
+          const selector =
+            typeof options.click === "function" ? options.click(mem) : options.click;
+          await (page as unknown as Page).locator(selector).click();
+        }
+        // else: arrival-only hub — previous Block already landed here
+      },
+      resolve: () => checkpoint(options.checkpoint) as Out,
+      ...(options.verify ? { verify: options.verify } : {}),
+      ...(options.highlights ? { highlights: options.highlights } : {}),
+    },
+  }) as PageBlock<Out>;
+
+  Object.defineProperty(built, "__waygraphKind", {
+    value: "page",
+    enumerable: false,
+    configurable: false,
+  });
+  Object.defineProperty(built, "__waygraphSalt", {
+    value: "page",
+    enumerable: false,
+    configurable: false,
+  });
+  Object.defineProperty(built, "methods", {
+    value: Object.freeze([...methodList]),
+    enumerable: true,
+    configurable: false,
+    writable: false,
+  });
+  Object.defineProperty(built, "__waygraphMethods", {
+    value: methodList.map((m) => m.name),
+    enumerable: false,
+    configurable: false,
+  });
+  if (options.url !== undefined || options.click !== undefined) {
+    Object.defineProperty(built, "__waygraphPageDeepLink", {
+      value: true,
+      enumerable: false,
+      configurable: false,
+    });
+  }
   if (options.click !== undefined) {
     Object.defineProperty(built, "__waygraphNavClick", {
       value: options.click,
@@ -1305,6 +1498,11 @@ export function defineEffectBlock<
     enumerable: false,
     configurable: false,
   });
+  Object.defineProperty(built, "__waygraphSalt", {
+    value: "effect",
+    enumerable: false,
+    configurable: false,
+  });
   return built;
 }
 
@@ -1333,14 +1531,14 @@ export function defineMemNavBlock<Out extends Checkpoint<string>>(
 }
 
 /**
- * "Where am I" - reverse-matches a live `page` against every NavBlock in
- * `library`, in order, returning the first one whose own `verify` Traits all
- * pass (its `checkpoint`), or `null` if none match. Deliberately NavBlocks
- * only: a NavBlock has exactly one fixed `checkpoint` and a `verify` list
- * whose whole job is already "confirm arrival here," so it's a reliable
+ * "Where am I" - reverse-matches a live `page` against every NavBlock /
+ * PageBlock in `library`, in order, returning the first one whose own `verify`
+ * Traits all pass (its `checkpoint`), or `null` if none match. Deliberately
+ * Nav/Page hubs only: each has exactly one fixed `checkpoint` and a `verify`
+ * list whose whole job is already "confirm arrival here," so it's a reliable
  * fingerprint - a regular `defineBlock` can branch to different `Out` tags
  * depending on runtime evidence, so its `verify` alone doesn't identify a
- * single state the way a NavBlock's does.
+ * single state the way a hub's does.
  *
  * The primitive `waygraph auto`'s discovered graph is *for* - the graph says
  * what pages exist and how to reach them; `locate()` is how an autonomous

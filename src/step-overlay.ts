@@ -165,54 +165,69 @@ export function instrumentInteractionHighlighting(
       this: {
         boundingBox: () => Promise<{ x: number; y: number; width: number; height: number } | null>;
         pressSequentially: (v: string, o?: { delay?: number; timeout?: number }) => Promise<void>;
+        page?: () => Page;
       },
       value: string,
       options?: { timeout?: number },
     ) {
+      const livePage = (typeof this.page === "function" ? this.page() : page) as Page;
       try {
-        await installDemoChrome(page);
+        await installDemoChrome(livePage);
         const box = await this.boundingBox();
         if (box) {
           const label =
             memTrack.lastKeyName && Date.now() - memTrack.at < 3000
               ? "from mem: " + memTrack.lastKeyName
               : "writing";
-          await moveCursorTo(page, box, cursorMs(500));
-          await showRing(page, box, label);
+          await moveCursorTo(livePage, box, cursorMs(500));
+          await showRing(livePage, box, label);
           await new Promise((r) => setTimeout(r, 200));
         }
       } catch {
         /* best-effort */
       }
-      try {
-        await originalFill.call(this, "", options);
-        const seqOpts: { delay: number; timeout?: number } = { delay: typeDelay() };
-        if (options?.timeout !== undefined) seqOpts.timeout = options.timeout;
-        await this.pressSequentially(String(value), seqOpts);
-      } catch {
+      // Prefer a single fill - clear+pressSequentially can hang when the auto
+      // panel steals focus mid-type (looks stuck on "Running: submit-login").
+      if (slowMo || typeDelay() === 0) {
         await originalFill.call(this, value, options);
+      } else {
+        try {
+          await originalFill.call(this, "", options);
+          const seqOpts: { delay: number; timeout?: number } = { delay: typeDelay() };
+          if (options?.timeout !== undefined) seqOpts.timeout = options.timeout;
+          await this.pressSequentially(String(value), seqOpts);
+        } catch {
+          await originalFill.call(this, value, options);
+        }
       }
-      await hideRing(page);
+      await hideRing(livePage);
     };
   }
 
   if (!proto.__wgClickPatched) {
     proto.__wgClickPatched = true;
     const originalClick = proto.click;
-    proto.click = async function (this: {
-      waitFor: (o: { state: string; timeout?: number }) => Promise<void>;
-      boundingBox: () => Promise<{ x: number; y: number; width: number; height: number } | null>;
-      textContent: () => Promise<string | null>;
-    }, options?: { timeout?: number }) {
+    proto.click = async function (
+      this: {
+        waitFor: (o: { state: string; timeout?: number }) => Promise<void>;
+        boundingBox: () => Promise<{ x: number; y: number; width: number; height: number } | null>;
+        textContent: () => Promise<string | null>;
+        page?: () => Page;
+      },
+      options?: { timeout?: number; noWaitAfter?: boolean },
+    ) {
+      const livePage = (typeof this.page === "function" ? this.page() : page) as Page;
       let clickPoint: { x: number; y: number } | null = null;
       try {
-        await installDemoChrome(page);
-        await this.waitFor({ state: "visible", timeout: options?.timeout ?? 30000 }).catch(() => {});
+        await installDemoChrome(livePage);
+        await this.waitFor({ state: "visible", timeout: options?.timeout ?? 15000 }).catch(() => {});
         const box = await this.boundingBox();
         if (box) {
           let label = "click";
           try {
-            const navLabel = await page.evaluate(() => (window as { __wgPendingNavClickLabel?: string }).__wgPendingNavClickLabel ?? null);
+            const navLabel = await livePage.evaluate(
+              () => (window as { __wgPendingNavClickLabel?: string }).__wgPendingNavClickLabel ?? null,
+            );
             if (navLabel) label = String(navLabel);
             else {
               const text = (await this.textContent())?.trim();
@@ -221,20 +236,20 @@ export function instrumentInteractionHighlighting(
           } catch {
             /* ignore */
           }
-          clickPoint = await moveCursorTo(page, box, cursorMs(600));
-          await showRing(page, box, label);
+          clickPoint = await moveCursorTo(livePage, box, cursorMs(600));
+          await showRing(livePage, box, label);
           await new Promise((r) => setTimeout(r, clickPrePop()));
         }
       } catch {
         /* best-effort */
       }
       if (clickPoint) {
-        await clickPulseAt(page, clickPoint.x, clickPoint.y);
-        await new Promise((r) => setTimeout(r, 500));
+        await clickPulseAt(livePage, clickPoint.x, clickPoint.y);
+        await new Promise((r) => setTimeout(r, 200));
       }
       const result = await originalClick.call(this, options);
       await new Promise((r) => setTimeout(r, clickPostPop()));
-      await hideRing(page);
+      await hideRing(livePage).catch(() => {});
       return result;
     };
   }

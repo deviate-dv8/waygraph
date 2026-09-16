@@ -3,9 +3,11 @@
 A typed graph of reusable Blocks for driving a browser through E2E flows, in place of a
 flat pile of ad hoc helper functions.
 
+**Current:** `0.10.0` — CLI less-is-more (`auto` / `demo` / `run` + flags). Page hubs still as in 0.9.0.
+
 This repo is the `waygraph` npm package itself. The full live **Sauce Demo** example
-(Effect Add/Remove, MemNav Open details, `waygraph auto`) ships in-tree at
-[`examples/saucedemo`](./examples/saucedemo). `waygraph try demo` copies
+(Page inventory hub, Effect Add/Remove, MemNav Open details, `waygraph auto`) ships
+in-tree at [`examples/saucedemo`](./examples/saucedemo). `waygraph try demo` copies
 [`templates/quickstart`](./templates/quickstart) (same Sauce Demo Blocks) into an OS
 temp dir.
 
@@ -14,17 +16,71 @@ See [ROADMAP.md](./ROADMAP.md) for what's shipped, spec'd, and planned by versio
 
 ## Docs (GitHub Pages)
 
-Browser docs (quick start, **demo / step / autoplay**, **auto explore**, engine handout, consumer layout, deploy):
+Browser docs (quick start, **demo / run**, **auto explore**, engine handout, consumer layout, deploy):
 
 - **Published:** https://deviate-dv8.github.io/waygraph/ (workflow auto-enables Pages via `enablement: true`; manual Settings only if org policy blocks it)
 - **Source:** [`docs/`](./docs/) — static HTML, no build step
 - **Local preview:** `npm run docs:preview` → http://127.0.0.1:4173/
 - **Deploy:** push to `main` touching `docs/**` runs [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) (`workflow_dispatch` also works)
-- **Demo contract:** [`docs/demo.html`](./docs/demo.html) — `--step` vs `--autoplay`
-- **Auto explore:** [`docs/auto.html`](./docs/auto.html) — Effect / MemNav picker (TS salt over Blocks)
+- **Demo / run contract:** [`docs/demo.html`](./docs/demo.html) — `demo` / `run` / flags (`--auto-next`, `--auto-play-video`)
+- **Auto explore:** [`docs/auto.html`](./docs/auto.html) — prefer `auto --cli` / `npm run auto:cli` (same menus as headed)
 - **In-repo example:** [`examples/saucedemo`](./examples/saucedemo) — full Sauce Demo project
+- **Convention showcase (Pages):** [`docs/saucedemo/`](./docs/saucedemo/) —
+  https://deviate-dv8.github.io/waygraph/saucedemo/
+- **Helpers (consumer copy):** [`examples/saucedemo/docs/HELPERS.md`](./examples/saucedemo/docs/HELPERS.md)
 
 This README stays the in-repo API narrative; Pages is the same material for eyeballing and cross-mesh handoff.
+
+## 0.9.0 — Page, Method, Sel
+
+Runtime is still one type: `Block`. Helpers are TypeScript salt.
+
+| Helper | Role | Typical file |
+|--------|------|----------------|
+| `definePageBlock` | Screen hub (checkpoint + `verify` + registered methods) | `*.page.block.ts` |
+| `defineMethodBlock` | One-shot non-nav step (submit, upload, logout) | `methods/*.method.block.ts` |
+| `defineEffectBlock` | Instance mutate + `instanceOptions` auto menu | `methods/*.effect.block.ts` |
+| `defineNavBlock` / `defineNavClickBlock` | `goto` / click-nav | `nav-*.block.ts` |
+| `defineMemNavBlock` | Nav + per-row `instanceOptions` | `nav-*.block.ts` |
+| `defineActionBlock` | **Deprecated** alias of `defineMethodBlock` | — |
+
+**Page hub:** one Checkpoint = this screen. Methods hang off the page for readability /
+auto grouping. Arrival-only hubs omit `url`/`click` (previous Block already landed here).
+Deep-link hubs pass `url` or `click` like a Nav.
+
+**`methods/` folder** (was `actions/`): on-page work lives next to the route, not free-floating.
+
+**`*Sel`:** DOM selectors only (static strings + `(id) => …` for item-no-1 style). Mem keys
+store values (which item / upload queue), not selectors. `instanceOptions` scrapes the live
+DOM into menu rows and `mem.set`s on pick; predefined methods seed mem from the flow instead.
+
+```typescript
+import { definePageBlock, Trait } from "waygraph";
+
+export const InventorySel = {
+  list: ".inventory_list",
+  addBtn: (id: string) => `[data-test="add-to-cart-${id}"]`,
+};
+
+export const InventoryPage = definePageBlock({
+  name: "page-inventory",
+  checkpoint: "LoggedIn",
+  verify: [
+    Trait.url({ pathname: "/inventory.html" }),
+    Trait.visible(InventorySel.list),
+  ],
+  methods: {
+    addToCart: () => AddToCartBlock,
+    removeFromCart: () => RemoveFromCartBlock,
+    addAllToCart: () => AddAllToCartBlock,
+    removeAllFromCart: () => RemoveAllFromCartBlock,
+  },
+});
+```
+
+Live reference: `examples/saucedemo/src/blocks/saucedemo-web/inventory/`
+(`inventory.page.block.ts` + `methods/` + `InventorySel`). Bulk `add-all-to-cart` /
+`remove-all-from-cart` are one menu row each (`from: "*"` — works after leave/return).
 
 
 ## Getting started (pick one)
@@ -32,7 +88,7 @@ This README stays the in-repo API narrative; Pages is the same material for eyeb
 | Goal | Command |
 |------|---------|
 | Watch Sauce Demo step-through (temp dir only) | `npx waygraph try demo` |
-| Interactive explore (Add/Remove/Open details from live page) | `cd examples/saucedemo && npm i && npx waygraph auto .` |
+| Interactive explore (Add/Remove/Open details from live page) | `cd examples/saucedemo && npm i && npx waygraph auto` |
 | Scaffold a new **offline** project (green `npm test` on a `data:` URL) | `npx create-waygraph my-app` **or** `npx waygraph init my-app` |
 | Add waygraph to an existing repo | `npm install waygraph @playwright/test` |
 
@@ -170,24 +226,16 @@ a fresh tab (the run won't close a page you handed it unless you say so), and
 so the caller can keep driving it - hands a run tab back instead of losing it. See
 "Recipes" for capture-on-popup, which stays a documented pattern until a second real use
 case promotes it to an engine API.
-`defineNavBlock({ name, checkpoint, url })` or `defineNavBlock({ name, checkpoint, click })`
-builds a Block whose only possible action is navigating - exactly one of `url`/`click` is
-required, enforced at compile time. Both accept a plain string or `(mem) => string`/
-`(mem) => selector` for parameterized routes; the generated `act()` is always exactly
-`page.goto(url)` or `page.locator(click).click()`, never author-supplied. `click` is the
-opinionated default - navigating by clicking a real element already on the page (a nav
-link, a sidebar item) instead of teleporting straight to a URL, so a Block actually proves
-the app's own navigation path works instead of skipping past it. `url` still exists for the
-real cases with no click path to get there (a deep link from an email, a public share
-link). A
-regular `defineBlock`'s `act()` receives its `page` typed as `ActionPage` instead of raw
-`Page` - structurally identical, every method still fully present and callable, except
-`goto`/`reload`/`goBack`/`goForward` are re-declared `@deprecated`, so a TypeScript-aware
-editor shows navigation struck through the instant it's typed in a regular Block, pointing
-at `defineNavBlock` - nothing is blocked, no build ever fails, existing code that already
-navigates from a regular Block keeps compiling and running unchanged. `waygraph check
-[project]` is the complementary whole-project sweep for contexts with no editor watching
-(CI, generated code) - same warning, on demand, across every `*.block.ts` file at once.
+`defineNavBlock({ name, checkpoint, url })` or `defineNavClickBlock({ name, checkpoint, click })`
+builds a Block whose only possible action is navigating. Prefer `defineNavClickBlock` for
+click-nav in app code; `defineNavBlock` for `url` / `goto` deep links. Both accept a plain
+string or `(mem) => string` / `(mem) => selector`. Generated `act()` is always exactly
+`page.goto(url)` or `page.locator(click).click()`. For screen hubs that also register
+methods, prefer `definePageBlock` (see **0.9.0 — Page, Method, Sel** above). A regular
+`defineBlock` / `defineMethodBlock`'s `act()` receives `page` typed as `ActionPage` —
+`goto`/`reload`/`goBack`/`goForward` are `@deprecated` there (editor strike-through pointing
+at Nav/Page helpers). `waygraph check [project]` is the complementary whole-project sweep
+for contexts with no editor watching (CI, generated code).
 `new Engine({ browsers: { chromium, firefox, webkit } })` overrides which `BrowserType`
 actually launches for a `mem`-only run, per browser name - waygraph is deliberately "just
 an opinionated Playwright," so a stealth-patched or otherwise customized launcher (e.g.
@@ -214,33 +262,20 @@ Deliberately **not yet implemented** (tracked on the project board):
 Mermaid) is `waygraph graph [project]` (`--mermaid`). Unattended JSON execution is
 `chain` + `WAYGRAPH_JSON=1`.
 
-**Friendly demo run:** `waygraph demo <flow> [project]` defaults to **STEP on +
-autoplay off** (manual "Run this step" / "Next"). Flags beat env:
+**Friendly demo / run / auto (0.10.0 — less is more):**
 
 | Want | Command |
 |------|---------|
-| Manual watch | `waygraph demo shopFlow .` |
-| Auto-advance | `waygraph demo shopFlow . --autoplay` |
-| Same overlay on a chain | `waygraph chain "login then nav-cart" . --step` |
-| No overlay | `waygraph demo shopFlow . --no-step` |
+| Manual watch | `waygraph demo --blocks shopFlow` |
+| Auto-advance | `waygraph demo --blocks shopFlow --auto-next` |
+| QA watch + record | `waygraph demo --blocks shopFlow --auto-play-video` |
+| Ad-hoc Blocks | `waygraph run --blocks "login then nav-cart" --data '{…}'` |
+| Headed execute | `waygraph run --blocks shopFlow --non-headless --video` |
+| Explore | `waygraph auto` / `waygraph auto --cli` |
+| Path-find | `waygraph auto --blocks LoginPage OrderComplete` |
 
-`--step` = headed overlay. `--autoplay` = panel Auto-advance starts checked (timer;
-flip mid-run; manual click always wins). `chain` does **not** default to step — pass
-`--step`. BASE_URL from `--base-url`, else `WAYGRAPH_BASE_URL`, else
-`package.json` `waygraph.baseUrl`, else `playwright.config` `baseURL`. Prefer flags
-(or `npm run demo*`) over a pile of `WAYGRAPH_*` vars. NavBlock `click` shows demo
-cursor travel + pulse before the real click; `url` NavBlocks still `goto`. Full page:
-https://deviate-dv8.github.io/waygraph/demo.html
-
-**Flow video (headless OK):** `waygraph chain "loginFlow({...}) then viewerBlockedFlow({...})" . --video`
-uses Playwright `recordVideo` and prints the `.webm` path when done (default dir:
-`.waygraph-videos/`). Lighter than help-center-clip-engine (no overlay/ffmpeg pipeline).
-Same flag works on `waygraph demo`. Programmatic: `Engine({ recordVideo: { dir: "./videos" } })`.
-
-**Project hygiene:** `waygraph check .` warns on nav outside NavBlocks **and** lists
-**orphan Blocks** (a `*.block.ts` export not wired into any `.flow.ts` defineFlow array).
-Zero orphans is required before `waygraph chain auto <fromCheckpoint> <toCheckpoint> .`
-builds a chain spec from the `waygraph auto` graph.
+`--auto-next` (alias `--autoplay`) = panel Auto-advance. `--auto-play-video` is **demo only**.
+`chain` remains a compat alias for `run --blocks` / `auto --blocks`.
 
 ## Example
 
@@ -359,17 +394,22 @@ npm run build       # tsc -p tsconfig.build.json, emits dist/
 ## Layout
 
 ```
-package.json              the "waygraph" npm package itself
+package.json              the "waygraph" npm package itself (0.9.0+)
 src/
   types.ts                 Checkpoint, Instruction, Block, connect()
   mem-page.ts               MemKey, key(), MemPage
   trait.ts                   Trait (type + discoverable Trait.url/.text/.visible), runVerify()
-  engine.ts                   runGraph(), spawnTab(), composeBlock(), Engine, start, end, Flow
+  engine.ts                   runGraph(), definePageBlock, defineMethodBlock, Engine, …
+  graph.ts                     discoverGraph, orphans, paths
+  auto-explore.ts              waygraph auto menu
   index.ts                     public barrel
-typecheck/                 compile-time-only fixtures (assignability, @ts-expect-error cases)
+examples/saucedemo/         live Sauce Demo (Page + methods/ + Sel)
+templates/quickstart/       try demo / init template (mirrors sauce)
+docs/                       GitHub Pages static HTML
+typecheck/                 compile-time-only fixtures
 tests/                      runtime unit + integration tests (@playwright/test)
-tsconfig.json                base config - typecheck script includes src/ + typecheck/ + tests/
-tsconfig.build.json          extends base, src/ only, emits to dist/
+tsconfig.json                base config
+tsconfig.build.json          emits to dist/
 ```
 
 In-package Sauce Demo: [`examples/saucedemo`](./examples/saucedemo). Other consumer

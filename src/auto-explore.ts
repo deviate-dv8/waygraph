@@ -70,7 +70,8 @@ function isBlockLike(val: unknown): val is Block<Checkpoint<string>, Checkpoint<
 }
 
 function isNavBlockMarked(val: unknown): boolean {
-  return (val as { __waygraphKind?: string }).__waygraphKind === "nav";
+  const kind = (val as { __waygraphKind?: string }).__waygraphKind;
+  return kind === "nav" || kind === "page";
 }
 
 function isUrlNav(entry: BlockEntry): boolean {
@@ -86,7 +87,8 @@ async function navRunnable(page: Page, entry: BlockEntry): Promise<boolean> {
   if (click === undefined) return true;
   if (typeof click !== "string") return false;
   try {
-    return await page.locator(click).first().isVisible({ timeout: 800 });
+    // Short timeout: menu scan must stay snappy (many edges miss on this page).
+    return await page.locator(click).first().isVisible({ timeout: 150 });
   } catch {
     return false;
   }
@@ -94,12 +96,17 @@ async function navRunnable(page: Page, entry: BlockEntry): Promise<boolean> {
 
 async function wildcardActionRunnable(page: Page, entry: BlockEntry, here: string | null): Promise<boolean> {
   if (here === null) return false;
-  if (entry.block.name === "add-to-cart") {
-    try {
-      return await page.locator("#add-to-cart-sauce-labs-backpack").first().isVisible({ timeout: 800 });
-    } catch {
-      return false;
+  const name = entry.block.name;
+  // Bulk / non-instance * actions: show when matching live buttons exist.
+  try {
+    if (name === "add-all-to-cart" || name === "add-to-cart") {
+      return await page.locator('button[data-test^="add-to-cart-"]').first().isVisible({ timeout: 150 });
     }
+    if (name === "remove-all-from-cart" || name === "remove-from-cart") {
+      return await page.locator('button[data-test^="remove-"]').first().isVisible({ timeout: 150 });
+    }
+  } catch {
+    return false;
   }
   return false;
 }
@@ -176,6 +183,9 @@ export async function buildExploreMenu(
   const navigate: ExploreEdge[] = [];
   const back: ExploreEdge[] = [];
   const seen = new Set<string>();
+  // Union Out tags create duplicate edges for the same Block - cache instanceOptions
+  // so we only scrape the DOM once per Block name per menu build.
+  const instanceOptionsCache = new Map<string, readonly WaygraphInstanceOption[]>();
 
   const push = (bucket: ExploreEdge[], edge: ExploreEdge) => {
     if (seen.has(edge.block)) return;
@@ -183,20 +193,31 @@ export async function buildExploreMenu(
     bucket.push(edge);
   };
 
+  async function loadInstanceOptions(
+    entry: BlockEntry,
+  ): Promise<readonly WaygraphInstanceOption[]> {
+    const fn = entry.block.instanceOptions;
+    if (!fn) return [];
+    const cached = instanceOptionsCache.get(entry.block.name);
+    if (cached) return cached;
+    let options: readonly WaygraphInstanceOption[] = [];
+    try {
+      options = await fn(page);
+    } catch {
+      options = [];
+    }
+    instanceOptionsCache.set(entry.block.name, options);
+    return options;
+  }
+
   for (const edge of graph.edges) {
     const entry = library.byName.get(edge.block);
     if (!entry) continue;
 
     if (edge.kind === "action") {
       if (here !== null && edge.from === here) {
-        const instanceOptionsFn = entry.block.instanceOptions;
-        if (instanceOptionsFn) {
-          let options: readonly WaygraphInstanceOption[] = [];
-          try {
-            options = await instanceOptionsFn(page);
-          } catch {
-            options = [];
-          }
+        if (entry.block.instanceOptions) {
+          const options = await loadInstanceOptions(entry);
           for (const option of options) {
             const seenKey = `${edge.block}::${option.id}`;
             if (seen.has(seenKey)) continue;
@@ -211,14 +232,8 @@ export async function buildExploreMenu(
           push(isBackEdge(edge) ? back : forward, edge);
         }
       } else if (here !== null && edge.from === "*") {
-        const instanceOptionsFn = entry.block.instanceOptions;
-        if (instanceOptionsFn) {
-          let options: readonly WaygraphInstanceOption[] = [];
-          try {
-            options = await instanceOptionsFn(page);
-          } catch {
-            options = [];
-          }
+        if (entry.block.instanceOptions) {
+          const options = await loadInstanceOptions(entry);
           for (const option of options) {
             const seenKey = `${edge.block}::${option.id}`;
             if (seen.has(seenKey)) continue;
@@ -226,7 +241,13 @@ export async function buildExploreMenu(
             anywhere.push({ ...edge, label: option.label, instanceOption: option });
           }
         } else if (await wildcardActionRunnable(page, entry, here)) {
-          push(anywhere, edge);
+          const bulkLabel: Record<string, string> = {
+            "add-all-to-cart": "Add all to cart",
+            "remove-all-from-cart": "Remove all from cart",
+          };
+          const label =
+            bulkLabel[entry.block.name] ?? (entry.description?.trim() || undefined);
+          push(anywhere, label ? { ...edge, label } : edge);
         }
       }
       continue;
@@ -235,14 +256,8 @@ export async function buildExploreMenu(
     // Nav: MemNavBlock (instanceOptions) expands one row per live target;
     // plain NavBlock still uses click-visibility (navRunnable).
     if (here !== null && (edge.from === here || edge.from === "*") && edge.to !== here) {
-      const instanceOptionsFn = entry.block.instanceOptions;
-      if (instanceOptionsFn) {
-        let options: readonly WaygraphInstanceOption[] = [];
-        try {
-          options = await instanceOptionsFn(page);
-        } catch {
-          options = [];
-        }
+      if (entry.block.instanceOptions) {
+        const options = await loadInstanceOptions(entry);
         const bucket = isBackEdge(edge) ? back : navigate;
         for (const option of options) {
           const seenKey = `${edge.block}::${option.id}`;
@@ -279,7 +294,7 @@ export async function buildExploreMenu(
   } else {
     if (forward.length > 0) {
       sections.push({
-        title: `Forward from ${here}`,
+        title: `Methods from ${here}`,
         edges: forward.sort((a, b) => a.block.localeCompare(b.block)),
       });
     }

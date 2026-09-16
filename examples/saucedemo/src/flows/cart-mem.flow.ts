@@ -1,5 +1,5 @@
 import { Engine, start, end } from "waygraph";
-import { RemoveFromCartBlock } from "../blocks/actions/remove-from-cart.effect.block.js";
+import { RemoveFromCartBlock } from "../blocks/saucedemo-web/inventory/methods/remove-from-cart.effect.block.js";
 
 const engine = new Engine();
 

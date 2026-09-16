@@ -1,8 +1,8 @@
 import { Engine, start, end } from "waygraph";
 import type { LoginPage, LoggedIn, ItemInCart } from "../states/checkout.states.js";
-import { NavLoginBlock } from "../blocks/nav-login.block.js";
-import { SubmitLoginForFlow } from "../blocks/actions/submit-login-for-flow.js";
-import { AddToCartBlock } from "../blocks/actions/add-to-cart.effect.block.js";
+import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
+import { SubmitLoginForFlow } from "../blocks/saucedemo-web/methods/submit-login-for-flow.js";
+import { AddToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.js";
 
 const engine = new Engine();
 

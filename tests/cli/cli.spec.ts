@@ -45,9 +45,20 @@ test("waygraph --help prints usage", async () => {
   const { stdout } = await exec(node, [CLI, "--help"]);
   expect(stdout).toContain("waygraph");
   expect(stdout).toContain("waygraph list");
-  expect(stdout).toContain("waygraph init");
-  expect(stdout).toContain("chain auto");
-  expect(stdout).toContain("waygraph graph");
+  expect(stdout).toContain("init <name>");
+  expect(stdout).toContain("waygraph auto");
+  expect(stdout).toContain("--blocks");
+  expect(stdout).toContain("--auto-play-video");
+  expect(stdout).toContain("--auto-next");
+  expect(stdout).toContain("--non-headless");
+  expect(stdout).toMatch(/\bgraph\b/);
+});
+
+test("waygraph --help prefers primary verbs over chain-first", async () => {
+  const { stdout } = await exec(node, [CLI, "--help"]);
+  expect(stdout).toContain("waygraph demo");
+  expect(stdout).toContain("waygraph run");
+  expect(stdout.indexOf("Primary")).toBeLessThan(stdout.indexOf("Aliases"));
 });
 
 test("waygraph list discovers flow files", async () => {

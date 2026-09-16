@@ -105,7 +105,9 @@ test("waygraph chain errors loudly on an unknown block name", async () => {
   });
 });
 
-test("waygraph --help mentions chain", async () => {
+test("waygraph --help mentions chain alias and primary run --blocks", async () => {
   const { stdout } = await exec(node, [CLI, "--help"]);
-  expect(stdout).toContain("waygraph chain");
+  expect(stdout).toContain("waygraph run");
+  expect(stdout).toContain("--blocks");
+  expect(stdout).toMatch(/chain/i);
 });
