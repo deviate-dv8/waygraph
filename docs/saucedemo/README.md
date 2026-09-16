@@ -33,7 +33,7 @@ npm test              # headless Playwright suite
 Or one-shot without a permanent folder:
 
 ```bash
-npx waygraph@latest try auto   # then: cd <temp> && npm run auto:cli
+npx waygraph@latest try auto:cli
 npx waygraph@latest try demo   # stepper + test
 ```
 
