@@ -13,7 +13,7 @@ See [ROADMAP.md](./ROADMAP.md) for what's shipped, spec'd, and planned by versio
 
 Browser docs (quick start, engine handout, consumer layout, deploy path):
 
-- **Published:** https://deviate-dv8.github.io/waygraph/ (after repo Pages source is set to GitHub Actions once)
+- **Published:** https://deviate-dv8.github.io/waygraph/ (workflow auto-enables Pages via `enablement: true`; manual Settings only if org policy blocks it)
 - **Source:** [`docs/`](./docs/) — static HTML, no build step
 - **Local preview:** `npm run docs:preview` → http://127.0.0.1:4173/
 - **Deploy:** push to `main` touching `docs/**` runs [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) (`workflow_dispatch` also works)
@@ -155,12 +155,12 @@ an opinionated Playwright," so a stealth-patched or otherwise customized launche
 the same `.launch()` shape as Playwright's own `chromium`/`firefox`/`webkit`.
 
 ```bash
-npx create-waygraph my-project && cd my-project && npm install && npm test
+npx waygraph init my-project && cd my-project && npm install && npx playwright install chromium && npm test
 ```
 
-[`create-waygraph`](https://github.com/deviate-dv8/create-waygraph) scaffolds a new
-project (package.json, tsconfig, playwright.config, one working example flow) in one
-command, published on npm - the above runs a real green test with no manual edits.
+`waygraph init` scaffolds a new project (package.json, tsconfig, playwright.config,
+one offline example flow + `npm run check` / `npm run auto`). [`create-waygraph`](https://github.com/deviate-dv8/create-waygraph)
+is the same shape as a standalone package if you prefer `npx create-waygraph`.
 
 **Consumer layout (Next.js App Router):** block folders mirror `app/` page routes (`/`
 at the namespace root; no invented `landing/`/`root/`; sidebar = chrome + edges). See
@@ -182,6 +182,16 @@ Flags beat env: `--step` / `--autoplay` / `--base-url` / `--title`. BASE_URL fal
 back to `package.json` `waygraph.baseUrl` then `playwright.config` `baseURL`. Prefer
 flags (or `npm run demo*`) over a pile of `WAYGRAPH_*` vars. NavBlock `click` shows
 demo cursor travel + pulse before the real click; `url` NavBlocks still `goto`.
+
+**Flow video (headless OK):** `waygraph chain "loginFlow then shopFlow" . --video`
+uses Playwright `recordVideo` and prints the `.webm` path when done (default dir:
+`.waygraph-videos/`). Lighter than help-center-clip-engine (no overlay/ffmpeg pipeline).
+Same flag works on `waygraph demo`. Programmatic: `Engine({ recordVideo: { dir: "./videos" } })`.
+
+**Project hygiene:** `waygraph check .` warns on nav outside NavBlocks **and** lists
+**orphan Blocks** (a `*.block.ts` export not wired into any `.flow.ts` defineFlow array).
+Zero orphans is required before `waygraph chain auto <fromCheckpoint> <toCheckpoint> .`
+builds a chain spec from the `waygraph auto` graph.
 
 ## Example
 

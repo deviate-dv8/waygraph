@@ -35,6 +35,16 @@ export interface WaygraphGraph {
   skipped: SkippedBlock[];
 }
 
+/** A Block export that no `.flow.ts` defineFlow array references yet. */
+export interface OrphanBlock {
+  /** Export identifier in the `.block.ts` file. */
+  exportName: string;
+  /** Runtime Block `.name` when import succeeds; else derived from export. */
+  block: string;
+  /** Path relative to the project root. */
+  file: string;
+}
+
 /**
  * Renders a `WaygraphGraph` as Mermaid `stateDiagram-v2` text - paste
  * straight into a `.md` file's ```mermaid fence or a live editor. `"*"`
@@ -82,6 +92,98 @@ function walkDir(dir: string, pattern: RegExp): string[] {
 
 function discoverBlocks(projectDir: string): string[] {
   return walkDir(projectDir, /\.block\.ts$/);
+}
+
+function discoverFlows(projectDir: string): string[] {
+  return walkDir(projectDir, /\.flow\.ts$/);
+}
+
+/** Block export ids listed inside any `defineFlow([...])` array in flow files. */
+function extractFlowBlockRefs(flowSrc: string): string[] {
+  const refs: string[] = [];
+  const re = /defineFlow(?:<[\s\S]*?>)?\s*\(\s*\[([\s\S]*?)\]\s*\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(flowSrc)) !== null) {
+    for (const part of m[1]!.split(",")) {
+      const trimmed = part.trim().replace(/\/\/.*$/, "").trim();
+      const id = trimmed.split(/\s+/)[0];
+      if (!id || id === "start" || id === "end") continue;
+      refs.push(id);
+    }
+  }
+  return refs;
+}
+
+function exportNameToBlockName(exportName: string): string {
+  const base = exportName.replace(/Block$/, "");
+  return base
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
+    .toLowerCase();
+}
+
+/**
+ * Blocks present on disk but never wired into a `.flow.ts` defineFlow array.
+ * Required before `chain auto` can build a path from the discovered graph -
+ * orphan Blocks are intentionally excluded from auto shorthand.
+ */
+export async function findOrphanBlocks(projectDir: string): Promise<OrphanBlock[]> {
+  const blockFiles = discoverBlocks(projectDir);
+  const flowFiles = discoverFlows(projectDir);
+  const referenced = new Set<string>();
+  for (const flowFile of flowFiles) {
+    for (const ref of extractFlowBlockRefs(readFileSync(flowFile, "utf-8"))) {
+      referenced.add(ref);
+    }
+  }
+
+  const orphans: OrphanBlock[] = [];
+  for (const file of blockFiles) {
+    const relFile = relative(projectDir, file);
+    const src = readFileSync(file, "utf-8");
+    const exportRe = /export\s+const\s+([A-Za-z_$][\w]*)\s*=/g;
+    let m: RegExpExecArray | null;
+    while ((m = exportRe.exec(src)) !== null) {
+      const exportName = m[1]!;
+      if (referenced.has(exportName)) continue;
+      if (!/defineBlock|defineNavBlock/.test(src)) continue;
+      let block = exportNameToBlockName(exportName);
+      try {
+        const mod = await importModule(file);
+        const exported = mod[exportName];
+        if (isBlockLike(exported)) block = exported.name;
+      } catch {
+        // import may fail in partial projects - keep derived name
+      }
+      orphans.push({ exportName, block, file: relFile });
+    }
+  }
+  return orphans.sort((a, b) => a.file.localeCompare(b.file) || a.exportName.localeCompare(b.exportName));
+}
+
+/**
+ * Shortest Block-name path between two Checkpoint tags using `discoverGraph`
+ * edges. NavBlocks (`from: "*"`) count from any state.
+ */
+export function findBlockPath(graph: WaygraphGraph, fromTag: string, toTag: string): string[] | null {
+  if (fromTag === toTag) return [];
+  type QueueItem = { tag: string; path: string[] };
+  const queue: QueueItem[] = [{ tag: fromTag, path: [] }];
+  const visited = new Set<string>([fromTag]);
+
+  while (queue.length > 0) {
+    const { tag, path } = queue.shift()!;
+    for (const edge of graph.edges) {
+      if (edge.from !== tag && edge.from !== "*") continue;
+      const nextPath = [...path, edge.block];
+      if (edge.to === toTag) return nextPath;
+      if (!visited.has(edge.to)) {
+        visited.add(edge.to);
+        queue.push({ tag: edge.to, path: nextPath });
+      }
+    }
+  }
+  return null;
 }
 
 async function importModule(filePath: string): Promise<Record<string, unknown>> {

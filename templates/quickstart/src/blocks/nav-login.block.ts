@@ -1,5 +1,5 @@
 import { defineNavBlock, Trait } from "waygraph";
-import type { LoginPage } from "../states/quickstart.states.js";
+import type { LoginPage } from "../states/checkout.states.js";
 
 // Navigation lives in its own Block, built by defineNavBlock - its act() is
 // ALWAYS exactly page.goto(url), generated for you, never hand-written. A

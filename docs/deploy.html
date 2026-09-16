@@ -40,7 +40,11 @@
       <h2>GitHub Pages (Actions)</h2>
       <ol>
         <li>Workflow: <code>.github/workflows/pages.yml</code> uploads <code>docs/</code> on push to <code>main</code> (and <code>workflow_dispatch</code>).</li>
-        <li>Repo Settings → Pages → Build and deployment → Source: <strong>GitHub Actions</strong> (one-time).</li>
+        <li>
+          First deploy: workflow uses <code>enablement: true</code> on
+          <code>configure-pages</code> to auto-provision Pages. If org policy blocks that,
+          set Settings → Pages → Source to <strong>GitHub Actions</strong> once, then re-run.
+        </li>
         <li>Published URL:
           <a href="https://deviate-dv8.github.io/waygraph/">https://deviate-dv8.github.io/waygraph/</a>
         </li>

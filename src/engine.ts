@@ -468,8 +468,18 @@ function buildFlow<Out extends Checkpoint<string>>(
         ...(executablePath ? { executablePath } : {}),
       });
       try {
-        const context = await browser.newContext();
-        return await runGraph<Out>(chain, undefined, context, mem);
+        const context = await browser.newContext(
+          config.recordVideo ? { recordVideo: config.recordVideo } : {},
+        );
+        try {
+          return await runGraph<Out>(chain, undefined, context, mem);
+        } finally {
+          // Playwright finalizes recordVideo on context.close(); skip when
+          // not recording so mem-only runs with stub contexts stay unchanged.
+          if (config.recordVideo) {
+            await context.close();
+          }
+        }
       } finally {
         await browser.close();
       }
@@ -674,8 +684,14 @@ export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
         ...(executablePath ? { executablePath } : {}),
       });
       try {
-        const context = await browser.newContext();
-        return await run(context, mem, { closeOnFinish: true });
+        const context = await browser.newContext(
+          config?.recordVideo ? { recordVideo: config.recordVideo } : {},
+        );
+        try {
+          return await run(context, mem, { closeOnFinish: true });
+        } finally {
+          await context.close();
+        }
       } finally {
         await browser.close();
       }
@@ -876,6 +892,12 @@ export interface EngineConfig {
    * @example new Engine({ browsers: { chromium: stealthChromium } })
    */
   browsers?: Partial<Record<"chromium" | "firefox" | "webkit", BrowserType>>;
+  /**
+   * Playwright `recordVideo` - saves a `.webm` when the context closes.
+   * Works headless. Lighter than a full clip-engine pipeline (no overlay/ffmpeg).
+   * @example new Engine({ recordVideo: { dir: "./videos" } })
+   */
+  recordVideo?: { dir: string; size?: { width: number; height: number } };
 }
 
 type S = Checkpoint<"__start__">;

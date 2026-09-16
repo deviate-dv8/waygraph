@@ -1,0 +1,25 @@
+{
+  "name": "__PROJECT_NAME__",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "flows": "waygraph list .",
+    "check": "waygraph check .",
+    "auto": "waygraph auto .",
+    "demo": "waygraph demo exampleFlow ."
+  },
+  "waygraph": {
+    "baseUrl": "https://example.com"
+  },
+  "dependencies": {
+    "waygraph": "^0.7.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}

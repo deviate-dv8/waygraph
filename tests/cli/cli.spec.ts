@@ -45,6 +45,8 @@ test("waygraph --help prints usage", async () => {
   const { stdout } = await exec(node, [CLI, "--help"]);
   expect(stdout).toContain("waygraph");
   expect(stdout).toContain("waygraph list");
+  expect(stdout).toContain("waygraph init");
+  expect(stdout).toContain("chain auto");
 });
 
 test("waygraph list discovers flow files", async () => {

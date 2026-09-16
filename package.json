@@ -1,6 +1,6 @@
 {
   "name": "waygraph",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "type": "module",
   "description": "A typed graph of reusable Blocks for driving a browser through E2E flows.",
   "main": "./dist/index.js",
