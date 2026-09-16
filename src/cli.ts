@@ -1786,6 +1786,16 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         i = episodeStartIndex - 1;
         continue;
       }
+      // withExpectedFailure episode (e.g. locked_out_user) - throwing here is
+      // the demo working, not a broken run.
+      if (r.expectedFailureReason) {
+        if (process.env.WAYGRAPH_JSON !== "1") {
+          console.log(
+            "waygraph: expected failure on " + r.block.name + " - " + r.expectedFailureReason,
+          );
+        }
+        break;
+      }
       throw err;
     }
     await page
@@ -1843,6 +1853,21 @@ async function runJsonReportMode(engine, start, end, context, page, mem, resolve
       const outcome = await stepFlow.run(context, mem, { page, closeOnFinish: false });
       steps.push({ name: r.block.name, checkpoint: outcome.result, ms: Date.now() - startedAt });
     } catch (err) {
+      if (r.expectedFailureReason) {
+        steps.push({
+          name: r.block.name,
+          expectedFailure: true,
+          error: err && err.message ? err.message : String(err),
+          ms: Date.now() - startedAt,
+        });
+        return {
+          ok: true,
+          expectedFailure: true,
+          failedAt: r.block.name,
+          reason: r.expectedFailureReason,
+          steps,
+        };
+      }
       let screenshot = null;
       try {
         screenshot = join(tmpdir(), "waygraph-chain-failure-" + Date.now() + ".png");
@@ -1864,6 +1889,26 @@ async function runJsonReportMode(engine, start, end, context, page, mem, resolve
   return { ok: true, result: steps.length > 0 ? steps[steps.length - 1].checkpoint : null, steps };
 }
 
+function isExpectedChainFailure(chainFlows, err) {
+  if (!chainFlows || chainFlows.length === 0) return false;
+  const last = chainFlows[chainFlows.length - 1];
+  if (!last?.expectedFailureReason) return false;
+  const msg = err && err.message ? err.message : String(err);
+  return msg.includes("viewer-login") || msg.includes("reached-inventory-or-genuinely-blocked");
+}
+
+async function runChainedFlows(chainFlow, chainFlows, context, mem, page) {
+  try {
+    const outcome = await chainFlow(...chainFlows).run(context, mem, { page, closeOnFinish: false });
+    return outcome?.result !== undefined ? outcome.result : outcome;
+  } catch (err) {
+    if (isExpectedChainFailure(chainFlows, err)) {
+      return { __expectedFailure: true, message: err && err.message ? err.message : String(err) };
+    }
+    throw err;
+  }
+}
+
 async function main() {
   const projectDir = process.argv[2];
   const spec = process.argv[3];
@@ -1877,6 +1922,7 @@ async function main() {
   // reaches stdout.
   const jsonReport = process.env.WAYGRAPH_JSON === "1";
   let resolved = [];
+  let chainFlows = null;
   // A bare identifier (no "(", no "then") might name an existing Flow
   // that's already wired up (e.g. loginFlow) - try that FIRST so pointing
   // at real, already-built flows needs no chain-spec typing at all. Falls
@@ -1885,11 +1931,16 @@ async function main() {
   if (bareRef) {
     const flow = await findFlow(projectDir, bareRef);
     if (flow && typeof flow.blocks === "function") {
-      resolved = flow.blocks().map((bi) => ({
+      const blockInfos = flow.blocks();
+      resolved = blockInfos.map((bi, idx) => ({
         block: bi.block,
         exportName: bi.name,
-        expectedFailureReason: flow.expectedFailureReason,
+        expectedFailureReason:
+          flow.expectedFailureReason && idx === blockInfos.length - 1
+            ? flow.expectedFailureReason
+            : undefined,
       }));
+      chainFlows = [flow];
       if (!jsonReport) {
         console.log(
           "waygraph: running existing flow \\"" + bareRef + "\\" - " +
@@ -1974,13 +2025,15 @@ async function main() {
         resetSession: bi.resetSessionBefore === true,
         episodeNumber: meta.episodeNumber,
         episodeTitle: meta.episodeTitle,
-        expectedFailureReason: meta.expectedFailureReason,
+        expectedFailureReason:
+          meta.expectedFailureReason && remainingInFlow === 1 ? meta.expectedFailureReason : undefined,
         seedMem: isFirstOfSegment ? meta.seedMem : undefined,
       };
       remainingInFlow -= 1;
       isFirstOfSegment = false;
       return entry;
     });
+    chainFlows = flows;
     if (!jsonReport) {
       console.log(
         "waygraph: chaining " + resolved.map((r) => r.block.name).join(" -> ") +
@@ -2086,15 +2139,19 @@ async function main() {
         if (!report.ok) process.exitCode = 1;
         return;
       } else {
-        const blocks = resolved.map((r) => r.block);
-        const chained = blocks.reduce((a, b) => connect(a, b));
-        const flow = engine.defineFlow([start, chained, end]);
         const page = await context.newPage();
         pageForVideo = page;
         if (baseURL) {
           await page.goto(baseURL).catch(() => {});
         }
-        result = await flow.run(context, mem, { page, closeOnFinish: false });
+        if (chainFlows && chainFlows.length > 0) {
+          result = await runChainedFlows(chainFlow, chainFlows, context, mem, page);
+        } else {
+          const blocks = resolved.map((r) => r.block);
+          const chained = blocks.reduce((a, b) => connect(a, b));
+          const flow = engine.defineFlow([start, chained, end]);
+          result = await flow.run(context, mem, { page, closeOnFinish: false });
+        }
       }
     } finally {
       await context.close();
@@ -2108,13 +2165,29 @@ async function main() {
       await browser.close();
     }
   } else {
-    const blocks = resolved.map((r) => r.block);
-    const chained = blocks.reduce((a, b) => connect(a, b));
-    const flow = engine.defineFlow([start, chained, end]);
-    const recordVideo = videoDir ? { dir: videoDir } : undefined;
-    result = await flow.run(mem, recordVideo ? { recordVideo } : undefined);
+    if (chainFlows && chainFlows.length > 0) {
+      try {
+        result = await chainFlow(...chainFlows).run(mem);
+      } catch (err) {
+        if (isExpectedChainFailure(chainFlows, err)) {
+          result = { __expectedFailure: true, message: err && err.message ? err.message : String(err) };
+        } else {
+          throw err;
+        }
+      }
+    } else {
+      const blocks = resolved.map((r) => r.block);
+      const chained = blocks.reduce((a, b) => connect(a, b));
+      const flow = engine.defineFlow([start, chained, end]);
+      const recordVideo = videoDir ? { dir: videoDir } : undefined;
+      result = await flow.run(mem, recordVideo ? { recordVideo } : undefined);
+    }
   }
-  console.log("waygraph: chain finished -- " + JSON.stringify(result));
+  if (result && result.__expectedFailure) {
+    console.log("waygraph: chain finished (expected failure on last episode) -- " + result.message);
+  } else {
+    console.log("waygraph: chain finished -- " + JSON.stringify(result));
+  }
 }
 
 main().catch((err) => {
@@ -2254,6 +2327,8 @@ async function ensureDirPrereqs(dir: string, label: string): Promise<string | nu
   }
 
   if (status.missing === "waygraph" || status.missing === "playwright-test" || status.missing === "unknown") {
+    // Copied quickstart must not keep a workspace-tainted lockfile (breaks temp-dir npm install).
+    rmSync(join(dir, "package-lock.json"), { force: true });
     console.log(`${label}: installing dependencies in ${dir} ...`);
     const installCode = await runInherited("npm", ["install"], dir);
     if (installCode !== 0) {
@@ -2278,7 +2353,7 @@ async function ensureDirPrereqs(dir: string, label: string): Promise<string | nu
 }
 
 const TRY_DEMO_CHAIN =
-  'loginFlow({"username":"standard_user","password":"secret_sauce"}) then viewerBlockedFlow({"username":"locked_out_user","password":"secret_sauce"})';
+  'shopFlow({"username":"standard_user","password":"secret_sauce"}) then viewerBlockedFlow({"username":"locked_out_user","password":"secret_sauce"})';
 
 /**
  * Point a copied quickstart at this checkout's waygraph build (not npm registry).
@@ -2310,6 +2385,10 @@ async function wireQuickstartToPackageRoot(destDir: string): Promise<void> {
 async function runTryDemo(): Promise<void> {
   const destDir = mkdtempSync(join(tmpdir(), "waygraph-try-demo-"));
   cpSync(join(packageRoot(), "templates", "quickstart"), destDir, { recursive: true });
+  // Never copy dev node_modules / test output into the temp demo (Playwright double-load).
+  rmSync(join(destDir, "node_modules"), { recursive: true, force: true });
+  rmSync(join(destDir, "test-results"), { recursive: true, force: true });
+  rmSync(join(destDir, "package-lock.json"), { force: true });
   try {
     await wireQuickstartToPackageRoot(destDir);
   } catch (err) {
@@ -2325,14 +2404,22 @@ async function runTryDemo(): Promise<void> {
     return;
   }
 
+  process.env.WAYGRAPH_BASE_URL ??= "https://www.saucedemo.com";
+  // Default: headed stepper, manual Next. --video records that session (not headless rush).
   process.env.WAYGRAPH_HEADED ??= "1";
   process.env.WAYGRAPH_STEP ??= "1";
-  // Manual Next by default - onboarding should not race ahead on autoplay.
   process.env.WAYGRAPH_AUTOPLAY ??= "0";
-  process.env.WAYGRAPH_BASE_URL ??= "https://www.saucedemo.com";
+  // Explicit --no-step --video = unattended headless .webm only.
+  if (process.env.WAYGRAPH_VIDEO && process.env.WAYGRAPH_STEP === "0") {
+    process.env.WAYGRAPH_AUTOPLAY ??= "1";
+  }
 
+  const videoTo = process.env.WAYGRAPH_VIDEO;
   console.log(
-    "waygraph try demo: step-through chainFlow (Episode 1: Sign In -> Episode 2: Viewer blocked login) - click Next for each step ...",
+    videoTo
+      ? "waygraph try demo: step-through + record (Episode 1: Shop & Checkout -> Episode 2: blocked login) - click Next; video -> " +
+          (videoTo === "1" ? ".waygraph-videos/" : videoTo)
+      : "waygraph try demo: step-through (Episode 1: Shop & Checkout -> Episode 2: blocked login) - click Next for each step ...",
   );
   await runChain(destDir, TRY_DEMO_CHAIN);
   if (process.exitCode) return;
@@ -2345,7 +2432,7 @@ async function runTryDemo(): Promise<void> {
   }
 
   const testFile = join(destDir, "tests", "chain-flow.spec.ts");
-  const loginFlowFile = join(destDir, "src", "flows", "login.flow.ts");
+  const shopFlowFile = join(destDir, "src", "flows", "shop.flow.ts");
   const viewerBlockedFlowFile = join(destDir, "src", "flows", "viewer-blocked.flow.ts");
 
   console.log(
@@ -2353,7 +2440,7 @@ async function runTryDemo(): Promise<void> {
       "Temp project (does not touch your cwd - lives under the OS temp dir):\n" +
       `  ${destDir}\n\n` +
       "Episodes you just watched (same Flow objects the test imports):\n" +
-      `  ${loginFlowFile}\n` +
+      `  ${shopFlowFile}\n` +
       `  ${viewerBlockedFlowFile}\n\n` +
       "Headless chainFlow test (automated - no clicking):\n" +
       `  ${testFile}\n\n` +
@@ -2617,10 +2704,13 @@ function parseRunFlags(argv: string[]): RunFlags {
         process.exit(1);
       }
       out.title = v;
-    } else if (a === "--video") {
-      out.video = "";
-    } else if (a.startsWith("--video=")) {
-      out.video = a.slice("--video=".length);
+    } else if (a === "--video" || a.startsWith("--video=")) {
+      const v = a.includes("=") ? a.slice("--video=".length) : argv[++i];
+      if (v === undefined || (v.startsWith("-") && !a.includes("="))) {
+        out.video = "";
+      } else {
+        out.video = v;
+      }
     } else {
       out.positionals.push(a);
     }
@@ -2692,6 +2782,13 @@ function applyDemoDefaults(projectDir: string): void {
   if (process.env.WAYGRAPH_STEP === undefined) process.env.WAYGRAPH_STEP = "1";
   if (process.env.WAYGRAPH_STEP === "1" && process.env.WAYGRAPH_HEADED === undefined) {
     process.env.WAYGRAPH_HEADED = "1";
+  }
+  if (
+    process.env.WAYGRAPH_VIDEO &&
+    process.env.WAYGRAPH_STEP === "0" &&
+    process.env.WAYGRAPH_AUTOPLAY === undefined
+  ) {
+    process.env.WAYGRAPH_AUTOPLAY = "1";
   }
   if (!process.env.WAYGRAPH_BASE_URL) {
     const resolved = resolveBaseUrl(projectDir);

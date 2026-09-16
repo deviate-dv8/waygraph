@@ -4,7 +4,7 @@ import { SubmitLoginActionBlock } from "../blocks/actions/submit-login.action.bl
 
 const engine = new Engine();
 
-// Episode 1 - the step overlay shows "Episode 1: Sign In".
+// Optional standalone sign-in only (try demo uses shopFlow as Episode 1).
 export const loginFlow = withTitle(
   engine.defineFlow([start, NavLoginBlock, SubmitLoginActionBlock, end]),
   "Sign In",
