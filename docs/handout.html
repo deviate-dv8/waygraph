@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Engine handout · Waygraph docs</title>
+  <link rel="stylesheet" href="./css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="./index.html">waygraph</a>
+      <ul>
+        <li><a href="./index.html">Home</a></li>
+        <li><a href="./quickstart.html">Quick start</a></li>
+        <li><a href="./handout.html" aria-current="page">Engine handout</a></li>
+        <li><a href="./consumer.html">Consumer layout</a></li>
+        <li><a href="./deploy.html">Deploy / preview</a></li>
+        <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>Engine handout</h1>
+      <p class="lede">
+        Package API summary for product meshes. Prefer the package README if this page and
+        the repo diverge. Not v1.0 — minors may break until then.
+      </p>
+      <p class="meta">Mirrored from shared mesh handout · tip tracks package <code>0.7.x</code></p>
+
+      <h2>Core model</h2>
+      <table>
+        <thead>
+          <tr><th>Concept</th><th>Role</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>Checkpoint&lt;"Name"&gt;</code></td><td>Typed state marker between Blocks</td></tr>
+          <tr><td><code>Block</code> / <code>defineBlock</code></td><td>One act (+ optional observe/verify) + resolve</td></tr>
+          <tr><td><code>NavBlock</code> / <code>defineNavBlock</code></td><td>Navigation-only (<code>url</code> XOR <code>click</code>)</td></tr>
+          <tr><td><code>MemPage</code> + <code>key()</code></td><td>Typed shared memory across the run</td></tr>
+          <tr><td><code>Trait</code></td><td>verify after resolve; precondition before act</td></tr>
+          <tr><td><code>Engine</code> + <code>defineFlow</code></td><td><code>[start, ...blocks, end]</code> → runnable Flow</td></tr>
+          <tr><td><code>Flow.run</code></td><td><code>run(mem)</code> owns browser, or <code>run(context, mem)</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2>Navigation belongs in defineNavBlock</h2>
+      <pre><code>import { defineNavBlock, Trait } from "waygraph";
+
+const NavDocuments = defineNavBlock({
+  name: "nav-documents",
+  checkpoint: "DocumentsList",
+  click: "nav &gt;&gt; text=Documents",
+  verify: [Trait.url({ pathname: "/dashboard/documents" })],
+});
+
+const NavDeepLink = defineNavBlock({
+  name: "nav-share",
+  checkpoint: "ShareView",
+  url: (mem) => `/share/${mem.get(ShareToken)}`,
+});</code></pre>
+      <p>
+        Exactly one of <code>url</code> | <code>click</code>. Inside regular Blocks,
+        <code>page</code> is typed as <code>ActionPage</code> — <code>goto</code> /
+        <code>reload</code> / history APIs are deprecated (editor strike-through; builds still pass).
+      </p>
+
+      <h2>CLI</h2>
+      <pre><code>npx waygraph check .          # warn nav in non-NavBlocks
+npx waygraph auto .           # discover Checkpoint/Block graph (JSON)
+npx waygraph auto . --mermaid # same as Mermaid
+npx waygraph chain "login then overview-metrics" &lt;project-dir&gt;</code></pre>
+      <p>
+        <code>locate(page, library)</code> reverse-matches a live page against NavBlock
+        verify Traits ("where am I"). Unattended JSON execution is <code>chain</code> +
+        <code>WAYGRAPH_JSON=1</code>, not <code>auto</code>.
+      </p>
+
+      <h2>Pluggable browsers</h2>
+      <pre><code>const engine = new Engine({
+  browsers: { chromium: stealthChromium },
+  headless: true,
+});</code></pre>
+      <p>Same <code>.launch()</code> shape as Playwright. Puppeteer is out of scope.</p>
+
+      <h2>Multi-episode demos</h2>
+      <pre><code>import { chainFlow, withSessionReset, withTitle, withExpectedFailure } from "waygraph";
+
+await chainFlow(
+  withTitle(withSessionReset(ownerFlow), "Episode 1 - Owner"),
+  withTitle(
+    withExpectedFailure(withSessionReset(viewerFlow), "Viewer is locked out"),
+    "Episode 2 - Viewer",
+  ),
+).run(context, mem);</code></pre>
+
+      <h2>Verify / precondition</h2>
+      <pre><code>verify: [
+  Trait.url({ pathname: "/inventory.html" }),
+  Trait.text("h1", "Products"),
+  Trait.visible('[data-testid="cart"]'),
+]
+
+instruction: {
+  async act(page) { /* ... */ },
+  resolve: () => checkpoint("CheckoutForm"),
+  precondition: [Trait.visible("#checkout-form")],
+  verify: [Trait.url({ pathname: "/checkout" })],
+}</code></pre>
+
+      <h2>Recommendations</h2>
+      <ol>
+        <li>Pin a published npm version until you intentionally bump.</li>
+        <li>Split nav vs act from day one; migrate old <code>page.goto</code> when you touch Blocks.</li>
+        <li>Prefer <code>click</code> NavBlocks for in-app chrome; <code>url</code> for deep links.</li>
+        <li>Stealth / odd launchers via <code>EngineConfig.browsers</code>.</li>
+        <li>Run <code>waygraph check</code> in CI on <code>*.block.ts</code> trees.</li>
+        <li>Credentials in MemPage <code>requires</code> — fail in preflight.</li>
+        <li>Demos: <code>chainFlow</code> + session/title helpers — do not hand-roll cookie clears in Blocks.</li>
+        <li>Hand page back with <code>{ closeOnFinish: false }</code> when demos must keep the tab.</li>
+        <li>Popups: arm <code>context.once("page", …)</code> before the click; drive with <code>{ page: popup }</code>.</li>
+        <li>Extend via composition — do not invent a parallel engine.</li>
+      </ol>
+
+      <h2>Useful APIs</h2>
+      <table>
+        <thead><tr><th>API</th><th>Use when</th></tr></thead>
+        <tbody>
+          <tr><td><code>defineNavBlock</code></td><td>Navigate only</td></tr>
+          <tr><td><code>defineBlock</code> / <code>Block</code></td><td>Act on current page</td></tr>
+          <tr><td><code>composeBlock</code></td><td>Multi-step form as one named unit</td></tr>
+          <tr><td><code>branch</code> / self-loops</td><td>Routing with <code>maxSteps</code> cap</td></tr>
+          <tr><td><code>spawnTab</code></td><td>Second tab, same context</td></tr>
+          <tr><td><code>withVerify</code> / <code>flow.withBlockVerify</code></td><td>Patch confirmation from outside</td></tr>
+          <tr><td><code>chainFlow</code> + episode helpers</td><td>Multi-episode showcase</td></tr>
+        </tbody>
+      </table>
+
+      <footer class="site">
+        Folder layout for consumer apps:
+        <a href="./consumer.html">consumer layout</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

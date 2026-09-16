@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Consumer layout · Waygraph docs</title>
+  <link rel="stylesheet" href="./css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="./index.html">waygraph</a>
+      <ul>
+        <li><a href="./index.html">Home</a></li>
+        <li><a href="./quickstart.html">Quick start</a></li>
+        <li><a href="./handout.html">Engine handout</a></li>
+        <li><a href="./consumer.html" aria-current="page">Consumer layout</a></li>
+        <li><a href="./deploy.html">Deploy / preview</a></li>
+        <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>Consumer layout</h1>
+      <p class="lede">
+        Route folders mirror the app's URL folders — not a parallel invented tree.
+        This is the consumer contract; the <a href="./handout.html">engine handout</a>
+        covers the package API.
+      </p>
+
+      <h2>The rule</h2>
+      <table>
+        <thead>
+          <tr><th>App Router</th><th>Waygraph blocks</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>app/page.tsx</code> (URL <code>/</code>)</td>
+            <td>Namespace root: <code>NAV.md</code> + <code>nav-*-root.block.ts</code> — no <code>landing/</code> folder</td>
+          </tr>
+          <tr>
+            <td><code>app/(auth)/login/page.tsx</code></td>
+            <td><code>…/login/</code> — route groups vanish (URL-invisible)</td>
+          </tr>
+          <tr>
+            <td>Folder with no <code>page.tsx</code></td>
+            <td>Grouping only — no NAV.md, no nav block</td>
+          </tr>
+          <tr>
+            <td><code>app/(app)/layout.tsx</code> (Sidebar)</td>
+            <td><code>shared/chrome/</code> — chrome, not a route</td>
+          </tr>
+          <tr>
+            <td><code>app/api/**</code></td>
+            <td>No UI block</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Test:</strong> a folder gets <code>NAV.md</code> + a nav block if and only if
+        the app has a <code>page.tsx</code> at that URL.
+      </p>
+
+      <h2>Block kinds</h2>
+      <table>
+        <thead>
+          <tr><th>Kind</th><th>File</th><th><code>page.goto</code>?</th><th>Lives</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Nav</td><td><code>nav-*.block.ts</code></td><td>Yes (<code>url</code> XOR <code>click</code>)</td><td>Route folder root</td></tr>
+          <tr><td>Action</td><td><code>*.action.block.ts</code></td><td>No</td><td>Route <code>actions/</code></td></tr>
+          <tr><td>Chrome</td><td><code>*.chrome.block.ts</code></td><td>No</td><td>Route <code>actions/chrome/</code> or <code>shared/chrome/</code></td></tr>
+        </tbody>
+      </table>
+      <p>
+        Every route folder with nav or actions must have <code>NAV.md</code>.
+        Namespaces by origin (do not mix): <code>*-web/</code> for the app FE,
+        <code>*-external/</code> for MailHog/Mailpit, Studio, probes.
+      </p>
+
+      <h2>Correct shape (sketch)</h2>
+      <pre><code>src/blocks/
+  SITE-MAP.md
+  shared/chrome/                 # (app)/layout — sidebar, dismiss toast
+  pia-web/                       # === app/  · THIS FOLDER IS "/"
+    NAV.md
+    nav-pia-root.block.ts        # /
+    actions/
+    login/                       # /login
+      NAV.md
+      nav-pia-login.block.ts
+      actions/
+    dashboard/                   # /dashboard
+    demo/                        # NO page.tsx → grouping ONLY
+      command-center/            # /demo/command-center → NAV + nav + actions/
+  pia-external/
+    mailpit/                     # external host — not under *-web/</code></pre>
+
+      <h2>Do not teach</h2>
+      <ul>
+        <li><code>pia-web/root/</code> or <code>pia-web/landing/</code> for <code>/</code></li>
+        <li><code>shell/nav/…</code> as a second map of routes (sidebar = edges + chrome)</li>
+        <li>Putting Mailpit under <code>*-web/</code></li>
+      </ul>
+
+      <h2>Same checkpoint + mem</h2>
+      <p>
+        Checkpoint is a phantom tag only — no payload. Same URL after an action ⇒ same
+        Checkpoint; richer mem. <code>act</code> / <code>observe</code> may
+        <code>mem.set</code> / <code>mem.update</code>; <code>resolve</code> is pure;
+        verify Traits cannot read mem. Self-loop via <code>branch</code> +
+        <code>maxSteps</code>; document in that route's <code>NAV.md</code> States / mem-keys.
+      </p>
+
+      <p class="meta" style="margin-top:2rem">
+        One-liner: Waygraph maps the app the way App Router maps URLs — one nav (+ actions)
+        per <code>page.tsx</code>, <code>/</code> at the namespace root, mem can change without
+        changing the Checkpoint.
+      </p>
+
+      <footer class="site">
+        <a href="./deploy.html">Deploy / preview</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

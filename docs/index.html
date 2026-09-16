@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Waygraph docs</title>
+  <link rel="stylesheet" href="./css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="./index.html">waygraph</a>
+      <ul>
+        <li><a href="./index.html" aria-current="page">Home</a></li>
+        <li><a href="./quickstart.html">Quick start</a></li>
+        <li><a href="./handout.html">Engine handout</a></li>
+        <li><a href="./consumer.html">Consumer layout</a></li>
+        <li><a href="./deploy.html">Deploy / preview</a></li>
+        <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
+        <li><a href="https://www.npmjs.com/package/waygraph">npm</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>Waygraph</h1>
+      <p class="lede">
+        A typed graph of reusable Blocks for driving a browser through E2E flows
+        (Playwright), instead of a flat pile of ad hoc helpers.
+      </p>
+      <p class="meta">
+        Package docs site · source
+        <a href="https://github.com/deviate-dv8/waygraph">deviate-dv8/waygraph</a>
+        · published URL after Pages is enabled:
+        <a href="https://deviate-dv8.github.io/waygraph/">deviate-dv8.github.io/waygraph</a>
+      </p>
+
+      <div class="cards">
+        <a href="./quickstart.html">
+          <strong>Quick start</strong>
+          <span>Install, first Block + Flow, develop the package.</span>
+        </a>
+        <a href="./handout.html">
+          <strong>Engine handout</strong>
+          <span>Core model, NavBlock, Traits, chainFlow, CLI, recommendations.</span>
+        </a>
+        <a href="./consumer.html">
+          <strong>Consumer layout</strong>
+          <span>Route folders = app URLs. No invented landing/root trees.</span>
+        </a>
+        <a href="./deploy.html">
+          <strong>Deploy / preview</strong>
+          <span>Local one-command preview and GitHub Pages workflow.</span>
+        </a>
+      </div>
+
+      <h2>Install</h2>
+      <pre><code>npm install waygraph @playwright/test
+npx create-waygraph my-project &amp;&amp; cd my-project &amp;&amp; npm install &amp;&amp; npm test</code></pre>
+      <p>
+        Requires Node 22+. <code>@playwright/test</code> is a peer dependency
+        (^1.40). Pin a published version for product work until you intentionally upgrade.
+      </p>
+
+      <h2>This site vs the package README</h2>
+      <p>
+        The package <a href="https://github.com/deviate-dv8/waygraph/blob/main/README.md">README</a>
+        remains the canonical API narrative in-repo. This Pages site packages the same
+        material (plus consumer layout guidance) for browser reading and cross-mesh handoff.
+      </p>
+
+      <footer class="site">
+        ASCII docs · content mirrored from README + shared handouts · not v1.0 yet
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

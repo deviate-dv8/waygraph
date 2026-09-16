@@ -9,9 +9,12 @@
  *   validate [project]           Import and validate all flows
  *   run <flow> [project]         Run a named flow with a fresh browser
  *   chain <spec> [project]       Run one or more Blocks by name, ad hoc, no flow file needed
+ *   demo <flow|spec> [project]   Friendly step-mode run (flags beat env; defaults STEP+headed)
+ *   try     [project]            Bundled quickstart showcase
  *
  * "project" defaults to the current directory.
  * A project is any directory containing *.flow.ts files (typically under src/flows/).
+ * Run flags (--step/--autoplay/--base-url/--title) beat WAYGRAPH_* env when present.
  */
 
 import { existsSync, readdirSync, readFileSync, writeFileSync, rmSync, cpSync, type Dirent } from "node:fs";
@@ -19,6 +22,7 @@ import { resolve, relative, join, basename, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { MemPage } from "./mem-page.js";
+import { discoverGraph, toMermaid } from "./graph.js";
 
 // ---------------------------------------------------------------------------
 // Filesystem
@@ -211,6 +215,7 @@ function isFlowLike(val: unknown): val is { run: (...args: unknown[]) => Promise
 const CHAIN_RUNNER_SCRIPT = `
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 function walkDir(dir, pattern) {
   const results = [];
@@ -1274,11 +1279,18 @@ async function teardownOverlay(page) {
 async function moveCursorTo(page, box, ms) {
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
+  const travel = Math.max(0, Number(ms) || 0);
   await page
     .evaluate(({ x, y, ms }) => {
       if (window.__wgMoveCursorTo) window.__wgMoveCursorTo(x, y, ms);
-    }, { x, y, ms })
+    }, { x, y, ms: travel })
     .catch(() => {});
+  // CSS transition is async - wait the full travel so the cursor is ON the
+  // target before ring/pulse/real click (NavBlock click nav was skipping
+  // this and looked like a teleport).
+  if (travel > 0) {
+    await new Promise((res) => setTimeout(res, travel));
+  }
   return { x, y };
 }
 
@@ -1400,6 +1412,14 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing) {
       let clickPoint = null;
       try {
         await installOverlay(page);
+        // Wait until the target is visible BEFORE measuring - otherwise
+        // defineNavBlock({ click }) (and any slow-to-appear control) skips
+        // the cursor entirely: boundingBox was null, then originalClick
+        // waited and clicked with no demo animation.
+        await this.waitFor({
+          state: "visible",
+          timeout: (options && options.timeout) || 30000,
+        }).catch(() => {});
         const box = await this.boundingBox();
         const narrated = box ? await wasJustNarrated(page) : false;
         if (box && !narrated) {
@@ -1409,6 +1429,14 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing) {
             if (text && text.length > 0 && text.length <= 30) label = text;
           } catch {
             // element has no simple text (an icon button, say) - generic label is fine
+          }
+          // Prefer "nav: …" when this locator is a NavBlock click target
+          // (set on page by runStepMode just before act).
+          try {
+            const navLabel = await page.evaluate(() => window.__wgPendingNavClickLabel || null);
+            if (navLabel) label = String(navLabel);
+          } catch {
+            /* ignore */
           }
           clickPoint = await moveCursorTo(page, box, cursorMs(600));
           await showRing(page, box, label);
@@ -1699,6 +1727,23 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       }
     }
     await markStepRunning(page);
+    // NavBlock click-nav: label the upcoming Locator.click demo cursor as
+    // "nav: <block>" so pia/demo watchers see cursor+pulse on click nav
+    // (not only on regular Block clicks).
+    const navClick = r.block.__waygraphNavClick;
+    if (r.block.__waygraphKind === "nav" && navClick !== undefined) {
+      await page
+        .evaluate((label) => {
+          window.__wgPendingNavClickLabel = label;
+        }, "nav: " + (r.block.name || "click"))
+        .catch(() => {});
+    } else {
+      await page
+        .evaluate(() => {
+          delete window.__wgPendingNavClickLabel;
+        })
+        .catch(() => {});
+    }
     const stepFlow = engine.defineFlow([start, r.block, end]);
     // { closeOnFinish: false } makes Flow.run return { result, page }, not
     // the plain checkpoint - destructure it, don't treat the wrapper as the
@@ -1708,6 +1753,11 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     try {
       stepOutcome = await stepFlow.run(context, mem, { page, closeOnFinish: false });
     } catch (err) {
+      await page
+        .evaluate(() => {
+          delete window.__wgPendingNavClickLabel;
+        })
+        .catch(() => {});
       // A thrown act()/observe()/a failed verify Trait used to just crash
       // the whole Node process with a raw stack trace - the browser closes
       // (main()'s own try/finally) before a human watching ever sees WHY.
@@ -1737,6 +1787,11 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       }
       throw err;
     }
+    await page
+      .evaluate(() => {
+        delete window.__wgPendingNavClickLabel;
+      })
+      .catch(() => {});
     result = stepOutcome.result;
     const highlights = extractVerifyHighlights(r.block, result.__state);
     await renderAfterStep(page, {
@@ -1761,11 +1816,65 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   return result;
 }
 
+/**
+ * "chain WAYGRAPH_JSON=1" - the unattended counterpart to "chain --step": no
+ * human gate, no overlay, headless by default. The same execution --step
+ * already has (session-reset boundaries, per-segment mem-seeding) but
+ * reporting built for an agent reading stdout afterward, not a human
+ * watching the browser live - a flat JSON object naming exactly which Block
+ * failed, what every EARLIER Block resolved to, and a screenshot at the
+ * exact moment of failure, since there's no live browser for a human to
+ * glance at instead. (Previously its own "waygraph auto" verb - renamed once
+ * "auto" came to mean the state-machine discovery tool instead; this is a
+ * chain reporting mode, not a distinct command.)
+ */
+async function runJsonReportMode(engine, start, end, context, page, mem, resolved, baseURL) {
+  const steps = [];
+  for (let i = 0; i < resolved.length; i++) {
+    const r = resolved[i];
+    if (r.seedMem) r.seedMem();
+    if (r.resetSession && i > 0) {
+      await resetPageState(context, page, baseURL);
+    }
+    const startedAt = Date.now();
+    const stepFlow = engine.defineFlow([start, r.block, end]);
+    try {
+      const outcome = await stepFlow.run(context, mem, { page, closeOnFinish: false });
+      steps.push({ name: r.block.name, checkpoint: outcome.result, ms: Date.now() - startedAt });
+    } catch (err) {
+      let screenshot = null;
+      try {
+        screenshot = join(tmpdir(), "waygraph-chain-failure-" + Date.now() + ".png");
+        await page.screenshot({ path: screenshot, fullPage: true });
+      } catch {
+        screenshot = null;
+      }
+      return {
+        ok: false,
+        failedAt: r.block.name,
+        stepIndex: i,
+        totalSteps: resolved.length,
+        error: err && err.message ? err.message : String(err),
+        steps,
+        screenshot,
+      };
+    }
+  }
+  return { ok: true, result: steps.length > 0 ? steps[steps.length - 1].checkpoint : null, steps };
+}
+
 async function main() {
   const projectDir = process.argv[2];
   const spec = process.argv[3];
   const { connect, MemPage, Engine, start, end, chainFlow } = await import("waygraph");
   const mem = new MemPage();
+  // Computed early - JSON-report mode's stdout is meant to be ONE parseable
+  // JSON object for whatever's reading it afterward (a script, an agent),
+  // not a human's console. Every informational console.log below is
+  // skipped for it; only the final JSON report (or a thrown Error, for a
+  // truly unexpected failure outside runJsonReportMode's own try/catch)
+  // reaches stdout.
+  const jsonReport = process.env.WAYGRAPH_JSON === "1";
   let resolved = [];
   // A bare identifier (no "(", no "then") might name an existing Flow
   // that's already wired up (e.g. loginFlow) - try that FIRST so pointing
@@ -1780,11 +1889,13 @@ async function main() {
         exportName: bi.name,
         expectedFailureReason: flow.expectedFailureReason,
       }));
-      console.log(
-        "waygraph: running existing flow \\"" + bareRef + "\\" - " +
-          resolved.map((r) => r.block.name).join(" -> ") + " (" + resolved.length + " block" +
-          (resolved.length === 1 ? "" : "s") + ", no chain spec needed)",
-      );
+      if (!jsonReport) {
+        console.log(
+          "waygraph: running existing flow \\"" + bareRef + "\\" - " +
+            resolved.map((r) => r.block.name).join(" -> ") + " (" + resolved.length + " block" +
+            (resolved.length === 1 ? "" : "s") + ", no chain spec needed)",
+        );
+      }
     }
   }
   if (resolved.length === 0) {
@@ -1869,10 +1980,12 @@ async function main() {
       isFirstOfSegment = false;
       return entry;
     });
-    console.log(
-      "waygraph: chaining " + resolved.map((r) => r.block.name).join(" -> ") +
-        " (" + resolved.length + " block" + (resolved.length === 1 ? "" : "s") + ")",
-    );
+    if (!jsonReport) {
+      console.log(
+        "waygraph: chaining " + resolved.map((r) => r.block.name).join(" -> ") +
+          " (" + resolved.length + " block" + (resolved.length === 1 ? "" : "s") + ")",
+      );
+    }
   }
   const step = process.env.WAYGRAPH_STEP === "1";
   // Stepping through headless defeats the point - a human can't watch it.
@@ -1914,12 +2027,12 @@ async function main() {
   // the same limitation "chain" always had; only --step's own runStepMode
   // loop actually needs (and correctly supports, via resolved[i].seedMem)
   // per-segment differentiated values.
-  if (!step) {
+  if (!step && !jsonReport) {
     for (const r of resolved) {
       if (r.seedMem) r.seedMem();
     }
   }
-  if (step || baseURL) {
+  if (step || jsonReport || baseURL) {
     const { chromium } = await import("playwright");
     // --start-maximized (step mode only): viewport: null alone only made
     // the PAGE content track the window - the actual browser WINDOW still
@@ -1949,6 +2062,15 @@ async function main() {
           await page.goto(baseURL).catch(() => {});
         }
         result = await runStepMode(engine, start, end, context, page, mem, resolved, slowMo, title, fastBlockNames, clearSession, baseURL);
+      } else if (jsonReport) {
+        const page = await context.newPage();
+        if (baseURL) {
+          await page.goto(baseURL).catch(() => {});
+        }
+        const report = await runJsonReportMode(engine, start, end, context, page, mem, resolved, baseURL);
+        console.log(JSON.stringify(report, null, 2));
+        if (!report.ok) process.exitCode = 1;
+        return;
       } else {
         const blocks = resolved.map((r) => r.block);
         const chained = blocks.reduce((a, b) => connect(a, b));
@@ -2288,8 +2410,124 @@ async function runFlow(projectDir: string, flowName: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// CLI plumbing
+// CLI plumbing - run flags (flags beat WAYGRAPH_* env)
 // ---------------------------------------------------------------------------
+
+interface RunFlags {
+  step?: boolean;
+  autoplay?: boolean;
+  baseUrl?: string;
+  title?: string;
+  /** Positional args with run flags stripped. */
+  positionals: string[];
+}
+
+/**
+ * Pulls `--step` / `--no-step` / `--autoplay` / `--no-autoplay` /
+ * `--base-url <url>` / `--title <text>` out of argv. Unknown `--*` stay as
+ * positionals so callers like `auto --mermaid` keep working when they parse
+ * their own flags.
+ */
+function parseRunFlags(argv: string[]): RunFlags {
+  const out: RunFlags = { positionals: [] };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]!;
+    if (a === "--step") {
+      out.step = true;
+    } else if (a === "--no-step") {
+      out.step = false;
+    } else if (a === "--autoplay") {
+      out.autoplay = true;
+    } else if (a === "--no-autoplay") {
+      out.autoplay = false;
+    } else if (a === "--base-url" || a.startsWith("--base-url=")) {
+      const v = a.includes("=") ? a.slice("--base-url=".length) : argv[++i];
+      if (!v || v.startsWith("-")) {
+        console.error("waygraph: --base-url needs a URL value");
+        process.exit(1);
+      }
+      out.baseUrl = v;
+    } else if (a === "--title" || a.startsWith("--title=")) {
+      const v = a.includes("=") ? a.slice("--title=".length) : argv[++i];
+      if (v === undefined || (v.startsWith("-") && !a.includes("="))) {
+        console.error('waygraph: --title needs a string value');
+        process.exit(1);
+      }
+      out.title = v;
+    } else {
+      out.positionals.push(a);
+    }
+  }
+  return out;
+}
+
+/** Writes flag values into process.env so the chain child inherits them. Flags beat prior env. */
+function applyRunFlags(flags: RunFlags): void {
+  if (flags.step === true) {
+    process.env.WAYGRAPH_STEP = "1";
+    process.env.WAYGRAPH_HEADED = "1";
+  } else if (flags.step === false) {
+    process.env.WAYGRAPH_STEP = "0";
+  }
+  if (flags.autoplay === true) {
+    process.env.WAYGRAPH_AUTOPLAY = "1";
+  } else if (flags.autoplay === false) {
+    process.env.WAYGRAPH_AUTOPLAY = "0";
+  }
+  if (flags.baseUrl !== undefined) {
+    process.env.WAYGRAPH_BASE_URL = flags.baseUrl;
+  }
+  if (flags.title !== undefined) {
+    process.env.WAYGRAPH_TITLE = flags.title;
+  }
+}
+
+/**
+ * BASE_URL when neither --base-url nor WAYGRAPH_BASE_URL is set:
+ * package.json `waygraph.baseUrl` (or `baseURL`), then playwright.config `baseURL`.
+ */
+function resolveBaseUrl(projectDir: string): string | undefined {
+  const pkgPath = join(projectDir, "package.json");
+  if (existsSync(pkgPath)) {
+    try {
+      const pkg = JSON.parse(readFileSync(pkgPath, "utf-8")) as {
+        waygraph?: { baseUrl?: string; baseURL?: string };
+        config?: { waygraph?: { baseUrl?: string; baseURL?: string } };
+      };
+      const fromPkg =
+        pkg.waygraph?.baseUrl ??
+        pkg.waygraph?.baseURL ??
+        pkg.config?.waygraph?.baseUrl ??
+        pkg.config?.waygraph?.baseURL;
+      if (typeof fromPkg === "string" && fromPkg.trim()) return fromPkg.trim();
+    } catch {
+      // ignore malformed package.json - fall through to playwright
+    }
+  }
+  for (const name of ["playwright.config.ts", "playwright.config.mts", "playwright.config.js", "playwright.config.mjs"]) {
+    const p = join(projectDir, name);
+    if (!existsSync(p)) continue;
+    const src = readFileSync(p, "utf-8");
+    const m = src.match(/baseURL\s*:\s*["']([^"']+)["']/);
+    if (m?.[1]) return m[1];
+  }
+  return undefined;
+}
+
+/**
+ * Friendly demo defaults: STEP+headed on, BASE_URL from package/env/playwright.
+ * Call after applyRunFlags so explicit flags already won.
+ */
+function applyDemoDefaults(projectDir: string): void {
+  if (process.env.WAYGRAPH_STEP === undefined) process.env.WAYGRAPH_STEP = "1";
+  if (process.env.WAYGRAPH_STEP === "1" && process.env.WAYGRAPH_HEADED === undefined) {
+    process.env.WAYGRAPH_HEADED = "1";
+  }
+  if (!process.env.WAYGRAPH_BASE_URL) {
+    const resolved = resolveBaseUrl(projectDir);
+    if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
+  }
+}
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -2303,7 +2541,51 @@ Usage:
   waygraph validate [project]     Import and validate all flows
   waygraph run <flow> [project]   Run a named flow
   waygraph chain <spec> [project] Run one or more Blocks by name, ad hoc
+  waygraph demo <flow|spec> [project]
+                                  Friendly human-watched run. Defaults:
+                                  --step (headed overlay). BASE_URL from
+                                  --base-url, else WAYGRAPH_BASE_URL, else
+                                  package.json waygraph.baseUrl, else
+                                  playwright.config baseURL.
+  waygraph auto    [project]      Discover state graph (JSON or --mermaid)
   waygraph check   [project]      Warn about navigation outside a NavBlock
+  waygraph try     [project]      One-shot bundled quickstart showcase
+
+Run flags (chain / demo / try) - flags beat WAYGRAPH_* env:
+  --step / --no-step              human-verification overlay (implies headed)
+  --autoplay / --no-autoplay      panel Auto-advance starting state
+  --base-url <url>                base URL for relative page.goto()
+  --title <text>                  persistent overlay banner title
+
+Prefer flags (or npm scripts that pass them) over an ENV soup of WAYGRAPH_*.
+
+    WAYGRAPH_JSON=1 reports for a script/agent instead of a human: no
+    --step overlay, no informational console.log, headless by default -
+    ONE JSON object on stdout, nothing else. Success: { ok: true, result,
+    steps: [{name, checkpoint, ms}, ...] }. Failure: { ok: false, failedAt,
+    stepIndex, totalSteps, error, steps (every EARLIER Block that
+    succeeded), screenshot (a PNG path captured at the exact moment of
+    failure - there's no live browser for anyone to glance at instead) }.
+    Exit code matches ok. Same session-reset boundaries and per-segment
+    mem-seeding --step already has.
+
+  waygraph auto    [project]      Walks every *.block.ts in [project]
+                                  (default: cwd) and builds the app's own
+                                  state graph: Checkpoints are nodes, Blocks
+                                  are edges. A NavBlock's own runtime
+                                  "checkpoint" gives its Out tag for free
+                                  (In is always "*" - reachable from
+                                  anywhere); a regular defineBlock<In, Out>
+                                  gets its tags via the same lightweight
+                                  regex source-reading list/nav/check
+                                  already do, resolving each type identifier
+                                  back to its literal Checkpoint tag (a
+                                  union Out - a branching action Block -
+                                  becomes one edge per member). Prints the
+                                  graph as JSON by default, or --mermaid for
+                                  a stateDiagram-v2 text export. Reports how
+                                  many Blocks' Out couldn't be resolved
+                                  (skipped, not crashed).
   waygraph try     [project]      One-shot quickstart showcase - genuinely
                                   "npx waygraph try", no separate init step.
                                   Checks (a real launch+close, not a guess)
@@ -2343,7 +2625,7 @@ Usage:
 
     Runs in a child process rooted at "project" (its own waygraph/playwright,
     never this CLI's) so a project's real Blocks resolve against its own
-    node_modules. Env vars, all optional:
+    node_modules. Env vars still work (flags override them when both set):
       WAYGRAPH_BASE_URL   base URL for Blocks using relative page.goto()
       WAYGRAPH_HEADED=1   show the browser instead of headless
       WAYGRAPH_SLOWMO=ms  slow down each Playwright action, for watching a run
@@ -2387,6 +2669,13 @@ Usage:
                           still cycles and remembers via localStorage
 
   "project" defaults to the current directory.
+
+Examples:
+  waygraph demo shopFlow .
+  waygraph demo shopFlow . --autoplay --title "Shop demo"
+  waygraph demo loginFlow . --base-url https://www.saucedemo.com
+  waygraph chain "login then nav-cart" . --step --no-autoplay
+  npm run demo                  # scaffold: waygraph demo exampleFlow .
 `);
   process.exit(0);
 }
@@ -2443,18 +2732,77 @@ async function main(): Promise<void> {
     }
 
     case "chain": {
-      const spec = args[1];
+      const flags = parseRunFlags(args.slice(1));
+      applyRunFlags(flags);
+      const spec = flags.positionals[0];
       if (!spec) {
         console.error('waygraph chain: missing <spec>, e.g. waygraph chain "login({...}) then overview-metrics"');
         process.exit(1);
       }
-      const proj = resolve(args[2] ?? process.cwd());
+      const proj = resolve(flags.positionals[1] ?? process.cwd());
+      if (!process.env.WAYGRAPH_BASE_URL) {
+        const resolved = resolveBaseUrl(proj);
+        if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
+      }
       await runChain(proj, spec);
       break;
     }
 
+    case "demo": {
+      const flags = parseRunFlags(args.slice(1));
+      applyRunFlags(flags);
+      const spec = flags.positionals[0];
+      if (!spec) {
+        console.error(
+          'waygraph demo: missing <flow|spec>, e.g. waygraph demo shopFlow .\n' +
+            "  Flags: --step/--no-step --autoplay/--no-autoplay --base-url <url> --title <text>",
+        );
+        process.exit(1);
+      }
+      const proj = resolve(flags.positionals[1] ?? process.cwd());
+      if (!existsSync(proj)) {
+        console.error(`waygraph: no such directory: ${proj}`);
+        process.exit(1);
+      }
+      // Friendly defaults after flags: STEP+headed on; BASE_URL from package/playwright.
+      if (flags.step === undefined && process.env.WAYGRAPH_STEP === undefined) {
+        process.env.WAYGRAPH_STEP = "1";
+      }
+      applyDemoDefaults(proj);
+      console.error(
+        `waygraph demo: STEP=${process.env.WAYGRAPH_STEP === "1" ? "on" : "off"}` +
+          ` AUTOPLAY=${process.env.WAYGRAPH_AUTOPLAY === "1" ? "on" : "off"}` +
+          ` BASE_URL=${process.env.WAYGRAPH_BASE_URL ?? "(unset)"}` +
+          (process.env.WAYGRAPH_TITLE ? ` TITLE=${JSON.stringify(process.env.WAYGRAPH_TITLE)}` : ""),
+      );
+      await runChain(proj, spec);
+      break;
+    }
+
+    case "auto": {
+      const mermaid = args.includes("--mermaid");
+      const proj = resolve(args.find((a, i) => i >= 1 && !a.startsWith("--")) ?? process.cwd());
+      if (!existsSync(proj)) {
+        console.error(`waygraph: no such directory: ${proj}`);
+        process.exit(1);
+      }
+      const graph = await discoverGraph(proj);
+      if (mermaid) {
+        console.log(toMermaid(graph));
+      } else {
+        console.log(JSON.stringify(graph, null, 2));
+      }
+      console.error(
+        `waygraph auto: ${graph.nodes.length} node(s), ${graph.edges.length} edge(s), ` +
+          `${graph.skipped.length} Block(s) skipped (Out not resolvable)`,
+      );
+      break;
+    }
+
     case "try": {
-      const proj = resolve(args[1] ?? process.cwd());
+      const flags = parseRunFlags(args.slice(1));
+      applyRunFlags(flags);
+      const proj = resolve(flags.positionals[0] ?? process.cwd());
       if (!existsSync(proj)) {
         console.error(`waygraph: no such directory: ${proj}`);
         process.exit(1);

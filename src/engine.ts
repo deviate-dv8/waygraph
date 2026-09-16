@@ -894,7 +894,7 @@ export class Engine {
    * Builds a runnable {@link Flow} from `[start, ...Blocks, end]`, typechecked
    * so each Block's `In` must match the previous Block's `Out` - the same
    * check `connect()` does, just declared as a flat array instead of hand-nested
-   * calls. Overloaded for 2-7 array slots (1-6 real Blocks between `start`/`end`)
+   * calls. Overloaded for 2-9 array slots (1-8 real Blocks between `start`/`end`)
    * rather than one fully-generic recursive tuple type, so each arity is as
    * reliably checked as `connect<A,B,C>` itself.
    * @example engine.defineFlow([start, LoginBlock, AddToCartBlock, end])
@@ -952,6 +952,50 @@ export class Engine {
       EndMarker,
     ],
   ): Flow<G>;
+  defineFlow<
+    B extends Checkpoint<string>,
+    C extends Checkpoint<string>,
+    D extends Checkpoint<string>,
+    E extends Checkpoint<string>,
+    F extends Checkpoint<string>,
+    G extends Checkpoint<string>,
+    H extends Checkpoint<string>,
+  >(
+    blocks: readonly [
+      StartMarker,
+      Block<S, B>,
+      Block<B, C>,
+      Block<C, D>,
+      Block<D, E>,
+      Block<E, F>,
+      Block<F, G>,
+      Block<G, H>,
+      EndMarker,
+    ],
+  ): Flow<H>;
+  defineFlow<
+    B extends Checkpoint<string>,
+    C extends Checkpoint<string>,
+    D extends Checkpoint<string>,
+    E extends Checkpoint<string>,
+    F extends Checkpoint<string>,
+    G extends Checkpoint<string>,
+    H extends Checkpoint<string>,
+    I extends Checkpoint<string>,
+  >(
+    blocks: readonly [
+      StartMarker,
+      Block<S, B>,
+      Block<B, C>,
+      Block<C, D>,
+      Block<D, E>,
+      Block<E, F>,
+      Block<F, G>,
+      Block<G, H>,
+      Block<H, I>,
+      EndMarker,
+    ],
+  ): Flow<I>;
   defineFlow(blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker]): Flow<any> {
     return buildFlow(blocks.slice(1, -1) as Block<any, any>[], this.config);
   }
@@ -1146,6 +1190,9 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
           const url = typeof options.url === "function" ? options.url(mem) : options.url;
           await (page as unknown as Page).goto(url);
         } else {
+          // Always Locator.click() so step-mode's demo cursor/pulse patch
+          // (instrumentInteractionHighlighting) sees NavBlock click-nav -
+          // never page.click() / goto teleport.
           const selector = typeof options.click === "function" ? options.click(mem) : options.click;
           await (page as unknown as Page).locator(selector).click();
         }
@@ -1165,7 +1212,65 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
     enumerable: false,
     configurable: false,
   });
+  // Demo/step tooling: remember the click selector (or factory) so
+  // overlays can label "nav click" without re-parsing source.
+  if (options.click !== undefined) {
+    Object.defineProperty(built, "__waygraphNavClick", {
+      value: options.click,
+      enumerable: false,
+      configurable: false,
+    });
+  }
   return built;
+}
+
+/**
+ * "Where am I" - reverse-matches a live `page` against every NavBlock in
+ * `library`, in order, returning the first one whose own `verify` Traits all
+ * pass (its `checkpoint`), or `null` if none match. Deliberately NavBlocks
+ * only: a NavBlock has exactly one fixed `checkpoint` and a `verify` list
+ * whose whole job is already "confirm arrival here," so it's a reliable
+ * fingerprint - a regular `defineBlock` can branch to different `Out` tags
+ * depending on runtime evidence, so its `verify` alone doesn't identify a
+ * single state the way a NavBlock's does.
+ *
+ * The primitive `waygraph auto`'s discovered graph is *for* - the graph says
+ * what pages exist and how to reach them; `locate()` is how an autonomous
+ * run figures out which one it's actually looking at right now, without a
+ * human telling it.
+ *
+ * More than one NavBlock matching is a real possibility (two Checkpoints
+ * whose `verify` Traits are both satisfied by the same page) - `locate()`
+ * returns the first match rather than treating that as an error; resolving
+ * genuine ambiguity is a follow-up, not solved here.
+ * @example const here = await locate(page, [NavLoginBlock, NavDashboardBlock]);
+ */
+export async function locate(page: Page, library: readonly NavBlock<any>[]): Promise<string | null> {
+  const mem = new MemPage();
+  for (const block of library) {
+    try {
+      // NavBlock's own resolve() ignores whatever it's called with - always
+      // exactly `checkpoint(options.checkpoint)` - so this is safe to call
+      // before verify, unlike a regular Block where resolve depends on
+      // observed evidence.
+      const resolved = await block.instruction.resolve(undefined as never);
+      const verify = block.instruction.verify;
+      const traits = typeof verify === "function" ? verify(resolved) : (verify ?? []);
+      let allPass = true;
+      for (const trait of traits) {
+        // eslint-disable-next-line no-await-in-loop
+        if (!(await trait.check(page, mem))) {
+          allPass = false;
+          break;
+        }
+      }
+      if (allPass) return resolved.__state;
+    } catch {
+      // This NavBlock's own verify threw (e.g. a waitFor timing out) -
+      // treat that the same as "didn't match," try the next candidate.
+    }
+  }
+  return null;
 }
 
 /**

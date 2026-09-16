@@ -15,7 +15,7 @@ The package is one published unit today, organized internally along these lines:
 | `waygraph-engine` | `src/engine.ts` | `Engine`, `defineFlow`, `runGraph`, `chainFlow`, `composeBlock`, browser launching. Currently the one module hardcoded to vanilla `@playwright/test` - see v0.6.0. |
 | `waygraph-cli` | `src/cli.ts` (non-`chain --step` commands) | `list` / `nav` / `validate` / `run` / `chain`. |
 | `waygraph-demo` | `src/cli.ts` (`chain --step` overlay) | The step-through browser overlay: panel, ring, cursor, `narrate()`, episode headings. Grew large enough this cycle to be its own module in practice. |
-| `waygraph-auto` | not yet built | `NavBlock`, `waygraph check`, and the autonomous-mode roadmap (`locate()`, split `requires`, pool-of-waygraphs). |
+| `waygraph-auto` | `src/graph.ts`, `locate()` in `src/engine.ts`, `waygraph auto` CLI | State-machine discovery (`discoverGraph` / `toMermaid`) + page recognition (`locate`). |
 
 Whether these become physically separate npm packages, or stay one package with clearer
 internal boundaries, is an open decision - not committed to either way yet.
@@ -26,9 +26,12 @@ internal boundaries, is an open decision - not committed to either way yet.
 |---|---|---|
 | 0.4.0 | `chainFlow`, `withSessionReset`/`withTitle`, episode-aware step overlay | Shipped |
 | 0.5.0 | `NavBlock` + `ActionPage` + `waygraph check` + pluggable browser provider | **Implemented, committed locally** (current) - holding for go-ahead to publish |
-| 0.6.0 | `locate()` page recognition + split `requires` | Roadmap only (autonomous-mode phase 2) |
+| 0.6.0 | `locate()` page recognition + split `requires` | `locate()` + `waygraph auto` graph discovery **shipped** (see `waygraph-auto` module). Split `requires` still roadmap. |
 | 0.7.0 | Federated pool of waygraphs | Roadmap only (autonomous-mode phase 3) |
-| 1.0.0 | Stability declaration | Not scheduled - depends on 0.5-0.7 landing and being used for real |
+| 0.7.2 | `precondition` + tip polish | Shipped |
+| 0.7.3 | (staged on npm, never went live - E409) | Skipped - do not pin |
+| 0.7.4 | `waygraph demo` + run flags; NavBlock click demo cursor | **This release** (not 1.0.0) |
+| 1.0.0 | Stability declaration | Hold for Dan go-ahead once auto is used for real on consumers |
 
 ### 0.5.0 - NavBlock + ActionPage + waygraph check + pluggable browser provider
 
@@ -57,16 +60,13 @@ runtime `defineNavBlock` marker, not file-naming convention. Committed locally
 
 ### 0.6.0 - locate() + split requires (autonomous-mode phase 2)
 
-A `locate(page, library)` function that reverse-matches a live page against every known
-Block's `verify` Traits to answer "where am I" (recognition, not confirmation) - needs
-0.5.0's NavBlock/ActionPage split to be reliable, since a Block that might secretly also
-navigate can't be fingerprinted. Also splits a MemKey's `requires` into
-externally-supplied (credentials/config - no Block will ever produce these) vs
-producedBy-another-Block (a document id from a list page - genuinely recoverable), so a
-failed `preflight()` can suggest a recovery path instead of just naming the missing key.
+**Shipped (graph + locate half):** `discoverGraph` / `toMermaid` / `waygraph auto`
+CLI and `locate(page, library)` reverse-match NavBlocks by their own `verify`
+Traits. See `src/graph.ts`, `tests/graph/`, `tests/nav/locate.spec.ts`.
 
-**Not yet spec'd** beyond the paragraph in `openspec/changes/nav-block-and-check/design.md`'s
-Roadmap section.
+**Still open:** split a MemKey's `requires` into externally-supplied
+(credentials/config) vs producedBy-another-Block so a failed `preflight()` can
+suggest a recovery path.
 
 ### 0.7.0 - Federated pool of waygraphs (autonomous-mode phase 3)
 

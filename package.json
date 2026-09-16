@@ -1,6 +1,6 @@
 {
   "name": "waygraph",
-  "version": "0.7.2",
+  "version": "0.7.4",
   "type": "module",
   "description": "A typed graph of reusable Blocks for driving a browser through E2E flows.",
   "main": "./dist/index.js",
@@ -26,7 +26,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "test": "playwright test"
+    "test": "playwright test",
+    "docs:preview": "python3 -m http.server 4173 --directory docs"
   },
   "peerDependencies": {
     "@playwright/test": "^1.40.0"

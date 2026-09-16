@@ -15,6 +15,7 @@ export {
   modVerifyAll,
   defineBlock,
   defineNavBlock,
+  locate,
   composeBlock,
   preflight,
   withSessionReset,
@@ -24,3 +25,5 @@ export {
 } from "./engine.js";
 export type { Flow, EngineConfig, ComposedBlock, RunGraphOptions, BlockInfo, NavBlock, NavBlockOptions } from "./engine.js";
 export type { ActionPage } from "./types.js";
+export { discoverGraph, toMermaid } from "./graph.js";
+export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock } from "./graph.js";

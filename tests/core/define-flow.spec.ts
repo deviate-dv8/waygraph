@@ -64,4 +64,43 @@ test.describe("Engine.defineFlow", () => {
     expect(result).toEqual(checkpoint("C"));
     expect(calls).toEqual(["a", "b", "c"]);
   });
+
+  test("the max arity (7 real Blocks) typechecks and runs end to end", async () => {
+    type D = Checkpoint<"D">;
+    type E = Checkpoint<"E">;
+    type F = Checkpoint<"F">;
+    type G = Checkpoint<"G">;
+    const calls: string[] = [];
+    const make = <In extends Checkpoint<string>, Out extends Checkpoint<string>>(
+      name: string,
+      tag: Out["__state"],
+    ): Block<In, Out> => ({
+      name,
+      instruction: {
+        async act() {
+          calls.push(name);
+        },
+        resolve: () => checkpoint(tag) as Out,
+      },
+    });
+
+    const engine = new Engine();
+    const flow = engine.defineFlow([
+      start,
+      make<Start, A>("a", "A"),
+      make<A, B>("b", "B"),
+      make<B, C>("c", "C"),
+      make<C, D>("d", "D"),
+      make<D, E>("e", "E"),
+      make<E, F>("f", "F"),
+      make<F, G>("g", "G"),
+      end,
+    ]);
+
+    const fakeContext = { newPage: async () => fakePage } as any;
+    const result = await flow.run(fakeContext, new MemPage());
+
+    expect(result).toEqual(checkpoint("G"));
+    expect(calls).toEqual(["a", "b", "c", "d", "e", "f", "g"]);
+  });
 });

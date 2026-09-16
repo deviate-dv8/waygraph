@@ -9,6 +9,18 @@ sites/apps (saucedemo.com, zsign-app) live in the sibling `projects_waygraph/` r
 See [ROADMAP.md](./ROADMAP.md) for what's shipped, spec'd, and planned by version, and
 `openspec/changes/` for the actual planning artifacts behind each roadmap item.
 
+## Docs (GitHub Pages)
+
+Browser docs (quick start, engine handout, consumer layout, deploy path):
+
+- **Published:** https://deviate-dv8.github.io/waygraph/ (after repo Pages source is set to GitHub Actions once)
+- **Source:** [`docs/`](./docs/) — static HTML, no build step
+- **Local preview:** `npm run docs:preview` → http://127.0.0.1:4173/
+- **Deploy:** push to `main` touching `docs/**` runs [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) (`workflow_dispatch` also works)
+
+This README stays the in-repo API narrative; Pages is the same material for eyeballing and cross-mesh handoff.
+
+
 ## Install
 
 ```bash
@@ -150,8 +162,26 @@ npx create-waygraph my-project && cd my-project && npm install && npm test
 project (package.json, tsconfig, playwright.config, one working example flow) in one
 command, published on npm - the above runs a real green test with no manual edits.
 
+**Consumer layout (Next.js App Router):** block folders mirror `app/` page routes (`/`
+at the namespace root; no invented `landing/`/`root/`; sidebar = chrome + edges). See
+`create-waygraph/README.md` "Consumer layout" and mesh handout
+`WAYGRAPH-CONSUMER-CONVENTION.md` - separate from this package API doc.
+
 Deliberately **not yet implemented** (tracked on the project board):
 - Interstitials/Watchers - background overlay handling (cookie banners, popups).
+- Split `requires` (externally-supplied vs producedBy) recovery hints.
+- Federated multi-package pool of waygraphs.
+
+**Available now:** `waygraph auto [project]` discovers the app's Checkpoint/Block
+state graph (JSON or `--mermaid`); `locate(page, library)` answers "where am I"
+from NavBlock verify Traits. Unattended JSON execution is `chain` + `WAYGRAPH_JSON=1`
+(not named `auto`).
+
+**Friendly demo run:** `waygraph demo <flow> [project]` defaults to STEP+headed.
+Flags beat env: `--step` / `--autoplay` / `--base-url` / `--title`. BASE_URL falls
+back to `package.json` `waygraph.baseUrl` then `playwright.config` `baseURL`. Prefer
+flags (or `npm run demo*`) over a pile of `WAYGRAPH_*` vars. NavBlock `click` shows
+demo cursor travel + pulse before the real click; `url` NavBlocks still `goto`.
 
 ## Example
 

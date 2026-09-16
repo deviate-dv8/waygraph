@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Deploy / preview · Waygraph docs</title>
+  <link rel="stylesheet" href="./css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="./index.html">waygraph</a>
+      <ul>
+        <li><a href="./index.html">Home</a></li>
+        <li><a href="./quickstart.html">Quick start</a></li>
+        <li><a href="./handout.html">Engine handout</a></li>
+        <li><a href="./consumer.html">Consumer layout</a></li>
+        <li><a href="./deploy.html" aria-current="page">Deploy / preview</a></li>
+        <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>Deploy / preview</h1>
+      <p class="lede">One local preview path; GitHub Actions deploys <code>docs/</code> to Pages.</p>
+
+      <h2>Local preview (one command)</h2>
+      <p>From the package root:</p>
+      <pre><code>npm run docs:preview</code></pre>
+      <p>
+        Serves <code>docs/</code> on
+        <a href="http://127.0.0.1:4173/">http://127.0.0.1:4173/</a>
+        (static files only; no build step).
+      </p>
+      <p>Equivalent without npm:</p>
+      <pre><code>python3 -m http.server 4173 --directory docs</code></pre>
+
+      <h2>GitHub Pages (Actions)</h2>
+      <ol>
+        <li>Workflow: <code>.github/workflows/pages.yml</code> uploads <code>docs/</code> on push to <code>main</code> (and <code>workflow_dispatch</code>).</li>
+        <li>Repo Settings → Pages → Build and deployment → Source: <strong>GitHub Actions</strong> (one-time).</li>
+        <li>Published URL:
+          <a href="https://deviate-dv8.github.io/waygraph/">https://deviate-dv8.github.io/waygraph/</a>
+        </li>
+      </ol>
+      <p>
+        Paths in the site are relative (<code>./css/…</code>, <code>./handout.html</code>)
+        so project Pages under <code>/waygraph/</code> resolve correctly.
+      </p>
+
+      <h2>What is not on Pages</h2>
+      <p>
+        OpenSpec change folders, Playwright fixtures, and <code>dist/</code> stay in the
+        git repo only. Consumer proof apps live in sibling <code>projects_waygraph/</code>.
+      </p>
+
+      <footer class="site">
+        <a href="./index.html">Home</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>
