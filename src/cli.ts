@@ -3,18 +3,19 @@
 /**
  * waygraph CLI -- tooling around this same package's engine.
  *
- * Commands:
- *   list    [project]            List discovered flows in a project
- *   nav     [flow] [project]     Print flow chain + navigation-only steps (goto / Trait.url)
- *   validate [project]           Import and validate all flows
- *   run <flow> [project]         Run a named flow with a fresh browser
- *   chain <spec> [project]       Run one or more Blocks by name, ad hoc, no flow file needed
- *   demo <flow|spec> [project]   Friendly step-mode run (flags beat env; defaults STEP+headed)
- *   try     [project]            Bundled quickstart showcase
+ * Commands (watch first, then run, then inspect, then scaffold):
+ *   demo <flow|spec> [project]   Watch a flow/chain with step overlay (default STEP+headed)
+ *   try [demo]                   One-shot saucedemo onboarding in an OS temp dir
+ *   chain <spec> [project]       Ad-hoc Blocks by name (+ --step/--autoplay like demo)
+ *   run <flow> [project]         Run a named flow (no overlay unless --step)
+ *   list / nav / validate        Discover and inspect flows
+ *   check / auto / graph         Hygiene + state graph
+ *   init <name>                  Offline scaffold
  *
  * "project" defaults to the current directory.
  * A project is any directory containing *.flow.ts files (typically under src/flows/).
  * Run flags (--step/--autoplay/--base-url/--title/--video) beat WAYGRAPH_* env when present.
+ * demo defaults: --step on, --autoplay off (manual "Run this step" / "Next").
  */
 
 import { existsSync, readdirSync, readFileSync, writeFileSync, rmSync, cpSync, mkdirSync, mkdtempSync, type Dirent } from "node:fs";
@@ -24,6 +25,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { MemPage } from "./mem-page.js";
 import { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./graph.js";
+import { runAutoExplore } from "./auto-explore-run.js";
 
 // ---------------------------------------------------------------------------
 // Filesystem
@@ -526,7 +528,28 @@ const RING_CSS =
   "#wg-panel.wg-expected{border:1.5px solid #e0a53e;}" +
   "#wg-panel .wg-expected-heading{color:#ffcf7a;}" +
   "#wg-panel .wg-expected-reason{font:600 12.5px/1.5 system-ui,sans-serif;background:#2a2410;" +
-  "color:#ffe6ae;border-radius:8px;padding:10px;margin:0 0 8px;}";
+  "color:#ffe6ae;border-radius:8px;padding:10px;margin:0 0 8px;}" +
+  // Hide / Show chrome + mobile bottom-sheet layout (Dan: stepper + auto panels).
+  "#wg-panel .wg-chrome{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;}" +
+  "#wg-panel .wg-chrome-title{font:700 11px/1.2 system-ui,sans-serif;color:#c9a6ff;" +
+  "letter-spacing:.04em;text-transform:uppercase;}" +
+  "#wg-panel button.wg-hide-btn{margin:0;padding:4px 10px;font:600 11px system-ui,sans-serif;" +
+  "background:#3a2a60;color:#e8dcff;border:1px solid #5b3aa8;border-radius:6px;cursor:pointer;}" +
+  "#wg-panel button.wg-hide-btn:hover{background:#4b2a80;}" +
+  "#wg-panel.wg-collapsed{width:auto;max-width:90vw;padding:8px 12px;max-height:none;overflow:hidden;}" +
+  "#wg-panel.wg-collapsed .wg-body{display:none;}" +
+  "#wg-panel.wg-collapsed .wg-chrome{margin:0;}" +
+  "@media (max-width:640px){" +
+  "#wg-panel{left:8px;right:8px;bottom:8px;transform:none;max-width:none;width:auto;" +
+  "max-height:min(55vh,calc(100vh - 16px));padding:12px 14px;border-radius:12px;}" +
+  "#wg-panel.wg-collapsed{left:50%;right:auto;transform:translateX(-50%);width:auto;}" +
+  "#wg-episodes{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;}" +
+  "#wg-modules{gap:4px;}" +
+  "#wg-panel .wg-narration{font-size:13px;}" +
+  "#wg-panel button{width:100%;}" +
+  "#wg-panel .wg-error-actions{flex-direction:column;}" +
+  "#wg-banner{max-width:min(92vw,320px);font-size:13px;}" +
+  "}";
 
 // Purple dot favicon (matches the overlay's own theme color) - the tab-bar
 // signal that "this Chromium window is a waygraph run," even at a glance
@@ -716,6 +739,54 @@ async function installOverlay(page, title) {
           document.head.appendChild(iconLink);
         }
         if (iconLink.href !== favicon) iconLink.href = favicon;
+        // Hide/Show for #wg-panel - call after every panel.innerHTML refresh.
+        window.__wgWirePanelChrome = (panel, storageKey, chromeTitle) => {
+          if (!panel) return;
+          if (!panel.querySelector(":scope > .wg-chrome")) {
+            const body = document.createElement("div");
+            body.className = "wg-body";
+            while (panel.firstChild) body.appendChild(panel.firstChild);
+            const chrome = document.createElement("div");
+            chrome.className = "wg-chrome";
+            const titleEl = document.createElement("span");
+            titleEl.className = "wg-chrome-title";
+            titleEl.textContent = chromeTitle || "waygraph demo";
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "wg-hide-btn";
+            btn.setAttribute("data-wg-toggle", "1");
+            btn.textContent = "Hide";
+            chrome.appendChild(titleEl);
+            chrome.appendChild(btn);
+            panel.appendChild(chrome);
+            panel.appendChild(body);
+          }
+          const apply = (hidden) => {
+            panel.classList.toggle("wg-collapsed", hidden);
+            const t = panel.querySelector("[data-wg-toggle]");
+            if (t) t.textContent = hidden ? "Show" : "Hide";
+            try {
+              localStorage.setItem(storageKey, hidden ? "1" : "0");
+            } catch {
+              /* private mode */
+            }
+          };
+          let hidden = false;
+          try {
+            hidden = localStorage.getItem(storageKey) === "1";
+          } catch {
+            /* ignore */
+          }
+          apply(hidden);
+          const toggle = panel.querySelector("[data-wg-toggle]");
+          if (toggle && !toggle.dataset.wgWired) {
+            toggle.dataset.wgWired = "1";
+            toggle.addEventListener("click", (e) => {
+              e.stopPropagation();
+              apply(!panel.classList.contains("wg-collapsed"));
+            });
+          }
+        };
       },
       { title, favicon: WAYGRAPH_FAVICON, bannerPos, envAutoplay },
     )
@@ -830,6 +901,7 @@ async function renderBeforeStep(page, info) {
         document.documentElement.appendChild(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
       }
+      if (window.__wgWirePanelChrome) window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo");
       // Live, human-readable preview of what a MemKey's raw JSON will
       // actually write - object fields become "Field: value" lines
       // (camelCase split the same way state tags already are); a
@@ -1034,6 +1106,7 @@ async function renderAfterStep(page, info) {
         document.documentElement.appendChild(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
       }
+      if (window.__wgWirePanelChrome) window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo");
       panel.querySelectorAll(".wg-toggle-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
           const wantPretty = btn.getAttribute("data-mode") === "pretty";
@@ -1083,7 +1156,9 @@ async function renderStepError(page, info) {
       }
       const isExpected = !!info.expectedFailureReason;
       const errClass = isExpected ? "wg-expected" : "wg-error";
-      panel.className = isNewPanel ? errClass : errClass + " wg-in";
+      panel.classList.remove("wg-error", "wg-expected");
+      panel.classList.add(errClass);
+      if (!isNewPanel) panel.classList.add("wg-in");
       const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
       const episodesHtml = info.allEpisodes && info.allEpisodes.length > 0
         ? "<div id=\\"wg-episodes\\">" +
@@ -1127,6 +1202,7 @@ async function renderStepError(page, info) {
         document.documentElement.appendChild(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
       }
+      if (window.__wgWirePanelChrome) window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo");
       const runBtn = document.getElementById("wg-run");
       if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
       const retryBtn = document.getElementById("wg-error-retry");
@@ -1564,6 +1640,22 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   // only OUR added pauses (ring pop, cursor travel, typing delay) shrink.
   const pacing = { fast: false };
   instrumentInteractionHighlighting(page, mem, slowMo, pacing);
+  // Force the panel checkbox from this process's flags/env at run start.
+  // installOverlay only seeds localStorage when the key is null (so mid-run
+  // checkbox clicks survive navigations). Without this, a prior --autoplay
+  // session sticks forever and agents cannot flip back with --no-autoplay.
+  if (process.env.WAYGRAPH_AUTOPLAY !== undefined) {
+    const on = process.env.WAYGRAPH_AUTOPLAY === "1";
+    await page
+      .evaluate((want) => {
+        try {
+          localStorage.setItem("wg-autoplay", want ? "1" : "0");
+        } catch {
+          /* private mode / blocked storage */
+        }
+      }, on)
+      .catch(() => {});
+  }
   // Some real Blocks (e.g. zsign-all's login.block.ts) call
   // page.setViewportSize({ width: 1280, height: 720 }) inside their own
   // act() - a hardcoded override for THEIR OWN testing consistency, with no
@@ -2336,7 +2428,9 @@ async function ensureDirPrereqs(dir: string, label: string): Promise<string | nu
     }
     status = await probeTryPrereqs(dir);
     if (status.ok) return null;
-    if (status.missing === "unknown") return `couldn't verify prerequisites:\n${status.detail}`;
+    if (status.missing === "unknown") {
+      return formatProbeFailure(status.detail ?? "probe failed");
+    }
   }
 
   console.log(`${label}: downloading Playwright's chromium browser ...`);
@@ -2349,11 +2443,26 @@ async function ensureDirPrereqs(dir: string, label: string): Promise<string | nu
   }
   status = await probeTryPrereqs(dir);
   if (status.ok) return null;
-  return status.detail ?? "prerequisites still aren't ready after attempting to install them.";
+  return formatProbeFailure(
+    status.detail ?? "prerequisites still aren't ready after attempting to install them.",
+  );
+}
+
+/** Playwright browser binary present but OS libs missing (common in Docker/Codespaces). */
+function formatProbeFailure(detail: string): string {
+  const needsDeps =
+    /shared libraries|libnspr4|libnss3|libatk|cannot open shared object file/i.test(detail);
+  const hint = needsDeps
+    ? "\n\nChromium needs OS packages too - try:\n  sudo npx playwright install-deps chromium\n" +
+      "In cloud/CI without a display, record headless:\n  npx waygraph try demo --video ./out --no-step"
+    : "";
+  return `couldn't verify prerequisites:\n${detail}${hint}`;
 }
 
 const TRY_DEMO_CHAIN =
-  'shopFlow({"username":"standard_user","password":"secret_sauce"}) then viewerBlockedFlow({"username":"locked_out_user","password":"secret_sauce"})';
+  'loginFlow({"saucedemo.credentials":{"username":"standard_user","password":"secret_sauce"}}) then ' +
+  'shopFlow({"saucedemo.selectedItem":{"id":"sauce-labs-backpack","name":"Sauce Labs Backpack"}}) then ' +
+  'viewerBlockedFlow({"saucedemo.credentials":{"username":"locked_out_user","password":"secret_sauce"}})';
 
 /**
  * Point a copied quickstart at this checkout's waygraph build (not npm registry).
@@ -2379,8 +2488,9 @@ async function wireQuickstartToPackageRoot(destDir: string): Promise<void> {
 
 /**
  * `waygraph try demo` - copy a self-contained saucedemo project into a temp
- * dir (never the caller's cwd), run a chainFlow step demo (Episode 1 + 2),
- * then run the headless Playwright test, and print where everything lives.
+ * dir (never the caller's cwd), run a chainFlow step demo (Sign In + Shop +
+ * blocked Viewer), then run the headless Playwright test, and print where
+ * everything lives.
  */
 async function runTryDemo(): Promise<void> {
   const destDir = mkdtempSync(join(tmpdir(), "waygraph-try-demo-"));
@@ -2417,9 +2527,9 @@ async function runTryDemo(): Promise<void> {
   const videoTo = process.env.WAYGRAPH_VIDEO;
   console.log(
     videoTo
-      ? "waygraph try demo: step-through + record (Episode 1: Shop & Checkout -> Episode 2: blocked login) - click Next; video -> " +
+      ? "waygraph try demo: step-through + record (Sign In -> Shop & Checkout -> blocked Viewer login) - click Next; video -> " +
           (videoTo === "1" ? ".waygraph-videos/" : videoTo)
-      : "waygraph try demo: step-through (Episode 1: Shop & Checkout -> Episode 2: blocked login) - click Next for each step ...",
+      : "waygraph try demo: step-through (Sign In -> Shop & Checkout -> blocked Viewer login) - click Next for each step ...",
   );
   await runChain(destDir, TRY_DEMO_CHAIN);
   if (process.exitCode) return;
@@ -2432,6 +2542,7 @@ async function runTryDemo(): Promise<void> {
   }
 
   const testFile = join(destDir, "tests", "chain-flow.spec.ts");
+  const loginFlowFile = join(destDir, "src", "flows", "login.flow.ts");
   const shopFlowFile = join(destDir, "src", "flows", "shop.flow.ts");
   const viewerBlockedFlowFile = join(destDir, "src", "flows", "viewer-blocked.flow.ts");
 
@@ -2440,6 +2551,7 @@ async function runTryDemo(): Promise<void> {
       "Temp project (does not touch your cwd - lives under the OS temp dir):\n" +
       `  ${destDir}\n\n` +
       "Episodes you just watched (same Flow objects the test imports):\n" +
+      `  ${loginFlowFile}\n` +
       `  ${shopFlowFile}\n` +
       `  ${viewerBlockedFlowFile}\n\n` +
       "Headless chainFlow test (automated - no clicking):\n" +
@@ -2447,8 +2559,10 @@ async function runTryDemo(): Promise<void> {
       "Run again in that temp folder:\n" +
       `  cd ${destDir}\n` +
       "  npm run demo    # step-through, manual Next (--step --no-autoplay)\n" +
+      "  npm run auto    # interactive explore (Effect Add/Remove, MemNav Open details)\n" +
       "  npm test        # playwright chainFlow test\n\n" +
-      "Keep a permanent copy in your tree: waygraph init my-app\n",
+      "Permanent full example in this package: examples/saucedemo\n" +
+      "Keep a permanent scaffold in your tree: waygraph init my-app\n",
   );
 }
 
@@ -2606,7 +2720,8 @@ function initCommand(projectName: string): void {
   console.log("  npx playwright install chromium");
   console.log("  npm test");
   console.log("  waygraph check .     # nav hygiene + orphan Blocks");
-  console.log("  waygraph auto .      # state graph (after orphans are wired)");
+  console.log("  waygraph auto .      # interactive explore (headful picker)");
+  console.log("  waygraph graph .     # static state graph JSON");
 }
 
 async function checkCommand(projectDir: string): Promise<CheckWarning[]> {
@@ -2783,12 +2898,14 @@ function applyDemoDefaults(projectDir: string): void {
   if (process.env.WAYGRAPH_STEP === "1" && process.env.WAYGRAPH_HEADED === undefined) {
     process.env.WAYGRAPH_HEADED = "1";
   }
-  if (
-    process.env.WAYGRAPH_VIDEO &&
-    process.env.WAYGRAPH_STEP === "0" &&
-    process.env.WAYGRAPH_AUTOPLAY === undefined
-  ) {
-    process.env.WAYGRAPH_AUTOPLAY = "1";
+  // Manual Next by default. --autoplay flips this; --no-step --video (unattended)
+  // still prefers autoplay when the caller did not set it.
+  if (process.env.WAYGRAPH_AUTOPLAY === undefined) {
+    if (process.env.WAYGRAPH_VIDEO && process.env.WAYGRAPH_STEP === "0") {
+      process.env.WAYGRAPH_AUTOPLAY = "1";
+    } else {
+      process.env.WAYGRAPH_AUTOPLAY = "0";
+    }
   }
   if (!process.env.WAYGRAPH_BASE_URL) {
     const resolved = resolveBaseUrl(projectDir);
@@ -2802,26 +2919,43 @@ const command = args[0];
 function usage(): void {
   console.log(`waygraph -- graph project tool + engine CLI
 
-Usage:
-  waygraph init <name>            Scaffold a new project (offline example flow)
-  waygraph list    [project]      List discovered flows
-  waygraph nav     [flow] [project]  Print flow chain + navigation steps
-  waygraph validate [project]     Import and validate all flows
-  waygraph run <flow> [project]   Run a named flow
-  waygraph chain <spec> [project] Run one or more Blocks by name, ad hoc
+Usage (watch -> run -> inspect -> scaffold):
   waygraph demo <flow|spec> [project]
-                                  Friendly human-watched run. Defaults:
-                                  --step (headed overlay). BASE_URL from
+                                  Watch a flow or chain with the step overlay.
+                                  Defaults: --step ON, --autoplay OFF (manual
+                                  "Run this step" / "Next"). BASE_URL from
                                   --base-url, else WAYGRAPH_BASE_URL, else
                                   package.json waygraph.baseUrl, else
                                   playwright.config baseURL.
-  waygraph auto    [project]      Discover state graph (JSON or --mermaid)
-  waygraph check   [project]      Nav hygiene + orphan Blocks (unwired *.block.ts)
-  waygraph try [demo]             chainFlow demo + headless test (OS temp dir)
+  waygraph try [demo]             One-shot saucedemo (temp dir) + npm test
+  waygraph chain <spec> [project] Ad-hoc Blocks by name ("a then b"); add
+                                  --step / --autoplay for the same overlay
+  waygraph run <flow> [project]   Run a named flow (no overlay unless --step)
+  waygraph list    [project]      List discovered flows
+  waygraph nav     [flow] [project]  Print flow chain + navigation steps
+  waygraph validate [project]     Import and validate all flows
+  waygraph check   [project]      Nav hygiene + orphan Blocks
+  waygraph auto    [project]      Interactive explore (picker; --cli terminal)
+  waygraph graph   [project]      Static state graph (JSON or --mermaid)
+  waygraph init <name>            Offline scaffold (same as create-waygraph)
 
-Run flags (chain / demo / try) - flags beat WAYGRAPH_* env:
-  --step / --no-step              human-verification overlay (implies headed)
-  --autoplay / --no-autoplay      panel Auto-advance starting state
+Demo / step / autoplay (read this - agents get this wrong):
+  --step                          headed overlay: gate each Block, edit MemKeys,
+                                  highlight verify Traits, then Next
+  --no-step                       no overlay; run straight through
+  --autoplay                      start with "Auto-advance" CHECKED (timer)
+  --no-autoplay                   start with Auto-advance UNCHECKED (manual)
+  Mid-run: flip the panel checkbox anytime. A manual click always wins over
+  an in-flight autoplay wait. Flags beat WAYGRAPH_* and reset the checkbox
+  at process start (so --no-autoplay after a prior --autoplay session works).
+
+  Manual watch (default):     waygraph demo shopFlow .
+  Auto-advance watch:         waygraph demo shopFlow . --autoplay
+  Same overlay on a chain:    waygraph chain "login then nav-cart" . --step
+  Unattended (no overlay):    waygraph demo shopFlow . --no-step
+  Onboarding (temp dir):      npx waygraph try demo
+
+Other run flags (chain / demo / try) - flags beat WAYGRAPH_* env:
   --base-url <url>                base URL for relative page.goto()
   --title <text>                  persistent overlay banner title
   --video [dir]                   Playwright recordVideo (.webm); headless OK;
@@ -3068,30 +3202,43 @@ async function main(): Promise<void> {
       break;
     }
 
+    case "graph":
     case "auto": {
       const mermaid = args.includes("--mermaid");
-      const proj = resolve(args.find((a, i) => i >= 1 && !a.startsWith("--")) ?? process.cwd());
+      const mapOnly = command === "graph" || args.includes("--map");
+      const cliPicker = args.includes("--cli");
+      const proj = resolve(
+        args.find((a, i) => i >= 1 && !a.startsWith("--") && a !== "graph") ?? process.cwd(),
+      );
       if (!existsSync(proj)) {
         console.error(`waygraph: no such directory: ${proj}`);
         process.exit(1);
       }
-      const orphans = await findOrphanBlocks(proj);
-      const graph = await discoverGraph(proj);
-      if (mermaid) {
-        console.log(toMermaid(graph));
-      } else {
-        console.log(JSON.stringify({ ...graph, orphans }, null, 2));
-      }
-      console.error(
-        `waygraph auto: ${graph.nodes.length} node(s), ${graph.edges.length} edge(s), ` +
-          `${graph.skipped.length} Block(s) skipped (Out not resolvable), ` +
-          `${orphans.length} orphan Block(s)`,
-      );
-      if (orphans.length > 0) {
+      if (mapOnly || mermaid) {
+        const orphans = await findOrphanBlocks(proj);
+        const graph = await discoverGraph(proj);
+        if (mermaid) {
+          console.log(toMermaid(graph));
+        } else {
+          console.log(JSON.stringify({ ...graph, orphans }, null, 2));
+        }
         console.error(
-          "waygraph auto: orphan Blocks block chain auto shorthand - wire each into a .flow.ts (waygraph check .)",
+          `waygraph graph: ${graph.nodes.length} node(s), ${graph.edges.length} edge(s), ` +
+            `${graph.skipped.length} Block(s) skipped (Out not resolvable), ` +
+            `${orphans.length} orphan Block(s)`,
         );
+        if (orphans.length > 0) {
+          console.error(
+            "waygraph graph: orphan Blocks block chain auto shorthand - wire each into a .flow.ts (waygraph check .)",
+          );
+        }
+        break;
       }
+      const baseURL =
+        args.find((a, i) => args[i - 1] === "--base-url") ??
+        process.env.WAYGRAPH_BASE_URL ??
+        resolveBaseUrl(proj);
+      await runAutoExplore(proj, baseURL ? { cli: cliPicker, baseURL } : { cli: cliPicker });
       break;
     }
 

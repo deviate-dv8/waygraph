@@ -3,20 +3,26 @@
 A typed graph of reusable Blocks for driving a browser through E2E flows, in place of a
 flat pile of ad hoc helper functions.
 
-This repo is the `waygraph` npm package itself. Consumer projects proving it against real
-sites/apps (saucedemo.com, zsign-app) live in the sibling `projects_waygraph/` repo, not here.
+This repo is the `waygraph` npm package itself. The full live **Sauce Demo** example
+(Effect Add/Remove, MemNav Open details, `waygraph auto`) ships in-tree at
+[`examples/saucedemo`](./examples/saucedemo). `waygraph try demo` copies
+[`templates/quickstart`](./templates/quickstart) (same Sauce Demo Blocks) into an OS
+temp dir.
 
 See [ROADMAP.md](./ROADMAP.md) for what's shipped, spec'd, and planned by version, and
 `openspec/changes/` for the actual planning artifacts behind each roadmap item.
 
 ## Docs (GitHub Pages)
 
-Browser docs (quick start, engine handout, consumer layout, deploy path):
+Browser docs (quick start, **demo / step / autoplay**, **auto explore**, engine handout, consumer layout, deploy):
 
 - **Published:** https://deviate-dv8.github.io/waygraph/ (workflow auto-enables Pages via `enablement: true`; manual Settings only if org policy blocks it)
 - **Source:** [`docs/`](./docs/) — static HTML, no build step
 - **Local preview:** `npm run docs:preview` → http://127.0.0.1:4173/
 - **Deploy:** push to `main` touching `docs/**` runs [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) (`workflow_dispatch` also works)
+- **Demo contract:** [`docs/demo.html`](./docs/demo.html) — `--step` vs `--autoplay`
+- **Auto explore:** [`docs/auto.html`](./docs/auto.html) — Effect / MemNav picker (TS salt over Blocks)
+- **In-repo example:** [`examples/saucedemo`](./examples/saucedemo) — full Sauce Demo project
 
 This README stays the in-repo API narrative; Pages is the same material for eyeballing and cross-mesh handoff.
 
@@ -25,7 +31,8 @@ This README stays the in-repo API narrative; Pages is the same material for eyeb
 
 | Goal | Command |
 |------|---------|
-| Watch the 2-episode saucedemo demo (temp dir only, no scaffold in cwd) | `npx waygraph try demo` |
+| Watch Sauce Demo step-through (temp dir only) | `npx waygraph try demo` |
+| Interactive explore (Add/Remove/Open details from live page) | `cd examples/saucedemo && npm i && npx waygraph auto .` |
 | Scaffold a new **offline** project (green `npm test` on a `data:` URL) | `npx create-waygraph my-app` **or** `npx waygraph init my-app` |
 | Add waygraph to an existing repo | `npm install waygraph @playwright/test` |
 
@@ -39,9 +46,20 @@ installed. After either:
 cd my-app && npm install && npx playwright install chromium && npm test
 ```
 
-`try demo` is different: live saucedemo.com quickstart, step-through Episode 1 (Sign In) +
-Episode 2 (blocked Viewer login), then headless tests. For a permanent tree, use
-`init` / `create-waygraph`, not `try demo` alone.
+`try demo` is different: live saucedemo.com, step-through **Sign In → Shop & Checkout →
+blocked Viewer login**, then headless tests. Permanent full example:
+[`examples/saucedemo`](./examples/saucedemo). Offline empty scaffold: `init` /
+`create-waygraph`.
+
+```bash
+# From this checkout, after npm run build:
+cd examples/saucedemo && npm install && npx playwright install chromium
+npm test                  # live Playwright suite
+npm run auto              # headed interactive explore
+npm run demo:step         # stepper (manual Next)
+npm run demo:autoplay     # stepper with Auto-advance
+```
+
 
 ## Install
 
@@ -190,16 +208,29 @@ Deliberately **not yet implemented** (tracked on the project board):
 - Split `requires` (externally-supplied vs producedBy) recovery hints.
 - Federated multi-package pool of waygraphs.
 
-**Available now:** `waygraph auto [project]` discovers the app's Checkpoint/Block
-state graph (JSON or `--mermaid`); `locate(page, library)` answers "where am I"
-from NavBlock verify Traits. Unattended JSON execution is `chain` + `WAYGRAPH_JSON=1`
-(not named `auto`).
+**Available now:** `waygraph auto [project]` is the **interactive explore** loop:
+`locate()` reads where you are, lists runnable Blocks from the graph, you pick one
+(headful panel or `--cli` terminal menu), repeat. Static graph export (old JSON /
+Mermaid) is `waygraph graph [project]` (`--mermaid`). Unattended JSON execution is
+`chain` + `WAYGRAPH_JSON=1`.
 
-**Friendly demo run:** `waygraph demo <flow> [project]` defaults to STEP+headed.
-Flags beat env: `--step` / `--autoplay` / `--base-url` / `--title`. BASE_URL falls
-back to `package.json` `waygraph.baseUrl` then `playwright.config` `baseURL`. Prefer
-flags (or `npm run demo*`) over a pile of `WAYGRAPH_*` vars. NavBlock `click` shows
-demo cursor travel + pulse before the real click; `url` NavBlocks still `goto`.
+**Friendly demo run:** `waygraph demo <flow> [project]` defaults to **STEP on +
+autoplay off** (manual "Run this step" / "Next"). Flags beat env:
+
+| Want | Command |
+|------|---------|
+| Manual watch | `waygraph demo shopFlow .` |
+| Auto-advance | `waygraph demo shopFlow . --autoplay` |
+| Same overlay on a chain | `waygraph chain "login then nav-cart" . --step` |
+| No overlay | `waygraph demo shopFlow . --no-step` |
+
+`--step` = headed overlay. `--autoplay` = panel Auto-advance starts checked (timer;
+flip mid-run; manual click always wins). `chain` does **not** default to step — pass
+`--step`. BASE_URL from `--base-url`, else `WAYGRAPH_BASE_URL`, else
+`package.json` `waygraph.baseUrl`, else `playwright.config` `baseURL`. Prefer flags
+(or `npm run demo*`) over a pile of `WAYGRAPH_*` vars. NavBlock `click` shows demo
+cursor travel + pulse before the real click; `url` NavBlocks still `goto`. Full page:
+https://deviate-dv8.github.io/waygraph/demo.html
 
 **Flow video (headless OK):** `waygraph chain "loginFlow({...}) then viewerBlockedFlow({...})" . --video`
 uses Playwright `recordVideo` and prints the `.webm` path when done (default dir:
@@ -268,11 +299,10 @@ const result = await flow.run(context, mem);
 // result === { __state: "Submitted" }
 ```
 
-See `tests/define-flow.spec.ts` here, and `saucedemo/tests/checkout-flow.spec.ts` in
-`projects_waygraph/` (a real 4-Block flow against the live saucedemo.com), for this running
-for real. The lower-level `connect()`/`runGraph()` still exist and are what `defineFlow`
-builds on - reach for them directly only if you need a shape `defineFlow`'s array can't
-express yet.
+See `tests/define-flow.spec.ts` here, and `examples/saucedemo/tests/checkout-flow.spec.ts`
+(a real multi-Block flow against live saucedemo.com), for this running for real. The
+lower-level `connect()`/`runGraph()` still exist and are what `defineFlow` builds on -
+reach for them directly only if you need a shape `defineFlow`'s array can't express yet.
 
 ## Recipes
 
@@ -342,8 +372,9 @@ tsconfig.json                base config - typecheck script includes src/ + type
 tsconfig.build.json          extends base, src/ only, emits to dist/
 ```
 
-Consumer projects (saucedemo.com proof, zsign-app integration) live in the sibling
-`projects_waygraph/` repo, depending on this package via `"waygraph": "file:../../waygraph"`
-during local dev (see its own `.npmrc` - `install-links=true` is required there, or npm will
-symlink instead of copy and pull this package's own `node_modules` in through the symlink,
-causing a duplicate-Playwright-installation error).
+In-package Sauce Demo: [`examples/saucedemo`](./examples/saucedemo). Other consumer
+experiments (e.g. zsign-app integration) may still live in a sibling workspace folder and
+depend on this package via `"waygraph": "file:../waygraph"` during local dev (see that
+project's own `.npmrc` - `install-links=true` is required there, or npm will symlink
+instead of copy and pull this package's own `node_modules` in through the symlink, causing
+a duplicate-Playwright-installation error).

@@ -16,6 +16,8 @@
       <ul>
         <li><a href="./index.html">Home</a></li>
         <li><a href="./quickstart.html">Quick start</a></li>
+        <li><a href="./demo.html">Demo / step</a></li>
+        <li><a href="./auto.html">Auto explore</a></li>
         <li><a href="./handout.html">Engine handout</a></li>
         <li><a href="./consumer.html" aria-current="page">Consumer layout</a></li>
         <li><a href="./deploy.html">Deploy / preview</a></li>
@@ -25,10 +27,12 @@
     <main>
       <h1>Consumer layout</h1>
       <p class="lede">
-        Route folders mirror the app's real URLs — not a parallel invented tree.
-        Reference consumer: <strong>Sauce Demo</strong> (Swag Labs checkout) in
-        <code>projects_waygraph/saucedemo</code>. The <a href="./handout.html">engine handout</a>
-        covers the package API.
+        Route folders mirror the app's real URLs - not a parallel invented tree.
+        Reference consumer: <strong>Sauce Demo</strong> (Swag Labs checkout) at
+        <code>examples/saucedemo</code> in this package (also what
+        <code>templates/quickstart</code> / <code>try demo</code> copy). The
+        <a href="./handout.html">engine handout</a> covers the package API.
+        Interactive explore: <a href="./auto.html">Auto explore</a>.
       </p>
 
       <h2>The rule</h2>
@@ -43,38 +47,44 @@
           </tr>
           <tr>
             <td><code>/inventory.html</code></td>
-            <td><code>saucedemo-web/inventory/</code> — <code>nav-item-detail</code>, <code>add-to-cart</code>, …</td>
+            <td><code>saucedemo-web/inventory/</code> - <code>nav-item-detail</code>, <code>add-to-cart</code>, …</td>
           </tr>
           <tr>
             <td><code>/cart.html</code></td>
-            <td><code>saucedemo-web/cart/</code> — <code>nav-cart</code>, <code>nav-checkout-info</code>, …</td>
+            <td><code>saucedemo-web/cart/</code> - <code>nav-cart</code>, <code>nav-checkout-info</code>, …</td>
           </tr>
           <tr>
             <td><code>/checkout-step-one.html</code></td>
-            <td><code>saucedemo-web/checkout-step-one/</code> — <code>submit-checkout-info</code>, …</td>
+            <td><code>saucedemo-web/checkout-step-one/</code> - <code>submit-checkout-info</code>, …</td>
           </tr>
           <tr>
             <td>Path with no page of its own</td>
-            <td>Grouping only — no <code>NAV.md</code>, no nav block</td>
+            <td>Grouping only - no <code>NAV.md</code>, no nav block</td>
           </tr>
         </tbody>
       </table>
       <p>
         <strong>Test:</strong> a folder gets <code>NAV.md</code> + a nav block if and only if
         the app has a real page at that URL.
-        On Next.js, swap URLs for <code>app/…/page.tsx</code> paths — route groups like
+        On Next.js, swap URLs for <code>app/…/page.tsx</code> paths - route groups like
         <code>(auth)</code> vanish; layout chrome goes in <code>shared/chrome/</code>, not a second route tree.
       </p>
 
       <h2>Block kinds</h2>
+      <p>
+        File suffixes are a <strong>convention</strong> for humans and
+        <code>waygraph check</code>. Helpers are TypeScript salt - runtime is always
+        <code>Block</code>.
+      </p>
       <table>
         <thead>
-          <tr><th>Kind</th><th>File</th><th><code>page.goto</code>?</th><th>Lives</th></tr>
+          <tr><th>Kind</th><th>File</th><th>Helper</th><th><code>page.goto</code>?</th><th>Lives</th></tr>
         </thead>
         <tbody>
-          <tr><td>Nav</td><td><code>nav-*.block.ts</code></td><td>Yes (<code>url</code> XOR <code>click</code>)</td><td>Route folder root</td></tr>
-          <tr><td>Action</td><td><code>*.action.block.ts</code></td><td>No</td><td>Route <code>actions/</code></td></tr>
-          <tr><td>Chrome</td><td><code>*.chrome.block.ts</code></td><td>No</td><td>Route <code>actions/chrome/</code> or <code>shared/chrome/</code></td></tr>
+          <tr><td>Nav</td><td><code>nav-*.block.ts</code></td><td><code>defineNavBlock</code></td><td>Yes (<code>url</code> XOR <code>click</code>)</td><td>Route folder root</td></tr>
+          <tr><td>Effect</td><td><code>*.effect.block.ts</code></td><td><code>defineEffectBlock</code></td><td>No</td><td>Route <code>actions/</code> (instance add/remove/toggle)</td></tr>
+          <tr><td>Action</td><td><code>*.action.block.ts</code></td><td><code>defineBlock</code></td><td>No</td><td>Route <code>actions/</code></td></tr>
+          <tr><td>Chrome</td><td><code>*.chrome.block.ts</code></td><td><code>defineBlock</code></td><td>No</td><td>Route <code>actions/chrome/</code> or <code>shared/chrome/</code></td></tr>
         </tbody>
       </table>
       <p>
@@ -86,17 +96,18 @@
       <h2>Example layout (Sauce Demo)</h2>
       <pre><code>src/blocks/
   SITE-MAP.md
-  saucedemo-web/                 # Swag Labs — THIS FOLDER IS "/"
+  saucedemo-web/                 # Swag Labs - THIS FOLDER IS "/"
     NAV.md
     nav-login.block.ts           # url: /
     actions/
       submit-login.action.block.ts
     inventory/                   # /inventory.html
       NAV.md
-      nav-item-detail.block.ts   # click → /inventory-item.html
+      nav-item-detail.block.ts   # click -> /inventory-item.html
       nav-back-to-inventory.block.ts
       actions/
-        add-to-cart.action.block.ts
+        add-to-cart.effect.block.ts
+        remove-from-cart.effect.block.ts
     inventory-item/              # /inventory-item.html
       NAV.md
       nav-continue-shopping.block.ts
@@ -112,34 +123,35 @@
       actions/
         finish-order.action.block.ts</code></pre>
       <p>
-        Block names match the live <code>projects_waygraph/saucedemo</code> project; folders show
+        Block names match the live <code>examples/saucedemo</code> project; folders show
         how to group them by URL. Nav uses <code>url</code> or <code>click</code> (see
-        <code>nav-cart</code> — header link, not a separate <code>goto</code> in actions).
+        <code>nav-cart</code> - header link, not a separate <code>goto</code> in actions).
       </p>
 
       <h2>Conventions</h2>
       <ul>
         <li>
           <strong>Namespace root is <code>/</code>.</strong>
-          Login lives at <code>saucedemo-web/</code> with <code>nav-login</code> — not
+          Login lives at <code>saucedemo-web/</code> with <code>nav-login</code> - not
           <code>saucedemo-web/root/</code> or <code>saucedemo-web/landing/</code>.
         </li>
         <li>
           <strong>One nav per route.</strong>
           Header links (<code>nav-cart</code>, <code>nav-checkout-info</code>) are nav blocks on
-          the route that owns that URL — not a parallel <code>shell/nav/…</code> tree.
+          the route that owns that URL - not a parallel <code>shell/nav/…</code> tree.
         </li>
         <li>
           <strong>Actions never navigate.</strong>
-          <code>submit-login</code>, <code>add-to-cart</code>, and friends stay in
+          <code>submit-login</code>, <code>add-to-cart</code> (effect), and friends stay in
           <code>actions/</code>; only <code>defineNavBlock</code> blocks call
-          <code>page.goto</code> or encoded clicks.
+          <code>page.goto</code> or encoded clicks. Effect vs action is file + helper
+          convention only - both are Blocks.
         </li>
       </ul>
 
       <h2>Same checkpoint + mem</h2>
       <p>
-        Checkpoint is a phantom tag only — no payload. Same URL after an action ⇒ same
+        Checkpoint is a phantom tag only - no payload. Same URL after an action ⇒ same
         Checkpoint; richer mem. <code>act</code> / <code>observe</code> may
         <code>mem.set</code> / <code>mem.update</code>; <code>resolve</code> is pure;
         verify Traits cannot read mem. Self-loop via <code>branch</code> +
@@ -147,7 +159,7 @@
       </p>
 
       <p class="meta" style="margin-top:2rem">
-        One-liner: Waygraph maps Sauce Demo (and any app) the way URLs map in the browser — one
+        One-liner: Waygraph maps Sauce Demo (and any app) the way URLs map in the browser - one
         nav (+ actions) per page, <code>/</code> at the namespace root, mem can change without
         changing the Checkpoint.
       </p>

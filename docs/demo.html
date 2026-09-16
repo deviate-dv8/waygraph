@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo / step / autoplay · Waygraph docs</title>
+  <link rel="stylesheet" href="./css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="./index.html">waygraph</a>
+      <ul>
+        <li><a href="./index.html">Home</a></li>
+        <li><a href="./quickstart.html">Quick start</a></li>
+        <li><a href="./demo.html" aria-current="page">Demo / step</a></li>
+        <li><a href="./auto.html">Auto explore</a></li>
+        <li><a href="./handout.html">Engine handout</a></li>
+        <li><a href="./consumer.html">Consumer layout</a></li>
+        <li><a href="./deploy.html">Deploy / preview</a></li>
+        <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>Demo / step / autoplay</h1>
+      <p class="lede">
+        How to watch a flow in the browser. Agents confuse <code>demo</code>,
+        <code>--step</code>, and <code>--autoplay</code> constantly - this page is the
+        contract.
+      </p>
+
+      <h2>Pick the command</h2>
+      <table>
+        <thead>
+          <tr><th>Want</th><th>Command</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Watch a named flow (manual Next)</td>
+            <td><code>npx waygraph demo shopFlow .</code></td>
+          </tr>
+          <tr>
+            <td>Same, but auto-advance on a timer</td>
+            <td><code>npx waygraph demo shopFlow . --autoplay</code></td>
+          </tr>
+          <tr>
+            <td>Watch an ad-hoc Block chain</td>
+            <td><code>npx waygraph chain "login then nav-cart" . --step</code></td>
+          </tr>
+          <tr>
+            <td>One-shot Sauce Demo onboarding (temp dir)</td>
+            <td><code>npx waygraph try demo</code></td>
+          </tr>
+          <tr>
+            <td>Interactive explore (in-repo)</td>
+            <td><code>cd examples/saucedemo &amp;&amp; npm run auto</code></td>
+          </tr>
+          <tr>
+            <td>Run with no overlay</td>
+            <td><code>npx waygraph demo shopFlow . --no-step</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <code>demo</code> is the friendly wrapper: it turns <strong>step ON</strong> and
+        <strong>autoplay OFF</strong> unless you pass flags. <code>chain --step</code> is the
+        same overlay on an ad-hoc spec. <code>try demo</code> copies Sauce Demo into a temp
+        folder, runs Sign In + Shop + blocked Viewer, then <code>npm test</code>. Permanent
+        example: <code>examples/saucedemo</code>. Interactive picker:
+        <a href="./auto.html">Auto explore</a>.
+      </p>
+
+      <h2>Step vs autoplay (two different knobs)</h2>
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>What it does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>--step</code></td>
+            <td>
+              Headed overlay: show MemKeys, gate the Block, highlight verify Traits, then
+              <strong>Next</strong>. Implies headed. Default for <code>demo</code> and
+              <code>try demo</code>.
+            </td>
+          </tr>
+          <tr>
+            <td><code>--no-step</code></td>
+            <td>No overlay. Runs straight through (headless unless you also set headed).</td>
+          </tr>
+          <tr>
+            <td><code>--autoplay</code></td>
+            <td>
+              Only meaningful with step. Starts the panel with
+              <strong>Auto-advance checked</strong> - timer moves to the next gate
+              (default ~1800ms; <code>WAYGRAPH_AUTOPLAY_MS</code>).
+            </td>
+          </tr>
+          <tr>
+            <td><code>--no-autoplay</code></td>
+            <td>
+              Starts with Auto-advance <strong>unchecked</strong>. You click
+              <strong>Run this step</strong> / <strong>Next</strong>. Default for
+              <code>demo</code>.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <pre><code># Manual watch (default)
+npx waygraph demo shopFlow .
+
+# Auto-advance watch
+npx waygraph demo shopFlow . --autoplay --title "Shop demo"
+
+# Force manual after a previous autoplay session
+npx waygraph demo shopFlow . --no-autoplay
+
+# Overlay on a chain (step is NOT default on chain - pass it)
+npx waygraph chain "login then nav-cart" . --step --no-autoplay</code></pre>
+
+      <h2>What you see in the browser</h2>
+      <ol>
+        <li>Purple overlay panel: Block name, MemKeys (editable), episode breadcrumb.</li>
+        <li>
+          <strong>Run this step</strong> (manual) or <strong>Auto-advancing...</strong>
+          (autoplay) - then Playwright runs that Block.
+        </li>
+        <li>Highlight ring over verify Traits; click <strong>Next</strong> (or wait if autoplay).</li>
+        <li>
+          Mid-run: flip the <strong>Auto-advance</strong> checkbox anytime. A manual click
+          always wins over an in-flight autoplay wait.
+        </li>
+        <li>
+          <strong>Hide</strong> / <strong>Show</strong> in the panel chrome (persisted). On
+          phones the panel is a bottom sheet so the page stays usable.
+        </li>
+      </ol>
+      <p>
+        NavBlock <code>click</code> shows cursor travel + pulse before the real click.
+        NavBlock <code>url</code> still uses <code>page.goto</code>.
+      </p>
+
+      <h2>Headed vs headless</h2>
+      <table>
+        <thead>
+          <tr><th>Mode</th><th>Command</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Headed stepper</td>
+            <td><code>waygraph demo shopFlow .</code> (default <code>--step</code>)</td>
+          </tr>
+          <tr>
+            <td>Headed + Auto-advance</td>
+            <td><code>waygraph demo shopFlow . --autoplay</code></td>
+          </tr>
+          <tr>
+            <td>Headless (no overlay)</td>
+            <td><code>waygraph demo shopFlow . --no-step</code> or <code>npm test</code></td>
+          </tr>
+          <tr>
+            <td>Record video headless</td>
+            <td><code>npx waygraph try demo --video ./out --no-step</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>CLI command order (agents)</h2>
+      <p>Prefer this order when reading <code>waygraph --help</code>:</p>
+      <ol>
+        <li><code>demo</code> / <code>try</code> - watch</li>
+        <li><code>chain</code> / <code>run</code> - execute</li>
+        <li><code>list</code> / <code>nav</code> / <code>validate</code> - inspect flows</li>
+        <li><code>check</code> / <code>auto</code> / <code>graph</code> - hygiene + graph</li>
+        <li><code>init</code> - scaffold</li>
+      </ol>
+
+      <h2>Common mistakes</h2>
+      <ul>
+        <li>
+          Expecting <code>chain</code> to open the overlay without <code>--step</code> -
+          only <code>demo</code> / <code>try demo</code> default step ON.
+        </li>
+        <li>
+          Thinking <code>--autoplay</code> alone is enough - without step there is no panel.
+          Use <code>demo … --autoplay</code> or <code>chain … --step --autoplay</code>.
+        </li>
+        <li>
+          Using <code>WAYGRAPH_STEP=1</code> soup instead of flags - flags beat env;
+          prefer <code>--step</code> / <code>--autoplay</code>.
+        </li>
+      </ul>
+
+      <footer class="site">
+        <a href="./quickstart.html">Quick start</a> ·
+        <a href="./auto.html">Auto explore</a> ·
+        <a href="./handout.html">Engine handout</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

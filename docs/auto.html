@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auto explore · Waygraph docs</title>
+  <link rel="stylesheet" href="./css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="./index.html">waygraph</a>
+      <ul>
+        <li><a href="./index.html">Home</a></li>
+        <li><a href="./quickstart.html">Quick start</a></li>
+        <li><a href="./demo.html">Demo / step</a></li>
+        <li><a href="./auto.html" aria-current="page">Auto explore</a></li>
+        <li><a href="./handout.html">Engine handout</a></li>
+        <li><a href="./consumer.html">Consumer layout</a></li>
+        <li><a href="./deploy.html">Deploy / preview</a></li>
+        <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>Auto explore</h1>
+      <p class="lede">
+        Interactive graph walker: pick the next Block from what is runnable on the
+        live page (Effect Add/Remove, mem-picked Nav Open details, plain Action).
+      </p>
+      <p>
+        <strong>Everything is a Block.</strong>
+        <code>defineEffectBlock</code> / <code>defineMemNavBlock</code> /
+        <code>defineNavBlock</code> are TypeScript salt that force
+        <code>requires</code> + <code>instanceOptions</code> (or nav-only shape).
+        The engine does not have a separate Effect runtime.
+      </p>
+
+      <h2>Commands</h2>
+      <table>
+        <thead>
+          <tr><th>Want</th><th>Command</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Headed picker (default)</td>
+            <td><code>npx waygraph auto .</code></td>
+          </tr>
+          <tr>
+            <td>CLI menu in the terminal</td>
+            <td><code>npx waygraph auto . --cli</code></td>
+          </tr>
+          <tr>
+            <td>In-repo Sauce Demo</td>
+            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npm run auto</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>What you see</h2>
+      <ol>
+        <li>Checkpoint map: where you are now.</li>
+        <li>
+          Action list built from the live DOM + Block graph (e.g. one
+          <strong>Add to cart</strong> row per inventory item via
+          <code>instanceOptions</code> + MemKey).
+        </li>
+        <li>Hover an option to ring-highlight its target on the page.</li>
+        <li>
+          Panel chrome: <strong>Hide</strong> / <strong>Show</strong> (persisted in
+          <code>localStorage</code>). On narrow viewports the panel is a bottom sheet.
+        </li>
+      </ol>
+
+      <h2>Effect vs Nav (helpers, not engines)</h2>
+      <table>
+        <thead>
+          <tr><th>Helper</th><th>File convention</th><th>Use when</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>defineEffectBlock</code></td>
+            <td><code>*.effect.block.ts</code></td>
+            <td>Same Checkpoint in/out; mutates page + mem (Add / Remove from cart).</td>
+          </tr>
+          <tr>
+            <td><code>defineMemNavBlock</code></td>
+            <td><code>nav-*.block.ts</code></td>
+            <td>Leaves current Checkpoint (Open item details) - still a NavBlock.</td>
+          </tr>
+          <tr>
+            <td><code>defineBlock</code></td>
+            <td><code>*.action.block.ts</code></td>
+            <td>Ordinary page act (submit login, finish order) with no instance menu.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Alias: <code>defineMemEffectBlock</code> === <code>defineEffectBlock</code>
+        (older name). Prefer <code>defineEffectBlock</code>.
+      </p>
+
+      <h2>Headed vs headless</h2>
+      <table>
+        <thead>
+          <tr><th>Mode</th><th>How</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Headed explore</td>
+            <td><code>waygraph auto .</code> (browser + overlay)</td>
+          </tr>
+          <tr>
+            <td>Headless tests</td>
+            <td><code>npm test</code> in the project (no overlay)</td>
+          </tr>
+          <tr>
+            <td>Stepper (not auto)</td>
+            <td><code>waygraph demo shopFlow .</code> - see <a href="./demo.html">Demo / step</a></td>
+          </tr>
+          <tr>
+            <td>Try onboarding (temp dir)</td>
+            <td><code>npx waygraph try demo</code> - copies <code>templates/quickstart</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>In-repo example</h2>
+      <pre><code>cd examples/saucedemo
+npm install
+npx playwright install chromium
+npm run auto          # headed explore
+npm run demo:step     # stepper, manual Next
+npm run demo:autoplay # stepper, Auto-advance on
+npm test              # headless Playwright suite</code></pre>
+      <p>
+        Source layout: <a href="./consumer.html">Consumer layout</a>.
+        Permanent tree ships in the package at <code>examples/saucedemo</code>.
+      </p>
+
+      <footer class="site">
+        <a href="./demo.html">Demo / step</a> ·
+        <a href="./quickstart.html">Quick start</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

@@ -16,6 +16,8 @@
       <ul>
         <li><a href="./index.html" aria-current="page">Home</a></li>
         <li><a href="./quickstart.html">Quick start</a></li>
+        <li><a href="./demo.html">Demo / step</a></li>
+        <li><a href="./auto.html">Auto explore</a></li>
         <li><a href="./handout.html">Engine handout</a></li>
         <li><a href="./consumer.html">Consumer layout</a></li>
         <li><a href="./deploy.html">Deploy / preview</a></li>
@@ -42,6 +44,14 @@
           <strong>Getting started</strong>
           <span>Try demo, scaffold (<code>create-waygraph</code> / <code>init</code>), first Flow.</span>
         </a>
+        <a href="./demo.html">
+          <strong>Demo / step / autoplay</strong>
+          <span>How to watch a flow: <code>--step</code> vs <code>--autoplay</code> (agents read this).</span>
+        </a>
+        <a href="./auto.html">
+          <strong>Auto explore</strong>
+          <span>Interactive Effect / MemNav picker on the live page (still just Blocks).</span>
+        </a>
         <a href="./quickstart.html">
           <strong>Quick start</strong>
           <span>Install, minimal Block + Flow, develop the package.</span>
@@ -52,7 +62,7 @@
         </a>
         <a href="./consumer.html">
           <strong>Consumer layout</strong>
-          <span>Route folders = app URLs. No invented landing/root trees.</span>
+          <span>Route folders = app URLs (Sauce Demo example).</span>
         </a>
         <a href="./deploy.html">
           <strong>Deploy / preview</strong>
@@ -67,8 +77,12 @@
         </thead>
         <tbody>
           <tr>
-            <td>Watch the 2-episode saucedemo in a browser (no project folder, temp dir only)</td>
+            <td>Watch Sauce Demo in a browser (temp dir; Sign In + Shop + blocked Viewer)</td>
             <td><code>npx waygraph try demo</code></td>
+          </tr>
+          <tr>
+            <td>Interactive explore (in-repo example)</td>
+            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npx waygraph auto .</code></td>
           </tr>
           <tr>
             <td>Scaffold a new offline project (green <code>npm test</code> on a <code>data:</code> URL)</td>
@@ -90,10 +104,13 @@
         After either scaffold: <code>cd my-app &amp;&amp; npm install &amp;&amp; npx playwright install chromium &amp;&amp; npm test</code>.
       </p>
       <p>
-        <code>try demo</code> is different: it copies the live saucedemo quickstart into an OS
-        temp folder, runs step-through Episode 1 (Sign In) + Episode 2 (blocked Viewer login),
-        then headless tests. Keep a permanent tree with <code>init</code> / <code>create-waygraph</code>,
-        not <code>try demo</code> alone.
+        <code>try demo</code> copies the live Sauce Demo quickstart into an OS temp folder,
+        runs step-through <strong>Sign In -> Shop &amp; Checkout -> blocked Viewer login</strong>,
+        then headless tests. Permanent tree:
+        <code>examples/saucedemo</code> in this package. Offline empty scaffold:
+        <code>init</code> / <code>create-waygraph</code>.
+        Overlay details: <a href="./demo.html">Demo / step</a> ·
+        <a href="./auto.html">Auto explore</a>.
       </p>
       <p>
         Requires Node 22+. <code>@playwright/test</code> is a peer dependency (^1.40).

@@ -1,33 +1,41 @@
 import { test, expect } from "@playwright/test";
 import { MemPage, checkpoint, chainFlow } from "waygraph";
+import { loginFlow } from "../src/flows/login.flow.js";
 import { shopFlow } from "../src/flows/shop.flow.js";
 import { viewerBlockedFlow } from "../src/flows/viewer-blocked.flow.js";
-import { LoginCreds, ViewerCreds } from "../src/states/checkout.mem-keys.js";
+import { LoginCreds, SelectedItem } from "../src/states/checkout.mem-keys.js";
 
-test("chainFlow: Episode 1 shops through checkout, Episode 2 blocked login genuinely fails", async () => {
+const BACKPACK = SelectedItem({ id: "sauce-labs-backpack", name: "Sauce Labs Backpack" });
+
+test("chainFlow: Episode 1 signs in + shops, Episode 2 locked-out user stays on LoginPage", async () => {
   const mem = new MemPage();
   mem.set(LoginCreds({ username: "standard_user", password: "secret_sauce" }));
-  mem.set(ViewerCreds({ username: "locked_out_user", password: "secret_sauce" }));
+  mem.set(BACKPACK);
 
-  const combined = chainFlow(shopFlow, viewerBlockedFlow);
+  const ep1 = chainFlow(loginFlow, shopFlow);
+  const result1 = await ep1.run(mem);
+  expect(result1).toEqual(checkpoint("OrderComplete"));
 
-  await expect(combined.run(mem)).rejects.toThrow(/viewer-login/);
+  mem.set(LoginCreds({ username: "locked_out_user", password: "secret_sauce" }));
+  const result2 = await viewerBlockedFlow.run(mem);
+  expect(result2).toEqual(checkpoint("LoginPage"));
 });
 
-test("episode 1 alone: standard_user completes checkout", async () => {
+test("shopFlow alone: already-seeded SelectedItem completes checkout after loginFlow", async () => {
   const mem = new MemPage();
   mem.set(LoginCreds({ username: "standard_user", password: "secret_sauce" }));
+  mem.set(BACKPACK);
 
-  const result = await shopFlow.run(mem);
-
+  const result = await chainFlow(loginFlow, shopFlow).run(mem);
   expect(result).toEqual(checkpoint("OrderComplete"));
 });
 
 test("chainFlow blocks() lists the flattened episode chain in order", () => {
+  expect(loginFlow.title).toBe("Sign In");
   expect(shopFlow.title).toBe("Shop & Checkout");
   expect(viewerBlockedFlow.title).toBe("Viewer: Blocked Login Attempt");
 
-  const blocks = chainFlow(shopFlow, viewerBlockedFlow).blocks();
+  const blocks = chainFlow(loginFlow, shopFlow, viewerBlockedFlow).blocks();
   expect(blocks.map((b) => b.name)).toEqual([
     "nav-login",
     "submit-login",
@@ -37,8 +45,9 @@ test("chainFlow blocks() lists the flattened episode chain in order", () => {
     "submit-checkout-info",
     "finish-order",
     "nav-login",
-    "viewer-login",
+    "submit-login",
   ]);
-  expect(blocks[0]!.resetSessionBefore).toBeUndefined();
-  expect(blocks[7]!.resetSessionBefore).toBe(true);
+  expect(blocks.every((b, i) => (i === 7 ? b.resetSessionBefore === true : !b.resetSessionBefore))).toBe(
+    true,
+  );
 });

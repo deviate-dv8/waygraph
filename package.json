@@ -1,6 +1,6 @@
 {
   "name": "waygraph",
-  "version": "0.7.9",
+  "version": "0.7.10",
   "type": "module",
   "description": "A typed graph of reusable Blocks for driving a browser through E2E flows.",
   "license": "MIT",
@@ -18,7 +18,8 @@
   "files": [
     "dist",
     "bin",
-    "templates"
+    "templates",
+    "examples"
   ],
   "repository": {
     "type": "git",
@@ -28,7 +29,10 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
-    "docs:preview": "python3 -m http.server 4173 --directory docs"
+    "docs:preview": "python3 -m http.server 4173 --directory docs",
+    "example:saucedemo:install": "npm --prefix examples/saucedemo install",
+    "example:saucedemo:test": "npm --prefix examples/saucedemo test",
+    "example:saucedemo:auto": "npm --prefix examples/saucedemo run auto"
   },
   "peerDependencies": {
     "@playwright/test": "^1.40.0"

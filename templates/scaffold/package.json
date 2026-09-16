@@ -9,13 +9,14 @@
     "flows": "waygraph list .",
     "check": "waygraph check .",
     "auto": "waygraph auto .",
+    "graph": "waygraph graph .",
     "demo": "waygraph demo exampleFlow ."
   },
   "waygraph": {
     "baseUrl": "https://example.com"
   },
   "dependencies": {
-    "waygraph": "^0.7.6"
+    "waygraph": "^0.7.9"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

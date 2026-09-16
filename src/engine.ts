@@ -1115,6 +1115,7 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
   next?: Block<In, Out>["next"];
   requires?: Block<In, Out>["requires"];
   routes?: Block<In, Out>["routes"];
+  instanceOptions?: Block<In, Out>["instanceOptions"];
 }): DefinedBlock<In, Out> {
   const plain: Block<In, Out> = {
     name: base.name,
@@ -1123,6 +1124,7 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
     ...(base.next ? { next: base.next } : {}),
     ...(base.requires ? { requires: base.requires } : {}),
     ...(base.routes ? { routes: base.routes } : {}),
+    ...(base.instanceOptions ? { instanceOptions: base.instanceOptions } : {}),
   };
   return {
     ...plain,
@@ -1159,6 +1161,12 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
   highlights?:
     | readonly WaygraphHighlight[]
     | ((out: Out) => readonly WaygraphHighlight[]);
+  /**
+   * Live per-instance menu rows for `waygraph auto` (see {@link Block.instanceOptions}).
+   * When set, the explore menu lists one row per option instead of a single
+   * generic nav edge - used by {@link defineMemNavBlock}.
+   */
+  instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
 } & (
   | {
       /**
@@ -1206,6 +1214,7 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
     name: options.name,
     ...(options.description ? { description: options.description } : {}),
     ...(options.requires ? { requires: options.requires } : {}),
+    ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
     instruction: {
       async act(page, _input, mem) {
         if (options.url !== undefined) {
@@ -1247,6 +1256,83 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
 }
 
 /**
+ * TypeScript salt over {@link defineBlock}: same runtime Block, but the type
+ * forces `requires` + `instanceOptions` so `waygraph auto` can list one menu
+ * row per live instance (add/remove/toggle). Not a separate engine concept -
+ * everything is still a Block.
+ */
+export type EffectBlock<
+  In extends Checkpoint<string>,
+  Out extends Checkpoint<string>,
+> = DefinedBlock<In, Out> & {
+  requires: readonly MemKey<any>[];
+  instanceOptions: NonNullable<Block<In, Out>["instanceOptions"]>;
+};
+
+/** @deprecated Prefer {@link EffectBlock} - same type; Mem* was an early name. */
+export type MemEffectBlock<
+  In extends Checkpoint<string>,
+  Out extends Checkpoint<string>,
+> = EffectBlock<In, Out>;
+
+/**
+ * TypeScript salt over {@link defineNavBlock}: mem-picked destination
+ * (which product row / which request id). Still a NavBlock / Block at runtime.
+ */
+export type MemNavBlock<Out extends Checkpoint<string>> = NavBlock<Out> & {
+  requires: readonly MemKey<any>[];
+  instanceOptions: NonNullable<Block<Checkpoint<string>, Out>["instanceOptions"]>;
+};
+
+/**
+ * {@link defineBlock} constrained for effect-style instance menus: `requires` +
+ * `instanceOptions` are mandatory. Prefer this when the Block adds / removes /
+ * toggles a live instance rather than navigating. Runtime result is an ordinary
+ * Block - the helper is TypeScript salt only.
+ */
+export function defineEffectBlock<
+  In extends Checkpoint<string>,
+  Out extends Checkpoint<string>,
+>(
+  base: Parameters<typeof defineBlock<In, Out>>[0] & {
+    requires: readonly MemKey<any>[];
+    instanceOptions: NonNullable<Block<In, Out>["instanceOptions"]>;
+  },
+): EffectBlock<In, Out> {
+  const built = defineBlock(base) as EffectBlock<In, Out>;
+  Object.defineProperty(built, "__waygraphMemKind", {
+    value: "effect",
+    enumerable: false,
+    configurable: false,
+  });
+  return built;
+}
+
+/** @deprecated Prefer {@link defineEffectBlock} - identical helper. */
+export const defineMemEffectBlock = defineEffectBlock;
+
+/**
+ * {@link defineNavBlock} constrained to mem-picked navigation: requires +
+ * instanceOptions mandatory, and `click`/`url` should depend on that mem
+ * (typically `click: (mem) => …`). Prefer this when the Block opens one of
+ * several live rows/items rather than a fixed nav target. Still a Block.
+ */
+export function defineMemNavBlock<Out extends Checkpoint<string>>(
+  options: NavBlockOptions<Out> & {
+    requires: readonly MemKey<any>[];
+    instanceOptions: NonNullable<Block<Checkpoint<string>, Out>["instanceOptions"]>;
+  },
+): MemNavBlock<Out> {
+  const built = defineNavBlock(options) as MemNavBlock<Out>;
+  Object.defineProperty(built, "__waygraphMemKind", {
+    value: "nav",
+    enumerable: false,
+    configurable: false,
+  });
+  return built;
+}
+
+/**
  * "Where am I" - reverse-matches a live `page` against every NavBlock in
  * `library`, in order, returning the first one whose own `verify` Traits all
  * pass (its `checkpoint`), or `null` if none match. Deliberately NavBlocks
@@ -1267,32 +1353,46 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
  * genuine ambiguity is a follow-up, not solved here.
  * @example const here = await locate(page, [NavLoginBlock, NavDashboardBlock]);
  */
-export async function locate(page: Page, library: readonly NavBlock<any>[]): Promise<string | null> {
+export async function locate(
+  page: Page,
+  library: readonly NavBlock<any>[],
+  options?: { timeoutMs?: number },
+): Promise<string | null> {
   const mem = new MemPage();
-  for (const block of library) {
-    try {
-      // NavBlock's own resolve() ignores whatever it's called with - always
-      // exactly `checkpoint(options.checkpoint)` - so this is safe to call
-      // before verify, unlike a regular Block where resolve depends on
-      // observed evidence.
-      const resolved = await block.instruction.resolve(undefined as never);
-      const verify = block.instruction.verify;
-      const traits = typeof verify === "function" ? verify(resolved) : (verify ?? []);
-      let allPass = true;
-      for (const trait of traits) {
-        // eslint-disable-next-line no-await-in-loop
-        if (!(await trait.check(page, mem))) {
-          allPass = false;
-          break;
+  const timeoutMs = options?.timeoutMs;
+  if (timeoutMs !== undefined) {
+    page.setDefaultTimeout(timeoutMs);
+  }
+  try {
+    for (const block of library) {
+      try {
+        // NavBlock's own resolve() ignores whatever it's called with - always
+        // exactly `checkpoint(options.checkpoint)` - so this is safe to call
+        // before verify, unlike a regular Block where resolve depends on
+        // observed evidence.
+        const resolved = await block.instruction.resolve(undefined as never);
+        const verify = block.instruction.verify;
+        const traits = typeof verify === "function" ? verify(resolved) : (verify ?? []);
+        let allPass = true;
+        for (const trait of traits) {
+          // eslint-disable-next-line no-await-in-loop
+          if (!(await trait.check(page, mem))) {
+            allPass = false;
+            break;
+          }
         }
+        if (allPass) return resolved.__state;
+      } catch {
+        // This NavBlock's own verify threw (e.g. a waitFor timing out) -
+        // treat that the same as "didn't match," try the next candidate.
       }
-      if (allPass) return resolved.__state;
-    } catch {
-      // This NavBlock's own verify threw (e.g. a waitFor timing out) -
-      // treat that the same as "didn't match," try the next candidate.
+    }
+    return null;
+  } finally {
+    if (timeoutMs !== undefined) {
+      page.setDefaultTimeout(30_000);
     }
   }
-  return null;
 }
 
 /**

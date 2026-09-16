@@ -47,6 +47,7 @@ test("waygraph --help prints usage", async () => {
   expect(stdout).toContain("waygraph list");
   expect(stdout).toContain("waygraph init");
   expect(stdout).toContain("chain auto");
+  expect(stdout).toContain("waygraph graph");
 });
 
 test("waygraph list discovers flow files", async () => {

@@ -119,6 +119,35 @@ export interface WaygraphHighlight {
 }
 
 /**
+ * One selectable option for a Block whose real choices depend on the live
+ * page - "which of these items to add to cart" is only knowable by looking
+ * at the DOM, not from static analysis. `waygraph auto` calls
+ * {@link Block.instanceOptions} while building its menu and lists one row
+ * per option (via `label`) instead of a single generic "block -> checkpoint"
+ * row; picking a row does `mem.set(key, value)` before that Block's own
+ * `act()` runs, so `act()` just reads mem exactly like any other required
+ * key - it never needs to know whether it was driven by a human-authored
+ * Flow or a dynamic auto-explore menu.
+ * @example { id: "sauce-labs-backpack", label: 'Add "Sauce Labs Backpack" to cart', key: SelectedItem.key, value: { id: "sauce-labs-backpack", name: "Sauce Labs Backpack" } }
+ */
+export interface WaygraphInstanceOption<T = unknown> {
+  /** Stable id for this option - used to dedupe menu rows across rebuilds. */
+  id: string;
+  /** Shown in the menu instead of a generic "block -> checkpoint" line. */
+  label: string;
+  /** Must be one of this Block's own `requires` keys. */
+  key: MemKey<T>;
+  /** `mem.set(key, value)` right before this Block's `act()` runs. */
+  value: T;
+  /**
+   * Optional CSS selector for the element this option will act on.
+   * `waygraph auto` (headful) rings that element while the menu row is hovered
+   * so you can see what a pick would click before committing.
+   */
+  highlight?: string;
+}
+
+/**
  * A Block wraps one instruction. Its Observed type is an internal detail, erased here.
  * `next` is optional routing attached by `branch()` - unset on a plain or
  * `connect()`-composed Block, meaning "terminal after one step" (today's behavior,
@@ -178,6 +207,19 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   requires?: readonly MemKey<any>[];
+  /**
+   * Optional. When this Block's real choices depend on the live page
+   * (which of several items to add to cart, which of several rows to
+   * open) rather than being knowable ahead of time, this returns one
+   * option per live choice - `waygraph auto` lists one menu row per
+   * option (via `label`) instead of a single generic edge, and seeds
+   * `mem.set(option.key, option.value)` before this Block's own `act()`
+   * runs when a row is picked. Purely additive tooling data - `runGraph`/
+   * `connect`/anything that decides behavior never consults it; a Block
+   * without it behaves exactly as before.
+   * @example instanceOptions: (page) => collectInventoryItems(page).then((items) => items.map((it) => ({ id: it.id, label: `Add "${it.name}" to cart`, key: SelectedItem.key, value: it })))
+   */
+  instanceOptions?(page: Page): Promise<readonly WaygraphInstanceOption[]>;
   /**
    * Replaces this Block's whole `verify` list - the only way to clear it to
    * empty (the "I only care that I navigated this far" case) or go from no

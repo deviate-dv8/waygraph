@@ -16,6 +16,8 @@
       <ul>
         <li><a href="./index.html">Home</a></li>
         <li><a href="./quickstart.html" aria-current="page">Quick start</a></li>
+        <li><a href="./demo.html">Demo / step</a></li>
+        <li><a href="./auto.html">Auto explore</a></li>
         <li><a href="./handout.html">Engine handout</a></li>
         <li><a href="./consumer.html">Consumer layout</a></li>
         <li><a href="./deploy.html">Deploy / preview</a></li>
@@ -39,6 +41,11 @@
             <td><code>npx waygraph try demo</code></td>
           </tr>
           <tr>
+            <td><strong>In-repo example</strong></td>
+            <td>Permanent Sauce Demo with <code>auto</code> + full Playwright suite</td>
+            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npm run auto</code></td>
+          </tr>
+          <tr>
             <td><strong>create-waygraph</strong></td>
             <td>New repo - offline scaffold (recommended if docs only mention one scaffold command)</td>
             <td><code>npx create-waygraph my-app</code></td>
@@ -58,13 +65,45 @@ npm install
 npx playwright install chromium
 npm test          # offline example flow - green immediately
 npm run check     # nav hygiene + orphan Blocks
-npm run demo      # step-through exampleFlow in the browser</code></pre>
+npm run demo      # step-through exampleFlow (manual Next; --step --no-autoplay)</code></pre>
       <p>
         Package link:
         <a href="https://github.com/deviate-dv8/create-waygraph">deviate-dv8/create-waygraph</a>
         ·
         <a href="https://www.npmjs.com/package/create-waygraph">npm</a>.
         <code>try demo</code> uses the live saucedemo quickstart template, not the offline scaffold.
+        How step vs autoplay works: <a href="./demo.html">Demo / step / autoplay</a>.
+        Interactive picker: <a href="./auto.html">Auto explore</a>.
+      </p>
+
+      <h2 id="demo">Watch a demo (step / autoplay)</h2>
+      <table>
+        <thead>
+          <tr><th>Want</th><th>Command</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Manual Next (default)</td>
+            <td><code>npx waygraph demo shopFlow .</code></td>
+          </tr>
+          <tr>
+            <td>Auto-advance timer</td>
+            <td><code>npx waygraph demo shopFlow . --autoplay</code></td>
+          </tr>
+          <tr>
+            <td>Overlay on a chain</td>
+            <td><code>npx waygraph chain "login then nav-cart" . --step</code></td>
+          </tr>
+          <tr>
+            <td>No overlay</td>
+            <td><code>npx waygraph demo shopFlow . --no-step</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Two knobs: <code>--step</code> (overlay on/off) and <code>--autoplay</code>
+        (Auto-advance checkbox start state). Details:
+        <a href="./demo.html">demo page</a>.
       </p>
 
       <h2>Install into an existing repo</h2>
@@ -117,8 +156,8 @@ await flow.run(mem);
 
       <h2>Hard rules</h2>
       <ul>
-        <li><code>resolve</code> never touches the browser or MemPage — only returns a Checkpoint.</li>
-        <li><code>verify</code> runs only after resolve — confirms or fails loud; never redirects.</li>
+        <li><code>resolve</code> never touches the browser or MemPage - only returns a Checkpoint.</li>
+        <li><code>verify</code> runs only after resolve - confirms or fails loud; never redirects.</li>
         <li><code>precondition</code> Traits run right before <code>act()</code>.</li>
         <li><code>preflight</code> checks <code>requires: MemKey[]</code> before a tab opens.</li>
         <li>Block output Checkpoint is the only contract the next Block can rely on.</li>
