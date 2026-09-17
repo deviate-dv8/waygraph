@@ -1300,10 +1300,12 @@ function extractVerifyHighlights(block, resultTag) {
  * __wgNext no-ops once already consumed - but looked live when it wasn't).
  * Disables the button and mem-key textareas, and swaps whichever gate
  * text was showing (manual button or "Auto-advancing...") to "Running...".
+ * When autoCollapsePanel is set (QA video / autoplay), tuck the stepper
+ * away so ring captions + the app fill the frame - Dan: stepper + auto panels.
  */
-async function markStepRunning(page) {
+async function markStepRunning(page, opts?: { autoCollapsePanel?: boolean }) {
   await page
-    .evaluate(() => {
+    .evaluate(({ autoCollapsePanel }) => {
       const runBtn = document.getElementById("wg-run");
       if (runBtn) {
         runBtn.disabled = true;
@@ -1314,7 +1316,15 @@ async function markStepRunning(page) {
       document.querySelectorAll("#wg-panel textarea[data-key]").forEach((ta) => {
         ta.disabled = true;
       });
-    })
+      if (autoCollapsePanel) {
+        const panel = document.getElementById("wg-panel");
+        if (panel) {
+          panel.classList.add("wg-collapsed");
+          const toggle = panel.querySelector("[data-wg-toggle]");
+          if (toggle) toggle.textContent = "Show";
+        }
+      }
+    }, { autoCollapsePanel: !!opts?.autoCollapsePanel })
     .catch(() => {});
 }
 
@@ -1829,7 +1839,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         }
       }
     }
-    await markStepRunning(page);
+    const recordingVideo = !!process.env.WAYGRAPH_VIDEO;
+    const autoCollapsePanel = recordingVideo || (await currentAutoplay());
+    await markStepRunning(page, { autoCollapsePanel });
     // NavBlock click-nav: label the upcoming Locator.click demo cursor as
     // "nav: <block>" so pia/demo watchers see cursor+pulse on click nav
     // (not only on regular Block clicks).
@@ -2011,6 +2023,18 @@ async function runChainedFlows(chainFlow, chainFlows, context, mem, page) {
   }
 }
 
+/** Parses WAYGRAPH_VIDEO_VIEWPORT / --video-viewport: "1920x1080" or "1920,1080". */
+function parseVideoViewport(raw: string | undefined): { width: number; height: number } | null {
+  if (!raw?.trim()) return null;
+  const m = raw.trim().match(/^(\d{3,5})[xX,](\d{3,5})$/);
+  if (!m) return null;
+  const width = Number(m[1]);
+  const height = Number(m[2]);
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
+  if (width < 320 || height < 240 || width > 7680 || height > 4320) return null;
+  return { width, height };
+}
+
 async function main() {
   const projectDir = process.argv[2];
   const spec = process.argv[3];
@@ -2184,6 +2208,13 @@ async function main() {
     videoDir = videoEnv === "1" ? join(projectDir, ".waygraph-videos") : videoEnv;
     mkdirSync(videoDir, { recursive: true });
   }
+  /** Fixed 16:9 capture for --video (demo QA and headless run). Step+video no longer maximizes. */
+  const DEFAULT_VIDEO_VIEWPORT = { width: 1920, height: 1080 };
+  const DEFAULT_RUN_VIDEO_VIEWPORT = { width: 1280, height: 720 };
+  const videoViewportParsed = parseVideoViewport(process.env.WAYGRAPH_VIDEO_VIEWPORT);
+  const fixedVideoViewport = videoDir
+    ? (videoViewportParsed ?? (step ? DEFAULT_VIDEO_VIEWPORT : DEFAULT_RUN_VIDEO_VIEWPORT))
+    : null;
   const engine = new Engine({ headless: !headed, slowMo });
   let result;
   // Non-interactive execution (no --step) runs the whole chain as one
@@ -2214,14 +2245,20 @@ async function main() {
     const browser = await chromium.launch({
       headless: !headed,
       slowMo,
-      args: step ? ["--start-maximized"] : [],
+      // Maximized only for interactive step mode WITHOUT a fixed video viewport -
+      // recording uses a locked 16:9 viewport so .webm has no gray letterboxing.
+      args: step && !fixedVideoViewport ? ["--start-maximized"] : [],
       ...(executablePath ? { executablePath } : {}),
     });
-    const contextOpts = step
-      ? { baseURL, viewport: null }
-      : { baseURL, viewport: { width: 1280, height: 720 } };
+    const contextOpts = fixedVideoViewport
+      ? { baseURL, viewport: fixedVideoViewport }
+      : step
+        ? { baseURL, viewport: null }
+        : { baseURL, viewport: { width: 1280, height: 720 } };
     if (videoDir) {
-      contextOpts.recordVideo = { dir: videoDir };
+      contextOpts.recordVideo = fixedVideoViewport
+        ? { dir: videoDir, size: fixedVideoViewport }
+        : { dir: videoDir };
     }
     const context = await browser.newContext(contextOpts);
     let pageForVideo = null;
@@ -2760,6 +2797,7 @@ function initCommand(projectName: string): void {
     process.exit(1);
   }
   const targetDir = resolve(process.cwd(), projectName);
+  const pkgName = basename(targetDir);
   if (existsSync(targetDir)) {
     const entries = readdirSync(targetDir);
     if (entries.length > 0) {
@@ -2783,11 +2821,11 @@ function initCommand(projectName: string): void {
   const packageJsonPath = join(targetDir, "package.json");
   writeFileSync(
     packageJsonPath,
-    readFileSync(packageJsonPath, "utf-8").replaceAll("__PROJECT_NAME__", projectName),
+    readFileSync(packageJsonPath, "utf-8").replaceAll("__PROJECT_NAME__", pkgName),
   );
-  console.log(`Scaffolded ${projectName}/`);
+  console.log(`Scaffolded ${pkgName}/`);
   console.log("");
-  console.log(`  cd ${projectName}`);
+  console.log(`  cd ${relative(process.cwd(), targetDir) || pkgName}`);
   console.log("  npm install");
   console.log("  npx playwright install chromium");
   console.log("  npm test");
@@ -2837,6 +2875,8 @@ interface RunFlags {
   title?: string;
   /** Set when --video present; empty string = default dir under project. */
   video?: string;
+  /** Recording viewport, e.g. 1920x1080 (--video-viewport). */
+  videoViewport?: string;
   /** Global Mem seed JSON (--data). */
   data?: string;
   /** Flow/chain spec from --blocks <spec>. */
@@ -2928,6 +2968,10 @@ function parseRunFlags(argv: string[]): RunFlags {
           i++;
         }
       }
+    } else if (a === "--video-viewport" || a.startsWith("--video-viewport=")) {
+      const t = takeFlagValue(argv, i, a, "--video-viewport");
+      out.videoViewport = t.value;
+      i = t.nextI;
     } else if (a === "--blocks" || a.startsWith("--blocks=")) {
       if (a.startsWith("--blocks=")) {
         out.blocks = a.slice("--blocks=".length);
@@ -2950,6 +2994,18 @@ function parseRunFlags(argv: string[]): RunFlags {
     }
   }
   return out;
+}
+
+/** Parses WAYGRAPH_VIDEO_VIEWPORT / --video-viewport: "1920x1080" or "1920,1080". */
+function parseVideoViewportFlag(raw: string | undefined): { width: number; height: number } | null {
+  if (!raw?.trim()) return null;
+  const m = raw.trim().match(/^(\d{3,5})[xX,](\d{3,5})$/);
+  if (!m) return null;
+  const width = Number(m[1]);
+  const height = Number(m[2]);
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
+  if (width < 320 || height < 240 || width > 7680 || height > 4320) return null;
+  return { width, height };
 }
 
 /** Writes flag values into process.env so the chain child inherits them. Flags beat prior env. */
@@ -2985,6 +3041,13 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean })
   }
   if (flags.video !== undefined) {
     process.env.WAYGRAPH_VIDEO = flags.video || "1";
+  }
+  if (flags.videoViewport !== undefined) {
+    if (!parseVideoViewportFlag(flags.videoViewport)) {
+      console.error('waygraph: --video-viewport must look like "1920x1080"');
+      process.exit(1);
+    }
+    process.env.WAYGRAPH_VIDEO_VIEWPORT = flags.videoViewport;
   }
   if (flags.data !== undefined) {
     process.env.WAYGRAPH_DATA = flags.data;
@@ -3152,11 +3215,13 @@ Primary (less is more):
                  --data '{...}'            Mem seed JSON (or inline flow({...}))
                  --auto-next               Auto-advance steps (alias: --autoplay)
                  --auto-play-video         QA: --auto-next + --video (+ step)
+                 --video-viewport WxH       Recording size (default demo: 1920x1080)
                  --title / --base-url
   waygraph run   [--blocks <flow|file|spec>]  Execute (no overlay unless --step)
                  --data '{...}'
                  --non-headless            Show browser
                  --video [dir]             Record .webm
+                 --video-viewport WxH       Recording size (default run: 1280x720)
 
 Also:
   waygraph list | nav | validate | check | graph | init <name>
