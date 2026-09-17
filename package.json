@@ -1,6 +1,6 @@
 {
   "name": "waygraph",
-  "version": "0.12.26",
+  "version": "0.12.27",
   "type": "module",
   "description": "A typed graph of reusable Blocks for driving a browser through E2E flows.",
   "license": "MIT",

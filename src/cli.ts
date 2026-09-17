@@ -2582,9 +2582,10 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     const stubBeforeTodos = stubBeforePhase.todos || [];
     const isNavBlock = r.block.__waygraphKind === "nav";
     const autoNow = await currentAutoplay();
-    // Auto-next: tuck stepper on NavBlocks so the page transition fills the frame.
-    // Video recording still collapses every step.
-    const forceCollapsed = !!process.env.WAYGRAPH_VIDEO || (autoNow && isNavBlock);
+    // Video recording: keep chrome compact. Live auto-next used to force-collapse
+    // every NavBlock and hid the stepper (todos / modules) - only collapse while
+    // act() runs (markStepRunning) so Playwright clicks hit the page, not the panel.
+    const forceCollapsed = !!process.env.WAYGRAPH_VIDEO;
     const requires = r.block.requires ?? [];
     const keys = requires.map((k) => {
       let value = "<not yet set>";
@@ -2639,8 +2640,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       }
     }
     const recordingVideo = !!process.env.WAYGRAPH_VIDEO;
-    const autoCollapsePanel = recordingVideo || (await currentAutoplay() && isNavBlock) || forceCollapsed;
-    await markStepRunning(page, { autoCollapsePanel });
+    await markStepRunning(page, {});
     // NavBlock click-nav: label the upcoming Locator.click demo cursor as
     // "nav: <block>" so pia/demo watchers see cursor+pulse on click nav
     // (not only on regular Block clicks).
@@ -2816,8 +2816,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       episodeTitle: r.episodeTitle,
       stepperMode,
       todos: stubAfterTodos,
-      // After a nav under auto-next, stay compact until the next action block expands.
-      forceCollapsed: !!process.env.WAYGRAPH_VIDEO || ((await currentAutoplay()) && isNavBlock),
+      forceCollapsed: !!process.env.WAYGRAPH_VIDEO,
     });
     await gate();
   }
@@ -4282,7 +4281,7 @@ Aliases (compat): \`chain <spec>\` -> run --blocks; \`chain auto A B\` -> auto -
 
 Project path optional (defaults to cwd). Flags beat WAYGRAPH_* env.
 \`run\`/\`demo\`/\`auto\`: Flow export, .flow.ts path, or "a then b" chain (auto also explores).
-Hide stepper = compact "N / M · block" pill. Auto-next auto-hides on NavBlocks.
+Hide stepper = compact "N / M · block" pill. Collapses while a step runs (clicks hit the page). Video mode stays compact.
 `);
   process.exit(0);
 }
