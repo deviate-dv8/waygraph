@@ -12,6 +12,8 @@ import {
   demoPaceGateMs,
   demoPaceIsSlow,
   demoPaceIsFast,
+  formatDemoPaceBadge,
+  formatDemoPaceLabel,
   FIXTURE_DURATION_MS_DEFAULT,
   FIXTURE_DURATION_FAST_MS_DEFAULT,
   FIXTURE_DURATION_SLOW_MS_DEFAULT,
@@ -81,6 +83,15 @@ describe("normalizeDemoPace / resolveStepDemoPace", () => {
     assert.equal(demoPaceGateMs(2, 1800), 3600);
     assert.equal(demoPaceIsSlow(2.5), true);
     assert.equal(demoPaceIsFast(0.5), true);
+  });
+
+  it("formats loud pace labels for UI/console", () => {
+    assert.match(formatDemoPaceLabel(2.5, 1800), /2\.5x/);
+    assert.match(formatDemoPaceLabel(2.5, 1800), /4500ms/);
+    assert.match(formatDemoPaceLabel(4500, 1800), /4500ms/);
+    assert.equal(formatDemoPaceBadge(2.5), "2.5x");
+    assert.equal(formatDemoPaceBadge(4500), "4500ms");
+    assert.equal(formatDemoPaceBadge("slow"), "slow");
   });
 
   it("FF wins over flow/block pace", () => {

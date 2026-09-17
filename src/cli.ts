@@ -238,6 +238,8 @@ import {
   demoPaceIsBlitz,
   demoPaceIsFast,
   demoPaceIsSlow,
+  formatDemoPaceBadge,
+  formatDemoPaceLabel,
 } from "waygraph";
 
 function walkDir(dir, pattern) {
@@ -508,6 +510,18 @@ const RING_CSS =
   // block chain shows no episode heading at all.
   "#wg-panel .wg-episode{margin:0 0 6px;font:700 15px system-ui,sans-serif;color:#fff;" +
   "padding-bottom:6px;border-bottom:1px solid rgba(124,58,237,.35);}" +
+  // Pace chip - numbers speak in the overlay (2.5x / 4500ms / slow).
+  "#wg-panel .wg-pace{display:inline-flex;align-items:center;gap:8px;margin:0 0 10px;" +
+  "padding:6px 10px;border-radius:8px;background:rgba(124,58,237,.22);" +
+  "border:1px solid rgba(124,58,237,.45);font:600 12px/1.35 system-ui,sans-serif;color:#f0e8ff;}" +
+  "#wg-panel .wg-pace-badge{display:inline-block;padding:2px 8px;border-radius:999px;" +
+  "background:#7C3AED;color:#fff;font:800 11px/1.2 system-ui,sans-serif;letter-spacing:.04em;" +
+  "text-transform:uppercase;}" +
+  "#wg-panel .wg-pace[data-pace-kind=slow] .wg-pace-badge," +
+  "#wg-panel .wg-pace[data-pace-kind=num-slow] .wg-pace-badge{background:#EAB308;color:#1c1917;}" +
+  "#wg-panel .wg-pace[data-pace-kind=fast] .wg-pace-badge," +
+  "#wg-panel .wg-pace[data-pace-kind=blitz] .wg-pace-badge{background:#22C55E;color:#052e16;}" +
+  "#wg-panel .wg-pace[data-pace-kind=ms] .wg-pace-badge{background:#3B82F6;color:#fff;}" +
   "#wg-panel .wg-narration{margin:0 0 12px;font:italic 14px/1.4 system-ui,sans-serif;color:#f0e8ff;}" +
   "#wg-progress{height:4px;background:#2a1650;border-radius:2px;margin:0 0 12px;overflow:hidden;}" +
   "#wg-progress-bar{height:100%;background:#7C3AED;border-radius:2px;transition:width .3s ease;}" +
@@ -974,9 +988,20 @@ async function renderBeforeStep(page, info) {
       const narrationHtml = info.description
         ? "<div class=\\"wg-narration\\">" + esc(info.description) + "</div>"
         : "";
+      const paceHtml =
+        info.paceBadge || info.paceLabel
+          ? "<div class=\\"wg-pace\\" data-pace-kind=\\"" +
+            esc(info.paceKind || "normal") +
+            "\\"><span class=\\"wg-pace-badge\\">" +
+            esc(info.paceBadge || "1x") +
+            "</span><span>" +
+            esc(info.paceLabel || "") +
+            "</span></div>"
+          : "";
       let html =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
         episodesHtml +
+        paceHtml +
         "<div id=\\"wg-modules\\" class=\\"" + modulesClass + "\\">" + modulesHtml + "</div>" +
         "<h3>Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + "</h3>" +
         narrationHtml;
@@ -1012,7 +1037,12 @@ async function renderBeforeStep(page, info) {
       }
       if (window.__wgWirePanelChrome) {
         window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-          stepLabel: (info.index + 1) + " / " + info.total + (info.blockName ? " · " + info.blockName : ""),
+          stepLabel:
+            (info.index + 1) +
+            " / " +
+            info.total +
+            (info.blockName ? " · " + info.blockName : "") +
+            (info.paceBadge ? " · " + info.paceBadge : ""),
           forceCollapsed: info.forceCollapsed === true ? true : info.forceCollapsed === false ? false : undefined,
         });
       }
@@ -1231,9 +1261,20 @@ async function renderAfterStep(page, info) {
             .join("") +
           "</div>"
         : "";
+      const paceHtml =
+        info.paceBadge || info.paceLabel
+          ? "<div class=\\"wg-pace\\" data-pace-kind=\\"" +
+            escA(info.paceKind || "normal") +
+            "\\"><span class=\\"wg-pace-badge\\">" +
+            escA(info.paceBadge || "1x") +
+            "</span><span>" +
+            escA(info.paceLabel || "") +
+            "</span></div>"
+          : "";
       panel.innerHTML =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
         episodesHtml +
+        paceHtml +
         "<div id=\\"wg-modules\\" class=\\"" + modulesClass + "\\">" + modulesHtml + "</div>" +
         "<h3>" + heading + "</h3>" +
         resultHtml +
@@ -1244,7 +1285,12 @@ async function renderAfterStep(page, info) {
       }
       if (window.__wgWirePanelChrome) {
         window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-          stepLabel: (info.index + 1) + " / " + info.total + (info.blockName ? " · " + info.blockName : ""),
+          stepLabel:
+            (info.index + 1) +
+            " / " +
+            info.total +
+            (info.blockName ? " · " + info.blockName : "") +
+            (info.paceBadge ? " · " + info.paceBadge : ""),
           forceCollapsed: info.forceCollapsed === true ? true : info.forceCollapsed === false ? false : undefined,
         });
       }
@@ -1346,7 +1392,12 @@ async function renderStepError(page, info) {
       }
       if (window.__wgWirePanelChrome) {
         window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-          stepLabel: (info.index + 1) + " / " + info.total + (info.blockName ? " · " + info.blockName : ""),
+          stepLabel:
+            (info.index + 1) +
+            " / " +
+            info.total +
+            (info.blockName ? " · " + info.blockName : "") +
+            (info.paceBadge ? " · " + info.paceBadge : ""),
           forceCollapsed: info.forceCollapsed === true ? true : info.forceCollapsed === false ? false : undefined,
         });
       }
@@ -1600,11 +1651,22 @@ async function presentSlides(page, slides, _gate, opts) {
               (info.episodeTitle ? ": " + esc(info.episodeTitle) : "") +
               " · yap slides</div>"
             : "";
+        const paceHtml =
+          info.paceBadge || info.paceLabel
+            ? "<div class=\\"wg-pace\\" data-pace-kind=\\"" +
+              esc(info.paceKind || "normal") +
+              "\\"><span class=\\"wg-pace-badge\\">" +
+              esc(info.paceBadge || "1x") +
+              "</span><span>" +
+              esc(info.paceLabel || "") +
+              "</span></div>"
+            : "";
         panel.innerHTML =
           "<div class=\\"wg-chrome\\"><span class=\\"wg-chrome-title\\">waygraph demo</span>" +
           "<button type=\\"button\\" class=\\"wg-hide-btn\\" data-wg-toggle=\\"1\\">Hide</button></div>" +
           "<div class=\\"wg-body\\">" +
           episodeLine +
+          paceHtml +
           "<h3>Slide " +
           (info.index + 1) +
           " / " +
@@ -1722,6 +1784,9 @@ async function presentSlides(page, slides, _gate, opts) {
         dwellMs,
         episodeNumber: episodeNumber !== undefined ? episodeNumber : null,
         episodeTitle,
+        paceBadge: formatDemoPaceBadge(demoPace, baseAutoplay),
+        paceLabel: formatDemoPaceLabel(demoPace, baseAutoplay),
+        paceKind: demoPaceKind(demoPace),
       },
     );
     const started = Date.now();
@@ -1752,6 +1817,25 @@ async function presentSlides(page, slides, _gate, opts) {
     }
   }
   await hideRing(page);
+}
+
+function demoPaceKind(pace) {
+  const p = normalizeDemoPace(pace);
+  if (typeof p === "number" && p > 20) return "ms";
+  if (typeof p === "number") return demoPaceIsSlow(p) ? "num-slow" : demoPaceIsFast(p) ? "fast" : "normal";
+  if (p === "blitz" || p === "fast" || p === "slow") return p;
+  return "normal";
+}
+
+function paceSpeakFields(pace, baseAutoplayMs) {
+  const p = normalizeDemoPace(pace);
+  const base = Number.isFinite(baseAutoplayMs) && baseAutoplayMs > 0 ? baseAutoplayMs : 1800;
+  return {
+    pace: p,
+    paceBadge: formatDemoPaceBadge(p, base),
+    paceLabel: formatDemoPaceLabel(p, base),
+    paceKind: demoPaceKind(p),
+  };
 }
 
 async function hideRing(page) {
@@ -2318,6 +2402,20 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       }
       return { name: k.name, value };
     });
+    const paceSpeak = paceSpeakFields(pacing.demoPace, autoplayMs);
+    if (process.env.WAYGRAPH_JSON !== "1") {
+      console.log(
+        "waygraph demo: step " +
+          (i + 1) +
+          "/" +
+          resolved.length +
+          " " +
+          r.block.name +
+          " · " +
+          paceSpeak.paceLabel +
+          (r.episodeNumber ? " · episode " + r.episodeNumber : ""),
+      );
+    }
     await renderBeforeStep(page, {
       index: i,
       total: resolved.length,
@@ -2334,6 +2432,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       episodeTitle: r.episodeTitle,
       stepperMode,
       forceCollapsed,
+      ...paceSpeak,
     });
     const edits = await gate();
     for (const k of requires) {
@@ -2503,6 +2602,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       highlights,
       gatesFast: pacing.gatesFast,
       pace: pacing.demoPace,
+      ...paceSpeakFields(pacing.demoPace, autoplayMs),
       isLast: i === resolved.length - 1,
       allNames: moduleNames,
       allDescriptions: moduleDescriptions,

@@ -269,6 +269,46 @@ export function demoPaceGateMs(pace: DemoPace, baseAutoplayMs: number): number {
 }
 
 /**
+ * Short chip for the demo panel (e.g. `2.5x`, `4500ms`, `slow`).
+ * Always printable - numbers speak in the UI, not only in code.
+ */
+export function formatDemoPaceBadge(pace: DemoPace, baseAutoplayMs = 1800): string {
+  const p = normalizeDemoPace(pace);
+  if (typeof p === "number" && p > 20) return `${Math.round(p)}ms`;
+  if (typeof p === "number") {
+    const s = Number.isInteger(p) ? String(p) : String(Math.round(p * 100) / 100);
+    return `${s}x`;
+  }
+  if (p === "blitz") return "blitz";
+  if (p === "fast") return "fast";
+  if (p === "slow") return "slow";
+  void baseAutoplayMs;
+  return "1x";
+}
+
+/**
+ * Loud one-line pace description for panel + console
+ * (e.g. `pace 2.5x (~4500ms gates)` / `pace 4500ms gates (~2.25x)`).
+ */
+export function formatDemoPaceLabel(pace: DemoPace, baseAutoplayMs = 1800): string {
+  const p = normalizeDemoPace(pace);
+  const gate = demoPaceGateMs(p, baseAutoplayMs);
+  const scale = demoPaceScale(p);
+  const scaleTxt = Number.isInteger(scale) ? String(scale) : (Math.round(scale * 100) / 100).toString();
+  if (typeof p === "number" && p > 20) {
+    return `pace ${Math.round(p)}ms gates (~${scaleTxt}x)`;
+  }
+  if (typeof p === "number") {
+    const s = Number.isInteger(p) ? String(p) : String(Math.round(p * 100) / 100);
+    return `pace ${s}x (~${gate}ms gates)`;
+  }
+  if (p === "blitz") return `pace blitz (~${gate}ms, skip theater)`;
+  if (p === "fast") return `pace fast (~${scaleTxt}x, ~${gate}ms gates)`;
+  if (p === "slow") return `pace slow (~${scaleTxt}x, ~${gate}ms gates)`;
+  return `pace normal (1x, ~${gate}ms gates)`;
+}
+
+/**
  * Resolve min dwell ms for any fixture (stub / flow fixture / yap slide),
  * or `null` when duration is unset (caller keeps legacy timing).
  *

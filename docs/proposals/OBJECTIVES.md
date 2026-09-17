@@ -26,8 +26,9 @@ Tester ask: make waygraph richer for QA/demo narration.
 | Flow episode defaults | DONE | `withHighlightStyle(flow, { size, weight, tone? })` |
 | Group pacing (flow / compose / episode) | DONE | `withDemoPace` / `withBlockPace`; FF = blitz |
 | Numeric pace | DONE | scale `<=20` (e.g. `0.5`, `2`) or absolute ms `>20` (e.g. `4500`) |
+| Pace speaks in UI/console | DONE | panel chip + `waygraph demo: step N · pace 2.5x (~4500ms gates)` |
 | Episode fast vs slow | DONE | e.g. pia ep2 gaps/wrongs = `withDemoPace(..., "slow"\|2)` |
-| Per-flow speed wins CLI `--fast` | DONE | Authoring wins for slow/numeric; `--fast` only when pace unset/normal |
+| Per-flow speed wins CLI `--fast` | DONE (0.12.18) | Authoring wins for slow/numeric; `--fast` only when pace unset/normal |
 
 ### Authoring sketch
 
