@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo narration · Waygraph docs</title>
+  <link rel="stylesheet" href="./css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="./index.html">waygraph</a>
+      <ul>
+        <li><a href="./index.html">Home</a></li>
+        <li><a href="./quickstart.html">Quick start</a></li>
+        <li><a href="./demo.html">Demo / run</a></li>
+        <li><a href="./highlights.html" aria-current="page">Demo narration</a></li>
+        <li><a href="./auto.html">Auto explore</a></li>
+        <li><a href="./saucedemo/index.html">Sauce Demo</a></li>
+        <li><a href="./handout.html">Engine handout</a></li>
+        <li><a href="./consumer.html">Consumer layout</a></li>
+        <li><a href="./deploy.html">Deploy / preview</a></li>
+        <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>Demo narration: stubs + flow fixtures</h1>
+      <p class="lede">
+        Catch-all highlight lifecycle on every block; unlimited demo purposes on the
+        issue <code>.flow.ts</code>. Proposal for waygraph (not shipped in <code>0.10.9</code>).
+      </p>
+      <p class="meta">
+        RFC:
+        <a href="./proposals/mod-highlights-rfc.md"><code>docs/proposals/mod-highlights-rfc.md</code></a>
+        · mesh handout: <code>.sm/seats/_shared/WAYGRAPH-HANDOUT.md</code> §4.6b
+      </p>
+
+      <h2>Mental model</h2>
+      <pre><code>Every block     → stubBefore + stubAfter   (selectors + neutral labels; {} ok)
+Issue .flow.ts  → highlightFixtures        (unlimited demo purposes per phase/slot)</code></pre>
+      <p>
+        Same pattern as Mem: the block declares <strong>slots</strong>; the flow owns the
+        <strong>story</strong>. Shared blocks stay library-neutral. Ticket AC copy, BUG/GATE
+        tags, <code>detail</code> lines, and any other demo purpose live on the flow.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Half</th><th>Where</th><th>Role</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Stubs</strong></td>
+            <td>Every block <code>instruction</code></td>
+            <td>
+              <code>stubBefore</code> + <code>stubAfter</code> — named slots (selector +
+              neutral label). Catch-all lifecycle shape on every block (<code>{}</code> ok).
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Fixtures</strong></td>
+            <td>Issue <code>.flow.ts</code></td>
+            <td>
+              <strong>Unlimited demo purposes</strong> — AC copy, BUG/GATE tags,
+              <code>detail</code>, ticket sentences. Override per block / phase / slot.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Not</strong> <code>modHighlight()</code> and
+        <strong>not</strong> a <code>modBlock*</code> highlight decorator.
+        (<code>modBlockVerify</code> is verify-only and unrelated.) The RFC filename
+        <code>mod-highlights</code> is legacy naming only.
+      </p>
+
+      <h2>Phases</h2>
+      <table>
+        <thead>
+          <tr><th>Phase</th><th>When demo runs it</th><th>Block (library)</th><th>Flow fixture</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>stubBefore</code></td>
+            <td>Before / during <code>act</code></td>
+            <td>Inputs / buttons the block touches</td>
+            <td>Unlimited purposes before/during interaction</td>
+          </tr>
+          <tr>
+            <td><code>stubAfter</code></td>
+            <td>After resolve + verify</td>
+            <td>Post-step proof points</td>
+            <td>Unlimited purposes after the step (AC / GATE / …)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Block (neutral)</h2>
+      <pre><code>instruction: {
+  async act(page, _input, mem) { /* … */ },
+  resolve: () =&gt; checkpoint("PiaLoginLinkSent"),
+  verify: [Trait.visible("text=Check your inbox")],
+
+  stubBefore: {
+    email: { selector: "#email", label: "Email address" },
+    submit: { selector: 'button[type="submit"]', label: "Send sign-in link" },
+  },
+  stubAfter: {
+    sent: { selector: "text=Check your inbox", label: "Magic link sent" },
+  },
+}</code></pre>
+
+      <h2>Flow <code>.flow.ts</code> (unlimited purposes)</h2>
+      <pre><code>const highlightFixtures = {
+  "method-pia-select-recommended-alternative": {
+    stubBefore: {
+      select: {
+        label: "pia-pm#276 AC-3",
+        detail: "Must not badge Active Plan yet.",
+        tag: "BUG",
+      },
+    },
+    stubAfter: {
+      dialog: { label: "Dialog open", detail: "Card unchanged.", tag: "GATE" },
+    },
+  },
+};
+
+export const issue276Flow = withHighlightFixtures(
+  withTitle(withSessionReset(engine.defineFlow([start, …chain, end])), "pia-pm#276 …"),
+  highlightFixtures,
+);</code></pre>
+      <p>
+        Fixtures merge onto stub slots (label / detail / tag; selector optional —
+        inherit from the block). Do not invent selectors the block never declared.
+      </p>
+
+      <h2>Replaces (today on 0.10.9)</h2>
+      <table>
+        <thead><tr><th>Old</th><th>New</th></tr></thead>
+        <tbody>
+          <tr><td><code>instruction.highlights</code></td><td><code>stubAfter</code></td></tr>
+          <tr><td>Fill ring <code>"writing"</code> / <code>"from mem: …"</code></td><td><code>stubBefore</code></td></tr>
+          <tr><td>Verify-trait fallback <code>visible(#…)</code></td><td><code>stubAfter</code> with human labels</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Shim (one release): empty <code>stubAfter</code> + legacy <code>highlights</code>
+        → ephemeral <code>stubAfter</code> keys <code>"0"</code>, <code>"1"</code>, …
+      </p>
+
+      <h2>Related</h2>
+      <ul>
+        <li><a href="./demo.html">Demo / run</a> — <code>--auto-next</code>, <code>--fast</code>, carousel strip</li>
+        <li><a href="./handout.html">Engine handout</a> — core API summary</li>
+        <li><a href="./proposals/mod-highlights-rfc.md">Full RFC (markdown)</a></li>
+      </ul>
+
+      <footer class="site">
+        Package tip: <code>waygraph@0.10.9</code> · stubs/fixtures still proposal until shipped.
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

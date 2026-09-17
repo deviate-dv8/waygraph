@@ -17,6 +17,7 @@
         <li><a href="./index.html">Home</a></li>
         <li><a href="./quickstart.html">Quick start</a></li>
         <li><a href="./demo.html">Demo / run</a></li>
+        <li><a href="./highlights.html">Demo narration</a></li>
         <li><a href="./auto.html">Auto explore</a></li>
         <li><a href="./saucedemo/index.html">Sauce Demo</a></li>
         <li><a href="./handout.html" aria-current="page">Engine handout</a></li>
@@ -31,7 +32,7 @@
         Package API summary for product meshes. Prefer the package README if this page and
         the repo diverge. Not v1.0 - minors may break until then.
       </p>
-      <p class="meta">Mirrored from shared mesh handout · tip tracks package <code>0.10.4</code></p>
+      <p class="meta">Mirrored from shared mesh handout · tip tracks package <code>0.10.9</code></p>
 
       <h2>Core model</h2>
       <p>
@@ -129,6 +130,26 @@ instruction: {
   precondition: [Trait.visible("#checkout-form")],
   verify: [Trait.url({ pathname: "/checkout" })],
 }</code></pre>
+
+      <h2>Demo narration (proposal)</h2>
+      <p>
+        Catch-all <code>stubBefore</code> / <code>stubAfter</code> on every block;
+        unlimited demo purposes on the issue <code>.flow.ts</code> via
+        <code>highlightFixtures</code>. Not <code>modHighlight</code> /
+        not a <code>modBlock*</code> decorator.
+        Full page: <a href="./highlights.html">Demo narration</a>.
+      </p>
+      <pre><code>// Block — neutral slots
+stubBefore: { email: { selector: "#email", label: "Email" } },
+stubAfter:  { sent: { selector: "text=Check your inbox", label: "Link sent" } },
+
+// .flow.ts — unlimited purposes (AC, BUG/GATE, detail, ticket copy)
+highlightFixtures: {
+  "method-…": {
+    stubBefore: { email: { label: "pia-pm#276 · Marco", detail: "Magic link." } },
+    stubAfter:  { sent: { label: "Inbox banner", tag: "GATE" } },
+  },
+};</code></pre>
 
       <h2>Onboarding CLI</h2>
       <table>
