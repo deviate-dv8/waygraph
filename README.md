@@ -3,7 +3,7 @@
 A typed graph of reusable Blocks for driving a browser through E2E flows, in place of a
 flat pile of ad hoc helper functions.
 
-**Current:** `0.10.6` — `try auto` headed by default; `init` / create-waygraph scaffolds on 0.10 + `.flow.ts` scripts.
+**Current:** `0.10.9` — demo carousel stepper (default), `--fast` / `--full`, Hide = compact `N / M`.
 
 This repo is the `waygraph` npm package itself. The full live **Sauce Demo** example
 (Page inventory hub, Effect Add/Remove, MemNav Open details, `waygraph auto`) ships
@@ -271,7 +271,8 @@ Mermaid) is `waygraph graph [project]` (`--mermaid`). Unattended JSON execution 
 | Same via `auto` | `waygraph auto src/flows/shop.flow.ts --data '{…}'` |
 | Run by export | `waygraph run --blocks shopFlow` |
 | Manual watch | `waygraph demo src/flows/shop.flow.ts` |
-| Auto-advance | `waygraph demo --blocks shopFlow --auto-next` |
+| Auto-advance | `waygraph demo --blocks shopFlow --auto-next` (nav auto-hides strip) |
+| Fast / full strip | `waygraph demo … --fast` · `--full` (classic chips; default = carousel) |
 | QA watch + record | `waygraph demo --blocks shopFlow --auto-play-video` |
 | Ad-hoc Blocks | `waygraph run --blocks "login then nav-cart" --data '{…}'` |
 | Headed execute | `waygraph run --blocks shopFlow --non-headless --video` |

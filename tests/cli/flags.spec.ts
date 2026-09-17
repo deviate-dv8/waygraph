@@ -27,6 +27,21 @@ test("run rejects --auto-play-video (demo only)", async () => {
   });
 });
 
+test("run rejects --fast (demo only)", async () => {
+  await expect(
+    exec(node, [CLI, "run", "--blocks", "echo", "--fast"]),
+  ).rejects.toMatchObject({
+    stderr: expect.stringMatching(/--fast|--full|demo-only/),
+  });
+});
+
+test("help lists demo --fast and --full", async () => {
+  const { stdout } = await exec(node, [CLI, "--help"]);
+  expect(stdout).toMatch(/--fast/);
+  expect(stdout).toMatch(/--full/);
+  expect(stdout).toMatch(/carousel/i);
+});
+
 test("help lists try auto headed + auto:cli", async () => {
   const { stdout } = await exec(node, [CLI, "--help"]);
   expect(stdout).toMatch(/try auto/);

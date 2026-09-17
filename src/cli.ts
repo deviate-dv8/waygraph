@@ -5,7 +5,7 @@
  *
  * Primary verbs (less is more):
  *   auto   Explore picker; `.flow.ts` / `--blocks From To` = run that path
- *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--auto-play-video`
+ *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--fast` `--full`
  *   run    Execute; `--blocks` `--data` `--non-headless` `--video`
  *
  * Also: list / nav / validate / check / graph / init / try
@@ -483,12 +483,16 @@ const RING_CSS =
   "@keyframes wg-ep-enter{0%{box-shadow:0 0 0 0 rgba(124,58,237,.55);}" +
   "100%{box-shadow:0 0 0 10px rgba(124,58,237,0);}}" +
   "#wg-episodes .wg-ep-entered{border-radius:6px;animation:wg-ep-enter 1.1s ease-out;}" +
-  // The block breadcrumb below it is scoped to the CURRENT episode's own
-  // blocks only, not the whole chain - "in episode 2 it shows 2nd to the
-  // last... it should start from the first block" (Dan). An ad hoc block
-  // chain with no episodes still shows the whole chain here, unchanged.
-  "#wg-modules{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}" +
-  "#wg-modules .wg-mod{padding:3px 9px;border-radius:6px;font:600 11px system-ui,sans-serif;}" +
+  // Block strip: carousel (default) or classic wrap (--full).
+  "#wg-modules.wg-modules-carousel{display:flex;flex-wrap:nowrap;gap:8px;margin:0 0 10px;" +
+  "overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;" +
+  "padding:4px 2px 8px;scrollbar-width:thin;}" +
+  "#wg-modules.wg-modules-carousel .wg-mod{flex:0 0 auto;scroll-snap-align:center;" +
+  "padding:6px 12px;border-radius:999px;font:600 12px system-ui,sans-serif;}" +
+  "#wg-modules.wg-modules-carousel .wg-mod-current{transform:scale(1.06);" +
+  "box-shadow:0 0 0 2px rgba(124,58,237,.45);}" +
+  "#wg-modules.wg-modules-full{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}" +
+  "#wg-modules.wg-modules-full .wg-mod{padding:3px 9px;border-radius:6px;font:600 11px system-ui,sans-serif;}" +
   "#wg-modules .wg-mod-done{background:#2a1650;color:#9a7ad1;}" +
   "#wg-modules .wg-mod-current{background:#7C3AED;color:#fff;}" +
   "#wg-modules .wg-mod-upcoming{background:transparent;color:#5a4a80;border:1px solid #3a2a60;}" +
@@ -539,22 +543,23 @@ const RING_CSS =
   "#wg-panel .wg-expected-heading{color:#ffcf7a;}" +
   "#wg-panel .wg-expected-reason{font:600 12.5px/1.5 system-ui,sans-serif;background:#2a2410;" +
   "color:#ffe6ae;border-radius:8px;padding:10px;margin:0 0 8px;}" +
-  // Hide / Show chrome + mobile bottom-sheet layout (Dan: stepper + auto panels).
+  // Hide / Show chrome: collapsed = compact "N / M · block" pill (not empty chrome).
   "#wg-panel .wg-chrome{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;}" +
   "#wg-panel .wg-chrome-title{font:700 11px/1.2 system-ui,sans-serif;color:#c9a6ff;" +
   "letter-spacing:.04em;text-transform:uppercase;}" +
   "#wg-panel button.wg-hide-btn{margin:0;padding:4px 10px;font:600 11px system-ui,sans-serif;" +
   "background:#3a2a60;color:#e8dcff;border:1px solid #5b3aa8;border-radius:6px;cursor:pointer;}" +
   "#wg-panel button.wg-hide-btn:hover{background:#4b2a80;}" +
-  "#wg-panel.wg-collapsed{width:auto;max-width:90vw;padding:8px 12px;max-height:none;overflow:hidden;}" +
+  "#wg-panel.wg-collapsed{width:auto;max-width:92vw;padding:8px 12px;max-height:none;overflow:hidden;}" +
   "#wg-panel.wg-collapsed .wg-body{display:none;}" +
   "#wg-panel.wg-collapsed .wg-chrome{margin:0;}" +
+  "#wg-panel.wg-collapsed .wg-chrome-title{font:700 13px/1.25 system-ui,sans-serif;color:#fff;" +
+  "letter-spacing:0;text-transform:none;}" +
   "@media (max-width:640px){" +
   "#wg-panel{left:8px;right:8px;bottom:8px;transform:none;max-width:none;width:auto;" +
   "max-height:min(55vh,calc(100vh - 16px));padding:12px 14px;border-radius:12px;}" +
   "#wg-panel.wg-collapsed{left:50%;right:auto;transform:translateX(-50%);width:auto;}" +
   "#wg-episodes{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;}" +
-  "#wg-modules{gap:4px;}" +
   "#wg-panel .wg-narration{font-size:13px;}" +
   "#wg-panel button{width:100%;}" +
   "#wg-panel .wg-error-actions{flex-direction:column;}" +
@@ -750,8 +755,11 @@ async function installOverlay(page, title) {
         }
         if (iconLink.href !== favicon) iconLink.href = favicon;
         // Hide/Show for #wg-panel - call after every panel.innerHTML refresh.
-        window.__wgWirePanelChrome = (panel, storageKey, chromeTitle) => {
+        // Collapsed title shows "N / M · block" (compact progress). forceCollapsed
+        // is for auto-next navs / video - does not overwrite the user's Hide preference.
+        window.__wgWirePanelChrome = (panel, storageKey, chromeTitle, opts) => {
           if (!panel) return;
+          opts = opts || {};
           if (!panel.querySelector(":scope > .wg-chrome")) {
             const body = document.createElement("div");
             body.className = "wg-body";
@@ -771,30 +779,55 @@ async function installOverlay(page, title) {
             panel.appendChild(chrome);
             panel.appendChild(body);
           }
-          const apply = (hidden) => {
+          const stepLabel = opts.stepLabel || panel.dataset.wgStepLabel || "";
+          if (stepLabel) panel.dataset.wgStepLabel = stepLabel;
+          const apply = (hidden, persist) => {
             panel.classList.toggle("wg-collapsed", hidden);
             const t = panel.querySelector("[data-wg-toggle]");
+            const titleEl = panel.querySelector(".wg-chrome-title");
+            const label = panel.dataset.wgStepLabel || stepLabel;
+            if (titleEl) {
+              titleEl.textContent = hidden
+                ? (label || chromeTitle || "waygraph demo")
+                : (chromeTitle || "waygraph demo");
+            }
             if (t) t.textContent = hidden ? "Show" : "Hide";
-            try {
-              localStorage.setItem(storageKey, hidden ? "1" : "0");
-            } catch {
-              /* private mode */
+            if (persist !== false) {
+              try {
+                localStorage.setItem(storageKey, hidden ? "1" : "0");
+              } catch {
+                /* private mode */
+              }
             }
           };
           let hidden = false;
-          try {
-            hidden = localStorage.getItem(storageKey) === "1";
-          } catch {
-            /* ignore */
+          if (opts.forceCollapsed === true) {
+            hidden = true;
+          } else if (opts.forceCollapsed === false) {
+            hidden = false;
+          } else {
+            try {
+              hidden = localStorage.getItem(storageKey) === "1";
+            } catch {
+              /* ignore */
+            }
           }
-          apply(hidden);
+          apply(hidden, opts.forceCollapsed === true ? false : true);
           const toggle = panel.querySelector("[data-wg-toggle]");
           if (toggle && !toggle.dataset.wgWired) {
             toggle.dataset.wgWired = "1";
             toggle.addEventListener("click", (e) => {
               e.stopPropagation();
-              apply(!panel.classList.contains("wg-collapsed"));
+              apply(!panel.classList.contains("wg-collapsed"), true);
             });
+          }
+          const cur = panel.querySelector("#wg-modules .wg-mod-current");
+          if (cur && typeof cur.scrollIntoView === "function") {
+            try {
+              cur.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+            } catch {
+              cur.scrollIntoView(false);
+            }
           }
         };
       },
@@ -864,6 +897,7 @@ async function renderBeforeStep(page, info) {
       // step's position WITHIN that subset, not the whole chain's index -
       // "in episode 2 it shows 2nd to the last... it should start from the
       // first block" (Dan).
+      const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
       const modulesHtml = info.allNames
         .map((name, idx) => {
           const cls = idx < info.moduleIndex ? "wg-mod-done" : idx === info.moduleIndex ? "wg-mod-current" : "wg-mod-upcoming";
@@ -878,7 +912,7 @@ async function renderBeforeStep(page, info) {
       let html =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
         episodesHtml +
-        "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
+        "<div id=\\"wg-modules\\" class=\\"" + modulesClass + "\\">" + modulesHtml + "</div>" +
         "<h3>Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + "</h3>" +
         narrationHtml;
       if (info.keys.length === 0) {
@@ -911,7 +945,12 @@ async function renderBeforeStep(page, info) {
         document.documentElement.appendChild(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
       }
-      if (window.__wgWirePanelChrome) window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo");
+      if (window.__wgWirePanelChrome) {
+        window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
+          stepLabel: (info.index + 1) + " / " + info.total + (info.blockName ? " · " + info.blockName : ""),
+          forceCollapsed: info.forceCollapsed === true ? true : info.forceCollapsed === false ? false : undefined,
+        });
+      }
       // Live, human-readable preview of what a MemKey's raw JSON will
       // actually write - object fields become "Field: value" lines
       // (camelCase split the same way state tags already are); a
@@ -1054,6 +1093,7 @@ async function renderAfterStep(page, info) {
         : "Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + " done";
       const buttonLabel = info.isLast ? "Finish" : "Next \\u25B6";
       const escA = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+      const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
       const modulesHtml = info.allNames
         .map((name, idx) => {
           const cls = idx <= info.moduleIndex ? "wg-mod-done" : "wg-mod-upcoming";
@@ -1108,7 +1148,7 @@ async function renderAfterStep(page, info) {
       panel.innerHTML =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
         episodesHtml +
-        "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
+        "<div id=\\"wg-modules\\" class=\\"" + modulesClass + "\\">" + modulesHtml + "</div>" +
         "<h3>" + heading + "</h3>" +
         resultHtml +
         gateHtml;
@@ -1116,7 +1156,12 @@ async function renderAfterStep(page, info) {
         document.documentElement.appendChild(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
       }
-      if (window.__wgWirePanelChrome) window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo");
+      if (window.__wgWirePanelChrome) {
+        window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
+          stepLabel: (info.index + 1) + " / " + info.total + (info.blockName ? " · " + info.blockName : ""),
+          forceCollapsed: info.forceCollapsed === true ? true : info.forceCollapsed === false ? false : undefined,
+        });
+      }
       panel.querySelectorAll(".wg-toggle-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
           const wantPretty = btn.getAttribute("data-mode") === "pretty";
@@ -1183,6 +1228,7 @@ async function renderStepError(page, info) {
             .join("") +
           "</div>"
         : "";
+      const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
       const modulesHtml = info.allNames
         .map((name, idx) => {
           const cls = idx === info.moduleIndex ? "wg-mod-current" : idx < info.moduleIndex ? "wg-mod-done" : "wg-mod-upcoming";
@@ -1200,7 +1246,7 @@ async function renderStepError(page, info) {
         : "";
       panel.innerHTML =
         episodesHtml +
-        "<div id=\\"wg-modules\\">" + modulesHtml + "</div>" +
+        "<div id=\\"wg-modules\\" class=\\"" + modulesClass + "\\">" + modulesHtml + "</div>" +
         "<h3 class=\\"" + (isExpected ? "wg-expected-heading" : "wg-error-heading") + "\\">" + headingText + "</h3>" +
         reasonHtml +
         "<div class=\\"wg-error-msg\\">" + esc(info.message) + "</div>" +
@@ -1212,7 +1258,12 @@ async function renderStepError(page, info) {
         document.documentElement.appendChild(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
       }
-      if (window.__wgWirePanelChrome) window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo");
+      if (window.__wgWirePanelChrome) {
+        window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
+          stepLabel: (info.index + 1) + " / " + info.total + (info.blockName ? " · " + info.blockName : ""),
+          forceCollapsed: info.forceCollapsed === true ? true : info.forceCollapsed === false ? false : undefined,
+        });
+      }
       const runBtn = document.getElementById("wg-run");
       if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
       const retryBtn = document.getElementById("wg-error-retry");
@@ -1322,6 +1373,9 @@ async function markStepRunning(page, opts) {
           panel.classList.add("wg-collapsed");
           const toggle = panel.querySelector("[data-wg-toggle]");
           if (toggle) toggle.textContent = "Show";
+          const titleEl = panel.querySelector(".wg-chrome-title");
+          const label = panel.dataset.wgStepLabel;
+          if (titleEl && label) titleEl.textContent = label;
         }
       }
     }, { autoCollapsePanel: !!(opts && opts.autoCollapsePanel) })
@@ -1658,7 +1712,11 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   // own added dwell while the rest of the chain keeps the full theatrical
   // pace. Playwright's own slowMo is process-wide and untouched by this -
   // only OUR added pauses (ring pop, cursor travel, typing delay) shrink.
-  const pacing = { fast: false };
+  // --fast / WAYGRAPH_DEMO_FAST: every step uses fast interaction pacing + shorter gates.
+  // WAYGRAPH_FAST_BLOCKS still names per-block overrides when --fast is off.
+  const demoFast = process.env.WAYGRAPH_DEMO_FAST === "1";
+  const stepperMode = process.env.WAYGRAPH_STEPPER === "full" ? "full" : "carousel";
+  const pacing = { fast: demoFast };
   instrumentInteractionHighlighting(page, mem, slowMo, pacing);
   // Force the panel checkbox from this process's flags/env at run start.
   // installOverlay only seeds localStorage when the key is null (so mid-run
@@ -1703,7 +1761,11 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   // which way the checkbox is set. That's the hybrid Dan asked for: some
   // steps auto-advance, some get a manual click, toggled as the demo goes,
   // not fixed for the whole run from a single env var.
-  const autoplayMs = process.env.WAYGRAPH_AUTOPLAY_MS ? Number(process.env.WAYGRAPH_AUTOPLAY_MS) : 1800;
+  const autoplayMs = process.env.WAYGRAPH_AUTOPLAY_MS
+    ? Number(process.env.WAYGRAPH_AUTOPLAY_MS)
+    : demoFast
+      ? 450
+      : 1800;
   const currentAutoplay = () =>
     page
       .evaluate(() => {
@@ -1803,7 +1865,12 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     if ((clearSession || r.resetSession) && i > 0) {
       await resetPageState(context, page, baseURL);
     }
-    pacing.fast = fastBlockNames.has(r.block.name);
+    pacing.fast = demoFast || fastBlockNames.has(r.block.name);
+    const isNavBlock = r.block.__waygraphKind === "nav";
+    const autoNow = await currentAutoplay();
+    // Auto-next: tuck stepper on NavBlocks so the page transition fills the frame.
+    // Video recording still collapses every step.
+    const forceCollapsed = !!process.env.WAYGRAPH_VIDEO || (autoNow && isNavBlock);
     const requires = r.block.requires ?? [];
     const keys = requires.map((k) => {
       let value = "<not yet set>";
@@ -1828,6 +1895,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       title,
       episodeNumber: r.episodeNumber,
       episodeTitle: r.episodeTitle,
+      stepperMode,
+      forceCollapsed,
     });
     const edits = await gate();
     for (const k of requires) {
@@ -1840,7 +1909,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       }
     }
     const recordingVideo = !!process.env.WAYGRAPH_VIDEO;
-    const autoCollapsePanel = recordingVideo || (await currentAutoplay());
+    const autoCollapsePanel = recordingVideo || (await currentAutoplay() && isNavBlock) || forceCollapsed;
     await markStepRunning(page, { autoCollapsePanel });
     // NavBlock click-nav: label the upcoming Locator.click demo cursor as
     // "nav: <block>" so pia/demo watchers see cursor+pulse on click nav
@@ -1890,6 +1959,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         episodeNumber: r.episodeNumber,
         episodeTitle: r.episodeTitle,
         expectedFailureReason: r.expectedFailureReason,
+        stepperMode,
+        forceCollapsed: false,
       });
       const errEdits = await gate();
       if (errEdits && errEdits.__wgRetry) {
@@ -1934,6 +2005,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       title,
       episodeNumber: r.episodeNumber,
       episodeTitle: r.episodeTitle,
+      stepperMode,
+      // After a nav under auto-next, stay compact until the next action block expands.
+      forceCollapsed: !!process.env.WAYGRAPH_VIDEO || ((await currentAutoplay()) && isNavBlock),
     });
     await gate();
   }
@@ -2888,6 +2962,10 @@ interface RunFlags {
   headed?: boolean;
   mermaid?: boolean;
   map?: boolean;
+  /** demo: faster transitions / shorter auto-next gates. */
+  fast?: boolean;
+  /** demo: classic wrap-all block chips instead of carousel. */
+  fullStepper?: boolean;
   /** Positional args with run flags stripped. */
   positionals: string[];
 }
@@ -2934,6 +3012,10 @@ function parseRunFlags(argv: string[]): RunFlags {
       out.autoplay = false;
     } else if (a === "--auto-play-video") {
       out.autoPlayVideo = true;
+    } else if (a === "--fast") {
+      out.fast = true;
+    } else if (a === "--full") {
+      out.fullStepper = true;
     } else if (a === "--non-headless") {
       out.nonHeadless = true;
     } else if (a === "--cli") {
@@ -3009,7 +3091,7 @@ function parseVideoViewportFlag(raw: string | undefined): { width: number; heigh
 }
 
 /** Writes flag values into process.env so the chain child inherits them. Flags beat prior env. */
-function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean }): void {
+function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean; allowDemoUi?: boolean }): void {
   if (flags.autoPlayVideo) {
     if (!opts?.allowAutoPlayVideo) {
       console.error("waygraph: --auto-play-video is a demo-only flag (QA watch + record)");
@@ -3018,6 +3100,10 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean })
     if (flags.autoplay === undefined) flags.autoplay = true;
     if (flags.video === undefined) flags.video = "";
     if (flags.step === undefined) flags.step = true;
+  }
+  if ((flags.fast || flags.fullStepper) && !opts?.allowDemoUi) {
+    console.error("waygraph: --fast / --full are demo-only flags");
+    process.exit(1);
   }
   if (flags.step === true) {
     process.env.WAYGRAPH_STEP = "1";
@@ -3051,6 +3137,12 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean })
   }
   if (flags.data !== undefined) {
     process.env.WAYGRAPH_DATA = flags.data;
+  }
+  if (flags.fast) {
+    process.env.WAYGRAPH_DEMO_FAST = "1";
+  }
+  if (flags.fullStepper) {
+    process.env.WAYGRAPH_STEPPER = "full";
   }
 }
 
@@ -3214,6 +3306,8 @@ Primary (less is more):
   waygraph demo  [--blocks <flow|file|spec>]  Watch with step overlay (QA path)
                  --data '{...}'            Mem seed JSON (or inline flow({...}))
                  --auto-next               Auto-advance steps (alias: --autoplay)
+                 --fast                    Faster transitions + shorter auto-next gates
+                 --full                    Classic wrap-all block chips (default: carousel)
                  --auto-play-video         QA: --auto-next + --video (+ step)
                  --video-viewport WxH       Recording size (default demo: 1920x1080)
                  --title / --base-url
@@ -3234,7 +3328,8 @@ Examples:
   waygraph list                                          # file → export map
   waygraph run src/flows/shop.flow.ts --data '{...}'
   waygraph run --blocks shopFlow --non-headless --video
-  waygraph demo --blocks src/flows/cart-bulk.flow.ts --auto-next
+  waygraph demo --blocks src/flows/cart-bulk.flow.ts --auto-next --fast
+  waygraph demo src/flows/shop.flow.ts --full
   waygraph try auto
   waygraph try auto:cli
   waygraph auto src/flows/shop.flow.ts --data '{...}'   # run by file (same as run)
@@ -3247,6 +3342,7 @@ Aliases (compat): \`chain <spec>\` -> run --blocks; \`chain auto A B\` -> auto -
 
 Project path optional (defaults to cwd). Flags beat WAYGRAPH_* env.
 \`run\`/\`demo\`/\`auto\`: Flow export, .flow.ts path, or "a then b" chain (auto also explores).
+Hide stepper = compact "N / M · block" pill. Auto-next auto-hides on NavBlocks.
 `);
   process.exit(0);
 }
@@ -3371,14 +3467,14 @@ async function main(): Promise<void> {
 
     case "demo": {
       const flags = parseRunFlags(args.slice(1));
-      applyRunFlags(flags, { allowAutoPlayVideo: true });
+      applyRunFlags(flags, { allowAutoPlayVideo: true, allowDemoUi: true });
       const spec = resolveSpec(flags);
       if (!spec) {
         console.error(
           "waygraph demo: missing flow/spec — e.g.\n" +
             "  waygraph demo src/flows/shop.flow.ts\n" +
             "  waygraph demo --blocks shopFlow\n" +
-            "  Flags: --blocks --data --auto-next --auto-play-video --title --base-url --video",
+            "  Flags: --blocks --data --auto-next --fast --full --auto-play-video --title --base-url --video",
         );
         process.exit(1);
       }

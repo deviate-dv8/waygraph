@@ -143,7 +143,20 @@
           <tr>
             <td><code>--auto-next</code></td>
             <td>demo</td>
-            <td>Step overlay Auto-advance starts ON (alias <code>--autoplay</code>).</td>
+            <td>
+              Step overlay Auto-advance starts ON (alias <code>--autoplay</code>).
+              Auto-hides the stepper on NavBlocks (compact <code>N / M</code> pill).
+            </td>
+          </tr>
+          <tr>
+            <td><code>--fast</code></td>
+            <td>demo only</td>
+            <td>Faster cursor/type dwells and shorter auto-next gates.</td>
+          </tr>
+          <tr>
+            <td><code>--full</code></td>
+            <td>demo only</td>
+            <td>Classic wrap-all block chips. Default is a horizontal <strong>carousel</strong>.</td>
           </tr>
           <tr>
             <td><code>--auto-play-video</code></td>
@@ -173,7 +186,8 @@ npx waygraph list
 
 # Run / watch by file
 npx waygraph run src/flows/shop.flow.ts --data '{"saucedemo.credentials":{…}}'
-npx waygraph demo src/flows/cart-bulk.flow.ts --auto-next
+npx waygraph demo src/flows/cart-bulk.flow.ts --auto-next --fast
+npx waygraph demo src/flows/shop.flow.ts --full
 
 # Or by export name
 npx waygraph demo --blocks shopFlow
