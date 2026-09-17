@@ -45,6 +45,8 @@ export {
   hasAuthoredStubOnError,
   normalizeHighlightTone,
   normalizeDemoPace,
+  normalizeHighlightSize,
+  normalizeHighlightWeight,
   toneIconPrefix,
   resolveStepDemoPace,
   FIXTURE_DURATION_MS_DEFAULT,
@@ -64,6 +66,8 @@ export type {
   ResolvedHighlight,
   WaygraphHighlight,
   HighlightTone,
+  HighlightSize,
+  HighlightWeight,
   DemoPace,
 } from "./highlights.js";
 export type {

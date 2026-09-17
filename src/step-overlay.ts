@@ -19,6 +19,12 @@ const RING_CSS =
   "#wg-ring-label[data-tone=warning]{background:#EAB308;color:#1c1917;}" +
   "#wg-ring-label[data-tone=danger]{background:#DC2626;color:#fff;}" +
   "#wg-ring-label[data-tone=success]{background:#16A34A;color:#fff;}" +
+  "#wg-ring[data-size=sm]{border-width:1.5px;border-radius:8px;}" +
+  "#wg-ring[data-size=lg]{border-width:4px;border-radius:12px;}" +
+  "#wg-ring-label[data-size=sm]{font-size:10px;line-height:1.25;padding:4px 7px;border-radius:5px;}" +
+  "#wg-ring-label[data-size=lg]{font-size:16px;line-height:1.35;padding:8px 14px;border-radius:9px;}" +
+  "#wg-ring-label[data-weight=bold]{font-weight:800;}" +
+  "#wg-ring-label[data-weight=normal]{font-weight:600;}" +
   "#wg-cursor{position:fixed;z-index:2147483647;width:24px;height:24px;pointer-events:none;" +
   "left:0;top:0;opacity:0;margin:0;" +
   "transition:transform var(--wg-cursor-ms,600ms) cubic-bezier(.22,1,.36,1),opacity .2s ease;" +
@@ -109,6 +115,7 @@ export async function installDemoChrome(
           box: { x: number; y: number; width: number; height: number },
           label: string,
           tone?: string,
+          style?: { size?: string; weight?: string },
         ) => {
           const ring = document.getElementById("wg-ring");
           const ringLabel = document.getElementById("wg-ring-label");
@@ -122,12 +129,20 @@ export async function installDemoChrome(
             raw === "success"
               ? raw
               : "planned";
+          const sizeRaw = ((style && style.size) || "md") + "";
+          const size = sizeRaw === "sm" || sizeRaw === "lg" ? sizeRaw : "md";
+          const weightRaw = ((style && style.weight) || "normal") + "";
+          const weight = weightRaw === "bold" ? "bold" : "normal";
           ring.dataset.tone = t;
           ringLabel.dataset.tone = t;
-          ring.style.left = box.x - 6 + "px";
-          ring.style.top = box.y - 6 + "px";
-          ring.style.width = box.width + 12 + "px";
-          ring.style.height = box.height + 12 + "px";
+          ring.dataset.size = size;
+          ringLabel.dataset.size = size;
+          ringLabel.dataset.weight = weight;
+          const pad = size === "sm" ? 3 : size === "lg" ? 10 : 6;
+          ring.style.left = box.x - pad + "px";
+          ring.style.top = box.y - pad + "px";
+          ring.style.width = box.width + pad * 2 + "px";
+          ring.style.height = box.height + pad * 2 + "px";
           ring.style.opacity = "1";
           ringLabel.textContent = label;
           ringLabel.style.left = box.x + "px";

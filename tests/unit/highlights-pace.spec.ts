@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   normalizeHighlightTone,
   normalizeDemoPace,
+  normalizeHighlightSize,
+  normalizeHighlightWeight,
   formatHighlightCaption,
   resolveFixtureDwellMs,
   resolveStepDemoPace,
@@ -21,6 +23,21 @@ describe("normalizeHighlightTone", () => {
     assert.equal(normalizeHighlightTone("ok"), "success");
     assert.equal(normalizeHighlightTone("purple"), "planned");
     assert.equal(normalizeHighlightTone(undefined), "planned");
+  });
+});
+
+describe("normalizeHighlightSize / weight", () => {
+  it("maps size aliases", () => {
+    assert.equal(normalizeHighlightSize("small"), "sm");
+    assert.equal(normalizeHighlightSize("lg"), "lg");
+    assert.equal(normalizeHighlightSize("big"), "lg");
+    assert.equal(normalizeHighlightSize(undefined), "md");
+  });
+
+  it("maps weight aliases", () => {
+    assert.equal(normalizeHighlightWeight("strong"), "bold");
+    assert.equal(normalizeHighlightWeight("regular"), "normal");
+    assert.equal(normalizeHighlightWeight(undefined), "normal");
   });
 });
 

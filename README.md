@@ -235,7 +235,8 @@ snapshot, partitions edges by hash, and claims via in-process edge leases (audit
 `docs/proposals/traverse-ffcompose-rfc.md`.
 
 **Richer demo narration:** automation rings are **gray**; authored stubs/slides can use
-`tone: "info" | "warning" | "danger" | "success"` (iconified captions). Episode pacing:
+`tone: "info" | "warning" | "danger" | "success"` (iconified captions), plus
+`size: "sm" | "md" | "lg"` and `weight: "normal" | "bold"`. Episode pacing:
 `withDemoPace(flow, "fast" | "slow" | "normal" | "blitz")` or `withBlockPace(block, ...)`
 (FFCompose stays blitz). Living objectives: `docs/proposals/OBJECTIVES.md`.
 `spawnTab(entry, page, mem)` drives a genuinely separate second tab through its own

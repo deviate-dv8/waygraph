@@ -230,6 +230,8 @@ import {
   hasAuthoredStubOnError,
   normalizeHighlightTone,
   normalizeDemoPace,
+  normalizeHighlightSize,
+  normalizeHighlightWeight,
   resolveStepDemoPace,
 } from "waygraph";
 
@@ -442,6 +444,13 @@ const RING_CSS =
   "#wg-ring-label[data-tone=warning]{background:#EAB308;color:#1c1917;}" +
   "#wg-ring-label[data-tone=danger]{background:#DC2626;color:#fff;}" +
   "#wg-ring-label[data-tone=success]{background:#16A34A;color:#fff;}" +
+  // size: ring pad + label font; weight: label boldness
+  "#wg-ring[data-size=sm]{border-width:1.5px;border-radius:8px;}" +
+  "#wg-ring[data-size=lg]{border-width:4px;border-radius:12px;}" +
+  "#wg-ring-label[data-size=sm]{font-size:10px;line-height:1.25;padding:4px 7px;border-radius:5px;}" +
+  "#wg-ring-label[data-size=lg]{font-size:16px;line-height:1.35;padding:8px 14px;border-radius:9px;max-width:min(480px,85vw);}" +
+  "#wg-ring-label[data-weight=bold]{font-weight:800;}" +
+  "#wg-ring-label[data-weight=normal]{font-weight:600;}" +
   // Mouse cursor icon that travels to a target before it's acted on, plus a
   // quick expanding ripple at the moment of a click - same idea as
   // help-center-clip-engine's #clip-cursor/#clip-ring (video-pipeline). The
@@ -679,7 +688,7 @@ async function installOverlay(page, title) {
           const cursor = document.getElementById("wg-cursor");
           if (cursor) cursor.style.opacity = "0";
         };
-        window.__wgPositionRing = (box, label, tone) => {
+        window.__wgPositionRing = (box, label, tone, style) => {
           const ring = document.getElementById("wg-ring");
           const ringLabel = document.getElementById("wg-ring-label");
           if (!ring || !ringLabel) return;
@@ -688,15 +697,25 @@ async function installOverlay(page, title) {
             raw === "auto" || raw === "info" || raw === "warning" || raw === "danger" || raw === "success"
               ? raw
               : "planned";
+          const st = style && typeof style === "object" ? style : {};
+          const sizeRaw = (st.size || "md") + "";
+          const size =
+            sizeRaw === "sm" || sizeRaw === "lg" ? sizeRaw : "md";
+          const weightRaw = (st.weight || "normal") + "";
+          const weight = weightRaw === "bold" ? "bold" : "normal";
           ring.dataset.tone = t;
           ringLabel.dataset.tone = t;
+          ring.dataset.size = size;
+          ringLabel.dataset.size = size;
+          ringLabel.dataset.weight = weight;
+          const pad = size === "sm" ? 3 : size === "lg" ? 10 : 6;
           const margin = 6;
           const vw = window.innerWidth;
           const vh = window.innerHeight;
-          let left = box.x - 6;
-          let top = box.y - 6;
-          const width = box.width + 12;
-          const height = box.height + 12;
+          let left = box.x - pad;
+          let top = box.y - pad;
+          const width = box.width + pad * 2;
+          const height = box.height + pad * 2;
           if (left < margin) left = margin;
           if (top < margin) top = margin;
           if (left + width > vw - margin) left = Math.max(margin, vw - margin - width);
@@ -1075,7 +1094,10 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
     try {
       const box = await page.locator(h.selector).first().boundingBox();
       if (box) {
-        await showRing(page, box, h.label, h.tone || "planned");
+        await showRing(page, box, h.label, h.tone || "planned", {
+          size: h.size,
+          weight: h.weight,
+        });
         const authored = resolveFixtureDwellMs(h, { gatesFast });
         const legacyMs = i === list.length - 1 ? 200 : 900;
         const holdMs =
@@ -1097,7 +1119,10 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
             if (window.__wgHideRing) window.__wgHideRing();
             return;
           }
-          window.__wgPositionRing(el.getBoundingClientRect(), h.label, h.tone || "planned");
+          window.__wgPositionRing(el.getBoundingClientRect(), h.label, h.tone || "planned", {
+            size: h.size || "md",
+            weight: h.weight || "normal",
+          });
         };
         reposition();
         window.__wgRingTrack = reposition;
@@ -1442,13 +1467,17 @@ async function markStepRunning(page, _opts) {
     .catch(() => {});
 }
 
-async function showRing(page, box, label, tone) {
+async function showRing(page, box, label, tone, style) {
+  const size = normalizeHighlightSize(style && style.size);
+  const weight = normalizeHighlightWeight(style && style.weight);
   await page
     .evaluate(
-      ({ box, label, tone }) => {
-        if (window.__wgPositionRing) window.__wgPositionRing(box, label, tone || "planned");
+      ({ box, label, tone, size, weight }) => {
+        if (window.__wgPositionRing) {
+          window.__wgPositionRing(box, label, tone || "planned", { size, weight });
+        }
       },
-      { box, label, tone: tone || "planned" },
+      { box, label, tone: tone || "planned", size, weight },
     )
     .catch(() => {});
 }
@@ -1482,9 +1511,11 @@ async function captionForLocator(page, locator, stubs, fallback) {
     return {
       label: formatHighlightCaption(matched),
       tone: normalizeHighlightTone(matched.tone),
+      size: normalizeHighlightSize(matched.size),
+      weight: normalizeHighlightWeight(matched.weight),
     };
   }
-  return { label: fallback, tone: "auto" };
+  return { label: fallback, tone: "auto", size: "md", weight: "normal" };
 }
 
 async function dwellMatchedStub(page, locator, stubs, pacing) {
@@ -1527,13 +1558,17 @@ async function presentSlides(page, slides, _gate, opts) {
     const s = slides[i];
     const caption = formatHighlightCaption(s);
     const slideTone = normalizeHighlightTone(s.tone);
+    const slideStyle = {
+      size: normalizeHighlightSize(s.size),
+      weight: normalizeHighlightWeight(s.weight),
+    };
     const isLast = i === slides.length - 1;
     const dwellMs = resolveFixtureDwellMs(s, { gatesFast, pace: demoPace });
     await installOverlay(page, title);
     if (s.selector) {
       try {
         const box = await page.locator(s.selector).first().boundingBox();
-        if (box) await showRing(page, box, caption, slideTone);
+        if (box) await showRing(page, box, caption, slideTone, slideStyle);
       } catch {
         await hideRing(page);
       }
@@ -1845,7 +1880,10 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
           const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
           const cap = await captionForLocator(page, this, stubs, fallback);
           await moveCursorTo(page, box, cursorMs(500));
-          await showRing(page, box, cap.label, cap.tone);
+          await showRing(page, box, cap.label, cap.tone, {
+            size: cap.size,
+            weight: cap.weight,
+          });
           await dwellMatchedStub(page, this, stubs, pacing);
           await new Promise((res) => setTimeout(res, skipTheater() ? 0 : 200));
         } else if (box) {
@@ -1917,7 +1955,10 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
           const cap = await captionForLocator(page, this, stubs, fallback);
           clickTone = cap.tone;
           clickPoint = await moveCursorTo(page, box, cursorMs(600));
-          await showRing(page, box, cap.label, cap.tone);
+          await showRing(page, box, cap.label, cap.tone, {
+            size: cap.size,
+            weight: cap.weight,
+          });
           await dwellMatchedStub(page, this, stubs, pacing);
           // "pop for a few seconds" - Dan's own phrase, matching the
           // zsign demo-engine's ring-before-click pattern in
@@ -2351,6 +2392,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           duration: h.duration,
           fastMode: h.fastMode,
           tone: normalizeHighlightTone(h.tone),
+          size: normalizeHighlightSize(h.size),
+          weight: normalizeHighlightWeight(h.weight),
         }));
         await cycleHighlightRings(page, errHighlights, !!pacing.gatesFast, {
           defaultHoldMs: 2000,
@@ -2425,6 +2468,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           duration: h.duration,
           fastMode: h.fastMode,
           tone: normalizeHighlightTone(h.tone),
+          size: normalizeHighlightSize(h.size),
+          weight: normalizeHighlightWeight(h.weight),
         }),
       );
     } else {

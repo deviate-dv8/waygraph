@@ -22,6 +22,7 @@ Tester ask: make waygraph richer for QA/demo narration.
 |------|--------|-------|
 | Automation highlight tone = **gray** | DONE | Was yellow; verify/auto rings gray |
 | Iconified semantic tones | DONE | warning/danger/success/info (+ planned purple) |
+| Highlight size / weight | DONE | `size: sm\|md\|lg`, `weight: normal\|bold` |
 | Group pacing (flow / compose / episode) | DONE | `withDemoPace` / `withBlockPace`; FF = blitz |
 | Episode fast vs slow | DONE | e.g. pia ep2 gaps/wrongs = `withDemoPace(..., "slow")` |
 
@@ -41,8 +42,8 @@ const review = withBlockPace(composeBlock("gap-review", [...]), "slow");
 
 // Highlight tones on stubs / slides
 stubAfter: {
-  bad: { selector: "#err", label: "Wrong state", tone: "danger" },
-  tip: { selector: "#hint", label: "Remember", tone: "info" },
+  bad: { selector: "#err", label: "Wrong state", tone: "danger", size: "lg", weight: "bold" },
+  tip: { selector: "#hint", label: "Remember", tone: "info", size: "sm" },
 }
 ```
 

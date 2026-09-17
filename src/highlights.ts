@@ -43,12 +43,22 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
    * - `info` blue · `warning` yellow · `danger` red · `success` green
    */
   tone?: HighlightTone;
+  /**
+   * Ring padding + label font scale: `sm` | `md` (default) | `lg`.
+   * Aliases: small/medium/large, s/m/l.
+   */
+  size?: HighlightSize;
+  /**
+   * Label font weight: `normal` (default) | `bold`.
+   * Aliases: regular, strong.
+   */
+  weight?: HighlightWeight;
 }
 
 /** Flow fixture patch: label required; selector optional (inherits from stub). */
 export type WaygraphHighlightFixture = Partial<Pick<WaygraphHighlightStub, "selector">> &
   Required<Pick<WaygraphHighlightStub, "label">> &
-  Pick<WaygraphHighlightStub, "detail" | "tag" | "tone"> &
+  Pick<WaygraphHighlightStub, "detail" | "tag" | "tone" | "size" | "weight"> &
   FixtureDurationFields;
 
 export type HighlightStubPhase = Record<string, WaygraphHighlightStub>;
@@ -69,6 +79,8 @@ export interface WaygraphSlide extends FixtureDurationFields {
   /** Optional ring while this slide is showing. */
   selector?: string;
   tone?: HighlightTone;
+  size?: HighlightSize;
+  weight?: HighlightWeight;
 }
 
 /**
@@ -82,6 +94,12 @@ export type HighlightTone =
   | "warning"
   | "danger"
   | "success";
+
+/** Ring + label scale. */
+export type HighlightSize = "sm" | "md" | "lg";
+
+/** Label font weight. */
+export type HighlightWeight = "normal" | "bold";
 
 const TONE_ICONS: Record<HighlightTone, string> = {
   planned: "",
@@ -103,6 +121,23 @@ export function normalizeHighlightTone(raw: unknown): HighlightTone {
   if (t === "success" || t === "ok" || t === "green") return "success";
   if (t === "planned" || t === "purple" || t === "authored") return "planned";
   return "planned";
+}
+
+/** Map size aliases to sm/md/lg. */
+export function normalizeHighlightSize(raw: unknown): HighlightSize {
+  if (typeof raw !== "string") return "md";
+  const t = raw.trim().toLowerCase();
+  if (t === "sm" || t === "s" || t === "small" || t === "tiny") return "sm";
+  if (t === "lg" || t === "l" || t === "large" || t === "big" || t === "xl") return "lg";
+  return "md";
+}
+
+/** Map weight aliases to normal/bold. */
+export function normalizeHighlightWeight(raw: unknown): HighlightWeight {
+  if (typeof raw !== "string") return "normal";
+  const t = raw.trim().toLowerCase();
+  if (t === "bold" || t === "strong" || t === "heavy" || t === "b") return "bold";
+  return "normal";
 }
 
 /** Prefix label with a short ASCII icon for semantic tones. */
@@ -239,12 +274,27 @@ function pickDurationFields(
   return out;
 }
 
+function pickStyleFields(
+  base: Pick<WaygraphHighlightStub, "tone" | "size" | "weight"> | undefined,
+  patch: Pick<WaygraphHighlightFixture, "tone" | "size" | "weight"> | undefined,
+): Pick<WaygraphHighlightStub, "tone" | "size" | "weight"> {
+  const out: Pick<WaygraphHighlightStub, "tone" | "size" | "weight"> = {};
+  const tone = patch?.tone !== undefined ? patch.tone : base?.tone;
+  const size = patch?.size !== undefined ? patch.size : base?.size;
+  const weight = patch?.weight !== undefined ? patch.weight : base?.weight;
+  if (tone !== undefined) out.tone = normalizeHighlightTone(tone);
+  if (size !== undefined) out.size = normalizeHighlightSize(size);
+  if (weight !== undefined) out.weight = normalizeHighlightWeight(weight);
+  return out;
+}
+
 function mergeSlot(
   base: WaygraphHighlightStub | undefined,
   patch: WaygraphHighlightFixture | undefined,
 ): WaygraphHighlightStub | null {
   if (!base && !patch) return null;
   const dwell = pickDurationFields(base, patch);
+  const style = pickStyleFields(base, patch);
   if (!base && patch) {
     if (!patch.selector) return null;
     return {
@@ -252,11 +302,18 @@ function mergeSlot(
       label: patch.label,
       ...(patch.detail ? { detail: patch.detail } : {}),
       ...(patch.tag ? { tag: patch.tag } : {}),
-      ...(patch.tone ? { tone: normalizeHighlightTone(patch.tone) } : {}),
+      ...style,
       ...dwell,
     };
   }
-  if (base && !patch) return { ...base };
+  if (base && !patch) {
+    return {
+      ...base,
+      ...(base.tone ? { tone: normalizeHighlightTone(base.tone) } : {}),
+      ...(base.size ? { size: normalizeHighlightSize(base.size) } : {}),
+      ...(base.weight ? { weight: normalizeHighlightWeight(base.weight) } : {}),
+    };
+  }
   return {
     selector: patch!.selector ?? base!.selector,
     label: patch!.label,
@@ -266,11 +323,7 @@ function mergeSlot(
         ? { detail: base!.detail }
         : {}),
     ...(patch!.tag !== undefined ? { tag: patch!.tag } : base!.tag ? { tag: base!.tag } : {}),
-    ...(patch!.tone !== undefined
-      ? { tone: normalizeHighlightTone(patch!.tone) }
-      : base!.tone
-        ? { tone: normalizeHighlightTone(base!.tone) }
-        : {}),
+    ...style,
     ...dwell,
   };
 }
