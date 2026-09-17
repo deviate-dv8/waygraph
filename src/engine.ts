@@ -6,6 +6,13 @@ import { MemPage } from "./mem-page.js";
 import type { MemKey } from "./mem-page.js";
 import type { Trait } from "./trait.js";
 import { runVerify, runPrecondition } from "./trait.js";
+import {
+  normalizeHighlightTone,
+  normalizeHighlightSize,
+  normalizeHighlightWeight,
+  type HighlightStyleDefaults,
+  type DemoPace,
+} from "./highlights.js";
 
 const LAUNCHERS = { chromium, firefox, webkit };
 
@@ -367,6 +374,11 @@ export interface Flow<Out extends Checkpoint<string>> {
    */
   readonly demoPace?: import("./highlights.js").DemoPace;
   /**
+   * Default highlight size/weight/tone for this Flow's episode (`withHighlightStyle`).
+   * Per-slot stub/fixture values win. `run()` ignores.
+   */
+  readonly highlightStyle?: import("./highlights.js").HighlightStyleDefaults;
+  /**
    * This Flow's constituent Blocks, in order between `start`/`end`, as plain
    * data - for introspection/visualization tools, without running anything.
    * @example loginFlow.blocks() // [{ name: "login" }, { name: "add-to-cart", routes: {...} }]
@@ -596,7 +608,7 @@ export function withTitle<Out extends Checkpoint<string>>(flow: Flow<Out>, title
  */
 export function withDemoPace<Out extends Checkpoint<string>>(
   flow: Flow<Out>,
-  pace: import("./highlights.js").DemoPace,
+  pace: DemoPace,
 ): Flow<Out> {
   const demoPace = pace;
   return {
@@ -609,17 +621,40 @@ export function withDemoPace<Out extends Checkpoint<string>>(
 }
 
 /**
+ * Default highlight look for a Flow episode (size / weight / optional tone).
+ * Per-slot stub or {@link withHighlightFixtures} values win when set.
+ * @example withHighlightStyle(withDemoPace(gapFlow, "slow"), { size: "lg", weight: "bold" })
+ */
+export function withHighlightStyle<Out extends Checkpoint<string>>(
+  flow: Flow<Out>,
+  style: HighlightStyleDefaults,
+): Flow<Out> {
+  const highlightStyle: HighlightStyleDefaults = {
+    ...(style.tone !== undefined ? { tone: normalizeHighlightTone(style.tone) } : {}),
+    ...(style.size !== undefined ? { size: normalizeHighlightSize(style.size) } : {}),
+    ...(style.weight !== undefined ? { weight: normalizeHighlightWeight(style.weight) } : {}),
+  };
+  return {
+    ...flow,
+    highlightStyle,
+    withBlockVerify: (block, verify) => withHighlightStyle(flow.withBlockVerify(block, verify), highlightStyle),
+    modBlockVerify: (block, nameOrIndex, newCheck) =>
+      withHighlightStyle(flow.modBlockVerify(block, nameOrIndex, newCheck), highlightStyle),
+  };
+}
+
+/**
  * Demo pacing for one Block or compose unit (not FF - use fastForwardComposeBlock for blitz).
  * @example withBlockPace(composeBlock("gap-review", [...]), "slow")
  */
 export function withBlockPace<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   block: Block<In, Out>,
-  pace: import("./highlights.js").DemoPace,
+  pace: DemoPace,
 ): Block<In, Out> {
   return {
     ...block,
     demoPace: pace,
-  } as Block<In, Out> & { demoPace: import("./highlights.js").DemoPace };
+  } as Block<In, Out> & { demoPace: DemoPace };
 }
 
 /**

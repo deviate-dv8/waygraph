@@ -232,6 +232,7 @@ import {
   normalizeDemoPace,
   normalizeHighlightSize,
   normalizeHighlightWeight,
+  applyHighlightStyleDefaults,
   resolveStepDemoPace,
 } from "waygraph";
 
@@ -2294,7 +2295,10 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       !!r.block.fastForward ||
       !!r.wasFastForward;
     const fixtures = r.highlightFixtures;
-    stubBeforeRef.current = resolveHighlightSlots(r.block, "stubBefore", { fixtures });
+    const flowStyle = r.highlightStyle;
+    stubBeforeRef.current = resolveHighlightSlots(r.block, "stubBefore", { fixtures }).map((h) =>
+      applyHighlightStyleDefaults(h, flowStyle),
+    );
     const isNavBlock = r.block.__waygraphKind === "nav";
     const autoNow = await currentAutoplay();
     // Auto-next: tuck stepper on NavBlocks so the page transition fills the frame.
@@ -2386,15 +2390,18 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           .catch(() => {});
         const errHighlights = resolveHighlightSlots(r.block, "stubOnError", {
           fixtures: fixturesOnError,
-        }).map((h) => ({
-          selector: h.selector,
-          label: formatHighlightCaption(h),
-          duration: h.duration,
-          fastMode: h.fastMode,
-          tone: normalizeHighlightTone(h.tone),
-          size: normalizeHighlightSize(h.size),
-          weight: normalizeHighlightWeight(h.weight),
-        }));
+        }).map((h) => {
+          const styled = applyHighlightStyleDefaults(h, r.highlightStyle);
+          return {
+            selector: styled.selector,
+            label: formatHighlightCaption(styled),
+            duration: styled.duration,
+            fastMode: styled.fastMode,
+            tone: styled.tone,
+            size: styled.size,
+            weight: styled.weight,
+          };
+        });
         await cycleHighlightRings(page, errHighlights, !!pacing.gatesFast, {
           defaultHoldMs: 2000,
         });
@@ -2447,7 +2454,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       .catch(() => {});
     result = stepOutcome.result;
     const fixturesAfter = r.highlightFixtures;
-    const slides = resolveSlides(r.block, { out: result, fixtures: fixturesAfter });
+    const slides = resolveSlides(r.block, { out: result, fixtures: fixturesAfter }).map((s) =>
+      applyHighlightStyleDefaults(s, r.highlightStyle),
+    );
     if (slides.length > 0) {
       await presentSlides(page, slides, gate, {
         title,
@@ -2462,18 +2471,23 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     let highlights;
     if (hasAuthoredStubAfter(r.block, result, fixturesAfter)) {
       highlights = resolveHighlightSlots(r.block, "stubAfter", { out: result, fixtures: fixturesAfter }).map(
-        (h) => ({
-          selector: h.selector,
-          label: formatHighlightCaption(h),
-          duration: h.duration,
-          fastMode: h.fastMode,
-          tone: normalizeHighlightTone(h.tone),
-          size: normalizeHighlightSize(h.size),
-          weight: normalizeHighlightWeight(h.weight),
-        }),
+        (h) => {
+          const styled = applyHighlightStyleDefaults(h, r.highlightStyle);
+          return {
+            selector: styled.selector,
+            label: formatHighlightCaption(styled),
+            duration: styled.duration,
+            fastMode: styled.fastMode,
+            tone: styled.tone,
+            size: styled.size,
+            weight: styled.weight,
+          };
+        },
       );
     } else {
-      highlights = extractVerifyHighlights(r.block, result.__state);
+      highlights = extractVerifyHighlights(r.block, result.__state).map((h) =>
+        applyHighlightStyleDefaults(h, r.highlightStyle),
+      );
     }
     await renderAfterStep(page, {
       index: i,
@@ -2655,6 +2669,7 @@ async function main() {
         seedMem: idx === 0 ? seedMem : undefined,
         highlightFixtures: flow.highlightFixtures,
         demoPace: flow.demoPace,
+        highlightStyle: flow.highlightStyle,
         expectedFailureReason:
           flow.expectedFailureReason && idx === blockInfos.length - 1
             ? flow.expectedFailureReason
@@ -2724,6 +2739,7 @@ async function main() {
           expectedFailureReason: flow.expectedFailureReason,
           highlightFixtures: flow.highlightFixtures,
           demoPace: flow.demoPace,
+          highlightStyle: flow.highlightStyle,
           seedMem: () => seedMemForFlow(mem, flow.blocks(), seg.json, seg.ref),
         });
       } else {
@@ -2734,6 +2750,7 @@ async function main() {
           episodeTitle: undefined,
           highlightFixtures: undefined,
           demoPace: undefined,
+          highlightStyle: undefined,
           seedMem: () => seedMemForBlock(mem, r, seg.json),
         });
       }
@@ -2759,6 +2776,7 @@ async function main() {
         episodeTitle: meta.episodeTitle,
         highlightFixtures: meta.highlightFixtures,
         demoPace: meta.demoPace,
+        highlightStyle: meta.highlightStyle,
         expectedFailureReason:
           meta.expectedFailureReason && remainingInFlow === 1 ? meta.expectedFailureReason : undefined,
         seedMem: isFirstOfSegment ? meta.seedMem : undefined,

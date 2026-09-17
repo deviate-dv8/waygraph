@@ -23,8 +23,10 @@ Tester ask: make waygraph richer for QA/demo narration.
 | Automation highlight tone = **gray** | DONE | Was yellow; verify/auto rings gray |
 | Iconified semantic tones | DONE | warning/danger/success/info (+ planned purple) |
 | Highlight size / weight | DONE | `size: sm\|md\|lg`, `weight: normal\|bold` |
+| Flow episode defaults | DONE | `withHighlightStyle(flow, { size, weight, tone? })` |
 | Group pacing (flow / compose / episode) | DONE | `withDemoPace` / `withBlockPace`; FF = blitz |
 | Episode fast vs slow | DONE | e.g. pia ep2 gaps/wrongs = `withDemoPace(..., "slow")` |
+| **Per-flow speed wins CLI `--fast`** | **NEXT (upcoming)** | Authored `withDemoPace("slow")` must keep slow dwell even when the runner passes `--fast`. Today CLI `gatesFast` still crushes fixture dwell in `resolveFixtureDwellMs` / `cycleHighlightRings` — fix: pace > gatesFast when pace is slow; pass `pace` into ring cycling. Until shipped, PIA gap episodes run with `--full`. |
 
 ### Authoring sketch
 
@@ -36,6 +38,7 @@ export const ep1 = withDemoPace(withTitle(happyFlow, "Episode 1 - happy"), "fast
 
 // Slow episode (gaps / wrongs / convention review)
 export const ep2 = withDemoPace(withTitle(gapFlow, "Episode 2 - gaps"), "slow");
+// Upcoming: this "slow" wins over CLI --fast for fixture dwell (see table above).
 
 // One compose group slower than the rest of its flow
 const review = withBlockPace(composeBlock("gap-review", [...]), "slow");

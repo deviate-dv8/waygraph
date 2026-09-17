@@ -31,6 +31,7 @@ export {
   withTitle,
   withDemoPace,
   withBlockPace,
+  withHighlightStyle,
   withExpectedFailure,
   withHighlightFixtures,
   chainFlow,
@@ -47,6 +48,7 @@ export {
   normalizeDemoPace,
   normalizeHighlightSize,
   normalizeHighlightWeight,
+  applyHighlightStyleDefaults,
   toneIconPrefix,
   resolveStepDemoPace,
   FIXTURE_DURATION_MS_DEFAULT,
@@ -68,6 +70,7 @@ export type {
   HighlightTone,
   HighlightSize,
   HighlightWeight,
+  HighlightStyleDefaults,
   DemoPace,
 } from "./highlights.js";
 export type {

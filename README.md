@@ -236,7 +236,8 @@ snapshot, partitions edges by hash, and claims via in-process edge leases (audit
 
 **Richer demo narration:** automation rings are **gray**; authored stubs/slides can use
 `tone: "info" | "warning" | "danger" | "success"` (iconified captions), plus
-`size: "sm" | "md" | "lg"` and `weight: "normal" | "bold"`. Episode pacing:
+`size: "sm" | "md" | "lg"` and `weight: "normal" | "bold"`. Flow episode defaults:
+`withHighlightStyle(flow, { size, weight, tone? })` (slot/fixture wins). Episode pacing:
 `withDemoPace(flow, "fast" | "slow" | "normal" | "blitz")` or `withBlockPace(block, ...)`
 (FFCompose stays blitz). Living objectives: `docs/proposals/OBJECTIVES.md`.
 `spawnTab(entry, page, mem)` drives a genuinely separate second tab through its own

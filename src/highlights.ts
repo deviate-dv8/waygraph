@@ -101,6 +101,42 @@ export type HighlightSize = "sm" | "md" | "lg";
 /** Label font weight. */
 export type HighlightWeight = "normal" | "bold";
 
+/** Optional Flow-level defaults for demo rings (episode-wide). Stub/fixture wins. */
+export type HighlightStyleDefaults = {
+  tone?: HighlightTone;
+  size?: HighlightSize;
+  weight?: HighlightWeight;
+};
+
+/** Apply Flow defaults under per-slot authored values (slot wins when set). */
+export function applyHighlightStyleDefaults<
+  T extends { tone?: HighlightTone | string; size?: HighlightSize | string; weight?: HighlightWeight | string },
+>(slot: T, defaults?: HighlightStyleDefaults | null): T & {
+  tone: HighlightTone;
+  size: HighlightSize;
+  weight: HighlightWeight;
+} {
+  const tone =
+    slot.tone !== undefined && slot.tone !== ""
+      ? normalizeHighlightTone(slot.tone)
+      : defaults?.tone !== undefined
+        ? normalizeHighlightTone(defaults.tone)
+        : "planned";
+  const size =
+    slot.size !== undefined && slot.size !== ""
+      ? normalizeHighlightSize(slot.size)
+      : defaults?.size !== undefined
+        ? normalizeHighlightSize(defaults.size)
+        : "md";
+  const weight =
+    slot.weight !== undefined && slot.weight !== ""
+      ? normalizeHighlightWeight(slot.weight)
+      : defaults?.weight !== undefined
+        ? normalizeHighlightWeight(defaults.weight)
+        : "normal";
+  return { ...slot, tone, size, weight };
+}
+
 const TONE_ICONS: Record<HighlightTone, string> = {
   planned: "",
   auto: "",
