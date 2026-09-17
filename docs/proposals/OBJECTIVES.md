@@ -12,7 +12,8 @@ Parked / in-flight goals so overrides do not lose the main track.
 | **B** `waygraph traverse` serial | DONE (0.12.8+) | max-visits, leaf/fail lines |
 | **C** `--blocks` glob/regex select | DONE (0.12.10+) | auto + traverse |
 | **D** `--parallel` + `--session clone` + leases | DONE (0.12.14) | inherit refused if parallel>1 |
-| **E** Coverage JSON + `--min-edge-coverage` CI | **NEXT (parked)** | Suite gate |
+| **E** Coverage JSON + `--min-edge-coverage` CI | DONE (0.12.20) | Suite gate exit 2; instance hits cover parent block |
+
 
 ## Richer testing / demo (override track - 2026-09-17)
 
@@ -71,3 +72,4 @@ stubAfter: {
 - Phase C leftover: glob `--blocks` on `demo`/`run` flow resolve
 - Traverse work-stealing when partition soft-leafs
 - FF bootstrap seed for parallel (`--ff` before fork)
+- FF covered-via-prefix in coverage reports (RFC open Q3)

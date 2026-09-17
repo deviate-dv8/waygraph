@@ -113,4 +113,18 @@ export {
 export type { BlocksSelect, BlocksSelectKind } from "./blocks-select.js";
 export { EdgeLeaseCoordinator } from "./traverse-lease.js";
 export { runTraverse } from "./traverse-run.js";
-export type { TraverseOptions, TraverseSessionMode } from "./traverse-run.js";
+export type {
+  TraverseOptions,
+  TraverseSessionMode,
+  TraverseWorkerResult,
+} from "./traverse-run.js";
+export {
+  buildCoverageReport,
+  collectGraphEdgeKeys,
+  defaultCoverageOutPath,
+  formatCoverageLine,
+  normalizeHitKey,
+  parseMinEdgeCoverage,
+  writeCoverageReport,
+} from "./traverse-coverage.js";
+export type { TraverseCoverageReport } from "./traverse-coverage.js";

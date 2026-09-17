@@ -1,7 +1,7 @@
 # RFC: Traverse + FFComposeBlock (graph regression, parallel, session fork)
 
-**Status:** Phase B shipped (2026-09-17). `waygraph traverse` serial + max-visits + leaf/fail lines.
-`fastForwardComposeBlock` (Phase A) remains for demo. Parallel (D) not started.
+**Status:** Phase E shipped (2026-09-17). Coverage JSON + `--min-edge-coverage` suite gate.
+Phases A-D remain: FFCompose, serial/parallel traverse, `--blocks`, clone+leases.
 **Depends on:** existing `composeBlock`, `chainFlow` / `withSessionReset`, `waygraph auto` graph discovery, CLI `--blocks` / file-select patterns.
 **Goal:** walk the whole Block graph as integration regression, fail loud at the first break, parallelize safely, skip boring prefixes via FFCompose.
 
@@ -348,6 +348,9 @@ Do not start D before A+B loop-safety is real.
 1. Default `--max-visits-per-edge` = 1 (regression) or 2 (allow one retry path)?
 2. Is **inherit** ever allowed, or clone-only forever?
 3. Should FF inners count as covered for `--min-edge-coverage`?
+   **Interim (0.12.20):** no special FF credit - denominator is static graph block
+   names; walking an FFCompose edge covers that FF block only. Instance hits
+   (`block::id`) count as covering `block`. Revisit covered-via-prefix later.
 4. Traverse command name: `traverse` vs `auto --crawl` vs `regress`?
 5. Regex on **file path**, **block name**, or both?
 

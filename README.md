@@ -228,11 +228,14 @@ real acts). `--ff-expand` is the older expand-only flag (same flatten). Saucedem
 `checkoutFlow` uses `ff-owner-auth` for the login prefix; `loginFlow` stays expanded for
 Sign In narration.
 
-`waygraph traverse` walks the Block graph (Phase B+D). `--parallel N` (default
+`waygraph traverse` walks the Block graph (Phase B-E). `--parallel N` (default
 `--session clone`) bootstraps one context, forks N workers with `storageState` + mem
 snapshot, partitions edges by hash, and claims via in-process edge leases (audit under
-`.waygraph-traverse/`). `--session inherit` is refused when `parallel > 1`. See
-`docs/proposals/traverse-ffcompose-rfc.md`.
+`.waygraph-traverse/`). `--session inherit` is refused when `parallel > 1`. Phase E
+writes `.waygraph-traverse/coverage.json` and prints `[Coverage edges=H/T ratio=R%...]`;
+`--min-edge-coverage 80%` fails the suite with exit 2 when the ratio is below the gate
+(even if every worker leaf-PASSed). `--coverage-out PATH` / `--no-coverage-report` adjust
+the JSON. See `docs/proposals/traverse-ffcompose-rfc.md`.
 
 **Richer demo narration:** automation rings are **gray**; authored stubs/slides can use
 `tone: "info" | "warning" | "danger" | "success"` (iconified captions), plus

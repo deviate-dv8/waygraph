@@ -210,7 +210,7 @@ async function runOneBlock(
   page: Page,
   mem: MemPage,
   headful: boolean,
-): Promise<void> {
+): Promise<Checkpoint<string>> {
   const navClick = (entry.block as { __waygraphNavClick?: string }).__waygraphNavClick;
   if (entry.kind === "nav" && navClick !== undefined) {
     await page
@@ -226,8 +226,9 @@ async function runOneBlock(
   const flow = engine.defineFlow([start, entry.block, end]);
   const BLOCK_TIMEOUT_MS = 45_000;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let result: Checkpoint<string>;
   try {
-    await Promise.race([
+    const ran = await Promise.race([
       flow.run(context, mem, { page, closeOnFinish: false }),
       new Promise<never>((_, reject) => {
         timer = setTimeout(
@@ -242,10 +243,12 @@ async function runOneBlock(
         );
       }),
     ]);
+    result = ran.result;
   } finally {
     if (timer) clearTimeout(timer);
   }
   await page.evaluate("delete window.__wgPendingNavClickLabel").catch(() => {});
+  return result;
 }
 
 const PANEL_CSS =
@@ -601,13 +604,16 @@ export async function runAutoExplore(projectDir: string, options: AutoExploreOpt
     wiredPage = target;
   }
 
+  let here: string | null = null;
   try {
     for (;;) {
       page = await ensureLivePage(context, page, startUrl);
       await wirePage(page);
       const pickWait = armPickWait();
       pickSlot.resolve = pickWait.resolve;
-      const here = await detectHere(page, library.navBlocks);
+      if (here === null) {
+        here = await detectHere(page, library.navBlocks);
+      }
       if (cli) console.error("waygraph auto: scanning page for moves ...");
       const menu = await buildExploreMenu(page, graph, library, here);
       if (cli) console.error(`waygraph auto: ${menu.flat.length} move(s) available`);
@@ -655,10 +661,11 @@ export async function runAutoExplore(projectDir: string, options: AutoExploreOpt
         }
         const pickLabel = edge.label ?? entry.block.name;
         console.error(`waygraph auto: running [${pick.index + 1}] ${pickLabel} ...`);
-        await runOneBlock(engine, entry, context, page, mem, !cli);
-        const landed = await detectHere(page, library.navBlocks);
-        lastRunNote = `${entry.block.name} -> ${landed ?? edge.to}`;
-        console.error(`waygraph auto: ran ${entry.block.name} -> ${landed ?? edge.to}`);
+        const result = await runOneBlock(engine, entry, context, page, mem, !cli);
+        // Trust block output over locate() - nav verify traits collide on /dashboard.
+        here = result.__state ?? edge.to;
+        lastRunNote = `${entry.block.name} -> ${here}`;
+        console.error(`waygraph auto: ran ${entry.block.name} -> ${here}`);
       } catch (err) {
         lastRunNote = `${entry.block.name} failed`;
         console.error(`waygraph auto: ${entry.block.name} failed - ${err instanceof Error ? err.message : String(err)}`);

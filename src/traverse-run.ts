@@ -18,8 +18,22 @@ import {
 import type { WaygraphGraph } from "./graph.js";
 import { defaultMemValueForKey } from "./auto-explore-run.js";
 import { EdgeLeaseCoordinator } from "./traverse-lease.js";
+import {
+  buildCoverageReport,
+  collectGraphEdgeKeys,
+  defaultCoverageOutPath,
+  formatCoverageLine,
+  writeCoverageReport,
+} from "./traverse-coverage.js";
 
 export type TraverseSessionMode = "clone" | "inherit";
+
+export interface TraverseWorkerResult {
+  exitCode: number;
+  steps: number;
+  edgesHit: string[];
+  leaf?: string;
+}
 
 export interface TraverseOptions {
   baseURL?: string;
@@ -46,6 +60,15 @@ export interface TraverseOptions {
   parallel?: number;
   /** Phase D: clone (default) or inherit. Inherit refused when parallel > 1. */
   session?: TraverseSessionMode;
+  /**
+   * Phase E: fail suite (exit 2) when hit/total ratio is below this 0-1 fraction.
+   * Leaf PASS alone does not satisfy the gate.
+   */
+  minEdgeCoverage?: number;
+  /** Phase E: write coverage JSON here (default `.waygraph-traverse/coverage.json`). */
+  coverageOut?: string;
+  /** Phase E: skip writing coverage.json (still prints the Coverage line). */
+  noCoverageReport?: boolean;
 }
 
 function resolveBaseUrl(projectDir: string): string | undefined {
@@ -204,7 +227,7 @@ interface WorkerOpts {
   leases: EdgeLeaseCoordinator;
 }
 
-async function runTraverseWorker(opts: WorkerOpts): Promise<number> {
+async function runTraverseWorker(opts: WorkerOpts): Promise<TraverseWorkerResult> {
   const {
     traverseId,
     workerIndex,
@@ -229,6 +252,7 @@ async function runTraverseWorker(opts: WorkerOpts): Promise<number> {
   const startedAt = Date.now();
   let lastHere: string | null = opts.from ?? null;
   let exitCode = 0;
+  let leaf: string | undefined;
 
   try {
     for (;;) {
@@ -279,6 +303,7 @@ async function runTraverseWorker(opts: WorkerOpts): Promise<number> {
 
       if (candidates.length === 0) {
         const label = here ?? detected ?? "unknown";
+        leaf = label;
         console.log(`[Reached Leaf Node[${traverseId}] at=${label} steps=${steps}]`);
         console.error(
           `waygraph traverse[${traverseId}]: PASS leaf edgesHit=${edgesHit.size} steps=${steps}`,
@@ -352,11 +377,17 @@ async function runTraverseWorker(opts: WorkerOpts): Promise<number> {
       `waygraph traverse[${traverseId}]: done exit=${exitCode} steps=${steps} edgesHit=${edgesHit.size}`,
     );
   }
-  return exitCode;
+  return {
+    exitCode,
+    steps,
+    edgesHit: [...edgesHit],
+    ...(leaf ? { leaf } : {}),
+  };
 }
 
 /**
- * Serial or parallel graph crawl. Prints greppable PASS/FAIL lines; non-zero on break.
+ * Serial or parallel graph crawl. Prints greppable PASS/FAIL + Coverage lines.
+ * Exit: 0 leaf ok (+ coverage ok), 1 break/timeout, 2 coverage gate fail (Phase E).
  */
 export async function runTraverse(projectDir: string, options: TraverseOptions = {}): Promise<number> {
   let parallel = Math.max(1, Math.floor(options.parallel ?? 1));
@@ -379,6 +410,11 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
   const headed = options.headed === true || process.env.WAYGRAPH_HEADED === "1";
   const baseURL = options.baseURL ?? resolveBaseUrl(projectDir) ?? process.env.WAYGRAPH_BASE_URL;
   const startUrl = options.startUrl ?? baseURL;
+  const minEdgeCoverage =
+    options.minEdgeCoverage != null && Number.isFinite(options.minEdgeCoverage)
+      ? options.minEdgeCoverage
+      : undefined;
+  const coverageOut = options.coverageOut ?? defaultCoverageOutPath(projectDir);
 
   const { graph, library } = await buildExploreContext(
     projectDir,
@@ -391,6 +427,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
     );
   }
 
+  const allEdgeKeys = collectGraphEdgeKeys(graph.edges);
   const leases = new EdgeLeaseCoordinator({ projectDir, persist: parallel > 1 });
   const engine = new Engine({ headless: !headed, slowMo: headed ? 100 : 0 });
   const { chromium } = await import("@playwright/test");
@@ -405,8 +442,53 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
     `waygraph traverse: ${graph.nodes.length} node(s), ${graph.edges.length} edge(s)` +
       (baseURL ? ` base=${baseURL}` : "") +
       ` parallel=${parallel} session=${session}` +
-      ` maxSteps=${maxSteps} maxVisits/node=${maxVisitsPerNode} maxVisits/edge=${maxVisitsPerEdge}`,
+      ` maxSteps=${maxSteps} maxVisits/node=${maxVisitsPerNode} maxVisits/edge=${maxVisitsPerEdge}` +
+      (minEdgeCoverage !== undefined
+        ? ` minEdgeCoverage=${(minEdgeCoverage * 100).toFixed(1)}%`
+        : ""),
   );
+
+  const emitCoverage = (
+    workers: Array<{ traverseId: string; result: TraverseWorkerResult }>,
+  ): number => {
+    const hitUnion = new Set<string>();
+    for (const w of workers) {
+      for (const k of w.result.edgesHit) hitUnion.add(k);
+    }
+    const report = buildCoverageReport({
+      projectDir,
+      parallel,
+      allEdgeKeys,
+      hitKeys: hitUnion,
+      ...(minEdgeCoverage !== undefined ? { minEdgeCoverage } : {}),
+      workers: workers.map(({ traverseId, result }) => ({
+        traverseId,
+        exitCode: result.exitCode,
+        steps: result.steps,
+        edgesHit: result.edgesHit.length,
+        ...(result.leaf ? { leaf: result.leaf } : {}),
+      })),
+    });
+    console.log(formatCoverageLine(report));
+    console.error(
+      `waygraph traverse: coverage hit=${report.edgesHit}/${report.edgesTotal}` +
+        (report.missed.length
+          ? ` missed=${report.missed.slice(0, 8).join(",")}${report.missed.length > 8 ? "..." : ""}`
+          : "") +
+        (options.noCoverageReport ? "" : ` report=${coverageOut}`),
+    );
+    if (!options.noCoverageReport) {
+      writeCoverageReport(coverageOut, report);
+    }
+    if (report.coveragePass === false) {
+      console.error(
+        `waygraph traverse: FAIL coverage gate ratio=${(report.ratio * 100).toFixed(1)}%` +
+          ` < min=${((report.minEdgeCoverage ?? 0) * 100).toFixed(1)}%`,
+      );
+      return 2;
+    }
+    return 0;
+  };
 
   try {
     if (parallel <= 1) {
@@ -422,8 +504,9 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
         await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
         await page.waitForLoadState("load").catch(() => {});
       }
-      const code = await runTraverseWorker({
-        traverseId: options.traverseId ?? "traverse-1",
+      const traverseId = options.traverseId ?? "traverse-1";
+      const result = await runTraverseWorker({
+        traverseId,
         workerIndex: 0,
         parallel: 1,
         maxSteps,
@@ -443,7 +526,9 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
         leases,
       });
       await context.close().catch(() => {});
-      return code;
+      const coverageCode = emitCoverage([{ traverseId, result }]);
+      if (result.exitCode !== 0) return result.exitCode;
+      return coverageCode;
     }
 
     // Phase D: bootstrap one context for storageState, then N clones.
@@ -467,54 +552,60 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
       `waygraph traverse: forked ${parallel} clone workers (storageState + mem snapshot)`,
     );
 
-    const codes = await Promise.all(
-      Array.from({ length: parallel }, async (_, i) => {
-        const traverseId = `traverse-${i + 1}`;
-        const ctxOpts: Parameters<Browser["newContext"]>[0] = {
-          viewport: { width: 1280, height: 720 },
-          storageState,
-        };
-        if (baseURL) ctxOpts.baseURL = baseURL;
-        const context = await browser.newContext(ctxOpts);
-        const page = await context.newPage();
-        const mem = new MemPage();
-        restoreMem(library.byName, mem, memSnap, options.data);
-        if (startUrl) {
-          await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
-        }
-        try {
-          return await runTraverseWorker({
-            traverseId,
-            workerIndex: i,
-            parallel,
-            maxSteps,
-            maxVisitsPerNode,
-            maxVisitsPerEdge,
-            timeoutMs,
-            ...(options.from ? { from: options.from } : {}),
-            ...(startUrl ? { startUrl } : {}),
-            ...(baseURL ? { baseURL } : {}),
-            ...(options.data ? { data: options.data } : {}),
-            graph,
-            library,
-            engine,
-            context,
-            page,
-            mem,
-            leases,
-          });
-        } finally {
-          await context.close().catch(() => {});
-        }
-      }),
-    );
+    const workerMeta: Array<{ traverseId: string; result: TraverseWorkerResult }> =
+      await Promise.all(
+        Array.from({ length: parallel }, async (_, i) => {
+          const traverseId = `traverse-${i + 1}`;
+          const ctxOpts: Parameters<Browser["newContext"]>[0] = {
+            viewport: { width: 1280, height: 720 },
+            storageState,
+          };
+          if (baseURL) ctxOpts.baseURL = baseURL;
+          const context = await browser.newContext(ctxOpts);
+          const page = await context.newPage();
+          const mem = new MemPage();
+          restoreMem(library.byName, mem, memSnap, options.data);
+          if (startUrl) {
+            await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
+          }
+          try {
+            const result = await runTraverseWorker({
+              traverseId,
+              workerIndex: i,
+              parallel,
+              maxSteps,
+              maxVisitsPerNode,
+              maxVisitsPerEdge,
+              timeoutMs,
+              ...(options.from ? { from: options.from } : {}),
+              ...(startUrl ? { startUrl } : {}),
+              ...(baseURL ? { baseURL } : {}),
+              ...(options.data ? { data: options.data } : {}),
+              graph,
+              library,
+              engine,
+              context,
+              page,
+              mem,
+              leases,
+            });
+            return { traverseId, result };
+          } finally {
+            await context.close().catch(() => {});
+          }
+        }),
+      );
 
-    const worst = codes.reduce((a, b) => Math.max(a, b), 0);
-    const pass = codes.filter((c) => c === 0).length;
+    const results = workerMeta.map((w) => w.result);
+    const worst = results.reduce((a, b) => Math.max(a, b.exitCode), 0);
+    const pass = results.filter((c) => c.exitCode === 0).length;
     console.error(
       `waygraph traverse: suite parallel=${parallel} pass=${pass}/${parallel} exit=${worst}`,
     );
-    return worst;
+
+    const coverageCode = emitCoverage(workerMeta);
+    if (worst !== 0) return worst;
+    return coverageCode;
   } finally {
     await browser.close().catch(() => {});
   }

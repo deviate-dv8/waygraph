@@ -23,6 +23,7 @@ import { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./gra
 import { runAutoExplore } from "./auto-explore-run.js";
 import { runAgentDive, type AgentDiveLoop } from "./agent-dive.js";
 import { runTraverse } from "./traverse-run.js";
+import { parseMinEdgeCoverage } from "./traverse-coverage.js";
 import {
   isFileSelectToken,
   parseBlocksSelect,
@@ -4035,7 +4036,7 @@ Primary (less is more):
 
 Also:
   waygraph list | nav | validate | check | graph | init <name>
-  waygraph traverse [project]              Graph crawl (Phase B+D)
+  waygraph traverse [project]              Graph crawl (Phase B-E)
                  --blocks <glob|/re/|sub>  Phase C: filter *.block.ts discovery
                  --parallel N              Phase D: N clone workers (max 4)
                  --session clone|inherit   Phase D: default clone
@@ -4167,6 +4168,9 @@ async function main(): Promise<void> {
       let blocksFilter: string | undefined;
       let parallel: number | undefined;
       let session: "clone" | "inherit" | undefined;
+      let minEdgeCoverageRaw: string | undefined;
+      let coverageOut: string | undefined;
+      let noCoverageReport = false;
       let projectDir = process.cwd();
       for (let i = 0; i < rest.length; i++) {
         const a = rest[i]!;
@@ -4207,6 +4211,22 @@ async function main(): Promise<void> {
           session = v;
           continue;
         }
+        if (a === "--min-edge-coverage" || a.startsWith("--min-edge-coverage=")) {
+          minEdgeCoverageRaw = a.startsWith("--min-edge-coverage=")
+            ? a.slice("--min-edge-coverage=".length)
+            : rest[++i];
+          continue;
+        }
+        if (a === "--coverage-out" || a.startsWith("--coverage-out=")) {
+          coverageOut = a.startsWith("--coverage-out=")
+            ? a.slice("--coverage-out=".length)
+            : rest[++i];
+          continue;
+        }
+        if (a === "--no-coverage-report") {
+          noCoverageReport = true;
+          continue;
+        }
         if (a === "--max-steps" || a.startsWith("--max-steps=")) {
           const v = a.startsWith("--max-steps=") ? a.slice(12) : rest[++i];
           maxSteps = Number(v);
@@ -4235,12 +4255,15 @@ async function main(): Promise<void> {
         if (a === "--help" || a === "-h") {
           console.log(`waygraph traverse [project] [flags]
 
-Graph crawl (RFC Phase B+D). Walks unused legal edges until a leaf,
+Graph crawl (RFC Phase B-E). Walks unused legal edges until a leaf,
 budget kill, or first broken edge. --parallel N uses session clone + edge leases.
 
   --blocks <glob|/regex/|substr>  Phase C: filter *.block.ts discovery
   --parallel N            Phase D: N clone workers (default 1, max 4)
   --session clone|inherit Phase D: default clone; inherit refused if parallel>1
+  --min-edge-coverage X   Phase E: suite gate 0.8 | 80% | 80 (exit 2 if below)
+  --coverage-out PATH     Phase E: write JSON (default .waygraph-traverse/coverage.json)
+  --no-coverage-report    Phase E: print Coverage line only (no JSON file)
   --from <Checkpoint>     start checkpoint (optional)
   --data '{...}'          Mem seed JSON
   --max-steps N           default 50 (per worker)
@@ -4252,9 +4275,11 @@ budget kill, or first broken edge. --parallel N uses session clone + edge leases
 Examples:
   waygraph traverse --blocks '**/mailpit/**/*.block.ts'
   waygraph traverse --parallel 2 --session clone --max-steps 20
+  waygraph traverse --min-edge-coverage 80% --coverage-out ./cov.json
 
 PASS:  [Reached Leaf Node[traverse-1] at=... steps=N]
 FAIL:  [Broke at edge[traverse-1] block=... from=... to=...]
+COVER: [Coverage edges=H/T ratio=R% min=M% PASS|FAIL]
 `);
           process.exit(0);
         }
@@ -4269,6 +4294,17 @@ FAIL:  [Broke at edge[traverse-1] block=... from=... to=...]
       const blocksSelect = blocksFilter
         ? parseBlocksSelect(blocksFilter)
         : undefined;
+      let minEdgeCoverage: number | undefined;
+      if (minEdgeCoverageRaw !== undefined) {
+        const parsed = parseMinEdgeCoverage(minEdgeCoverageRaw);
+        if (parsed === null) {
+          console.error(
+            `waygraph traverse: --min-edge-coverage expects 0.8, 80%, or 80 (got ${JSON.stringify(minEdgeCoverageRaw)})`,
+          );
+          process.exit(1);
+        }
+        minEdgeCoverage = parsed;
+      }
       const code = await runTraverse(projectDir, {
         ...(from ? { from } : {}),
         ...(data ? { data } : {}),
@@ -4284,6 +4320,9 @@ FAIL:  [Broke at edge[traverse-1] block=... from=... to=...]
         ...(blocksSelect ? { blocksSelect } : {}),
         ...(parallel !== undefined && Number.isFinite(parallel) ? { parallel } : {}),
         ...(session ? { session } : {}),
+        ...(minEdgeCoverage !== undefined ? { minEdgeCoverage } : {}),
+        ...(coverageOut ? { coverageOut: resolve(coverageOut) } : {}),
+        ...(noCoverageReport ? { noCoverageReport: true } : {}),
       });
       process.exit(code);
     }
