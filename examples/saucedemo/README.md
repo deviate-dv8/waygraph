@@ -34,6 +34,9 @@ npx playwright install chromium
 | Headless suite | `npm test` |
 | Interactive explore (headed panel) | `npm run auto` |
 | Interactive explore (terminal menu) | `npm run auto:cli` |
+| Graph crawl (Phase B-E) | `npm run traverse` |
+| Parallel crawl + leases | `npm run traverse:parallel` |
+| Coverage JSON + min gate (10%) | `npm run traverse:coverage` |
 | Shop demo stepper | `npm run demo:step` |
 | Shop demo autoplay | `npm run demo:autoplay` |
 | **Cart bulk** demo (add-all → remove-all) | `npm run demo:bulk` |
@@ -47,6 +50,7 @@ npx playwright install chromium
 | **`run --blocks`** | `npm run run:bulk` — Block names + `--data` | No |
 | **`demo --blocks`** | `npm run demo:bulk` — named flow + `--data` | Optional (`cartBulkFlow`) |
 | **`auto`** | `npm run auto` / `auto:cli` | No — live menu |
+| **`traverse`** | `npm run traverse` / `traverse:parallel` / `traverse:coverage` | No — graph crawl + `.waygraph-traverse/coverage.json` |
 | **`auto --blocks From To`** | path-find on graph | No — checkpoints only |
 
 QA watch+record: `npm run demo:bulk:video` (`--auto-play-video`).
