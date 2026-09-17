@@ -25,6 +25,7 @@ npm install && npx playwright install chromium
 
 npm run auto          # headed panel - start here
 npm run auto:cli      # terminal menu (same menus)
+npm run traverse      # graph crawl + coverage.json (0.12.20+)
 npm run demo          # stepper, manual Next
 npm run demo:auto-next
 npm test              # headless Playwright suite
@@ -45,5 +46,5 @@ npx waygraph@latest try demo   # stepper + test
 | [index.html](./index.html) | Overview + why Sauce Demo |
 | [kinds.html](./kinds.html) | Block kinds (salt) |
 | [layout.html](./layout.html) | Route folders = URLs |
-| [auto.html](./auto.html) | `auto` / `auto:cli` menus |
+| [auto.html](./auto.html) | `auto` / `auto:cli` / `traverse` menus |
 | [SITE-MAP.md](./SITE-MAP.md) | Block tree map |

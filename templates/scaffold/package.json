@@ -24,7 +24,7 @@
     "baseUrl": "http://127.0.0.1:4177"
   },
   "dependencies": {
-    "waygraph": "^0.12.7"
+    "waygraph": "^0.12.20"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

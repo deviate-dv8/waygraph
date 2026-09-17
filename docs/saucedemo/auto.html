@@ -37,6 +37,9 @@ npm install
 npm run auto              # headed panel - start here
 npm run auto:cli          # terminal menu (same graph)
 npm run prove:auto-cli    # scripted login -&gt; add-all -&gt; remove-all
+npm run traverse          # graph crawl (Phase B-E); writes coverage.json
+npm run traverse:parallel # --parallel 2 --session clone
+npm run traverse:coverage # --min-edge-coverage 10% suite gate
 
 # One-shot temp copy:
 npx waygraph@latest try auto
