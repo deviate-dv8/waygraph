@@ -605,6 +605,9 @@ export function withTitle<Out extends Checkpoint<string>>(flow: Flow<Out>, title
  * Non-destructive. `fastForwardComposeBlock` is always blitz for its own step;
  * use this when an entire episode should be fast or slow.
  * @example withDemoPace(withTitle(gapFlow, "Episode 2 - gaps"), "slow")
+ * @example withDemoPace(happyFlow, 0.5)  // 2x faster than normal
+ * @example withDemoPace(gapFlow, 2.5)    // 2.5x slower
+ * @example withDemoPace(gapFlow, 4500)   // absolute ~4.5s gates/dwells
  */
 export function withDemoPace<Out extends Checkpoint<string>>(
   flow: Flow<Out>,

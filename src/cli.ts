@@ -234,6 +234,10 @@ import {
   normalizeHighlightWeight,
   applyHighlightStyleDefaults,
   resolveStepDemoPace,
+  demoPaceGateMs,
+  demoPaceIsBlitz,
+  demoPaceIsFast,
+  demoPaceIsSlow,
 } from "waygraph";
 
 function walkDir(dir, pattern) {
@@ -1090,6 +1094,7 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
   // defaultHoldMs: when set (fail path), use instead of legacy 900/200 so BUG
   // rings stay visible ~2s before the error panel (PIA stubOnError RFC).
   const defaultHoldMs = opts && opts.defaultHoldMs != null ? opts.defaultHoldMs : null;
+  const pace = opts && opts.pace !== undefined ? opts.pace : undefined;
   for (let i = 0; i < list.length; i++) {
     const h = list[i];
     try {
@@ -1099,7 +1104,7 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
           size: h.size,
           weight: h.weight,
         });
-        const authored = resolveFixtureDwellMs(h, { gatesFast });
+        const authored = resolveFixtureDwellMs(h, { gatesFast, pace });
         const legacyMs = i === list.length - 1 ? 200 : 900;
         const holdMs =
           authored != null ? authored : defaultHoldMs != null ? defaultHoldMs : legacyMs;
@@ -1156,7 +1161,9 @@ async function renderAfterStep(page, info) {
   // it highlights something [else] and next," not just the first one.
   // duration / fastMode on stubAfter (or flow fixtures) override the legacy
   // 900ms / 200ms holds when set.
-  await cycleHighlightRings(page, highlights, gatesFast, null);
+  await cycleHighlightRings(page, highlights, gatesFast, {
+    pace: info.pace,
+  });
   await page
     .evaluate((info) => {
       // Reused in place - see renderBeforeStep's own comment on this.
@@ -1547,14 +1554,13 @@ async function presentSlides(page, slides, _gate, opts) {
   const episodeTitle = (opts && opts.episodeTitle) || "";
   const gatesFast = !!(opts && opts.fast);
   const demoPace = normalizeDemoPace((opts && opts.pace) || (gatesFast ? "fast" : "normal"));
-  const autoplayMs =
+  const baseAutoplay =
     opts && opts.autoplayMs
       ? Number(opts.autoplayMs)
       : process.env.WAYGRAPH_AUTOPLAY_MS
         ? Number(process.env.WAYGRAPH_AUTOPLAY_MS)
-        : demoPace === "slow"
-          ? 3500
-          : 1800;
+        : 1800;
+  const autoplayMs = demoPaceGateMs(demoPace, baseAutoplay);
   for (let i = 0; i < slides.length; i++) {
     const s = slides[i];
     const caption = formatHighlightCaption(s);
@@ -2177,13 +2183,10 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     // gates too, not just skip its interaction dwell - otherwise autoplay
     // still stalls the full autoplayMs admiring a step that intentionally
     // ran too fast to watch.
-    const ms = pacing.skipTheater
-      ? Math.min(80, autoplayMs)
-      : pacing.gatesFast
-        ? Math.min(400, autoplayMs)
-        : pacing.gatesSlow
-          ? Math.max(autoplayMs * 2, 3500)
-          : autoplayMs;
+    const ms = demoPaceGateMs(
+      pacing.skipTheater ? "blitz" : pacing.demoPace,
+      autoplayMs,
+    );
     let elapsed = 0;
     for (;;) {
       // Re-read the checkbox EVERY loop tick, not once up front - a human
@@ -2266,31 +2269,32 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     if ((clearSession || r.resetSession) && i > 0) {
       await resetPageState(context, page, baseURL);
     }
-    // gatesFast / skipTheater: opaque FF, former-FF inners (--ff-disabled/--ff-expand),
-    // WAYGRAPH_FAST_BLOCKS, or withDemoPace/withBlockPace. --fast alone = shorter
-    // gates only (keeps theater). Episode pace: block > flow > CLI --fast.
+    // Episode pace: block > flow > CLI --fast (only when no authored pace).
+    // Authoring wins: withDemoPace("slow"|2|4500) keeps slow dwell even under --fast.
     const stepPace = resolveStepDemoPace({
       blockPace: r.block.demoPace,
       flowPace: r.demoPace,
       fastForward: !!r.block.fastForward,
       wasFastForward: !!r.wasFastForward,
     });
+    const authoredPace =
+      (r.block.demoPace != null && r.block.demoPace !== "") ||
+      (r.demoPace != null && r.demoPace !== "");
     const cliFast = demoFast || fastBlockNames.has(r.block.name);
     pacing.demoPace =
-      stepPace === "normal" && cliFast
+      stepPace === "normal" && cliFast && !authoredPace
         ? fastBlockNames.has(r.block.name)
           ? "blitz"
           : "fast"
         : stepPace;
     pacing.gatesFast =
-      pacing.demoPace === "blitz" ||
-      pacing.demoPace === "fast" ||
+      demoPaceIsFast(pacing.demoPace) ||
       !!r.block.fastForward ||
       !!r.wasFastForward ||
-      demoFast;
-    pacing.gatesSlow = pacing.demoPace === "slow";
+      (!authoredPace && demoFast);
+    pacing.gatesSlow = demoPaceIsSlow(pacing.demoPace);
     pacing.skipTheater =
-      pacing.demoPace === "blitz" ||
+      demoPaceIsBlitz(pacing.demoPace) ||
       fastBlockNames.has(r.block.name) ||
       !!r.block.fastForward ||
       !!r.wasFastForward;
@@ -2404,6 +2408,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         });
         await cycleHighlightRings(page, errHighlights, !!pacing.gatesFast, {
           defaultHoldMs: 2000,
+          pace: pacing.demoPace,
         });
       }
       // A thrown act()/observe()/a failed verify Trait used to just crash
@@ -2497,6 +2502,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       resultTag: JSON.stringify(result),
       highlights,
       gatesFast: pacing.gatesFast,
+      pace: pacing.demoPace,
       isLast: i === resolved.length - 1,
       allNames: moduleNames,
       allDescriptions: moduleDescriptions,

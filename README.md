@@ -238,8 +238,9 @@ snapshot, partitions edges by hash, and claims via in-process edge leases (audit
 `tone: "info" | "warning" | "danger" | "success"` (iconified captions), plus
 `size: "sm" | "md" | "lg"` and `weight: "normal" | "bold"`. Flow episode defaults:
 `withHighlightStyle(flow, { size, weight, tone? })` (slot/fixture wins). Episode pacing:
-`withDemoPace(flow, "fast" | "slow" | "normal" | "blitz")` or `withBlockPace(block, ...)`
-(FFCompose stays blitz). Living objectives: `docs/proposals/OBJECTIVES.md`.
+`withDemoPace(flow, "fast" | "slow" | "normal" | "blitz" | number)` or `withBlockPace(block, ...)`
+(`number` `<=20` = scale vs normal, e.g. `0.5` / `2`; `>20` = absolute ms, e.g. `4500`).
+FFCompose stays blitz. Living objectives: `docs/proposals/OBJECTIVES.md`.
 `spawnTab(entry, page, mem)` drives a genuinely separate second tab through its own
 Block/Flow, in the same browser context an existing `page` already belongs to - the
 pattern `observe()` could already reach for (it's the only phase allowed to touch

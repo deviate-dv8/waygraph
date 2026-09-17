@@ -185,20 +185,14 @@ export function toneIconPrefix(tone: HighlightTone): string {
 /**
  * Demo pacing for a Flow episode or a Block/compose group.
  * - `blitz` - FF-like: skip theater + short gates (same as fastForwardComposeBlock)
- * - `fast` - shorter gates, keep cursor theater
- * - `normal` - default demo pace
- * - `slow` - longer autoplay + fixture dwell (gaps / wrongs review)
+ * - `fast` - shorter gates, keep cursor theater (~0.33x normal)
+ * - `normal` - default demo pace (1x)
+ * - `slow` - longer autoplay + fixture dwell (~2x)
+ * - `number` - scale vs normal when `<= 20` (e.g. `0.5`, `1.5`, `3`);
+ *   absolute gate/dwell ms when `> 20` (e.g. `4500`)
  */
-export type DemoPace = "blitz" | "fast" | "normal" | "slow";
-
-export function normalizeDemoPace(raw: unknown): DemoPace {
-  if (typeof raw !== "string") return "normal";
-  const t = raw.trim().toLowerCase();
-  if (t === "blitz" || t === "ff") return "blitz";
-  if (t === "fast" || t === "quick") return "fast";
-  if (t === "slow" || t === "careful" || t === "review") return "slow";
-  return "normal";
-}
+export type DemoPaceName = "blitz" | "fast" | "normal" | "slow";
+export type DemoPace = DemoPaceName | number;
 
 /** Default fixture dwell when `duration: true`. */
 export const FIXTURE_DURATION_MS_DEFAULT = 2000;
@@ -212,27 +206,104 @@ export const SLIDE_DURATION_MS_DEFAULT = FIXTURE_DURATION_MS_DEFAULT;
 /** @deprecated Prefer FIXTURE_DURATION_FAST_MS_DEFAULT */
 export const SLIDE_DURATION_FAST_MS_DEFAULT = FIXTURE_DURATION_FAST_MS_DEFAULT;
 
+export function normalizeDemoPace(raw: unknown): DemoPace {
+  if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return raw;
+  if (typeof raw === "string") {
+    const t = raw.trim().toLowerCase();
+    if (t === "blitz" || t === "ff") return "blitz";
+    if (t === "fast" || t === "quick") return "fast";
+    if (t === "slow" || t === "careful" || t === "review") return "slow";
+    if (t === "normal" || t === "default" || t === "1x") return "normal";
+    // "2x" / "0.5x"
+    if (t.endsWith("x")) {
+      const n = Number(t.slice(0, -1));
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    const n = Number(t);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return "normal";
+}
+
+/** Named / numeric pace -> scale vs normal (1 = normal). Absolute ms (>20) maps via default dwell. */
+export function demoPaceScale(pace: DemoPace): number {
+  if (typeof pace === "number") {
+    if (pace > 20) return Math.min(10, Math.max(0.05, pace / FIXTURE_DURATION_MS_DEFAULT));
+    return Math.min(10, Math.max(0.05, pace));
+  }
+  if (pace === "blitz") return 0.05;
+  if (pace === "fast") return 0.33;
+  if (pace === "slow") return 2;
+  return 1;
+}
+
+export function demoPaceIsBlitz(pace: DemoPace): boolean {
+  return pace === "blitz" || (typeof pace === "number" && pace > 0 && pace <= 0.1);
+}
+
+/** True when pace should use the short-gate / fast fixture path (not slow authored). */
+export function demoPaceIsFast(pace: DemoPace): boolean {
+  if (demoPaceIsBlitz(pace)) return true;
+  if (pace === "fast") return true;
+  if (typeof pace === "number" && pace <= 20) return pace < 0.75;
+  return false;
+}
+
+export function demoPaceIsSlow(pace: DemoPace): boolean {
+  if (pace === "slow") return true;
+  if (typeof pace === "number") {
+    if (pace > 20) return pace >= 3000;
+    return pace > 1.25;
+  }
+  return false;
+}
+
+/** Autoplay / Next-gate ms for this pace (base is WAYGRAPH_AUTOPLAY_MS or 1800). */
+export function demoPaceGateMs(pace: DemoPace, baseAutoplayMs: number): number {
+  if (demoPaceIsBlitz(pace)) return Math.min(80, baseAutoplayMs);
+  if (typeof pace === "number" && pace > 20) {
+    return Math.min(30000, Math.max(80, Math.round(pace)));
+  }
+  const scale = demoPaceScale(pace);
+  return Math.min(30000, Math.max(80, Math.round(baseAutoplayMs * scale)));
+}
+
 /**
  * Resolve min dwell ms for any fixture (stub / flow fixture / yap slide),
  * or `null` when duration is unset (caller keeps legacy timing).
+ *
+ * Authoring wins: an explicit slow/numeric pace is not crushed by CLI `--fast`
+ * (`gatesFast`). `--fast` only shortens when pace is unset/normal.
  */
 export function resolveFixtureDwellMs(
   fixture: FixtureDurationFields,
   opts?: { gatesFast?: boolean; pace?: DemoPace },
 ): number | null {
   if (fixture.duration === undefined || fixture.duration === false) return null;
-  const pace = normalizeDemoPace(opts?.pace ?? (opts?.gatesFast ? "fast" : "normal"));
+  const pace =
+    opts?.pace !== undefined && opts.pace !== null
+      ? normalizeDemoPace(opts.pace)
+      : opts?.gatesFast
+        ? "fast"
+        : "normal";
   const fastMs =
     typeof fixture.fastMode === "number" && Number.isFinite(fixture.fastMode) && fixture.fastMode >= 0
       ? fixture.fastMode
       : FIXTURE_DURATION_FAST_MS_DEFAULT;
-  if (pace === "blitz" || pace === "fast" || opts?.gatesFast) return fastMs;
   const normalMs =
     fixture.duration === true
       ? FIXTURE_DURATION_MS_DEFAULT
       : typeof fixture.duration === "number" && Number.isFinite(fixture.duration) && fixture.duration >= 0
         ? fixture.duration
         : FIXTURE_DURATION_MS_DEFAULT;
+
+  if (typeof pace === "number") {
+    if (pace > 20) return Math.round(pace);
+    return Math.max(0, Math.round(normalMs * Math.min(10, Math.max(0.05, pace))));
+  }
+  if (pace === "blitz" || pace === "fast") return fastMs;
+  // CLI --fast only when author left pace at normal
+  if (opts?.gatesFast && pace === "normal") return fastMs;
   if (pace === "slow") return Math.max(normalMs, FIXTURE_DURATION_SLOW_MS_DEFAULT);
   return normalMs;
 }
@@ -250,8 +321,8 @@ export function resolveSlideDwellMs(
  * Opaque FF / wasFastForward always win as blitz.
  */
 export function resolveStepDemoPace(opts: {
-  blockPace?: DemoPace | string | null;
-  flowPace?: DemoPace | string | null;
+  blockPace?: DemoPace | string | number | null;
+  flowPace?: DemoPace | string | number | null;
   fastForward?: boolean;
   wasFastForward?: boolean;
 }): DemoPace {

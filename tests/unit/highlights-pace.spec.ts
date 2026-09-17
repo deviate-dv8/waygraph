@@ -8,6 +8,10 @@ import {
   formatHighlightCaption,
   resolveFixtureDwellMs,
   resolveStepDemoPace,
+  demoPaceScale,
+  demoPaceGateMs,
+  demoPaceIsSlow,
+  demoPaceIsFast,
   FIXTURE_DURATION_MS_DEFAULT,
   FIXTURE_DURATION_FAST_MS_DEFAULT,
   FIXTURE_DURATION_SLOW_MS_DEFAULT,
@@ -67,6 +71,18 @@ describe("normalizeDemoPace / resolveStepDemoPace", () => {
     assert.equal(normalizeDemoPace(""), "normal");
   });
 
+  it("accepts numeric scale and absolute ms", () => {
+    assert.equal(normalizeDemoPace(0.5), 0.5);
+    assert.equal(normalizeDemoPace(2), 2);
+    assert.equal(normalizeDemoPace(4500), 4500);
+    assert.equal(normalizeDemoPace("2x"), 2);
+    assert.equal(demoPaceScale(2), 2);
+    assert.equal(demoPaceGateMs(4500, 1800), 4500);
+    assert.equal(demoPaceGateMs(2, 1800), 3600);
+    assert.equal(demoPaceIsSlow(2.5), true);
+    assert.equal(demoPaceIsFast(0.5), true);
+  });
+
   it("FF wins over flow/block pace", () => {
     assert.equal(
       resolveStepDemoPace({ blockPace: "slow", flowPace: "fast", fastForward: true }),
@@ -78,6 +94,7 @@ describe("normalizeDemoPace / resolveStepDemoPace", () => {
   it("block pace overrides flow pace", () => {
     assert.equal(resolveStepDemoPace({ blockPace: "slow", flowPace: "fast" }), "slow");
     assert.equal(resolveStepDemoPace({ flowPace: "fast" }), "fast");
+    assert.equal(resolveStepDemoPace({ flowPace: 1.75 }), 1.75);
   });
 });
 
@@ -94,6 +111,19 @@ describe("resolveFixtureDwellMs pace", () => {
     assert.equal(
       resolveFixtureDwellMs({ duration: true }, { pace: "normal" }),
       FIXTURE_DURATION_MS_DEFAULT,
+    );
+  });
+
+  it("scales and absolute ms; authored slow wins over gatesFast", () => {
+    assert.equal(resolveFixtureDwellMs({ duration: true }, { pace: 2 }), 4000);
+    assert.equal(resolveFixtureDwellMs({ duration: true }, { pace: 4500 }), 4500);
+    assert.equal(
+      resolveFixtureDwellMs({ duration: true }, { pace: "slow", gatesFast: true }),
+      FIXTURE_DURATION_SLOW_MS_DEFAULT,
+    );
+    assert.equal(
+      resolveFixtureDwellMs({ duration: true }, { pace: "normal", gatesFast: true }),
+      FIXTURE_DURATION_FAST_MS_DEFAULT,
     );
   });
 });

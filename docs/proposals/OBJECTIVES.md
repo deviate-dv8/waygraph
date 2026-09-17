@@ -25,20 +25,35 @@ Tester ask: make waygraph richer for QA/demo narration.
 | Highlight size / weight | DONE | `size: sm\|md\|lg`, `weight: normal\|bold` |
 | Flow episode defaults | DONE | `withHighlightStyle(flow, { size, weight, tone? })` |
 | Group pacing (flow / compose / episode) | DONE | `withDemoPace` / `withBlockPace`; FF = blitz |
-| Episode fast vs slow | DONE | e.g. pia ep2 gaps/wrongs = `withDemoPace(..., "slow")` |
-| **Per-flow speed wins CLI `--fast`** | **NEXT (upcoming)** | Authored `withDemoPace("slow")` must keep slow dwell even when the runner passes `--fast`. Today CLI `gatesFast` still crushes fixture dwell in `resolveFixtureDwellMs` / `cycleHighlightRings` — fix: pace > gatesFast when pace is slow; pass `pace` into ring cycling. Until shipped, PIA gap episodes run with `--full`. |
+| Numeric pace | DONE | scale `<=20` (e.g. `0.5`, `2`) or absolute ms `>20` (e.g. `4500`) |
+| Episode fast vs slow | DONE | e.g. pia ep2 gaps/wrongs = `withDemoPace(..., "slow"\|2)` |
+| Per-flow speed wins CLI `--fast` | DONE | Authoring wins for slow/numeric; `--fast` only when pace unset/normal |
 
 ### Authoring sketch
 
 ```ts
-import { withDemoPace, withBlockPace, withTitle, composeBlock } from "waygraph";
+import {
+  withDemoPace, withBlockPace, withTitle, withHighlightStyle,
+  withHighlightFixtures, composeBlock,
+} from "waygraph";
 
 // Fast episode (smoke through happy path)
 export const ep1 = withDemoPace(withTitle(happyFlow, "Episode 1 - happy"), "fast");
 
-// Slow episode (gaps / wrongs / convention review)
-export const ep2 = withDemoPace(withTitle(gapFlow, "Episode 2 - gaps"), "slow");
-// Upcoming: this "slow" wins over CLI --fast for fixture dwell (see table above).
+// Slow episode + larger/bolder rings by default for the whole Flow
+export const ep2 = withHighlightStyle(
+  withDemoPace(withTitle(gapFlow, "Episode 2 - gaps"), 2.5), // or "slow" / 4500ms
+  { size: "lg", weight: "bold" },
+);
+
+// Per-slot override on the flow (wins over withHighlightStyle)
+export const ep2Fixtures = withHighlightFixtures(ep2, {
+  "review-gap": {
+    stubAfter: {
+      tip: { label: "Side note", tone: "info", size: "sm", weight: "normal" },
+    },
+  },
+});
 
 // One compose group slower than the rest of its flow
 const review = withBlockPace(composeBlock("gap-review", [...]), "slow");
