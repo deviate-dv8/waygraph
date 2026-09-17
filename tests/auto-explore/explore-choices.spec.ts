@@ -59,6 +59,55 @@ test("buildExploreMenu at LoginPage groups forward actions", async ({ page }) =>
   expect(menu.flat.map((e) => e.block)).toEqual(["submit-login"]);
 });
 
+test("buildExploreMenu at LoginPage hides url deep-link nav spam", async ({ page }) => {
+  await page.setContent('<button id="login-button">Login</button>');
+  const graph: WaygraphGraph = {
+    nodes: [{ checkpoint: "LoginPage" }, { checkpoint: "LoggedIn" }, { checkpoint: "ContactsList" }],
+    edges: [
+      { block: "nav-login", file: "a", from: "*", to: "LoginPage", kind: "nav" },
+      { block: "nav-contacts", file: "c", from: "*", to: "ContactsList", kind: "nav" },
+      { block: "submit-login", file: "b", from: "LoginPage", to: "LoggedIn", kind: "action" },
+    ],
+    skipped: [],
+  };
+  const library = {
+    byName: new Map([
+      [
+        "nav-login",
+        {
+          block: { name: "nav-login", __waygraphKind: "nav" } as never,
+          exportName: "NavLoginBlock",
+          file: "a",
+          kind: "nav" as const,
+          description: "",
+        },
+      ],
+      [
+        "nav-contacts",
+        {
+          block: { name: "nav-contacts", __waygraphKind: "nav" } as never,
+          exportName: "NavContactsBlock",
+          file: "c",
+          kind: "nav" as const,
+          description: "",
+        },
+      ],
+      [
+        "submit-login",
+        {
+          block: { name: "submit-login" } as never,
+          exportName: "SubmitLoginBlock",
+          file: "b",
+          kind: "action" as const,
+          description: "",
+        },
+      ],
+    ]),
+  };
+  const menu = await buildExploreMenu(page, graph, library, "LoginPage");
+  expect(menu.flat.map((e) => e.block)).toEqual(["submit-login"]);
+});
+
 test("buildExploreMenu when unknown only offers url nav", async ({ page }) => {
   await page.setContent("<body>blank</body>");
   const library = {

@@ -215,11 +215,18 @@ overridable, not one giant Block with no per-step confirmation. `composedBlock.w
 `modStepVerify` patch one step from outside, addressed the same three ways
 `withBlockVerify`/`modBlockVerify` already are - a `composeBlock` result is a plain Block,
 so it drops straight into `defineFlow([start, ..., composed, ..., end])` like any other.
-`fastForwardComposeBlock(name, steps)` is the same shape marked for **demo pacing**: one
-opaque step (no per-inner gate) unless `waygraph demo --ff-expand`. Saucedemo
+`fastForwardComposeBlock(name, steps)` is the same shape marked for **wall-clock
+fast-forward**: one opaque demo step that **blitzes** (no per-inner gate, no smooth
+cursor theater, Playwright slowMo off for that flow unless `WAYGRAPH_SLOWMO` is set)
+unless expanded. Put **several** FF units in one Flow when you need to race past auth,
+then a heavy dashboard settle, then watch the interesting middle.
+
+**Dispute / disable FF:** `waygraph demo --ff-disabled` (alias `--no-ff`) expands every
+FFCompose into its inner Blocks so a broken login step is visible as its own panel row.
+Former FF inners keep blitz pacing so wall-clock stays comparable to opaque FF (same
+real acts). `--ff-expand` is the older expand-only flag (same flatten). Saucedemo
 `checkoutFlow` uses `ff-owner-auth` for the login prefix; `loginFlow` stays expanded for
-Sign In narration. Traverse (later) reuses FF as a seed prefix - see
-`docs/proposals/traverse-ffcompose-rfc.md`.
+Sign In narration. See `docs/proposals/traverse-ffcompose-rfc.md`.
 `spawnTab(entry, page, mem)` drives a genuinely separate second tab through its own
 Block/Flow, in the same browser context an existing `page` already belongs to - the
 pattern `observe()` could already reach for (it's the only phase allowed to touch

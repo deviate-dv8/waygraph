@@ -900,10 +900,13 @@ export function composeBlock(
 
 /**
  * Same shape as {@link composeBlock}, marked {@link FastForwardComposedBlock.fastForward}
- * so demo/run/traverse treat it as **one opaque step** (no per-inner gate/ring)
- * unless `--ff-expand` / `WAYGRAPH_FF_EXPAND=1`. Inner acts still run for real;
+ * so demo/run/traverse treat it as **one opaque step** that **blitzes wall-clock**
+ * (skip overlay theater + no Playwright slowMo on that step's acts) unless
+ * `--ff-expand` / `WAYGRAPH_FF_EXPAND=1`. Inner acts still run for real;
  * failures are prefixed `ff-name > …` so the locus names both the FF unit and
- * the inner step. Prefer this for boring prefixes (auth, seed) on demo Flows.
+ * the inner step. Prefer this for boring or heavy-check prefixes (auth, seed,
+ * dashboard settle) — you may put **several** FF units in one Flow with normal
+ * Blocks between them.
  * @example fastForwardComposeBlock("ff-owner-auth", [NavLoginBlock, SubmitLoginForFlow])
  */
 export interface FastForwardComposedBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>

@@ -40,7 +40,7 @@ CLI parity standing rule (Dan): every waygraph CLI surface that can take work sh
 | **Edge** | A Block (or composed / FF-composed unit) from `from` -> `to`. |
 | **Traverse** | One waygraph client walking the graph from a seed (checkpoint + mem + optional browser context). |
 | **Leaf** | A node with no unused legal outgoing edges under current policy (or policy says stop). |
-| **FFComposeBlock** | Fast-forward compose: same shape as `composeBlock`, run as **one** opaque step for demo/traverse pacing (no per-inner-step overlay), still real acts under the hood. |
+| **FFComposeBlock** | Fast-forward compose: same shape as `composeBlock`, run as **one** opaque step that **blitzes wall-clock** (skip overlay theater + default `slowMo: 0` when any opaque FF / former-FF inners are in the flow). Not "hide cursor only." Multiple FF units per Flow are fine. `--ff-disabled` / `--no-ff` expands inners for dispute (broken step locus) while keeping blitz on those inners so timing stays comparable. `--ff-expand` = expand-only. |
 | **Session inherit** | Child traverse reuses the **same** Playwright BrowserContext (cookies, storage, open pages) as parent. |
 | **Session clone** | Child gets a **copy** of storage state (cookies/localStorage) into a **new** context (isolated tabs; parent keeps going). |
 | **Split** | Spawn child traverse(s) from a node (or after an FFCompose landing) to fan out remaining edges in parallel. |
@@ -87,6 +87,8 @@ Rules:
 - Same typing / connect rules as `composeBlock` (In/Out chain must typecheck).
 - Runtime: one `act` that runs inners in order; verify = last step's verify (or explicit compose verify).
 - Demo: one panel row `ff-owner-auth` (optional expand for debug: `--ff-expand`).
+- **Speed (Dan / PIA):** FF means **blitz wall-clock**, not "hide the smooth cursor." Opaque FF steps set `skipTheater` and, when any opaque FF is in the flow, default Playwright `slowMo` to `0` (override with `WAYGRAPH_SLOWMO`). Target: auth FF under ~10s when the app cooperates (mail latency still real).
+- **Multiple FFs:** allowed in one Flow (auth FF, later a dashboard-heavy-checks FF, then slow interesting Blocks).
 - Errors: fail names **inner block** + FF name (`ff-owner-auth > submit-login`).
 - Mem: inners still `requires` / `mem.set`; FF declares union of requires for seeding.
 
@@ -322,9 +324,9 @@ Do **not** make authors edit traverse configs every time a Block file moves if i
 
 | Phase | Ship | Notes |
 |-------|------|-------|
-| **A** | `fastForwardComposeBlock` + demo/run treat as one step | **DONE (demo-first):** saucedemo `ff-owner-auth`, `--ff-expand` |
+| **A** | `fastForwardComposeBlock` + demo/run treat as one step | **DONE + speed + disable (0.12.13):** opaque blitz; `--ff-disabled` expands for dispute; multi-FF OK |
 | **B** | `waygraph traverse` serial + max-visits + leaf PASS lines | **DONE** — `src/traverse-run.ts` |
-| **C** | Glob/regex `--blocks` shared by auto/traverse/demo | CLI parity |
+| **C** | Glob/regex `--blocks` shared by auto/traverse | **DONE** — `src/blocks-select.ts` (demo/run still bare/path/export) |
 | **D** | `--parallel` + `--session clone` + edge leases | inherit later or never |
 | **E** | Coverage gate + JSON report + CI recipe | |
 

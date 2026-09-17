@@ -21,6 +21,8 @@ export interface AutoExploreOptions {
   baseURL?: string;
   /** Initial URL when the page is blank (defaults to baseURL). */
   startUrl?: string;
+  /** Phase C: glob / regex / bare `--blocks` file select for discovery. */
+  blocksSelect?: import("./blocks-select.js").BlocksSelect;
 }
 
 function resolveBaseUrl(projectDir: string): string | undefined {
@@ -544,7 +546,16 @@ export async function runAutoExplore(projectDir: string, options: AutoExploreOpt
   const cli = options.cli === true;
   const baseURL = options.baseURL ?? resolveBaseUrl(projectDir) ?? process.env.WAYGRAPH_BASE_URL;
   const startUrl = options.startUrl ?? baseURL;
-  const { graph, library } = await buildExploreContext(projectDir);
+  const { graph, library } = await buildExploreContext(
+    projectDir,
+    options.blocksSelect ? { blocksSelect: options.blocksSelect } : undefined,
+  );
+  if (options.blocksSelect) {
+    console.error(
+      `waygraph auto: --blocks ${options.blocksSelect.raw} → ` +
+        `${library.byName.size} block(s), ${graph.edges.length} edge(s)`,
+    );
+  }
   const mem = new MemPage();
   seedDefaultMem(library.byName, mem);
   const engine = cli ? new Engine({ headless: true }) : new Engine({ headless: false, slowMo: 250 });

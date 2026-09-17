@@ -1,5 +1,9 @@
 import { existsSync, readFileSync, readdirSync, type Dirent } from "node:fs";
 import { join, dirname, relative, resolve } from "node:path";
+import {
+  type BlocksSelect,
+  matchBlocksSelect,
+} from "./blocks-select.js";
 
 /**
  * The state-machine shape `waygraph auto` discovers from a project's own
@@ -338,8 +342,20 @@ function extractDefineBlockGenerics(src: string): { in: string; out: string }[] 
  * already is for `check`, unlike `chain`, which spawns a child process
  * specifically because it also EXECUTES Blocks, not just imports them.
  */
-export async function discoverGraph(projectDir: string): Promise<WaygraphGraph> {
-  const files = discoverBlocks(projectDir);
+export async function discoverGraph(
+  projectDir: string,
+  opts?: { blocksSelect?: BlocksSelect },
+): Promise<WaygraphGraph> {
+  let files = discoverBlocks(projectDir);
+  const select = opts?.blocksSelect;
+  // Glob/bare: drop files early. Regex needs block names — filter per export below.
+  if (select && select.kind !== "regex") {
+    files = files.filter((file) =>
+      matchBlocksSelect(select, {
+        relFile: relative(projectDir, file).replace(/\\/g, "/"),
+      }),
+    );
+  }
   const nodeTags = new Set<string>();
   const edges: WaygraphEdge[] = [];
   const skipped: SkippedBlock[] = [];
@@ -368,6 +384,15 @@ export async function discoverGraph(projectDir: string): Promise<WaygraphGraph> 
     for (const exported of Object.values(mod)) {
       if (!isBlockLike(exported)) continue;
       const blockName = exported.name;
+      if (
+        select &&
+        !matchBlocksSelect(select, {
+          relFile: relFile.replace(/\\/g, "/"),
+          blockName,
+        })
+      ) {
+        continue;
+      }
 
       if (isNavBlockMarked(exported as Record<string, unknown>)) {
         try {

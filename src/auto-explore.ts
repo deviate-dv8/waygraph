@@ -114,14 +114,23 @@ async function wildcardActionRunnable(page: Page, entry: BlockEntry, here: strin
 /**
  * Import every `*.block.ts` export keyed by runtime Block `.name`.
  */
-export async function loadBlockLibrary(projectDir: string): Promise<{
+export async function loadBlockLibrary(
+  projectDir: string,
+  opts?: { blocksSelect?: import("./blocks-select.js").BlocksSelect },
+): Promise<{
   byName: Map<string, BlockEntry>;
   navBlocks: BlockEntry[];
 }> {
+  const { matchBlocksSelect } = await import("./blocks-select.js");
   const byName = new Map<string, BlockEntry>();
   const navBlocks: BlockEntry[] = [];
+  const select = opts?.blocksSelect;
   for (const file of walkDir(projectDir, /\.block\.ts$/)) {
-    const relFile = relative(projectDir, file);
+    const relFile = relative(projectDir, file).replace(/\\/g, "/");
+    // Glob/bare: path filter before import. Regex: need block name — filter after.
+    if (select && select.kind !== "regex" && !matchBlocksSelect(select, { relFile })) {
+      continue;
+    }
     let mod: Record<string, unknown>;
     try {
       mod = await importModule(file);
@@ -134,6 +143,12 @@ export async function loadBlockLibrary(projectDir: string): Promise<{
     }
     for (const [exportName, exported] of Object.entries(mod)) {
       if (!isBlockLike(exported)) continue;
+      if (
+        select &&
+        !matchBlocksSelect(select, { relFile, blockName: exported.name })
+      ) {
+        continue;
+      }
       const kind = isNavBlockMarked(exported) ? "nav" : "action";
       const entry: BlockEntry = {
         block: exported as Block<Checkpoint<string>, Checkpoint<string>>,
@@ -276,12 +291,20 @@ export async function buildExploreMenu(
     if (!(await navRunnable(page, entry))) continue;
 
     if (here === null) {
+      // Bootstrap only: URL deep-links as "Start here". Click-nav needs a live
+      // control so it cannot seed an unknown page.
       if (!isUrlNav(entry)) continue;
       push(navigate, edge);
       continue;
     }
 
     if (edge.to === here) continue;
+
+    // Known screen: do NOT dump every defineNavBlock({ url }) under Navigate.
+    // Graph still marks NavBlocks from:"*" for pathfinding/traverse; auto menu
+    // only offers click-nav whose control is visible on this page (navRunnable).
+    // Otherwise LoginForm lists every app route + mailpit as if legal moves.
+    if (isUrlNav(entry)) continue;
 
     if (isBackEdge(edge) && (edge.from === here || edge.from === "*")) {
       push(back, edge);
@@ -351,14 +374,17 @@ export async function buildExploreMenu(
   return { here, sections, flat };
 }
 
-export async function buildExploreContext(projectDir: string): Promise<{
+export async function buildExploreContext(
+  projectDir: string,
+  opts?: { blocksSelect?: import("./blocks-select.js").BlocksSelect },
+): Promise<{
   graph: WaygraphGraph;
   library: Awaited<ReturnType<typeof loadBlockLibrary>>;
 }> {
   // Sequential: parallel import of the same *.block.ts tree raced Playwright's
   // dual-copy guard in some installs and left graph edges without library entries
   // (LoginPage → "No moves").
-  const library = await loadBlockLibrary(projectDir);
-  const graph = await discoverGraph(projectDir);
+  const library = await loadBlockLibrary(projectDir, opts);
+  const graph = await discoverGraph(projectDir, opts);
   return { graph, library };
 }

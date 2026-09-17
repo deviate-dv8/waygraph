@@ -80,3 +80,10 @@ export type {
 export type { ActionPage } from "./types.js";
 export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./graph.js";
 export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock, OrphanBlock } from "./graph.js";
+export {
+  isFileSelectToken,
+  parseBlocksSelect,
+  matchBlocksSelect,
+  globToRegExp,
+} from "./blocks-select.js";
+export type { BlocksSelect, BlocksSelectKind } from "./blocks-select.js";

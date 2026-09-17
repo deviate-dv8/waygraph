@@ -36,6 +36,8 @@ export interface TraverseOptions {
   headed?: boolean;
   /** Traverse id for greppable lines (default traverse-1). */
   traverseId?: string;
+  /** Phase C: glob / regex / bare `--blocks` file select. */
+  blocksSelect?: import("./blocks-select.js").BlocksSelect;
 }
 
 function resolveBaseUrl(projectDir: string): string | undefined {
@@ -151,7 +153,16 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
   const baseURL = options.baseURL ?? resolveBaseUrl(projectDir) ?? process.env.WAYGRAPH_BASE_URL;
   const startUrl = options.startUrl ?? baseURL;
 
-  const { graph, library } = await buildExploreContext(projectDir);
+  const { graph, library } = await buildExploreContext(
+    projectDir,
+    options.blocksSelect ? { blocksSelect: options.blocksSelect } : undefined,
+  );
+  if (options.blocksSelect) {
+    console.error(
+      `waygraph traverse: --blocks ${options.blocksSelect.raw} → ` +
+        `${library.byName.size} block(s), ${graph.edges.length} edge(s)`,
+    );
+  }
   const mem = new MemPage();
   seedMem(library.byName, mem, options.data);
 

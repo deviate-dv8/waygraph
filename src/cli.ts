@@ -5,7 +5,7 @@
  *
  * Primary verbs (less is more):
  *   auto   Explore picker; `.flow.ts` / `--blocks From To` = run that path
- *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--fast` `--full` `--ff-expand`
+ *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--fast` `--full` `--ff-expand` `--ff-disabled`
  *   run    Execute; `--blocks` `--data` `--non-headless` `--video`
  *
  * Also: list / nav / validate / check / graph / init / agent-dive / traverse / try
@@ -23,6 +23,10 @@ import { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./gra
 import { runAutoExplore } from "./auto-explore-run.js";
 import { runAgentDive, type AgentDiveLoop } from "./agent-dive.js";
 import { runTraverse } from "./traverse-run.js";
+import {
+  isFileSelectToken,
+  parseBlocksSelect,
+} from "./blocks-select.js";
 
 // ---------------------------------------------------------------------------
 // Filesystem
@@ -1758,10 +1762,10 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
   // seconds. When slowMo is already doing the pacing, add none of our own;
   // only fall back to a small typing delay when slowMo is off entirely.
   //
-  // pacing.skipTheater (WAYGRAPH_FAST_BLOCKS only): near-zero cursor / pop /
-  // typing - blow past this block. --fast sets pacing.gatesFast instead
-  // and must NOT land here, or demo looks like plain waygraph run.
-  // stubBeforeRef.current = resolved stubBefore slots for the active block.
+  // pacing.skipTheater (WAYGRAPH_FAST_BLOCKS **or** FFCompose): near-zero
+  // cursor / pop / typing - blitz this step. --fast alone sets gatesFast only
+  // (shorter Next/autoplay gates) and must NOT skip theater, or the whole demo
+  // looks like plain waygraph run.
   const skipTheater = () => !!pacing.skipTheater;
   const typeDelay = () => (skipTheater() ? 0 : slowMo ? 0 : 30);
   // Click is a single action, not per-character, so it doesn't compound
@@ -1770,7 +1774,8 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
   // rather than stacking a full 1.2s on top of that.
   const clickPrePop = () => (skipTheater() ? 0 : slowMo ? 300 : 700);
   const clickPostPop = () => (skipTheater() ? 0 : slowMo ? 200 : 500);
-  const cursorMs = (full) => (skipTheater() ? Math.min(120, full) : full);
+  // FF / FAST_BLOCKS: no cursor travel animation (0). Plain theater keeps full.
+  const cursorMs = (full) => (skipTheater() ? 0 : full);
   // Locator.fill()/click() only ever see a raw call, no context of where
   // the value came from. Patching mem.get() to remember the most recently
   // read key's name (Blocks read-then-immediately-fill, e.g. const { email
@@ -1997,14 +2002,15 @@ async function resetPageState(context, page, baseURL) {
 async function runStepMode(engine, start, end, context, page, mem, resolved, slowMo, title, fastBlockNames, clearSession, baseURL) {
   // A shared, mutable pacing knob the interaction patches read live (per
   // call, not once at setup) - flipped per-block below so one block (e.g.
-  // WAYGRAPH_FAST_BLOCKS=login) can run through with none of the overlay's
-  // own added dwell while the rest of the chain keeps the full theatrical
-  // pace. Playwright's own slowMo is process-wide and untouched by this -
-  // only OUR added pauses (ring pop, cursor travel, typing delay) shrink
-  // when skipTheater is on.
+  // WAYGRAPH_FAST_BLOCKS=login or an FFCompose unit) can run through with
+  // none of the overlay's own added dwell while the rest of the chain keeps
+  // the full theatrical pace.
   // --fast / WAYGRAPH_DEMO_FAST: shorter auto-next / Next gates ONLY -
   // keeps smooth cursor travel (not akin to waygraph run).
-  // WAYGRAPH_FAST_BLOCKS: named blocks still skip theater (old blow-past).
+  // FFCompose + WAYGRAPH_FAST_BLOCKS: skipTheater (blitz overlay delays).
+  // When the flow has any opaque FF unit and WAYGRAPH_SLOWMO is unset,
+  // launch slowMo is 0 so Playwright itself does not re-tax every click
+  // inside the FF (that was the "30s login / cursor gone but still slow" bug).
   const demoFast = process.env.WAYGRAPH_DEMO_FAST === "1";
   const stepperMode = process.env.WAYGRAPH_STEPPER === "full" ? "full" : "carousel";
   const pacing = { gatesFast: demoFast, skipTheater: false };
@@ -2094,8 +2100,11 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     // gates too, not just skip its interaction dwell - otherwise autoplay
     // still stalls the full autoplayMs admiring a step that intentionally
     // ran too fast to watch.
-    const ms =
-      pacing.gatesFast || pacing.skipTheater ? Math.min(400, autoplayMs) : autoplayMs;
+    const ms = pacing.skipTheater
+      ? Math.min(80, autoplayMs)
+      : pacing.gatesFast
+        ? Math.min(400, autoplayMs)
+        : autoplayMs;
     let elapsed = 0;
     for (;;) {
       // Re-read the checkbox EVERY loop tick, not once up front - a human
@@ -2178,10 +2187,11 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     if ((clearSession || r.resetSession) && i > 0) {
       await resetPageState(context, page, baseURL);
     }
-    // gatesFast: --fast (whole run) or FFCompose opaque steps (one short gate).
-    // skipTheater: only WAYGRAPH_FAST_BLOCKS - never --fast, never FF by default.
-    pacing.gatesFast = demoFast || !!r.block.fastForward;
-    pacing.skipTheater = fastBlockNames.has(r.block.name);
+    // gatesFast / skipTheater: opaque FF, former-FF inners (--ff-disabled/--ff-expand),
+    // or WAYGRAPH_FAST_BLOCKS. --fast alone = shorter gates only (keeps theater).
+    pacing.gatesFast = demoFast || !!r.block.fastForward || !!r.wasFastForward;
+    pacing.skipTheater =
+      fastBlockNames.has(r.block.name) || !!r.block.fastForward || !!r.wasFastForward;
     const fixtures = r.highlightFixtures;
     stubBeforeRef.current = resolveHighlightSlots(r.block, "stubBefore", { fixtures });
     const isNavBlock = r.block.__waygraphKind === "nav";
@@ -2491,7 +2501,9 @@ async function main() {
   // truly unexpected failure outside runJsonReportMode's own try/catch)
   // reaches stdout.
   const jsonReport = process.env.WAYGRAPH_JSON === "1";
-  const ffExpand = process.env.WAYGRAPH_FF_EXPAND === "1";
+  const ffExpand =
+    process.env.WAYGRAPH_FF_EXPAND === "1" || process.env.WAYGRAPH_FF_DISABLED === "1";
+  const ffDisabled = process.env.WAYGRAPH_FF_DISABLED === "1";
   /** Expand or keep fastForwardComposeBlock units for demo/run step lists. */
   const flattenBlockInfos = (blockInfos) => {
     const out = [];
@@ -2504,6 +2516,10 @@ async function main() {
             block: step.block,
             ...(step.routes ? { routes: step.routes } : {}),
             ...(bi.resetSessionBefore ? { resetSessionBefore: true } : {}),
+            // Dispute / --ff-disabled: keep blitz pacing on former FF inners so
+            // wall-clock stays comparable to opaque FF (same real acts).
+            wasFastForward: true,
+            ffSource: b.name,
           });
         }
       } else {
@@ -2536,14 +2552,20 @@ async function main() {
           flow.expectedFailureReason && idx === blockInfos.length - 1
             ? flow.expectedFailureReason
             : undefined,
+        ...(bi.wasFastForward ? { wasFastForward: true, ffSource: bi.ffSource } : {}),
       }));
       chainFlows = [flow];
       if (!jsonReport) {
         console.log(
-          "waygraph: running existing flow \\"" + bareRef + "\\" - " +
+          'waygraph: running existing flow "' + bareRef + '" - ' +
             resolved.map((r) => r.block.name).join(" -> ") + " (" + resolved.length + " block" +
             (resolved.length === 1 ? "" : "s") + ", no chain spec needed)",
         );
+        if (ffDisabled) {
+          console.error(
+            "waygraph demo: --ff-disabled - FFCompose expanded to inners (dispute / step locus); blitz pacing kept on former FF steps",
+          );
+        }
       }
     }
   }
@@ -2630,6 +2652,7 @@ async function main() {
         expectedFailureReason:
           meta.expectedFailureReason && remainingInFlow === 1 ? meta.expectedFailureReason : undefined,
         seedMem: isFirstOfSegment ? meta.seedMem : undefined,
+        ...(bi.wasFastForward ? { wasFastForward: true, ffSource: bi.ffSource } : {}),
       };
       remainingInFlow -= 1;
       isFirstOfSegment = false;
@@ -2651,22 +2674,35 @@ async function main() {
   // nobody has to watch a live window for it to be right).
   const headed =
     process.env.WAYGRAPH_HEADED === "0" ? false : process.env.WAYGRAPH_HEADED === "1" || step;
-  // Step mode defaults to a visible pace (each fill/click actually shows on
-  // screen instead of snapping in) unless the human overrides it - an
-  // explicit WAYGRAPH_SLOWMO=0 still means "off".
+  // Step mode: blitz Playwright slowMo when any opaque FF **or** former-FF
+  // inners (--ff-disabled) are in the resolved list. Explicit WAYGRAPH_SLOWMO wins.
+  const hasFfBlitz = resolved.some(
+    (r) =>
+      r &&
+      ((r.block && r.block.fastForward === true) || r.wasFastForward === true),
+  );
   const slowMo = process.env.WAYGRAPH_SLOWMO !== undefined
     ? Number(process.env.WAYGRAPH_SLOWMO)
     : step
-      ? 350
+      ? hasFfBlitz
+        ? 0
+        : 350
       : undefined;
+  if (step && hasFfBlitz && process.env.WAYGRAPH_SLOWMO === undefined && !jsonReport) {
+    console.error(
+      ffDisabled
+        ? "waygraph demo: --ff-disabled (expanded) -> Playwright slowMo=0 on former FF steps (blitz; same acts as opaque FF)"
+        : "waygraph demo: opaque FFCompose in flow -> Playwright slowMo=0 (blitz); set WAYGRAPH_SLOWMO to override",
+    );
+  }
   const baseURL = process.env.WAYGRAPH_BASE_URL;
   const title = process.env.WAYGRAPH_TITLE;
   // Comma-separated Block names (their real .name, e.g. "login") that
   // should blow past the overlay's own added dwell (ring pop, cursor
   // travel, typing delay, and that block's own gates) - "I want the login
   // block to be faster than the rest of the demo," Dan's own phrase.
-  // Playwright's real slowMo is untouched; this only trims what waygraph
-  // itself adds on top of it. Distinct from --fast (gates only).
+  // FFCompose blocks get the same skipTheater automatically (no need to
+  // list them here). Distinct from --fast (gates only).
   const fastBlockNames = new Set(
     (process.env.WAYGRAPH_FAST_BLOCKS || "")
       .split(",")
@@ -3379,8 +3415,10 @@ interface RunFlags {
   fast?: boolean;
   /** demo: classic wrap-all block chips instead of carousel. */
   fullStepper?: boolean;
-  /** demo/run: expand fastForwardComposeBlock inners into separate step gates. */
+  /** demo/run: expand fastForwardComposeBlock inners as separate steps. */
   ffExpand?: boolean;
+  /** demo/run: dispute mode — expand FF + keep blitz on former FF inners. */
+  ffDisabled?: boolean;
   /** Positional args with run flags stripped. */
   positionals: string[];
 }
@@ -3435,6 +3473,9 @@ function parseRunFlags(argv: string[]): RunFlags {
     } else if (a === "--full") {
       out.fullStepper = true;
     } else if (a === "--ff-expand") {
+      out.ffExpand = true;
+    } else if (a === "--ff-disabled" || a === "--no-ff") {
+      out.ffDisabled = true;
       out.ffExpand = true;
     } else if (a === "--non-headless") {
       out.nonHeadless = true;
@@ -3574,6 +3615,10 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean; a
     process.env.WAYGRAPH_STEPPER = "full";
   }
   if (flags.ffExpand) {
+    process.env.WAYGRAPH_FF_EXPAND = "1";
+  }
+  if (flags.ffDisabled) {
+    process.env.WAYGRAPH_FF_DISABLED = "1";
     process.env.WAYGRAPH_FF_EXPAND = "1";
   }
 }
@@ -3741,6 +3786,7 @@ Primary (less is more):
                  --fast                    Shorter auto-next / Next gates (keeps smooth cursor)
                  --full                    Classic wrap-all block chips (default: carousel)
                  --ff-expand               Expand fastForwardComposeBlock inners as separate steps
+                 --ff-disabled             Dispute: expand FF (alias --no-ff); blitz kept on those inners
                  --auto-play-video         Unattended + recorded: --auto-next + --video (+ step); headless by default
                  --auto-play-video-head    Same, but keep the browser visible (--non-headless)
                  --video-viewport WxH       Recording size (default demo: 1920x1080)
@@ -3751,10 +3797,12 @@ Primary (less is more):
                  --video [dir]             Record .webm
                  --video-viewport WxH       Recording size (default run: 1280x720)
                  --ff-expand               Same as demo (expand FFCompose inners)
+                 --ff-disabled             Same as demo (dispute: expand FF)
 
 Also:
   waygraph list | nav | validate | check | graph | init <name>
-  waygraph traverse [project]              Serial graph crawl (Phase B)
+  waygraph traverse [project]              Serial graph crawl (Phase B+)
+                 --blocks <glob|/re/|sub>  Phase C: filter *.block.ts discovery
                  --from <Checkpoint>       Seed / start checkpoint
                  --data '{...}'            Mem seed
                  --max-steps N             Cap Block runs (default 50)
@@ -3778,6 +3826,8 @@ Examples:
   waygraph auto src/flows/shop.flow.ts --data '{...}'   # run by file (same as run)
   waygraph auto --cli --data '{"saucedemo.credentials":{...}}'
   waygraph auto --blocks LoginPage OrderComplete
+  waygraph auto --blocks '/mailpit/'                     # Phase C filtered explore
+  waygraph traverse --blocks '**/mailpit/**/*.block.ts'  # Phase C filtered crawl
   waygraph run  --blocks "loginFlow then add-all-to-cart" --data '{...}' --video
 
 Aliases (compat): \`chain <spec>\` -> run --blocks; \`chain auto A B\` -> auto --blocks A B;
@@ -3877,6 +3927,7 @@ async function main(): Promise<void> {
       let maxEdge: number | undefined;
       let headed = false;
       let baseUrl: string | undefined;
+      let blocksFilter: string | undefined;
       let projectDir = process.cwd();
       for (let i = 0; i < rest.length; i++) {
         const a = rest[i]!;
@@ -3886,6 +3937,21 @@ async function main(): Promise<void> {
         }
         if (a === "--data" || a.startsWith("--data=")) {
           data = a.startsWith("--data=") ? a.slice(7) : rest[++i];
+          continue;
+        }
+        if (a === "--blocks" || a.startsWith("--blocks=")) {
+          if (a.startsWith("--blocks=")) {
+            blocksFilter = a.slice("--blocks=".length);
+          } else {
+            const v = rest[++i];
+            if (!v || v.startsWith("-")) {
+              console.error(
+                "waygraph traverse: --blocks needs a glob, /regex/, or path substring",
+              );
+              process.exit(1);
+            }
+            blocksFilter = v;
+          }
           continue;
         }
         if (a === "--max-steps" || a.startsWith("--max-steps=")) {
@@ -3919,6 +3985,7 @@ async function main(): Promise<void> {
 Serial graph crawl (RFC Phase B). Walks unused legal edges until a leaf,
 budget kill, or first broken edge.
 
+  --blocks <glob|/regex/|substr>  Phase C: filter *.block.ts discovery
   --from <Checkpoint>     start checkpoint (optional)
   --data '{...}'          Mem seed JSON
   --max-steps N           default 50
@@ -3926,6 +3993,10 @@ budget kill, or first broken edge.
   --max-visits-per-edge N default 1
   --non-headless          show browser
   --base-url URL
+
+Examples:
+  waygraph traverse --blocks '**/mailpit/**/*.block.ts'
+  waygraph traverse --blocks '/mailpit|login/'
 
 PASS:  [Reached Leaf Node[traverse-1] at=... steps=N]
 FAIL:  [Broke at edge[traverse-1] block=... from=... to=...]
@@ -3940,6 +4011,9 @@ FAIL:  [Broke at edge[traverse-1] block=... from=... to=...]
         console.error(`waygraph traverse: no such directory: ${projectDir}`);
         process.exit(1);
       }
+      const blocksSelect = blocksFilter
+        ? parseBlocksSelect(blocksFilter)
+        : undefined;
       const code = await runTraverse(projectDir, {
         ...(from ? { from } : {}),
         ...(data ? { data } : {}),
@@ -3952,6 +4026,7 @@ FAIL:  [Broke at edge[traverse-1] block=... from=... to=...]
           : {}),
         headed,
         ...(baseUrl ? { baseURL: baseUrl } : {}),
+        ...(blocksSelect ? { blocksSelect } : {}),
       });
       process.exit(code);
     }
@@ -4061,7 +4136,7 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           "waygraph demo: missing flow/spec — e.g.\n" +
             "  waygraph demo src/flows/shop.flow.ts\n" +
             "  waygraph demo --blocks shopFlow\n" +
-            "  Flags: --blocks --data --auto-next --fast --full --ff-expand --auto-play-video --title --base-url --video",
+            "  Flags: --blocks --data --auto-next --fast --full --ff-expand --ff-disabled --auto-play-video --title --base-url --video",
         );
         process.exit(1);
       }
@@ -4128,14 +4203,27 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
       }
 
       // auto --blocks From To  (graph path-find + run)
+      // auto --blocks '/regex/' or '**/*.block.ts'  (Phase C file select → explore)
       if (command === "auto" && (flags.blocksFromTo || flags.blocks)) {
         if (flags.blocksFromTo) {
           const [fromTag, toTag] = flags.blocksFromTo;
           await runChainAuto(proj, fromTag, toTag);
           break;
         }
+        if (flags.blocks && isFileSelectToken(flags.blocks)) {
+          const blocksSelect = parseBlocksSelect(flags.blocks);
+          const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? resolveBaseUrl(proj);
+          await runAutoExplore(
+            proj,
+            baseURL
+              ? { cli: cliPicker, baseURL, blocksSelect }
+              : { cli: cliPicker, blocksSelect },
+          );
+          break;
+        }
         console.error(
           "waygraph auto --blocks expects <fromCheckpoint> <toCheckpoint>\n" +
+            "  or file select: --blocks '**/mailpit/**/*.block.ts' / --blocks '/mailpit/'\n" +
             '  e.g. waygraph auto --blocks LoginPage OrderComplete\n' +
             '  for a hand-named chain use: waygraph run --blocks "a then b"\n' +
             "  or: waygraph auto src/flows/shop.flow.ts",
