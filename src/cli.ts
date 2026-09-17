@@ -410,7 +410,11 @@ function seedMemForFlow(mem, flowBlocks, json, label) {
 const RING_CSS =
   "#wg-ring{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
   "border:2.5px solid #7C3AED;border-radius:10px;" +
-  "box-shadow:0 0 0 4px rgba(124,58,237,.16);transition:opacity .3s ease;}" +
+  "box-shadow:0 0 0 4px rgba(124,58,237,.16);transition:opacity .3s ease,border-color .15s,box-shadow .15s;}" +
+  // Planned (stubs / fixtures / YAP / instruction.highlights) = purple.
+  // Automation (verify fallback, unmatched fill/click) = yellow - so operators
+  // can ignore engine checks and only watch purple narration.
+  "#wg-ring[data-tone=auto]{border-color:#EAB308;box-shadow:0 0 0 4px rgba(234,179,8,.22);}" +
   // A real element, not a ::after pseudo-element - a pseudo-element's
   // position is CSS-relative to the ring's own box (left:0 always meant
   // "the ring's own left edge"), so it had no way to be clamped back onto
@@ -421,7 +425,8 @@ const RING_CSS =
   // window.__wgPositionRing in installOverlay.
   "#wg-ring-label{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
   "max-width:min(360px,70vw);white-space:normal;padding:6px 10px;border-radius:7px;background:#7C3AED;color:#fff;" +
-  "font:600 12px/1.35 system-ui,sans-serif;transition:opacity .3s ease;}" +
+  "font:600 12px/1.35 system-ui,sans-serif;transition:opacity .3s ease,background .15s,color .15s;}" +
+  "#wg-ring-label[data-tone=auto]{background:#EAB308;color:#1c1917;}" +
   // Mouse cursor icon that travels to a target before it's acted on, plus a
   // quick expanding ripple at the moment of a click - same idea as
   // help-center-clip-engine's #clip-cursor/#clip-ring (video-pipeline). The
@@ -439,6 +444,7 @@ const RING_CSS =
   "#wg-click-pulse{position:fixed;z-index:2147483647;width:14px;height:14px;" +
   "margin-left:-7px;margin-top:-7px;border-radius:50%;pointer-events:none;opacity:0;" +
   "border:2px solid #7C3AED;background:rgba(124,58,237,.25);}" +
+  "#wg-click-pulse[data-tone=auto]{border-color:#EAB308;background:rgba(234,179,8,.28);}" +
   "#wg-click-pulse.wg-pulse{animation:wg-pulse .5s ease-out;}" +
   "@keyframes wg-pulse{0%{opacity:.9;transform:scale(.4);}100%{opacity:0;transform:scale(2.4);}}" +
   "#wg-panel{position:fixed;z-index:2147483647;left:50%;bottom:12px;transform:translateX(-50%);" +
@@ -654,26 +660,13 @@ async function installOverlay(page, title) {
           const cursor = document.getElementById("wg-cursor");
           if (cursor) cursor.style.opacity = "0";
         };
-        window.__wgClickPulse = (x, y) => {
-          const pulse = document.getElementById("wg-click-pulse");
-          if (!pulse) return;
-          pulse.style.left = x + "px";
-          pulse.style.top = y + "px";
-          pulse.classList.remove("wg-pulse");
-          void pulse.offsetWidth;
-          pulse.classList.add("wg-pulse");
-        };
-        // Clamps the ring AND its label to stay fully on-screen, same
-        // width/height always - only the position moves. A target near a
-        // viewport edge (real case: "login success" highlight landing top
-        // right) used to just run the label text off-screen with no guard
-        // at all - same mistake as the banner had before its own
-        // left/center/right positions existed, not repeating it here by
-        // shrinking anything, only repositioning.
-        window.__wgPositionRing = (box, label) => {
+        window.__wgPositionRing = (box, label, tone) => {
           const ring = document.getElementById("wg-ring");
           const ringLabel = document.getElementById("wg-ring-label");
           if (!ring || !ringLabel) return;
+          const t = tone === "auto" ? "auto" : "planned";
+          ring.dataset.tone = t;
+          ringLabel.dataset.tone = t;
           const margin = 6;
           const vw = window.innerWidth;
           const vh = window.innerHeight;
@@ -704,6 +697,16 @@ async function installOverlay(page, title) {
           if (labelLeft < margin) labelLeft = margin;
           ringLabel.style.left = labelLeft + "px";
           ringLabel.style.top = labelTop + "px";
+        };
+        window.__wgClickPulse = (x, y, tone) => {
+          const pulse = document.getElementById("wg-click-pulse");
+          if (!pulse) return;
+          pulse.dataset.tone = tone === "auto" ? "auto" : "planned";
+          pulse.style.left = x + "px";
+          pulse.style.top = y + "px";
+          pulse.classList.remove("wg-pulse");
+          void pulse.offsetWidth;
+          pulse.classList.add("wg-pulse");
         };
         window.__wgHideRing = () => {
           // While a narrate() call owns the ring (mid multi-step action),
@@ -1045,7 +1048,7 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
     try {
       const box = await page.locator(h.selector).first().boundingBox();
       if (box) {
-        await showRing(page, box, h.label);
+        await showRing(page, box, h.label, h.tone || "planned");
         const authored = resolveFixtureDwellMs(h, { gatesFast });
         const legacyMs = i === list.length - 1 ? 200 : 900;
         const holdMs =
@@ -1067,7 +1070,7 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
             if (window.__wgHideRing) window.__wgHideRing();
             return;
           }
-          window.__wgPositionRing(el.getBoundingClientRect(), h.label);
+          window.__wgPositionRing(el.getBoundingClientRect(), h.label, h.tone || "planned");
         };
         reposition();
         window.__wgRingTrack = reposition;
@@ -1311,7 +1314,10 @@ function resolveDeclaredHighlights(block, resultTag) {
     }
   }
   if (!Array.isArray(highlights)) return [];
-  return highlights.filter((h) => h && typeof h.selector === "string" && typeof h.label === "string");
+  return highlights.filter((h) => h && typeof h.selector === "string" && typeof h.label === "string").map((h) => ({
+    ...h,
+    tone: h.tone === "auto" ? "auto" : "planned",
+  }));
 }
 
 /**
@@ -1341,12 +1347,12 @@ function extractVerifyHighlights(block, resultTag) {
     if (typeof name !== "string") continue;
     let m = /^visible\\((.+)\\)$/.exec(name);
     if (m) {
-      highlights.push({ selector: m[1], label: name });
+      highlights.push({ selector: m[1], label: name, tone: "auto" });
       continue;
     }
     m = /^text-equals\\((.+?),\\s*"/.exec(name);
     if (m) {
-      highlights.push({ selector: m[1], label: name });
+      highlights.push({ selector: m[1], label: name, tone: "auto" });
       continue;
     }
   }
@@ -1409,13 +1415,13 @@ async function markStepRunning(page, _opts) {
     .catch(() => {});
 }
 
-async function showRing(page, box, label) {
+async function showRing(page, box, label, tone) {
   await page
     .evaluate(
-      ({ box, label }) => {
-        if (window.__wgPositionRing) window.__wgPositionRing(box, label);
+      ({ box, label, tone }) => {
+        if (window.__wgPositionRing) window.__wgPositionRing(box, label, tone || "planned");
       },
-      { box, label },
+      { box, label, tone: tone || "planned" },
     )
     .catch(() => {});
 }
@@ -1445,8 +1451,8 @@ async function matchStubForLocator(page, locator, stubs) {
 
 async function captionForLocator(page, locator, stubs, fallback) {
   const matched = await matchStubForLocator(page, locator, stubs);
-  if (matched) return formatHighlightCaption(matched);
-  return fallback;
+  if (matched) return { label: formatHighlightCaption(matched), tone: "planned" };
+  return { label: fallback, tone: "auto" };
 }
 
 async function dwellMatchedStub(page, locator, stubs, pacing) {
@@ -1488,7 +1494,7 @@ async function presentSlides(page, slides, _gate, opts) {
     if (s.selector) {
       try {
         const box = await page.locator(s.selector).first().boundingBox();
-        if (box) await showRing(page, box, caption);
+        if (box) await showRing(page, box, caption, "planned");
       } catch {
         await hideRing(page);
       }
@@ -1719,11 +1725,11 @@ async function moveCursorTo(page, box, ms) {
   return { x, y };
 }
 
-async function clickPulseAt(page, x, y) {
+async function clickPulseAt(page, x, y, tone) {
   await page
-    .evaluate(({ x, y }) => {
-      if (window.__wgClickPulse) window.__wgClickPulse(x, y);
-    }, { x, y })
+    .evaluate(({ x, y, tone }) => {
+      if (window.__wgClickPulse) window.__wgClickPulse(x, y, tone || "planned");
+    }, { x, y, tone: tone || "planned" })
     .catch(() => {});
 }
 
@@ -1797,9 +1803,9 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
             ? "from mem: " + memTrack.lastKeyName
             : "writing from mem";
           const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
-          const label = await captionForLocator(page, this, stubs, fallback);
+          const cap = await captionForLocator(page, this, stubs, fallback);
           await moveCursorTo(page, box, cursorMs(500));
-          await showRing(page, box, label);
+          await showRing(page, box, cap.label, cap.tone);
           await dwellMatchedStub(page, this, stubs, pacing);
           await new Promise((res) => setTimeout(res, skipTheater() ? 0 : 200));
         } else if (box) {
@@ -1838,6 +1844,7 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
     const originalClick = proto.click;
     proto.click = async function (options) {
       let clickPoint = null;
+      let clickTone = "auto";
       try {
         await installOverlay(page);
         // Wait until the target is visible BEFORE measuring - otherwise
@@ -1867,9 +1874,10 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
             /* ignore */
           }
           const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
-          const label = await captionForLocator(page, this, stubs, fallback);
+          const cap = await captionForLocator(page, this, stubs, fallback);
+          clickTone = cap.tone;
           clickPoint = await moveCursorTo(page, box, cursorMs(600));
-          await showRing(page, box, label);
+          await showRing(page, box, cap.label, cap.tone);
           await dwellMatchedStub(page, this, stubs, pacing);
           // "pop for a few seconds" - Dan's own phrase, matching the
           // zsign demo-engine's ring-before-click pattern in
@@ -1879,12 +1887,13 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
           // Ring/caption already handled by narrate() - still move the
           // cursor + pulse the click point, just skip re-showing the ring.
           clickPoint = await moveCursorTo(page, box, cursorMs(200));
+          clickTone = "planned";
         }
       } catch {
         // best-effort - the real click below still runs either way
       }
       if (clickPoint) {
-        await clickPulseAt(page, clickPoint.x, clickPoint.y);
+        await clickPulseAt(page, clickPoint.x, clickPoint.y, clickTone);
         // clickPulseAt only triggers the CSS animation class - it doesn't
         // wait for it. Without a pause here, the real click (and any
         // resulting navigation/DOM change) fires while the ripple is still
@@ -2271,6 +2280,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           label: formatHighlightCaption(h),
           duration: h.duration,
           fastMode: h.fastMode,
+          tone: "planned",
         }));
         await cycleHighlightRings(page, errHighlights, !!pacing.gatesFast, {
           defaultHoldMs: 2000,
@@ -2343,6 +2353,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           label: formatHighlightCaption(h),
           duration: h.duration,
           fastMode: h.fastMode,
+          tone: "planned",
         }),
       );
     } else {
@@ -3942,8 +3953,7 @@ FAIL:  [Broke at edge[traverse-1] block=... from=... to=...]
         headed,
         ...(baseUrl ? { baseURL: baseUrl } : {}),
       });
-      process.exitCode = code;
-      break;
+      process.exit(code);
     }
 
     case "agent-dive":

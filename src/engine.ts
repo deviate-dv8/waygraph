@@ -197,11 +197,11 @@ export async function narrate<T>(
         .evaluate(
           ({ box, caption }) => {
             const w = globalThis as unknown as {
-              __wgPositionRing?: (box: unknown, label: string) => void;
+              __wgPositionRing?: (box: unknown, label: string, tone?: string) => void;
               __wgLastNarrate?: number;
               __wgNarrateOwnsRing?: boolean;
             };
-            if (w.__wgPositionRing) w.__wgPositionRing(box, caption);
+            if (w.__wgPositionRing) w.__wgPositionRing(box, caption, "planned");
             // The CLI's own automatic per-fill/per-click narration checks
             // this before showing (and overwriting) its own guess - an
             // explicitly authored caption should win, not get immediately
@@ -1168,6 +1168,87 @@ export class Engine {
       EndMarker,
     ],
   ): Flow<I>;
+  defineFlow<
+    B extends Checkpoint<string>,
+    C extends Checkpoint<string>,
+    D extends Checkpoint<string>,
+    E extends Checkpoint<string>,
+    F extends Checkpoint<string>,
+    G extends Checkpoint<string>,
+    H extends Checkpoint<string>,
+    I extends Checkpoint<string>,
+    J extends Checkpoint<string>,
+  >(
+    blocks: readonly [
+      StartMarker,
+      Block<S, B>,
+      Block<B, C>,
+      Block<C, D>,
+      Block<D, E>,
+      Block<E, F>,
+      Block<F, G>,
+      Block<G, H>,
+      Block<H, I>,
+      Block<I, J>,
+      EndMarker,
+    ],
+  ): Flow<J>;
+  defineFlow<
+    B extends Checkpoint<string>,
+    C extends Checkpoint<string>,
+    D extends Checkpoint<string>,
+    E extends Checkpoint<string>,
+    F extends Checkpoint<string>,
+    G extends Checkpoint<string>,
+    H extends Checkpoint<string>,
+    I extends Checkpoint<string>,
+    J extends Checkpoint<string>,
+    K extends Checkpoint<string>,
+  >(
+    blocks: readonly [
+      StartMarker,
+      Block<S, B>,
+      Block<B, C>,
+      Block<C, D>,
+      Block<D, E>,
+      Block<E, F>,
+      Block<F, G>,
+      Block<G, H>,
+      Block<H, I>,
+      Block<I, J>,
+      Block<J, K>,
+      EndMarker,
+    ],
+  ): Flow<K>;
+  defineFlow<
+    B extends Checkpoint<string>,
+    C extends Checkpoint<string>,
+    D extends Checkpoint<string>,
+    E extends Checkpoint<string>,
+    F extends Checkpoint<string>,
+    G extends Checkpoint<string>,
+    H extends Checkpoint<string>,
+    I extends Checkpoint<string>,
+    J extends Checkpoint<string>,
+    K extends Checkpoint<string>,
+    L extends Checkpoint<string>,
+  >(
+    blocks: readonly [
+      StartMarker,
+      Block<S, B>,
+      Block<B, C>,
+      Block<C, D>,
+      Block<D, E>,
+      Block<E, F>,
+      Block<F, G>,
+      Block<G, H>,
+      Block<H, I>,
+      Block<I, J>,
+      Block<J, K>,
+      Block<K, L>,
+      EndMarker,
+    ],
+  ): Flow<L>;
   defineFlow(blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker]): Flow<any> {
     return buildFlow(blocks.slice(1, -1) as Block<any, any>[], this.config);
   }

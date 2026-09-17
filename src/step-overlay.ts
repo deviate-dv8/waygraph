@@ -3,10 +3,13 @@ import type { MemPage } from "./mem-page.js";
 
 const RING_CSS =
   "#wg-ring{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
-  "border:2.5px solid #7C3AED;border-radius:10px;box-shadow:0 0 0 4px rgba(124,58,237,.16);transition:opacity .3s ease;}" +
+  "border:2.5px solid #7C3AED;border-radius:10px;box-shadow:0 0 0 4px rgba(124,58,237,.16);" +
+  "transition:opacity .3s ease,border-color .15s,box-shadow .15s;}" +
+  "#wg-ring[data-tone=auto]{border-color:#EAB308;box-shadow:0 0 0 4px rgba(234,179,8,.22);}" +
   "#wg-ring-label{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
   "white-space:nowrap;padding:4px 9px;border-radius:7px;background:#7C3AED;color:#fff;" +
-  "font:600 12px/1.2 system-ui,sans-serif;transition:opacity .3s ease;}" +
+  "font:600 12px/1.2 system-ui,sans-serif;transition:opacity .3s ease,background .15s,color .15s;}" +
+  "#wg-ring-label[data-tone=auto]{background:#EAB308;color:#1c1917;}" +
   "#wg-cursor{position:fixed;z-index:2147483647;width:24px;height:24px;pointer-events:none;" +
   "left:0;top:0;opacity:0;margin:0;" +
   "transition:transform var(--wg-cursor-ms,600ms) cubic-bezier(.22,1,.36,1),opacity .2s ease;" +
@@ -14,6 +17,7 @@ const RING_CSS =
   "#wg-click-pulse{position:fixed;z-index:2147483647;width:14px;height:14px;" +
   "margin-left:-7px;margin-top:-7px;border-radius:50%;pointer-events:none;opacity:0;" +
   "border:2px solid #7C3AED;background:rgba(124,58,237,.25);}" +
+  "#wg-click-pulse[data-tone=auto]{border-color:#EAB308;background:rgba(234,179,8,.28);}" +
   "#wg-click-pulse.wg-pulse{animation:wg-pulse .5s ease-out;}" +
   "@keyframes wg-pulse{0%{opacity:.9;transform:scale(.4);}100%{opacity:0;transform:scale(2.4);}}" +
   "#wg-banner{position:fixed;z-index:2147483647;top:14px;left:14px;" +
@@ -38,7 +42,7 @@ export async function installDemoChrome(
   await page.addStyleTag({ content: RING_CSS }).catch(() => {});
   await page
     .evaluate(
-      ({ title, favicon }) => {
+      ({ title, favicon, showBanner }) => {
         if (!document.getElementById("wg-ring")) {
           const ring = document.createElement("div");
           ring.id = "wg-ring";
@@ -70,19 +74,27 @@ export async function installDemoChrome(
           cursor.style.transform = "translate(" + x + "px," + y + "px)";
           cursor.style.opacity = "1";
         };
-        window.__wgClickPulse = (x: number, y: number) => {
+        window.__wgClickPulse = (x: number, y: number, tone?: string) => {
           const pulse = document.getElementById("wg-click-pulse");
           if (!pulse) return;
+          pulse.dataset.tone = tone === "auto" ? "auto" : "planned";
           pulse.style.left = x + "px";
           pulse.style.top = y + "px";
           pulse.classList.remove("wg-pulse");
           void pulse.offsetWidth;
           pulse.classList.add("wg-pulse");
         };
-        window.__wgPositionRing = (box: { x: number; y: number; width: number; height: number }, label: string) => {
+        window.__wgPositionRing = (
+          box: { x: number; y: number; width: number; height: number },
+          label: string,
+          tone?: string,
+        ) => {
           const ring = document.getElementById("wg-ring");
           const ringLabel = document.getElementById("wg-ring-label");
           if (!ring || !ringLabel) return;
+          const t = tone === "auto" ? "auto" : "planned";
+          ring.dataset.tone = t;
+          ringLabel.dataset.tone = t;
           ring.style.left = box.x - 6 + "px";
           ring.style.top = box.y - 6 + "px";
           ring.style.width = box.width + 12 + "px";
@@ -123,19 +135,32 @@ async function moveCursorTo(page: Page, box: { x: number; y: number; width: numb
   return { x, y };
 }
 
-async function showRing(page: Page, box: { x: number; y: number; width: number; height: number }, label: string) {
-  await page.evaluate(({ box, label }) => window.__wgPositionRing?.(box, label), { box, label }).catch(() => {});
+async function showRing(
+  page: Page,
+  box: { x: number; y: number; width: number; height: number },
+  label: string,
+  tone: "planned" | "auto" = "auto",
+) {
+  await page
+    .evaluate(({ box, label, tone }) => window.__wgPositionRing?.(box, label, tone), {
+      box,
+      label,
+      tone,
+    })
+    .catch(() => {});
 }
 
 async function hideRing(page: Page) {
   await page.evaluate(() => window.__wgHideRing?.()).catch(() => {});
 }
 
-async function clickPulseAt(page: Page, x: number, y: number) {
-  await page.evaluate(({ x, y }) => window.__wgClickPulse?.(x, y), { x, y }).catch(() => {});
+async function clickPulseAt(page: Page, x: number, y: number, tone: "planned" | "auto" = "auto") {
+  await page
+    .evaluate(({ x, y, tone }) => window.__wgClickPulse?.(x, y, tone), { x, y, tone })
+    .catch(() => {});
 }
 
-/** Demo cursor + ring on fill/click during auto explore headful runs. */
+/** Demo cursor + ring on fill/click during auto explore headful runs (automation = yellow). */
 export function instrumentInteractionHighlighting(
   page: Page,
   mem: MemPage,
@@ -148,108 +173,84 @@ export function instrumentInteractionHighlighting(
 
   const memTrack = { lastKeyName: null as string | null, at: 0 };
   const originalGet = mem.get.bind(mem);
-  mem.get = (key) => {
+  mem.get = (key: { name?: string }) => {
     memTrack.lastKeyName = key?.name ?? null;
     memTrack.at = Date.now();
-    return originalGet(key);
+    return originalGet(key as never);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const proto = Object.getPrototypeOf(page.locator("html")) as any;
+  const proto = Object.getPrototypeOf(page.locator("html"));
 
   if (!proto.__wgFillPatched) {
     proto.__wgFillPatched = true;
-    // Keep unbound — originalFill.call(this, …) must receive the Locator as `this`, not the prototype.
     const originalFill = proto.fill;
-    proto.fill = async function (
-      this: {
-        boundingBox: () => Promise<{ x: number; y: number; width: number; height: number } | null>;
-        pressSequentially: (v: string, o?: { delay?: number; timeout?: number }) => Promise<void>;
-        page?: () => Page;
-      },
-      value: string,
-      options?: { timeout?: number },
-    ) {
-      const livePage = (typeof this.page === "function" ? this.page() : page) as Page;
+    proto.fill = async function (this: ReturnType<Page["locator"]>, value: string, options?: object) {
       try {
-        await installDemoChrome(livePage);
+        await installDemoChrome(page, "", { banner: false });
         const box = await this.boundingBox();
         if (box) {
           const label =
             memTrack.lastKeyName && Date.now() - memTrack.at < 3000
               ? "from mem: " + memTrack.lastKeyName
-              : "writing";
-          await moveCursorTo(livePage, box, cursorMs(500));
-          await showRing(livePage, box, label);
-          await new Promise((r) => setTimeout(r, 200));
+              : "writing from mem";
+          await moveCursorTo(page, box, cursorMs(500));
+          await showRing(page, box, label, "auto");
+          await new Promise((res) => setTimeout(res, 200));
         }
       } catch {
         /* best-effort */
       }
-      // Prefer a single fill - clear+pressSequentially can hang when the auto
-      // panel steals focus mid-type (looks stuck on "Running: submit-login").
-      if (slowMo || typeDelay() === 0) {
-        await originalFill.call(this, value, options);
-      } else {
-        try {
-          await originalFill.call(this, "", options);
-          const seqOpts: { delay: number; timeout?: number } = { delay: typeDelay() };
-          if (options?.timeout !== undefined) seqOpts.timeout = options.timeout;
-          await this.pressSequentially(String(value), seqOpts);
-        } catch {
-          await originalFill.call(this, value, options);
-        }
+      let result;
+      try {
+        await originalFill.call(this, "", {
+          timeout: (options as { timeout?: number } | undefined)?.timeout,
+        });
+        const seqOpts: { delay: number; timeout?: number } = { delay: typeDelay() };
+        const to = (options as { timeout?: number } | undefined)?.timeout;
+        if (to !== undefined) seqOpts.timeout = to;
+        result = await this.pressSequentially(String(value), seqOpts);
+      } catch {
+        result = await originalFill.call(this, value, options);
       }
-      await hideRing(livePage);
+      await hideRing(page);
+      return result;
     };
   }
 
   if (!proto.__wgClickPatched) {
     proto.__wgClickPatched = true;
     const originalClick = proto.click;
-    proto.click = async function (
-      this: {
-        waitFor: (o: { state: string; timeout?: number }) => Promise<void>;
-        boundingBox: () => Promise<{ x: number; y: number; width: number; height: number } | null>;
-        textContent: () => Promise<string | null>;
-        page?: () => Page;
-      },
-      options?: { timeout?: number; noWaitAfter?: boolean },
-    ) {
-      const livePage = (typeof this.page === "function" ? this.page() : page) as Page;
+    proto.click = async function (this: ReturnType<Page["locator"]>, options?: object) {
       let clickPoint: { x: number; y: number } | null = null;
       try {
-        await installDemoChrome(livePage);
-        await this.waitFor({ state: "visible", timeout: options?.timeout ?? 15000 }).catch(() => {});
+        await installDemoChrome(page, "", { banner: false });
+        await this.waitFor({
+          state: "visible",
+          timeout: (options as { timeout?: number } | undefined)?.timeout || 30000,
+        }).catch(() => {});
         const box = await this.boundingBox();
         if (box) {
           let label = "click";
           try {
-            const navLabel = await livePage.evaluate(
-              () => (window as { __wgPendingNavClickLabel?: string }).__wgPendingNavClickLabel ?? null,
-            );
-            if (navLabel) label = String(navLabel);
-            else {
-              const text = (await this.textContent())?.trim();
-              if (text && text.length <= 30) label = text;
-            }
+            const text = (await this.textContent())?.trim();
+            if (text && text.length > 0 && text.length <= 30) label = text;
           } catch {
             /* ignore */
           }
-          clickPoint = await moveCursorTo(livePage, box, cursorMs(600));
-          await showRing(livePage, box, label);
-          await new Promise((r) => setTimeout(r, clickPrePop()));
+          clickPoint = await moveCursorTo(page, box, cursorMs(600));
+          await showRing(page, box, label, "auto");
+          await new Promise((res) => setTimeout(res, clickPrePop()));
         }
       } catch {
         /* best-effort */
       }
       if (clickPoint) {
-        await clickPulseAt(livePage, clickPoint.x, clickPoint.y);
-        await new Promise((r) => setTimeout(r, 200));
+        await clickPulseAt(page, clickPoint.x, clickPoint.y, "auto");
+        await new Promise((res) => setTimeout(res, 80));
       }
       const result = await originalClick.call(this, options);
-      await new Promise((r) => setTimeout(r, clickPostPop()));
-      await hideRing(livePage).catch(() => {});
+      await new Promise((res) => setTimeout(res, clickPostPop()));
+      await hideRing(page);
       return result;
     };
   }
@@ -258,8 +259,12 @@ export function instrumentInteractionHighlighting(
 declare global {
   interface Window {
     __wgMoveCursorTo?: (x: number, y: number, ms?: number) => void;
-    __wgClickPulse?: (x: number, y: number) => void;
-    __wgPositionRing?: (box: { x: number; y: number; width: number; height: number }, label: string) => void;
+    __wgClickPulse?: (x: number, y: number, tone?: string) => void;
+    __wgPositionRing?: (
+      box: { x: number; y: number; width: number; height: number },
+      label: string,
+      tone?: string,
+    ) => void;
     __wgHideRing?: () => void;
     __wgPendingNavClickLabel?: string;
     __wgWirePanelChrome?: (panel: HTMLElement, storageKey: string, chromeTitle?: string) => void;

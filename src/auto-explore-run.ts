@@ -479,6 +479,7 @@ async function headfulPick(
           window.__wgPositionRing(
             { x: r.x, y: r.y, width: r.width, height: r.height },
             btn.textContent?.trim()?.slice(0, 80) || "target",
+            "auto",
           );
         });
         btn.addEventListener("mouseleave", () => {
