@@ -1,13 +1,48 @@
-#!/bin/sh
-# Two cwd/symlink pitfalls this resolves, both real, both hit in practice:
-#  - `--import tsx/esm` is a bare specifier - Node resolves it as if from an
-#    unnamed module at the CALLER's cwd, not this script's install
-#    directory, so it broke when invoked from anywhere else.
-#  - `npm link` makes this script reachable via a SYMLINK (e.g.
-#    ~/.nvm/.../bin/waygraph) - `dirname "$0"` alone follows argv[0], not the
-#    symlink target, so it resolved to the nvm bin dir instead of this
-#    package. `readlink -f` follows the symlink to the real file first.
-SOURCE="$(readlink -f "$0")"
-DIR="$(cd "$(dirname "$SOURCE")/.." && pwd)"
-TSX_ESM="$(cd "$DIR" && node -e "console.log(require.resolve('tsx/esm'))")"
-exec node --import "$TSX_ESM" "$DIR/dist/cli.js" "$@"
+#!/usr/bin/env node
+/**
+ * Cross-platform CLI launcher.
+ *
+ * Why Node (not #!/bin/sh + readlink -f):
+ *   - macOS BSD `readlink` has no `-f` (GNU) -> "illegal option -- f" / broken bin
+ *   - Windows npm expects a Node shebang for `.cmd` shims
+ *
+ * Still registers `tsx/esm` before `dist/cli.js` so consumer `.block.ts` /
+ * `.flow.ts` dynamic imports resolve the same as the old shell wrapper.
+ */
+import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const require = createRequire(join(pkgRoot, "package.json"));
+let tsxEsm;
+try {
+  tsxEsm = require.resolve("tsx/esm");
+} catch (err) {
+  console.error(
+    "waygraph: cannot resolve dependency \"tsx\" (required to load .ts Blocks).\n" +
+      "  Reinstall: npm install waygraph\n" +
+      `  Detail: ${err instanceof Error ? err.message : String(err)}`,
+  );
+  process.exit(1);
+}
+
+const cli = join(pkgRoot, "dist", "cli.js");
+const child = spawn(
+  process.execPath,
+  ["--import", tsxEsm, cli, ...process.argv.slice(2)],
+  { stdio: "inherit", env: process.env, windowsHide: true },
+);
+
+child.on("error", (err) => {
+  console.error(`waygraph: failed to start CLI: ${err.message}`);
+  process.exit(1);
+});
+child.on("exit", (code, signal) => {
+  if (signal) {
+    process.kill(process.pid, signal);
+    return;
+  }
+  process.exit(code ?? 1);
+});
