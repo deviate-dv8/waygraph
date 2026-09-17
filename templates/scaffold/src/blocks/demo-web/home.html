@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Waygraph scaffold demo</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 32rem; }
+      h1 { margin: 0 0 0.5rem; }
+      #cart { margin: 1rem 0; font-weight: 600; }
+      .item { display: flex; gap: 0.75rem; align-items: center; margin: 0.5rem 0; }
+      button { cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <h1>Hello Waygraph</h1>
+    <p id="sub">Scaffold demo - Effect / auto / Page hub</p>
+    <div id="cart">Cart: <span data-test="cart-count">0</span></div>
+    <ul id="catalog">
+      <li class="item" data-id="alpha">
+        <span class="name">Alpha</span>
+        <button type="button" data-test="add-alpha" class="add">Add Alpha</button>
+        <button type="button" data-test="remove-alpha" class="remove" hidden>Remove Alpha</button>
+      </li>
+      <li class="item" data-id="beta">
+        <span class="name">Beta</span>
+        <button type="button" data-test="add-beta" class="add">Add Beta</button>
+        <button type="button" data-test="remove-beta" class="remove" hidden>Remove Beta</button>
+      </li>
+      <li class="item" data-id="gamma">
+        <span class="name">Gamma</span>
+        <button type="button" data-test="add-gamma" class="add">Add Gamma</button>
+        <button type="button" data-test="remove-gamma" class="remove" hidden>Remove Gamma</button>
+      </li>
+    </ul>
+    <button type="button" data-test="clear-cart" id="clear">Clear cart</button>
+    <script>
+      const countEl = document.querySelector("[data-test=cart-count]");
+      const sync = () => {
+        const n = document.querySelectorAll(".remove:not([hidden])").length;
+        countEl.textContent = String(n);
+      };
+      document.querySelectorAll(".item").forEach((row) => {
+        const add = row.querySelector(".add");
+        const remove = row.querySelector(".remove");
+        add.addEventListener("click", () => {
+          add.hidden = true;
+          remove.hidden = false;
+          sync();
+        });
+        remove.addEventListener("click", () => {
+          remove.hidden = true;
+          add.hidden = false;
+          sync();
+        });
+      });
+      document.getElementById("clear").addEventListener("click", () => {
+        document.querySelectorAll(".item").forEach((row) => {
+          row.querySelector(".add").hidden = false;
+          row.querySelector(".remove").hidden = true;
+        });
+        sync();
+      });
+    </script>
+  </body>
+</html>

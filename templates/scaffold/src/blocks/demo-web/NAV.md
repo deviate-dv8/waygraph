@@ -1,20 +1,29 @@
 # demo-web / (synthetic home)
 
-**URL:** `data:text/html,…` (offline hello - replace with your real `/`)
+**URL:** `http://127.0.0.1:4177/home.html` (offline catalog via `scripts/fixture-server.mjs` - replace with your real `/`)
 
 ## Nav-to
 
 | From | Block | How |
 |------|-------|-----|
-| start | `nav-home` | `defineNavBlock` `url` → data HTML |
+| start | `nav-home` | `defineNavBlock` `url` → home.html |
 
-## Methods
+## Page hub
 
-| Block | Kind | Notes |
-|-------|------|-------|
-| `assert-hello` | Method | Verify heading; demo stubs + fixtures |
+| Block | Checkpoint | Methods |
+|-------|------------|---------|
+| `page-home` | `Home` | add-item, remove-item, clear-cart, assert-hello |
+
+## Methods / Effects
+
+| Block | Kind | Auto |
+|-------|------|------|
+| `assert-hello` | Method | single row |
+| `add-item` | Effect | one row per live Add button (`instanceOptions`) |
+| `remove-item` | Effect | one row per live Remove button |
+| `clear-cart` | Method | single row |
 
 ## States / mem-keys
 
-- Checkpoint `Home` after nav
-- Checkpoint `HomeVerified` after assert-hello
+- Checkpoints: `Home`, `HomeVerified`, `ItemInCart`, `CartEmpty`
+- Mem: `demo.selectedItem` (`SelectedItem`) - filled by auto or `--data`

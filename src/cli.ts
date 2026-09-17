@@ -8,7 +8,7 @@
  *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--fast` `--full` `--ff-expand`
  *   run    Execute; `--blocks` `--data` `--non-headless` `--video`
  *
- * Also: list / nav / validate / check / graph / init / try
+ * Also: list / nav / validate / check / graph / init / agent-dive / try
  * Aliases (one release): `chain` -> run/demo --blocks; `--autoplay` -> `--auto-next`
  *
  * "project" defaults to cwd. Flags beat WAYGRAPH_* env.
@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./graph.js";
 import { runAutoExplore } from "./auto-explore-run.js";
+import { runAgentDive, type AgentDiveLoop } from "./agent-dive.js";
 
 // ---------------------------------------------------------------------------
 // Filesystem
@@ -3741,6 +3742,8 @@ Primary (less is more):
 
 Also:
   waygraph list | nav | validate | check | graph | init <name>
+  waygraph agent-dive [--loop claude|opencode|cursor|vscode] [--prompts]
+                 Initialize coding-agent defs (Playwright init-agents analogue)
   waygraph try [demo|auto|auto:cli]        One-shot saucedemo in a temp dir
                  try auto                  Headed browser panel (default)
                  try auto:cli / --cli      Terminal menu instead
@@ -3840,6 +3843,58 @@ async function main(): Promise<void> {
 
     case "init": {
       initCommand(args[1] ?? "");
+      break;
+    }
+
+    case "agent-dive":
+    case "init-agents": {
+      // Playwright analogue: npx playwright init-agents --loop <provider>
+      const rest = args.slice(1);
+      let loop: AgentDiveLoop = "claude";
+      let prompts = false;
+      let projectDir = process.cwd();
+      for (let i = 0; i < rest.length; i++) {
+        const a = rest[i]!;
+        if (a === "--prompts") {
+          prompts = true;
+          continue;
+        }
+        if (a === "--loop" || a.startsWith("--loop=")) {
+          const v = a.startsWith("--loop=") ? a.slice("--loop=".length) : rest[++i];
+          if (!v || !["claude", "opencode", "cursor", "vscode"].includes(v)) {
+            console.error(
+              "waygraph agent-dive: --loop must be claude | opencode | cursor | vscode",
+            );
+            process.exit(1);
+          }
+          loop = v as AgentDiveLoop;
+          continue;
+        }
+        if (a === "--help" || a === "-h") {
+          console.log(`waygraph agent-dive [--loop claude|opencode|cursor|vscode] [--prompts] [project]
+
+Initialize coding-agent definitions for diving an app into waygraph Blocks
+(Playwright \`init-agents\` analogue).
+
+  --loop claude     write .claude/agents/*.md (default)
+  --loop opencode   write .opencode/prompts/*.md
+  --loop cursor     write .cursor/rules/waygraph-*.mdc
+  --loop vscode     write .github/agents/*.md
+  --prompts         also copy docs/waygraph-agents/*.md
+
+Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
+`);
+          process.exit(0);
+        }
+        if (!a.startsWith("-")) {
+          projectDir = resolve(a);
+        }
+      }
+      if (!existsSync(projectDir) || !statSync(projectDir).isDirectory()) {
+        console.error(`waygraph agent-dive: no such directory: ${projectDir}`);
+        process.exit(1);
+      }
+      runAgentDive({ loop, projectDir, prompts });
       break;
     }
 

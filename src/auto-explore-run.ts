@@ -94,11 +94,25 @@ function missingMemKeys(entry: BlockEntry, mem: MemPage): MemKey<unknown>[] {
 
 const DEFAULT_CREDENTIALS = { username: "standard_user", password: "secret_sauce" };
 
-function defaultMemValueForKey(keyName: string): unknown | undefined {
-  if (keyName.includes("credential") || keyName.includes("login")) {
+/**
+ * Saucedemo-only defaults. Exact key names only — never substring `"login"`
+ * (PIA `login-email` string must stay unset; see docs/proposals/auto-login-email-seed-bug.md).
+ */
+export function defaultMemValueForKey(keyName: string): unknown | undefined {
+  if (
+    keyName === "login-credentials" ||
+    keyName === "credentials" ||
+    keyName === "saucedemo.credentials"
+  ) {
     return DEFAULT_CREDENTIALS;
   }
   return undefined;
+}
+
+function defaultMemJsonPrompt(keyName: string): string {
+  const def = defaultMemValueForKey(keyName);
+  if (def !== undefined) return JSON.stringify(def);
+  return "{}";
 }
 
 function seedMemFromEnv(mem: MemPage, entry: BlockEntry): boolean {
@@ -143,10 +157,7 @@ async function promptMemCli(entry: BlockEntry, mem: MemPage): Promise<void> {
   const rl = createInterface({ input, output });
   try {
     for (const k of missingMemKeys(entry, mem)) {
-      const def =
-        k.name.includes("credential") || k.name.includes("login")
-          ? '{"username":"standard_user","password":"secret_sauce"}'
-          : "{}";
+      const def = defaultMemJsonPrompt(k.name);
       const line = await rl.question(`  ${k.name} JSON [${def}]: `);
       const json = line.trim() || def;
       mem.set(k, JSON.parse(json));

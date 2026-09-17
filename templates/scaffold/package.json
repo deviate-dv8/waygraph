@@ -6,20 +6,25 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
+    "fixture": "node scripts/fixture-server.mjs",
     "list": "waygraph list",
     "check": "waygraph check",
-    "auto": "waygraph auto",
-    "auto:cli": "waygraph auto --cli",
-    "demo": "waygraph demo --blocks exampleFlow",
-    "demo:auto-next": "waygraph demo --blocks exampleFlow --auto-next --title \"Scaffold demo\"",
-    "run": "waygraph run --blocks exampleFlow",
-    "graph": "waygraph graph"
+    "graph": "waygraph graph",
+    "graph:mermaid": "waygraph graph --mermaid",
+    "auto": "node scripts/with-fixture.mjs waygraph auto",
+    "auto:cli": "node scripts/with-fixture.mjs waygraph auto --cli",
+    "demo": "node scripts/with-fixture.mjs waygraph demo --blocks exampleFlow",
+    "demo:auto-next": "node scripts/with-fixture.mjs waygraph demo --blocks exampleFlow --auto-next --title \"Scaffold hello\"",
+    "demo:shop": "node scripts/with-fixture.mjs waygraph demo --blocks shopFlow --data \"{\\\"demo.selectedItem\\\":{\\\"id\\\":\\\"alpha\\\",\\\"name\\\":\\\"Alpha\\\"}}\" --title \"Scaffold shop\"",
+    "demo:shop:auto-next": "node scripts/with-fixture.mjs waygraph demo --blocks shopFlow --auto-next --data \"{\\\"demo.selectedItem\\\":{\\\"id\\\":\\\"alpha\\\",\\\"name\\\":\\\"Alpha\\\"}}\"",
+    "run": "node scripts/with-fixture.mjs waygraph run --blocks exampleFlow",
+    "run:shop": "node scripts/with-fixture.mjs waygraph run --blocks shopFlow --data \"{\\\"demo.selectedItem\\\":{\\\"id\\\":\\\"alpha\\\",\\\"name\\\":\\\"Alpha\\\"}}\""
   },
   "waygraph": {
-    "baseUrl": "about:blank"
+    "baseUrl": "http://127.0.0.1:4177"
   },
   "dependencies": {
-    "waygraph": "^0.12.6"
+    "waygraph": "^0.12.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

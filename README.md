@@ -89,7 +89,8 @@ Live reference: `examples/saucedemo/src/blocks/saucedemo-web/inventory/`
 |------|---------|
 | Watch Sauce Demo step-through (temp dir only) | `npx waygraph try demo` |
 | Interactive explore (Add/Remove/Open details from live page) | `cd examples/saucedemo && npm i && npx waygraph auto` |
-| Scaffold a new **offline** project (green `npm test` on a `data:` URL) | `npx create-waygraph my-app` **or** `npx waygraph init my-app` |
+| Scaffold a new **offline** project (green `npm test` on local fixture `:4177`) | `npx create-waygraph my-app` **or** `npx waygraph init my-app` |
+| Install coding-agent defs for diving an app into Blocks | `npx waygraph agent-dive --loop claude` (also `opencode` / `cursor` / `vscode`) |
 | Add waygraph to an existing repo | `npm install waygraph @playwright/test` |
 
 **Scaffold is not hidden inside waygraph alone** - the offline starter also ships as

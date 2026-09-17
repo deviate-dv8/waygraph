@@ -34,91 +34,96 @@
       <p class="lede">
         What <code>npx waygraph init my-app</code> and
         <code>npx create-waygraph my-app</code> copy (waygraph
-        <code>templates/scaffold/</code>, 0.12+).
+        <code>templates/scaffold/</code>, 0.12.7+). Includes
+        <strong>auto</strong> (Effect <code>instanceOptions</code>), Page hub,
+        narration, and mem - not a bare hello.
       </p>
       <p class="meta">
-        Source of truth in the package:
-        <code>templates/scaffold/STRUCTURE.md</code>.
-        Offline hello uses a <code>data:</code> URL so <code>npm test</code> needs no network.
+        Source: <code>templates/scaffold/STRUCTURE.md</code>. Offline
+        <code>home.html</code> via local fixture server <code>:4177</code>
+        (not <code>file://</code>) - no external network for
+        <code>npm test</code> / <code>auto</code>.
       </p>
 
       <h2 id="tree">Tree</h2>
       <pre><code>.
-├── package.json              # waygraph ^0.12.6, demo/run/auto scripts
-├── playwright.config.ts
-├── tsconfig.json
+├── package.json
 ├── STRUCTURE.md
-├── README.md
+├── scripts/
+│   ├── fixture-server.mjs         # serves home.html on :4177
+│   └── with-fixture.mjs           # start server + waygraph auto/demo/run
 ├── src/
 │   ├── blocks/
 │   │   ├── SITE-MAP.md
-│   │   └── demo-web/         # synthetic site - mirrors app "/"
+│   │   └── demo-web/
 │   │       ├── NAV.md
-│   │       ├── nav-home.block.ts
+│   │       ├── home.html              # offline catalog + cart
+│   │       ├── nav-home.block.ts      # Nav
+│   │       ├── home.page.block.ts     # Page hub
 │   │       └── methods/
-│   │           └── assert-hello.method.block.ts
+│   │           ├── assert-hello.method.block.ts
+│   │           ├── add-item.effect.block.ts      # auto menus
+│   │           ├── remove-item.effect.block.ts
+│   │           └── clear-cart.method.block.ts
 │   ├── states/
-│   │   └── demo.states.ts
+│   │   ├── demo.states.ts
+│   │   └── demo.mem-keys.ts           # SelectedItem
 │   └── flows/
-│       └── example.flow.ts   # withTitle + withHighlightFixtures
+│       ├── example.flow.ts            # smoke
+│       └── shop.flow.ts               # Effect path
 └── tests/
     └── example.spec.ts</code></pre>
 
-      <h2 id="conventions">Conventions baked in</h2>
+      <h2 id="features">Features covered</h2>
       <table>
         <thead>
-          <tr><th>Piece</th><th>Scaffold shows</th></tr>
+          <tr><th>Feature</th><th>In scaffold</th></tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Route folders</td>
-            <td><code>demo-web/</code> = synthetic <code>/</code> (rename to your FE namespace)</td>
-          </tr>
-          <tr>
-            <td>Nav</td>
-            <td><code>defineNavBlock</code> + <code>NAV.md</code></td>
-          </tr>
-          <tr>
-            <td>Method</td>
-            <td><code>methods/*.method.block.ts</code> via <code>defineMethodBlock</code></td>
-          </tr>
-          <tr>
-            <td>Demo narration</td>
-            <td><code>stubBefore</code> / <code>stubAfter</code> / <code>stubOnError</code> + flow fixtures + one YAP slide</td>
-          </tr>
-          <tr>
-            <td>Flows</td>
-            <td><code>withTitle</code> + <code>withHighlightFixtures</code>; demo via <code>--blocks exampleFlow</code></td>
-          </tr>
+          <tr><td>Nav</td><td><code>defineNavBlock</code> → <code>nav-home</code></td></tr>
+          <tr><td>Page hub</td><td><code>definePageBlock</code> + <code>methods{}</code></td></tr>
+          <tr><td>Method</td><td><code>assert-hello</code>, <code>clear-cart</code></td></tr>
+          <tr><td>Effect + auto</td><td><code>add-item</code> / <code>remove-item</code> + <code>instanceOptions</code></td></tr>
+          <tr><td>Mem</td><td><code>demo.selectedItem</code> keyGroup</td></tr>
+          <tr><td>Narration</td><td><code>stubBefore</code> / <code>stubAfter</code> / <code>stubOnError</code> + fixtures + YAP</td></tr>
+          <tr><td>CLI</td><td><code>demo</code>, <code>run</code>, <code>auto</code>, <code>auto:cli</code>, <code>list</code>, <code>check</code>, <code>graph</code></td></tr>
         </tbody>
       </table>
+
+      <h2 id="auto">Auto</h2>
+      <pre><code>cd my-app
+npm install &amp;&amp; npx playwright install chromium
+npm run auto        # headed - after home, pick Add Alpha / Add Beta / …
+npm run auto:cli    # terminal menus
+npm run demo:shop   # scripted Effect path with --data selectedItem</code></pre>
       <p>
-        Full multi-route consumer rules:
-        <a href="./consumer.html">Consumer layout</a>.
-        Narration API: <a href="./highlights.html">Demo narration</a>
-        (includes <code>stubOnError</code>).
+        Auto fills <code>SelectedItem</code> when you pick an Effect menu row.
+        Hand-written flows pass <code>--data '{"demo.selectedItem":{…}}'</code>.
+        More: <a href="./auto.html">Auto explore</a>.
       </p>
 
-      <h2 id="commands">After init</h2>
-      <pre><code>cd my-app
-npm install
-npx playwright install chromium
-npm test
-npm run demo              # headed step
-npm run demo:auto-next    # auto-next + YAP slide
-npm run list &amp;&amp; npm run check</code></pre>
+      <h2 id="agents">Coding agents</h2>
+      <p>
+        Mirror of Playwright <code>init-agents</code>:
+      </p>
+      <pre><code>npx waygraph agent-dive --loop claude
+npx waygraph agent-dive --loop opencode
+npx waygraph agent-dive --loop cursor
+npx waygraph agent-dive --loop vscode --prompts</code></pre>
+      <p>
+        Writes planner / author / healer agent files into the project so an agent can
+        dive an existing app into Nav/Page/Method/Effect coverage.
+      </p>
 
-      <h2 id="grow">Growing past hello</h2>
+      <h2 id="grow">Growing past the fixture</h2>
       <ol>
-        <li>Point <code>package.json</code> <code>waygraph.baseUrl</code> at your app.</li>
-        <li>Rename <code>demo-web/</code> to your origin namespace (<code>pia-web/</code>, <code>zsign-web/</code>, …).</li>
-        <li>Add one folder per real <code>page.tsx</code> URL; grouping dirs without a page get no <code>NAV.md</code>.</li>
-        <li>Keep ticket copy on <code>.flow.ts</code> fixtures; blocks stay neutral stubs.</li>
+        <li>Point <code>waygraph.baseUrl</code> at your app; replace <code>home.html</code> nav with real routes.</li>
+        <li>Rename <code>demo-web/</code> to your origin namespace.</li>
+        <li>One folder per <code>page.tsx</code>; keep Effects for DOM-instance menus.</li>
       </ol>
       <p>
-        Sauce Demo reference tree:
-        <a href="./saucedemo/index.html">Sauce Demo</a> /
-        <a href="./saucedemo/layout.html">layout</a>.
+        Consumer rules: <a href="./consumer.html">Consumer layout</a>.
+        Sauce Demo reference: <a href="./saucedemo/index.html">Sauce Demo</a>.
       </p>
     </main>
   </div>

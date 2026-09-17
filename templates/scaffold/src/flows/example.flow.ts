@@ -1,13 +1,12 @@
 import { Engine, start, end, withTitle, withHighlightFixtures } from "waygraph";
 import { NavHomeBlock } from "../blocks/demo-web/nav-home.block.js";
 import { AssertHelloBlock } from "../blocks/demo-web/methods/assert-hello.method.block.js";
+// Page hub registered for auto/docs grouping (arrival-only after nav).
+import "../blocks/demo-web/home.page.block.js";
 
 const engine = new Engine();
 
-/**
- * Offline example: nav to data: hello page, then assert heading.
- * Flow fixtures override ticket-style copy on stubs (demo narration).
- */
+/** Smoke: nav + assert (no mem). Green offline. */
 export const exampleFlow = withHighlightFixtures(
   withTitle(
     engine.defineFlow([start, NavHomeBlock, AssertHelloBlock, end]),
