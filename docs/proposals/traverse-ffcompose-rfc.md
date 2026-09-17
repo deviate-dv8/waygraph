@@ -1,6 +1,7 @@
 # RFC: Traverse + FFComposeBlock (graph regression, parallel, session fork)
 
-**Status:** Phase A in progress (2026-09-17 Dan approve). `fastForwardComposeBlock` shipped for **waygraph demo** pacing; traverse (B+) not started.
+**Status:** Phase B shipped (2026-09-17). `waygraph traverse` serial + max-visits + leaf/fail lines.
+`fastForwardComposeBlock` (Phase A) remains for demo. Parallel (D) not started.
 **Depends on:** existing `composeBlock`, `chainFlow` / `withSessionReset`, `waygraph auto` graph discovery, CLI `--blocks` / file-select patterns.
 **Goal:** walk the whole Block graph as integration regression, fail loud at the first break, parallelize safely, skip boring prefixes via FFCompose.
 
@@ -322,7 +323,7 @@ Do **not** make authors edit traverse configs every time a Block file moves if i
 | Phase | Ship | Notes |
 |-------|------|-------|
 | **A** | `fastForwardComposeBlock` + demo/run treat as one step | **DONE (demo-first):** saucedemo `ff-owner-auth`, `--ff-expand` |
-| **B** | `waygraph traverse` serial + max-visits + leaf PASS lines | No parallel yet |
+| **B** | `waygraph traverse` serial + max-visits + leaf PASS lines | **DONE** — `src/traverse-run.ts` |
 | **C** | Glob/regex `--blocks` shared by auto/traverse/demo | CLI parity |
 | **D** | `--parallel` + `--session clone` + edge leases | inherit later or never |
 | **E** | Coverage gate + JSON report + CI recipe | |

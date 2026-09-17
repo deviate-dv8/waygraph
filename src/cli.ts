@@ -8,7 +8,7 @@
  *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--fast` `--full` `--ff-expand`
  *   run    Execute; `--blocks` `--data` `--non-headless` `--video`
  *
- * Also: list / nav / validate / check / graph / init / agent-dive / try
+ * Also: list / nav / validate / check / graph / init / agent-dive / traverse / try
  * Aliases (one release): `chain` -> run/demo --blocks; `--autoplay` -> `--auto-next`
  *
  * "project" defaults to cwd. Flags beat WAYGRAPH_* env.
@@ -22,6 +22,7 @@ import { spawn } from "node:child_process";
 import { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./graph.js";
 import { runAutoExplore } from "./auto-explore-run.js";
 import { runAgentDive, type AgentDiveLoop } from "./agent-dive.js";
+import { runTraverse } from "./traverse-run.js";
 
 // ---------------------------------------------------------------------------
 // Filesystem
@@ -3742,6 +3743,12 @@ Primary (less is more):
 
 Also:
   waygraph list | nav | validate | check | graph | init <name>
+  waygraph traverse [project]              Serial graph crawl (Phase B)
+                 --from <Checkpoint>       Seed / start checkpoint
+                 --data '{...}'            Mem seed
+                 --max-steps N             Cap Block runs (default 50)
+                 --max-visits N            Cap visits per node (default 2)
+                 --non-headless            Show browser
   waygraph agent-dive [--loop claude|opencode|cursor|vscode] [--prompts]
                  Initialize coding-agent defs (Playwright init-agents analogue)
   waygraph try [demo|auto|auto:cli]        One-shot saucedemo in a temp dir
@@ -3843,6 +3850,99 @@ async function main(): Promise<void> {
 
     case "init": {
       initCommand(args[1] ?? "");
+      break;
+    }
+
+    case "traverse": {
+      if (args.includes("--step") || args.includes("--auto-next") || args.includes("--autoplay")) {
+        console.error("waygraph traverse: --step / --auto-next not supported (not a demo)");
+        process.exit(1);
+      }
+      const rest = args.slice(1);
+      let from: string | undefined;
+      let data: string | undefined;
+      let maxSteps: number | undefined;
+      let maxVisits: number | undefined;
+      let maxEdge: number | undefined;
+      let headed = false;
+      let baseUrl: string | undefined;
+      let projectDir = process.cwd();
+      for (let i = 0; i < rest.length; i++) {
+        const a = rest[i]!;
+        if (a === "--from" || a.startsWith("--from=")) {
+          from = a.startsWith("--from=") ? a.slice(7) : rest[++i];
+          continue;
+        }
+        if (a === "--data" || a.startsWith("--data=")) {
+          data = a.startsWith("--data=") ? a.slice(7) : rest[++i];
+          continue;
+        }
+        if (a === "--max-steps" || a.startsWith("--max-steps=")) {
+          const v = a.startsWith("--max-steps=") ? a.slice(12) : rest[++i];
+          maxSteps = Number(v);
+          continue;
+        }
+        if (a === "--max-visits" || a.startsWith("--max-visits=")) {
+          const v = a.startsWith("--max-visits=") ? a.slice(13) : rest[++i];
+          maxVisits = Number(v);
+          continue;
+        }
+        if (a === "--max-visits-per-edge" || a.startsWith("--max-visits-per-edge=")) {
+          const v = a.startsWith("--max-visits-per-edge=")
+            ? a.slice("--max-visits-per-edge=".length)
+            : rest[++i];
+          maxEdge = Number(v);
+          continue;
+        }
+        if (a === "--non-headless" || a === "--headed") {
+          headed = true;
+          continue;
+        }
+        if (a === "--base-url" || a.startsWith("--base-url=")) {
+          baseUrl = a.startsWith("--base-url=") ? a.slice(11) : rest[++i];
+          continue;
+        }
+        if (a === "--help" || a === "-h") {
+          console.log(`waygraph traverse [project] [flags]
+
+Serial graph crawl (RFC Phase B). Walks unused legal edges until a leaf,
+budget kill, or first broken edge.
+
+  --from <Checkpoint>     start checkpoint (optional)
+  --data '{...}'          Mem seed JSON
+  --max-steps N           default 50
+  --max-visits N          per-node visit cap (default 2)
+  --max-visits-per-edge N default 1
+  --non-headless          show browser
+  --base-url URL
+
+PASS:  [Reached Leaf Node[traverse-1] at=... steps=N]
+FAIL:  [Broke at edge[traverse-1] block=... from=... to=...]
+`);
+          process.exit(0);
+        }
+        if (!a.startsWith("-")) {
+          projectDir = resolve(a);
+        }
+      }
+      if (!existsSync(projectDir) || !statSync(projectDir).isDirectory()) {
+        console.error(`waygraph traverse: no such directory: ${projectDir}`);
+        process.exit(1);
+      }
+      const code = await runTraverse(projectDir, {
+        ...(from ? { from } : {}),
+        ...(data ? { data } : {}),
+        ...(maxSteps !== undefined && Number.isFinite(maxSteps) ? { maxSteps } : {}),
+        ...(maxVisits !== undefined && Number.isFinite(maxVisits)
+          ? { maxVisitsPerNode: maxVisits }
+          : {}),
+        ...(maxEdge !== undefined && Number.isFinite(maxEdge)
+          ? { maxVisitsPerEdge: maxEdge }
+          : {}),
+        headed,
+        ...(baseUrl ? { baseURL: baseUrl } : {}),
+      });
+      process.exitCode = code;
       break;
     }
 
