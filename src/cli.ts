@@ -1303,7 +1303,7 @@ function extractVerifyHighlights(block, resultTag) {
  * When autoCollapsePanel is set (QA video / autoplay), tuck the stepper
  * away so ring captions + the app fill the frame - Dan: stepper + auto panels.
  */
-async function markStepRunning(page, opts?: { autoCollapsePanel?: boolean }) {
+async function markStepRunning(page, opts) {
   await page
     .evaluate(({ autoCollapsePanel }) => {
       const runBtn = document.getElementById("wg-run");
@@ -1324,7 +1324,7 @@ async function markStepRunning(page, opts?: { autoCollapsePanel?: boolean }) {
           if (toggle) toggle.textContent = "Show";
         }
       }
-    }, { autoCollapsePanel: !!opts?.autoCollapsePanel })
+    }, { autoCollapsePanel: !!(opts && opts.autoCollapsePanel) })
     .catch(() => {});
 }
 
@@ -2024,8 +2024,8 @@ async function runChainedFlows(chainFlow, chainFlows, context, mem, page) {
 }
 
 /** Parses WAYGRAPH_VIDEO_VIEWPORT / --video-viewport: "1920x1080" or "1920,1080". */
-function parseVideoViewport(raw: string | undefined): { width: number; height: number } | null {
-  if (!raw?.trim()) return null;
+function parseVideoViewport(raw) {
+  if (!raw || !raw.trim()) return null;
   const m = raw.trim().match(/^(\d{3,5})[xX,](\d{3,5})$/);
   if (!m) return null;
   const width = Number(m[1]);
