@@ -241,6 +241,7 @@ import {
   demoPaceIsSlow,
   formatDemoPaceBadge,
   formatDemoPaceLabel,
+  normalizeTodos,
 } from "waygraph";
 
 function walkDir(dir, pattern) {
@@ -524,6 +525,14 @@ const RING_CSS =
   "#wg-panel .wg-pace[data-pace-kind=blitz] .wg-pace-badge{background:#22C55E;color:#052e16;}" +
   "#wg-panel .wg-pace[data-pace-kind=ms] .wg-pace-badge{background:#3B82F6;color:#fff;}" +
   "#wg-panel .wg-narration{margin:0 0 12px;font:italic 14px/1.4 system-ui,sans-serif;color:#f0e8ff;}" +
+  "#wg-todos{list-style:none;margin:0 0 12px;padding:8px 10px;background:#0f0620;border-radius:8px;" +
+  "border:1px solid #3a2a60;}" +
+  "#wg-todos li{display:flex;gap:8px;align-items:flex-start;margin:0 0 6px;font:600 12.5px/1.35 system-ui,sans-serif;}" +
+  "#wg-todos li:last-child{margin-bottom:0;}" +
+  "#wg-todos .wg-todo-mark{flex:0 0 auto;width:1.1em;text-align:center;}" +
+  "#wg-todos .wg-todo-done{color:#6ee7b7;text-decoration:line-through;opacity:.85;}" +
+  "#wg-todos .wg-todo-current{color:#fff;}" +
+  "#wg-todos .wg-todo-pending{color:#9a7ad1;}" +
   "#wg-progress{height:4px;background:#2a1650;border-radius:2px;margin:0 0 12px;overflow:hidden;}" +
   "#wg-progress-bar{height:100%;background:#7C3AED;border-radius:2px;transition:width .3s ease;}" +
   // A real tab bar for episodes - the currently-active episode reads as
@@ -784,6 +793,31 @@ async function installOverlay(page, title) {
           const ringLabel = document.getElementById("wg-ring-label");
           if (ring) ring.style.opacity = "0";
           if (ringLabel) ringLabel.style.opacity = "0";
+          if (window.__wgClearZoom) window.__wgClearZoom();
+        };
+        window.__wgClearZoom = () => {
+          document.querySelectorAll("[data-wg-zoomed=\\"1\\"]").forEach((el) => {
+            el.style.removeProperty("transform");
+            el.style.removeProperty("transform-origin");
+            el.style.removeProperty("transition");
+            el.style.removeProperty("z-index");
+            el.style.removeProperty("position");
+            delete el.dataset.wgZoomed;
+          });
+        };
+        window.__wgApplyZoom = (sel, scale) => {
+          if (window.__wgClearZoom) window.__wgClearZoom();
+          const n = Number(scale);
+          if (!Number.isFinite(n) || n <= 1.001) return;
+          const el = document.querySelector(sel);
+          if (!el) return;
+          const st = getComputedStyle(el);
+          if (st.position === "static") el.style.position = "relative";
+          el.style.zIndex = "2147483645";
+          el.style.transition = "transform .35s ease";
+          el.style.transformOrigin = "center center";
+          el.style.transform = "scale(" + n + ")";
+          el.dataset.wgZoomed = "1";
         };
         const POSITIONS = ["left", "center", "right"];
         const applyPos = (el, pos) => {
@@ -1005,7 +1039,8 @@ async function renderBeforeStep(page, info) {
         paceHtml +
         "<div id=\\"wg-modules\\" class=\\"" + modulesClass + "\\">" + modulesHtml + "</div>" +
         "<h3>Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + "</h3>" +
-        narrationHtml;
+        narrationHtml +
+        todosHtmlFromInfo(info, esc);
       if (info.keys.length === 0) {
         html += "<div class=\\"wg-key\\">(no MemKeys required)</div>";
       }
@@ -1038,12 +1073,7 @@ async function renderBeforeStep(page, info) {
       }
       if (window.__wgWirePanelChrome) {
         window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-          stepLabel:
-            (info.index + 1) +
-            " / " +
-            info.total +
-            (info.blockName ? " · " + info.blockName : "") +
-            (info.paceBadge ? " · " + info.paceBadge : ""),
+          stepLabel: miniStepLabel(info),
           forceCollapsed: info.forceCollapsed === true ? true : info.forceCollapsed === false ? false : undefined,
         });
       }
@@ -1120,6 +1150,102 @@ async function renderBeforeStep(page, info) {
     .catch(() => {});
 }
 
+async function ensureSelectorInView(page, selector) {
+  try {
+    const loc = page.locator(selector).first();
+    await loc.scrollIntoViewIfNeeded().catch(() => {});
+    await page
+      .evaluate((sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return;
+        try {
+          el.scrollIntoView({ block: "center", inline: "center", behavior: "instant" });
+        } catch {
+          try {
+            el.scrollIntoView(true);
+          } catch {
+            /* ignore */
+          }
+        }
+        let p = el.parentElement;
+        while (p && p !== document.documentElement && p !== document.body) {
+          const st = getComputedStyle(p);
+          const ox = st.overflowX;
+          const oy = st.overflowY;
+          if (/(auto|scroll|overlay)/.test(ox) || /(auto|scroll|overlay)/.test(oy)) {
+            const er = el.getBoundingClientRect();
+            const pr = p.getBoundingClientRect();
+            if (er.left < pr.left || er.right > pr.right || er.top < pr.top || er.bottom > pr.bottom) {
+              p.scrollLeft += er.left + er.width / 2 - (pr.left + pr.width / 2);
+              p.scrollTop += er.top + er.height / 2 - (pr.top + pr.height / 2);
+            }
+          }
+          p = p.parentElement;
+        }
+      }, selector)
+      .catch(() => {});
+  } catch {
+    /* best-effort */
+  }
+}
+
+async function applyHighlightZoom(page, selector, zoom) {
+  const z = Number(zoom);
+  if (!Number.isFinite(z) || z <= 1.001) {
+    await page.evaluate(() => {
+      if (window.__wgClearZoom) window.__wgClearZoom();
+    }).catch(() => {});
+    return;
+  }
+  await page
+    .evaluate(
+      ({ sel, scale }) => {
+        if (window.__wgApplyZoom) window.__wgApplyZoom(sel, scale);
+      },
+      { sel: selector, scale: z },
+    )
+    .catch(() => {});
+}
+
+function todosHtmlFromInfo(info, escFn) {
+  const list = info.todos || [];
+  if (!list.length) return "";
+  return (
+    "<ul id=\\"wg-todos\\">" +
+    list
+      .map((t) => {
+        const cls = t.current ? "wg-todo-current" : t.done ? "wg-todo-done" : "wg-todo-pending";
+        const mark = t.done ? "\\u2713" : t.current ? "\\u2192" : "\\u25CB";
+        return (
+          "<li class=\\"" +
+          cls +
+          "\\"><span class=\\"wg-todo-mark\\">" +
+          mark +
+          "</span><span>" +
+          escFn(t.text || "") +
+          "</span></li>"
+        );
+      })
+      .join("") +
+    "</ul>"
+  );
+}
+
+function miniStepLabel(info) {
+  const ep =
+    info.episodeNumber !== undefined && info.episodeNumber !== null
+      ? "Ep " + info.episodeNumber + " \\u00b7 "
+      : "";
+  return (
+    ep +
+    (info.index + 1) +
+    " / " +
+    info.total +
+    (info.blockName ? " \\u00b7 " + info.blockName : "") +
+    (info.paceBadge ? " \\u00b7 " + info.paceBadge : "")
+  );
+}
+
 async function cycleHighlightRings(page, highlights, gatesFast, opts) {
   const list = highlights || [];
   // defaultHoldMs: when set (fail path), use instead of legacy 900/200 so BUG
@@ -1129,12 +1255,47 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
   for (let i = 0; i < list.length; i++) {
     const h = list[i];
     try {
+      await ensureSelectorInView(page, h.selector);
+      await applyHighlightZoom(page, h.selector, h.zoom);
       const box = await page.locator(h.selector).first().boundingBox();
       if (box) {
         await showRing(page, box, h.label, h.tone || "planned", {
           size: h.size,
           weight: h.weight,
         });
+        if (h.todos && h.todos.length) {
+          const rows = normalizeTodos(h.todos, h.todoIndex);
+          await page
+            .evaluate((todos) => {
+              const ul = document.getElementById("wg-todos");
+              if (!ul) return;
+              ul.innerHTML = todos
+                .map((t) => {
+                  const cls = t.current
+                    ? "wg-todo-current"
+                    : t.done
+                      ? "wg-todo-done"
+                      : "wg-todo-pending";
+                  const mark = t.done ? "\\u2713" : t.current ? "\\u2192" : "\\u25CB";
+                  const esc = (s) =>
+                    String(s)
+                      .replace(/&/g, "&amp;")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;");
+                  return (
+                    "<li class=\\"" +
+                    cls +
+                    "\\"><span class=\\"wg-todo-mark\\">" +
+                    mark +
+                    "</span><span>" +
+                    esc(t.text || "") +
+                    "</span></li>"
+                  );
+                })
+                .join("");
+            }, rows)
+            .catch(() => {});
+        }
         const authored = resolveFixtureDwellMs(h, { gatesFast, pace });
         const legacyMs = i === list.length - 1 ? 200 : 900;
         const holdMs =
@@ -1278,6 +1439,7 @@ async function renderAfterStep(page, info) {
         paceHtml +
         "<div id=\\"wg-modules\\" class=\\"" + modulesClass + "\\">" + modulesHtml + "</div>" +
         "<h3>" + heading + "</h3>" +
+        todosHtmlFromInfo(info, escA) +
         resultHtml +
         gateHtml;
       if (isNewPanel) {
@@ -1286,12 +1448,7 @@ async function renderAfterStep(page, info) {
       }
       if (window.__wgWirePanelChrome) {
         window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-          stepLabel:
-            (info.index + 1) +
-            " / " +
-            info.total +
-            (info.blockName ? " · " + info.blockName : "") +
-            (info.paceBadge ? " · " + info.paceBadge : ""),
+          stepLabel: miniStepLabel(info),
           forceCollapsed: info.forceCollapsed === true ? true : info.forceCollapsed === false ? false : undefined,
         });
       }
@@ -1393,12 +1550,7 @@ async function renderStepError(page, info) {
       }
       if (window.__wgWirePanelChrome) {
         window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-          stepLabel:
-            (info.index + 1) +
-            " / " +
-            info.total +
-            (info.blockName ? " · " + info.blockName : "") +
-            (info.paceBadge ? " · " + info.paceBadge : ""),
+          stepLabel: miniStepLabel(info),
           forceCollapsed: info.forceCollapsed === true ? true : info.forceCollapsed === false ? false : undefined,
         });
       }
@@ -1626,6 +1778,8 @@ async function presentSlides(page, slides, _gate, opts) {
     await installOverlay(page, title);
     if (s.selector) {
       try {
+        await ensureSelectorInView(page, s.selector);
+        await applyHighlightZoom(page, s.selector, s.zoom);
         const box = await page.locator(s.selector).first().boundingBox();
         if (box) await showRing(page, box, caption, slideTone, slideStyle);
       } catch {
@@ -1713,11 +1867,14 @@ async function presentSlides(page, slides, _gate, opts) {
         if (window.__wgWirePanelChrome) {
           window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
             stepLabel:
+              (info.episodeNumber !== undefined && info.episodeNumber !== null
+                ? "Ep " + info.episodeNumber + " \\u00b7 "
+                : "") +
               "Slide " +
               (info.index + 1) +
               " / " +
               info.total +
-              (info.blockName ? " · " + info.blockName : ""),
+              (info.blockName ? " \\u00b7 " + info.blockName : ""),
             forceCollapsed: false,
           });
         }
@@ -2433,6 +2590,12 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       episodeTitle: r.episodeTitle,
       stepperMode,
       forceCollapsed,
+      todos: (() => {
+        for (const h of stubBeforeRef.current || []) {
+          if (h.todos && h.todos.length) return normalizeTodos(h.todos, h.todoIndex);
+        }
+        return [];
+      })(),
       ...paceSpeak,
     });
     const edits = await gate();
@@ -2504,6 +2667,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
             tone: styled.tone,
             size: styled.size,
             weight: styled.weight,
+            todos: styled.todos,
+            todoIndex: styled.todoIndex,
+            zoom: styled.zoom,
           };
         });
         await cycleHighlightRings(page, errHighlights, !!pacing.gatesFast, {
@@ -2586,6 +2752,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
             tone: styled.tone,
             size: styled.size,
             weight: styled.weight,
+            todos: styled.todos,
+            todoIndex: styled.todoIndex,
+            zoom: styled.zoom,
           };
         },
       );
@@ -2613,6 +2782,12 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       episodeNumber: r.episodeNumber,
       episodeTitle: r.episodeTitle,
       stepperMode,
+      todos: (() => {
+        for (const h of highlights || []) {
+          if (h.todos && h.todos.length) return normalizeTodos(h.todos, h.todoIndex);
+        }
+        return [];
+      })(),
       // After a nav under auto-next, stay compact until the next action block expands.
       forceCollapsed: !!process.env.WAYGRAPH_VIDEO || ((await currentAutoplay()) && isNavBlock),
     });
@@ -2707,7 +2882,7 @@ async function runChainedFlows(chainFlow, chainFlows, context, mem, page) {
 /** Parses WAYGRAPH_VIDEO_VIEWPORT / --video-viewport: "1920x1080" or "1920,1080". */
 function parseVideoViewport(raw) {
   if (!raw || !raw.trim()) return null;
-  const m = raw.trim().match(/^(\d{3,5})[xX,](\d{3,5})$/);
+  const m = raw.trim().match(/^(\\d{3,5})[xX,](\\d{3,5})$/);
   if (!m) return null;
   const width = Number(m[1]);
   const height = Number(m[2]);
@@ -2998,7 +3173,13 @@ async function main() {
       ...(executablePath ? { executablePath } : {}),
     });
     const contextOpts = fixedVideoViewport
-      ? { baseURL, viewport: fixedVideoViewport }
+      ? {
+          baseURL,
+          viewport: fixedVideoViewport,
+          // Lock DPR so --video-viewport 800x450 stays 800x450 in the .webm
+          // (HiDPI hosts otherwise scale recordVideo to e.g. 1920x1080).
+          deviceScaleFactor: 1,
+        }
       : step
         ? { baseURL, viewport: null }
         : { baseURL, viewport: { width: 1280, height: 720 } };

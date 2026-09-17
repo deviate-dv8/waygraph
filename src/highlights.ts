@@ -27,6 +27,20 @@ export type FixtureDurationFields = {
   fastMode?: number;
 };
 
+/**
+ * One checklist row for episode planning (demo panel).
+ * Prefer {@link WaygraphHighlightStub.todoIndex} for sequential done/current.
+ */
+export type WaygraphTodoItem = {
+  text: string;
+  /** Explicit done. If omitted, derived from todoIndex (index < todoIndex). */
+  done?: boolean;
+  /** Explicit current. If omitted, derived from todoIndex (index === todoIndex). */
+  current?: boolean;
+};
+
+export type WaygraphTodoInput = string | WaygraphTodoItem;
+
 /** One named highlight slot on a block (selector + caption). */
 export interface WaygraphHighlightStub extends FixtureDurationFields {
   selector: string;
@@ -53,12 +67,31 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
    * Aliases: regular, strong.
    */
   weight?: HighlightWeight;
+  /**
+   * Simple episode checklist (demo panel). Same lifecycle as this stub
+   * (stubBefore / stubAfter / stubOnError). Strings or `{ text, done?, current? }`.
+   */
+  todos?: readonly WaygraphTodoInput[];
+  /**
+   * Which todo is current (0-based). Rows before = done, after = pending.
+   * Authored `done`/`current` on an item still win when set.
+   * Bump in a stub phase function for sequential plans.
+   */
+  todoIndex?: number;
+  /**
+   * Magnify the target element while this ring is shown (e.g. `1.35`).
+   * Cleared when the ring hides / next highlight starts. `1` or omit = off.
+   */
+  zoom?: number;
 }
 
 /** Flow fixture patch: label required; selector optional (inherits from stub). */
 export type WaygraphHighlightFixture = Partial<Pick<WaygraphHighlightStub, "selector">> &
   Required<Pick<WaygraphHighlightStub, "label">> &
-  Pick<WaygraphHighlightStub, "detail" | "tag" | "tone" | "size" | "weight"> &
+  Pick<
+    WaygraphHighlightStub,
+    "detail" | "tag" | "tone" | "size" | "weight" | "todos" | "todoIndex" | "zoom"
+  > &
   FixtureDurationFields;
 
 export type HighlightStubPhase = Record<string, WaygraphHighlightStub>;
@@ -81,6 +114,8 @@ export interface WaygraphSlide extends FixtureDurationFields {
   tone?: HighlightTone;
   size?: HighlightSize;
   weight?: HighlightWeight;
+  /** Magnify selector target while this slide is showing (same as stub zoom). */
+  zoom?: number;
 }
 
 /**
@@ -435,6 +470,45 @@ function pickStyleFields(
   return out;
 }
 
+/**
+ * Normalize checklist rows; apply todoIndex for sequential done/current.
+ */
+export function normalizeTodos(
+  todos: readonly WaygraphTodoInput[] | undefined,
+  todoIndex?: number,
+): WaygraphTodoItem[] {
+  if (!todos || todos.length === 0) return [];
+  const idx =
+    todoIndex !== undefined && Number.isFinite(todoIndex) ? Math.floor(todoIndex) : undefined;
+  return todos.map((t, i) => {
+    const text = typeof t === "string" ? t.trim() : String(t?.text ?? "").trim();
+    const item: WaygraphTodoItem = { text: text || `Item ${i + 1}` };
+    if (typeof t === "object" && t) {
+      if (t.done !== undefined) item.done = !!t.done;
+      if (t.current !== undefined) item.current = !!t.current;
+    }
+    if (idx !== undefined) {
+      if (item.done === undefined) item.done = i < idx;
+      if (item.current === undefined) item.current = i === idx;
+    }
+    return item;
+  });
+}
+
+function pickTodoFields(
+  base: Pick<WaygraphHighlightStub, "todos" | "todoIndex" | "zoom"> | undefined,
+  patch: Pick<WaygraphHighlightFixture, "todos" | "todoIndex" | "zoom"> | undefined,
+): Pick<WaygraphHighlightStub, "todos" | "todoIndex" | "zoom"> {
+  const out: Pick<WaygraphHighlightStub, "todos" | "todoIndex" | "zoom"> = {};
+  const todos = patch?.todos !== undefined ? patch.todos : base?.todos;
+  const todoIndex = patch?.todoIndex !== undefined ? patch.todoIndex : base?.todoIndex;
+  const zoom = patch?.zoom !== undefined ? patch.zoom : base?.zoom;
+  if (todos !== undefined) out.todos = todos;
+  if (todoIndex !== undefined) out.todoIndex = todoIndex;
+  if (zoom !== undefined && Number.isFinite(zoom) && zoom > 0) out.zoom = zoom;
+  return out;
+}
+
 function mergeSlot(
   base: WaygraphHighlightStub | undefined,
   patch: WaygraphHighlightFixture | undefined,
@@ -442,6 +516,7 @@ function mergeSlot(
   if (!base && !patch) return null;
   const dwell = pickDurationFields(base, patch);
   const style = pickStyleFields(base, patch);
+  const todos = pickTodoFields(base, patch);
   if (!base && patch) {
     if (!patch.selector) return null;
     return {
@@ -451,6 +526,7 @@ function mergeSlot(
       ...(patch.tag ? { tag: patch.tag } : {}),
       ...style,
       ...dwell,
+      ...todos,
     };
   }
   if (base && !patch) {
@@ -459,6 +535,7 @@ function mergeSlot(
       ...(base.tone ? { tone: normalizeHighlightTone(base.tone) } : {}),
       ...(base.size ? { size: normalizeHighlightSize(base.size) } : {}),
       ...(base.weight ? { weight: normalizeHighlightWeight(base.weight) } : {}),
+      ...pickTodoFields(base, undefined),
     };
   }
   return {
@@ -472,6 +549,7 @@ function mergeSlot(
     ...(patch!.tag !== undefined ? { tag: patch!.tag } : base!.tag ? { tag: base!.tag } : {}),
     ...style,
     ...dwell,
+    ...todos,
   };
 }
 
