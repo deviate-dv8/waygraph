@@ -1156,18 +1156,40 @@ async function ensureSelectorInView(page, selector) {
     const loc = page.locator(selector).first();
     await loc.scrollIntoViewIfNeeded().catch(() => {});
     await page
-      .evaluate((sel) => {
+      .evaluate(async (sel) => {
         const el = document.querySelector(sel);
         if (!el) return;
+        const waitScroll = (node, ms) =>
+          new Promise((resolve) => {
+            let done = false;
+            const finish = () => {
+              if (done) return;
+              done = true;
+              node.removeEventListener("scrollend", finish);
+              clearTimeout(t);
+              resolve();
+            };
+            const t = setTimeout(finish, ms);
+            try {
+              node.addEventListener("scrollend", finish, { once: true });
+            } catch {
+              /* scrollend unsupported - timeout only */
+            }
+          });
         try {
-          el.scrollIntoView({ block: "center", inline: "center", behavior: "instant" });
+          el.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
         } catch {
           try {
-            el.scrollIntoView(true);
+            el.scrollIntoView({ block: "center", inline: "center" });
           } catch {
-            /* ignore */
+            try {
+              el.scrollIntoView(true);
+            } catch {
+              /* ignore */
+            }
           }
         }
+        await waitScroll(document.scrollingElement || document.documentElement, 500);
         let p = el.parentElement;
         while (p && p !== document.documentElement && p !== document.body) {
           const st = getComputedStyle(p);
@@ -1177,8 +1199,15 @@ async function ensureSelectorInView(page, selector) {
             const er = el.getBoundingClientRect();
             const pr = p.getBoundingClientRect();
             if (er.left < pr.left || er.right > pr.right || er.top < pr.top || er.bottom > pr.bottom) {
-              p.scrollLeft += er.left + er.width / 2 - (pr.left + pr.width / 2);
-              p.scrollTop += er.top + er.height / 2 - (pr.top + pr.height / 2);
+              const left = p.scrollLeft + (er.left + er.width / 2 - (pr.left + pr.width / 2));
+              const top = p.scrollTop + (er.top + er.height / 2 - (pr.top + pr.height / 2));
+              try {
+                p.scrollTo({ left, top, behavior: "smooth" });
+              } catch {
+                p.scrollLeft = left;
+                p.scrollTop = top;
+              }
+              await waitScroll(p, 500);
             }
           }
           p = p.parentElement;

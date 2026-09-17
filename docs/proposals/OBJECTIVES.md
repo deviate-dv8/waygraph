@@ -37,7 +37,7 @@ Open **block lifecycle** stubs (not closed slot objects). Episode fixtures
 |------|--------|-------|
 | **Open stub lifecycle** | DONE (0.12.24) | `stubBefore(ctx) { ctx.todos(...); ctx.ring(...) }` |
 | **Todo checklist fixtures** | DONE (0.12.24) | `ctx.todos` + `ctx.todoIndex` (bump for sequential plans) |
-| **Auto-scroll into view** | DONE (0.12.23) | Vert + horiz before ring |
+| **Auto-scroll into view** | DONE (0.12.25) | Smooth vert + horiz (incl. overflow ancestors); wait scrollend before ring |
 | **Zoom fixtures** | DONE (0.12.24) | `ctx.zoom(n)` episode default; or per-ring `zoom` |
 | **Mini stepper shows episode** | DONE (0.12.23) | Collapsed chrome: `Ep N · step · block` |
 
