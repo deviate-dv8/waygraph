@@ -197,6 +197,18 @@ async function setAutoPanelRunning(page: Page, label: string): Promise<void> {
         if (typeof window.__wgWirePanelChrome === "function") {
           window.__wgWirePanelChrome(panel, "wg-auto-panel-hidden", "waygraph auto");
         }
+        if (typeof window.__wgStampModal === "function") {
+          window.__wgStampModal(panel, "auto-panel", {
+            phase: "running",
+            block: label,
+            ready: true,
+          });
+        } else {
+          panel.setAttribute("data-wg-ui", "1");
+          panel.setAttribute("data-wg-modal", "auto-panel");
+          panel.setAttribute("data-wg-phase", "running");
+          panel.setAttribute("data-wg-ready", "1");
+        }
       },
       label,
     )
@@ -452,6 +464,7 @@ async function headfulPick(
         }
         const apply = (hidden) => {
           el.classList.toggle("wg-collapsed", hidden);
+          el.setAttribute("data-wg-collapsed", hidden ? "1" : "0");
           const t = el.querySelector("[data-wg-toggle]");
           if (t) t.textContent = hidden ? "Show" : "Hide";
           try { localStorage.setItem(storageKey, hidden ? "1" : "0"); } catch {}
@@ -469,6 +482,41 @@ async function headfulPick(
         }
       };
       window.__wgWirePanelChrome(root, "wg-auto-panel-hidden", "waygraph auto");
+      if (typeof window.__wgStampModal === "function") {
+        window.__wgStampModal(root, "auto-panel", { phase: "pick", ready: true });
+      } else {
+        root.setAttribute("data-wg-ui", "1");
+        root.setAttribute("data-wg-modal", "auto-panel");
+        root.setAttribute("data-wg-phase", "pick");
+        root.setAttribute(
+          "data-wg-collapsed",
+          root.classList.contains("wg-collapsed") ? "1" : "0",
+        );
+        root.setAttribute("data-wg-ready", "1");
+        window.__wgOverlayBeacon =
+          window.__wgOverlayBeacon ||
+          (() =>
+            Array.from(document.querySelectorAll('[data-wg-ui="1"]')).map((el) => {
+              const r = el.getBoundingClientRect();
+              const st = getComputedStyle(el);
+              return {
+                id: el.id || null,
+                modal: el.getAttribute("data-wg-modal"),
+                ready: el.getAttribute("data-wg-ready") === "1",
+                phase: el.getAttribute("data-wg-phase"),
+                step: el.getAttribute("data-wg-step"),
+                block: el.getAttribute("data-wg-block"),
+                collapsed:
+                  el.getAttribute("data-wg-collapsed") === "1" ||
+                  el.classList.contains("wg-collapsed"),
+                opacity: st.opacity,
+                textLen: (el.innerText || "").trim().length,
+                w: Math.round(r.width),
+                h: Math.round(r.height),
+                visible: r.width > 0 && r.height > 0 && Number(st.opacity) > 0.05,
+              };
+            }));
+      }
       root.querySelectorAll("button[data-idx]").forEach((btn) => {
         btn.addEventListener("click", () => {
           const idx = Number(btn.getAttribute("data-idx"));
@@ -524,20 +572,18 @@ function printCliMenu(menu: ExploreMenu, library: Map<string, BlockEntry>): void
   console.log("");
 }
 
-async function cliPick(menu: ExploreMenu): Promise<PickResult> {
-  const rl = createInterface({ input, output });
-  try {
-    while (true) {
-      const ans = (await rl.question("Choose: ")).trim().toLowerCase();
-      if (ans === "q" || ans === "quit") return { type: "quit" };
-      const n = Number(ans);
-      if (Number.isInteger(n) && n >= 1 && n <= menu.flat.length) {
-        return { type: "pick", index: n - 1 };
-      }
-      console.log("Enter a number from the list, or q to quit.");
+async function cliPick(
+  menu: ExploreMenu,
+  rl: ReturnType<typeof createInterface>,
+): Promise<PickResult> {
+  while (true) {
+    const ans = (await rl.question("Choose: ")).trim().toLowerCase();
+    if (ans === "q" || ans === "quit") return { type: "quit" };
+    const n = Number(ans);
+    if (Number.isInteger(n) && n >= 1 && n <= menu.flat.length) {
+      return { type: "pick", index: n - 1 };
     }
-  } finally {
-    rl.close();
+    console.log("Enter a number from the list, or q to quit.");
   }
 }
 
@@ -605,6 +651,7 @@ export async function runAutoExplore(projectDir: string, options: AutoExploreOpt
   }
 
   let here: string | null = null;
+  const cliRl = cli ? createInterface({ input, output }) : null;
   try {
     for (;;) {
       page = await ensureLivePage(context, page, startUrl);
@@ -633,9 +680,9 @@ export async function runAutoExplore(projectDir: string, options: AutoExploreOpt
       }
 
       let pick: PickResult;
-      if (cli) {
+      if (cli && cliRl) {
         printCliMenu(menu, library.byName);
-        pick = await cliPick(menu);
+        pick = await cliPick(menu, cliRl);
       } else {
         pick = await headfulPick(page, menu, library.byName, mem, () => pickWait.promise);
       }
@@ -672,6 +719,7 @@ export async function runAutoExplore(projectDir: string, options: AutoExploreOpt
       }
     }
   } finally {
+    cliRl?.close();
     await context.close();
     await browser.close();
   }

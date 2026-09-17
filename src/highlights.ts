@@ -50,8 +50,15 @@ export type StubPhaseFixtures = {
   todos?: readonly WaygraphTodoInput[];
   /** Which todo is current (0-based). Rows before = done, after = pending. */
   todoIndex?: number;
-  /** Default zoom for rings that omit their own zoom. */
+  /**
+   * Camera zoom (Screen Studio style) - scales the page toward the target /
+   * cursor. Not element CSS zoom. Typical `1.25` .. `2`.
+   */
   zoom?: number;
+  /** Default zoomOut for rings (false = keep camera between rings). */
+  zoomOut?: boolean;
+  /** Top demo banner title (the purple "waygraph demo" card). */
+  title?: string;
 };
 
 /** One named highlight slot on a block (selector + caption). */
@@ -81,17 +88,46 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
    */
   weight?: HighlightWeight;
   /**
-   * Magnify this target while its ring is shown (e.g. `1.35`).
-   * Cleared when the ring hides / next highlight starts. `1` or omit = off.
-   * Episode default: {@link StubCtx.zoom}.
+   * Camera zoom while this ring is up (Screen Studio style - page scales toward
+   * the target / cursor). Typical `1.25` .. `2`. Cleared when the ring hides
+   * unless `zoomOut: false`. Episode default: {@link StubCtx.zoom}.
    */
   zoom?: number;
+  /**
+   * When false, keep the camera zoomed after this ring (pan to the next target
+   * instead of zooming out). Default true. Phase default: {@link StubCtx.zoomOut}.
+   */
+  zoomOut?: boolean;
+  /**
+   * Spotlight: dim the rest of the page, keep this target as the focal point.
+   */
+  focus?: boolean;
+  /**
+   * Deprecated no-op. Camera auto-centers on the ring target; host mouse is
+   * ignored. Playwright's real mouse is driven to the centered target instead.
+   */
+  followMouse?: boolean;
+  /** Alias for {@link WaygraphHighlightStub.followMouse} (no-op). */
+  follow?: boolean;
+  /**
+   * Caption text color (CSS color). Overrides tone label color when set.
+   * Aliases accepted at runtime: `color`, `labelColor`, `textColor`.
+   */
+  color?: string;
+  /**
+   * Move the demo cursor to the target while this ring is up (default true
+   * for authored stub queues; set false to keep cursor hidden).
+   */
+  cursor?: boolean;
 }
 
 /** Flow fixture patch: label required; selector optional (inherits from stub). */
 export type WaygraphHighlightFixture = Partial<Pick<WaygraphHighlightStub, "selector">> &
   Required<Pick<WaygraphHighlightStub, "label">> &
-  Pick<WaygraphHighlightStub, "detail" | "tag" | "tone" | "size" | "weight" | "zoom"> &
+  Pick<
+    WaygraphHighlightStub,
+    "detail" | "tag" | "tone" | "size" | "weight" | "zoom" | "zoomOut" | "focus" | "followMouse" | "follow" | "color" | "cursor"
+  > &
   FixtureDurationFields;
 
 export type HighlightStubPhase = Record<string, WaygraphHighlightStub>;
@@ -130,8 +166,16 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   todos(items: readonly WaygraphTodoInput[]): void;
   /** Current checklist index (bump for sequential plans). */
   todoIndex(n: number): void;
-  /** Default zoom for rings without their own zoom. */
+  /** Default camera zoom for rings without their own zoom. */
   zoom(n: number): void;
+  /**
+   * Default zoomOut for rings in this phase. `false` = keep camera between rings.
+   */
+  zoomOut(keep: boolean): void;
+  /** Top banner title (waygraph demo card). */
+  title(text: string): void;
+  /** Alias for {@link StubCtx.title}. */
+  banner(text: string): void;
   /** Batch-set rings + episode fixtures. */
   set(partial: { highlights?: HighlightStubPhase } & StubPhaseFixtures): void;
 };
@@ -157,6 +201,8 @@ export type StubPhaseResult = {
   todos: WaygraphTodoItem[];
   todoIndex?: number;
   zoom?: number;
+  zoomOut?: boolean;
+  title?: string;
 };
 
 /**
@@ -173,7 +219,7 @@ export interface WaygraphSlide extends FixtureDurationFields {
   tone?: HighlightTone;
   size?: HighlightSize;
   weight?: HighlightWeight;
-  /** Magnify selector target while this slide is showing (same as stub zoom). */
+  /** Magnify via camera (Screen Studio) while this slide is showing. */
   zoom?: number;
 }
 
@@ -563,6 +609,20 @@ function pickZoom(
   return {};
 }
 
+function pickFxFields(
+  base: Pick<WaygraphHighlightStub, "focus" | "color" | "cursor"> | undefined,
+  patch: Pick<WaygraphHighlightFixture, "focus" | "color" | "cursor"> | undefined,
+): Pick<WaygraphHighlightStub, "focus" | "color" | "cursor"> {
+  const out: Pick<WaygraphHighlightStub, "focus" | "color" | "cursor"> = {};
+  const focus = patch?.focus !== undefined ? patch.focus : base?.focus;
+  const color = patch?.color !== undefined ? patch.color : base?.color;
+  const cursor = patch?.cursor !== undefined ? patch.cursor : base?.cursor;
+  if (focus !== undefined) out.focus = !!focus;
+  if (color !== undefined && String(color).trim()) out.color = String(color).trim();
+  if (cursor !== undefined) out.cursor = !!cursor;
+  return out;
+}
+
 function mergeSlot(
   base: WaygraphHighlightStub | undefined,
   patch: WaygraphHighlightFixture | undefined,
@@ -571,6 +631,7 @@ function mergeSlot(
   const dwell = pickDurationFields(base, patch);
   const style = pickStyleFields(base, patch);
   const zoom = pickZoom(base, patch);
+  const fx = pickFxFields(base, patch);
   if (!base && patch) {
     if (!patch.selector) return null;
     return {
@@ -581,6 +642,7 @@ function mergeSlot(
       ...style,
       ...dwell,
       ...zoom,
+      ...fx,
     };
   }
   if (base && !patch) {
@@ -590,6 +652,7 @@ function mergeSlot(
       ...(base.size ? { size: normalizeHighlightSize(base.size) } : {}),
       ...(base.weight ? { weight: normalizeHighlightWeight(base.weight) } : {}),
       ...pickZoom(base, undefined),
+      ...pickFxFields(base, undefined),
     };
   }
   return {
@@ -604,6 +667,7 @@ function mergeSlot(
     ...style,
     ...dwell,
     ...zoom,
+    ...fx,
   };
 }
 
@@ -612,6 +676,8 @@ type StubBagState = {
   todos?: readonly WaygraphTodoInput[];
   todoIndex?: number;
   zoom?: number;
+  zoomOut?: boolean;
+  title?: string;
 };
 
 function createStubCtx<Out extends Checkpoint<string>>(
@@ -636,6 +702,15 @@ function createStubCtx<Out extends Checkpoint<string>>(
     zoom(n) {
       if (Number.isFinite(n) && n > 0) bag.zoom = n;
     },
+    zoomOut(keep) {
+      bag.zoomOut = !!keep;
+    },
+    title(text) {
+      bag.title = String(text ?? "");
+    },
+    banner(text) {
+      bag.title = String(text ?? "");
+    },
     set(partial) {
       if (partial.highlights) bag.highlights = { ...partial.highlights };
       if (partial.todos !== undefined) bag.todos = partial.todos;
@@ -643,6 +718,8 @@ function createStubCtx<Out extends Checkpoint<string>>(
       if (partial.zoom !== undefined && Number.isFinite(partial.zoom) && partial.zoom > 0) {
         bag.zoom = partial.zoom;
       }
+      if (partial.zoomOut !== undefined) bag.zoomOut = !!partial.zoomOut;
+      if (partial.title !== undefined) bag.title = String(partial.title ?? "");
     },
   };
 }
@@ -666,6 +743,16 @@ function liftLegacySlotTodos(bag: StubBagState): void {
 function applyDefaultZoom(slots: ResolvedHighlight[], defaultZoom?: number): ResolvedHighlight[] {
   if (defaultZoom === undefined || !(defaultZoom > 0)) return slots;
   return slots.map((h) => (h.zoom !== undefined && h.zoom > 0 ? h : { ...h, zoom: defaultZoom }));
+}
+
+function applyDefaultZoomOut(
+  slots: ResolvedHighlight[],
+  defaultZoomOut?: boolean,
+): ResolvedHighlight[] {
+  if (defaultZoomOut === undefined) return slots;
+  return slots.map((h) =>
+    h.zoomOut !== undefined ? h : { ...h, zoomOut: defaultZoomOut },
+  );
 }
 
 function mergePhaseMaps(
@@ -793,6 +880,7 @@ export async function runStubPhase(
   const fixturePhase = opts?.fixtures?.[block.name]?.[phase];
   let highlights = mergePhaseMaps(bag.highlights, fixturePhase);
   highlights = applyDefaultZoom(highlights, bag.zoom);
+  highlights = applyDefaultZoomOut(highlights, bag.zoomOut);
 
   const todos = normalizeTodos(bag.todos, bag.todoIndex);
   return {
@@ -800,6 +888,8 @@ export async function runStubPhase(
     todos,
     ...(bag.todoIndex !== undefined ? { todoIndex: bag.todoIndex } : {}),
     ...(bag.zoom !== undefined ? { zoom: bag.zoom } : {}),
+    ...(bag.zoomOut !== undefined ? { zoomOut: bag.zoomOut } : {}),
+    ...(bag.title !== undefined && bag.title !== "" ? { title: bag.title } : {}),
   };
 }
 

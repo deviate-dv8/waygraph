@@ -667,15 +667,15 @@ export function withBlockPace<In extends Checkpoint<string>, Out extends Checkpo
  * {@link withTitle}.
  *
  * By itself this changes nothing about how the Flow runs - it still throws
- * exactly as it would otherwise. It's a hint a step-through overlay
- * (waygraph's `chain --step`) reads when that throw happens, to show an
- * informational "this is the point" panel instead of one indistinguishable
- * from a genuine break - the distinction a demo author needs so a viewer
- * (or the author, mid-build) can tell "the app just did what it's supposed
- * to" apart from "something in this demo is actually broken."
+ * Marks a Flow whose last step is an intentional product failure (demo overlay).
+ * Step mode shows stubOnError rings + an amber "expected outcome" panel when:
+ * - the last block **throws**, or
+ * - the last block **succeeds** on the fail branch (e.g. LoginPage + error banner
+ *   after submit-login branched instead of throwing).
+ * Headless `run()` is unchanged - branching success returns the checkpoint.
  * @example const viewerBlockedFlow = withExpectedFailure(
- *   engine.defineFlow([start, NavLoginBlock, blockedLoginCheck, end]),
- *   "locked_out_user can never reach /inventory.html - this is the block working as intended.",
+ *   engine.defineFlow([start, NavLoginBlock, SubmitLoginActionBlock, end]),
+ *   "locked_out_user stays on LoginPage with the error banner - working as intended.",
  * );
  */
 export function withExpectedFailure<Out extends Checkpoint<string>>(flow: Flow<Out>, reason: string): Flow<Out> {
@@ -1329,6 +1329,105 @@ export class Engine {
       EndMarker,
     ],
   ): Flow<L>;
+  defineFlow<
+    B extends Checkpoint<string>,
+    C extends Checkpoint<string>,
+    D extends Checkpoint<string>,
+    E extends Checkpoint<string>,
+    F extends Checkpoint<string>,
+    G extends Checkpoint<string>,
+    H extends Checkpoint<string>,
+    I extends Checkpoint<string>,
+    J extends Checkpoint<string>,
+    K extends Checkpoint<string>,
+    L extends Checkpoint<string>,
+    M extends Checkpoint<string>,
+  >(
+    blocks: readonly [
+      StartMarker,
+      Block<S, B>,
+      Block<B, C>,
+      Block<C, D>,
+      Block<D, E>,
+      Block<E, F>,
+      Block<F, G>,
+      Block<G, H>,
+      Block<H, I>,
+      Block<I, J>,
+      Block<J, K>,
+      Block<K, L>,
+      Block<L, M>,
+      EndMarker,
+    ],
+  ): Flow<M>;
+  defineFlow<
+    B extends Checkpoint<string>,
+    C extends Checkpoint<string>,
+    D extends Checkpoint<string>,
+    E extends Checkpoint<string>,
+    F extends Checkpoint<string>,
+    G extends Checkpoint<string>,
+    H extends Checkpoint<string>,
+    I extends Checkpoint<string>,
+    J extends Checkpoint<string>,
+    K extends Checkpoint<string>,
+    L extends Checkpoint<string>,
+    M extends Checkpoint<string>,
+    N extends Checkpoint<string>,
+  >(
+    blocks: readonly [
+      StartMarker,
+      Block<S, B>,
+      Block<B, C>,
+      Block<C, D>,
+      Block<D, E>,
+      Block<E, F>,
+      Block<F, G>,
+      Block<G, H>,
+      Block<H, I>,
+      Block<I, J>,
+      Block<J, K>,
+      Block<K, L>,
+      Block<L, M>,
+      Block<M, N>,
+      EndMarker,
+    ],
+  ): Flow<N>;
+  defineFlow<
+    B extends Checkpoint<string>,
+    C extends Checkpoint<string>,
+    D extends Checkpoint<string>,
+    E extends Checkpoint<string>,
+    F extends Checkpoint<string>,
+    G extends Checkpoint<string>,
+    H extends Checkpoint<string>,
+    I extends Checkpoint<string>,
+    J extends Checkpoint<string>,
+    K extends Checkpoint<string>,
+    L extends Checkpoint<string>,
+    M extends Checkpoint<string>,
+    N extends Checkpoint<string>,
+    O extends Checkpoint<string>,
+  >(
+    blocks: readonly [
+      StartMarker,
+      Block<S, B>,
+      Block<B, C>,
+      Block<C, D>,
+      Block<D, E>,
+      Block<E, F>,
+      Block<F, G>,
+      Block<G, H>,
+      Block<H, I>,
+      Block<I, J>,
+      Block<J, K>,
+      Block<K, L>,
+      Block<L, M>,
+      Block<M, N>,
+      Block<N, O>,
+      EndMarker,
+    ],
+  ): Flow<O>;
   defineFlow(blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker]): Flow<any> {
     return buildFlow(blocks.slice(1, -1) as Block<any, any>[], this.config);
   }

@@ -3,6 +3,9 @@ import type { ItemInCart } from "../../../../states/checkout.states.js";
 import { SelectedItem } from "../../../../states/checkout.mem-keys.js";
 import { collectAddableItems, InventorySel } from "./inventory-items.js";
 
+/** Showcase product for headed demos (matches shopFlow --data selectedItem). */
+const DEMO_PRODUCT_ID = "sauce-labs-backpack";
+
 /**
  * Kind: Effect
  * Helper: defineEffectBlock
@@ -30,13 +33,49 @@ export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>(
         },
       },
     ],
-    stubBefore: {},
-    stubAfter: {
-      badge: {
+    // Demo: zoom product -> add (stay zoomed), then badge after act.
+    stubBefore: (ctx) => {
+      ctx.title("Pick a product");
+      ctx.todos(["Find the product", "Add to cart", "Open cart"]);
+      ctx.todoIndex(0);
+      ctx.zoom(1.35);
+      ctx.zoomOut(false);
+      ctx.highlights({
+        product: {
+          selector: InventorySel.title(DEMO_PRODUCT_ID),
+          label: "Sauce Labs Backpack",
+          detail: "Zoom the product",
+          focus: true,
+          color: "#c9a6ff",
+          zoom: 1.45,
+          zoomOut: false,
+        },
+        add: {
+          selector: InventorySel.addBtn(DEMO_PRODUCT_ID),
+          label: "Add to cart",
+          focus: true,
+          color: "#86efac",
+          zoom: 1.5,
+          zoomOut: false,
+          weight: "bold",
+        },
+      });
+    },
+    stubAfter: (ctx) => {
+      ctx.banner("In the cart");
+      ctx.todos(["Find the product", "Add to cart", "Open cart"]);
+      ctx.todoIndex(1);
+      ctx.zoomOut(false);
+      ctx.ring("badge", {
         selector: InventorySel.cartBadge,
         label: "Cart badge",
-        detail: "Item is in the cart",
-      },
+        detail: "Item count updated",
+        focus: true,
+        color: "#86efac",
+        zoom: 1.6,
+        zoomOut: false,
+        duration: true,
+      });
     },
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {

@@ -45,34 +45,77 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
       out.__state === "LoggedIn"
         ? [Trait.url({ pathname: "/inventory.html" })]
         : [Trait.visible('[data-test="error"]')],
-    // Open lifecycle: todos + zoom; stubAfter rings a lower inventory item
-    // so smooth auto-scroll is visible after login.
+    // Open lifecycle: banner title, todos, Screen Studio camera zoom,
+    // sequential highlight queue (appear / dwell / fade), focus + color.
     stubBefore: (ctx) => {
+      ctx.title("Signing in");
       ctx.todos(["Enter username", "Enter password", "Click Login"]);
       ctx.todoIndex(0);
-      ctx.zoom(1.25);
+      ctx.zoom(1.35);
       ctx.highlights({
-        username: { selector: "#user-name", label: "Username", zoom: 1.3 },
-        password: { selector: "#password", label: "Password", zoom: 1.3 },
-        submit: { selector: "#login-button", label: "Login", zoom: 1.45 },
+        username: {
+          selector: "#user-name",
+          label: "Username",
+          focus: true,
+          color: "#c9a6ff",
+          zoom: 1.4,
+        },
+        password: {
+          selector: "#password",
+          label: "Password",
+          focus: true,
+          color: "#c9a6ff",
+          zoom: 1.4,
+        },
+        submit: {
+          selector: "#login-button",
+          label: "Login",
+          focus: true,
+          color: "#86efac",
+          zoom: 1.55,
+          weight: "bold",
+        },
       });
     },
     stubAfter: (ctx) => {
+      // Fail branch lands on LoginPage with Epic sadface - do not ring the
+      // inventory shelf. Success (LoggedIn) hands off to shopFlow.
+      if (ctx.out && ctx.out.__state === "LoginPage") {
+        ctx.title("Login blocked");
+        ctx.todos(["Enter username", "Enter password", "Click Login"]);
+        ctx.todoIndex(2);
+        ctx.ring("error", {
+          selector: '[data-test="error"]',
+          label: "Login error banner",
+          tone: "danger",
+          focus: true,
+          color: "#f87171",
+          duration: true,
+        });
+        return;
+      }
+      ctx.banner("Inventory");
       ctx.todos(["Enter username", "Enter password", "Click Login"]);
       ctx.todoIndex(2);
-      // Inventory is tall - fleece sits lower; demo smooth-scrolls + zooms it.
-      ctx.ring("fleece", {
-        selector: '[data-test="add-to-cart-sauce-labs-fleece-jacket"]',
-        label: "Fleece jacket",
-        detail: "Smooth scroll + zoom",
-        zoom: 1.4,
+      // Landed on inventory - hand off to shopFlow for product -> cart zoom.
+      ctx.ring("shelf", {
+        selector: ".inventory_list",
+        label: "Product shelf",
+        detail: "Ready to shop",
+        focus: true,
+        color: "#c9a6ff",
+        zoom: 1.25,
         duration: true,
       });
     },
     stubOnError: (ctx) => {
+      ctx.title("Login failed");
       ctx.ring("error", {
         selector: '[data-test="error"]',
         label: "Login error banner",
+        tone: "danger",
+        focus: true,
+        color: "#f87171",
         duration: true,
       });
     },

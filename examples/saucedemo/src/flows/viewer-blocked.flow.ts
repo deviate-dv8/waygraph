@@ -1,4 +1,4 @@
-import { Engine, start, end, withTitle, withSessionReset } from "waygraph";
+import { Engine, start, end, withTitle, withSessionReset, withExpectedFailure } from "waygraph";
 import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
 import { SubmitLoginActionBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
 
@@ -16,10 +16,14 @@ const engine = new Engine();
 // genuinely fresh cookies/storage, or the previous user's session would
 // still be live and this login attempt wouldn't mean anything.
 //
-// submit-login now branches: observe sees no /inventory.html navigation,
-// resolve -> LoginPage, verify confirms the error banner - the flow completes
-// at LoginPage (not a thrown verify on a fake LoggedIn resolve).
-export const viewerBlockedFlow = withTitle(
-  withSessionReset(engine.defineFlow([start, NavLoginBlock, SubmitLoginActionBlock, end])),
-  "Viewer: Blocked Login Attempt",
+// submit-login branches: observe sees no /inventory.html navigation,
+// resolve -> LoginPage, verify confirms the error banner. Demo still wraps
+// withExpectedFailure so step 9/9 shows stubOnError rings + amber
+// "expected outcome" panel (branching no longer throws).
+export const viewerBlockedFlow = withExpectedFailure(
+  withTitle(
+    withSessionReset(engine.defineFlow([start, NavLoginBlock, SubmitLoginActionBlock, end])),
+    "Viewer: Blocked Login Attempt",
+  ),
+  "locked_out_user stays on LoginPage with the error banner - this is the product working as intended.",
 );

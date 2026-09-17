@@ -1,5 +1,6 @@
 import { defineNavClickBlock, Trait } from "waygraph";
 import type { CartPage } from "../../../states/checkout.states.js";
+import { InventorySel } from "../inventory/methods/inventory-items.js";
 
 /**
  * Kind: Nav
@@ -14,4 +15,38 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
   checkpoint: "CartPage",
   click: ".shopping_cart_link",
   verify: [Trait.url({ pathname: "/cart.html" })],
+  stubBefore: (ctx) => {
+    ctx.title("Open cart");
+    ctx.todos(["Find the product", "Add to cart", "Open cart"]);
+    ctx.todoIndex(2);
+    ctx.zoom(1.4);
+    ctx.zoomOut(false);
+    ctx.highlights({
+      cart: {
+        selector: ".shopping_cart_link",
+        label: "Cart",
+        detail: "Zoom cart chrome",
+        focus: true,
+        color: "#c9a6ff",
+        zoom: 1.55,
+        zoomOut: false,
+        followMouse: false,
+        weight: "bold",
+      },
+    });
+  },
+  stubAfter: (ctx) => {
+    ctx.banner("Your cart");
+    ctx.zoomOut(false);
+    ctx.ring("items", {
+      selector: InventorySel.cartItem,
+      label: "Cart items",
+      detail: "Product landed in cart",
+      focus: true,
+      color: "#86efac",
+      zoom: 1.4,
+      followMouse: false,
+      duration: true,
+    });
+  },
 });

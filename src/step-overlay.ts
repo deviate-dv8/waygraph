@@ -161,6 +161,16 @@ export async function installDemoChrome(
           banner.innerHTML =
             "<span class='wg-banner-tag'>waygraph auto</span><span>" + title + "</span>";
           document.documentElement.appendChild(banner);
+          banner.setAttribute("data-wg-ui", "1");
+          banner.setAttribute("data-wg-modal", "banner");
+          banner.setAttribute("data-wg-ready", "1");
+        } else {
+          const existing = document.getElementById("wg-banner");
+          if (existing) {
+            existing.setAttribute("data-wg-ui", "1");
+            existing.setAttribute("data-wg-modal", "banner");
+            existing.setAttribute("data-wg-ready", "1");
+          }
         }
         if (showBanner && !document.title.startsWith("[waygraph] ")) {
           document.title = "[waygraph] " + document.title;
@@ -312,5 +322,24 @@ declare global {
     __wgHideRing?: () => void;
     __wgPendingNavClickLabel?: string;
     __wgWirePanelChrome?: (panel: HTMLElement, storageKey: string, chromeTitle?: string) => void;
+    __wgStampModal?: (
+      el: Element,
+      kind: string,
+      meta?: Record<string, unknown>,
+    ) => void;
+    __wgOverlayBeacon?: () => Array<{
+      id: string | null;
+      modal: string | null;
+      ready: boolean;
+      phase: string | null;
+      step: string | null;
+      block: string | null;
+      collapsed: boolean;
+      opacity: string;
+      textLen: number;
+      w: number;
+      h: number;
+      visible: boolean;
+    }>;
   }
 }

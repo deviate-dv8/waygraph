@@ -31,7 +31,15 @@ test("run rejects --fast (demo only)", async () => {
   await expect(
     exec(node, [CLI, "run", "--blocks", "echo", "--fast"]),
   ).rejects.toMatchObject({
-    stderr: expect.stringMatching(/--fast|--full|demo-only/),
+    stderr: expect.stringMatching(/--fast|--full|--mini|demo-only/),
+  });
+});
+
+test("run rejects --mini (demo only)", async () => {
+  await expect(
+    exec(node, [CLI, "run", "--blocks", "echo", "--mini"]),
+  ).rejects.toMatchObject({
+    stderr: expect.stringMatching(/--mini|demo-only/),
   });
 });
 
@@ -39,6 +47,7 @@ test("help lists demo --fast and --full", async () => {
   const { stdout } = await exec(node, [CLI, "--help"]);
   expect(stdout).toMatch(/--fast/);
   expect(stdout).toMatch(/--full/);
+  expect(stdout).toMatch(/--mini/);
   expect(stdout).toMatch(/carousel/i);
   expect(stdout).toMatch(/--ff-expand/);
   expect(stdout).toMatch(/--ff-disabled/);

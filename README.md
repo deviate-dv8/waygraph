@@ -3,7 +3,7 @@
 A typed graph of reusable Blocks for driving a browser through E2E flows, in place of a
 flat pile of ad hoc helper functions.
 
-**Current:** `0.10.9` — demo carousel stepper (default), `--fast` / `--full`, Hide = compact `N / M`.
+**Current:** `0.12.43` — overlay beacons (blind-agent gate), expected-failure panel on branched LoginPage, `--mini`, Hide stickiness.
 
 This repo is the `waygraph` npm package itself. The full live **Sauce Demo** example
 (Page inventory hub, Effect Add/Remove, MemNav Open details, `waygraph auto`) ships
@@ -428,6 +428,25 @@ npm run typecheck   # tsc --noEmit
 npm run test        # playwright test
 npm run build       # tsc -p tsconfig.build.json, emits dist/
 ```
+
+### Blind-agent overlay gate (anti-blank)
+
+Every live modal (`#wg-panel`, `#wg-banner`, `#wg-auto-panel`) stamps
+`data-wg-ui` / `data-wg-modal` / `data-wg-ready="1"`. Do **not** claim the
+stepper works unless one of these passes:
+
+```bash
+# Playwright helper (exported from waygraph)
+import { assertWgOverlayReady } from "waygraph";
+await assertWgOverlayReady(page); // throws on blank / opacity-0 / missing stamp
+
+# Live demo prove (exit 0 = painted, exit 2 = blank)
+WAYGRAPH_PROVE_EXIT=1 WAYGRAPH_PROVE_SHOT=/tmp/wg.png \
+  waygraph demo --blocks loginFlow --data '...'
+# stderr: WAYGRAPH_PROVE {"ok":true,"beacons":[...],"readyAttr":"1"}
+```
+
+Tests: `tests/cli/overlay-beacon.spec.ts`. Helpers: `src/overlay-beacon.ts`.
 
 ## Layout
 

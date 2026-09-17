@@ -38,27 +38,31 @@ Open **block lifecycle** stubs (not closed slot objects). Episode fixtures
 | **Open stub lifecycle** | DONE (0.12.24) | `stubBefore(ctx) { ctx.todos(...); ctx.ring(...) }` |
 | **Todo checklist fixtures** | DONE (0.12.24) | `ctx.todos` + `ctx.todoIndex` (bump for sequential plans) |
 | **Auto-scroll into view** | DONE (0.12.25) | Smooth vert + horiz (incl. overflow ancestors); wait scrollend before ring |
-| **Zoom fixtures** | DONE (0.12.24) | `ctx.zoom(n)` episode default; or per-ring `zoom` |
+| **Camera zoom (Screen Studio)** | PARTIAL (0.12.40) | Auto-center + `zoomOut:false` OK for first/center targets; **corners/edges still bad** - parked |
+| **Camera follow mouse** | PARKED | Host follow imperfect; first zoom fine, corners fail. See `tasks/backlog/2026-09-18_waygraph-camera-follow-corners.md` |
+| **Banner title in lifecycle** | DONE (0.12.28) | `ctx.title(...)` / `ctx.banner(...)` updates top `#wg-banner` |
+| **Highlight queue** | DONE (0.12.28) | Appear -> dwell -> fade; live follow; focus veil; caption color; `[i/n]` |
 | **Mini stepper shows episode** | DONE (0.12.23) | Collapsed chrome: `Ep N · step · block` |
 
 ### Authoring (what it is)
 
 ```ts
 stubBefore: (ctx) => {
+  ctx.title("Signing in"); // top banner text (tag stays "waygraph demo")
   ctx.todos(["Enter email", "Enter password", "Click Sign in"]);
-  ctx.todoIndex(0); // bump in later phases / later blocks
-  ctx.zoom(1.35);    // optional default magnify
+  ctx.todoIndex(0);
+  ctx.zoom(1.35); // Screen Studio camera - auto-center on target (follow-mouse parked)
   ctx.highlights({
-    email: { selector: "#email", label: "Email" },
-    submit: { selector: "#login-button", label: "Sign in" },
+    email: { selector: "#email", label: "Email", focus: true, color: "#c9a6ff" },
+    submit: { selector: "#login-button", label: "Sign in", zoom: 1.5 },
   });
-  // or: ctx.ring("email", { selector: "#email", label: "Email" });
 },
 
 stubAfter: (ctx) => {
+  ctx.banner("Inventory");
   ctx.todos(["Enter email", "Enter password", "Click Sign in"]);
   ctx.todoIndex(2);
-  ctx.ring("inv", { selector: ".inventory_list", label: "Landed" });
+  ctx.ring("inv", { selector: ".inventory_list", label: "Landed", focus: true });
 },
 ```
 

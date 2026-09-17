@@ -5,7 +5,7 @@
  *
  * Primary verbs (less is more):
  *   auto   Explore picker; `.flow.ts` / `--blocks From To` = run that path
- *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--fast` `--full` `--ff-expand` `--ff-disabled`
+ *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--fast` `--full` `--mini` `--ff-expand` `--ff-disabled`
  *   run    Execute; `--blocks` `--data` `--non-headless` `--video`
  *
  * Also: list / nav / validate / check / graph / init / agent-dive / traverse / try
@@ -618,18 +618,23 @@ const RING_CSS =
   "#wg-panel .wg-expected-heading{color:#ffcf7a;}" +
   "#wg-panel .wg-expected-reason{font:600 12.5px/1.5 system-ui,sans-serif;background:#2a2410;" +
   "color:#ffe6ae;border-radius:8px;padding:10px;margin:0 0 8px;}" +
-  // Hide / Show chrome: collapsed = compact "N / M · block" pill (not empty chrome).
+  // Hide / Show chrome: collapsed = compact "N / M · block" pill + Next (manual).
   "#wg-panel .wg-chrome{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;}" +
   "#wg-panel .wg-chrome-title{font:700 11px/1.2 system-ui,sans-serif;color:#c9a6ff;" +
-  "letter-spacing:.04em;text-transform:uppercase;}" +
-  "#wg-panel button.wg-hide-btn{margin:0;padding:4px 10px;font:600 11px system-ui,sans-serif;" +
+  "letter-spacing:.04em;text-transform:uppercase;flex:1;min-width:0;}" +
+  "#wg-panel .wg-chrome-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}" +
+  "#wg-panel button.wg-hide-btn,#wg-panel button.wg-mini-next{margin:0;padding:4px 10px;font:600 11px system-ui,sans-serif;" +
   "background:#3a2a60;color:#e8dcff;border:1px solid #5b3aa8;border-radius:6px;cursor:pointer;}" +
-  "#wg-panel button.wg-hide-btn:hover{background:#4b2a80;}" +
+  "#wg-panel button.wg-hide-btn:hover,#wg-panel button.wg-mini-next:hover{background:#4b2a80;}" +
+  "#wg-panel button.wg-mini-next{background:#2a9d6f;border-color:#22855e;color:#fff;display:none;}" +
+  "#wg-panel button.wg-mini-next:hover{background:#22855e;}" +
+  "#wg-panel button.wg-mini-next:disabled{opacity:.55;cursor:default;}" +
   "#wg-panel.wg-collapsed{width:auto;max-width:92vw;padding:8px 12px;max-height:none;overflow:hidden;}" +
   "#wg-panel.wg-collapsed .wg-body{display:none;}" +
   "#wg-panel.wg-collapsed .wg-chrome{margin:0;}" +
   "#wg-panel.wg-collapsed .wg-chrome-title{font:700 13px/1.25 system-ui,sans-serif;color:#fff;" +
   "letter-spacing:0;text-transform:none;}" +
+  "#wg-panel.wg-collapsed button.wg-mini-next.wg-mini-next-show{display:inline-block;}" +
   "@media (max-width:640px){" +
   "#wg-panel{left:8px;right:8px;bottom:8px;transform:none;max-width:none;width:auto;" +
   "max-height:min(55vh,calc(100vh - 16px));padding:12px 14px;border-radius:12px;}" +
@@ -637,6 +642,7 @@ const RING_CSS =
   "#wg-episodes{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;}" +
   "#wg-panel .wg-narration{font-size:13px;}" +
   "#wg-panel button{width:100%;}" +
+  "#wg-panel.wg-collapsed button.wg-mini-next,#wg-panel.wg-collapsed button.wg-hide-btn{width:auto;}" +
   "#wg-panel .wg-error-actions{flex-direction:column;}" +
   "#wg-banner{max-width:min(92vw,320px);font-size:13px;}" +
   "}";
@@ -869,35 +875,127 @@ async function installOverlay(page, title) {
           document.head.appendChild(iconLink);
         }
         if (iconLink.href !== favicon) iconLink.href = favicon;
+        // Blind-agent overlay beacons: every modal root gets data-wg-ui /
+        // data-wg-modal / data-wg-ready so tests can fail on a blank panel.
+        window.__wgStampModal = (el, kind, meta) => {
+          if (!el) return;
+          meta = meta || {};
+          el.setAttribute("data-wg-ui", "1");
+          el.setAttribute("data-wg-modal", kind || "panel");
+          if (meta.phase != null) el.setAttribute("data-wg-phase", String(meta.phase));
+          if (meta.step != null) el.setAttribute("data-wg-step", String(meta.step));
+          if (meta.total != null) el.setAttribute("data-wg-total", String(meta.total));
+          if (meta.block != null) el.setAttribute("data-wg-block", String(meta.block));
+          el.setAttribute(
+            "data-wg-collapsed",
+            el.classList.contains("wg-collapsed") ? "1" : "0",
+          );
+          el.setAttribute("data-wg-ready", meta.ready === false ? "0" : "1");
+        };
+        window.__wgOverlayBeacon = () => {
+          return Array.from(document.querySelectorAll("[data-wg-ui=\\"1\\"]")).map((el) => {
+            const r = el.getBoundingClientRect();
+            const st = getComputedStyle(el);
+            return {
+              id: el.id || null,
+              modal: el.getAttribute("data-wg-modal"),
+              ready: el.getAttribute("data-wg-ready") === "1",
+              phase: el.getAttribute("data-wg-phase"),
+              step: el.getAttribute("data-wg-step"),
+              block: el.getAttribute("data-wg-block"),
+              collapsed:
+                el.getAttribute("data-wg-collapsed") === "1" ||
+                el.classList.contains("wg-collapsed"),
+              opacity: st.opacity,
+              textLen: (el.innerText || "").trim().length,
+              w: Math.round(r.width),
+              h: Math.round(r.height),
+              visible: r.width > 0 && r.height > 0 && Number(st.opacity) > 0.05,
+            };
+          });
+        };
+        const existingBanner = document.getElementById("wg-banner");
+        if (existingBanner) window.__wgStampModal(existingBanner, "banner", { ready: true });
         // Hide/Show for #wg-panel - call after every panel.innerHTML refresh.
-        // Collapsed title shows "N / M · block" (compact progress). forceCollapsed
-        // is for auto-next navs / video - does not overwrite the user's Hide preference.
+        // Collapsed = "N / M · block" + Next (when not auto). Never pass
+        // forceCollapsed:false - omit so Hide/localStorage wins.
         window.__wgWirePanelChrome = (panel, storageKey, chromeTitle, opts) => {
           if (!panel) return;
           opts = opts || {};
-          if (!panel.querySelector(":scope > .wg-chrome")) {
-            const body = document.createElement("div");
-            body.className = "wg-body";
-            while (panel.firstChild) body.appendChild(panel.firstChild);
-            const chrome = document.createElement("div");
-            chrome.className = "wg-chrome";
-            const titleEl = document.createElement("span");
-            titleEl.className = "wg-chrome-title";
-            titleEl.textContent = chromeTitle || "waygraph demo";
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "wg-hide-btn";
-            btn.setAttribute("data-wg-toggle", "1");
-            btn.textContent = "Hide";
-            chrome.appendChild(titleEl);
-            chrome.appendChild(btn);
-            panel.appendChild(chrome);
-            panel.appendChild(body);
-          }
+          const ensureChrome = () => {
+            let chrome = panel.querySelector(":scope > .wg-chrome");
+            if (!chrome) {
+              const body = document.createElement("div");
+              body.className = "wg-body";
+              while (panel.firstChild) body.appendChild(panel.firstChild);
+              chrome = document.createElement("div");
+              chrome.className = "wg-chrome";
+              const titleEl = document.createElement("span");
+              titleEl.className = "wg-chrome-title";
+              titleEl.textContent = chromeTitle || "waygraph demo";
+              const actions = document.createElement("div");
+              actions.className = "wg-chrome-actions";
+              const nextBtn = document.createElement("button");
+              nextBtn.type = "button";
+              nextBtn.className = "wg-mini-next";
+              nextBtn.setAttribute("data-wg-mini-next", "1");
+              nextBtn.textContent = "Next \u25B6";
+              const btn = document.createElement("button");
+              btn.type = "button";
+              btn.className = "wg-hide-btn";
+              btn.setAttribute("data-wg-toggle", "1");
+              btn.textContent = "Hide";
+              actions.appendChild(nextBtn);
+              actions.appendChild(btn);
+              chrome.appendChild(titleEl);
+              chrome.appendChild(actions);
+              panel.appendChild(chrome);
+              panel.appendChild(body);
+              return;
+            }
+            // Yap slides ship a bare chrome - ensure actions + mini Next exist.
+            let actions = chrome.querySelector(".wg-chrome-actions");
+            if (!actions) {
+              actions = document.createElement("div");
+              actions.className = "wg-chrome-actions";
+              const hide = chrome.querySelector("[data-wg-toggle]");
+              if (hide) actions.appendChild(hide);
+              chrome.appendChild(actions);
+            }
+            if (!actions.querySelector("[data-wg-mini-next]")) {
+              const nextBtn = document.createElement("button");
+              nextBtn.type = "button";
+              nextBtn.className = "wg-mini-next";
+              nextBtn.setAttribute("data-wg-mini-next", "1");
+              nextBtn.textContent = "Next \u25B6";
+              actions.insertBefore(nextBtn, actions.firstChild);
+            }
+          };
+          ensureChrome();
           const stepLabel = opts.stepLabel || panel.dataset.wgStepLabel || "";
           if (stepLabel) panel.dataset.wgStepLabel = stepLabel;
+          const syncMiniNext = (hidden) => {
+            const miniNext = panel.querySelector("[data-wg-mini-next]");
+            if (!miniNext) return;
+            let auto = false;
+            try {
+              auto = localStorage.getItem("wg-autoplay") === "1";
+            } catch {
+              /* ignore */
+            }
+            const runBtn = document.getElementById("wg-run");
+            const show = !!hidden && !auto && !!runBtn;
+            miniNext.classList.toggle("wg-mini-next-show", show);
+            if (runBtn) {
+              miniNext.textContent = runBtn.textContent || "Next \u25B6";
+              miniNext.disabled = !!runBtn.disabled;
+            } else {
+              miniNext.disabled = true;
+            }
+          };
           const apply = (hidden, persist) => {
             panel.classList.toggle("wg-collapsed", hidden);
+            panel.setAttribute("data-wg-collapsed", hidden ? "1" : "0");
             const t = panel.querySelector("[data-wg-toggle]");
             const titleEl = panel.querySelector(".wg-chrome-title");
             const label = panel.dataset.wgStepLabel || stepLabel;
@@ -907,6 +1005,7 @@ async function installOverlay(page, title) {
                 : (chromeTitle || "waygraph demo");
             }
             if (t) t.textContent = hidden ? "Show" : "Hide";
+            syncMiniNext(hidden);
             if (persist !== false) {
               try {
                 localStorage.setItem(storageKey, hidden ? "1" : "0");
@@ -918,8 +1017,6 @@ async function installOverlay(page, title) {
           let hidden = false;
           if (opts.forceCollapsed === true) {
             hidden = true;
-          } else if (opts.forceCollapsed === false) {
-            hidden = false;
           } else {
             try {
               hidden = localStorage.getItem(storageKey) === "1";
@@ -927,6 +1024,7 @@ async function installOverlay(page, title) {
               /* ignore */
             }
           }
+          // force mini does not overwrite Hide preference in storage.
           apply(hidden, opts.forceCollapsed === true ? false : true);
           const toggle = panel.querySelector("[data-wg-toggle]");
           if (toggle && !toggle.dataset.wgWired) {
@@ -934,6 +1032,26 @@ async function installOverlay(page, title) {
             toggle.addEventListener("click", (e) => {
               e.stopPropagation();
               apply(!panel.classList.contains("wg-collapsed"), true);
+            });
+          }
+          const miniNext = panel.querySelector("[data-wg-mini-next]");
+          if (miniNext && !miniNext.dataset.wgWired) {
+            miniNext.dataset.wgWired = "1";
+            miniNext.addEventListener("click", (e) => {
+              e.stopPropagation();
+              const runBtn = document.getElementById("wg-run");
+              if (runBtn && !runBtn.disabled) {
+                runBtn.click();
+                return;
+              }
+              if (typeof window.__wgNext === "function") window.__wgNext({});
+            });
+          }
+          const autoCb = document.getElementById("wg-autoplay-cb");
+          if (autoCb && !autoCb.dataset.wgMiniWired) {
+            autoCb.dataset.wgMiniWired = "1";
+            autoCb.addEventListener("change", () => {
+              syncMiniNext(panel.classList.contains("wg-collapsed"));
             });
           }
           const cur = panel.querySelector("#wg-modules .wg-mod-current");
@@ -968,6 +1086,8 @@ async function renderBeforeStep(page, info) {
       if (window.__wgHideCursor) window.__wgHideCursor();
     })
     .catch(() => {});
+  // miniStepLabel / todosHtmlFromInfo are Node-only — browser evaluate has no closure.
+  const payload = { ...info, stepLabel: miniStepLabel(info) };
   await page
     .evaluate((info) => {
       // Reused in place, not removed + recreated, every step - the old
@@ -1034,6 +1154,33 @@ async function renderBeforeStep(page, info) {
             esc(info.paceLabel || "") +
             "</span></div>"
           : "";
+      const todosHtml = (() => {
+        const list = info.todos || [];
+        if (!list.length) return "";
+        return (
+          '<ul id=\\"wg-todos\\">' +
+          list
+            .map((t) => {
+              const cls = t.current ? "wg-todo-current" : t.done ? "wg-todo-done" : "wg-todo-pending";
+              const mark = t.done
+                ? String.fromCharCode(0x2713)
+                : t.current
+                  ? String.fromCharCode(0x2192)
+                  : String.fromCharCode(0x25cb);
+              return (
+                '<li class=\\"' +
+                cls +
+                '\\"><span class=\\"wg-todo-mark\\">' +
+                mark +
+                '</span><span>' +
+                esc(t.text || "") +
+                "</span></li>"
+              );
+            })
+            .join("") +
+          "</ul>"
+        );
+      })();
       let html =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
         episodesHtml +
@@ -1041,7 +1188,7 @@ async function renderBeforeStep(page, info) {
         "<div id=\\"wg-modules\\" class=\\"" + modulesClass + "\\">" + modulesHtml + "</div>" +
         "<h3>Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + "</h3>" +
         narrationHtml +
-        todosHtmlFromInfo(info, esc);
+        todosHtml;
       if (info.keys.length === 0) {
         html += "<div class=\\"wg-key\\">(no MemKeys required)</div>";
       }
@@ -1071,11 +1218,22 @@ async function renderBeforeStep(page, info) {
       if (isNewPanel) {
         document.documentElement.appendChild(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
+      } else {
+        panel.classList.add("wg-in");
       }
       if (window.__wgWirePanelChrome) {
         window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-          stepLabel: miniStepLabel(info),
-          forceCollapsed: info.forceCollapsed === true ? true : info.forceCollapsed === false ? false : undefined,
+          stepLabel: info.stepLabel || "",
+          forceCollapsed: info.forceCollapsed === true ? true : undefined,
+        });
+      }
+      if (window.__wgStampModal) {
+        window.__wgStampModal(panel, "panel", {
+          phase: "before",
+          step: info.index + 1,
+          total: info.total,
+          block: info.blockName || "",
+          ready: true,
         });
       }
       // Live, human-readable preview of what a MemKey's raw JSON will
@@ -1147,8 +1305,40 @@ async function renderBeforeStep(page, info) {
           if (auto) auto.style.display = cb.checked ? "" : "none";
         });
       }
-    }, info)
+    }, payload)
     .catch(() => {});
+  if (process.env.WAYGRAPH_PROVE_SHOT || process.env.WAYGRAPH_PROVE_EXIT === "1") {
+    // Default: prove once on first painted panel. PROVE_EVERY=1 re-checks
+    // every step (noisy; useful when hunting a mid-chain blank).
+    const proveEvery = process.env.WAYGRAPH_PROVE_EVERY === "1";
+    const already = globalThis.__wgProveDone;
+    if (!already || proveEvery || process.env.WAYGRAPH_PROVE_EXIT === "1") {
+      await page.waitForTimeout(500).catch(() => {});
+      if (process.env.WAYGRAPH_PROVE_SHOT) {
+        await page.screenshot({ path: process.env.WAYGRAPH_PROVE_SHOT }).catch(() => {});
+      }
+      const ok = await page
+        .evaluate(() => {
+          const beacons =
+            typeof window.__wgOverlayBeacon === "function" ? window.__wgOverlayBeacon() : [];
+          const panel = beacons.find((b) => b.modal === "panel" && b.ready && b.visible);
+          const textOk = panel && panel.textLen >= 12;
+          const opacityOk = panel && Number(panel.opacity) > 0.5;
+          return {
+            ok: !!(panel && textOk && opacityOk),
+            beacons,
+            hasRun: !!document.getElementById("wg-run"),
+            readyAttr: document.getElementById("wg-panel")?.getAttribute("data-wg-ready") || null,
+          };
+        })
+        .catch((e) => ({ ok: false, reason: String(e && e.message ? e.message : e) }));
+      console.error("WAYGRAPH_PROVE " + JSON.stringify(ok));
+      globalThis.__wgProveDone = true;
+      if (process.env.WAYGRAPH_PROVE_EXIT === "1") {
+        process.exit(ok && ok.ok ? 0 : 2);
+      }
+    }
+  }
 }
 
 async function ensureSelectorInView(page, selector) {
@@ -1276,6 +1466,85 @@ function miniStepLabel(info) {
   );
 }
 
+/**
+ * stubOnError rings + amber "expected outcome" / red error panel, then wait
+ * for Stop/Retry. Used when a step throws OR when withExpectedFailure's last
+ * block succeeds on the intentional fail branch (e.g. LoginPage + error banner).
+ */
+async function presentFailPanel(page, opts) {
+  const {
+    block,
+    fixtures,
+    error,
+    index,
+    total,
+    blockName,
+    message,
+    allNames,
+    allDescriptions,
+    moduleIndex,
+    allEpisodes,
+    title,
+    episodeNumber,
+    episodeTitle,
+    expectedFailureReason,
+    stepperMode,
+    gatesFast,
+    demoPace,
+    gate,
+  } = opts;
+  if (hasAuthoredStubOnError(block, fixtures)) {
+    await page
+      .evaluate(() => {
+        if (window.__wgRingTrack) {
+          window.removeEventListener("resize", window.__wgRingTrack);
+          window.removeEventListener("scroll", window.__wgRingTrack, true);
+          window.__wgRingTrack = null;
+        }
+      })
+      .catch(() => {});
+    const errPhase = await runStubPhase(block, "stubOnError", {
+      fixtures,
+      error,
+      out: opts.out,
+    });
+    const errHighlights = errPhase.highlights.map((h) => {
+      const styled = applyHighlightStyleDefaults(h, opts.highlightStyle);
+      return {
+        selector: styled.selector,
+        label: formatHighlightCaption(styled),
+        duration: styled.duration,
+        fastMode: styled.fastMode,
+        tone: styled.tone,
+        size: styled.size,
+        weight: styled.weight,
+        zoom: styled.zoom,
+      };
+    });
+    await cycleHighlightRings(page, errHighlights, !!gatesFast, {
+      defaultHoldMs: 2000,
+      pace: demoPace,
+      todos: errPhase.todos,
+    });
+  }
+  await renderStepError(page, {
+    index,
+    total,
+    blockName,
+    message,
+    allNames,
+    allDescriptions,
+    moduleIndex,
+    allEpisodes,
+    title,
+    episodeNumber,
+    episodeTitle,
+    expectedFailureReason,
+    stepperMode,
+  });
+  return gate();
+}
+
 async function cycleHighlightRings(page, highlights, gatesFast, opts) {
   const list = highlights || [];
   // defaultHoldMs: when set (fail path), use instead of legacy 900/200 so BUG
@@ -1388,7 +1657,9 @@ async function renderAfterStep(page, info) {
   // 900ms / 200ms holds when set.
   await cycleHighlightRings(page, highlights, gatesFast, {
     pace: info.pace,
+    stepLabel: miniStepLabel(info),
   });
+  const afterPayload = { ...info, stepLabel: miniStepLabel(info) };
   await page
     .evaluate((info) => {
       // Reused in place - see renderBeforeStep's own comment on this.
@@ -1466,23 +1737,61 @@ async function renderAfterStep(page, info) {
             escA(info.paceLabel || "") +
             "</span></div>"
           : "";
+      const todosHtml = (() => {
+        const list = info.todos || [];
+        if (!list.length) return "";
+        return (
+          '<ul id=\\"wg-todos\\">' +
+          list
+            .map((t) => {
+              const cls = t.current ? "wg-todo-current" : t.done ? "wg-todo-done" : "wg-todo-pending";
+              const mark = t.done
+                ? String.fromCharCode(0x2713)
+                : t.current
+                  ? String.fromCharCode(0x2192)
+                  : String.fromCharCode(0x25cb);
+              return (
+                '<li class=\\"' +
+                cls +
+                '\\"><span class=\\"wg-todo-mark\\">' +
+                mark +
+                '</span><span>' +
+                escA(t.text || "") +
+                "</span></li>"
+              );
+            })
+            .join("") +
+          "</ul>"
+        );
+      })();
       panel.innerHTML =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
         episodesHtml +
         paceHtml +
         "<div id=\\"wg-modules\\" class=\\"" + modulesClass + "\\">" + modulesHtml + "</div>" +
         "<h3>" + heading + "</h3>" +
-        todosHtmlFromInfo(info, escA) +
+        todosHtml +
         resultHtml +
         gateHtml;
       if (isNewPanel) {
         document.documentElement.appendChild(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
+      } else {
+        panel.classList.add("wg-in");
       }
       if (window.__wgWirePanelChrome) {
         window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-          stepLabel: miniStepLabel(info),
-          forceCollapsed: info.forceCollapsed === true ? true : info.forceCollapsed === false ? false : undefined,
+          stepLabel: info.stepLabel || "",
+          forceCollapsed: info.forceCollapsed === true ? true : undefined,
+        });
+      }
+      if (window.__wgStampModal) {
+        window.__wgStampModal(panel, "panel", {
+          phase: "after",
+          step: info.index + 1,
+          total: info.total,
+          block: info.blockName || "",
+          ready: true,
         });
       }
       panel.querySelectorAll(".wg-toggle-btn").forEach((btn) => {
@@ -1511,7 +1820,7 @@ async function renderAfterStep(page, info) {
           if (auto) auto.style.display = cb.checked ? "" : "none";
         });
       }
-    }, info)
+    }, afterPayload)
     .catch(() => {});
 }
 
@@ -1523,6 +1832,7 @@ async function renderAfterStep(page, info) {
  */
 async function renderStepError(page, info) {
   await installOverlay(page, info.title);
+  const errorPayload = { ...info, stepLabel: miniStepLabel(info) };
   await page
     .evaluate((info) => {
       // Reused in place - see renderBeforeStep's own comment on this.
@@ -1580,18 +1890,29 @@ async function renderStepError(page, info) {
       if (isNewPanel) {
         document.documentElement.appendChild(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
+      } else {
+        panel.classList.add("wg-in");
       }
       if (window.__wgWirePanelChrome) {
         window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-          stepLabel: miniStepLabel(info),
-          forceCollapsed: info.forceCollapsed === true ? true : info.forceCollapsed === false ? false : undefined,
+          stepLabel: info.stepLabel || "",
+          forceCollapsed: info.forceCollapsed === true ? true : undefined,
+        });
+      }
+      if (window.__wgStampModal) {
+        window.__wgStampModal(panel, "panel", {
+          phase: "error",
+          step: info.index + 1,
+          total: info.total,
+          block: info.blockName || "",
+          ready: true,
         });
       }
       const runBtn = document.getElementById("wg-run");
       if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
       const retryBtn = document.getElementById("wg-error-retry");
       if (retryBtn) retryBtn.addEventListener("click", () => window.__wgNext({ __wgRetry: "1" }));
-    }, info)
+    }, errorPayload)
     .catch(() => {});
 }
 
@@ -1702,11 +2023,24 @@ async function markStepRunning(page, _opts) {
       const panel = document.getElementById("wg-panel");
       if (panel) {
         panel.classList.add("wg-collapsed");
+        panel.setAttribute("data-wg-collapsed", "1");
+        panel.setAttribute("data-wg-phase", "running");
+        if (typeof window.__wgStampModal === "function") {
+          window.__wgStampModal(panel, "panel", {
+            phase: "running",
+            ready: true,
+          });
+        }
         const toggle = panel.querySelector("[data-wg-toggle]");
         if (toggle) toggle.textContent = "Show";
         const titleEl = panel.querySelector(".wg-chrome-title");
         const label = panel.dataset.wgStepLabel;
         if (titleEl && label) titleEl.textContent = label;
+        const miniNext = panel.querySelector("[data-wg-mini-next]");
+        if (miniNext) {
+          miniNext.disabled = true;
+          miniNext.classList.remove("wg-mini-next-show");
+        }
       }
     })
     .catch(() => {});
@@ -1829,7 +2163,9 @@ async function presentSlides(page, slides, _gate, opts) {
           panel = document.createElement("div");
           panel.id = "wg-panel";
         }
-        panel.classList.remove("wg-collapsed", "wg-error", "wg-expected");
+        panel.classList.remove("wg-error", "wg-expected");
+        // Do not clear wg-collapsed - WirePanelChrome honors Hide (localStorage)
+        // unless forceCollapsed:true (--mini / --video).
         const esc = (t) =>
           String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
         const episodeLine =
@@ -1908,7 +2244,17 @@ async function presentSlides(page, slides, _gate, opts) {
               " / " +
               info.total +
               (info.blockName ? " \\u00b7 " + info.blockName : ""),
-            forceCollapsed: false,
+            // Video / --mini: compact pill. Else omit so Hide sticks.
+            forceCollapsed: info.forceCollapsed === true ? true : undefined,
+          });
+        }
+        if (window.__wgStampModal) {
+          window.__wgStampModal(panel, "panel", {
+            phase: "slide",
+            step: info.index + 1,
+            total: info.total,
+            block: info.blockName || "",
+            ready: true,
           });
         }
         let autoNow = false;
@@ -1978,6 +2324,12 @@ async function presentSlides(page, slides, _gate, opts) {
         paceBadge: formatDemoPaceBadge(demoPace, baseAutoplay),
         paceLabel: formatDemoPaceLabel(demoPace, baseAutoplay),
         paceKind: demoPaceKind(demoPace),
+        forceCollapsed:
+          !!process.env.WAYGRAPH_VIDEO ||
+          process.env.WAYGRAPH_MINI === "1" ||
+          process.env.WAYGRAPH_STEPPER_MINI === "1"
+            ? true
+            : undefined,
       },
     );
     const started = Date.now();
@@ -2378,7 +2730,10 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   // installOverlay only seeds localStorage when the key is null (so mid-run
   // checkbox clicks survive navigations). Without this, a prior --autoplay
   // session sticks forever and agents cannot flip back with --no-autoplay.
-  if (process.env.WAYGRAPH_AUTOPLAY !== undefined) {
+  // Must run on the *demo origin* (after goto), not about:blank - localStorage
+  // is origin-scoped.
+  const syncAutoplayFromEnv = async () => {
+    if (process.env.WAYGRAPH_AUTOPLAY === undefined) return;
     const on = process.env.WAYGRAPH_AUTOPLAY === "1";
     await page
       .evaluate((want) => {
@@ -2389,7 +2744,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         }
       }, on)
       .catch(() => {});
-  }
+  };
+  await syncAutoplayFromEnv();
   // Some real Blocks (e.g. zsign-all's login.block.ts) call
   // page.setViewportSize({ width: 1280, height: 720 }) inside their own
   // act() - a hardcoded override for THEIR OWN testing consistency, with no
@@ -2543,6 +2899,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     // still rendered on screen.
     if ((clearSession || r.resetSession) && i > 0) {
       await resetPageState(context, page, baseURL);
+      // clear() wiped origin storage - re-apply CLI autoplay default.
+      await syncAutoplayFromEnv();
     }
     // Episode pace: block > flow > CLI --fast (only when no authored pace).
     // Authoring wins: withDemoPace("slow"|2|4500) keeps slow dwell even under --fast.
@@ -2582,10 +2940,13 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     const stubBeforeTodos = stubBeforePhase.todos || [];
     const isNavBlock = r.block.__waygraphKind === "nav";
     const autoNow = await currentAutoplay();
-    // Video recording: keep chrome compact. Live auto-next used to force-collapse
-    // every NavBlock and hid the stepper (todos / modules) - only collapse while
-    // act() runs (markStepRunning) so Playwright clicks hit the page, not the panel.
-    const forceCollapsed = !!process.env.WAYGRAPH_VIDEO;
+    // Video / --mini: compact pill. Never pass false - Hide/localStorage wins.
+    const forceCollapsed =
+      !!process.env.WAYGRAPH_VIDEO ||
+      process.env.WAYGRAPH_MINI === "1" ||
+      process.env.WAYGRAPH_STEPPER_MINI === "1"
+        ? true
+        : undefined;
     const requires = r.block.requires ?? [];
     const keys = requires.map((k) => {
       let value = "<not yet set>";
@@ -2672,47 +3033,12 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           delete window.__wgPendingNavClickLabel;
         })
         .catch(() => {});
-      // stubOnError: ring the broken UI BEFORE the error panel (PIA RFC).
-      // stubAfter stays success-only - distinct BUG/FAIL copy on the fail path.
-      const fixturesOnError = r.highlightFixtures;
-      if (hasAuthoredStubOnError(r.block, fixturesOnError)) {
-        await page
-          .evaluate(() => {
-            if (window.__wgRingTrack) {
-              window.removeEventListener("resize", window.__wgRingTrack);
-              window.removeEventListener("scroll", window.__wgRingTrack, true);
-              window.__wgRingTrack = null;
-            }
-          })
-          .catch(() => {});
-        const errPhase = await runStubPhase(r.block, "stubOnError", {
-          fixtures: fixturesOnError,
-          error: err,
-        });
-        const errHighlights = errPhase.highlights.map((h) => {
-          const styled = applyHighlightStyleDefaults(h, r.highlightStyle);
-          return {
-            selector: styled.selector,
-            label: formatHighlightCaption(styled),
-            duration: styled.duration,
-            fastMode: styled.fastMode,
-            tone: styled.tone,
-            size: styled.size,
-            weight: styled.weight,
-            zoom: styled.zoom,
-          };
-        });
-        await cycleHighlightRings(page, errHighlights, !!pacing.gatesFast, {
-          defaultHoldMs: 2000,
-          pace: pacing.demoPace,
-          todos: errPhase.todos,
-        });
-      }
-      // A thrown act()/observe()/a failed verify Trait used to just crash
-      // the whole Node process with a raw stack trace - the browser closes
-      // (main()'s own try/finally) before a human watching ever sees WHY.
-      // Show it on-screen and let a real click acknowledge it first.
-      await renderStepError(page, {
+      // stubOnError + error/expected panel BEFORE acknowledging (PIA RFC).
+      const errEdits = await presentFailPanel(page, {
+        block: r.block,
+        fixtures: r.highlightFixtures,
+        highlightStyle: r.highlightStyle,
+        error: err,
         index: i,
         total: resolved.length,
         blockName: r.block.name,
@@ -2726,14 +3052,13 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         episodeTitle: r.episodeTitle,
         expectedFailureReason: r.expectedFailureReason,
         stepperMode,
-        forceCollapsed: false,
+        gatesFast: pacing.gatesFast,
+        demoPace: pacing.demoPace,
+        gate,
       });
-      const errEdits = await gate();
       if (errEdits && errEdits.__wgRetry) {
-        // Same clean slate a normal episode boundary gets - not just
-        // re-running the failed block against whatever broken/half-
-        // navigated state it left the page in.
         await resetPageState(context, page, baseURL);
+        await syncAutoplayFromEnv();
         i = episodeStartIndex - 1;
         continue;
       }
@@ -2755,6 +3080,50 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       })
       .catch(() => {});
     result = stepOutcome.result;
+    // withExpectedFailure last block that SUCCEEDS on the intentional fail
+    // branch (e.g. submit-login -> LoginPage + error banner). Still show
+    // stubOnError rings + amber "expected outcome" panel - branching no
+    // longer throws, but the demo must not skip the educational overlay.
+    if (r.expectedFailureReason) {
+      const errEdits = await presentFailPanel(page, {
+        block: r.block,
+        fixtures: r.highlightFixtures,
+        highlightStyle: r.highlightStyle,
+        error: undefined,
+        out: result,
+        index: i,
+        total: resolved.length,
+        blockName: r.block.name,
+        message:
+          "Resolved " +
+          (result && result.__state ? result.__state : JSON.stringify(result)) +
+          " (expected failure path)",
+        allNames: moduleNames,
+        allDescriptions: moduleDescriptions,
+        moduleIndex,
+        allEpisodes,
+        title,
+        episodeNumber: r.episodeNumber,
+        episodeTitle: r.episodeTitle,
+        expectedFailureReason: r.expectedFailureReason,
+        stepperMode,
+        gatesFast: pacing.gatesFast,
+        demoPace: pacing.demoPace,
+        gate,
+      });
+      if (errEdits && errEdits.__wgRetry) {
+        await resetPageState(context, page, baseURL);
+        await syncAutoplayFromEnv();
+        i = episodeStartIndex - 1;
+        continue;
+      }
+      if (process.env.WAYGRAPH_JSON !== "1") {
+        console.log(
+          "waygraph: expected failure on " + r.block.name + " - " + r.expectedFailureReason,
+        );
+      }
+      break;
+    }
     const fixturesAfter = r.highlightFixtures;
     const slides = resolveSlides(r.block, { out: result, fixtures: fixturesAfter }).map((s) =>
       applyHighlightStyleDefaults(s, r.highlightStyle),
@@ -2816,7 +3185,12 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       episodeTitle: r.episodeTitle,
       stepperMode,
       todos: stubAfterTodos,
-      forceCollapsed: !!process.env.WAYGRAPH_VIDEO,
+      forceCollapsed:
+        !!process.env.WAYGRAPH_VIDEO ||
+        process.env.WAYGRAPH_MINI === "1" ||
+        process.env.WAYGRAPH_STEPPER_MINI === "1"
+          ? true
+          : undefined,
     });
     await gate();
   }
@@ -3858,6 +4232,8 @@ interface RunFlags {
   fast?: boolean;
   /** demo: classic wrap-all block chips instead of carousel. */
   fullStepper?: boolean;
+  /** demo: force compact mini panel (--mini / WAYGRAPH_MINI=1). */
+  miniStepper?: boolean;
   /** demo/run: expand fastForwardComposeBlock inners as separate steps. */
   ffExpand?: boolean;
   /** demo/run: dispute mode — expand FF + keep blitz on former FF inners. */
@@ -3915,6 +4291,8 @@ function parseRunFlags(argv: string[]): RunFlags {
       out.fast = true;
     } else if (a === "--full") {
       out.fullStepper = true;
+    } else if (a === "--mini" || a === "--stepper-mini") {
+      out.miniStepper = true;
     } else if (a === "--ff-expand") {
       out.ffExpand = true;
     } else if (a === "--ff-disabled" || a === "--no-ff") {
@@ -4014,8 +4392,8 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean; a
       process.env.WAYGRAPH_HEADED = "0";
     }
   }
-  if ((flags.fast || flags.fullStepper) && !opts?.allowDemoUi) {
-    console.error("waygraph: --fast / --full are demo-only flags");
+  if ((flags.fast || flags.fullStepper || flags.miniStepper) && !opts?.allowDemoUi) {
+    console.error("waygraph: --fast / --full / --mini are demo-only flags");
     process.exit(1);
   }
   if (flags.step === true) {
@@ -4056,6 +4434,9 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean; a
   }
   if (flags.fullStepper) {
     process.env.WAYGRAPH_STEPPER = "full";
+  }
+  if (flags.miniStepper) {
+    process.env.WAYGRAPH_MINI = "1";
   }
   if (flags.ffExpand) {
     process.env.WAYGRAPH_FF_EXPAND = "1";
@@ -4228,6 +4609,7 @@ Primary (less is more):
                  --auto-next               Auto-advance steps (alias: --autoplay)
                  --fast                    Shorter auto-next / Next gates (keeps smooth cursor)
                  --full                    Classic wrap-all block chips (default: carousel)
+                 --mini                    Force compact mini panel (Hide pill + Next); alias --stepper-mini
                  --ff-expand               Expand fastForwardComposeBlock inners as separate steps
                  --ff-disabled             Dispute: expand FF (alias --no-ff); blitz kept on those inners
                  --auto-play-video         Unattended + recorded: --auto-next + --video (+ step); headless by default
@@ -4640,7 +5022,7 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           "waygraph demo: missing flow/spec — e.g.\n" +
             "  waygraph demo src/flows/shop.flow.ts\n" +
             "  waygraph demo --blocks shopFlow\n" +
-            "  Flags: --blocks --data --auto-next --fast --full --ff-expand --ff-disabled --auto-play-video --title --base-url --video",
+            "  Flags: --blocks --data --auto-next --fast --full --mini --ff-expand --ff-disabled --auto-play-video --title --base-url --video",
         );
         process.exit(1);
       }

@@ -29,14 +29,17 @@ withHighlightFixtures(flow, {
 });
 ```
 
-- Success path: `stubAfter` only (unchanged).
+- Success path: `stubAfter` only (unless `withExpectedFailure` - see below).
 - Fail path: `stubOnError` rings (~2s default dwell when duration unset), then error panel.
-- `withExpectedFailure`: still runs `stubOnError` when the step throws.
+- `withExpectedFailure`: runs `stubOnError` + amber panel when the last step **throws**,
+  **or** when it **succeeds** on the intentional fail branch (e.g. LoginPage + banner
+  after branched submit-login). Headless `run()` still returns the checkpoint.
 - No `runGraph` / CI behaviour change.
 
 ## Acceptance
 
 1. Demo step intentional verify fail → ≥1 `stubOnError` ring before error panel.
-2. `withHighlightFixtures` overrides `stubOnError` labels.
-3. Success path unchanged.
-4. Unit: `tests/core/stub-on-error.spec.ts`.
+2. `withExpectedFailure` branched success (LoginPage) → stubOnError + amber panel on last step.
+3. `withHighlightFixtures` overrides `stubOnError` labels.
+4. Success path unchanged for normal flows.
+5. Unit: `tests/core/stub-on-error.spec.ts`.

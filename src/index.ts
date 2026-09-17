@@ -136,3 +136,13 @@ export {
   writeCoverageReport,
 } from "./traverse-coverage.js";
 export type { TraverseCoverageReport } from "./traverse-coverage.js";
+export {
+  WG_UI_SEL,
+  WG_READY_PANEL_SEL,
+  WG_READY_AUTO_SEL,
+  WG_READY_BANNER_SEL,
+  readWgOverlayBeacon,
+  readWgOverlayBeaconInPage,
+  assertWgOverlayReady,
+} from "./overlay-beacon.js";
+export type { WgModalKind, WgBeaconRow } from "./overlay-beacon.js";
