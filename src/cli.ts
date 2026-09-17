@@ -3305,8 +3305,10 @@ function initCommand(projectName: string): void {
   console.log("  waygraph check       # nav hygiene + orphan Blocks");
   console.log("  waygraph auto        # interactive explore (headed panel)");
   console.log("  waygraph auto --cli  # same menus in the terminal");
-  console.log("  waygraph demo src/flows/example.flow.ts");
+  console.log("  waygraph demo --blocks exampleFlow");
   console.log("  waygraph graph       # static state graph JSON");
+  console.log("");
+  console.log("  Layout: see STRUCTURE.md (or https://deviate-dv8.github.io/waygraph/scaffold.html)");
 }
 
 async function checkCommand(projectDir: string): Promise<CheckWarning[]> {

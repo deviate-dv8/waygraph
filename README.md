@@ -248,12 +248,13 @@ an opinionated Playwright," so a stealth-patched or otherwise customized launche
 the same `.launch()` shape as Playwright's own `chromium`/`firefox`/`webkit`.
 
 See **Getting started** above for `try demo`, `create-waygraph`, and `waygraph init`.
-Both scaffold commands emit the same offline tree (package.json, tsconfig, playwright.config,
-one example flow + `npm run check` / `npm run auto` / `npm run demo`).
+Both scaffold commands emit the same offline tree (route-shaped `demo-web/` +
+`methods/`, stubs, fixtures, one YAP slide). Layout:
+[`docs/scaffold.html`](./docs/scaffold.html) · `templates/scaffold/STRUCTURE.md`.
 
 **Consumer layout (Next.js App Router):** block folders mirror `app/` page routes (`/`
 at the namespace root; no invented `landing/`/`root/`; sidebar = chrome + edges). See
-`create-waygraph/README.md` "Consumer layout" and mesh handout
+[`docs/consumer.html`](./docs/consumer.html) and mesh handout
 `WAYGRAPH-CONSUMER-CONVENTION.md` - separate from this package API doc.
 
 Deliberately **not yet implemented** (tracked on the project board):

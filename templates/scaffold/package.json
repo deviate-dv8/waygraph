@@ -10,15 +10,16 @@
     "check": "waygraph check",
     "auto": "waygraph auto",
     "auto:cli": "waygraph auto --cli",
-    "demo": "waygraph demo src/flows/example.flow.ts",
-    "run": "waygraph run src/flows/example.flow.ts",
+    "demo": "waygraph demo --blocks exampleFlow",
+    "demo:auto-next": "waygraph demo --blocks exampleFlow --auto-next --title \"Scaffold demo\"",
+    "run": "waygraph run --blocks exampleFlow",
     "graph": "waygraph graph"
   },
   "waygraph": {
-    "baseUrl": "https://example.com"
+    "baseUrl": "about:blank"
   },
   "dependencies": {
-    "waygraph": "^0.11.0"
+    "waygraph": "^0.12.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scaffold structure · Waygraph docs</title>
+  <link rel="stylesheet" href="./css/site.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="side" aria-label="Docs">
+      <a class="brand" href="./index.html">waygraph</a>
+      <ul>
+        <li><a href="./index.html">Home</a></li>
+        <li><a href="./quickstart.html">Quick start</a></li>
+        <li><a href="./scaffold.html" aria-current="page">Scaffold</a></li>
+        <li><a href="./demo.html">Demo / run</a></li>
+        <li><a href="./highlights.html">Demo narration</a></li>
+        <li><a href="./auto.html">Auto explore</a></li>
+        <li><a href="./saucedemo/index.html">Sauce Demo</a></li>
+        <li><a href="./handout.html">Engine handout</a></li>
+        <li><a href="./consumer.html">Consumer layout</a></li>
+        <li><a href="./deploy.html">Deploy / preview</a></li>
+        <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
+        <li><a href="https://www.npmjs.com/package/waygraph">npm (waygraph)</a></li>
+        <li><a href="https://www.npmjs.com/package/create-waygraph">npm (create-waygraph)</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>Scaffold structure</h1>
+      <p class="lede">
+        What <code>npx waygraph init my-app</code> and
+        <code>npx create-waygraph my-app</code> copy (waygraph
+        <code>templates/scaffold/</code>, 0.12+).
+      </p>
+      <p class="meta">
+        Source of truth in the package:
+        <code>templates/scaffold/STRUCTURE.md</code>.
+        Offline hello uses a <code>data:</code> URL so <code>npm test</code> needs no network.
+      </p>
+
+      <h2 id="tree">Tree</h2>
+      <pre><code>.
+├── package.json              # waygraph ^0.12.6, demo/run/auto scripts
+├── playwright.config.ts
+├── tsconfig.json
+├── STRUCTURE.md
+├── README.md
+├── src/
+│   ├── blocks/
+│   │   ├── SITE-MAP.md
+│   │   └── demo-web/         # synthetic site - mirrors app "/"
+│   │       ├── NAV.md
+│   │       ├── nav-home.block.ts
+│   │       └── methods/
+│   │           └── assert-hello.method.block.ts
+│   ├── states/
+│   │   └── demo.states.ts
+│   └── flows/
+│       └── example.flow.ts   # withTitle + withHighlightFixtures
+└── tests/
+    └── example.spec.ts</code></pre>
+
+      <h2 id="conventions">Conventions baked in</h2>
+      <table>
+        <thead>
+          <tr><th>Piece</th><th>Scaffold shows</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Route folders</td>
+            <td><code>demo-web/</code> = synthetic <code>/</code> (rename to your FE namespace)</td>
+          </tr>
+          <tr>
+            <td>Nav</td>
+            <td><code>defineNavBlock</code> + <code>NAV.md</code></td>
+          </tr>
+          <tr>
+            <td>Method</td>
+            <td><code>methods/*.method.block.ts</code> via <code>defineMethodBlock</code></td>
+          </tr>
+          <tr>
+            <td>Demo narration</td>
+            <td><code>stubBefore</code> / <code>stubAfter</code> / <code>stubOnError</code> + flow fixtures + one YAP slide</td>
+          </tr>
+          <tr>
+            <td>Flows</td>
+            <td><code>withTitle</code> + <code>withHighlightFixtures</code>; demo via <code>--blocks exampleFlow</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Full multi-route consumer rules:
+        <a href="./consumer.html">Consumer layout</a>.
+        Narration API: <a href="./highlights.html">Demo narration</a>
+        (includes <code>stubOnError</code>).
+      </p>
+
+      <h2 id="commands">After init</h2>
+      <pre><code>cd my-app
+npm install
+npx playwright install chromium
+npm test
+npm run demo              # headed step
+npm run demo:auto-next    # auto-next + YAP slide
+npm run list &amp;&amp; npm run check</code></pre>
+
+      <h2 id="grow">Growing past hello</h2>
+      <ol>
+        <li>Point <code>package.json</code> <code>waygraph.baseUrl</code> at your app.</li>
+        <li>Rename <code>demo-web/</code> to your origin namespace (<code>pia-web/</code>, <code>zsign-web/</code>, …).</li>
+        <li>Add one folder per real <code>page.tsx</code> URL; grouping dirs without a page get no <code>NAV.md</code>.</li>
+        <li>Keep ticket copy on <code>.flow.ts</code> fixtures; blocks stay neutral stubs.</li>
+      </ol>
+      <p>
+        Sauce Demo reference tree:
+        <a href="./saucedemo/index.html">Sauce Demo</a> /
+        <a href="./saucedemo/layout.html">layout</a>.
+      </p>
+    </main>
+  </div>
+</body>
+</html>
