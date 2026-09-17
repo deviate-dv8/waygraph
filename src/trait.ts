@@ -38,7 +38,9 @@ export function urlMatches(pattern: URLPatternInit): Trait {
   return {
     name: `url-matches(${JSON.stringify(pattern)})`,
     async check(page) {
-      await page.waitForURL(urlPattern);
+      // Bound wait - fail loud instead of hanging forever when navigation never comes
+      // (e.g. locked_out login still on / while verify demands /inventory.html).
+      await page.waitForURL(urlPattern, { timeout: 8_000 });
       return true;
     },
   };

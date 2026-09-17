@@ -8,3 +8,7 @@ playwright-report/
 waygraph-artifact.html
 *.tgz
 .npm-debug.log*
+
+# local demo captures
+**/.waygraph-videos/
+

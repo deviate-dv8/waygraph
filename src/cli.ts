@@ -5,7 +5,7 @@
  *
  * Primary verbs (less is more):
  *   auto   Explore picker; `.flow.ts` / `--blocks From To` = run that path
- *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--fast` `--full`
+ *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--fast` `--full` `--ff-expand`
  *   run    Execute; `--blocks` `--data` `--non-headless` `--video`
  *
  * Also: list / nav / validate / check / graph / init / try
@@ -217,8 +217,11 @@ import { tmpdir } from "node:os";
 import {
   resolveHighlightSlots,
   resolveSlides,
+  resolveFixtureDwellMs,
+  resolveSlideDwellMs,
   formatHighlightCaption,
   hasAuthoredStubAfter,
+  hasAuthoredStubOnError,
 } from "waygraph";
 
 function walkDir(dir, pattern) {
@@ -1030,40 +1033,29 @@ async function renderBeforeStep(page, info) {
     .catch(() => {});
 }
 
-async function renderAfterStep(page, info) {
-  await installOverlay(page, info.title);
-  // Clear any tracker from a previous highlight before cycling through this
-  // step's own.
-  await page
-    .evaluate(() => {
-      if (window.__wgRingTrack) {
-        window.removeEventListener("resize", window.__wgRingTrack);
-        window.removeEventListener("scroll", window.__wgRingTrack, true);
-        window.__wgRingTrack = null;
-      }
-    })
-    .catch(() => {});
-  const highlights = info.highlights || [];
-  // Cycle through EVERY declared/recovered highlight in order, each shown
-  // long enough to actually register - "it highlights something [...] then
-  // it highlights something [else] and next," not just the first one.
-  for (let i = 0; i < highlights.length; i++) {
-    const h = highlights[i];
+async function cycleHighlightRings(page, highlights, gatesFast, opts) {
+  const list = highlights || [];
+  // defaultHoldMs: when set (fail path), use instead of legacy 900/200 so BUG
+  // rings stay visible ~2s before the error panel (PIA stubOnError RFC).
+  const defaultHoldMs = opts && opts.defaultHoldMs != null ? opts.defaultHoldMs : null;
+  for (let i = 0; i < list.length; i++) {
+    const h = list[i];
     try {
       const box = await page.locator(h.selector).first().boundingBox();
       if (box) {
         await showRing(page, box, h.label);
-        await new Promise((res) => setTimeout(res, i === highlights.length - 1 ? 200 : 900));
+        const authored = resolveFixtureDwellMs(h, { gatesFast });
+        const legacyMs = i === list.length - 1 ? 200 : 900;
+        const holdMs =
+          authored != null ? authored : defaultHoldMs != null ? defaultHoldMs : legacyMs;
+        await new Promise((res) => setTimeout(res, holdMs));
       }
     } catch {
       // best-effort - a selector that doesn't resolve just gets skipped
     }
   }
-  if (highlights.length > 0) {
-    // The LAST highlight is the one that stays lit while the human reads
-    // the after-step panel - give THAT one live resize/scroll tracking,
-    // same as before.
-    const last = highlights[highlights.length - 1];
+  if (list.length > 0) {
+    const last = list[list.length - 1];
     await page
       .evaluate((h) => {
         if (!window.__wgPositionRing) return;
@@ -1084,6 +1076,29 @@ async function renderAfterStep(page, info) {
   } else {
     await hideRing(page);
   }
+}
+
+async function renderAfterStep(page, info) {
+  await installOverlay(page, info.title);
+  // Clear any tracker from a previous highlight before cycling through this
+  // step's own.
+  await page
+    .evaluate(() => {
+      if (window.__wgRingTrack) {
+        window.removeEventListener("resize", window.__wgRingTrack);
+        window.removeEventListener("scroll", window.__wgRingTrack, true);
+        window.__wgRingTrack = null;
+      }
+    })
+    .catch(() => {});
+  const highlights = info.highlights || [];
+  const gatesFast = !!info.gatesFast;
+  // Cycle through EVERY declared/recovered highlight in order, each shown
+  // long enough to actually register - "it highlights something [...] then
+  // it highlights something [else] and next," not just the first one.
+  // duration / fastMode on stubAfter (or flow fixtures) override the legacy
+  // 900ms / 200ms holds when set.
+  await cycleHighlightRings(page, highlights, gatesFast, null);
   await page
     .evaluate((info) => {
       // Reused in place - see renderBeforeStep's own comment on this.
@@ -1404,10 +1419,10 @@ async function showRing(page, box, label) {
 }
 
 /** Match a locator to a stubBefore slot by overlapping bounding boxes. */
-async function captionForLocator(page, locator, stubs, fallback) {
-  if (!stubs || stubs.length === 0) return fallback;
+async function matchStubForLocator(page, locator, stubs) {
+  if (!stubs || stubs.length === 0) return null;
   const box = await locator.boundingBox().catch(() => null);
-  if (!box) return fallback;
+  if (!box) return null;
   for (const s of stubs) {
     try {
       const b = await page.locator(s.selector).first().boundingBox();
@@ -1417,13 +1432,28 @@ async function captionForLocator(page, locator, stubs, fallback) {
         Math.abs(b.y - box.y) < 4 &&
         Math.abs(b.width - box.width) < 8
       ) {
-        return formatHighlightCaption(s);
+        return s;
       }
     } catch {
       /* skip */
     }
   }
+  return null;
+}
+
+async function captionForLocator(page, locator, stubs, fallback) {
+  const matched = await matchStubForLocator(page, locator, stubs);
+  if (matched) return formatHighlightCaption(matched);
   return fallback;
+}
+
+async function dwellMatchedStub(page, locator, stubs, pacing) {
+  const matched = await matchStubForLocator(page, locator, stubs);
+  if (!matched) return;
+  const ms = resolveFixtureDwellMs(matched, { gatesFast: !!(pacing && pacing.gatesFast) });
+  if (ms != null && ms > 0) {
+    await new Promise((res) => setTimeout(res, ms));
+  }
 }
 
 /**
@@ -1440,6 +1470,7 @@ async function presentSlides(page, slides, _gate, opts) {
   const blockName = (opts && opts.blockName) || "";
   const episodeNumber = opts && opts.episodeNumber;
   const episodeTitle = (opts && opts.episodeTitle) || "";
+  const gatesFast = !!(opts && opts.fast);
   const autoplayMs =
     opts && opts.autoplayMs
       ? Number(opts.autoplayMs)
@@ -1450,6 +1481,7 @@ async function presentSlides(page, slides, _gate, opts) {
     const s = slides[i];
     const caption = formatHighlightCaption(s);
     const isLast = i === slides.length - 1;
+    const dwellMs = resolveFixtureDwellMs(s, { gatesFast });
     await installOverlay(page, title);
     if (s.selector) {
       try {
@@ -1503,12 +1535,19 @@ async function presentSlides(page, slides, _gate, opts) {
               esc(info.detail) +
               "</div>"
             : "") +
+          (info.dwellMs != null
+            ? "<div class=\\"wg-auto\\" id=\\"wg-dwell-hint\\" style=\\"margin:0 0 8px\\">Hold " +
+              (info.dwellMs / 1000).toFixed(1) +
+              "s before next...</div>"
+            : "") +
           "<div class=\\"wg-autoplay-row\\"><label><input type=\\"checkbox\\" id=\\"wg-autoplay-cb\\"" +
           (info.autoNow ? " checked" : "") +
           "> Auto-advance</label></div>" +
           "<div id=\\"wg-gate-manual\\"" +
           (info.autoNow ? " style=\\"display:none\\"" : "") +
-          "><button type=\\"button\\" id=\\"wg-run\\">" +
+          "><button type=\\"button\\" id=\\"wg-run\\"" +
+          (info.dwellMs != null ? " disabled" : "") +
+          ">" +
           (info.isLast ? "Continue \\u25B6" : "Next slide \\u25B6") +
           "</button></div>" +
           "<div id=\\"wg-gate-auto\\" class=\\"wg-auto\\"" +
@@ -1558,15 +1597,28 @@ async function presentSlides(page, slides, _gate, opts) {
         const runBtn = document.getElementById("wg-run");
         if (runBtn) {
           runBtn.removeAttribute("data-wg-acked");
-          runBtn.addEventListener(
-            "click",
-            (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              runBtn.setAttribute("data-wg-acked", "1");
-            },
-            { once: true },
-          );
+          runBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (runBtn.disabled) return;
+            runBtn.setAttribute("data-wg-acked", "1");
+          });
+        }
+        if (info.dwellMs != null && info.dwellMs > 0) {
+          const unlockAt = Date.now() + info.dwellMs;
+          const tick = () => {
+            const left = Math.max(0, unlockAt - Date.now());
+            const hint = document.getElementById("wg-dwell-hint");
+            const btn = document.getElementById("wg-run");
+            if (left <= 0) {
+              if (hint) hint.remove();
+              if (btn) btn.disabled = false;
+              return;
+            }
+            if (hint) hint.textContent = "Hold " + (left / 1000).toFixed(1) + "s before next...";
+            setTimeout(tick, 100);
+          };
+          setTimeout(tick, 100);
         }
       },
       {
@@ -1578,11 +1630,15 @@ async function presentSlides(page, slides, _gate, opts) {
         blockName,
         isLast,
         autoNow: false,
+        dwellMs,
         episodeNumber: episodeNumber !== undefined ? episodeNumber : null,
         episodeTitle,
       },
     );
     const started = Date.now();
+    // When duration is set: floor both manual Next and auto-next to dwellMs.
+    // When unset: legacy - auto uses autoplayMs, manual Next is immediate.
+    const autoWaitMs = dwellMs != null ? dwellMs : autoplayMs;
     for (;;) {
       const acked = await page
         .evaluate(() => {
@@ -1590,7 +1646,9 @@ async function presentSlides(page, slides, _gate, opts) {
           return !!(btn && btn.getAttribute("data-wg-acked") === "1");
         })
         .catch(() => false);
-      if (acked) break;
+      if (acked) {
+        if (dwellMs == null || Date.now() - started >= dwellMs) break;
+      }
       const auto = await page
         .evaluate(() => {
           try {
@@ -1600,7 +1658,7 @@ async function presentSlides(page, slides, _gate, opts) {
           }
         })
         .catch(() => false);
-      if (auto && Date.now() - started >= autoplayMs) break;
+      if (auto && Date.now() - started >= autoWaitMs) break;
       await new Promise((res) => setTimeout(res, 100));
     }
   }
@@ -1692,20 +1750,19 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
   // seconds. When slowMo is already doing the pacing, add none of our own;
   // only fall back to a small typing delay when slowMo is off entirely.
   //
-  // Each is a function, not a plain const, and reads pacing.fast fresh
-  // on every call - pacing is a shared mutable object runStepMode flips
-  // per-block (WAYGRAPH_FAST_BLOCKS), and the Locator.fill/click patches
-  // below are installed once on the shared prototype but invoked once per
-  // real interaction, long after this closure was created.
+  // pacing.skipTheater (WAYGRAPH_FAST_BLOCKS only): near-zero cursor / pop /
+  // typing - blow past this block. --fast sets pacing.gatesFast instead
+  // and must NOT land here, or demo looks like plain waygraph run.
   // stubBeforeRef.current = resolved stubBefore slots for the active block.
-  const typeDelay = () => (pacing.fast ? 0 : slowMo ? 0 : 30);
+  const skipTheater = () => !!pacing.skipTheater;
+  const typeDelay = () => (skipTheater() ? 0 : slowMo ? 0 : 30);
   // Click is a single action, not per-character, so it doesn't compound
   // the same way - but slowMo still adds its own pause around the actual
   // click, so trim our own explicit "pop" pauses when it's already active
   // rather than stacking a full 1.2s on top of that.
-  const clickPrePop = () => (pacing.fast ? 0 : slowMo ? 300 : 700);
-  const clickPostPop = () => (pacing.fast ? 0 : slowMo ? 200 : 500);
-  const cursorMs = (full) => (pacing.fast ? Math.min(120, full) : full);
+  const clickPrePop = () => (skipTheater() ? 0 : slowMo ? 300 : 700);
+  const clickPostPop = () => (skipTheater() ? 0 : slowMo ? 200 : 500);
+  const cursorMs = (full) => (skipTheater() ? Math.min(120, full) : full);
   // Locator.fill()/click() only ever see a raw call, no context of where
   // the value came from. Patching mem.get() to remember the most recently
   // read key's name (Blocks read-then-immediately-fill, e.g. const { email
@@ -1741,7 +1798,8 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
           const label = await captionForLocator(page, this, stubs, fallback);
           await moveCursorTo(page, box, cursorMs(500));
           await showRing(page, box, label);
-          await new Promise((res) => setTimeout(res, pacing.fast ? 0 : 200));
+          await dwellMatchedStub(page, this, stubs, pacing);
+          await new Promise((res) => setTimeout(res, skipTheater() ? 0 : 200));
         } else if (box) {
           // Ring/caption already handled by narrate() - still move the
           // cursor there, just skip re-showing the ring with a generic label.
@@ -1810,6 +1868,7 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
           const label = await captionForLocator(page, this, stubs, fallback);
           clickPoint = await moveCursorTo(page, box, cursorMs(600));
           await showRing(page, box, label);
+          await dwellMatchedStub(page, this, stubs, pacing);
           // "pop for a few seconds" - Dan's own phrase, matching the
           // zsign demo-engine's ring-before-click pattern in
           // services/help-center-clip-engine's video-pipeline.
@@ -1830,7 +1889,7 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
         // mid-animation, sometimes cutting it off before it's even visible.
         // Wait out the same .5s the "@keyframes wg-pulse" rule uses, so the
         // mock click visually completes before the real one fires.
-        await new Promise((res) => setTimeout(res, pacing.fast ? 0 : 500));
+        await new Promise((res) => setTimeout(res, skipTheater() ? 0 : 500));
       }
       const result = await originalClick.call(this, options);
       await new Promise((res) => setTimeout(res, clickPostPop()));
@@ -1930,12 +1989,14 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   // WAYGRAPH_FAST_BLOCKS=login) can run through with none of the overlay's
   // own added dwell while the rest of the chain keeps the full theatrical
   // pace. Playwright's own slowMo is process-wide and untouched by this -
-  // only OUR added pauses (ring pop, cursor travel, typing delay) shrink.
-  // --fast / WAYGRAPH_DEMO_FAST: every step uses fast interaction pacing + shorter gates.
-  // WAYGRAPH_FAST_BLOCKS still names per-block overrides when --fast is off.
+  // only OUR added pauses (ring pop, cursor travel, typing delay) shrink
+  // when skipTheater is on.
+  // --fast / WAYGRAPH_DEMO_FAST: shorter auto-next / Next gates ONLY -
+  // keeps smooth cursor travel (not akin to waygraph run).
+  // WAYGRAPH_FAST_BLOCKS: named blocks still skip theater (old blow-past).
   const demoFast = process.env.WAYGRAPH_DEMO_FAST === "1";
   const stepperMode = process.env.WAYGRAPH_STEPPER === "full" ? "full" : "carousel";
-  const pacing = { fast: demoFast };
+  const pacing = { gatesFast: demoFast, skipTheater: false };
   const stubBeforeRef = { current: [] };
   instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef);
   // Force the panel checkbox from this process's flags/env at run start.
@@ -2022,7 +2083,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     // gates too, not just skip its interaction dwell - otherwise autoplay
     // still stalls the full autoplayMs admiring a step that intentionally
     // ran too fast to watch.
-    const ms = pacing.fast ? Math.min(400, autoplayMs) : autoplayMs;
+    const ms =
+      pacing.gatesFast || pacing.skipTheater ? Math.min(400, autoplayMs) : autoplayMs;
     let elapsed = 0;
     for (;;) {
       // Re-read the checkbox EVERY loop tick, not once up front - a human
@@ -2105,7 +2167,10 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     if ((clearSession || r.resetSession) && i > 0) {
       await resetPageState(context, page, baseURL);
     }
-    pacing.fast = demoFast || fastBlockNames.has(r.block.name);
+    // gatesFast: --fast (whole run) or FFCompose opaque steps (one short gate).
+    // skipTheater: only WAYGRAPH_FAST_BLOCKS - never --fast, never FF by default.
+    pacing.gatesFast = demoFast || !!r.block.fastForward;
+    pacing.skipTheater = fastBlockNames.has(r.block.name);
     const fixtures = r.highlightFixtures;
     stubBeforeRef.current = resolveHighlightSlots(r.block, "stubBefore", { fixtures });
     const isNavBlock = r.block.__waygraphKind === "nav";
@@ -2184,6 +2249,31 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           delete window.__wgPendingNavClickLabel;
         })
         .catch(() => {});
+      // stubOnError: ring the broken UI BEFORE the error panel (PIA RFC).
+      // stubAfter stays success-only - distinct BUG/FAIL copy on the fail path.
+      const fixturesOnError = r.highlightFixtures;
+      if (hasAuthoredStubOnError(r.block, fixturesOnError)) {
+        await page
+          .evaluate(() => {
+            if (window.__wgRingTrack) {
+              window.removeEventListener("resize", window.__wgRingTrack);
+              window.removeEventListener("scroll", window.__wgRingTrack, true);
+              window.__wgRingTrack = null;
+            }
+          })
+          .catch(() => {});
+        const errHighlights = resolveHighlightSlots(r.block, "stubOnError", {
+          fixtures: fixturesOnError,
+        }).map((h) => ({
+          selector: h.selector,
+          label: formatHighlightCaption(h),
+          duration: h.duration,
+          fastMode: h.fastMode,
+        }));
+        await cycleHighlightRings(page, errHighlights, !!pacing.gatesFast, {
+          defaultHoldMs: 2000,
+        });
+      }
       // A thrown act()/observe()/a failed verify Trait used to just crash
       // the whole Node process with a raw stack trace - the browser closes
       // (main()'s own try/finally) before a human watching ever sees WHY.
@@ -2237,7 +2327,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       await presentSlides(page, slides, gate, {
         title,
         blockName: r.block.name,
-        fast: pacing.fast,
+        fast: pacing.gatesFast,
         episodeNumber: r.episodeNumber,
         episodeTitle: r.episodeTitle,
         autoplayMs,
@@ -2249,6 +2339,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         (h) => ({
           selector: h.selector,
           label: formatHighlightCaption(h),
+          duration: h.duration,
+          fastMode: h.fastMode,
         }),
       );
     } else {
@@ -2261,6 +2353,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       result,
       resultTag: JSON.stringify(result),
       highlights,
+      gatesFast: pacing.gatesFast,
       isLast: i === resolved.length - 1,
       allNames: moduleNames,
       allDescriptions: moduleDescriptions,
@@ -2376,7 +2469,7 @@ function parseVideoViewport(raw) {
 async function main() {
   const projectDir = process.argv[2];
   const spec = process.argv[3];
-  const { connect, MemPage, Engine, start, end, chainFlow } = await import("waygraph");
+  const { connect, MemPage, Engine, start, end, chainFlow, isFastForwardBlock } = await import("waygraph");
   const mem = new MemPage();
   // Computed early - JSON-report mode's stdout is meant to be ONE parseable
   // JSON object for whatever's reading it afterward (a script, an agent),
@@ -2385,6 +2478,27 @@ async function main() {
   // truly unexpected failure outside runJsonReportMode's own try/catch)
   // reaches stdout.
   const jsonReport = process.env.WAYGRAPH_JSON === "1";
+  const ffExpand = process.env.WAYGRAPH_FF_EXPAND === "1";
+  /** Expand or keep fastForwardComposeBlock units for demo/run step lists. */
+  const flattenBlockInfos = (blockInfos) => {
+    const out = [];
+    for (const bi of blockInfos) {
+      const b = bi.block;
+      if (ffExpand && isFastForwardBlock(b)) {
+        for (const step of b.steps()) {
+          out.push({
+            name: step.name,
+            block: step.block,
+            ...(step.routes ? { routes: step.routes } : {}),
+            ...(bi.resetSessionBefore ? { resetSessionBefore: true } : {}),
+          });
+        }
+      } else {
+        out.push(bi);
+      }
+    }
+    return out;
+  };
   let resolved = [];
   let chainFlows = null;
   // A bare identifier (no "(", no "then") might name an existing Flow
@@ -2395,7 +2509,7 @@ async function main() {
   if (bareRef) {
     const flow = await findFlow(projectDir, bareRef);
     if (flow && typeof flow.blocks === "function") {
-      const blockInfos = flow.blocks();
+      const blockInfos = flattenBlockInfos(flow.blocks());
       // Same --data / WAYGRAPH_DATA seeding as the multi-segment path.
       // Without this, \`waygraph run shop.flow.ts --data '{...}'\` (and bare
       // export names) hit preflight with an empty MemPage.
@@ -2480,14 +2594,16 @@ async function main() {
         });
       }
     }
-    const combinedBlocks = chainFlow(...flows).blocks();
+    const combinedBlocks = flattenBlockInfos(chainFlow(...flows).blocks());
     let fi = 0;
-    let remainingInFlow = flows[0].blocks().length;
+    // Episode lengths must follow the same flatten so remainingInFlow stays aligned.
+    const flowLengths = flows.map((f) => flattenBlockInfos(f.blocks()).length);
+    let remainingInFlow = flowLengths[0];
     let isFirstOfSegment = true;
     resolved = combinedBlocks.map((bi) => {
       while (remainingInFlow === 0) {
         fi += 1;
-        remainingInFlow = flows[fi].blocks().length;
+        remainingInFlow = flowLengths[fi];
         isFirstOfSegment = true;
       }
       const meta = flowMeta[fi];
@@ -2537,7 +2653,7 @@ async function main() {
   // travel, typing delay, and that block's own gates) - "I want the login
   // block to be faster than the rest of the demo," Dan's own phrase.
   // Playwright's real slowMo is untouched; this only trims what waygraph
-  // itself adds on top of it.
+  // itself adds on top of it. Distinct from --fast (gates only).
   const fastBlockNames = new Set(
     (process.env.WAYGRAPH_FAST_BLOCKS || "")
       .split(",")
@@ -3248,6 +3364,8 @@ interface RunFlags {
   fast?: boolean;
   /** demo: classic wrap-all block chips instead of carousel. */
   fullStepper?: boolean;
+  /** demo/run: expand fastForwardComposeBlock inners into separate step gates. */
+  ffExpand?: boolean;
   /** Positional args with run flags stripped. */
   positionals: string[];
 }
@@ -3301,6 +3419,8 @@ function parseRunFlags(argv: string[]): RunFlags {
       out.fast = true;
     } else if (a === "--full") {
       out.fullStepper = true;
+    } else if (a === "--ff-expand") {
+      out.ffExpand = true;
     } else if (a === "--non-headless") {
       out.nonHeadless = true;
     } else if (a === "--cli") {
@@ -3437,6 +3557,9 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean; a
   }
   if (flags.fullStepper) {
     process.env.WAYGRAPH_STEPPER = "full";
+  }
+  if (flags.ffExpand) {
+    process.env.WAYGRAPH_FF_EXPAND = "1";
   }
 }
 
@@ -3600,8 +3723,9 @@ Primary (less is more):
   waygraph demo  [--blocks <flow|file|spec>]  Watch with step overlay (QA path)
                  --data '{...}'            Mem seed JSON (or inline flow({...}))
                  --auto-next               Auto-advance steps (alias: --autoplay)
-                 --fast                    Faster transitions + shorter auto-next gates
+                 --fast                    Shorter auto-next / Next gates (keeps smooth cursor)
                  --full                    Classic wrap-all block chips (default: carousel)
+                 --ff-expand               Expand fastForwardComposeBlock inners as separate steps
                  --auto-play-video         Unattended + recorded: --auto-next + --video (+ step); headless by default
                  --auto-play-video-head    Same, but keep the browser visible (--non-headless)
                  --video-viewport WxH       Recording size (default demo: 1920x1080)
@@ -3611,6 +3735,7 @@ Primary (less is more):
                  --non-headless            Show browser
                  --video [dir]             Record .webm
                  --video-viewport WxH       Recording size (default run: 1280x720)
+                 --ff-expand               Same as demo (expand FFCompose inners)
 
 Also:
   waygraph list | nav | validate | check | graph | init <name>
@@ -3769,7 +3894,7 @@ async function main(): Promise<void> {
           "waygraph demo: missing flow/spec — e.g.\n" +
             "  waygraph demo src/flows/shop.flow.ts\n" +
             "  waygraph demo --blocks shopFlow\n" +
-            "  Flags: --blocks --data --auto-next --fast --full --auto-play-video --title --base-url --video",
+            "  Flags: --blocks --data --auto-next --fast --full --ff-expand --auto-play-video --title --base-url --video",
         );
         process.exit(1);
       }

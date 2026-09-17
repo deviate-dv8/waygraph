@@ -1,6 +1,5 @@
 import { Engine, start, end, withTitle, withHighlightFixtures } from "waygraph";
 import type {
-  LoginPage,
   LoggedIn,
   ItemInCart,
   CartPage,
@@ -8,8 +7,7 @@ import type {
   CheckoutOverviewPage,
   OrderComplete,
 } from "../states/checkout.states.js";
-import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
-import { SubmitLoginForFlow } from "../blocks/saucedemo-web/methods/submit-login-for-flow.js";
+import { FfOwnerAuthBlock } from "../blocks/saucedemo-web/ff-owner-auth.block.js";
 import { AddToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.js";
 import { NavCartBlock } from "../blocks/saucedemo-web/cart/nav-cart.block.js";
 import { NavCheckoutInfoBlock } from "../blocks/saucedemo-web/cart/nav-checkout-info.block.js";
@@ -18,18 +16,18 @@ import { FinishOrderBlock } from "../blocks/saucedemo-web/checkout-step-two/meth
 
 const engine = new Engine({ headless: false, slowMo: 250 });
 
-// Atomic nav/action per real URL - the shape `waygraph auto` discovers.
-// Explicit type args: AddToCartBlock's In is Checkpoint<string> (wildcard),
-// which trips defineFlow overload inference across a long array.
+// Atomic nav/action per real URL after auth - the shape `waygraph auto` discovers.
+// Auth is one FFCompose step (ff-owner-auth) so demo pacing skips login yap;
+// use --ff-expand (or loginFlow) when you need per-step auth narration.
 //
-// Demo narration showcase (waygraph 0.11+):
-// - Block stubs: submit-login stubBefore, add-to-cart / finish-order stubAfter
-// - Flow fixtures: ticket-style captions (unlimited purposes on .flow.ts)
+// Demo narration showcase (waygraph 0.11+ / FFCompose 0.12):
+// - FF opaque: one gate for auth; stubs on interesting post-login blocks
+// - Block stubs: add-to-cart / finish-order stubAfter
+// - Flow fixtures: ticket-style captions
 // - Slides on finish-order: multi-step yap with Next between slides
 export const checkoutFlow = withHighlightFixtures(
   withTitle(
     engine.defineFlow<
-      LoginPage,
       LoggedIn,
       ItemInCart,
       CartPage,
@@ -38,8 +36,7 @@ export const checkoutFlow = withHighlightFixtures(
       OrderComplete
     >([
       start,
-      NavLoginBlock,
-      SubmitLoginForFlow,
+      FfOwnerAuthBlock,
       AddToCartBlock,
       NavCartBlock,
       NavCheckoutInfoBlock,
@@ -50,15 +47,27 @@ export const checkoutFlow = withHighlightFixtures(
     "Owner: Full Checkout",
   ),
   {
+    "ff-owner-auth": {
+      stubAfter: {
+        inventory: {
+          label: "Signed in (fast-forward)",
+          detail: "Auth collapsed via FFCompose - interesting work starts here.",
+          tag: "AC",
+          duration: true,
+        },
+      },
+    },
+    // Kept for --ff-expand (inners become separate steps again).
     "submit-login": {
       stubBefore: {
         username: {
           label: "Demo user",
-          detail: "standard_user from Mem — library block stays neutral.",
+          detail: "standard_user from Mem - library block stays neutral.",
           tag: "AC",
+          duration: true,
         },
-        password: { label: "Password", detail: "Filled from Mem credentials." },
-        submit: { label: "Sign in", tag: "GATE" },
+        password: { label: "Password", detail: "Filled from Mem credentials.", duration: 1500 },
+        submit: { label: "Sign in", tag: "GATE", duration: true, fastMode: 500 },
       },
     },
     "add-to-cart": {
@@ -67,6 +76,7 @@ export const checkoutFlow = withHighlightFixtures(
           label: "Cart now has the item",
           detail: "Badge updates after Add to cart.",
           tag: "AC",
+          duration: true,
         },
       },
     },
@@ -76,9 +86,10 @@ export const checkoutFlow = withHighlightFixtures(
           label: "Order placed",
           detail: "Completion header is the durable proof.",
           tag: "GATE",
+          duration: 2500,
+          fastMode: 700,
         },
       },
-      // Optional: fixture can replace block slides; leave unset to use block slides.
     },
   },
 );

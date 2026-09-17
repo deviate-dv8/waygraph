@@ -16,6 +16,7 @@
     "prove:auto-cli": "node scripts/drive-auto-cli.mjs",
     "graph": "waygraph graph",
     "graph:mermaid": "waygraph graph --mermaid",
+    "demo:stub-on-error": "waygraph demo --blocks stubOnErrorFlow --auto-next --fast --data \"{\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"locked_out_user\\\",\\\"password\\\":\\\"secret_sauce\\\"}}\" --title \"stubOnError prove\"",
     "prove:login-branch": "node scripts/prove-wrong-login-runtime.mjs",
     "prove:graph": "node scripts/prove-auto-graph.mjs",
     "prove:add-to-cart-menu": "node scripts/prove-add-to-cart-menu.mjs",

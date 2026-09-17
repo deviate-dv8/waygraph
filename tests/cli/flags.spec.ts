@@ -40,6 +40,7 @@ test("help lists demo --fast and --full", async () => {
   expect(stdout).toMatch(/--fast/);
   expect(stdout).toMatch(/--full/);
   expect(stdout).toMatch(/carousel/i);
+  expect(stdout).toMatch(/--ff-expand/);
 });
 
 test("help lists try auto headed + auto:cli", async () => {

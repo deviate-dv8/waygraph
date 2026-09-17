@@ -214,6 +214,11 @@ overridable, not one giant Block with no per-step confirmation. `composedBlock.w
 `modStepVerify` patch one step from outside, addressed the same three ways
 `withBlockVerify`/`modBlockVerify` already are - a `composeBlock` result is a plain Block,
 so it drops straight into `defineFlow([start, ..., composed, ..., end])` like any other.
+`fastForwardComposeBlock(name, steps)` is the same shape marked for **demo pacing**: one
+opaque step (no per-inner gate) unless `waygraph demo --ff-expand`. Saucedemo
+`checkoutFlow` uses `ff-owner-auth` for the login prefix; `loginFlow` stays expanded for
+Sign In narration. Traverse (later) reuses FF as a seed prefix - see
+`docs/proposals/traverse-ffcompose-rfc.md`.
 `spawnTab(entry, page, mem)` drives a genuinely separate second tab through its own
 Block/Flow, in the same browser context an existing `page` already belongs to - the
 pattern `observe()` could already reach for (it's the only phase allowed to touch
@@ -272,7 +277,7 @@ Mermaid) is `waygraph graph [project]` (`--mermaid`). Unattended JSON execution 
 | Run by export | `waygraph run --blocks shopFlow` |
 | Manual watch | `waygraph demo src/flows/shop.flow.ts` |
 | Auto-advance | `waygraph demo --blocks shopFlow --auto-next` (nav auto-hides strip) |
-| Fast / full strip | `waygraph demo … --fast` · `--full` (classic chips; default = carousel) |
+| Fast / full strip | `waygraph demo … --fast` (shorter gates; keeps cursor) · `--full` (classic chips; default = carousel) |
 | QA watch + record | `waygraph demo --blocks shopFlow --auto-play-video` |
 | Ad-hoc Blocks | `waygraph run --blocks "login then nav-cart" --data '{…}'` |
 | Headed execute | `waygraph run --blocks shopFlow --non-headless --video` |

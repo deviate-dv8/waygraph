@@ -26,9 +26,16 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
       await page.locator("#login-button").click({ noWaitAfter: true });
     },
     async observe(page): Promise<LoginObserve> {
+      // Race inventory nav vs error banner - locked_out / wrong password show
+      // Epic sadface immediately; do not burn the full inventory timeout.
+      const inventory = page.waitForURL(/\/inventory\.html/, { timeout: 8_000 }).then(() => "success" as const);
+      const errorBanner = page
+        .locator('[data-test="error"]')
+        .first()
+        .waitFor({ state: "visible", timeout: 8_000 })
+        .then(() => "failure" as const);
       try {
-        await page.waitForURL(/\/inventory\.html/, { timeout: 8_000 });
-        return "success";
+        return await Promise.race([inventory, errorBanner]);
       } catch {
         return "failure";
       }
@@ -44,5 +51,14 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
       submit: { selector: "#login-button", label: "Login" },
     },
     stubAfter: {},
+    // Fail-path rings (demo step throw only) - locked-out / wrong-password
+    // bug-repro narration; success never shows these.
+    stubOnError: {
+      error: {
+        selector: '[data-test="error"]',
+        label: "Login error banner",
+        duration: true,
+      },
+    },
   },
 });

@@ -126,6 +126,13 @@ export interface Instruction<
    */
   stubAfter?: HighlightStubPhaseOrFn<Out>;
   /**
+   * Demo slots shown when a **step throws** (failed verify / act error) -
+   * before the error panel. Success-only {@link Instruction.stubAfter} never runs
+   * here; authors keep distinct BUG/FAIL copy. Named map; `{}` is valid.
+   * @example stubOnError: { card: { selector: ".alt-1", label: "Card at failure" } }
+   */
+  stubOnError?: HighlightStubPhaseOrFn<Out>;
+  /**
    * Multi-step demo captions ("yap" slides) with Next between each -
    * not block lifecycle. Explains a long process; optional `selector` rings
    * while that slide is up. Flow fixtures may override via `slides`.

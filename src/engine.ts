@@ -613,8 +613,8 @@ export function withExpectedFailure<Out extends Checkpoint<string>>(flow: Flow<O
 
 /**
  * Attaches demo highlight fixtures to a Flow - unlimited purposes on `.flow.ts`
- * (AC copy, BUG/GATE tags, detail) merged onto each block's stubBefore/stubAfter
- * slots. Non-destructive, same pattern as {@link withTitle}.
+ * (AC copy, BUG/GATE tags, detail) merged onto each block's stubBefore/stubAfter/
+ * stubOnError slots. Non-destructive, same pattern as {@link withTitle}.
  * Demo/`chain --step` reads `flow.highlightFixtures`; `run()` ignores it.
  * @example withHighlightFixtures(issueFlow, { "submit-login": { stubBefore: { email: { label: "AC-1" } } } })
  */
@@ -896,6 +896,130 @@ export function composeBlock(
       return composeBlock(name, patched as [Block<any, any>]);
     },
   };
+}
+
+/**
+ * Same shape as {@link composeBlock}, marked {@link FastForwardComposedBlock.fastForward}
+ * so demo/run/traverse treat it as **one opaque step** (no per-inner gate/ring)
+ * unless `--ff-expand` / `WAYGRAPH_FF_EXPAND=1`. Inner acts still run for real;
+ * failures are prefixed `ff-name > …` so the locus names both the FF unit and
+ * the inner step. Prefer this for boring prefixes (auth, seed) on demo Flows.
+ * @example fastForwardComposeBlock("ff-owner-auth", [NavLoginBlock, SubmitLoginForFlow])
+ */
+export interface FastForwardComposedBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>
+  extends ComposedBlock<In, Out> {
+  readonly fastForward: true;
+}
+
+/** True when `block` came from {@link fastForwardComposeBlock}. */
+export function isFastForwardBlock(
+  block: Block<any, any>,
+): block is FastForwardComposedBlock<any, any> {
+  return (
+    (block as FastForwardComposedBlock<any, any>).fastForward === true &&
+    typeof (block as ComposedBlock<any, any>).steps === "function"
+  );
+}
+
+function wrapFfError(ffName: string, err: unknown): Error {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.startsWith(`${ffName} > `)) {
+    return err instanceof Error ? err : new Error(msg);
+  }
+  const wrapped = new Error(`${ffName} > ${msg}`);
+  if (err instanceof Error && err.stack) {
+    wrapped.stack = err.stack;
+  }
+  return wrapped;
+}
+
+export function fastForwardComposeBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
+  name: string,
+  steps: readonly [Block<In, Out>],
+): FastForwardComposedBlock<In, Out>;
+export function fastForwardComposeBlock<
+  In extends Checkpoint<string>,
+  B extends Checkpoint<string>,
+  Out extends Checkpoint<string>,
+>(name: string, steps: readonly [Block<In, B>, Block<B, Out>]): FastForwardComposedBlock<In, Out>;
+export function fastForwardComposeBlock<
+  In extends Checkpoint<string>,
+  B extends Checkpoint<string>,
+  C extends Checkpoint<string>,
+  Out extends Checkpoint<string>,
+>(
+  name: string,
+  steps: readonly [Block<In, B>, Block<B, C>, Block<C, Out>],
+): FastForwardComposedBlock<In, Out>;
+export function fastForwardComposeBlock<
+  In extends Checkpoint<string>,
+  B extends Checkpoint<string>,
+  C extends Checkpoint<string>,
+  D extends Checkpoint<string>,
+  Out extends Checkpoint<string>,
+>(
+  name: string,
+  steps: readonly [Block<In, B>, Block<B, C>, Block<C, D>, Block<D, Out>],
+): FastForwardComposedBlock<In, Out>;
+export function fastForwardComposeBlock<
+  In extends Checkpoint<string>,
+  B extends Checkpoint<string>,
+  C extends Checkpoint<string>,
+  D extends Checkpoint<string>,
+  E extends Checkpoint<string>,
+  Out extends Checkpoint<string>,
+>(
+  name: string,
+  steps: readonly [Block<In, B>, Block<B, C>, Block<C, D>, Block<D, E>, Block<E, Out>],
+): FastForwardComposedBlock<In, Out>;
+export function fastForwardComposeBlock<
+  In extends Checkpoint<string>,
+  B extends Checkpoint<string>,
+  C extends Checkpoint<string>,
+  D extends Checkpoint<string>,
+  E extends Checkpoint<string>,
+  F extends Checkpoint<string>,
+  Out extends Checkpoint<string>,
+>(
+  name: string,
+  steps: readonly [Block<In, B>, Block<B, C>, Block<C, D>, Block<D, E>, Block<E, F>, Block<F, Out>],
+): FastForwardComposedBlock<In, Out>;
+export function fastForwardComposeBlock(
+  name: string,
+  steps: readonly Block<any, any>[],
+): FastForwardComposedBlock<any, any> {
+  if (steps.length === 0) {
+    throw new Error(`fastForwardComposeBlock: "${name}" needs at least one step`);
+  }
+  const base = composeBlock(name, steps as [Block<any, any>]);
+  const origAct = base.instruction.act.bind(base.instruction);
+  const ff: FastForwardComposedBlock<any, any> = {
+    ...base,
+    fastForward: true,
+    instruction: {
+      ...base.instruction,
+      async act(page, input, mem) {
+        try {
+          await origAct(page, input, mem);
+        } catch (e) {
+          throw wrapFfError(name, e);
+        }
+      },
+    },
+    withStepVerify(step, verify) {
+      const index = findBlockIndex(steps, step);
+      const patched = [...steps];
+      patched[index] = withVerify(steps[index]!, verify);
+      return fastForwardComposeBlock(name, patched as [Block<any, any>]);
+    },
+    modStepVerify(step, nameOrIndex, newCheck) {
+      const index = findBlockIndex(steps, step);
+      const patched = [...steps];
+      patched[index] = modVerify(steps[index]!, nameOrIndex, newCheck);
+      return fastForwardComposeBlock(name, patched as [Block<any, any>]);
+    },
+  };
+  return ff;
 }
 
 /** Configures how an Engine launches its own browser - only used by `Flow.run(mem)` (no context given); ignored by `Flow.run(context, mem)`, since that context is already launched. */
@@ -1190,6 +1314,9 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
   stubAfter?:
     | import("./highlights.js").HighlightStubPhase
     | ((out: Out) => import("./highlights.js").HighlightStubPhase);
+  stubOnError?:
+    | import("./highlights.js").HighlightStubPhase
+    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
   /** @deprecated Prefer stubAfter. */
   highlights?:
     | readonly WaygraphHighlight[]
@@ -1266,6 +1393,7 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
       ...(options.verify ? { verify: options.verify } : {}),
       ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
       ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
+      ...(options.stubOnError ? { stubOnError: options.stubOnError } : {}),
       ...(options.highlights ? { highlights: options.highlights } : {}),
     },
   });
@@ -1310,6 +1438,9 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   stubAfter?:
     | import("./highlights.js").HighlightStubPhase
     | ((out: Out) => import("./highlights.js").HighlightStubPhase);
+  stubOnError?:
+    | import("./highlights.js").HighlightStubPhase
+    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
   /** @deprecated Prefer stubAfter. */
   highlights?:
     | readonly WaygraphHighlight[]
@@ -1332,6 +1463,7 @@ export function defineNavClickBlock<Out extends Checkpoint<string>>(
     ...(options.verify ? { verify: options.verify } : {}),
     ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
     ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
+    ...(options.stubOnError ? { stubOnError: options.stubOnError } : {}),
     ...(options.highlights ? { highlights: options.highlights } : {}),
     ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
   });
@@ -1387,6 +1519,9 @@ export type PageBlockOptions<Out extends Checkpoint<string>> = {
     | import("./highlights.js").HighlightStubPhase
     | ((out: Out) => import("./highlights.js").HighlightStubPhase);
   stubAfter?:
+    | import("./highlights.js").HighlightStubPhase
+    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
+  stubOnError?:
     | import("./highlights.js").HighlightStubPhase
     | ((out: Out) => import("./highlights.js").HighlightStubPhase);
   /** @deprecated Prefer stubAfter. */
@@ -1459,6 +1594,7 @@ export function definePageBlock<Out extends Checkpoint<string>>(
       ...(options.verify ? { verify: options.verify } : {}),
       ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
       ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
+      ...(options.stubOnError ? { stubOnError: options.stubOnError } : {}),
       ...(options.highlights ? { highlights: options.highlights } : {}),
     },
   }) as PageBlock<Out>;
