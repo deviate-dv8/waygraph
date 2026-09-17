@@ -327,7 +327,7 @@ Do **not** make authors edit traverse configs every time a Block file moves if i
 | **A** | `fastForwardComposeBlock` + demo/run treat as one step | **DONE + speed + disable (0.12.13):** opaque blitz; `--ff-disabled` expands for dispute; multi-FF OK |
 | **B** | `waygraph traverse` serial + max-visits + leaf PASS lines | **DONE** — `src/traverse-run.ts` |
 | **C** | Glob/regex `--blocks` shared by auto/traverse | **DONE** — `src/blocks-select.ts` (demo/run still bare/path/export) |
-| **D** | `--parallel` + `--session clone` + edge leases | inherit later or never |
+| **D** | `--parallel` + `--session clone` + edge leases | **DONE (0.12.14):** in-process leases + storageState clone; inherit refused when parallel>1 |
 | **E** | Coverage gate + JSON report + CI recipe | |
 
 Do not start D before A+B loop-safety is real.

@@ -1,10 +1,10 @@
 /**
- * Phase B: serial graph traverse (RFC traverse-ffcompose).
- * Walk unused legal edges until leaf / budget / break. No parallel yet.
+ * Phase B+D: graph traverse (serial or --parallel with --session clone).
+ * Walk unused legal edges until leaf / budget / break.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import type { BrowserContext, Page } from "@playwright/test";
+import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { Engine, start, end, locate } from "./engine.js";
 import type { NavBlock } from "./engine.js";
 import { MemPage, type MemKey } from "./mem-page.js";
@@ -15,7 +15,11 @@ import {
   type BlockEntry,
   type ExploreEdge,
 } from "./auto-explore.js";
+import type { WaygraphGraph } from "./graph.js";
 import { defaultMemValueForKey } from "./auto-explore-run.js";
+import { EdgeLeaseCoordinator } from "./traverse-lease.js";
+
+export type TraverseSessionMode = "clone" | "inherit";
 
 export interface TraverseOptions {
   baseURL?: string;
@@ -38,6 +42,10 @@ export interface TraverseOptions {
   traverseId?: string;
   /** Phase C: glob / regex / bare `--blocks` file select. */
   blocksSelect?: import("./blocks-select.js").BlocksSelect;
+  /** Phase D: parallel workers (default 1). Cap 4. */
+  parallel?: number;
+  /** Phase D: clone (default) or inherit. Inherit refused when parallel > 1. */
+  session?: TraverseSessionMode;
 }
 
 function resolveBaseUrl(projectDir: string): string | undefined {
@@ -73,6 +81,41 @@ function seedMem(library: Map<string, BlockEntry>, mem: MemPage, dataJson?: stri
       }
       const def = defaultMemValueForKey(k.name);
       if (def !== undefined) mem.set(k, def);
+    }
+  }
+}
+
+function snapshotMem(
+  library: Map<string, BlockEntry>,
+  mem: MemPage,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const entry of library.values()) {
+    for (const k of entry.block.requires ?? []) {
+      if (mem.has(k) && !(k.name in out)) {
+        try {
+          out[k.name] = mem.get(k);
+        } catch {
+          /* skip */
+        }
+      }
+    }
+  }
+  return out;
+}
+
+function restoreMem(
+  library: Map<string, BlockEntry>,
+  mem: MemPage,
+  snap: Record<string, unknown>,
+  dataJson?: string,
+): void {
+  seedMem(library, mem, dataJson);
+  for (const entry of library.values()) {
+    for (const k of entry.block.requires ?? []) {
+      if (k.name in snap) {
+        mem.set(k, snap[k.name]);
+      }
     }
   }
 }
@@ -140,67 +183,54 @@ async function runOneBlock(
   }
 }
 
-/**
- * Serial graph crawl. Prints greppable PASS/FAIL lines; non-zero exit on break.
- */
-export async function runTraverse(projectDir: string, options: TraverseOptions = {}): Promise<number> {
-  const traverseId = options.traverseId ?? "traverse-1";
-  const maxSteps = options.maxSteps ?? 50;
-  const maxVisitsPerNode = options.maxVisitsPerNode ?? 2;
-  const maxVisitsPerEdge = options.maxVisitsPerEdge ?? 1;
-  const timeoutMs = options.timeoutMs ?? 15 * 60_000;
-  const headed = options.headed === true || process.env.WAYGRAPH_HEADED === "1";
-  const baseURL = options.baseURL ?? resolveBaseUrl(projectDir) ?? process.env.WAYGRAPH_BASE_URL;
-  const startUrl = options.startUrl ?? baseURL;
+interface WorkerOpts {
+  traverseId: string;
+  workerIndex: number;
+  parallel: number;
+  maxSteps: number;
+  maxVisitsPerNode: number;
+  maxVisitsPerEdge: number;
+  timeoutMs: number;
+  from?: string;
+  startUrl?: string;
+  baseURL?: string;
+  data?: string;
+  graph: WaygraphGraph;
+  library: Awaited<ReturnType<typeof buildExploreContext>>["library"];
+  engine: Engine;
+  context: BrowserContext;
+  page: Page;
+  mem: MemPage;
+  leases: EdgeLeaseCoordinator;
+}
 
-  const { graph, library } = await buildExploreContext(
-    projectDir,
-    options.blocksSelect ? { blocksSelect: options.blocksSelect } : undefined,
-  );
-  if (options.blocksSelect) {
-    console.error(
-      `waygraph traverse: --blocks ${options.blocksSelect.raw} → ` +
-        `${library.byName.size} block(s), ${graph.edges.length} edge(s)`,
-    );
-  }
-  const mem = new MemPage();
-  seedMem(library.byName, mem, options.data);
-
-  const engine = new Engine({ headless: !headed, slowMo: headed ? 100 : 0 });
-  const { chromium } = await import("@playwright/test");
-  const executablePath = process.env.CHROME_PATH || process.env.CHROMIUM_PATH;
-  const launchOpts: Parameters<typeof chromium.launch>[0] = {
-    headless: !headed,
-  };
-  if (executablePath) launchOpts.executablePath = executablePath;
-  const browser = await chromium.launch(launchOpts);
-  const contextOpts: Parameters<typeof browser.newContext>[0] = {
-    viewport: { width: 1280, height: 720 },
-  };
-  if (baseURL) contextOpts.baseURL = baseURL;
-  const context = await browser.newContext(contextOpts);
-  let page = await context.newPage();
-
+async function runTraverseWorker(opts: WorkerOpts): Promise<number> {
+  const {
+    traverseId,
+    workerIndex,
+    parallel,
+    maxSteps,
+    maxVisitsPerNode,
+    maxVisitsPerEdge,
+    timeoutMs,
+    graph,
+    library,
+    engine,
+    context,
+    mem,
+    leases,
+  } = opts;
+  let page = opts.page;
+  const startUrl = opts.startUrl;
   const nodeVisits = new Map<string, number>();
   const edgeVisits = new Map<string, number>();
   const edgesHit = new Set<string>();
   let steps = 0;
   const startedAt = Date.now();
-  let lastHere: string | null = options.from ?? null;
+  let lastHere: string | null = opts.from ?? null;
   let exitCode = 0;
 
-  console.error(
-    `waygraph traverse[${traverseId}]: ${graph.nodes.length} node(s), ${graph.edges.length} edge(s)` +
-      (baseURL ? ` base=${baseURL}` : "") +
-      ` maxSteps=${maxSteps} maxVisits/node=${maxVisitsPerNode} maxVisits/edge=${maxVisitsPerEdge}`,
-  );
-
   try {
-    if (startUrl) {
-      await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
-      await page.waitForLoadState("load").catch(() => {});
-    }
-
     for (;;) {
       if (Date.now() - startedAt > timeoutMs) {
         console.log(
@@ -225,7 +255,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
       }
 
       const detected = await detectHere(page, library.navBlocks);
-      const here = lastHere ?? detected ?? options.from ?? null;
+      const here = lastHere ?? detected ?? opts.from ?? null;
 
       if (here && (nodeVisits.get(here) ?? 0) >= maxVisitsPerNode) {
         console.log(
@@ -238,7 +268,13 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
       const menu = await buildExploreMenu(page, graph, library, here);
       const candidates = menu.flat.filter((edge) => {
         const key = edgeKey(edge);
-        return (edgeVisits.get(key) ?? 0) < maxVisitsPerEdge;
+        if ((edgeVisits.get(key) ?? 0) >= maxVisitsPerEdge) return false;
+        if (parallel > 1) {
+          if (EdgeLeaseCoordinator.partitionIndex(key, parallel) !== workerIndex) {
+            return false;
+          }
+        }
+        return true;
       });
 
       if (candidates.length === 0) {
@@ -256,6 +292,13 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
         if (aWild !== bWild) return aWild - bWild;
         return edgeKey(a).localeCompare(edgeKey(b));
       })[0]!;
+
+      const key = edgeKey(pick);
+      if (!leases.tryClaim(key, traverseId)) {
+        // Another worker won a race (instance fan-out); treat as unavailable.
+        edgeVisits.set(key, maxVisitsPerEdge);
+        continue;
+      }
 
       const entry = library.byName.get(pick.block);
       if (!entry) {
@@ -284,7 +327,6 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
             ? String((out as { __state: string }).__state)
             : pick.to;
 
-        const key = edgeKey(pick);
         edgeVisits.set(key, (edgeVisits.get(key) ?? 0) + 1);
         edgesHit.add(key);
         if (here) nodeVisits.set(here, (nodeVisits.get(here) ?? 0) + 1);
@@ -306,11 +348,174 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
       }
     }
   } finally {
-    await browser.close().catch(() => {});
+    console.error(
+      `waygraph traverse[${traverseId}]: done exit=${exitCode} steps=${steps} edgesHit=${edgesHit.size}`,
+    );
+  }
+  return exitCode;
+}
+
+/**
+ * Serial or parallel graph crawl. Prints greppable PASS/FAIL lines; non-zero on break.
+ */
+export async function runTraverse(projectDir: string, options: TraverseOptions = {}): Promise<number> {
+  let parallel = Math.max(1, Math.floor(options.parallel ?? 1));
+  if (parallel > 4) {
+    console.error(`waygraph traverse: --parallel ${parallel} capped to 4`);
+    parallel = 4;
+  }
+  const session: TraverseSessionMode = options.session ?? (parallel > 1 ? "clone" : "clone");
+  if (parallel > 1 && session === "inherit") {
+    console.error(
+      "waygraph traverse: --session inherit is refused with --parallel > 1 (races); use --session clone",
+    );
+    return 1;
   }
 
-  console.error(
-    `waygraph traverse[${traverseId}]: done exit=${exitCode} steps=${steps} edgesHit=${edgesHit.size}`,
+  const maxSteps = options.maxSteps ?? 50;
+  const maxVisitsPerNode = options.maxVisitsPerNode ?? 2;
+  const maxVisitsPerEdge = options.maxVisitsPerEdge ?? 1;
+  const timeoutMs = options.timeoutMs ?? 15 * 60_000;
+  const headed = options.headed === true || process.env.WAYGRAPH_HEADED === "1";
+  const baseURL = options.baseURL ?? resolveBaseUrl(projectDir) ?? process.env.WAYGRAPH_BASE_URL;
+  const startUrl = options.startUrl ?? baseURL;
+
+  const { graph, library } = await buildExploreContext(
+    projectDir,
+    options.blocksSelect ? { blocksSelect: options.blocksSelect } : undefined,
   );
-  return exitCode;
+  if (options.blocksSelect) {
+    console.error(
+      `waygraph traverse: --blocks ${options.blocksSelect.raw} -> ` +
+        `${library.byName.size} block(s), ${graph.edges.length} edge(s)`,
+    );
+  }
+
+  const leases = new EdgeLeaseCoordinator({ projectDir, persist: parallel > 1 });
+  const engine = new Engine({ headless: !headed, slowMo: headed ? 100 : 0 });
+  const { chromium } = await import("@playwright/test");
+  const executablePath = process.env.CHROME_PATH || process.env.CHROMIUM_PATH;
+  const launchOpts: Parameters<typeof chromium.launch>[0] = {
+    headless: !headed,
+  };
+  if (executablePath) launchOpts.executablePath = executablePath;
+  const browser: Browser = await chromium.launch(launchOpts);
+
+  console.error(
+    `waygraph traverse: ${graph.nodes.length} node(s), ${graph.edges.length} edge(s)` +
+      (baseURL ? ` base=${baseURL}` : "") +
+      ` parallel=${parallel} session=${session}` +
+      ` maxSteps=${maxSteps} maxVisits/node=${maxVisitsPerNode} maxVisits/edge=${maxVisitsPerEdge}`,
+  );
+
+  try {
+    if (parallel <= 1) {
+      const contextOpts: Parameters<Browser["newContext"]>[0] = {
+        viewport: { width: 1280, height: 720 },
+      };
+      if (baseURL) contextOpts.baseURL = baseURL;
+      const context = await browser.newContext(contextOpts);
+      const page = await context.newPage();
+      const mem = new MemPage();
+      seedMem(library.byName, mem, options.data);
+      if (startUrl) {
+        await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
+        await page.waitForLoadState("load").catch(() => {});
+      }
+      const code = await runTraverseWorker({
+        traverseId: options.traverseId ?? "traverse-1",
+        workerIndex: 0,
+        parallel: 1,
+        maxSteps,
+        maxVisitsPerNode,
+        maxVisitsPerEdge,
+        timeoutMs,
+        ...(options.from ? { from: options.from } : {}),
+        ...(startUrl ? { startUrl } : {}),
+        ...(baseURL ? { baseURL } : {}),
+        ...(options.data ? { data: options.data } : {}),
+        graph,
+        library,
+        engine,
+        context,
+        page,
+        mem,
+        leases,
+      });
+      await context.close().catch(() => {});
+      return code;
+    }
+
+    // Phase D: bootstrap one context for storageState, then N clones.
+    const bootOpts: Parameters<Browser["newContext"]>[0] = {
+      viewport: { width: 1280, height: 720 },
+    };
+    if (baseURL) bootOpts.baseURL = baseURL;
+    const bootContext = await browser.newContext(bootOpts);
+    const bootPage = await bootContext.newPage();
+    const bootMem = new MemPage();
+    seedMem(library.byName, bootMem, options.data);
+    if (startUrl) {
+      await bootPage.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
+      await bootPage.waitForLoadState("load").catch(() => {});
+    }
+    const storageState = await bootContext.storageState();
+    const memSnap = snapshotMem(library.byName, bootMem);
+    await bootContext.close().catch(() => {});
+
+    console.error(
+      `waygraph traverse: forked ${parallel} clone workers (storageState + mem snapshot)`,
+    );
+
+    const codes = await Promise.all(
+      Array.from({ length: parallel }, async (_, i) => {
+        const traverseId = `traverse-${i + 1}`;
+        const ctxOpts: Parameters<Browser["newContext"]>[0] = {
+          viewport: { width: 1280, height: 720 },
+          storageState,
+        };
+        if (baseURL) ctxOpts.baseURL = baseURL;
+        const context = await browser.newContext(ctxOpts);
+        const page = await context.newPage();
+        const mem = new MemPage();
+        restoreMem(library.byName, mem, memSnap, options.data);
+        if (startUrl) {
+          await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
+        }
+        try {
+          return await runTraverseWorker({
+            traverseId,
+            workerIndex: i,
+            parallel,
+            maxSteps,
+            maxVisitsPerNode,
+            maxVisitsPerEdge,
+            timeoutMs,
+            ...(options.from ? { from: options.from } : {}),
+            ...(startUrl ? { startUrl } : {}),
+            ...(baseURL ? { baseURL } : {}),
+            ...(options.data ? { data: options.data } : {}),
+            graph,
+            library,
+            engine,
+            context,
+            page,
+            mem,
+            leases,
+          });
+        } finally {
+          await context.close().catch(() => {});
+        }
+      }),
+    );
+
+    const worst = codes.reduce((a, b) => Math.max(a, b), 0);
+    const pass = codes.filter((c) => c === 0).length;
+    console.error(
+      `waygraph traverse: suite parallel=${parallel} pass=${pass}/${parallel} exit=${worst}`,
+    );
+    return worst;
+  } finally {
+    await browser.close().catch(() => {});
+  }
 }

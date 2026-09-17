@@ -3801,8 +3801,10 @@ Primary (less is more):
 
 Also:
   waygraph list | nav | validate | check | graph | init <name>
-  waygraph traverse [project]              Serial graph crawl (Phase B+)
+  waygraph traverse [project]              Graph crawl (Phase B+D)
                  --blocks <glob|/re/|sub>  Phase C: filter *.block.ts discovery
+                 --parallel N              Phase D: N clone workers (max 4)
+                 --session clone|inherit   Phase D: default clone
                  --from <Checkpoint>       Seed / start checkpoint
                  --data '{...}'            Mem seed
                  --max-steps N             Cap Block runs (default 50)
@@ -3828,6 +3830,7 @@ Examples:
   waygraph auto --blocks LoginPage OrderComplete
   waygraph auto --blocks '/mailpit/'                     # Phase C filtered explore
   waygraph traverse --blocks '**/mailpit/**/*.block.ts'  # Phase C filtered crawl
+  waygraph traverse --parallel 2 --session clone         # Phase D clone workers
   waygraph run  --blocks "loginFlow then add-all-to-cart" --data '{...}' --video
 
 Aliases (compat): \`chain <spec>\` -> run --blocks; \`chain auto A B\` -> auto --blocks A B;
@@ -3928,6 +3931,8 @@ async function main(): Promise<void> {
       let headed = false;
       let baseUrl: string | undefined;
       let blocksFilter: string | undefined;
+      let parallel: number | undefined;
+      let session: "clone" | "inherit" | undefined;
       let projectDir = process.cwd();
       for (let i = 0; i < rest.length; i++) {
         const a = rest[i]!;
@@ -3952,6 +3957,20 @@ async function main(): Promise<void> {
             }
             blocksFilter = v;
           }
+          continue;
+        }
+        if (a === "--parallel" || a.startsWith("--parallel=")) {
+          const v = a.startsWith("--parallel=") ? a.slice("--parallel=".length) : rest[++i];
+          parallel = Number(v);
+          continue;
+        }
+        if (a === "--session" || a.startsWith("--session=")) {
+          const v = a.startsWith("--session=") ? a.slice("--session=".length) : rest[++i];
+          if (v !== "clone" && v !== "inherit") {
+            console.error('waygraph traverse: --session must be "clone" or "inherit"');
+            process.exit(1);
+          }
+          session = v;
           continue;
         }
         if (a === "--max-steps" || a.startsWith("--max-steps=")) {
@@ -3982,13 +4001,15 @@ async function main(): Promise<void> {
         if (a === "--help" || a === "-h") {
           console.log(`waygraph traverse [project] [flags]
 
-Serial graph crawl (RFC Phase B). Walks unused legal edges until a leaf,
-budget kill, or first broken edge.
+Graph crawl (RFC Phase B+D). Walks unused legal edges until a leaf,
+budget kill, or first broken edge. --parallel N uses session clone + edge leases.
 
   --blocks <glob|/regex/|substr>  Phase C: filter *.block.ts discovery
+  --parallel N            Phase D: N clone workers (default 1, max 4)
+  --session clone|inherit Phase D: default clone; inherit refused if parallel>1
   --from <Checkpoint>     start checkpoint (optional)
   --data '{...}'          Mem seed JSON
-  --max-steps N           default 50
+  --max-steps N           default 50 (per worker)
   --max-visits N          per-node visit cap (default 2)
   --max-visits-per-edge N default 1
   --non-headless          show browser
@@ -3996,7 +4017,7 @@ budget kill, or first broken edge.
 
 Examples:
   waygraph traverse --blocks '**/mailpit/**/*.block.ts'
-  waygraph traverse --blocks '/mailpit|login/'
+  waygraph traverse --parallel 2 --session clone --max-steps 20
 
 PASS:  [Reached Leaf Node[traverse-1] at=... steps=N]
 FAIL:  [Broke at edge[traverse-1] block=... from=... to=...]
@@ -4027,6 +4048,8 @@ FAIL:  [Broke at edge[traverse-1] block=... from=... to=...]
         headed,
         ...(baseUrl ? { baseURL: baseUrl } : {}),
         ...(blocksSelect ? { blocksSelect } : {}),
+        ...(parallel !== undefined && Number.isFinite(parallel) ? { parallel } : {}),
+        ...(session ? { session } : {}),
       });
       process.exit(code);
     }

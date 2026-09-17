@@ -1,0 +1,29 @@
+{
+  "updatedAt": "2026-09-17T11:18:26.658Z",
+  "leases": {
+    "submit-login": {
+      "workerId": "traverse-2",
+      "claimedAt": 1789643826618
+    },
+    "add-all-to-cart": {
+      "workerId": "traverse-2",
+      "claimedAt": 1789643827327
+    },
+    "nav-cart": {
+      "workerId": "traverse-2",
+      "claimedAt": 1789643829570
+    },
+    "nav-continue-shopping": {
+      "workerId": "traverse-2",
+      "claimedAt": 1789643855282
+    },
+    "nav-item-detail::sauce-labs-backpack": {
+      "workerId": "traverse-2",
+      "claimedAt": 1789643857049
+    },
+    "nav-back-to-inventory": {
+      "workerId": "traverse-2",
+      "claimedAt": 1789643906658
+    }
+  }
+}

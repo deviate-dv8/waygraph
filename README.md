@@ -215,8 +215,11 @@ overridable, not one giant Block with no per-step confirmation. `composedBlock.w
 `modStepVerify` patch one step from outside, addressed the same three ways
 `withBlockVerify`/`modBlockVerify` already are - a `composeBlock` result is a plain Block,
 so it drops straight into `defineFlow([start, ..., composed, ..., end])` like any other.
-`fastForwardComposeBlock(name, steps)` is the same shape marked for **wall-clock
-fast-forward**: one opaque demo step that **blitzes** (no per-inner gate, no smooth
+`waygraph traverse` walks the Block graph (Phase B). Phase D adds `--parallel N`
+(default `--session clone`): bootstrap one context, fork N workers with
+`storageState` + mem snapshot, partition edges by hash, and claim via in-process
+edge leases under `.waygraph-traverse/`. `--session inherit` is refused when
+`parallel > 1`. one opaque demo step that **blitzes** (no per-inner gate, no smooth
 cursor theater, Playwright slowMo off for that flow unless `WAYGRAPH_SLOWMO` is set)
 unless expanded. Put **several** FF units in one Flow when you need to race past auth,
 then a heavy dashboard settle, then watch the interesting middle.
