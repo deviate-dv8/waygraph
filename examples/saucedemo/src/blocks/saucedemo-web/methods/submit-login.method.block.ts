@@ -38,5 +38,11 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
       out.__state === "LoggedIn"
         ? [Trait.url({ pathname: "/inventory.html" })]
         : [Trait.visible('[data-test="error"]')],
+    stubBefore: {
+      username: { selector: "#user-name", label: "Username" },
+      password: { selector: "#password", label: "Password" },
+      submit: { selector: "#login-button", label: "Login" },
+    },
+    stubAfter: {},
   },
 });

@@ -214,6 +214,12 @@ const CHAIN_RUNNER_SCRIPT = `
 import { readdirSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import {
+  resolveHighlightSlots,
+  resolveSlides,
+  formatHighlightCaption,
+  hasAuthoredStubAfter,
+} from "waygraph";
 
 function walkDir(dir, pattern) {
   const results = [];
@@ -409,8 +415,8 @@ const RING_CSS =
   // pushed back onto screen, same width, never shrunk. See
   // window.__wgPositionRing in installOverlay.
   "#wg-ring-label{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
-  "white-space:nowrap;padding:4px 9px;border-radius:7px;background:#7C3AED;color:#fff;" +
-  "font:600 12px/1.2 system-ui,sans-serif;transition:opacity .3s ease;}" +
+  "max-width:min(360px,70vw);white-space:normal;padding:6px 10px;border-radius:7px;background:#7C3AED;color:#fff;" +
+  "font:600 12px/1.35 system-ui,sans-serif;transition:opacity .3s ease;}" +
   // Mouse cursor icon that travels to a target before it's acted on, plus a
   // quick expanding ripple at the moment of a click - same idea as
   // help-center-clip-engine's #clip-cursor/#clip-ring (video-pipeline). The
@@ -1393,6 +1399,162 @@ async function showRing(page, box, label) {
     .catch(() => {});
 }
 
+/** Match a locator to a stubBefore slot by overlapping bounding boxes. */
+async function captionForLocator(page, locator, stubs, fallback) {
+  if (!stubs || stubs.length === 0) return fallback;
+  const box = await locator.boundingBox().catch(() => null);
+  if (!box) return fallback;
+  for (const s of stubs) {
+    try {
+      const b = await page.locator(s.selector).first().boundingBox();
+      if (
+        b &&
+        Math.abs(b.x - box.x) < 4 &&
+        Math.abs(b.y - box.y) < 4 &&
+        Math.abs(b.width - box.width) < 8
+      ) {
+        return formatHighlightCaption(s);
+      }
+    } catch {
+      /* skip */
+    }
+  }
+  return fallback;
+}
+
+/**
+ * Multi-step yap captions - not block lifecycle. Each slide waits for Next
+ * (or auto-next), optional ring via slide.selector.
+ */
+async function presentSlides(page, slides, gate, opts) {
+  const title = (opts && opts.title) || "waygraph demo";
+  const blockName = (opts && opts.blockName) || "";
+  for (let i = 0; i < slides.length; i++) {
+    const s = slides[i];
+    const caption = formatHighlightCaption(s);
+    const isLast = i === slides.length - 1;
+    await installOverlay(page, title);
+    if (s.selector) {
+      try {
+        const box = await page.locator(s.selector).first().boundingBox();
+        if (box) await showRing(page, box, caption);
+      } catch {
+        await hideRing(page);
+      }
+    } else {
+      await hideRing(page);
+    }
+    await page
+      .evaluate(
+        (info) => {
+          let panel = document.getElementById("wg-panel");
+          const isNew = !panel;
+          if (!panel) {
+            panel = document.createElement("div");
+            panel.id = "wg-panel";
+          }
+          panel.classList.remove("wg-collapsed", "wg-error", "wg-expected");
+          const esc = (t) =>
+            String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+          panel.innerHTML =
+            "<div class=\\"wg-chrome\\"><span class=\\"wg-chrome-title\\">waygraph demo</span>" +
+            "<button type=\\"button\\" class=\\"wg-hide-btn\\" data-wg-toggle=\\"1\\">Hide</button></div>" +
+            "<div class=\\"wg-body\\">" +
+            "<h3>Slide " +
+            (info.index + 1) +
+            " / " +
+            info.total +
+            (info.blockName ? " · " + esc(info.blockName) : "") +
+            "</h3>" +
+            (info.tag
+              ? "<div class=\\"wg-episode\\" style=\\"border:none;padding:0;margin:0 0 6px;font-size:11px;color:#c9a6ff\\">" +
+                esc(info.tag) +
+                "</div>"
+              : "") +
+            "<div class=\\"wg-narration\\">" +
+            esc(info.caption) +
+            "</div>" +
+            (info.detail
+              ? "<div class=\\"wg-result-pretty\\" style=\\"margin:0 0 12px;color:#f0e8ff\\">" +
+                esc(info.detail) +
+                "</div>"
+              : "") +
+            "<div class=\\"wg-autoplay-row\\"><label><input type=\\"checkbox\\" id=\\"wg-autoplay-cb\\"" +
+            (info.autoNow ? " checked" : "") +
+            "> Auto-advance</label></div>" +
+            "<div id=\\"wg-gate-manual\\"" +
+            (info.autoNow ? " style=\\"display:none\\"" : "") +
+            "><button id=\\"wg-run\\">" +
+            (info.isLast ? "Continue \\u25B6" : "Next slide \\u25B6") +
+            "</button></div>" +
+            "<div id=\\"wg-gate-auto\\" class=\\"wg-auto\\"" +
+            (info.autoNow ? "" : " style=\\"display:none\\"") +
+            ">Auto-advancing...</div>" +
+            "</div>";
+          if (isNew) {
+            document.documentElement.appendChild(panel);
+            requestAnimationFrame(() => panel.classList.add("wg-in"));
+          }
+          if (window.__wgWirePanelChrome) {
+            window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
+              stepLabel:
+                "Slide " +
+                (info.index + 1) +
+                " / " +
+                info.total +
+                (info.blockName ? " · " + info.blockName : ""),
+              forceCollapsed: false,
+            });
+          }
+          const cb = document.getElementById("wg-autoplay-cb");
+          if (cb) {
+            cb.addEventListener("change", () => {
+              try {
+                localStorage.setItem("wg-autoplay", cb.checked ? "1" : "0");
+              } catch {
+                /* ignore */
+              }
+              const manual = document.getElementById("wg-gate-manual");
+              const auto = document.getElementById("wg-gate-auto");
+              if (manual) manual.style.display = cb.checked ? "none" : "";
+              if (auto) auto.style.display = cb.checked ? "" : "none";
+            });
+          }
+          const runBtn = document.getElementById("wg-run");
+          if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
+        },
+        {
+          index: i,
+          total: slides.length,
+          caption: s.caption,
+          detail: s.detail || "",
+          tag: s.tag || "",
+          blockName,
+          isLast,
+          autoNow: false,
+        },
+      )
+      .catch(() => {});
+    await page
+      .evaluate(() => {
+        try {
+          const on = localStorage.getItem("wg-autoplay") === "1";
+          const cb = document.getElementById("wg-autoplay-cb");
+          if (cb) cb.checked = on;
+          const manual = document.getElementById("wg-gate-manual");
+          const auto = document.getElementById("wg-gate-auto");
+          if (manual) manual.style.display = on ? "none" : "";
+          if (auto) auto.style.display = on ? "" : "none";
+        } catch {
+          /* ignore */
+        }
+      })
+      .catch(() => {});
+    await gate();
+  }
+  await hideRing(page);
+}
+
 async function hideRing(page) {
   await page
     .evaluate(() => {
@@ -1469,7 +1631,7 @@ async function wasJustNarrated(page) {
     .catch(() => false);
 }
 
-function instrumentInteractionHighlighting(page, mem, slowMo, pacing) {
+function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef) {
   // Playwright's own slowMo ALREADY pauses after every single low-level
   // action it dispatches - and pressSequentially() fires one such action
   // PER CHARACTER. Also giving pressSequentially its own fixed delay
@@ -1483,6 +1645,7 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing) {
   // per-block (WAYGRAPH_FAST_BLOCKS), and the Locator.fill/click patches
   // below are installed once on the shared prototype but invoked once per
   // real interaction, long after this closure was created.
+  // stubBeforeRef.current = resolved stubBefore slots for the active block.
   const typeDelay = () => (pacing.fast ? 0 : slowMo ? 0 : 30);
   // Click is a single action, not per-character, so it doesn't compound
   // the same way - but slowMo still adds its own pause around the actual
@@ -1519,9 +1682,11 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing) {
           // Only trust the "last mem.get()" as THIS fill's source if it
           // happened recently - a stale read from several actions ago is
           // more likely unrelated than actually describing this field.
-          const label = memTrack.lastKeyName && Date.now() - memTrack.at < 3000
+          const fallback = memTrack.lastKeyName && Date.now() - memTrack.at < 3000
             ? "from mem: " + memTrack.lastKeyName
             : "writing from mem";
+          const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
+          const label = await captionForLocator(page, this, stubs, fallback);
           await moveCursorTo(page, box, cursorMs(500));
           await showRing(page, box, label);
           await new Promise((res) => setTimeout(res, pacing.fast ? 0 : 200));
@@ -1574,10 +1739,10 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing) {
         const box = await this.boundingBox();
         const narrated = box ? await wasJustNarrated(page) : false;
         if (box && !narrated) {
-          let label = "click";
+          let fallback = "click";
           try {
             const text = (await this.textContent())?.trim();
-            if (text && text.length > 0 && text.length <= 30) label = text;
+            if (text && text.length > 0 && text.length <= 30) fallback = text;
           } catch {
             // element has no simple text (an icon button, say) - generic label is fine
           }
@@ -1585,10 +1750,12 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing) {
           // (set on page by runStepMode just before act).
           try {
             const navLabel = await page.evaluate(() => window.__wgPendingNavClickLabel || null);
-            if (navLabel) label = String(navLabel);
+            if (navLabel) fallback = String(navLabel);
           } catch {
             /* ignore */
           }
+          const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
+          const label = await captionForLocator(page, this, stubs, fallback);
           clickPoint = await moveCursorTo(page, box, cursorMs(600));
           await showRing(page, box, label);
           // "pop for a few seconds" - Dan's own phrase, matching the
@@ -1717,7 +1884,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   const demoFast = process.env.WAYGRAPH_DEMO_FAST === "1";
   const stepperMode = process.env.WAYGRAPH_STEPPER === "full" ? "full" : "carousel";
   const pacing = { fast: demoFast };
-  instrumentInteractionHighlighting(page, mem, slowMo, pacing);
+  const stubBeforeRef = { current: [] };
+  instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef);
   // Force the panel checkbox from this process's flags/env at run start.
   // installOverlay only seeds localStorage when the key is null (so mid-run
   // checkbox clicks survive navigations). Without this, a prior --autoplay
@@ -1866,6 +2034,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       await resetPageState(context, page, baseURL);
     }
     pacing.fast = demoFast || fastBlockNames.has(r.block.name);
+    const fixtures = r.highlightFixtures;
+    stubBeforeRef.current = resolveHighlightSlots(r.block, "stubBefore", { fixtures });
     const isNavBlock = r.block.__waygraphKind === "nav";
     const autoNow = await currentAutoplay();
     // Auto-next: tuck stepper on NavBlocks so the page transition fills the frame.
@@ -1989,7 +2159,26 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       })
       .catch(() => {});
     result = stepOutcome.result;
-    const highlights = extractVerifyHighlights(r.block, result.__state);
+    const fixturesAfter = r.highlightFixtures;
+    const slides = resolveSlides(r.block, { out: result, fixtures: fixturesAfter });
+    if (slides.length > 0) {
+      await presentSlides(page, slides, gate, {
+        title,
+        blockName: r.block.name,
+        fast: pacing.fast,
+      });
+    }
+    let highlights;
+    if (hasAuthoredStubAfter(r.block, result, fixturesAfter)) {
+      highlights = resolveHighlightSlots(r.block, "stubAfter", { out: result, fixtures: fixturesAfter }).map(
+        (h) => ({
+          selector: h.selector,
+          label: formatHighlightCaption(h),
+        }),
+      );
+    } else {
+      highlights = extractVerifyHighlights(r.block, result.__state);
+    }
     await renderAfterStep(page, {
       index: i,
       total: resolved.length,
@@ -2140,6 +2329,7 @@ async function main() {
         block: bi.block,
         exportName: bi.name,
         seedMem: idx === 0 ? seedMem : undefined,
+        highlightFixtures: flow.highlightFixtures,
         expectedFailureReason:
           flow.expectedFailureReason && idx === blockInfos.length - 1
             ? flow.expectedFailureReason
@@ -2201,6 +2391,7 @@ async function main() {
           episodeNumber: episodeCounter,
           episodeTitle: flow.title || seg.ref,
           expectedFailureReason: flow.expectedFailureReason,
+          highlightFixtures: flow.highlightFixtures,
           seedMem: () => seedMemForFlow(mem, flow.blocks(), seg.json, seg.ref),
         });
       } else {
@@ -2209,6 +2400,7 @@ async function main() {
         flowMeta.push({
           episodeNumber: undefined,
           episodeTitle: undefined,
+          highlightFixtures: undefined,
           seedMem: () => seedMemForBlock(mem, r, seg.json),
         });
       }
@@ -2230,6 +2422,7 @@ async function main() {
         resetSession: bi.resetSessionBefore === true,
         episodeNumber: meta.episodeNumber,
         episodeTitle: meta.episodeTitle,
+        highlightFixtures: meta.highlightFixtures,
         expectedFailureReason:
           meta.expectedFailureReason && remainingInFlow === 1 ? meta.expectedFailureReason : undefined,
         seedMem: isFirstOfSegment ? meta.seedMem : undefined,

@@ -30,7 +30,14 @@ export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>(
         },
       },
     ],
-    highlights: () => [{ selector: InventorySel.cartBadge, label: "remember this: cart now has the item" }],
+    stubBefore: {},
+    stubAfter: {
+      badge: {
+        selector: InventorySel.cartBadge,
+        label: "Cart badge",
+        detail: "Item is in the cart",
+      },
+    },
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     const items = await collectAddableItems(page);

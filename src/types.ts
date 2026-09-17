@@ -2,6 +2,22 @@ import type { Page } from "@playwright/test";
 import type { MemPage, MemKey } from "./mem-page.js";
 import type { Trait } from "./trait.js";
 import { runVerify, runPrecondition } from "./trait.js";
+import type {
+  HighlightStubPhaseOrFn,
+  WaygraphHighlight,
+  WaygraphSlidesOrFn,
+} from "./highlights.js";
+
+export type {
+  WaygraphHighlight,
+  WaygraphHighlightStub,
+  WaygraphHighlightFixture,
+  WaygraphSlide,
+  HighlightStubPhase,
+  HighlightStubPhaseOrFn,
+  HighlightFixtureMap,
+  ResolvedHighlight,
+} from "./highlights.js";
 
 /**
  * A Checkpoint is identified solely by its string tag - a phantom marker with no
@@ -98,24 +114,32 @@ export interface Instruction<
    */
   verify?: Trait[] | ((out: Out) => Trait[]);
   /**
-   * Optional. Arbitrary highlight points for step-mode tooling to show, in
-   * order, after this Block resolves - independent of `verify`, for
-   * calling out something worth a human's attention regardless of whether
-   * it's also being asserted ("remember this signature ID" isn't a
-   * pass/fail check). A function form picks different highlights per
-   * resolved `Out`, same as `verify`. Purely additive UI narration - never
-   * consulted by `runGraph`/`connect`/anything that decides behavior.
-   * @example highlights: (out) => [{ selector: "#signature-id", label: "remember this ID" }]
+   * Catch-all demo slots shown **before / during** `act` (fill/click rings).
+   * Named map; `{}` is valid. Flow {@link HighlightFixtureMap} overrides labels.
+   * @example stubBefore: { email: { selector: "#email", label: "Email" } }
+   */
+  stubBefore?: HighlightStubPhaseOrFn<Out>;
+  /**
+   * Catch-all demo slots shown **after** resolve (step panel rings).
+   * Named map; `{}` is valid. Prefer this over legacy {@link Instruction.highlights}.
+   * @example stubAfter: { badge: { selector: ".cart", label: "Cart updated" } }
+   */
+  stubAfter?: HighlightStubPhaseOrFn<Out>;
+  /**
+   * Multi-step demo captions ("yap" slides) with Next between each -
+   * not block lifecycle. Explains a long process; optional `selector` rings
+   * while that slide is up. Flow fixtures may override via `slides`.
+   * @example slides: [
+   *   { caption: "Checkout is three screens", tag: "YAP" },
+   *   { caption: "Overview confirms totals", selector: ".summary_info" },
+   * ]
+   */
+  slides?: WaygraphSlidesOrFn<Out>;
+  /**
+   * @deprecated Prefer {@link Instruction.stubAfter}. Shimmed to stubAfter keys
+   * `"0"`, `"1"`, … when stubAfter is empty.
    */
   highlights?: readonly WaygraphHighlight[] | ((out: Out) => readonly WaygraphHighlight[]);
-}
-
-/** One arbitrary highlight point - see {@link Instruction.highlights}. */
-export interface WaygraphHighlight {
-  /** CSS selector for the element to highlight. */
-  selector: string;
-  /** Caption shown next to the highlight ring. */
-  label: string;
 }
 
 /**

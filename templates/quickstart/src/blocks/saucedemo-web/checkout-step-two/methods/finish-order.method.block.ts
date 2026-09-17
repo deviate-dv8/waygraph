@@ -18,6 +18,34 @@ export const FinishOrderBlock = defineMethodBlock<CheckoutOverviewPage, OrderCom
     },
     resolve: () => checkpoint("OrderComplete"),
     verify: [Trait.text(".complete-header", "Thank you for your order!")],
-    highlights: () => [{ selector: ".complete-header", label: "remember this: order confirmed" }],
+    stubBefore: {
+      finish: { selector: "#finish", label: "Finish" },
+    },
+    stubAfter: {
+      thanks: {
+        selector: ".complete-header",
+        label: "Order confirmed",
+        detail: "Thank you for your order!",
+      },
+    },
+    slides: [
+      {
+        caption: "Checkout is a short pipeline",
+        detail: "Cart → info → overview → done. Watch the last click place the order.",
+        tag: "YAP",
+      },
+      {
+        caption: "Finish submits the overview",
+        detail: "This click is the only mutating step on this screen.",
+        tag: "YAP",
+        selector: "#finish",
+      },
+      {
+        caption: "Completion banner is the proof",
+        detail: "The next ring calls out the thank-you header.",
+        tag: "YAP",
+        selector: ".complete-header",
+      },
+    ],
   },
 });

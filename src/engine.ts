@@ -356,6 +356,12 @@ export interface Flow<Out extends Checkpoint<string>> {
    */
   readonly expectedFailureReason?: string;
   /**
+   * Set once this Flow has been wrapped in {@link withHighlightFixtures} -
+   * demo narration overrides (unlimited purposes on `.flow.ts`) keyed by
+   * block.name. `run()` never reads this; step/`demo` merges onto block stubs.
+   */
+  readonly highlightFixtures?: import("./highlights.js").HighlightFixtureMap;
+  /**
    * This Flow's constituent Blocks, in order between `start`/`end`, as plain
    * data - for introspection/visualization tools, without running anything.
    * @example loginFlow.blocks() // [{ name: "login" }, { name: "add-to-cart", routes: {...} }]
@@ -602,6 +608,26 @@ export function withExpectedFailure<Out extends Checkpoint<string>>(flow: Flow<O
     withBlockVerify: (block, verify) => withExpectedFailure(flow.withBlockVerify(block, verify), reason),
     modBlockVerify: (block, nameOrIndex, newCheck) =>
       withExpectedFailure(flow.modBlockVerify(block, nameOrIndex, newCheck), reason),
+  };
+}
+
+/**
+ * Attaches demo highlight fixtures to a Flow - unlimited purposes on `.flow.ts`
+ * (AC copy, BUG/GATE tags, detail) merged onto each block's stubBefore/stubAfter
+ * slots. Non-destructive, same pattern as {@link withTitle}.
+ * Demo/`chain --step` reads `flow.highlightFixtures`; `run()` ignores it.
+ * @example withHighlightFixtures(issueFlow, { "submit-login": { stubBefore: { email: { label: "AC-1" } } } })
+ */
+export function withHighlightFixtures<Out extends Checkpoint<string>>(
+  flow: Flow<Out>,
+  fixtures: import("./highlights.js").HighlightFixtureMap,
+): Flow<Out> {
+  return {
+    ...flow,
+    highlightFixtures: fixtures,
+    withBlockVerify: (block, verify) => withHighlightFixtures(flow.withBlockVerify(block, verify), fixtures),
+    modBlockVerify: (block, nameOrIndex, newCheck) =>
+      withHighlightFixtures(flow.modBlockVerify(block, nameOrIndex, newCheck), fixtures),
   };
 }
 
@@ -1158,6 +1184,13 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
   checkpoint: Out["__state"];
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
+  stubBefore?:
+    | import("./highlights.js").HighlightStubPhase
+    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
+  stubAfter?:
+    | import("./highlights.js").HighlightStubPhase
+    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
+  /** @deprecated Prefer stubAfter. */
   highlights?:
     | readonly WaygraphHighlight[]
     | ((out: Out) => readonly WaygraphHighlight[]);
@@ -1231,6 +1264,8 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
       },
       resolve: () => checkpoint(options.checkpoint) as Out,
       ...(options.verify ? { verify: options.verify } : {}),
+      ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
+      ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
       ...(options.highlights ? { highlights: options.highlights } : {}),
     },
   });
@@ -1269,6 +1304,13 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   click: string | ((mem: MemPage) => string);
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
+  stubBefore?:
+    | import("./highlights.js").HighlightStubPhase
+    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
+  stubAfter?:
+    | import("./highlights.js").HighlightStubPhase
+    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
+  /** @deprecated Prefer stubAfter. */
   highlights?:
     | readonly WaygraphHighlight[]
     | ((out: Out) => readonly WaygraphHighlight[]);
@@ -1288,6 +1330,8 @@ export function defineNavClickBlock<Out extends Checkpoint<string>>(
     ...(options.description ? { description: options.description } : {}),
     ...(options.requires ? { requires: options.requires } : {}),
     ...(options.verify ? { verify: options.verify } : {}),
+    ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
+    ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
     ...(options.highlights ? { highlights: options.highlights } : {}),
     ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
   });
@@ -1339,6 +1383,13 @@ export type PageBlockOptions<Out extends Checkpoint<string>> = {
   /** Checkpoint tag for this screen (hub). */
   checkpoint: Out["__state"];
   verify?: Trait[] | ((out: Out) => Trait[]);
+  stubBefore?:
+    | import("./highlights.js").HighlightStubPhase
+    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
+  stubAfter?:
+    | import("./highlights.js").HighlightStubPhase
+    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
+  /** @deprecated Prefer stubAfter. */
   highlights?:
     | readonly WaygraphHighlight[]
     | ((out: Out) => readonly WaygraphHighlight[]);
@@ -1406,6 +1457,8 @@ export function definePageBlock<Out extends Checkpoint<string>>(
       },
       resolve: () => checkpoint(options.checkpoint) as Out,
       ...(options.verify ? { verify: options.verify } : {}),
+      ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
+      ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
       ...(options.highlights ? { highlights: options.highlights } : {}),
     },
   }) as PageBlock<Out>;

@@ -28,8 +28,24 @@ export {
   withSessionReset,
   withTitle,
   withExpectedFailure,
+  withHighlightFixtures,
   chainFlow,
 } from "./engine.js";
+export {
+  resolveHighlightSlots,
+  resolveSlides,
+  formatHighlightCaption,
+  hasAuthoredStubAfter,
+} from "./highlights.js";
+export type {
+  WaygraphHighlightStub,
+  WaygraphHighlightFixture,
+  WaygraphSlide,
+  HighlightStubPhase,
+  HighlightFixtureMap,
+  ResolvedHighlight,
+  WaygraphHighlight,
+} from "./highlights.js";
 export type {
   Flow,
   EngineConfig,

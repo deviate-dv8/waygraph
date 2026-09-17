@@ -27,20 +27,18 @@
       </ul>
     </nav>
     <main>
-      <h1>Demo narration: stubs + flow fixtures</h1>
+      <h1>Demo narration: stubs, fixtures, captions &amp; slides</h1>
       <p class="lede">
-        Catch-all highlight lifecycle on every block; unlimited demo purposes on the
-        issue <code>.flow.ts</code>. Proposal for waygraph (not shipped in <code>0.10.9</code>).
-      </p>
-      <p class="meta">
-        RFC:
-        <a href="./proposals/mod-highlights-rfc.md"><code>docs/proposals/mod-highlights-rfc.md</code></a>
-        · mesh handout: <code>.sm/seats/_shared/WAYGRAPH-HANDOUT.md</code> §4.6b
+        Catch-all highlight lifecycle on every block (<code>stubBefore</code> / <code>stubAfter</code>);
+        unlimited demo purposes on the issue <code>.flow.ts</code>;
+        multi-step yap slides with Next between each one.
+        Shipped in <code>waygraph@0.11.0</code>.
       </p>
 
       <h2>Mental model</h2>
       <pre><code>Every block     → stubBefore + stubAfter   (selectors + neutral labels; {} ok)
-Issue .flow.ts  → highlightFixtures        (unlimited demo purposes per phase/slot)</code></pre>
+Issue .flow.ts  → highlightFixtures        (unlimited demo purposes per phase/slot)
+Block or flow   → slides                   (multi-step yap, Next between each - not block lifecycle)</code></pre>
       <p>
         Same pattern as Mem: the block declares <strong>slots</strong>; the flow owns the
         <strong>story</strong>. Shared blocks stay library-neutral. Ticket AC copy, BUG/GATE
@@ -48,14 +46,14 @@ Issue .flow.ts  → highlightFixtures        (unlimited demo purposes per phase/
       </p>
       <table>
         <thead>
-          <tr><th>Half</th><th>Where</th><th>Role</th></tr>
+          <tr><th>Feature</th><th>Where</th><th>Role</th></tr>
         </thead>
         <tbody>
           <tr>
             <td><strong>Stubs</strong></td>
             <td>Every block <code>instruction</code></td>
             <td>
-              <code>stubBefore</code> + <code>stubAfter</code> — named slots (selector +
+              <code>stubBefore</code> + <code>stubAfter</code> - named slots (selector +
               neutral label). Catch-all lifecycle shape on every block (<code>{}</code> ok).
             </td>
           </tr>
@@ -63,8 +61,25 @@ Issue .flow.ts  → highlightFixtures        (unlimited demo purposes per phase/
             <td><strong>Fixtures</strong></td>
             <td>Issue <code>.flow.ts</code></td>
             <td>
-              <strong>Unlimited demo purposes</strong> — AC copy, BUG/GATE tags,
+              <strong>Unlimited demo purposes</strong> - AC copy, BUG/GATE tags,
               <code>detail</code>, ticket sentences. Override per block / phase / slot.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Captions</strong></td>
+            <td>Every stub slot / slide</td>
+            <td>
+              <code>label</code> (or <code>caption</code> on slides), optional <code>detail</code>
+              and <code>tag</code>. Rendered as: <code>[TAG] primary - detail</code>.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Slides</strong></td>
+            <td>Block <code>instruction.slides</code> or flow fixture <code>slides</code></td>
+            <td>
+              Multi-step yap sequence. Demo pauses on each slide; user clicks
+              <strong>Next slide</strong> (or auto-next) to advance. Separate from
+              block lifecycle - slides run after the step resolves.
             </td>
           </tr>
         </tbody>
@@ -72,11 +87,10 @@ Issue .flow.ts  → highlightFixtures        (unlimited demo purposes per phase/
       <p>
         <strong>Not</strong> <code>modHighlight()</code> and
         <strong>not</strong> a <code>modBlock*</code> highlight decorator.
-        (<code>modBlockVerify</code> is verify-only and unrelated.) The RFC filename
-        <code>mod-highlights</code> is legacy naming only.
+        (<code>modBlockVerify</code> is verify-only and unrelated.)
       </p>
 
-      <h2>Phases</h2>
+      <h2>Phases (stubs)</h2>
       <table>
         <thead>
           <tr><th>Phase</th><th>When demo runs it</th><th>Block (library)</th><th>Flow fixture</th></tr>
@@ -92,19 +106,19 @@ Issue .flow.ts  → highlightFixtures        (unlimited demo purposes per phase/
             <td><code>stubAfter</code></td>
             <td>After resolve + verify</td>
             <td>Post-step proof points</td>
-            <td>Unlimited purposes after the step (AC / GATE / …)</td>
+            <td>Unlimited purposes after the step (AC / GATE / ...)</td>
           </tr>
         </tbody>
       </table>
 
-      <h2>Block (neutral)</h2>
+      <h2>Block (neutral stubs)</h2>
       <pre><code>instruction: {
-  async act(page, _input, mem) { /* … */ },
-  resolve: () =&gt; checkpoint("PiaLoginLinkSent"),
+  async act(page, _input, mem) { /* ... */ },
+  resolve: () =&gt; checkpoint("LoginLinkSent"),
   verify: [Trait.visible("text=Check your inbox")],
 
   stubBefore: {
-    email: { selector: "#email", label: "Email address" },
+    email:  { selector: "#email",              label: "Email address" },
     submit: { selector: 'button[type="submit"]', label: "Send sign-in link" },
   },
   stubAfter: {
@@ -112,54 +126,158 @@ Issue .flow.ts  → highlightFixtures        (unlimited demo purposes per phase/
   },
 }</code></pre>
 
-      <h2>Flow <code>.flow.ts</code> (unlimited purposes)</h2>
-      <pre><code>const highlightFixtures = {
-  "method-pia-select-recommended-alternative": {
-    stubBefore: {
-      select: {
-        label: "pia-pm#276 AC-3",
-        detail: "Must not badge Active Plan yet.",
-        tag: "BUG",
+      <h2>Captions: <code>label</code>, <code>detail</code>, <code>tag</code></h2>
+      <p>Every stub slot and every slide supports the same caption fields:</p>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>label</code></td><td>string (required on stubs)</td><td>Primary ring / panel text</td></tr>
+          <tr><td><code>detail</code></td><td>string (optional)</td><td>Second line in the panel body</td></tr>
+          <tr><td><code>tag</code></td><td>string (optional)</td><td>Badge prefix: <code>AC</code>, <code>BUG</code>, <code>GATE</code>, <code>YAP</code>, ...</td></tr>
+        </tbody>
+      </table>
+      <p>Rendered format: <code>[TAG] primary - detail</code> (hyphens, not em-dashes).</p>
+
+      <h2>Slides: multi-step yap</h2>
+      <p>
+        Slides are a demo-only narration sequence. They run after a block resolves
+        (not part of the block's pass/fail lifecycle). Each slide pauses and waits for
+        <strong>Next slide</strong> (or auto-next / auto-advance checkbox). An optional
+        <code>selector</code> shows a ring while that slide is up.
+      </p>
+      <pre><code>// On a block:
+instruction: {
+  stubBefore: { finish: { selector: "#finish", label: "Finish" } },
+  stubAfter:  { thanks: { selector: ".complete-header", label: "Order confirmed" } },
+  slides: [
+    {
+      caption: "Checkout is a short pipeline",
+      detail:  "Cart -&gt; info -&gt; overview -&gt; done.",
+      tag:     "YAP",
+    },
+    {
+      caption:  "Finish submits the overview",
+      detail:   "This click is the only mutating step.",
+      tag:      "YAP",
+      selector: "#finish",
+    },
+    {
+      caption:  "Completion banner is the proof",
+      detail:   "The thank-you header is the durable signal.",
+      tag:      "YAP",
+      selector: ".complete-header",
+    },
+  ],
+}</code></pre>
+      <p>
+        Flow fixtures can override <code>slides</code> for a specific block
+        (fixture wins over block): set <code>slides: [...]</code> on the block's fixture entry.
+        Leave it unset to use the block's own slides.
+      </p>
+
+      <h2>Flow <code>.flow.ts</code> - fixtures + slides</h2>
+      <pre><code>import { withHighlightFixtures, withTitle } from "waygraph";
+
+export const checkoutFlow = withHighlightFixtures(
+  withTitle(engine.defineFlow([start, ...chain, end]), "Owner: Full Checkout"),
+  {
+    "submit-login": {
+      stubBefore: {
+        username: { label: "Demo user",  detail: "standard_user from Mem.", tag: "AC" },
+        password: { label: "Password",   detail: "Filled from Mem credentials." },
+        submit:   { label: "Sign in",    tag: "GATE" },
       },
     },
-    stubAfter: {
-      dialog: { label: "Dialog open", detail: "Card unchanged.", tag: "GATE" },
+    "add-to-cart": {
+      stubAfter: {
+        badge: { label: "Cart now has the item", detail: "Badge updates after add.", tag: "AC" },
+      },
+    },
+    "finish-order": {
+      stubAfter: {
+        thanks: { label: "Order placed", detail: "Completion header is the proof.", tag: "GATE" },
+      },
+      // slides: [...] here would override the block's own slides
+    },
+  },
+);</code></pre>
+      <p>
+        Fixtures merge onto stub slots (label / detail / tag; selector optional -
+        inherited from the block stub). Do not invent selectors the block never declared.
+      </p>
+
+      <h2>Reusable fixtures (HighlightFixtureMap)</h2>
+      <p>
+        A <code>HighlightFixtureMap</code> is a plain object - define it once, reuse
+        across multiple flows or export from a shared file:
+      </p>
+      <pre><code>// src/fixtures/checkout-ac-fixtures.ts
+import type { HighlightFixtureMap } from "waygraph";
+
+export const checkoutAcFixtures: HighlightFixtureMap = {
+  "submit-login": {
+    stubBefore: {
+      username: { label: "AC-1: standard_user", tag: "AC" },
     },
   },
 };
 
-export const issue276Flow = withHighlightFixtures(
-  withTitle(withSessionReset(engine.defineFlow([start, …chain, end])), "pia-pm#276 …"),
-  highlightFixtures,
-);</code></pre>
-      <p>
-        Fixtures merge onto stub slots (label / detail / tag; selector optional —
-        inherit from the block). Do not invent selectors the block never declared.
-      </p>
+// src/flows/checkout.flow.ts
+import { checkoutAcFixtures } from "../fixtures/checkout-ac-fixtures.js";
+export const checkoutFlow = withHighlightFixtures(baseFlow, checkoutAcFixtures);</code></pre>
 
-      <h2>Replaces (today on 0.10.9)</h2>
+      <h2>TypeScript exports (waygraph@0.11.0)</h2>
+      <table>
+        <thead><tr><th>Export</th><th>Kind</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>withHighlightFixtures(flow, map)</code></td><td>function</td><td>Attach a <code>HighlightFixtureMap</code> to a Flow</td></tr>
+          <tr><td><code>resolveHighlightSlots(block, phase, opts)</code></td><td>function</td><td>Resolve stubBefore / stubAfter slots with fixture merge</td></tr>
+          <tr><td><code>resolveSlides(block, opts)</code></td><td>function</td><td>Resolve slides (fixture wins over block)</td></tr>
+          <tr><td><code>formatHighlightCaption(h)</code></td><td>function</td><td>Format <code>[TAG] label - detail</code> string</td></tr>
+          <tr><td><code>hasAuthoredStubAfter(block, out, fixtures)</code></td><td>function</td><td>True when block has non-empty stubAfter (skips verify-trait fallback)</td></tr>
+          <tr><td><code>WaygraphHighlightStub</code></td><td>type</td><td>One named stub slot</td></tr>
+          <tr><td><code>WaygraphHighlightFixture</code></td><td>type</td><td>Flow fixture patch for a slot</td></tr>
+          <tr><td><code>WaygraphSlide</code></td><td>type</td><td>One yap slide (caption, detail, tag, selector)</td></tr>
+          <tr><td><code>HighlightFixtureMap</code></td><td>type</td><td>Per-block fixture map for <code>withHighlightFixtures</code></td></tr>
+          <tr><td><code>ResolvedHighlight</code></td><td>type</td><td>Resolved stub after merge</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Replaces (shim until 0.12)</h2>
       <table>
         <thead><tr><th>Old</th><th>New</th></tr></thead>
         <tbody>
           <tr><td><code>instruction.highlights</code></td><td><code>stubAfter</code></td></tr>
-          <tr><td>Fill ring <code>"writing"</code> / <code>"from mem: …"</code></td><td><code>stubBefore</code></td></tr>
-          <tr><td>Verify-trait fallback <code>visible(#…)</code></td><td><code>stubAfter</code> with human labels</td></tr>
+          <tr><td>Fill ring <code>"writing"</code> / <code>"from mem: ..."</code></td><td><code>stubBefore</code></td></tr>
+          <tr><td>Verify-trait fallback <code>visible(#...)</code></td><td><code>stubAfter</code> with human labels</td></tr>
         </tbody>
       </table>
       <p>
-        Shim (one release): empty <code>stubAfter</code> + legacy <code>highlights</code>
-        → ephemeral <code>stubAfter</code> keys <code>"0"</code>, <code>"1"</code>, …
+        Shim: empty <code>stubAfter</code> + legacy <code>highlights</code>
+        automatically shimmed to ephemeral <code>stubAfter</code> keys <code>"0"</code>, <code>"1"</code>, ...
       </p>
+
+      <h2>Sauce Demo coverage</h2>
+      <p>
+        The <a href="./saucedemo/index.html">Sauce Demo</a> shows all features in a real block/flow:
+      </p>
+      <ul>
+        <li><strong>submit-login</strong> - <code>stubBefore</code> (fill rings on username/password/submit)</li>
+        <li><strong>add-to-cart</strong> - <code>stubAfter</code> (cart badge ring after action)</li>
+        <li><strong>finish-order</strong> - <code>stubBefore</code> + <code>stubAfter</code> + <code>slides</code> (3-slide yap sequence)</li>
+        <li>Flow fixtures on <code>checkoutFlow</code> - AC/GATE captions, tag badges, detail lines</li>
+      </ul>
 
       <h2>Related</h2>
       <ul>
-        <li><a href="./demo.html">Demo / run</a> — <code>--auto-next</code>, <code>--fast</code>, carousel strip</li>
-        <li><a href="./handout.html">Engine handout</a> — core API summary</li>
+        <li><a href="./demo.html">Demo / run</a> - <code>--auto-next</code>, <code>--fast</code>, carousel strip</li>
+        <li><a href="./handout.html">Engine handout</a> - core API summary</li>
+        <li><a href="./saucedemo/index.html">Sauce Demo</a> - live saucedemo example</li>
         <li><a href="./proposals/mod-highlights-rfc.md">Full RFC (markdown)</a></li>
       </ul>
 
       <footer class="site">
-        Package tip: <code>waygraph@0.10.9</code> · stubs/fixtures still proposal until shipped.
+        <code>waygraph@0.11.0</code> - stubs / fixtures / captions / slides shipped.
       </footer>
     </main>
   </div>

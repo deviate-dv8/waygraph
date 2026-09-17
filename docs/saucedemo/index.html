@@ -40,15 +40,15 @@
       <h1>Sauce Demo showcase</h1>
       <p class="lede">
         The in-package consumer that teaches waygraph conventions against live
-        saucedemo.com - Nav, Effect, Action, route folders, and
-        <code>waygraph auto</code>.
+        saucedemo.com - Nav, Effect, Action, route folders,
+        <code>waygraph auto</code>, and demo narration (stubs / fixtures / captions / slides).
       </p>
       <p class="meta">
         Source:
         <a href="https://github.com/deviate-dv8/waygraph/tree/main/examples/saucedemo">examples/saucedemo</a>
         · Pages folder:
         <a href="https://github.com/deviate-dv8/waygraph/tree/main/docs/saucedemo">docs/saucedemo</a>
-        · npm <code>waygraph@0.10.4+</code>
+        · npm <code>waygraph@0.11.0</code>
       </p>
 
       <h2>What this showcase is for</h2>
@@ -64,6 +64,12 @@
           <code>Block</code>s - see <a href="./kinds.html">Block kinds</a>.
         </li>
         <li>
+          <strong>Demo narration coverage.</strong>
+          All 0.11.0 narration features are shown in the checkout flow:
+          <code>stubBefore</code>, <code>stubAfter</code>, flow fixtures,
+          captions (label / detail / tag), and multi-step slides.
+        </li>
+        <li>
           <strong>Runnable proof.</strong>
           Prefer <code>npm run auto</code> (headed panel) first; use
           <code>auto:cli</code> for the same menus in the terminal.
@@ -75,13 +81,80 @@
 npm install &amp;&amp; npx playwright install chromium
 npm run auto          # headed panel - start here
 npm run auto:cli      # terminal menu (same menus)
-npm run demo          # headed stepper
+npm run demo          # headed stepper (narration, stubs, slides)
 npm test              # headless
 
 # Or temp copy:
 npx waygraph@latest try auto
 npx waygraph@latest try auto:cli
-npx waygraph@latest try demo   # stepper + test</code></pre>
+npx waygraph@latest try demo   # stepper + narration</code></pre>
+
+      <h2>Demo narration (0.11.0)</h2>
+      <p>
+        The checkout flow (<code>src/flows/checkout.flow.ts</code>) demonstrates every
+        narration feature. Run <code>npm run demo</code> to see it live:
+      </p>
+      <table>
+        <thead><tr><th>Block</th><th>Feature</th><th>What you see</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>submit-login</code></td>
+            <td><code>stubBefore</code></td>
+            <td>Rings on username / password / submit before the fill runs. Flow fixture overrides labels with AC copy + GATE tag.</td>
+          </tr>
+          <tr>
+            <td><code>add-to-cart</code></td>
+            <td><code>stubAfter</code></td>
+            <td>Cart badge ring after the click. Flow fixture adds <code>detail</code> and AC tag.</td>
+          </tr>
+          <tr>
+            <td><code>finish-order</code></td>
+            <td><code>stubBefore</code> + <code>stubAfter</code> + <code>slides</code></td>
+            <td>
+              Ring on the Finish button before click (<code>stubBefore</code>);
+              after resolve, 3 yap slides run in sequence - each pauses for
+              <strong>Next slide</strong>; last slide resolves to
+              <code>stubAfter</code> ring on the completion header.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Slides are separate from block lifecycle: they explain a long process step by step
+        (slide 1 / 2 / 3), with Next between each. The block's pass/fail is not affected.
+        Auto-advance checkbox in the panel skips manual Next.
+      </p>
+      <pre><code>// finish-order.method.block.ts (abridged)
+instruction: {
+  stubBefore: { finish: { selector: "#finish", label: "Finish" } },
+  stubAfter:  { thanks: { selector: ".complete-header", label: "Order confirmed" } },
+  slides: [
+    { caption: "Checkout is a short pipeline", detail: "Cart -&gt; info -&gt; overview -&gt; done.", tag: "YAP" },
+    { caption: "Finish submits the overview",   detail: "Only mutating step on this screen.", tag: "YAP", selector: "#finish" },
+    { caption: "Completion banner is the proof",detail: "Thank-you header = durable signal.", tag: "YAP", selector: ".complete-header" },
+  ],
+}</code></pre>
+      <pre><code>// checkout.flow.ts - fixture overrides (unlimited demo purposes on .flow.ts)
+withHighlightFixtures(flow, {
+  "submit-login": {
+    stubBefore: {
+      username: { label: "Demo user",         detail: "standard_user from Mem.", tag: "AC" },
+      password: { label: "Password",          detail: "Filled from Mem credentials." },
+      submit:   { label: "Sign in",           tag: "GATE" },
+    },
+  },
+  "add-to-cart": {
+    stubAfter: { badge: { label: "Cart now has the item", detail: "Badge updates after add.", tag: "AC" } },
+  },
+  "finish-order": {
+    stubAfter: { thanks: { label: "Order placed", detail: "Completion header is the proof.", tag: "GATE" } },
+    // slides: [...] here would override the block's own 3-slide sequence
+  },
+});</code></pre>
+      <p>
+        See the full narration API reference on the
+        <a href="../highlights.html">Demo narration</a> page.
+      </p>
 
       <div class="cards">
         <a href="./kinds.html">
@@ -100,17 +173,22 @@ npx waygraph@latest try demo   # stepper + test</code></pre>
           <strong>Source comments</strong>
           <span>How each Block file documents its kind.</span>
         </a>
+        <a href="../highlights.html">
+          <strong>Demo narration</strong>
+          <span>Stubs, fixtures, captions, slides API.</span>
+        </a>
       </div>
 
       <h2>Read next</h2>
       <ul>
+        <li><a href="../highlights.html">Demo narration</a> - full stubs/fixtures/slides API</li>
         <li><a href="./SITE-MAP.md">SITE-MAP.md</a> - full block tree</li>
         <li><a href="./README.md">README.md</a> - same story in markdown</li>
         <li><a href="../auto.html">Package auto explore</a> - CLI contract</li>
       </ul>
 
       <footer class="site">
-        ASCII docs · showcase tracks <code>examples/saucedemo</code>
+        ASCII docs · showcase tracks <code>examples/saucedemo</code> · <code>waygraph@0.11.0</code>
       </footer>
     </main>
   </div>
