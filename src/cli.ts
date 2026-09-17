@@ -1357,12 +1357,18 @@ function extractVerifyHighlights(block, resultTag) {
  * __wgNext no-ops once already consumed - but looked live when it wasn't).
  * Disables the button and mem-key textareas, and swaps whichever gate
  * text was showing (manual button or "Auto-advancing...") to "Running...".
- * When autoCollapsePanel is set (QA video / autoplay), tuck the stepper
- * away so ring captions + the app fill the frame - Dan: stepper + auto panels.
+ * ALWAYS collapses the panel while act() runs - leaving it expanded was a
+ * real bug: #wg-panel sits at z-index max with pointer-events:auto, so
+ * Playwright's login/add-to-cart clicks hit the stepper instead of the app
+ * ("subtree intercepts pointer events"). Empty/partial fills + a lucky
+ * edge click on Login then produced Sauce Demo's Epic sadface, verify
+ * still passed on the error banner, and the next block blew up. Collapse
+ * also matches Dan's "step is running / can't interrupt" ask. (_opts kept
+ * for call-site compat; autoCollapsePanel is now unconditional.)
  */
-async function markStepRunning(page, opts) {
+async function markStepRunning(page, _opts) {
   await page
-    .evaluate(({ autoCollapsePanel }) => {
+    .evaluate(() => {
       const runBtn = document.getElementById("wg-run");
       if (runBtn) {
         runBtn.disabled = true;
@@ -1373,18 +1379,16 @@ async function markStepRunning(page, opts) {
       document.querySelectorAll("#wg-panel textarea[data-key]").forEach((ta) => {
         ta.disabled = true;
       });
-      if (autoCollapsePanel) {
-        const panel = document.getElementById("wg-panel");
-        if (panel) {
-          panel.classList.add("wg-collapsed");
-          const toggle = panel.querySelector("[data-wg-toggle]");
-          if (toggle) toggle.textContent = "Show";
-          const titleEl = panel.querySelector(".wg-chrome-title");
-          const label = panel.dataset.wgStepLabel;
-          if (titleEl && label) titleEl.textContent = label;
-        }
+      const panel = document.getElementById("wg-panel");
+      if (panel) {
+        panel.classList.add("wg-collapsed");
+        const toggle = panel.querySelector("[data-wg-toggle]");
+        if (toggle) toggle.textContent = "Show";
+        const titleEl = panel.querySelector(".wg-chrome-title");
+        const label = panel.dataset.wgStepLabel;
+        if (titleEl && label) titleEl.textContent = label;
       }
-    }, { autoCollapsePanel: !!(opts && opts.autoCollapsePanel) })
+    })
     .catch(() => {});
 }
 
@@ -1425,10 +1429,23 @@ async function captionForLocator(page, locator, stubs, fallback) {
 /**
  * Multi-step yap captions - not block lifecycle. Each slide waits for Next
  * (or auto-next), optional ring via slide.selector.
+ *
+ * Advance wait does NOT use exposeFunction/gate(): after a real navigation
+ * (e.g. finish-order -> checkout-complete) the panel can render while
+ * __wgNext is momentarily wedged, which left "Next slide" looking live but
+ * doing nothing. In-page data-wg-acked + autoplay poll is the source of truth.
  */
-async function presentSlides(page, slides, gate, opts) {
+async function presentSlides(page, slides, _gate, opts) {
   const title = (opts && opts.title) || "waygraph demo";
   const blockName = (opts && opts.blockName) || "";
+  const episodeNumber = opts && opts.episodeNumber;
+  const episodeTitle = (opts && opts.episodeTitle) || "";
+  const autoplayMs =
+    opts && opts.autoplayMs
+      ? Number(opts.autoplayMs)
+      : process.env.WAYGRAPH_AUTOPLAY_MS
+        ? Number(process.env.WAYGRAPH_AUTOPLAY_MS)
+        : 1800;
   for (let i = 0; i < slides.length; i++) {
     const s = slides[i];
     const caption = formatHighlightCaption(s);
@@ -1444,113 +1461,148 @@ async function presentSlides(page, slides, gate, opts) {
     } else {
       await hideRing(page);
     }
-    await page
-      .evaluate(
-        (info) => {
-          let panel = document.getElementById("wg-panel");
-          const isNew = !panel;
-          if (!panel) {
-            panel = document.createElement("div");
-            panel.id = "wg-panel";
-          }
-          panel.classList.remove("wg-collapsed", "wg-error", "wg-expected");
-          const esc = (t) =>
-            String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
-          panel.innerHTML =
-            "<div class=\\"wg-chrome\\"><span class=\\"wg-chrome-title\\">waygraph demo</span>" +
-            "<button type=\\"button\\" class=\\"wg-hide-btn\\" data-wg-toggle=\\"1\\">Hide</button></div>" +
-            "<div class=\\"wg-body\\">" +
-            "<h3>Slide " +
-            (info.index + 1) +
-            " / " +
-            info.total +
-            (info.blockName ? " · " + esc(info.blockName) : "") +
-            "</h3>" +
-            (info.tag
-              ? "<div class=\\"wg-episode\\" style=\\"border:none;padding:0;margin:0 0 6px;font-size:11px;color:#c9a6ff\\">" +
-                esc(info.tag) +
-                "</div>"
-              : "") +
-            "<div class=\\"wg-narration\\">" +
-            esc(info.caption) +
-            "</div>" +
-            (info.detail
-              ? "<div class=\\"wg-result-pretty\\" style=\\"margin:0 0 12px;color:#f0e8ff\\">" +
-                esc(info.detail) +
-                "</div>"
-              : "") +
-            "<div class=\\"wg-autoplay-row\\"><label><input type=\\"checkbox\\" id=\\"wg-autoplay-cb\\"" +
-            (info.autoNow ? " checked" : "") +
-            "> Auto-advance</label></div>" +
-            "<div id=\\"wg-gate-manual\\"" +
-            (info.autoNow ? " style=\\"display:none\\"" : "") +
-            "><button id=\\"wg-run\\">" +
-            (info.isLast ? "Continue \\u25B6" : "Next slide \\u25B6") +
-            "</button></div>" +
-            "<div id=\\"wg-gate-auto\\" class=\\"wg-auto\\"" +
-            (info.autoNow ? "" : " style=\\"display:none\\"") +
-            ">Auto-advancing...</div>" +
-            "</div>";
-          if (isNew) {
-            document.documentElement.appendChild(panel);
-            requestAnimationFrame(() => panel.classList.add("wg-in"));
-          }
-          if (window.__wgWirePanelChrome) {
-            window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-              stepLabel:
-                "Slide " +
-                (info.index + 1) +
-                " / " +
-                info.total +
-                (info.blockName ? " · " + info.blockName : ""),
-              forceCollapsed: false,
-            });
-          }
-          const cb = document.getElementById("wg-autoplay-cb");
-          if (cb) {
-            cb.addEventListener("change", () => {
-              try {
-                localStorage.setItem("wg-autoplay", cb.checked ? "1" : "0");
-              } catch {
-                /* ignore */
-              }
-              const manual = document.getElementById("wg-gate-manual");
-              const auto = document.getElementById("wg-gate-auto");
-              if (manual) manual.style.display = cb.checked ? "none" : "";
-              if (auto) auto.style.display = cb.checked ? "" : "none";
-            });
-          }
-          const runBtn = document.getElementById("wg-run");
-          if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
-        },
-        {
-          index: i,
-          total: slides.length,
-          caption: s.caption,
-          detail: s.detail || "",
-          tag: s.tag || "",
-          blockName,
-          isLast,
-          autoNow: false,
-        },
-      )
-      .catch(() => {});
-    await page
-      .evaluate(() => {
+    await page.evaluate(
+      (info) => {
+        let panel = document.getElementById("wg-panel");
+        const isNew = !panel;
+        if (!panel) {
+          panel = document.createElement("div");
+          panel.id = "wg-panel";
+        }
+        panel.classList.remove("wg-collapsed", "wg-error", "wg-expected");
+        const esc = (t) =>
+          String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+        const episodeLine =
+          info.episodeNumber !== undefined && info.episodeNumber !== null
+            ? "<div class=\\"wg-episode\\">Episode " +
+              info.episodeNumber +
+              (info.episodeTitle ? ": " + esc(info.episodeTitle) : "") +
+              " · yap slides</div>"
+            : "";
+        panel.innerHTML =
+          "<div class=\\"wg-chrome\\"><span class=\\"wg-chrome-title\\">waygraph demo</span>" +
+          "<button type=\\"button\\" class=\\"wg-hide-btn\\" data-wg-toggle=\\"1\\">Hide</button></div>" +
+          "<div class=\\"wg-body\\">" +
+          episodeLine +
+          "<h3>Slide " +
+          (info.index + 1) +
+          " / " +
+          info.total +
+          (info.blockName ? " · " + esc(info.blockName) : "") +
+          "</h3>" +
+          (info.tag
+            ? "<div style=\\"border:none;padding:0;margin:0 0 6px;font-size:11px;color:#c9a6ff\\">" +
+              esc(info.tag) +
+              "</div>"
+            : "") +
+          "<div class=\\"wg-narration\\">" +
+          esc(info.caption) +
+          "</div>" +
+          (info.detail
+            ? "<div class=\\"wg-result-pretty\\" style=\\"margin:0 0 12px;color:#f0e8ff\\">" +
+              esc(info.detail) +
+              "</div>"
+            : "") +
+          "<div class=\\"wg-autoplay-row\\"><label><input type=\\"checkbox\\" id=\\"wg-autoplay-cb\\"" +
+          (info.autoNow ? " checked" : "") +
+          "> Auto-advance</label></div>" +
+          "<div id=\\"wg-gate-manual\\"" +
+          (info.autoNow ? " style=\\"display:none\\"" : "") +
+          "><button type=\\"button\\" id=\\"wg-run\\">" +
+          (info.isLast ? "Continue \\u25B6" : "Next slide \\u25B6") +
+          "</button></div>" +
+          "<div id=\\"wg-gate-auto\\" class=\\"wg-auto\\"" +
+          (info.autoNow ? "" : " style=\\"display:none\\"") +
+          ">Auto-advancing...</div>" +
+          "</div>";
+        if (isNew) {
+          document.documentElement.appendChild(panel);
+          requestAnimationFrame(() => panel.classList.add("wg-in"));
+        }
+        if (window.__wgWirePanelChrome) {
+          window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
+            stepLabel:
+              "Slide " +
+              (info.index + 1) +
+              " / " +
+              info.total +
+              (info.blockName ? " · " + info.blockName : ""),
+            forceCollapsed: false,
+          });
+        }
+        let autoNow = false;
         try {
-          const on = localStorage.getItem("wg-autoplay") === "1";
-          const cb = document.getElementById("wg-autoplay-cb");
-          if (cb) cb.checked = on;
-          const manual = document.getElementById("wg-gate-manual");
-          const auto = document.getElementById("wg-gate-auto");
-          if (manual) manual.style.display = on ? "none" : "";
-          if (auto) auto.style.display = on ? "" : "none";
+          autoNow = localStorage.getItem("wg-autoplay") === "1";
         } catch {
           /* ignore */
         }
-      })
-      .catch(() => {});
-    await gate();
+        const cb = document.getElementById("wg-autoplay-cb");
+        if (cb) {
+          cb.checked = autoNow;
+          cb.addEventListener("change", () => {
+            try {
+              localStorage.setItem("wg-autoplay", cb.checked ? "1" : "0");
+            } catch {
+              /* ignore */
+            }
+            const manual = document.getElementById("wg-gate-manual");
+            const auto = document.getElementById("wg-gate-auto");
+            if (manual) manual.style.display = cb.checked ? "none" : "";
+            if (auto) auto.style.display = cb.checked ? "" : "none";
+          });
+        }
+        const manual = document.getElementById("wg-gate-manual");
+        const auto = document.getElementById("wg-gate-auto");
+        if (manual) manual.style.display = autoNow ? "none" : "";
+        if (auto) auto.style.display = autoNow ? "" : "none";
+        const runBtn = document.getElementById("wg-run");
+        if (runBtn) {
+          runBtn.removeAttribute("data-wg-acked");
+          runBtn.addEventListener(
+            "click",
+            (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              runBtn.setAttribute("data-wg-acked", "1");
+            },
+            { once: true },
+          );
+        }
+      },
+      {
+        index: i,
+        total: slides.length,
+        caption: s.caption,
+        detail: s.detail || "",
+        tag: s.tag || "",
+        blockName,
+        isLast,
+        autoNow: false,
+        episodeNumber: episodeNumber !== undefined ? episodeNumber : null,
+        episodeTitle,
+      },
+    );
+    const started = Date.now();
+    for (;;) {
+      const acked = await page
+        .evaluate(() => {
+          const btn = document.getElementById("wg-run");
+          return !!(btn && btn.getAttribute("data-wg-acked") === "1");
+        })
+        .catch(() => false);
+      if (acked) break;
+      const auto = await page
+        .evaluate(() => {
+          try {
+            return localStorage.getItem("wg-autoplay") === "1";
+          } catch {
+            return false;
+          }
+        })
+        .catch(() => false);
+      if (auto && Date.now() - started >= autoplayMs) break;
+      await new Promise((res) => setTimeout(res, 100));
+    }
   }
   await hideRing(page);
 }
@@ -1915,14 +1967,34 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   // already is.
   page.setViewportSize = async () => {};
   let resolveNext = null;
+  // Render-to-gate race: a slide/step panel's Next button is wired to
+  // window.__wgNext BEFORE gate() calls waitForNext() (there is at least
+  // one more await - the autoplay-sync evaluate - in between on the
+  // presentSlides path). A click landing in that small window used to be
+  // dropped silently (resolveNext was still null) - the panel then looked
+  // "stuck" forever since gate() started listening AFTER the click already
+  // fired and no second click ever came. Queue it instead: the very next
+  // waitForNext() call picks up a pending click immediately.
+  let pendingNext = null;
   await page.exposeFunction("__wgNext", (edits) => {
     if (resolveNext) {
       const r = resolveNext;
       resolveNext = null;
       r(edits);
+    } else {
+      pendingNext = edits;
     }
   });
-  const waitForNext = () => new Promise((res) => (resolveNext = res));
+  const waitForNext = () =>
+    new Promise((res) => {
+      if (pendingNext !== null) {
+        const edits = pendingNext;
+        pendingNext = null;
+        res(edits);
+        return;
+      }
+      resolveNext = res;
+    });
   // WAYGRAPH_AUTOPLAY=1 only sets the STARTING checkbox state now - the
   // panel's own "Auto-advance" checkbox can flip it live, mid-run, and a
   // manual click always wins over an in-flight autoplay wait regardless of
@@ -2166,6 +2238,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         title,
         blockName: r.block.name,
         fast: pacing.fast,
+        episodeNumber: r.episodeNumber,
+        episodeTitle: r.episodeTitle,
+        autoplayMs,
       });
     }
     let highlights;
@@ -2440,8 +2515,13 @@ async function main() {
     }
   }
   const step = process.env.WAYGRAPH_STEP === "1";
-  // Stepping through headless defeats the point - a human can't watch it.
-  const headed = process.env.WAYGRAPH_HEADED === "1" || step;
+  // Stepping through headless defeats the point for a MANUAL demo - a
+  // human can't watch it. But an explicit WAYGRAPH_HEADED=0 always wins
+  // over that default: --auto-play-video sets STEP=1 (it still needs the
+  // overlay/narration machinery) AND HEADED=0 (unattended + recorded,
+  // nobody has to watch a live window for it to be right).
+  const headed =
+    process.env.WAYGRAPH_HEADED === "0" ? false : process.env.WAYGRAPH_HEADED === "1" || step;
   // Step mode defaults to a visible pace (each fill/click actually shows on
   // screen instead of snapping in) unless the human overrides it - an
   // explicit WAYGRAPH_SLOWMO=0 still means "off".
@@ -2843,13 +2923,22 @@ async function runTryDemo(): Promise<void> {
   if (!destDir) return;
 
   process.env.WAYGRAPH_BASE_URL ??= "https://www.saucedemo.com";
-  // Default: headed stepper, manual Next. --video records that session (not headless rush).
-  process.env.WAYGRAPH_HEADED ??= "1";
   process.env.WAYGRAPH_STEP ??= "1";
   process.env.WAYGRAPH_AUTOPLAY ??= "0";
-  // Explicit --no-step --video = unattended headless .webm only.
-  if (process.env.WAYGRAPH_VIDEO && process.env.WAYGRAPH_STEP === "0") {
+  // Explicit --no-step --video = unattended headless .webm only (the
+  // documented cloud/CI recipe above) - nobody needs to watch a live
+  // window for Playwright's own recordVideo to capture the right thing.
+  // This must be decided BEFORE the headed default below, or the
+  // unconditional "??=" there always wins and the documented recipe never
+  // actually runs headless.
+  const unattendedVideo = Boolean(process.env.WAYGRAPH_VIDEO) && process.env.WAYGRAPH_STEP === "0";
+  if (unattendedVideo) {
     process.env.WAYGRAPH_AUTOPLAY ??= "1";
+    process.env.WAYGRAPH_HEADED ??= "0";
+  } else {
+    // Default: headed stepper, manual Next. --video records that session
+    // too (not a headless rush) as long as --step is still on.
+    process.env.WAYGRAPH_HEADED ??= "1";
   }
 
   const videoTo = process.env.WAYGRAPH_VIDEO;
@@ -3205,6 +3294,9 @@ function parseRunFlags(argv: string[]): RunFlags {
       out.autoplay = false;
     } else if (a === "--auto-play-video") {
       out.autoPlayVideo = true;
+    } else if (a === "--auto-play-video-head") {
+      out.autoPlayVideo = true;
+      out.nonHeadless = true;
     } else if (a === "--fast") {
       out.fast = true;
     } else if (a === "--full") {
@@ -3292,7 +3384,16 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean; a
     }
     if (flags.autoplay === undefined) flags.autoplay = true;
     if (flags.video === undefined) flags.video = "";
-    if (flags.step === undefined) flags.step = true;
+    // Overlay narration (captions/rings/slides) needs step mode to run, but
+    // --auto-play-video is unattended-and-recorded by design - no human
+    // has to watch a live window for Playwright's own recordVideo to
+    // capture the right thing. Headless by default; --non-headless (or the
+    // --auto-play-video-head alias, parsed above) opts back into a
+    // visible browser for someone who wants to watch it live too.
+    process.env.WAYGRAPH_STEP = "1";
+    if (!flags.nonHeadless && process.env.WAYGRAPH_HEADED === undefined) {
+      process.env.WAYGRAPH_HEADED = "0";
+    }
   }
   if ((flags.fast || flags.fullStepper) && !opts?.allowDemoUi) {
     console.error("waygraph: --fast / --full are demo-only flags");
@@ -3501,7 +3602,8 @@ Primary (less is more):
                  --auto-next               Auto-advance steps (alias: --autoplay)
                  --fast                    Faster transitions + shorter auto-next gates
                  --full                    Classic wrap-all block chips (default: carousel)
-                 --auto-play-video         QA: --auto-next + --video (+ step)
+                 --auto-play-video         Unattended + recorded: --auto-next + --video (+ step); headless by default
+                 --auto-play-video-head    Same, but keep the browser visible (--non-headless)
                  --video-viewport WxH       Recording size (default demo: 1920x1080)
                  --title / --base-url
   waygraph run   [--blocks <flow|file|spec>]  Execute (no overlay unless --step)

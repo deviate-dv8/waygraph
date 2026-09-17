@@ -54,12 +54,17 @@ export function textEquals(selector: string, expected: string): Trait {
   };
 }
 
-/** Passes once `selector` is visible on the page, waiting for it to appear. */
+/**
+ * Passes once at least one element matching `selector` is visible on the page,
+ * waiting for it to appear. Uses `.first()` so list selectors (e.g. one row per
+ * message/document) don't trip Playwright strict mode - the check means
+ * "something matching is visible", not "the selector is unambiguous".
+ */
 export function visible(selector: string): Trait {
   return {
     name: `visible(${selector})`,
     async check(page) {
-      await page.locator(selector).waitFor({ state: "visible" });
+      await page.locator(selector).first().waitFor({ state: "visible" });
       return true;
     },
   };

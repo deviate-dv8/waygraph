@@ -95,8 +95,12 @@
             <td><code>npx waygraph demo --blocks shopFlow --auto-next</code></td>
           </tr>
           <tr>
-            <td>QA: watch + record</td>
+            <td>Unattended + recorded (headless)</td>
             <td><code>npx waygraph demo --blocks shopFlow --auto-play-video</code></td>
+          </tr>
+          <tr>
+            <td>Same, but watch it live too</td>
+            <td><code>npx waygraph demo --blocks shopFlow --auto-play-video-head</code></td>
           </tr>
           <tr>
             <td>Ad-hoc Blocks + mem seed</td>
@@ -162,7 +166,15 @@
           <tr>
             <td><code>--auto-play-video</code></td>
             <td>demo only</td>
-            <td>QA combo: <code>--auto-next</code> + <code>--video</code> (+ step).</td>
+            <td>
+              <code>--auto-next</code> + <code>--video</code> (+ step) - unattended and
+              recorded, so <strong>headless by default</strong> (no live window needed).
+            </td>
+          </tr>
+          <tr>
+            <td><code>--auto-play-video-head</code></td>
+            <td>demo only</td>
+            <td>Same as <code>--auto-play-video</code>, but keeps the browser visible (implies <code>--non-headless</code>).</td>
           </tr>
           <tr>
             <td><code>--non-headless</code></td>
