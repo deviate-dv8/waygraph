@@ -39,6 +39,7 @@ export {
 export {
   resolveHighlightSlots,
   resolveSlides,
+  runStubPhase,
   resolveFixtureDwellMs,
   resolveSlideDwellMs,
   formatHighlightCaption,
@@ -83,6 +84,10 @@ export type {
   HighlightStyleDefaults,
   DemoPace,
   DemoPaceName,
+  StubCtx,
+  StubLifecycleFn,
+  StubPhaseResult,
+  StubPhaseFixtures,
 } from "./highlights.js";
 export type {
   Flow,

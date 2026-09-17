@@ -30,46 +30,40 @@ Parked / in-flight goals so overrides do not lose the main track.
 
 ## Fixture / stepper requests (NOW - 2026-09-17)
 
-User / tester asks - craft episodes with checklist todos, reveal off-screen targets, optional zoom, episode on mini stepper.
+Open **block lifecycle** stubs (not closed slot objects). Episode fixtures
+(todos / zoom) are set inside `stubBefore(ctx)` / `stubAfter(ctx)`.
 
 | Item | Status | Notes |
 |------|--------|-------|
-| **Todo checklist fixtures** | DONE (0.12.23) | `todos` + `todoIndex` on stubs/fixtures; panel checklist |
-| **Auto-scroll into view** | DONE (0.12.23) | Vert + horiz before ring (overflow ancestors too) |
-| **Zoom fixtures** | DONE (0.12.23) | `zoom: number` scales target while ring/slide shows |
+| **Open stub lifecycle** | DONE (0.12.24) | `stubBefore(ctx) { ctx.todos(...); ctx.ring(...) }` |
+| **Todo checklist fixtures** | DONE (0.12.24) | `ctx.todos` + `ctx.todoIndex` (bump for sequential plans) |
+| **Auto-scroll into view** | DONE (0.12.23) | Vert + horiz before ring |
+| **Zoom fixtures** | DONE (0.12.24) | `ctx.zoom(n)` episode default; or per-ring `zoom` |
 | **Mini stepper shows episode** | DONE (0.12.23) | Collapsed chrome: `Ep N · step · block` |
 
-### Authoring sketch (todos + zoom)
+### Authoring (what it is)
 
 ```ts
-stubBefore: {
-  plan: {
-    selector: "#login-button",
-    label: "Sign in plan",
-    todoIndex: 0, // 0 = current; before = done; after = pending
-    todos: ["Enter email", "Enter password", "Click Sign in"],
-    zoom: 1.35, // optional magnify target while this ring is up
-  },
-}
+stubBefore: (ctx) => {
+  ctx.todos(["Enter email", "Enter password", "Click Sign in"]);
+  ctx.todoIndex(0); // bump in later phases / later blocks
+  ctx.zoom(1.35);    // optional default magnify
+  ctx.highlights({
+    email: { selector: "#email", label: "Email" },
+    submit: { selector: "#login-button", label: "Sign in" },
+  });
+  // or: ctx.ring("email", { selector: "#email", label: "Email" });
+},
 
-// Sequential: bump todoIndex (or mark done) in the phase function
-stubBefore: (out) => ({
-  plan: {
-    selector: "#login-button",
-    label: "Sign in plan",
-    todoIndex: out.__todoStep ?? 1,
-    todos: ["Enter email", "Enter password", "Click Sign in"],
-  },
-})
-
-withHighlightFixtures(ep2, {
-  "submit-login": {
-    stubBefore: {
-      plan: { label: "AC checklist", todoIndex: 1, todos: ["Email", "Password", "Submit"] },
-    },
-  },
-});
+stubAfter: (ctx) => {
+  ctx.todos(["Enter email", "Enter password", "Click Sign in"]);
+  ctx.todoIndex(2);
+  ctx.ring("inv", { selector: ".inventory_list", label: "Landed" });
+},
 ```
+
+Object map `{ email: { selector, label } }` remains a **highlight-only shorthand**.
+Flow `withHighlightFixtures` still patches ring labels/tags per slot.
 
 ## Later / nice-to-have
 

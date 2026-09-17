@@ -1469,15 +1469,9 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
   checkpoint: Out["__state"];
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
-  stubBefore?:
-    | import("./highlights.js").HighlightStubPhase
-    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
-  stubAfter?:
-    | import("./highlights.js").HighlightStubPhase
-    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
-  stubOnError?:
-    | import("./highlights.js").HighlightStubPhase
-    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
+  stubBefore?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
   /** @deprecated Prefer stubAfter. */
   highlights?:
     | readonly WaygraphHighlight[]
@@ -1593,15 +1587,9 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   click: string | ((mem: MemPage) => string);
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
-  stubBefore?:
-    | import("./highlights.js").HighlightStubPhase
-    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
-  stubAfter?:
-    | import("./highlights.js").HighlightStubPhase
-    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
-  stubOnError?:
-    | import("./highlights.js").HighlightStubPhase
-    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
+  stubBefore?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
   /** @deprecated Prefer stubAfter. */
   highlights?:
     | readonly WaygraphHighlight[]
@@ -1676,15 +1664,9 @@ export type PageBlockOptions<Out extends Checkpoint<string>> = {
   /** Checkpoint tag for this screen (hub). */
   checkpoint: Out["__state"];
   verify?: Trait[] | ((out: Out) => Trait[]);
-  stubBefore?:
-    | import("./highlights.js").HighlightStubPhase
-    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
-  stubAfter?:
-    | import("./highlights.js").HighlightStubPhase
-    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
-  stubOnError?:
-    | import("./highlights.js").HighlightStubPhase
-    | ((out: Out) => import("./highlights.js").HighlightStubPhase);
+  stubBefore?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
   /** @deprecated Prefer stubAfter. */
   highlights?:
     | readonly WaygraphHighlight[]

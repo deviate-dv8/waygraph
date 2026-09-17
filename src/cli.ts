@@ -224,6 +224,7 @@ import { tmpdir } from "node:os";
 import {
   resolveHighlightSlots,
   resolveSlides,
+  runStubPhase,
   resolveFixtureDwellMs,
   resolveSlideDwellMs,
   formatHighlightCaption,
@@ -1263,8 +1264,11 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
           size: h.size,
           weight: h.weight,
         });
-        if (h.todos && h.todos.length) {
-          const rows = normalizeTodos(h.todos, h.todoIndex);
+        if ((opts && opts.todos && opts.todos.length) || (h.todos && h.todos.length)) {
+          const rows =
+            opts && opts.todos && opts.todos.length
+              ? opts.todos
+              : normalizeTodos(h.todos, h.todoIndex);
           await page
             .evaluate((todos) => {
               const ul = document.getElementById("wg-todos");
@@ -2542,9 +2546,11 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       !!r.wasFastForward;
     const fixtures = r.highlightFixtures;
     const flowStyle = r.highlightStyle;
-    stubBeforeRef.current = resolveHighlightSlots(r.block, "stubBefore", { fixtures }).map((h) =>
+    const stubBeforePhase = await runStubPhase(r.block, "stubBefore", { fixtures });
+    stubBeforeRef.current = stubBeforePhase.highlights.map((h) =>
       applyHighlightStyleDefaults(h, flowStyle),
     );
+    const stubBeforeTodos = stubBeforePhase.todos || [];
     const isNavBlock = r.block.__waygraphKind === "nav";
     const autoNow = await currentAutoplay();
     // Auto-next: tuck stepper on NavBlocks so the page transition fills the frame.
@@ -2590,12 +2596,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       episodeTitle: r.episodeTitle,
       stepperMode,
       forceCollapsed,
-      todos: (() => {
-        for (const h of stubBeforeRef.current || []) {
-          if (h.todos && h.todos.length) return normalizeTodos(h.todos, h.todoIndex);
-        }
-        return [];
-      })(),
+      todos: stubBeforeTodos,
       ...paceSpeak,
     });
     const edits = await gate();
@@ -2655,9 +2656,11 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
             }
           })
           .catch(() => {});
-        const errHighlights = resolveHighlightSlots(r.block, "stubOnError", {
+        const errPhase = await runStubPhase(r.block, "stubOnError", {
           fixtures: fixturesOnError,
-        }).map((h) => {
+          error: err,
+        });
+        const errHighlights = errPhase.highlights.map((h) => {
           const styled = applyHighlightStyleDefaults(h, r.highlightStyle);
           return {
             selector: styled.selector,
@@ -2667,14 +2670,13 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
             tone: styled.tone,
             size: styled.size,
             weight: styled.weight,
-            todos: styled.todos,
-            todoIndex: styled.todoIndex,
             zoom: styled.zoom,
           };
         });
         await cycleHighlightRings(page, errHighlights, !!pacing.gatesFast, {
           defaultHoldMs: 2000,
           pace: pacing.demoPace,
+          todos: errPhase.todos,
         });
       }
       // A thrown act()/observe()/a failed verify Trait used to just crash
@@ -2740,24 +2742,26 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       });
     }
     let highlights;
+    let stubAfterTodos = [];
     if (hasAuthoredStubAfter(r.block, result, fixturesAfter)) {
-      highlights = resolveHighlightSlots(r.block, "stubAfter", { out: result, fixtures: fixturesAfter }).map(
-        (h) => {
-          const styled = applyHighlightStyleDefaults(h, r.highlightStyle);
-          return {
-            selector: styled.selector,
-            label: formatHighlightCaption(styled),
-            duration: styled.duration,
-            fastMode: styled.fastMode,
-            tone: styled.tone,
-            size: styled.size,
-            weight: styled.weight,
-            todos: styled.todos,
-            todoIndex: styled.todoIndex,
-            zoom: styled.zoom,
-          };
-        },
-      );
+      const afterPhase = await runStubPhase(r.block, "stubAfter", {
+        out: result,
+        fixtures: fixturesAfter,
+      });
+      stubAfterTodos = afterPhase.todos || [];
+      highlights = afterPhase.highlights.map((h) => {
+        const styled = applyHighlightStyleDefaults(h, r.highlightStyle);
+        return {
+          selector: styled.selector,
+          label: formatHighlightCaption(styled),
+          duration: styled.duration,
+          fastMode: styled.fastMode,
+          tone: styled.tone,
+          size: styled.size,
+          weight: styled.weight,
+          zoom: styled.zoom,
+        };
+      });
     } else {
       highlights = extractVerifyHighlights(r.block, result.__state).map((h) =>
         applyHighlightStyleDefaults(h, r.highlightStyle),
@@ -2782,12 +2786,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       episodeNumber: r.episodeNumber,
       episodeTitle: r.episodeTitle,
       stepperMode,
-      todos: (() => {
-        for (const h of highlights || []) {
-          if (h.todos && h.todos.length) return normalizeTodos(h.todos, h.todoIndex);
-        }
-        return [];
-      })(),
+      todos: stubAfterTodos,
       // After a nav under auto-next, stay compact until the next action block expands.
       forceCollapsed: !!process.env.WAYGRAPH_VIDEO || ((await currentAutoplay()) && isNavBlock),
     });

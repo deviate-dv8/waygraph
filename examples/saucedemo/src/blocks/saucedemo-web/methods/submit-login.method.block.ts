@@ -45,20 +45,29 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
       out.__state === "LoggedIn"
         ? [Trait.url({ pathname: "/inventory.html" })]
         : [Trait.visible('[data-test="error"]')],
-    stubBefore: {
-      username: { selector: "#user-name", label: "Username" },
-      password: { selector: "#password", label: "Password" },
-      submit: { selector: "#login-button", label: "Login" },
+    // Open lifecycle: set fixtures + rings inside the fn (not a closed slot object).
+    stubBefore: (ctx) => {
+      ctx.todos(["Enter username", "Enter password", "Click Login"]);
+      ctx.todoIndex(0);
+      ctx.highlights({
+        username: { selector: "#user-name", label: "Username" },
+        password: { selector: "#password", label: "Password" },
+        submit: { selector: "#login-button", label: "Login" },
+      });
     },
-    stubAfter: {},
+    stubAfter: (ctx) => {
+      // Sequential plan: bump index after a successful submit beat.
+      ctx.todos(["Enter username", "Enter password", "Click Login"]);
+      ctx.todoIndex(2);
+    },
     // Fail-path rings (demo step throw only) - locked-out / wrong-password
     // bug-repro narration; success never shows these.
-    stubOnError: {
-      error: {
+    stubOnError: (ctx) => {
+      ctx.ring("error", {
         selector: '[data-test="error"]',
         label: "Login error banner",
         duration: true,
-      },
+      });
     },
   },
 });

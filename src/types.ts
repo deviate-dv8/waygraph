@@ -17,6 +17,12 @@ export type {
   HighlightStubPhaseOrFn,
   HighlightFixtureMap,
   ResolvedHighlight,
+  StubCtx,
+  StubLifecycleFn,
+  StubPhaseResult,
+  StubPhaseFixtures,
+  WaygraphTodoItem,
+  WaygraphTodoInput,
 } from "./highlights.js";
 
 /**
@@ -114,22 +120,34 @@ export interface Instruction<
    */
   verify?: Trait[] | ((out: Out) => Trait[]);
   /**
-   * Catch-all demo slots shown **before / during** `act` (fill/click rings).
-   * Named map; `{}` is valid. Flow {@link HighlightFixtureMap} overrides labels.
-   * @example stubBefore: { email: { selector: "#email", label: "Email" } }
+   * Open block lifecycle **before / during** `act` (demo rings + fixtures).
+   * Prefer `stubBefore(ctx) { ctx.todos(...); ctx.ring(...) }` — not a closed
+   * slot object. Object map `{ email: { selector, label } }` remains a shorthand.
+   * Flow {@link HighlightFixtureMap} still overrides ring labels.
+   * @example stubBefore: (ctx) => {
+   *   ctx.todos(["Email", "Password", "Submit"]);
+   *   ctx.todoIndex(0);
+   *   ctx.highlights({ email: { selector: "#email", label: "Email" } });
+   * }
    */
   stubBefore?: HighlightStubPhaseOrFn<Out>;
   /**
-   * Catch-all demo slots shown **after** resolve (step panel rings).
-   * Named map; `{}` is valid. Prefer this over legacy {@link Instruction.highlights}.
-   * @example stubAfter: { badge: { selector: ".cart", label: "Cart updated" } }
+   * Open block lifecycle **after** resolve (step panel rings + fixtures).
+   * Prefer `stubAfter(ctx) { ... }`. Object map shorthand still works.
+   * Prefer this over legacy {@link Instruction.highlights}.
+   * @example stubAfter: (ctx) => {
+   *   ctx.todoIndex(2);
+   *   ctx.ring("badge", { selector: ".cart", label: "Cart updated" });
+   * }
    */
   stubAfter?: HighlightStubPhaseOrFn<Out>;
   /**
-   * Demo slots shown when a **step throws** (failed verify / act error) -
+   * Open block lifecycle when a **step throws** (failed verify / act error) -
    * before the error panel. Success-only {@link Instruction.stubAfter} never runs
-   * here; authors keep distinct BUG/FAIL copy. Named map; `{}` is valid.
-   * @example stubOnError: { card: { selector: ".alt-1", label: "Card at failure" } }
+   * here. Prefer `stubOnError(ctx) { ... }`.
+   * @example stubOnError: (ctx) => {
+   *   ctx.ring("card", { selector: ".alt-1", label: "Card at failure", tag: "BUG" });
+   * }
    */
   stubOnError?: HighlightStubPhaseOrFn<Out>;
   /**

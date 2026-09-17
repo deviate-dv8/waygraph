@@ -2,6 +2,10 @@
  * Block stubBefore / stubAfter / stubOnError + flow highlightFixtures + demo slides.
  * Demo narration only - never affects runGraph pass/fail.
  *
+ * Stubs are **open block lifecycles** - prefer `stubBefore(ctx) { ... }`, not a
+ * closed slot object. Inside the fn authors set fixtures (todos, zoom) and rings.
+ * Object maps remain a shorthand for highlight-only slots.
+ *
  * Lifecycle (stubs) ≠ yap slides: stubs are fill/after/error rings tied to the block;
  * slides are multi-step captions with Next between them (long-process explain).
  *
@@ -29,7 +33,7 @@ export type FixtureDurationFields = {
 
 /**
  * One checklist row for episode planning (demo panel).
- * Prefer {@link WaygraphHighlightStub.todoIndex} for sequential done/current.
+ * Set via {@link StubCtx.todos} / {@link StubCtx.todoIndex} inside the lifecycle.
  */
 export type WaygraphTodoItem = {
   text: string;
@@ -40,6 +44,15 @@ export type WaygraphTodoItem = {
 };
 
 export type WaygraphTodoInput = string | WaygraphTodoItem;
+
+/** Episode-level fixtures authored inside stubBefore/After/OnError(ctx). */
+export type StubPhaseFixtures = {
+  todos?: readonly WaygraphTodoInput[];
+  /** Which todo is current (0-based). Rows before = done, after = pending. */
+  todoIndex?: number;
+  /** Default zoom for rings that omit their own zoom. */
+  zoom?: number;
+};
 
 /** One named highlight slot on a block (selector + caption). */
 export interface WaygraphHighlightStub extends FixtureDurationFields {
@@ -68,19 +81,9 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
    */
   weight?: HighlightWeight;
   /**
-   * Simple episode checklist (demo panel). Same lifecycle as this stub
-   * (stubBefore / stubAfter / stubOnError). Strings or `{ text, done?, current? }`.
-   */
-  todos?: readonly WaygraphTodoInput[];
-  /**
-   * Which todo is current (0-based). Rows before = done, after = pending.
-   * Authored `done`/`current` on an item still win when set.
-   * Bump in a stub phase function for sequential plans.
-   */
-  todoIndex?: number;
-  /**
-   * Magnify the target element while this ring is shown (e.g. `1.35`).
+   * Magnify this target while its ring is shown (e.g. `1.35`).
    * Cleared when the ring hides / next highlight starts. `1` or omit = off.
+   * Episode default: {@link StubCtx.zoom}.
    */
   zoom?: number;
 }
@@ -88,17 +91,73 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
 /** Flow fixture patch: label required; selector optional (inherits from stub). */
 export type WaygraphHighlightFixture = Partial<Pick<WaygraphHighlightStub, "selector">> &
   Required<Pick<WaygraphHighlightStub, "label">> &
-  Pick<
-    WaygraphHighlightStub,
-    "detail" | "tag" | "tone" | "size" | "weight" | "todos" | "todoIndex" | "zoom"
-  > &
+  Pick<WaygraphHighlightStub, "detail" | "tag" | "tone" | "size" | "weight" | "zoom"> &
   FixtureDurationFields;
 
 export type HighlightStubPhase = Record<string, WaygraphHighlightStub>;
 
+/**
+ * Open stub lifecycle context. Authors set rings + episode fixtures freely —
+ * not restricted to returning a closed slot object.
+ *
+ * @example
+ * stubBefore: (ctx) => {
+ *   ctx.todos(["Enter email", "Enter password", "Click Sign in"]);
+ *   ctx.todoIndex(0);
+ *   ctx.zoom(1.35);
+ *   ctx.highlights({
+ *     email: { selector: "#email", label: "Email" },
+ *     submit: { selector: "#login-button", label: "Sign in" },
+ *   });
+ * }
+ * // Sequential plan: bump todoIndex in a later phase / later block's stubBefore
+ * stubAfter: (ctx) => {
+ *   ctx.todos(["Enter email", "Enter password", "Click Sign in"]);
+ *   ctx.todoIndex(2);
+ *   ctx.ring("inventory", { selector: ".inventory_list", label: "Landed" });
+ * }
+ */
+export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
+  /** Present after resolve (stubAfter). Undefined for stubBefore. */
+  readonly out: Out | undefined;
+  /** Present on stubOnError when the step threw. */
+  readonly error: unknown | undefined;
+  /** Replace named highlight rings for this phase. */
+  highlights(slots: HighlightStubPhase): void;
+  /** Set / overwrite one named ring. */
+  ring(id: string, stub: WaygraphHighlightStub): void;
+  /** Episode checklist (demo panel). */
+  todos(items: readonly WaygraphTodoInput[]): void;
+  /** Current checklist index (bump for sequential plans). */
+  todoIndex(n: number): void;
+  /** Default zoom for rings without their own zoom. */
+  zoom(n: number): void;
+  /** Batch-set rings + episode fixtures. */
+  set(partial: { highlights?: HighlightStubPhase } & StubPhaseFixtures): void;
+};
+
+export type StubLifecycleFn<Out extends Checkpoint<string>> = (
+  ctx: StubCtx<Out>,
+) => void | HighlightStubPhase | Promise<void | HighlightStubPhase>;
+
+/**
+ * Block stub authoring:
+ * - **preferred:** open lifecycle `stubBefore(ctx) { ctx.todos(...); ctx.ring(...) }`
+ * - **shorthand:** static slot map `{ email: { selector, label } }`
+ * - **legacy:** `(out) => slotMap` still accepted (treated as highlights only)
+ */
 export type HighlightStubPhaseOrFn<Out extends Checkpoint<string>> =
   | HighlightStubPhase
+  | StubLifecycleFn<Out>
   | ((out: Out) => HighlightStubPhase);
+
+/** Result of running a stub phase (rings + episode fixtures). */
+export type StubPhaseResult = {
+  highlights: ResolvedHighlight[];
+  todos: WaygraphTodoItem[];
+  todoIndex?: number;
+  zoom?: number;
+};
 
 /**
  * One yap/slide in a multi-step demo caption sequence.
@@ -495,18 +554,13 @@ export function normalizeTodos(
   });
 }
 
-function pickTodoFields(
-  base: Pick<WaygraphHighlightStub, "todos" | "todoIndex" | "zoom"> | undefined,
-  patch: Pick<WaygraphHighlightFixture, "todos" | "todoIndex" | "zoom"> | undefined,
-): Pick<WaygraphHighlightStub, "todos" | "todoIndex" | "zoom"> {
-  const out: Pick<WaygraphHighlightStub, "todos" | "todoIndex" | "zoom"> = {};
-  const todos = patch?.todos !== undefined ? patch.todos : base?.todos;
-  const todoIndex = patch?.todoIndex !== undefined ? patch.todoIndex : base?.todoIndex;
+function pickZoom(
+  base: Pick<WaygraphHighlightStub, "zoom"> | undefined,
+  patch: Pick<WaygraphHighlightFixture, "zoom"> | undefined,
+): Pick<WaygraphHighlightStub, "zoom"> {
   const zoom = patch?.zoom !== undefined ? patch.zoom : base?.zoom;
-  if (todos !== undefined) out.todos = todos;
-  if (todoIndex !== undefined) out.todoIndex = todoIndex;
-  if (zoom !== undefined && Number.isFinite(zoom) && zoom > 0) out.zoom = zoom;
-  return out;
+  if (zoom !== undefined && Number.isFinite(zoom) && zoom > 0) return { zoom };
+  return {};
 }
 
 function mergeSlot(
@@ -516,7 +570,7 @@ function mergeSlot(
   if (!base && !patch) return null;
   const dwell = pickDurationFields(base, patch);
   const style = pickStyleFields(base, patch);
-  const todos = pickTodoFields(base, patch);
+  const zoom = pickZoom(base, patch);
   if (!base && patch) {
     if (!patch.selector) return null;
     return {
@@ -526,7 +580,7 @@ function mergeSlot(
       ...(patch.tag ? { tag: patch.tag } : {}),
       ...style,
       ...dwell,
-      ...todos,
+      ...zoom,
     };
   }
   if (base && !patch) {
@@ -535,7 +589,7 @@ function mergeSlot(
       ...(base.tone ? { tone: normalizeHighlightTone(base.tone) } : {}),
       ...(base.size ? { size: normalizeHighlightSize(base.size) } : {}),
       ...(base.weight ? { weight: normalizeHighlightWeight(base.weight) } : {}),
-      ...pickTodoFields(base, undefined),
+      ...pickZoom(base, undefined),
     };
   }
   return {
@@ -549,8 +603,88 @@ function mergeSlot(
     ...(patch!.tag !== undefined ? { tag: patch!.tag } : base!.tag ? { tag: base!.tag } : {}),
     ...style,
     ...dwell,
-    ...todos,
+    ...zoom,
   };
+}
+
+type StubBagState = {
+  highlights: HighlightStubPhase;
+  todos?: readonly WaygraphTodoInput[];
+  todoIndex?: number;
+  zoom?: number;
+};
+
+function createStubCtx<Out extends Checkpoint<string>>(
+  bag: StubBagState,
+  opts: { out?: Out; error?: unknown },
+): StubCtx<Out> {
+  return {
+    out: opts.out,
+    error: opts.error,
+    highlights(slots) {
+      bag.highlights = { ...(slots || {}) };
+    },
+    ring(id, stub) {
+      bag.highlights = { ...bag.highlights, [id]: stub };
+    },
+    todos(items) {
+      bag.todos = items;
+    },
+    todoIndex(n) {
+      bag.todoIndex = n;
+    },
+    zoom(n) {
+      if (Number.isFinite(n) && n > 0) bag.zoom = n;
+    },
+    set(partial) {
+      if (partial.highlights) bag.highlights = { ...partial.highlights };
+      if (partial.todos !== undefined) bag.todos = partial.todos;
+      if (partial.todoIndex !== undefined) bag.todoIndex = partial.todoIndex;
+      if (partial.zoom !== undefined && Number.isFinite(partial.zoom) && partial.zoom > 0) {
+        bag.zoom = partial.zoom;
+      }
+    },
+  };
+}
+
+/** Lift legacy per-slot todos (0.12.23) onto the phase bag once. */
+function liftLegacySlotTodos(bag: StubBagState): void {
+  if (bag.todos && bag.todos.length) return;
+  for (const stub of Object.values(bag.highlights)) {
+    const legacy = stub as WaygraphHighlightStub & {
+      todos?: readonly WaygraphTodoInput[];
+      todoIndex?: number;
+    };
+    if (legacy.todos && legacy.todos.length) {
+      bag.todos = legacy.todos;
+      if (legacy.todoIndex !== undefined) bag.todoIndex = legacy.todoIndex;
+      return;
+    }
+  }
+}
+
+function applyDefaultZoom(slots: ResolvedHighlight[], defaultZoom?: number): ResolvedHighlight[] {
+  if (defaultZoom === undefined || !(defaultZoom > 0)) return slots;
+  return slots.map((h) => (h.zoom !== undefined && h.zoom > 0 ? h : { ...h, zoom: defaultZoom }));
+}
+
+function mergePhaseMaps(
+  phaseMap: HighlightStubPhase,
+  fixturePhase: Record<string, WaygraphHighlightFixture> | undefined,
+): ResolvedHighlight[] {
+  const slotIds = new Set([...Object.keys(phaseMap), ...Object.keys(fixturePhase || {})]);
+  const ordered = [...slotIds].sort((a, b) => {
+    const na = Number(a);
+    const nb = Number(b);
+    if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+    return a.localeCompare(b);
+  });
+  const resolved: ResolvedHighlight[] = [];
+  for (const id of ordered) {
+    const merged = mergeSlot(phaseMap[id], fixturePhase?.[id]);
+    if (merged) resolved.push(merged);
+  }
+  return resolved;
 }
 
 function phaseFromLegacyHighlights(
@@ -570,10 +704,108 @@ function phaseFromLegacyHighlights(
   return out;
 }
 
+function readStubRaw(
+  block: Block<any, any>,
+  phase: HighlightStubPhaseName,
+): HighlightStubPhaseOrFn<any> | undefined {
+  const instr = block.instruction as {
+    stubBefore?: HighlightStubPhaseOrFn<any>;
+    stubAfter?: HighlightStubPhaseOrFn<any>;
+    stubOnError?: HighlightStubPhaseOrFn<any>;
+  };
+  if (phase === "stubBefore") return instr.stubBefore;
+  if (phase === "stubAfter") return instr.stubAfter;
+  return instr.stubOnError;
+}
+
+function applyLegacyHighlightsShim(
+  block: Block<any, any>,
+  phase: HighlightStubPhaseName,
+  phaseMap: HighlightStubPhase,
+  out?: Checkpoint<string>,
+): HighlightStubPhase {
+  if (phase !== "stubAfter" || Object.keys(phaseMap).length > 0) return phaseMap;
+  const instr = block.instruction as {
+    highlights?: readonly WaygraphHighlight[] | ((o: any) => readonly WaygraphHighlight[]);
+  };
+  if (!instr.highlights) return phaseMap;
+  let legacy = instr.highlights;
+  if (typeof legacy === "function") {
+    try {
+      legacy = legacy(out ?? { __state: "" });
+    } catch {
+      legacy = [];
+    }
+  }
+  return phaseFromLegacyHighlights(Array.isArray(legacy) ? legacy : []);
+}
+
 /**
- * Resolve ordered highlight slots for a phase, merging flow fixtures over block stubs.
- * Shim: empty stubAfter + legacy `instruction.highlights` -> auto-keyed stubAfter.
- * `stubOnError` is fail-path only (demo step catch) - never run on success.
+ * Run an open stub lifecycle (preferred) or resolve a static slot map.
+ * Returns rings + episode fixtures (todos / todoIndex / zoom).
+ *
+ * @example
+ * const before = await runStubPhase(block, "stubBefore", { fixtures });
+ * // before.todos, before.highlights
+ */
+export async function runStubPhase(
+  block: Block<any, any>,
+  phase: HighlightStubPhaseName,
+  opts?: {
+    out?: Checkpoint<string>;
+    error?: unknown;
+    fixtures?: HighlightFixtureMap;
+  },
+): Promise<StubPhaseResult> {
+  const bag: StubBagState = { highlights: {} };
+  const ctx = createStubCtx(bag, {
+    ...(opts?.out !== undefined ? { out: opts.out } : {}),
+    ...(opts?.error !== undefined ? { error: opts.error } : {}),
+  });
+  const raw = readStubRaw(block, phase);
+
+  if (typeof raw === "function") {
+    try {
+      const ret = await (raw as StubLifecycleFn<any>)(ctx as StubCtx<any>);
+      if (isStubPhase(ret)) {
+        bag.highlights = { ...bag.highlights, ...ret };
+      }
+    } catch {
+      /* best-effort */
+    }
+    // Compat: legacy `(out) => map` that expected Checkpoint (__state on arg)
+    if (Object.keys(bag.highlights).length === 0 && !bag.todos) {
+      try {
+        const legacyOut = (opts?.out ?? { __state: "" }) as Checkpoint<string>;
+        const ret2 = (raw as (o: Checkpoint<string>) => HighlightStubPhase)(legacyOut);
+        if (isStubPhase(ret2)) bag.highlights = { ...ret2 };
+      } catch {
+        /* ignore */
+      }
+    }
+  } else if (isStubPhase(raw)) {
+    bag.highlights = { ...raw };
+  }
+
+  bag.highlights = applyLegacyHighlightsShim(block, phase, bag.highlights, opts?.out);
+  liftLegacySlotTodos(bag);
+
+  const fixturePhase = opts?.fixtures?.[block.name]?.[phase];
+  let highlights = mergePhaseMaps(bag.highlights, fixturePhase);
+  highlights = applyDefaultZoom(highlights, bag.zoom);
+
+  const todos = normalizeTodos(bag.todos, bag.todoIndex);
+  return {
+    highlights,
+    todos,
+    ...(bag.todoIndex !== undefined ? { todoIndex: bag.todoIndex } : {}),
+    ...(bag.zoom !== undefined ? { zoom: bag.zoom } : {}),
+  };
+}
+
+/**
+ * Sync resolve of highlight slots. Prefer {@link runStubPhase} for open
+ * async lifecycles + episode fixtures (todos/zoom).
  */
 export function resolveHighlightSlots(
   block: Block<any, any>,
@@ -583,56 +815,33 @@ export function resolveHighlightSlots(
     fixtures?: HighlightFixtureMap;
   },
 ): ResolvedHighlight[] {
-  const instr = block.instruction as {
-    stubBefore?: HighlightStubPhaseOrFn<any>;
-    stubAfter?: HighlightStubPhaseOrFn<any>;
-    stubOnError?: HighlightStubPhaseOrFn<any>;
-    highlights?: readonly WaygraphHighlight[] | ((out: any) => readonly WaygraphHighlight[]);
-  };
-  let raw: HighlightStubPhaseOrFn<any> | undefined =
-    phase === "stubBefore"
-      ? instr.stubBefore
-      : phase === "stubAfter"
-        ? instr.stubAfter
-        : instr.stubOnError;
-  let phaseMap: HighlightStubPhase = {};
+  const bag: StubBagState = { highlights: {} };
+  const raw = readStubRaw(block, phase);
   if (typeof raw === "function") {
     try {
-      phaseMap = raw(opts?.out ?? { __state: "" }) || {};
+      const ctx = createStubCtx(bag, {
+        ...(opts?.out !== undefined ? { out: opts.out } : {}),
+      });
+      const ret = (raw as StubLifecycleFn<any>)(ctx as StubCtx<any>);
+      if (isStubPhase(ret)) {
+        bag.highlights = { ...bag.highlights, ...ret };
+      }
     } catch {
-      phaseMap = {};
-    }
-  } else if (isStubPhase(raw)) {
-    phaseMap = { ...raw };
-  }
-
-  if (phase === "stubAfter" && Object.keys(phaseMap).length === 0 && instr.highlights) {
-    let legacy = instr.highlights;
-    if (typeof legacy === "function") {
       try {
-        legacy = legacy(opts?.out ?? { __state: "" });
+        const legacyOut = (opts?.out ?? { __state: "" }) as Checkpoint<string>;
+        const ret2 = (raw as (o: Checkpoint<string>) => HighlightStubPhase)(legacyOut);
+        if (isStubPhase(ret2)) bag.highlights = { ...ret2 };
       } catch {
-        legacy = [];
+        bag.highlights = {};
       }
     }
-    phaseMap = phaseFromLegacyHighlights(Array.isArray(legacy) ? legacy : []);
+  } else if (isStubPhase(raw)) {
+    bag.highlights = { ...raw };
   }
-
+  bag.highlights = applyLegacyHighlightsShim(block, phase, bag.highlights, opts?.out);
+  liftLegacySlotTodos(bag);
   const fixturePhase = opts?.fixtures?.[block.name]?.[phase];
-  const slotIds = new Set([...Object.keys(phaseMap), ...Object.keys(fixturePhase || {})]);
-  const ordered = [...slotIds].sort((a, b) => {
-    const na = Number(a);
-    const nb = Number(b);
-    if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-    return a.localeCompare(b);
-  });
-
-  const resolved: ResolvedHighlight[] = [];
-  for (const id of ordered) {
-    const merged = mergeSlot(phaseMap[id], fixturePhase?.[id]);
-    if (merged) resolved.push(merged);
-  }
-  return resolved;
+  return applyDefaultZoom(mergePhaseMaps(bag.highlights, fixturePhase), bag.zoom);
 }
 
 /**
@@ -675,15 +884,31 @@ export function formatHighlightCaption(
   return `${icon}${tag}${primary}`;
 }
 
+function stubPhaseLooksAuthored(
+  block: Block<any, any>,
+  phase: HighlightStubPhaseName,
+  fixtures?: HighlightFixtureMap,
+): boolean {
+  const raw = readStubRaw(block, phase);
+  if (typeof raw === "function") return true;
+  if (isStubPhase(raw) && Object.keys(raw).length > 0) return true;
+  const fx = fixtures?.[block.name]?.[phase];
+  if (fx && Object.keys(fx).length > 0) return true;
+  return false;
+}
+
 /**
- * True when the block authored a non-empty stubAfter (after resolve + shim),
- * including legacy highlights. When true, demo should not use verify-trait fallback.
+ * True when the block authored stubAfter (lifecycle fn, slots, fixtures, or legacy highlights).
+ * When true, demo should not use verify-trait fallback.
  */
 export function hasAuthoredStubAfter(
   block: Block<any, any>,
   out?: Checkpoint<string>,
   fixtures?: HighlightFixtureMap,
 ): boolean {
+  if (stubPhaseLooksAuthored(block, "stubAfter", fixtures)) return true;
+  const instr = block.instruction as { highlights?: unknown };
+  if (instr.highlights) return true;
   return resolveHighlightSlots(block, "stubAfter", {
     ...(out !== undefined ? { out } : {}),
     ...(fixtures !== undefined ? { fixtures } : {}),
@@ -691,13 +916,14 @@ export function hasAuthoredStubAfter(
 }
 
 /**
- * True when stubOnError resolves to at least one ring (block and/or flow fixture).
+ * True when stubOnError is authored (lifecycle fn and/or rings).
  * Demo fail path only - success never consults this.
  */
 export function hasAuthoredStubOnError(
   block: Block<any, any>,
   fixtures?: HighlightFixtureMap,
 ): boolean {
+  if (stubPhaseLooksAuthored(block, "stubOnError", fixtures)) return true;
   return (
     resolveHighlightSlots(block, "stubOnError", {
       ...(fixtures !== undefined ? { fixtures } : {}),
