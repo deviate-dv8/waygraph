@@ -45,23 +45,30 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
       out.__state === "LoggedIn"
         ? [Trait.url({ pathname: "/inventory.html" })]
         : [Trait.visible('[data-test="error"]')],
-    // Open lifecycle: set fixtures + rings inside the fn (not a closed slot object).
+    // Open lifecycle: todos + zoom; stubAfter rings a lower inventory item
+    // so smooth auto-scroll is visible after login.
     stubBefore: (ctx) => {
       ctx.todos(["Enter username", "Enter password", "Click Login"]);
       ctx.todoIndex(0);
+      ctx.zoom(1.25);
       ctx.highlights({
-        username: { selector: "#user-name", label: "Username" },
-        password: { selector: "#password", label: "Password" },
-        submit: { selector: "#login-button", label: "Login" },
+        username: { selector: "#user-name", label: "Username", zoom: 1.3 },
+        password: { selector: "#password", label: "Password", zoom: 1.3 },
+        submit: { selector: "#login-button", label: "Login", zoom: 1.45 },
       });
     },
     stubAfter: (ctx) => {
-      // Sequential plan: bump index after a successful submit beat.
       ctx.todos(["Enter username", "Enter password", "Click Login"]);
       ctx.todoIndex(2);
+      // Inventory is tall - fleece sits lower; demo smooth-scrolls + zooms it.
+      ctx.ring("fleece", {
+        selector: '[data-test="add-to-cart-sauce-labs-fleece-jacket"]',
+        label: "Fleece jacket",
+        detail: "Smooth scroll + zoom",
+        zoom: 1.4,
+        duration: true,
+      });
     },
-    // Fail-path rings (demo step throw only) - locked-out / wrong-password
-    // bug-repro narration; success never shows these.
     stubOnError: (ctx) => {
       ctx.ring("error", {
         selector: '[data-test="error"]',

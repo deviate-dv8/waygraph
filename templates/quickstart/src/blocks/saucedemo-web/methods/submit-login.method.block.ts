@@ -48,15 +48,23 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
     stubBefore: (ctx) => {
       ctx.todos(["Enter username", "Enter password", "Click Login"]);
       ctx.todoIndex(0);
+      ctx.zoom(1.25);
       ctx.highlights({
-        username: { selector: "#user-name", label: "Username" },
-        password: { selector: "#password", label: "Password" },
-        submit: { selector: "#login-button", label: "Login" },
+        username: { selector: "#user-name", label: "Username", zoom: 1.3 },
+        password: { selector: "#password", label: "Password", zoom: 1.3 },
+        submit: { selector: "#login-button", label: "Login", zoom: 1.45 },
       });
     },
     stubAfter: (ctx) => {
       ctx.todos(["Enter username", "Enter password", "Click Login"]);
       ctx.todoIndex(2);
+      ctx.ring("fleece", {
+        selector: '[data-test="add-to-cart-sauce-labs-fleece-jacket"]',
+        label: "Fleece jacket",
+        detail: "Smooth scroll + zoom",
+        zoom: 1.4,
+        duration: true,
+      });
     },
     stubOnError: (ctx) => {
       ctx.ring("error", {
