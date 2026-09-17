@@ -215,11 +215,8 @@ overridable, not one giant Block with no per-step confirmation. `composedBlock.w
 `modStepVerify` patch one step from outside, addressed the same three ways
 `withBlockVerify`/`modBlockVerify` already are - a `composeBlock` result is a plain Block,
 so it drops straight into `defineFlow([start, ..., composed, ..., end])` like any other.
-`waygraph traverse` walks the Block graph (Phase B). Phase D adds `--parallel N`
-(default `--session clone`): bootstrap one context, fork N workers with
-`storageState` + mem snapshot, partition edges by hash, and claim via in-process
-edge leases under `.waygraph-traverse/`. `--session inherit` is refused when
-`parallel > 1`. one opaque demo step that **blitzes** (no per-inner gate, no smooth
+`fastForwardComposeBlock(name, steps)` is the same shape marked for **wall-clock
+fast-forward**: one opaque demo step that **blitzes** (no per-inner gate, no smooth
 cursor theater, Playwright slowMo off for that flow unless `WAYGRAPH_SLOWMO` is set)
 unless expanded. Put **several** FF units in one Flow when you need to race past auth,
 then a heavy dashboard settle, then watch the interesting middle.
@@ -229,7 +226,18 @@ FFCompose into its inner Blocks so a broken login step is visible as its own pan
 Former FF inners keep blitz pacing so wall-clock stays comparable to opaque FF (same
 real acts). `--ff-expand` is the older expand-only flag (same flatten). Saucedemo
 `checkoutFlow` uses `ff-owner-auth` for the login prefix; `loginFlow` stays expanded for
-Sign In narration. See `docs/proposals/traverse-ffcompose-rfc.md`.
+Sign In narration.
+
+`waygraph traverse` walks the Block graph (Phase B+D). `--parallel N` (default
+`--session clone`) bootstraps one context, forks N workers with `storageState` + mem
+snapshot, partitions edges by hash, and claims via in-process edge leases (audit under
+`.waygraph-traverse/`). `--session inherit` is refused when `parallel > 1`. See
+`docs/proposals/traverse-ffcompose-rfc.md`.
+
+**Richer demo narration:** automation rings are **gray**; authored stubs/slides can use
+`tone: "info" | "warning" | "danger" | "success"` (iconified captions). Episode pacing:
+`withDemoPace(flow, "fast" | "slow" | "normal" | "blitz")` or `withBlockPace(block, ...)`
+(FFCompose stays blitz). Living objectives: `docs/proposals/OBJECTIVES.md`.
 `spawnTab(entry, page, mem)` drives a genuinely separate second tab through its own
 Block/Flow, in the same browser context an existing `page` already belongs to - the
 pattern `observe()` could already reach for (it's the only phase allowed to touch

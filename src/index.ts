@@ -29,6 +29,8 @@ export {
   preflight,
   withSessionReset,
   withTitle,
+  withDemoPace,
+  withBlockPace,
   withExpectedFailure,
   withHighlightFixtures,
   chainFlow,
@@ -41,8 +43,13 @@ export {
   formatHighlightCaption,
   hasAuthoredStubAfter,
   hasAuthoredStubOnError,
+  normalizeHighlightTone,
+  normalizeDemoPace,
+  toneIconPrefix,
+  resolveStepDemoPace,
   FIXTURE_DURATION_MS_DEFAULT,
   FIXTURE_DURATION_FAST_MS_DEFAULT,
+  FIXTURE_DURATION_SLOW_MS_DEFAULT,
   SLIDE_DURATION_MS_DEFAULT,
   SLIDE_DURATION_FAST_MS_DEFAULT,
 } from "./highlights.js";
@@ -56,6 +63,8 @@ export type {
   HighlightFixtureMap,
   ResolvedHighlight,
   WaygraphHighlight,
+  HighlightTone,
+  DemoPace,
 } from "./highlights.js";
 export type {
   Flow,

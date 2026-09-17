@@ -5,11 +5,20 @@ const RING_CSS =
   "#wg-ring{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
   "border:2.5px solid #7C3AED;border-radius:10px;box-shadow:0 0 0 4px rgba(124,58,237,.16);" +
   "transition:opacity .3s ease,border-color .15s,box-shadow .15s;}" +
-  "#wg-ring[data-tone=auto]{border-color:#EAB308;box-shadow:0 0 0 4px rgba(234,179,8,.22);}" +
+  // Automation = gray; semantic tones for authored highlights.
+  "#wg-ring[data-tone=auto]{border-color:#9CA3AF;box-shadow:0 0 0 4px rgba(156,163,175,.28);}" +
+  "#wg-ring[data-tone=info]{border-color:#3B82F6;box-shadow:0 0 0 4px rgba(59,130,246,.22);}" +
+  "#wg-ring[data-tone=warning]{border-color:#EAB308;box-shadow:0 0 0 4px rgba(234,179,8,.22);}" +
+  "#wg-ring[data-tone=danger]{border-color:#EF4444;box-shadow:0 0 0 4px rgba(239,68,68,.22);}" +
+  "#wg-ring[data-tone=success]{border-color:#22C55E;box-shadow:0 0 0 4px rgba(34,197,94,.22);}" +
   "#wg-ring-label{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
   "white-space:nowrap;padding:4px 9px;border-radius:7px;background:#7C3AED;color:#fff;" +
   "font:600 12px/1.2 system-ui,sans-serif;transition:opacity .3s ease,background .15s,color .15s;}" +
-  "#wg-ring-label[data-tone=auto]{background:#EAB308;color:#1c1917;}" +
+  "#wg-ring-label[data-tone=auto]{background:#6B7280;color:#fff;}" +
+  "#wg-ring-label[data-tone=info]{background:#2563EB;color:#fff;}" +
+  "#wg-ring-label[data-tone=warning]{background:#EAB308;color:#1c1917;}" +
+  "#wg-ring-label[data-tone=danger]{background:#DC2626;color:#fff;}" +
+  "#wg-ring-label[data-tone=success]{background:#16A34A;color:#fff;}" +
   "#wg-cursor{position:fixed;z-index:2147483647;width:24px;height:24px;pointer-events:none;" +
   "left:0;top:0;opacity:0;margin:0;" +
   "transition:transform var(--wg-cursor-ms,600ms) cubic-bezier(.22,1,.36,1),opacity .2s ease;" +
@@ -17,7 +26,11 @@ const RING_CSS =
   "#wg-click-pulse{position:fixed;z-index:2147483647;width:14px;height:14px;" +
   "margin-left:-7px;margin-top:-7px;border-radius:50%;pointer-events:none;opacity:0;" +
   "border:2px solid #7C3AED;background:rgba(124,58,237,.25);}" +
-  "#wg-click-pulse[data-tone=auto]{border-color:#EAB308;background:rgba(234,179,8,.28);}" +
+  "#wg-click-pulse[data-tone=auto]{border-color:#9CA3AF;background:rgba(156,163,175,.28);}" +
+  "#wg-click-pulse[data-tone=info]{border-color:#3B82F6;background:rgba(59,130,246,.28);}" +
+  "#wg-click-pulse[data-tone=warning]{border-color:#EAB308;background:rgba(234,179,8,.28);}" +
+  "#wg-click-pulse[data-tone=danger]{border-color:#EF4444;background:rgba(239,68,68,.28);}" +
+  "#wg-click-pulse[data-tone=success]{border-color:#22C55E;background:rgba(34,197,94,.28);}" +
   "#wg-click-pulse.wg-pulse{animation:wg-pulse .5s ease-out;}" +
   "@keyframes wg-pulse{0%{opacity:.9;transform:scale(.4);}100%{opacity:0;transform:scale(2.4);}}" +
   "#wg-banner{position:fixed;z-index:2147483647;top:14px;left:14px;" +
@@ -77,7 +90,15 @@ export async function installDemoChrome(
         window.__wgClickPulse = (x: number, y: number, tone?: string) => {
           const pulse = document.getElementById("wg-click-pulse");
           if (!pulse) return;
-          pulse.dataset.tone = tone === "auto" ? "auto" : "planned";
+          const raw = (tone || "planned") + "";
+          pulse.dataset.tone =
+            raw === "auto" ||
+            raw === "info" ||
+            raw === "warning" ||
+            raw === "danger" ||
+            raw === "success"
+              ? raw
+              : "planned";
           pulse.style.left = x + "px";
           pulse.style.top = y + "px";
           pulse.classList.remove("wg-pulse");
@@ -92,7 +113,15 @@ export async function installDemoChrome(
           const ring = document.getElementById("wg-ring");
           const ringLabel = document.getElementById("wg-ring-label");
           if (!ring || !ringLabel) return;
-          const t = tone === "auto" ? "auto" : "planned";
+          const raw = (tone || "planned") + "";
+          const t =
+            raw === "auto" ||
+            raw === "info" ||
+            raw === "warning" ||
+            raw === "danger" ||
+            raw === "success"
+              ? raw
+              : "planned";
           ring.dataset.tone = t;
           ringLabel.dataset.tone = t;
           ring.style.left = box.x - 6 + "px";
@@ -139,7 +168,7 @@ async function showRing(
   page: Page,
   box: { x: number; y: number; width: number; height: number },
   label: string,
-  tone: "planned" | "auto" = "auto",
+  tone: string = "auto",
 ) {
   await page
     .evaluate(({ box, label, tone }) => window.__wgPositionRing?.(box, label, tone), {
@@ -154,13 +183,13 @@ async function hideRing(page: Page) {
   await page.evaluate(() => window.__wgHideRing?.()).catch(() => {});
 }
 
-async function clickPulseAt(page: Page, x: number, y: number, tone: "planned" | "auto" = "auto") {
+async function clickPulseAt(page: Page, x: number, y: number, tone: string = "auto") {
   await page
     .evaluate(({ x, y, tone }) => window.__wgClickPulse?.(x, y, tone), { x, y, tone })
     .catch(() => {});
 }
 
-/** Demo cursor + ring on fill/click during auto explore headful runs (automation = yellow). */
+/** Demo cursor + ring on fill/click during auto explore headful runs (automation = gray). */
 export function instrumentInteractionHighlighting(
   page: Page,
   mem: MemPage,

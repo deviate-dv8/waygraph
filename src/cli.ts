@@ -228,6 +228,9 @@ import {
   formatHighlightCaption,
   hasAuthoredStubAfter,
   hasAuthoredStubOnError,
+  normalizeHighlightTone,
+  normalizeDemoPace,
+  resolveStepDemoPace,
 } from "waygraph";
 
 function walkDir(dir, pattern) {
@@ -416,9 +419,13 @@ const RING_CSS =
   "border:2.5px solid #7C3AED;border-radius:10px;" +
   "box-shadow:0 0 0 4px rgba(124,58,237,.16);transition:opacity .3s ease,border-color .15s,box-shadow .15s;}" +
   // Planned (stubs / fixtures / YAP / instruction.highlights) = purple.
-  // Automation (verify fallback, unmatched fill/click) = yellow - so operators
-  // can ignore engine checks and only watch purple narration.
-  "#wg-ring[data-tone=auto]{border-color:#EAB308;box-shadow:0 0 0 4px rgba(234,179,8,.22);}" +
+  // Automation (verify fallback, unmatched fill/click) = gray - operators
+  // can ignore engine checks and watch purple + semantic tones.
+  "#wg-ring[data-tone=auto]{border-color:#9CA3AF;box-shadow:0 0 0 4px rgba(156,163,175,.28);}" +
+  "#wg-ring[data-tone=info]{border-color:#3B82F6;box-shadow:0 0 0 4px rgba(59,130,246,.22);}" +
+  "#wg-ring[data-tone=warning]{border-color:#EAB308;box-shadow:0 0 0 4px rgba(234,179,8,.22);}" +
+  "#wg-ring[data-tone=danger]{border-color:#EF4444;box-shadow:0 0 0 4px rgba(239,68,68,.22);}" +
+  "#wg-ring[data-tone=success]{border-color:#22C55E;box-shadow:0 0 0 4px rgba(34,197,94,.22);}" +
   // A real element, not a ::after pseudo-element - a pseudo-element's
   // position is CSS-relative to the ring's own box (left:0 always meant
   // "the ring's own left edge"), so it had no way to be clamped back onto
@@ -430,7 +437,11 @@ const RING_CSS =
   "#wg-ring-label{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
   "max-width:min(360px,70vw);white-space:normal;padding:6px 10px;border-radius:7px;background:#7C3AED;color:#fff;" +
   "font:600 12px/1.35 system-ui,sans-serif;transition:opacity .3s ease,background .15s,color .15s;}" +
-  "#wg-ring-label[data-tone=auto]{background:#EAB308;color:#1c1917;}" +
+  "#wg-ring-label[data-tone=auto]{background:#6B7280;color:#fff;}" +
+  "#wg-ring-label[data-tone=info]{background:#2563EB;color:#fff;}" +
+  "#wg-ring-label[data-tone=warning]{background:#EAB308;color:#1c1917;}" +
+  "#wg-ring-label[data-tone=danger]{background:#DC2626;color:#fff;}" +
+  "#wg-ring-label[data-tone=success]{background:#16A34A;color:#fff;}" +
   // Mouse cursor icon that travels to a target before it's acted on, plus a
   // quick expanding ripple at the moment of a click - same idea as
   // help-center-clip-engine's #clip-cursor/#clip-ring (video-pipeline). The
@@ -448,7 +459,11 @@ const RING_CSS =
   "#wg-click-pulse{position:fixed;z-index:2147483647;width:14px;height:14px;" +
   "margin-left:-7px;margin-top:-7px;border-radius:50%;pointer-events:none;opacity:0;" +
   "border:2px solid #7C3AED;background:rgba(124,58,237,.25);}" +
-  "#wg-click-pulse[data-tone=auto]{border-color:#EAB308;background:rgba(234,179,8,.28);}" +
+  "#wg-click-pulse[data-tone=auto]{border-color:#9CA3AF;background:rgba(156,163,175,.28);}" +
+  "#wg-click-pulse[data-tone=info]{border-color:#3B82F6;background:rgba(59,130,246,.28);}" +
+  "#wg-click-pulse[data-tone=warning]{border-color:#EAB308;background:rgba(234,179,8,.28);}" +
+  "#wg-click-pulse[data-tone=danger]{border-color:#EF4444;background:rgba(239,68,68,.28);}" +
+  "#wg-click-pulse[data-tone=success]{border-color:#22C55E;background:rgba(34,197,94,.28);}" +
   "#wg-click-pulse.wg-pulse{animation:wg-pulse .5s ease-out;}" +
   "@keyframes wg-pulse{0%{opacity:.9;transform:scale(.4);}100%{opacity:0;transform:scale(2.4);}}" +
   "#wg-panel{position:fixed;z-index:2147483647;left:50%;bottom:12px;transform:translateX(-50%);" +
@@ -668,7 +683,11 @@ async function installOverlay(page, title) {
           const ring = document.getElementById("wg-ring");
           const ringLabel = document.getElementById("wg-ring-label");
           if (!ring || !ringLabel) return;
-          const t = tone === "auto" ? "auto" : "planned";
+          const raw = (tone || "planned") + "";
+          const t =
+            raw === "auto" || raw === "info" || raw === "warning" || raw === "danger" || raw === "success"
+              ? raw
+              : "planned";
           ring.dataset.tone = t;
           ringLabel.dataset.tone = t;
           const margin = 6;
@@ -705,7 +724,11 @@ async function installOverlay(page, title) {
         window.__wgClickPulse = (x, y, tone) => {
           const pulse = document.getElementById("wg-click-pulse");
           if (!pulse) return;
-          pulse.dataset.tone = tone === "auto" ? "auto" : "planned";
+          const raw = (tone || "planned") + "";
+          pulse.dataset.tone =
+            raw === "auto" || raw === "info" || raw === "warning" || raw === "danger" || raw === "success"
+              ? raw
+              : "planned";
           pulse.style.left = x + "px";
           pulse.style.top = y + "px";
           pulse.classList.remove("wg-pulse");
@@ -1320,7 +1343,7 @@ function resolveDeclaredHighlights(block, resultTag) {
   if (!Array.isArray(highlights)) return [];
   return highlights.filter((h) => h && typeof h.selector === "string" && typeof h.label === "string").map((h) => ({
     ...h,
-    tone: h.tone === "auto" ? "auto" : "planned",
+    tone: normalizeHighlightTone(h.tone),
   }));
 }
 
@@ -1455,14 +1478,22 @@ async function matchStubForLocator(page, locator, stubs) {
 
 async function captionForLocator(page, locator, stubs, fallback) {
   const matched = await matchStubForLocator(page, locator, stubs);
-  if (matched) return { label: formatHighlightCaption(matched), tone: "planned" };
+  if (matched) {
+    return {
+      label: formatHighlightCaption(matched),
+      tone: normalizeHighlightTone(matched.tone),
+    };
+  }
   return { label: fallback, tone: "auto" };
 }
 
 async function dwellMatchedStub(page, locator, stubs, pacing) {
   const matched = await matchStubForLocator(page, locator, stubs);
   if (!matched) return;
-  const ms = resolveFixtureDwellMs(matched, { gatesFast: !!(pacing && pacing.gatesFast) });
+  const ms = resolveFixtureDwellMs(matched, {
+    gatesFast: !!(pacing && pacing.gatesFast),
+    pace: pacing && pacing.demoPace,
+  });
   if (ms != null && ms > 0) {
     await new Promise((res) => setTimeout(res, ms));
   }
@@ -1483,22 +1514,26 @@ async function presentSlides(page, slides, _gate, opts) {
   const episodeNumber = opts && opts.episodeNumber;
   const episodeTitle = (opts && opts.episodeTitle) || "";
   const gatesFast = !!(opts && opts.fast);
+  const demoPace = normalizeDemoPace((opts && opts.pace) || (gatesFast ? "fast" : "normal"));
   const autoplayMs =
     opts && opts.autoplayMs
       ? Number(opts.autoplayMs)
       : process.env.WAYGRAPH_AUTOPLAY_MS
         ? Number(process.env.WAYGRAPH_AUTOPLAY_MS)
-        : 1800;
+        : demoPace === "slow"
+          ? 3500
+          : 1800;
   for (let i = 0; i < slides.length; i++) {
     const s = slides[i];
     const caption = formatHighlightCaption(s);
+    const slideTone = normalizeHighlightTone(s.tone);
     const isLast = i === slides.length - 1;
-    const dwellMs = resolveFixtureDwellMs(s, { gatesFast });
+    const dwellMs = resolveFixtureDwellMs(s, { gatesFast, pace: demoPace });
     await installOverlay(page, title);
     if (s.selector) {
       try {
         const box = await page.locator(s.selector).first().boundingBox();
-        if (box) await showRing(page, box, caption, "planned");
+        if (box) await showRing(page, box, caption, slideTone);
       } catch {
         await hideRing(page);
       }
@@ -2013,7 +2048,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   // inside the FF (that was the "30s login / cursor gone but still slow" bug).
   const demoFast = process.env.WAYGRAPH_DEMO_FAST === "1";
   const stepperMode = process.env.WAYGRAPH_STEPPER === "full" ? "full" : "carousel";
-  const pacing = { gatesFast: demoFast, skipTheater: false };
+  const pacing = { gatesFast: demoFast, gatesSlow: false, skipTheater: false, demoPace: "normal" };
   const stubBeforeRef = { current: [] };
   instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef);
   // Force the panel checkbox from this process's flags/env at run start.
@@ -2104,7 +2139,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       ? Math.min(80, autoplayMs)
       : pacing.gatesFast
         ? Math.min(400, autoplayMs)
-        : autoplayMs;
+        : pacing.gatesSlow
+          ? Math.max(autoplayMs * 2, 3500)
+          : autoplayMs;
     let elapsed = 0;
     for (;;) {
       // Re-read the checkbox EVERY loop tick, not once up front - a human
@@ -2188,10 +2225,33 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       await resetPageState(context, page, baseURL);
     }
     // gatesFast / skipTheater: opaque FF, former-FF inners (--ff-disabled/--ff-expand),
-    // or WAYGRAPH_FAST_BLOCKS. --fast alone = shorter gates only (keeps theater).
-    pacing.gatesFast = demoFast || !!r.block.fastForward || !!r.wasFastForward;
+    // WAYGRAPH_FAST_BLOCKS, or withDemoPace/withBlockPace. --fast alone = shorter
+    // gates only (keeps theater). Episode pace: block > flow > CLI --fast.
+    const stepPace = resolveStepDemoPace({
+      blockPace: r.block.demoPace,
+      flowPace: r.demoPace,
+      fastForward: !!r.block.fastForward,
+      wasFastForward: !!r.wasFastForward,
+    });
+    const cliFast = demoFast || fastBlockNames.has(r.block.name);
+    pacing.demoPace =
+      stepPace === "normal" && cliFast
+        ? fastBlockNames.has(r.block.name)
+          ? "blitz"
+          : "fast"
+        : stepPace;
+    pacing.gatesFast =
+      pacing.demoPace === "blitz" ||
+      pacing.demoPace === "fast" ||
+      !!r.block.fastForward ||
+      !!r.wasFastForward ||
+      demoFast;
+    pacing.gatesSlow = pacing.demoPace === "slow";
     pacing.skipTheater =
-      fastBlockNames.has(r.block.name) || !!r.block.fastForward || !!r.wasFastForward;
+      pacing.demoPace === "blitz" ||
+      fastBlockNames.has(r.block.name) ||
+      !!r.block.fastForward ||
+      !!r.wasFastForward;
     const fixtures = r.highlightFixtures;
     stubBeforeRef.current = resolveHighlightSlots(r.block, "stubBefore", { fixtures });
     const isNavBlock = r.block.__waygraphKind === "nav";
@@ -2290,7 +2350,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           label: formatHighlightCaption(h),
           duration: h.duration,
           fastMode: h.fastMode,
-          tone: "planned",
+          tone: normalizeHighlightTone(h.tone),
         }));
         await cycleHighlightRings(page, errHighlights, !!pacing.gatesFast, {
           defaultHoldMs: 2000,
@@ -2350,6 +2410,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         title,
         blockName: r.block.name,
         fast: pacing.gatesFast,
+        pace: pacing.demoPace,
         episodeNumber: r.episodeNumber,
         episodeTitle: r.episodeTitle,
         autoplayMs,
@@ -2363,7 +2424,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           label: formatHighlightCaption(h),
           duration: h.duration,
           fastMode: h.fastMode,
-          tone: "planned",
+          tone: normalizeHighlightTone(h.tone),
         }),
       );
     } else {
@@ -2548,6 +2609,7 @@ async function main() {
         exportName: bi.name,
         seedMem: idx === 0 ? seedMem : undefined,
         highlightFixtures: flow.highlightFixtures,
+        demoPace: flow.demoPace,
         expectedFailureReason:
           flow.expectedFailureReason && idx === blockInfos.length - 1
             ? flow.expectedFailureReason
@@ -2616,6 +2678,7 @@ async function main() {
           episodeTitle: flow.title || seg.ref,
           expectedFailureReason: flow.expectedFailureReason,
           highlightFixtures: flow.highlightFixtures,
+          demoPace: flow.demoPace,
           seedMem: () => seedMemForFlow(mem, flow.blocks(), seg.json, seg.ref),
         });
       } else {
@@ -2625,6 +2688,7 @@ async function main() {
           episodeNumber: undefined,
           episodeTitle: undefined,
           highlightFixtures: undefined,
+          demoPace: undefined,
           seedMem: () => seedMemForBlock(mem, r, seg.json),
         });
       }
@@ -2649,6 +2713,7 @@ async function main() {
         episodeNumber: meta.episodeNumber,
         episodeTitle: meta.episodeTitle,
         highlightFixtures: meta.highlightFixtures,
+        demoPace: meta.demoPace,
         expectedFailureReason:
           meta.expectedFailureReason && remainingInFlow === 1 ? meta.expectedFailureReason : undefined,
         seedMem: isFirstOfSegment ? meta.seedMem : undefined,

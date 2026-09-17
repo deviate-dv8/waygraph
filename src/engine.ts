@@ -362,6 +362,11 @@ export interface Flow<Out extends Checkpoint<string>> {
    */
   readonly highlightFixtures?: import("./highlights.js").HighlightFixtureMap;
   /**
+   * Demo pacing for this Flow's episode (`withDemoPace`).
+   * `run()` ignores; step/demo applies per Block in the episode.
+   */
+  readonly demoPace?: import("./highlights.js").DemoPace;
+  /**
    * This Flow's constituent Blocks, in order between `start`/`end`, as plain
    * data - for introspection/visualization tools, without running anything.
    * @example loginFlow.blocks() // [{ name: "login" }, { name: "add-to-cart", routes: {...} }]
@@ -581,6 +586,40 @@ export function withTitle<Out extends Checkpoint<string>>(flow: Flow<Out>, title
     withBlockVerify: (block, verify) => withTitle(flow.withBlockVerify(block, verify), title),
     modBlockVerify: (block, nameOrIndex, newCheck) => withTitle(flow.modBlockVerify(block, nameOrIndex, newCheck), title),
   };
+}
+
+/**
+ * Demo pacing for a whole Flow episode (fast review vs slow gap/wrong walkthrough).
+ * Non-destructive. `fastForwardComposeBlock` is always blitz for its own step;
+ * use this when an entire episode should be fast or slow.
+ * @example withDemoPace(withTitle(gapFlow, "Episode 2 - gaps"), "slow")
+ */
+export function withDemoPace<Out extends Checkpoint<string>>(
+  flow: Flow<Out>,
+  pace: import("./highlights.js").DemoPace,
+): Flow<Out> {
+  const demoPace = pace;
+  return {
+    ...flow,
+    demoPace,
+    withBlockVerify: (block, verify) => withDemoPace(flow.withBlockVerify(block, verify), demoPace),
+    modBlockVerify: (block, nameOrIndex, newCheck) =>
+      withDemoPace(flow.modBlockVerify(block, nameOrIndex, newCheck), demoPace),
+  };
+}
+
+/**
+ * Demo pacing for one Block or compose unit (not FF - use fastForwardComposeBlock for blitz).
+ * @example withBlockPace(composeBlock("gap-review", [...]), "slow")
+ */
+export function withBlockPace<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
+  block: Block<In, Out>,
+  pace: import("./highlights.js").DemoPace,
+): Block<In, Out> {
+  return {
+    ...block,
+    demoPace: pace,
+  } as Block<In, Out> & { demoPace: import("./highlights.js").DemoPace };
 }
 
 /**

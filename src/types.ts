@@ -239,6 +239,11 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   requires?: readonly MemKey<any>[];
   /**
+   * Demo pacing for this Block or compose group (`withBlockPace`).
+   * Demo/step only - `runGraph` ignores. Prefer `fastForwardComposeBlock` for blitz.
+   */
+  demoPace?: import("./highlights.js").DemoPace;
+  /**
    * Optional. When this Block's real choices depend on the live page
    * (which of several items to add to cart, which of several rows to
    * open) rather than being knowable ahead of time, this returns one
