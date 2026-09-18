@@ -17,40 +17,48 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
   click: ".shopping_cart_link",
   verify: [Trait.url({ pathname: "/cart.html" })],
   stubBefore: (ctx: StubCtx) => {
-    ctx.title("Open cart");
-    ctx.todoId("saucedemo-cart");
-    ctx.todos([
-      { id: "cart-find", text: "Find the product" },
-      { id: "cart-add", text: "Add to cart" },
-      { id: "cart-open", text: "Open cart" },
-    ]);
-    ctx.todoIndex(2);
+    ctx.title("Open cart · landscape");
+    ctx.landscape();
+    ctx.todos(
+      "saucedemo",
+      [
+        { id: "login-user", text: "Enter username", done: true },
+        { id: "login-pass", text: "Enter password", done: true },
+        { id: "login-submit", text: "Tap Login", done: true },
+        { id: "cart-find", text: "Find the product", done: true },
+        { id: "cart-add", text: "Add to cart", done: true },
+        { id: "cart-open", text: "Open cart" },
+      ],
+      { title: "Device showcase", index: 5 },
+    );
     ctx.zoom(1.4);
     ctx.zoomOut(false);
     ctx.highlights({
       cart: {
         selector: ".shopping_cart_link",
         label: "Cart",
-        detail: "Zoom cart chrome",
+        detail: "Open cart",
         focus: true,
         color: "#c9a6ff",
-        zoom: 1.55,
         zoomOut: false,
         followMouse: false,
         weight: "bold",
+        gesture: "tap",
       },
     });
   },
   stubAfter: (ctx: StubCtx) => {
-    ctx.banner("Your cart");
-    ctx.zoomOut(false);
+    ctx.banner("Your cart · desktop");
+    ctx.clearDevice();
+    ctx.hideTodos();
+    ctx.zoomOut(true);
     ctx.ring("items", {
       selector: InventorySel.cartItem,
       label: "Cart items",
       detail: "Product landed in cart",
       focus: true,
       color: "#86efac",
-      zoom: 1.4,
+      zoomOut: true,
       followMouse: false,
       duration: true,
     });

@@ -11,3 +11,4 @@ test-results/
 waygraph-artifact.html
 .waygraph-traverse/
 **/.waygraph-videos/
+**/.tmp/

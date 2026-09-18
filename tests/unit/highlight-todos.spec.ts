@@ -37,13 +37,31 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
     expect(normalizeTodoPos("nope")).toBeUndefined();
   });
 
+  it("normalizes bullets style aliases", async () => {
+    const { normalizeTodoStyle } = await import("../../src/highlights.js");
+    expect(normalizeTodoStyle("bullets")).toBe("bullets");
+    expect(normalizeTodoStyle("bullet")).toBe("bullets");
+    expect(normalizeTodoStyle("list")).toBe("bullets");
+    expect(normalizeTodoStyle("plain")).toBe("bullets");
+    expect(normalizeTodoStyle("checklist")).toBe("checklist");
+  });
+
+  it("bullets style ignores todoIndex current marks", () => {
+    const rows = normalizeTodos(["A", "B", "C"], 1, "bullets");
+    expect(rows.every((r) => !r.current)).toBe(true);
+    expect(rows.map((r) => r.text)).toEqual(["A", "B", "C"]);
+  });
+
   it("exposes title + todoPos from stubBefore lifecycle", async () => {
+    const { normalizeTodoPos } = await import("../../src/highlights.js");
+    expect(normalizeTodoPos("left")).toBe("left");
     const block = {
       name: "submit-login",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
           ctx.title("Signing in");
           ctx.todoPos("right");
+          ctx.todoStyle("bullets");
           ctx.todos(["Email", "Password"]);
           ctx.todoIndex(0);
         },
@@ -53,7 +71,8 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
     const phase = await runStubPhase(block, "stubBefore");
     expect(phase.title).toBe("Signing in");
     expect(phase.todoPos).toBe("right");
-    expect(phase.todos[0]!.current).toBe(true);
+    expect(phase.todoDock?.style).toBe("bullets");
+    expect(phase.todos.every((t) => !t.current)).toBe(true);
   });
 });
 

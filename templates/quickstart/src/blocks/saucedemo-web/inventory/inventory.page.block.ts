@@ -1,4 +1,5 @@
 import { definePageBlock, Trait } from "waygraph";
+import type { StubCtx } from "waygraph";
 import type { LoggedIn } from "../../../states/checkout.states.js";
 import { AddToCartBlock } from "./methods/add-to-cart.effect.block.js";
 import { RemoveFromCartBlock } from "./methods/remove-from-cart.effect.block.js";
@@ -27,6 +28,11 @@ export const InventoryPageBlock = definePageBlock<LoggedIn>({
     Trait.url({ pathname: "/inventory.html" }),
     Trait.visible(InventorySel.list),
   ],
+  // Showcase responsive dashboard: tablet after mobile login (toast + lerp).
+  stubBefore: (ctx: StubCtx) => {
+    ctx.title("Inventory · tablet");
+    ctx.device("tablet");
+  },
   methods: {
     addToCart: () => AddToCartBlock,
     removeFromCart: () => RemoveFromCartBlock,

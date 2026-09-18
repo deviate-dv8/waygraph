@@ -1,4 +1,5 @@
 import { defineNavClickBlock, Trait } from "waygraph";
+import type { StubCtx } from "waygraph";
 import type { CartPage } from "../../../states/checkout.states.js";
 import { InventorySel } from "../inventory/methods/inventory-items.js";
 
@@ -15,8 +16,10 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
   checkpoint: "CartPage",
   click: ".shopping_cart_link",
   verify: [Trait.url({ pathname: "/cart.html" })],
-  stubBefore: (ctx) => {
-    ctx.title("Open cart");
+  stubBefore: (ctx: StubCtx) => {
+    ctx.title("Open cart · landscape");
+    // Device showcase: rotate tablet to landscape before the cart tap.
+    ctx.landscape();
     ctx.todoId("saucedemo-cart");
     ctx.todos([
       { id: "cart-find", text: "Find the product" },
@@ -37,11 +40,14 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
         zoomOut: false,
         followMouse: false,
         weight: "bold",
+        gesture: "tap",
       },
     });
   },
-  stubAfter: (ctx) => {
-    ctx.banner("Your cart");
+  stubAfter: (ctx: StubCtx) => {
+    ctx.banner("Your cart · desktop");
+    // Showcase finale: back to desktop.
+    ctx.clearDevice();
     ctx.zoomOut(false);
     ctx.ring("items", {
       selector: InventorySel.cartItem,

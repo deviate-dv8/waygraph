@@ -50,19 +50,27 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
     // Open lifecycle: banner title, todos, Screen Studio camera zoom,
     // sequential highlight queue (appear / dwell / fade), focus + color.
     stubBefore: (ctx: StubCtx) => {
-      ctx.title("Signing in");
-      ctx.todoId("saucedemo-login");
-      ctx.todos([
-        { id: "login-user", text: "Enter username" },
-        { id: "login-pass", text: "Enter password" },
-        { id: "login-submit", text: "Click Login" },
-      ]);
-      ctx.todoIndex(0);
+      ctx.title("Signing in · mobile");
+      ctx.device("mobile");
+      ctx.portrait();
+      ctx.todos(
+        "saucedemo",
+        [
+          { id: "login-user", text: "Enter username" },
+          { id: "login-pass", text: "Enter password" },
+          { id: "login-submit", text: "Tap Login" },
+          { id: "cart-find", text: "Find the product" },
+          { id: "cart-add", text: "Add to cart" },
+          { id: "cart-open", text: "Open cart" },
+        ],
+        { title: "Device showcase", index: 0 },
+      );
       ctx.zoom(1.35);
       ctx.highlights({
         username: {
           selector: "#user-name",
           label: "Username",
+          todo: "login-user",
           focus: true,
           color: "#c9a6ff",
           zoom: 1.4,
@@ -70,6 +78,7 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
         password: {
           selector: "#password",
           label: "Password",
+          todo: "login-pass",
           focus: true,
           color: "#c9a6ff",
           zoom: 1.4,
@@ -77,25 +86,27 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
         submit: {
           selector: "#login-button",
           label: "Login",
+          todo: "login-submit",
           focus: true,
           color: "#86efac",
           zoom: 1.55,
           weight: "bold",
+          gesture: "tap",
         },
       });
     },
     stubAfter: (ctx: StubCtx) => {
-      // Fail branch lands on LoginPage with Epic sadface - do not ring the
-      // inventory shelf. Success (LoggedIn) hands off to shopFlow.
       if (ctx.out && ctx.out.__state === "LoginPage") {
         ctx.title("Login blocked");
-        ctx.todoId("saucedemo-login");
-        ctx.todos([
-          { id: "login-user", text: "Enter username", done: true },
-          { id: "login-pass", text: "Enter password", done: true },
-          { id: "login-submit", text: "Click Login", done: true },
-        ]);
-        ctx.todoStyle("checklist");
+        ctx.todos(
+          "saucedemo",
+          [
+            { id: "login-user", text: "Enter username", done: true },
+            { id: "login-pass", text: "Enter password", done: true },
+            { id: "login-submit", text: "Click Login", done: true },
+          ],
+          { title: "Sign in", style: "checklist" },
+        );
         ctx.ring("error", {
           selector: '[data-test="error"]',
           label: "Login error banner",
@@ -106,15 +117,20 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
         });
         return;
       }
-      ctx.banner("Inventory");
-      ctx.todoId("saucedemo-login");
-      ctx.todos([
-        { id: "login-user", text: "Enter username" },
-        { id: "login-pass", text: "Enter password" },
-        { id: "login-submit", text: "Click Login" },
-      ]);
-      ctx.todoIndex(2);
-      // Landed on inventory - hand off to shopFlow for product -> cart zoom.
+      ctx.banner("Inventory · landscape");
+      ctx.landscape();
+      ctx.todos(
+        "saucedemo",
+        [
+          { id: "login-user", text: "Enter username", done: true },
+          { id: "login-pass", text: "Enter password", done: true },
+          { id: "login-submit", text: "Tap Login", done: true },
+          { id: "cart-find", text: "Find the product" },
+          { id: "cart-add", text: "Add to cart" },
+          { id: "cart-open", text: "Open cart" },
+        ],
+        { title: "Device showcase", index: 3 },
+      );
       ctx.ring("shelf", {
         selector: ".inventory_list",
         label: "Product shelf",

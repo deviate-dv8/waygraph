@@ -36,14 +36,21 @@ export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>(
     ],
     // Demo: zoom product -> add (stay zoomed), then badge after act.
     stubBefore: (ctx: StubCtx) => {
-      ctx.title("Pick a product");
-      ctx.todoId("saucedemo-cart");
-      ctx.todos([
-        { id: "cart-find", text: "Find the product" },
-        { id: "cart-add", text: "Add to cart" },
-        { id: "cart-open", text: "Open cart" },
-      ]);
-      ctx.todoIndex(0);
+      ctx.title("Pick a product · tablet");
+      ctx.device("tablet");
+      ctx.portrait();
+      ctx.todos(
+        "saucedemo",
+        [
+          { id: "login-user", text: "Enter username", done: true },
+          { id: "login-pass", text: "Enter password", done: true },
+          { id: "login-submit", text: "Tap Login", done: true },
+          { id: "cart-find", text: "Find the product" },
+          { id: "cart-add", text: "Add to cart" },
+          { id: "cart-open", text: "Open cart" },
+        ],
+        { title: "Device showcase", index: 3 },
+      );
       ctx.zoom(1.35);
       ctx.zoomOut(false);
       ctx.highlights({
@@ -69,13 +76,18 @@ export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>(
     },
     stubAfter: (ctx: StubCtx) => {
       ctx.banner("In the cart");
-      ctx.todoId("saucedemo-cart");
-      ctx.todos([
-        { id: "cart-find", text: "Find the product" },
-        { id: "cart-add", text: "Add to cart" },
-        { id: "cart-open", text: "Open cart" },
-      ]);
-      ctx.todoIndex(1);
+      ctx.todos(
+        "saucedemo",
+        [
+          { id: "login-user", text: "Enter username", done: true },
+          { id: "login-pass", text: "Enter password", done: true },
+          { id: "login-submit", text: "Tap Login", done: true },
+          { id: "cart-find", text: "Find the product", done: true },
+          { id: "cart-add", text: "Add to cart" },
+          { id: "cart-open", text: "Open cart" },
+        ],
+        { title: "Device showcase", index: 4 },
+      );
       ctx.zoomOut(false);
       ctx.ring("badge", {
         selector: InventorySel.cartBadge,
@@ -83,7 +95,6 @@ export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>(
         detail: "Item count updated",
         focus: true,
         color: "#86efac",
-        zoom: 1.6,
         zoomOut: false,
         duration: true,
       });

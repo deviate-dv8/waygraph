@@ -247,6 +247,8 @@ import {
   applyTodoPhase,
   advanceTodoDock,
   completeSequentialTodoDock,
+  applyDevicePhase,
+  resolveDeviceState,
 } from "waygraph";
 
 function walkDir(dir, pattern) {
@@ -494,6 +496,26 @@ const RING_CSS =
   "#wg-click-pulse[data-tone=success]{border-color:#22C55E;background:rgba(34,197,94,.28);}" +
   "#wg-click-pulse.wg-pulse{animation:wg-pulse .5s ease-out;}" +
   "@keyframes wg-pulse{0%{opacity:.9;transform:scale(.4);}100%{opacity:0;transform:scale(2.4);}}" +
+  // Spotlight: dim everything except the highlight target (focus: true).
+  "#wg-focus-veil{position:fixed;z-index:2147483644;pointer-events:none;" +
+  "border-radius:12px;box-shadow:0 0 0 9999px rgba(8,4,20,.62);" +
+  "opacity:0;transition:opacity .3s ease,left .3s ease,top .3s ease,width .3s ease,height .3s ease;}" +
+  "#wg-focus-veil.wg-in{opacity:1;}" +
+  // Touch swipe trail (mobile/tablet orientation + device theater).
+  "#wg-swipe-layer{position:fixed;inset:0;z-index:2147483646;pointer-events:none;" +
+  "overflow:hidden;}" +
+  "#wg-swipe-layer .wg-swipe-dot{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;" +
+  "border-radius:50%;background:rgba(147,197,253,.55);border:2px solid rgba(255,255,255,.85);" +
+  "box-shadow:0 0 12px rgba(59,130,246,.55);opacity:0;}" +
+  "#wg-swipe-layer .wg-swipe-finger{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;" +
+  "border-radius:50%;background:rgba(15,23,42,.92);border:2px solid #fff;" +
+  "box-shadow:0 4px 16px rgba(0,0,0,.4);opacity:0;" +
+  "transition:left .05s linear,top .05s linear,opacity .15s ease;}" +
+  "#wg-swipe-layer .wg-swipe-label{position:absolute;left:50%;top:18%;transform:translateX(-50%);" +
+  "padding:6px 12px;border-radius:999px;background:rgba(15,23,42,.88);color:#e0f2fe;" +
+  "border:1px solid rgba(56,189,248,.55);font:700 12px/1.2 system-ui,sans-serif;" +
+  "letter-spacing:.04em;text-transform:uppercase;opacity:0;transition:opacity .25s ease;}" +
+  "#wg-swipe-layer.wg-in .wg-swipe-label{opacity:1;}" +
   "#wg-panel{position:fixed;z-index:2147483647;left:50%;bottom:12px;transform:translateX(-50%);" +
   "max-width:min(92vw,640px);max-height:calc(100vh - 24px);overflow-y:auto;box-sizing:border-box;" +
   "background:rgba(20,10,40,.94);color:#fff;border-radius:14px;" +
@@ -535,26 +557,109 @@ const RING_CSS =
   "#wg-panel .wg-pace[data-pace-kind=blitz] .wg-pace-badge{background:#22C55E;color:#052e16;}" +
   "#wg-panel .wg-pace[data-pace-kind=ms] .wg-pace-badge{background:#3B82F6;color:#fff;}" +
   "#wg-panel .wg-narration{margin:0 0 12px;font:italic 14px/1.4 system-ui,sans-serif;color:#f0e8ff;}" +
-  // Todo checklist lives in #wg-todo-dock (fixed, outside #wg-panel) so
-  // --mini / Hide collapse never hides it (.wg-body {display:none} would).
-  // Click dock to slide left <-> right (WAYGRAPH_TODO_POS / --todo-left|right).
-  "#wg-todo-dock{position:fixed;z-index:2147483646;top:72px;left:14px;" +
+  // Todo checklist(s) float outside #wg-panel so --mini / Hide never hide them.
+  // Multiple docks (one per todoId) are supported - stacked on the same side.
+  // Click a dock to slide left <-> right (WAYGRAPH_TODO_POS / --todo-left|right).
+  ".wg-todo-dock,#wg-todo-dock{position:fixed;z-index:2147483646;top:72px;left:14px;" +
   "width:min(280px,42vw);max-height:calc(100vh - 100px);overflow:auto;box-sizing:border-box;" +
   "padding:10px 12px;background:rgba(20,10,40,.94);color:#fff;border-radius:12px;" +
   "border:1px solid rgba(124,58,237,.45);box-shadow:0 8px 24px rgba(0,0,0,.35);" +
   "pointer-events:auto;cursor:pointer;" +
-  "transition:transform .4s cubic-bezier(.22,1,.36,1);transform:translateX(0);}" +
-  "#wg-todo-dock[data-pos=right]{transform:translateX(calc(100vw - 100% - 28px));}" +
-  "#wg-todo-dock[data-pos=left]{transform:translateX(0);}" +
-  "#wg-todo-dock #wg-todos{list-style:none;margin:0;padding:0;background:transparent;border:none;}" +
-  "#wg-todos{list-style:none;margin:0 0 12px;padding:8px 10px;background:#0f0620;border-radius:8px;" +
+  "transition:transform .4s cubic-bezier(.22,1,.36,1),top .35s ease;transform:translateX(0);}" +
+  ".wg-todo-dock[data-pos=right],#wg-todo-dock[data-pos=right]{transform:translateX(calc(100vw - 100% - 28px));}" +
+  ".wg-todo-dock[data-pos=left],#wg-todo-dock[data-pos=left]{transform:translateX(0);}" +
+  ".wg-todo-dock .wg-todos-list,#wg-todo-dock #wg-todos,.wg-todo-dock #wg-todos{list-style:none;margin:0;padding:0;background:transparent;border:none;}" +
+  // Video device stage: keep recordVideo size fixed; center a device-sized shell.
+  "html.wg-video-device-stage{background:#0b1220 !important;}" +
+  "html.wg-video-device-stage body{margin:0 !important;min-height:100vh !important;" +
+  "display:flex !important;align-items:center !important;justify-content:center !important;" +
+  "background:#0b1220 !important;overflow:hidden !important;}" +
+  "#wg-device-shell{flex-shrink:0;overflow:auto;background:#fff;" +
+  "border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.08);" +
+  "transform-origin:center center;" +
+  /* Force radius clip on all corners (Chrome + transform/scale). */
+  "-webkit-mask-image:-webkit-radial-gradient(white,black);" +
+  "isolation:isolate;" +
+  "transition:border-radius .55s cubic-bezier(.22,1,.36,1),box-shadow .55s ease," +
+  "transform .55s cubic-bezier(.22,1,.36,1),width .5s ease,height .5s ease,max-width .5s ease,max-height .5s ease;}" +
+  "#wg-device-shell.wg-shell-enter{border-radius:0;box-shadow:none;}" +
+  "#wg-device-shell.wg-shell-shutter-out{border-radius:0 !important;" +
+  "box-shadow:none !important;outline:none !important;border:none !important;}" +
+  "#wg-device-shell.wg-shell-desktop-flat{border-radius:0 !important;box-shadow:none !important;" +
+  "outline:none !important;border:none !important;-webkit-mask-image:none;}" +
+  // Always-on zoom HUD - bottom-right (top-left is crowded: todos + banners).
+  "#wg-zoom-badge{position:fixed;z-index:2147483646;bottom:14px;right:14px;" +
+  "display:flex;align-items:center;gap:7px;padding:6px 11px 6px 8px;" +
+  "border-radius:999px;background:rgba(20,10,40,.94);color:#f0e8ff;" +
+  "border:1px solid rgba(250,204,21,.6);box-shadow:0 6px 18px rgba(0,0,0,.4);" +
+  "font:700 12px/1.2 system-ui,sans-serif;pointer-events:none;" +
+  "opacity:1;transform:translateY(0);}" +
+  "#wg-zoom-badge .wg-zoom-ico{width:18px;height:18px;display:flex;align-items:center;justify-content:center;" +
+  "border-radius:6px;background:rgba(250,204,21,.22);}" +
+  "#wg-zoom-badge .wg-zoom-ico svg{width:14px;height:14px;display:block;}" +
+  "#wg-zoom-badge .wg-zoom-val{color:#fde68a;font-variant-numeric:tabular-nums;font-weight:800;min-width:3.2em;}" +
+  "#wg-zoom-badge[data-zoomed=\\"1\\"]{border-color:#fbbf24;}" +
+  // Typing chip (method fills: username / password / etc.)
+  "#wg-typing-badge{position:fixed;z-index:2147483646;bottom:88px;left:50%;transform:translateX(-50%);" +
+  "display:flex;align-items:center;gap:8px;padding:8px 14px;" +
+  "border-radius:999px;background:rgba(20,10,40,.95);color:#e0f2fe;" +
+  "border:1px solid rgba(56,189,248,.55);box-shadow:0 8px 22px rgba(0,0,0,.4);" +
+  "font:700 12px/1.2 system-ui,sans-serif;pointer-events:none;" +
+  "opacity:0;transition:opacity .2s ease;}" +
+  "#wg-typing-badge.wg-in{opacity:1;}" +
+  "#wg-typing-badge .wg-ty-dots{letter-spacing:.15em;color:#7dd3fc;}" +
+  // Device toast + chip (0.13.2+) - icon toast on fixture change, then compact chip.
+  "#wg-device-toast{position:fixed;z-index:2147483647;top:14px;right:14px;" +
+  "display:flex;align-items:center;gap:10px;min-width:200px;max-width:min(92vw,320px);" +
+  "padding:12px 14px;border-radius:14px;background:rgba(20,10,40,.96);color:#f0e8ff;" +
+  "border:1px solid rgba(124,58,237,.55);box-shadow:0 10px 28px rgba(0,0,0,.4);" +
+  "font:600 13px/1.35 system-ui,sans-serif;pointer-events:none;" +
+  "opacity:0;transform:translateX(18px) scale(.96);" +
+  "transition:opacity .35s ease,transform .45s cubic-bezier(.22,1,.36,1);}" +
+  "#wg-device-toast.wg-in{opacity:1;transform:translateX(0) scale(1);}" +
+  "#wg-device-toast.wg-out{opacity:0;transform:translateX(12px) scale(.98);}" +
+  "#wg-device-toast[data-preset=mobile]{border-color:#3B82F6;}" +
+  "#wg-device-toast[data-preset=tablet]{border-color:#22C55E;}" +
+  "#wg-device-toast[data-preset=desktop]{border-color:#9CA3AF;}" +
+  "#wg-device-toast .wg-dev-icon{flex:0 0 auto;width:36px;height:36px;border-radius:10px;" +
+  "display:flex;align-items:center;justify-content:center;background:rgba(124,58,237,.28);}" +
+  "#wg-device-toast[data-preset=mobile] .wg-dev-icon{background:rgba(59,130,246,.28);}" +
+  "#wg-device-toast[data-preset=tablet] .wg-dev-icon{background:rgba(34,197,94,.28);}" +
+  "#wg-device-toast[data-preset=desktop] .wg-dev-icon{background:rgba(156,163,175,.28);}" +
+  "#wg-device-toast .wg-dev-icon svg{width:22px;height:22px;display:block;}" +
+  "#wg-device-toast .wg-dev-copy{flex:1 1 auto;min-width:0;}" +
+  "#wg-device-toast .wg-dev-title{font:800 13px/1.2 system-ui,sans-serif;color:#fff;}" +
+  "#wg-device-toast .wg-dev-sub{margin-top:3px;font:600 11px/1.3 system-ui,sans-serif;" +
+  "color:#c9a6ff;letter-spacing:.02em;}" +
+  "#wg-device-badge{position:fixed;z-index:2147483646;top:14px;right:14px;" +
+  "display:inline-flex;align-items:center;gap:6px;padding:6px 10px 6px 8px;" +
+  "border-radius:999px;background:rgba(20,10,40,.92);color:#f0e8ff;" +
+  "border:1px solid rgba(124,58,237,.5);font:700 11px/1.2 system-ui,sans-serif;" +
+  "letter-spacing:.04em;text-transform:uppercase;pointer-events:none;" +
+  "box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:0;transform:translateY(-4px);" +
+  "transition:opacity .3s ease,transform .35s cubic-bezier(.22,1,.36,1);}" +
+  "#wg-device-badge.wg-in{opacity:1;transform:translateY(0);}" +
+  "#wg-device-badge[data-preset=mobile]{border-color:#3B82F6;}" +
+  "#wg-device-badge[data-preset=tablet]{border-color:#22C55E;}" +
+  "#wg-device-badge[data-preset=desktop]{border-color:#9CA3AF;}" +
+  "#wg-device-badge .wg-dev-icon{width:16px;height:16px;display:flex;align-items:center;justify-content:center;}" +
+  "#wg-device-badge .wg-dev-icon svg{width:14px;height:14px;display:block;}" +
+  "#wg-device-badge .wg-dev-label{white-space:nowrap;}" +
+  "#wg-cursor[data-touch=1]{width:28px;height:28px;}" +
+  "#wg-todos,.wg-todos-list{list-style:none;margin:0 0 12px;padding:8px 10px;background:#0f0620;border-radius:8px;" +
   "border:1px solid #3a2a60;}" +
-  "#wg-todos li{display:flex;gap:8px;align-items:flex-start;margin:0 0 6px;font:600 12.5px/1.35 system-ui,sans-serif;}" +
-  "#wg-todos li:last-child{margin-bottom:0;}" +
-  "#wg-todos .wg-todo-mark{flex:0 0 auto;width:1.1em;text-align:center;}" +
-  "#wg-todos .wg-todo-done{color:#6ee7b7;text-decoration:line-through;opacity:.85;}" +
-  "#wg-todos .wg-todo-current{color:#fff;}" +
-  "#wg-todos .wg-todo-pending{color:#9a7ad1;}" +
+  "#wg-todos li,.wg-todos-list li{display:flex;gap:8px;align-items:flex-start;margin:0 0 6px;font:600 12.5px/1.35 system-ui,sans-serif;}" +
+  "#wg-todos li:last-child,.wg-todos-list li:last-child{margin-bottom:0;}" +
+  "#wg-todos .wg-todo-mark,.wg-todos-list .wg-todo-mark{flex:0 0 auto;width:1.1em;text-align:center;}" +
+  "#wg-todos .wg-todo-done,.wg-todos-list .wg-todo-done{color:#6ee7b7;text-decoration:line-through;opacity:.85;}" +
+  "#wg-todos .wg-todo-current,.wg-todos-list .wg-todo-current{color:#fff;}" +
+  "#wg-todos .wg-todo-pending,.wg-todos-list .wg-todo-pending{color:#9a7ad1;}" +
+  "#wg-todos[data-wg-todo-style=bullets] .wg-todo-pending," +
+  "#wg-todos[data-wg-todo-style=bullets] .wg-todo-current," +
+  ".wg-todos-list[data-wg-todo-style=bullets] .wg-todo-pending," +
+  ".wg-todos-list[data-wg-todo-style=bullets] .wg-todo-current{color:#e8dcff;}" +
+  "#wg-todos[data-wg-todo-style=bullets] .wg-todo-mark," +
+  ".wg-todos-list[data-wg-todo-style=bullets] .wg-todo-mark{color:#c9a6ff;}" +
   "#wg-progress{height:4px;background:#2a1650;border-radius:2px;margin:0 0 12px;overflow:hidden;}" +
   "#wg-progress-bar{height:100%;background:#7C3AED;border-radius:2px;transition:width .3s ease;}" +
   // A real tab bar for episodes - the currently-active episode reads as
@@ -750,7 +855,7 @@ async function installOverlay(page, title) {
         window.__wgPositionRing = (box, label, tone, style) => {
           const ring = document.getElementById("wg-ring");
           const ringLabel = document.getElementById("wg-ring-label");
-          if (!ring || !ringLabel) return;
+          if (!ring || !ringLabel || !box) return;
           const raw = (tone || "planned") + "";
           const t =
             raw === "auto" || raw === "info" || raw === "warning" || raw === "danger" || raw === "success"
@@ -771,33 +876,58 @@ async function installOverlay(page, title) {
           const margin = 6;
           const vw = window.innerWidth;
           const vh = window.innerHeight;
-          let left = box.x - pad;
-          let top = box.y - pad;
-          const width = box.width + pad * 2;
-          const height = box.height + pad * 2;
-          if (left < margin) left = margin;
-          if (top < margin) top = margin;
-          if (left + width > vw - margin) left = Math.max(margin, vw - margin - width);
-          if (top + height > vh - margin) top = Math.max(margin, vh - margin - height);
+          // Pin ring EXACTLY to the element - never clamp the ring away from
+          // the target (that looked "strapped on" the viewport).
+          const left = box.x - pad;
+          const top = box.y - pad;
+          const width = Math.max(4, box.width + pad * 2);
+          const height = Math.max(4, box.height + pad * 2);
           ring.style.left = left + "px";
           ring.style.top = top + "px";
           ring.style.width = width + "px";
           ring.style.height = height + "px";
           ring.style.opacity = "1";
-          ringLabel.textContent = label;
+          ringLabel.textContent = label || "";
           ringLabel.style.opacity = "1";
-          // Measure the label's own natural width/height (its real
-          // rendered size, unchanged) before deciding where it fits.
           const lw = ringLabel.offsetWidth;
           const lh = ringLabel.offsetHeight;
           let labelLeft = left;
           let labelTop = top + height + 8;
-          if (labelTop + lh > vh - margin) labelTop = top - lh - 8; // flip above if it'd overflow the bottom
+          if (labelTop + lh > vh - margin) labelTop = top - lh - 8;
           if (labelTop < margin) labelTop = margin;
           if (labelLeft + lw > vw - margin) labelLeft = Math.max(margin, vw - margin - lw);
           if (labelLeft < margin) labelLeft = margin;
           ringLabel.style.left = labelLeft + "px";
           ringLabel.style.top = labelTop + "px";
+        };
+        /** Live-follow a selector with rAF (accurate under device shell scale). */
+        window.__wgStopRingFollow = () => {
+          if (window.__wgRingFollowRaf) {
+            cancelAnimationFrame(window.__wgRingFollowRaf);
+            window.__wgRingFollowRaf = 0;
+          }
+          window.__wgRingFollowSel = "";
+        };
+        window.__wgFollowRing = (sel, label, tone, style, focus) => {
+          window.__wgStopRingFollow();
+          if (!sel) return;
+          window.__wgRingFollowSel = sel;
+          const tick = () => {
+            if (window.__wgRingFollowSel !== sel) return;
+            const el = document.querySelector(sel);
+            if (!el) {
+              window.__wgRingFollowRaf = requestAnimationFrame(tick);
+              return;
+            }
+            const r = el.getBoundingClientRect();
+            const box = { x: r.x, y: r.y, width: r.width, height: r.height };
+            if (window.__wgPositionRing) {
+              window.__wgPositionRing(box, label, tone || "planned", style || {});
+            }
+            if (focus && window.__wgApplyFocus) window.__wgApplyFocus(box);
+            window.__wgRingFollowRaf = requestAnimationFrame(tick);
+          };
+          tick();
         };
         window.__wgClickPulse = (x, y, tone) => {
           const pulse = document.getElementById("wg-click-pulse");
@@ -813,19 +943,155 @@ async function installOverlay(page, title) {
           void pulse.offsetWidth;
           pulse.classList.add("wg-pulse");
         };
-        window.__wgHideRing = () => {
+        window.__wgHideRing = (opts) => {
           // While a narrate() call owns the ring (mid multi-step action),
           // the auto-highlight click/fill patches' own end-of-step hide is
           // a no-op - narrate() itself clears it once the WHOLE wrapped
           // action finishes, not just its first sub-step.
           if (window.__wgNarrateOwnsRing) return;
+          if (window.__wgStopRingFollow) window.__wgStopRingFollow();
           const ring = document.getElementById("wg-ring");
           const ringLabel = document.getElementById("wg-ring-label");
           if (ring) ring.style.opacity = "0";
           if (ringLabel) ringLabel.style.opacity = "0";
-          if (window.__wgClearZoom) window.__wgClearZoom();
+          if (window.__wgClearFocus) window.__wgClearFocus();
+          // Honor zoomOut:false - keep camera until next zoom / desktop clear.
+          const forceClear = opts && opts.clearZoom === true;
+          const skipClear = opts && opts.clearZoom === false;
+          if (
+            !skipClear &&
+            (forceClear || window.__wgZoomOutOnHide !== false) &&
+            window.__wgClearZoom
+          ) {
+            window.__wgClearZoom();
+          }
+        };
+        window.__wgClearFocus = () => {
+          const veil = document.getElementById("wg-focus-veil");
+          if (!veil) return;
+          veil.classList.remove("wg-in");
+          setTimeout(() => {
+            const v = document.getElementById("wg-focus-veil");
+            if (v && !v.classList.contains("wg-in")) v.remove();
+          }, 320);
+        };
+        window.__wgApplyFocus = (box) => {
+          if (!box) {
+            if (window.__wgClearFocus) window.__wgClearFocus();
+            return;
+          }
+          let veil = document.getElementById("wg-focus-veil");
+          if (!veil) {
+            veil = document.createElement("div");
+            veil.id = "wg-focus-veil";
+            veil.setAttribute("data-wg-ui", "1");
+            document.documentElement.appendChild(veil);
+          }
+          const pad = 10;
+          veil.style.left = Math.max(0, box.x - pad) + "px";
+          veil.style.top = Math.max(0, box.y - pad) + "px";
+          veil.style.width = Math.max(8, box.width + pad * 2) + "px";
+          veil.style.height = Math.max(8, box.height + pad * 2) + "px";
+          void veil.offsetWidth;
+          veil.classList.add("wg-in");
+        };
+        /**
+         * Finger swipe trail for touch theater (orientation rotate / device change).
+         * opts: { dir: 'left'|'right'|'up'|'down', label?, ms? }
+         * Returns duration waited (ms) via Promise when called from page.evaluate async.
+         */
+        window.__wgSwipeTrail = (opts) => {
+          const o = opts || {};
+          const dir = o.dir === "right" || o.dir === "up" || o.dir === "down" ? o.dir : "left";
+          const ms = Math.max(280, Math.min(1400, Number(o.ms) || 720));
+          const label =
+            o.label ||
+            (dir === "left" || dir === "right" ? "swipe" : "swipe") +
+              (o.hint ? " \\u00b7 " + o.hint : "");
+          let layer = document.getElementById("wg-swipe-layer");
+          if (layer && layer._wgTimer) {
+            clearTimeout(layer._wgTimer);
+            layer._wgTimer = null;
+          }
+          if (layer) layer.remove();
+          layer = document.createElement("div");
+          layer.id = "wg-swipe-layer";
+          layer.setAttribute("data-wg-ui", "1");
+          const finger = document.createElement("div");
+          finger.className = "wg-swipe-finger";
+          const lab = document.createElement("div");
+          lab.className = "wg-swipe-label";
+          lab.textContent = label;
+          layer.appendChild(lab);
+          layer.appendChild(finger);
+          document.documentElement.appendChild(layer);
+          const vw = window.innerWidth || 390;
+          const vh = window.innerHeight || 844;
+          const pad = Math.min(vw, vh) * 0.18;
+          let x0;
+          let y0;
+          let x1;
+          let y1;
+          if (dir === "left") {
+            x0 = vw - pad;
+            x1 = pad;
+            y0 = y1 = vh * 0.52;
+          } else if (dir === "right") {
+            x0 = pad;
+            x1 = vw - pad;
+            y0 = y1 = vh * 0.52;
+          } else if (dir === "up") {
+            x0 = x1 = vw * 0.5;
+            y0 = vh - pad;
+            y1 = pad;
+          } else {
+            x0 = x1 = vw * 0.5;
+            y0 = pad;
+            y1 = vh - pad;
+          }
+          finger.style.left = x0 + "px";
+          finger.style.top = y0 + "px";
+          finger.style.opacity = "1";
+          void layer.offsetWidth;
+          layer.classList.add("wg-in");
+          const steps = 12;
+          const stepMs = Math.floor(ms / steps);
+          let i = 0;
+          const tick = () => {
+            i += 1;
+            const t = Math.min(1, i / steps);
+            const e = t * t * (3 - 2 * t);
+            const x = x0 + (x1 - x0) * e;
+            const y = y0 + (y1 - y0) * e;
+            finger.style.left = x + "px";
+            finger.style.top = y + "px";
+            const dot = document.createElement("div");
+            dot.className = "wg-swipe-dot";
+            dot.style.left = x + "px";
+            dot.style.top = y + "px";
+            dot.style.opacity = String(0.85 - t * 0.55);
+            layer.appendChild(dot);
+            requestAnimationFrame(() => {
+              dot.style.transition = "opacity .45s ease, transform .45s ease";
+              dot.style.opacity = "0";
+              dot.style.transform = "scale(1.8)";
+            });
+            if (i < steps) {
+              layer._wgTimer = setTimeout(tick, stepMs);
+            } else {
+              finger.style.opacity = "0";
+              layer.classList.remove("wg-in");
+              layer._wgTimer = setTimeout(() => {
+                const el = document.getElementById("wg-swipe-layer");
+                if (el) el.remove();
+              }, 380);
+            }
+          };
+          layer._wgTimer = setTimeout(tick, 40);
+          return ms + 120;
         };
         window.__wgClearZoom = () => {
+          // Strip leftover element transforms from older zoom path.
           document.querySelectorAll("[data-wg-zoomed=\\"1\\"]").forEach((el) => {
             el.style.removeProperty("transform");
             el.style.removeProperty("transform-origin");
@@ -834,21 +1100,116 @@ async function installOverlay(page, title) {
             el.style.removeProperty("position");
             delete el.dataset.wgZoomed;
           });
+          // Undo any prior shell-camera experiment - restore device fit scale only.
+          const shell = document.getElementById("wg-device-shell");
+          if (shell && shell.dataset.wgCamBase != null) {
+            shell.style.transform = shell.dataset.wgCamBase;
+            if (shell.dataset.wgCamOrigin) {
+              shell.style.transformOrigin = shell.dataset.wgCamOrigin;
+            } else {
+              shell.style.transformOrigin = "center center";
+            }
+            delete shell.dataset.wgCamBase;
+            delete shell.dataset.wgCamOrigin;
+            delete shell.dataset.wgCamZoom;
+          }
+          window.__wgZoomLevel = 1;
+          window.__wgZoomSel = "";
+          if (window.__wgSetZoomBadge) window.__wgSetZoomBadge(1, "");
         };
-        window.__wgApplyZoom = (sel, scale) => {
-          if (window.__wgClearZoom) window.__wgClearZoom();
+        const ZOOM_ICO =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+        window.__wgSetZoomBadge = (scale, sel) => {
           const n = Number(scale);
-          if (!Number.isFinite(n) || n <= 1.001) return;
-          const el = document.querySelector(sel);
-          if (!el) return;
-          const st = getComputedStyle(el);
-          if (st.position === "static") el.style.position = "relative";
-          el.style.zIndex = "2147483645";
-          el.style.transition = "transform .35s ease";
-          el.style.transformOrigin = "center center";
-          el.style.transform = "scale(" + n + ")";
-          el.dataset.wgZoomed = "1";
+          const level = Number.isFinite(n) && n > 0 ? n : 1;
+          let badge = document.getElementById("wg-zoom-badge");
+          if (!badge) {
+            badge = document.createElement("div");
+            badge.id = "wg-zoom-badge";
+            badge.setAttribute("data-wg-ui", "1");
+            document.documentElement.appendChild(badge);
+          }
+          const zoomed = level > 1.001 || level < 0.999;
+          badge.dataset.zoomed = zoomed ? "1" : "0";
+          const txt = level.toFixed(2) + "\\u00d7";
+          badge.innerHTML =
+            '<span class="wg-zoom-ico">' +
+            ZOOM_ICO +
+            '</span><span class="wg-zoom-val">' +
+            txt +
+            "</span>";
+          badge.classList.add("wg-in");
+          window.__wgZoomLevel = level;
+          window.__wgZoomSel = sel || "";
         };
+        window.__wgEnsureZoomBadge = () => {
+          if (window.__wgSetZoomBadge) {
+            window.__wgSetZoomBadge(window.__wgZoomLevel || 1, window.__wgZoomSel || "");
+          }
+        };
+        window.__wgSetTypingBadge = (on, label) => {
+          let badge = document.getElementById("wg-typing-badge");
+          if (!on) {
+            if (badge) {
+              badge.classList.remove("wg-in");
+              setTimeout(() => {
+                const b = document.getElementById("wg-typing-badge");
+                if (b && !b.classList.contains("wg-in")) b.remove();
+              }, 220);
+            }
+            return;
+          }
+          if (!badge) {
+            badge = document.createElement("div");
+            badge.id = "wg-typing-badge";
+            badge.setAttribute("data-wg-ui", "1");
+            document.documentElement.appendChild(badge);
+          }
+          const text = label ? String(label).slice(0, 40) : "typing";
+          badge.innerHTML =
+            '<span class="wg-ty-dots">\\u25cf\\u25cf\\u25cf</span><span>typing \\u00b7 ' +
+            text.replace(/</g, "&lt;") +
+            "</span>";
+          void badge.offsetWidth;
+          badge.classList.add("wg-in");
+        };
+        /**
+         * Zoom HUD only - never CSS-scale the target or the device shell.
+         * Shell camera zoom fought device-theater fit-scale (broke ring follow
+         * + uneven border-radius). Element scale mangled cart rows. Emphasis
+         * is ring + focus veil; badge still shows authored zoom level.
+         */
+        window.__wgApplyZoom = (sel, scale) => {
+          document.querySelectorAll("[data-wg-zoomed=\\"1\\"]").forEach((el) => {
+            el.style.removeProperty("transform");
+            el.style.removeProperty("transform-origin");
+            el.style.removeProperty("transition");
+            el.style.removeProperty("z-index");
+            el.style.removeProperty("position");
+            delete el.dataset.wgZoomed;
+          });
+          const shell = document.getElementById("wg-device-shell");
+          if (shell && shell.dataset.wgCamBase != null) {
+            shell.style.transform = shell.dataset.wgCamBase;
+            shell.style.transformOrigin = shell.dataset.wgCamOrigin || "center center";
+            delete shell.dataset.wgCamBase;
+            delete shell.dataset.wgCamOrigin;
+            delete shell.dataset.wgCamZoom;
+          }
+          const n = Number(scale);
+          if (!Number.isFinite(n) || n <= 1.001) {
+            window.__wgZoomLevel = 1;
+            window.__wgZoomSel = "";
+            if (window.__wgSetZoomBadge) window.__wgSetZoomBadge(1, "");
+            return;
+          }
+          window.__wgZoomLevel = n;
+          window.__wgZoomSel = sel || "";
+          if (window.__wgSetZoomBadge) window.__wgSetZoomBadge(n, sel || "");
+        };
+        // Mount zoom HUD immediately so demos always show 1.00x.
+        if (window.__wgEnsureZoomBadge) window.__wgEnsureZoomBadge();
         const POSITIONS = ["left", "center", "right"];
         const applyPos = (el, pos) => {
           el.dataset.pos = pos;
@@ -1134,25 +1495,85 @@ async function installOverlay(page, title) {
             sync = "clear";
           }
 
-          let dock = document.getElementById("wg-todo-dock");
+          let dockKey =
+            (dockState && dockState.id && String(dockState.id).trim()) ||
+            (payload && !Array.isArray(payload) && payload.todoId && String(payload.todoId).trim()) ||
+            "_default";
+
           // Drop any in-panel leftover (old builds put #wg-todos in .wg-body).
           document.querySelectorAll("#wg-panel #wg-todos").forEach((el) => el.remove());
 
-          // keep + no new payload: do not remove an existing dock (PIA #10).
+          const allDocks = () =>
+            [...document.querySelectorAll(".wg-todo-dock, #wg-todo-dock")].filter(
+              (el, i, arr) => arr.indexOf(el) === i,
+            );
+          const relayoutTodoDocks = () => {
+            const docks = allDocks();
+            let top = 72;
+            for (const el of docks) {
+              el.style.top = top + "px";
+              top += Math.max(48, el.getBoundingClientRect().height) + 10;
+            }
+          };
+          const findDock = (key) => {
+            if (key === "_default") {
+              return (
+                document.querySelector('.wg-todo-dock[data-wg-todo-key="_default"]') ||
+                document.getElementById("wg-todo-dock")
+              );
+            }
+            const all = document.querySelectorAll(".wg-todo-dock");
+            for (let i = 0; i < all.length; i++) {
+              if (all[i].getAttribute("data-wg-todo-key") === String(key)) return all[i];
+            }
+            return null;
+          };
+
+          // keep + no new payload: do not remove existing docks (PIA #10).
           if (sync === "keep") {
             if (!dockState && !list.length) return;
             // After navigation the DOM may be gone - recreate from carried dock.
             sync = "set";
           }
-          if (sync === "clear" || (sync === "set" && !dockState && !list.length)) {
-            if (dock) dock.remove();
+          // Default replace=true: one checklist. parallel docks only when replace:false.
+          const replace =
+            !(payload && !Array.isArray(payload) && payload.replace === false) &&
+            !(payload && !Array.isArray(payload) && payload.parallel === true);
+          const hasDock =
+            !!(dockState && Array.isArray(dockState.groups) && dockState.groups.length);
+          // Explicit clear only - never treat "set + dock + empty list" as clear
+          // (that thrash was marks -> blank in a few ms).
+          if (sync === "clear" || (sync === "set" && !hasDock && !list.length)) {
+            const clearId =
+              (payload && !Array.isArray(payload) && payload.todoId && String(payload.todoId).trim()) ||
+              (dockState && dockState.id && String(dockState.id).trim()) ||
+              "";
+            if (clearId && !replace) {
+              const el = findDock(clearId);
+              if (el) el.remove();
+            } else {
+              allDocks().forEach((el) => el.remove());
+            }
+            relayoutTodoDocks();
             return;
           }
 
+          if (sync === "set" && replace) {
+            // Drop sibling docks so we never stack duplicates.
+            for (const el of allDocks()) {
+              const key = el.getAttribute("data-wg-todo-key") || "_default";
+              if (key !== dockKey) el.remove();
+            }
+          }
+
           const POS = ["left", "right"];
+          let dock = findDock(dockKey);
           if (!dock) {
             dock = document.createElement("div");
-            dock.id = "wg-todo-dock";
+            dock.className = "wg-todo-dock";
+            dock.setAttribute("data-wg-todo-key", dockKey);
+            if (dockKey === "_default") dock.id = "wg-todo-dock";
+            else dock.id = "wg-todo-dock--" + dockKey.replace(/[^a-zA-Z0-9_-]/g, "-");
             dock.setAttribute("data-wg-ui", "1");
             dock.setAttribute("data-wg-modal", "todos");
             dock.setAttribute("data-wg-ready", "1");
@@ -1199,21 +1620,39 @@ async function installOverlay(page, title) {
             return id ? ' data-wg-todo-item="' + esc(id) + '"' : "";
           };
           const renderItems = (items, style) => {
-            const st = style === "checklist" ? "checklist" : "sequential";
+            const rawStyle = String(style || "sequential").toLowerCase();
+            const st =
+              rawStyle === "checklist"
+                ? "checklist"
+                : rawStyle === "bullets" ||
+                    rawStyle === "bullet" ||
+                    rawStyle === "list" ||
+                    rawStyle === "ul" ||
+                    rawStyle === "points" ||
+                    rawStyle === "plain"
+                  ? "bullets"
+                  : "sequential";
             return (
-              '<ul id="wg-todos" data-wg-todo-style="' +
+              '<ul class="wg-todos-list" data-wg-todo-style="' +
               st +
               '">' +
               (items || [])
                 .map((t) => {
-                  const cls = t.current
-                    ? "wg-todo-current"
-                    : t.done
-                      ? "wg-todo-done"
-                      : "wg-todo-pending";
+                  const cls =
+                    st === "bullets"
+                      ? t.done
+                        ? "wg-todo-done"
+                        : "wg-todo-pending"
+                      : t.current
+                        ? "wg-todo-current"
+                        : t.done
+                          ? "wg-todo-done"
+                          : "wg-todo-pending";
                   let mark;
                   if (st === "checklist") {
                     mark = t.done ? "\u2611" : "\u2610";
+                  } else if (st === "bullets") {
+                    mark = "\u2022";
                   } else {
                     mark = t.done ? "\u2713" : t.current ? "\u2192" : "\u25CB";
                   }
@@ -1235,11 +1674,7 @@ async function installOverlay(page, title) {
             );
           };
 
-          const dockId =
-            (dockState && dockState.id) ||
-            (payload && !Array.isArray(payload) && payload.todoId) ||
-            "";
-          if (dockId) dock.setAttribute("data-wg-todo-id", String(dockId));
+          if (dockKey !== "_default") dock.setAttribute("data-wg-todo-id", dockKey);
           else dock.removeAttribute("data-wg-todo-id");
 
           let html = "";
@@ -1265,14 +1700,235 @@ async function installOverlay(page, title) {
             html = renderItems(list, "sequential");
           }
           dock.innerHTML = html;
+          relayoutTodoDocks();
           if (window.__wgStampModal) {
             window.__wgStampModal(dock, "todos", { ready: true });
+          }
+        };
+        // Device toast + chip (0.13.2+) - announce on set/clear; quiet chip on keep.
+        // Payload: { sync, device?, remain?, announce? }
+        window.__wgSyncDevice = (payload) => {
+          const sync =
+            payload && (payload.sync === "clear" || payload.sync === "keep" || payload.sync === "set")
+              ? payload.sync
+              : "keep";
+          const device = payload && payload.device ? payload.device : null;
+          const cursor = document.getElementById("wg-cursor");
+          const MOUSE_SVG =
+            "<svg viewBox='0 0 32 32' width='24' height='24'>" +
+            "<path fill='#0C0C1A' stroke='#fff' stroke-width='1.4' stroke-linejoin='round' " +
+            "d='M6 3.5l1.4 22.5 5.8-5.4 4.2 9.4 3.6-1.6-4.2-9.2H26z'/></svg>";
+          const FINGER_SVG =
+            "<svg viewBox='0 0 32 32' width='28' height='28'>" +
+            "<ellipse cx='16' cy='22' rx='7' ry='8' fill='#0C0C1A' stroke='#fff' stroke-width='1.4'/>" +
+            "<rect x='12' y='6' width='8' height='16' rx='4' fill='#0C0C1A' stroke='#fff' stroke-width='1.4'/>" +
+            "</svg>";
+          const ICONS = {
+            mobile:
+              '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+              '<rect x="7" y="2.5" width="10" height="19" rx="2.2"/>' +
+              '<circle cx="12" cy="18.2" r="1.1" fill="#fff" stroke="none"/></svg>',
+            tablet:
+              '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+              '<rect x="3.5" y="4" width="17" height="16" rx="2"/>' +
+              '<circle cx="12" cy="17.2" r="1" fill="#fff" stroke="none"/></svg>',
+            desktop:
+              '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+              '<rect x="2.5" y="3.5" width="19" height="12.5" rx="1.5"/>' +
+              '<path d="M8 20h8M12 16v4"/></svg>',
+          };
+          const setCursor = (touch) => {
+            if (!cursor) return;
+            if (touch) {
+              cursor.setAttribute("data-touch", "1");
+              cursor.innerHTML = FINGER_SVG;
+            } else {
+              cursor.removeAttribute("data-touch");
+              cursor.innerHTML = MOUSE_SVG;
+            }
+          };
+          const ensureChip = (preset, touch, remain, orientation) => {
+            let badge = document.getElementById("wg-device-badge");
+            if (preset === "desktop" && !touch) {
+              if (badge) {
+                badge.classList.remove("wg-in");
+                setTimeout(() => {
+                  const b = document.getElementById("wg-device-badge");
+                  if (b) b.remove();
+                }, 320);
+              }
+              return;
+            }
+            if (!badge) {
+              badge = document.createElement("div");
+              badge.id = "wg-device-badge";
+              badge.setAttribute("data-wg-ui", "1");
+              document.documentElement.appendChild(badge);
+            }
+            badge.dataset.preset = preset;
+            badge.dataset.touch = touch ? "1" : "0";
+            const orient =
+              orientation === "landscape" || orientation === "portrait"
+                ? orientation
+                : "";
+            if (orient) badge.dataset.orientation = orient;
+            const chipLabel =
+              preset === "desktop" && !touch
+                ? "desktop"
+                : preset +
+                  (orient ? " \u00b7 " + (orient === "landscape" ? "land" : "port") : "") +
+                  (remain ? " \u00b7 remain" : "");
+            badge.innerHTML =
+              '<span class="wg-dev-icon">' +
+              (ICONS[preset] || ICONS.desktop) +
+              '</span><span class="wg-dev-label">' +
+              chipLabel +
+              "</span>";
+            void badge.offsetWidth;
+            badge.classList.add("wg-in");
+          };
+          const showToast = (preset, touch, title, sub, orientation) => {
+            let toast = document.getElementById("wg-device-toast");
+            if (toast && toast._wgTimer) {
+              clearTimeout(toast._wgTimer);
+              toast._wgTimer = null;
+            }
+            if (!toast) {
+              toast = document.createElement("div");
+              toast.id = "wg-device-toast";
+              toast.setAttribute("data-wg-ui", "1");
+              document.documentElement.appendChild(toast);
+            }
+            // Hide chip while toast is up (same corner).
+            const badge = document.getElementById("wg-device-badge");
+            if (badge) badge.classList.remove("wg-in");
+            toast.dataset.preset = preset;
+            toast.innerHTML =
+              '<span class="wg-dev-icon">' +
+              (ICONS[preset] || ICONS.desktop) +
+              '</span><span class="wg-dev-copy"><div class="wg-dev-title">' +
+              title +
+              '</div><div class="wg-dev-sub">' +
+              sub +
+              "</div></span>";
+            toast.classList.remove("wg-out");
+            void toast.offsetWidth;
+            toast.classList.add("wg-in");
+            toast._wgTimer = setTimeout(() => {
+              toast.classList.add("wg-out");
+              toast.classList.remove("wg-in");
+              setTimeout(() => {
+                const t = document.getElementById("wg-device-toast");
+                if (t) t.remove();
+                if (preset !== "desktop" || touch) {
+                  ensureChip(preset, touch, true, orientation);
+                }
+              }, 380);
+            }, 2200);
+          };
+
+          if (sync === "keep" && !device) return;
+
+          const isDesktopClear =
+            sync === "clear" ||
+            (device && device.preset === "desktop" && !device.touchMode);
+          if (isDesktopClear) {
+            setCursor(false);
+            const announce = payload.announce !== false && sync !== "keep";
+            if (announce) {
+              const vp = device && device.viewport ? device.viewport : { width: 1280, height: 720 };
+              showToast(
+                "desktop",
+                false,
+                "Back to desktop",
+                vp.width + "\u00d7" + vp.height + " \u00b7 mouse",
+                "landscape",
+              );
+              setTimeout(() => {
+                const badge = document.getElementById("wg-device-badge");
+                if (badge) badge.remove();
+              }, 2600);
+            } else {
+              const badge = document.getElementById("wg-device-badge");
+              if (badge) badge.remove();
+              const toast = document.getElementById("wg-device-toast");
+              if (toast) toast.remove();
+            }
+            window.__wgDevicePreset = "desktop";
+            window.__wgDeviceOrientation = "landscape";
+            window.__wgDeviceTouch = false;
+            document.documentElement.dataset.wgTouch = "0";
+            if (window.__wgEnsureZoomBadge) window.__wgEnsureZoomBadge();
+            return;
+          }
+
+          if (!device) return;
+          const preset = device.preset || "desktop";
+          const touch = !!device.touchMode;
+          const remain = payload.remain !== false && sync !== "clear";
+          const vp = device.viewport || {};
+          const orient =
+            device.orientation === "landscape" || device.orientation === "portrait"
+              ? device.orientation
+              : vp.height > vp.width
+                ? "portrait"
+                : "landscape";
+          const prev = window.__wgDevicePreset || "";
+          const prevOrient = window.__wgDeviceOrientation || "";
+          const presetChanged = prev !== preset || (touch && prev === "desktop");
+          const orientChanged = prevOrient !== "" && prevOrient !== orient;
+          const changed = presetChanged || orientChanged || prev === "";
+          setCursor(touch);
+          window.__wgDevicePreset = preset;
+          window.__wgDeviceOrientation = orient;
+          window.__wgDeviceTouch = touch;
+          document.documentElement.dataset.wgTouch = touch ? "1" : "0";
+          if (window.__wgEnsureZoomBadge) window.__wgEnsureZoomBadge();
+
+          const announce =
+            payload.announce === true ||
+            (payload.announce !== false && (sync === "set" || sync === "clear") && changed);
+
+          const size =
+            (vp.width || "?") +
+            "\u00d7" +
+            (vp.height || "?") +
+            " \u00b7 " +
+            orient +
+            (touch ? " \u00b7 touch" : "");
+          let titleText = {
+            mobile: "Now in mobile mode",
+            tablet: "Now in tablet mode",
+            desktop: "Now in desktop mode",
+          }[preset] || "Device updated";
+          if (orientChanged && !presetChanged) {
+            titleText =
+              orient === "landscape" ? "Rotated to landscape" : "Rotated to portrait";
+          }
+          if (announce) {
+            showToast(preset, touch, titleText, size, orient);
+          } else {
+            ensureChip(preset, touch, remain, orient);
           }
         };
       },
       { title, favicon: WAYGRAPH_FAVICON, bannerPos, todoPos, envAutoplay },
     )
     .catch(() => {});
+  // Navigations wipe #wg-device-shell - rebuild when video stage + device are live.
+  // If we already shuttered to desktop-flat, re-apply FLAT (never re-add bezel).
+  if (
+    page.__wgVideoViewport &&
+    page.__wgDeviceShell &&
+    page.__wgDeviceShell.width &&
+    page.__wgDeviceShell.height
+  ) {
+    await applyVideoDeviceStage(page, page.__wgDeviceShell, page.__wgVideoViewport, {
+      clear: false,
+      shutterOut: !!page.__wgDesktopFlat,
+      desktopFlat: !!page.__wgDesktopFlat,
+    });
+  }
 }
 
 async function renderBeforeStep(page, info) {
@@ -1409,13 +2065,22 @@ async function renderBeforeStep(page, info) {
       }
       if (window.__wgSyncTodos) {
         const sync = info.todoSync || (info.todos && info.todos.length ? "set" : "keep");
-        window.__wgSyncTodos({
-          sync: sync,
-          dock: info.todoDock || null,
-          list: info.todos || [],
-          pos: info.todoPos || null,
-          todoId: info.todoId || (info.todoDock && info.todoDock.id) || null,
-        });
+        // Prefer dock-only payload. Passing list:[] with a dock used to clear
+        // marks a frame later (empty-list clear path).
+        if (sync === "keep" && !info.todoDock) {
+          /* leave floating dock alone */
+        } else {
+          const payload = {
+            sync: sync,
+            dock: info.todoDock || null,
+            pos: info.todoPos || null,
+            todoId: info.todoId || (info.todoDock && info.todoDock.id) || null,
+          };
+          if (!info.todoDock && info.todos && info.todos.length) {
+            payload.list = info.todos;
+          }
+          window.__wgSyncTodos(payload);
+        }
       }
       if (window.__wgStampModal) {
         window.__wgStampModal(panel, "panel", {
@@ -1531,21 +2196,73 @@ async function renderBeforeStep(page, info) {
   }
 }
 
-async function ensureSelectorInView(page, selector) {
+/**
+ * Scroll a locator into view for demo theater.
+ * Prefer CSS smooth scroll + scrollend wait. Do NOT call Playwright's
+ * scrollIntoViewIfNeeded first - that jumps instantly and makes the
+ * following smooth scroll a no-op (looks like a teleport), especially
+ * noticeable under --fast when dwell is shorter.
+ * Pass opts.instant=true only for skipTheater / blitz.
+ */
+async function ensureLocatorInView(locator, opts) {
+  const instant = !!(opts && opts.instant);
   try {
-    const loc = page.locator(selector).first();
-    await loc.scrollIntoViewIfNeeded().catch(() => {});
-    await page
-      .evaluate(async (sel) => {
-        const el = document.querySelector(sel);
-        if (!el) return;
+    if (instant) {
+      await locator.scrollIntoViewIfNeeded().catch(() => {});
+      return;
+    }
+    // Touch mode: if the target is off-screen, show a swipe trail in the
+    // finger direction that would scroll it into view (not device morph).
+    const scrollPlan = await locator
+      .evaluate((el) => {
+        if (!el || typeof el.getBoundingClientRect !== "function") return null;
+        const touch =
+          window.__wgDeviceTouch === true ||
+          document.documentElement.dataset.wgTouch === "1" ||
+          window.__wgDevicePreset === "mobile" ||
+          window.__wgDevicePreset === "tablet";
+        if (!touch) return null;
+        const r = el.getBoundingClientRect();
+        const vw = window.innerWidth || 390;
+        const vh = window.innerHeight || 844;
+        const margin = 48;
+        const below = r.top > vh - margin;
+        const above = r.bottom < margin;
+        const right = r.left > vw - margin;
+        const left = r.right < margin;
+        if (!below && !above && !left && !right) return null;
+        // Finger direction to reveal the target (swipe up => content moves up).
+        let dir = "up";
+        if (below) dir = "up";
+        else if (above) dir = "down";
+        else if (right) dir = "left";
+        else if (left) dir = "right";
+        return { dir, hint: "scroll" };
+      })
+      .catch(() => null);
+    if (scrollPlan && scrollPlan.dir) {
+      demoLog("  swipe trail dir=" + scrollPlan.dir + " hint=scroll");
+      await playSwipeTrail(locator.page(), {
+        dir: scrollPlan.dir,
+        label: "swipe \\u00b7 scroll",
+        hint: "scroll",
+        ms: Number(process.env.WAYGRAPH_SWIPE_MS || 650),
+      });
+    }
+    await locator
+      .evaluate(async (el) => {
+        if (!el || typeof el.scrollIntoView !== "function") return;
         const waitScroll = (node, ms) =>
           new Promise((resolve) => {
             let done = false;
             const finish = () => {
               if (done) return;
               done = true;
-              node.removeEventListener("scrollend", finish);
+              try {
+                node.removeEventListener("scrollend", finish);
+              } catch {
+                /* ignore */
+              }
               clearTimeout(t);
               resolve();
             };
@@ -1569,7 +2286,7 @@ async function ensureSelectorInView(page, selector) {
             }
           }
         }
-        await waitScroll(document.scrollingElement || document.documentElement, 500);
+        await waitScroll(document.scrollingElement || document.documentElement, 650);
         let p = el.parentElement;
         while (p && p !== document.documentElement && p !== document.body) {
           const st = getComputedStyle(p);
@@ -1587,33 +2304,63 @@ async function ensureSelectorInView(page, selector) {
                 p.scrollLeft = left;
                 p.scrollTop = top;
               }
-              await waitScroll(p, 500);
+              await waitScroll(p, 650);
             }
           }
           p = p.parentElement;
         }
-      }, selector)
+      })
       .catch(() => {});
   } catch {
     /* best-effort */
   }
 }
 
-async function applyHighlightZoom(page, selector, zoom) {
+async function ensureSelectorInView(page, selector, opts) {
+  await ensureLocatorInView(page.locator(selector).first(), opts);
+}
+
+async function applyHighlightZoom(page, selector, zoom, zoomOut) {
   const z = Number(zoom);
   if (!Number.isFinite(z) || z <= 1.001) {
     await page.evaluate(() => {
+      window.__wgZoomOutOnHide = true;
       if (window.__wgClearZoom) window.__wgClearZoom();
     }).catch(() => {});
     return;
   }
+  demoFixture("zoom", "ctx/ring zoom(" + z + ") zoomOut=" + (zoomOut !== false), selector);
   await page
     .evaluate(
-      ({ sel, scale }) => {
+      ({ sel, scale, zoomOut }) => {
+        // false = keep camera after ring hide (ctx.zoomOut(false) / ring.zoomOut).
+        window.__wgZoomOutOnHide = zoomOut !== false;
         if (window.__wgApplyZoom) window.__wgApplyZoom(sel, scale);
       },
-      { sel: selector, scale: z },
+      { sel: selector, scale: z, zoomOut: zoomOut !== false },
     )
+    .catch(() => {});
+}
+
+async function applyHighlightFocus(page, box, focus) {
+  if (!focus || !box) {
+    await page
+      .evaluate(() => {
+        if (window.__wgClearFocus) window.__wgClearFocus();
+      })
+      .catch(() => {});
+    return;
+  }
+  demoFixture("focus", "ctx/ring focus(true)", {
+    x: Math.round(box.x),
+    y: Math.round(box.y),
+    w: Math.round(box.width),
+    h: Math.round(box.height),
+  });
+  await page
+    .evaluate((b) => {
+      if (window.__wgApplyFocus) window.__wgApplyFocus(b);
+    }, box)
     .catch(() => {});
 }
 
@@ -1709,6 +2456,11 @@ async function presentFailPanel(page, opts) {
         size: styled.size,
         weight: styled.weight,
         zoom: styled.zoom,
+        zoomOut: styled.zoomOut,
+        focus: !!styled.focus,
+        tone: styled.tone,
+        color: styled.color,
+        detail: styled.detail,
       };
     });
     await cycleHighlightRings(page, errHighlights, !!gatesFast, {
@@ -1758,17 +2510,30 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
       })
       .catch(() => {});
   }
+  let lastRingEndedAt = null;
   for (let i = 0; i < list.length; i++) {
     const h = list[i];
+    const ringStarted = Date.now();
     try {
       await ensureSelectorInView(page, h.selector);
-      await applyHighlightZoom(page, h.selector, h.zoom);
-      const box = await page.locator(h.selector).first().boundingBox();
-      if (box) {
+      await applyHighlightZoom(page, h.selector, h.zoom, h.zoomOut);
+      // Prefer live in-page rect (honors device-shell scale) over Playwright box.
+      const box = await page
+        .evaluate((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return { x: r.x, y: r.y, width: r.width, height: r.height };
+        }, h.selector)
+        .catch(() => null);
+      if (box && box.width > 0 && box.height > 0) {
         await showRing(page, box, h.label, h.tone || "planned", {
           size: h.size,
           weight: h.weight,
+          selector: h.selector,
+          focus: !!h.focus,
         });
+        // focus is applied by FollowRing / showRing - no second apply needed
         // Do NOT advanceTodoDock by ring index after stubAfter already set
         // progress - that reset current back to 0 and the next block looked
         // blank. Mid-act Method advance still uses syncTodoDockAdvance.
@@ -1825,27 +2590,76 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
         const legacyMs = i === list.length - 1 ? 200 : 900;
         const holdMs =
           authored != null ? authored : defaultHoldMs != null ? defaultHoldMs : legacyMs;
+        const gap = lastRingEndedAt != null ? ringStarted - lastRingEndedAt : null;
+        const holdExtra =
+          "hold=" +
+          holdMs +
+          "ms" +
+          (authored != null ? " authored" : " default") +
+          " box=" +
+          Math.round(box.x) +
+          "," +
+          Math.round(box.y) +
+          " " +
+          Math.round(box.width) +
+          "x" +
+          Math.round(box.height) +
+          (gap != null ? " gap=" + gap + "ms" : "");
+        demoHighlight(h, holdExtra);
+        demoLog(
+          "  highlight " +
+            (i + 1) +
+            "/" +
+            list.length +
+            (gap != null && gap < 120 ? ansiPaint(ANSI.yellow, " WARN gap<120ms") : "") +
+            (holdMs < 250 && list.length > 1 ? ansiPaint(ANSI.yellow, " WARN short hold") : ""),
+        );
         await new Promise((res) => setTimeout(res, holdMs));
+        lastRingEndedAt = Date.now();
+      } else {
+        demoHighlight(h, "SKIP no boundingBox");
       }
-    } catch {
-      // best-effort - a selector that doesn't resolve just gets skipped
+    } catch (err) {
+      demoHighlight(
+        h || { selector: h && h.selector, label: "(error)" },
+        "SKIP " + String(err && err.message ? err.message : err).slice(0, 80),
+      );
     }
   }
   if (list.length > 0) {
     const last = list[list.length - 1];
     await page
       .evaluate((h) => {
-        if (!window.__wgPositionRing) return;
+        if (!window.__wgFollowRing && !window.__wgPositionRing) return;
+        if (window.__wgFollowRing) {
+          window.__wgFollowRing(
+            h.selector,
+            h.label,
+            h.tone || "planned",
+            { size: h.size || "md", weight: h.weight || "normal" },
+            !!h.focus,
+          );
+          return;
+        }
         const reposition = () => {
           const el = document.querySelector(h.selector);
           if (!el) {
             if (window.__wgHideRing) window.__wgHideRing();
             return;
           }
-          window.__wgPositionRing(el.getBoundingClientRect(), h.label, h.tone || "planned", {
+          const box = el.getBoundingClientRect();
+          window.__wgPositionRing(box, h.label, h.tone || "planned", {
             size: h.size || "md",
             weight: h.weight || "normal",
           });
+          if (h.focus && window.__wgApplyFocus) {
+            window.__wgApplyFocus({
+              x: box.x,
+              y: box.y,
+              width: box.width,
+              height: box.height,
+            });
+          }
         };
         reposition();
         window.__wgRingTrack = reposition;
@@ -1994,13 +2808,22 @@ async function renderAfterStep(page, info) {
       }
       if (window.__wgSyncTodos) {
         const sync = info.todoSync || (info.todos && info.todos.length ? "set" : "keep");
-        window.__wgSyncTodos({
-          sync: sync,
-          dock: info.todoDock || null,
-          list: info.todos || [],
-          pos: info.todoPos || null,
-          todoId: info.todoId || (info.todoDock && info.todoDock.id) || null,
-        });
+        // Prefer dock-only payload. Passing list:[] with a dock used to clear
+        // marks a frame later (empty-list clear path).
+        if (sync === "keep" && !info.todoDock) {
+          /* leave floating dock alone */
+        } else {
+          const payload = {
+            sync: sync,
+            dock: info.todoDock || null,
+            pos: info.todoPos || null,
+            todoId: info.todoId || (info.todoDock && info.todoDock.id) || null,
+          };
+          if (!info.todoDock && info.todos && info.todos.length) {
+            payload.list = info.todos;
+          }
+          window.__wgSyncTodos(payload);
+        }
       }
       if (window.__wgStampModal) {
         window.__wgStampModal(panel, "panel", {
@@ -2266,14 +3089,23 @@ async function markStepRunning(page, _opts) {
 async function showRing(page, box, label, tone, style) {
   const size = normalizeHighlightSize(style && style.size);
   const weight = normalizeHighlightWeight(style && style.weight);
+  const selector = style && style.selector ? String(style.selector) : "";
+  const focus = !!(style && style.focus);
   await page
     .evaluate(
-      ({ box, label, tone, size, weight }) => {
+      ({ box, label, tone, size, weight, selector, focus }) => {
+        if (selector && window.__wgFollowRing) {
+          window.__wgFollowRing(selector, label, tone || "planned", { size, weight }, focus);
+          return;
+        }
+        if (window.__wgStopRingFollow) window.__wgStopRingFollow();
         if (window.__wgPositionRing) {
           window.__wgPositionRing(box, label, tone || "planned", { size, weight });
         }
+        if (focus && box && window.__wgApplyFocus) window.__wgApplyFocus(box);
+        else if (!focus && window.__wgClearFocus) window.__wgClearFocus();
       },
-      { box, label, tone: tone || "planned", size, weight },
+      { box, label, tone: tone || "planned", size, weight, selector, focus },
     )
     .catch(() => {});
 }
@@ -2325,13 +3157,78 @@ async function matchStubIndexForLocator(page, locator, stubs) {
   return -1;
 }
 
+/** Flatten dock items in order (sequential groups). */
+function flattenTodoDockItems(dock) {
+  const items = [];
+  if (!dock || !dock.groups) return items;
+  for (const g of dock.groups) {
+    for (const t of g.items || []) items.push(t);
+  }
+  return items;
+}
+
+/**
+ * Resolve which todo index a matched stub should advance to.
+ * Prefer stub.todo / stub.slotId / stub.id against item.id; never jump backward.
+ */
+function resolveTodoAdvanceIndex(dock, stub, stubIndex) {
+  const items = flattenTodoDockItems(dock);
+  if (!items.length) return stubIndex;
+  const curIdx = items.findIndex((t) => t.current);
+  let idx = stubIndex;
+  const key = stub && (stub.todo || stub.slotId || stub.id);
+  if (key) {
+    const k = String(key).trim().toLowerCase();
+    let found = items.findIndex((t) => t.id && String(t.id).toLowerCase() === k);
+    if (found < 0) {
+      // username -> login-user, password -> login-pass, submit -> login-submit
+      const aliases = {
+        username: ["login-user", "user", "email"],
+        password: ["login-pass", "pass"],
+        submit: ["login-submit", "login", "tap-login"],
+        user: ["login-user", "username"],
+        pass: ["login-pass", "password"],
+      };
+      const alts = aliases[k] || [];
+      for (const a of alts) {
+        found = items.findIndex((t) => t.id && String(t.id).toLowerCase() === a);
+        if (found >= 0) break;
+      }
+    }
+    if (found < 0) {
+      found = items.findIndex(
+        (t) =>
+          (t.id && String(t.id).toLowerCase().includes(k)) ||
+          (t.text && String(t.text).toLowerCase().includes(k)),
+      );
+    }
+    if (found >= 0) idx = found;
+  }
+  // Monotonic: never retreat the walkthrough.
+  if (curIdx >= 0 && idx < curIdx) idx = curIdx;
+  return idx;
+}
+
 /** Advance sequential todo dock to stubIndex and push to the page (Method act). */
-async function syncTodoDockAdvance(page, todoDockRef, stubIndex) {
+async function syncTodoDockAdvance(page, todoDockRef, stubIndex, stub) {
   if (!todoDockRef || stubIndex < 0) return;
   const prev = todoDockRef.current;
   if (!prev) return;
-  const advanced = advanceTodoDock(prev, stubIndex);
+  const idx = resolveTodoAdvanceIndex(prev, stub || null, stubIndex);
+  const advanced = advanceTodoDock(prev, idx);
   todoDockRef.current = advanced;
+  demoLog(
+    "  todo advance -> idx=" +
+      idx +
+      (stub && (stub.slotId || stub.todo)
+        ? " slot=" + (stub.todo || stub.slotId)
+        : " stub#" + stubIndex) +
+      ' current="' +
+      String(
+        (flattenTodoDockItems(advanced).find((t) => t.current) || {}).text || "",
+      ).slice(0, 40) +
+      '"',
+  );
   await page
     .evaluate((dock) => {
       if (window.__wgSyncTodos) {
@@ -2403,9 +3300,22 @@ async function presentSlides(page, slides, _gate, opts) {
     if (s.selector) {
       try {
         await ensureSelectorInView(page, s.selector);
-        await applyHighlightZoom(page, s.selector, s.zoom);
-        const box = await page.locator(s.selector).first().boundingBox();
-        if (box) await showRing(page, box, caption, slideTone, slideStyle);
+        await applyHighlightZoom(page, s.selector, s.zoom, s.zoomOut);
+        const box = await page
+          .evaluate((sel) => {
+            const el = document.querySelector(sel);
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            return { x: r.x, y: r.y, width: r.width, height: r.height };
+          }, s.selector)
+          .catch(() => null);
+        if (box && box.width > 0 && box.height > 0) {
+          await showRing(page, box, caption, slideTone, {
+            ...slideStyle,
+            selector: s.selector,
+            focus: !!s.focus,
+          });
+        }
       } catch {
         await hideRing(page);
       }
@@ -2638,6 +3548,307 @@ function paceSpeakFields(pace, baseAutoplayMs) {
   };
 }
 
+/** Demo CLI chatter (agents use this to ballpark timing / todo layout). Off for WAYGRAPH_JSON. */
+function demoQuiet() {
+  return process.env.WAYGRAPH_JSON === "1";
+}
+function demoColorEnabled() {
+  // FORCE_COLOR wins (agents/CI often set NO_COLOR=1).
+  if (process.env.FORCE_COLOR && process.env.FORCE_COLOR !== "0") return true;
+  if (process.env.NO_COLOR === "1" || process.env.NO_COLOR === "true") return false;
+  if (process.env.FORCE_COLOR === "0") return false;
+  return !!(
+    (process.stderr && process.stderr.isTTY) ||
+    (process.stdout && process.stdout.isTTY)
+  );
+}
+const ESC = String.fromCharCode(27);
+const ANSI = {
+  reset: ESC + "[0m",
+  bold: ESC + "[1m",
+  dim: ESC + "[2m",
+  purple: ESC + "[38;5;141m",
+  blue: ESC + "[38;5;75m",
+  yellow: ESC + "[38;5;220m",
+  red: ESC + "[38;5;203m",
+  green: ESC + "[38;5;114m",
+  gray: ESC + "[38;5;246m",
+  cyan: ESC + "[38;5;87m",
+  magenta: ESC + "[38;5;213m",
+  white: ESC + "[37m",
+};
+function ansiPaint(code, text) {
+  if (!demoColorEnabled() || text == null || text === "") return String(text ?? "");
+  return code + String(text) + ANSI.reset;
+}
+function toneAnsi(tone) {
+  const t = normalizeHighlightTone(tone);
+  if (t === "info") return ANSI.blue;
+  if (t === "warning") return ANSI.yellow;
+  if (t === "danger") return ANSI.red;
+  if (t === "success") return ANSI.green;
+  if (t === "auto") return ANSI.gray;
+  return ANSI.purple;
+}
+function toneName(tone) {
+  const t = normalizeHighlightTone(tone);
+  if (t === "info") return "BLUE";
+  if (t === "warning") return "YELLOW";
+  if (t === "danger") return "RED";
+  if (t === "success") return "GREEN";
+  if (t === "auto") return "GRAY";
+  return "PURPLE";
+}
+/** Optional authored CSS color (#rrggbb) -> truecolor ANSI when TTY. */
+function hexAnsi(hex) {
+  if (!hex || typeof hex !== "string") return null;
+  const m = String(hex).trim().match(/^#?([0-9a-fA-F]{6})$/);
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return ESC + "[38;2;" + r + ";" + g + ";" + b + "m";
+}
+function demoTs() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  const ms = String(d.getMilliseconds()).padStart(3, "0");
+  return (
+    p(d.getHours()) +
+    ":" +
+    p(d.getMinutes()) +
+    ":" +
+    p(d.getSeconds()) +
+    "." +
+    ms
+  );
+}
+function demoPrefix() {
+  return ansiPaint(ANSI.dim, "[" + demoTs() + "]") + " waygraph demo: ";
+}
+function demoLog(msg) {
+  if (demoQuiet()) return;
+  console.log(demoPrefix() + msg);
+}
+/** Fixture catch-all: how it was called + value. */
+function demoFixture(kind, call, value) {
+  if (demoQuiet()) return;
+  const head = ansiPaint(ANSI.cyan, "FIXTURE") + " " + ansiPaint(ANSI.bold, kind);
+  const callPart = call ? " " + ansiPaint(ANSI.dim, call) : "";
+  let val = "";
+  if (value !== undefined) {
+    if (typeof value === "string") val = value;
+    else {
+      try {
+        val = JSON.stringify(value);
+      } catch {
+        val = String(value);
+      }
+    }
+    if (val.length > 220) val = val.slice(0, 217) + "...";
+    val = " = " + ansiPaint(ANSI.white, val);
+  }
+  console.log(demoPrefix() + head + callPart + val);
+}
+/** Highlight trigger line: PURPLE · Cart items - Product landed in cart */
+function demoHighlight(h, extra) {
+  if (demoQuiet()) return;
+  const tone = h && h.tone != null ? h.tone : "planned";
+  const paint = hexAnsi(h && h.color) || toneAnsi(tone);
+  const name = toneName(tone);
+  const label = String((h && h.label) || "").trim() || "(no label)";
+  const sel = h && h.selector ? String(h.selector) : "";
+  const bits = [];
+  if (h && h.focus) bits.push("focus");
+  if (h && h.zoom != null && Number(h.zoom) > 1) bits.push("zoom=" + h.zoom);
+  if (h && h.zoomOut === false) bits.push("zoomOut=false");
+  if (h && h.gesture) bits.push("gesture=" + h.gesture);
+  if (h && h.weight && h.weight !== "normal") bits.push("weight=" + h.weight);
+  if (h && h.size && h.size !== "md") bits.push("size=" + h.size);
+  if (h && h.color) bits.push("color=" + h.color);
+  if (extra) bits.push(extra);
+  const line =
+    ansiPaint(paint, name) +
+    " · " +
+    ansiPaint(paint, label) +
+    (sel ? ansiPaint(ANSI.dim, "  sel=" + sel) : "") +
+    (bits.length ? ansiPaint(ANSI.dim, "  [" + bits.join(" ") + "]") : "");
+  console.log(demoPrefix() + ansiPaint(ANSI.magenta, "HIGHLIGHT") + " " + line);
+}
+function logStubPhaseFixtures(phaseName, phase) {
+  if (demoQuiet() || !phase) return;
+  const tag = "stub." + phaseName;
+  if (phase.title) demoFixture(tag, "ctx.title(...)", JSON.stringify(phase.title));
+  if (phase.banner) demoFixture(tag, "ctx.banner(...)", JSON.stringify(phase.banner));
+  if (phase.deviceSync && phase.deviceSync !== "keep") {
+    demoFixture(
+      tag,
+      phase.deviceSync === "clear" ? "ctx.clearDevice()" : "ctx.device(...)",
+      phase.device
+        ? {
+            preset: phase.device.preset,
+            w: phase.device.viewport && phase.device.viewport.width,
+            h: phase.device.viewport && phase.device.viewport.height,
+            orient: phase.device.orientation,
+            touch: !!phase.device.touchMode,
+          }
+        : phase.deviceSync,
+    );
+  }
+  if (phase.zoom != null) demoFixture(tag, "ctx.zoom(" + phase.zoom + ")", phase.zoom + "x");
+  if (phase.zoomOut !== undefined) demoFixture(tag, "ctx.zoomOut(" + !!phase.zoomOut + ")", !!phase.zoomOut);
+  if (phase.todoSync && phase.todoSync !== "keep") {
+    demoFixture(
+      tag,
+      phase.todoSync === "clear" ? "ctx.hideTodos() / clear" : "ctx.todos(...)",
+      phase.todoDock
+        ? {
+            id: phase.todoDock.id,
+            pos: phase.todoDock.pos,
+            title: phase.todoDock.title,
+            n: (phase.todos && phase.todos.length) || 0,
+          }
+        : phase.todoSync,
+    );
+  }
+  const rings = phase.highlights || [];
+  for (let i = 0; i < rings.length; i++) {
+    const h = rings[i];
+    demoFixture(
+      tag,
+      "ctx.ring/highlights[" + i + "]",
+      {
+        selector: h.selector,
+        label: h.label || h.caption,
+        detail: h.detail,
+        tone: h.tone || "planned",
+        color: h.color,
+        focus: !!h.focus,
+        zoom: h.zoom,
+        zoomOut: h.zoomOut,
+        gesture: h.gesture,
+        duration: h.duration,
+      },
+    );
+  }
+  if (phase.slides && phase.slides.length) {
+    demoFixture(tag, "ctx.slides(...)", { n: phase.slides.length });
+  }
+}
+function summarizeTodoDock(dock) {
+  if (!dock) return "todos=none";
+  const id = dock.id || "_default";
+  const pos = dock.pos || "left";
+  const style = dock.style || "sequential";
+  const title = dock.title ? String(dock.title) : "";
+  const items = [];
+  for (const g of dock.groups || []) {
+    for (const t of g.items || []) items.push(t);
+  }
+  const cur = items.find((t) => t.current);
+  const done = items.filter((t) => t.done).length;
+  return (
+    "todos id=" +
+    id +
+    " pos=" +
+    pos +
+    " style=" +
+    style +
+    (title ? ' title="' + title + '"' : "") +
+    " n=" +
+    items.length +
+    " done=" +
+    done +
+    (cur && cur.text ? ' current="' + String(cur.text).slice(0, 48) + '"' : "")
+  );
+}
+/** Full todo dump for agents (every group/item id + flags). */
+function logTodoDockFull(dock, tag) {
+  const prefix = tag ? tag + " " : "";
+  if (!dock) {
+    demoLog(prefix + "todos=none");
+    return;
+  }
+  demoLog(prefix + summarizeTodoDock(dock));
+  const groups = dock.groups || [];
+  if (!groups.length) {
+    demoLog(prefix + "  (no groups)");
+    return;
+  }
+  for (let gi = 0; gi < groups.length; gi++) {
+    const g = groups[gi];
+    const gLabel =
+      "group[" +
+      gi +
+      "]" +
+      (g.id ? " id=" + g.id : "") +
+      (g.title ? ' title="' + String(g.title).slice(0, 40) + '"' : "") +
+      (g.style ? " style=" + g.style : "");
+    demoLog(prefix + "  " + gLabel);
+    const items = g.items || [];
+    for (let ti = 0; ti < items.length; ti++) {
+      const t = items[ti];
+      const mark = t.done ? "done" : t.current ? "CURRENT" : "pending";
+      demoLog(
+        prefix +
+          "    [" +
+          ti +
+          "] " +
+          mark +
+          (t.id ? " id=" + t.id : "") +
+          ' text="' +
+          String(t.text || "").slice(0, 80) +
+          '"' +
+          (t.detail ? ' detail="' + String(t.detail).slice(0, 40) + '"' : ""),
+      );
+    }
+  }
+}
+function summarizeDevice(d) {
+  if (!d) return "device=none";
+  const vp = d.viewport || {};
+  return (
+    "device=" +
+    (d.preset || "?") +
+    " " +
+    (vp.width || "?") +
+    "x" +
+    (vp.height || "?") +
+    " " +
+    (d.orientation || "?") +
+    (d.touchMode ? " touch" : "")
+  );
+}
+async function probeTodoDocksOnPage(page) {
+  return page
+    .evaluate(() => {
+      const docks = [...document.querySelectorAll(".wg-todo-dock, #wg-todo-dock")];
+      return docks.map((el) => {
+        const r = el.getBoundingClientRect();
+        const items = el.querySelectorAll("li");
+        let current = "";
+        items.forEach((li) => {
+          if (li.classList.contains("wg-todo-current")) {
+            current = (li.textContent || "").replace(/\s+/g, " ").trim().slice(0, 48);
+          }
+        });
+        return {
+          key: el.getAttribute("data-wg-todo-key") || el.id || "?",
+          pos: el.dataset.pos || "?",
+          top: Math.round(r.top),
+          left: Math.round(r.left),
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+          onScreen: r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth,
+          n: items.length,
+          current,
+        };
+      });
+    })
+    .catch(() => []);
+}
+
 async function hideRing(page) {
   await page
     .evaluate(() => {
@@ -2664,10 +3875,23 @@ async function teardownOverlay(page) {
         window.__wgRingTrack = null;
       }
       window.__wgNarrateOwnsRing = false;
-      for (const id of ["wg-panel", "wg-ring", "wg-ring-label", "wg-cursor", "wg-click-pulse", "wg-banner", "wg-todo-dock"]) {
+      for (const id of [
+        "wg-panel",
+        "wg-ring",
+        "wg-ring-label",
+        "wg-cursor",
+        "wg-click-pulse",
+        "wg-banner",
+        "wg-todo-dock",
+        "wg-device-shell",
+        "wg-device-toast",
+        "wg-device-badge",
+      ]) {
         const el = document.getElementById(id);
         if (el) el.remove();
       }
+      document.querySelectorAll(".wg-todo-dock").forEach((el) => el.remove());
+      document.documentElement.classList.remove("wg-video-device-stage");
     })
     .catch(() => {});
 }
@@ -2699,6 +3923,511 @@ async function clickPulseAt(page, x, y, tone) {
 }
 
 /**
+ * Touch swipe trail (mobile/tablet). dir: left|right|up|down.
+ * Returns after the trail animation completes.
+ * Self-contained when overlay helper is not installed yet (device runs before panel).
+ */
+async function playSwipeTrail(page, opts) {
+  const o = opts || {};
+  const waitMs = await page
+    .evaluate((payload) => {
+      if (typeof window.__wgSwipeTrail === "function") {
+        return window.__wgSwipeTrail(payload);
+      }
+      // Fallback: inject a one-shot trail without full overlay install.
+      const dir =
+        payload.dir === "right" || payload.dir === "up" || payload.dir === "down"
+          ? payload.dir
+          : "left";
+      const ms = Math.max(280, Math.min(1400, Number(payload.ms) || 720));
+      const label = payload.label || "swipe";
+      let layer = document.getElementById("wg-swipe-layer");
+      if (layer) layer.remove();
+      layer = document.createElement("div");
+      layer.id = "wg-swipe-layer";
+      layer.setAttribute("data-wg-ui", "1");
+      layer.style.cssText =
+        "position:fixed;inset:0;z-index:2147483646;pointer-events:none;overflow:hidden;";
+      const finger = document.createElement("div");
+      finger.style.cssText =
+        "position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;" +
+        "background:rgba(15,23,42,.92);border:2px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,.4);";
+      const lab = document.createElement("div");
+      lab.textContent = label;
+      lab.style.cssText =
+        "position:absolute;left:50%;top:18%;transform:translateX(-50%);padding:6px 12px;" +
+        "border-radius:999px;background:rgba(15,23,42,.88);color:#e0f2fe;" +
+        "border:1px solid rgba(56,189,248,.55);font:700 12px/1.2 system-ui,sans-serif;";
+      layer.appendChild(lab);
+      layer.appendChild(finger);
+      document.documentElement.appendChild(layer);
+      const vw = window.innerWidth || 390;
+      const vh = window.innerHeight || 844;
+      const pad = Math.min(vw, vh) * 0.18;
+      let x0;
+      let y0;
+      let x1;
+      let y1;
+      if (dir === "left") {
+        x0 = vw - pad;
+        x1 = pad;
+        y0 = y1 = vh * 0.52;
+      } else if (dir === "right") {
+        x0 = pad;
+        x1 = vw - pad;
+        y0 = y1 = vh * 0.52;
+      } else if (dir === "up") {
+        x0 = x1 = vw * 0.5;
+        y0 = vh - pad;
+        y1 = pad;
+      } else {
+        x0 = x1 = vw * 0.5;
+        y0 = pad;
+        y1 = vh - pad;
+      }
+      finger.style.left = x0 + "px";
+      finger.style.top = y0 + "px";
+      const steps = 12;
+      const stepMs = Math.floor(ms / steps);
+      for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        const e = t * t * (3 - 2 * t);
+        const x = x0 + (x1 - x0) * e;
+        const y = y0 + (y1 - y0) * e;
+        setTimeout(() => {
+          finger.style.left = x + "px";
+          finger.style.top = y + "px";
+          const dot = document.createElement("div");
+          dot.style.cssText =
+            "position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;" +
+            "background:rgba(147,197,253,.55);border:2px solid rgba(255,255,255,.85);left:" +
+            x +
+            "px;top:" +
+            y +
+            "px;opacity:" +
+            (0.85 - t * 0.55) +
+            ";transition:opacity .45s ease,transform .45s ease;";
+          layer.appendChild(dot);
+          requestAnimationFrame(() => {
+            dot.style.opacity = "0";
+            dot.style.transform = "scale(1.8)";
+          });
+          if (i === steps) {
+            setTimeout(() => {
+              const el = document.getElementById("wg-swipe-layer");
+              if (el) el.remove();
+            }, 400);
+          }
+        }, i * stepMs);
+      }
+      return ms + 120;
+    }, {
+      dir: o.dir || "left",
+      label: o.label || "swipe",
+      hint: o.hint || "",
+      ms: o.ms || 720,
+    })
+    .catch(() => 0);
+  const n = Number(waitMs) || 0;
+  if (n > 0) await new Promise((r) => setTimeout(r, n));
+}
+
+/**
+ * Fit + center the OS browser window on the device viewport so mobile/tablet
+ * is not stuck top-left inside a maximized frame (Dan 0.13.4).
+ * Desktop clear restores maximized.
+ */
+async function fitWindowToDeviceViewport(page, viewport, opts) {
+  const maximize = !!(opts && opts.maximize);
+  let client;
+  try {
+    client = await page.context().newCDPSession(page);
+    const { windowId } = await client.send("Browser.getWindowForTarget");
+    if (maximize) {
+      await client.send("Browser.setWindowBounds", {
+        windowId,
+        bounds: { windowState: "maximized" },
+      });
+      return;
+    }
+    if (!viewport || !viewport.width || !viewport.height) return;
+    const metrics = await page
+      .evaluate(() => {
+        const chromeW = Math.max(0, (window.outerWidth || 0) - (window.innerWidth || 0));
+        const chromeH = Math.max(0, (window.outerHeight || 0) - (window.innerHeight || 0));
+        return {
+          chromeW: Number.isFinite(chromeW) ? chromeW : 0,
+          // First paint after maximize often reports 0 chrome - use a floor.
+          chromeH: chromeH > 20 ? chromeH : 88,
+          screenW: window.screen.availWidth || 1920,
+          screenH: window.screen.availHeight || 1080,
+        };
+      })
+      .catch(() => ({ chromeW: 0, chromeH: 88, screenW: 1920, screenH: 1080 }));
+    // Leave maximized before setting pixel bounds (Chromium ignores size while max).
+    await client.send("Browser.setWindowBounds", {
+      windowId,
+      bounds: { windowState: "normal" },
+    });
+    const winW = Math.min(
+      metrics.screenW,
+      Math.max(320, Math.floor(viewport.width + metrics.chromeW)),
+    );
+    const winH = Math.min(
+      metrics.screenH,
+      Math.max(320, Math.floor(viewport.height + metrics.chromeH)),
+    );
+    const left = Math.max(0, Math.floor((metrics.screenW - winW) / 2));
+    const top = Math.max(0, Math.floor((metrics.screenH - winH) / 2));
+    await client.send("Browser.setWindowBounds", {
+      windowId,
+      bounds: {
+        windowState: "normal",
+        left,
+        top,
+        width: winW,
+        height: winH,
+      },
+    });
+  } catch {
+    /* headless / no window - ignore */
+  } finally {
+    if (client) await client.detach().catch(() => {});
+  }
+}
+
+/**
+ * Video recording locks Playwright viewport to recordVideo.size. Shrinking
+ * setViewportSize to mobile/tablet letterboxes the .webm top-left. Instead keep
+ * the stage size and center a device-sized #wg-device-shell inside the frame.
+ */
+async function applyVideoDeviceStage(page, target, stage, opts) {
+  const clear = !!(opts && opts.clear);
+  const shutterOut = !!(opts && opts.shutterOut);
+  const enterIn = !!(opts && opts.enterIn);
+  const desktopFlat = !!(opts && (opts.desktopFlat || opts.shutterOut));
+  const result = await page
+    .evaluate(
+      ({ tw, th, sw, sh, clear, shutterOut, enterIn, desktopFlat }) => {
+        const MATTE = "#0b1220";
+        const unwrap = () => {
+          const shell = document.getElementById("wg-device-shell");
+          if (shell) {
+            const parent = shell.parentNode;
+            if (parent) {
+              while (shell.firstChild) parent.insertBefore(shell.firstChild, shell);
+            }
+            shell.remove();
+          }
+          document.documentElement.classList.remove("wg-video-device-stage");
+          document.documentElement.style.removeProperty("background");
+          const b = document.body;
+          if (b) {
+            b.style.margin = "";
+            b.style.minHeight = "";
+            b.style.display = "";
+            b.style.alignItems = "";
+            b.style.justifyContent = "";
+            b.style.background = "";
+            b.style.overflow = "";
+          }
+        };
+        if (clear) {
+          unwrap();
+          return { waitMs: 0 };
+        }
+        if (!document.body) return { waitMs: 0 };
+        document.documentElement.classList.add("wg-video-device-stage");
+        document.documentElement.style.background = MATTE;
+        document.body.style.margin = "0";
+        document.body.style.minHeight = "100vh";
+        document.body.style.display = "flex";
+        document.body.style.alignItems = "center";
+        document.body.style.justifyContent = "center";
+        document.body.style.background = MATTE;
+        document.body.style.overflow = "hidden";
+
+        let shell = document.getElementById("wg-device-shell");
+        const created = !shell;
+        if (!shell) {
+          shell = document.createElement("div");
+          shell.id = "wg-device-shell";
+          const move = [];
+          for (const child of [...document.body.childNodes]) {
+            if (
+              child.nodeType === 1 &&
+              child.getAttribute &&
+              child.getAttribute("data-wg-ui") === "1"
+            ) {
+              continue;
+            }
+            if (child.nodeType === 1 && child.id === "wg-device-shell") continue;
+            move.push(child);
+          }
+          for (const n of move) shell.appendChild(n);
+          document.body.appendChild(shell);
+        }
+        // Desktop flat: always full-bleed, never reintroduce bezel on overlay rebuild.
+        if (desktopFlat) {
+          shell.classList.remove("wg-shell-enter");
+          shell.classList.add("wg-shell-shutter-out");
+          shell.classList.add("wg-shell-desktop-flat");
+          shell.style.width = sw + "px";
+          shell.style.height = sh + "px";
+          shell.style.maxWidth = sw + "px";
+          shell.style.maxHeight = sh + "px";
+          shell.style.transform = "scale(1)";
+          shell.style.transformOrigin = "center center";
+          shell.style.borderRadius = "0";
+          shell.style.boxShadow = "none";
+          shell.style.border = "none";
+          shell.style.outline = "none";
+          return { waitMs: shutterOut ? 480 : 0 };
+        }
+        // Leaving desktop-flat: clear INLINE radius/shadow overrides so CSS
+        // border-radius:16px applies evenly on all corners again.
+        shell.style.removeProperty("border-radius");
+        shell.style.removeProperty("box-shadow");
+        shell.style.removeProperty("border");
+        shell.style.removeProperty("outline");
+        if (enterIn && (created || shell.classList.contains("wg-shell-shutter-out"))) {
+          shell.classList.remove("wg-shell-shutter-out");
+          shell.classList.remove("wg-shell-desktop-flat");
+          shell.classList.add("wg-shell-enter");
+          void shell.offsetWidth;
+        }
+        const scale = Math.min(sw / tw, sh / th) * 0.92;
+        shell.style.width = tw + "px";
+        shell.style.height = th + "px";
+        shell.style.maxWidth = tw + "px";
+        shell.style.maxHeight = th + "px";
+        shell.style.transform = "scale(" + scale + ")";
+        shell.style.transformOrigin = "center center";
+        shell.classList.remove("wg-shell-shutter-out");
+        shell.classList.remove("wg-shell-desktop-flat");
+        if (enterIn && shell.classList.contains("wg-shell-enter")) {
+          requestAnimationFrame(() => {
+            shell.classList.remove("wg-shell-enter");
+          });
+          return { waitMs: 520 };
+        }
+        shell.classList.remove("wg-shell-enter");
+        return { waitMs: 0 };
+      },
+      {
+        tw: target.width,
+        th: target.height,
+        sw: stage.width,
+        sh: stage.height,
+        clear,
+        shutterOut,
+        enterIn,
+        desktopFlat,
+      },
+    )
+    .catch(() => ({ waitMs: 0 }));
+  const waitMs = result && result.waitMs ? Number(result.waitMs) : 0;
+  if (waitMs > 0) await new Promise((r) => setTimeout(r, waitMs));
+}
+
+/**
+ * Apply authored device fixture to the live page (0.13+).
+ * Seamless viewport lerp + centered window + toast on set/clear.
+ * With --video: keep recordVideo stage size and center a device shell in-frame.
+ */
+async function applyDeviceToPage(page, device, sync) {
+  const mode = sync || (device ? "set" : "keep");
+  if (mode === "keep" && !device) return;
+  const d =
+    device ||
+    resolveDeviceState("desktop", false) || {
+      preset: "desktop",
+      viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
+      isMobile: false,
+      hasTouch: false,
+      touchMode: false,
+    };
+  const realSet =
+    typeof page.__wgRealSetViewportSize === "function"
+      ? page.__wgRealSetViewportSize
+      : page.setViewportSize.bind(page);
+  const target = {
+    width: Math.max(200, Math.floor(d.viewport.width)),
+    height: Math.max(200, Math.floor(d.viewport.height)),
+  };
+  const videoStage =
+    page.__wgVideoViewport &&
+    page.__wgVideoViewport.width > 0 &&
+    page.__wgVideoViewport.height > 0
+      ? {
+          width: Math.floor(page.__wgVideoViewport.width),
+          height: Math.floor(page.__wgVideoViewport.height),
+        }
+      : null;
+  let from = null;
+  try {
+    from = page.viewportSize();
+  } catch {
+    from = null;
+  }
+  const announce = mode === "set" || mode === "clear";
+  const toDesktop =
+    mode === "clear" || (d.preset === "desktop" && !d.touchMode);
+  const shouldAnimate =
+    announce &&
+    from &&
+    from.width > 0 &&
+    from.height > 0 &&
+    (from.width !== target.width || from.height !== target.height);
+
+  // Always clear camera zoom when returning to desktop (video + headed).
+  if (toDesktop) {
+    page.__wgDesktopFlat = true;
+    await page
+      .evaluate(() => {
+        window.__wgZoomOutOnHide = true;
+        if (window.__wgClearZoom) window.__wgClearZoom();
+      })
+      .catch(() => {});
+  } else if (announce) {
+    page.__wgDesktopFlat = false;
+  }
+
+  // Swipe trail is for scrolling (see ensureLocatorInView), not device morph.
+  const nextOrient =
+    d.orientation === "landscape" || d.orientation === "portrait"
+      ? d.orientation
+      : target.height > target.width
+        ? "portrait"
+        : "landscape";
+  page.__wgDeviceOrient = nextOrient;
+  page.__wgDevicePreset = toDesktop ? "desktop" : d.preset || "";
+
+  if (videoStage) {
+    // Lock Playwright viewport to the recordVideo size so frames fill the
+    // .webm; center the device shell inside (OS window centering alone does not).
+    // Do NOT fitWindow to the device size - that shrinks the viewport below the
+    // recordVideo canvas and Playwright pads the .webm with grey (top-left bias).
+    try {
+      await realSet(videoStage);
+    } catch {
+      /* ignore */
+    }
+    const shellFrom = page.__wgDeviceShell || target;
+    if (toDesktop) {
+      // Zoom already cleared above. Full-bleed desktop shell (no matte frame).
+      // Shutter-out: soft rounded -> radius 0, then flat edge-to-edge.
+      const desk = {
+        width: videoStage.width,
+        height: videoStage.height,
+      };
+      page.__wgDeviceShell = { ...desk };
+      await applyVideoDeviceStage(page, desk, videoStage, {
+        clear: false,
+        shutterOut: true,
+        desktopFlat: true,
+      });
+      try {
+        await realSet(videoStage);
+      } catch {
+        /* ignore */
+      }
+    } else {
+      // Lerp shell size when switching mobile <-> tablet mid-video.
+      const firstDevice = !page.__wgDeviceShell;
+      if (
+        announce &&
+        shellFrom &&
+        (shellFrom.width !== target.width || shellFrom.height !== target.height)
+      ) {
+        const steps = 14;
+        const ms = Number(process.env.WAYGRAPH_DEVICE_TRANSITION_MS || 520);
+        const stepMs = Math.max(12, Math.floor(ms / steps));
+        for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          const e = t * t * (3 - 2 * t);
+          const mid = {
+            width: Math.round(shellFrom.width + (target.width - shellFrom.width) * e),
+            height: Math.round(shellFrom.height + (target.height - shellFrom.height) * e),
+          };
+          await applyVideoDeviceStage(page, mid, videoStage, {
+            clear: false,
+            enterIn: i === 1 && firstDevice,
+          });
+          if (i < steps) await new Promise((r) => setTimeout(r, stepMs));
+        }
+      } else {
+        await applyVideoDeviceStage(page, target, videoStage, {
+          clear: false,
+          enterIn: firstDevice || announce,
+        });
+      }
+      page.__wgDeviceShell = { ...target };
+      // Re-assert stage size after any prior non-video fitWindow.
+      try {
+        await realSet(videoStage);
+      } catch {
+        /* ignore */
+      }
+    }
+  } else {
+    // Unmaximize + center early so the lerp does not sit in the corner of a
+    // maximized frame. Desktop clear maximizes at the end instead.
+    if (!toDesktop) {
+      await fitWindowToDeviceViewport(page, from && from.width ? from : target, {
+        maximize: false,
+      });
+    }
+
+    try {
+      if (shouldAnimate) {
+        const steps = 14;
+        const ms = Number(process.env.WAYGRAPH_DEVICE_TRANSITION_MS || 520);
+        const stepMs = Math.max(12, Math.floor(ms / steps));
+        for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          const e = t * t * (3 - 2 * t); // smoothstep
+          const mid = {
+            width: Math.round(from.width + (target.width - from.width) * e),
+            height: Math.round(from.height + (target.height - from.height) * e),
+          };
+          await realSet(mid);
+          if (!toDesktop && (i === 1 || i === steps || i % 3 === 0)) {
+            await fitWindowToDeviceViewport(page, mid, { maximize: false });
+          }
+          if (i < steps) await new Promise((r) => setTimeout(r, stepMs));
+        }
+      } else {
+        await realSet(target);
+      }
+    } catch {
+      /* maximized / null viewport hosts may reject - toast still updates */
+    }
+
+    if (toDesktop) {
+      await fitWindowToDeviceViewport(page, target, { maximize: true });
+    } else {
+      await fitWindowToDeviceViewport(page, target, { maximize: false });
+    }
+  }
+
+  // Fire toast near the end of the lerp so it reads as one seamless beat.
+  await page
+    .evaluate(
+      (payload) => {
+        if (window.__wgSyncDevice) window.__wgSyncDevice(payload);
+      },
+      {
+        sync: mode,
+        device: d,
+        remain: mode === "keep" || mode === "set",
+        announce,
+      },
+    )
+    .catch(() => {});
+}
+
+/**
  * True if the engine's own narrate() (waygraph's public export, for a Block
  * author explicitly captioning one action) JUST positioned the ring for
  * THIS action, moments ago - the automatic per-fill/per-click narration
@@ -2714,7 +4443,7 @@ async function wasJustNarrated(page) {
     .catch(() => false);
 }
 
-function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef, todoDockRef) {
+function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef, todoDockRef, deviceRef) {
   // Playwright's own slowMo ALREADY pauses after every single low-level
   // action it dispatches - and pressSequentially() fires one such action
   // PER CHARACTER. Also giving pressSequentially its own fixed delay
@@ -2760,7 +4489,30 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
     proto.fill = async function (value, options) {
       try {
         await installOverlay(page);
+        await this.waitFor({
+          state: "visible",
+          timeout: (options && options.timeout) || 30000,
+        }).catch(() => {});
+        // Smooth scroll before measuring - otherwise off-screen fields
+        // teleport when Playwright's fill actionability scrolls.
+        await ensureLocatorInView(this, { instant: skipTheater() });
         const box = await this.boundingBox();
+        let typeLabel = "input";
+        try {
+          const meta = await this.evaluate((el) => {
+            const id = (el.id || "").toLowerCase();
+            const name = (el.getAttribute("name") || "").toLowerCase();
+            const ph = (el.getAttribute("placeholder") || "").toLowerCase();
+            const ty = (el.getAttribute("type") || "text").toLowerCase();
+            if (ty === "password" || /pass/.test(id + name + ph)) return "password";
+            if (/user|email|login/.test(id + name + ph)) return "username";
+            if (ty && ty !== "text") return ty;
+            return id || name || ph || "input";
+          });
+          if (meta) typeLabel = String(meta);
+        } catch {
+          /* ignore */
+        }
         if (box && !(await wasJustNarrated(page))) {
           // Only trust the "last mem.get()" as THIS fill's source if it
           // happened recently - a stale read from several actions ago is
@@ -2771,19 +4523,46 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
           const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
           const cap = await captionForLocator(page, this, stubs, fallback);
           const stubIdx = await matchStubIndexForLocator(page, this, stubs);
-          await syncTodoDockAdvance(page, todoDockRef, stubIdx);
+          const stub = stubIdx >= 0 ? stubs[stubIdx] : null;
+          await syncTodoDockAdvance(page, todoDockRef, stubIdx, stub);
           await moveCursorTo(page, box, cursorMs(500));
+          if (stub) {
+            await applyHighlightZoom(page, stub.selector, stub.zoom, stub.zoomOut);
+          }
+          demoHighlight(
+            {
+              selector: stub && stub.selector,
+              label: cap.label,
+              tone: cap.tone || (stub && stub.tone) || "planned",
+              color: stub && stub.color,
+              focus: !!(stub && stub.focus),
+              zoom: stub && stub.zoom,
+              zoomOut: stub && stub.zoomOut,
+              gesture: stub && stub.gesture,
+              weight: cap.weight,
+              size: cap.size,
+            },
+            "fill",
+          );
           await showRing(page, box, cap.label, cap.tone, {
             size: cap.size,
             weight: cap.weight,
+            selector: stub && stub.selector ? stub.selector : undefined,
+            focus: !!(stub && stub.focus),
           });
           await dwellMatchedStub(page, this, stubs, pacing);
           await new Promise((res) => setTimeout(res, skipTheater() ? 0 : 200));
+          if (cap && cap.label) typeLabel = String(cap.label).slice(0, 40);
         } else if (box) {
           // Ring/caption already handled by narrate() - still move the
           // cursor there, just skip re-showing the ring with a generic label.
           await moveCursorTo(page, box, cursorMs(200));
         }
+        await page
+          .evaluate((label) => {
+            if (window.__wgSetTypingBadge) window.__wgSetTypingBadge(true, label);
+          }, typeLabel)
+          .catch(() => {});
       } catch {
         // best-effort - element not visible/attached yet is not this
         // instrumentation's problem, the real fill below still runs
@@ -2802,6 +4581,11 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
         // handle specially) - fall back to the real, unpatched fill.
         result = await originalFill.call(this, value, options);
       }
+      await page
+        .evaluate(() => {
+          if (window.__wgSetTypingBadge) window.__wgSetTypingBadge(false);
+        })
+        .catch(() => {});
       // Fade the ring back out once this field is actually done, instead
       // of leaving it lit until the next Block's own before-panel clears
       // it - it was sticking around through the whole rest of the step.
@@ -2826,6 +4610,9 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
           state: "visible",
           timeout: (options && options.timeout) || 30000,
         }).catch(() => {});
+        // Smooth-scroll off-screen targets before cursor/ring. Playwright's
+        // own click scroll is instant and reads as a teleport under --fast.
+        await ensureLocatorInView(this, { instant: skipTheater() });
         const box = await this.boundingBox();
         const narrated = box ? await wasJustNarrated(page) : false;
         if (box && !narrated) {
@@ -2847,12 +4634,33 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
           const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
           const cap = await captionForLocator(page, this, stubs, fallback);
           const stubIdx = await matchStubIndexForLocator(page, this, stubs);
-          await syncTodoDockAdvance(page, todoDockRef, stubIdx);
+          const stub = stubIdx >= 0 ? stubs[stubIdx] : null;
+          await syncTodoDockAdvance(page, todoDockRef, stubIdx, stub);
           clickTone = cap.tone;
           clickPoint = await moveCursorTo(page, box, cursorMs(600));
+          if (stub) {
+            await applyHighlightZoom(page, stub.selector, stub.zoom, stub.zoomOut);
+          }
+          demoHighlight(
+            {
+              selector: stub && stub.selector,
+              label: cap.label,
+              tone: cap.tone || (stub && stub.tone) || "planned",
+              color: stub && stub.color,
+              focus: !!(stub && stub.focus),
+              zoom: stub && stub.zoom,
+              zoomOut: stub && stub.zoomOut,
+              gesture: stub && stub.gesture,
+              weight: cap.weight,
+              size: cap.size,
+            },
+            "click",
+          );
           await showRing(page, box, cap.label, cap.tone, {
             size: cap.size,
             weight: cap.weight,
+            selector: stub && stub.selector ? stub.selector : undefined,
+            focus: !!(stub && stub.focus),
           });
           await dwellMatchedStub(page, this, stubs, pacing);
           // "pop for a few seconds" - Dan's own phrase, matching the
@@ -2878,7 +4686,36 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
         // mock click visually completes before the real one fires.
         await new Promise((res) => setTimeout(res, skipTheater() ? 0 : 500));
       }
-      const result = await originalClick.call(this, options);
+      // Touch theater (0.13+): prefer Locator.tap / long-press when device
+      // touchMode is on (context launched with hasTouch). gesture on stub
+      // wins: tap | hold | click.
+      let result;
+      const stubsForGesture = (stubBeforeRef && stubBeforeRef.current) || [];
+      let gesture = "click";
+      try {
+        const idx = await matchStubIndexForLocator(page, this, stubsForGesture);
+        const stub = idx >= 0 ? stubsForGesture[idx] : null;
+        if (stub && stub.gesture) gesture = stub.gesture;
+        else if (deviceRef && deviceRef.current && deviceRef.current.touchMode) gesture = "tap";
+      } catch {
+        if (deviceRef && deviceRef.current && deviceRef.current.touchMode) gesture = "tap";
+      }
+      if (gesture === "tap" || gesture === "hold") {
+        try {
+          if (gesture === "hold") {
+            result = await this.tap({
+              ...(options || {}),
+              delay: skipTheater() ? 0 : 600,
+            });
+          } else {
+            result = await this.tap(options);
+          }
+        } catch {
+          result = await originalClick.call(this, options);
+        }
+      } else {
+        result = await originalClick.call(this, options);
+      }
       await new Promise((res) => setTimeout(res, clickPostPop()));
       await hideRing(page);
       return result;
@@ -2988,7 +4825,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   const stubBeforeRef = { current: [] };
   /** Live todo dock for Method fill/click advance (same carry as lastTodoDock). */
   const todoDockRef = { current: undefined };
-  instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef, todoDockRef);
+  /** Live device fixture for touch theater (same carry as lastDevice). */
+  const deviceRef = { current: undefined };
+  instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef, todoDockRef, deviceRef);
   // Force the panel checkbox from this process's flags/env at run start.
   // installOverlay only seeds localStorage when the key is null (so mid-run
   // checkbox clicks survive navigations). Without this, a prior --autoplay
@@ -3019,7 +4858,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   // setViewportSize entirely for the duration of step mode. Blocks that
   // call it don't need it to actually do anything here - their own
   // selectors/layouts still work fine at whatever size the real window
-  // already is.
+  // already is. Authored ctx.device() still uses __wgRealSetViewportSize.
+  page.__wgRealSetViewportSize = page.setViewportSize.bind(page);
   page.setViewportSize = async () => {};
   let resolveNext = null;
   // Render-to-gate race: a slide/step panel's Next button is wired to
@@ -3117,6 +4957,54 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   let result;
   /** Carry floating todo dock across steps (empty stubBefore must not wipe). */
   let lastTodoDock = undefined;
+  /** Multi-todo: every dock keyed by todoId (or "_default"), survives navigation. */
+  const todoDockById = new Map();
+  const dockRegistryKey = (dock) =>
+    dock && dock.id && String(dock.id).trim() ? String(dock.id).trim() : "_default";
+  const rememberTodoDock = (dock, sync, parallel) => {
+    if (sync === "clear") {
+      todoDockById.clear();
+      return;
+    }
+    if (sync === "set" && dock) {
+      if (!parallel) todoDockById.clear();
+      todoDockById.set(dockRegistryKey(dock), dock);
+    }
+  };
+  const syncAllTodoDocks = async (opts) => {
+    const docks = [...todoDockById.values()];
+    const parallel = !!(opts && opts.parallel);
+    if (!docks.length) {
+      await page
+        .evaluate(() => {
+          if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "clear" });
+        })
+        .catch(() => {});
+      return;
+    }
+    await page
+      .evaluate(
+        ({ list, parallel }) => {
+          if (!window.__wgSyncTodos) return;
+          for (let i = 0; i < list.length; i++) {
+            const d = list[i];
+            window.__wgSyncTodos({
+              sync: "set",
+              dock: d,
+              todoId: (d && d.id) || null,
+              pos: (d && d.pos) || null,
+              // First dock replaces; later ones keep siblings when parallel.
+              replace: !(parallel && i > 0),
+              parallel: parallel && i > 0,
+            });
+          }
+        },
+        { list: docks, parallel },
+      )
+      .catch(() => {});
+  };
+  /** Carry device / touch fixture across steps (omit = keep, like todos). */
+  let lastDevice = undefined;
   for (let i = 0; i < resolved.length; i++) {
     const r = resolved[i];
     // The block breadcrumb is scoped to THIS step's own episode, not the
@@ -3202,6 +5090,13 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     stubBeforeRef.current = stubBeforePhase.highlights.map((h) =>
       applyHighlightStyleDefaults(h, flowStyle),
     );
+    logStubPhaseFixtures("before", {
+      ...stubBeforePhase,
+      highlights: stubBeforeRef.current.map((h) => ({
+        ...h,
+        label: formatHighlightCaption(h),
+      })),
+    });
     const appliedBefore = applyTodoPhase(lastTodoDock, {
       todoSync: stubBeforePhase.todoSync,
       todoDock: stubBeforePhase.todoDock,
@@ -3210,6 +5105,16 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     });
     lastTodoDock = appliedBefore.dock;
     todoDockRef.current = lastTodoDock;
+    rememberTodoDock(appliedBefore.dock, appliedBefore.sync, !!stubBeforePhase.todoParallel);
+    const appliedDeviceBefore = applyDevicePhase(lastDevice, {
+      deviceSync: stubBeforePhase.deviceSync,
+      device: stubBeforePhase.device,
+    });
+    lastDevice = appliedDeviceBefore.device;
+    deviceRef.current = lastDevice;
+    if (appliedDeviceBefore.sync !== "keep" || lastDevice) {
+      await applyDeviceToPage(page, lastDevice, appliedDeviceBefore.sync);
+    }
     const stubBeforeTodos =
       (lastTodoDock && lastTodoDock.groups[0] && lastTodoDock.groups[0].items) ||
       stubBeforePhase.todos ||
@@ -3242,8 +5147,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     });
     const paceSpeak = paceSpeakFields(pacing.demoPace, autoplayMs);
     if (process.env.WAYGRAPH_JSON !== "1") {
-      console.log(
-        "waygraph demo: step " +
+      demoLog(
+        "step " +
           (i + 1) +
           "/" +
           resolved.length +
@@ -3253,6 +5158,29 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           paceSpeak.paceLabel +
           (r.episodeNumber ? " · episode " + r.episodeNumber : ""),
       );
+      demoLog(
+        "  gate~" +
+          autoplayMs +
+          "ms skipTheater=" +
+          !!pacing.skipTheater +
+          " gatesFast=" +
+          !!pacing.gatesFast,
+      );
+      demoLog("  " + summarizeDevice(lastDevice));
+      const phaseZoom =
+        stubBeforePhase.zoom != null && Number(stubBeforePhase.zoom) > 0
+          ? Number(stubBeforePhase.zoom)
+          : null;
+      const phaseZoomOut =
+        stubBeforePhase.zoomOut !== undefined ? !!stubBeforePhase.zoomOut : null;
+      demoLog(
+        "  zoom=" +
+          (phaseZoom != null ? phaseZoom + "x" : "default") +
+          (phaseZoomOut != null ? " zoomOut=" + phaseZoomOut : "") +
+          " (StubCtx / API; live chip top-left when ring zoom >1)",
+      );
+      logTodoDockFull(lastTodoDock, "  before");
+      demoLog("  todoSync=" + appliedBefore.sync);
     }
     await renderBeforeStep(page, {
       index: i,
@@ -3277,6 +5205,38 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       todoId: lastTodoDock && lastTodoDock.id,
       ...paceSpeak,
     });
+    // Re-paint dock(s) - renderBeforeStep syncs the active one; this enforces replace.
+    await syncAllTodoDocks({ parallel: !!stubBeforePhase.todoParallel });
+    if (process.env.WAYGRAPH_JSON !== "1") {
+      const docks = await probeTodoDocksOnPage(page);
+      if (!docks.length && lastTodoDock) {
+        demoLog("  WARN todos authored but dock-dom empty (not painted?)");
+      } else if (docks.length) {
+        demoLog(
+          "  dock-dom " +
+            docks
+              .map(
+                (d) =>
+                  d.key +
+                  "@" +
+                  d.pos +
+                  " " +
+                  d.left +
+                  "," +
+                  d.top +
+                  " " +
+                  d.w +
+                  "x" +
+                  d.h +
+                  (d.onScreen ? "" : " OFFSCREEN") +
+                  " n=" +
+                  d.n +
+                  (d.current ? ' cur="' + d.current + '"' : ""),
+              )
+              .join(" | "),
+        );
+      }
+    }
     const edits = await gate();
     for (const k of requires) {
       if (edits[k.name] !== undefined) {
@@ -3435,11 +5395,21 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     let afterOverlayTitle = overlayTitle;
     let afterTodoPos = overlayTodoPos;
     let appliedAfter = { dock: lastTodoDock, sync: "keep" };
+    let appliedDeviceAfter = { device: lastDevice, sync: "keep" };
+    let afterTodoParallel = false;
     if (hasAuthoredStubAfter(r.block, result, fixturesAfter)) {
       const afterPhase = await runStubPhase(r.block, "stubAfter", {
         out: result,
         fixtures: fixturesAfter,
       });
+      logStubPhaseFixtures("after", {
+        ...afterPhase,
+        highlights: (afterPhase.highlights || []).map((h) => {
+          const styled = applyHighlightStyleDefaults(h, r.highlightStyle);
+          return { ...styled, label: formatHighlightCaption(styled) };
+        }),
+      });
+      afterTodoParallel = !!afterPhase.todoParallel;
       appliedAfter = applyTodoPhase(lastTodoDock, {
         todoSync: afterPhase.todoSync,
         todoDock: afterPhase.todoDock,
@@ -3448,6 +5418,16 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       });
       lastTodoDock = appliedAfter.dock;
       todoDockRef.current = lastTodoDock;
+      rememberTodoDock(appliedAfter.dock, appliedAfter.sync, afterTodoParallel);
+      appliedDeviceAfter = applyDevicePhase(lastDevice, {
+        deviceSync: afterPhase.deviceSync,
+        device: afterPhase.device,
+      });
+      lastDevice = appliedDeviceAfter.device;
+      deviceRef.current = lastDevice;
+      if (appliedDeviceAfter.sync !== "keep" || (appliedDeviceAfter.sync === "set" && lastDevice)) {
+        await applyDeviceToPage(page, lastDevice, appliedDeviceAfter.sync);
+      }
       stubAfterTodos =
         (lastTodoDock && lastTodoDock.groups[0] && lastTodoDock.groups[0].items) ||
         afterPhase.todos ||
@@ -3468,6 +5448,11 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           size: styled.size,
           weight: styled.weight,
           zoom: styled.zoom,
+          zoomOut: styled.zoomOut,
+          focus: !!styled.focus,
+          tone: styled.tone,
+          color: styled.color,
+          detail: styled.detail,
         };
       });
     } else {
@@ -3507,8 +5492,52 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           ? true
           : undefined,
     });
+    await syncAllTodoDocks({ parallel: afterTodoParallel });
     // Ring cycle / stubAfter may have advanced the dock - persist for next block.
-    if (todoDockRef.current) lastTodoDock = todoDockRef.current;
+    if (todoDockRef.current) {
+      lastTodoDock = todoDockRef.current;
+      rememberTodoDock(todoDockRef.current, "set", afterTodoParallel);
+    }
+    if (process.env.WAYGRAPH_JSON !== "1") {
+      demoLog(
+        "  after " +
+          summarizeDevice(lastDevice) +
+          " deviceSync=" +
+          appliedDeviceAfter.sync,
+      );
+      logTodoDockFull(lastTodoDock, "  after");
+      demoLog("  after todoSync=" + appliedAfter.sync);
+      const docksAfter = await probeTodoDocksOnPage(page);
+      if (!docksAfter.length && lastTodoDock && appliedAfter.sync !== "clear") {
+        demoLog("  WARN after: todos authored but dock-dom empty");
+      } else if (docksAfter.length) {
+        demoLog(
+          "  after dock-dom " +
+            docksAfter
+              .map(
+                (d) =>
+                  d.key +
+                  "@" +
+                  d.pos +
+                  " " +
+                  d.left +
+                  "," +
+                  d.top +
+                  " " +
+                  d.w +
+                  "x" +
+                  d.h +
+                  (d.onScreen ? "" : " OFFSCREEN") +
+                  " n=" +
+                  d.n +
+                  (d.current ? ' cur="' + d.current + '"' : ""),
+              )
+              .join(" | "),
+        );
+      } else if (appliedAfter.sync === "clear") {
+        demoLog("  after dock-dom cleared (expected)");
+      }
+    }
     await gate();
   }
   await teardownOverlay(page);
@@ -3882,12 +5911,12 @@ async function main() {
     // Without this, STEP mode always launched a different-looking browser than
     // headed Engine runs / waygraph-demo.mjs (which already resolve Flatpak).
     const executablePath = process.env.CHROME_PATH || process.env.CHROMIUM_PATH || undefined;
+    // Maximized for interactive step, and for fixed video viewport so the
+    // locked record size can actually fit (otherwise .webm gets grey pad).
     const browser = await chromium.launch({
       headless: !headed,
       slowMo,
-      // Maximized only for interactive step mode WITHOUT a fixed video viewport -
-      // recording uses a locked 16:9 viewport so .webm has no gray letterboxing.
-      args: step && !fixedVideoViewport ? ["--start-maximized"] : [],
+      args: step || fixedVideoViewport ? ["--start-maximized"] : [],
       ...(executablePath ? { executablePath } : {}),
     });
     const contextOpts = fixedVideoViewport
@@ -3897,10 +5926,11 @@ async function main() {
           // Lock DPR so --video-viewport 800x450 stays 800x450 in the .webm
           // (HiDPI hosts otherwise scale recordVideo to e.g. 1920x1080).
           deviceScaleFactor: 1,
+          hasTouch: true,
         }
       : step
-        ? { baseURL, viewport: null }
-        : { baseURL, viewport: { width: 1280, height: 720 } };
+        ? { baseURL, viewport: null, hasTouch: true }
+        : { baseURL, viewport: { width: 1280, height: 720 }, hasTouch: true };
     if (videoDir) {
       contextOpts.recordVideo = fixedVideoViewport
         ? { dir: videoDir, size: fixedVideoViewport }
@@ -3912,6 +5942,7 @@ async function main() {
       if (step) {
         const page = await context.newPage();
         pageForVideo = page;
+        if (fixedVideoViewport) page.__wgVideoViewport = fixedVideoViewport;
         // Step 1's "before" panel used to sit over a blank about:blank page
         // until the human clicked Run - show the real destination first.
         if (baseURL) {
@@ -3921,6 +5952,7 @@ async function main() {
       } else if (jsonReport) {
         const page = await context.newPage();
         pageForVideo = page;
+        if (fixedVideoViewport) page.__wgVideoViewport = fixedVideoViewport;
         if (baseURL) {
           await page.goto(baseURL).catch(() => {});
         }
@@ -3931,6 +5963,7 @@ async function main() {
       } else {
         const page = await context.newPage();
         pageForVideo = page;
+        if (fixedVideoViewport) page.__wgVideoViewport = fixedVideoViewport;
         if (baseURL) {
           await page.goto(baseURL).catch(() => {});
         }
@@ -4733,6 +6766,10 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean; a
   if (flags.nonHeadless) {
     process.env.WAYGRAPH_HEADED = "1";
   }
+  // Any --video on demo/run: headless unless --non-headless already won.
+  if (flags.video !== undefined && !flags.nonHeadless && process.env.WAYGRAPH_HEADED === undefined) {
+    process.env.WAYGRAPH_HEADED = "0";
+  }
   if (flags.baseUrl !== undefined) {
     process.env.WAYGRAPH_BASE_URL = flags.baseUrl;
   }
@@ -4806,13 +6843,16 @@ function resolveBaseUrl(projectDir: string): string | undefined {
 }
 
 /**
- * Friendly demo defaults: STEP+headed on, BASE_URL from package/env/playwright.
+ * Friendly demo defaults: STEP on; headed only for live watch (no --video).
+ * --video / --auto-play-video => headless unless --non-headless.
  * Call after applyRunFlags so explicit flags already won.
  */
 function applyDemoDefaults(projectDir: string): void {
   if (process.env.WAYGRAPH_STEP === undefined) process.env.WAYGRAPH_STEP = "1";
   if (process.env.WAYGRAPH_STEP === "1" && process.env.WAYGRAPH_HEADED === undefined) {
-    process.env.WAYGRAPH_HEADED = "1";
+    // Recording locks headless - a live window fights fixed video viewport /
+    // device shell centering. Watch live only with --non-headless.
+    process.env.WAYGRAPH_HEADED = process.env.WAYGRAPH_VIDEO ? "0" : "1";
   }
   // Manual Next by default. --auto-next / --auto-play-video flip this.
   if (process.env.WAYGRAPH_AUTOPLAY === undefined) {
@@ -4939,8 +6979,9 @@ Primary (less is more):
                  --todo-left|--todo-right  Floating checklist dock side (also ctx.todoPos / WAYGRAPH_TODO_POS)
                  --ff-expand               Expand fastForwardComposeBlock inners as separate steps
                  --ff-disabled             Dispute: expand FF (alias --no-ff); blitz kept on those inners
-                 --auto-play-video         Unattended + recorded: --auto-next + --video (+ step); headless by default
+                 --auto-play-video         Unattended + recorded: --auto-next + --video (+ step); headless
                  --auto-play-video-head    Same, but keep the browser visible (--non-headless)
+                 --video [dir]             Record .webm (demo: headless unless --non-headless)
                  --video-viewport WxH       Recording size (default demo: 1920x1080)
                  --title / --base-url
   waygraph run   [--blocks <flow|file|spec>]  Execute (no overlay unless --step)
@@ -5367,6 +7408,7 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
       console.error(
         `waygraph demo: STEP=${process.env.WAYGRAPH_STEP === "1" ? "on" : "off"}` +
           ` AUTO_NEXT=${process.env.WAYGRAPH_AUTOPLAY === "1" ? "on" : "off"}` +
+          ` HEADED=${process.env.WAYGRAPH_HEADED === "0" ? "off" : "on"}` +
           ` BASE_URL=${process.env.WAYGRAPH_BASE_URL ?? "(unset)"}` +
           (process.env.WAYGRAPH_VIDEO ? ` VIDEO=${process.env.WAYGRAPH_VIDEO}` : "") +
           (process.env.WAYGRAPH_TITLE ? ` TITLE=${JSON.stringify(process.env.WAYGRAPH_TITLE)}` : ""),

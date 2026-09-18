@@ -50,12 +50,15 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
     // Open lifecycle: banner title, todos, Screen Studio camera zoom,
     // sequential highlight queue (appear / dwell / fade), focus + color.
     stubBefore: (ctx: StubCtx) => {
-      ctx.title("Signing in");
+      ctx.title("Signing in · mobile");
+      // 0.13.3: mobile portrait + touch; tap Login.
+      ctx.device("mobile");
+      ctx.portrait();
       ctx.todoId("saucedemo-login");
       ctx.todos([
         { id: "login-user", text: "Enter username" },
         { id: "login-pass", text: "Enter password" },
-        { id: "login-submit", text: "Click Login" },
+        { id: "login-submit", text: "Tap Login" },
       ]);
       ctx.todoIndex(0);
       ctx.zoom(1.35);
@@ -81,6 +84,7 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
           color: "#86efac",
           zoom: 1.55,
           weight: "bold",
+          gesture: "tap",
         },
       });
     },
@@ -106,7 +110,9 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
         });
         return;
       }
-      ctx.banner("Inventory");
+      ctx.banner("Inventory · landscape");
+      // Rotate mobile to landscape on the product shelf (toast + lerp).
+      ctx.landscape();
       ctx.todoId("saucedemo-login");
       ctx.todos([
         { id: "login-user", text: "Enter username" },

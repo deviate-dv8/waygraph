@@ -56,8 +56,9 @@ export type WaygraphTodoInput = string | WaygraphTodoItem;
  * Dock list presentation:
  * - `sequential` - arrow on current, strike done (demo walkthrough)
  * - `checklist` - checkbox done/pending only (no current arrow; independent checks)
+ * - `bullets` - flat bullet list (no arrow/checkbox; open notes / trimmed dock)
  */
-export type TodoListStyle = "sequential" | "checklist";
+export type TodoListStyle = "sequential" | "checklist" | "bullets";
 
 /** One titled group in the floating todo dock (FR / Scenarios / ACs, etc.). */
 export type WaygraphTodoGroupInput = {
@@ -96,6 +97,23 @@ export type TodoDockState = {
   pos?: "left" | "right";
 };
 
+/** Options for compact {@link StubCtx.todos}(`id`, items, opts). */
+export type WaygraphTodosOpts = {
+  /** Dock heading. */
+  title?: string;
+  /** Current item index (0-based). */
+  index?: number;
+  /** `sequential` | `checklist` | `bullets`. */
+  style?: TodoListStyle;
+  /** Dock side. */
+  pos?: "left" | "right";
+  /**
+   * Keep other docks with different ids (multi-todo). Default false —
+   * one checklist at a time (setting todos replaces the previous dock).
+   */
+  parallel?: boolean;
+};
+
 /** Episode-level fixtures authored inside stubBefore/After/OnError(ctx). */
 export type StubPhaseFixtures = {
   todos?: readonly WaygraphTodoInput[];
@@ -108,7 +126,7 @@ export type StubPhaseFixtures = {
    * (e.g. Mailhog -> back to app and still find the checklist).
    */
   todoId?: string;
-  /** `sequential` (default) or `checklist`. */
+  /** `sequential` (default), `checklist`, or `bullets`. */
   todoStyle?: TodoListStyle;
   /** Multiple titled lists (FR / Scenarios / ACs). Wins over bare todos when set. */
   todoGroups?: readonly WaygraphTodoGroupInput[];
@@ -126,7 +144,231 @@ export type StubPhaseFixtures = {
    * Authored control (also click / WAYGRAPH_TODO_POS / --todo-left|right).
    */
   todoPos?: "left" | "right";
+  /**
+   * Viewport preset: `mobile` | `tablet` | `desktop` (default / clear).
+   * Omit on later blocks = **keep** (same persist pattern as todos).
+   */
+  device?: DevicePreset | DeviceState;
+  /** Explicit pixel viewport (wins over preset width/height when both set). */
+  viewport?: DeviceViewport;
+  /** Touch theater + Playwright touchscreen when true. */
+  touch?: boolean;
+  /** Portrait / landscape (swaps preset width/height). */
+  orientation?: DeviceOrientation;
 };
+
+/** Named viewport presets (0.13+). */
+export type DevicePreset = "mobile" | "tablet" | "desktop";
+
+/** Explicit viewport box. */
+export type DeviceViewport = {
+  width: number;
+  height: number;
+  deviceScaleFactor?: number;
+};
+
+/**
+ * Carried device fixture (todo-dock shaped persist).
+ * Omit on a later step = keep; hideDevice/clearDevice/desktop = clear to desktop.
+ */
+export type DeviceState = {
+  preset: DevicePreset;
+  viewport: DeviceViewport;
+  /** Playwright-ish: treat as mobile layout. */
+  isMobile: boolean;
+  /** Context needs hasTouch for touchscreen.tap (demo launches with hasTouch). */
+  hasTouch: boolean;
+  /** Demo gesture theater: finger cursor, tap/hold timing, prefer touchscreen. */
+  touchMode: boolean;
+  /** Viewport orientation (0.13.3+). Default derived from width/height. */
+  orientation?: DeviceOrientation;
+};
+
+/** Portrait (tall) or landscape (wide). */
+export type DeviceOrientation = "portrait" | "landscape";
+
+/** Built-in preset sizes (CSS pixels) — stored in portrait for mobile/tablet. */
+export const DEVICE_PRESETS: Record<DevicePreset, Omit<DeviceState, "touchMode"> & { touchMode?: boolean }> = {
+  mobile: {
+    preset: "mobile",
+    viewport: { width: 390, height: 844, deviceScaleFactor: 2 },
+    isMobile: true,
+    hasTouch: true,
+    touchMode: true,
+    orientation: "portrait",
+  },
+  tablet: {
+    preset: "tablet",
+    viewport: { width: 768, height: 1024, deviceScaleFactor: 2 },
+    isMobile: true,
+    hasTouch: true,
+    touchMode: true,
+    orientation: "portrait",
+  },
+  desktop: {
+    preset: "desktop",
+    viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
+    isMobile: false,
+    hasTouch: false,
+    touchMode: false,
+    orientation: "landscape",
+  },
+};
+
+export function normalizeDevicePreset(raw: unknown): DevicePreset | undefined {
+  const s = String(raw ?? "")
+    .trim()
+    .toLowerCase();
+  if (s === "mobile" || s === "phone" || s === "m") return "mobile";
+  if (s === "tablet" || s === "pad" || s === "t") return "tablet";
+  if (s === "desktop" || s === "desk" || s === "d" || s === "main") return "desktop";
+  return undefined;
+}
+
+export function normalizeDeviceOrientation(raw: unknown): DeviceOrientation | undefined {
+  const s = String(raw ?? "")
+    .trim()
+    .toLowerCase();
+  if (s === "portrait" || s === "port" || s === "tall" || s === "p") return "portrait";
+  if (s === "landscape" || s === "land" || s === "wide" || s === "l") return "landscape";
+  return undefined;
+}
+
+/** Infer orientation from box (square counts as landscape). */
+export function orientationFromViewport(vp: DeviceViewport): DeviceOrientation {
+  return vp.height > vp.width ? "portrait" : "landscape";
+}
+
+/**
+ * Swap width/height so the viewport matches the requested orientation.
+ * Preserves deviceScaleFactor. No-op when already oriented.
+ */
+export function applyOrientation(
+  state: DeviceState,
+  orientation: DeviceOrientation,
+): DeviceState {
+  const vp = { ...state.viewport };
+  const current = orientationFromViewport(vp);
+  if (current !== orientation) {
+    const w = vp.width;
+    vp.width = vp.height;
+    vp.height = w;
+  }
+  return { ...state, viewport: vp, orientation };
+}
+
+/** Resolve a preset name or partial state into a full DeviceState. */
+export function resolveDeviceState(
+  input: DevicePreset | DeviceState | DeviceViewport | undefined,
+  touchOverride?: boolean,
+  orientationOverride?: DeviceOrientation,
+): DeviceState | undefined {
+  if (input === undefined) return undefined;
+  let resolved: DeviceState | undefined;
+  if (typeof input === "string") {
+    const p = normalizeDevicePreset(input);
+    if (!p) return undefined;
+    const base = DEVICE_PRESETS[p];
+    const touchMode = touchOverride !== undefined ? !!touchOverride : !!base.touchMode;
+    resolved = {
+      preset: base.preset,
+      viewport: { ...base.viewport },
+      isMobile: base.isMobile,
+      hasTouch: base.hasTouch || touchMode,
+      touchMode,
+      orientation: base.orientation || orientationFromViewport(base.viewport),
+    };
+  } else if ("width" in input && "height" in input && !("preset" in input)) {
+    const vp = input as DeviceViewport;
+    const touchMode = touchOverride !== undefined ? !!touchOverride : true;
+    const box = {
+      width: Math.max(200, Math.floor(vp.width)),
+      height: Math.max(200, Math.floor(vp.height)),
+      ...(vp.deviceScaleFactor !== undefined
+        ? { deviceScaleFactor: vp.deviceScaleFactor }
+        : { deviceScaleFactor: 2 }),
+    };
+    resolved = {
+      preset: "mobile",
+      viewport: box,
+      isMobile: true,
+      hasTouch: true,
+      touchMode,
+      orientation: orientationFromViewport(box),
+    };
+  } else {
+    const d = input as DeviceState;
+    const preset = normalizeDevicePreset(d.preset) || "desktop";
+    const base = DEVICE_PRESETS[preset];
+    const touchMode =
+      touchOverride !== undefined
+        ? !!touchOverride
+        : d.touchMode !== undefined
+          ? !!d.touchMode
+          : !!base.touchMode;
+    const viewport = d.viewport
+      ? {
+          width: Math.max(200, Math.floor(d.viewport.width)),
+          height: Math.max(200, Math.floor(d.viewport.height)),
+          ...(d.viewport.deviceScaleFactor !== undefined
+            ? { deviceScaleFactor: d.viewport.deviceScaleFactor }
+            : base.viewport.deviceScaleFactor !== undefined
+              ? { deviceScaleFactor: base.viewport.deviceScaleFactor }
+              : {}),
+        }
+      : { ...base.viewport };
+    resolved = {
+      preset,
+      viewport,
+      isMobile: d.isMobile !== undefined ? !!d.isMobile : base.isMobile,
+      hasTouch: d.hasTouch !== undefined ? !!d.hasTouch : base.hasTouch || touchMode,
+      touchMode,
+      orientation:
+        normalizeDeviceOrientation(d.orientation) ||
+        orientationFromViewport(viewport),
+    };
+  }
+  if (!resolved) return undefined;
+  const want =
+    orientationOverride ||
+    (typeof input === "object" && input && "orientation" in input
+      ? normalizeDeviceOrientation((input as DeviceState).orientation)
+      : undefined);
+  if (want) return applyOrientation(resolved, want);
+  if (!resolved.orientation) {
+    resolved = {
+      ...resolved,
+      orientation: orientationFromViewport(resolved.viewport),
+    };
+  }
+  return resolved;
+}
+
+/**
+ * Carry-forward for device fixtures (mirror {@link applyTodoPhase}).
+ * - clear: hideDevice / clearDevice / device("desktop") with clear intent
+ * - set: author set device/viewport/touch this phase
+ * - keep: omit - preserve previous (whole episode remain)
+ */
+export function applyDevicePhase(
+  prev: DeviceState | undefined,
+  phase: {
+    deviceSync?: "set" | "clear" | "keep";
+    device?: DeviceState;
+  },
+): { device: DeviceState | undefined; sync: "set" | "clear" | "keep" } {
+  const sync =
+    phase.deviceSync ||
+    (phase.device ? "set" : "keep");
+  if (sync === "clear") {
+    return { device: resolveDeviceState("desktop", false), sync: "clear" };
+  }
+  if (sync === "set") {
+    if (phase.device) return { device: phase.device, sync: "set" };
+    return { device: resolveDeviceState("desktop", false), sync: "clear" };
+  }
+  return { device: prev, sync: "keep" };
+}
 
 /** One named highlight slot on a block (selector + caption). */
 export interface WaygraphHighlightStub extends FixtureDurationFields {
@@ -186,6 +428,21 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
    * for authored stub queues; set false to keep cursor hidden).
    */
   cursor?: boolean;
+  /**
+   * Optional link to a todo item id. When set, Method fill/click advances that
+   * todo row instead of relying on stub array index (avoids password/submit/username
+   * alphabetical reorder bugs).
+   */
+  todo?: string;
+  /** Slot key from stubBefore/After map (e.g. "username") - set by resolver. */
+  slotId?: string;
+  /**
+   * Pointer feel when touchMode is on (0.13+):
+   * - `tap` - short press via touchscreen (default in touch mode)
+   * - `hold` - long-press (~600ms) then release
+   * - `click` - mouse click even in touch mode
+   */
+  gesture?: "tap" | "hold" | "click" | "swipe";
 }
 
 /** Flow fixture patch: label required; selector optional (inherits from stub). */
@@ -193,7 +450,20 @@ export type WaygraphHighlightFixture = Partial<Pick<WaygraphHighlightStub, "sele
   Required<Pick<WaygraphHighlightStub, "label">> &
   Pick<
     WaygraphHighlightStub,
-    "detail" | "tag" | "tone" | "size" | "weight" | "zoom" | "zoomOut" | "focus" | "followMouse" | "follow" | "color" | "cursor"
+    | "detail"
+    | "tag"
+    | "tone"
+    | "size"
+    | "weight"
+    | "zoom"
+    | "zoomOut"
+    | "focus"
+    | "followMouse"
+    | "follow"
+    | "color"
+    | "cursor"
+    | "todo"
+    | "gesture"
   > &
   FixtureDurationFields;
 
@@ -229,8 +499,18 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   highlights(slots: HighlightStubPhase): void;
   /** Set / overwrite one named ring. */
   ring(id: string, stub: WaygraphHighlightStub): void;
-  /** Episode checklist (demo panel). Single list; use {@link StubCtx.todoGroups} for FR/AC packs. */
+  /**
+   * Floating checklist. Prefer the compact form:
+   *   ctx.todos("login", ["Enter email", "Enter password"], { title: "Sign in", index: 0 })
+   * Legacy: ctx.todos([...]); ctx.todoId(...); ctx.todoIndex(...); …
+   * Default = one dock (setting todos replaces). Pass `{ parallel: true }` to keep others.
+   */
   todos(items: readonly WaygraphTodoInput[]): void;
+  todos(
+    id: string,
+    items: readonly WaygraphTodoInput[],
+    opts?: WaygraphTodosOpts,
+  ): void;
   /** Current checklist index (bump for sequential plans). */
   todoIndex(n: number): void;
   /** Heading above the single {@link StubCtx.todos} list. */
@@ -241,8 +521,8 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
    */
   todoId(id: string): void;
   /**
-   * Dock presentation: `sequential` (arrow walkthrough) or `checklist`
-   * (independent checkboxes, no current arrow).
+   * Dock presentation: `sequential` (arrow walkthrough), `checklist`
+   * (independent checkboxes), or `bullets` (flat • list, no progress marks).
    */
   todoStyle(style: TodoListStyle): void;
   /**
@@ -257,6 +537,32 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   hideTodos(): void;
   /** Alias for {@link StubCtx.hideTodos}. */
   clearTodos(): void;
+  /**
+   * Viewport / device fixture (0.13+). `mobile` | `tablet` | `desktop`.
+   * Omit on later blocks = **keep** (same persist as todos). Use
+   * {@link StubCtx.hideDevice} / {@link StubCtx.clearDevice} to return to desktop.
+   */
+  device(preset: DevicePreset | DeviceState): void;
+  /** Explicit CSS-pixel viewport (implies mobile-ish unless desktop-sized). */
+  viewport(box: DeviceViewport): void;
+  /** Enable / disable touch theater + touchscreen gestures. */
+  touch(on?: boolean): void;
+  /**
+   * Rotate viewport to portrait or landscape (0.13.3+).
+   * Keeps current preset; swaps width/height. Toast + lerp like device().
+   */
+  orientation(o: DeviceOrientation): void;
+  /** Alias for {@link StubCtx.orientation}("landscape"). */
+  landscape(): void;
+  /** Alias for {@link StubCtx.orientation}("portrait"). */
+  portrait(): void;
+  /**
+   * Reset to desktop viewport and clear touch mode. Omit device on a later
+   * block = **keep**; only hideDevice / clearDevice / device("desktop") clears.
+   */
+  hideDevice(): void;
+  /** Alias for {@link StubCtx.hideDevice}. */
+  clearDevice(): void;
   /** Default camera zoom for rings without their own zoom. */
   zoom(n: number): void;
   /**
@@ -305,10 +611,21 @@ export type StubPhaseResult = {
    * - `keep` - author omitted todos; demo must leave previous dock alone
    */
   todoSync?: "set" | "clear" | "keep";
+  /** Resolved device after this phase (undefined when keep with no prior). */
+  device?: DeviceState;
+  /**
+   * Device intent (mirror todoSync):
+   * - `set` - apply {@link device}
+   * - `clear` - reset to desktop (hideDevice / clearDevice / device desktop)
+   * - `keep` - author omitted device; demo must leave previous alone
+   */
+  deviceSync?: "set" | "clear" | "keep";
   zoom?: number;
   zoomOut?: boolean;
   title?: string;
   todoPos?: "left" | "right";
+  /** When true, keep other docks (multi-todo). Default false = replace. */
+  todoParallel?: boolean;
 };
 
 /**
@@ -691,16 +1008,22 @@ function pickZoom(
 }
 
 function pickFxFields(
-  base: Pick<WaygraphHighlightStub, "focus" | "color" | "cursor"> | undefined,
-  patch: Pick<WaygraphHighlightFixture, "focus" | "color" | "cursor"> | undefined,
-): Pick<WaygraphHighlightStub, "focus" | "color" | "cursor"> {
-  const out: Pick<WaygraphHighlightStub, "focus" | "color" | "cursor"> = {};
+  base: Pick<WaygraphHighlightStub, "focus" | "color" | "cursor" | "todo" | "gesture"> | undefined,
+  patch: Pick<WaygraphHighlightFixture, "focus" | "color" | "cursor" | "todo" | "gesture"> | undefined,
+): Pick<WaygraphHighlightStub, "focus" | "color" | "cursor" | "todo" | "gesture"> {
+  const out: Pick<WaygraphHighlightStub, "focus" | "color" | "cursor" | "todo" | "gesture"> = {};
   const focus = patch?.focus !== undefined ? patch.focus : base?.focus;
   const color = patch?.color !== undefined ? patch.color : base?.color;
   const cursor = patch?.cursor !== undefined ? patch.cursor : base?.cursor;
+  const todo = patch?.todo !== undefined ? patch.todo : base?.todo;
+  const gesture = patch?.gesture !== undefined ? patch.gesture : base?.gesture;
   if (focus !== undefined) out.focus = !!focus;
   if (color !== undefined && String(color).trim()) out.color = String(color).trim();
   if (cursor !== undefined) out.cursor = !!cursor;
+  if (todo !== undefined && String(todo).trim()) out.todo = String(todo).trim();
+  if (gesture === "tap" || gesture === "hold" || gesture === "click" || gesture === "swipe") {
+    out.gesture = gesture;
+  }
   return out;
 }
 
@@ -764,10 +1087,21 @@ type StubBagState = {
   todoTouched?: boolean | undefined;
   /** Author asked to hide the dock. */
   hideTodos?: boolean | undefined;
+  /** Author touched device this phase (set or clear). */
+  deviceTouched?: boolean | undefined;
+  /** Author asked to reset to desktop. */
+  hideDevice?: boolean | undefined;
+  device?: DeviceState | undefined;
+  /** Touch override when set via ctx.touch() alone or with device. */
+  touchOverride?: boolean | undefined;
+  /** Orientation override when set via ctx.orientation / landscape / portrait. */
+  orientationOverride?: DeviceOrientation | undefined;
   zoom?: number | undefined;
   zoomOut?: boolean | undefined;
   title?: string | undefined;
   todoPos?: "left" | "right" | undefined;
+  /** Keep sibling docks (compact todos opts.parallel). */
+  todoParallel?: boolean | undefined;
 };
 
 /** Normalize checklist dock side. */
@@ -787,12 +1121,23 @@ export function normalizeTodoStyle(raw: unknown): TodoListStyle | undefined {
     .toLowerCase();
   if (s === "sequential" || s === "seq" || s === "steps" || s === "step") return "sequential";
   if (s === "checklist" || s === "check" || s === "checks" || s === "box") return "checklist";
+  if (
+    s === "bullets" ||
+    s === "bullet" ||
+    s === "list" ||
+    s === "ul" ||
+    s === "points" ||
+    s === "plain"
+  ) {
+    return "bullets";
+  }
   return undefined;
 }
 
 /**
  * Normalize checklist rows; apply todoIndex for sequential done/current.
- * In checklist mode, todoIndex is ignored unless items omit explicit done.
+ * In checklist / bullets mode, todoIndex is ignored unless items omit explicit done
+ * (bullets never auto-mark current).
  */
 export function normalizeTodos(
   todos: readonly WaygraphTodoInput[] | undefined,
@@ -813,6 +1158,11 @@ export function normalizeTodos(
     }
     if (style === "checklist") {
       if (item.done === undefined) item.done = false;
+      item.current = false;
+      return item;
+    }
+    if (style === "bullets") {
+      // Flat list: no walkthrough current; keep explicit done if authored.
       item.current = false;
       return item;
     }
@@ -860,9 +1210,7 @@ export function buildTodoDock(opts: {
   const items = normalizeTodos(opts.todos, opts.todoIndex, style);
   if (!items.length) return undefined;
   const group: WaygraphTodoGroup = { style, items };
-  if (opts.todoTitle && String(opts.todoTitle).trim()) {
-    group.title = String(opts.todoTitle).trim();
-  }
+  // Title once on the dock - not also on the lone group (avoids duplicate headings).
   const dock: TodoDockState = { style, groups: [group] };
   if (opts.todoTitle && String(opts.todoTitle).trim()) {
     dock.title = String(opts.todoTitle).trim();
@@ -908,7 +1256,7 @@ export function applyTodoPhase(
 }
 
 /**
- * Advance every sequential group to `index` (capped). Checklist groups unchanged.
+ * Advance every sequential group to `index` (capped). Checklist / bullets unchanged.
  * Used while cycling rings / fill/click stubs so the walkthrough moves.
  */
 export function advanceTodoDock(dock: TodoDockState | undefined, index: number): TodoDockState | undefined {
@@ -935,7 +1283,7 @@ export function advanceTodoDock(dock: TodoDockState | undefined, index: number):
 
 /**
  * Mark sequential groups complete (all done, none current) - e.g. end of step.
- * Checklist groups keep explicit done flags.
+ * Checklist / bullets groups keep explicit done flags.
  */
 export function completeSequentialTodoDock(
   dock: TodoDockState | undefined,
@@ -971,13 +1319,31 @@ function createStubCtx<Out extends Checkpoint<string>>(
     ring(id, stub) {
       bag.highlights = { ...bag.highlights, [id]: stub };
     },
-    todos(items) {
+    todos(a: string | readonly WaygraphTodoInput[], b?: readonly WaygraphTodoInput[] | WaygraphTodosOpts, c?: WaygraphTodosOpts) {
       bag.todoTouched = true;
       bag.hideTodos = false;
-      bag.todos = items;
       delete bag.todoGroups;
-      // Empty list = explicit clear (same as hideTodos).
-      if (!items || !items.length) bag.hideTodos = true;
+      if (typeof a === "string") {
+        const id = String(a).trim();
+        if (id) bag.todoId = id;
+        else delete bag.todoId;
+        const items = (Array.isArray(b) ? b : []) as readonly WaygraphTodoInput[];
+        bag.todos = items;
+        const opts = (c && typeof c === "object" ? c : {}) as WaygraphTodosOpts;
+        if (opts.title != null) bag.todoTitle = String(opts.title);
+        if (opts.index != null) bag.todoIndex = Number(opts.index);
+        const st = normalizeTodoStyle(opts.style);
+        if (st) bag.todoStyle = st;
+        const pos = normalizeTodoPos(opts.pos);
+        if (pos) bag.todoPos = pos;
+        bag.todoParallel = opts.parallel === true;
+        if (!items.length) bag.hideTodos = true;
+        return;
+      }
+      bag.todos = a;
+      // Legacy list-only form: leave parallel unset (CLI treats as replace).
+      delete bag.todoParallel;
+      if (!a || !a.length) bag.hideTodos = true;
     },
     todoIndex(n) {
       bag.todoIndex = n;
@@ -1012,6 +1378,72 @@ function createStubCtx<Out extends Checkpoint<string>>(
       bag.hideTodos = true;
       bag.todos = [];
       delete bag.todoGroups;
+    },
+    device(preset) {
+      bag.deviceTouched = true;
+      bag.hideDevice = false;
+      const resolved = resolveDeviceState(preset, bag.touchOverride, bag.orientationOverride);
+      if (resolved) {
+        bag.device = resolved;
+        if (resolved.preset === "desktop" && !resolved.touchMode) {
+          bag.hideDevice = true;
+        }
+      }
+    },
+    viewport(box) {
+      bag.deviceTouched = true;
+      bag.hideDevice = false;
+      const resolved = resolveDeviceState(box, bag.touchOverride, bag.orientationOverride);
+      if (resolved) bag.device = resolved;
+    },
+    touch(on) {
+      bag.deviceTouched = true;
+      const enabled = on === undefined ? true : !!on;
+      bag.touchOverride = enabled;
+      if (enabled) bag.hideDevice = false;
+      if (bag.device) {
+        bag.device = {
+          ...bag.device,
+          touchMode: enabled,
+          hasTouch: bag.device.hasTouch || enabled,
+        };
+        if (enabled) bag.hideDevice = false;
+      } else if (enabled) {
+        const base = resolveDeviceState("desktop", true, bag.orientationOverride);
+        if (base) bag.device = { ...base, touchMode: true, hasTouch: true };
+      }
+    },
+    orientation(o) {
+      const want = normalizeDeviceOrientation(o);
+      if (!want) return;
+      bag.deviceTouched = true;
+      bag.hideDevice = false;
+      bag.orientationOverride = want;
+      const base =
+        bag.device ||
+        resolveDeviceState("mobile", bag.touchOverride) ||
+        resolveDeviceState("mobile");
+      if (base) bag.device = applyOrientation(base, want);
+    },
+    landscape() {
+      this.orientation("landscape");
+    },
+    portrait() {
+      this.orientation("portrait");
+    },
+    hideDevice() {
+      bag.deviceTouched = true;
+      bag.hideDevice = true;
+      bag.device = resolveDeviceState("desktop", false);
+      bag.touchOverride = false;
+      bag.orientationOverride = undefined;
+    },
+    clearDevice() {
+      bag.deviceTouched = true;
+      bag.hideDevice = true;
+      bag.device = resolveDeviceState("desktop", false);
+      bag.touchOverride = false;
+      bag.orientationOverride = undefined;
     },
     zoom(n) {
       if (Number.isFinite(n) && n > 0) bag.zoom = n;
@@ -1051,6 +1483,46 @@ function createStubCtx<Out extends Checkpoint<string>>(
         bag.todoTouched = true;
         bag.hideTodos = !partial.todoGroups || !partial.todoGroups.length;
         bag.todoGroups = partial.todoGroups;
+      }
+      if (partial.touch !== undefined) {
+        bag.deviceTouched = true;
+        bag.touchOverride = !!partial.touch;
+      }
+      if (partial.orientation !== undefined) {
+        const want = normalizeDeviceOrientation(partial.orientation);
+        if (want) {
+          bag.deviceTouched = true;
+          bag.hideDevice = false;
+          bag.orientationOverride = want;
+          const base =
+            bag.device ||
+            resolveDeviceState("mobile", bag.touchOverride) ||
+            resolveDeviceState("mobile");
+          if (base) bag.device = applyOrientation(base, want);
+        }
+      }
+      if (partial.device !== undefined) {
+        bag.deviceTouched = true;
+        bag.hideDevice = false;
+        const resolved = resolveDeviceState(
+          partial.device,
+          bag.touchOverride,
+          bag.orientationOverride,
+        );
+        if (resolved) {
+          bag.device = resolved;
+          if (resolved.preset === "desktop" && !resolved.touchMode) bag.hideDevice = true;
+        }
+      }
+      if (partial.viewport !== undefined) {
+        bag.deviceTouched = true;
+        bag.hideDevice = false;
+        const resolved = resolveDeviceState(
+          partial.viewport,
+          bag.touchOverride,
+          bag.orientationOverride,
+        );
+        if (resolved) bag.device = resolved;
       }
       if (partial.zoom !== undefined && Number.isFinite(partial.zoom) && partial.zoom > 0) {
         bag.zoom = partial.zoom;
@@ -1098,17 +1570,27 @@ function mergePhaseMaps(
   phaseMap: HighlightStubPhase,
   fixturePhase: Record<string, WaygraphHighlightFixture> | undefined,
 ): ResolvedHighlight[] {
-  const slotIds = new Set([...Object.keys(phaseMap), ...Object.keys(fixturePhase || {})]);
-  const ordered = [...slotIds].sort((a, b) => {
-    const na = Number(a);
-    const nb = Number(b);
-    if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-    return a.localeCompare(b);
-  });
+  const phaseKeys = Object.keys(phaseMap);
+  const fixtureKeys = Object.keys(fixturePhase || {});
+  const allKeys = [...new Set([...phaseKeys, ...fixtureKeys])];
+  const allNumeric =
+    allKeys.length > 0 && allKeys.every((k) => Number.isFinite(Number(k)) && String(Number(k)) === k);
+  // Numeric stub ids (legacy "0","1") sort by number. Named stubs keep author
+  // insertion order - localeCompare used to reorder password/submit/username
+  // and advance the wrong todo index on fill.
+  const ordered = allNumeric
+    ? [...allKeys].sort((a, b) => Number(a) - Number(b))
+    : [...phaseKeys, ...fixtureKeys.filter((k) => !phaseKeys.includes(k))];
   const resolved: ResolvedHighlight[] = [];
   for (const id of ordered) {
     const merged = mergeSlot(phaseMap[id], fixturePhase?.[id]);
-    if (merged) resolved.push(merged);
+    if (merged) {
+      resolved.push({
+        ...merged,
+        slotId: id,
+        ...(merged.todo ? { todo: merged.todo } : {}),
+      });
+    }
   }
   return resolved;
 }
@@ -1249,16 +1731,42 @@ export async function runStubPhase(
       : bag.todoTouched && !todoDock
         ? "clear"
         : "keep";
+
+  let deviceState: DeviceState | undefined;
+  if (bag.hideDevice) {
+    deviceState = resolveDeviceState("desktop", false);
+  } else if (bag.device) {
+    deviceState = bag.touchOverride !== undefined
+      ? {
+          ...bag.device,
+          touchMode: bag.touchOverride,
+          hasTouch: bag.device.hasTouch || bag.touchOverride,
+        }
+      : bag.device;
+  } else if (bag.touchOverride !== undefined) {
+    deviceState = resolveDeviceState("desktop", bag.touchOverride);
+  }
+  const deviceSync: "set" | "clear" | "keep" = bag.hideDevice
+    ? "clear"
+    : bag.deviceTouched && deviceState
+      ? "set"
+      : bag.deviceTouched && !deviceState
+        ? "clear"
+        : "keep";
+
   return {
     highlights,
     todos,
     todoSync,
+    deviceSync,
     ...(bag.todoIndex !== undefined ? { todoIndex: bag.todoIndex } : {}),
     ...(todoDock ? { todoDock } : {}),
+    ...(deviceState ? { device: deviceState } : {}),
     ...(bag.zoom !== undefined ? { zoom: bag.zoom } : {}),
     ...(bag.zoomOut !== undefined ? { zoomOut: bag.zoomOut } : {}),
     ...(bag.title !== undefined && bag.title !== "" ? { title: bag.title } : {}),
     ...(bag.todoPos !== undefined ? { todoPos: bag.todoPos } : {}),
+    ...(bag.todoParallel === true ? { todoParallel: true } : {}),
   };
 }
 

@@ -39,6 +39,8 @@ npx playwright install chromium
 | Coverage JSON + min gate (10%) | `npm run traverse:coverage` |
 | Shop demo stepper | `npm run demo:step` |
 | Shop demo autoplay | `npm run demo:autoplay` |
+| **Device showcase** (mobile/tablet + portrait/landscape) | `npm run demo:device` |
+| Device showcase + `.webm` | `npm run demo:device:video` |
 | **Cart bulk** demo (add-all → remove-all) | `npm run demo:bulk` |
 | Cart bulk stepper | `npm run demo:bulk:step` |
 | List flows | `npm run flows` |
