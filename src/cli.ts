@@ -1219,9 +1219,9 @@ async function installOverlay(page, title) {
                   }
                   const rowId = t.id || t.name || "";
                   return (
-                    "<li class=\"" +
+                    '<li class="' +
                     cls +
-                    "\"" +
+                    '"' +
                     attrId(rowId) +
                     '><span class="wg-todo-mark">' +
                     mark +
