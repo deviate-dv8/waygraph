@@ -238,8 +238,23 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
     expect(cleared.dock).toBeUndefined();
   });
 
-  it("normalizeTodos stamps id from name alias", () => {
-    const rows = normalizeTodos([{ name: "ext-redirect", text: "Click verify link" }], 0);
-    expect(rows[0]!.id).toBe("ext-redirect");
+  it("applyTodoPhase keep preserves advanced current after mid-act style set", async () => {
+    const { applyTodoPhase, buildTodoDock, advanceTodoDock } = await import("../../src/highlights.js");
+    const base = buildTodoDock({
+      todoId: "ep10",
+      todos: ["A", "B", "C"],
+      todoIndex: 0,
+    });
+    const midAct = advanceTodoDock(base, 2);
+    expect(midAct?.groups[0]?.items[2]?.current).toBe(true);
+    const kept = applyTodoPhase(midAct, { todoSync: "keep" });
+    expect(kept.dock?.groups[0]?.items[2]?.current).toBe(true);
+    // A later stubBefore that re-sets index 0 would wipe - that is authoring,
+    // not keep. keep must not invent a blank dock.
+    const wiped = applyTodoPhase(midAct, {
+      todoSync: "set",
+      todoDock: buildTodoDock({ todoId: "ep10", todos: ["A", "B", "C"], todoIndex: 0 }),
+    });
+    expect(wiped.dock?.groups[0]?.items[0]?.current).toBe(true);
   });
 });

@@ -1742,6 +1742,7 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
   const defaultHoldMs = opts && opts.defaultHoldMs != null ? opts.defaultHoldMs : null;
   const pace = opts && opts.pace !== undefined ? opts.pace : undefined;
   let dock = opts && opts.todoDock;
+  const advanceTodos = !(opts && opts.advanceTodos === false);
   // Push stubAfter/before dock before the first ring so Method after-panels
   // show the updated checklist immediately (not only after the ring cycle).
   if (dock) {
@@ -1768,7 +1769,10 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
           size: h.size,
           weight: h.weight,
         });
-        if (dock) {
+        // Do NOT advanceTodoDock by ring index after stubAfter already set
+        // progress - that reset current back to 0 and the next block looked
+        // blank. Mid-act Method advance still uses syncTodoDockAdvance.
+        if (dock && advanceTodos) {
           dock = advanceTodoDock(dock, i);
           if (opts && opts.todoDockRef) opts.todoDockRef.current = dock;
           await page
@@ -1776,7 +1780,7 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
               if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", dock: d });
             }, dock)
             .catch(() => {});
-        } else if ((opts && opts.todos && opts.todos.length) || (h.todos && h.todos.length)) {
+        } else if (!dock && ((opts && opts.todos && opts.todos.length) || (h.todos && h.todos.length))) {
           const rows =
             opts && opts.todos && opts.todos.length
               ? opts.todos
@@ -1880,7 +1884,14 @@ async function renderAfterStep(page, info) {
     todoDock: info.todoDock,
     todos: info.todos,
     todoSync: info.todoSync,
+    todoDockRef: info.todoDockRef,
+    // stubAfter already authored progress - do not re-index by ring 0..n
+    advanceTodos: false,
   });
+  // After-ring advances may have moved the dock - surface latest for caller.
+  if (info.todoDockRef && info.todoDockRef.current) {
+    info.todoDock = info.todoDockRef.current;
+  }
   const afterPayload = { ...info, stepLabel: miniStepLabel(info) };
   await page
     .evaluate((info) => {
@@ -3356,6 +3367,10 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       })
       .catch(() => {});
     result = stepOutcome.result;
+    // Mid-act Method fill/click advances live on todoDockRef - fold that
+    // back into lastTodoDock before stubAfter / next-block keep, or the
+    // next step reverts to the pre-act (blank / index-0) checklist.
+    if (todoDockRef.current) lastTodoDock = todoDockRef.current;
     // withExpectedFailure last block that SUCCEEDS on the intentional fail
     // branch (e.g. submit-login -> LoginPage + error banner). Still show
     // stubOnError rings + amber "expected outcome" panel - branching no
@@ -3484,6 +3499,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       todoDock: lastTodoDock,
       todoSync: appliedAfter.sync,
       todoId: lastTodoDock && lastTodoDock.id,
+      todoDockRef,
       forceCollapsed:
         !!process.env.WAYGRAPH_VIDEO ||
         process.env.WAYGRAPH_MINI === "1" ||
@@ -3491,6 +3507,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
           ? true
           : undefined,
     });
+    // Ring cycle / stubAfter may have advanced the dock - persist for next block.
+    if (todoDockRef.current) lastTodoDock = todoDockRef.current;
     await gate();
   }
   await teardownOverlay(page);
