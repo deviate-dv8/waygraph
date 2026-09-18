@@ -1,2 +1,13 @@
+.tmp/
+**/.tmp/
+**/.tmp/**
+examples/**/.tmp/
+examples/**/.tmp/**
 **/.waygraph-videos/
+**/.waygraph-traverse/
 *.webm
+playwright-report/
+test-results/
+*.tgz
+.npm-debug.log*
+node_modules/
