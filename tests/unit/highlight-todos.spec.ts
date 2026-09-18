@@ -28,6 +28,35 @@ describe("normalizeTodos", () => {
   });
 });
 
+describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
+  it("normalizes left/right aliases", async () => {
+    const { normalizeTodoPos } = await import("../../src/highlights.js");
+    expect(normalizeTodoPos("left")).toBe("left");
+    expect(normalizeTodoPos("RIGHT")).toBe("right");
+    expect(normalizeTodoPos("r")).toBe("right");
+    expect(normalizeTodoPos("nope")).toBeUndefined();
+  });
+
+  it("exposes title + todoPos from stubBefore lifecycle", async () => {
+    const block = {
+      name: "submit-login",
+      instruction: {
+        stubBefore: (ctx: StubCtx) => {
+          ctx.title("Signing in");
+          ctx.todoPos("right");
+          ctx.todos(["Email", "Password"]);
+          ctx.todoIndex(0);
+        },
+      },
+    } as unknown as Block<any, any>;
+
+    const phase = await runStubPhase(block, "stubBefore");
+    expect(phase.title).toBe("Signing in");
+    expect(phase.todoPos).toBe("right");
+    expect(phase.todos[0]!.current).toBe(true);
+  });
+});
+
 describe("open stubBefore(ctx) lifecycle", () => {
   it("sets todos + rings via ctx (not slot object)", async () => {
     const block = {

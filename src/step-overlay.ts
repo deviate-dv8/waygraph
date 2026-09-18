@@ -4,8 +4,10 @@ import type { MemPage } from "./mem-page.js";
 const RING_CSS =
   "#wg-ring{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
   "border:2.5px solid #7C3AED;border-radius:10px;box-shadow:0 0 0 4px rgba(124,58,237,.16);" +
-  "transition:opacity .3s ease,border-color .15s,box-shadow .15s;}" +
+  // Opacity only - tone color must snap (no gray/purple/yellow morph).
+  "transition:opacity .3s ease;}" +
   // Automation = gray; semantic tones for authored highlights.
+  "#wg-ring[data-tone=planned]{border-color:#7C3AED;box-shadow:0 0 0 4px rgba(124,58,237,.16);}" +
   "#wg-ring[data-tone=auto]{border-color:#9CA3AF;box-shadow:0 0 0 4px rgba(156,163,175,.28);}" +
   "#wg-ring[data-tone=info]{border-color:#3B82F6;box-shadow:0 0 0 4px rgba(59,130,246,.22);}" +
   "#wg-ring[data-tone=warning]{border-color:#EAB308;box-shadow:0 0 0 4px rgba(234,179,8,.22);}" +
@@ -13,7 +15,8 @@ const RING_CSS =
   "#wg-ring[data-tone=success]{border-color:#22C55E;box-shadow:0 0 0 4px rgba(34,197,94,.22);}" +
   "#wg-ring-label{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
   "white-space:nowrap;padding:4px 9px;border-radius:7px;background:#7C3AED;color:#fff;" +
-  "font:600 12px/1.2 system-ui,sans-serif;transition:opacity .3s ease,background .15s,color .15s;}" +
+  "font:600 12px/1.2 system-ui,sans-serif;transition:opacity .3s ease;}" +
+  "#wg-ring-label[data-tone=planned]{background:#7C3AED;color:#fff;}" +
   "#wg-ring-label[data-tone=auto]{background:#6B7280;color:#fff;}" +
   "#wg-ring-label[data-tone=info]{background:#2563EB;color:#fff;}" +
   "#wg-ring-label[data-tone=warning]{background:#EAB308;color:#1c1917;}" +

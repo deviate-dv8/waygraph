@@ -40,7 +40,9 @@ Open **block lifecycle** stubs (not closed slot objects). Episode fixtures
 | **Auto-scroll into view** | DONE (0.12.25) | Smooth vert + horiz (incl. overflow ancestors); wait scrollend before ring |
 | **Camera zoom (Screen Studio)** | PARTIAL (0.12.40) | Auto-center + `zoomOut:false` OK for first/center targets; **corners/edges still bad** - parked |
 | **Camera follow mouse** | PARKED | Host follow imperfect; first zoom fine, corners fail. See `tasks/backlog/2026-09-18_waygraph-camera-follow-corners.md` |
-| **Banner title in lifecycle** | DONE (0.12.28) | `ctx.title(...)` / `ctx.banner(...)` updates top `#wg-banner` |
+| **Banner title in lifecycle** | DONE (0.12.44) | `ctx.title(...)` / `ctx.banner(...)` updates top `#wg-banner` each step (was collected but not applied - fixed). Episode tab: `withTitle(flow, "...")` |
+| **Todo dock side** | DONE (0.12.44) | `ctx.todoPos("left"\|"right")` + click slide + `--todo-left\|--todo-right` / `WAYGRAPH_TODO_POS`. Dock floats outside panel so `--mini` never hides todos. |
+| **Highlight tone snap** | DONE (0.12.44) | Ring/label color changes are instant (no gray/purple/yellow morph). |
 | **Highlight queue** | DONE (0.12.28) | Appear -> dwell -> fade; live follow; focus veil; caption color; `[i/n]` |
 | **Mini stepper shows episode** | DONE (0.12.23) | Collapsed chrome: `Ep N · step · block` |
 
@@ -49,6 +51,7 @@ Open **block lifecycle** stubs (not closed slot objects). Episode fixtures
 ```ts
 stubBefore: (ctx) => {
   ctx.title("Signing in"); // top banner text (tag stays "waygraph demo")
+  ctx.todoPos("right"); // floating checklist dock (also click / --todo-right)
   ctx.todos(["Enter email", "Enter password", "Click Sign in"]);
   ctx.todoIndex(0);
   ctx.zoom(1.35); // Screen Studio camera - auto-center on target (follow-mouse parked)

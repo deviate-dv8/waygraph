@@ -3,7 +3,7 @@
 A typed graph of reusable Blocks for driving a browser through E2E flows, in place of a
 flat pile of ad hoc helper functions.
 
-**Current:** `0.12.43` — overlay beacons (blind-agent gate), expected-failure panel on branched LoginPage, `--mini`, Hide stickiness.
+**Current:** `0.12.44` — floating todo dock (visible under `--mini`, `ctx.todoPos` / click / `--todo-left|right`), live `ctx.title` banner updates, instant highlight tone snaps.
 
 This repo is the `waygraph` npm package itself. The full live **Sauce Demo** example
 (Page inventory hub, Effect Add/Remove, MemNav Open details, `waygraph auto`) ships

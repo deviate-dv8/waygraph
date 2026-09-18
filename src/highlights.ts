@@ -59,6 +59,11 @@ export type StubPhaseFixtures = {
   zoomOut?: boolean;
   /** Top demo banner title (the purple "waygraph demo" card). */
   title?: string;
+  /**
+   * Floating checklist dock side. `left` | `right`.
+   * Authored control (also click / WAYGRAPH_TODO_POS / --todo-left|right).
+   */
+  todoPos?: "left" | "right";
 };
 
 /** One named highlight slot on a block (selector + caption). */
@@ -176,6 +181,11 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   title(text: string): void;
   /** Alias for {@link StubCtx.title}. */
   banner(text: string): void;
+  /**
+   * Floating checklist dock side (`left` | `right`). Authors control this in
+   * code; click / env / --todo-left|right are fallbacks.
+   */
+  todoPos(side: "left" | "right"): void;
   /** Batch-set rings + episode fixtures. */
   set(partial: { highlights?: HighlightStubPhase } & StubPhaseFixtures): void;
 };
@@ -203,6 +213,7 @@ export type StubPhaseResult = {
   zoom?: number;
   zoomOut?: boolean;
   title?: string;
+  todoPos?: "left" | "right";
 };
 
 /**
@@ -678,7 +689,18 @@ type StubBagState = {
   zoom?: number;
   zoomOut?: boolean;
   title?: string;
+  todoPos?: "left" | "right";
 };
+
+/** Normalize checklist dock side. */
+export function normalizeTodoPos(raw: unknown): "left" | "right" | undefined {
+  const s = String(raw ?? "")
+    .trim()
+    .toLowerCase();
+  if (s === "left" || s === "l") return "left";
+  if (s === "right" || s === "r") return "right";
+  return undefined;
+}
 
 function createStubCtx<Out extends Checkpoint<string>>(
   bag: StubBagState,
@@ -711,6 +733,10 @@ function createStubCtx<Out extends Checkpoint<string>>(
     banner(text) {
       bag.title = String(text ?? "");
     },
+    todoPos(side) {
+      const p = normalizeTodoPos(side);
+      if (p) bag.todoPos = p;
+    },
     set(partial) {
       if (partial.highlights) bag.highlights = { ...partial.highlights };
       if (partial.todos !== undefined) bag.todos = partial.todos;
@@ -720,6 +746,8 @@ function createStubCtx<Out extends Checkpoint<string>>(
       }
       if (partial.zoomOut !== undefined) bag.zoomOut = !!partial.zoomOut;
       if (partial.title !== undefined) bag.title = String(partial.title ?? "");
+      const tp = normalizeTodoPos(partial.todoPos);
+      if (tp) bag.todoPos = tp;
     },
   };
 }
@@ -890,6 +918,7 @@ export async function runStubPhase(
     ...(bag.zoom !== undefined ? { zoom: bag.zoom } : {}),
     ...(bag.zoomOut !== undefined ? { zoomOut: bag.zoomOut } : {}),
     ...(bag.title !== undefined && bag.title !== "" ? { title: bag.title } : {}),
+    ...(bag.todoPos !== undefined ? { todoPos: bag.todoPos } : {}),
   };
 }
 

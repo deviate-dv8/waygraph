@@ -60,6 +60,7 @@ export {
   formatDemoPaceBadge,
   formatDemoPaceLabel,
   normalizeTodos,
+  normalizeTodoPos,
   FIXTURE_DURATION_MS_DEFAULT,
   FIXTURE_DURATION_FAST_MS_DEFAULT,
   FIXTURE_DURATION_SLOW_MS_DEFAULT,

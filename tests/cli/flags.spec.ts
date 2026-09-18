@@ -48,6 +48,7 @@ test("help lists demo --fast and --full", async () => {
   expect(stdout).toMatch(/--fast/);
   expect(stdout).toMatch(/--full/);
   expect(stdout).toMatch(/--mini/);
+  expect(stdout).toMatch(/--todo-left|--todo-right/);
   expect(stdout).toMatch(/carousel/i);
   expect(stdout).toMatch(/--ff-expand/);
   expect(stdout).toMatch(/--ff-disabled/);

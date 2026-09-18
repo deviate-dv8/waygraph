@@ -429,10 +429,14 @@ function seedMemForFlow(mem, flowBlocks, json, label) {
 const RING_CSS =
   "#wg-ring{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
   "border:2.5px solid #7C3AED;border-radius:10px;" +
-  "box-shadow:0 0 0 4px rgba(124,58,237,.16);transition:opacity .3s ease,border-color .15s,box-shadow .15s;}" +
+  // Opacity fade only - NEVER transition border-color/box-shadow. Tone swaps
+  // (auto gray -> planned purple -> warning yellow) must snap instantly;
+  // color transitions read as a muddy gray/purple/yellow morph on ring 2+.
+  "box-shadow:0 0 0 4px rgba(124,58,237,.16);transition:opacity .3s ease;}" +
   // Planned (stubs / fixtures / YAP / instruction.highlights) = purple.
   // Automation (verify fallback, unmatched fill/click) = gray - operators
   // can ignore engine checks and watch purple + semantic tones.
+  "#wg-ring[data-tone=planned]{border-color:#7C3AED;box-shadow:0 0 0 4px rgba(124,58,237,.16);}" +
   "#wg-ring[data-tone=auto]{border-color:#9CA3AF;box-shadow:0 0 0 4px rgba(156,163,175,.28);}" +
   "#wg-ring[data-tone=info]{border-color:#3B82F6;box-shadow:0 0 0 4px rgba(59,130,246,.22);}" +
   "#wg-ring[data-tone=warning]{border-color:#EAB308;box-shadow:0 0 0 4px rgba(234,179,8,.22);}" +
@@ -448,7 +452,8 @@ const RING_CSS =
   // window.__wgPositionRing in installOverlay.
   "#wg-ring-label{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
   "max-width:min(360px,70vw);white-space:normal;padding:6px 10px;border-radius:7px;background:#7C3AED;color:#fff;" +
-  "font:600 12px/1.35 system-ui,sans-serif;transition:opacity .3s ease,background .15s,color .15s;}" +
+  "font:600 12px/1.35 system-ui,sans-serif;transition:opacity .3s ease;}" +
+  "#wg-ring-label[data-tone=planned]{background:#7C3AED;color:#fff;}" +
   "#wg-ring-label[data-tone=auto]{background:#6B7280;color:#fff;}" +
   "#wg-ring-label[data-tone=info]{background:#2563EB;color:#fff;}" +
   "#wg-ring-label[data-tone=warning]{background:#EAB308;color:#1c1917;}" +
@@ -526,6 +531,18 @@ const RING_CSS =
   "#wg-panel .wg-pace[data-pace-kind=blitz] .wg-pace-badge{background:#22C55E;color:#052e16;}" +
   "#wg-panel .wg-pace[data-pace-kind=ms] .wg-pace-badge{background:#3B82F6;color:#fff;}" +
   "#wg-panel .wg-narration{margin:0 0 12px;font:italic 14px/1.4 system-ui,sans-serif;color:#f0e8ff;}" +
+  // Todo checklist lives in #wg-todo-dock (fixed, outside #wg-panel) so
+  // --mini / Hide collapse never hides it (.wg-body {display:none} would).
+  // Click dock to slide left <-> right (WAYGRAPH_TODO_POS / --todo-left|right).
+  "#wg-todo-dock{position:fixed;z-index:2147483646;top:72px;left:14px;" +
+  "width:min(280px,42vw);max-height:calc(100vh - 100px);overflow:auto;box-sizing:border-box;" +
+  "padding:10px 12px;background:rgba(20,10,40,.94);color:#fff;border-radius:12px;" +
+  "border:1px solid rgba(124,58,237,.45);box-shadow:0 8px 24px rgba(0,0,0,.35);" +
+  "pointer-events:auto;cursor:pointer;" +
+  "transition:transform .4s cubic-bezier(.22,1,.36,1);transform:translateX(0);}" +
+  "#wg-todo-dock[data-pos=right]{transform:translateX(calc(100vw - 100% - 28px));}" +
+  "#wg-todo-dock[data-pos=left]{transform:translateX(0);}" +
+  "#wg-todo-dock #wg-todos{list-style:none;margin:0;padding:0;background:transparent;border:none;}" +
   "#wg-todos{list-style:none;margin:0 0 12px;padding:8px 10px;background:#0f0620;border-radius:8px;" +
   "border:1px solid #3a2a60;}" +
   "#wg-todos li{display:flex;gap:8px;align-items:flex-start;margin:0 0 6px;font:600 12.5px/1.35 system-ui,sans-serif;}" +
@@ -664,10 +681,12 @@ async function installOverlay(page, title) {
   // navigation that rebuilds the banner keeps the human's last pick).
   const envPos = (process.env.WAYGRAPH_TITLE_POS || "left").toLowerCase();
   const bannerPos = envPos === "center" || envPos === "right" ? envPos : "left";
+  const envTodoPos = (process.env.WAYGRAPH_TODO_POS || "left").toLowerCase();
+  const todoPos = envTodoPos === "right" ? "right" : "left";
   const envAutoplay = process.env.WAYGRAPH_AUTOPLAY === "1";
   await page
     .evaluate(
-      ({ title, favicon, bannerPos, envAutoplay }) => {
+      ({ title, favicon, bannerPos, todoPos, envAutoplay }) => {
         // Seed the live autoplay toggle from the env default on first ever
         // load only - a real navigation re-runs this, and re-stamping here
         // would silently undo a human's mid-run checkbox click.
@@ -835,32 +854,46 @@ async function installOverlay(page, title) {
             /* private mode / blocked storage - position still applies this page */
           }
         };
-        if (title && !document.getElementById("wg-banner")) {
-          const banner = document.createElement("div");
-          banner.id = "wg-banner";
-          let saved = null;
-          try {
-            saved = localStorage.getItem("wg-banner-pos");
-          } catch {
-            /* ignore */
+        if (title) {
+          let banner = document.getElementById("wg-banner");
+          if (!banner) {
+            banner = document.createElement("div");
+            banner.id = "wg-banner";
+            let saved = null;
+            try {
+              saved = localStorage.getItem("wg-banner-pos");
+            } catch {
+              /* ignore */
+            }
+            const startPos =
+              saved && POSITIONS.includes(saved) ? saved : bannerPos;
+            applyPos(banner, startPos);
+            banner.title = "Click to move: top left / center / right";
+            banner.addEventListener("click", (e) => {
+              e.stopPropagation();
+              const i = POSITIONS.indexOf(banner.dataset.pos || "left");
+              applyPos(banner, POSITIONS[(i + 1) % POSITIONS.length]);
+            });
+            const tag = document.createElement("span");
+            tag.className = "wg-banner-tag";
+            tag.textContent = "waygraph demo";
+            const text = document.createElement("span");
+            text.className = "wg-banner-text";
+            text.textContent = title;
+            banner.appendChild(tag);
+            banner.appendChild(text);
+            document.documentElement.appendChild(banner);
+          } else {
+            // Fixture / episode title changes every step - update in place
+            // (banner is created once; do not leave the first step's text stuck).
+            let text = banner.querySelector(".wg-banner-text");
+            if (!text) {
+              text = document.createElement("span");
+              text.className = "wg-banner-text";
+              banner.appendChild(text);
+            }
+            text.textContent = title;
           }
-          const startPos =
-            saved && POSITIONS.includes(saved) ? saved : bannerPos;
-          applyPos(banner, startPos);
-          banner.title = "Click to move: top left / center / right";
-          banner.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const i = POSITIONS.indexOf(banner.dataset.pos || "left");
-            applyPos(banner, POSITIONS[(i + 1) % POSITIONS.length]);
-          });
-          const tag = document.createElement("span");
-          tag.className = "wg-banner-tag";
-          tag.textContent = "waygraph demo";
-          const text = document.createElement("span");
-          text.textContent = title;
-          banner.appendChild(tag);
-          banner.appendChild(text);
-          document.documentElement.appendChild(banner);
         }
         // Tab title/favicon: a real navigation resets document.title and any
         // <link rel="icon"> the new document brings, so re-check (not
@@ -1063,8 +1096,93 @@ async function installOverlay(page, title) {
             }
           }
         };
+        // Floating todo dock - lives outside #wg-panel so --mini / Hide never
+        // hide the checklist. Click cycles left <-> right with CSS transform.
+        // Authors set side via ctx.todoPos("left"|"right"); env / --todo-* fallback.
+        window.__wgSyncTodos = (list, pos) => {
+          list = Array.isArray(list) ? list : [];
+          const POS = ["left", "right"];
+          let dock = document.getElementById("wg-todo-dock");
+          // Drop any in-panel leftover (old builds put #wg-todos in .wg-body).
+          document.querySelectorAll("#wg-panel #wg-todos").forEach((el) => el.remove());
+          if (!list.length) {
+            if (dock) dock.remove();
+            return;
+          }
+          const wantPos =
+            pos === "left" || pos === "right"
+              ? pos
+              : null;
+          if (!dock) {
+            dock = document.createElement("div");
+            dock.id = "wg-todo-dock";
+            dock.setAttribute("data-wg-ui", "1");
+            dock.setAttribute("data-wg-modal", "todos");
+            dock.setAttribute("data-wg-ready", "1");
+            let saved = null;
+            try {
+              saved = localStorage.getItem("wg-todo-pos");
+            } catch {
+              /* ignore */
+            }
+            const start =
+              wantPos ||
+              (saved && POS.includes(saved) ? saved : todoPos === "right" ? "right" : "left");
+            dock.dataset.pos = start;
+            dock.title = "Click to move checklist: left / right";
+            dock.addEventListener("click", (e) => {
+              e.stopPropagation();
+              const i = POS.indexOf(dock.dataset.pos || "left");
+              const next = POS[(i + 1) % POS.length];
+              dock.dataset.pos = next;
+              try {
+                localStorage.setItem("wg-todo-pos", next);
+              } catch {
+                /* ignore */
+              }
+            });
+            document.documentElement.appendChild(dock);
+          } else if (wantPos) {
+            dock.dataset.pos = wantPos;
+            try {
+              localStorage.setItem("wg-todo-pos", wantPos);
+            } catch {
+              /* ignore */
+            }
+          }
+          const esc = (s) =>
+            String(s)
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;");
+          dock.innerHTML =
+            '<ul id="wg-todos">' +
+            list
+              .map((t) => {
+                const cls = t.current
+                  ? "wg-todo-current"
+                  : t.done
+                    ? "wg-todo-done"
+                    : "wg-todo-pending";
+                const mark = t.done ? "\u2713" : t.current ? "\u2192" : "\u25CB";
+                return (
+                  '<li class="' +
+                  cls +
+                  '"><span class="wg-todo-mark">' +
+                  mark +
+                  "</span><span>" +
+                  esc(t.text || "") +
+                  "</span></li>"
+                );
+              })
+              .join("") +
+            "</ul>";
+          if (window.__wgStampModal) {
+            window.__wgStampModal(dock, "todos", { ready: true });
+          }
+        };
       },
-      { title, favicon: WAYGRAPH_FAVICON, bannerPos, envAutoplay },
+      { title, favicon: WAYGRAPH_FAVICON, bannerPos, todoPos, envAutoplay },
     )
     .catch(() => {});
 }
@@ -1154,41 +1272,15 @@ async function renderBeforeStep(page, info) {
             esc(info.paceLabel || "") +
             "</span></div>"
           : "";
-      const todosHtml = (() => {
-        const list = info.todos || [];
-        if (!list.length) return "";
-        return (
-          '<ul id=\\"wg-todos\\">' +
-          list
-            .map((t) => {
-              const cls = t.current ? "wg-todo-current" : t.done ? "wg-todo-done" : "wg-todo-pending";
-              const mark = t.done
-                ? String.fromCharCode(0x2713)
-                : t.current
-                  ? String.fromCharCode(0x2192)
-                  : String.fromCharCode(0x25cb);
-              return (
-                '<li class=\\"' +
-                cls +
-                '\\"><span class=\\"wg-todo-mark\\">' +
-                mark +
-                '</span><span>' +
-                esc(t.text || "") +
-                "</span></li>"
-              );
-            })
-            .join("") +
-          "</ul>"
-        );
-      })();
+      // Todos render into floating #wg-todo-dock via __wgSyncTodos - never
+      // inside .wg-body (would vanish under --mini / Hide collapse).
       let html =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
         episodesHtml +
         paceHtml +
         "<div id=\\"wg-modules\\" class=\\"" + modulesClass + "\\">" + modulesHtml + "</div>" +
         "<h3>Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + "</h3>" +
-        narrationHtml +
-        todosHtml;
+        narrationHtml;
       if (info.keys.length === 0) {
         html += "<div class=\\"wg-key\\">(no MemKeys required)</div>";
       }
@@ -1227,6 +1319,7 @@ async function renderBeforeStep(page, info) {
           forceCollapsed: info.forceCollapsed === true ? true : undefined,
         });
       }
+      if (window.__wgSyncTodos) window.__wgSyncTodos(info.todos || [], info.todoPos || null);
       if (window.__wgStampModal) {
         window.__wgStampModal(panel, "panel", {
           phase: "before",
@@ -1569,6 +1662,11 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
               : normalizeTodos(h.todos, h.todoIndex);
           await page
             .evaluate((todos) => {
+              if (window.__wgSyncTodos) {
+                window.__wgSyncTodos(todos);
+                return;
+              }
+              // Fallback for pages that never got installOverlay sync helper.
               const ul = document.getElementById("wg-todos");
               if (!ul) return;
               ul.innerHTML = todos
@@ -1737,33 +1835,7 @@ async function renderAfterStep(page, info) {
             escA(info.paceLabel || "") +
             "</span></div>"
           : "";
-      const todosHtml = (() => {
-        const list = info.todos || [];
-        if (!list.length) return "";
-        return (
-          '<ul id=\\"wg-todos\\">' +
-          list
-            .map((t) => {
-              const cls = t.current ? "wg-todo-current" : t.done ? "wg-todo-done" : "wg-todo-pending";
-              const mark = t.done
-                ? String.fromCharCode(0x2713)
-                : t.current
-                  ? String.fromCharCode(0x2192)
-                  : String.fromCharCode(0x25cb);
-              return (
-                '<li class=\\"' +
-                cls +
-                '\\"><span class=\\"wg-todo-mark\\">' +
-                mark +
-                '</span><span>' +
-                escA(t.text || "") +
-                "</span></li>"
-              );
-            })
-            .join("") +
-          "</ul>"
-        );
-      })();
+      const todosHtml = ""; // todos float in #wg-todo-dock via __wgSyncTodos
       panel.innerHTML =
         "<div id=\\"wg-progress\\"><div id=\\"wg-progress-bar\\" style=\\"width:" + pct + "%\\"></div></div>" +
         episodesHtml +
@@ -1785,6 +1857,7 @@ async function renderAfterStep(page, info) {
           forceCollapsed: info.forceCollapsed === true ? true : undefined,
         });
       }
+      if (window.__wgSyncTodos) window.__wgSyncTodos(info.todos || [], info.todoPos || null);
       if (window.__wgStampModal) {
         window.__wgStampModal(panel, "panel", {
           phase: "after",
@@ -2407,7 +2480,7 @@ async function teardownOverlay(page) {
         window.__wgRingTrack = null;
       }
       window.__wgNarrateOwnsRing = false;
-      for (const id of ["wg-panel", "wg-ring", "wg-ring-label", "wg-cursor", "wg-click-pulse", "wg-banner"]) {
+      for (const id of ["wg-panel", "wg-ring", "wg-ring-label", "wg-cursor", "wg-click-pulse", "wg-banner", "wg-todo-dock"]) {
         const el = document.getElementById(id);
         if (el) el.remove();
       }
@@ -2938,6 +3011,12 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       applyHighlightStyleDefaults(h, flowStyle),
     );
     const stubBeforeTodos = stubBeforePhase.todos || [];
+    const overlayTitle =
+      (stubBeforePhase.title && String(stubBeforePhase.title).trim()) ||
+      (r.episodeTitle && String(r.episodeTitle).trim()) ||
+      title ||
+      "waygraph demo";
+    const overlayTodoPos = stubBeforePhase.todoPos || undefined;
     const isNavBlock = r.block.__waygraphKind === "nav";
     const autoNow = await currentAutoplay();
     // Video / --mini: compact pill. Never pass false - Hide/localStorage wins.
@@ -2982,7 +3061,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       moduleIndex,
       allEpisodes,
       justEnteredEpisode,
-      title,
+      title: overlayTitle,
+      todoPos: overlayTodoPos,
       episodeNumber: r.episodeNumber,
       episodeTitle: r.episodeTitle,
       stepperMode,
@@ -3141,12 +3221,18 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     }
     let highlights;
     let stubAfterTodos = [];
+    let afterOverlayTitle = overlayTitle;
+    let afterTodoPos = overlayTodoPos;
     if (hasAuthoredStubAfter(r.block, result, fixturesAfter)) {
       const afterPhase = await runStubPhase(r.block, "stubAfter", {
         out: result,
         fixtures: fixturesAfter,
       });
       stubAfterTodos = afterPhase.todos || [];
+      if (afterPhase.title && String(afterPhase.title).trim()) {
+        afterOverlayTitle = String(afterPhase.title).trim();
+      }
+      if (afterPhase.todoPos) afterTodoPos = afterPhase.todoPos;
       highlights = afterPhase.highlights.map((h) => {
         const styled = applyHighlightStyleDefaults(h, r.highlightStyle);
         return {
@@ -3180,7 +3266,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       allDescriptions: moduleDescriptions,
       moduleIndex,
       allEpisodes,
-      title,
+      title: afterOverlayTitle,
+      todoPos: afterTodoPos,
       episodeNumber: r.episodeNumber,
       episodeTitle: r.episodeTitle,
       stepperMode,
@@ -4234,6 +4321,8 @@ interface RunFlags {
   fullStepper?: boolean;
   /** demo: force compact mini panel (--mini / WAYGRAPH_MINI=1). */
   miniStepper?: boolean;
+  /** demo: floating todo dock side (--todo-left | --todo-right). */
+  todoPos?: "left" | "right";
   /** demo/run: expand fastForwardComposeBlock inners as separate steps. */
   ffExpand?: boolean;
   /** demo/run: dispute mode — expand FF + keep blitz on former FF inners. */
@@ -4293,6 +4382,10 @@ function parseRunFlags(argv: string[]): RunFlags {
       out.fullStepper = true;
     } else if (a === "--mini" || a === "--stepper-mini") {
       out.miniStepper = true;
+    } else if (a === "--todo-left") {
+      out.todoPos = "left";
+    } else if (a === "--todo-right") {
+      out.todoPos = "right";
     } else if (a === "--ff-expand") {
       out.ffExpand = true;
     } else if (a === "--ff-disabled" || a === "--no-ff") {
@@ -4392,8 +4485,8 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean; a
       process.env.WAYGRAPH_HEADED = "0";
     }
   }
-  if ((flags.fast || flags.fullStepper || flags.miniStepper) && !opts?.allowDemoUi) {
-    console.error("waygraph: --fast / --full / --mini are demo-only flags");
+  if ((flags.fast || flags.fullStepper || flags.miniStepper || flags.todoPos) && !opts?.allowDemoUi) {
+    console.error("waygraph: --fast / --full / --mini / --todo-left|--todo-right are demo-only flags");
     process.exit(1);
   }
   if (flags.step === true) {
@@ -4437,6 +4530,9 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean; a
   }
   if (flags.miniStepper) {
     process.env.WAYGRAPH_MINI = "1";
+  }
+  if (flags.todoPos === "left" || flags.todoPos === "right") {
+    process.env.WAYGRAPH_TODO_POS = flags.todoPos;
   }
   if (flags.ffExpand) {
     process.env.WAYGRAPH_FF_EXPAND = "1";
@@ -4610,6 +4706,7 @@ Primary (less is more):
                  --fast                    Shorter auto-next / Next gates (keeps smooth cursor)
                  --full                    Classic wrap-all block chips (default: carousel)
                  --mini                    Force compact mini panel (Hide pill + Next); alias --stepper-mini
+                 --todo-left|--todo-right  Floating checklist dock side (also ctx.todoPos / WAYGRAPH_TODO_POS)
                  --ff-expand               Expand fastForwardComposeBlock inners as separate steps
                  --ff-disabled             Dispute: expand FF (alias --no-ff); blitz kept on those inners
                  --auto-play-video         Unattended + recorded: --auto-next + --video (+ step); headless by default
