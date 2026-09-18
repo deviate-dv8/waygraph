@@ -1,4 +1,5 @@
 import { defineEffectBlock, checkpoint, type Checkpoint, type WaygraphInstanceOption } from "waygraph";
+import type { StubCtx } from "waygraph";
 import type { ItemInCart } from "../../../../states/checkout.states.js";
 import { SelectedItem } from "../../../../states/checkout.mem-keys.js";
 import { collectAddableItems, InventorySel } from "./inventory-items.js";
@@ -34,7 +35,7 @@ export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>(
       },
     ],
     // Demo: zoom product -> add (stay zoomed), then badge after act.
-    stubBefore: (ctx) => {
+    stubBefore: (ctx: StubCtx) => {
       ctx.title("Pick a product");
       ctx.todoId("saucedemo-cart");
       ctx.todos([
@@ -66,7 +67,7 @@ export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>(
         },
       });
     },
-    stubAfter: (ctx) => {
+    stubAfter: (ctx: StubCtx) => {
       ctx.banner("In the cart");
       ctx.todoId("saucedemo-cart");
       ctx.todos([

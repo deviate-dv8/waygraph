@@ -1,4 +1,4 @@
-import { defineMethodBlock, checkpoint, Trait } from "waygraph";
+import { defineMethodBlock, checkpoint, Trait, type StubCtx } from "waygraph";
 import type { LoginPage, LoginSubmitOutcome } from "../../../states/checkout.states.js";
 import { LoginCreds } from "../../../states/checkout.mem-keys.js";
 
@@ -9,8 +9,10 @@ type LoginObserve = "success" | "failure";
  * Helper: defineMethodBlock
  * Route: saucedemo-web/methods/  (page URL /)
  *
- * Fills credentials and submits - never page.goto (nav-login owns that).
+ * Fills credentials and submits - never page.goto (nav-login Page hub owns that).
  * Branches: good creds -> LoggedIn; bad/locked -> LoginPage with error banner.
+ * stubBefore/stubAfter drive the floating todo dock (Method fill/click advances
+ * todoIndex mid-act; stubAfter marks complete / fail).
  */
 export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOutcome>({
   name: "submit-login",
@@ -47,9 +49,14 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
         : [Trait.visible('[data-test="error"]')],
     // Open lifecycle: banner title, todos, Screen Studio camera zoom,
     // sequential highlight queue (appear / dwell / fade), focus + color.
-    stubBefore: (ctx) => {
+    stubBefore: (ctx: StubCtx) => {
       ctx.title("Signing in");
-      ctx.todos(["Enter username", "Enter password", "Click Login"]);
+      ctx.todoId("saucedemo-login");
+      ctx.todos([
+        { id: "login-user", text: "Enter username" },
+        { id: "login-pass", text: "Enter password" },
+        { id: "login-submit", text: "Click Login" },
+      ]);
       ctx.todoIndex(0);
       ctx.zoom(1.35);
       ctx.highlights({
@@ -77,13 +84,18 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
         },
       });
     },
-    stubAfter: (ctx) => {
+    stubAfter: (ctx: StubCtx) => {
       // Fail branch lands on LoginPage with Epic sadface - do not ring the
       // inventory shelf. Success (LoggedIn) hands off to shopFlow.
       if (ctx.out && ctx.out.__state === "LoginPage") {
         ctx.title("Login blocked");
-        ctx.todos(["Enter username", "Enter password", "Click Login"]);
-        ctx.todoIndex(2);
+        ctx.todoId("saucedemo-login");
+        ctx.todos([
+          { id: "login-user", text: "Enter username", done: true },
+          { id: "login-pass", text: "Enter password", done: true },
+          { id: "login-submit", text: "Click Login", done: true },
+        ]);
+        ctx.todoStyle("checklist");
         ctx.ring("error", {
           selector: '[data-test="error"]',
           label: "Login error banner",
@@ -95,7 +107,12 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
         return;
       }
       ctx.banner("Inventory");
-      ctx.todos(["Enter username", "Enter password", "Click Login"]);
+      ctx.todoId("saucedemo-login");
+      ctx.todos([
+        { id: "login-user", text: "Enter username" },
+        { id: "login-pass", text: "Enter password" },
+        { id: "login-submit", text: "Click Login" },
+      ]);
       ctx.todoIndex(2);
       // Landed on inventory - hand off to shopFlow for product -> cart zoom.
       ctx.ring("shelf", {
@@ -108,7 +125,7 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
         duration: true,
       });
     },
-    stubOnError: (ctx) => {
+    stubOnError: (ctx: StubCtx) => {
       ctx.title("Login failed");
       ctx.ring("error", {
         selector: '[data-test="error"]',

@@ -1,4 +1,5 @@
 import { defineNavClickBlock, Trait } from "waygraph";
+import type { StubCtx } from "waygraph";
 import type { CartPage } from "../../../states/checkout.states.js";
 import { InventorySel } from "../inventory/methods/inventory-items.js";
 
@@ -15,7 +16,7 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
   checkpoint: "CartPage",
   click: ".shopping_cart_link",
   verify: [Trait.url({ pathname: "/cart.html" })],
-  stubBefore: (ctx) => {
+  stubBefore: (ctx: StubCtx) => {
     ctx.title("Open cart");
     ctx.todoId("saucedemo-cart");
     ctx.todos([
@@ -40,7 +41,7 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
       },
     });
   },
-  stubAfter: (ctx) => {
+  stubAfter: (ctx: StubCtx) => {
     ctx.banner("Your cart");
     ctx.zoomOut(false);
     ctx.ring("items", {

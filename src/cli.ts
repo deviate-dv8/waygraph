@@ -1741,6 +1741,22 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
   // rings stay visible ~2s before the error panel (PIA stubOnError RFC).
   const defaultHoldMs = opts && opts.defaultHoldMs != null ? opts.defaultHoldMs : null;
   const pace = opts && opts.pace !== undefined ? opts.pace : undefined;
+  let dock = opts && opts.todoDock;
+  // Push stubAfter/before dock before the first ring so Method after-panels
+  // show the updated checklist immediately (not only after the ring cycle).
+  if (dock) {
+    await page
+      .evaluate((d) => {
+        if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", dock: d });
+      }, dock)
+      .catch(() => {});
+  } else if (opts && opts.todoSync === "clear") {
+    await page
+      .evaluate(() => {
+        if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "clear" });
+      })
+      .catch(() => {});
+  }
   for (let i = 0; i < list.length; i++) {
     const h = list[i];
     try {
@@ -1752,7 +1768,15 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
           size: h.size,
           weight: h.weight,
         });
-        if ((opts && opts.todos && opts.todos.length) || (h.todos && h.todos.length)) {
+        if (dock) {
+          dock = advanceTodoDock(dock, i);
+          if (opts && opts.todoDockRef) opts.todoDockRef.current = dock;
+          await page
+            .evaluate((d) => {
+              if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", dock: d });
+            }, dock)
+            .catch(() => {});
+        } else if ((opts && opts.todos && opts.todos.length) || (h.todos && h.todos.length)) {
           const rows =
             opts && opts.todos && opts.todos.length
               ? opts.todos
@@ -1760,7 +1784,7 @@ async function cycleHighlightRings(page, highlights, gatesFast, opts) {
           await page
             .evaluate((todos) => {
               if (window.__wgSyncTodos) {
-                window.__wgSyncTodos(todos);
+                window.__wgSyncTodos({ sync: "set", list: todos });
                 return;
               }
               // Fallback for pages that never got installOverlay sync helper.
@@ -1853,6 +1877,9 @@ async function renderAfterStep(page, info) {
   await cycleHighlightRings(page, highlights, gatesFast, {
     pace: info.pace,
     stepLabel: miniStepLabel(info),
+    todoDock: info.todoDock,
+    todos: info.todos,
+    todoSync: info.todoSync,
   });
   const afterPayload = { ...info, stepLabel: miniStepLabel(info) };
   await page
@@ -2263,6 +2290,46 @@ async function matchStubForLocator(page, locator, stubs) {
   return null;
 }
 
+/** 0-based stub index for Method fill/click todo advance; -1 if none. */
+async function matchStubIndexForLocator(page, locator, stubs) {
+  if (!stubs || stubs.length === 0) return -1;
+  const box = await locator.boundingBox().catch(() => null);
+  if (!box) return -1;
+  for (let i = 0; i < stubs.length; i++) {
+    const s = stubs[i];
+    try {
+      const b = await page.locator(s.selector).first().boundingBox();
+      if (
+        b &&
+        Math.abs(b.x - box.x) < 4 &&
+        Math.abs(b.y - box.y) < 4 &&
+        Math.abs(b.width - box.width) < 8
+      ) {
+        return i;
+      }
+    } catch {
+      /* skip */
+    }
+  }
+  return -1;
+}
+
+/** Advance sequential todo dock to stubIndex and push to the page (Method act). */
+async function syncTodoDockAdvance(page, todoDockRef, stubIndex) {
+  if (!todoDockRef || stubIndex < 0) return;
+  const prev = todoDockRef.current;
+  if (!prev) return;
+  const advanced = advanceTodoDock(prev, stubIndex);
+  todoDockRef.current = advanced;
+  await page
+    .evaluate((dock) => {
+      if (window.__wgSyncTodos) {
+        window.__wgSyncTodos({ sync: "set", dock });
+      }
+    }, advanced)
+    .catch(() => {});
+}
+
 async function captionForLocator(page, locator, stubs, fallback) {
   const matched = await matchStubForLocator(page, locator, stubs);
   if (matched) {
@@ -2636,7 +2703,7 @@ async function wasJustNarrated(page) {
     .catch(() => false);
 }
 
-function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef) {
+function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef, todoDockRef) {
   // Playwright's own slowMo ALREADY pauses after every single low-level
   // action it dispatches - and pressSequentially() fires one such action
   // PER CHARACTER. Also giving pressSequentially its own fixed delay
@@ -2692,6 +2759,8 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
             : "writing from mem";
           const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
           const cap = await captionForLocator(page, this, stubs, fallback);
+          const stubIdx = await matchStubIndexForLocator(page, this, stubs);
+          await syncTodoDockAdvance(page, todoDockRef, stubIdx);
           await moveCursorTo(page, box, cursorMs(500));
           await showRing(page, box, cap.label, cap.tone, {
             size: cap.size,
@@ -2766,6 +2835,8 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
           }
           const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
           const cap = await captionForLocator(page, this, stubs, fallback);
+          const stubIdx = await matchStubIndexForLocator(page, this, stubs);
+          await syncTodoDockAdvance(page, todoDockRef, stubIdx);
           clickTone = cap.tone;
           clickPoint = await moveCursorTo(page, box, cursorMs(600));
           await showRing(page, box, cap.label, cap.tone, {
@@ -2904,7 +2975,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   const stepperMode = process.env.WAYGRAPH_STEPPER === "full" ? "full" : "carousel";
   const pacing = { gatesFast: demoFast, gatesSlow: false, skipTheater: false, demoPace: "normal" };
   const stubBeforeRef = { current: [] };
-  instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef);
+  /** Live todo dock for Method fill/click advance (same carry as lastTodoDock). */
+  const todoDockRef = { current: undefined };
+  instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef, todoDockRef);
   // Force the panel checkbox from this process's flags/env at run start.
   // installOverlay only seeds localStorage when the key is null (so mid-run
   // checkbox clicks survive navigations). Without this, a prior --autoplay
@@ -3125,6 +3198,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       todoPos: stubBeforePhase.todoPos,
     });
     lastTodoDock = appliedBefore.dock;
+    todoDockRef.current = lastTodoDock;
     const stubBeforeTodos =
       (lastTodoDock && lastTodoDock.groups[0] && lastTodoDock.groups[0].items) ||
       stubBeforePhase.todos ||
@@ -3358,6 +3432,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         todoPos: afterPhase.todoPos,
       });
       lastTodoDock = appliedAfter.dock;
+      todoDockRef.current = lastTodoDock;
       stubAfterTodos =
         (lastTodoDock && lastTodoDock.groups[0] && lastTodoDock.groups[0].items) ||
         afterPhase.todos ||
