@@ -243,6 +243,10 @@ import {
   formatDemoPaceBadge,
   formatDemoPaceLabel,
   normalizeTodos,
+  buildTodoDock,
+  applyTodoPhase,
+  advanceTodoDock,
+  completeSequentialTodoDock,
 } from "waygraph";
 
 function walkDir(dir, pattern) {
@@ -1099,20 +1103,53 @@ async function installOverlay(page, title) {
         // Floating todo dock - lives outside #wg-panel so --mini / Hide never
         // hide the checklist. Click cycles left <-> right with CSS transform.
         // Authors set side via ctx.todoPos("left"|"right"); env / --todo-* fallback.
-        window.__wgSyncTodos = (list, pos) => {
-          list = Array.isArray(list) ? list : [];
-          const POS = ["left", "right"];
+        // Payload:
+        //   { sync: "clear" }                         -> remove dock
+        //   { sync: "keep" }                          -> leave dock alone (no wipe)
+        //   { sync: "set", dock } / { sync:"set", list } -> render / recreate
+        // Compat: bare array = set list (empty array = clear - legacy only).
+        window.__wgSyncTodos = (payload, pos) => {
+          let sync = "set";
+          let list = [];
+          let dockState = null;
+          let wantPos =
+            pos === "left" || pos === "right" ? pos : null;
+          if (Array.isArray(payload)) {
+            list = payload;
+            sync = list.length ? "set" : "clear";
+          } else if (payload && typeof payload === "object") {
+            sync = payload.sync === "clear" || payload.sync === "keep" ? payload.sync : "set";
+            dockState = payload.dock || null;
+            if (payload.pos === "left" || payload.pos === "right") wantPos = payload.pos;
+            if (Array.isArray(payload.list)) list = payload.list;
+            else if (dockState && Array.isArray(dockState.groups)) {
+              // Flatten for legacy callers; full dock rendered below when present.
+              list = [];
+              for (const g of dockState.groups) {
+                if (g && Array.isArray(g.items)) list = list.concat(g.items);
+              }
+            }
+          } else {
+            list = [];
+            sync = "clear";
+          }
+
           let dock = document.getElementById("wg-todo-dock");
           // Drop any in-panel leftover (old builds put #wg-todos in .wg-body).
           document.querySelectorAll("#wg-panel #wg-todos").forEach((el) => el.remove());
-          if (!list.length) {
+
+          // keep + no new payload: do not remove an existing dock (PIA #10).
+          if (sync === "keep") {
+            if (!dockState && !list.length) return;
+            // After navigation the DOM may be gone - recreate from carried dock.
+            sync = "set";
+          }
+          if (sync === "clear" || (sync === "set" && !dockState && !list.length)) {
             if (dock) dock.remove();
             return;
           }
-          const wantPos =
-            pos === "left" || pos === "right"
-              ? pos
-              : null;
+
+          const POS = ["left", "right"];
           if (!dock) {
             dock = document.createElement("div");
             dock.id = "wg-todo-dock";
@@ -1150,33 +1187,84 @@ async function installOverlay(page, title) {
               /* ignore */
             }
           }
+
           const esc = (s) =>
             String(s)
               .replace(/&/g, "&amp;")
               .replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;");
-          dock.innerHTML =
-            '<ul id="wg-todos">' +
-            list
-              .map((t) => {
-                const cls = t.current
-                  ? "wg-todo-current"
-                  : t.done
-                    ? "wg-todo-done"
-                    : "wg-todo-pending";
-                const mark = t.done ? "\u2713" : t.current ? "\u2192" : "\u25CB";
-                return (
-                  '<li class="' +
-                  cls +
-                  '"><span class="wg-todo-mark">' +
-                  mark +
-                  "</span><span>" +
-                  esc(t.text || "") +
-                  "</span></li>"
-                );
-              })
-              .join("") +
-            "</ul>";
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;");
+          const attrId = (raw) => {
+            const id = raw != null && String(raw).trim() ? String(raw).trim() : "";
+            return id ? ' data-wg-todo-item="' + esc(id) + '"' : "";
+          };
+          const renderItems = (items, style) => {
+            const st = style === "checklist" ? "checklist" : "sequential";
+            return (
+              '<ul id="wg-todos" data-wg-todo-style="' +
+              st +
+              '">' +
+              (items || [])
+                .map((t) => {
+                  const cls = t.current
+                    ? "wg-todo-current"
+                    : t.done
+                      ? "wg-todo-done"
+                      : "wg-todo-pending";
+                  let mark;
+                  if (st === "checklist") {
+                    mark = t.done ? "\u2611" : "\u2610";
+                  } else {
+                    mark = t.done ? "\u2713" : t.current ? "\u2192" : "\u25CB";
+                  }
+                  const rowId = t.id || t.name || "";
+                  return (
+                    "<li class=\"" +
+                    cls +
+                    "\"" +
+                    attrId(rowId) +
+                    '><span class="wg-todo-mark">' +
+                    mark +
+                    "</span><span>" +
+                    esc(t.text || "") +
+                    "</span></li>"
+                  );
+                })
+                .join("") +
+              "</ul>"
+            );
+          };
+
+          const dockId =
+            (dockState && dockState.id) ||
+            (payload && !Array.isArray(payload) && payload.todoId) ||
+            "";
+          if (dockId) dock.setAttribute("data-wg-todo-id", String(dockId));
+          else dock.removeAttribute("data-wg-todo-id");
+
+          let html = "";
+          if (dockState && Array.isArray(dockState.groups) && dockState.groups.length) {
+            const dockTitle = dockState.title && String(dockState.title).trim();
+            if (dockTitle) {
+              html += '<div class="wg-todo-dock-title">' + esc(dockTitle) + "</div>";
+            }
+            for (const g of dockState.groups) {
+              const gTitle = g.title && String(g.title).trim();
+              const gid = g.id || g.name || "";
+              html +=
+                '<div class="wg-todo-group"' +
+                (gid ? ' data-wg-todo-group="' + esc(gid) + '"' : "") +
+                ">";
+              if (gTitle) {
+                html += '<div class="wg-todo-group-title">' + esc(gTitle) + "</div>";
+              }
+              html += renderItems(g.items, g.style || dockState.style);
+              html += "</div>";
+            }
+          } else {
+            html = renderItems(list, "sequential");
+          }
+          dock.innerHTML = html;
           if (window.__wgStampModal) {
             window.__wgStampModal(dock, "todos", { ready: true });
           }
@@ -1319,7 +1407,16 @@ async function renderBeforeStep(page, info) {
           forceCollapsed: info.forceCollapsed === true ? true : undefined,
         });
       }
-      if (window.__wgSyncTodos) window.__wgSyncTodos(info.todos || [], info.todoPos || null);
+      if (window.__wgSyncTodos) {
+        const sync = info.todoSync || (info.todos && info.todos.length ? "set" : "keep");
+        window.__wgSyncTodos({
+          sync: sync,
+          dock: info.todoDock || null,
+          list: info.todos || [],
+          pos: info.todoPos || null,
+          todoId: info.todoId || (info.todoDock && info.todoDock.id) || null,
+        });
+      }
       if (window.__wgStampModal) {
         window.__wgStampModal(panel, "panel", {
           phase: "before",
@@ -1857,7 +1954,16 @@ async function renderAfterStep(page, info) {
           forceCollapsed: info.forceCollapsed === true ? true : undefined,
         });
       }
-      if (window.__wgSyncTodos) window.__wgSyncTodos(info.todos || [], info.todoPos || null);
+      if (window.__wgSyncTodos) {
+        const sync = info.todoSync || (info.todos && info.todos.length ? "set" : "keep");
+        window.__wgSyncTodos({
+          sync: sync,
+          dock: info.todoDock || null,
+          list: info.todos || [],
+          pos: info.todoPos || null,
+          todoId: info.todoId || (info.todoDock && info.todoDock.id) || null,
+        });
+      }
       if (window.__wgStampModal) {
         window.__wgStampModal(panel, "panel", {
           phase: "after",
@@ -2925,6 +3031,8 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   }
 
   let result;
+  /** Carry floating todo dock across steps (empty stubBefore must not wipe). */
+  let lastTodoDock = undefined;
   for (let i = 0; i < resolved.length; i++) {
     const r = resolved[i];
     // The block breadcrumb is scoped to THIS step's own episode, not the
@@ -3010,13 +3118,24 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     stubBeforeRef.current = stubBeforePhase.highlights.map((h) =>
       applyHighlightStyleDefaults(h, flowStyle),
     );
-    const stubBeforeTodos = stubBeforePhase.todos || [];
+    const appliedBefore = applyTodoPhase(lastTodoDock, {
+      todoSync: stubBeforePhase.todoSync,
+      todoDock: stubBeforePhase.todoDock,
+      todos: stubBeforePhase.todos,
+      todoPos: stubBeforePhase.todoPos,
+    });
+    lastTodoDock = appliedBefore.dock;
+    const stubBeforeTodos =
+      (lastTodoDock && lastTodoDock.groups[0] && lastTodoDock.groups[0].items) ||
+      stubBeforePhase.todos ||
+      [];
     const overlayTitle =
       (stubBeforePhase.title && String(stubBeforePhase.title).trim()) ||
       (r.episodeTitle && String(r.episodeTitle).trim()) ||
       title ||
       "waygraph demo";
-    const overlayTodoPos = stubBeforePhase.todoPos || undefined;
+    const overlayTodoPos =
+      (lastTodoDock && lastTodoDock.pos) || stubBeforePhase.todoPos || undefined;
     const isNavBlock = r.block.__waygraphKind === "nav";
     const autoNow = await currentAutoplay();
     // Video / --mini: compact pill. Never pass false - Hide/localStorage wins.
@@ -3068,6 +3187,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       stepperMode,
       forceCollapsed,
       todos: stubBeforeTodos,
+      todoDock: lastTodoDock,
+      todoSync: appliedBefore.sync,
+      todoId: lastTodoDock && lastTodoDock.id,
       ...paceSpeak,
     });
     const edits = await gate();
@@ -3223,16 +3345,28 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     let stubAfterTodos = [];
     let afterOverlayTitle = overlayTitle;
     let afterTodoPos = overlayTodoPos;
+    let appliedAfter = { dock: lastTodoDock, sync: "keep" };
     if (hasAuthoredStubAfter(r.block, result, fixturesAfter)) {
       const afterPhase = await runStubPhase(r.block, "stubAfter", {
         out: result,
         fixtures: fixturesAfter,
       });
-      stubAfterTodos = afterPhase.todos || [];
+      appliedAfter = applyTodoPhase(lastTodoDock, {
+        todoSync: afterPhase.todoSync,
+        todoDock: afterPhase.todoDock,
+        todos: afterPhase.todos,
+        todoPos: afterPhase.todoPos,
+      });
+      lastTodoDock = appliedAfter.dock;
+      stubAfterTodos =
+        (lastTodoDock && lastTodoDock.groups[0] && lastTodoDock.groups[0].items) ||
+        afterPhase.todos ||
+        [];
       if (afterPhase.title && String(afterPhase.title).trim()) {
         afterOverlayTitle = String(afterPhase.title).trim();
       }
       if (afterPhase.todoPos) afterTodoPos = afterPhase.todoPos;
+      if (lastTodoDock && lastTodoDock.pos) afterTodoPos = lastTodoDock.pos;
       highlights = afterPhase.highlights.map((h) => {
         const styled = applyHighlightStyleDefaults(h, r.highlightStyle);
         return {
@@ -3272,6 +3406,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       episodeTitle: r.episodeTitle,
       stepperMode,
       todos: stubAfterTodos,
+      todoDock: lastTodoDock,
+      todoSync: appliedAfter.sync,
+      todoId: lastTodoDock && lastTodoDock.id,
       forceCollapsed:
         !!process.env.WAYGRAPH_VIDEO ||
         process.env.WAYGRAPH_MINI === "1" ||

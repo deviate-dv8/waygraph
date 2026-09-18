@@ -49,7 +49,12 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
     // sequential highlight queue (appear / dwell / fade), focus + color.
     stubBefore: (ctx) => {
       ctx.title("Signing in");
-      ctx.todos(["Enter username", "Enter password", "Click Login"]);
+      ctx.todoId("saucedemo-login");
+      ctx.todos([
+        { id: "login-user", text: "Enter username" },
+        { id: "login-pass", text: "Enter password" },
+        { id: "login-submit", text: "Click Login" },
+      ]);
       ctx.todoIndex(0);
       ctx.zoom(1.35);
       ctx.highlights({
@@ -82,7 +87,12 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
       // inventory shelf. Success (LoggedIn) hands off to shopFlow.
       if (ctx.out && ctx.out.__state === "LoginPage") {
         ctx.title("Login blocked");
-        ctx.todos(["Enter username", "Enter password", "Click Login"]);
+        ctx.todoId("saucedemo-login");
+        ctx.todos([
+          { id: "login-user", text: "Enter username" },
+          { id: "login-pass", text: "Enter password" },
+          { id: "login-submit", text: "Click Login" },
+        ]);
         ctx.todoIndex(2);
         ctx.ring("error", {
           selector: '[data-test="error"]',
@@ -95,7 +105,12 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
         return;
       }
       ctx.banner("Inventory");
-      ctx.todos(["Enter username", "Enter password", "Click Login"]);
+      ctx.todoId("saucedemo-login");
+      ctx.todos([
+        { id: "login-user", text: "Enter username" },
+        { id: "login-pass", text: "Enter password" },
+        { id: "login-submit", text: "Click Login" },
+      ]);
       ctx.todoIndex(2);
       // Landed on inventory - hand off to shopFlow for product -> cart zoom.
       ctx.ring("shelf", {

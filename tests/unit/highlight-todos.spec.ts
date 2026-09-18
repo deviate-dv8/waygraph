@@ -159,3 +159,87 @@ describe("open stubBefore(ctx) lifecycle", () => {
     expect(phase.todos[0]!.current).toBe(true);
   });
 });
+
+describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
+  it("omitting todos on a later phase returns todoSync keep (does not clear)", async () => {
+    const withTodos = {
+      name: "teach",
+      instruction: {
+        stubBefore: (ctx: StubCtx) => {
+          ctx.todoId("ep10-coverage");
+          ctx.todos([
+            { id: "fr-1", text: "FR: manpower read" },
+            { name: "sc-2", text: "Scenario: open dock" },
+          ]);
+          ctx.todoIndex(0);
+        },
+      },
+    } as unknown as Block<any, any>;
+    const bare = {
+      name: "next-block",
+      instruction: {
+        stubBefore: (ctx: StubCtx) => {
+          ctx.ring("x", { selector: "#x", label: "X" });
+        },
+      },
+    } as unknown as Block<any, any>;
+
+    const setPhase = await runStubPhase(withTodos, "stubBefore");
+    expect(setPhase.todoSync).toBe("set");
+    expect(setPhase.todoDock?.id).toBe("ep10-coverage");
+    expect(setPhase.todos[0]!.id).toBe("fr-1");
+    expect(setPhase.todos[1]!.id).toBe("sc-2");
+
+    const keepPhase = await runStubPhase(bare, "stubBefore");
+    expect(keepPhase.todoSync).toBe("keep");
+    expect(keepPhase.todoDock).toBeUndefined();
+    expect(keepPhase.todos).toEqual([]);
+  });
+
+  it("hideTodos / todos([]) returns todoSync clear", async () => {
+    const hide = {
+      name: "hide",
+      instruction: {
+        stubBefore: (ctx: StubCtx) => {
+          ctx.hideTodos();
+        },
+      },
+    } as unknown as Block<any, any>;
+    const empty = {
+      name: "empty",
+      instruction: {
+        stubBefore: (ctx: StubCtx) => {
+          ctx.todos([]);
+        },
+      },
+    } as unknown as Block<any, any>;
+    expect((await runStubPhase(hide, "stubBefore")).todoSync).toBe("clear");
+    expect((await runStubPhase(empty, "stubBefore")).todoSync).toBe("clear");
+  });
+
+  it("applyTodoPhase keeps previous dock when sync is keep", async () => {
+    const { applyTodoPhase, buildTodoDock } = await import("../../src/highlights.js");
+    const prev = buildTodoDock({
+      todoId: "ep10-coverage",
+      todos: [
+        { id: "mailhog-back", text: "Return from Mailhog" },
+        { id: "assert-dock", text: "Assert dock still present" },
+      ],
+      todoIndex: 0,
+    });
+    expect(prev?.id).toBe("ep10-coverage");
+    const kept = applyTodoPhase(prev, { todoSync: "keep" });
+    expect(kept.sync).toBe("keep");
+    expect(kept.dock).toBe(prev);
+    expect(kept.dock?.groups[0]?.items[0]?.id).toBe("mailhog-back");
+
+    const cleared = applyTodoPhase(prev, { todoSync: "clear" });
+    expect(cleared.sync).toBe("clear");
+    expect(cleared.dock).toBeUndefined();
+  });
+
+  it("normalizeTodos stamps id from name alias", () => {
+    const rows = normalizeTodos([{ name: "ext-redirect", text: "Click verify link" }], 0);
+    expect(rows[0]!.id).toBe("ext-redirect");
+  });
+});

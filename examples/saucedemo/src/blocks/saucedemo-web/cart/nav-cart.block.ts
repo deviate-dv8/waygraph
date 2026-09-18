@@ -17,7 +17,12 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
   verify: [Trait.url({ pathname: "/cart.html" })],
   stubBefore: (ctx) => {
     ctx.title("Open cart");
-    ctx.todos(["Find the product", "Add to cart", "Open cart"]);
+    ctx.todoId("saucedemo-cart");
+    ctx.todos([
+      { id: "cart-find", text: "Find the product" },
+      { id: "cart-add", text: "Add to cart" },
+      { id: "cart-open", text: "Open cart" },
+    ]);
     ctx.todoIndex(2);
     ctx.zoom(1.4);
     ctx.zoomOut(false);

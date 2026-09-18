@@ -36,7 +36,12 @@ export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>(
     // Demo: zoom product -> add (stay zoomed), then badge after act.
     stubBefore: (ctx) => {
       ctx.title("Pick a product");
-      ctx.todos(["Find the product", "Add to cart", "Open cart"]);
+      ctx.todoId("saucedemo-cart");
+      ctx.todos([
+        { id: "cart-find", text: "Find the product" },
+        { id: "cart-add", text: "Add to cart" },
+        { id: "cart-open", text: "Open cart" },
+      ]);
       ctx.todoIndex(0);
       ctx.zoom(1.35);
       ctx.zoomOut(false);
@@ -63,7 +68,12 @@ export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>(
     },
     stubAfter: (ctx) => {
       ctx.banner("In the cart");
-      ctx.todos(["Find the product", "Add to cart", "Open cart"]);
+      ctx.todoId("saucedemo-cart");
+      ctx.todos([
+        { id: "cart-find", text: "Find the product" },
+        { id: "cart-add", text: "Add to cart" },
+        { id: "cart-open", text: "Open cart" },
+      ]);
       ctx.todoIndex(1);
       ctx.zoomOut(false);
       ctx.ring("badge", {
