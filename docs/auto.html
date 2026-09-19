@@ -98,17 +98,141 @@
       </ol>
 
       <h2>Sauce Demo CLI walk</h2>
+      <p>
+        Login is three atomic Blocks, not one - <code>fill-username</code> and
+        <code>fill-password</code> self-loop on <code>LoginPage</code>,
+        <code>submit-login</code> owns the actual transition. Menu order may vary; pick by
+        the label shown.
+      </p>
       <pre><code>cd examples/saucedemo
 npm install
 npx playwright install chromium
 npm run auto:cli
-# [1] submit-login
+# [2] fill-username
+# [1] fill-password
+# [3] submit-login
 # [7] Add all to cart
-# [7] Remove all from cart
+# [8] Remove all from cart
 # q
 
 # Scripted prove (same path):
 npm run prove:auto-cli</code></pre>
+
+      <h2><code>--cli</code> session control (detach / send / status / attach)</h2>
+      <p>
+        Bare <code>auto --cli</code> blocks in a terminal <code>readline</code> loop - fine
+        for a person, awkward for an agent that needs to inspect state between picks or send
+        one command without guessing a whole input sequence upfront. <code>--detach</code>
+        runs the same session as a background socket server instead.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Want</th><th>Command</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Start a detached session</td>
+            <td><code>npx waygraph auto --cli --detach</code> -&gt; <code>{"sessionId":"...","socketPath":"..."}</code></td>
+          </tr>
+          <tr>
+            <td>Send one pick, get JSON state back (no TTY)</td>
+            <td><code>npx waygraph auto send &lt;sessionId&gt; "3"</code></td>
+          </tr>
+          <tr>
+            <td>Read state without side effects</td>
+            <td><code>npx waygraph auto status &lt;sessionId&gt;</code></td>
+          </tr>
+          <tr>
+            <td>Reopen an interactive terminal on it</td>
+            <td><code>npx waygraph auto attach &lt;sessionId&gt;</code></td>
+          </tr>
+          <tr>
+            <td>End the session</td>
+            <td><code>npx waygraph auto send &lt;sessionId&gt; q</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Session identity lives under <code>.waygraph-auto/</code> in the target project
+        (metadata + socket), mirroring <code>.waygraph-traverse/</code>'s convention - removed
+        automatically when the session quits. Session control only applies to <code>--cli</code>;
+        the headed panel is unaffected. See
+        <code>openspec/changes/waygraph-auto-cli-session-control/spec.md</code> in the package repo.
+      </p>
+
+      <h2>Reading the live page (<code>auto dom</code>)</h2>
+      <p>
+        An agent driving a session can read the actual page - not just the menu - without
+        touching the target project's frontend source.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Want</th><th>Command</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Small, structured, AI-oriented snapshot (default)</td>
+            <td><code>npx waygraph auto dom &lt;sessionId&gt;</code></td>
+          </tr>
+          <tr>
+            <td>Raw DOM subtree (tags/attributes/text), bounded</td>
+            <td><code>npx waygraph auto dom &lt;sessionId&gt; --mode full</code></td>
+          </tr>
+          <tr>
+            <td>Scope either mode to one element</td>
+            <td><code>npx waygraph auto dom &lt;sessionId&gt; --selector ".inventory_list"</code></td>
+          </tr>
+          <tr>
+            <td>Limit snapshot depth</td>
+            <td><code>npx waygraph auto dom &lt;sessionId&gt; --depth 4</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Default mode is <code>aria</code> - Playwright's <code>ariaSnapshotJSON({ mode: "ai" })</code>,
+        small and usually enough to find an interactive element by role/name. <code>full</code>
+        is a hand-written bounded DOM walk for when you need something aria can't see (actual
+        CSS classes, data-attributes) - hard-capped on depth/node count/text length and marked
+        <code>truncated: true</code> whenever a cap is hit, since this is read by an LLM, not a
+        human. <code>--selector</code> is a modifier on either mode, not a third mode. See
+        <code>openspec/changes/waygraph-auto-dom-inspect/spec.md</code> in the package repo.
+      </p>
+
+      <h2>Visible browser + session history (<code>--non-headless</code>, <code>auto trace</code>)</h2>
+      <table>
+        <thead>
+          <tr><th>Want</th><th>Command</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Detached session with a real visible browser</td>
+            <td><code>npx waygraph auto --cli --detach --non-headless</code></td>
+          </tr>
+          <tr>
+            <td>Read the session's Checkpoint/Block history</td>
+            <td><code>npx waygraph auto trace &lt;sessionId&gt;</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <code>--non-headless</code> is the same flag <code>run</code>/<code>demo</code>
+        already use for "show the browser" - reused here rather than a new flag name. The
+        session stays driven entirely through <code>send</code>/<code>status</code>/
+        <code>attach</code>/<code>dom</code> either way; this is not a new picker UI, and the
+        existing page-embedded headful panel (bare <code>waygraph auto</code>, no
+        <code>--cli</code>) is unaffected regardless of this flag.
+      </p>
+      <p>
+        <code>auto trace</code> returns a Checkpoint/Block-level record of what the session
+        actually did - Block name, Checkpoint before/after, and (when the Block authors them)
+        its resolved <code>stubBefore</code>/<code>stubAfter</code>/<code>stubOnError</code>
+        demo-narration fixtures, the same highlight/todo/device data
+        <code>waygraph demo</code>'s own lifecycle logging already computes via
+        <code>runStubPhase</code>. Deliberately not a raw action recorder - no clicks or
+        fills, only the same Block-level resolution the rest of the engine already reasons
+        about, capped at the last 500 steps. See
+        <code>openspec/changes/waygraph-auto-headful-trace/spec.md</code> in the package repo.
+      </p>
 
       <h2>Related primary verbs</h2>
       <table>

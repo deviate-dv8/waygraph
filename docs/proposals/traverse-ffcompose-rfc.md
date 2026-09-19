@@ -1,7 +1,8 @@
 # RFC: Traverse + FFComposeBlock (graph regression, parallel, session fork)
 
-**Status:** Phase E shipped (2026-09-17). Coverage JSON + `--min-edge-coverage` suite gate.
-Phases A-D remain: FFCompose, serial/parallel traverse, `--blocks`, clone+leases.
+**Status:** Phases A-E all shipped (A 0.12.13, B 0.12.8+, C 0.12.10+, D 0.12.14, E 0.12.20 -
+coverage JSON + `--min-edge-coverage` suite gate). Current status: `docs/proposals/OBJECTIVES.md`.
+The open checklist below is follow-up polish, not a blocking phase.
 **Depends on:** existing `composeBlock`, `chainFlow` / `withSessionReset`, `waygraph auto` graph discovery, CLI `--blocks` / file-select patterns.
 **Goal:** walk the whole Block graph as integration regression, fail loud at the first break, parallelize safely, skip boring prefixes via FFCompose.
 

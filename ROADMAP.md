@@ -2,8 +2,10 @@
 
 Not yet v1.0.0 - breaking changes between minor versions are expected and acceptable
 until then. This file is the durable, git-tracked record of where the project is headed;
-`openspec/changes/<name>/` holds the actual planning artifacts (proposal/spec/design/tasks)
-for anything listed here as "Spec'd."
+`openspec/changes/<name>/` holds the planning artifacts (proposal/spec/design/tasks) for
+an in-progress change, and `openspec/changes/archive/` holds the same for a shipped one.
+`openspec/specs/` is the current, merged spec for each capability - read that for "what is
+true today," not a `changes/` entry, which is a point-in-time proposal.
 
 ## Modules
 
@@ -11,30 +13,45 @@ The package is one published unit today, organized internally along these lines:
 
 | Module | Where | What it owns |
 |---|---|---|
-| `waygraph-core` | `src/types.ts`, `src/mem-page.ts`, `src/trait.ts` | Checkpoint, Block, MemPage, Trait, `connect()`. Stable - untouched this whole cycle. |
-| `waygraph-engine` | `src/engine.ts` | `Engine`, `defineFlow`, `runGraph`, `chainFlow`, `composeBlock`, browser launching. Currently the one module hardcoded to vanilla `@playwright/test` - see v0.6.0. |
-| `waygraph-cli` | `src/cli.ts` (non-`chain --step` commands) | `list` / `nav` / `validate` / `run` / `chain`. |
-| `waygraph-demo` | `src/cli.ts` (`chain --step` overlay) | The step-through browser overlay: panel, ring, cursor, `narrate()`, episode headings. Grew large enough this cycle to be its own module in practice. |
-| `waygraph-auto` | `src/graph.ts`, `locate()` in `src/engine.ts`, `waygraph auto` CLI | State-machine discovery (`discoverGraph` / `toMermaid`) + page recognition (`locate`). |
+| `waygraph-core` | `src/types.ts`, `src/mem-page.ts`, `src/trait.ts` | Checkpoint, Block, MemPage, Trait, `connect()`. Stable. |
+| `waygraph-engine` | `src/engine.ts` | `Engine`, `defineFlow`, `runGraph`, `chainFlow`, `composeBlock`, browser launching (pluggable via `EngineConfig.browsers`). |
+| `waygraph-cli` | `src/cli.ts` (non-overlay commands) | `list` / `nav` / `validate` / `run` / `check` / `graph` / `init` / `agent-dive` / `traverse`. |
+| `waygraph-demo` | `src/cli.ts` (`demo` / `chain --step` overlay), `src/step-overlay.ts`, `src/highlights.ts`, `src/overlay-beacon.ts` | The step-through browser overlay: panel, ring, cursor, todo dock, `narrate()`, episode headings, stub/fixture/slide narration. |
+| `waygraph-auto` | `src/graph.ts`, `src/auto-explore.ts`, `src/auto-explore-run.ts`, `locate()` in `src/engine.ts` | State-machine discovery (`discoverGraph` / `toMermaid`) + page recognition (`locate`) + the interactive `waygraph auto` explore loop. |
+| `waygraph-traverse` | `src/traverse-run.ts`, `src/traverse-coverage.ts`, `src/traverse-lease.ts` | `waygraph traverse` graph crawl: serial/parallel workers, edge leases, coverage report + CI gate. |
 
 Whether these become physically separate npm packages, or stay one package with clearer
 internal boundaries, is an open decision - not committed to either way yet.
 
 ## Milestones
 
-| Version | Theme | Status |
-|---|---|---|
-| 0.4.0 | `chainFlow`, `withSessionReset`/`withTitle`, episode-aware step overlay | Shipped |
-| 0.5.0 | `NavBlock` + `ActionPage` + `waygraph check` + pluggable browser provider | **Implemented, committed locally** (current) - holding for go-ahead to publish |
-| 0.6.0 | `locate()` page recognition + split `requires` | `locate()` + `waygraph auto` graph discovery **shipped** (see `waygraph-auto` module). Split `requires` still roadmap. |
-| 0.7.0 | Federated pool of waygraphs | Roadmap only (autonomous-mode phase 3) |
-| 0.7.2 | `precondition` + tip polish | Shipped |
-| 0.7.3 | (staged on npm, never went live - E409) | Skipped - do not pin |
-| 0.7.4 | `waygraph demo` + run flags; NavBlock click demo cursor | **This release** (not 1.0.0) |
-| 0.9.0 | PageBlock + methods/ + Sel; Action→Method | **This release** |
-| 1.0.0 | Stability declaration | Hold for Dan go-ahead once auto is used for real on consumers |
+Themes below are proposal-time labels, not npm version tags - actual npm releases run
+their own `0.12.x`/`0.13.x` sequence (see `git log` / `package.json` for the real current
+version). Every theme in this table is already shipped in that real lineage unless marked
+otherwise.
 
-### 0.5.0 - NavBlock + ActionPage + waygraph check + pluggable browser provider
+| Theme | Status |
+|---|---|
+| `chainFlow`, `withSessionReset`/`withTitle`, episode-aware step overlay | Shipped |
+| `precondition` + tip polish | Shipped |
+| `waygraph demo` + run flags; NavBlock click demo cursor | Shipped |
+| PageBlock + `methods/` + `Sel` convention; Action -> Method rename | Shipped |
+| `NavBlock` + `ActionPage` deprecation + `waygraph check` + pluggable browser provider | Shipped - see "NavBlock + ActionPage" below |
+| `locate()` page recognition (`waygraph auto` graph discovery) | Shipped - split `requires` still open, see below |
+| Traverse (Phase B-E: serial/parallel graph crawl, coverage gate) | Shipped - `docs/proposals/traverse-ffcompose-rfc.md` |
+| `Flow.run` / `runGraph` tab options (drive an existing page, `closeOnFinish`) | Shipped - see "Flow.run tab options" below |
+| Split `requires` (externally-supplied vs producedBy-another-Block) | Roadmap only |
+| Federated pool of waygraphs | Roadmap only (autonomous-mode phase 3) |
+| `waygraph auto --cli` session control (detach/attach/send/status) | Shipped - `openspec/changes/waygraph-auto-cli-session-control/` |
+| DOM-inspection tool (`auto dom`: aria / full fidelity, `--selector` scoping) | Shipped - `openspec/changes/waygraph-auto-dom-inspect/` |
+| Visible-browser sessions + Checkpoint/Block trace (`--non-headless`, `auto trace`) | Shipped - `openspec/changes/waygraph-auto-headful-trace/` |
+| Agent-skill hardening (one-action-per-Block, `defineAssertBlock`, Sel enforcement, orphan gates) | Shipped - `openspec/changes/waygraph-agent-skill-hardening/` |
+| `maildrop.cc` external-mail adapter (production/external QA) | Roadmap only - see "Agent-authoring tooling" below |
+| Waygraph Copilot (embeddable end-user navigation agent) | Roadmap only - see "Agent-authoring tooling" below |
+| Narrated help-center video generation (core `waygraph render`) | Deferred to v1.0.x (`waygraph-demo` module) - not current focus, see below |
+| Stability declaration (1.0.0) | Gated on Waygraph Copilot demoable - see "1.0.0" below |
+
+### NavBlock + ActionPage + waygraph check + pluggable browser provider
 
 Separates "navigate to a URL" from "act on the current page" as a structural,
 engine-enforced distinction - the foundation the later autonomous-mode phases need to
@@ -48,28 +65,40 @@ Also folded in: `EngineConfig.browsers` - "waygraph is just an opinionated Playw
 the engine's three hardcoded `chromium`/`firefox`/`webkit` launch sites now accept an
 override, letting a consumer plug in `playwright-extra` or a stealth-patched launcher
 (same `.launch()` shape, drops in unmodified). Requested alongside NavBlock in the same
-go-ahead ("pia project really want this"), so built together rather than waiting for a
-separate 0.6.0. Puppeteer support is explicitly out of scope - different `Page`/
+go-ahead (a real downstream consumer project needed it), so built together rather than as a
+separate change. Puppeteer support is explicitly out of scope - different `Page`/
 `BrowserContext` shape entirely.
 
-**Implemented and verified** (9 new tests, full suite 105/105) at
-`openspec/changes/nav-block-and-check/` - see that change's `tasks.md` for the full
-verification record, including a real finding: `zsign-atomic-waygraph`'s own existing nav
-blocks (still plain `defineBlock`) get flagged by `check` too, since it looks for the
-runtime `defineNavBlock` marker, not file-naming convention. Committed locally
-(`affe227`); not yet pushed or published to npm - holding for explicit go-ahead.
+**Shipped** (9 new tests, full suite 105/105 at the time) - full spec now at
+`openspec/specs/nav-block-and-check/spec.md`; planning history in
+`openspec/changes/archive/2026-09-19-nav-block-and-check/` (see that change's `tasks.md`
+for the full verification record, including a real finding: a real consumer project's own
+existing nav blocks, still plain `defineBlock`, get flagged by `check` too, since it looks
+for the runtime `defineNavBlock` marker, not file-naming convention).
 
-### 0.6.0 - locate() + split requires (autonomous-mode phase 2)
+### Flow.run tab options
 
-**Shipped (graph + locate half):** `discoverGraph` / `toMermaid` / `waygraph auto`
-CLI and `locate(page, library)` reverse-match NavBlocks by their own `verify`
-Traits. See `src/graph.ts`, `tests/graph/`, `tests/nav/locate.spec.ts`.
+Lets a run drive an already-open page instead of always opening its own tab, and choose
+whether that page survives the run (`closeOnFinish: false` hands it back as
+`{ result, page }`). Additive only - every pre-existing `flow.run(context, mem)` call
+keeps behaving exactly as before. Popup capture (`target=_blank` clicks) stays a
+documented README recipe rather than an engine API until a second real use case needs it.
+
+**Shipped** - full spec now at `openspec/specs/flow-run-tab-options/spec.md`; planning
+history in `openspec/changes/archive/2026-09-19-flow-run-tab-options/`.
+
+### locate() + split requires (autonomous-mode phase 2)
+
+**Shipped:** `discoverGraph` / `toMermaid` / `waygraph auto` CLI and
+`locate(page, library)` reverse-match NavBlocks by their own `verify` Traits. See
+`src/graph.ts`, `tests/graph/`, `tests/nav/locate.spec.ts`.
 
 **Still open:** split a MemKey's `requires` into externally-supplied
 (credentials/config) vs producedBy-another-Block so a failed `preflight()` can
-suggest a recovery path.
+suggest a recovery path. Not yet spec'd beyond the paragraph in
+`openspec/changes/archive/2026-09-19-nav-block-and-check/design.md`'s Roadmap section.
 
-### 0.7.0 - Federated pool of waygraphs (autonomous-mode phase 3)
+### Federated pool of waygraphs (autonomous-mode phase 3)
 
 Multiple site-specific waygraph packages loaded together, each publishing its own Block
 library, with package-scoped namespacing so `locate()`/planning can run across sites
@@ -79,10 +108,162 @@ community scale (no one owns a third party's markup, unlike your own product) an
 ToS/access risk on platforms that restrict automation. Neither is an engine problem to
 solve; both are reasons this stays scoped.
 
-**Not yet spec'd** beyond the paragraph in `openspec/changes/nav-block-and-check/design.md`'s
-Roadmap section.
+**Not yet spec'd** beyond the paragraph in
+`openspec/changes/archive/2026-09-19-nav-block-and-check/design.md`'s Roadmap section.
+
+## Agent-authoring tooling and Waygraph Copilot (planned)
+
+**Current focus (as of 2026-09-19): the `waygraph-auto` module** - phases 1-3 below
+(`--cli` session control, DOM-inspection tool, simultaneous `--cli` + headful) all live
+there, and Phase 6 (Copilot) depends directly on `waygraph-auto`'s `locate()` /
+`discoverGraph` / `findBlockPath`. `waygraph-demo`-module work (the narrated help-center
+video generation section further down) is explicitly deferred to v1.0.x, not part of the
+near-term push.
+
+Grounded in two real, opposite data points from actual consumer usage, not speculation:
+
+- **Positive:** `waygraph demo`'s step-overlay/narration was used for real in a production
+  QA workflow at a real consumer and measurably reduced the QA bottleneck there - this is
+  the evidence the later Copilot phase below is betting on, not a hypothetical.
+- **Negative:** `waygraph check` run against two real pre-skill consumer projects found the
+  exact defect classes this roadmap exists to close: one project's `complete-draft`-style
+  Method does `page.reload()` outside a NavBlock *and* silently drives an entire multi-step
+  wizard (clear storage, reload, then a bounded retry loop clicking through rail steps)
+  inside one opaque Method - the "teleporting" / multi-action-per-Block anti-pattern this
+  cycle's saucedemo atomicity fixes were meant to catch. The other project has **98 orphan
+  Blocks** (built, never wired into a `defineFlow`, invisible to `auto`/`traverse`). Both
+  predate the waygraph agent skill (`templates/agents/*.agent.md`) and are the baseline the
+  phases below are measured against.
+- **Convergent finding (from the Phase 0 saucedemo cleanup, 2026-09-19):** the same
+  orphan-heavy consumer project also has **40+ near-identical `assert-*.method.block.ts`
+  files** - each one a self-loop
+  `defineMethodBlock<Checkpoint<string>, Checkpoint<string>>` whose `act` is just
+  `await page.getByRole("heading", {...}).waitFor()`, `resolve` hand-restates the same
+  checkpoint tag as a string every time (a real footgun - copy/rename one and forget to
+  update the string, it silently self-loops to the wrong tag with nothing catching it),
+  and all the real content lives in a long `verify: [Trait...]` array. None of those 40+
+  files use a `*Sel` object anywhere - every check is a raw inline selector string, the
+  same gap this cycle's saucedemo cleanup fixed, at larger scale and higher risk (these are
+  long compound Playwright chain-locators, not simple ids). This is stronger, more
+  convergent evidence than what originally justified `Effect`/`Method` becoming real sugar
+  (those were also promoted from watching agents write the same shape by hand repeatedly).
+
+Six phases, each independently shippable, in dependency order:
+
+1. **`waygraph auto --cli` session control - Shipped.** `--cli` used to be a single
+   in-process `readline` loop over the CLI's own stdin/stdout - an agent driving it had no
+   way to inspect state between prompts or send one command without blind-piping a whole
+   pre-guessed input sequence. `--detach` (long-lived session behind a local unix socket
+   under `.waygraph-auto/`), `waygraph auto send <id> "<pick>"` (one-shot RPC: send one
+   command, get the resulting menu/state back as JSON, no TTY), `auto attach <id>` (reopen
+   the interactive loop), `auto status <id>` (pure getter) - all implemented and proven with
+   a real non-interactive login+add-to-cart run against live saucedemo.com. Full spec/design/
+   tasks: `openspec/changes/waygraph-auto-cli-session-control/`.
+2. **DOM-inspection tool - Shipped.** A `dom` op/`auto dom` sub-verb on the same session
+   protocol with two fidelities - `aria` (default: Playwright's `ariaSnapshotJSON({mode:"ai"})`
+   - the originally-planned `page.accessibility.snapshot()` turned out to be removed in this
+   package's Playwright version, and the replacement is better-suited to this job anyway) and
+   `full` (a hand-written bounded DOM walk, hard-capped on depth/node count/text length,
+   explicitly marked `truncated: true` when a cap is hit). `--selector` scopes either fidelity
+   to one element's subtree - a modifier on the mode, not a third mode ("container" was
+   corrected from an originally-planned third enum value to this simpler shape before
+   implementation). Token-budget aware by design since the reader is an LLM agent, not a
+   human. Full spec/design/tasks: `openspec/changes/waygraph-auto-dom-inspect/`.
+3. **Visible-browser sessions + Checkpoint/Block trace - Shipped.** `--non-headless` (the
+   same flag `run`/`demo` already use, reused rather than a new `--headful` name) launches a
+   `--detach`'d session with a real visible browser while it stays driven entirely through
+   `send`/`status`/`attach`/`dom` - not a new picker, and the existing page-embedded headful
+   panel is untouched either way. `auto trace <sessionId>` returns the session's own
+   Checkpoint/Block-level history (Block name, Checkpoint before/after, and - extended mid-
+   implementation on request - the resolved `stubBefore`/`stubAfter`/`stubOnError`
+   demo-narration fixtures already computed by `waygraph demo`'s own lifecycle logging via
+   `runStubPhase`, confirmed to have zero browser side effects and safe to reuse). Still
+   deliberately not a 1:1 action recorder the way Playwright codegen is - no clicks/fills,
+   only the Block-level sequence and its own authored narration metadata. Turning a trace
+   into actually-authored Blocks remains separate, later work (Phase 4+). Full spec/design/
+   tasks: `openspec/changes/waygraph-auto-headful-trace/`.
+4. **Feed it back into the agent skill - Shipped.** `defineAssertBlock` (self-loop-only
+   sugar over `defineMethodBlock<Checkpoint<string>, Checkpoint<string>>`: no hand-written
+   `act`/`resolve`, just a name, checkpoint, optional `waitForHeading`, and `verify` -
+   closing the copy/rename footgun above) plus a new `waygraph check` warning that fires on
+   an inline selector literal in a `verify` array and stays silent on a `*Sel` reference -
+   directly answering the 40+-file pattern found above. "One distinct action per Block" is
+   now an explicit hard rule in `waygraph-author.agent.md`, alongside a self-gate requiring
+   zero orphan/inline-selector/nav-escape warnings before reporting done.
+   `waygraph-planner.agent.md` gained a "Blind mode" section using Phase 1-3's `auto` session
+   tools when there is no FE source to read. Real find while proving this against
+   `examples/saucedemo`: the new check immediately caught 3 genuine inline selectors this
+   session's earlier atomicity cleanup had missed (the root login route never got a `*Sel`
+   object) - fixed, and the whole example now reports zero warnings of any kind. Honest
+   scope note: this proof is inside this repo only - it does not re-verify either external
+   consumer project's own Block library, which stays separate, later work. Full spec/design/
+   tasks: `openspec/changes/waygraph-agent-skill-hardening/`.
+5. **`maildrop.cc` external-mail adapter.** A `*-external/maildrop/` convention parallel
+   to the existing `*-external/mailpit/` one, using maildrop.cc's public HTTP API instead
+   of an internal MailHog UI, so a codebase-blind external QA can drive real signup/verify
+   flows against production without internal-mail access.
+6. **Waygraph Copilot - embeddable end-user navigation agent.** The big pitch: inject
+   waygraph into an agent that shows a real end user their own application, live, and
+   helps them navigate it - more accurately than a generic vision-based "browser use" agent
+   because it is constrained to a verified, opinionated, site-specific Block graph instead
+   of guessing from pixels each time. Reuses infrastructure already built for QA/demo, not
+   a rewrite: (a) compile `discoverGraph`'s output into a client-safe static manifest
+   (checkpoints, edges, each Block's description/verify/selector/`requires`) instead of
+   reading `.block.ts` off disk; (b) port `locate()` and `findBlockPath` to run client-side
+   against that manifest and the user's real DOM; (c) resolve a plain-language ask ("how do
+   I invite a signer") to a target Checkpoint using each Block's existing required
+   `description` field as the semantic index - zero new authoring burden; (d) two delivery
+   modes on the same path - **narrate** (reuse the existing ring/highlight/todo-dock overlay
+   to point at the real control, safer default) and **agentic** (execute the Block chain for
+   real against the user's authenticated session, same `runGraph` semantics QA already
+   uses). Phase 4's atomicity/orphan-Block gates are a hard prerequisite here, not cleanup:
+   a compound Block or a stray `page.goto` is invisible in a passing test but a visibly
+   broken promise when narrated or driven live in front of a real customer. Proof: embed
+   against one real consumer app, using its existing waygraph Block library post-Phase-4
+   cleanup, and demo one real "how do I do X" ask end-to-end, narrate then agentic.
+
+## Narrated help-center video generation (planned - deferred to v1.0.x)
+
+**Not current focus.** This is `waygraph-demo`-module work, explicitly deferred to v1.0.x
+point releases after 1.0.0 ships; the active push is the `waygraph-auto` module above.
+Kept here so the idea and its evidence aren't lost, not as near-term work.
+
+Also already validated in production, not hypothetical: `services/help-center-clip-engine`
+uses **unmodified** waygraph (`file:../../waygraph`) - its `*.block.ts` "beats" drive a real
+browser capture (`_live_drive/drive.webm`, `beats.json`) - piped into a separate hand-built
+`video-pipeline/` (caption-timing script -> `narr.js`, a Playwright frame-seek renderer,
+ffmpeg mux) that has shipped real Help Center videos for tickets #248-#251. Current state:
+**caption-only** - TTS voice-over (Kokoro) is wired for but stubbed (`gen_vo.py` is a stub),
+not live narration yet.
+
+Today this is bespoke per-clip glue: a hand-written `script.json`, a hand-cloned HTML
+template per clip, ad hoc capture/mux folders duplicated per project. The roadmap
+opportunity is folding the proven parts into core waygraph instead of copy-pasting the
+pipeline per consumer:
+
+- Reuse the narration text authors already write in `stubBefore`/`stubAfter`/slide captions
+  (for `waygraph demo`) as the source for caption timing, instead of a hand-written
+  `script.json` duplicating the same copy.
+- Formalize beat-capture -> frame-render -> mux (`render_seek.js` + `build.sh` + ffmpeg) as
+  a core `waygraph render` (or `waygraph clip`) command, replacing the per-project copy of
+  `video-pipeline/`.
+- Wire a real pluggable TTS narrator (Kokoro or otherwise), mirroring the
+  `EngineConfig.browsers` pattern - opinionated default, bring-your-own override -
+  unblocking the currently-stubbed voice-over.
+- Proof: regenerate one of the four already-shipped clips (#248-#251) through the new core
+  command and confirm output parity with the existing hand-built pipeline.
 
 ### 1.0.0 - Stability declaration
 
-No fixed feature list. Marks the point breaking changes stop being casual - not scheduled
-until 0.5.0-0.7.0 have shipped and been used for real (not just spec'd).
+**Decided 2026-09-19: 1.0.0 = Waygraph Copilot demoable on one real consumer** (Phase 6's
+own proof bar - narrate mode working end-to-end against a real consumer app, using its
+existing waygraph Block library). This supersedes the earlier criteria below, which move to
+the regular post-1.0.0 roadmap instead of gating the release:
+
+- `locate()`'s split-`requires` follow-up (externally-supplied vs producedBy-another-Block)
+- Federated pool of waygraphs (autonomous-mode phase 3)
+
+Phases 1-5 above (CLI session control, DOM-inspection tool, simultaneous `--cli` +
+headful, agent-skill hardening, `maildrop.cc` adapter) remain prerequisites to 1.0.0 in
+practice, since Phase 6 depends on them - see "Agent-authoring tooling and Waygraph
+Copilot" above for the dependency order.

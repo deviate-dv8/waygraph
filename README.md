@@ -3,7 +3,10 @@
 A typed graph of reusable Blocks for driving a browser through E2E flows, in place of a
 flat pile of ad hoc helper functions.
 
-**Current:** `0.12.44` — floating todo dock (visible under `--mini`, `ctx.todoPos` / click / `--todo-left|right`), live `ctx.title` banner updates, instant highlight tone snaps.
+Not yet `1.0.0` - breaking changes between minor versions are expected. See
+[ROADMAP.md](./ROADMAP.md) for what's shipped, spec'd, and planned, and
+`openspec/specs/` for the current merged spec behind each capability
+(`openspec/changes/archive/` holds the historical planning artifacts once a change ships).
 
 This repo is the `waygraph` npm package itself. The full live **Sauce Demo** example
 (Page inventory hub, Effect Add/Remove, MemNav Open details, `waygraph auto`) ships
@@ -11,112 +14,30 @@ in-tree at [`examples/saucedemo`](./examples/saucedemo). `waygraph try demo` cop
 [`templates/quickstart`](./templates/quickstart) (same Sauce Demo Blocks) into an OS
 temp dir.
 
-See [ROADMAP.md](./ROADMAP.md) for what's shipped, spec'd, and planned by version, and
-`openspec/changes/` for the actual planning artifacts behind each roadmap item.
-
 ## Docs (GitHub Pages)
 
-Browser docs (quick start, **demo / run**, **auto explore**, engine handout, consumer layout, deploy):
+Browser docs (quick start, **demo / run**, **auto explore**, engine handout, consumer
+layout, deploy):
 
-- **Published:** https://deviate-dv8.github.io/waygraph/ (workflow auto-enables Pages via `enablement: true`; manual Settings only if org policy blocks it)
-- **Source:** [`docs/`](./docs/) — static HTML, no build step
-- **Local preview:** `npm run docs:preview` → http://127.0.0.1:4173/
-- **Deploy:** push to `main` touching `docs/**` runs [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) (`workflow_dispatch` also works)
-- **Demo / run contract:** [`docs/demo.html`](./docs/demo.html) — `list` / `.flow.ts` path / export / flags
-- **Auto explore:** [`docs/auto.html`](./docs/auto.html) — prefer `auto --cli` / `npm run auto:cli` (same menus as headed)
-- **In-repo example:** [`examples/saucedemo`](./examples/saucedemo) — full Sauce Demo project
-- **Convention showcase (Pages):** [`docs/saucedemo/`](./docs/saucedemo/) —
+- **Published:** https://deviate-dv8.github.io/waygraph/ (workflow auto-enables Pages via
+  `enablement: true`; manual Settings only if org policy blocks it)
+- **Source:** [`docs/`](./docs/) - static HTML, no build step
+- **Local preview:** `npm run docs:preview` -> http://127.0.0.1:4173/
+- **Deploy:** push to `main` touching `docs/**` runs
+  [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) (`workflow_dispatch` also
+  works)
+- **Demo / run contract:** [`docs/demo.html`](./docs/demo.html) - `list` / `.flow.ts` path
+  / export / flags
+- **Auto explore:** [`docs/auto.html`](./docs/auto.html) - prefer `auto --cli` /
+  `npm run auto:cli` (same menus as headed)
+- **In-repo example:** [`examples/saucedemo`](./examples/saucedemo) - full Sauce Demo
+  project
+- **Convention showcase (Pages):** [`docs/saucedemo/`](./docs/saucedemo/) -
   https://deviate-dv8.github.io/waygraph/saucedemo/
 - **Helpers (consumer copy):** [`examples/saucedemo/docs/HELPERS.md`](./examples/saucedemo/docs/HELPERS.md)
 
-This README stays the in-repo API narrative; Pages is the same material for eyeballing and cross-mesh handoff.
-
-## 0.9.0 — Page, Method, Sel
-
-Runtime is still one type: `Block`. Helpers are TypeScript salt.
-
-| Helper | Role | Typical file |
-|--------|------|----------------|
-| `definePageBlock` | Screen hub (checkpoint + `verify` + registered methods) | `*.page.block.ts` |
-| `defineMethodBlock` | One-shot non-nav step (submit, upload, logout) | `methods/*.method.block.ts` |
-| `defineEffectBlock` | Instance mutate + `instanceOptions` auto menu | `methods/*.effect.block.ts` |
-| `defineNavBlock` / `defineNavClickBlock` | `goto` / click-nav | `nav-*.block.ts` |
-| `defineMemNavBlock` | Nav + per-row `instanceOptions` | `nav-*.block.ts` |
-| `defineActionBlock` | **Deprecated** alias of `defineMethodBlock` | — |
-
-**Page hub:** one Checkpoint = this screen. Methods hang off the page for readability /
-auto grouping. Arrival-only hubs omit `url`/`click` (previous Block already landed here).
-Deep-link hubs pass `url` or `click` like a Nav.
-
-**`methods/` folder** (was `actions/`): on-page work lives next to the route, not free-floating.
-
-**`*Sel`:** DOM selectors only (static strings + `(id) => …` for item-no-1 style). Mem keys
-store values (which item / upload queue), not selectors. `instanceOptions` scrapes the live
-DOM into menu rows and `mem.set`s on pick; predefined methods seed mem from the flow instead.
-
-```typescript
-import { definePageBlock, Trait } from "waygraph";
-
-export const InventorySel = {
-  list: ".inventory_list",
-  addBtn: (id: string) => `[data-test="add-to-cart-${id}"]`,
-};
-
-export const InventoryPage = definePageBlock({
-  name: "page-inventory",
-  checkpoint: "LoggedIn",
-  verify: [
-    Trait.url({ pathname: "/inventory.html" }),
-    Trait.visible(InventorySel.list),
-  ],
-  methods: {
-    addToCart: () => AddToCartBlock,
-    removeFromCart: () => RemoveFromCartBlock,
-    addAllToCart: () => AddAllToCartBlock,
-    removeAllFromCart: () => RemoveAllFromCartBlock,
-  },
-});
-```
-
-Live reference: `examples/saucedemo/src/blocks/saucedemo-web/inventory/`
-(`inventory.page.block.ts` + `methods/` + `InventorySel`). Bulk `add-all-to-cart` /
-`remove-all-from-cart` are one menu row each (`from: "*"` — works after leave/return).
-
-
-## Getting started (pick one)
-
-| Goal | Command |
-|------|---------|
-| Watch Sauce Demo step-through (temp dir only) | `npx waygraph try demo` |
-| Interactive explore (Add/Remove/Open details from live page) | `cd examples/saucedemo && npm i && npx waygraph auto` |
-| Scaffold a new **offline** project (green `npm test` on local fixture `:4177`) | `npx create-waygraph my-app` **or** `npx waygraph init my-app` |
-| Install coding-agent defs for diving an app into Blocks | `npx waygraph agent-dive --loop claude` (also `opencode` / `cursor` / `vscode`) |
-| Add waygraph to an existing repo | `npm install waygraph @playwright/test` |
-
-**Scaffold is not hidden inside waygraph alone** - the offline starter also ships as
-[`create-waygraph`](https://github.com/deviate-dv8/create-waygraph) on npm (same template as
-`waygraph init` since 0.7.5). Use whichever entry you already have: `npx create-waygraph my-app`
-when reading the GitHub Pages docs, or `npx waygraph init my-app` when the CLI is already
-installed. After either:
-
-```bash
-cd my-app && npm install && npx playwright install chromium && npm test
-```
-
-`try demo` is different: live saucedemo.com, step-through **Sign In → Shop & Checkout →
-blocked Viewer login**, then headless tests. Permanent full example:
-[`examples/saucedemo`](./examples/saucedemo). Offline empty scaffold: `init` /
-`create-waygraph`.
-
-```bash
-# From this checkout, after npm run build:
-cd examples/saucedemo && npm install && npx playwright install chromium
-npm test                  # live Playwright suite
-npm run auto              # headed interactive explore
-npm run demo:step         # stepper (manual Next)
-npm run demo:autoplay     # stepper with Auto-advance
-```
-
+This README stays the in-repo API narrative; Pages is the same material for eyeballing and
+cross-mesh handoff.
 
 ## Install
 
@@ -124,14 +45,26 @@ npm run demo:autoplay     # stepper with Auto-advance
 npm install waygraph @playwright/test
 ```
 
-`@playwright/test` is a peer dependency, not bundled - you bring your own version (`^1.40.0`
-or later) since it's also what drives the rest of your test suite. Requires Node 22+ (uses
-`URL`/`URLPattern` from `@types/node` for `Trait.url`'s type checking).
+`@playwright/test` is a peer dependency, not bundled - you bring your own version
+(`^1.40.0` or later) since it's also what drives the rest of your test suite. Requires
+Node 22+ (uses `URL`/`URLPattern` from `@types/node` for `Trait.url`'s type checking).
+
+## Core concepts
+
+- **`Checkpoint<Tag>`** - a state identified solely by its string tag. Carries no data.
+- **`MemPage`** / **`MemKey<T>`** - typed shared memory across a run, keyed by object
+  identity (`key<T>("debug-name")`), not by name string.
+- **`Block<In, Out>`** - one step: `act(page, input, mem)` does the work,
+  `resolve()` decides the resulting Checkpoint (never touches the page or mem),
+  `verify` (optional) confirms the page actually matches what `resolve()` claimed.
+- **`Trait`** - a named, independently-reportable check (`{ name, check(page, mem) }`).
+  Built-in factories: `Trait.url` / `Trait.text` / `Trait.visible` (also importable as
+  free functions `urlMatches` / `textEquals` / `visible`).
+- **`Flow`** - several Blocks chained with `Engine().defineFlow([start, ...blocks, end])`,
+  run with `flow.run(mem)` (Engine launches its own browser) or `flow.run(context, mem)`
+  (reuse an existing `@playwright/test` `context` fixture).
 
 ## Quick start
-
-A Block wraps one `act`/`resolve` step (add `observe`/`verify` once you need them); a `Flow`
-chains several into a run:
 
 ```typescript
 import { Engine, start, end, MemPage, key, checkpoint, Trait } from "waygraph";
@@ -162,158 +95,359 @@ const result = await flow.run(mem); // Engine launches its own browser
 // result === { __state: "LoggedIn" }
 ```
 
-Inside an existing `@playwright/test` file, reuse its `context` fixture instead of having the
-Engine launch its own browser: `await flow.run(context, mem)`.
+Inside an existing `@playwright/test` file, reuse its `context` fixture instead of having
+the Engine launch its own browser: `await flow.run(context, mem)`.
 
-**Status:** `Checkpoint`, `MemPage`, `Instruction`/`Block` (`act`/`observe`/`resolve`/`verify`),
-`connect()`, `Trait`, `Engine.defineFlow([start, ...blocks, end])`, and `branch()`/self-loops
-with a `maxSteps` safety cap. A Block's output type is the only contract the next Block can
-rely on, `resolve` is structurally incapable of touching the browser or shared memory,
-`verify` runs only after `resolve` has already decided (confirms or fails loud, never
-redirects), `branch()` attaches routing to a Block - including back to itself - without ever
-touching that Block's own phases, a Block's `requires: MemKey[]` gets checked by
-`preflight()` (built into `runGraph`) before a tab even opens - a missing credential fails
-in milliseconds, not after several real browser actions already ran - and `new Engine({ headless, browserName, slowMo })` configures a browser the Engine
-launches and owns itself: `flow.run(mem)` (no context) uses it, and `flow.run(mem, {
-...overrides })` overrides it per call - so one module-level `Flow`, imported by many
-specs, doesn't force every caller into the same settings. `flow.run(context, mem)` still
-works exactly as before and ignores all of this, since that context is already launched.
-`withVerify(block, verify)` decorates any existing Block with different confirmation - same
-`act`/`resolve`, same routing - without that Block needing to have been authored as a
-parameterized factory (`withVerify(LoginBlock, [])` is the "I only care that I navigated
-this far, no DOM check" case). Built-in Trait factories are reachable two ways - as free
-functions (`urlMatches`, `textEquals`, `visible`) or, for autocomplete discoverability,
-off `Trait.` itself (`Trait.url`, `Trait.text`, `Trait.visible` - the exact same functions,
-just findable by typing `Trait.` without needing to already know their names). `Trait.url`
-takes a structured `URLPatternInit` (`{ pathname, hostname, search, hash, ... }`, the same
-shape the standard `URLPattern` Web API takes), not a hand-written regex - whichever
-components you leave out default to "match anything," so `Trait.url({ pathname:
-"/inventory.html" })` already ignores whatever query params a hybrid SPA tacks on, with no
-separate flag needed for that. A hand-written `Trait` isn't limited to the page, either - its
-`check(page, mem)` receives `mem` too, for the same-Checkpoint case: an action that doesn't
-navigate anywhere at all (clicking "+" to bump a cart item's quantity, say) has `In === Out`,
-which `defineBlock`/`defineFlow` already accept with no special-casing - `act()` updates `mem`
-alongside the real click (`mem.set(Quantity, mem.get(Quantity) + 1)`), and a bespoke `verify`
-Trait confirms the page's own displayed value actually matches what `mem` now expects
-(`shown === String(mem.get(Quantity))`), not just that *some* number is showing. `resolve()`
-itself stays exactly as pure as ever - it never sees `mem`, only `verify` does. `verify` only
-ever confirms what a Block itself just did, though - nothing previously checked whether the
-page was STILL there by the time the NEXT Block's `act()` starts. A `precondition` (same
-`Trait[]`/`(input) => Trait[]` shape as `verify`, checked automatically by `connect()`/
-`runGraph` right before `act()` runs, never called directly) closes that gap: a session
-timeout, a redirect, an interstitial popup - anything that changes the page in the moment
-between one Block finishing and the next one starting - fails loud with a clear "trait X
-failed before Y," instead of a confusing error deep inside `act()` trying to click something
-that's no longer there. Once Blocks are composed into a `Flow`, `flow.withBlockVerify`/
-`flow.modBlockVerify` patch one Block's verify from outside - a spec that only imports the
-finished flow, addressed by the Block reference (preferred), its name, or its numeric
-position in the flow - without editing the flow's own file. `composeBlock(name, steps)`
-chains several Blocks into one named unit the same way `connect()` already does - the
-multi-step-form case (a government form with several stepper pages, say), which is
-naturally "one feature" but still wants each step's own real `verify` independently
-overridable, not one giant Block with no per-step confirmation. `composedBlock.withStepVerify`/
-`modStepVerify` patch one step from outside, addressed the same three ways
-`withBlockVerify`/`modBlockVerify` already are - a `composeBlock` result is a plain Block,
-so it drops straight into `defineFlow([start, ..., composed, ..., end])` like any other.
-`fastForwardComposeBlock(name, steps)` is the same shape marked for **wall-clock
-fast-forward**: one opaque demo step that **blitzes** (no per-inner gate, no smooth
-cursor theater, Playwright slowMo off for that flow unless `WAYGRAPH_SLOWMO` is set)
-unless expanded. Put **several** FF units in one Flow when you need to race past auth,
-then a heavy dashboard settle, then watch the interesting middle.
+See `tests/define-flow.spec.ts` here, and
+`examples/saucedemo/tests/checkout-flow.spec.ts` (a real multi-Block flow against live
+saucedemo.com), for this running for real. The lower-level `connect()`/`runGraph()` still
+exist and are what `defineFlow` builds on - reach for them directly only if you need a
+shape `defineFlow`'s array can't express yet.
 
-**Dispute / disable FF:** `waygraph demo --ff-disabled` (alias `--no-ff`) expands every
-FFCompose into its inner Blocks so a broken login step is visible as its own panel row.
-Former FF inners keep blitz pacing so wall-clock stays comparable to opaque FF (same
-real acts). `--ff-expand` is the older expand-only flag (same flatten). Saucedemo
-`checkoutFlow` uses `ff-owner-auth` for the login prefix; `loginFlow` stays expanded for
-Sign In narration.
+## Engine features
 
-`waygraph traverse` walks the Block graph (Phase B-E). `--parallel N` (default
-`--session clone`) bootstraps one context, forks N workers with `storageState` + mem
-snapshot, partitions edges by hash, and claims via in-process edge leases (audit under
-`.waygraph-traverse/`). `--session inherit` is refused when `parallel > 1`. Phase E
-writes `.waygraph-traverse/coverage.json` and prints `[Coverage edges=H/T ratio=R%...]`;
-`--min-edge-coverage 80%` fails the suite with exit 2 when the ratio is below the gate
-(even if every worker leaf-PASSed). `--coverage-out PATH` / `--no-coverage-report` adjust
-the JSON. See `docs/proposals/traverse-ffcompose-rfc.md`.
+A Block's output type is the only contract the next Block can rely on. `resolve` is
+structurally incapable of touching the browser or shared memory. `verify` runs only after
+`resolve` has already decided (confirms or fails loud, never redirects).
 
-**Richer demo narration:** automation rings are **gray**; authored stubs/slides can use
-`tone: "info" | "warning" | "danger" | "success"` (iconified captions), plus
-`size: "sm" | "md" | "lg"` and `weight: "normal" | "bold"`. Flow episode defaults:
-`withHighlightStyle(flow, { size, weight, tone? })` (slot/fixture wins). Episode pacing:
-`withDemoPace(flow, "fast" | "slow" | "normal" | "blitz" | number)` or `withBlockPace(block, ...)`
-(`number` `<=20` = scale vs normal, e.g. `0.5` / `2`; `>20` = absolute ms, e.g. `4500`).
-FFCompose stays blitz. Living objectives: `docs/proposals/OBJECTIVES.md`.
-`spawnTab(entry, page, mem)` drives a genuinely separate second tab through its own
-Block/Flow, in the same browser context an existing `page` already belongs to - the
-pattern `observe()` could already reach for (it's the only phase allowed to touch
-`page.context()`), now a named, discoverable, tested primitive instead of something
-you'd have to already know to hand-roll. `flow.run(context, mem, options)` also accepts a
-trailing optional options object - additively, so `flow.run(context, mem)` still behaves
-byte-for-byte as before: `options.page` drives that already-open page instead of opening
-a fresh tab (the run won't close a page you handed it unless you say so), and
-`options.closeOnFinish: false` leaves the run's page open and returns `{ result, page }`
-so the caller can keep driving it - hands a run tab back instead of losing it. See
-"Recipes" for capture-on-popup, which stays a documented pattern until a second real use
-case promotes it to an engine API.
-`defineNavBlock({ name, checkpoint, url })` or `defineNavClickBlock({ name, checkpoint, click })`
-builds a Block whose only possible action is navigating. Prefer `defineNavClickBlock` for
-click-nav in app code; `defineNavBlock` for `url` / `goto` deep links. Both accept a plain
-string or `(mem) => string` / `(mem) => selector`. Generated `act()` is always exactly
-`page.goto(url)` or `page.locator(click).click()`. For screen hubs that also register
-methods, prefer `definePageBlock` (see **0.9.0 — Page, Method, Sel** above). A regular
-`defineBlock` / `defineMethodBlock`'s `act()` receives `page` typed as `ActionPage` —
-`goto`/`reload`/`goBack`/`goForward` are `@deprecated` there (editor strike-through pointing
-at Nav/Page helpers). `waygraph check [project]` is the complementary whole-project sweep
-for contexts with no editor watching (CI, generated code).
+### Routing and composition
+
+- **`branch()`** attaches routing to a Block - including back to itself (self-loops) -
+  without ever touching that Block's own phases. A `maxSteps` safety cap keeps a routing
+  bug from hanging a run forever.
+- **`withVerify(block, verify)`** decorates any existing Block with different
+  confirmation, same `act`/`resolve`, same routing - without that Block needing to have
+  been authored as a parameterized factory (`withVerify(LoginBlock, [])` is the "I only
+  care that I navigated this far, no DOM check" case).
+- **`flow.withBlockVerify` / `flow.modBlockVerify`** patch one Block's verify from
+  outside a finished `Flow` - addressed by the Block reference (preferred), its name, or
+  its numeric position - without editing the flow's own file.
+- **`composeBlock(name, steps)`** chains several Blocks into one named unit, the same way
+  `connect()` already does - useful for a multi-step form that's naturally "one feature"
+  but still wants each step's own real `verify` independently overridable, not one giant
+  Block with no per-step confirmation. `composedBlock.withStepVerify` / `modStepVerify`
+  patch one step from outside, addressed the same three ways as `withBlockVerify`. A
+  `composeBlock` result is a plain Block, so it drops straight into
+  `defineFlow([start, ..., composed, ..., end])` like any other.
+- **`fastForwardComposeBlock(name, steps)`** is the same shape marked for wall-clock
+  **fast-forward**: one opaque demo step that blitzes (no per-inner gate, no smooth cursor
+  theater, Playwright `slowMo` off for that flow unless `WAYGRAPH_SLOWMO` is set) unless
+  expanded. Put several FF units in one Flow to race past auth, then a heavy dashboard
+  settle, then watch the interesting middle. `waygraph demo --ff-disabled` (alias
+  `--no-ff`) expands every FFCompose into its inner Blocks so a broken step is visible as
+  its own panel row; former FF inners keep blitz pacing so wall-clock stays comparable.
+  `--ff-expand` is the older expand-only flag (same flatten).
+
+### Traits beyond the page
+
+A hand-written `Trait`'s `check(page, mem)` receives `mem` too, for the same-Checkpoint
+case: an action that doesn't navigate at all (clicking "+" to bump a cart item's quantity,
+say) has `In === Out`, which `defineBlock`/`defineFlow` already accept with no
+special-casing - `act()` updates `mem` alongside the real click, and a bespoke `verify`
+Trait confirms the page's own displayed value actually matches what `mem` now expects, not
+just that *some* number is showing. `resolve()` itself stays exactly as pure as ever - it
+never sees `mem`, only `verify` does.
+
+`Trait.url` takes a structured `URLPatternInit` (`{ pathname, hostname, search, hash, ... }`,
+the same shape the standard `URLPattern` Web API takes), not a hand-written regex -
+whichever components you leave out default to "match anything," so
+`Trait.url({ pathname: "/inventory.html" })` already ignores whatever query params a
+hybrid SPA tacks on, with no separate flag needed for that.
+
+### `precondition` - confirming the page is *still* there
+
+`verify` only ever confirms what a Block itself just did - nothing previously checked
+whether the page was still there by the time the next Block's `act()` starts. A
+`precondition` (same `Trait[]` / `(input) => Trait[]` shape as `verify`, checked
+automatically by `connect()`/`runGraph` right before `act()` runs, never called directly)
+closes that gap: a session timeout, a redirect, an interstitial popup - anything that
+changes the page in the moment between one Block finishing and the next one starting -
+fails loud with a clear "trait X failed before Y," instead of a confusing error deep
+inside `act()` trying to click something that's no longer there.
+
+### `requires` and `preflight()`
+
+A Block's `requires: MemKey[]` gets checked by `preflight()` (built into `runGraph`)
+before a tab even opens - a missing credential fails in milliseconds, not after several
+real browser actions already ran.
+
+### Engine config and pluggable browsers
+
+`new Engine({ headless, browserName, slowMo })` configures a browser the Engine launches
+and owns itself: `flow.run(mem)` (no context) uses it, and
+`flow.run(mem, { ...overrides })` overrides it per call - so one module-level `Flow`,
+imported by many specs, doesn't force every caller into the same settings.
+`flow.run(context, mem)` still works exactly as before and ignores all of this, since that
+context is already launched.
+
 `new Engine({ browsers: { chromium, firefox, webkit } })` overrides which `BrowserType`
 actually launches for a `mem`-only run, per browser name - waygraph is deliberately "just
 an opinionated Playwright," so a stealth-patched or otherwise customized launcher (e.g.
 `playwright-extra` plus a stealth plugin) drops in unmodified, since those already expose
 the same `.launch()` shape as Playwright's own `chromium`/`firefox`/`webkit`.
 
-See **Getting started** above for `try demo`, `create-waygraph`, and `waygraph init`.
-Both scaffold commands emit the same offline tree (route-shaped `demo-web/` +
-`methods/`, stubs, fixtures, one YAP slide). Layout:
-[`docs/scaffold.html`](./docs/scaffold.html) · `templates/scaffold/STRUCTURE.md`.
+### Driving an existing page / tabs
 
-**Consumer layout (Next.js App Router):** block folders mirror `app/` page routes (`/`
-at the namespace root; no invented `landing/`/`root/`; sidebar = chrome + edges). See
-[`docs/consumer.html`](./docs/consumer.html) and mesh handout
-`WAYGRAPH-CONSUMER-CONVENTION.md` - separate from this package API doc.
+`spawnTab(entry, page, mem)` drives a genuinely separate second tab through its own
+Block/Flow, in the same browser context an existing `page` already belongs to - the
+pattern `observe()` could already reach for (it's the only phase allowed to touch
+`page.context()`), now a named, discoverable, tested primitive.
 
-Deliberately **not yet implemented** (tracked on the project board):
+`flow.run(context, mem, options)` also accepts a trailing optional options object -
+additively, so `flow.run(context, mem)` still behaves byte-for-byte as before:
+`options.page` drives that already-open page instead of opening a fresh tab (the run
+won't close a page you handed it unless you say so), and `options.closeOnFinish: false`
+leaves the run's page open and returns `{ result, page }` so the caller can keep driving
+it. See [Recipes](#recipes) for the surviving-tab and popup-capture patterns.
+
+### NavBlock / ActionPage / waygraph check
+
+`defineNavBlock({ name, checkpoint, url })` or
+`defineNavClickBlock({ name, checkpoint, click })` builds a Block whose only possible
+action is navigating. Prefer `defineNavClickBlock` for click-nav in app code;
+`defineNavBlock` for `url` / `goto` deep links. Both accept a plain string or
+`(mem) => string` / `(mem) => selector`. Generated `act()` is always exactly
+`page.goto(url)` or `page.locator(click).click()`. For screen hubs that also register
+methods, prefer `definePageBlock` (see [Block helpers](#block-helpers-page-method-sel)
+below).
+
+A regular `defineBlock` / `defineMethodBlock`'s `act()` receives `page` typed as
+`ActionPage` - `goto`/`reload`/`goBack`/`goForward` are `@deprecated` there (editor
+strike-through pointing at Nav/Page helpers). This is a soft, TypeScript-only signal:
+nothing is blocked, nothing fails to build. `waygraph check [project]` is the
+complementary whole-project sweep for contexts with no editor watching (CI, generated
+code, an autonomous agent authoring Blocks) - it warns, never fails the process.
+
+### Demo narration
+
+Automation rings are gray; authored stubs/slides can use
+`tone: "info" | "warning" | "danger" | "success"` (iconified captions), plus
+`size: "sm" | "md" | "lg"` and `weight: "normal" | "bold"`. Flow episode defaults:
+`withHighlightStyle(flow, { size, weight, tone? })` (slot/fixture wins). Episode pacing:
+`withDemoPace(flow, "fast" | "slow" | "normal" | "blitz" | number)` or
+`withBlockPace(block, ...)` (`number <= 20` = scale vs normal, e.g. `0.5` / `2`; `> 20` =
+absolute ms, e.g. `4500`). FFCompose stays blitz. Living objectives:
+`docs/proposals/OBJECTIVES.md`.
+
+### Graph traversal
+
+`waygraph traverse` walks the Block graph. `--parallel N` (default `--session clone`)
+bootstraps one context, forks N workers with `storageState` + mem snapshot, partitions
+edges by hash, and claims via in-process edge leases (audit trail under
+`.waygraph-traverse/`). `--session inherit` is refused when `parallel > 1`. It writes
+`.waygraph-traverse/coverage.json` and prints `[Coverage edges=H/T ratio=R%...]`;
+`--min-edge-coverage 80%` fails the suite with exit 2 when the ratio is below the gate
+(even if every worker leaf-PASSed). `--coverage-out PATH` / `--no-coverage-report` adjust
+the JSON. See `docs/proposals/traverse-ffcompose-rfc.md`.
+
+### Not yet implemented
+
+Tracked on the project board / roadmap, not in this package today:
+
 - Interstitials/Watchers - background overlay handling (cookie banners, popups).
 - Split `requires` (externally-supplied vs producedBy) recovery hints.
 - Federated multi-package pool of waygraphs.
 
-**Available now:** `waygraph auto [project]` is the **interactive explore** loop:
-`locate()` reads where you are, lists runnable Blocks from the graph, you pick one
-(headful panel or `--cli` terminal menu), repeat. Static graph export (old JSON /
-Mermaid) is `waygraph graph [project]` (`--mermaid`). Unattended JSON execution is
-`chain` + `WAYGRAPH_JSON=1`.
+## Block helpers (Page, Method, Sel)
 
-**Friendly demo / run / auto (0.10.5 — flows are files):**
+Runtime is still one type: `Block`. Helpers are TypeScript salt.
+
+| Helper | Role | Typical file |
+|--------|------|----------------|
+| `definePageBlock` | Screen hub (checkpoint + `verify` + registered methods) | `*.page.block.ts` |
+| `defineMethodBlock` | One-shot non-nav step, exactly one action (submit, upload, logout) | `methods/*.method.block.ts` |
+| `defineAssertBlock` | Self-loop-only assertion (no state change) - `verify` only | `methods/*.method.block.ts` |
+| `defineEffectBlock` | Instance mutate + `instanceOptions` auto menu | `methods/*.effect.block.ts` |
+| `defineNavBlock` / `defineNavClickBlock` | `goto` / click-nav | `nav-*.block.ts` |
+| `defineMemNavBlock` | Nav + per-row `instanceOptions` | `nav-*.block.ts` |
+| `defineActionBlock` | Deprecated alias of `defineMethodBlock` | - |
+
+**Page hub:** one Checkpoint = this screen. Methods hang off the page for readability /
+auto grouping. Arrival-only hubs omit `url`/`click` (previous Block already landed here).
+Deep-link hubs pass `url` or `click` like a Nav.
+
+**One distinct action per Block - hard rule.** A Method that fills form fields *and*
+submits, or that drives several steps inside one `act()`, is wrong even if it "works" -
+split it into atomic Blocks (a login form is `fill-username` + `fill-password` +
+`submit-login`, never one Block doing all three; see `examples/saucedemo`'s own
+`saucedemo-web/methods/` for the real split). A Block that only asserts something on the
+current page, with no state change, is `defineAssertBlock({ name, checkpoint, verify,
+waitForHeading? })` - self-loop and `resolve` are generated for you, so there's no
+hand-written `act`/`resolve` to accidentally make do two things. It also accepts
+`stubBefore`/`stubAfter`/`stubOnError`/`slides`, the same narration fields every other
+Block helper takes, so converting a hand-written assertion Method loses no demo/highlight
+fixture data:
+
+```typescript
+export const AssertInventoryHeaderBlock = defineAssertBlock({
+  name: "assert-inventory-header",
+  checkpoint: "LoggedIn",
+  waitForHeading: "Products",
+  verify: [Trait.visible(InventorySel.list)],
+});
+```
+
+`waygraph check` warns when a `verify` array inlines a literal selector string
+(`Trait.visible("#some-id")`) instead of referencing a `*Sel` object - the exact pattern
+`defineAssertBlock` exists to make easy to avoid.
+
+**`methods/` folder:** on-page work lives next to the route, not free-floating.
+
+**`*Sel`:** DOM selectors only (static strings + `(id) => ...` for item-no-1 style). Mem
+keys store values (which item / upload queue), not selectors. `instanceOptions` scrapes the
+live DOM into menu rows and `mem.set`s on pick; predefined methods seed mem from the flow
+instead.
+
+```typescript
+import { definePageBlock, Trait } from "waygraph";
+
+export const InventorySel = {
+  list: ".inventory_list",
+  addBtn: (id: string) => `[data-test="add-to-cart-${id}"]`,
+};
+
+export const InventoryPage = definePageBlock({
+  name: "page-inventory",
+  checkpoint: "LoggedIn",
+  verify: [
+    Trait.url({ pathname: "/inventory.html" }),
+    Trait.visible(InventorySel.list),
+  ],
+  methods: {
+    addToCart: () => AddToCartBlock,
+    removeFromCart: () => RemoveFromCartBlock,
+    addAllToCart: () => AddAllToCartBlock,
+    removeAllFromCart: () => RemoveAllFromCartBlock,
+  },
+});
+```
+
+Live reference: `examples/saucedemo/src/blocks/saucedemo-web/inventory/`
+(`inventory.page.block.ts` + `methods/` + `InventorySel`). Bulk `add-all-to-cart` /
+`remove-all-from-cart` are one menu row each (`from: "*"` - works after leave/return).
+
+## Getting started (pick one)
+
+| Goal | Command |
+|------|---------|
+| Watch Sauce Demo step-through (temp dir only) | `npx waygraph try demo` |
+| Interactive explore (Add/Remove/Open details from live page) | `cd examples/saucedemo && npm i && npx waygraph auto` |
+| Scaffold a new **offline** project (green `npm test` on local fixture `:4177`) | `npx create-waygraph my-app` **or** `npx waygraph init my-app` |
+| Install coding-agent defs for diving an app into Blocks | `npx waygraph agent-dive --loop claude` (also `opencode` / `cursor` / `vscode`) |
+| Add waygraph to an existing repo | `npm install waygraph @playwright/test` |
+
+**Scaffold is not hidden inside waygraph alone** - the offline starter also ships as
+[`create-waygraph`](https://github.com/deviate-dv8/create-waygraph) on npm (same template
+as `waygraph init` since 0.7.5). Use whichever entry you already have:
+`npx create-waygraph my-app` when reading the GitHub Pages docs, or `npx waygraph init my-app`
+when the CLI is already installed. After either:
+
+```bash
+cd my-app && npm install && npx playwright install chromium && npm test
+```
+
+`try demo` is different: live saucedemo.com, step-through **Sign In -> Shop & Checkout ->
+blocked Viewer login**, then headless tests. Permanent full example:
+[`examples/saucedemo`](./examples/saucedemo). Offline empty scaffold: `init` /
+`create-waygraph`.
+
+```bash
+# From this checkout, after npm run build:
+cd examples/saucedemo && npm install && npx playwright install chromium
+npm test                  # live Playwright suite
+npm run auto              # headed interactive explore
+npm run demo:step         # stepper (manual Next)
+npm run demo:autoplay     # stepper with Auto-advance
+```
+
+Both scaffold commands emit the same offline tree (route-shaped `demo-web/` + `methods/`,
+stubs, fixtures, one YAP slide). Layout: [`docs/scaffold.html`](./docs/scaffold.html) ·
+`templates/scaffold/STRUCTURE.md`.
+
+**Consumer layout (Next.js App Router):** block folders mirror `app/` page routes (`/` at
+the namespace root; no invented `landing/`/`root/`; sidebar = chrome + edges). See
+[`docs/consumer.html`](./docs/consumer.html). A separate mesh handout
+(`WAYGRAPH-CONSUMER-CONVENTION.md`) covers the same convention outside this repo - not
+part of this package's own tree.
+
+## CLI reference
+
+`waygraph auto [project]` is the **interactive explore** loop: `locate()` reads where you
+are, lists runnable Blocks from the graph, you pick one (headful panel or `--cli` terminal
+menu), repeat. Static graph export (old JSON / Mermaid) is `waygraph graph [project]`
+(`--mermaid`). Unattended JSON execution is `run` + `WAYGRAPH_JSON=1`.
+
+**`--cli` session control:** `waygraph auto --cli` on its own is a blocking terminal loop -
+fine for a person, awkward for an agent that needs to inspect state between picks or send
+one command at a time without guessing a whole input sequence upfront. `--detach` runs that
+same session as a background socket server instead (session identity under
+`.waygraph-auto/` in the target project, mirroring `.waygraph-traverse/`'s convention);
+`auto send <sessionId> "<pick>"` and `auto status <sessionId>` are non-interactive
+request/response calls against it (no TTY needed), and `auto attach <sessionId>` reopens an
+interactive terminal against an already-running session. `send q`/`send quit` ends the
+session and cleans up its socket/metadata. `--detach` defaults to headless;
+`--non-headless` (the same flag `run`/`demo` already use) launches a real visible browser
+window while the session stays driven entirely through `send`/`status`/`attach`/`dom` - not
+a new picker UI, and the existing page-embedded headful panel (bare `waygraph auto`, no
+`--cli`) is untouched either way.
+
+**Session history:** `auto trace <sessionId>` returns a Checkpoint/Block-level record of
+what the session actually did - Block name, Checkpoint before/after, and (when the Block
+authors them) its resolved `stubBefore`/`stubAfter`/`stubOnError` demo-narration fixtures
+(the same highlight/todo/device data `waygraph demo`'s own lifecycle logging computes via
+`runStubPhase`, reused here since it's pure data with no browser side effects). Deliberately
+not a raw action recorder - no clicks/fills, only the same Block-level resolution the rest of
+the engine already reasons about, capped at the last 500 steps.
+
+**Reading the live page:** `auto dom <sessionId>` gives an agent driving a session read-only
+visibility into the actual page, without reading the target project's frontend source.
+Default `--mode aria` returns Playwright's AI-oriented accessibility snapshot
+(`ariaSnapshotJSON({ mode: "ai" })`) - small and usually enough to find "the Username
+textbox" or "the Login button." `--mode full` returns a bounded raw DOM subtree
+(tag/attributes/text/children - useful when you need actual CSS classes or data-attributes
+`aria` can't see), hard-capped on depth/node count/text length and marked `truncated: true`
+whenever a cap is hit, since this is read by an LLM, not a human. `--selector <sel>` scopes
+either mode to one element's subtree instead of the whole page - a modifier on the mode, not
+a third mode.
+
+Flows are files (0.10.5+):
 
 | Want | Command |
 |------|---------|
-| List flows | `waygraph list` → `src/flows/shop.flow.ts  shopFlow` |
-| Run by file | `waygraph run src/flows/shop.flow.ts --data '{…}'` |
-| Same via `auto` | `waygraph auto src/flows/shop.flow.ts --data '{…}'` |
+| List flows | `waygraph list` -> `src/flows/shop.flow.ts  shopFlow` |
+| Run by file | `waygraph run src/flows/shop.flow.ts --data '{...}'` |
+| Same via `auto` | `waygraph auto src/flows/shop.flow.ts --data '{...}'` |
 | Run by export | `waygraph run --blocks shopFlow` |
 | Manual watch | `waygraph demo src/flows/shop.flow.ts` |
 | Auto-advance | `waygraph demo --blocks shopFlow --auto-next` (nav auto-hides strip) |
-| Fast / full strip | `waygraph demo … --fast` (shorter gates; keeps cursor) · `--full` (classic chips; default = carousel) |
+| Fast / full strip | `waygraph demo ... --fast` (shorter gates; keeps cursor) · `--full` (classic chips; default = carousel) |
 | QA watch + record | `waygraph demo --blocks shopFlow --auto-play-video` |
-| Ad-hoc Blocks | `waygraph run --blocks "login then nav-cart" --data '{…}'` |
+| Ad-hoc Blocks | `waygraph run --blocks "login then nav-cart" --data '{...}'` |
 | Headed execute | `waygraph run --blocks shopFlow --non-headless --video` |
 | Explore | `waygraph auto` / `waygraph auto --cli` |
 | Path-find | `waygraph auto --blocks LoginPage OrderComplete` |
+| Run `--cli` as a background session | `waygraph auto --cli --detach` -> `{sessionId, socketPath}` |
+| Drive a detached session (no TTY) | `waygraph auto send <sessionId> "<pick>"` -> JSON state |
+| Read a detached session's state | `waygraph auto status <sessionId>` (no side effects) |
+| Reattach a terminal to a detached session | `waygraph auto attach <sessionId>` |
+| Read the live page (aria, small/default) | `waygraph auto dom <sessionId>` |
+| Read the live page (raw DOM, bounded) | `waygraph auto dom <sessionId> --mode full` |
+| Scope either to one element | `waygraph auto dom <sessionId> --selector ".inventory_list"` |
+| Detached session with a real visible browser | `waygraph auto --cli --detach --non-headless` |
+| Read the session's Checkpoint/Block history | `waygraph auto trace <sessionId>` |
+| Whole-project nav-escape + inline-selector + orphan sweep | `waygraph check [project]` |
+| Graph crawl | `waygraph traverse [project] --parallel N --min-edge-coverage 80%` |
+| Coding-agent defs | `waygraph agent-dive --loop claude` |
+| One-shot temp-dir demo | `waygraph try demo` / `waygraph try auto` / `waygraph try auto:cli` |
 
 `--blocks` / positional accepts a Flow export, a `.flow.ts` path, or `"a then b"`.
 `auto <file.flow.ts>` **runs** that flow (same as `run`); bare `auto` still explores.
-`--auto-next` (alias `--autoplay`) = panel Auto-advance. `--auto-play-video` is **demo only**.
-`chain` remains a compat alias for `run --blocks` / `auto --blocks`.
+`--auto-next` (alias `--autoplay`) = panel Auto-advance. `--auto-play-video` is **demo
+only**. `chain` remains a compat alias for `run --blocks` / `auto --blocks`.
+
+Run `waygraph --help` (or any subcommand with no args) for the full flag reference kept
+in `src/cli.ts`'s own `usage()` - that's the source of truth for flags, this table is the
+scannable summary.
 
 ## Example
 
@@ -372,18 +506,13 @@ const result = await flow.run(context, mem);
 // result === { __state: "Submitted" }
 ```
 
-See `tests/define-flow.spec.ts` here, and `examples/saucedemo/tests/checkout-flow.spec.ts`
-(a real multi-Block flow against live saucedemo.com), for this running for real. The
-lower-level `connect()`/`runGraph()` still exist and are what `defineFlow` builds on -
-reach for them directly only if you need a shape `defineFlow`'s array can't express yet.
-
 ## Recipes
 
 ### Detect / drive the surviving tab after a run
 
 The default run closes the page it opened, and a page you hand in via `options.page`
-survives. For a flow that must BE the surviving tab after it returns (an interactive demo,
-a hand-back to a caller), ask for the page back explicitly:
+survives. For a flow that must BE the surviving tab after it returns (an interactive
+demo, a hand-back to a caller), ask for the page back explicitly:
 
 ```typescript
 const { result, page } = await registerFlow.run(context, mem, { closeOnFinish: false });
@@ -402,7 +531,7 @@ event armed before the click that is expected to open exactly one popup:
 let popup: Page | undefined;
 context.once("page", (p) => { popup = p; });
 await linkHandle.click();          // the block that causes the popup (e.g. the
-                                   // MailHog email's real verify link)
+                                    // MailHog email's real verify link)
 if (popup) {
   await popup.waitForLoadState();  // fully loaded before calling into the engine
   await verifyLinkFlow.run(context, mem, { page: popup, closeOnFinish: false });
@@ -431,9 +560,9 @@ npm run build       # tsc -p tsconfig.build.json, emits dist/
 
 ### Blind-agent overlay gate (anti-blank)
 
-Every live modal (`#wg-panel`, `#wg-banner`, `#wg-auto-panel`) stamps
-`data-wg-ui` / `data-wg-modal` / `data-wg-ready="1"`. Do **not** claim the
-stepper works unless one of these passes:
+Every live modal (`#wg-panel`, `#wg-banner`, `#wg-auto-panel`, `#wg-todo-dock`) stamps
+`data-wg-ui` / `data-wg-modal` / `data-wg-ready="1"`. Do **not** claim the stepper works
+unless one of these passes:
 
 ```bash
 # Playwright helper (exported from waygraph)
@@ -446,32 +575,46 @@ WAYGRAPH_PROVE_EXIT=1 WAYGRAPH_PROVE_SHOT=/tmp/wg.png \
 # stderr: WAYGRAPH_PROVE {"ok":true,"beacons":[...],"readyAttr":"1"}
 ```
 
-Tests: `tests/cli/overlay-beacon.spec.ts`. Helpers: `src/overlay-beacon.ts`.
+Tests: `tests/cli/overlay-beacon.spec.ts`. Helpers: `src/overlay-beacon.ts`. Rules for
+touching the stepper/overlay chrome itself: `src/CLI-STOMP-GUARD.md`.
 
 ## Layout
 
 ```
-package.json              the "waygraph" npm package itself (0.9.0+)
+package.json              the "waygraph" npm package itself
 src/
   types.ts                 Checkpoint, Instruction, Block, connect()
   mem-page.ts               MemKey, key(), MemPage
   trait.ts                   Trait (type + discoverable Trait.url/.text/.visible), runVerify()
-  engine.ts                   runGraph(), definePageBlock, defineMethodBlock, Engine, …
+  engine.ts                   runGraph(), definePageBlock, defineMethodBlock, Engine, ...
   graph.ts                     discoverGraph, orphans, paths
-  auto-explore.ts              waygraph auto menu
-  index.ts                     public barrel
+  auto-explore.ts               waygraph auto menu building
+  auto-explore-run.ts            waygraph auto interactive loop (headful + --cli)
+  highlights.ts                  stub/fixture/slide/todo-dock/device narration types + helpers
+  step-overlay.ts                 demo step overlay chrome (panel, ring, cursor)
+  overlay-beacon.ts                blind-agent overlay readiness beacons
+  traverse-run.ts                   waygraph traverse crawl (serial/parallel)
+  traverse-coverage.ts               traverse coverage report + CI gate
+  traverse-lease.ts                  traverse edge lease coordinator
+  blocks-select.ts                   shared --blocks glob/regex/bare grammar
+  agent-dive.ts                      waygraph agent-dive coding-agent scaffolding
+  cli.ts                             waygraph CLI entrypoint (all subcommands)
+  index.ts                           public barrel
 examples/saucedemo/         live Sauce Demo (Page + methods/ + Sel)
 templates/quickstart/       try demo / init template (mirrors sauce)
-docs/                       GitHub Pages static HTML
-typecheck/                 compile-time-only fixtures
+templates/scaffold/         offline init/create-waygraph scaffold template
+templates/agents/           waygraph agent-dive coding-agent definitions
+docs/                       GitHub Pages static HTML + docs/proposals/ RFCs
+openspec/                   spec-driven planning: specs/ (current), changes/ (in-flight),
+                            changes/archive/ (shipped)
 tests/                      runtime unit + integration tests (@playwright/test)
 tsconfig.json                base config
 tsconfig.build.json          emits to dist/
 ```
 
 In-package Sauce Demo: [`examples/saucedemo`](./examples/saucedemo). Other consumer
-experiments (e.g. zsign-app integration) may still live in a sibling workspace folder and
-depend on this package via `"waygraph": "file:../waygraph"` during local dev (see that
+experiments may still live in a sibling workspace folder and depend on this package via
+`"waygraph": "file:../waygraph"` during local dev (see that
 project's own `.npmrc` - `install-links=true` is required there, or npm will symlink
 instead of copy and pull this package's own `node_modules` in through the symlink, causing
 a duplicate-Playwright-installation error).
