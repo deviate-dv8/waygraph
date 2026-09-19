@@ -1,5 +1,6 @@
 import { defineMethodBlock, checkpoint, Trait, narrate } from "waygraph";
 import type { CheckoutOverviewPage, OrderComplete } from "../../../../states/checkout.states.js";
+import { CheckoutOverviewSel } from "./checkout-overview.sel.js";
 
 /**
  * Kind: Method
@@ -13,17 +14,17 @@ export const FinishOrderBlock = defineMethodBlock<CheckoutOverviewPage, OrderCom
   description: "Places the order and confirms the 'Thank you for your order!' completion page.",
   instruction: {
     async act(page) {
-      const finishButton = page.locator("#finish");
+      const finishButton = page.locator(CheckoutOverviewSel.finishBtn);
       await narrate(finishButton, "Placing the order", () => finishButton.click());
     },
     resolve: () => checkpoint("OrderComplete"),
-    verify: [Trait.text(".complete-header", "Thank you for your order!")],
+    verify: [Trait.text(CheckoutOverviewSel.completeHeader, "Thank you for your order!")],
     stubBefore: {
-      finish: { selector: "#finish", label: "Finish" },
+      finish: { selector: CheckoutOverviewSel.finishBtn, label: "Finish" },
     },
     stubAfter: {
       thanks: {
-        selector: ".complete-header",
+        selector: CheckoutOverviewSel.completeHeader,
         label: "Order confirmed",
         detail: "Thank you for your order!",
         duration: true,
@@ -42,7 +43,7 @@ export const FinishOrderBlock = defineMethodBlock<CheckoutOverviewPage, OrderCom
         caption: "Completion page is the durable proof",
         detail: "The thank-you header is what verify asserts on.",
         tag: "YAP",
-        selector: ".complete-header",
+        selector: CheckoutOverviewSel.completeHeader,
         duration: 2500,
         fastMode: 700,
       },
@@ -50,7 +51,7 @@ export const FinishOrderBlock = defineMethodBlock<CheckoutOverviewPage, OrderCom
         caption: "Episode continues after this yap",
         detail: "Next step rings the same banner, then you move on.",
         tag: "YAP",
-        selector: ".complete-header",
+        selector: CheckoutOverviewSel.completeHeader,
         duration: true,
         fastMode: 500,
       },

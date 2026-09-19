@@ -1,7 +1,21 @@
 # saucedemo waygraph conventions
 
-Atomic Blocks - one nav / effect / method per real URL or on-page mutation so
-`waygraph auto` can discover a real state graph (not a fat multi-page Block).
+**How this maps to the app:** navigate to the site -> you land on a `Page` Block
+(the screen hub) -> every Method/Effect/Nav that screen can do hangs off that
+Page. Each Block does exactly **one** distinct action - never two or more
+bundled together. Filling a form field and submitting it are two different
+actions, so they are two different Blocks, even on the same screen:
+`fill-username` / `fill-password` (self-loop Methods, no checkpoint change) and
+`submit-login` (the real transition) are three real Blocks, not one Method
+that "inputs username and password and logs in at the same time." The same
+split applies to `fill-first-name` / `fill-last-name` / `fill-postal-code` /
+`submit-checkout-info` on the shipping form.
+
+This is what makes `waygraph auto`/`traverse` see a clean, honest graph of the
+app: every real user-visible action is its own edge, and no Block silently
+"teleports" the user past several actions at once. It is also why a
+`page.goto()` (or NavBlock `click`) never appears anywhere except inside a
+`defineNavBlock`/`defineNavClickBlock` - see `waygraph check` below.
 
 **TypeScript salt only.** Helpers force a useful shape. At runtime everything is
 still a `Block` - there is no separate Page / Effect / Nav engine.
@@ -33,9 +47,12 @@ src/blocks/
   SITE-MAP.md
   saucedemo-web/                 # THIS FOLDER IS URL "/"
     NAV.md
-    nav-login.block.ts
+    nav-login.block.ts             # Page hub
+    ff-owner-auth.block.ts         # FFCompose wrapping the 4 Blocks below
     methods/
-      submit-login.method.block.ts
+      fill-username.method.block.ts   # self-loop, fills only
+      fill-password.method.block.ts   # self-loop, fills only
+      submit-login.method.block.ts    # click only, branches
       submit-login-for-flow.ts
       submit-logout.method.block.ts
     inventory/                   # /inventory.html
@@ -58,7 +75,10 @@ src/blocks/
     checkout-step-one/           # /checkout-step-one.html
       NAV.md
       methods/
-        submit-checkout-info.method.block.ts
+        fill-first-name.method.block.ts    # self-loop, fills only
+        fill-last-name.method.block.ts     # self-loop, fills only
+        fill-postal-code.method.block.ts   # self-loop, fills only
+        submit-checkout-info.method.block.ts  # click only
     checkout-step-two/           # /checkout-step-two.html
       NAV.md
       methods/

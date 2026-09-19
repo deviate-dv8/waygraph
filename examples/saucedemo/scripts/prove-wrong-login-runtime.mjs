@@ -14,7 +14,13 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const waygraphDist = join(root, "../../dist");
 const { Engine, start, end, MemPage } = await import(pathToFileURL(join(waygraphDist, "index.js")).href);
 const { NavLoginBlock } = await import(pathToFileURL(join(root, "src/blocks/saucedemo-web/nav-login.block.js")).href);
-const { SubmitLoginActionBlock } = await import(
+const { FillUsernameBlock } = await import(
+  pathToFileURL(join(root, "src/blocks/saucedemo-web/methods/fill-username.method.block.js")).href
+);
+const { FillPasswordBlock } = await import(
+  pathToFileURL(join(root, "src/blocks/saucedemo-web/methods/fill-password.method.block.js")).href
+);
+const { SubmitLoginBlock } = await import(
   pathToFileURL(join(root, "src/blocks/saucedemo-web/methods/submit-login.method.block.js")).href
 );
 const { LoginCreds } = await import(pathToFileURL(join(root, "src/states/checkout.mem-keys.js")).href);
@@ -35,7 +41,7 @@ const engine = new Engine({ headless: true });
 const mem = new MemPage();
 mem.set(LoginCreds({ username: "standard_user", password: "wrong-password" }));
 
-const flow = engine.defineFlow([start, NavLoginBlock, SubmitLoginActionBlock, end]);
+const flow = engine.defineFlow([start, NavLoginBlock, FillUsernameBlock, FillPasswordBlock, SubmitLoginBlock, end]);
 const runOut = await flow.run(context, mem, { page, closeOnFinish: false });
 const result = runOut && typeof runOut === "object" && "result" in runOut ? runOut.result : runOut;
 

@@ -1,5 +1,6 @@
 import { defineNavClickBlock, Trait } from "waygraph";
 import type { LoggedIn } from "../../../states/checkout.states.js";
+import { ItemDetailSel } from "./item-detail.sel.js";
 
 /**
  * Kind: Nav
@@ -13,6 +14,6 @@ export const NavBackToProductsBlock = defineNavClickBlock<LoggedIn>({
   name: "nav-back-to-products",
   description: "Clicks 'Back Home' on the order confirmation page.",
   checkpoint: "LoggedIn",
-  click: "#back-to-products",
+  click: ItemDetailSel.backToProductsBtn,
   verify: [Trait.url({ pathname: "/inventory.html" })],
 });

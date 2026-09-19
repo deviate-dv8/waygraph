@@ -23,3 +23,4 @@ Single product detail page, plus nav edges that return to catalog
 ## Related mem keys / checkpoints
 
 - Checkpoints: `ItemDetailPage`, `LoggedIn` (after back / continue), `OrderComplete` (from for back-to-products)
+- Sel: `ItemDetailSel` (`item-detail.sel.ts`) - DOM only, not mem

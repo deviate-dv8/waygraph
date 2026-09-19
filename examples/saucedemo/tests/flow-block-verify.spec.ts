@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { MemPage, checkpoint, Trait } from "waygraph";
 import { checkoutFlow } from "../src/flows/checkout.flow.js";
-import { SubmitLoginActionBlock } from "../src/blocks/saucedemo-web/methods/submit-login.method.block.js";
+import { SubmitLoginBlock } from "../src/blocks/saucedemo-web/methods/submit-login.method.block.js";
 import { LoginCreds, SelectedItem } from "../src/states/checkout.mem-keys.js";
 
 // checkoutFlow.withBlockVerify/modBlockVerify - a spec that only imports the
@@ -31,9 +31,9 @@ test("withBlockVerify: replacing login's verify with an extra real check still p
   mem.set(LoginCreds({ username: "standard_user", password: "secret_sauce" }));
   mem.set(SelectedItem({ id: "sauce-labs-backpack", name: "Sauce Labs Backpack" }));
 
-  // Addressed by the actual SubmitLoginActionBlock reference - the preferred
+  // Addressed by the actual SubmitLoginBlock reference - the preferred
   // form: no typo risk, refactor-safe, jump-to-definition works.
-  const patched = checkoutFlow.withBlockVerify(SubmitLoginActionBlock, [
+  const patched = checkoutFlow.withBlockVerify(SubmitLoginBlock, [
     Trait.url({ pathname: "/inventory.html" }),
     Trait.visible(".inventory_list"),
   ]);

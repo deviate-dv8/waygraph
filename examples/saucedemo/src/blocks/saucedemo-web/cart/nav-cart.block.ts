@@ -2,6 +2,7 @@ import { defineNavClickBlock, Trait } from "waygraph";
 import type { StubCtx } from "waygraph";
 import type { CartPage } from "../../../states/checkout.states.js";
 import { InventorySel } from "../inventory/methods/inventory-items.js";
+import { CartSel } from "./cart.sel.js";
 
 /**
  * Kind: Nav
@@ -14,7 +15,7 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
   name: "nav-cart",
   description: "Clicks the cart link in the header.",
   checkpoint: "CartPage",
-  click: ".shopping_cart_link",
+  click: CartSel.cartLink,
   verify: [Trait.url({ pathname: "/cart.html" })],
   stubBefore: (ctx: StubCtx) => {
     ctx.title("Open cart · landscape");
@@ -35,7 +36,7 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
     ctx.zoomOut(false);
     ctx.highlights({
       cart: {
-        selector: ".shopping_cart_link",
+        selector: CartSel.cartLink,
         label: "Cart",
         detail: "Open cart",
         focus: true,

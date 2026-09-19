@@ -1,5 +1,6 @@
 import { defineMethodBlock, checkpoint, Trait } from "waygraph";
 import type { LoggedIn, LoginPage } from "../../../states/checkout.states.js";
+import { LoginSel } from "./login.sel.js";
 
 /**
  * Kind: Method
@@ -13,10 +14,10 @@ export const SubmitLogoutBlock = defineMethodBlock<LoggedIn, LoginPage>({
   description: "Opens the burger menu and logs out.",
   instruction: {
     async act(page) {
-      await page.locator("#react-burger-menu-btn").click();
-      await page.locator("#logout_sidebar_link").click();
+      await page.locator(LoginSel.burgerMenuButton).click();
+      await page.locator(LoginSel.logoutLink).click();
     },
     resolve: () => checkpoint("LoginPage"),
-    verify: [Trait.visible("#login-button")],
+    verify: [Trait.visible(LoginSel.loginButton)],
   },
 });

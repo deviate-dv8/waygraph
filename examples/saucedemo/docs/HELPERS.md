@@ -8,12 +8,20 @@ Runtime is always a `Block`. Helpers are TypeScript salt + clear intent.
 | `defineNavBlock` | URL / `goto` only | `nav-*.block.ts` |
 | `defineNavClickBlock` | Click-to-navigate only | `nav-*.block.ts` |
 | `defineMemNavBlock` | Nav + per-row `instanceOptions` | `nav-*.block.ts` |
-| `defineMethodBlock` | One-shot non-nav app step | `*.method.block.ts` under `methods/` |
+| `defineMethodBlock` | One-shot non-nav app step, exactly one action | `*.method.block.ts` under `methods/` |
+| `defineAssertBlock` | Self-loop assertion, no state change - `verify` only | `*.method.block.ts` under `methods/` |
 | `defineEffectBlock` | Instance mutate + auto menu rows | `*.effect.block.ts` under `methods/` |
 | `defineBlock` | Escape hatch: tests, unsure, probes | any |
-| `defineActionBlock` | **Deprecated** alias of `defineMethodBlock` | — |
+| `defineActionBlock` | **Deprecated** alias of `defineMethodBlock` | - |
 
 `defineNavBlock({ click })` still works (compat) - prefer `defineNavClickBlock` in app code.
+
+**One distinct action per Block.** A Method that fills fields *and* submits is wrong even if
+it "works" - split it (`fill-username` + `fill-password` + `submit-login`, not one Block).
+`defineAssertBlock({ name, checkpoint, verify, waitForHeading? })` is the self-loop-only
+shape for "assert something on the current page, no state change" - no hand-written
+`act`/`resolve` to accidentally make do two things. `waygraph check` warns when a `verify`
+array inlines a literal selector string instead of a `*Sel` reference.
 
 ---
 
@@ -76,7 +84,7 @@ Conditional Out (no `branch()` needed for auto/graph):
 defineMethodBlock<LoginPage, LoggedIn | LoginPage>({
   name: "submit-login",
   instruction: {
-    async act(page, _in, mem) { /* fill + click */ },
+    async act(page) { /* click only - fields were filled by earlier Blocks */ },
     async observe(page) {
       try {
         await page.waitForURL(/\/inventory\.html/, { timeout: 8000 });
@@ -93,7 +101,7 @@ defineMethodBlock<LoginPage, LoggedIn | LoginPage>({
 Optional routing for `runGraph`:
 
 ```ts
-branch(SubmitLoginActionBlock, {
+branch(SubmitLoginBlock, {
   LoggedIn: AddToCartBlock,
   LoginPage: null, // stop
 });

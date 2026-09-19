@@ -9,7 +9,9 @@ import {
   Trait,
 } from "waygraph";
 import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
-import { SubmitLoginActionBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
+import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
+import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
+import { SubmitLoginBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
 
 const engine = new Engine();
 
@@ -23,7 +25,7 @@ const engine = new Engine();
  */
 const forcedInventoryVerify = withSessionReset(
   engine
-    .defineFlow([start, NavLoginBlock, SubmitLoginActionBlock, end])
+    .defineFlow([start, NavLoginBlock, FillUsernameBlock, FillPasswordBlock, SubmitLoginBlock, end])
     .withBlockVerify("submit-login", [Trait.url({ pathname: "/inventory.html" })]),
 );
 

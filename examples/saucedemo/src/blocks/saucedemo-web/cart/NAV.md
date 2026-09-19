@@ -20,3 +20,4 @@ Shopping cart page and checkout entry.
 ## Related mem keys / checkpoints
 
 - Checkpoints: `CartPage`, `CheckoutInfoPage`, `ItemInCart` / `LoggedIn` (cart contents)
+- Sel: `CartSel` (`cart.sel.ts`) - DOM only, not mem
