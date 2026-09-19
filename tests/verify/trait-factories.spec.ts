@@ -1,9 +1,25 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
-import { runGraph, MemPage, urlMatches, textEquals, visible, checkpoint, Trait } from "../../src/index.js";
+import {
+  runGraph,
+  MemPage,
+  urlMatches,
+  textEquals,
+  visible,
+  frameVisible,
+  frameTextEquals,
+  frameContainsText,
+  checkpoint,
+  Trait,
+} from "../../src/index.js";
 
 const FORM_URL = `data:text/html,${encodeURIComponent(
   `<!doctype html><html><body><h1 id="h">Hello</h1></body></html>`,
+)}`;
+
+const IFRAME_BODY = `<body>Please verify your account: <a href="https://app.example.com/verify?token=abc">Verify</a></body>`;
+const IFRAME_URL = `data:text/html,${encodeURIComponent(
+  `<!doctype html><html><body><iframe id="preview" srcdoc='${IFRAME_BODY}'></iframe></body></html>`,
 )}`;
 
 type Start = Checkpoint<"__start__">;
@@ -114,4 +130,59 @@ test("Trait.url/Trait.text/Trait.visible are the same factories as urlMatches/te
 
   const result = await runGraph<Done>(block, undefined, context, new MemPage());
   expect(result).toEqual(checkpoint("Done"));
+});
+
+test("frameVisible/frameText/frameContains reach inside a real iframe, which plain visible/text cannot", async ({
+  context,
+}) => {
+  const block: Block<Start, Done> = {
+    name: "load",
+    instruction: {
+      async act(page) {
+        await page.goto(IFRAME_URL);
+      },
+      resolve: () => checkpoint("Done"),
+      verify: [
+        Trait.frameVisible("#preview", "a"),
+        Trait.frameContains("#preview", "body", "Please verify your account"),
+        Trait.frameText("#preview", "a", "Verify"),
+      ],
+    },
+  };
+
+  expect(Trait.frameVisible).toBe(frameVisible);
+  expect(Trait.frameText).toBe(frameTextEquals);
+  expect(Trait.frameContains).toBe(frameContainsText);
+
+  const result = await runGraph<Done>(block, undefined, context, new MemPage());
+  expect(result).toEqual(checkpoint("Done"));
+});
+
+test("a plain page.locator (what visible/text use) cannot see content that only exists inside the iframe", async ({
+  context,
+}) => {
+  const page = await context.newPage();
+  await page.goto(IFRAME_URL);
+  // The link only exists inside the iframe's own document - a plain top-level
+  // locator (what Trait.visible/Trait.text use) never finds it, which is
+  // exactly why frameVisible/frameText/frameContains exist as separate Traits.
+  expect(await page.locator("a").count()).toBe(0);
+  await page.close();
+});
+
+test("frameContains fails loud, naming itself, when the expected text is not in the frame", async ({ context }) => {
+  const block: Block<Start, Done> = {
+    name: "load",
+    instruction: {
+      async act(page) {
+        await page.goto(IFRAME_URL);
+      },
+      resolve: () => checkpoint("Done"),
+      verify: [Trait.frameContains("#preview", "body", "this text is not in the email")],
+    },
+  };
+
+  await expect(runGraph<Done>(block, undefined, context, new MemPage())).rejects.toThrow(
+    /frame-contains-text.*failed after "load"/,
+  );
 });

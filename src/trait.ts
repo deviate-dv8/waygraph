@@ -73,6 +73,51 @@ export function visible(selector: string): Trait {
 }
 
 /**
+ * `visible`, scoped to a frame (e.g. a mail catcher's message-preview iframe)
+ * instead of the top-level page. `page.locator(selector)` alone never reaches
+ * inside an iframe - Playwright requires `frameLocator` for that - so
+ * `Trait.visible` cannot express this on its own. `frameSelector` finds the
+ * iframe itself; `innerSelector` is resolved inside it.
+ * @example Trait.frameVisible("#preview-html", 'a[href*="verify"]')
+ */
+export function frameVisible(frameSelector: string, innerSelector: string): Trait {
+  return {
+    name: `frame-visible(${frameSelector}, ${innerSelector})`,
+    async check(page) {
+      await page.frameLocator(frameSelector).locator(innerSelector).first().waitFor({ state: "visible" });
+      return true;
+    },
+  };
+}
+
+/** `textEquals`, scoped to a frame - see {@link frameVisible} for why this needs its own factory. */
+export function frameTextEquals(frameSelector: string, innerSelector: string, expected: string): Trait {
+  return {
+    name: `frame-text-equals(${frameSelector}, ${innerSelector}, ${JSON.stringify(expected)})`,
+    async check(page) {
+      return (await page.frameLocator(frameSelector).locator(innerSelector).textContent()) === expected;
+    },
+  };
+}
+
+/**
+ * Passes when `innerSelector`'s text inside `frameSelector` contains `expected`
+ * as a substring - the common QA shape for "the email says X somewhere" without
+ * needing to match the whole body verbatim (surrounding whitespace/markup in a
+ * real email template would otherwise break an exact-equality check).
+ * @example Trait.frameContains("#preview-html", "body", "Please verify your account")
+ */
+export function frameContainsText(frameSelector: string, innerSelector: string, expected: string): Trait {
+  return {
+    name: `frame-contains-text(${frameSelector}, ${innerSelector}, ${JSON.stringify(expected)})`,
+    async check(page) {
+      const text = await page.frameLocator(frameSelector).locator(innerSelector).textContent();
+      return (text ?? "").includes(expected);
+    },
+  };
+}
+
+/**
  * Discoverable entry point for the built-in Trait factories - type `Trait.` in
  * an editor to see `url`/`text`/`visible` offered, instead of needing to
  * already know `urlMatches`/`textEquals`/`visible` exist as free functions to
@@ -86,6 +131,9 @@ export const Trait = {
   url: urlMatches,
   text: textEquals,
   visible,
+  frameVisible,
+  frameText: frameTextEquals,
+  frameContains: frameContainsText,
 };
 
 /**

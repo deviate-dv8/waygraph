@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint } from "../../src/index.js";
-import { defineAssertBlock, checkpoint, MemPage } from "../../src/index.js";
+import { defineAssertBlock, checkpoint, MemPage, key } from "../../src/index.js";
 import { runVerify } from "../../src/trait.js";
 
 type Screen = Checkpoint<"Screen">;
@@ -58,5 +58,28 @@ test.describe("defineAssertBlock", () => {
     const b = defineAssertBlock<B>({ name: "assert-b", checkpoint: "B", verify: [] });
     expect(a.instruction.resolve(undefined as never)).toEqual(checkpoint("A"));
     expect(b.instruction.resolve(undefined as never)).toEqual(checkpoint("B"));
+  });
+
+  test("requires is passed through - preflight can catch a missing mem-aware Trait's input before the flow runs", () => {
+    const expectedThing = key<string>("expected-thing");
+    const block = defineAssertBlock<Screen>({
+      name: "assert-mem-aware",
+      checkpoint: "Screen",
+      requires: [expectedThing],
+      verify: [
+        {
+          name: "matches-mem",
+          async check(_page, mem) {
+            return mem.get(expectedThing) === "expected-value";
+          },
+        },
+      ],
+    });
+    expect(block.requires).toEqual([expectedThing]);
+  });
+
+  test("omitting requires leaves it unset, not an empty array - matches every other Block helper", () => {
+    const block = defineAssertBlock<Screen>({ name: "assert-no-requires", checkpoint: "Screen", verify: [] });
+    expect(block.requires).toBeUndefined();
   });
 });

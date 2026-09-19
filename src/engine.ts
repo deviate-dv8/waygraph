@@ -1766,6 +1766,8 @@ export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<
    */
   waitForHeading?: string;
   verify: Trait[] | ((out: Out) => Trait[]);
+  /** Mem keys this assertion's `verify` reads (e.g. a mem-aware Trait) - checked by preflight before the flow runs. */
+  requires?: readonly MemKey<any>[];
   stubBefore?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
   stubAfter?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
   stubOnError?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
@@ -1795,6 +1797,7 @@ export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<st
   return defineMethodBlock<Out, Out>({
     name: options.name,
     ...(options.description ? { description: options.description } : {}),
+    ...(options.requires ? { requires: options.requires } : {}),
     instruction: {
       async act(page) {
         if (options.waitForHeading !== undefined) {
