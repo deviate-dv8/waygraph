@@ -1,178 +1,138 @@
 ## Status (read this first, always)
 
-**State: implemented and verified (M1-M5).** Phase 6 of the "Agent-authoring tooling and
-Waygraph Pilot" roadmap in `ROADMAP.md` - the final phase. **This proposal was corrected
-mid-flight before any code was written**: the first draft wrongly assumed Pilot had to run as
-a sandboxed script embedded into an untrusted end-user page (no Playwright/CDP access), which
-generated a long list of invented hard problems (cross-origin iframe access, synthetic-event
-trust, a native-DOM compatibility shim). Corrected once `AutoSession`'s actual existing
-surface was re-checked: Pilot is a launched Playwright session, exactly like every other
-command in this roadmap, so none of that applies. Scope is small - a plain-language resolver
-plus thin narrate/agentic dispatch over `AutoSession`'s existing, already-proven
-`currentSnapshot()`/`applyPick()`.
+**State: corrected and re-implemented (M1-M4). This change has now been rebuilt twice - both
+times from direct user correction, not internal review. Read both corrections before touching
+anything here again; do not silently narrow or drop either one.**
 
-**Real deviations found during implementation, not anticipated by design.md:**
-1. `src/cli.ts` runs `main().catch(...)` unconditionally at module load with no
-   `import.meta.url` guard - importing anything from it (as design.md's own Decision planned,
-   "reuse `cycleHighlightRings`/`showRing` via export") would trigger the whole CLI's argument
-   dispatch as a side effect of loading `src/pilot.ts`, unsafe for a library module. Its ring
-   renderer is also deeply coupled to CLI-only terminal-logging helpers (`demoLog`/
-   `demoHighlight`/ANSI color codes) that have nothing to do with page rendering. Rather than
-   a risky wide extraction untangling a dozen interdependent functions serving two different
-   concerns, `src/pilot.ts` ships a small, self-contained, narrate-mode-specific ring renderer
-   instead (same visual idea - a highlighted ring + label over the real element - no `cli.ts`
-   dependency, no console output of its own). Documented in `src/pilot.ts`'s own file header.
-2. `pilot` (unlike `auto --cli --detach`) runs `AutoSession.start()` **in-process**, not via a
-   spawned child. `spawnDetachedSession` always re-spawns its child through `bin/waygraph`
-   (which registers `tsx/esm`) regardless of how the outer command was invoked - this is why
-   the existing `auto-session.spec.ts` tests, which only ever talk to spawned sessions, never
-   surfaced this. An in-process command needs `bin/waygraph`'s own loader directly for a
-   consumer project's `.block.ts` files' `.js`-suffixed sibling imports to resolve - confirmed
-   by direct reproduction (bare `node dist/cli.js pilot ask ...` silently sees zero Blocks;
-   `node bin/waygraph pilot ask ...` sees the real menu). Not a bug in `pilot`'s own code -
-   just how a real user actually runs it (`bin/waygraph` is the published entry point); the
-   test suite's own CLI invocation was the thing that needed fixing, not the command.
+**Correction 1 (before any code existed):** the first design draft wrongly assumed Pilot had
+to run as a sandboxed script embedded into an untrusted end-user page (no Playwright/CDP
+access), inventing hard problems (cross-origin iframe access, synthetic-event trust, a
+native-DOM compatibility shim) that don't apply. Corrected once `AutoSession`'s actual
+existing surface was re-checked: Pilot is a launched Playwright session, like every other
+command in this roadmap.
 
-12/16 new tests exercise the real mechanism against live saucedemo.com (`tests/pilot/
-pilot.spec.ts` x8 library-level, `tests/cli/pilot.spec.ts` x4 real-CLI-level), plus 4 more
-pure `resolveAsk` unit tests included in that same file's count - all pass, stable under
-`--repeat-each=2` with real concurrent Playwright sessions. Full project regression suite
-re-confirmed green (197/197).
+**Correction 2 (after the corrected model's first implementation shipped, was tested, and was
+demoed live):** that implementation - `resolveAsk` (deterministic ask-to-edge text matcher),
+`pilotNarrate`/`pilotAct`, a `waygraph pilot ask "<text>" --mode narrate|agentic` CLI command,
+12 real tests against live saucedemo.com, full README/ROADMAP docs - was **entirely removed**
+after the user rejected it: *"this isn't it. its just a glorified waygraph demo --logs
+stuffs... this one you made is just an extended version of this of logs but prettified."* A
+real request is multi-step; matching one ask to one edge and stopping there does not satisfy
+it, no matter how accurate the matching gets. That code is preserved for reference at git tag
+`waygraph-pilot-v1-logs-prettified`, not reachable from any active branch.
 
-**Honest gap, not silently closed:** M3.4/spec.md's "a Block using a bespoke Trait works
-identically to one using only built-in factories" is true by code inspection - nothing in
-`AutoSession`/`src/pilot.ts` branches on Trait kind anywhere, both just call
-`entry.block.instruction.verify`'s Traits generically, same as every other consumer of a
-Block in this codebase - but it has not been exercised by a dedicated *live* test against a
-real bespoke-Trait Block (e.g. `templates/scaffold`'s `assert-email-received`, which needs a
-Docker/Mailpit fixture setup this change didn't invest in, given the underlying claim is
-structural, not scenario-specific). Stated plainly rather than marked done on inspection
-alone, or silently skipped.
+**The re-implementation (this file's current milestones) was proven by hand before being
+written as code**: a real multi-step goal (log in, add an item to cart, complete checkout)
+was driven to `OrderComplete` against live saucedemo.com using only pre-existing commands
+(`auto --cli --detach`, `waygraph graph`, `auto send/status`) - zero new execution
+primitives. The only real, confirmed gap was a convenience: combining session-start and
+graph-discovery into one bootstrap call for an agent, instead of two it would otherwise have
+to know to chain itself. That gap is `pilotStart` / `waygraph pilot start`, below.
 
-- [x] Milestone 1 (M1) - Plain-language resolver
-- [x] Milestone 2 (M2) - Narrate mode
-- [x] Milestone 3 (M3) - Agentic mode
-- [x] Milestone 4 (M4) - `waygraph pilot` CLI entry point
-- [x] Milestone 5 (M5) - In-repo proof
+- [x] Milestone 1 (M1) - Remove the rejected implementation
+- [x] Milestone 2 (M2) - `pilotStart` bootstrap function
+- [x] Milestone 3 (M3) - `waygraph pilot start` CLI entry point
+- [x] Milestone 4 (M4) - In-repo proof
+- [ ] Milestone 5 (M5) - Real-consumer proof (out of scope for this change, tracked
+      separately - see spec.md's own honest-scope requirement)
 
 ---
 
-## M1. Plain-language resolver
+## M1. Remove the rejected implementation
 
-- [x] M1.1 `src/pilot.ts`: `resolveAsk(snapshot: SessionSnapshot, ask: string):
-      ResolvedAsk | null` - flattens `snapshot.sections` into the same reachable-edge list
-      `printCliMenu` already iterates, scores each edge's `description` against `ask`.
-- [x] M1.2 Deterministic token-overlap scoring, confirmed (not just assumed) against real
-      Block descriptions from `examples/saucedemo`: fraction of the ask's own meaningful
-      tokens (stopwords stripped) found in the edge's description, `MIN_CONFIDENCE = 0.34`
-      below which the resolver returns `null`. Real accuracy gap caught by the real test
-      below (not a synthetic case): "submit the login form" tied `fill-password` against
-      `submit-login` because "submits" (description) never matched "submit" (ask) with no
-      stemming, and the tie broke on iteration order toward the wrong edge. Fixed with a
-      small, deterministic suffix-stripping step (`stem()` - strips trailing
-      `ing`/`ed`/`es`/`s`, guarded by minimum lengths) - still the same token-overlap
-      approach, not the embedding/LLM matcher design.md defers, just accurate enough to not
-      lose real, unambiguous ties to an unrelated edge.
-- [x] M1.3 Real tests (`tests/pilot/pilot.spec.ts`): 5 pure tests (no browser) covering an
-      ask matching one reachable edge, a different ask matching a different edge, a
-      well-matching-but-unreachable edge never returned, a genuinely ambiguous ask returning
-      `null`, and an edge with no `description` never matchable. Plus real `SessionSnapshot`
-      data from a real `AutoSession` against `examples/saucedemo` in the M2/M3 tests below,
-      not a hand-built fixture snapshot only.
+- [x] M1.1 Deleted `resolveAsk`, `pilotNarrate`, `pilotAct`, `ResolvedAsk`, `NarrateResult`,
+      the self-contained ring-renderer (`installPilotOverlay`/`showPilotRing`), and all
+      related constants (`STOPWORDS`, `stem`, `tokenize`, `MIN_CONFIDENCE`) from
+      `src/pilot.ts` - none had another consumer once the `pilot ask` CLI case was removed.
+- [x] M1.2 Removed `AutoSession.getPage()` and `AutoSession.peekStubBefore()` from
+      `src/auto-session.ts` - confirmed (via repo-wide grep) both existed solely for the
+      now-removed narrate mode, no other caller anywhere in `src/`/`tests/`.
+- [x] M1.3 Removed the `pilot ask` CLI case from `src/cli.ts`; removed the now-unused
+      `AutoSession` import (confirmed via grep it had no other use in that file); updated
+      `usage()`'s pilot section.
+- [x] M1.4 Updated `src/index.ts`'s exports (`resolveAsk`/`pilotNarrate`/`pilotAct`/
+      `ResolvedAsk`/`NarrateResult` removed).
+- [x] M1.5 Tagged the pre-removal commit `waygraph-pilot-v1-logs-prettified` (annotated,
+      with a message explaining what it was and why it was superseded) - preserves the
+      rejected implementation for reference without keeping it live on `main`.
 
-## M2. Narrate mode
+## M2. `pilotStart` bootstrap function
 
-- [x] M2.1 **Deviated from design.md's original plan** ("export `cycleHighlightRings`/
-      `showRing` from `src/cli.ts`") - see Status above for why. `src/pilot.ts` ships its own
-      small, self-contained `installPilotOverlay`/`showPilotRing` (a CSS ring + label
-      positioned via `getBoundingClientRect`, no `cli.ts` dependency).
-- [x] M2.2 `AutoSession` gained two small, additive, read-only public methods it didn't have
-      before (not anticipated by design.md, a real gap found while wiring this): `getPage()`
-      (the session's live page - narrate mode needs direct Playwright access
-      `currentSnapshot()`/`inspectDom()`'s JSON-only surface deliberately doesn't expose) and
-      `peekStubBefore(blockName)` (a named Block's own `stubBefore` data via the existing
-      `runStubPhase`, without running it - `applyPick` already computes this internally but
-      never exposed it). Both are pure getters/lookups; neither changes any existing method's
-      behavior - confirmed by the full existing `tests/cli/auto-session.spec.ts` suite still
-      passing unmodified.
-- [x] M2.3 `src/pilot.ts`: `pilotNarrate(session, resolved): Promise<NarrateResult>` - looks
-      up the resolved edge's Block's `stubBefore` data via `session.peekStubBefore`, renders
-      the ring via the self-contained renderer against `session.getPage()`, without calling
-      `applyPick`. Throws a clear, named error (not a silent no-op) when the Block has no
-      stub highlight data, or when the highlighted selector doesn't exist on the live page.
-- [x] M2.4 Real test: after `pilotNarrate` runs for a resolved edge, the target element is
-      visibly highlighted on the real page (`#wg-pilot-ring.wg-pilot-visible` actually
-      visible), the real input field it points at is still empty, and the session's own
-      `currentSnapshot().here` is unchanged - proven against real saucedemo.com, not a
-      fixture. A second real test proves the "no stubBefore data" error path fires for a
-      real Block (`submit-logout`) that genuinely has none authored, reached via a full,
-      real three-step login sequence, not a contrived case.
+- [x] M2.1 `src/pilot.ts`: `pilotStart(init: AutoSessionInit): Promise<PilotStartResult>` -
+      runs `spawnDetachedSession(init)` and `discoverGraph(init.projectDir)` in parallel
+      (neither depends on the other), then one `requestSession(..., { op: "status" })`
+      against the now-ready session, returning
+      `{ sessionId, socketPath, headless, graph, snapshot }`.
+- [x] M2.2 No new session-control logic - `spawnDetachedSession`/`discoverGraph`/
+      `requestSession` are all pre-existing, unmodified (Phase 1-3, and the pre-existing
+      `graph` command's own mechanism respectively).
+- [x] M2.3 Real tests (`tests/pilot/pilot.spec.ts`, imported from `dist/` not `src/` per the
+      established dual-module-instance precedent): a real session id/socket path/headless
+      flag are returned; the returned `graph` contains the whole project (Checkpoints/edges
+      not reachable from the starting position included, e.g. `OrderComplete`/`finish-order`
+      from a fresh `LoginPage` start) - not scoped down to the current snapshot; the
+      returned `snapshot.here` matches the session's real starting position; and, separately,
+      that the session really is still alive and driveable afterward - a caller can pick an
+      edge straight out of the returned snapshot and `send` it, then read a fresh `status`,
+      using only the pre-existing IPC surface.
+- [x] M2.4 Real bug found and fixed while writing these tests: the test's own `afterEach`
+      recursively deleted the whole shared `.waygraph-auto/` directory, racing with a
+      sibling test's still-running session under Playwright's default parallel workers
+      (confirmed by reproducing the failure, then fixing it - not assumed). Fixed by relying
+      on each test's own explicit `send "q"` to quit its session, matching
+      `tests/cli/pilot.spec.ts`'s already-correct pattern; both files pass at
+      `--repeat-each=2` under real concurrent Playwright workers afterward.
 
-## M3. Agentic mode
+## M3. `waygraph pilot start` CLI entry point
 
-- [x] M3.1 `src/pilot.ts`: `pilotAct(session, resolved): Promise<ApplyPickResult>` - calls
-      `session.applyPick(String(resolved.edge.index))` directly; no new execution logic.
-- [x] M3.2 Real test: `pilotAct`'s result for a real ask ("fill in my username") is identical
-      (same `ok`, same resulting Checkpoint) to manually calling `applyPick` with that same
-      edge's index directly, run as two separate real sessions against live saucedemo.com -
-      proves this is genuinely the same path, not a parallel one that could drift.
-- [x] M3.3 Real end-to-end test: a full three-step real login (`fill-username` ->
-      `fill-password` -> `submit-login`, each resolved from a fresh plain-language ask
-      against the live post-act snapshot) reaches the real `LoggedIn` Checkpoint via
-      `pilotAct` alone - not a synthetic single-step case.
-- [ ] M3.4 **Deferred to M5 or later, not yet proven**: a resolved edge whose Block uses a
-      bespoke, hand-written Trait (e.g. this repo's own `assert-email-received` from
-      `templates/scaffold`) works identically in both narrate and agentic mode to one using
-      only built-in Trait factories, per spec.md's requirement. Nothing in the implementation
-      restricts this (there is no `recognizable`-style gate at all in this design - see
-      spec.md), but it has not yet been exercised by a real test the way the saucedemo login
-      path has. Flagged honestly rather than marked done on the strength of "the code has no
-      restriction" alone.
+- [x] M3.1 New `pilot` sub-command in `src/cli.ts`:
+      `waygraph pilot start [--non-headless] [--base-url <url>] [--data <json>]` - reuses
+      `parseRunFlags`/`applyRunFlags`, the same shared flag surface `auto`/`demo`/`run`
+      already use. Prints `pilotStart`'s result as JSON; a thrown error is reported with
+      exit code 1, not a silent failure.
+- [x] M3.2 `usage()` text rewritten for the `pilot` section (the old `pilot ask` text
+      described a resolver/narrate/agentic split that no longer exists).
+- [x] M3.3 Real tests (`tests/cli/pilot.spec.ts`, via `bin/waygraph` - `discoverGraph`, run
+      in-process by `pilot start`, imports this project's own `.block.ts` files, which need
+      `tsx/esm` registered; the same reason `waygraph graph` itself has always needed
+      `bin/waygraph`, not a `pilot`-specific concern): a real `pilot start` call returns a
+      real session id/socket path and the whole project graph against live saucedemo.com;
+      that session is still reachable via a separate real `auto status <sessionId>` call
+      afterward; and an unrecognized `pilot` sub-verb (`pilot ask`, the old verb) reports
+      clear usage with exit code 1, not a crash.
 
-## M4. `waygraph pilot` CLI entry point
+## M4. In-repo proof
 
-- [x] M4.1 New `pilot` sub-command in `src/cli.ts` (`waygraph pilot ask "<text>" [--mode
-      narrate|agentic] [--non-headless] [--base-url <url>] [--data <json>]`) - reuses
-      `parseRunFlags`/`applyRunFlags` (the same shared flag surface `auto`/`demo`/`run`
-      already use), not a parallel set of options. `--detach`/persistent multi-ask sessions
-      deliberately not wired - each `pilot ask` call is a single-shot fresh `AutoSession`
-      (starts, resolves, narrates/acts once, closes); a persistent Pilot session is real,
-      separate future work, not required by spec.md's single-ask requirements.
-- [x] M4.2 Wires `resolveAsk` + `pilotNarrate`/`pilotAct` to a real, freshly-started
-      `AutoSession` - reports a clear, real error naming the ask (and current position) when
-      resolution returns no confident match, exit code 1, not a silent no-op. Verified for
-      real against live saucedemo.com: `waygraph pilot ask "fill in my username" --mode
-      agentic` (real field filled, JSON result printed), `waygraph pilot ask "fill in my
-      username" --mode narrate --non-headless` (real visible ring on screen), and
-      `waygraph pilot ask "xyzzy plugh qux"` (clear error, exit code 1).
-
-## M5. In-repo proof
-
-- [x] M5.1 Chose `examples/saucedemo` (not `templates/scaffold`) - `tests/pilot/
-      pilot.spec.ts` already proves the underlying mechanism against it directly (M2/M3), so
-      reusing it for the CLI-level proof too is genuine consistency, not redundant setup work
-      (matching the mail-verification example's own precedent for the identical choice).
-- [x] M5.2 Real end-to-end demo via the real `waygraph pilot` CLI (`tests/cli/pilot.spec.ts`,
-      4 tests, `bin/waygraph` not `dist/cli.js` directly - see the in-process/spawned-child
-      deviation above): agentic mode really filling the username field against live
-      saucedemo.com, narrate mode really resolving and returning the real target
-      selector/label headless, a no-confident-match ask failing loud with exit code 1, and an
-      invalid sub-verb reporting clear usage instead of crashing. Also manually verified
-      headful (`--non-headless`) with a real visible ring on screen, and agentic mode
-      end-to-end via direct terminal runs before the automated tests were written.
-- [x] M5.3 Honest status note (per spec.md's last requirement, also in this file's Status
-      section above): this proof demonstrates the mechanism works in-repo; it does not
-      satisfy `ROADMAP.md`'s original `1.0.0` criterion of "demoable on one real consumer" -
-      that remains separate, later, unmet work.
-- [x] M5.4 `README.md`/`ROADMAP.md` updated: the capability, its reuse of Phase 1-5
-      machinery, both real deviations found during implementation, and the honest 1.0.0-gap
-      note.
-- [x] M5.5 Full in-repo regression suite green (197/197); `npm run build`/`npx tsc --noEmit`
+- [x] M4.1 Chose `examples/saucedemo` (same as before) - consistent with the mail-verify and
+      original Pilot precedent for reusing one already-atomic example rather than adding a
+      second one purely for redundant proof.
+- [x] M4.2 Real end-to-end proof, in two layers: `tests/pilot/pilot.spec.ts` (the library
+      function) and `tests/cli/pilot.spec.ts` (the real CLI), both against live
+      saucedemo.com. Separately, the underlying claim - that an agent can reach a real
+      multi-step goal using only pre-existing commands - was proven by hand via direct shell
+      commands (`auto --cli --detach` -> `waygraph graph` -> repeated `auto send/status`)
+      reaching real `OrderComplete` through login + add-to-cart + checkout + finish-order,
+      before `pilotStart` itself was written; this is the concrete example `design.md`/
+      `ROADMAP.md` both cite.
+- [x] M4.3 `README.md`/`ROADMAP.md` updated: the corrected capability, both corrections
+      (sandboxed-runtime, then one-ask-to-one-edge) stated plainly rather than overwritten,
+      and the honest 1.0.0-scope note carried forward unchanged.
+- [x] M4.4 Full regression suite re-confirmed green: 190/190 across every test directory
+      except `tests/unit/` (a pre-existing, unrelated gap - five files there import `vitest`
+      directly, which isn't installed; confirmed via `git blame` to predate this session by
+      many releases, not something this change touched or introduced). `npm run build`
       clean.
 
 ## Follow-up (explicitly NOT in this change - do not pull forward without a new proposal)
 
-- [ ] A smarter (embedding/LLM-assisted) plain-language matcher than deterministic text
-      similarity.
+- [ ] Blind Pilot: an agent exploring a live site with zero pre-existing Blocks, writing new
+      Block files as it recognizes patterns. Confirmed partially possible today
+      (`AutoSession`/`loadBlockLibrary` tolerate zero `.block.ts` files without throwing),
+      but real gaps remain unbuilt: no raw interaction primitive (`auto click/type/goto`)
+      for acting before any Block exists, and no "write a Block file from what just
+      happened" capability. Tracked in `ROADMAP.md`'s Phase 6b/6c section.
+- [ ] Waygraph Map / Waygraph Router - vision only, tracked in `ROADMAP.md`.
+- [ ] A smarter (embedding/LLM-assisted) plain-language matcher - explicitly not being
+      reconsidered; see spec.md's own requirement against reintroducing a resolver.
 - [ ] Embedding into a real external consumer application, and the associated `1.0.0`
       declaration this change alone does not complete.

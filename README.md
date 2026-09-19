@@ -575,48 +575,53 @@ authored flow/chain (`someAppFlow then mailVerifyFlow`), exactly like `mailVerif
 
 ## Waygraph Pilot
 
-Resolves a plain-language ask ("fill in my username") to a real, reachable Checkpoint using
-each Block's existing `description` (already required - zero new authoring burden), then
-either **narrates** it (highlights the real control, takes no action) or **acts** on it (runs
-the real Block). Built entirely on `AutoSession`'s already-proven Playwright session - not a
-new execution architecture, not code injected into an untrusted page. Because everything runs
-inside the same trusted session as every other command, a Block using a bespoke, hand-written
-Trait works identically to one using only built-in factories.
+Bootstraps a real, persistent, inspectable browser session for an **agent** to discover and
+drive toward a natural-language goal it plans itself - not a tool that resolves one ask to one
+Block internally. A real request is a multi-step task ("log in and buy the backpack for me",
+"make a signature draft request") that needs an agent reasoning over a sequence of Blocks, not
+a single best-matching edge. Comparable in shape to a browser-use-style agent, but the action
+space is constrained to this project's own pre-verified Blocks (each with a real resolve/verify
+already checked) instead of freeform DOM/pixel guessing - narrower, but far more accurate and
+deterministic.
 
 ```bash
-waygraph pilot ask "fill in my username" --mode narrate            # highlight only
-waygraph pilot ask "fill in my username" --mode agentic            # actually run it
-waygraph pilot ask "fill in my username" --mode narrate --non-headless   # visible browser
+waygraph pilot start --non-headless
+# {"sessionId":"bb65d74c","socketPath":"...","headless":false,"graph":{...},"snapshot":{...}}
 ```
 
-Same primitives, callable directly:
+One call gives an agent everything it needs to start: a real, already-running Playwright
+session (the exact mechanism `auto --cli --detach` already provides), and the whole project's
+Block graph (`graph` - every Checkpoint/edge/description, not just what's reachable from the
+current position, so the agent can plan several steps ahead). From there, the agent drives the
+session itself, one pick at a time, using the session-control commands that already existed
+before Pilot did:
 
-```typescript
-import { AutoSession, resolveAsk, pilotNarrate, pilotAct } from "waygraph";
-
-const session = await AutoSession.start({ projectDir: process.cwd(), headless: false });
-const snapshot = await session.currentSnapshot(); // reachable edges from wherever you are now
-const resolved = resolveAsk(snapshot, "fill in my username");
-if (resolved) {
-  await pilotNarrate(session, resolved); // ring + label on the real control
-  // ...or:
-  await pilotAct(session, resolved); // session.applyPick(String(resolved.edge.index)) - runs it for real
-}
-await session.close();
+```bash
+waygraph auto status <sessionId>              # read the current menu (no side effects)
+waygraph auto send <sessionId> "<pick>"       # run one pick, get the resulting menu back
+waygraph auto dom <sessionId>                 # inspect the live DOM/ARIA tree
+waygraph auto trace <sessionId>               # read the Checkpoint/Block history so far
 ```
 
-`resolveAsk` only ever scores edges already present in the given snapshot (itself already
-scoped to what's reachable from `here`) - a well-matching edge elsewhere in the graph that
-isn't reachable right now is never returned, and a genuinely ambiguous ask returns `null`
-rather than a guess. `pilotAct` is literally `session.applyPick(String(edge.index))` - the
-exact same execution path `waygraph auto --cli` already proved end to end, not a parallel one.
+Worked example (run for real against `examples/saucedemo`, no new execution code involved): an
+agent gets a plain request - "log me in and buy the backpack" - reads the graph and the starting
+`status`, reasons out login -> add-to-cart -> cart -> checkout info -> submit -> finish as the
+route to `OrderComplete`, then drives it by repeatedly reading each `status`/`send` response and
+picking the next index itself. The browser stays open the whole time; the user can watch it, or
+check the final tab afterward.
 
-**Honest scope, not silently redefined:** this capability's own proof runs against an
-in-repo example (`examples/saucedemo`), not a real external consumer application - it
-demonstrates the mechanism works, not the "demoable on one real consumer" bar `ROADMAP.md`
-sets for `1.0.0`, which remains separate, later, unmet work. Live reference:
-`tests/pilot/pilot.spec.ts` (the library functions) and `tests/cli/pilot.spec.ts` (the real
-CLI), both proven against live saucedemo.com.
+**Pilot itself does no planning, resolving, narrating, or acting** - `pilotStart`'s only job is
+starting the session and handing back its graph in one round trip; see `src/pilot.ts`. An
+earlier shape (`pilot ask "<text>"`, a deterministic ask-to-one-edge text matcher) was built,
+shipped, and then explicitly rejected as not matching this goal - preserved for reference at git
+tag `waygraph-pilot-v1-logs-prettified`, not on any active branch.
+
+**Honest scope, not silently redefined:** this capability's own proof runs against an in-repo
+example (`examples/saucedemo`), not a real external consumer application - it demonstrates the
+mechanism works, not the "demoable on one real consumer" bar `ROADMAP.md` sets for `1.0.0`,
+which remains separate, later, unmet work. Live reference: `tests/pilot/pilot.spec.ts` (the
+library function) and `tests/cli/pilot.spec.ts` (the real CLI), both proven against live
+saucedemo.com.
 
 ## Getting started (pick one)
 
@@ -702,9 +707,9 @@ whenever a cap is hit, since this is read by an LLM, not a human. `--selector <s
 either mode to one element's subtree instead of the whole page - a modifier on the mode, not
 a third mode.
 
-**Plain-language navigation:** `waygraph pilot ask "<text>"` resolves a free-text ask to a
-real, reachable Block via its `description`, then narrates (highlight only) or acts (runs it
-for real) - see "Waygraph Pilot" above for the full picture.
+**Agent bootstrap:** `waygraph pilot start` starts a `--detach` session and reads back the
+whole project graph in one call, so an agent can begin planning a multi-step request
+immediately - see "Waygraph Pilot" above for the full picture.
 
 Flows are files (0.10.5+):
 

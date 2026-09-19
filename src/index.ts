@@ -179,5 +179,5 @@ export type {
   ApplyPickResult,
   TraceStep,
 } from "./auto-session.js";
-export { resolveAsk, pilotNarrate, pilotAct } from "./pilot.js";
-export type { ResolvedAsk, NarrateResult } from "./pilot.js";
+export { pilotStart } from "./pilot.js";
+export type { PilotStartResult } from "./pilot.js";

@@ -1,72 +1,81 @@
 # waygraph-pilot Specification
 
 ## Purpose
-Resolves a plain-language ask to a real, reachable Checkpoint using each Block's existing
-`description`, then either narrates it (highlights the real control on a real live page) or
-acts on it (runs the real Block) - built entirely on `AutoSession`'s existing, already-proven
-Playwright session, not a new execution architecture.
+Bootstraps an agent's access to a real, persistent, driveable Playwright session in one call
+- the session itself (via the existing `auto --cli --detach` mechanism) plus the whole
+project's Block graph (via the existing `waygraph graph` mechanism) - so an agent can plan
+and execute a multi-step, natural-language goal by driving the session itself through the
+already-existing `auto send/status/dom/trace` surface. Does not itself resolve a
+plain-language ask to a Block, narrate anything, or act on anything - that reasoning belongs
+to whatever agent holds the session.
 
 ## Requirements
 
-### Requirement: The resolver scores an ask against reachable edges' descriptions only
-Given a free-text ask and a live session's current snapshot, the resolver SHALL consider
-only edges reachable from the session's current position (`currentSnapshot()`'s own
-sections/edges), scoring each by similarity between the ask and that edge's `description`.
-It SHALL NOT consider edges that are not currently reachable, and SHALL NOT require any
-Block to supply data beyond what `description` already requires today.
+### Requirement: `pilotStart` combines a real session and the whole project graph in one call
+Given an `AutoSessionInit`, `pilotStart` SHALL start a detached session using the same
+mechanism `auto --cli --detach` uses, and SHALL read back the whole project's Block graph
+using the same mechanism `waygraph graph` uses, returning both plus the session's identity
+and its starting snapshot in a single result.
 
-#### Scenario: An ask matching one reachable edge's description resolves to it
-- **WHEN** an ask closely matches exactly one currently-reachable edge's `description`
-- **THEN** the resolver SHALL return that edge as the top match
+#### Scenario: The returned graph is the whole project, not just what's reachable now
+- **WHEN** `pilotStart` is called against a project whose current position only reaches a
+  small subset of its Checkpoints
+- **THEN** the returned `graph` SHALL include every Checkpoint and edge in the project, not
+  only the ones reachable from the session's starting position
 
-#### Scenario: A well-matching but unreachable edge is never returned
-- **WHEN** an edge elsewhere in the graph would match the ask well but is not reachable from
-  the session's current position
-- **THEN** the resolver SHALL NOT return it
+#### Scenario: The returned session is real and already running
+- **WHEN** `pilotStart` returns
+- **THEN** its `sessionId` SHALL identify a real, already-listening detached session, such
+  that `auto status <sessionId>` (or the equivalent `requestSession` call) against it
+  succeeds immediately without the caller starting anything further
 
-#### Scenario: No confident match is reported as such, not guessed
-- **WHEN** no reachable edge's `description` is a reasonable match for the ask
-- **THEN** the resolver SHALL report no confident match rather than returning the
-  best-of-a-bad-set edge as if it were reliable
+### Requirement: `pilotStart` does not resolve, narrate, or act on anything itself
+`pilotStart` SHALL NOT score a plain-language ask against the graph, SHALL NOT render any
+highlight/overlay, and SHALL NOT run (`applyPick`) any Block on the caller's behalf. Planning
+which Block(s) to run, and actually running them via `auto send <sessionId> "<pick>"`, SHALL
+remain entirely the responsibility of whatever agent is driving the session.
 
-### Requirement: Narrate mode highlights the real control without running the Block
-Given a resolved edge, narrate mode SHALL render that Block's own highlight/ring overlay
-(reusing its `stubBefore` data and the same rendering primitives `waygraph demo` already
-uses) against the session's real, live page, and SHALL NOT call `applyPick` or otherwise run
-the Block.
+#### Scenario: The session's state is unchanged immediately after `pilotStart` returns
+- **WHEN** `pilotStart` returns
+- **THEN** the session's Checkpoint SHALL be exactly its natural starting position (e.g. the
+  result of Phase 1's own `detectHere`) - no Block SHALL have been run as a side effect of
+  bootstrapping
 
-#### Scenario: Narrate mode changes nothing about the page's state
-- **WHEN** narrate mode runs for a resolved edge
-- **THEN** the real target element SHALL be visibly highlighted, and the session's current
-  Checkpoint SHALL be unchanged afterward
+### Requirement: Driving the session afterward uses only pre-existing session-control commands
+An agent holding a `pilotStart` result SHALL be able to drive the session to completion of a
+multi-step goal using only `auto send/status/dom/trace <sessionId>` - commands that already
+existed before this capability did. This capability SHALL NOT introduce any new
+session-control primitive (e.g. a raw click/type/goto command, or a path-finding command
+scoped to a running session) to make this possible.
 
-### Requirement: Agentic mode runs the real Block via the session's existing execution path
-Given a resolved edge, agentic mode SHALL run it by calling the session's own existing
-`applyPick(String(edge.index))` - the same execution path Phase 1 already proved end to end
-- not a separate or reimplemented execution mechanism.
+#### Scenario: A real multi-step goal is reachable using only pre-existing commands
+- **WHEN** an agent is given a multi-step natural-language goal (e.g. "log in and buy an
+  item") against a `pilotStart` session
+- **THEN** the agent SHALL be able to reach the goal's terminal Checkpoint using only
+  repeated `auto send <sessionId> "<pick>"` calls, each chosen by reading the previous
+  `status`/`send` response - proven end to end against real saucedemo.com before this
+  capability's own code was written
 
-#### Scenario: Agentic mode's outcome matches a manual pick of the same edge
-- **WHEN** agentic mode resolves and runs an ask that maps to edge N
-- **THEN** the resulting Checkpoint/trace SHALL be identical to manually picking edge N via
-  the same session's existing `applyPick`
+### Requirement: The rejected one-ask-to-one-edge architecture is not reintroduced
+A prior implementation of this capability (`resolveAsk`/`pilotNarrate`/`pilotAct`, a
+deterministic text-similarity resolver mapping one plain-language ask to one graph edge,
+narrating or running just that edge) was built, proven, demoed, and explicitly rejected as
+not satisfying a real multi-step request. This capability SHALL NOT reintroduce that
+architecture, or any other internal resolver that picks a single Block on the caller's
+behalf, without a new, separate proposal explicitly re-opening that decision.
 
-### Requirement: Every Block kind runs through its own real code, including bespoke Traits
-Because this capability runs entirely inside the same Playwright session Phase 1-5 already
-use (not a separate, untrusted-browser context), a Block's `verify`/`act` SHALL execute
-exactly as authored - a bespoke `{ name, check(page, mem) {...} }` Trait works identically to
-a built-in-factory one, with no `recognizable`-style subset restriction.
-
-#### Scenario: A Block using a bespoke Trait works the same as one using only built-in factories
-- **WHEN** a resolved edge's Block verify uses a hand-written mem-aware Trait
-- **THEN** both narrate and agentic mode SHALL work for it exactly as they do for a Block
-  using only `Trait.url`/`Trait.text`/`Trait.visible`/etc.
+#### Scenario: No exported function scores a plain-language ask against the graph
+- **WHEN** this capability's public surface (`src/pilot.ts`'s exports) is inspected
+- **THEN** it SHALL contain no function that takes a free-text ask and returns a single
+  resolved Block/edge
 
 ### Requirement: Proof is scoped to an in-repo example, not a real external consumer app
-This capability's own proof SHALL demonstrate one real plain-language ask resolving to a
-real narrated highlight and a real agentic run, end to end, against an in-repo example - not
-a real external consumer application. This SHALL be stated explicitly wherever this
-capability's status is reported, distinct from `ROADMAP.md`'s original `1.0.0` criterion
-("demoable on one real consumer"), which this capability alone does not satisfy.
+This capability's own proof SHALL demonstrate `pilotStart` returning a real session and the
+real whole-project graph, and that session remaining alive and driveable afterward, end to
+end, against an in-repo example - not a real external consumer application. This SHALL be
+stated explicitly wherever this capability's status is reported, distinct from
+`ROADMAP.md`'s original `1.0.0` criterion ("demoable on one real consumer"), which this
+capability alone does not satisfy.
 
 #### Scenario: Status reporting does not conflate in-repo proof with the 1.0.0 criterion
 - **WHEN** this capability is reported as implemented and proven

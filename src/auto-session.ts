@@ -302,30 +302,6 @@ export class AutoSession {
   }
 
   /**
-   * The session's own live page, for a caller that needs direct Playwright
-   * access this class's own JSON-only surface (`currentSnapshot`/`inspectDom`)
-   * deliberately doesn't expose - e.g. rendering a highlight overlay against
-   * the real page (see `src/pilot.ts`). Same liveness guarantee every other
-   * method already gets via `ensureLivePage` - never a closed/stale page.
-   */
-  async getPage(): Promise<Page> {
-    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    return this.page;
-  }
-
-  /**
-   * A named Block's own `stubBefore` narration data, for a caller previewing
-   * what a pick would show without actually running it (see `src/pilot.ts`'s
-   * narrate mode). `undefined` for an unknown Block name - never throws, this
-   * is a lookup, not an assertion that the Block exists.
-   */
-  async peekStubBefore(blockName: string): Promise<StubPhaseResult | undefined> {
-    const entry = this.library.byName.get(blockName);
-    if (!entry) return undefined;
-    return runStubPhase(entry.block, "stubBefore");
-  }
-
-  /**
    * Pure getter - reads the live page's structure at the requested fidelity.
    * No Block runs, no mem/page mutation. `selector` scopes either mode to one
    * element's subtree; it is a modifier, not a third mode.

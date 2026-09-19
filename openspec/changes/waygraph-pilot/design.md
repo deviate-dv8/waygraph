@@ -1,120 +1,131 @@
 ## Context
 
-`ROADMAP.md`'s Phase 6 bullet describes compiling a "client-safe static manifest," porting
-`locate()`/`findBlockPath` to run "client-side," and two delivery modes. An earlier pass at
-this proposal took that literally: a sandboxed script embedded into an arbitrary end-user
-page, with no Playwright/CDP access at all. That assumption was wrong, and it's what
-generated a long list of invented hard problems (cross-origin iframe access, synthetic-event
-trust, a native-DOM compatibility shim for a dozen Playwright methods) that don't actually
-apply here.
+`ROADMAP.md`'s Phase 6 bullet describes an agent driving a real app session toward a real
+user's plain-language goal. This design has already gone through two corrections, both from
+direct user rejection, not internal review - both are load-bearing history, not superseded
+detail to prune.
 
-The corrected model, confirmed by re-reading what Phase 1 already built
-(`src/auto-session.ts`): `AutoSession` is a **launched** Playwright session - exactly the
-same execution model every other command in this whole roadmap already uses (`waygraph
-auto`, `waygraph demo`, `waygraph auto --detach`). It already exposes `currentSnapshot()` (a
-live, JSON-serializable menu of every reachable edge, each one already carrying that Block's
-required `description` - confirmed directly in `SessionSnapshotEdge`) and `applyPick(raw)`
-(already runs a real Block for real, end to end, proven by Phase 1's own test suite).
-Nothing about resolving a plain-language ask and then either narrating or running the
-matched edge requires stepping outside that already-proven session model. There is no
-untrusted-browser sandbox to design around, because there is no untrusted browser - it's the
-same Playwright/CDP session Phases 1-5 already run.
+**Correction 1 (before any code existed):** an earlier pass assumed Pilot had to run as a
+script sandboxed inside an untrusted end-user page, no Playwright/CDP access at all. That
+generated a long list of invented hard problems (cross-origin iframe access, synthetic-event
+trust, a native-DOM compatibility shim) that don't actually apply. The corrected model,
+confirmed by re-reading what Phase 1 already built (`src/auto-session.ts`): `AutoSession` is
+a **launched** Playwright session, exactly the same execution model every other command in
+this whole roadmap already uses.
+
+**Correction 2 (after the corrected model's first implementation shipped and was demoed):**
+that first implementation was itself wrong. It shipped `resolveAsk` (deterministic
+token-overlap scoring of a free-text ask against reachable edges' `description` fields),
+`pilotNarrate`/`pilotAct` (highlight vs. run the one resolved edge), and a
+`waygraph pilot ask "<text>" --mode narrate|agentic` CLI command - fully implemented, tested
+(12 tests, all real, against live saucedemo.com), and demoed live. The user's response to
+that demo, verbatim: *"this isn't it. its just a glorified waygraph demo --logs stuffs...
+this one you made is just an extended version of this of logs but prettified."* The gap: a
+real request is multi-step ("log in and buy the backpack for me") and needs an agent
+*planning a route through the graph*, not a tool that internally decides the single
+best-matching edge for one short phrase and stops there. `resolveAsk` was solving the wrong
+problem correctly, not solving the right problem badly - no amount of improving its matching
+accuracy would have closed this gap.
+
+**What the correct shape actually needs, verified directly rather than assumed:** before
+writing any new code, the corrected shape was proven by hand. A detached session was started
+(`auto --cli --detach --non-headless --data '{...}'`), its whole graph read
+(`waygraph graph`), and a real multi-step goal - log in, add an item to the cart, complete
+checkout - was driven to `OrderComplete` using only `auto send <id> "<pick>"` calls, each
+pick chosen by reading the previous `status`/`send` response and reasoning about which edge
+served the goal. This used **zero new session-control primitives** - `auto
+send/status/dom/trace` (Phase 1-3) already did everything needed. The only real gap: an
+agent currently has to know to chain two separate existing commands (`auto --cli --detach`
+for the session, `waygraph graph` for the whole-project context) to bootstrap. That is the
+entire scope of what this change now builds.
 
 ## Roadmap (why this slice, not the whole vision)
 
-1. **This change** - the plain-language resolver, narrate mode (reusing existing highlight
-   rendering), agentic mode (reusing `applyPick` as-is), a `waygraph pilot` CLI entry
-   point, proven in-repo.
-2. **Not in this change - a smarter (embedding/LLM-assisted) plain-language matcher.** A
-   deterministic text-similarity baseline ships; nothing here forecloses a smarter matcher
-   later, but this change does not require calling an external model to produce a working
-   result.
-3. **Not in this change - embedding into a real external consumer application.** Proof stays
+1. **This change** - `pilotStart`: combine `spawnDetachedSession` and `discoverGraph` into
+   one bootstrap call, proven in-repo. Removes the rejected `resolveAsk`/`pilotNarrate`/
+   `pilotAct`/`pilot ask` implementation entirely (preserved at git tag
+   `waygraph-pilot-v1-logs-prettified` for reference, not kept live in the codebase).
+2. **Not in this change - Blind Pilot.** The same mechanism, but for a project with zero
+   pre-existing Blocks: an agent explores a live site cold via the DOM-inspection primitives
+   (`auto dom`/`auto trace`, Phase 2-3), recognizes patterns, and *writes* new Block files as
+   it goes, asking the human clarifying questions it can't resolve from the DOM alone.
+   Confirmed already partially possible today (`AutoSession`/`loadBlockLibrary` tolerate a
+   project with zero `.block.ts` files without throwing - `detectHere`/`locate` return
+   `null` on an empty `navBlocks` list), but a real, unbuilt gap remains: there is currently
+   no raw interaction primitive (`auto click`/`type`/`goto`) for acting on a page before any
+   Block exists, and no "write a Block file from what I just did" capability. Out of scope
+   here - vision only, tracked in `ROADMAP.md`'s Phase 6b/6c section.
+3. **Not in this change - Waygraph Map / Waygraph Router.** A portable, consolidated graph
+   package artifact, and a second, opinionated Next.js-App-Router-style folder convention,
+   respectively. Both vision only, tracked in `ROADMAP.md`, not scoped or designed here.
+4. **Not in this change - a smarter agent embedded as a package feature.** The agent that
+   plans a multi-step route through the graph is external to this package (Claude, or any
+   other LLM with tool-calling) - this package's job is only to hand it a real session and
+   real context, not to embed a planner of its own. Nothing here forecloses a future
+   in-package planning helper, but this change does not need one to be useful.
+5. **Not in this change - embedding into a real external consumer application.** Proof stays
    in-repo, matching Phases 4 and 5's own established precedent for the identical tension.
-   Reaching `1.0.0`'s original "demoable on one real consumer" criterion is a separate, later,
-   explicit step this change does not complete.
-4. **Not a design question this change needs to answer at all (corrected from the earlier
-   draft): how untrusted, sandboxed page-embedded JS would reach cross-origin content, or
-   dispatch trusted-equivalent input.** That constraint only existed under the wrong
-   architecture assumption; under the corrected one (a launched Playwright session), it does
-   not arise, so there is nothing to solve or defer here.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- A plain-language ask resolves to a real, reachable Checkpoint using data every Block
-  already supplies (`description`), scoped correctly to what's actually reachable right now.
-- Narrate mode gives a real, visible pointer to the real control that answers the ask, reusing
-  already-authored, already-rendered highlight data and rendering code.
-- Agentic mode runs the real Block for real, using the exact execution path Phase 1 already
-  proved - no new or parallel execution mechanism.
-- Every Block kind (built-in-Trait-factory-based or bespoke) works identically in both modes,
-  since nothing here runs outside the same trusted Playwright session everything else does.
+- One call gives an agent everything it needs to start driving a multi-step task: a real,
+  already-running session, and the whole project's graph (not just what's reachable right
+  now - multi-step planning needs to see steps ahead).
+- Driving the session afterward uses only commands that already existed before this change
+  (`auto send/status/dom/trace`) - no new execution mechanism.
+- The rejected one-ask-to-one-edge architecture is fully removed, not left dangling as dead
+  or parallel code.
 
 **Non-Goals (this change):**
-- A smarter plain-language matcher than deterministic text similarity (see Roadmap above).
+- Any plain-language resolver, matcher, or Block-picking logic living inside this package.
+  That reasoning belongs to the agent holding the session.
+- Blind Pilot, Waygraph Map, Waygraph Router (see Roadmap above).
 - Embedding into any real external consumer application (see Roadmap above).
-- Anything related to running Block code inside an untrusted, non-Playwright browser context
-  - not applicable under this corrected architecture, not a deferred problem, just not this.
 
 ## Decisions
 
-**Pilot is a new, thin consumer of `AutoSession`'s existing public surface - almost.**
-`currentSnapshot()` and `applyPick()` already do exactly what the resolver and agentic mode
-each need, unmodified. Narrate mode needed two things `AutoSession` genuinely didn't expose
-(a real gap, not anticipated here): direct access to the session's live `page` (its own
-JSON-only surface deliberately hides Playwright objects) and a way to preview a named Block's
-`stubBefore` data without running it (`applyPick` already computes this internally, but never
-returned it). `AutoSession` gained two small, additive, read-only public methods -
-`getPage()` and `peekStubBefore(blockName)` - neither changes any existing method's behavior,
-confirmed by the full pre-existing `auto-session.spec.ts` suite passing unmodified. All
-Pilot-specific logic (the resolver, mode dispatch) still lives in the separate `src/pilot.ts`
-module, not inside `AutoSession` itself - `AutoSession` stays a generic, reusable session
-primitive with a slightly larger read-only surface, not one coupled to Pilot's own concerns.
+**`pilotStart` composes two already-existing, separately-proven primitives - it does not
+wrap them in any new abstraction beyond a single return shape.** `spawnDetachedSession`
+already starts a real, persistent session and waits for its own readiness signal before
+resolving; `discoverGraph` already walks a project's `.block.ts` files into a
+Checkpoint/edge/description graph. `pilotStart` runs both (the graph discovery in parallel
+with the session spawn, since neither depends on the other) and follows up with one `status`
+read against the now-ready session, returning
+`{sessionId, socketPath, headless, graph, snapshot}`. No new server-side session logic, no
+change to `auto`'s existing IPC protocol.
 
-**The plain-language resolver is a small, deterministic text-similarity function, not a
-call to an external model.** Every edge's `description` is already required, short,
-human-written prose - a token-overlap/keyword-similarity score (the concrete algorithm
-decided and justified in tasks.md, not assumed here) is enough to distinguish "add an item to
-my cart" from "check out" from "sign in" reliably, without adding a network dependency or a
-new required API key just to get a working baseline. A smarter matcher is a real, valid
-future upgrade to the same interface, not something this change needs to build to be useful.
+**`AutoSession.getPage()`/`peekStubBefore()` are removed, not kept as unused public API.**
+Both existed solely to support the now-removed narrate mode (direct Playwright page access
+for rendering a highlight ring; previewing a Block's `stubBefore` data without running it).
+Neither has any other consumer. Keeping them "in case a future narrate-like feature wants
+them" would be exactly the kind of speculative surface this project's own conventions argue
+against; if a real future consumer needs them, they can be re-added then, against a real
+requirement.
 
-**Narrate mode ships its own small, self-contained ring renderer - not `src/cli.ts`'s,
-despite the original plan to export and reuse it.** `cycleHighlightRings`/`showRing` do
-exactly the right visual thing, but two real problems surfaced once actually wiring this up:
-`src/cli.ts` runs `main().catch(...)` unconditionally at module load with no
-`import.meta.url` guard, so importing anything from it would trigger the whole CLI's argument
-dispatch as a side effect of loading a library module; and its ring renderer is deeply
-coupled to CLI-only terminal-logging helpers (`demoLog`/`demoHighlight`/ANSI color codes) -
-a different concern than page rendering. Untangling that cleanly would mean a wide extraction
-across a dozen interdependent functions serving two purposes at once - real, but risky, work
-this change didn't take on. `src/pilot.ts` instead ships a small (~60 line), purpose-built
-CSS ring + label renderer with the same visual idea and zero `cli.ts` dependency or console
-output of its own - documented as a deliberate deviation in the file's own header.
+**The rejected implementation is preserved at a git tag, not silently deleted from
+history.** `waygraph-pilot-v1-logs-prettified` marks the commit before removal, with a tag
+message explaining what it was and why it was superseded - satisfies "don't lose work" without
+keeping it live on `main` or re-litigating whether it should come back.
 
-**Agentic mode is `applyPick`, not a new "act on this Block" primitive.** `AutoSession`
-already runs a full act/resolve/verify cycle for real, updates `here`, and records a trace
-step - everything agentic mode needs. Wrapping it in Pilot-specific language (`ask` ->
-resolved edge -> `applyPick(String(edge.index))`) is the entire integration; there is no
-separate execution path to design.
-
-**A resolved-but-unreachable edge is a contradiction the resolver's own scoping prevents,
-not a runtime case to handle.** Because the resolver only ever scores edges already present
-in `currentSnapshot()` (which is itself already scoped to what's reachable from `here`), an
-edge can never be "resolved" without also being reachable - no separate reachability check is
-needed downstream of resolution.
+**No new session-control primitive is added, even though Blind Pilot will eventually need
+one.** The multi-step saucedemo proof (login + add-to-cart + checkout) used only
+`auto send/status`, because that project already has an authored Block library - non-blind
+Pilot's whole premise. A raw `auto click/type/goto` primitive is real, future, separately
+justified work for Blind Pilot (which has no Block library to pick edges from at all), not
+something this change should add speculatively now.
 
 ## Risks / Trade-offs
 
-- [Deterministic text-similarity matching will sometimes be wrong or unconfident on a
-  genuinely ambiguous ask] -> Accepted for this change; "no confident match" is a real,
-  correct outcome for a genuinely ambiguous ask, not a bug to eliminate here.
+- [An agent still has to do its own multi-step planning/reasoning - this package provides no
+  planning assistance beyond the raw graph] -> Accepted, and correct: the planning agent is
+  external (Claude, or any LLM with tool-calling), matching the user's own explicit framing
+  ("browser-use, but sending waygraph commands instead of raw CDP - lesser, but more accurate
+  and deterministic"). This package's job is context + a driveable session, not a planner.
 - [Proof stays in-repo, so this change alone does not satisfy `ROADMAP.md`'s own original
-  `1.0.0` criterion ("demoable on one real consumer")] -> Stated plainly in spec.md and
-  proposal.md rather than silently redefining what `1.0.0` means; reaching it is real,
-  separate, later work.
-- [Narrate mode's visibility depends on the session actually being headful/visible to
-  whoever it's meant to help - a headless narrate run highlights nothing anyone can see] ->
-  Not a new risk - Phase 3 already built `--non-headless` for exactly this; Pilot's CLI
-  entry point exposes the same existing flag rather than inventing a new visibility control.
+  `1.0.0` criterion ("demoable on one real consumer")] -> Stated plainly, same as the
+  previous version of this design; reaching it is real, separate, later work.
+- [Removing `resolveAsk`/`pilotNarrate`/`pilotAct` discards real, working, tested code] ->
+  Deliberate: it solved a problem the user didn't have. Preserved at a git tag for reference,
+  not reintroduced without a new proposal explicitly re-opening that decision (see spec.md's
+  own requirement to this effect).

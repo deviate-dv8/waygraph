@@ -4,29 +4,22 @@ import { promisify } from "node:util";
 import { join } from "node:path";
 
 /**
- * Proof for openspec/changes/waygraph-pilot: the real `waygraph pilot ask`
- * CLI command against real saucedemo.com, not just the library functions
- * directly (already proven in tests/pilot/pilot.spec.ts). Reuses
- * examples/saucedemo (same reasoning as tests/pilot/pilot.spec.ts - one
- * example already exercises the mechanism end to end, a second one would be
- * redundant proof, not additional coverage).
+ * Proof for openspec/changes/waygraph-pilot: the real `waygraph pilot start`
+ * CLI command against real saucedemo.com - the agent-bootstrap replacement
+ * for the old `pilot ask` single-shot resolver (see git tag
+ * waygraph-pilot-v1-logs-prettified for that superseded shape).
  */
 
 const exec = promisify(execFile);
 const node = process.execPath;
-// bin/waygraph, not dist/cli.js directly: `pilot` runs AutoSession.start()
-// in-process (no spawned child, unlike auto --cli --detach's own session,
-// which spawnDetachedSession always re-spawns through bin/waygraph
-// regardless of how the outer command was invoked). bin/waygraph registers
-// tsx/esm, which examples/saucedemo's own .block.ts files' .js-suffixed
-// sibling imports need to resolve correctly - a real, reproducible
-// difference confirmed directly (bare `node dist/cli.js pilot ask ...`
-// silently sees zero Blocks; `node bin/waygraph pilot ask ...` sees the
-// real menu), not a hypothetical one.
+// bin/waygraph, not dist/cli.js directly: `discoverGraph` (run in-process by
+// `pilot start`) imports this project's own .block.ts files, whose
+// .js-suffixed sibling imports need tsx/esm registered - the same reason
+// `waygraph graph` itself has always needed bin/waygraph, not a pilot-specific
+// concern.
 const CLI = join(import.meta.dirname, "..", "..", "bin", "waygraph");
 const sauceRoot = join(import.meta.dirname, "../../examples/saucedemo");
 
-/** The CLI sets exit code 1 on a real, expected failure - stdout still holds the real result. */
 async function runCli(args: string[]): Promise<{ stdout: string; code: number }> {
   try {
     const { stdout } = (await exec(node, [CLI, ...args], { cwd: sauceRoot })) as { stdout: string };
@@ -38,37 +31,42 @@ async function runCli(args: string[]): Promise<{ stdout: string; code: number }>
   }
 }
 
-test("waygraph pilot ask --mode agentic runs the real Block against real saucedemo.com", async () => {
+// No directory-level cleanup here: .waygraph-auto/ is shared by every
+// concurrent Playwright worker, so recursively deleting the whole dir would
+// race with a sibling test's still-running session. Each test below quits
+// its own session explicitly via "auto send ... q" instead.
+
+test("waygraph pilot start returns a real session id, socket path, and the whole project graph", async () => {
   test.setTimeout(30_000);
-  const { stdout, code } = await runCli(["pilot", "ask", "fill in my username", "--mode", "agentic"]);
+  const { stdout, code } = await runCli(["pilot", "start"]);
   expect(code).toBe(0);
   const result = JSON.parse(stdout.trim());
-  expect(result.ok).toBe(true);
-  expect(result.block).toBe("fill-username");
-  expect(result.mode).toBe("agentic");
+  expect(result.sessionId).toMatch(/^[0-9a-f]{8}$/);
+  expect(result.socketPath).toContain(result.sessionId);
+  expect(result.headless).toBe(true);
   expect(result.snapshot.here).toBe("LoginPage");
+  const checkpointNames = result.graph.nodes.map((n: { checkpoint: string }) => n.checkpoint);
+  expect(checkpointNames).toEqual(expect.arrayContaining(["LoginPage", "LoggedIn", "OrderComplete"]));
+
+  await exec(node, [CLI, "auto", "send", result.sessionId, "q"], { cwd: sauceRoot }).catch(() => {});
 });
 
-test("waygraph pilot ask --mode narrate highlights without acting, headless", async () => {
+test("waygraph pilot start's session is really still running afterward - auto status against it succeeds", async () => {
   test.setTimeout(30_000);
-  const { stdout, code } = await runCli(["pilot", "ask", "fill in my username", "--mode", "narrate"]);
+  const { stdout, code } = await runCli(["pilot", "start"]);
   expect(code).toBe(0);
   const result = JSON.parse(stdout.trim());
-  expect(result.ok).toBe(true);
-  expect(result.mode).toBe("narrate");
-  expect(result.selector).toBe("#user-name");
-  expect(result.label).toBe("Username");
+
+  const { stdout: statusOut } = await exec(node, [CLI, "auto", "status", result.sessionId], { cwd: sauceRoot });
+  const status = JSON.parse(statusOut.trim());
+  expect(status.ok).toBe(true);
+  expect(status.snapshot.here).toBe("LoginPage");
+
+  await exec(node, [CLI, "auto", "send", result.sessionId, "q"], { cwd: sauceRoot }).catch(() => {});
 });
 
-test("waygraph pilot ask with no confident match fails loud, exit code 1", async () => {
-  test.setTimeout(30_000);
-  const { stdout, code } = await runCli(["pilot", "ask", "xyzzy plugh qux"]);
-  expect(code).toBe(1);
-  expect(stdout.trim()).toBe("");
-});
-
-test("waygraph pilot ask with the wrong verb reports clear usage, not a crash", async () => {
+test("waygraph pilot with the wrong sub-verb reports clear usage, not a crash", async () => {
   test.setTimeout(15_000);
-  const { code } = await runCli(["pilot", "notaverb"]);
+  const { code } = await runCli(["pilot", "ask"]);
   expect(code).toBe(1);
 });

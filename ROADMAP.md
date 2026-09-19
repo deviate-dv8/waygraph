@@ -248,44 +248,46 @@ Six phases, each independently shippable, in dependency order:
    own mem-aware Traits started reading externally-supplied mem, so preflight can catch a
    missing input before the flow ever runs, not deep inside a Trait check.
    Full spec/design/tasks: `openspec/changes/waygraph-mail-adapters/`.
-6. **Waygraph Pilot - Proposed.** The big pitch: resolve a plain-language ask ("how do I
-   invite a signer") to a real Checkpoint, then either narrate it (highlight the real
-   control) or run it for real - more accurately than a generic vision-based "browser use"
-   agent because it is constrained to a verified, opinionated, site-specific Block graph
-   instead of guessing from pixels each time. An early draft of this proposal wrongly
-   assumed Pilot had to run as a script sandboxed inside an untrusted end-user page with no
-   Playwright/CDP access - that generated a long list of invented hard problems (cross-origin
-   iframe access, synthetic-event trust, a native-DOM compatibility shim) that turned out not
-   to apply at all. Corrected once `AutoSession`'s actual existing surface (Phase 1) was
-   re-checked: Pilot is a **launched Playwright session**, exactly like every other command
-   in this whole roadmap already is - not code injected into an arbitrary tab it doesn't
-   control. `AutoSession.currentSnapshot()` already exposes every reachable edge with that
-   Block's required `description`; `AutoSession.applyPick()` already runs any of them for
-   real, end to end, proven by Phase 1's own test suite. Given that, the actual new work is
-   small: (a) a plain-language resolver scoring an ask against reachable edges'
-   `description` fields (zero new authoring burden - `description` is already required); (b)
-   **narrate mode** - highlight the real control on the session's real live page, no action
-   taken; (c) **agentic mode** - literally `applyPick()` on the resolved edge, the exact same
-   execution path Phase 1 already proved, not a new or parallel mechanism. Because everything
-   runs inside the same trusted Playwright session as every other phase, a Block using a
-   bespoke Trait (this session's own mail-verification work uses several) works identically
-   to one using only built-in Trait factories - no manifest, no client-safe-data restriction,
-   no `recognizable` subset needed at all. Phase 4's atomicity/orphan-Block gates remain a
-   hard prerequisite: a compound Block or a stray `page.goto` is invisible in a passing test
-   but a visibly broken promise when narrated or driven live.
-   **M1-M3 shipped** (`resolveAsk`, narrate mode, agentic mode - all proven end to end
-   against real saucedemo.com in `tests/pilot/pilot.spec.ts`); **M4-M5 (CLI entry point,
-   in-repo proof) not yet done.** Real deviation found while implementing, not anticipated by
-   the design: `src/cli.ts` runs `main()` unconditionally at module load with no
-   `import.meta.url` guard, so importing its ring-rendering code (the original plan) would
-   trigger the whole CLI's argument dispatch as a side effect - `src/pilot.ts` ships its own
-   small, self-contained ring renderer instead, and `AutoSession` gained two small additive
-   getters (`getPage()`, `peekStubBefore()`) it didn't have before. **Honest proof-scope
-   note, matching Phases 4-5's own established precedent:** this change's proof runs against
-   an in-repo example (`examples/saucedemo` or `templates/scaffold`), not a real consumer app
-   - it demonstrates the mechanism works, not the original `1.0.0` criterion ("demoable on one
-   real consumer"), which remains a separate, later, unmet step even once this change ships.
-   Full spec/design/tasks: `openspec/changes/waygraph-pilot/`.
+6. **Waygraph Pilot - shipped, corrected once already.** The big pitch: an **agent** (not
+   this package's own code) discovers a real, persistent, running Playwright session and
+   drives it through a multi-step, natural-language goal ("log in and buy the backpack",
+   "make a signature draft request") it plans itself - more accurately than a generic
+   vision-based "browser use" agent because it is constrained to a verified, opinionated,
+   site-specific Block graph instead of guessing from pixels each time.
+   **Two real corrections along the way, both from direct user feedback, not internal review:**
+   (1) An early design draft wrongly assumed Pilot had to run as a script sandboxed inside an
+   untrusted end-user page with no Playwright/CDP access - invented hard problems
+   (cross-origin iframe access, synthetic-event trust, a DOM compatibility shim) that didn't
+   apply once `AutoSession`'s actual existing surface (Phase 1) was re-checked: Pilot is a
+   **launched Playwright session**, like every other command in this roadmap.
+   (2) The first shipped implementation (`resolveAsk`/`pilotNarrate`/`pilotAct`, a
+   deterministic ask-to-one-edge text matcher plus a `pilot ask "<text>"` CLI command) was
+   built, tested, and demoed end to end against real saucedemo.com - then explicitly rejected:
+   a real request is multi-step, and matching one ask to one edge is "a glorified demo --logs
+   tool," not an agent capable of planning a route through the graph. That code was removed
+   (preserved for reference at git tag `waygraph-pilot-v1-logs-prettified`, not on any active
+   branch) and replaced with the actual shape: `waygraph pilot start` - one call combining
+   `spawnDetachedSession` (same mechanism as `auto --cli --detach`, a real persistent session
+   an agent keeps driving across many calls) and `discoverGraph` (same mechanism as
+   `waygraph graph`, the *whole* project graph, not just what's reachable right now, so an
+   agent can plan several steps ahead) into one bootstrap payload
+   `{sessionId, socketPath, headless, graph, snapshot}`. Driving the session afterward -
+   `auto send/status/dom/trace <sessionId>` - needed **zero new execution primitives**: all
+   four already existed from Phases 1-3, confirmed by hand-driving a real multi-step login +
+   add-to-cart + checkout + finish-order sequence against saucedemo.com through them directly
+   before writing any new code. Because everything runs inside the same trusted Playwright
+   session as every other phase, a Block using a bespoke Trait works identically to one using
+   only built-in Trait factories - no manifest, no client-safe-data restriction needed at all.
+   Phase 4's atomicity/orphan-Block gates remain a hard prerequisite: a compound Block or a
+   stray `page.goto` is invisible in a passing test but a visibly broken promise when an agent
+   is driving the session live.
+   **Shipped**: `pilotStart`, `waygraph pilot start` CLI entry point, in-repo proof
+   (`tests/pilot/pilot.spec.ts`, `tests/cli/pilot.spec.ts`, both against live saucedemo.com).
+   **Honest proof-scope note, matching Phases 4-5's own established precedent:** this proof
+   runs against an in-repo example (`examples/saucedemo`), not a real consumer app - it
+   demonstrates the mechanism works, not the original `1.0.0` criterion ("demoable on one
+   real consumer"), which remains a separate, later, unmet step. Full spec/design/tasks:
+   `openspec/changes/waygraph-pilot/`.
 
 ### Phase 6b/6c - Blind Pilot, Waygraph Map, Waygraph Router (vision only - not proposed, not scoped)
 
