@@ -41,10 +41,11 @@ are unchanged" is a hard requirement, not just a goal.
       mem seed, browser/context/page launch - same shape as `runAutoExplore`'s `cli` branch),
       `currentSnapshot()`, `applyPick(raw)`, `close()`. Missing mem always fails loud
       (`ensureMem(..., false)`) rather than prompting - a detached session has no TTY.
-- [ ] M1.5 Prove zero behavior change: full existing suite green, plus a manual run of both
+- [x] M1.5 Prove zero behavior change: full existing suite green, plus a manual run of both
       foreground `--cli` and headful `waygraph auto` confirming byte-for-byte unchanged
-      behavior (no shared code path was touched, so this is confirming the negative). Deferred
-      to M4's proof pass, once the CLI commands exist to exercise end to end.
+      behavior (no shared code path was touched, so this is confirming the negative). Done as
+      part of M4's proof pass (M4.3's 174/174 full-suite run) - checkbox corrected here since
+      it was never flipped after M4 actually completed this.
 
 ## M2. `--detach` + background server
 
