@@ -47,7 +47,7 @@ otherwise.
 | Visible-browser sessions + Checkpoint/Block trace (`--non-headless`, `auto trace`) | Shipped - `openspec/changes/waygraph-auto-headful-trace/` |
 | Agent-skill hardening (one-action-per-Block, `defineAssertBlock`, Sel enforcement, orphan gates) | Shipped - `openspec/changes/waygraph-agent-skill-hardening/` |
 | Mail verification (browser-driven, `*-external/<tool>/` convention) | Shipped (Mailpit) - `openspec/changes/waygraph-mail-adapters/` |
-| Waygraph Copilot (embeddable end-user navigation agent) | Roadmap only - see "Agent-authoring tooling" below |
+| Waygraph Copilot (embeddable end-user navigation agent) | Proposed (narrate mode only, scope narrowed - see below) - `openspec/changes/waygraph-copilot/` |
 | Narrated help-center video generation (core `waygraph render`) | Deferred to v1.0.x (`waygraph-demo` module) - not current focus, see below |
 | Stability declaration (1.0.0) | Gated on Waygraph Copilot demoable - see "1.0.0" below |
 
@@ -248,25 +248,39 @@ Six phases, each independently shippable, in dependency order:
    own mem-aware Traits started reading externally-supplied mem, so preflight can catch a
    missing input before the flow ever runs, not deep inside a Trait check.
    Full spec/design/tasks: `openspec/changes/waygraph-mail-adapters/`.
-6. **Waygraph Copilot - embeddable end-user navigation agent.** The big pitch: inject
-   waygraph into an agent that shows a real end user their own application, live, and
-   helps them navigate it - more accurately than a generic vision-based "browser use" agent
-   because it is constrained to a verified, opinionated, site-specific Block graph instead
-   of guessing from pixels each time. Reuses infrastructure already built for QA/demo, not
-   a rewrite: (a) compile `discoverGraph`'s output into a client-safe static manifest
-   (checkpoints, edges, each Block's description/verify/selector/`requires`) instead of
-   reading `.block.ts` off disk; (b) port `locate()` and `findBlockPath` to run client-side
-   against that manifest and the user's real DOM; (c) resolve a plain-language ask ("how do
-   I invite a signer") to a target Checkpoint using each Block's existing required
-   `description` field as the semantic index - zero new authoring burden; (d) two delivery
-   modes on the same path - **narrate** (reuse the existing ring/highlight/todo-dock overlay
-   to point at the real control, safer default) and **agentic** (execute the Block chain for
-   real against the user's authenticated session, same `runGraph` semantics QA already
-   uses). Phase 4's atomicity/orphan-Block gates are a hard prerequisite here, not cleanup:
-   a compound Block or a stray `page.goto` is invisible in a passing test but a visibly
-   broken promise when narrated or driven live in front of a real customer. Proof: embed
-   against one real consumer app, using its existing waygraph Block library post-Phase-4
-   cleanup, and demo one real "how do I do X" ask end-to-end, narrate then agentic.
+6. **Waygraph Copilot - embeddable end-user navigation agent - Proposed, scope narrowed to
+   narrate mode.** The big pitch: inject waygraph into an agent that shows a real end user
+   their own application, live, and helps them navigate it - more accurately than a generic
+   vision-based "browser use" agent because it is constrained to a verified, opinionated,
+   site-specific Block graph instead of guessing from pixels each time. Reading the actual
+   code (`discoverGraph`, `locate()`, `runStubPhase`) before proposing surfaced real
+   constraints the original framing below hadn't accounted for: `WaygraphEdge` carries no
+   `description`/`requires`/`verify` data today (the "client-safe manifest" needs a real new
+   compiler, not just a re-export); and a Block's `verify` is only reconstructable as
+   client-safe *data* when built from the six built-in `Trait` factories - a bespoke
+   `{ name, check(page, mem) {...} }` Trait (used throughout this session's own
+   mail-verification work) is arbitrary code that cannot be safely shipped to an untrusted
+   end-user browser, so such Blocks are marked `recognizable: false` rather than silently
+   guessed at. Original four-part design, now split: (a) compile `discoverGraph`'s output
+   into a client-safe static manifest (checkpoints, edges, each Block's description/
+   `requires`/a data-only `verify` when recognizable) instead of reading `.block.ts` off
+   disk; (b) port `locate()`/`findBlockPath` to run client-side, Playwright-free, against
+   that manifest and the user's real DOM; (c) resolve a plain-language ask ("how do I invite
+   a signer") to a target Checkpoint using each Block's existing required `description` field
+   - zero new authoring burden; (d) **narrate mode only** in this change (reuse the existing
+   `stubBefore`/highlight data, computed once at compile time, to point at the real control) -
+   **agentic mode (execute the Block chain for real against the user's live session) is
+   explicitly deferred**, since it needs a Playwright-Locator-to-native-DOM compatibility
+   layer (every existing Block's `act()` calls Playwright APIs with no browser-native
+   equivalent) - real, substantial, unsolved work, not bundled in speculatively. Phase 4's
+   atomicity/orphan-Block gates remain a hard prerequisite: a compound Block or a stray
+   `page.goto` is invisible in a passing test but a visibly broken promise when narrated live.
+   **Honest proof-scope note, matching Phases 4-5's own established precedent:** this
+   change's proof embeds against an in-repo example (`examples/saucedemo` or
+   `templates/scaffold`), not a real consumer app - it demonstrates the mechanism works, not
+   the original `1.0.0` criterion ("demoable on one real consumer"), which remains a separate,
+   later, unmet step even once this change ships. Full spec/design/tasks:
+   `openspec/changes/waygraph-copilot/`.
 
 ## Narrated help-center video generation (planned - deferred to v1.0.x)
 
@@ -303,8 +317,14 @@ pipeline per consumer:
 
 **Decided 2026-09-19: 1.0.0 = Waygraph Copilot demoable on one real consumer** (Phase 6's
 own proof bar - narrate mode working end-to-end against a real consumer app, using its
-existing waygraph Block library). This supersedes the earlier criteria below, which move to
-the regular post-1.0.0 roadmap instead of gating the release:
+existing waygraph Block library). Phase 6's own proposal (`openspec/changes/waygraph-copilot/`)
+independently landed on narrate-mode-only as its scope too (agentic mode deferred - see
+Phase 6 above), so the *mode* matches this criterion already; what the proposal's own proof
+cannot satisfy from inside this repo is "one real consumer" specifically - its proof is
+scoped to an in-repo example, matching Phases 4-5's own established precedent. Reaching this
+1.0.0 criterion for real still needs a separate, later step: actually embedding the shipped
+Phase 6 capability into one real consumer project. This supersedes the earlier criteria
+below, which move to the regular post-1.0.0 roadmap instead of gating the release:
 
 - `locate()`'s split-`requires` follow-up (externally-supplied vs producedBy-another-Block)
 - Federated pool of waygraphs (autonomous-mode phase 3)
