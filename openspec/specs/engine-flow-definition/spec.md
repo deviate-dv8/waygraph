@@ -38,3 +38,14 @@ the flow's terminal Checkpoint.
 #### Scenario: Running a flow returns its terminal Checkpoint
 - **WHEN** a defined Flow is run against a real browser context and a MemPage
 - **THEN** it SHALL return the Checkpoint the flow's last Block resolved to
+
+### Requirement: Run accepts an optional additive options argument
+`Flow.run` and `runGraph` SHALL accept a trailing, optional options argument for driving an
+already-open page and/or controlling whether the run's page closes on finish. This SHALL be
+additive only - every pre-existing call signature SHALL continue to compile and behave
+identically with no options given. Full behavior: `flow-run-tab-options` capability.
+
+#### Scenario: No options still behaves exactly as before
+- **WHEN** a Flow is run as `flow.run(context, mem)` with no trailing options
+- **THEN** it SHALL open and close its own page exactly as it did before this capability
+  existed
