@@ -1,6 +1,8 @@
 import { Engine, start, end, withTitle, withSessionReset, withExpectedFailure } from "waygraph";
 import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
-import { SubmitLoginActionBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
+import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
+import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
+import { SubmitLoginBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
 
 const engine = new Engine();
 
@@ -22,7 +24,9 @@ const engine = new Engine();
 // "expected outcome" panel (branching no longer throws).
 export const viewerBlockedFlow = withExpectedFailure(
   withTitle(
-    withSessionReset(engine.defineFlow([start, NavLoginBlock, SubmitLoginActionBlock, end])),
+    withSessionReset(
+      engine.defineFlow([start, NavLoginBlock, FillUsernameBlock, FillPasswordBlock, SubmitLoginBlock, end]),
+    ),
     "Viewer: Blocked Login Attempt",
   ),
   "locked_out_user stays on LoginPage with the error banner - this is the product working as intended.",

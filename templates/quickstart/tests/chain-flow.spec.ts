@@ -38,16 +38,23 @@ test("chainFlow blocks() lists the flattened episode chain in order", () => {
   const blocks = chainFlow(loginFlow, shopFlow, viewerBlockedFlow).blocks();
   expect(blocks.map((b) => b.name)).toEqual([
     "nav-login",
+    "fill-username",
+    "fill-password",
     "submit-login",
     "add-to-cart",
     "nav-cart",
     "nav-checkout-info",
+    "fill-first-name",
+    "fill-last-name",
+    "fill-postal-code",
     "submit-checkout-info",
     "finish-order",
     "nav-login",
+    "fill-username",
+    "fill-password",
     "submit-login",
   ]);
-  expect(blocks.every((b, i) => (i === 7 ? b.resetSessionBefore === true : !b.resetSessionBefore))).toBe(
+  expect(blocks.every((b, i) => (i === 12 ? b.resetSessionBefore === true : !b.resetSessionBefore))).toBe(
     true,
   );
 });

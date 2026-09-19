@@ -2,6 +2,7 @@ import { defineNavClickBlock, Trait } from "waygraph";
 import type { StubCtx } from "waygraph";
 import type { CartPage } from "../../../states/checkout.states.js";
 import { InventorySel } from "../inventory/methods/inventory-items.js";
+import { CartSel } from "./cart.sel.js";
 
 /**
  * Kind: Nav
@@ -14,29 +15,32 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
   name: "nav-cart",
   description: "Clicks the cart link in the header.",
   checkpoint: "CartPage",
-  click: ".shopping_cart_link",
+  click: CartSel.cartLink,
   verify: [Trait.url({ pathname: "/cart.html" })],
   stubBefore: (ctx: StubCtx) => {
     ctx.title("Open cart · landscape");
-    // Device showcase: rotate tablet to landscape before the cart tap.
     ctx.landscape();
-    ctx.todoId("saucedemo-cart");
-    ctx.todos([
-      { id: "cart-find", text: "Find the product" },
-      { id: "cart-add", text: "Add to cart" },
-      { id: "cart-open", text: "Open cart" },
-    ]);
-    ctx.todoIndex(2);
+    ctx.todos(
+      "saucedemo",
+      [
+        { id: "login-user", text: "Enter username", done: true },
+        { id: "login-pass", text: "Enter password", done: true },
+        { id: "login-submit", text: "Tap Login", done: true },
+        { id: "cart-find", text: "Find the product", done: true },
+        { id: "cart-add", text: "Add to cart", done: true },
+        { id: "cart-open", text: "Open cart" },
+      ],
+      { title: "Device showcase", index: 5 },
+    );
     ctx.zoom(1.4);
     ctx.zoomOut(false);
     ctx.highlights({
       cart: {
-        selector: ".shopping_cart_link",
+        selector: CartSel.cartLink,
         label: "Cart",
-        detail: "Zoom cart chrome",
+        detail: "Open cart",
         focus: true,
         color: "#c9a6ff",
-        zoom: 1.55,
         zoomOut: false,
         followMouse: false,
         weight: "bold",
@@ -46,16 +50,16 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
   },
   stubAfter: (ctx: StubCtx) => {
     ctx.banner("Your cart · desktop");
-    // Showcase finale: back to desktop.
     ctx.clearDevice();
-    ctx.zoomOut(false);
+    ctx.hideTodos();
+    ctx.zoomOut(true);
     ctx.ring("items", {
       selector: InventorySel.cartItem,
       label: "Cart items",
       detail: "Product landed in cart",
       focus: true,
       color: "#86efac",
-      zoom: 1.4,
+      zoomOut: true,
       followMouse: false,
       duration: true,
     });

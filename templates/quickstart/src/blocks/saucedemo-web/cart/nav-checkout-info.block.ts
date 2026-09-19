@@ -1,5 +1,6 @@
 import { defineNavClickBlock, Trait } from "waygraph";
 import type { CheckoutInfoPage } from "../../../states/checkout.states.js";
+import { CartSel } from "./cart.sel.js";
 
 /**
  * Kind: Nav
@@ -12,6 +13,6 @@ export const NavCheckoutInfoBlock = defineNavClickBlock<CheckoutInfoPage>({
   name: "nav-checkout-info",
   description: "Clicks 'Checkout' on the cart page.",
   checkpoint: "CheckoutInfoPage",
-  click: "#checkout",
+  click: CartSel.checkoutBtn,
   verify: [Trait.url({ pathname: "/checkout-step-one.html" })],
 });

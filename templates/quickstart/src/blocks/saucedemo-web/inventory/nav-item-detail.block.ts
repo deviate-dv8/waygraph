@@ -3,7 +3,7 @@ import type { ItemDetailPage } from "../../../states/checkout.states.js";
 import { SelectedItem } from "../../../states/checkout.mem-keys.js";
 import {
   collectInventoryItems,
-  inventoryItemTitleSelector,
+  InventorySel,
 } from "./methods/inventory-items.js";
 
 /**
@@ -19,7 +19,7 @@ export const NavItemDetailBlock = defineMemNavBlock<ItemDetailPage>({
   description: "Opens the product named by mem (saucedemo.selectedItem) on its detail page.",
   checkpoint: "ItemDetailPage",
   requires: [SelectedItem.key],
-  click: (mem) => inventoryItemTitleSelector(mem.get(SelectedItem.key).id),
+  click: (mem) => InventorySel.title(mem.get(SelectedItem.key).id),
   verify: [Trait.url({ pathname: "/inventory-item.html" })],
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     const items = await collectInventoryItems(page);
@@ -28,7 +28,7 @@ export const NavItemDetailBlock = defineMemNavBlock<ItemDetailPage>({
       label: `Open "${item.name}" details`,
       key: SelectedItem.key,
       value: item,
-      highlight: inventoryItemTitleSelector(item.id),
+      highlight: InventorySel.title(item.id),
     }));
   },
 });

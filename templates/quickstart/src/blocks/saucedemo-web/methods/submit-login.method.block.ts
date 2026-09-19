@@ -1,6 +1,6 @@
 import { defineMethodBlock, checkpoint, Trait, type StubCtx } from "waygraph";
 import type { LoginPage, LoginSubmitOutcome } from "../../../states/checkout.states.js";
-import { LoginCreds } from "../../../states/checkout.mem-keys.js";
+import { LoginSel } from "./login.sel.js";
 
 type LoginObserve = "success" | "failure";
 
@@ -9,30 +9,26 @@ type LoginObserve = "success" | "failure";
  * Helper: defineMethodBlock
  * Route: saucedemo-web/methods/  (page URL /)
  *
- * Fills credentials and submits - never page.goto (nav-login Page hub owns that).
+ * Clicks Login only - never page.goto (nav-login Page hub owns that), never
+ * fills fields (fill-username.method.block.ts / fill-password.method.block.ts
+ * already did that). One Block, one action: submit.
  * Branches: good creds -> LoggedIn; bad/locked -> LoginPage with error banner.
- * stubBefore/stubAfter drive the floating todo dock (Method fill/click advances
- * todoIndex mid-act; stubAfter marks complete / fail).
  */
-export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOutcome>({
+export const SubmitLoginBlock = defineMethodBlock<LoginPage, LoginSubmitOutcome>({
   name: "submit-login",
-  description: "Logs a user in when credentials are valid; stays on LoginPage when auth fails.",
-  requires: [LoginCreds.key],
+  description: "Submits the login form; stays on LoginPage when auth fails.",
   instruction: {
-    async act(page, _input, mem) {
-      const { username, password } = mem.get(LoginCreds.key);
-      await page.locator("#user-name").fill(username);
-      await page.locator("#password").fill(password);
+    async act(page) {
       // noWaitAfter: observe owns the inventory URL wait. Default click
       // navigation-wait can hang under waygraph auto's demo cursor patch.
-      await page.locator("#login-button").click({ noWaitAfter: true });
+      await page.locator(LoginSel.loginButton).click({ noWaitAfter: true });
     },
     async observe(page): Promise<LoginObserve> {
       // Race inventory nav vs error banner - locked_out / wrong password show
       // Epic sadface immediately; do not burn the full inventory timeout.
       const inventory = page.waitForURL(/\/inventory\.html/, { timeout: 8_000 }).then(() => "success" as const);
       const errorBanner = page
-        .locator('[data-test="error"]')
+        .locator(LoginSel.errorBanner)
         .first()
         .waitFor({ state: "visible", timeout: 8_000 })
         .then(() => "failure" as const);
@@ -46,40 +42,13 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
     verify: (out) =>
       out.__state === "LoggedIn"
         ? [Trait.url({ pathname: "/inventory.html" })]
-        : [Trait.visible('[data-test="error"]')],
-    // Open lifecycle: banner title, todos, Screen Studio camera zoom,
-    // sequential highlight queue (appear / dwell / fade), focus + color.
+        : [Trait.visible(LoginSel.errorBanner)],
     stubBefore: (ctx: StubCtx) => {
-      ctx.title("Signing in · mobile");
-      // 0.13.3: mobile portrait + touch; tap Login.
-      ctx.device("mobile");
-      ctx.portrait();
-      ctx.todoId("saucedemo-login");
-      ctx.todos([
-        { id: "login-user", text: "Enter username" },
-        { id: "login-pass", text: "Enter password" },
-        { id: "login-submit", text: "Tap Login" },
-      ]);
-      ctx.todoIndex(0);
-      ctx.zoom(1.35);
       ctx.highlights({
-        username: {
-          selector: "#user-name",
-          label: "Username",
-          focus: true,
-          color: "#c9a6ff",
-          zoom: 1.4,
-        },
-        password: {
-          selector: "#password",
-          label: "Password",
-          focus: true,
-          color: "#c9a6ff",
-          zoom: 1.4,
-        },
         submit: {
-          selector: "#login-button",
+          selector: LoginSel.loginButton,
           label: "Login",
+          todo: "login-submit",
           focus: true,
           color: "#86efac",
           zoom: 1.55,
@@ -89,19 +58,19 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
       });
     },
     stubAfter: (ctx: StubCtx) => {
-      // Fail branch lands on LoginPage with Epic sadface - do not ring the
-      // inventory shelf. Success (LoggedIn) hands off to shopFlow.
       if (ctx.out && ctx.out.__state === "LoginPage") {
         ctx.title("Login blocked");
-        ctx.todoId("saucedemo-login");
-        ctx.todos([
-          { id: "login-user", text: "Enter username", done: true },
-          { id: "login-pass", text: "Enter password", done: true },
-          { id: "login-submit", text: "Click Login", done: true },
-        ]);
-        ctx.todoStyle("checklist");
+        ctx.todos(
+          "saucedemo",
+          [
+            { id: "login-user", text: "Enter username", done: true },
+            { id: "login-pass", text: "Enter password", done: true },
+            { id: "login-submit", text: "Click Login", done: true },
+          ],
+          { title: "Sign in", style: "checklist" },
+        );
         ctx.ring("error", {
-          selector: '[data-test="error"]',
+          selector: LoginSel.errorBanner,
           label: "Login error banner",
           tone: "danger",
           focus: true,
@@ -111,16 +80,19 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
         return;
       }
       ctx.banner("Inventory · landscape");
-      // Rotate mobile to landscape on the product shelf (toast + lerp).
       ctx.landscape();
-      ctx.todoId("saucedemo-login");
-      ctx.todos([
-        { id: "login-user", text: "Enter username" },
-        { id: "login-pass", text: "Enter password" },
-        { id: "login-submit", text: "Click Login" },
-      ]);
-      ctx.todoIndex(2);
-      // Landed on inventory - hand off to shopFlow for product -> cart zoom.
+      ctx.todos(
+        "saucedemo",
+        [
+          { id: "login-user", text: "Enter username", done: true },
+          { id: "login-pass", text: "Enter password", done: true },
+          { id: "login-submit", text: "Tap Login", done: true },
+          { id: "cart-find", text: "Find the product" },
+          { id: "cart-add", text: "Add to cart" },
+          { id: "cart-open", text: "Open cart" },
+        ],
+        { title: "Device showcase", index: 3 },
+      );
       ctx.ring("shelf", {
         selector: ".inventory_list",
         label: "Product shelf",
@@ -134,7 +106,7 @@ export const SubmitLoginActionBlock = defineMethodBlock<LoginPage, LoginSubmitOu
     stubOnError: (ctx: StubCtx) => {
       ctx.title("Login failed");
       ctx.ring("error", {
-        selector: '[data-test="error"]',
+        selector: LoginSel.errorBanner,
         label: "Login error banner",
         tone: "danger",
         focus: true,

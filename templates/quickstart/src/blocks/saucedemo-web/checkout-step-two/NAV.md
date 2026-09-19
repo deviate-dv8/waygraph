@@ -15,7 +15,9 @@ Order overview / finish page.
 | File | Kind | Notes |
 |------|------|-------|
 | `methods/finish-order.method.block.ts` | Method | Finish -> thank-you / OrderComplete |
+| `methods/checkout-overview.sel.ts` | helper | `CheckoutOverviewSel` (not a Block) |
 
 ## Related mem keys / checkpoints
 
 - Checkpoints: `CheckoutOverviewPage`, `OrderComplete`
+- Sel: `CheckoutOverviewSel` (`methods/checkout-overview.sel.ts`) - DOM only, not mem
