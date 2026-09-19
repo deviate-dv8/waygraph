@@ -21,6 +21,8 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./graph.js";
 import { runAutoExplore } from "./auto-explore-run.js";
+import { AutoSession } from "./auto-session.js";
+import { resolveAsk, pilotNarrate, pilotAct } from "./pilot.js";
 import {
   spawnDetachedSession,
   requestSession,
@@ -7028,6 +7030,16 @@ Primary (less is more):
                  --depth N                 Limit snapshot depth (aria: native; full: caller cap)
   waygraph auto trace <sessionId>          Read the session's Checkpoint/Block-level history
                                            (no side effects; not raw click/fill recording)
+  waygraph pilot ask "<text>"              Resolve a plain-language ask to a reachable Block
+                                           via its description, then narrate or act on it -
+                                           a fresh AutoSession, non-blind (needs this
+                                           project's own Block library, same as auto/traverse)
+                 --mode narrate|agentic    Default narrate: highlight the real control, take
+                                           no action. agentic: actually run the real Block
+                                           (same execution path as a manual auto --cli pick)
+                 --non-headless            Show the real browser (needed to actually see a
+                                           narrate-mode highlight - default headless)
+                 --base-url / --data       Same as auto/demo/run
   waygraph demo  [--blocks <flow|file|spec>]  Watch with step overlay (QA path)
                  --data '{...}'            Mem seed JSON (or inline flow({...}))
                  --auto-next               Auto-advance steps (alias: --autoplay)
@@ -7676,6 +7688,61 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
       }
       const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? resolveBaseUrl(proj);
       await runAutoExplore(proj, baseURL ? { cli: cliPicker, baseURL } : { cli: cliPicker });
+      break;
+    }
+
+    case "pilot": {
+      if (args[1] !== "ask") {
+        console.error('waygraph pilot: usage: waygraph pilot ask "<text>" [--mode narrate|agentic] [--non-headless] [--base-url <url>] [--data <json>]');
+        process.exit(1);
+      }
+      const ask = args[2];
+      if (!ask) {
+        console.error('waygraph pilot ask: missing "<text>" - usage: waygraph pilot ask "<text>"');
+        process.exit(1);
+      }
+      const flags = parseRunFlags(args.slice(3));
+      applyRunFlags(flags);
+      let mode: "narrate" | "agentic" = "narrate";
+      const modeIdx = args.indexOf("--mode");
+      if (modeIdx >= 0) {
+        const v = args[modeIdx + 1];
+        if (v !== "narrate" && v !== "agentic") {
+          console.error(`waygraph pilot ask: --mode must be "narrate" or "agentic", got "${v}"`);
+          process.exit(1);
+        }
+        mode = v;
+      }
+      const proj = resolve(process.cwd());
+      const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? resolveBaseUrl(proj);
+      const headless = !flags.nonHeadless;
+      const session = await AutoSession.start({
+        projectDir: proj,
+        headless,
+        ...(baseURL ? { baseURL } : {}),
+      });
+      try {
+        const snapshot = await session.currentSnapshot();
+        const resolved = resolveAsk(snapshot, ask);
+        if (!resolved) {
+          console.error(`waygraph pilot ask: no confident match for "${ask}" from here (${snapshot.here ?? "start"})`);
+          process.exitCode = 1;
+          break;
+        }
+        if (mode === "narrate") {
+          const result = await pilotNarrate(session, resolved);
+          console.log(JSON.stringify({ ok: true, mode, score: resolved.score, ...result }));
+          // A human watching headful needs a moment to actually see the ring
+          // before the session (and its browser) closes underneath it.
+          if (!headless) await new Promise((r) => setTimeout(r, 2500));
+        } else {
+          const result = await pilotAct(session, resolved);
+          console.log(JSON.stringify({ mode, score: resolved.score, block: resolved.edge.block, ...result }));
+          if (!result.ok) process.exitCode = 1;
+        }
+      } finally {
+        await session.close();
+      }
       break;
     }
 

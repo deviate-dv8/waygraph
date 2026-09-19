@@ -23,7 +23,7 @@ same Playwright/CDP session Phases 1-5 already run.
 ## Roadmap (why this slice, not the whole vision)
 
 1. **This change** - the plain-language resolver, narrate mode (reusing existing highlight
-   rendering), agentic mode (reusing `applyPick` as-is), a `waygraph copilot` CLI entry
+   rendering), agentic mode (reusing `applyPick` as-is), a `waygraph pilot` CLI entry
    point, proven in-repo.
 2. **Not in this change - a smarter (embedding/LLM-assisted) plain-language matcher.** A
    deterministic text-similarity baseline ships; nothing here forecloses a smarter matcher
@@ -59,14 +59,18 @@ same Playwright/CDP session Phases 1-5 already run.
 
 ## Decisions
 
-**Copilot is a new, thin consumer of `AutoSession`'s existing public surface, not a
-modification to it.** `currentSnapshot()` and `applyPick()` already do exactly what narrate
-and agentic mode each need. Adding Copilot-specific logic inside `AutoSession` itself would
-couple a generic, already-stable session primitive to one particular consumer's concerns;
-keeping the resolver and mode dispatch in a separate module (`src/copilot.ts`) that calls
-`AutoSession`'s existing methods keeps `AutoSession` itself unchanged and reusable for
-anything else that wants a live session (which is exactly how Phase 1 was designed to be
-consumed in the first place).
+**Pilot is a new, thin consumer of `AutoSession`'s existing public surface - almost.**
+`currentSnapshot()` and `applyPick()` already do exactly what the resolver and agentic mode
+each need, unmodified. Narrate mode needed two things `AutoSession` genuinely didn't expose
+(a real gap, not anticipated here): direct access to the session's live `page` (its own
+JSON-only surface deliberately hides Playwright objects) and a way to preview a named Block's
+`stubBefore` data without running it (`applyPick` already computes this internally, but never
+returned it). `AutoSession` gained two small, additive, read-only public methods -
+`getPage()` and `peekStubBefore(blockName)` - neither changes any existing method's behavior,
+confirmed by the full pre-existing `auto-session.spec.ts` suite passing unmodified. All
+Pilot-specific logic (the resolver, mode dispatch) still lives in the separate `src/pilot.ts`
+module, not inside `AutoSession` itself - `AutoSession` stays a generic, reusable session
+primitive with a slightly larger read-only surface, not one coupled to Pilot's own concerns.
 
 **The plain-language resolver is a small, deterministic text-similarity function, not a
 call to an external model.** Every edge's `description` is already required, short,
@@ -76,16 +80,22 @@ my cart" from "check out" from "sign in" reliably, without adding a network depe
 new required API key just to get a working baseline. A smarter matcher is a real, valid
 future upgrade to the same interface, not something this change needs to build to be useful.
 
-**Narrate mode reuses `src/cli.ts`'s existing ring-rendering primitives via export, not a
-reimplementation.** `cycleHighlightRings`/`showRing` (and their small helpers) already do
-exactly what narrate mode needs - Playwright-orchestrated, already proven throughout
-`waygraph demo`. They are currently private to `cli.ts`; this change exports the minimum
-needed rather than copying the logic into a second implementation that could drift from the
-original.
+**Narrate mode ships its own small, self-contained ring renderer - not `src/cli.ts`'s,
+despite the original plan to export and reuse it.** `cycleHighlightRings`/`showRing` do
+exactly the right visual thing, but two real problems surfaced once actually wiring this up:
+`src/cli.ts` runs `main().catch(...)` unconditionally at module load with no
+`import.meta.url` guard, so importing anything from it would trigger the whole CLI's argument
+dispatch as a side effect of loading a library module; and its ring renderer is deeply
+coupled to CLI-only terminal-logging helpers (`demoLog`/`demoHighlight`/ANSI color codes) -
+a different concern than page rendering. Untangling that cleanly would mean a wide extraction
+across a dozen interdependent functions serving two purposes at once - real, but risky, work
+this change didn't take on. `src/pilot.ts` instead ships a small (~60 line), purpose-built
+CSS ring + label renderer with the same visual idea and zero `cli.ts` dependency or console
+output of its own - documented as a deliberate deviation in the file's own header.
 
 **Agentic mode is `applyPick`, not a new "act on this Block" primitive.** `AutoSession`
 already runs a full act/resolve/verify cycle for real, updates `here`, and records a trace
-step - everything agentic mode needs. Wrapping it in Copilot-specific language (`ask` ->
+step - everything agentic mode needs. Wrapping it in Pilot-specific language (`ask` ->
 resolved edge -> `applyPick(String(edge.index))`) is the entire integration; there is no
 separate execution path to design.
 
@@ -106,5 +116,5 @@ needed downstream of resolution.
   separate, later work.
 - [Narrate mode's visibility depends on the session actually being headful/visible to
   whoever it's meant to help - a headless narrate run highlights nothing anyone can see] ->
-  Not a new risk - Phase 3 already built `--non-headless` for exactly this; Copilot's CLI
+  Not a new risk - Phase 3 already built `--non-headless` for exactly this; Pilot's CLI
   entry point exposes the same existing flag rather than inventing a new visibility control.

@@ -170,3 +170,14 @@ export {
   assertWgOverlayReady,
 } from "./overlay-beacon.js";
 export type { WgModalKind, WgBeaconRow } from "./overlay-beacon.js";
+export { AutoSession } from "./auto-session.js";
+export type {
+  AutoSessionInit,
+  SessionSnapshot,
+  SessionSnapshotEdge,
+  SessionSnapshotSection,
+  ApplyPickResult,
+  TraceStep,
+} from "./auto-session.js";
+export { resolveAsk, pilotNarrate, pilotAct } from "./pilot.js";
+export type { ResolvedAsk, NarrateResult } from "./pilot.js";

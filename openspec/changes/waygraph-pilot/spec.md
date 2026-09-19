@@ -1,4 +1,4 @@
-# waygraph-copilot Specification
+# waygraph-pilot Specification
 
 ## Purpose
 Resolves a plain-language ask to a real, reachable Checkpoint using each Block's existing
