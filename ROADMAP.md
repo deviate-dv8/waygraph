@@ -47,7 +47,7 @@ otherwise.
 | Visible-browser sessions + Checkpoint/Block trace (`--non-headless`, `auto trace`) | Shipped - `openspec/changes/waygraph-auto-headful-trace/` |
 | Agent-skill hardening (one-action-per-Block, `defineAssertBlock`, Sel enforcement, orphan gates) | Shipped - `openspec/changes/waygraph-agent-skill-hardening/` |
 | Mail verification (browser-driven, `*-external/<tool>/` convention) | Shipped (Mailpit) - `openspec/changes/waygraph-mail-adapters/` |
-| Waygraph Copilot (embeddable end-user navigation agent) | Proposed (narrate mode only, scope narrowed - see below) - `openspec/changes/waygraph-copilot/` |
+| Waygraph Copilot (plain-language ask -> narrate/agentic, built on AutoSession) | Proposed - `openspec/changes/waygraph-copilot/` |
 | Narrated help-center video generation (core `waygraph render`) | Deferred to v1.0.x (`waygraph-demo` module) - not current focus, see below |
 | Stability declaration (1.0.0) | Gated on Waygraph Copilot demoable - see "1.0.0" below |
 
@@ -248,35 +248,34 @@ Six phases, each independently shippable, in dependency order:
    own mem-aware Traits started reading externally-supplied mem, so preflight can catch a
    missing input before the flow ever runs, not deep inside a Trait check.
    Full spec/design/tasks: `openspec/changes/waygraph-mail-adapters/`.
-6. **Waygraph Copilot - embeddable end-user navigation agent - Proposed, scope narrowed to
-   narrate mode.** The big pitch: inject waygraph into an agent that shows a real end user
-   their own application, live, and helps them navigate it - more accurately than a generic
-   vision-based "browser use" agent because it is constrained to a verified, opinionated,
-   site-specific Block graph instead of guessing from pixels each time. Reading the actual
-   code (`discoverGraph`, `locate()`, `runStubPhase`) before proposing surfaced real
-   constraints the original framing below hadn't accounted for: `WaygraphEdge` carries no
-   `description`/`requires`/`verify` data today (the "client-safe manifest" needs a real new
-   compiler, not just a re-export); and a Block's `verify` is only reconstructable as
-   client-safe *data* when built from the six built-in `Trait` factories - a bespoke
-   `{ name, check(page, mem) {...} }` Trait (used throughout this session's own
-   mail-verification work) is arbitrary code that cannot be safely shipped to an untrusted
-   end-user browser, so such Blocks are marked `recognizable: false` rather than silently
-   guessed at. Original four-part design, now split: (a) compile `discoverGraph`'s output
-   into a client-safe static manifest (checkpoints, edges, each Block's description/
-   `requires`/a data-only `verify` when recognizable) instead of reading `.block.ts` off
-   disk; (b) port `locate()`/`findBlockPath` to run client-side, Playwright-free, against
-   that manifest and the user's real DOM; (c) resolve a plain-language ask ("how do I invite
-   a signer") to a target Checkpoint using each Block's existing required `description` field
-   - zero new authoring burden; (d) **narrate mode only** in this change (reuse the existing
-   `stubBefore`/highlight data, computed once at compile time, to point at the real control) -
-   **agentic mode (execute the Block chain for real against the user's live session) is
-   explicitly deferred**, since it needs a Playwright-Locator-to-native-DOM compatibility
-   layer (every existing Block's `act()` calls Playwright APIs with no browser-native
-   equivalent) - real, substantial, unsolved work, not bundled in speculatively. Phase 4's
+6. **Waygraph Copilot - Proposed.** The big pitch: resolve a plain-language ask ("how do I
+   invite a signer") to a real Checkpoint, then either narrate it (highlight the real
+   control) or run it for real - more accurately than a generic vision-based "browser use"
+   agent because it is constrained to a verified, opinionated, site-specific Block graph
+   instead of guessing from pixels each time. An early draft of this proposal wrongly
+   assumed Copilot had to run as a script sandboxed inside an untrusted end-user page with no
+   Playwright/CDP access - that generated a long list of invented hard problems (cross-origin
+   iframe access, synthetic-event trust, a native-DOM compatibility shim) that turned out not
+   to apply at all. Corrected once `AutoSession`'s actual existing surface (Phase 1) was
+   re-checked: Copilot is a **launched Playwright session**, exactly like every other command
+   in this whole roadmap already is - not code injected into an arbitrary tab it doesn't
+   control. `AutoSession.currentSnapshot()` already exposes every reachable edge with that
+   Block's required `description`; `AutoSession.applyPick()` already runs any of them for
+   real, end to end, proven by Phase 1's own test suite. Given that, the actual new work is
+   small: (a) a plain-language resolver scoring an ask against reachable edges'
+   `description` fields (zero new authoring burden - `description` is already required); (b)
+   **narrate mode** - render that Block's own highlight data (reusing `waygraph demo`'s
+   already-proven ring-rendering code, exported for reuse) against the session's real live
+   page, no action taken; (c) **agentic mode** - literally `applyPick()` on the resolved edge,
+   the exact same execution path Phase 1 already proved, not a new or parallel mechanism.
+   Because everything runs inside the same trusted Playwright session as every other phase,
+   a Block using a bespoke Trait (this session's own mail-verification work uses several)
+   works identically to one using only built-in Trait factories - no manifest, no
+   client-safe-data restriction, no `recognizable` subset needed at all. Phase 4's
    atomicity/orphan-Block gates remain a hard prerequisite: a compound Block or a stray
-   `page.goto` is invisible in a passing test but a visibly broken promise when narrated live.
-   **Honest proof-scope note, matching Phases 4-5's own established precedent:** this
-   change's proof embeds against an in-repo example (`examples/saucedemo` or
+   `page.goto` is invisible in a passing test but a visibly broken promise when narrated or
+   driven live. **Honest proof-scope note, matching Phases 4-5's own established
+   precedent:** this change's proof runs against an in-repo example (`examples/saucedemo` or
    `templates/scaffold`), not a real consumer app - it demonstrates the mechanism works, not
    the original `1.0.0` criterion ("demoable on one real consumer"), which remains a separate,
    later, unmet step even once this change ships. Full spec/design/tasks:
@@ -316,15 +315,15 @@ pipeline per consumer:
 ### 1.0.0 - Stability declaration
 
 **Decided 2026-09-19: 1.0.0 = Waygraph Copilot demoable on one real consumer** (Phase 6's
-own proof bar - narrate mode working end-to-end against a real consumer app, using its
-existing waygraph Block library). Phase 6's own proposal (`openspec/changes/waygraph-copilot/`)
-independently landed on narrate-mode-only as its scope too (agentic mode deferred - see
-Phase 6 above), so the *mode* matches this criterion already; what the proposal's own proof
-cannot satisfy from inside this repo is "one real consumer" specifically - its proof is
-scoped to an in-repo example, matching Phases 4-5's own established precedent. Reaching this
-1.0.0 criterion for real still needs a separate, later step: actually embedding the shipped
-Phase 6 capability into one real consumer project. This supersedes the earlier criteria
-below, which move to the regular post-1.0.0 roadmap instead of gating the release:
+own proof bar - narrate and agentic mode working end-to-end against a real consumer app,
+using its existing waygraph Block library). Phase 6's own proposal
+(`openspec/changes/waygraph-copilot/`) delivers both modes, built entirely on Phase 1's
+already-proven `AutoSession` - what its proof cannot satisfy from inside this repo is "one
+real consumer" specifically; its proof is scoped to an in-repo example, matching Phases 4-5's
+own established precedent. Reaching this 1.0.0 criterion for real still needs a separate,
+later step: actually running the shipped Phase 6 capability against one real consumer
+project. This supersedes the earlier criteria below, which move to the regular post-1.0.0
+roadmap instead of gating the release:
 
 - `locate()`'s split-`requires` follow-up (externally-supplied vs producedBy-another-Block)
 - Federated pool of waygraphs (autonomous-mode phase 3)
