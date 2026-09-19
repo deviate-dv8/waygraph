@@ -4,3 +4,11 @@ export type Home = Checkpoint<"Home">;
 export type HomeVerified = Checkpoint<"HomeVerified">;
 export type ItemInCart = Checkpoint<"ItemInCart">;
 export type CartEmpty = Checkpoint<"CartEmpty">;
+
+// --- Mailpit (external tool surface, demo-external lane) ---
+
+/** Mailpit inbox UI reached; message list visible. */
+export type MailpitInbox = Checkpoint<"MailpitInbox">;
+
+/** The message addressed to the expected recipient is open; preview iframe visible. */
+export type MailpitMessageOpen = Checkpoint<"MailpitMessageOpen">;

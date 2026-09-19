@@ -11,4 +11,5 @@ export const DemoSel = {
   clear: "[data-test=clear-cart]",
   addBtn: (id: string) => `[data-test=add-${id}]`,
   removeBtn: (id: string) => `[data-test=remove-${id}]`,
+  verifiedBanner: "#verified-banner",
 } as const;

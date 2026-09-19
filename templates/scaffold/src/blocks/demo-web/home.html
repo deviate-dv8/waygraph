@@ -14,6 +14,7 @@
   <body>
     <h1>Hello Waygraph</h1>
     <p id="sub">Scaffold demo - Effect / auto / Page hub</p>
+    <p id="verified-banner" hidden>Email verified!</p>
     <div id="cart">Cart: <span data-test="cart-count">0</span></div>
     <ul id="catalog">
       <li class="item" data-id="alpha">
@@ -34,6 +35,9 @@
     </ul>
     <button type="button" data-test="clear-cart" id="clear">Clear cart</button>
     <script>
+      if (new URLSearchParams(location.search).get("verified") === "1") {
+        document.getElementById("verified-banner").hidden = false;
+      }
       const countEl = document.querySelector("[data-test=cart-count]");
       const sync = () => {
         const n = document.querySelectorAll(".remove:not([hidden])").length;
