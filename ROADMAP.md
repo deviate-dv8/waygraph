@@ -47,9 +47,9 @@ otherwise.
 | Visible-browser sessions + Checkpoint/Block trace (`--non-headless`, `auto trace`) | Shipped - `openspec/changes/waygraph-auto-headful-trace/` |
 | Agent-skill hardening (one-action-per-Block, `defineAssertBlock`, Sel enforcement, orphan gates) | Shipped - `openspec/changes/waygraph-agent-skill-hardening/` |
 | Mail verification (browser-driven, `*-external/<tool>/` convention) | Shipped (Mailpit) - `openspec/changes/waygraph-mail-adapters/` |
-| Waygraph Copilot (plain-language ask -> narrate/agentic, built on AutoSession) | Proposed - `openspec/changes/waygraph-copilot/` |
+| Waygraph Pilot (plain-language ask -> narrate/agentic, built on AutoSession) | Proposed - `openspec/changes/waygraph-pilot/` |
 | Narrated help-center video generation (core `waygraph render`) | Deferred to v1.0.x (`waygraph-demo` module) - not current focus, see below |
-| Stability declaration (1.0.0) | Gated on Waygraph Copilot demoable - see "1.0.0" below |
+| Stability declaration (1.0.0) | Gated on Waygraph Pilot demoable - see "1.0.0" below |
 
 ### NavBlock + ActionPage + waygraph check + pluggable browser provider
 
@@ -111,11 +111,11 @@ solve; both are reasons this stays scoped.
 **Not yet spec'd** beyond the paragraph in
 `openspec/changes/archive/2026-09-19-nav-block-and-check/design.md`'s Roadmap section.
 
-## Agent-authoring tooling and Waygraph Copilot (planned)
+## Agent-authoring tooling and Waygraph Pilot (planned)
 
 **Current focus (as of 2026-09-19): the `waygraph-auto` module** - phases 1-3 below
 (`--cli` session control, DOM-inspection tool, simultaneous `--cli` + headful) all live
-there, and Phase 6 (Copilot) depends directly on `waygraph-auto`'s `locate()` /
+there, and Phase 6 (Pilot) depends directly on `waygraph-auto`'s `locate()` /
 `discoverGraph` / `findBlockPath`. `waygraph-demo`-module work (the narrated help-center
 video generation section further down) is explicitly deferred to v1.0.x, not part of the
 near-term push.
@@ -124,7 +124,7 @@ Grounded in two real, opposite data points from actual consumer usage, not specu
 
 - **Positive:** `waygraph demo`'s step-overlay/narration was used for real in a production
   QA workflow at a real consumer and measurably reduced the QA bottleneck there - this is
-  the evidence the later Copilot phase below is betting on, not a hypothetical.
+  the evidence the later Pilot phase below is betting on, not a hypothetical.
 - **Negative:** `waygraph check` run against two real pre-skill consumer projects found the
   exact defect classes this roadmap exists to close: one project's `complete-draft`-style
   Method does `page.reload()` outside a NavBlock *and* silently drives an entire multi-step
@@ -248,38 +248,71 @@ Six phases, each independently shippable, in dependency order:
    own mem-aware Traits started reading externally-supplied mem, so preflight can catch a
    missing input before the flow ever runs, not deep inside a Trait check.
    Full spec/design/tasks: `openspec/changes/waygraph-mail-adapters/`.
-6. **Waygraph Copilot - Proposed.** The big pitch: resolve a plain-language ask ("how do I
+6. **Waygraph Pilot - Proposed.** The big pitch: resolve a plain-language ask ("how do I
    invite a signer") to a real Checkpoint, then either narrate it (highlight the real
    control) or run it for real - more accurately than a generic vision-based "browser use"
    agent because it is constrained to a verified, opinionated, site-specific Block graph
    instead of guessing from pixels each time. An early draft of this proposal wrongly
-   assumed Copilot had to run as a script sandboxed inside an untrusted end-user page with no
+   assumed Pilot had to run as a script sandboxed inside an untrusted end-user page with no
    Playwright/CDP access - that generated a long list of invented hard problems (cross-origin
    iframe access, synthetic-event trust, a native-DOM compatibility shim) that turned out not
    to apply at all. Corrected once `AutoSession`'s actual existing surface (Phase 1) was
-   re-checked: Copilot is a **launched Playwright session**, exactly like every other command
+   re-checked: Pilot is a **launched Playwright session**, exactly like every other command
    in this whole roadmap already is - not code injected into an arbitrary tab it doesn't
    control. `AutoSession.currentSnapshot()` already exposes every reachable edge with that
    Block's required `description`; `AutoSession.applyPick()` already runs any of them for
    real, end to end, proven by Phase 1's own test suite. Given that, the actual new work is
    small: (a) a plain-language resolver scoring an ask against reachable edges'
    `description` fields (zero new authoring burden - `description` is already required); (b)
-   **narrate mode** - render that Block's own highlight data (reusing `waygraph demo`'s
-   already-proven ring-rendering code, exported for reuse) against the session's real live
-   page, no action taken; (c) **agentic mode** - literally `applyPick()` on the resolved edge,
-   the exact same execution path Phase 1 already proved, not a new or parallel mechanism.
-   Because everything runs inside the same trusted Playwright session as every other phase,
-   a Block using a bespoke Trait (this session's own mail-verification work uses several)
-   works identically to one using only built-in Trait factories - no manifest, no
-   client-safe-data restriction, no `recognizable` subset needed at all. Phase 4's
-   atomicity/orphan-Block gates remain a hard prerequisite: a compound Block or a stray
-   `page.goto` is invisible in a passing test but a visibly broken promise when narrated or
-   driven live. **Honest proof-scope note, matching Phases 4-5's own established
-   precedent:** this change's proof runs against an in-repo example (`examples/saucedemo` or
-   `templates/scaffold`), not a real consumer app - it demonstrates the mechanism works, not
-   the original `1.0.0` criterion ("demoable on one real consumer"), which remains a separate,
-   later, unmet step even once this change ships. Full spec/design/tasks:
-   `openspec/changes/waygraph-copilot/`.
+   **narrate mode** - highlight the real control on the session's real live page, no action
+   taken; (c) **agentic mode** - literally `applyPick()` on the resolved edge, the exact same
+   execution path Phase 1 already proved, not a new or parallel mechanism. Because everything
+   runs inside the same trusted Playwright session as every other phase, a Block using a
+   bespoke Trait (this session's own mail-verification work uses several) works identically
+   to one using only built-in Trait factories - no manifest, no client-safe-data restriction,
+   no `recognizable` subset needed at all. Phase 4's atomicity/orphan-Block gates remain a
+   hard prerequisite: a compound Block or a stray `page.goto` is invisible in a passing test
+   but a visibly broken promise when narrated or driven live.
+   **M1-M3 shipped** (`resolveAsk`, narrate mode, agentic mode - all proven end to end
+   against real saucedemo.com in `tests/pilot/pilot.spec.ts`); **M4-M5 (CLI entry point,
+   in-repo proof) not yet done.** Real deviation found while implementing, not anticipated by
+   the design: `src/cli.ts` runs `main()` unconditionally at module load with no
+   `import.meta.url` guard, so importing its ring-rendering code (the original plan) would
+   trigger the whole CLI's argument dispatch as a side effect - `src/pilot.ts` ships its own
+   small, self-contained ring renderer instead, and `AutoSession` gained two small additive
+   getters (`getPage()`, `peekStubBefore()`) it didn't have before. **Honest proof-scope
+   note, matching Phases 4-5's own established precedent:** this change's proof runs against
+   an in-repo example (`examples/saucedemo` or `templates/scaffold`), not a real consumer app
+   - it demonstrates the mechanism works, not the original `1.0.0` criterion ("demoable on one
+   real consumer"), which remains a separate, later, unmet step even once this change ships.
+   Full spec/design/tasks: `openspec/changes/waygraph-pilot/`.
+
+### Phase 6b/6c - Blind Pilot, Waygraph Map, Waygraph Router (vision only - not proposed, not scoped)
+
+Real forward-looking ideas captured here so they aren't lost, deliberately not pulled into
+the current Phase 6 (non-blind Pilot) change above:
+
+- **Non-blind Pilot** (Phase 6, above) assumes a Block library already exists, already
+  authored with `description`/`verify`/checkpoints by a developer - Pilot just drives
+  Playwright through a graph someone already built.
+- **Blind Pilot (Phase 6b)** - the opposite case: no pre-existing Block library at all. An
+  agent navigates a live site cold, reusing the same discovery primitives Phase 2-3 already
+  built for blind planning (`auto --cli --detach`/`dom`/`send`/`trace`), and *builds* the
+  graph as it goes instead of reading one that's already authored.
+- **Waygraph Map (Phase 6c)** - the blind pilot's own output: a consolidated, portable,
+  standalone package (working name `waygraph/map` or a companion package) capturing a
+  project's discovered graph as a distributable artifact, separate from any Block source.
+- **Waygraph Router (Phase 6c)** - a second, opinionated authoring mode alongside today's:
+  today's convention (`*-web/`/`*-external/` namespacing, Nav/Page/Method/Effect/Assert
+  kinds, `*Sel` objects) is **manual mode** - a developer has real freedom over file layout,
+  just follows soft conventions. Router mode would be a fully opinionated,
+  Next.js-App-Router-style folder structure (`(base_app)/dashboard/page.ts`,
+  `(external)/mailpit/...`) making a project's structure mechanically parseable - the natural
+  target for blind-discovery-to-map generation to regenerate against, and likely its own
+  scaffold variant, not a change to the current freeform one.
+
+No design work has started on any of these three - named here as real, coherent future
+direction, not as commitments with a shape yet.
 
 ## Narrated help-center video generation (planned - deferred to v1.0.x)
 
@@ -314,10 +347,10 @@ pipeline per consumer:
 
 ### 1.0.0 - Stability declaration
 
-**Decided 2026-09-19: 1.0.0 = Waygraph Copilot demoable on one real consumer** (Phase 6's
+**Decided 2026-09-19: 1.0.0 = Waygraph Pilot demoable on one real consumer** (Phase 6's
 own proof bar - narrate and agentic mode working end-to-end against a real consumer app,
 using its existing waygraph Block library). Phase 6's own proposal
-(`openspec/changes/waygraph-copilot/`) delivers both modes, built entirely on Phase 1's
+(`openspec/changes/waygraph-pilot/`) delivers both modes, built entirely on Phase 1's
 already-proven `AutoSession` - what its proof cannot satisfy from inside this repo is "one
 real consumer" specifically; its proof is scoped to an in-repo example, matching Phases 4-5's
 own established precedent. Reaching this 1.0.0 criterion for real still needs a separate,
@@ -331,4 +364,4 @@ roadmap instead of gating the release:
 Phases 1-5 above (CLI session control, DOM-inspection tool, simultaneous `--cli` +
 headful, agent-skill hardening, mail adapters) remain prerequisites to 1.0.0 in
 practice, since Phase 6 depends on them - see "Agent-authoring tooling and Waygraph
-Copilot" above for the dependency order.
+Pilot" above for the dependency order.

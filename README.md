@@ -573,6 +573,51 @@ so `waygraph auto --blocks "<AppCheckpoint> MailpitInbox"` can still route there
 it's just never suggested unprompted. The tested, recommended way to actually use this is an
 authored flow/chain (`someAppFlow then mailVerifyFlow`), exactly like `mailVerifyFlow` itself.
 
+## Waygraph Pilot
+
+Resolves a plain-language ask ("fill in my username") to a real, reachable Checkpoint using
+each Block's existing `description` (already required - zero new authoring burden), then
+either **narrates** it (highlights the real control, takes no action) or **acts** on it (runs
+the real Block). Built entirely on `AutoSession`'s already-proven Playwright session - not a
+new execution architecture, not code injected into an untrusted page. Because everything runs
+inside the same trusted session as every other command, a Block using a bespoke, hand-written
+Trait works identically to one using only built-in factories.
+
+```bash
+waygraph pilot ask "fill in my username" --mode narrate            # highlight only
+waygraph pilot ask "fill in my username" --mode agentic            # actually run it
+waygraph pilot ask "fill in my username" --mode narrate --non-headless   # visible browser
+```
+
+Same primitives, callable directly:
+
+```typescript
+import { AutoSession, resolveAsk, pilotNarrate, pilotAct } from "waygraph";
+
+const session = await AutoSession.start({ projectDir: process.cwd(), headless: false });
+const snapshot = await session.currentSnapshot(); // reachable edges from wherever you are now
+const resolved = resolveAsk(snapshot, "fill in my username");
+if (resolved) {
+  await pilotNarrate(session, resolved); // ring + label on the real control
+  // ...or:
+  await pilotAct(session, resolved); // session.applyPick(String(resolved.edge.index)) - runs it for real
+}
+await session.close();
+```
+
+`resolveAsk` only ever scores edges already present in the given snapshot (itself already
+scoped to what's reachable from `here`) - a well-matching edge elsewhere in the graph that
+isn't reachable right now is never returned, and a genuinely ambiguous ask returns `null`
+rather than a guess. `pilotAct` is literally `session.applyPick(String(edge.index))` - the
+exact same execution path `waygraph auto --cli` already proved end to end, not a parallel one.
+
+**Honest scope, not silently redefined:** this capability's own proof runs against an
+in-repo example (`examples/saucedemo`), not a real external consumer application - it
+demonstrates the mechanism works, not the "demoable on one real consumer" bar `ROADMAP.md`
+sets for `1.0.0`, which remains separate, later, unmet work. Live reference:
+`tests/pilot/pilot.spec.ts` (the library functions) and `tests/cli/pilot.spec.ts` (the real
+CLI), both proven against live saucedemo.com.
+
 ## Getting started (pick one)
 
 | Goal | Command |
@@ -656,6 +701,10 @@ textbox" or "the Login button." `--mode full` returns a bounded raw DOM subtree
 whenever a cap is hit, since this is read by an LLM, not a human. `--selector <sel>` scopes
 either mode to one element's subtree instead of the whole page - a modifier on the mode, not
 a third mode.
+
+**Plain-language navigation:** `waygraph pilot ask "<text>"` resolves a free-text ask to a
+real, reachable Block via its `description`, then narrates (highlight only) or acts (runs it
+for real) - see "Waygraph Pilot" above for the full picture.
 
 Flows are files (0.10.5+):
 
