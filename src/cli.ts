@@ -21,6 +21,12 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./graph.js";
 import { runAutoExplore } from "./auto-explore-run.js";
+import {
+  spawnDetachedSession,
+  requestSession,
+  runAttachLoop,
+  runAutoServeCommand,
+} from "./auto-session-ipc.js";
 import { runAgentDive, type AgentDiveLoop } from "./agent-dive.js";
 import { runTraverse } from "./traverse-run.js";
 import { parseMinEdgeCoverage } from "./traverse-coverage.js";
@@ -6399,7 +6405,7 @@ async function validateFlows(projectDir: string): Promise<FlowInfo[]> {
 // instant a regular Block's act() calls a navigation method; this command
 // sweeps a whole project in one shot for contexts with no editor watching
 // (CI, an autonomous agent writing Block files without a language server).
-// See openspec/changes/nav-block-and-check/ for the full rationale.
+// See openspec/specs/nav-block-and-check/spec.md for the full rationale.
 // ---------------------------------------------------------------------------
 
 function discoverBlocks(projectDir: string): string[] {
@@ -6421,7 +6427,27 @@ function isNavBlockMarked(val: Record<string, unknown>): boolean {
 
 const NAV_METHOD_CALLS = ["page.goto(", "page.reload(", "page.goBack(", "page.goForward("] as const;
 
+/**
+ * Matches a selector-taking Trait factory call whose first argument is a
+ * literal string/template, not an identifier or property access - the exact
+ * shape found repeatedly in hand-written assertion Blocks
+ * (`Trait.visible("#some-id")` instead of `Trait.visible(SomeSel.thing)`).
+ * `Trait.url(...)` is deliberately excluded - it takes a URLPatternInit, never
+ * a DOM selector. Same file-scoped-regex bluntness the nav-escape sweep above
+ * already accepts (see openspec/specs/nav-block-and-check/spec.md) - a known
+ * blind spot on string concatenation/template-built selectors, not solved
+ * here for the same "recipe before promotion" reason that check accepts its
+ * own shared-helper blind spot.
+ */
+const INLINE_SELECTOR_CALL = /\b(?:Trait\.visible|Trait\.text|textEquals|visible)\(\s*["'`]/;
+
 interface CheckWarning {
+  file: string;
+  blockName: string;
+  exportName: string;
+}
+
+interface SelWarning {
   file: string;
   blockName: string;
   exportName: string;
@@ -6527,9 +6553,12 @@ function initCommand(projectName: string): void {
   console.log("  Layout: see STRUCTURE.md (or https://deviate-dv8.github.io/waygraph/scaffold.html)");
 }
 
-async function checkCommand(projectDir: string): Promise<CheckWarning[]> {
+async function checkCommand(
+  projectDir: string,
+): Promise<{ navWarnings: CheckWarning[]; selWarnings: SelWarning[] }> {
   const files = discoverBlocks(projectDir);
-  const warnings: CheckWarning[] = [];
+  const navWarnings: CheckWarning[] = [];
+  const selWarnings: SelWarning[] = [];
   for (const file of files) {
     let mod: Record<string, unknown>;
     try {
@@ -6540,14 +6569,23 @@ async function checkCommand(projectDir: string): Promise<CheckWarning[]> {
     let src: string | undefined;
     for (const [exportName, exported] of Object.entries(mod)) {
       if (!isBlockLike(exported)) continue;
-      if (isNavBlockMarked(exported as Record<string, unknown>)) continue;
       src ??= readFileSync(file, "utf-8");
-      if (NAV_METHOD_CALLS.some((needle) => src!.includes(needle))) {
-        warnings.push({ file, blockName: exported.name, exportName });
+      // Nav-escape: NavBlocks are exempt (their generated act() is the one
+      // legitimate goto/click call site).
+      if (
+        !isNavBlockMarked(exported as Record<string, unknown>) &&
+        NAV_METHOD_CALLS.some((needle) => src!.includes(needle))
+      ) {
+        navWarnings.push({ file, blockName: exported.name, exportName });
+      }
+      // Inline selector: applies to every Block kind, including NavBlocks -
+      // a Nav's own `verify` array is just as likely to inline a selector.
+      if (INLINE_SELECTOR_CALL.test(src)) {
+        selWarnings.push({ file, blockName: exported.name, exportName });
       }
     }
   }
-  return warnings;
+  return { navWarnings, selWarnings };
 }
 
 // ---------------------------------------------------------------------------
@@ -6574,6 +6612,8 @@ interface RunFlags {
   /** auto path-find: --blocks <fromCheckpoint> <toCheckpoint>. */
   blocksFromTo?: [string, string];
   cli?: boolean;
+  /** auto --cli --detach: run the explore session as a background socket server. */
+  detach?: boolean;
   /** Force headed panel (compat; bare try auto / auto already headed). */
   headed?: boolean;
   mermaid?: boolean;
@@ -6658,6 +6698,8 @@ function parseRunFlags(argv: string[]): RunFlags {
       out.nonHeadless = true;
     } else if (a === "--cli") {
       out.cli = true;
+    } else if (a === "--detach") {
+      out.detach = true;
     } else if (a === "--headed") {
       out.headed = true;
     } else if (a === "--mermaid") {
@@ -6967,9 +7009,25 @@ function usage(): void {
 Primary (less is more):
   waygraph auto  [project|.flow.ts]        Interactive explore (picker)
                  --cli                     Terminal menu instead of browser panel
+                 --cli --detach            Run the --cli session as a background socket
+                                           server; prints {sessionId, socketPath} and exits
                  --blocks <From> <To>      Graph path-find From->To, then run
                  --data '{...}'            Mem seed (same as demo/run)
                  (pass a .flow.ts to run that flow - same as run)
+                 --cli --detach --non-headless  Detached session with a real visible browser
+                                           (same --non-headless flag run/demo already use)
+  waygraph auto send <sessionId> "<pick>"  Send one pick to a --detach session, print
+                                           the resulting state as JSON (no TTY needed)
+  waygraph auto status <sessionId>         Read a --detach session's state (no side effects)
+  waygraph auto attach <sessionId>         Reopen an interactive terminal against a
+                                           running --detach session
+  waygraph auto dom <sessionId>            Read the live page's structure (no side effects)
+                 --mode aria|full          Default aria (Playwright ariaSnapshotJSON, AI mode);
+                                           full = bounded raw DOM walk (tag/attrs/text/children)
+                 --selector <sel>          Scope either mode to one element's subtree
+                 --depth N                 Limit snapshot depth (aria: native; full: caller cap)
+  waygraph auto trace <sessionId>          Read the session's Checkpoint/Block-level history
+                                           (no side effects; not raw click/fill recording)
   waygraph demo  [--blocks <flow|file|spec>]  Watch with step overlay (QA path)
                  --data '{...}'            Mem seed JSON (or inline flow({...}))
                  --auto-next               Auto-advance steps (alias: --autoplay)
@@ -7419,6 +7477,91 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
 
     case "graph":
     case "auto": {
+      // auto send|status|attach <sessionId> - session control against a
+      // --detach'd background session. Intercepted before the normal
+      // project-directory resolution below, same pattern `try demo|auto|
+      // auto:cli` already uses for a sub-verb positional.
+      if (
+        command === "auto" &&
+        (args[1] === "send" ||
+          args[1] === "status" ||
+          args[1] === "attach" ||
+          args[1] === "dom" ||
+          args[1] === "trace")
+      ) {
+        const sub = args[1];
+        const sessionId = args[2];
+        if (!sessionId) {
+          console.error(`waygraph auto ${sub}: missing <sessionId>`);
+          process.exit(1);
+        }
+        const proj = resolve(process.cwd());
+        if (sub === "attach") {
+          await runAttachLoop(proj, sessionId);
+          break;
+        }
+        if (sub === "send") {
+          const pick = args[3];
+          if (pick === undefined) {
+            console.error('waygraph auto send: usage: waygraph auto send <sessionId> "<pick>"');
+            process.exit(1);
+          }
+          const res = await requestSession(proj, sessionId, { op: "send", pick });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
+        if (sub === "dom") {
+          const domArgs = args.slice(3);
+          let mode: "aria" | "full" | undefined;
+          let selector: string | undefined;
+          let depth: number | undefined;
+          for (let i = 0; i < domArgs.length; i++) {
+            const a = domArgs[i]!;
+            if (a === "--mode" || a.startsWith("--mode=")) {
+              const v = a.startsWith("--mode=") ? a.slice("--mode=".length) : domArgs[++i];
+              if (v !== "aria" && v !== "full") {
+                console.error(`waygraph auto dom: --mode must be "aria" or "full", got "${v}"`);
+                process.exit(1);
+              }
+              mode = v;
+            } else if (a === "--selector" || a.startsWith("--selector=")) {
+              selector = a.startsWith("--selector=") ? a.slice("--selector=".length) : domArgs[++i];
+            } else if (a === "--depth" || a.startsWith("--depth=")) {
+              const raw = a.startsWith("--depth=") ? a.slice("--depth=".length) : domArgs[++i];
+              const n = Number(raw);
+              if (!Number.isInteger(n) || n < 1) {
+                console.error(`waygraph auto dom: --depth must be a positive integer, got "${raw}"`);
+                process.exit(1);
+              }
+              depth = n;
+            } else {
+              console.error(`waygraph auto dom: unrecognized argument "${a}"`);
+              process.exit(1);
+            }
+          }
+          const res = await requestSession(proj, sessionId, {
+            op: "dom",
+            ...(mode ? { mode } : {}),
+            ...(selector ? { selector } : {}),
+            ...(depth !== undefined ? { depth } : {}),
+          });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
+        if (sub === "trace") {
+          const res = await requestSession(proj, sessionId, { op: "trace" });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
+        const res = await requestSession(proj, sessionId, { op: "status" });
+        console.log(JSON.stringify(res));
+        if (!res.ok) process.exitCode = 1;
+        break;
+      }
+
       const flags = parseRunFlags(args.slice(1));
       applyRunFlags(flags);
       const mermaid = flags.mermaid === true;
@@ -7455,6 +7598,31 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
             "  or path-find: waygraph auto --blocks LoginPage OrderComplete",
         );
         process.exit(1);
+      }
+
+      // auto --cli --detach: start the explore session as a background socket
+      // server instead of blocking in the interactive loop. Session control
+      // only applies to --cli (spec: "Headful mode is unaffected").
+      if (command === "auto" && flags.detach) {
+        if (!cliPicker) {
+          console.error("waygraph auto --detach requires --cli (headful has no session control)");
+          process.exit(1);
+        }
+        const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? resolveBaseUrl(proj);
+        try {
+          const meta = await spawnDetachedSession({
+            projectDir: proj,
+            ...(baseURL ? { baseURL } : {}),
+            ...(flags.nonHeadless ? { headless: false } : {}),
+          });
+          console.log(
+            JSON.stringify({ sessionId: meta.sessionId, socketPath: meta.socketPath, headless: meta.headless }),
+          );
+        } catch (err) {
+          console.error(`waygraph auto --detach: ${err instanceof Error ? err.message : String(err)}`);
+          process.exit(1);
+        }
+        break;
       }
 
       // auto --blocks From To  (graph path-find + run)
@@ -7511,6 +7679,30 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
       break;
     }
 
+    // Hidden: the detached server's own entry point, spawned by
+    // `spawnDetachedSession` (auto --cli --detach). Not documented in
+    // usage() - not meant to be invoked directly by a person.
+    case "__auto-serve": {
+      const proj = resolve(args[1] ?? process.cwd());
+      const flags = parseRunFlags(args.slice(2));
+      const sessionIdIdx = args.indexOf("--session-id");
+      const sessionId = sessionIdIdx >= 0 ? args[sessionIdIdx + 1] : undefined;
+      if (!sessionId) {
+        console.error("waygraph __auto-serve: missing --session-id");
+        process.exit(1);
+      }
+      const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? resolveBaseUrl(proj);
+      await runAutoServeCommand(
+        {
+          projectDir: proj,
+          ...(baseURL ? { baseURL } : {}),
+          ...(flags.nonHeadless ? { headless: false } : {}),
+        },
+        sessionId,
+      );
+      break;
+    }
+
     case "try": {
       const flags = parseRunFlags(args.slice(1));
       applyRunFlags(flags);
@@ -7543,19 +7735,28 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
 
     case "check": {
       const proj = resolve(args[1] ?? process.cwd());
-      const warnings = await checkCommand(proj);
-      if (warnings.length === 0) {
+      const { navWarnings, selWarnings } = await checkCommand(proj);
+      if (navWarnings.length === 0) {
         console.log(`waygraph check: no navigation found outside NavBlocks under ${proj}`);
       } else {
-        for (const w of warnings) {
+        for (const w of navWarnings) {
           const rel = relative(proj, w.file);
           console.warn(`waygraph check: ${rel} (${w.blockName}) calls page.goto/reload/goBack/goForward outside a NavBlock - consider defineNavBlock instead`);
         }
-        console.log(`waygraph check: ${warnings.length} nav warning${warnings.length === 1 ? "" : "s"}`);
+        console.log(`waygraph check: ${navWarnings.length} nav warning${navWarnings.length === 1 ? "" : "s"}`);
+      }
+      if (selWarnings.length === 0) {
+        console.log(`waygraph check: no inline selectors found in verify arrays under ${proj}`);
+      } else {
+        for (const w of selWarnings) {
+          const rel = relative(proj, w.file);
+          console.warn(`waygraph check: ${rel} (${w.blockName}) has an inline selector literal in verify - move it into a *Sel object`);
+        }
+        console.log(`waygraph check: ${selWarnings.length} inline-selector warning${selWarnings.length === 1 ? "" : "s"}`);
       }
       const orphans = await findOrphanBlocks(proj);
       printOrphanReport(proj, orphans);
-      // Nav warnings only - never fail exit code. Orphans are reported for
+      // Warnings only - never fail exit code. Orphans are reported for
       // human/agent cleanup; chain auto refuses while any remain.
       break;
     }

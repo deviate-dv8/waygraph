@@ -25,7 +25,7 @@ export interface AutoExploreOptions {
   blocksSelect?: import("./blocks-select.js").BlocksSelect;
 }
 
-function resolveBaseUrl(projectDir: string): string | undefined {
+export function resolveBaseUrl(projectDir: string): string | undefined {
   const pkgPath = join(projectDir, "package.json");
   if (existsSync(pkgPath)) {
     try {
@@ -68,14 +68,14 @@ async function inferCheckpointFromUrl(page: Page): Promise<string | null> {
   return null;
 }
 
-async function detectHere(page: Page, navBlocks: BlockEntry[]): Promise<string | null> {
+export async function detectHere(page: Page, navBlocks: BlockEntry[]): Promise<string | null> {
   const fromUrl = await inferCheckpointFromUrl(page);
   if (fromUrl) return fromUrl;
   const tags = navBlocks.map((n) => n.block) as NavBlock<Checkpoint<string>>[];
   return locate(page, tags, { timeoutMs: 1500 });
 }
 
-async function ensureLivePage(
+export async function ensureLivePage(
   context: BrowserContext,
   page: Page,
   startUrl: string | undefined,
@@ -97,8 +97,9 @@ function missingMemKeys(entry: BlockEntry, mem: MemPage): MemKey<unknown>[] {
 const DEFAULT_CREDENTIALS = { username: "standard_user", password: "secret_sauce" };
 
 /**
- * Saucedemo-only defaults. Exact key names only — never substring `"login"`
- * (PIA `login-email` string must stay unset; see docs/proposals/auto-login-email-seed-bug.md).
+ * Saucedemo-only defaults. Exact key names only — never substring `"login"`.
+ * A consumer's own `key<string>("login-email")` must stay unset here, or it
+ * silently gets a saucedemo credentials object instead of its own default.
  */
 export function defaultMemValueForKey(keyName: string): unknown | undefined {
   if (
@@ -132,7 +133,7 @@ function seedMemFromEnv(mem: MemPage, entry: BlockEntry): boolean {
 }
 
 /** Pre-seed known demo keys (saucedemo creds) so headful/cli do not stop for mem forms. */
-function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage): void {
+export function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage): void {
   const raw = process.env.WAYGRAPH_DATA ?? process.env.WAYGRAPH_AUTO_MEM;
   let envParsed: Record<string, unknown> = {};
   if (raw) {
@@ -169,7 +170,7 @@ async function promptMemCli(entry: BlockEntry, mem: MemPage): Promise<void> {
   }
 }
 
-async function ensureMem(entry: BlockEntry, mem: MemPage, cli: boolean): Promise<void> {
+export async function ensureMem(entry: BlockEntry, mem: MemPage, cli: boolean): Promise<void> {
   if (missingMemKeys(entry, mem).length === 0) return;
   if (seedMemFromEnv(mem, entry)) return;
   if (cli) {
@@ -215,7 +216,7 @@ async function setAutoPanelRunning(page: Page, label: string): Promise<void> {
     .catch(() => {});
 }
 
-async function runOneBlock(
+export async function runOneBlock(
   engine: Engine,
   entry: BlockEntry,
   context: BrowserContext,
@@ -302,7 +303,7 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 }
 
-type PickResult = { type: "pick"; index: number } | { type: "quit" };
+export type PickResult = { type: "pick"; index: number } | { type: "quit" };
 
 /** Shown in the headful panel after each Block run. */
 let lastRunNote: string | null = null;

@@ -10,5 +10,6 @@ test-results/
 *.tgz
 waygraph-artifact.html
 .waygraph-traverse/
+.waygraph-auto/
 **/.waygraph-videos/
 **/.tmp/

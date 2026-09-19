@@ -1550,7 +1550,7 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
  * (same shape `DefinedBlock`/`ComposedBlock` already use), so it drops into
  * `defineFlow([...])`, `connect()`, `composeBlock()` exactly like any other
  * Block - no special-casing needed anywhere that only expects a `Block`.
- * See `openspec/changes/nav-block-and-check/` for why this exists.
+ * See `openspec/specs/nav-block-and-check/spec.md` for why this exists.
  */
 export type NavBlock<Out extends Checkpoint<string>> = DefinedBlock<Checkpoint<string>, Out>;
 
@@ -1751,6 +1751,65 @@ export function defineMethodBlock<
 
 /** @deprecated Prefer {@link defineMethodBlock} - identical helper (0.7 name). */
 export const defineActionBlock = defineMethodBlock;
+
+export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<string>> {
+  name: string;
+  description?: string;
+  /** Self-loop target - the Checkpoint this assertion runs on and returns to. */
+  checkpoint: Out["__state"];
+  /**
+   * Shorthand for the wait-then-assert shape found repeatedly in hand-written
+   * assertion Blocks: waits for a heading with this accessible name before
+   * `verify` runs. Omit for a pure "assert whatever is already on the page"
+   * check with no wait. Not a general `act()` override - a Block that needs
+   * more than this stays a plain `defineMethodBlock`.
+   */
+  waitForHeading?: string;
+  verify: Trait[] | ((out: Out) => Trait[]);
+  stubBefore?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("./highlights.js").HighlightStubPhaseOrFn<Out>;
+  /** Multi-step yap slides (demo only) - same field `Instruction.slides` exposes elsewhere. */
+  slides?: import("./highlights.js").WaygraphSlidesOrFn<Out>;
+}
+
+/**
+ * Sugar for a self-loop-only "pure assertion" Block: no hand-written
+ * `act`/`resolve`, just a name, a `checkpoint` tag, and a `verify` array.
+ * `resolve` is generated from the one `checkpoint` field given, closing the
+ * copy/rename footgun where a hand-restated checkpoint string can silently
+ * drift wrong across a copy/pasted file. Mirrors `definePageBlock`'s own
+ * construction pattern (flat options in, `defineBlock` built internally).
+ * See openspec/changes/waygraph-agent-skill-hardening/spec.md.
+ * @example
+ * defineAssertBlock({
+ *   name: "assert-raw-materials-table",
+ *   checkpoint: "RawMaterials",
+ *   waitForHeading: "Raw Materials & Lead Times",
+ *   verify: [Trait.visible(RawMaterialsSel.reorderBadge)],
+ * });
+ */
+export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<string>>(
+  options: AssertBlockOptions<Out>,
+): MethodBlock<Out, Out> {
+  return defineMethodBlock<Out, Out>({
+    name: options.name,
+    ...(options.description ? { description: options.description } : {}),
+    instruction: {
+      async act(page) {
+        if (options.waitForHeading !== undefined) {
+          await (page as unknown as Page).getByRole("heading", { name: options.waitForHeading }).waitFor();
+        }
+      },
+      resolve: () => checkpoint(options.checkpoint) as Out,
+      verify: options.verify,
+      ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
+      ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
+      ...(options.stubOnError ? { stubOnError: options.stubOnError } : {}),
+      ...(options.slides ? { slides: options.slides } : {}),
+    },
+  });
+}
 
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */
 export type PageMethodEntry =
