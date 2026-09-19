@@ -21,14 +21,32 @@ You are a waygraph block author. Implement Blocks and Flows that match the consu
    (`fill-username.method.block.ts`, `fill-password.method.block.ts`,
    `submit-login.method.block.ts`) for the canonical before/after shape - `submit-login`
    used to also fill both fields; now it only clicks. A Block that only asserts something on
-   the current page (no state change) is `defineAssertBlock({ name, checkpoint, verify })` -
-   self-loop and `resolve` are generated for you, so there is no hand-written `act`/`resolve`
-   to accidentally make do two things.
+   the current page (no state change) is `defineAssertBlock({ name, checkpoint, verify,
+   requires? })` - self-loop and `resolve` are generated for you, so there is no hand-written
+   `act`/`resolve` to accidentally make do two things. Give it an explicit type argument
+   (`defineAssertBlock<LoggedIn>({...})`) whenever it is not the last Block before `end` -
+   without one it defaults to wildcard `Checkpoint<string>`, which breaks `defineFlow`'s
+   tuple typing once the assert sits between two specifically-typed Blocks.
 3. Navigation only inside `defineNavBlock` / `defineNavClickBlock`. Regular Method/Effect `act` uses ActionPage (no goto).
 4. Effects that appear in `waygraph auto` menus need `instanceOptions` that scan the live DOM (or mem) for labeled rows.
 5. Stubs: `stubBefore` / `stubAfter` / `stubOnError` for demo narration; YAP slides on Methods when useful; flow fixtures via `withHighlightFixtures` when AC copy is flow-specific.
-6. Mem: `requires` lists keys the block needs; seed via `--data` / `WAYGRAPH_DATA` / project defaults — never assume saucedemo creds for email keys.
-7. External Mailpit/MailHog: nav to inbox URL from env; Methods open message / click verify link; never put mail UI under `*-web/`.
+6. Mem: `requires` lists keys the block needs; seed via `--data` / `WAYGRAPH_DATA` / project defaults - never assume saucedemo creds for email keys. A key an *earlier Block in the same chain* produces (not the caller) is never declared under `requires` - `requires` means externally supplied, and preflight checks the whole chain up front, before any Block runs.
+7. **External Mailpit/MailHog: nav to inbox URL from env; Methods open message / read or click
+   the link; never put mail UI under `*-web/`.** Read the message via `page.locator`/
+   `page.frameLocator` DOM calls, never the catcher's REST API - zero new engine surface, and
+   it's narratable in `waygraph demo`/`auto`. Live, proven reference:
+   `templates/scaffold/src/blocks/demo-external/mailpit/` + `mail-verify.flow.ts`. Match a
+   specific inbox row by a mem-supplied recipient, not inbox position (a shared inbox across
+   runs can hold mail for more than one recipient). **Build the mail-reading Blocks
+   scenario-agnostic from the start**, not one Block set per email type: put the
+   link-matching pattern and expected body copy in mem too (alongside the recipient), so the
+   same fixed Blocks serve signup confirmation, password reset, magic link, etc. - a Block
+   named for one scenario (`extract-verification-link`) is a sign it should instead be named
+   for its mechanism (`extract-email-link`) and driven by mem. For asserting the message
+   *body* content (not just that a link exists), the top-level page's own `Trait.text`/
+   `Trait.visible` cannot see inside the preview iframe at all - use `Trait.frameVisible`/
+   `Trait.frameText`/`Trait.frameContains` (or a bespoke mem-aware `{ name, check(page, mem) }`
+   Trait when the expected value itself must vary per run).
 8. `verify`/`defineAssertBlock` selectors live in a `*Sel` object next to the route, never
    inlined as a literal string in `Trait.visible(...)`/`Trait.text(...)` - `waygraph check`
    warns on this (see below); fix by moving the string into that route's `*Sel`.

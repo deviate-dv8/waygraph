@@ -46,7 +46,7 @@ otherwise.
 | DOM-inspection tool (`auto dom`: aria / full fidelity, `--selector` scoping) | Shipped - `openspec/changes/waygraph-auto-dom-inspect/` |
 | Visible-browser sessions + Checkpoint/Block trace (`--non-headless`, `auto trace`) | Shipped - `openspec/changes/waygraph-auto-headful-trace/` |
 | Agent-skill hardening (one-action-per-Block, `defineAssertBlock`, Sel enforcement, orphan gates) | Shipped - `openspec/changes/waygraph-agent-skill-hardening/` |
-| `maildrop.cc` external-mail adapter (production/external QA) | Roadmap only - see "Agent-authoring tooling" below |
+| Mail verification (browser-driven, `*-external/<tool>/` convention) | Shipped (Mailpit) - `openspec/changes/waygraph-mail-adapters/` |
 | Waygraph Copilot (embeddable end-user navigation agent) | Roadmap only - see "Agent-authoring tooling" below |
 | Narrated help-center video generation (core `waygraph render`) | Deferred to v1.0.x (`waygraph-demo` module) - not current focus, see below |
 | Stability declaration (1.0.0) | Gated on Waygraph Copilot demoable - see "1.0.0" below |
@@ -198,10 +198,56 @@ Six phases, each independently shippable, in dependency order:
    scope note: this proof is inside this repo only - it does not re-verify either external
    consumer project's own Block library, which stays separate, later work. Full spec/design/
    tasks: `openspec/changes/waygraph-agent-skill-hardening/`.
-5. **`maildrop.cc` external-mail adapter.** A `*-external/maildrop/` convention parallel
-   to the existing `*-external/mailpit/` one, using maildrop.cc's public HTTP API instead
-   of an internal MailHog UI, so a codebase-blind external QA can drive real signup/verify
-   flows against production without internal-mail access.
+5. **Mail adapters - Shipped, browser-driven convention.** First attempt built a
+   `MailAdapter` HTTP/REST interface with four backends (MailHog/MailDev/Mailpit/
+   `maildrop.cc`) - real, tested, working, but superseded before shipping once real evidence
+   turned up: more than one real consumer project independently converged on a *different*
+   shape for this - a `NavBlock` to the mail catcher's own web UI (a real, separate,
+   cross-origin page - MailHog/MailDev/Mailpit all ship one) plus small `MethodBlock`s
+   reading the DOM directly (`page.locator`/`page.frameLocator`, `getAttribute("href")`) -
+   no REST client, no new engine surface at all, just more Blocks in their own
+   `*-external/<tool>/` folder. Convergent evidence from two independent real projects
+   settling on the identical pattern (same folder convention, same
+   `page.frameLocator("#preview-html")` DOM read, same `mem`-matched-recipient-not-
+   inbox-position reasoning) outweighed the from-scratch REST design - replaced it entirely
+   rather than shipping two competing conventions. Also more narratable: a real click/DOM
+   read shows up in `waygraph demo`/`auto`, an invisible `fetch()` never would. Real finds:
+   the message row is a genuine `<a href="/view/:id">` (client-side route change - Playwright
+   `waitForURL` sees it exactly like a full navigation), and the message body lives in a
+   `srcdoc` `iframe#preview-html`, confirmed against a real running Mailpit container's
+   actual DOM before writing any selector. Same "no `requires` for a chain-internal,
+   producedBy-an-earlier-Block key" lesson as before still applies to the final NavBlock.
+   Live reference: `templates/scaffold/src/blocks/demo-external/mailpit/` +
+   `mail-verify.flow.ts`, proven against a real, throwaway Mailpit container (real SMTP
+   send, real click, real DOM read, real navigation back into the app) - not a fixture.
+   **QA-richness follow-up, same change:** two more assert Blocks answer "does the email
+   even exist" (`assert-email-received`, self-loop, doesn't consume the message) and "does
+   it say the right thing" (`assert-email-content`, reads the message body via new
+   `Trait.frameVisible`/`Trait.frameText`/`Trait.frameContains` factories - the top-level
+   page's own `Trait.text`/`Trait.visible` can't see inside an iframe at all). Both proven
+   to fail loud, naming themselves, on a real negative case (no email arrives; email
+   arrives with the wrong copy) - not just the happy path. A third example
+   (`assert-item-added` in `shop.flow.ts`) shows the same "assert Block checks a method's
+   real result" pattern outside the mail context, using mem to know which specific row's
+   DOM effect to check. Also documented: why a `NavBlock`'s wildcard `from:"*"` edge doesn't
+   clutter `waygraph auto`'s live menu on every screen - `buildExploreMenu` already excludes
+   URL-based Navs once on a known screen (a pre-existing engine behavior, not built by this
+   phase, but confirmed and written down here since it directly answers "how does this fit
+   into auto").
+   **Reuse follow-up, same change (the actual answer to "100+ different emails"):**
+   the temptation is one Block set per email scenario - wrong axis. `open-message`,
+   `extract-email-link` (renamed from `extract-verification-link` - a mem-driven Block
+   should be named for its mechanism, not one scenario), and the two assert Blocks are
+   already scenario-agnostic; only mem varies per run (`ExpectedRecipient`,
+   `ExpectedLinkPattern`, `ExpectedEmailContent`), never the Blocks. Proven, not just
+   claimed: the same four Blocks run a signup-verification check and an entirely different
+   password-reset check (different recipient, different content, and a decoy link
+   `ExpectedLinkPattern` correctly discriminates against) with zero new Blocks. Real
+   engine gap caught and fixed while wiring this: `defineAssertBlock` never had a
+   `requires` option at all (every other Block helper does) - needed once these asserts'
+   own mem-aware Traits started reading externally-supplied mem, so preflight can catch a
+   missing input before the flow ever runs, not deep inside a Trait check.
+   Full spec/design/tasks: `openspec/changes/waygraph-mail-adapters/`.
 6. **Waygraph Copilot - embeddable end-user navigation agent.** The big pitch: inject
    waygraph into an agent that shows a real end user their own application, live, and
    helps them navigate it - more accurately than a generic vision-based "browser use" agent
@@ -264,6 +310,6 @@ the regular post-1.0.0 roadmap instead of gating the release:
 - Federated pool of waygraphs (autonomous-mode phase 3)
 
 Phases 1-5 above (CLI session control, DOM-inspection tool, simultaneous `--cli` +
-headful, agent-skill hardening, `maildrop.cc` adapter) remain prerequisites to 1.0.0 in
+headful, agent-skill hardening, mail adapters) remain prerequisites to 1.0.0 in
 practice, since Phase 6 depends on them - see "Agent-authoring tooling and Waygraph
 Copilot" above for the dependency order.

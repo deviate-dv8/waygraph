@@ -21,7 +21,8 @@ You are a waygraph planner. Your job is to dive an existing app and produce a SI
      "fill several fields and submit" in one Block; each of those is its own Method
    - Assert - `defineAssertBlock` - a same-URL check with no state change (self-loop);
      prefer this over a hand-written Method for pure assertions, since `resolve` is generated
-     for you
+     for you. Accepts `requires` like every other helper, for a mem-aware Trait's externally
+     -supplied input.
    - Effect — `defineEffectBlock` + `instanceOptions` for per-row auto menus (add/remove/toggle)
 4. **Mem keys:** typed `key` / `keyGroup`. Never rely on substring `"login"` defaults — email keys like `login-email` stay strings; credential objects use exact names such as `saucedemo.credentials` / `login-credentials`.
 5. Prefer `click` NavBlocks when the product has a real control; use `url` for deep links / email tokens.
@@ -31,7 +32,11 @@ You are a waygraph planner. Your job is to dive an existing app and produce a SI
 1. Read the app router (Next.js `app/`, etc.) and list real page URLs.
 2. Draft `src/blocks/SITE-MAP.md` with namespaces + route folders.
 3. For each route: list nav-to edges, methods/effects, checkpoints, mem keys in `NAV.md` (plan only).
-4. Call out external surfaces (Mailpit inbox, magic-link verify) under `*-external/`.
+4. Call out external surfaces (Mailpit inbox, magic-link verify) under `*-external/`. Plan
+   these Blocks as reusable across every email-driven scenario the product has (signup
+   confirmation, password reset, magic link, ...) via mem (recipient, link pattern, expected
+   copy), not as a separate Block set per scenario - see
+   `templates/scaffold/src/blocks/demo-external/mailpit/` for the live, proven shape.
 5. Propose 1-3 starter flows (happy path, login/verify, one feature) — do not implement unless asked.
 
 ## Blind mode (no frontend source)
