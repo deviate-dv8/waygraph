@@ -623,6 +623,54 @@ which remains separate, later, unmet work. Live reference: `tests/pilot/pilot.sp
 library function) and `tests/cli/pilot.spec.ts` (the real CLI), both proven against live
 saucedemo.com.
 
+## Blind Pilot (cold start, zero Blocks)
+
+Waygraph Pilot above assumes a Block library already exists. Blind Pilot is the opposite
+case: a session on a site nobody has described to this package yet. `AutoSession`/`auto --cli
+--detach` already tolerate a project directory with **zero** `.block.ts` files (no crash,
+`here` just stays `null`), so an agent can open a real session and start exploring cold with
+no new code at all - `auto dom <sessionId>` already gives real DOM/ARIA visibility
+independent of any Block library.
+
+What's actually new here is two primitives an agent needs to go from "exploring" to "building
+a Block library incrementally":
+
+```bash
+waygraph auto click <sessionId> "<selector>"          # act before any Block covers this
+waygraph auto type <sessionId> "<selector>" "<text>"  # same, for a real input
+waygraph auto goto <sessionId> "<url>"                # navigate the real live page
+waygraph auto reload <sessionId>                      # pick up a Block just written to disk,
+                                                       # without restarting the session
+```
+
+`click`/`type`/`goto` each re-detect the session's Checkpoint afterward (the same detection
+`send`/`status` already use) and return a fresh snapshot - a selector matching nothing is a
+reported failure naming it, not a silent no-op. `reload` re-discovers the project's Block
+library/graph from disk in place, leaving the live page, mem, and current Checkpoint
+untouched - so a Block an agent just wrote to disk becomes immediately runnable via the
+session's existing `send`, without relaunching the browser.
+
+**This package writes no Block content.** The driving agent recognizes a pattern ("this is a
+login form") and writes the `.block.ts`/`*Sel`/mem-keys files itself, using the conventions
+documented above - the same way it would write any other source file. Worked example (proven
+end to end in `tests/cli/auto-session-blind-pilot.spec.ts` against an in-repo synthetic
+fixture, `tests/fixtures/blind-pilot-site/`): start a session with zero Blocks, explore via
+`dom`/`click`/`goto`, write one real `defineNavBlock` to disk, `reload`, then `send` it -
+reaching the real Checkpoint it declares, proving it's genuinely driveable, not just visible.
+
+**Two real gotchas found while proving this, worth knowing before debugging a silent
+failure:** a `.block.ts` file that throws on import (e.g. a malformed Trait call) vanishes
+from the graph with no error printed anywhere - `discoverGraph`'s per-file import errors are
+mostly swallowed silently, so "reload did nothing" can mean a real mistake in the file just
+written, not a package bug. And a Block not wired into any `.flow.ts` (`waygraph graph`'s own
+"orphan" warning) is still fully visible and runnable in a live session's menu - orphan status
+only affects `auto --blocks <From> <To>` path-finding, not `auto`'s own menu.
+
+**Honest scope:** Waygraph Map (a portable, consolidated graph package artifact) and Waygraph
+Router (an opinionated folder convention) are separate, unbuilt, vision-only pieces this
+capability does not depend on or design - see `ROADMAP.md`'s Phase 6b/6c section. Proof stays
+against an in-repo synthetic fixture, not a real external site.
+
 ## Getting started (pick one)
 
 | Goal | Command |
@@ -710,6 +758,10 @@ a third mode.
 **Agent bootstrap:** `waygraph pilot start` starts a `--detach` session and reads back the
 whole project graph in one call, so an agent can begin planning a multi-step request
 immediately - see "Waygraph Pilot" above for the full picture.
+
+**Cold start (zero Blocks):** `auto click/type/goto <sessionId>` act on the live page even
+when no Block covers that action yet, and `auto reload <sessionId>` picks up a Block just
+written to disk without restarting the session - see "Blind Pilot" above.
 
 Flows are files (0.10.5+):
 

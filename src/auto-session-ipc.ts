@@ -41,7 +41,11 @@ type ServerRequest =
   | { op: "status" }
   | { op: "send"; pick: string }
   | ({ op: "dom" } & InspectDomOptions)
-  | { op: "trace" };
+  | { op: "trace" }
+  | { op: "click"; selector: string }
+  | { op: "type"; selector: string; text: string }
+  | { op: "goto"; url: string }
+  | { op: "reload" };
 
 export type StatusOrSendResponse =
   | { ok: true; snapshot: SessionSnapshot; quit: boolean }
@@ -144,7 +148,13 @@ function readOneMessage<T>(sock: Socket, timeoutMs: number): Promise<T> {
 export async function requestSession(
   projectDir: string,
   sessionId: string,
-  request: { op: "status" } | { op: "send"; pick: string },
+  request:
+    | { op: "status" }
+    | { op: "send"; pick: string }
+    | { op: "click"; selector: string }
+    | { op: "type"; selector: string; text: string }
+    | { op: "goto"; url: string }
+    | { op: "reload" },
   timeoutMs?: number,
 ): Promise<StatusOrSendResponse>;
 export async function requestSession(
@@ -261,6 +271,15 @@ export async function serveSession(
         response = await session.inspectDom(domOpts);
       } else if (request.op === "trace") {
         response = { ok: true, trace: session.getTrace() };
+      } else if (request.op === "click") {
+        response = await session.rawClick(request.selector);
+      } else if (request.op === "type") {
+        response = await session.rawType(request.selector, request.text);
+      } else if (request.op === "goto") {
+        response = await session.rawGoto(request.url);
+      } else if (request.op === "reload") {
+        await session.reloadLibrary();
+        response = { ok: true, snapshot: await session.currentSnapshot(), quit: false };
       } else {
         response = { ok: false, error: `unknown op "${(request as { op: string }).op}"` };
       }

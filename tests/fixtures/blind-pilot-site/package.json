@@ -1,0 +1,10 @@
+{
+  "name": "waygraph-fixture-blind-pilot-site",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Minimal two-page offline fixture for openspec/changes/waygraph-blind-pilot's own proof - starts with zero .block.ts files.",
+  "dependencies": {
+    "waygraph": "file:../../.."
+  }
+}

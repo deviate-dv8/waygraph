@@ -238,8 +238,10 @@ export class AutoSession {
   private readonly trace: TraceStep[] = [];
 
   private constructor(
-    private readonly graph: Awaited<ReturnType<typeof buildExploreContext>>["graph"],
-    private readonly library: Awaited<ReturnType<typeof buildExploreContext>>["library"],
+    private readonly projectDir: string,
+    private readonly blocksSelect: import("./blocks-select.js").BlocksSelect | undefined,
+    private graph: Awaited<ReturnType<typeof buildExploreContext>>["graph"],
+    private library: Awaited<ReturnType<typeof buildExploreContext>>["library"],
     private readonly mem: MemPage,
     private readonly engine: Engine,
     private readonly browser: Browser,
@@ -274,7 +276,18 @@ export class AutoSession {
       await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
       await page.waitForLoadState("load").catch(() => {});
     }
-    return new AutoSession(graph, library, mem, engine, browser, context, page, startUrl);
+    return new AutoSession(
+      init.projectDir,
+      init.blocksSelect,
+      graph,
+      library,
+      mem,
+      engine,
+      browser,
+      context,
+      page,
+      startUrl,
+    );
   }
 
   /** Pure getter - returns a copy, not the live array. */
@@ -405,6 +418,84 @@ export class AutoSession {
     return {
       ok: true,
       snapshot: buildSessionSnapshot(nextMenu, this.library.byName, this.here, this.lastRunNote),
+      quit: false,
+    };
+  }
+
+  /**
+   * Re-discovers the project's Block library and graph from disk, using the
+   * exact same call `start()` itself makes - not a duplicated read - and
+   * replaces `this.library`/`this.graph` in place. Leaves the live page,
+   * mem, browser/context, and current Checkpoint (`here`) untouched, so a
+   * Block written to disk mid-session becomes pickable via a later
+   * `applyPick` without restarting the session. See
+   * openspec/changes/waygraph-blind-pilot/design.md.
+   */
+  async reloadLibrary(): Promise<void> {
+    const { graph, library } = await buildExploreContext(
+      this.projectDir,
+      this.blocksSelect ? { blocksSelect: this.blocksSelect } : undefined,
+    );
+    this.graph = graph;
+    this.library = library;
+  }
+
+  /**
+   * Raw interaction primitives for a page no Block covers yet (Blind Pilot -
+   * see openspec/changes/waygraph-blind-pilot). Unlike `applyPick`, the
+   * resulting Checkpoint isn't known ahead of time from a Block's own
+   * `resolve()`, so each of these invalidates the cached `here` (forcing
+   * `currentMenu()`'s existing lazy `detectHere` call to run again) rather
+   * than assuming the page didn't move anywhere a Block now recognizes.
+   * A selector matching nothing is a reported failure, not a silent no-op.
+   */
+  async rawClick(selector: string): Promise<ApplyPickResult> {
+    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    const locator = this.page.locator(selector).first();
+    if ((await locator.count()) === 0) {
+      return { ok: false, error: `no element matches selector "${selector}"` };
+    }
+    await locator.click();
+    this.here = null;
+    const menu = await this.currentMenu();
+    this.lastRunNote = `click "${selector}" -> ${this.here ?? "Unknown"}`;
+    return {
+      ok: true,
+      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+      quit: false,
+    };
+  }
+
+  async rawType(selector: string, text: string): Promise<ApplyPickResult> {
+    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    const locator = this.page.locator(selector).first();
+    if ((await locator.count()) === 0) {
+      return { ok: false, error: `no element matches selector "${selector}"` };
+    }
+    await locator.fill(text);
+    this.here = null;
+    const menu = await this.currentMenu();
+    this.lastRunNote = `type into "${selector}" -> ${this.here ?? "Unknown"}`;
+    return {
+      ok: true,
+      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+      quit: false,
+    };
+  }
+
+  async rawGoto(url: string): Promise<ApplyPickResult> {
+    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    try {
+      await this.page.goto(url, { waitUntil: "domcontentloaded" });
+    } catch (err) {
+      return { ok: false, error: `goto "${url}" failed - ${err instanceof Error ? err.message : String(err)}` };
+    }
+    this.here = null;
+    const menu = await this.currentMenu();
+    this.lastRunNote = `goto "${url}" -> ${this.here ?? "Unknown"}`;
+    return {
+      ok: true,
+      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
       quit: false,
     };
   }

@@ -289,31 +289,51 @@ Six phases, each independently shippable, in dependency order:
    real consumer"), which remains a separate, later, unmet step. Full spec/design/tasks:
    `openspec/changes/waygraph-pilot/`.
 
-### Phase 6b/6c - Blind Pilot, Waygraph Map, Waygraph Router (vision only - not proposed, not scoped)
-
-Real forward-looking ideas captured here so they aren't lost, deliberately not pulled into
-the current Phase 6 (non-blind Pilot) change above:
+### Phase 6b - Blind Pilot - shipped
 
 - **Non-blind Pilot** (Phase 6, above) assumes a Block library already exists, already
   authored with `description`/`verify`/checkpoints by a developer - Pilot just drives
   Playwright through a graph someone already built.
-- **Blind Pilot (Phase 6b)** - the opposite case: no pre-existing Block library at all. An
-  agent navigates a live site cold, reusing the same discovery primitives Phase 2-3 already
-  built for blind planning (`auto --cli --detach`/`dom`/`send`/`trace`), and *builds* the
-  graph as it goes instead of reading one that's already authored.
-- **Waygraph Map (Phase 6c)** - the blind pilot's own output: a consolidated, portable,
+- **Blind Pilot** - the opposite case: no pre-existing Block library at all. `AutoSession`/
+  `auto --cli --detach` already tolerated a project with zero `.block.ts` files before this
+  phase touched anything (confirmed by reading the code, not assumed), so an agent opening a
+  session and exploring cold via `auto dom` needed no new code at all. What was actually
+  missing, and is now built: `auto click/type/goto <sessionId>` (act on the live page before
+  any Block covers that action - each re-detects the session's Checkpoint afterward, the same
+  detection `send`/`status` already use) and `auto reload <sessionId>` (re-discover the
+  project's Block library/graph from disk in place, so a Block an agent just wrote to disk
+  becomes runnable via the session's existing `send` without restarting the browser). This
+  package generates no Block content - the driving agent recognizes a pattern and writes the
+  `.block.ts`/`*Sel`/mem-keys files itself, the same way it writes any other source file.
+  Proven end to end (`tests/cli/auto-session-blind-pilot.spec.ts`) against an in-repo
+  synthetic fixture (`tests/fixtures/blind-pilot-site/`, a tracked two-page offline site):
+  cold session -> blind DOM exploration -> a real `defineNavBlock` written to disk mid-session
+  -> `reload` -> `send` runs it for real, reaching its declared Checkpoint. Two real gotchas
+  found and documented (not silently worked around): `discoverGraph`'s per-file import errors
+  are mostly swallowed silently, so a malformed newly-written Block vanishes from the graph
+  with no error printed anywhere; and a Block not wired into any `.flow.ts` (`waygraph
+  graph`'s "orphan" warning) is still fully visible and runnable in a live session's menu -
+  orphan status only gates `auto --blocks` path-finding, not `auto`'s own menu. Full
+  spec/design/tasks: `openspec/changes/waygraph-blind-pilot/`.
+
+### Phase 6c - Waygraph Map, Waygraph Router (vision only - not proposed, not scoped)
+
+- **Waygraph Map** - Blind Pilot's own output, generalized: a consolidated, portable,
   standalone package (working name `waygraph/map` or a companion package) capturing a
   project's discovered graph as a distributable artifact, separate from any Block source.
-- **Waygraph Router (Phase 6c)** - a second, opinionated authoring mode alongside today's:
-  today's convention (`*-web/`/`*-external/` namespacing, Nav/Page/Method/Effect/Assert
-  kinds, `*Sel` objects) is **manual mode** - a developer has real freedom over file layout,
-  just follows soft conventions. Router mode would be a fully opinionated,
-  Next.js-App-Router-style folder structure (`(base_app)/dashboard/page.ts`,
-  `(external)/mailpit/...`) making a project's structure mechanically parseable - the natural
-  target for blind-discovery-to-map generation to regenerate against, and likely its own
-  scaffold variant, not a change to the current freeform one.
+  Real, open dependency Phase 6b deliberately left unresolved (see its own design.md): Blind
+  Pilot as shipped writes plain `.block.ts` files directly; whether Waygraph Map should be the
+  actual target instead is a real design question for whenever this phase is picked up.
+- **Waygraph Router** - a second, opinionated authoring mode alongside today's: today's
+  convention (`*-web/`/`*-external/` namespacing, Nav/Page/Method/Effect/Assert kinds, `*Sel`
+  objects) is **manual mode** - a developer has real freedom over file layout, just follows
+  soft conventions. Router mode would be a fully opinionated, Next.js-App-Router-style folder
+  structure (`(base_app)/dashboard/page.ts`, `(external)/mailpit/...`) making a project's
+  structure mechanically parseable - the natural target for blind-discovery-to-map generation
+  to regenerate against, and likely its own scaffold variant, not a change to the current
+  freeform one.
 
-No design work has started on any of these three - named here as real, coherent future
+No design work has started on either of these two - named here as real, coherent future
 direction, not as commitments with a shape yet.
 
 ## Narrated help-center video generation (planned - deferred to v1.0.x)

@@ -7029,6 +7029,15 @@ Primary (less is more):
                  --depth N                 Limit snapshot depth (aria: native; full: caller cap)
   waygraph auto trace <sessionId>          Read the session's Checkpoint/Block-level history
                                            (no side effects; not raw click/fill recording)
+  waygraph auto click <sessionId> <sel>    Click a real element - works even with zero Blocks
+                                           (Blind Pilot: act before any Block covers this)
+  waygraph auto type <sessionId> <sel> <text>  Fill a real input the same way
+  waygraph auto goto <sessionId> <url>     Navigate the real live page
+                 (click/type/goto each re-detect the session's Checkpoint afterward,
+                  same detection send/status already use)
+  waygraph auto reload <sessionId>         Re-discover the project's Block library/graph
+                                           from disk without restarting the session - picks
+                                           up a Block written to disk mid-session
   waygraph pilot start                     Bootstrap for an agent: starts a --detach session
                                            (same as auto --cli --detach) AND reads back the
                                            whole project's Block graph (same as waygraph
@@ -7498,7 +7507,11 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           args[1] === "status" ||
           args[1] === "attach" ||
           args[1] === "dom" ||
-          args[1] === "trace")
+          args[1] === "trace" ||
+          args[1] === "click" ||
+          args[1] === "type" ||
+          args[1] === "goto" ||
+          args[1] === "reload")
       ) {
         const sub = args[1];
         const sessionId = args[2];
@@ -7563,6 +7576,46 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
         }
         if (sub === "trace") {
           const res = await requestSession(proj, sessionId, { op: "trace" });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
+        if (sub === "click") {
+          const selector = args[3];
+          if (selector === undefined) {
+            console.error('waygraph auto click: usage: waygraph auto click <sessionId> "<selector>"');
+            process.exit(1);
+          }
+          const res = await requestSession(proj, sessionId, { op: "click", selector });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
+        if (sub === "type") {
+          const selector = args[3];
+          const text = args[4];
+          if (selector === undefined || text === undefined) {
+            console.error('waygraph auto type: usage: waygraph auto type <sessionId> "<selector>" "<text>"');
+            process.exit(1);
+          }
+          const res = await requestSession(proj, sessionId, { op: "type", selector, text });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
+        if (sub === "goto") {
+          const url = args[3];
+          if (url === undefined) {
+            console.error("waygraph auto goto: usage: waygraph auto goto <sessionId> <url>");
+            process.exit(1);
+          }
+          const res = await requestSession(proj, sessionId, { op: "goto", url });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
+        if (sub === "reload") {
+          const res = await requestSession(proj, sessionId, { op: "reload" });
           console.log(JSON.stringify(res));
           if (!res.ok) process.exitCode = 1;
           break;
