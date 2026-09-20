@@ -26,6 +26,7 @@ import {
   type InspectDomOptions,
   type DomSnapshot,
   type TraceStep,
+  type ApplyPathResult,
 } from "./auto-session.js";
 
 export interface SessionMeta {
@@ -45,7 +46,8 @@ type ServerRequest =
   | { op: "click"; selector: string }
   | { op: "type"; selector: string; text: string }
   | { op: "goto"; url: string }
-  | { op: "reload" };
+  | { op: "reload" }
+  | { op: "reach"; checkpoint: string };
 
 export type StatusOrSendResponse =
   | { ok: true; snapshot: SessionSnapshot; quit: boolean }
@@ -55,7 +57,9 @@ export type DomResponse = { ok: true; snapshot: DomSnapshot } | { ok: false; err
 
 export type TraceResponse = { ok: true; trace: TraceStep[] } | { ok: false; error: string };
 
-type ServerResponse = StatusOrSendResponse | DomResponse | TraceResponse;
+export type ReachResponse = ApplyPathResult;
+
+type ServerResponse = StatusOrSendResponse | DomResponse | TraceResponse | ReachResponse;
 
 function sessionDir(projectDir: string): string {
   return join(projectDir, ".waygraph-auto");
@@ -172,6 +176,12 @@ export async function requestSession(
 export async function requestSession(
   projectDir: string,
   sessionId: string,
+  request: { op: "reach"; checkpoint: string },
+  timeoutMs?: number,
+): Promise<ReachResponse>;
+export async function requestSession(
+  projectDir: string,
+  sessionId: string,
   request: ServerRequest,
   timeoutMs = 15_000,
 ): Promise<ServerResponse> {
@@ -280,6 +290,8 @@ export async function serveSession(
       } else if (request.op === "reload") {
         await session.reloadLibrary();
         response = { ok: true, snapshot: await session.currentSnapshot(), quit: false };
+      } else if (request.op === "reach") {
+        response = await session.applyPath(request.checkpoint);
       } else {
         response = { ok: false, error: `unknown op "${(request as { op: string }).op}"` };
       }

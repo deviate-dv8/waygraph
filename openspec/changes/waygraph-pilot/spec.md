@@ -81,3 +81,30 @@ capability alone does not satisfy.
 - **WHEN** this capability is reported as implemented and proven
 - **THEN** the report SHALL state plainly that proof is in-repo only, and that the original
   `1.0.0` "real consumer" criterion remains a separate, later, unmet step
+
+### Requirement: A multi-step route runs in one call, verifying real progress at every step
+An agent SHALL be able to run a whole multi-step route to a target Checkpoint in one call
+against an already-running session, without hand-picking each step's index separately. Each
+step SHALL be verified to have actually reached the specific Checkpoint its own graph edge
+promised - not merely that it ran without throwing - before the route is reported successful.
+
+#### Scenario: A route with no setup-step requirement runs correctly in one call
+- **WHEN** a target Checkpoint is reachable via one or more Blocks whose real DOM
+  preconditions are already met at the session's current position
+- **THEN** the whole route SHALL run in one call, and the resulting snapshot's Checkpoint
+  SHALL equal the target
+
+#### Scenario: A step that runs without error but lands elsewhere fails loud, not falsely
+- **WHEN** a step in the computed route runs to completion without throwing, but its own
+  `resolve()` legitimately lands on a Checkpoint other than the one that step's specific edge
+  promised (e.g. a login submission staying on the login page after bad auth)
+- **THEN** the whole route SHALL be reported as failed, naming the step and where it actually
+  landed - not reported as successful because no exception occurred
+
+#### Scenario: A route crossing an edge whose real precondition isn't met fails loud, not hangs
+- **WHEN** the computed route includes a step whose real DOM precondition isn't met at the
+  point it's attempted (a known, stated limitation of routing purely from the static graph -
+  see design.md)
+- **THEN** the route SHALL fail within a bounded time with a clear error naming the failed
+  step, and the session SHALL remain alive and usable afterward - not hang indefinitely or
+  corrupt the session's state

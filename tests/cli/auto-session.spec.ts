@@ -80,6 +80,11 @@ async function trace(sessionId: string): Promise<{ ok: boolean; [k: string]: unk
   return JSON.parse(stdout.trim());
 }
 
+async function reach(sessionId: string, checkpoint: string): Promise<{ ok: boolean; [k: string]: unknown }> {
+  const stdout = await runCli(["auto", "reach", sessionId, checkpoint], { cwd: sauceRoot });
+  return JSON.parse(stdout.trim());
+}
+
 test("--detach requires --cli", async () => {
   await expect(exec(node, [CLI, "auto", "--detach", sauceRoot])).rejects.toMatchObject({
     stderr: expect.stringContaining("--detach requires --cli"),
@@ -219,4 +224,27 @@ test("full non-interactive sequence: detach, drive login + add-to-cart, status, 
   const afterQuit = await status(sessionId);
   expect(afterQuit.ok).toBe(false);
   expect(String(afterQuit.error)).toMatch(/no such session/);
+});
+
+test("auto reach: runs a real multi-step route to a Checkpoint in one call, against an already-running session", async () => {
+  test.setTimeout(60_000);
+
+  const { sessionId } = await detach();
+  // Real login by hand first (fill/fill/submit - reach doesn't invent
+  // same-Checkpoint setup steps; see openspec/changes/waygraph-pilot/design.md).
+  const atLogin = await status(sessionId);
+  const flat = (atLogin.snapshot as { sections: { edges: { block: string; index: number }[] }[] }).sections.flatMap((s) => s.edges);
+  await send(sessionId, String(flat.find((e) => e.block === "fill-username")!.index));
+  await send(sessionId, String(flat.find((e) => e.block === "fill-password")!.index));
+  const loginRes = await send(sessionId, String(flat.find((e) => e.block === "submit-login")!.index));
+  expect(loginRes.ok).toBe(true);
+
+  // One real CLI call reaches CartPage from LoggedIn via the live "nav-cart"
+  // wildcard edge - not a hand-picked index, the actual proof this exists for.
+  const reachRes = await reach(sessionId, "CartPage");
+  expect(reachRes.ok).toBe(true);
+  expect(reachRes.path).toEqual(["nav-cart"]);
+  expect((reachRes.snapshot as { here: string }).here).toBe("CartPage");
+
+  await send(sessionId, "q");
 });

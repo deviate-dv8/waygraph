@@ -220,6 +220,45 @@ export function findBlockPath(graph: WaygraphGraph, fromTag: string, toTag: stri
   return null;
 }
 
+export interface BlockPathStep {
+  block: string;
+  /** The specific Checkpoint this hop's edge targets - NOT re-derivable by
+   * looking up `block` by name afterward, since a union-Out Block (e.g.
+   * "Union Out tags create duplicate edges for the same Block", see
+   * `discoverGraph`'s own comment above) can have several edges with the
+   * same `block` name but different `to` tags; only the specific edge BFS
+   * actually routed through here is correct. */
+  to: string;
+}
+
+/**
+ * Same BFS as `findBlockPath`, but returns each hop's specific edge (block
+ * name + the Checkpoint it targets), not just the block name - needed by any
+ * caller that must verify a step actually landed where the route intended,
+ * not just re-guess it afterward. `findBlockPath` itself is unchanged and
+ * still used wherever only the block-name sequence matters.
+ */
+export function findBlockPathDetailed(graph: WaygraphGraph, fromTag: string, toTag: string): BlockPathStep[] | null {
+  if (fromTag === toTag) return [];
+  type QueueItem = { tag: string; path: BlockPathStep[] };
+  const queue: QueueItem[] = [{ tag: fromTag, path: [] }];
+  const visited = new Set<string>([fromTag]);
+
+  while (queue.length > 0) {
+    const { tag, path } = queue.shift()!;
+    for (const edge of graph.edges) {
+      if (edge.from !== tag && edge.from !== "*") continue;
+      const nextPath = [...path, { block: edge.block, to: edge.to }];
+      if (edge.to === toTag) return nextPath;
+      if (!visited.has(edge.to)) {
+        visited.add(edge.to);
+        queue.push({ tag: edge.to, path: nextPath });
+      }
+    }
+  }
+  return null;
+}
+
 async function importModule(filePath: string): Promise<Record<string, unknown>> {
   const url = new URL(`file://${resolve(filePath)}`);
   return (await import(url.href)) as Record<string, unknown>;

@@ -177,6 +177,7 @@ export type {
   SessionSnapshotEdge,
   SessionSnapshotSection,
   ApplyPickResult,
+  ApplyPathResult,
   TraceStep,
 } from "./auto-session.js";
 export { pilotStart } from "./pilot.js";

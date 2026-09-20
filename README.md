@@ -601,6 +601,7 @@ waygraph auto status <sessionId>              # read the current menu (no side e
 waygraph auto send <sessionId> "<pick>"       # run one pick, get the resulting menu back
 waygraph auto dom <sessionId>                 # inspect the live DOM/ARIA tree
 waygraph auto trace <sessionId>               # read the Checkpoint/Block history so far
+waygraph auto reach <sessionId> <Checkpoint>  # run a whole multi-step route in one call
 ```
 
 Worked example (run for real against `examples/saucedemo`, no new execution code involved): an
@@ -609,6 +610,21 @@ agent gets a plain request - "log me in and buy the backpack" - reads the graph 
 route to `OrderComplete`, then drives it by repeatedly reading each `status`/`send` response and
 picking the next index itself. The browser stays open the whole time; the user can watch it, or
 check the final tab afterward.
+
+**`auto reach <sessionId> <Checkpoint>`** runs a whole route in one call instead of one
+`send` per step - real, reported pain for any non-trivial task on a rich graph ("the entire
+prompts of the day" for one manual walkthrough). It path-finds via the same BFS `auto --blocks
+<From> <To>` already uses, then runs each step directly against the session's own live
+page/mem, verifying every step actually lands where its own graph edge promised (not just that
+it ran without throwing - a Block can legitimately resolve elsewhere, e.g. a login submission
+staying put after bad auth). **Real, stated limitation, not silently papered over:** for a
+target only reachable by crossing a wildcard (`from: "*"`) edge whose real DOM precondition
+depends on same-Checkpoint setup (e.g. filling form fields before a submit), neither `reach`
+nor the already-shipped `auto --blocks` can safely route there automatically - both fail loud
+within a bounded time (a real Playwright click/wait timeout) rather than silently guessing
+wrong or hanging. Full design history - three rejected approaches, a real correctness bug this
+change's own tests caught, and this limitation confirmed by direct reproduction - is in
+`openspec/changes/waygraph-pilot/tasks.md`'s own M5 section.
 
 **Pilot itself does no planning, resolving, narrating, or acting** - `pilotStart`'s only job is
 starting the session and handing back its graph in one round trip; see `src/pilot.ts`. An

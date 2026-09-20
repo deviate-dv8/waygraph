@@ -7038,6 +7038,13 @@ Primary (less is more):
   waygraph auto reload <sessionId>         Re-discover the project's Block library/graph
                                            from disk without restarting the session - picks
                                            up a Block written to disk mid-session
+  waygraph auto reach <sessionId> <Checkpoint>  Path-find from here to Checkpoint and run
+                                           the whole route in one call - not one auto send
+                                           per step. Same findBlockPath BFS auto --blocks
+                                           <From> <To> already uses, against this session's
+                                           own live graph/position. Fails loud (not a guess)
+                                           if a step has several live options on the page
+                                           (an instanceOptions Block) - use send for that step
   waygraph pilot start                     Bootstrap for an agent: starts a --detach session
                                            (same as auto --cli --detach) AND reads back the
                                            whole project's Block graph (same as waygraph
@@ -7511,7 +7518,8 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           args[1] === "click" ||
           args[1] === "type" ||
           args[1] === "goto" ||
-          args[1] === "reload")
+          args[1] === "reload" ||
+          args[1] === "reach")
       ) {
         const sub = args[1];
         const sessionId = args[2];
@@ -7616,6 +7624,20 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
         }
         if (sub === "reload") {
           const res = await requestSession(proj, sessionId, { op: "reload" });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
+        if (sub === "reach") {
+          const checkpoint = args[3];
+          if (checkpoint === undefined) {
+            console.error("waygraph auto reach: usage: waygraph auto reach <sessionId> <Checkpoint>");
+            process.exit(1);
+          }
+          // Longer than every other op's default (15s): a real multi-step
+          // route runs several real Blocks in sequence server-side before
+          // responding - a legitimately slow single request, not a hang.
+          const res = await requestSession(proj, sessionId, { op: "reach", checkpoint }, 90_000);
           console.log(JSON.stringify(res));
           if (!res.ok) process.exitCode = 1;
           break;

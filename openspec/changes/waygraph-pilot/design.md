@@ -129,3 +129,17 @@ something this change should add speculatively now.
   Deliberate: it solved a problem the user didn't have. Preserved at a git tag for reference,
   not reintroduced without a new proposal explicitly re-opening that decision (see spec.md's
   own requirement to this effect).
+
+## M5 addendum: multi-step routing (`applyPath`/`auto reach`)
+
+Full design history (three rejected approaches, the real correctness bug found by this
+change's own tests, and the pre-existing `auto --blocks` limitation this surfaced) lives in
+`tasks.md`'s own M5 section, not duplicated here - read it before touching `applyPath` again.
+The one decision worth restating at this level: **routing reuses `runChainAuto`'s
+already-proven "trust the static graph, run each step directly" model rather than inventing
+live-menu-aware cleverness**, because every attempt at the latter (gating on live-menu
+visibility, re-planning per step, scoring live options by static-graph distance) was
+independently found wrong by direct reproduction. The static graph's own blind spot (a
+wildcard edge's real DOM precondition isn't encoded anywhere) is a real, accepted limitation
+of the current graph model, not something `applyPath` tries to paper over - it fails loud and
+bounded instead, matching how `runChainAuto` already behaves for the identical case.

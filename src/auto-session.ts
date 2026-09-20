@@ -9,7 +9,7 @@
  */
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { Engine, MemPage } from "./index.js";
-import type { Checkpoint } from "./types.js";
+import type { Checkpoint, WaygraphInstanceOption } from "./types.js";
 import {
   buildExploreContext,
   buildExploreMenu,
@@ -26,6 +26,7 @@ import {
   type PickResult,
 } from "./auto-explore-run.js";
 import { runStubPhase, type StubPhaseResult } from "./highlights.js";
+import { findBlockPathDetailed } from "./graph.js";
 
 /** True when a stub-phase result actually carries authored content worth keeping. */
 function stubPhaseHasContent(r: StubPhaseResult): boolean {
@@ -199,6 +200,10 @@ export type ApplyPickResult =
   | { ok: true; snapshot: SessionSnapshot; quit: boolean }
   | { ok: false; error: string };
 
+export type ApplyPathResult =
+  | { ok: true; path: string[]; snapshot: SessionSnapshot }
+  | { ok: false; error: string };
+
 /**
  * One Checkpoint/Block-level step in a session's history - not a raw action
  * recording (no clicks/fills). Kept lean by design: an agent that wants DOM
@@ -359,25 +364,19 @@ export class AutoSession {
     return { ok: true, snapshot: { mode: "aria", truncated: false, tree } };
   }
 
-  /** Applies exactly one pick: runs at most one Block, returns the resulting state. */
-  async applyPick(raw: string): Promise<ApplyPickResult> {
-    const menu = await this.currentMenu();
-    const pick = parsePick(raw, menu.flat.length);
-    if (pick.type === "invalid") return { ok: false, error: pick.reason };
-    if (pick.type === "quit") {
-      return {
-        ok: true,
-        snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
-        quit: true,
-      };
-    }
-
-    const edge = menu.flat[pick.index]!;
-    const entry = this.library.byName.get(edge.block);
-    if (!entry) {
-      return { ok: false, error: `Block "${edge.block}" not loaded - skipped` };
-    }
-
+  /**
+   * Runs one already-resolved Block entry for real - the shared core both
+   * `applyPick` (resolved via a live-menu index) and `applyPath` (resolved
+   * directly by name, bypassing live-menu-visibility entirely - see
+   * `applyPath`'s own comment for why) call. `expectedTo` is only used as a
+   * fallback when a Block's own `resolve()` doesn't set `__state` - same
+   * behavior `applyPick` always had, just factored out, not changed.
+   */
+  private async runNamedBlock(
+    entry: BlockEntry,
+    expectedTo: string,
+    instanceOption?: WaygraphInstanceOption,
+  ): Promise<ApplyPickResult> {
     const from = this.here;
     const stubBeforeResult = await runStubPhase(entry.block, "stubBefore");
     const stepBase: Pick<TraceStep, "block" | "from" | "timestamp" | "stubBefore"> = {
@@ -387,14 +386,14 @@ export class AutoSession {
       ...(stubPhaseHasContent(stubBeforeResult) ? { stubBefore: stubBeforeResult } : {}),
     };
     try {
-      if (edge.instanceOption) {
-        this.mem.set(edge.instanceOption.key, edge.instanceOption.value);
+      if (instanceOption) {
+        this.mem.set(instanceOption.key, instanceOption.value);
       }
       // Always the non-interactive path (cli: false) - a detached session has
       // no TTY to prompt on; a missing mem key fails loud instead of hanging.
       await ensureMem(entry, this.mem, false);
       const result = await runOneBlock(this.engine, entry, this.context, this.page, this.mem, false);
-      this.here = (result as Checkpoint<string>).__state ?? edge.to;
+      this.here = (result as Checkpoint<string>).__state ?? expectedTo;
       this.lastRunNote = `${entry.block.name} -> ${this.here}`;
       const stubAfterResult = await runStubPhase(entry.block, "stubAfter", { out: result });
       this.pushTrace({
@@ -420,6 +419,27 @@ export class AutoSession {
       snapshot: buildSessionSnapshot(nextMenu, this.library.byName, this.here, this.lastRunNote),
       quit: false,
     };
+  }
+
+  /** Applies exactly one pick: runs at most one Block, returns the resulting state. */
+  async applyPick(raw: string): Promise<ApplyPickResult> {
+    const menu = await this.currentMenu();
+    const pick = parsePick(raw, menu.flat.length);
+    if (pick.type === "invalid") return { ok: false, error: pick.reason };
+    if (pick.type === "quit") {
+      return {
+        ok: true,
+        snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+        quit: true,
+      };
+    }
+
+    const edge = menu.flat[pick.index]!;
+    const entry = this.library.byName.get(edge.block);
+    if (!entry) {
+      return { ok: false, error: `Block "${edge.block}" not loaded - skipped` };
+    }
+    return this.runNamedBlock(entry, edge.to, edge.instanceOption);
   }
 
   /**
@@ -498,6 +518,88 @@ export class AutoSession {
       snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
       quit: false,
     };
+  }
+
+  /**
+   * Runs a whole multi-step route to `targetCheckpoint` in one call, instead
+   * of an agent hand-picking one index at a time across many separate
+   * `applyPick` round trips - real, reported pain for any non-trivial task
+   * on a rich graph ("the entire prompts of the day" driving one step per
+   * call).
+   *
+   * Two other designs were tried and rejected by direct reproduction against
+   * live saucedemo.com before this one, both undone by the same root cause:
+   * a `from: "*"` edge (e.g. "Checkout", only clickable once you're actually
+   * on the cart page with items) looks globally reachable to
+   * `findBlockPath`'s static-graph BFS, which has no live-page access and
+   * can't know the edge's real precondition isn't showing yet. Computing the
+   * whole route once upfront names a premature wildcard step immediately;
+   * scoring each live menu option by its static-graph distance to the
+   * target (greedy best-first) doesn't fix it either - a harmless self-loop
+   * Method can score just as well as real progress once wildcard "shortcuts"
+   * are baked into every distance calculation, and the session gets stuck
+   * repeating it.
+   *
+   * The fix that actually works: stop trying to be clever about live-menu
+   * visibility per step, and reuse `auto --blocks <From> <To>`'s own already
+   * -proven approach instead - compute the path ONCE (via
+   * `findBlockPathDetailed`, the same BFS `findBlockPath`/`runChainAuto`
+   * already use, extended to also return each hop's specific edge - see its
+   * own doc comment for why that extra detail is load-bearing, not cosmetic),
+   * then run each Block in it directly via `runNamedBlock`, trusting the
+   * graph the same way `runChain`'s own flow execution already does, not
+   * gated on live-menu visibility at all. The one real difference from
+   * `runChainAuto`: this runs against the session's own already-live
+   * page/context/mem, not a freshly spawned browser - the whole point of
+   * staying in one session. A step whose real precondition genuinely isn't
+   * met still fails loud, naming that step, exactly the way a mis-ordered
+   * `runChain` spec would - and a step that runs without throwing but lands
+   * somewhere other than what its own edge promised (a real, observed case,
+   * not hypothetical - see this method's own test suite) fails loud too,
+   * rather than reporting false success.
+   */
+  async applyPath(targetCheckpoint: string): Promise<ApplyPathResult> {
+    await this.currentMenu();
+    const from = this.here;
+    if (from === null) {
+      return { ok: false, error: "cannot path-find: the session's current Checkpoint is unknown (here is null)" };
+    }
+    const path = findBlockPathDetailed(this.graph, from, targetCheckpoint);
+    if (!path) {
+      return { ok: false, error: `no Block path from "${from}" to "${targetCheckpoint}" in the discovered graph` };
+    }
+    for (const step of path) {
+      const entry = this.library.byName.get(step.block);
+      if (!entry) {
+        return { ok: false, error: `path step "${step.block}" is in the discovered graph but not loaded in this session's library` };
+      }
+      if (entry.block.instanceOptions) {
+        return {
+          ok: false,
+          error: `path step "${step.block}" needs a specific live option chosen (an instanceOptions Block, e.g. one per product) - ambiguous for automatic routing, use applyPick directly with the specific index`,
+        };
+      }
+      const result = await this.runNamedBlock(entry, step.to);
+      if (!result.ok) {
+        return { ok: false, error: `step "${step.block}" failed - ${result.error}` };
+      }
+      // A Block can resolve to a DIFFERENT real Checkpoint than this exact
+      // hop's own edge expected, without throwing at all - e.g.
+      // submit-login's own resolve() legitimately "stays on LoginPage" on
+      // bad auth instead of erroring. Trusting `result.ok` alone would
+      // silently report success while sitting on the wrong page - a real
+      // bug caught by this method's own test suite, not theoretical.
+      // `step.to` (not a name-based re-lookup - a union-Out Block can have
+      // several edges sharing one name with different `to` tags) is exactly
+      // the Checkpoint THIS hop's own edge in the computed route promised.
+      if (this.here !== step.to) {
+        return {
+          ok: false,
+          error: `step "${step.block}" ran but landed on "${this.here}", not the expected "${step.to}" - it did not throw, but did not make the expected progress either`,
+        };
+      }
+    }
+    return { ok: true, path: path.map((s) => s.block), snapshot: await this.currentSnapshot() };
   }
 
   async close(): Promise<void> {
