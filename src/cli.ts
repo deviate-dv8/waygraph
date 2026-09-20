@@ -256,6 +256,7 @@ import {
   completeSequentialTodoDock,
   applyDevicePhase,
   resolveDeviceState,
+  WAYGRAPH_RING_CSS,
 } from "waygraph";
 
 function walkDir(dir, pattern) {
@@ -440,45 +441,10 @@ function seedMemForFlow(mem, flowBlocks, json, label) {
 // Purely CLI-level orchestration - no engine changes, no change to the
 // non-STEP path above.
 const RING_CSS =
-  "#wg-ring{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
-  "border:2.5px solid #7C3AED;border-radius:10px;" +
-  // Opacity fade only - NEVER transition border-color/box-shadow. Tone swaps
-  // (auto gray -> planned purple -> warning yellow) must snap instantly;
-  // color transitions read as a muddy gray/purple/yellow morph on ring 2+.
-  "box-shadow:0 0 0 4px rgba(124,58,237,.16);transition:opacity .3s ease;}" +
-  // Planned (stubs / fixtures / YAP / instruction.highlights) = purple.
-  // Automation (verify fallback, unmatched fill/click) = gray - operators
-  // can ignore engine checks and watch purple + semantic tones.
-  "#wg-ring[data-tone=planned]{border-color:#7C3AED;box-shadow:0 0 0 4px rgba(124,58,237,.16);}" +
-  "#wg-ring[data-tone=auto]{border-color:#9CA3AF;box-shadow:0 0 0 4px rgba(156,163,175,.28);}" +
-  "#wg-ring[data-tone=info]{border-color:#3B82F6;box-shadow:0 0 0 4px rgba(59,130,246,.22);}" +
-  "#wg-ring[data-tone=warning]{border-color:#EAB308;box-shadow:0 0 0 4px rgba(234,179,8,.22);}" +
-  "#wg-ring[data-tone=danger]{border-color:#EF4444;box-shadow:0 0 0 4px rgba(239,68,68,.22);}" +
-  "#wg-ring[data-tone=success]{border-color:#22C55E;box-shadow:0 0 0 4px rgba(34,197,94,.22);}" +
-  // A real element, not a ::after pseudo-element - a pseudo-element's
-  // position is CSS-relative to the ring's own box (left:0 always meant
-  // "the ring's own left edge"), so it had no way to be clamped back onto
-  // screen when that box sat near a viewport edge - the label's text just
-  // ran off, invisibly, with no overflow guard at all. A real sibling can
-  // be measured (its actual rendered width) and repositioned in JS -
-  // pushed back onto screen, same width, never shrunk. See
-  // window.__wgPositionRing in installOverlay.
-  "#wg-ring-label{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
-  "max-width:min(360px,70vw);white-space:normal;padding:6px 10px;border-radius:7px;background:#7C3AED;color:#fff;" +
-  "font:600 12px/1.35 system-ui,sans-serif;transition:opacity .3s ease;}" +
-  "#wg-ring-label[data-tone=planned]{background:#7C3AED;color:#fff;}" +
-  "#wg-ring-label[data-tone=auto]{background:#6B7280;color:#fff;}" +
-  "#wg-ring-label[data-tone=info]{background:#2563EB;color:#fff;}" +
-  "#wg-ring-label[data-tone=warning]{background:#EAB308;color:#1c1917;}" +
-  "#wg-ring-label[data-tone=danger]{background:#DC2626;color:#fff;}" +
-  "#wg-ring-label[data-tone=success]{background:#16A34A;color:#fff;}" +
-  // size: ring pad + label font; weight: label boldness
-  "#wg-ring[data-size=sm]{border-width:1.5px;border-radius:8px;}" +
-  "#wg-ring[data-size=lg]{border-width:4px;border-radius:12px;}" +
-  "#wg-ring-label[data-size=sm]{font-size:10px;line-height:1.25;padding:4px 7px;border-radius:5px;}" +
-  "#wg-ring-label[data-size=lg]{font-size:16px;line-height:1.35;padding:8px 14px;border-radius:9px;max-width:min(480px,85vw);}" +
-  "#wg-ring-label[data-weight=bold]{font-weight:800;}" +
-  "#wg-ring-label[data-weight=normal]{font-weight:600;}" +
+  // Shared with pilot-overlay.ts's showPilotVision - same ring/label CSS,
+  // one source of truth (highlights.ts), so a Blind Pilot vision ring and a
+  // demo stepper ring never visually drift apart.
+  WAYGRAPH_RING_CSS +
   // Mouse cursor icon that travels to a target before it's acted on, plus a
   // quick expanding ripple at the moment of a click - same idea as
   // help-center-clip-engine's #clip-cursor/#clip-ring (video-pipeline). The
@@ -7019,6 +6985,9 @@ Primary (less is more):
                                            (same --non-headless flag run/demo already use)
   waygraph auto send <sessionId> "<pick>"  Send one pick to a --detach session, print
                                            the resulting state as JSON (no TTY needed)
+                 --timeout <ms>            Override the 15s default wait for this one call -
+                                           a single Block can legitimately run a slow real
+                                           interaction (e.g. a multi-step mouse drag)
   waygraph auto status <sessionId>         Read a --detach session's state (no side effects)
   waygraph auto attach <sessionId>         Reopen an interactive terminal against a
                                            running --detach session
@@ -7029,11 +6998,30 @@ Primary (less is more):
                  --depth N                 Limit snapshot depth (aria: native; full: caller cap)
   waygraph auto trace <sessionId>          Read the session's Checkpoint/Block-level history
                                            (no side effects; not raw click/fill recording)
+  waygraph auto console <sessionId>        Read the real browser console/pageerror messages and
+                                           failed (4xx/5xx) network responses seen so far - for
+                                           diagnosing a silent failure (e.g. a form submit that
+                                           does nothing observable in the DOM) that inspectDom
+                                           alone can't explain, since it only reads what actually
+                                           rendered, not what the page/network actually said
+  waygraph auto storage <sessionId>        Read localStorage/sessionStorage plus registered
+                                           service workers (scope/active URL/state) - client-
+                                           side state (push-subscription/auth tokens etc.) that
+                                           never appears in the rendered DOM inspectDom reads
   waygraph auto click <sessionId> <sel>    Click a real element - works even with zero Blocks
                                            (Blind Pilot: act before any Block covers this)
   waygraph auto type <sessionId> <sel> <text>  Fill a real input the same way
   waygraph auto goto <sessionId> <url>     Navigate the real live page
-                 (click/type/goto each re-detect the session's Checkpoint afterward,
+  waygraph auto press <sessionId> <sel> <key>
+                                           Presses a real key (Playwright name, e.g. Enter,
+                                           Escape, Tab) on a real focused element - many real
+                                           inline-edit inputs (no visible Save button until you
+                                           type) commit on Enter, not blur/click-elsewhere
+  waygraph auto upload <sessionId> <sel> <image|pdf|video|path>
+                                           Fill a real <input type="file"> - a built-in stub
+                                           (small, real, valid: assets/stubs/stub.png|pdf|mp4)
+                                           or a caller-supplied file path
+                 (click/type/goto/upload each re-detect the session's Checkpoint afterward,
                   same detection send/status already use)
   waygraph auto reload <sessionId>         Re-discover the project's Block library/graph
                                            from disk without restarting the session - picks
@@ -7523,8 +7511,12 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           args[1] === "attach" ||
           args[1] === "dom" ||
           args[1] === "trace" ||
+          args[1] === "console" ||
+          args[1] === "storage" ||
+          args[1] === "upload" ||
           args[1] === "click" ||
           args[1] === "type" ||
+          args[1] === "press" ||
           args[1] === "goto" ||
           args[1] === "reload" ||
           args[1] === "reach" ||
@@ -7544,10 +7536,29 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
         if (sub === "send") {
           const pick = args[3];
           if (pick === undefined) {
-            console.error('waygraph auto send: usage: waygraph auto send <sessionId> "<pick>"');
+            console.error('waygraph auto send: usage: waygraph auto send <sessionId> "<pick>" [--timeout <ms>]');
             process.exit(1);
           }
-          const res = await requestSession(proj, sessionId, { op: "send", pick });
+          // Real, direct need found live: a single Block can legitimately
+          // run a genuinely slow real interaction (e.g. a multi-step mouse
+          // drag) that exceeds the 15s default - same reasoning `auto
+          // reach` already gets a 90s default for (multiple Blocks in one
+          // call). Unlike reach, send has no way to know ahead of time
+          // whether the ONE Block it's running is fast or slow, so this is
+          // opt-in via a flag rather than a raised default.
+          let timeoutMs: number | undefined;
+          for (let i = 4; i < args.length; i++) {
+            if (args[i] === "--timeout") {
+              const raw = args[++i];
+              const n = Number(raw);
+              if (!Number.isFinite(n) || n <= 0) {
+                console.error(`waygraph auto send: --timeout must be a positive number of ms, got "${raw}"`);
+                process.exit(1);
+              }
+              timeoutMs = n;
+            }
+          }
+          const res = await requestSession(proj, sessionId, { op: "send", pick }, timeoutMs);
           console.log(JSON.stringify(res));
           if (!res.ok) process.exitCode = 1;
           break;
@@ -7597,6 +7608,18 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           if (!res.ok) process.exitCode = 1;
           break;
         }
+        if (sub === "console") {
+          const res = await requestSession(proj, sessionId, { op: "console" });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
+        if (sub === "storage") {
+          const res = await requestSession(proj, sessionId, { op: "storage" });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
         if (sub === "click") {
           const selector = args[3];
           if (selector === undefined) {
@@ -7620,6 +7643,18 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           if (!res.ok) process.exitCode = 1;
           break;
         }
+        if (sub === "press") {
+          const selector = args[3];
+          const key = args[4];
+          if (selector === undefined || key === undefined) {
+            console.error('waygraph auto press: usage: waygraph auto press <sessionId> "<selector>" <key>');
+            process.exit(1);
+          }
+          const res = await requestSession(proj, sessionId, { op: "press", selector, key });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
         if (sub === "goto") {
           const url = args[3];
           if (url === undefined) {
@@ -7627,6 +7662,24 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
             process.exit(1);
           }
           const res = await requestSession(proj, sessionId, { op: "goto", url });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
+        if (sub === "upload") {
+          const selector = args[3];
+          const kindOrPath = args[4];
+          if (selector === undefined || kindOrPath === undefined) {
+            console.error(
+              'waygraph auto upload: usage: waygraph auto upload <sessionId> "<selector>" <image|pdf|video|path-to-file>',
+            );
+            process.exit(1);
+          }
+          const stub: { selector: string; stub: "image" | "pdf" | "video" | { filePath: string } } =
+            kindOrPath === "image" || kindOrPath === "pdf" || kindOrPath === "video"
+              ? { selector, stub: kindOrPath }
+              : { selector, stub: { filePath: resolve(process.cwd(), kindOrPath) } };
+          const res = await requestSession(proj, sessionId, { op: "upload", ...stub });
           console.log(JSON.stringify(res));
           if (!res.ok) process.exitCode = 1;
           break;

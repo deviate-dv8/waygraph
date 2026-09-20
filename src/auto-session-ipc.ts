@@ -28,6 +28,9 @@ import {
   type DomSnapshot,
   type TraceStep,
   type ApplyPathResult,
+  type ConsoleLogEntry,
+  type StorageSnapshot,
+  type StubFileKind,
 } from "./auto-session.js";
 
 export interface SessionMeta {
@@ -46,10 +49,14 @@ type ServerRequest =
   | { op: "trace" }
   | { op: "click"; selector: string }
   | { op: "type"; selector: string; text: string }
+  | { op: "press"; selector: string; key: string }
   | { op: "goto"; url: string }
   | { op: "reload" }
   | { op: "reach"; checkpoint: string }
-  | { op: "resync" };
+  | { op: "resync" }
+  | { op: "console" }
+  | { op: "storage" }
+  | { op: "upload"; selector: string; stub: StubFileKind | { filePath: string } };
 
 export type StatusOrSendResponse =
   | { ok: true; snapshot: SessionSnapshot; quit: boolean }
@@ -59,9 +66,19 @@ export type DomResponse = { ok: true; snapshot: DomSnapshot } | { ok: false; err
 
 export type TraceResponse = { ok: true; trace: TraceStep[] } | { ok: false; error: string };
 
+export type ConsoleResponse = { ok: true; consoleLog: ConsoleLogEntry[] } | { ok: false; error: string };
+
+export type StorageResponse = ({ ok: true } & StorageSnapshot) | { ok: false; error: string };
+
 export type ReachResponse = ApplyPathResult;
 
-type ServerResponse = StatusOrSendResponse | DomResponse | TraceResponse | ReachResponse;
+type ServerResponse =
+  | StatusOrSendResponse
+  | DomResponse
+  | TraceResponse
+  | ConsoleResponse
+  | StorageResponse
+  | ReachResponse;
 
 function sessionDir(projectDir: string): string {
   return join(projectDir, ".waygraph-auto");
@@ -175,9 +192,11 @@ export async function requestSession(
     | { op: "send"; pick: string }
     | { op: "click"; selector: string }
     | { op: "type"; selector: string; text: string }
+    | { op: "press"; selector: string; key: string }
     | { op: "goto"; url: string }
     | { op: "reload" }
-    | { op: "resync" },
+    | { op: "resync" }
+    | { op: "upload"; selector: string; stub: StubFileKind | { filePath: string } },
   timeoutMs?: number,
 ): Promise<StatusOrSendResponse>;
 export async function requestSession(
@@ -192,6 +211,18 @@ export async function requestSession(
   request: { op: "trace" },
   timeoutMs?: number,
 ): Promise<TraceResponse>;
+export async function requestSession(
+  projectDir: string,
+  sessionId: string,
+  request: { op: "console" },
+  timeoutMs?: number,
+): Promise<ConsoleResponse>;
+export async function requestSession(
+  projectDir: string,
+  sessionId: string,
+  request: { op: "storage" },
+  timeoutMs?: number,
+): Promise<StorageResponse>;
 export async function requestSession(
   projectDir: string,
   sessionId: string,
@@ -288,34 +319,54 @@ export async function serveSession(
     await enqueue(async () => {
       let response: ServerResponse;
       let shouldQuit = false;
-      if (request.op === "status") {
-        response = { ok: true, snapshot: await session.currentSnapshot(), quit: false };
-      } else if (request.op === "send") {
-        const result = await session.applyPick(request.pick);
-        response = result.ok
-          ? { ok: true, snapshot: result.snapshot, quit: result.quit }
-          : { ok: false, error: result.error };
-        shouldQuit = result.ok && result.quit;
-      } else if (request.op === "dom") {
-        const { op: _op, ...domOpts } = request;
-        response = await session.inspectDom(domOpts);
-      } else if (request.op === "trace") {
-        response = { ok: true, trace: session.getTrace() };
-      } else if (request.op === "click") {
-        response = await session.rawClick(request.selector);
-      } else if (request.op === "type") {
-        response = await session.rawType(request.selector, request.text);
-      } else if (request.op === "goto") {
-        response = await session.rawGoto(request.url);
-      } else if (request.op === "reload") {
-        await session.reloadLibrary();
-        response = { ok: true, snapshot: await session.currentSnapshot(), quit: false };
-      } else if (request.op === "reach") {
-        response = await session.applyPath(request.checkpoint);
-      } else if (request.op === "resync") {
-        response = await session.resync();
-      } else {
-        response = { ok: false, error: `unknown op "${(request as { op: string }).op}"` };
+      try {
+        if (request.op === "status") {
+          response = { ok: true, snapshot: await session.currentSnapshot(), quit: false };
+        } else if (request.op === "send") {
+          const result = await session.applyPick(request.pick);
+          response = result.ok
+            ? { ok: true, snapshot: result.snapshot, quit: result.quit }
+            : { ok: false, error: result.error };
+          shouldQuit = result.ok && result.quit;
+        } else if (request.op === "dom") {
+          const { op: _op, ...domOpts } = request;
+          response = await session.inspectDom(domOpts);
+        } else if (request.op === "trace") {
+          response = { ok: true, trace: session.getTrace() };
+        } else if (request.op === "console") {
+          response = { ok: true, consoleLog: session.getConsoleLog() };
+        } else if (request.op === "storage") {
+          response = { ok: true, ...(await session.inspectStorage()) };
+        } else if (request.op === "upload") {
+          response = await session.rawUpload(request.selector, request.stub);
+        } else if (request.op === "click") {
+          response = await session.rawClick(request.selector);
+        } else if (request.op === "type") {
+          response = await session.rawType(request.selector, request.text);
+        } else if (request.op === "press") {
+          response = await session.rawPress(request.selector, request.key);
+        } else if (request.op === "goto") {
+          response = await session.rawGoto(request.url);
+        } else if (request.op === "reload") {
+          await session.reloadLibrary();
+          response = { ok: true, snapshot: await session.currentSnapshot(), quit: false };
+        } else if (request.op === "reach") {
+          response = await session.applyPath(request.checkpoint);
+        } else if (request.op === "resync") {
+          response = await session.resync();
+        } else {
+          response = { ok: false, error: `unknown op "${(request as { op: string }).op}"` };
+        }
+      } catch (err) {
+        // Real, confirmed bug this fixes: an uncaught rejection here (e.g. a
+        // Playwright locator timing out because the element it found a
+        // moment ago - via `.count()`, which does NOT auto-wait - is gone by
+        // the time a slower call like `.evaluate()` re-resolves it, which
+        // DOES auto-wait) used to escape `handleLine`'s returned promise
+        // uncaught, crashing the whole detached session process on a single
+        // bad request. One request failing must never take the rest of the
+        // still-live session (browser/page/socket) down with it.
+        response = { ok: false, error: err instanceof Error ? err.message : String(err) };
       }
       sock.write(JSON.stringify(response) + "\n");
       if (shouldQuit) {

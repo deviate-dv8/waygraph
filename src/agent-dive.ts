@@ -32,6 +32,10 @@ function agentsTemplateDir(): string {
   return join(packageRoot(), "templates", "agents");
 }
 
+function skillsTemplateDir(): string {
+  return join(packageRoot(), "templates", "skills");
+}
+
 /** Minimal YAML-ish frontmatter parser for `*.agent.md` templates. */
 export function parseAgentSpec(filePath: string): AgentSpec {
   const raw = readFileSync(filePath, "utf-8");
@@ -87,6 +91,23 @@ export function loadAgentSpecs(): AgentSpec[] {
     .map((f) => parseAgentSpec(join(dir, f)));
 }
 
+/**
+ * Claude Code Skills (`.claude/skills/<name>/SKILL.md`) - a different
+ * mechanism than the agent persona files above: loadable instructions
+ * triggered by task shape, not a persona. Claude-Code-specific (no
+ * equivalent in the opencode/cursor/vscode loops), additive to the
+ * `claude` loop only. Reuses the same `name: .../description: ...` +
+ * body frontmatter shape `parseAgentSpec` already parses.
+ */
+export function loadSkillSpecs(): AgentSpec[] {
+  const dir = skillsTemplateDir();
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => f.endsWith(".skill.md"))
+    .sort()
+    .map((f) => parseAgentSpec(join(dir, f)));
+}
+
 function writeFileLogged(path: string, content: string, kind: string): void {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, content.endsWith("\n") ? content : content + "\n");
@@ -131,6 +152,11 @@ function vscodeAgentMd(agent: AgentSpec): string {
   return claudeAgentMd(agent);
 }
 
+function claudeSkillMd(skill: AgentSpec): string {
+  const lines = ["---", `name: ${skill.name}`, `description: ${skill.description}`, "---", "", skill.instructions, ""];
+  return lines.join("\n");
+}
+
 export interface AgentDiveOptions {
   loop: AgentDiveLoop;
   projectDir: string;
@@ -150,6 +176,14 @@ export function runAgentDive(opts: AgentDiveOptions): void {
       mkdirSync(dir, { recursive: true });
       for (const a of agents) {
         writeFileLogged(join(dir, `${a.name}.md`), claudeAgentMd(a), "claude agent");
+      }
+      const skills = loadSkillSpecs();
+      if (skills.length > 0) {
+        console.log(`  ${skills.length} skill(s) from package templates`);
+        const skillsRoot = join(root, ".claude", "skills");
+        for (const s of skills) {
+          writeFileLogged(join(skillsRoot, s.name, "SKILL.md"), claudeSkillMd(s), "claude skill");
+        }
       }
       break;
     }

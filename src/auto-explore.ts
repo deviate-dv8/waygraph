@@ -1,4 +1,4 @@
-import { readdirSync, type Dirent } from "node:fs";
+import { readdirSync, statSync, type Dirent } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import type { Page } from "@playwright/test";
 import type { Block, Checkpoint, WaygraphInstanceOption } from "./types.js";
@@ -56,8 +56,28 @@ function walkDir(dir: string, pattern: RegExp): string[] {
   return results;
 }
 
+/**
+ * Real, confirmed bug this fixes: a bare `import(url.href)` is permanently
+ * cached by Node's ESM loader for the lifetime of the process, keyed on the
+ * exact specifier. `AutoSession.reloadLibrary()` exists specifically so a
+ * Block edited on disk mid-session takes effect without restarting the
+ * session - but a SECOND `reload` of a file already imported once in this
+ * process silently kept returning the FIRST version's content, no matter
+ * how many times the file changed on disk after that. A one-shot CLI
+ * process (`waygraph graph`, etc.) never hits this - it only ever imports
+ * each file once anyway - but a long-running `--detach` session calling
+ * `reloadLibrary()` repeatedly does.
+ *
+ * Fix: bust the cache with the file's own mtime as a query param - a
+ * genuinely changed file gets a new specifier (forcing a fresh import); an
+ * UNCHANGED file between two reloads keeps hitting the SAME specifier (no
+ * unbounded accumulation of dead module instances across many reloads).
+ */
 async function importModule(filePath: string): Promise<Record<string, unknown>> {
-  const url = new URL(`file://${resolve(filePath)}`);
+  const resolved = resolve(filePath);
+  const url = new URL(`file://${resolved}`);
+  const mtimeMs = statSync(resolved).mtimeMs;
+  url.searchParams.set("t", String(mtimeMs));
   return (await import(url.href)) as Record<string, unknown>;
 }
 

@@ -243,3 +243,78 @@ test("cold-start end to end: explore with zero Blocks, author one to disk, reloa
     rmSync(projectDir, { recursive: true, force: true });
   }
 });
+
+test("a SECOND reload of an already-imported file picks up its new content, not a stale cached version", async () => {
+  // Real, confirmed bug found live (veciro.com Blind Pilot exploration):
+  // Node's ESM loader permanently caches a module by its exact import
+  // specifier for the life of the process. `auto-explore.ts` and `graph.ts`
+  // each had their own `importModule` importing a bare `file://` URL with
+  // no cache-busting - the FIRST reload of a given file always worked (new
+  // specifier, nothing cached yet), but editing that SAME file again and
+  // reloading again kept silently serving the FIRST version's content. A
+  // page-hub Block (`nav.block.ts`-style) that gets a NEW method wired into
+  // it after already being reloaded once is exactly this shape - the new
+  // method never appeared until the whole session restarted.
+  test.setTimeout(45_000);
+  const projectDir = createIsolatedProjectDir();
+  const { sessionId } = await detach(projectDir);
+  try {
+    const blocksDir = join(projectDir, "blocks");
+    mkdirSync(blocksDir, { recursive: true });
+    const blockFile = join(blocksDir, "nav-second-page.block.ts");
+    writeFileSync(
+      blockFile,
+      [
+        'import { defineNavBlock, Trait } from "waygraph";',
+        "",
+        "export const NavSecondPageBlock = defineNavBlock({",
+        '  name: "nav-second-page",',
+        '  description: "v1",',
+        '  checkpoint: "SecondPage",',
+        '  url: "/second.html",',
+        '  verify: [Trait.url({ pathname: "/second.html" })],',
+        "});",
+        "",
+      ].join("\n"),
+    );
+
+    // First reload - this file has never been imported in this process
+    // before, so it's cached for the first time here.
+    const firstReload = await auto(projectDir, "reload", sessionId);
+    expect(firstReload.ok).toBe(true);
+    const afterFirst = await auto(projectDir, "status", sessionId);
+    const edgeV1 = afterFirst.snapshot.sections
+      .flatMap((s: { edges: any[] }) => s.edges)
+      .find((e: { block: string }) => e.block === "nav-second-page");
+    expect(edgeV1.description).toBe("v1");
+
+    // Edit the SAME file (already cached from the reload above) and reload
+    // a second time - this is the exact case that silently served stale
+    // content before the fix.
+    writeFileSync(
+      blockFile,
+      [
+        'import { defineNavBlock, Trait } from "waygraph";',
+        "",
+        "export const NavSecondPageBlock = defineNavBlock({",
+        '  name: "nav-second-page",',
+        '  description: "v2 - edited after the first reload",',
+        '  checkpoint: "SecondPage",',
+        '  url: "/second.html",',
+        '  verify: [Trait.url({ pathname: "/second.html" })],',
+        "});",
+        "",
+      ].join("\n"),
+    );
+    const secondReload = await auto(projectDir, "reload", sessionId);
+    expect(secondReload.ok).toBe(true);
+    const afterSecond = await auto(projectDir, "status", sessionId);
+    const edgeV2 = afterSecond.snapshot.sections
+      .flatMap((s: { edges: any[] }) => s.edges)
+      .find((e: { block: string }) => e.block === "nav-second-page");
+    expect(edgeV2.description).toBe("v2 - edited after the first reload");
+  } finally {
+    await auto(projectDir, "send", sessionId, "q");
+    rmSync(projectDir, { recursive: true, force: true });
+  }
+});

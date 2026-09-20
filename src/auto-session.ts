@@ -8,6 +8,8 @@
  * affect them even indirectly. See openspec/changes/waygraph-auto-cli-session-control.
  */
 import type { Browser, BrowserContext, Page } from "@playwright/test";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Engine, MemPage } from "./index.js";
 import type { Checkpoint, WaygraphInstanceOption } from "./types.js";
 import {
@@ -27,7 +29,7 @@ import {
 } from "./auto-explore-run.js";
 import { runStubPhase, type StubPhaseResult } from "./highlights.js";
 import { findBlockPathDetailed } from "./graph.js";
-import { updatePilotOverlay } from "./pilot-overlay.js";
+import { updatePilotOverlay, showPilotActivity, showPilotVision } from "./pilot-overlay.js";
 
 /** True when a stub-phase result actually carries authored content worth keeping. */
 function stubPhaseHasContent(r: StubPhaseResult): boolean {
@@ -238,6 +240,80 @@ export interface TraceStep {
 
 const TRACE_MAX_STEPS = 500;
 
+export type StubFileKind = "image" | "pdf" | "video";
+
+/**
+ * Real, minimal, valid fixture files bundled at `assets/stubs/` - not
+ * placeholder/renamed-empty files: `stub.png` is a real 1x1 PNG,
+ * `stub.pdf` a real single-page PDF, `stub.mp4` a real ffmpeg-encoded
+ * 1s black clip. Real, direct user request: Blind Pilot hitting a real
+ * `<input type="file">` (e.g. an avatar upload) had no way to supply
+ * anything without a human handing over a real file each time - these are
+ * small enough to ship in the package and pass most apps' basic file-type
+ * checks (magic bytes, not just extension).
+ */
+/**
+ * Public so a Block a consumer writes can reach the same real fixture files
+ * `rawUpload` uses - not just the raw primitive. Needed when a real upload
+ * flow has no stable `<input type="file">` to hand a selector to at all
+ * (e.g. one created on the fly inside a click handler, then immediately
+ * `.click()`'d to open the OS picker and possibly torn down right after) -
+ * a Block's own `act()` should pair this with `page.waitForEvent("filechooser")`
+ * around the triggering click, not go hunting for a selector that may not
+ * exist for more than a moment.
+ */
+export function stubFilePath(kind: StubFileKind): string {
+  const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  const names: Record<StubFileKind, string> = {
+    image: "stub.png",
+    pdf: "stub.pdf",
+    video: "stub.mp4",
+  };
+  return join(packageRoot, "assets", "stubs", names[kind]);
+}
+
+/**
+ * Real gap found live (Blind Pilot against veciro.com): a form submit that
+ * does nothing observable in the DOM - no navigation, no visible error text -
+ * is undiagnosable through `inspectDom` alone, since a silent client-side
+ * validation failure or a failed network request never touches the DOM at
+ * all. `auto dom` reads what's rendered; this reads what the page/network
+ * actually SAID, independent of whether the app chose to show it.
+ */
+export interface ConsoleLogEntry {
+  type: "console" | "pageerror" | "response";
+  level?: string;
+  text: string;
+  url?: string;
+  status?: number;
+  timestamp: string;
+}
+
+const CONSOLE_LOG_MAX_ENTRIES = 200;
+
+export interface ServiceWorkerRegistrationInfo {
+  scope: string;
+  activeUrl?: string;
+  state?: string;
+}
+
+export interface CookieInfo {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  httpOnly: boolean;
+  secure: boolean;
+}
+
+export interface StorageSnapshot {
+  localStorage: Record<string, string>;
+  sessionStorage: Record<string, string>;
+  cookies: CookieInfo[];
+  serviceWorkers: string[];
+  serviceWorkerRegistrations: ServiceWorkerRegistrationInfo[];
+}
+
 /**
  * Non-interactive explore session: same graph/library/mem/browser setup
  * `runAutoExplore` runs in `--cli` mode, driven by `applyPick` instead of a
@@ -250,6 +326,7 @@ export class AutoSession {
   private here: string | null = null;
   private lastRunNote: string | null = null;
   private readonly trace: TraceStep[] = [];
+  private readonly consoleLog: ConsoleLogEntry[] = [];
 
   private constructor(
     private readonly projectDir: string,
@@ -278,11 +355,21 @@ export class AutoSession {
     const engine = new Engine({ headless });
     const { chromium } = await import("@playwright/test");
     const executablePath = process.env.CHROME_PATH || process.env.CHROMIUM_PATH;
-    const launchOpts: Parameters<typeof chromium.launch>[0] = { headless, args: [] };
+    // Real gap found live: a headed (--non-headless) session kept a fixed
+    // 1280x720 content area even when the user maximized/fullscreened the
+    // actual window - `viewport: null` alone only makes the PAGE track the
+    // window; the window itself still launches at Chromium's own small
+    // default size unless told to start maximized. Same fix cli.ts's own
+    // --step/headed launch already uses (see its own comment there) -
+    // headless keeps the fixed viewport since there's no real window to size.
+    const launchOpts: Parameters<typeof chromium.launch>[0] = {
+      headless,
+      args: headless ? [] : ["--start-maximized"],
+    };
     if (executablePath) launchOpts.executablePath = executablePath;
     const browser = await chromium.launch(launchOpts);
     const contextOpts: Parameters<typeof browser.newContext>[0] = {
-      viewport: { width: 1280, height: 720 },
+      viewport: headless ? { width: 1280, height: 720 } : null,
     };
     if (baseURL) contextOpts.baseURL = baseURL;
     const context = await browser.newContext(contextOpts);
@@ -291,7 +378,7 @@ export class AutoSession {
       await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
       await page.waitForLoadState("load").catch(() => {});
     }
-    return new AutoSession(
+    const session = new AutoSession(
       init.projectDir,
       init.blocksSelect,
       graph,
@@ -304,6 +391,44 @@ export class AutoSession {
       startUrl,
       init.sessionId,
     );
+    // Attached once, on the page created here - `ensureLivePage` only swaps
+    // to a fresh Page if the current one closed (a rare case, e.g. the human
+    // closing the tab), not on ordinary same-page SPA navigation, which is
+    // all this target (and most real sites) actually do.
+    page.on("console", (msg) => {
+      session.pushConsoleLog({
+        type: "console",
+        level: msg.type(),
+        text: msg.text(),
+        timestamp: new Date().toISOString(),
+      });
+    });
+    page.on("pageerror", (err) => {
+      session.pushConsoleLog({
+        type: "pageerror",
+        text: err instanceof Error ? err.message : String(err),
+        timestamp: new Date().toISOString(),
+      });
+    });
+    page.on("response", (res) => {
+      // Every failed response (the original case), PLUS every mutation
+      // (non-GET) response regardless of status - a real gap found live:
+      // "auto console" only logging failures made a SUCCESSFUL POST that
+      // simply didn't navigate anywhere look identical to "nothing
+      // happened at all," undiagnosable the same way a real failure was.
+      // A mutation's outcome (2xx or not) is always diagnostically
+      // relevant; a GET's usually isn't (assets, trackers) unless it failed.
+      const method = res.request().method();
+      if (res.status() < 400 && method === "GET") return;
+      session.pushConsoleLog({
+        type: "response",
+        text: `${method} ${res.statusText()}`,
+        url: res.url(),
+        status: res.status(),
+        timestamp: new Date().toISOString(),
+      });
+    });
+    return session;
   }
 
   /** Pure getter - returns a copy, not the live array. */
@@ -314,6 +439,16 @@ export class AutoSession {
   private pushTrace(step: TraceStep): void {
     this.trace.push(step);
     if (this.trace.length > TRACE_MAX_STEPS) this.trace.shift();
+  }
+
+  /** Pure getter - returns a copy, not the live array. */
+  getConsoleLog(): ConsoleLogEntry[] {
+    return [...this.consoleLog];
+  }
+
+  private pushConsoleLog(entry: ConsoleLogEntry): void {
+    this.consoleLog.push(entry);
+    if (this.consoleLog.length > CONSOLE_LOG_MAX_ENTRIES) this.consoleLog.shift();
   }
 
   private async currentMenu(): Promise<ExploreMenu> {
@@ -333,8 +468,58 @@ export class AutoSession {
     await updatePilotOverlay(this.page, {
       sessionId: this.sessionId,
       snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+      graph: this.graph,
     });
+    await this.warnUnmappedLinks();
     return menu;
+  }
+
+  /**
+   * Real, direct user request: a Blind Pilot agent had no way to ask "which
+   * of the links visible on THIS page are already covered by a NavBlock" -
+   * only manual DOM inspection + guessing hrefs, exactly what this session
+   * had been doing by hand the whole time this feature was built. Compares
+   * every same-origin `<a href>` on the page against every NavBlock's own
+   * static url (`__waygraphNavUrl` - see `defineNavBlock`'s own comment for
+   * why only plain-string urls qualify), and `console.warn()`s each pathname
+   * with no NavBlock at all - surfaced through the same real console capture
+   * `auto console` already reads, not a separate channel. Deduped per path
+   * per page load (a `Set` living on `window`, so it survives repeated
+   * `currentMenu()` calls but resets on a real navigation) - once is enough
+   * to flag a gap, repeating it on every status/send call would just be noise.
+   */
+  private async warnUnmappedLinks(): Promise<void> {
+    const known = new Set<string>();
+    for (const entry of this.library.navBlocks) {
+      const url = (entry.block as unknown as { __waygraphNavUrl?: string }).__waygraphNavUrl;
+      if (!url) continue;
+      try {
+        known.add(new URL(url, this.page.url()).pathname);
+      } catch {
+        /* not a resolvable URL (relative to an unset base, etc.) - skip */
+      }
+    }
+    await this.page
+      .evaluate((knownPathnames: string[]) => {
+        const w = window as unknown as { __wgWarnedPaths?: Set<string> };
+        w.__wgWarnedPaths ??= new Set<string>();
+        const seenThisPass = new Set<string>();
+        for (const a of Array.from(document.querySelectorAll("a[href]"))) {
+          let url: URL;
+          try {
+            url = new URL(a.getAttribute("href") || "", location.href);
+          } catch {
+            continue;
+          }
+          if (url.origin !== location.origin) continue;
+          const path = url.pathname;
+          if (seenThisPass.has(path) || knownPathnames.includes(path) || w.__wgWarnedPaths!.has(path)) continue;
+          seenThisPass.add(path);
+          w.__wgWarnedPaths!.add(path);
+          console.warn(`[waygraph] unmapped nav link on this page: ${path} - no NavBlock covers this URL`);
+        }
+      }, Array.from(known))
+      .catch(() => {});
   }
 
   /** Pure getter - no Block runs, no mem/page mutation. */
@@ -358,6 +543,7 @@ export class AutoSession {
       if ((await locator.count()) === 0) {
         return { ok: false, error: `no element matches selector "${opts.selector}"` };
       }
+      await showPilotVision(this.page, opts.selector, `dom (${mode}): ${opts.selector}`, "orange");
       if (mode === "full") {
         const caps: FullDomCaps = {
           depth: opts.depth ?? FULL_MODE_DEFAULT_DEPTH,
@@ -371,6 +557,7 @@ export class AutoSession {
       return { ok: true, snapshot: { mode: "aria", selector: opts.selector, truncated: false, tree } };
     }
 
+    await showPilotActivity(this.page, `Running (Dom): ${mode}, whole page`);
     if (mode === "full") {
       // page.evaluate only ships the one function passed to it - it can't
       // reach another named function by closure. Routing the whole-page case
@@ -386,6 +573,49 @@ export class AutoSession {
     }
     const tree = await this.page.ariaSnapshotJSON(ariaOptions);
     return { ok: true, snapshot: { mode: "aria", truncated: false, tree } };
+  }
+
+  /**
+   * Pure getter - reads the live page's client-side state: localStorage,
+   * sessionStorage, and registered service workers (scope/active URL/state).
+   * Real, direct follow-up to `auto console`'s own gap: a site doing web
+   * push (this target has a real `NOTIFICATION_VAPID` config, confirmed via
+   * `auto dom` earlier) keeps push-subscription/auth state in these places,
+   * not in the rendered DOM `inspectDom` reads.
+   */
+  async inspectStorage(): Promise<StorageSnapshot> {
+    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    const [localStorageEntries, sessionStorageEntries] = await this.page.evaluate(() => [
+      Object.entries(window.localStorage),
+      Object.entries(window.sessionStorage),
+    ]);
+    const cookies = await this.context.cookies();
+    const workers = this.context.serviceWorkers();
+    const registrations = await this.page
+      .evaluate(async () => {
+        if (!("serviceWorker" in navigator)) return [];
+        const regs = await navigator.serviceWorker.getRegistrations();
+        return regs.map((r) => ({
+          scope: r.scope,
+          ...(r.active?.scriptURL ? { activeUrl: r.active.scriptURL } : {}),
+          ...(r.active?.state ? { state: r.active.state } : {}),
+        }));
+      })
+      .catch(() => []);
+    return {
+      localStorage: Object.fromEntries(localStorageEntries),
+      sessionStorage: Object.fromEntries(sessionStorageEntries),
+      cookies: cookies.map((c) => ({
+        name: c.name,
+        value: c.value,
+        domain: c.domain,
+        path: c.path,
+        httpOnly: c.httpOnly,
+        secure: c.secure,
+      })),
+      serviceWorkers: workers.map((w) => w.url()),
+      serviceWorkerRegistrations: registrations,
+    };
   }
 
   /**
@@ -463,6 +693,7 @@ export class AutoSession {
     if (!entry) {
       return { ok: false, error: `Block "${edge.block}" not loaded - skipped` };
     }
+    await showPilotActivity(this.page, `Running (Block): ${edge.block}`);
     return this.runNamedBlock(entry, edge.to, edge.instanceOption);
   }
 
@@ -476,12 +707,14 @@ export class AutoSession {
    * openspec/changes/waygraph-blind-pilot/design.md.
    */
   async reloadLibrary(): Promise<void> {
+    if (this.page) await showPilotActivity(this.page, "Running: reload");
     const { graph, library } = await buildExploreContext(
       this.projectDir,
       this.blocksSelect ? { blocksSelect: this.blocksSelect } : undefined,
     );
     this.graph = graph;
     this.library = library;
+    if (this.page) await showPilotActivity(this.page, "Map updated");
   }
 
   /**
@@ -504,6 +737,7 @@ export class AutoSession {
    */
   async resync(): Promise<ApplyPickResult> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    await showPilotActivity(this.page, "Running: resync");
     this.here = await detectHere(this.page, this.library.navBlocks);
     const menu = await this.currentMenu();
     this.lastRunNote = `resync -> ${this.here ?? "Unknown"}`;
@@ -525,10 +759,12 @@ export class AutoSession {
    */
   async rawClick(selector: string): Promise<ApplyPickResult> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    await showPilotActivity(this.page, `Running (Dom): click "${selector}"`);
     const locator = this.page.locator(selector).first();
     if ((await locator.count()) === 0) {
       return { ok: false, error: `no element matches selector "${selector}"` };
     }
+    await showPilotVision(this.page, selector, `click: ${selector}`);
     await locator.click();
     this.here = null;
     const menu = await this.currentMenu();
@@ -542,10 +778,12 @@ export class AutoSession {
 
   async rawType(selector: string, text: string): Promise<ApplyPickResult> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    await showPilotActivity(this.page, `Running (Dom): type into "${selector}"`);
     const locator = this.page.locator(selector).first();
     if ((await locator.count()) === 0) {
       return { ok: false, error: `no element matches selector "${selector}"` };
     }
+    await showPilotVision(this.page, selector, `type: ${selector}`);
     await locator.fill(text);
     this.here = null;
     const menu = await this.currentMenu();
@@ -557,8 +795,35 @@ export class AutoSession {
     };
   }
 
+  /**
+   * Presses a real key on a real focused element - a real gap found live:
+   * many real inline-edit inputs (no visible Save button at all) commit on
+   * Enter, not on blur/click-elsewhere. `key` is a Playwright key name
+   * (e.g. "Enter", "Escape", "Tab") - same vocabulary as
+   * `page.keyboard.press`, which this wraps.
+   */
+  async rawPress(selector: string, key: string): Promise<ApplyPickResult> {
+    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    await showPilotActivity(this.page, `Running (Dom): press "${key}" on "${selector}"`);
+    const locator = this.page.locator(selector).first();
+    if ((await locator.count()) === 0) {
+      return { ok: false, error: `no element matches selector "${selector}"` };
+    }
+    await showPilotVision(this.page, selector, `press ${key}: ${selector}`);
+    await locator.press(key);
+    this.here = null;
+    const menu = await this.currentMenu();
+    this.lastRunNote = `press "${key}" on "${selector}" -> ${this.here ?? "Unknown"}`;
+    return {
+      ok: true,
+      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+      quit: false,
+    };
+  }
+
   async rawGoto(url: string): Promise<ApplyPickResult> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    await showPilotActivity(this.page, `Running (Dom): goto "${url}"`);
     try {
       await this.page.goto(url, { waitUntil: "domcontentloaded" });
     } catch (err) {
@@ -567,6 +832,38 @@ export class AutoSession {
     this.here = null;
     const menu = await this.currentMenu();
     this.lastRunNote = `goto "${url}" -> ${this.here ?? "Unknown"}`;
+    return {
+      ok: true,
+      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+      quit: false,
+    };
+  }
+
+  /**
+   * Fills a real `<input type="file">` - a built-in stub kind
+   * ("image"/"pdf"/"video", see `stubFilePath`) or a caller-supplied
+   * `filePath` for anything else ("whatever", per the real request this
+   * responds to). Same raw-primitive shape as click/type/goto: works with
+   * zero Blocks, invalidates `here` since the app may react to the upload.
+   */
+  async rawUpload(selector: string, stub: StubFileKind | { filePath: string }): Promise<ApplyPickResult> {
+    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    const filePath = typeof stub === "string" ? stubFilePath(stub) : stub.filePath;
+    const label = typeof stub === "string" ? stub : filePath;
+    await showPilotActivity(this.page, `Running (Dom): upload ${label} into "${selector}"`);
+    const locator = this.page.locator(selector).first();
+    if ((await locator.count()) === 0) {
+      return { ok: false, error: `no element matches selector "${selector}"` };
+    }
+    await showPilotVision(this.page, selector, `upload ${label}: ${selector}`);
+    try {
+      await locator.setInputFiles(filePath);
+    } catch (err) {
+      return { ok: false, error: `upload into "${selector}" failed - ${err instanceof Error ? err.message : String(err)}` };
+    }
+    this.here = null;
+    const menu = await this.currentMenu();
+    this.lastRunNote = `upload ${label} into "${selector}" -> ${this.here ?? "Unknown"}`;
     return {
       ok: true,
       snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
@@ -633,6 +930,7 @@ export class AutoSession {
           error: `path step "${step.block}" needs a specific live option chosen (an instanceOptions Block, e.g. one per product) - ambiguous for automatic routing, use applyPick directly with the specific index`,
         };
       }
+      if (this.page) await showPilotActivity(this.page, `Running (Block): ${step.block} (reach -> ${targetCheckpoint})`);
       const result = await this.runNamedBlock(entry, step.to);
       if (!result.ok) {
         return { ok: false, error: `step "${step.block}" failed - ${result.error}` };

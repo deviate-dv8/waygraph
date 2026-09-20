@@ -79,6 +79,7 @@ export {
   FIXTURE_DURATION_SLOW_MS_DEFAULT,
   SLIDE_DURATION_MS_DEFAULT,
   SLIDE_DURATION_FAST_MS_DEFAULT,
+  WAYGRAPH_RING_CSS,
 } from "./highlights.js";
 export type {
   WaygraphHighlightStub,
@@ -170,7 +171,7 @@ export {
   assertWgOverlayReady,
 } from "./overlay-beacon.js";
 export type { WgModalKind, WgBeaconRow } from "./overlay-beacon.js";
-export { AutoSession } from "./auto-session.js";
+export { AutoSession, stubFilePath } from "./auto-session.js";
 export type {
   AutoSessionInit,
   SessionSnapshot,
@@ -179,6 +180,11 @@ export type {
   ApplyPickResult,
   ApplyPathResult,
   TraceStep,
+  ConsoleLogEntry,
+  StorageSnapshot,
+  ServiceWorkerRegistrationInfo,
+  CookieInfo,
+  StubFileKind,
 } from "./auto-session.js";
 export { pilotStart } from "./pilot.js";
 export type { PilotStartResult } from "./pilot.js";

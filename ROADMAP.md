@@ -46,6 +46,7 @@ otherwise.
 | DOM-inspection tool (`auto dom`: aria / full fidelity, `--selector` scoping) | Shipped - `openspec/changes/waygraph-auto-dom-inspect/` |
 | Visible-browser sessions + Checkpoint/Block trace (`--non-headless`, `auto trace`) | Shipped - `openspec/changes/waygraph-auto-headful-trace/` |
 | Agent-skill hardening (one-action-per-Block, `defineAssertBlock`, Sel enforcement, orphan gates) | Shipped - `openspec/changes/waygraph-agent-skill-hardening/` |
+| `agent-dive` Claude Code Skills (`waygraph-pilot`/`waygraph-blind-pilot`, real hard-won Pilot/Blind-Pilot lessons, not `--help` restated) | Shipped - `templates/skills/*.skill.md`, `src/agent-dive.ts` (`claude` loop only), `tests/agent-dive/skills.spec.ts` |
 | Mail verification (browser-driven, `*-external/<tool>/` convention) | Shipped (Mailpit) - `openspec/changes/waygraph-mail-adapters/` |
 | Waygraph Pilot (plain-language ask -> narrate/agentic, built on AutoSession) | Proposed - `openspec/changes/waygraph-pilot/` |
 | Narrated help-center video generation (core `waygraph render`) | Deferred to v1.0.x (`waygraph-demo` module) - not current focus, see below |
@@ -110,6 +111,43 @@ solve; both are reasons this stays scoped.
 
 **Not yet spec'd** beyond the paragraph in
 `openspec/changes/archive/2026-09-19-nav-block-and-check/design.md`'s Roadmap section.
+
+Real, concrete framing from a live session (2026-09-21, veciro.com Blind Pilot exploration):
+a bare `waygraph` install loading several already-built consumer waygraphs as plain deps
+(`waygraph-google`, `waygraph-zsign`, `waygraph-veciro`, ...) and querying/traversing across
+all of them at once - same shape as the already-shipped "Waygraph Map" folder convention's own
+"waypack" proof (`examples/routed-demo-consumer/`), just generalized to *multiple* consumer
+packages loaded together instead of one.
+
+### VirtualUser (planned, not yet spec'd)
+
+Two distinct modes, both real, direct user requests from the same session:
+
+1. **Plain traversal run** - a scripted full-tree walk of a project's own graph (nodes/edges
+   already discovered by `discoverGraph`), exercising every reachable Block once. Closest
+   existing precedent: `waygraph traverse` (`src/traverse-run.ts`) - this mode may turn out to
+   already be that command under a new name, needs checking against `traverse`'s actual current
+   scope before assuming it's new work.
+2. **Agent-driven virtual user** - the actually-new part: an LLM agent given a live Pilot/Blind
+   Pilot session and told to *act like a real user* of the app (e.g. on veciro.com: sign in,
+   browse, join the pool, chat with whoever it matches, decide what to say) rather than
+   following a fixed script - the agent does its own reasoning over the live menu each step,
+   same relationship Waygraph Pilot already has to a driving agent, just with "behave like a
+   real end user" as the actual goal instead of a specific test scenario. Real-world use: load
+   testing / organic-traffic simulation on your own app (e.g. veciro's real matching pool
+   presumably wants more than one live participant to be interesting to test against).
+
+### Pilot overlay (shipped, still evolving)
+
+`src/pilot-overlay.ts` - badge + expandable panel + activity toast + vision ring, all sharing
+`cli.ts`'s own demo-panel color language (`#7C3AED` purple, `rgba(20,10,40,.94)` dark panel,
+`#c9a6ff` accent - not a separate palette). Panel now has two tabs: "Here" (current live menu,
+original behavior) and "All nodes" (the whole project graph as a tree, one entry per Checkpoint
+with its outgoing edges nested under it) - real, direct user request ("i have a button where it
+shows all the nodes like a node tree stuff"). Still real per-tone color coding to do: gray
+(existing `auto` tone) for a real Playwright-driven action (Block run / raw click-type-upload),
+a new `orange` tone for a pure DOM inspection (`auto dom`) - not yet implemented, `WAYGRAPH_RING_CSS`
+only has planned/auto/info/warning/danger/success right now.
 
 ## Agent-authoring tooling and Waygraph Pilot (planned)
 

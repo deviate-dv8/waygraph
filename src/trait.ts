@@ -38,9 +38,21 @@ export function urlMatches(pattern: URLPatternInit): Trait {
   return {
     name: `url-matches(${JSON.stringify(pattern)})`,
     async check(page) {
-      // Bound wait - fail loud instead of hanging forever when navigation never comes
-      // (e.g. locked_out login still on / while verify demands /inventory.html).
-      await page.waitForURL(urlPattern, { timeout: 8_000 });
+      // No explicit timeout - inherits whatever `page.setDefaultTimeout()`
+      // is currently in effect (matching Trait.visible's own precedent),
+      // rather than a hardcoded value. Real, confirmed bug this fixes: an
+      // explicit `{ timeout: 8_000 }` here silently OVERRODE the much
+      // shorter bound `engine.ts`'s own `locate()` sets via
+      // `page.setDefaultTimeout()` while probing each NavBlock during
+      // `detectHere` (used by resync and every raw click/type/goto/upload) -
+      // a project with several `Trait.url` NavBlocks could take 8s PER
+      // candidate that doesn't match, turning one resync/raw call into many
+      // tens of seconds. Playwright's own ambient default (30s, unless
+      // something narrowed it) still fails loud for the normal post-resolve
+      // `verify()` case this was originally written for - just via the same
+      // mechanism every other Trait already uses instead of its own
+      // hardcoded, wrong-context value.
+      await page.waitForURL(urlPattern);
       return true;
     },
   };

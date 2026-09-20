@@ -80,6 +80,20 @@ export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, CartPage>({
 });
 `;
 
+const ASSERT_LOGIN_BLOCK = `
+import { defineAssertBlock, Trait } from "waygraph";
+
+// Called exactly as documented - no <In, Out> generic, no hand-written
+// act/resolve. Real bug this guards: this shape was silently invisible to
+// discoverGraph ("Out not resolvable"), confirmed live against a real
+// consumer project's own Pilot session.
+export const AssertLoginBlock = defineAssertBlock({
+  name: "assert-login",
+  checkpoint: "LoginPage",
+  verify: [Trait.visible("h1")],
+});
+`;
+
 async function withFixtureProject(name: string, files: Record<string, string>, run: (dir: string) => Promise<void>) {
   const tmpDir = join(import.meta.dirname, `.tmp-${name}`);
   await mkdir(join(tmpDir, "src", "blocks"), { recursive: true });
@@ -155,6 +169,17 @@ test("discoverGraph: a Block with no defineBlock<In, Out> generic is skipped, no
     expect(graph.skipped).toEqual([
       { block: "mystery", file: "src/blocks/mystery.block.ts", reason: "no defineBlock/defineMethodBlock/defineEffectBlock<In, Out> generic call found" },
     ]);
+  });
+});
+
+test("discoverGraph: defineAssertBlock is discovered without an explicit <In, Out> generic", async () => {
+  await withFixtureProject("assert-no-generic", { "assert-login.block.ts": ASSERT_LOGIN_BLOCK }, async (dir) => {
+    const graph = await discoverGraph(dir);
+    expect(graph.skipped).toEqual([]);
+    expect(graph.edges).toEqual([
+      { block: "assert-login", file: "src/blocks/assert-login.block.ts", from: "LoginPage", to: "LoginPage", kind: "action" },
+    ]);
+    expect(graph.nodes).toEqual([{ checkpoint: "LoginPage" }]);
   });
 });
 

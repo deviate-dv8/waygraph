@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, type Dirent } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, type Dirent } from "node:fs";
 import { join, dirname, relative, resolve } from "node:path";
 import {
   type BlocksSelect,
@@ -259,8 +259,21 @@ export function findBlockPathDetailed(graph: WaygraphGraph, fromTag: string, toT
   return null;
 }
 
+/**
+ * Same real, confirmed reload-caching bug `auto-explore.ts`'s own copy of
+ * this function fixes (see its own comment) - `discoverGraph` (used for
+ * `this.graph`/path-finding) and `loadBlockLibrary` (used for `this.library`/
+ * the live menu) are two independent importers, each with their own
+ * duplicate `importModule`, so each needed the same mtime-based cache-bust
+ * fix separately - fixing only one left the other still serving a session's
+ * `reloadLibrary()` a stale (or, for a brand-new file only ever discovered
+ * through THIS path, silently absent) graph.
+ */
 async function importModule(filePath: string): Promise<Record<string, unknown>> {
-  const url = new URL(`file://${resolve(filePath)}`);
+  const resolved = resolve(filePath);
+  const url = new URL(`file://${resolved}`);
+  const mtimeMs = statSync(resolved).mtimeMs;
+  url.searchParams.set("t", String(mtimeMs));
   return (await import(url.href)) as Record<string, unknown>;
 }
 
@@ -276,6 +289,11 @@ function isBlockLike(val: unknown): val is { name: string; instruction: { act: u
 function isNavBlockMarked(val: Record<string, unknown>): boolean {
   const kind = (val as { __waygraphKind?: string }).__waygraphKind;
   return kind === "nav" || kind === "page";
+}
+
+/** Set by `defineAssertBlock` (non-enumerable) - see src/engine.ts. */
+function isAssertBlockMarked(val: Record<string, unknown>): boolean {
+  return (val as { __waygraphKind?: string }).__waygraphKind === "assert";
 }
 
 /**
@@ -430,6 +448,24 @@ export async function discoverGraph(
           blockName,
         })
       ) {
+        continue;
+      }
+
+      if (isAssertBlockMarked(exported as Record<string, unknown>)) {
+        try {
+          // Same input-independent resolve() shape Nav/Page Blocks already
+          // get this shortcut for - defineAssertBlock's own resolve() is
+          // always `() => checkpoint(options.checkpoint)`, so no <In, Out>
+          // generic needs to appear in source text for this to be found.
+          const resolveFn = exported.instruction.resolve as (input: unknown) => Promise<{ __state: string }> | { __state: string };
+          const resolved = await resolveFn(undefined);
+          const to = resolved.__state;
+          nodeTags.add(to);
+          // Self-loop by construction (defineAssertBlock is self-loop-only).
+          edges.push({ block: blockName, file: relFile, from: to, to, kind: "action" });
+        } catch {
+          skipped.push({ block: blockName, file: relFile, reason: "assertBlock resolve() threw" });
+        }
         continue;
       }
 

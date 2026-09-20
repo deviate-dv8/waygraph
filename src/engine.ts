@@ -1670,6 +1670,20 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
       configurable: false,
     });
   }
+  // Same idea, for the url case - only when it's a plain string (a
+  // function URL is mem-dependent/dynamic, can't be compared statically
+  // without running it). Real, direct request this responds to: an agent
+  // driving Blind Pilot had no structured way to ask "which of the links
+  // on THIS page are already covered by a NavBlock" without re-parsing
+  // every nav.block.ts's own source - this is what `AutoSession` now reads
+  // to warn about real, unmapped nav links found live on the page.
+  if (typeof options.url === "string") {
+    Object.defineProperty(built, "__waygraphNavUrl", {
+      value: options.url,
+      enumerable: false,
+      configurable: false,
+    });
+  }
   return built;
 }
 
@@ -1794,7 +1808,7 @@ export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<
 export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<string>>(
   options: AssertBlockOptions<Out>,
 ): MethodBlock<Out, Out> {
-  return defineMethodBlock<Out, Out>({
+  const built = defineMethodBlock<Out, Out>({
     name: options.name,
     ...(options.description ? { description: options.description } : {}),
     ...(options.requires ? { requires: options.requires } : {}),
@@ -1812,6 +1826,24 @@ export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<st
       ...(options.slides ? { slides: options.slides } : {}),
     },
   });
+  // Real bug this closes: `waygraph graph`'s static discovery only knows
+  // how to read a Block's Checkpoint tags from an EXPLICIT `<In, Out>`
+  // generic written in the source text (or, for Nav/Page Blocks, by calling
+  // their own input-independent `resolve()` directly). `defineAssertBlock`'s
+  // whole point is skipping that generic - called exactly as documented
+  // (`defineAssertBlock({ name, checkpoint, verify })`, no generics), it was
+  // silently invisible to both `waygraph graph` and the live Pilot menu
+  // ("2 Block(s) skipped (Out not resolvable)", confirmed live against a
+  // real veciro-waygraph session). `resolve()` here is ALSO input-
+  // independent (always `checkpoint(options.checkpoint)`), so the same
+  // resolve()-calling path Nav/Page Blocks already use is reused via this
+  // marker instead of requiring authors to write generics just to be found.
+  Object.defineProperty(built, "__waygraphKind", {
+    value: "assert",
+    enumerable: false,
+    configurable: false,
+  });
+  return built;
 }
 
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */
@@ -1924,6 +1956,20 @@ export function definePageBlock<Out extends Checkpoint<string>>(
     enumerable: false,
     configurable: false,
   });
+  // Same marker `defineNavBlock` sets, same reason - a page hub with a
+  // `url` (deep-link) is exactly as "known, coverable" as a plain
+  // `defineNavBlock`, and in practice most real projects' own nav Blocks
+  // ARE page hubs (methods hanging off them), not bare NavBlocks - the real
+  // saucedemo fixture this whole package tests against uses definePageBlock
+  // for every one of its own nav-* Blocks. Missing this here meant the
+  // marker existed but was never actually set on any real project's Blocks.
+  if (typeof options.url === "string") {
+    Object.defineProperty(built, "__waygraphNavUrl", {
+      value: options.url,
+      enumerable: false,
+      configurable: false,
+    });
+  }
   if (options.url !== undefined || options.click !== undefined) {
     Object.defineProperty(built, "__waygraphPageDeepLink", {
       value: true,
