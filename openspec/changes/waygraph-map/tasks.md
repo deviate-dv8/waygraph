@@ -83,17 +83,24 @@ turns rather than silently erasing them.
       the consumer's own directory correctly discovers the loaded project's full
       Checkpoint/edge structure - confirmed by direct inspection of the real output, byte
       -for-byte the same graph as M2.2's own. No manifest, index, or schema file involved at
-      any point. **Real, honest finding along the way, not silently worked around**: running
-      a *live* `--detach` session (`auto --cli --detach`) against that same nested
-      `node_modules/<pkg>` path failed with `listen EINVAL` - the resulting absolute path
-      (147 characters in the reproduction) exceeds the OS's AF_UNIX socket path limit
-      (~108 bytes on Linux). `waygraph graph` uses no socket and is unaffected - it remains
-      this task's actual proof mechanism, matching spec.md's own requirement wording (which
-      was corrected to state this limitation explicitly rather than overclaim `pilot start`
-      also works through an arbitrarily deep loaded path).
+      any point.
+- [x] M3.3 **Real bug found along the way, fixed, not left as a caveat**: running a *live*
+      `--detach` session (`auto --cli --detach`) against that same nested `node_modules/<pkg>`
+      path failed with `listen EINVAL` - the resulting absolute path (147 characters in the
+      reproduction) exceeded the OS's AF_UNIX socket path limit (~108 bytes on Linux), because
+      the session socket lived under the project directory. Fixed in `src/auto-session-ipc.ts`
+      (`socketDir()`/`socketPathFor()`): session sockets now live at
+      `os.tmpdir()/waygraph-auto/<sessionId>.sock` - short and constant regardless of project
+      nesting depth. Session metadata (still per-project, `.waygraph-auto/<id>.json`)
+      untouched. Re-ran the exact previously-failing scenario end to end after the fix:
+      `auto --cli --detach` (real session id + short `/tmp/waygraph-auto/<id>.sock`),
+      `auto status`, `auto reach <id> Docs` (real multi-step route), and `auto send <id> q`
+      all succeeded against the identical nested path. `waygraph graph` was never affected
+      (no socket involved) and remains M3.2's own proof mechanism regardless.
       This is the concrete proof of "agents can run an empty waygraph, load a waygraph
-      package, and understand more" - achieved with zero new code, only the convention plus
-      tooling that already existed before this change.
+      package, and understand more" - the convention itself needed zero new engine code; the
+      one real addition (M3.3's socket-path fix) was a genuine, unrelated bug this proof
+      surfaced, not part of the convention's own design.
 
 ## M4. Docs
 

@@ -15,6 +15,7 @@ import {
   openSync,
 } from "node:fs";
 import { join, dirname } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
 import { createInterface } from "node:readline/promises";
@@ -69,8 +70,24 @@ function metaPath(projectDir: string, sessionId: string): string {
   return join(sessionDir(projectDir), `${sessionId}.json`);
 }
 
-function socketPathFor(projectDir: string, sessionId: string): string {
-  return join(sessionDir(projectDir), `${sessionId}.sock`);
+/**
+ * Deliberately NOT under the project directory (unlike meta/log files) -
+ * a real bug found while proving out openspec/changes/waygraph-map's own
+ * "waypack" loading claim: a project loaded through a consumer's own deeply
+ * nested `node_modules/<pkg>` path can push the socket's absolute path past
+ * the OS's AF_UNIX `sun_path` limit (~108 bytes on Linux), failing with
+ * `listen EINVAL`. A short, fixed-location directory sidesteps this
+ * regardless of how deep `projectDir` itself is nested. `sessionId` alone
+ * (8 hex chars, `generateSessionId()`) is enough to keep this collision-safe
+ * across every project on the machine sharing this one flat directory - the
+ * same randomness space this package already relied on per-project.
+ */
+function socketDir(): string {
+  return join(tmpdir(), "waygraph-auto");
+}
+
+function socketPathFor(sessionId: string): string {
+  return join(socketDir(), `${sessionId}.sock`);
 }
 
 function logPathFor(projectDir: string, sessionId: string): string {
@@ -94,7 +111,7 @@ function readSessionMeta(projectDir: string, sessionId: string): SessionMeta | n
 function removeSessionFiles(projectDir: string, sessionId: string): void {
   for (const p of [
     metaPath(projectDir, sessionId),
-    socketPathFor(projectDir, sessionId),
+    socketPathFor(sessionId),
   ]) {
     try {
       rmSync(p, { force: true });
@@ -234,7 +251,8 @@ export async function serveSession(
   headless = true,
 ): Promise<void> {
   mkdirSync(sessionDir(projectDir), { recursive: true });
-  const socketPath = socketPathFor(projectDir, sessionId);
+  mkdirSync(socketDir(), { recursive: true });
+  const socketPath = socketPathFor(sessionId);
   rmSync(socketPath, { force: true });
 
   let queue: Promise<unknown> = Promise.resolve();

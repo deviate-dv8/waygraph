@@ -89,6 +89,23 @@ packaging mechanism.** "waypack" names the user's own goal (a project's Blocks b
 by another), not a request for this change to build a new distribution format - the honest,
 smallest proof of that goal reuses what already demonstrably works in this repo today.
 
+**Session sockets moved out of the project directory, to a short fixed location - a real
+bug fix required to make the M3 proof actually true, not a pre-existing design choice.**
+`auto --cli --detach` (and `pilot start`, which spawns one internally) used to put a session's
+Unix socket at `<projectDir>/.waygraph-auto/<sessionId>.sock` - fine for a normal project, but
+a real, reproducible failure (`listen EINVAL`) once `projectDir` is nested deep enough (a
+package loaded through a consumer's own `node_modules/<pkg>` path is a realistic way to hit
+this) that the absolute socket path exceeds the OS's AF_UNIX `sun_path` limit
+(~108 bytes on Linux - confirmed via direct reproduction, 147 characters in the failing case).
+Fixed in `src/auto-session-ipc.ts`: sockets now live at
+`os.tmpdir()/waygraph-auto/<sessionId>.sock` - short and constant regardless of how deep the
+real project is nested. Session *metadata* (`.waygraph-auto/<id>.json`, still under the
+project directory, discoverable per-project) is untouched - only the socket moved, and only
+the socket had the OS-level length constraint in the first place. `sessionId`'s own existing
+randomness (8 hex chars, `generateSessionId()`) already made per-project collisions
+negligible; sharing one flat directory across every project on the machine doesn't
+meaningfully change that.
+
 ## Risks / Trade-offs
 
 - [The convention is documented and demonstrated, but nothing enforces it - a project could
@@ -102,11 +119,11 @@ smallest proof of that goal reuses what already demonstrably works in this repo 
   proves the plain `file:`-dependency mechanism already suffices for the same goal] -> Honest
   scope-narrowing, stated directly rather than silently substituted; a real packaging tool is
   separate, later work if the plain mechanism ever proves insufficient.
-- [A real, unrelated limitation found while proving M3: `auto --cli --detach` (and therefore
-  `pilot start`, which also spawns one) can fail with `listen EINVAL` when the target
-  project's absolute path is long enough to exceed the OS's AF_UNIX socket path limit
-  (~108 bytes on Linux) - concretely hit when driving a live session against a package loaded
-  through a consumer project's own `node_modules/<pkg>` path] -> `waygraph graph` (no socket
-  involved) is unaffected and is this change's own actual M3 proof mechanism; the session
-  -socket limitation is real, pre-existing, and not something this change introduces or fixes
-  - stated honestly in spec.md rather than silently worked around or left undiscovered.
+- [A real bug found while proving M3, fixed rather than left standing: `auto --cli --detach`
+  (and therefore `pilot start`) used to fail with `listen EINVAL` when the target project's
+  absolute path was long enough to exceed the OS's AF_UNIX socket path limit
+  (~108 bytes on Linux) - concretely hit driving a live session against a package loaded
+  through a consumer project's own `node_modules/<pkg>` path] -> Fixed (see Decisions below)
+  by moving session sockets to a short, fixed location, independent of project nesting depth.
+  `waygraph graph` (no socket involved) was never affected and remains this change's own M3
+  proof mechanism regardless.

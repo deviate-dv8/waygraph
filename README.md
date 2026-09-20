@@ -724,13 +724,15 @@ understandable: `waygraph graph node_modules/<loaded-package>` correctly discove
 Checkpoint/edge structure, with nothing generated or maintained separately. Proven end to end
 in `examples/routed-demo-consumer/` against `examples/routed-demo/`.
 
-**Real, honest limitation found while proving this, not silently worked around:** a *live*
-`--detach` session (`auto --cli --detach`, and therefore `pilot start`, which also spawns
-one) can fail with a real OS-level `listen EINVAL` when the target path is long enough to
-exceed the AF_UNIX socket path limit (~108 bytes on Linux) - concretely possible when driving
-a session against a package loaded through a consumer project's own deeply nested
-`node_modules/<pkg>` path. `waygraph graph` uses no socket and is unaffected; it's the actual
-mechanism this capability's own "waypack" proof relies on.
+**A real bug this proof surfaced, fixed, not left as a caveat:** a *live* `--detach` session
+against a package loaded through a consumer project's own deeply nested `node_modules/<pkg>`
+path used to fail with `listen EINVAL` - the session's Unix socket lived under the project
+directory, and that absolute path could exceed the OS's AF_UNIX limit (~108 bytes on Linux).
+Fixed: session sockets now live in a short, fixed location (`os.tmpdir()/waygraph-auto/`),
+independent of how deeply the project itself is nested - confirmed against the exact
+previously-failing path (`auto --cli --detach`, `auto reach`, and quit all working normally).
+Session metadata (`.waygraph-auto/<id>.json`, discoverable per-project) is unaffected - only
+the socket moved.
 
 Full design history (why "Router" isn't a separate thing to build, two prior wrong readings
 of this before landing here, and everything above stated as requirements) in

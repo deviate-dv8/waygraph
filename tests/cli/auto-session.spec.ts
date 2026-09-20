@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, rmSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 /**
  * Proof for openspec/changes/waygraph-auto-cli-session-control: a fully
@@ -247,4 +248,40 @@ test("auto reach: runs a real multi-step route to a Checkpoint in one call, agai
   expect((reachRes.snapshot as { here: string }).here).toBe("CartPage");
 
   await send(sessionId, "q");
+});
+
+test("a session against a deeply nested project path still starts - session sockets don't live under the project dir", async () => {
+  test.setTimeout(30_000);
+
+  // Real bug this reproduces: session sockets used to live at
+  // <projectDir>/.waygraph-auto/<id>.sock. A long enough projectDir (a
+  // realistic case: a package loaded through a consumer's own
+  // node_modules/<pkg> path - see openspec/changes/waygraph-map) pushed that
+  // absolute path past the OS's AF_UNIX socket path limit (~108 bytes on
+  // Linux), failing with `listen EINVAL`. Construct a deliberately long,
+  // deeply nested (but otherwise empty - AutoSession tolerates zero Blocks)
+  // project directory to prove the fix, not just assert it.
+  const segment = "a-deliberately-long-directory-name-to-exceed-the-socket-path-limit";
+  const baseDir = join(tmpdir(), `wg-deep-${Date.now()}`);
+  const deepDir = join(baseDir, segment, segment);
+  mkdirSync(deepDir, { recursive: true });
+  expect(join(deepDir, ".waygraph-auto", "aaaaaaaa.sock").length).toBeGreaterThan(108);
+
+  let sessionId: string | undefined;
+  try {
+    const stdout = await runCli(["auto", "--cli", "--detach"], { cwd: deepDir });
+    const meta = JSON.parse(stdout.trim()) as { sessionId: string; socketPath: string };
+    sessionId = meta.sessionId;
+    // The fix: the socket is short and NOT under the (long) project directory.
+    expect(meta.socketPath.startsWith(deepDir)).toBe(false);
+    expect(meta.socketPath.length).toBeLessThan(108);
+
+    const statusRes = await runCli(["auto", "status", meta.sessionId], { cwd: deepDir });
+    const status = JSON.parse(statusRes.trim());
+    expect(status.ok).toBe(true);
+    expect(status.snapshot.here).toBeNull(); // zero Blocks in this throwaway dir
+  } finally {
+    if (sessionId) await runCli(["auto", "send", sessionId, "q"], { cwd: deepDir }).catch(() => {});
+    rmSync(baseDir, { recursive: true, force: true });
+  }
 });

@@ -339,11 +339,12 @@ understood via `waygraph graph node_modules/<pkg>` - no manifest, index, or sche
 anywhere). `templates/scaffold` itself now demonstrates both authoring modes composing in one
 flow (`src/routes/`, alongside its existing `src/blocks/`).
 
-Real, honest limitation found while proving the "waypack" loading claim, not silently worked
-around: a *live* `--detach` session (and therefore `pilot start`, which also spawns one) can
-fail with a real OS-level `listen EINVAL` when the loaded package's path is long enough to
-exceed the AF_UNIX socket path limit (~108 bytes on Linux) - `waygraph graph` uses no socket
-and is unaffected, and remains this capability's actual proof mechanism.
+A real bug found while proving the "waypack" loading claim, fixed rather than left as a
+caveat: a *live* `--detach` session against a deeply nested loaded package's path used to fail
+with `listen EINVAL` (the session socket lived under the project directory, exceeding the OS's
+AF_UNIX path limit, ~108 bytes on Linux, on a long enough path). Fixed in `src/auto-session
+-ipc.ts` - session sockets now live under `os.tmpdir()/waygraph-auto/`, independent of project
+nesting depth; confirmed against the exact previously-failing path.
 
 Full spec/design/tasks: `openspec/changes/waygraph-map/`.
 

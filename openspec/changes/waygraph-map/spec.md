@@ -56,15 +56,15 @@ file needs to exist or be generated for this to work.
   `node_modules/<loaded-package>`) SHALL correctly discover the loaded project's full
   Checkpoint/edge structure
 
-#### Scenario: A real, unrelated OS constraint on a session against a deeply nested path (stated honestly, not silently worked around)
+#### Scenario: A live session also works against a deeply nested loaded path
 - **WHEN** the loaded package's path is deep enough (e.g. through a consumer project's own
-  `node_modules/<pkg>` path) that its absolute length approaches the OS's AF_UNIX socket path
-  limit (~108 bytes on Linux)
-- **THEN** `waygraph graph` (which uses no socket) SHALL still work correctly, but a
-  `--detach` session (`auto --cli --detach`, and therefore `pilot start`, which also spawns
-  one) MAY fail with a real, pre-existing, unrelated OS-level error (`listen EINVAL`) - a
-  known constraint of session sockets living under the project directory, not something this
-  capability introduces or is required to work around
+  `node_modules/<pkg>` path) that its absolute length would exceed the OS's AF_UNIX socket
+  path limit (~108 bytes on Linux) were the session socket to live under it
+- **THEN** a `--detach` session (`auto --cli --detach`, and therefore `pilot start`, which
+  also spawns one) SHALL still start and be driveable normally - session sockets live in a
+  short, fixed location (`os.tmpdir()/waygraph-auto/`) independent of the project's own
+  nesting depth, a real fix found and applied while proving this requirement, not a
+  limitation left standing
 
 ### Requirement: No schema file, load/save helper, or `map init` command is introduced
 This capability SHALL NOT introduce a JSON (or other) manifest format, any function that
