@@ -638,6 +638,19 @@ actually shows. Doesn't crash or corrupt anything if you never need it - it's a 
 gap (confirmed by reading the exact code path, `src/auto-session.ts`'s `currentMenu()`), fixed
 outright rather than left as a caveat.
 
+**On-page indicator.** A headful (`--non-headless`) session looks like an ordinary browser
+tab otherwise - no sign anything is driving it, which matters once a human might be watching
+or co-driving the same visible session. Every session now injects a small badge (bottom-right
+corner: `Waygraph Pilot - session <id> - <Checkpoint>`) that click-expands into a panel
+listing the current live menu's real edges (block name, kind, target Checkpoint,
+description) - the same data `auto status` returns, rendered in the page itself. Both refresh
+automatically after every `send`/`reach`/`reload`/`resync`/raw action - there's nothing
+separate to call to keep it in sync. Particularly useful for Blind Pilot: watching the panel
+update as newly-authored Blocks get picked up via `reload` shows the map actually growing,
+live, not just a JSON diff in a terminal. Self-contained (`src/pilot-overlay.ts`), not built
+on `waygraph demo`'s own panel/banner system, for the same `cli.ts`-side-effect reason
+`pilot-v1`'s old narrate-mode ring wasn't either.
+
 **Pilot itself does no planning, resolving, narrating, or acting** - `pilotStart`'s only job is
 starting the session and handing back its graph in one round trip; see `src/pilot.ts`. An
 earlier shape (`pilot ask "<text>"`, a deterministic ask-to-one-edge text matcher) was built,

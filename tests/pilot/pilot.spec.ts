@@ -70,6 +70,52 @@ test.describe("pilotStart (real spawnDetachedSession + discoverGraph, real sauce
   });
 });
 
+test.describe("Pilot overlay (real on-page badge/panel, real saucedemo.com)", () => {
+  test("badge shows the real session id and Checkpoint, panel lists the real live edges, both update after a real transition", async () => {
+    test.setTimeout(30_000);
+    const session = await AutoSession.start({ projectDir: sauceRoot, headless: true, sessionId: "test-overlay-id" });
+    try {
+      await session.currentSnapshot();
+      const badge = await session.inspectDom({ mode: "full", selector: "#wg-pilot-badge" });
+      expect(badge.ok).toBe(true);
+      if (badge.ok) {
+        const text = JSON.stringify(badge.snapshot.tree);
+        expect(text).toContain("test-overlay-id");
+        expect(text).toContain("LoginPage");
+      }
+
+      const panel = await session.inspectDom({ mode: "full", selector: "#wg-pilot-panel" });
+      expect(panel.ok).toBe(true);
+      if (panel.ok) expect(JSON.stringify(panel.snapshot.tree)).toContain("submit-login");
+
+      let snapshot = await session.currentSnapshot();
+      await session.applyPick(String(snapshot.sections.flatMap((s) => s.edges).find((e) => e.block === "fill-username")!.index));
+      snapshot = await session.currentSnapshot();
+      await session.applyPick(String(snapshot.sections.flatMap((s) => s.edges).find((e) => e.block === "fill-password")!.index));
+      snapshot = await session.currentSnapshot();
+      await session.applyPick(String(snapshot.sections.flatMap((s) => s.edges).find((e) => e.block === "submit-login")!.index));
+
+      const badgeAfter = await session.inspectDom({ mode: "full", selector: "#wg-pilot-badge" });
+      if (badgeAfter.ok) expect(JSON.stringify(badgeAfter.snapshot.tree)).toContain("LoggedIn");
+    } finally {
+      await session.close();
+    }
+  });
+
+  test("without a sessionId, the badge shows a graceful fallback, not a crash", async () => {
+    test.setTimeout(30_000);
+    const session = await AutoSession.start({ projectDir: sauceRoot, headless: true });
+    try {
+      await session.currentSnapshot();
+      const badge = await session.inspectDom({ mode: "full", selector: "#wg-pilot-badge" });
+      expect(badge.ok).toBe(true);
+      if (badge.ok) expect(JSON.stringify(badge.snapshot.tree)).toContain("no session id");
+    } finally {
+      await session.close();
+    }
+  });
+});
+
 test.describe("resync (real re-detection, real saucedemo.com)", () => {
   // What this proves, and what it honestly can't: `resync` fixes a real gap
   // - `here` is only ever updated by an action AutoSession itself ran

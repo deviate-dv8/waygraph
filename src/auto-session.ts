@@ -27,6 +27,7 @@ import {
 } from "./auto-explore-run.js";
 import { runStubPhase, type StubPhaseResult } from "./highlights.js";
 import { findBlockPathDetailed } from "./graph.js";
+import { updatePilotOverlay } from "./pilot-overlay.js";
 
 /** True when a stub-phase result actually carries authored content worth keeping. */
 function stubPhaseHasContent(r: StubPhaseResult): boolean {
@@ -194,6 +195,14 @@ export interface AutoSessionInit {
   blocksSelect?: import("./blocks-select.js").BlocksSelect;
   /** Default true. false launches a real visible browser window. */
   headless?: boolean;
+  /**
+   * Shown on the on-page Pilot overlay badge, when known - purely cosmetic,
+   * this class has no other use for it. `auto --cli --detach`'s spawned
+   * child (`runAutoServeCommand`) always knows and passes its own generated
+   * id; a directly-constructed `AutoSession` (e.g. in a test) simply omits
+   * it, and the badge shows "no session id" instead.
+   */
+  sessionId?: string;
 }
 
 export type ApplyPickResult =
@@ -253,6 +262,7 @@ export class AutoSession {
     private readonly context: BrowserContext,
     private page: Page,
     private readonly startUrl: string | undefined,
+    private readonly sessionId: string | undefined,
   ) {}
 
   static async start(init: AutoSessionInit): Promise<AutoSession> {
@@ -292,6 +302,7 @@ export class AutoSession {
       context,
       page,
       startUrl,
+      init.sessionId,
     );
   }
 
@@ -310,7 +321,20 @@ export class AutoSession {
     if (this.here === null) {
       this.here = await detectHere(this.page, this.library.navBlocks);
     }
-    return buildExploreMenu(this.page, this.graph, this.library, this.here);
+    const menu = await buildExploreMenu(this.page, this.graph, this.library, this.here);
+    // Every caller of currentMenu() (status reads, applyPick/applyPath,
+    // the raw click/type/goto primitives, resync) already routes through
+    // here, so hooking the overlay refresh at this one point covers every
+    // real state-changing (and reading) path without needing a separate
+    // call at each site. Awaited deliberately, not fire-and-forget - the
+    // whole point is a human watching the screen sees the SAME state a
+    // concurrent API caller just got back, not a stale frame that catches
+    // up moments later.
+    await updatePilotOverlay(this.page, {
+      sessionId: this.sessionId,
+      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+    });
+    return menu;
   }
 
   /** Pure getter - no Block runs, no mem/page mutation. */

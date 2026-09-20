@@ -355,7 +355,7 @@ export async function serveSession(
 
 /** Entry point for the hidden `__auto-serve` CLI command (runs in the detached child). */
 export async function runAutoServeCommand(init: AutoSessionInit, sessionId: string): Promise<void> {
-  const session = await AutoSession.start(init);
+  const session = await AutoSession.start({ ...init, sessionId });
   await serveSession(session, init.projectDir, sessionId, init.headless ?? true);
   // Keep the event loop alive - the listening server already does this,
   // but await forever here documents the intent for a reader.
