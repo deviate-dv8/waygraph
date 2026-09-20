@@ -602,6 +602,7 @@ waygraph auto send <sessionId> "<pick>"       # run one pick, get the resulting 
 waygraph auto dom <sessionId>                 # inspect the live DOM/ARIA tree
 waygraph auto trace <sessionId>               # read the Checkpoint/Block history so far
 waygraph auto reach <sessionId> <Checkpoint>  # run a whole multi-step route in one call
+waygraph auto resync <sessionId>              # force here to re-detect from the real page
 ```
 
 Worked example (run for real against `examples/saucedemo`, no new execution code involved): an
@@ -625,6 +626,17 @@ within a bounded time (a real Playwright click/wait timeout) rather than silentl
 wrong or hanging. Full design history - three rejected approaches, a real correctness bug this
 change's own tests caught, and this limitation confirmed by direct reproduction - is in
 `openspec/changes/waygraph-pilot/tasks.md`'s own M5 section.
+
+**`auto resync <sessionId>`** - `here` is only ever updated by an action the session itself
+ran (`send`/`reach` set it from a Block's own resolved Checkpoint; the raw `click`/`type`/
+`goto` primitives null it because *they* just changed the page). Anything that changes the
+page *outside* the session - a human clicking around in a visible `--non-headless` session
+someone is co-driving, for instance - leaves `here` silently stale, since `send`/`reach` only
+ever re-detect when the position is already unknown, never to double-check a known one.
+`resync` forces that re-detection unconditionally, right now, against whatever the real page
+actually shows. Doesn't crash or corrupt anything if you never need it - it's a real, found
+gap (confirmed by reading the exact code path, `src/auto-session.ts`'s `currentMenu()`), fixed
+outright rather than left as a caveat.
 
 **Pilot itself does no planning, resolving, narrating, or acting** - `pilotStart`'s only job is
 starting the session and handing back its graph in one round trip; see `src/pilot.ts`. An

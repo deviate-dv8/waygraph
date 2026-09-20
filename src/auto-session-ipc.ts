@@ -48,7 +48,8 @@ type ServerRequest =
   | { op: "type"; selector: string; text: string }
   | { op: "goto"; url: string }
   | { op: "reload" }
-  | { op: "reach"; checkpoint: string };
+  | { op: "reach"; checkpoint: string }
+  | { op: "resync" };
 
 export type StatusOrSendResponse =
   | { ok: true; snapshot: SessionSnapshot; quit: boolean }
@@ -175,7 +176,8 @@ export async function requestSession(
     | { op: "click"; selector: string }
     | { op: "type"; selector: string; text: string }
     | { op: "goto"; url: string }
-    | { op: "reload" },
+    | { op: "reload" }
+    | { op: "resync" },
   timeoutMs?: number,
 ): Promise<StatusOrSendResponse>;
 export async function requestSession(
@@ -310,6 +312,8 @@ export async function serveSession(
         response = { ok: true, snapshot: await session.currentSnapshot(), quit: false };
       } else if (request.op === "reach") {
         response = await session.applyPath(request.checkpoint);
+      } else if (request.op === "resync") {
+        response = await session.resync();
       } else {
         response = { ok: false, error: `unknown op "${(request as { op: string }).op}"` };
       }

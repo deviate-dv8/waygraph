@@ -7045,6 +7045,14 @@ Primary (less is more):
                                            own live graph/position. Fails loud (not a guess)
                                            if a step has several live options on the page
                                            (an instanceOptions Block) - use send for that step
+  waygraph auto resync <sessionId>         Force here to be re-detected from the real live
+                                           page right now, discarding whatever was cached -
+                                           fixes a session's tracked position going stale
+                                           after anything OUTSIDE this session changed the
+                                           page (e.g. a human clicking around in a visible
+                                           --non-headless session someone is co-driving);
+                                           send/reach never do this on their own, since they
+                                           only re-detect when the position is already unknown
   waygraph pilot start                     Bootstrap for an agent: starts a --detach session
                                            (same as auto --cli --detach) AND reads back the
                                            whole project's Block graph (same as waygraph
@@ -7519,7 +7527,8 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           args[1] === "type" ||
           args[1] === "goto" ||
           args[1] === "reload" ||
-          args[1] === "reach")
+          args[1] === "reach" ||
+          args[1] === "resync")
       ) {
         const sub = args[1];
         const sessionId = args[2];
@@ -7638,6 +7647,12 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           // route runs several real Blocks in sequence server-side before
           // responding - a legitimately slow single request, not a hang.
           const res = await requestSession(proj, sessionId, { op: "reach", checkpoint }, 90_000);
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
+        if (sub === "resync") {
+          const res = await requestSession(proj, sessionId, { op: "resync" });
           console.log(JSON.stringify(res));
           if (!res.ok) process.exitCode = 1;
           break;

@@ -70,6 +70,47 @@ test.describe("pilotStart (real spawnDetachedSession + discoverGraph, real sauce
   });
 });
 
+test.describe("resync (real re-detection, real saucedemo.com)", () => {
+  // What this proves, and what it honestly can't: `resync` fixes a real gap
+  // - `here` is only ever updated by an action AutoSession itself ran
+  // (applyPick/applyPath set it; rawClick/rawType/rawGoto null it because
+  // they just changed the page), so anything OUTSIDE this class touching
+  // the page (a human clicking around in a visible --non-headless session
+  // someone is co-driving) leaves `here` silently stale. The trigger for
+  // that (something other than AutoSession's own methods changing the live
+  // page) can't be reproduced here - it would need either OS-level input
+  // simulation (no xdotool in this environment) or a second, independent
+  // CDP client attached to the same browser (AutoSession launches without
+  // an exposed remote-debugging port). What IS proven, live: resync
+  // performs a real, unconditional re-detection against the real page - not
+  // a cached return - both when `here` is already correct (confirms it
+  // wasn't a no-op) and after a real Checkpoint transition.
+  test("resync re-detects the real position, both at a fresh start and after a real transition", async () => {
+    test.setTimeout(30_000);
+    const session = await AutoSession.start({ projectDir: sauceRoot, headless: true });
+    try {
+      const fresh = await session.resync();
+      expect(fresh.ok).toBe(true);
+      if (fresh.ok) expect(fresh.snapshot.here).toBe("LoginPage");
+
+      let snapshot = await session.currentSnapshot();
+      await session.applyPick(String(snapshot.sections.flatMap((s) => s.edges).find((e) => e.block === "fill-username")!.index));
+      snapshot = await session.currentSnapshot();
+      await session.applyPick(String(snapshot.sections.flatMap((s) => s.edges).find((e) => e.block === "fill-password")!.index));
+      snapshot = await session.currentSnapshot();
+      const loginResult = await session.applyPick(String(snapshot.sections.flatMap((s) => s.edges).find((e) => e.block === "submit-login")!.index));
+      expect(loginResult.ok).toBe(true);
+
+      // Real re-detection after a real transition, not a stale/cached read.
+      const afterLogin = await session.resync();
+      expect(afterLogin.ok).toBe(true);
+      if (afterLogin.ok) expect(afterLogin.snapshot.here).toBe("LoggedIn");
+    } finally {
+      await session.close();
+    }
+  });
+});
+
 test.describe("applyPath / auto reach (real multi-step routing, real saucedemo.com)", () => {
   test("reaches the target immediately (path: []) when already there", async () => {
     test.setTimeout(30_000);

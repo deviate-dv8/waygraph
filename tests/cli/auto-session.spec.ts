@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { existsSync, rmSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, rmSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -19,8 +19,46 @@ const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
 const sauceRoot = join(import.meta.dirname, "../../examples/saucedemo");
 const autoDir = join(sauceRoot, ".waygraph-auto");
 
+/**
+ * Real incident this fixed, not a theoretical concern: a blanket
+ * `rmSync(autoDir, {recursive:true})` deleted a genuinely live, human
+ * -important `--non-headless` Pilot session's own `<id>.json` as collateral
+ * damage, because this suite ran against the same project directory that
+ * session was using. The session's browser/socket survived (sockets live
+ * under `os.tmpdir()`, not here - see the socket-path fix), but its
+ * metadata - the only way `auto status`/`send`/etc. can find it - was gone
+ * until manually reconstructed. Only remove metadata for sessions whose own
+ * recorded `pid` is no longer running; never touch a live one, no matter
+ * whose test (or human) started it.
+ */
 function cleanAutoDir() {
-  rmSync(autoDir, { recursive: true, force: true });
+  if (!existsSync(autoDir)) return;
+  for (const entry of readdirSync(autoDir)) {
+    if (!entry.endsWith(".json")) continue;
+    const metaPath = join(autoDir, entry);
+    let pid: number | undefined;
+    try {
+      pid = (JSON.parse(readFileSync(metaPath, "utf-8")) as { pid?: number }).pid;
+    } catch {
+      // Unreadable/corrupt metadata - safe to remove, nothing can be using it.
+      rmSync(metaPath, { force: true });
+      continue;
+    }
+    const alive = typeof pid === "number" && isPidAlive(pid);
+    if (!alive) {
+      rmSync(metaPath, { force: true });
+      rmSync(metaPath.replace(/\.json$/, ".log"), { force: true });
+    }
+  }
+}
+
+function isPidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // No global beforeEach/afterEach cleanup: tests run in parallel workers

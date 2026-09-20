@@ -461,6 +461,36 @@ export class AutoSession {
   }
 
   /**
+   * Forces `here` to be re-detected from the real live page, discarding
+   * whatever was cached - the fix for a real, confirmed gap: `here` is only
+   * ever updated by an action this class itself ran (`applyPick`/`applyPath`
+   * set it to a Block's own resolved Checkpoint; `rawClick`/`rawType`/
+   * `rawGoto` reset it to `null` because *they* just changed the page). If a
+   * human co-driving the same visible session clicks/types/navigates
+   * directly - a real scenario for a headful Pilot session someone is
+   * watching, not hypothetical - none of that goes through this class at
+   * all, so `here` silently goes stale: `currentMenu()`'s own lazy check
+   * (`if (this.here === null)`, just above) only re-detects when `here` is
+   * already unknown, never to confirm a *known* value is still correct.
+   * This does not crash the session (the process/socket/page all stay
+   * alive) but subsequent `send`/`reach` calls would act on a menu built
+   * from the wrong Checkpoint until something forces re-detection - this
+   * method is that: unconditionally re-run the same `detectHere` logic the
+   * lazy path already uses, regardless of what `here` currently holds.
+   */
+  async resync(): Promise<ApplyPickResult> {
+    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    this.here = await detectHere(this.page, this.library.navBlocks);
+    const menu = await this.currentMenu();
+    this.lastRunNote = `resync -> ${this.here ?? "Unknown"}`;
+    return {
+      ok: true,
+      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+      quit: false,
+    };
+  }
+
+  /**
    * Raw interaction primitives for a page no Block covers yet (Blind Pilot -
    * see openspec/changes/waygraph-blind-pilot). Unlike `applyPick`, the
    * resulting Checkpoint isn't known ahead of time from a Block's own
