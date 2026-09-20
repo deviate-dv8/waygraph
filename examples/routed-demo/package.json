@@ -1,0 +1,26 @@
+{
+  "name": "waygraph-example-routed-demo",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Waygraph Map folder convention proof - (group)/<page>/page.block.ts + nav.block.ts + methods/*.block.ts, offline fixture, zero new engine code.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "npm run fixture:test",
+    "fixture": "node scripts/fixture-server.mjs",
+    "fixture:test": "node scripts/with-fixture.mjs npx playwright test",
+    "graph": "waygraph graph",
+    "auto:cli": "node scripts/with-fixture.mjs waygraph auto --cli"
+  },
+  "waygraph": {
+    "baseUrl": "http://127.0.0.1:4277"
+  },
+  "dependencies": {
+    "waygraph": "file:../.."
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^26.0.0",
+    "typescript": "^5.6.0"
+  }
+}

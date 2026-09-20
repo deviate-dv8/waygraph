@@ -25,9 +25,16 @@ Docs: [docs/scaffold.html](../../docs/scaffold.html)
 │   ├── states/
 │   │   ├── demo.states.ts
 │   │   └── demo.mem-keys.ts  # SelectedItem for Effect / auto
-│   └── flows/
-│       ├── example.flow.ts   # nav + assert (smoke)
-│       └── shop.flow.ts      # nav + add-item + clear (Effect path)
+│   ├── flows/
+│   │   ├── example.flow.ts   # nav + assert (smoke)
+│   │   ├── shop.flow.ts      # nav + add-item + clear (Effect path)
+│   │   └── routes-demo.flow.ts  # Home (manual mode) -> Docs (Map convention)
+│   └── routes/                       # Waygraph Map convention - see README.md
+│       └── (external)/
+│           └── docs/
+│               ├── docs.sel.ts
+│               ├── nav.block.ts      # fixed name - every page-slug folder's Nav
+│               └── page.block.ts     # fixed name - every page-slug folder's arrival hub
 ├── scripts/
 │   ├── fixture-server.mjs    # serves home.html on :4177
 │   └── with-fixture.mjs      # start server + run waygraph auto/demo/run
@@ -59,3 +66,16 @@ npm run auto:cli    # same menus in the terminal
 ```
 
 After `nav-home`, Effect blocks expose one menu row per visible Add/Remove button.
+
+## Two authoring modes
+
+`src/blocks/` (`demo-web/`, `demo-external/`) is **manual mode** - freeform, developer-chosen
+file layout, the default this whole scaffold otherwise uses.
+
+`src/routes/` is the **Waygraph Map** convention - `(group)/<page-slug>/page.block.ts` +
+`nav.block.ts` + `methods/*.block.ts`, one Checkpoint per folder, `(group)` purely
+organizational (parens, Next.js route-group style - never part of the Checkpoint tag). Same
+Block helpers, same execution - only where files live and what they're named changes. A
+project can adopt it folder by folder; `routes-demo.flow.ts` proves both modes compose in one
+flow (`nav-home` from `blocks/`, `nav-docs` from `routes/`). See the main package's own
+`README.md` "Waygraph Map" section and `openspec/changes/waygraph-map/`.

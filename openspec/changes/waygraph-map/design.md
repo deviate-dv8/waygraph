@@ -102,3 +102,11 @@ smallest proof of that goal reuses what already demonstrably works in this repo 
   proves the plain `file:`-dependency mechanism already suffices for the same goal] -> Honest
   scope-narrowing, stated directly rather than silently substituted; a real packaging tool is
   separate, later work if the plain mechanism ever proves insufficient.
+- [A real, unrelated limitation found while proving M3: `auto --cli --detach` (and therefore
+  `pilot start`, which also spawns one) can fail with `listen EINVAL` when the target
+  project's absolute path is long enough to exceed the OS's AF_UNIX socket path limit
+  (~108 bytes on Linux) - concretely hit when driving a live session against a package loaded
+  through a consumer project's own `node_modules/<pkg>` path] -> `waygraph graph` (no socket
+  involved) is unaffected and is this change's own actual M3 proof mechanism; the session
+  -socket limitation is real, pre-existing, and not something this change introduces or fixes
+  - stated honestly in spec.md rather than silently worked around or left undiscovered.

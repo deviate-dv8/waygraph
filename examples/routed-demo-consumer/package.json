@@ -1,0 +1,18 @@
+{
+  "name": "waygraph-example-routed-demo-consumer",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Waygraph Map 'waypack' loading proof - depends on routed-demo as a plain file: dependency, no separate manifest, waygraph graph understands it via the loaded package's own node_modules path.",
+  "scripts": {
+    "graph:own": "waygraph graph",
+    "graph:loaded": "waygraph graph node_modules/waygraph-example-routed-demo"
+  },
+  "dependencies": {
+    "waygraph": "file:../..",
+    "waygraph-example-routed-demo": "file:../routed-demo"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

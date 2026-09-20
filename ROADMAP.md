@@ -316,25 +316,36 @@ Six phases, each independently shippable, in dependency order:
   orphan status only gates `auto --blocks` path-finding, not `auto`'s own menu. Full
   spec/design/tasks: `openspec/changes/waygraph-blind-pilot/`.
 
-### Phase 6c - Waygraph Map, Waygraph Router (vision only - not proposed, not scoped)
+### Phase 6c - Waygraph Map - shipped
 
-- **Waygraph Map** - Blind Pilot's own output, generalized: a consolidated, portable,
-  standalone package (working name `waygraph/map` or a companion package) capturing a
-  project's discovered graph as a distributable artifact, separate from any Block source.
-  Real, open dependency Phase 6b deliberately left unresolved (see its own design.md): Blind
-  Pilot as shipped writes plain `.block.ts` files directly; whether Waygraph Map should be the
-  actual target instead is a real design question for whenever this phase is picked up.
-- **Waygraph Router** - a second, opinionated authoring mode alongside today's: today's
-  convention (`*-web/`/`*-external/` namespacing, Nav/Page/Method/Effect/Assert kinds, `*Sel`
-  objects) is **manual mode** - a developer has real freedom over file layout, just follows
-  soft conventions. Router mode would be a fully opinionated, Next.js-App-Router-style folder
-  structure (`(base_app)/dashboard/page.ts`, `(external)/mailpit/...`) making a project's
-  structure mechanically parseable - the natural target for blind-discovery-to-map generation
-  to regenerate against, and likely its own scaffold variant, not a change to the current
-  freeform one.
+**Corrected twice before implementation** (full record in
+`openspec/changes/waygraph-map/tasks.md`'s own Status section): a first draft designed Map as
+a separate `waygraph.map.json` file. Re-reading a third, later chat message against an
+earlier one that looked contradictory (Router originally described with literal Next.js
+App-Router syntax, `(base_app)/dashboard/page.ts`; later called "the current setup we have
+today") resolved the other way: **there is no separate "Waygraph Router" to build** - it
+names the role today's freeform, folder-organized "manual mode" already fills. **Waygraph
+Map is the opinionated folder convention itself** - `(group)/<page-slug>/page.block.ts` +
+`nav.block.ts` + `methods/*.block.ts`, one Checkpoint per folder, `(group)` purely
+organizational - not a schema file describing a project separately from its own Blocks.
 
-No design work has started on either of these two - named here as real, coherent future
-direction, not as commitments with a shape yet.
+Verified before choosing this shape, not assumed: `discoverGraph`/`loadBlockLibrary` already
+recurse through any folder structure, matching only the `.block.ts` filename pattern - folder
+naming/depth was already 100% cosmetic to every existing command. **The convention needed
+zero new engine code** - only documentation, a demonstrative example
+(`examples/routed-demo/`), and a "waypack" loading proof (`examples/routed-demo-consumer/`,
+a separate project depending on the first as a plain `file:` dependency, immediately
+understood via `waygraph graph node_modules/<pkg>` - no manifest, index, or schema file
+anywhere). `templates/scaffold` itself now demonstrates both authoring modes composing in one
+flow (`src/routes/`, alongside its existing `src/blocks/`).
+
+Real, honest limitation found while proving the "waypack" loading claim, not silently worked
+around: a *live* `--detach` session (and therefore `pilot start`, which also spawns one) can
+fail with a real OS-level `listen EINVAL` when the loaded package's path is long enough to
+exceed the AF_UNIX socket path limit (~108 bytes on Linux) - `waygraph graph` uses no socket
+and is unaffected, and remains this capability's actual proof mechanism.
+
+Full spec/design/tasks: `openspec/changes/waygraph-map/`.
 
 ## Narrated help-center video generation (planned - deferred to v1.0.x)
 

@@ -45,16 +45,26 @@ structure.
 ### Requirement: Loading a second project's Blocks needs no separate manifest step
 A project (the "waypack" consumer) that takes a convention-following project's Blocks as a
 plain dependency (e.g. a `file:` reference, matching `examples/saucedemo`'s own existing
-`"waygraph": "file:../.."` precedent) SHALL be immediately understandable by
-`waygraph graph`/`pilot start` run against it - no separate manifest, index, or schema file
-needs to exist or be generated for this to work.
+`"waygraph": "file:../.."` precedent) SHALL be immediately understandable by `waygraph graph`
+run directly against the loaded package's own path - no separate manifest, index, or schema
+file needs to exist or be generated for this to work.
 
 #### Scenario: A second project understands a loaded convention-following project immediately
 - **WHEN** a project depends on a convention-following project's Block folder as a plain
   file dependency, with no additional manifest of any kind
-- **THEN** `waygraph graph` (or `pilot start`) run against the consuming project's own Blocks
-  (which may re-export or directly reference the loaded ones) SHALL correctly discover the
-  loaded project's full Checkpoint/edge structure
+- **THEN** `waygraph graph` run against the loaded package's own path (e.g.
+  `node_modules/<loaded-package>`) SHALL correctly discover the loaded project's full
+  Checkpoint/edge structure
+
+#### Scenario: A real, unrelated OS constraint on a session against a deeply nested path (stated honestly, not silently worked around)
+- **WHEN** the loaded package's path is deep enough (e.g. through a consumer project's own
+  `node_modules/<pkg>` path) that its absolute length approaches the OS's AF_UNIX socket path
+  limit (~108 bytes on Linux)
+- **THEN** `waygraph graph` (which uses no socket) SHALL still work correctly, but a
+  `--detach` session (`auto --cli --detach`, and therefore `pilot start`, which also spawns
+  one) MAY fail with a real, pre-existing, unrelated OS-level error (`listen EINVAL`) - a
+  known constraint of session sockets living under the project directory, not something this
+  capability introduces or is required to work around
 
 ### Requirement: No schema file, load/save helper, or `map init` command is introduced
 This capability SHALL NOT introduce a JSON (or other) manifest format, any function that

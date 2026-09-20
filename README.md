@@ -682,10 +682,59 @@ written, not a package bug. And a Block not wired into any `.flow.ts` (`waygraph
 "orphan" warning) is still fully visible and runnable in a live session's menu - orphan status
 only affects `auto --blocks <From> <To>` path-finding, not `auto`'s own menu.
 
-**Honest scope:** Waygraph Map (a portable, consolidated graph package artifact) and Waygraph
-Router (an opinionated folder convention) are separate, unbuilt, vision-only pieces this
-capability does not depend on or design - see `ROADMAP.md`'s Phase 6b/6c section. Proof stays
-against an in-repo synthetic fixture, not a real external site.
+**Honest scope:** Blind Pilot does not currently author into the Waygraph Map convention
+below by default - it still writes plain files wherever it's pointed. Proof stays against an
+in-repo synthetic fixture, not a real external site.
+
+## Waygraph Map
+
+An opinionated, Next.js/Nuxt-style folder convention where a project's own directory
+structure mechanically *is* its map - not a separate schema file to generate, maintain, or
+let drift out of sync. Needs zero new engine code: `discoverGraph`/`loadBlockLibrary` already
+recurse through any folder structure, matching only the `.block.ts` filename pattern - folder
+naming and depth are already 100% cosmetic to every existing command.
+
+```text
+src/routes/
+  (base_app)/              # purely organizational - never part of any Checkpoint tag
+    dashboard/              # one folder per Checkpoint - "Dashboard"
+      page.block.ts          # arrival hub (definePageBlock) - fixed name, every folder
+      nav.block.ts            # navigation (defineNavBlock) - fixed name, every folder
+      dashboard.sel.ts
+      methods/
+        click-widget.block.ts
+  (external)/
+    docs/                    # a different group, same shape - "Docs"
+      page.block.ts
+      nav.block.ts
+      docs.sel.ts
+```
+
+Same Block helpers as today's freeform "manual mode" (`definePageBlock`/`defineNavBlock`/
+`defineMethodBlock`/etc.) - this only changes *where files live and what they're named*,
+never what kind of Block authors them or how they execute. A project adopts it incrementally,
+folder by folder; the two styles compose in the same flow with no special-casing (proven in
+`templates/scaffold`'s own `routes-demo.flow.ts`: `nav-home` from `src/blocks/`, manual mode,
+into `nav-docs` from `src/routes/`, Map convention, one real navigation).
+
+**"waypack" - loading another project's Blocks needs no separate manifest either.** A second
+project depending on a Map-convention project as a plain `file:` dependency (the same
+mechanism `examples/saucedemo`'s own `"waygraph": "file:../.."` already uses) is immediately
+understandable: `waygraph graph node_modules/<loaded-package>` correctly discovers its full
+Checkpoint/edge structure, with nothing generated or maintained separately. Proven end to end
+in `examples/routed-demo-consumer/` against `examples/routed-demo/`.
+
+**Real, honest limitation found while proving this, not silently worked around:** a *live*
+`--detach` session (`auto --cli --detach`, and therefore `pilot start`, which also spawns
+one) can fail with a real OS-level `listen EINVAL` when the target path is long enough to
+exceed the AF_UNIX socket path limit (~108 bytes on Linux) - concretely possible when driving
+a session against a package loaded through a consumer project's own deeply nested
+`node_modules/<pkg>` path. `waygraph graph` uses no socket and is unaffected; it's the actual
+mechanism this capability's own "waypack" proof relies on.
+
+Full design history (why "Router" isn't a separate thing to build, two prior wrong readings
+of this before landing here, and everything above stated as requirements) in
+`openspec/changes/waygraph-map/`.
 
 ## Getting started (pick one)
 

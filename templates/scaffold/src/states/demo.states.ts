@@ -12,3 +12,8 @@ export type MailpitInbox = Checkpoint<"MailpitInbox">;
 
 /** The message addressed to the expected recipient is open; preview iframe visible. */
 export type MailpitMessageOpen = Checkpoint<"MailpitMessageOpen">;
+
+// --- Waygraph Map convention demo (src/routes/, alongside src/blocks/'s manual mode) ---
+
+/** Reached via src/routes/(external)/docs/ - see openspec/changes/waygraph-map. */
+export type Docs = Checkpoint<"Docs">;
