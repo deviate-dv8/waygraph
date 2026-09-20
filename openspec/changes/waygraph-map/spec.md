@@ -1,85 +1,81 @@
 # waygraph-map Specification
 
 ## Purpose
-A structured, incrementally-writable JSON record of what a Blind Pilot session has
-discovered about a project - the substrate Blind Pilot works from *before and while*
-authoring real Blocks, not a report generated from Blocks that already exist. Provides only
-data read/write helpers; generates no `.block.ts`/`*Sel`/mem-key source text itself.
+An opinionated, Next.js/Nuxt-style folder convention where a project's own directory
+structure mechanically is its map - not a separate schema file a project generates,
+maintains, or can let drift out of sync with its actual Blocks. Requires zero new engine
+code: every existing command already discovers Blocks by walking the filesystem for
+`.block.ts` files, independent of folder naming or depth.
 
 ## Requirements
 
-### Requirement: The Map schema records what has been discovered, per Checkpoint
-A `WaygraphMap` SHALL be a collection of `WaygraphMapEntry` records, one per discovered
-Checkpoint, each capturing: how to reach it (a nav mechanism/URL, when known), selectors
-recognized on it, recognized method/effect patterns (each carrying a
-`status: "confirmed" | "needs-review"`), and a free-form list of open questions the agent
-could not resolve from the DOM alone.
+### Requirement: The convention is folder-per-Checkpoint, with purely organizational groups
+A project following this convention SHALL organize its Blocks as one folder per Checkpoint
+under a top-level `(group)/` directory, where `(group)` is purely organizational (does not
+affect the Checkpoint tag or any runtime behavior) and each Checkpoint's own folder contains
+its arrival Block (`page.block.ts`), its navigation Block (`nav.block.ts`), and its actions
+(`methods/*.block.ts`), mirroring today's freeform convention's own Block kinds under fixed,
+predictable file names instead of developer-chosen ones.
 
-#### Scenario: An entry can exist before a Checkpoint is fully understood
-- **WHEN** an agent has only recognized a page's URL/nav mechanism but nothing else about it
-  yet
-- **THEN** a `WaygraphMapEntry` for it SHALL be a valid, saveable record with its other
-  fields empty or absent - the schema does not require full information before an entry can
-  exist
+#### Scenario: A Checkpoint's Blocks are locatable from its folder path alone
+- **WHEN** a project follows this convention for a Checkpoint named `Dashboard` under group
+  `(base_app)`
+- **THEN** its arrival Block SHALL be at `(base_app)/dashboard/page.block.ts`, its navigation
+  Block at `(base_app)/dashboard/nav.block.ts`, and its actions under
+  `(base_app)/dashboard/methods/`
 
-#### Scenario: An open question survives a save/load round trip
-- **WHEN** an entry's `openQuestions` list is set (e.g. "is this mail catcher local or
-  published?") and the Map is saved then reloaded
-- **THEN** that same open question SHALL still be present, unchanged, on reload
+#### Scenario: A `(group)` folder never appears in any Checkpoint tag or resolved state
+- **WHEN** Blocks under two different `(group)/` folders are discovered
+- **THEN** neither group's own name SHALL appear in any Checkpoint tag - groups organize
+  files on disk only
 
-### Requirement: Load/save/update helpers are pure data operations
-`loadMap`, `saveMap`, and `upsertMapEntry` SHALL only read, write, or merge `WaygraphMap`
-data. None of them SHALL generate, write, or otherwise produce `.block.ts`, `*Sel`, or
-mem-key source text, and none SHALL depend on a live browser session, Playwright, or any
-`AutoSession` state.
+### Requirement: Existing tooling works against the convention with zero new code
+`discoverGraph`, `loadBlockLibrary`, and every command built on them (`waygraph graph`,
+`waygraph auto`, `waygraph check`, `waygraph pilot start`, `waygraph auto reach`, ...) SHALL
+work correctly against a project following this convention without any modification, because
+Block discovery already depends only on the `.block.ts` filename pattern, never on folder
+structure.
 
-#### Scenario: upsertMapEntry merges without a live session
-- **WHEN** `upsertMapEntry` is called with a `WaygraphMap` and a new/updated entry, with no
-  browser or session involved at all
-- **THEN** it SHALL return an updated `WaygraphMap` reflecting the merge, purely as a data
-  transformation
+#### Scenario: `waygraph graph` against a convention-following project needs no new code path
+- **WHEN** `waygraph graph` runs against a project organized under this convention
+- **THEN** it SHALL produce a correct graph (every Checkpoint/edge discovered) using the
+  exact same `discoverGraph` code path used for a freeform-organized project - no
+  convention-specific branch
 
-#### Scenario: No exported function returns Block source text
-- **WHEN** this capability's public surface is inspected
-- **THEN** none of it SHALL take a `WaygraphMapEntry` and return `.block.ts`/`*Sel`/mem-key
-  source text, or write such a file itself - matching `waygraph-blind-pilot`'s own
-  unmodified "generates no Block content" requirement
+### Requirement: Loading a second project's Blocks needs no separate manifest step
+A project (the "waypack" consumer) that takes a convention-following project's Blocks as a
+plain dependency (e.g. a `file:` reference, matching `examples/saucedemo`'s own existing
+`"waygraph": "file:../.."` precedent) SHALL be immediately understandable by
+`waygraph graph`/`pilot start` run against it - no separate manifest, index, or schema file
+needs to exist or be generated for this to work.
 
-### Requirement: `waygraph map init` scaffolds an empty Map at the conventional location
-Running `waygraph map init [dir]` against a `templates/scaffold`-based project SHALL create
-an empty, valid `WaygraphMap` file at the conventional location if one does not already
-exist, and SHALL fail loud (not silently overwrite) if one already does.
+#### Scenario: A second project understands a loaded convention-following project immediately
+- **WHEN** a project depends on a convention-following project's Block folder as a plain
+  file dependency, with no additional manifest of any kind
+- **THEN** `waygraph graph` (or `pilot start`) run against the consuming project's own Blocks
+  (which may re-export or directly reference the loaded ones) SHALL correctly discover the
+  loaded project's full Checkpoint/edge structure
 
-#### Scenario: init on a fresh project creates a valid empty Map
-- **WHEN** `waygraph map init` runs against a project with no existing Map file
-- **THEN** a new file SHALL exist afterward, loadable via `loadMap` as a valid, empty
-  `WaygraphMap`
+### Requirement: No schema file, load/save helper, or `map init` command is introduced
+This capability SHALL NOT introduce a JSON (or other) manifest format, any function that
+loads/saves such a manifest, or a `waygraph map init`-style CLI command. An earlier draft of
+this proposal took exactly this shape and was superseded before implementation - this
+requirement exists specifically to prevent it from being silently reintroduced.
 
-#### Scenario: init refuses to overwrite an existing Map
-- **WHEN** `waygraph map init` runs against a project that already has a Map file
-- **THEN** it SHALL exit with a clear error and SHALL NOT modify the existing file
+#### Scenario: No exported function reads or writes a Map manifest file
+- **WHEN** this capability's public surface (any new exports from this change) is inspected
+- **THEN** none of it SHALL read or write a separate manifest file describing a project's
+  Checkpoint/edge structure
 
-### Requirement: The Map is additive documentation, not a replacement for NAV.md/SITE-MAP.md
-Introducing a Map file SHALL NOT require removing or restructuring `templates/scaffold`'s
-existing `NAV.md`/`SITE-MAP.md` prose docs. The Map is a separate, machine-readable working
-file Blind Pilot itself reads and writes; the existing prose docs remain the human-facing
-reference they already are.
+### Requirement: Proof is scoped to an in-repo example, and Blind Pilot's own authoring is unchanged
+This capability's own proof SHALL demonstrate the convention working end to end (a real
+demonstrative scaffold, plus a second project loading it as a plain dependency) against
+in-repo examples, not a real external consumer. It SHALL NOT claim that `waygraph-blind-pilot`
+itself now authors into this convention - that remains separate, later, unscoped work, and
+Blind Pilot continues writing plain files exactly as already shipped.
 
-#### Scenario: A project can have both a Map file and its existing NAV.md unchanged
-- **WHEN** a Map file is introduced into a `templates/scaffold`-based project
-- **THEN** the project's existing `NAV.md`/`SITE-MAP.md` files SHALL remain valid and
-  unmodified by this capability
-
-### Requirement: Proof is scoped to an in-repo example, and the underlying vision is stated as underspecified
-This capability's own proof SHALL demonstrate the schema/helpers and `map init` working
-end to end against `templates/scaffold`, not a real external consumer. Status reporting
-SHALL state plainly that the exact schema and the choice not to build a standalone
-`waygraph@map` package are a chosen, minimal reading of a genuinely underspecified user
-vision - not a fully certain one - and that wiring Blind Pilot itself to read from/write to
-a Map (rather than only having the schema exist) remains separate, later, unscoped work.
-
-#### Scenario: Status reporting states the interpretation is a choice, not a certainty
+#### Scenario: Status reporting does not overstate what changed
 - **WHEN** this capability is reported as implemented
-- **THEN** the report SHALL name the schema/location decisions as a chosen interpretation of
-  an underspecified vision, and SHALL state that Blind Pilot's own code does not yet read
-  from or write to a Map as part of its own exploration loop
+- **THEN** the report SHALL state plainly that Blind Pilot's own authoring behavior is
+  unchanged, and that this capability proves the convention works, not that anything
+  currently generates Blocks following it automatically

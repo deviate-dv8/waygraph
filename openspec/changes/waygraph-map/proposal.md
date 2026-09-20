@@ -1,101 +1,89 @@
 ## Why
 
-`ROADMAP.md`'s Phase 6c names Waygraph Map, and `waygraph-blind-pilot`'s own design.md
-(Roadmap item 3) explicitly left it as an open dependency rather than guessing at it:
-"Blind Pilot as shipped writes plain `.block.ts` files directly; whether Waygraph Map should
-be the actual target instead is a real design question for whenever this phase is picked up."
+`ROADMAP.md`'s Phase 6c names Waygraph Map. This proposal has already been corrected once
+(see `tasks.md`'s own Status section for the full record): a first draft designed Map as a
+separate `waygraph.map.json` file Blind Pilot would read and write as its own working notes.
+That was superseded by re-reading the user's own words more carefully, and this session's
+resulting reply below reconciles a real tension between two of the user's messages that
+looked contradictory at first:
 
-**This proposal was almost built on a wrong reading of that dependency**, caught only by
-re-checking this project's own chat history directly rather than re-deriving it from memory
-(the user's own standing instruction, given exactly to prevent this class of mistake). The
-two real mentions of Waygraph Map in this whole project's history, verbatim:
+- Earlier in this project's history, "Waygraph Router" was described with literal Next.js
+  App-Router syntax: *"an opinionated folder structure in waygraph just like nextjs. like
+  there is (base_app), (external) something. and (baseapp)/dashboard/, it has /dashboard/
+  page.ts thing."*
+- Later: *"waygraph router is the current setup we have today. waygraph map is like the
+  folder opinon similar to what nextjs,nuxtjs. with their endpoitns. this makes it easier to
+  create the waypack package im hoping for... the fodlers are literally the page endpoint."*
 
-1. *"...the waygraph blind pilot, which auto create from navigating the webiste. should
-   utliize first on the waygraph map this is only availble on the scaffold thing. maybe
-   waygraph@map package stuffs?"*
-2. *"...ok i know this pattern is login, stuff then go writes some mem blocks. asks me is
-   this a fucking local or published, does it support maildrop.cc? balh blah blah. get info.
-   update the blocks using hte waygraph map."*
+Read together, not as a contradiction: the *name* attached to "the opinionated Next.js-style
+folder convention" moved from "Router" to "Map" between messages - this proposal treats the
+second, later message as authoritative. **Waygraph Map is an opinionated, mechanically
+-parseable folder convention** (`(group)/<page>/page.block.ts`, `nav.block.ts`,
+`methods/*.block.ts`, one Checkpoint per folder) - not a separate schema file a project
+maintains alongside its Blocks. "Waygraph Router" isn't a separate thing to build; it's the
+user's own name for the role today's freeform, folder-organized "manual mode" already fills.
+"waypack" is the actual goal this unblocks: a distributable package of a project's Blocks
+that another agent can load and immediately understand, because the folder structure it
+loads *is* the map - "agents can run an empty waygraph, load a waygraph package, and they
+can understand more and navigate the website."
 
-The corrected reading, confirmed directly with the user: **Waygraph Map is not a read-only
-export generated from already-written Blocks.** It is Blind Pilot's own working substrate -
-built up *first*, while exploring, as a structured record of what's been discovered
-(recognized patterns, checkpoints, selectors, open questions like "is this mail catcher local
-or published") - and real Block authoring happens *from* that record afterward, not before
-it. Scoped explicitly to `templates/scaffold`'s own conventions ("only available on the
-scaffold thing"), named as a distributable package (working name `waygraph@map` or
-`waygraph/map`).
-
-**What this proposal deliberately does NOT do, and why:** design a Block-execution engine
-that runs directly off Map data instead of real `.block.ts` source. `AutoSession`/
-`loadBlockLibrary` only know how to import real TypeScript Block files - a parallel
-Map-native interpreter would be a large, speculative expansion of exactly the kind this
-project's own history has repeatedly rejected once evidence corrected it (a discarded
-HTTP mail-adapter, a discarded sandboxed-runtime Pilot design, a discarded one-ask-to-one-edge
-resolver - each time the fix was reusing an already-proven mechanism, not building a new
-parallel one). The smaller, justified interpretation this proposal takes instead: Waygraph
-Map is a structured JSON file Blind Pilot reads and writes incrementally during exploration
-(discovered checkpoints/selectors, recognized-pattern notes, open questions to ask the
-human) - real Block authoring still means writing real `.block.ts`/`*Sel`/mem-keys files
-afterward, informed by what's in the Map, not replaced by it. This keeps
-`waygraph-blind-pilot`'s own already-shipped requirement ("this capability generates no Block
-content") fully intact - Map manipulation is structured note-taking, not code generation.
-
-**Honest, stated uncertainty, not resolved by assumption:** this is the chosen, minimal
-reading of a genuinely underspecified user vision (the user's own words: "just yapping"),
-not a fully certain one. Real open questions this proposal answers with a concrete, reasoned
-default rather than leaving unaddressed: the exact JSON schema and file location (below), and
-whether "`waygraph@map`" is a real separate npm package or a data format within this package
-(this proposal treats it as the latter - a schema/helpers shipped from this package, scoped
-to `templates/scaffold` - since nothing yet demonstrates a second, independent consumer that
-would justify a standalone package).
-
-`templates/scaffold` already has a hand-written precedent for exactly this shape of
-information - `NAV.md` (nav-to / page hub / methods-effects / states-mem-keys tables, one per
-namespace) and `SITE-MAP.md` (folder-to-URL table) - both prose, not data. Waygraph Map is
-the machine-readable, incrementally-writable equivalent of `NAV.md`'s own table structure,
-not a new kind of information.
+**Verified before writing this design, not assumed:** `discoverGraph`/`loadBlockLibrary`
+(`src/graph.ts`'s `walkDir`) already recurse through any directory structure, matching files
+purely by the `.block.ts` filename pattern - folder depth and naming are already 100%
+cosmetic to every existing command (`auto`, `graph`, `check`, `pilot start`, `auto reach`,
+...). A Block's identity comes entirely from its own exported properties (`name`,
+`__waygraphKind`, `instruction`), never from its file path except for diagnostics. **This
+means the opinionated folder convention needs zero new engine code to work** - it is purely
+an authoring/naming convention layered on top of machinery that already works, the same kind
+of "verify what already exists before building" finding that shaped every prior phase this
+session (`AutoSession` tolerating zero Blocks, `auto --blocks`'s own pathfinding, etc.).
 
 ## What Changes
 
-- **New: a Waygraph Map JSON schema and its TypeScript types** (`WaygraphMap`,
-  `WaygraphMapEntry`) - one entry per discovered Checkpoint, capturing what Blind Pilot has
-  learned about it: how to reach it (nav mechanism/URL), recognized selectors, recognized
-  method/effect patterns (each with a `status: "confirmed" | "needs-review"`), and free-form
-  `openQuestions` (e.g. "is this mail catcher local or published?") - the structured
-  equivalent of `NAV.md`'s own tables.
-- **New: minimal load/save/update helpers** (`loadMap(path)`, `saveMap(path, map)`,
-  `upsertMapEntry(map, entry)`) - pure data read/write, no Block-content generation. These
-  are the entire new runtime surface; nothing here writes `.block.ts`/`*Sel`/mem-key files.
-- **New: `waygraph map init [dir]`** - scaffolds an empty Map file at the conventional
-  location inside a `templates/scaffold`-based project (below).
-- **Not built:** any code that turns a Map entry into `.block.ts` source text. Authoring the
-  actual Block, informed by the Map, remains the driving agent's own job - unchanged from
-  `waygraph-blind-pilot`'s own shipped scope, not a boundary this proposal is allowed to
-  quietly move.
-- **Not built:** Waygraph Router (a separate, unrelated, opinionated folder convention).
-- **Not built:** a standalone `waygraph@map` npm package - the schema/helpers ship from this
-  package instead, since no second consumer yet justifies a separate one (see Roadmap in
-  design.md for the honest reasoning).
+- **New: the Waygraph Map folder convention, documented** - `src/routes/(group)/<page-slug>/
+  page.block.ts` (arrival/hub, the folder-convention equivalent of today's `*.page.block.ts`),
+  `nav.block.ts` (today's `nav-*.block.ts`), `methods/<action>.block.ts` (today's
+  `methods/*.method.block.ts`), `<page-slug>.sel.ts` (today's `*-sel.ts`). `(group)` is purely
+  organizational (parens, Next.js route-group style - does not affect the Checkpoint tag),
+  matching the user's own `(base_app)`/`(external)` example. Recommends, but does not enforce
+  by new validation code, that a folder's Checkpoint tag matches its own page-slug.
+- **New: one demonstrative scaffold** showing the convention end to end, proving
+  `discoverGraph`/`waygraph graph`/`waygraph auto`/`waygraph pilot start`/`auto reach` all
+  already work against it unmodified - no new parsing/discovery code, because none is needed
+  (verified above).
+- **New: a real "waypack" proof** - a second project loads the first (as a plain `file:`
+  dependency/directory copy, the same mechanism `examples/saucedemo`'s own `"waygraph":
+  "file:../.."` already uses), and `waygraph graph`/`pilot start` against it immediately
+  understands the loaded project's full structure - no separate manifest step, no schema
+  file, because the folder structure it just loaded already *is* the map.
+- **Not built:** any new JSON schema, load/save helper module, or `map init` CLI command -
+  the entire premise of this proposal's own first (superseded) draft. Removed, not layered
+  alongside the new approach.
+- **Not built:** wiring Blind Pilot to *author into* this convention automatically. Blind
+  Pilot still writes plain files itself (unchanged, per `waygraph-blind-pilot`'s own shipped
+  scope) - which convention it follows when doing so is real, separate, later work.
+- **Not built:** any new validation/lint rule enforcing folder-name-matches-Checkpoint-tag.
+  A real, valuable follow-up, not required for this proposal's own claim (the convention
+  works and is mechanically walkable today) to be true.
 
 ## Capabilities
 
 ### New Capabilities
-- `waygraph-map`: a structured, incrementally-writable JSON record of what a Blind Pilot
-  session has discovered about a project, read/written via a minimal set of pure helpers -
-  the substrate Blind Pilot works from before and while authoring real Blocks, not a report
-  generated after the fact.
+- `waygraph-map`: an opinionated, documented, Next.js/Nuxt-style folder convention where a
+  project's own directory structure mechanically is its map - no separate artifact to
+  generate, maintain, or let drift out of sync - proven to work against every existing
+  command with zero new engine code, and proven to make loading a second project's Block
+  library ("waypack") immediately understandable with the same existing tooling.
 
 ## Impact
 
-- New module (e.g. `src/map.ts`): `WaygraphMap`/`WaygraphMapEntry` types, `loadMap`/
-  `saveMap`/`upsertMapEntry`.
-- `src/cli.ts`: new `map init [dir]` sub-command.
-- `templates/scaffold/`: documents the conventional Map file location and its relationship
-  to `NAV.md`/`SITE-MAP.md` (the Map supersedes neither - `NAV.md` stays the human-facing
-  doc; the Map is Blind Pilot's own working file).
-- Does not touch `waygraph-blind-pilot`'s own shipped code (`rawClick`/`rawType`/`rawGoto`/
-  `reloadLibrary`, the CLI verbs) - this proposal adds a data substrate those primitives can
-  be used alongside, not a modification to them.
-- Does not touch Waygraph Router, or any real external-site proof - stays in-repo, matching
-  every prior phase's own established precedent for the identical tension.
+- One new documented convention (in `README.md`, cross-referenced from `ROADMAP.md`'s Phase
+  6c section) - no new `src/` module.
+- One new demonstrative example/scaffold directory proving the convention against real,
+  already-shipped tooling.
+- Does not touch `waygraph-pilot`'s or `waygraph-blind-pilot`'s own shipped code.
+- Supersedes this proposal's own first draft entirely (the `waygraph.map.json` schema/
+  helpers/`map init` command) - that draft is not implemented alongside this one; it is
+  replaced by it. Full record of why in `tasks.md`'s Status section and the archived first
+  draft's own git history (this proposal was corrected before any of its own code was
+  written, so there is no removal commit the way `waygraph-pilot`'s v1 needed one).
