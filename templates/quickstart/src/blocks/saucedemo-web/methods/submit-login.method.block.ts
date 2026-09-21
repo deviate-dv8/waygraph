@@ -48,9 +48,10 @@ export const SubmitLoginBlock = defineMethodBlock<LoginPage, LoginSubmitOutcome>
         submit: {
           selector: LoginSel.loginButton,
           label: "Login",
+          detail: "tone: warning (yellow)",
           todo: "login-submit",
+          tone: "warning",
           focus: true,
-          color: "#86efac",
           zoom: 1.55,
           weight: "bold",
           gesture: "tap",
@@ -72,9 +73,9 @@ export const SubmitLoginBlock = defineMethodBlock<LoginPage, LoginSubmitOutcome>
         ctx.ring("error", {
           selector: LoginSel.errorBanner,
           label: "Login error banner",
+          detail: "tone: danger (red)",
           tone: "danger",
           focus: true,
-          color: "#f87171",
           duration: true,
         });
         return;
@@ -96,9 +97,9 @@ export const SubmitLoginBlock = defineMethodBlock<LoginPage, LoginSubmitOutcome>
       ctx.ring("shelf", {
         selector: ".inventory_list",
         label: "Product shelf",
-        detail: "Ready to shop",
+        detail: "tone: success (green) - ready to shop",
+        tone: "success",
         focus: true,
-        color: "#c9a6ff",
         zoom: 1.25,
         duration: true,
       });
@@ -108,9 +109,9 @@ export const SubmitLoginBlock = defineMethodBlock<LoginPage, LoginSubmitOutcome>
       ctx.ring("error", {
         selector: LoginSel.errorBanner,
         label: "Login error banner",
+        detail: "tone: danger (red)",
         tone: "danger",
         focus: true,
-        color: "#f87171",
         duration: true,
       });
     },

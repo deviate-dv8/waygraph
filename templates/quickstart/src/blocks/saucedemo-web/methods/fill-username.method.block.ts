@@ -44,9 +44,10 @@ export const FillUsernameBlock = defineMethodBlock<LoginPage, LoginPage>({
         username: {
           selector: LoginSel.username,
           label: "Username",
+          detail: "tone: info (blue)",
           todo: "login-user",
+          tone: "info",
           focus: true,
-          color: "#c9a6ff",
           zoom: 1.4,
         },
       });

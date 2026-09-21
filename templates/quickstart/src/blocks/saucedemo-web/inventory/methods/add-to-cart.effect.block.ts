@@ -57,17 +57,18 @@ export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>(
         product: {
           selector: InventorySel.title(DEMO_PRODUCT_ID),
           label: "Sauce Labs Backpack",
-          detail: "Zoom the product",
+          detail: "tone: info (blue)",
+          tone: "info",
           focus: true,
-          color: "#c9a6ff",
           zoom: 1.45,
           zoomOut: false,
         },
         add: {
           selector: InventorySel.addBtn(DEMO_PRODUCT_ID),
           label: "Add to cart",
+          detail: "tone: success (green)",
+          tone: "success",
           focus: true,
-          color: "#86efac",
           zoom: 1.5,
           zoomOut: false,
           weight: "bold",
@@ -92,9 +93,9 @@ export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>(
       ctx.ring("badge", {
         selector: InventorySel.cartBadge,
         label: "Cart badge",
-        detail: "Item count updated",
+        detail: "tone: success (green) - count updated",
+        tone: "success",
         focus: true,
-        color: "#86efac",
         zoomOut: false,
         duration: true,
       });

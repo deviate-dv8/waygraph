@@ -38,9 +38,9 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
       cart: {
         selector: CartSel.cartLink,
         label: "Cart",
-        detail: "Open cart",
+        detail: "tone: planned (purple) - open cart",
+        tone: "planned",
         focus: true,
-        color: "#c9a6ff",
         zoomOut: false,
         followMouse: false,
         weight: "bold",
@@ -56,9 +56,9 @@ export const NavCartBlock = defineNavClickBlock<CartPage>({
     ctx.ring("items", {
       selector: InventorySel.cartItem,
       label: "Cart items",
-      detail: "Product landed in cart",
+      detail: "tone: success (green) - product in cart",
+      tone: "success",
       focus: true,
-      color: "#86efac",
       zoomOut: true,
       followMouse: false,
       duration: true,

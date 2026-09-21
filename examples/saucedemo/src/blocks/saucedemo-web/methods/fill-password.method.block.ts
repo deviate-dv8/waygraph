@@ -26,9 +26,10 @@ export const FillPasswordBlock = defineMethodBlock<LoginPage, LoginPage>({
         password: {
           selector: LoginSel.password,
           label: "Password",
+          detail: "tone: planned (purple)",
           todo: "login-pass",
+          tone: "planned",
           focus: true,
-          color: "#c9a6ff",
           zoom: 1.4,
         },
       });
