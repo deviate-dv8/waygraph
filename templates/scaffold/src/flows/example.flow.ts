@@ -1,15 +1,17 @@
 import { Engine, start, end, withTitle, withHighlightFixtures } from "waygraph";
-import { NavHomeBlock } from "../blocks/demo-web/nav-home.block.js";
-import { AssertHelloBlock } from "../blocks/demo-web/methods/assert-hello.method.block.js";
-// Page hub registered for auto/docs grouping (arrival-only after nav).
-import "../blocks/demo-web/home.page.block.js";
+import { NavHomeBlock } from "../map/(app_base)/home/nav.block.js";
+import { AssertHelloBlock } from "../map/(app_base)/home/methods/assert-hello.method.block.js";
+import { NavDocsBlock } from "../map/(app_base)/docs/nav.block.js";
+// Page hubs registered for auto/docs grouping (arrival-only after nav).
+import "../map/(app_base)/home/page.block.js";
+import "../map/(app_base)/docs/page.block.js";
 
 const engine = new Engine();
 
-/** Smoke: nav + assert (no mem). Green offline. */
+/** Smoke: nav + assert (no mem), then nav to the sibling docs/ page. Green offline. */
 export const exampleFlow = withHighlightFixtures(
   withTitle(
-    engine.defineFlow([start, NavHomeBlock, AssertHelloBlock, end]),
+    engine.defineFlow([start, NavHomeBlock, AssertHelloBlock, NavDocsBlock, end]),
     "Scaffold: Hello Waygraph",
   ),
   {

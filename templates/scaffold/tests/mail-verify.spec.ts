@@ -4,7 +4,7 @@ import net from "node:net";
 import { MemPage, checkpoint } from "waygraph";
 import { mailVerifyFlow } from "../src/flows/mail-verify.flow.js";
 import { ExpectedRecipient, ExpectedLinkPattern, ExpectedEmailContent } from "../src/states/demo.mem-keys.js";
-import { HOME_URL } from "../src/blocks/demo-web/demo-sel.js";
+import { HOME_URL } from "../src/map/(app_base)/home/home.sel.js";
 
 /**
  * This scaffold has no real backend, so these tests play the role of "the

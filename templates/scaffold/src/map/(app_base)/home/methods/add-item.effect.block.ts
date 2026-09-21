@@ -4,9 +4,9 @@ import {
   type Checkpoint,
   type WaygraphInstanceOption,
 } from "waygraph";
-import type { ItemInCart } from "../../../states/demo.states.js";
-import { SelectedItem } from "../../../states/demo.mem-keys.js";
-import { DemoSel } from "../demo-sel.js";
+import type { ItemInCart } from "../../../../states/demo.states.js";
+import { SelectedItem } from "../../../../states/demo.mem-keys.js";
+import { DemoSel } from "../home.sel.js";
 
 /**
  * Kind: Effect

@@ -4,7 +4,7 @@ import { DocsSel } from "./docs.sel.js";
 
 /**
  * Kind: Page
- * Route: (external)/docs/
+ * Route: (app_base)/docs/
  * Arrival-only (nav.block.ts already landed on Docs).
  */
 export const DocsPageBlock = definePageBlock<Docs>({

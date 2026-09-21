@@ -4,9 +4,9 @@ import type { MailpitInbox } from "../../../states/demo.states.js";
 /**
  * Kind: Nav
  * Helper: defineNavBlock
- * Route: demo-external/mailpit/  (cross-origin - a real Mailpit web UI, not this app)
+ * Route: (external)/mailpit/  (cross-origin - a real Mailpit web UI, not this app)
  *
- * Cross-origin tooling lives under demo-external/, never demo-web/ - this is
+ * Cross-origin tooling lives under (external)/, never (app_base)/ - this is
  * a dev-inbox screen, not part of the app under test. `WAYGRAPH_MAIL_URL`
  * defaults to Mailpit's own usual local port.
  */

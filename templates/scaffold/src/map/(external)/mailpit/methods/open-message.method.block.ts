@@ -1,7 +1,7 @@
 import { defineMethodBlock, checkpoint } from "waygraph";
 import type { MailpitInbox, MailpitMessageOpen } from "../../../../states/demo.states.js";
 import { ExpectedRecipient } from "../../../../states/demo.mem-keys.js";
-import { MailpitSel } from "../mailpit-sel.js";
+import { MailpitSel } from "../mailpit.sel.js";
 
 /**
  * Kind: Method

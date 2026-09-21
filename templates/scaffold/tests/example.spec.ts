@@ -4,9 +4,9 @@ import { exampleFlow } from "../src/flows/example.flow.js";
 import { shopFlow } from "../src/flows/shop.flow.js";
 import { SelectedItem } from "../src/states/demo.mem-keys.js";
 
-test("example flow reaches HomeVerified", async ({ context }) => {
+test("example flow reaches Docs (home -> assert -> sibling docs/ page)", async ({ context }) => {
   const result = await exampleFlow.run(context, new MemPage());
-  expect(result).toEqual(checkpoint("HomeVerified"));
+  expect(result).toEqual(checkpoint("Docs"));
 });
 
 test("shop flow adds then clears (Effect + Method)", async ({ context }) => {

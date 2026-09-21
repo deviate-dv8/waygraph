@@ -4,12 +4,11 @@ import { DocsSel, DOCS_URL } from "./docs.sel.js";
 
 /**
  * Kind: Nav
- * Route: (external)/docs/
+ * Route: (app_base)/docs/
  *
- * Demonstrates the Waygraph Map folder convention alongside this scaffold's
- * own default "manual mode" (src/blocks/) - a second, optional authoring
- * style, not a replacement. See README.md "Waygraph Map" and
- * openspec/changes/waygraph-map. `(external)` is purely organizational
+ * Same origin as home/ (same fixture server, different HTML file) - lives
+ * under (app_base), not (external). See README.md "Waygraph Map" and
+ * openspec/changes/waygraph-map. `(app_base)` is purely organizational
  * (Next.js route-group style) - never part of the Checkpoint tag.
  */
 export const NavDocsBlock = defineNavBlock<Docs>({

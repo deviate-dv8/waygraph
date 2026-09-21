@@ -1,7 +1,7 @@
 import { defineAssertBlock, type Trait } from "waygraph";
 import type { MailpitMessageOpen } from "../../../../states/demo.states.js";
 import { ExpectedEmailContent } from "../../../../states/demo.mem-keys.js";
-import { MailpitSel } from "../mailpit-sel.js";
+import { MailpitSel } from "../mailpit.sel.js";
 
 /**
  * Mem-aware Trait: the expected copy varies per email scenario, so it can't

@@ -1,12 +1,12 @@
 import { defineNavBlock, Trait } from "waygraph";
-import type { HomeVerified } from "../../states/demo.states.js";
-import { EmailLink } from "../../states/demo.mem-keys.js";
-import { DemoSel } from "./demo-sel.js";
+import type { HomeVerified } from "../../../states/demo.states.js";
+import { EmailLink } from "../../../states/demo.mem-keys.js";
+import { DemoSel } from "./home.sel.js";
 
 /**
  * Kind: Nav
  * Helper: defineNavBlock
- * Route: demo-web/
+ * Route: (app_base)/home/
  *
  * Navigates back into the app to the link extract-email-link read out of
  * the real Mailpit message, then confirms the page actually reflects it

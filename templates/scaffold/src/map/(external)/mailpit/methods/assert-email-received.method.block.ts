@@ -1,7 +1,7 @@
 import { defineAssertBlock, type Trait } from "waygraph";
 import type { MailpitInbox } from "../../../../states/demo.states.js";
 import { ExpectedRecipient } from "../../../../states/demo.mem-keys.js";
-import { MailpitSel } from "../mailpit-sel.js";
+import { MailpitSel } from "../mailpit.sel.js";
 
 /**
  * Mem-aware Trait: the selector depends on which recipient this run expects,

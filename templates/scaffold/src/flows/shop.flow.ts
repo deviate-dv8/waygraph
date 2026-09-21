@@ -6,12 +6,12 @@ import {
   withHighlightFixtures,
   withSessionReset,
 } from "waygraph";
-import { NavHomeBlock } from "../blocks/demo-web/nav-home.block.js";
-import { AddItemBlock } from "../blocks/demo-web/methods/add-item.effect.block.js";
-import { AssertItemAddedBlock } from "../blocks/demo-web/methods/assert-item-added.method.block.js";
-import { RemoveItemBlock } from "../blocks/demo-web/methods/remove-item.effect.block.js";
-import { ClearCartBlock } from "../blocks/demo-web/methods/clear-cart.method.block.js";
-import "../blocks/demo-web/home.page.block.js";
+import { NavHomeBlock } from "../map/(app_base)/home/nav.block.js";
+import { AddItemBlock } from "../map/(app_base)/home/methods/add-item.effect.block.js";
+import { AssertItemAddedBlock } from "../map/(app_base)/home/methods/assert-item-added.method.block.js";
+import { RemoveItemBlock } from "../map/(app_base)/home/methods/remove-item.effect.block.js";
+import { ClearCartBlock } from "../map/(app_base)/home/methods/clear-cart.method.block.js";
+import "../map/(app_base)/home/page.block.js";
 
 const engine = new Engine();
 

@@ -1,10 +1,10 @@
 import { defineNavBlock, Trait } from "waygraph";
-import { DemoSel, HOME_URL } from "./demo-sel.js";
+import { DemoSel, HOME_URL } from "./home.sel.js";
 
 /**
  * Kind: Nav
  * Helper: defineNavBlock
- * Route: demo-web/  (synthetic "/")
+ * Route: (app_base)/home/  (synthetic "/")
  */
 export const NavHomeBlock = defineNavBlock({
   name: "nav-home",

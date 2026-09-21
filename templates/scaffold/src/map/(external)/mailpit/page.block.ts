@@ -8,7 +8,7 @@ import { ExtractEmailLinkBlock } from "./methods/extract-email-link.method.block
 /**
  * Kind: Page
  * Helper: definePageBlock
- * Route: demo-external/mailpit/  (= http://127.0.0.1:8025/ by default)
+ * Route: (external)/mailpit/  (= http://127.0.0.1:8025/ by default)
  *
  * Hub for the Mailpit dev-inbox screen. Arrival-only (no url/click) -
  * nav-mailpit-inbox owns the goto. Methods: confirm the email arrived, open
