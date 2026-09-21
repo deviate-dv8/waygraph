@@ -34,8 +34,9 @@ waygraph auto highlight <sessionId> '{"rings":[{"selector":"#user-name","label":
 waygraph auto highlight <sessionId> '{"clear":true}'
 ```
 
-- `tone`: `planned` (purple, default) | `auto` | `info` | `warning` | `danger` | `success` (pilot `orange` is for `auto dom` vision only)
+- `tone`: all demo tones - `planned` | `auto` | `info` | `warning` | `danger` | `success` | `orange` (aliases like `error`/`blue`/`green` work too)
 - `holdMs`: ms to keep fixtures; `0` = until the next highlight / clear (default 12000)
+- Bottom-left toast shows `Highlighting: …` (same strip as `Running (Dom): …`)
 - Missing selectors are listed in the JSON response (`missing`) - not a hard failure
 - Does not replace `auto send` - paint, then run the real Block
 

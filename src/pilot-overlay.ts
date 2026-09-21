@@ -18,7 +18,7 @@
  */
 import type { Page } from "@playwright/test";
 import type { SessionSnapshot } from "./auto-session.js";
-import { WAYGRAPH_RING_CSS, type HighlightTone } from "./highlights.js";
+import { WAYGRAPH_RING_CSS, type HighlightTone, normalizeHighlightTone, normalizeHighlightSize, normalizeHighlightWeight, toneIconPrefix } from "./highlights.js";
 
 // Real, direct user request: this overlay's own colors were an improvised
 // purple/white scheme (#a78bfa / #1a1033) that didn't match anything else -
@@ -284,9 +284,10 @@ export async function showPilotVision(
 export type PilotFixtureRing = {
   selector: string;
   label: string;
-  tone?: HighlightTone;
-  size?: "sm" | "md" | "lg";
-  weight?: "normal" | "bold";
+  /** Any {@link HighlightTone} or alias (`error`/`blue`/…). Normalized on paint. */
+  tone?: HighlightTone | string;
+  size?: "sm" | "md" | "lg" | string;
+  weight?: "normal" | "bold" | string;
 };
 
 /**
@@ -328,7 +329,20 @@ export async function showPilotFixtures(
       : fixtures.holdMs === undefined
         ? 12_000
         : Math.max(0, fixtures.holdMs);
-  const rings = fixtures.clear ? [] : (fixtures.rings ?? []);
+  const rings = (fixtures.clear ? [] : (fixtures.rings ?? [])).map((r) => {
+    const tone = normalizeHighlightTone(r.tone);
+    const size = normalizeHighlightSize(r.size);
+    const weight = normalizeHighlightWeight(r.weight);
+    const icon = toneIconPrefix(tone);
+    const label = icon && !r.label.startsWith(icon) ? `${icon} ${r.label}` : r.label;
+    return {
+      selector: r.selector,
+      label,
+      tone,
+      size,
+      weight,
+    };
+  });
   const todos = fixtures.clear ? [] : (fixtures.todos ?? []);
   const todoIndex = fixtures.todoIndex ?? 0;
   const todoTitle = fixtures.todoTitle ?? "Plan";
@@ -359,9 +373,9 @@ export async function showPilotFixtures(
             missing.push(ring.selector);
             continue;
           }
-          const tone = ring.tone || "planned";
-          const size = ring.size === "sm" || ring.size === "lg" ? ring.size : "md";
-          const weight = ring.weight === "bold" ? "bold" : "normal";
+          const tone = ring.tone;
+          const size = ring.size;
+          const weight = ring.weight;
           const pad = size === "sm" ? 3 : size === "lg" ? 10 : 6;
           const ringEl = document.createElement("div");
           ringEl.className = "wg-pilot-fx-ring";

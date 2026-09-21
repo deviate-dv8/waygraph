@@ -884,12 +884,17 @@ export class AutoSession {
     | { ok: false; error: string }
   > {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    const label =
+    const detail =
       fixtures.clear === true
-        ? "clear fixtures"
-        : `${fixtures.rings?.length ?? 0} ring(s)` +
-          (fixtures.todos?.length ? `, ${fixtures.todos.length} todo(s)` : "");
-    await showPilotActivity(this.page, `Highlight: ${label}`);
+        ? "clear"
+        : [
+            fixtures.rings?.length ? `${fixtures.rings.length} ring(s)` : null,
+            fixtures.todos?.length ? `${fixtures.todos.length} todo(s)` : null,
+          ]
+            .filter(Boolean)
+            .join(", ") || "fixtures";
+    // Same bottom-left activity toast as Running (Dom)/(Block) - agent narration.
+    await showPilotActivity(this.page, `Highlighting: ${detail}`);
     try {
       const { painted, missing } = await showPilotFixtures(this.page, fixtures);
       const menu = await this.currentMenu();
