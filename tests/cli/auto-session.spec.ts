@@ -304,6 +304,24 @@ test("auto highlight: paints agent fixture rings on the live login page", async 
     const cleared = await highlight(sessionId, { clear: true });
     expect(cleared.ok).toBe(true);
     expect(cleared.painted).toBe(0);
+
+    // Zoom + focus (demo-parity fixtures) - scroll/badge/veil, not CSS page scale.
+    const zoomed = await highlight(sessionId, {
+      rings: [
+        {
+          selector: "#login-button",
+          label: "Login",
+          tone: "success",
+          focus: true,
+          zoom: 1.5,
+          detail: "submit",
+        },
+      ],
+      holdMs: 0,
+    });
+    expect(zoomed.ok).toBe(true);
+    expect(zoomed.painted).toBe(1);
+    expect(zoomed.missing ?? []).toEqual([]);
   } finally {
     await send(sessionId, "q");
   }

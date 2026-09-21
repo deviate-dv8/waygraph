@@ -27,16 +27,24 @@ sending picks.
 
 Block `stubBefore` / `withHighlightFixtures` only paint in `waygraph demo`. In Pilot they
 land in `auto trace` as metadata but do **not** draw on the page. When a human is watching
-a headful session (or you want to narrate intent before a send), paint yourself:
+a headful session (or you want to narrate intent before a send), paint yourself with the
+same fixture surface:
 
 ```
-waygraph auto highlight <sessionId> '{"rings":[{"selector":"#user-name","label":"Username","tone":"planned"},{"selector":"#password","label":"Password","tone":"info"}],"todos":["Fill username","Fill password","Submit"],"todoIndex":0,"holdMs":0}'
+waygraph auto highlight <sessionId> '{"rings":[{"selector":"#user-name","label":"Username","tone":"planned","focus":true},{"selector":"#password","label":"Password","tone":"info","detail":"secret"}],"todos":["Fill username","Fill password","Submit"],"todoIndex":0,"zoom":1.5,"holdMs":0}'
+waygraph auto highlight <sessionId> '{"device":"mobile","rings":[{"selector":".inventory_item:last-child","label":"Last item","zoom":1.6,"focus":true}],"holdMs":30000}'
 waygraph auto highlight <sessionId> '{"clear":true}'
 ```
 
+Supported fields (demo parity):
+- `rings[]`: `selector`, `label`, `detail`, `tag`, `tone`, `size`, `weight`, `color`, `zoom`, `zoomOut`, `focus`
+- `todos` / `todoIndex` / `todoTitle` / `todoPos` (`right` default | `left`)
+- `zoom` / `zoomSelector` / `zoomOut` - scroll + zoom badge (not CSS page scale)
+- `device`: `mobile` | `tablet` | `desktop` (Playwright viewport)
+- `holdMs`: ms to keep fixtures; `0` = until the next highlight / clear (default 30000)
+- `clear`: true drops rings/todos/focus/zoom badge
+
 - `tone`: all demo tones - `planned` | `auto` | `info` | `warning` | `danger` | `success` | `orange` (aliases like `error`/`blue`/`green` work too)
-- `todoPos`: `right` (default) | `left`
-- `holdMs`: ms to keep fixtures; `0` = until the next highlight / clear (default 12000)
 - Bottom-left toast shows `Highlighting: …` (same strip as `Running (Dom): …`)
 - Missing selectors are listed in the JSON response (`missing`) - not a hard failure
 - Does not replace `auto send` - paint, then run the real Block

@@ -890,6 +890,11 @@ export class AutoSession {
         : [
             fixtures.rings?.length ? `${fixtures.rings.length} ring(s)` : null,
             fixtures.todos?.length ? `${fixtures.todos.length} todo(s)` : null,
+            fixtures.zoom && fixtures.zoom > 1.001 ? `zoom ${fixtures.zoom}` : null,
+            fixtures.device
+              ? `device ${typeof fixtures.device === "string" ? fixtures.device : fixtures.device.preset || "custom"}`
+              : null,
+            fixtures.rings?.some((r) => r.focus) ? "focus" : null,
           ]
             .filter(Boolean)
             .join(", ") || "fixtures";
