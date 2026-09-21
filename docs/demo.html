@@ -165,6 +165,28 @@
             <td>Classic wrap-all block chips. Default is a horizontal <strong>carousel</strong>.</td>
           </tr>
           <tr>
+            <td><code>--todo-smart</code></td>
+            <td>demo only</td>
+            <td>
+              Compact floating checklist + collision flip + behind-ring
+              (default for <code>waygraph demo</code>). See
+              <a href="#todo-dock-ui">Todo dock UI</a>.
+            </td>
+          </tr>
+          <tr>
+            <td><code>--todo-full</code></td>
+            <td>demo only</td>
+            <td>
+              Opt out of smart dock UX (full list, no compact/collision/behind).
+              Alias <code>--no-todo-smart</code>. Env: <code>WAYGRAPH_TODO_UI=full</code>.
+            </td>
+          </tr>
+          <tr>
+            <td><code>--todo-left</code> / <code>--todo-right</code></td>
+            <td>demo only</td>
+            <td>Pin the floating todo dock to that side (default remembers last side).</td>
+          </tr>
+          <tr>
             <td><code>--auto-play-video</code></td>
             <td>demo only</td>
             <td>
@@ -195,6 +217,45 @@
         </tbody>
       </table>
 
+      <h2 id="todo-dock-ui">Todo dock UI (demo, 0.15.8+)</h2>
+      <p>
+        When a block calls <code>ctx.todos(...)</code> / <code>ctx.todoDock(...)</code>,
+        <code>waygraph demo</code> renders a <strong>floating checklist</strong> outside
+        the step panel (survives Hide / mini). Long FR/AC lists used to bury highlight
+        rings - <strong>smart defaults are on</strong> in demo:
+      </p>
+      <table>
+        <thead>
+          <tr><th>Behavior</th><th>Default</th><th>Opt out</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Compact fold (~5 rows around current; hover expands; <code>+N more</code>)</td>
+            <td>on</td>
+            <td><code>--todo-full</code> / <code>WAYGRAPH_TODO_UI=full</code> / <code>ctx.todoDockFull()</code></td>
+          </tr>
+          <tr>
+            <td>Collision flip (dock L/R when a ring overlaps)</td>
+            <td>on</td>
+            <td><code>ctx.todoDockUi({ collision: false })</code> / <code>WAYGRAPH_TODO_COLLISION=0</code></td>
+          </tr>
+          <tr>
+            <td>Behind ring (dim + lower z-index while a ring is up)</td>
+            <td>on</td>
+            <td><code>ctx.todoDockUi({ behindRing: false })</code> / <code>WAYGRAPH_TODO_BEHIND=0</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Try it on Sauce Demo login / cart flows (they already seed todos):
+      </p>
+      <pre><code>npx waygraph demo examples/saucedemo/src/flows/login.flow.ts --auto-next
+npx waygraph demo examples/saucedemo/src/flows/login.flow.ts --todo-full</code></pre>
+      <p>
+        Author API and Pilot parity:
+        <a href="./highlights.html#todo-dock-ui">Demo narration → Todo dock UI</a>.
+      </p>
+
       <pre><code># See file → export
 npx waygraph list
 
@@ -202,6 +263,7 @@ npx waygraph list
 npx waygraph run src/flows/shop.flow.ts --data '{"saucedemo.credentials":{…}}'
 npx waygraph demo src/flows/cart-bulk.flow.ts --auto-next --fast
 npx waygraph demo src/flows/shop.flow.ts --full
+npx waygraph demo src/flows/login.flow.ts --todo-smart   # default; compact dock
 
 # Or by export name
 npx waygraph demo --blocks shopFlow
@@ -212,9 +274,11 @@ npx waygraph run --blocks "loginFlow then add-all-to-cart" --data '{…}'
       <p>
         Interactive picker (same menus in CLI and GUI):
         <a href="./auto.html">Auto explore</a>.
-        Demo ring captions / AC copy on flows (proposal):
+        Demo ring captions / AC copy on flows:
         <a href="./highlights.html">Demo narration</a>
         (<code>stubBefore</code> / <code>stubAfter</code> + <code>.flow.ts</code> fixtures).
+        Floating checklist UX:
+        <a href="#todo-dock-ui">Todo dock UI</a>.
       </p>
 
       <footer class="site">

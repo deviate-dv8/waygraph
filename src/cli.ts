@@ -7016,8 +7016,13 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean; a
       process.env.WAYGRAPH_HEADED = "0";
     }
   }
-  if ((flags.fast || flags.fullStepper || flags.miniStepper || flags.todoPos) && !opts?.allowDemoUi) {
-    console.error("waygraph: --fast / --full / --mini / --todo-left|--todo-right are demo-only flags");
+  if (
+    (flags.fast || flags.fullStepper || flags.miniStepper || flags.todoPos || flags.todoUiFull || flags.todoUiSmart) &&
+    !opts?.allowDemoUi
+  ) {
+    console.error(
+      "waygraph: --fast / --full / --mini / --todo-left|--todo-right / --todo-full|--todo-smart are demo-only flags",
+    );
     process.exit(1);
   }
   if (flags.step === true) {

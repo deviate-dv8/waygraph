@@ -260,6 +260,24 @@ export const checkoutFlow = withHighlightFixtures(baseFlow, checkoutAcFixtures);
         automatically shimmed to ephemeral <code>stubAfter</code> keys <code>"0"</code>, <code>"1"</code>, ...
       </p>
 
+      <h2 id="todo-dock-ui">Todo dock UI (demo, 0.15.8+)</h2>
+      <p>
+        <code>ctx.todos(...)</code> / <code>ctx.todoDock(...)</code> paint a floating
+        checklist during <code>waygraph demo</code> (and Pilot overlay). Smart defaults
+        keep long FR/AC lists from burying highlight rings:
+      </p>
+      <ul>
+        <li><strong>Compact</strong> - fold around the current row; hover or <code>+N more</code> expands</li>
+        <li><strong>Collision flip</strong> - dock moves L/R when a ring would overlap it</li>
+        <li><strong>Behind ring</strong> - dim + lower z-index while a ring is up</li>
+      </ul>
+      <p>
+        Opt out for the whole run: <code>waygraph demo ... --todo-full</code>
+        (or <code>WAYGRAPH_TODO_UI=full</code>). Per-block:
+        <code>ctx.todoDockFull()</code> / <code>ctx.todoDockUi({ compact: false, ... })</code>.
+        Full flag table: <a href="./demo.html#todo-dock-ui">Demo / run → Todo dock UI</a>.
+      </p>
+
       <h2>Sauce Demo coverage</h2>
       <p>
         The <a href="./saucedemo/index.html">Sauce Demo</a> shows all features in a real block/flow:
@@ -269,11 +287,12 @@ export const checkoutFlow = withHighlightFixtures(baseFlow, checkoutAcFixtures);
         <li><strong>add-to-cart</strong> - <code>stubAfter</code> (cart badge ring after action)</li>
         <li><strong>finish-order</strong> - <code>stubBefore</code> + <code>stubAfter</code> + <code>slides</code> (3-slide yap sequence)</li>
         <li>Flow fixtures on <code>checkoutFlow</code> - AC/GATE captions, tag badges, detail lines</li>
+        <li><strong>login / cart blocks</strong> - <code>ctx.todos(...)</code> so the floating dock (smart UX) shows in <code>waygraph demo</code></li>
       </ul>
 
       <h2>Related</h2>
       <ul>
-        <li><a href="./demo.html">Demo / run</a> - <code>--auto-next</code>, <code>--fast</code>, carousel strip</li>
+        <li><a href="./demo.html">Demo / run</a> - <code>--auto-next</code>, <code>--fast</code>, carousel strip, <a href="./demo.html#todo-dock-ui">todo dock UI</a></li>
         <li><a href="./handout.html">Engine handout</a> - core API summary</li>
         <li><a href="./saucedemo/index.html">Sauce Demo</a> - live saucedemo example</li>
       </ul>
