@@ -860,6 +860,58 @@ Full design history (why "Router" isn't a separate thing to build, two prior wro
 of this before landing here, and everything above stated as requirements) in
 `openspec/changes/waygraph-map/`.
 
+## Migrating from freeform ("router") to Waygraph Map
+
+"Router" isn't a separate mode to turn off - it's this project's own name for today's
+freeform, folder-organized style (`src/blocks/<slug>/`, any nesting, any file names).
+Migrating means moving those files under `src/map/(group)/<page-slug>/` with verbatim
+URL-matching names, nothing more - no engine change, no new Block helpers, no flag to flip.
+Do it incrementally: the two styles coexist in the same project (and even the same Flow) with
+no special-casing, since `discoverGraph`/`loadBlockLibrary` only ever match the `.block.ts`
+filename pattern, never folder depth or naming.
+
+1. **List every real URL your NavBlocks/PageBlocks already navigate to.** For each one with a
+   static string `url`, note its real path. For each one that's `click`-based (no `url` field
+   at all) or a dynamic `(mem) => string` function, note that too - neither is statically
+   checkable by `waygraph map`, so they can go wherever makes sense; only a literal string
+   `url` is verified.
+2. **Pick your group(s).** `(app_base)/` for the landing/base app (organizational only, never
+   part of a Checkpoint tag); `(external)/` for genuinely cross-origin Blocks (mail tools,
+   third-party embeds) - verify with the real URL, not the folder's own current name, since a
+   folder can already be mis-grouped (a real bug this session found: a project's own
+   `(external)/docs/` was actually same-origin the whole time).
+3. **Create `src/map/(group)/<verbatim-url-segments>/` per Checkpoint**, `git mv` each
+   Block/Sel file in, and rename the fixed ones: `nav.block.ts` -> `_nav.block.ts`,
+   `page.block.ts` -> `_page.block.ts`, your selector file -> `_sel.ts` (drops its slug - now a
+   fully fixed name), `methods/` -> `_methods/` (contents keep their own names unchanged).
+   **Two Checkpoints sharing one real URL** (a DOM-state distinction, not a URL one - e.g. a
+   "joined" vs "not joined" variant of the same page) can't both use the bare fixed names in
+   one folder; give each pair a slug prefix instead (`app-home._nav.block.ts` /
+   `in-pool._nav.block.ts`, or similar) rather than nesting either under its own subfolder
+   (that would add a folder segment the real URL doesn't have, and fail step 5).
+4. **A dynamic per-instance URL** (a real chat/order/ticket id, not a fixed route) - if it's
+   currently a plain string constant, wrap it as `url: () => thatConstant` instead. A bare
+   string is always treated as a real, checkable static route; a function is correctly treated
+   as dynamic/non-canonical and skipped, matching how you'd actually navigate a real instance of
+   it in practice anyway.
+5. **Fix every import** the moves break (states/mem-key paths change depth; sibling
+   nav/page/methods imports need their new `_`-prefixed names) - let the compiler do this for
+   you: `tsc --noEmit` if the project has one, otherwise `waygraph check [project]` and
+   `waygraph graph [project]` (both do real dynamic imports of every Block file and report
+   import failures by name) are just as effective a proof.
+6. **Run `waygraph map [project]`.** Exit 0 / "0 violations" is the actual finish line - not a
+   subjective review. A remaining violation names the exact file, its real folder path, and the
+   real URL it doesn't match; fix the folder, not the check.
+7. **Diff `waygraph graph`'s node/edge/skipped/orphan counts against before the move.** A pure
+   migration changes zero Block behavior - if a count changed, something broke in transit
+   (a bad import silently dropped a Block from discovery is the usual cause), not something to
+   wave off as "close enough."
+
+Once the folder structure is settled, prefer building/rebuilding Flows over these Blocks with
+[`map()`](#map---a-kind-checked-no-teleporting-flow-builder) instead of a hand-assembled
+`defineFlow([start, ...])` array - it's the one that can't silently accept a Block that isn't
+really a Nav/Page/Assert/Method from this package's own factories.
+
 ## Getting started (pick one)
 
 | Goal | Command |

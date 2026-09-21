@@ -498,6 +498,13 @@ here - documented in the flow file's own comment rather than hidden. Proven via
 `tests/routed-demo-map.spec.ts` (real `flow.run(context, mem)`, 3/3 passing alongside the
 existing CLI-driven tests).
 
+**Router -> Map migration guide, shipped:** README's new "Migrating from freeform (\"router\")
+to Waygraph Map" section - a concrete 7-step guide (list real URLs, pick a group, move + rename
+to the underscore convention, wrap a dynamic id in a `url: () => ...` function, fix imports,
+run `waygraph map` to 0 violations, diff `waygraph graph`'s counts before/after) grounded in
+what the veciro-waygraph restructure itself actually ran into (shared-URL Checkpoints,
+dynamic-id Blocks, a mis-grouped `(external)` folder that was really same-origin).
+
 **Still pending:**
 - The original, most concrete ask that kicked off this whole escalation: restructure
   `veciro-waygraph` (a real consumer project, separate repo) from its old `src/routes/(app)/` +
@@ -516,7 +523,6 @@ existing CLI-driven tests).
   matching starting point, not about treating the two styles as equally preferred.
 - A real example/project proving `AppShellLayout`-style Layout usage against an actual persistent
   sidebar (e.g. once the veciro-waygraph restructure above is committed).
-- A router->map migration guide (requested, not yet written).
 
 ## Narrated help-center video generation (planned - deferred to v1.0.x)
 
