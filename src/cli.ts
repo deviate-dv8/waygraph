@@ -3832,6 +3832,62 @@ async function hideRing(page) {
 }
 
 /**
+ * Real navigation wipes document + overlay helpers. Reinstall and re-paint
+ * carried todos / device / optional stubBefore ring so keep-dock and nav
+ * highlights do not vanish until the next ctx.todos() / stubAfter (PIA #15).
+ */
+async function restoreTheaterAfterNavigation(page, todoDockRef, deviceRef, stubBeforeRef) {
+  const needs =
+    (await page
+      .evaluate(() => !window.__wgSyncTodos || !document.getElementById("wg-ring"))
+      .catch(() => true)) || false;
+  if (!needs) {
+    // Overlay survived (SPA / no full document wipe) - still refresh dock
+    // if Node has a carry and the DOM lost .wg-todo-dock.
+    const hasDock = await page
+      .evaluate(() => !!document.querySelector(".wg-todo-dock, #wg-todo-dock"))
+      .catch(() => false);
+    if (hasDock || !todoDockRef || !todoDockRef.current) return;
+  }
+  await installOverlay(page);
+  const dock = todoDockRef && todoDockRef.current;
+  if (dock) {
+    await page
+      .evaluate((d) => {
+        if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", dock: d });
+      }, dock)
+      .catch(() => {});
+  }
+  if (deviceRef && deviceRef.current) {
+    await applyDeviceToPage(page, deviceRef.current, "set").catch(() => {});
+  }
+  // Re-show first matching stubBefore ring if selector still exists (sidebar
+  // nav targets often survive the route change).
+  const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
+  for (const h of stubs) {
+    if (!h || !h.selector) continue;
+    const box = await page
+      .evaluate((sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        if (r.width < 2 || r.height < 2) return null;
+        return { x: r.x, y: r.y, width: r.width, height: r.height };
+      }, h.selector)
+      .catch(() => null);
+    if (box) {
+      await showRing(page, box, formatHighlightCaption(h), h.tone || "planned", {
+        size: h.size,
+        weight: h.weight,
+        selector: h.selector,
+        focus: !!h.focus,
+      }).catch(() => {});
+      break;
+    }
+  }
+}
+
+/**
  * Removes every overlay element (panel, ring, ring-label, cursor,
  * click-pulse, banner) and stops the live resize/scroll ring tracker, once
  * the whole chain is genuinely done - "I want to see the same page just
@@ -4564,6 +4620,7 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
       // of leaving it lit until the next Block's own before-panel clears
       // it - it was sticking around through the whole rest of the step.
       await hideRing(page);
+      await restoreTheaterAfterNavigation(page, todoDockRef, deviceRef, stubBeforeRef);
       return result;
     };
   }
@@ -4692,6 +4749,8 @@ function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBefore
       }
       await new Promise((res) => setTimeout(res, clickPostPop()));
       await hideRing(page);
+      // Full document navigation drops #wg-todo-dock + rings; restore carry.
+      await restoreTheaterAfterNavigation(page, todoDockRef, deviceRef, stubBeforeRef);
       return result;
     };
   }
@@ -4943,17 +5002,21 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     if (sync === "set" && dock) {
       if (!parallel) todoDockById.clear();
       todoDockById.set(dockRegistryKey(dock), dock);
+      return;
+    }
+    // keep: refresh / re-seed so syncAllTodoDocks never sees an empty map
+    // while lastTodoDock still carries (nav wipe + mid-act advance).
+    if (sync === "keep" && dock) {
+      todoDockById.set(dockRegistryKey(dock), dock);
     }
   };
   const syncAllTodoDocks = async (opts) => {
     const docks = [...todoDockById.values()];
     const parallel = !!(opts && opts.parallel);
     if (!docks.length) {
-      await page
-        .evaluate(() => {
-          if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "clear" });
-        })
-        .catch(() => {});
+      // Empty registry: do NOT clear the DOM. renderBefore/After may have
+      // just painted from lastTodoDock (keep). Clearing here made todos
+      // vanish until the next ctx.todos() set (PIA #15).
       return;
     }
     await page
