@@ -39,6 +39,7 @@ waygraph auto highlight <sessionId> '{"clear":true}'
 Supported fields (demo parity):
 - `rings[]`: `selector`, `label`, `detail`, `tag`, `tone`, `size`, `weight`, `color`, `zoom`, `zoomOut`, `focus`
 - `todos` / `todoIndex` / `todoTitle` / `todoPos` (`right` default | `left`)
+- `todoUi`: `{ compact?, cap?, expandCap?, collision?, behindRing? }` — same dock UX as demo (defaults smart-on; see README "Todo dock UI")
 - `zoom` / `zoomSelector` / `zoomOut` - scroll + zoom badge (not CSS page scale)
 - `device`: `mobile` | `tablet` | `desktop` (Playwright viewport)
 - `holdMs`: ms to keep fixtures; `0` = until the next highlight / clear (default 30000)

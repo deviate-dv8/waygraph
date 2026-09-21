@@ -1015,6 +1015,7 @@ Flows are files (0.10.5+):
 | Manual watch | `waygraph demo src/flows/shop.flow.ts` |
 | Auto-advance | `waygraph demo --blocks shopFlow --auto-next` (nav auto-hides strip) |
 | Fast / full strip | `waygraph demo ... --fast` (shorter gates; keeps cursor) · `--full` (classic chips; default = carousel) |
+| Todo dock UX | `waygraph demo ... --todo-smart` (default) · `--todo-full` (no compact/collision/behind) |
 | QA watch + record | `waygraph demo --blocks shopFlow --auto-play-video` |
 | Ad-hoc Blocks | `waygraph run --blocks "login then nav-cart" --data '{...}'` |
 | Headed execute | `waygraph run --blocks shopFlow --non-headless --video` |
@@ -1039,6 +1040,20 @@ Flows are files (0.10.5+):
 `auto <file.flow.ts>` **runs** that flow (same as `run`); bare `auto` still explores.
 `--auto-next` (alias `--autoplay`) = panel Auto-advance. `--auto-play-video` is **demo
 only**. `chain` remains a compat alias for `run --blocks` / `auto --blocks`.
+
+### Todo dock UI (demo, 0.15.8+)
+
+Long FR/AC checklists used to bury highlight rings. **Smart defaults are on:**
+
+| Behavior | Default | Opt out |
+|----------|---------|---------|
+| Compact fold (~5 rows around current; hover expands; `+N more`) | on | `ctx.todoDockFull()` / `ctx.todoDockUi({ compact: false })` / `--todo-full` / `WAYGRAPH_TODO_UI=full` |
+| Collision flip (dock L/R when a ring overlaps) | on | `ctx.todoDockUi({ collision: false })` / `WAYGRAPH_TODO_COLLISION=0` |
+| Behind ring (dim + lower z-index while a ring is up) | on | `ctx.todoDockUi({ behindRing: false })` / `WAYGRAPH_TODO_BEHIND=0` |
+
+Per-knob env also: `WAYGRAPH_TODO_COMPACT`, `WAYGRAPH_TODO_CAP` (default 5),
+`WAYGRAPH_TODO_EXPAND_CAP` (default 14). Author API: `ctx.todoDockUi({ ... })`.
+Pilot `auto highlight` accepts the same knobs as `todoUi` on the JSON body.
 
 Run `waygraph --help` (or any subcommand with no args) for the full flag reference kept
 in `src/cli.ts`'s own `usage()` - that's the source of truth for flags, this table is the

@@ -257,6 +257,7 @@ import {
   completeSequentialTodoDock,
   applyDevicePhase,
   resolveDeviceState,
+  resolveTodoDockUi,
   WAYGRAPH_RING_CSS,
 } from "waygraph";
 
@@ -539,9 +540,22 @@ const RING_CSS =
   "padding:10px 12px;background:rgba(20,10,40,.94);color:#fff;border-radius:12px;" +
   "border:1px solid rgba(124,58,237,.45);box-shadow:0 8px 24px rgba(0,0,0,.35);" +
   "pointer-events:auto;cursor:pointer;" +
-  "transition:transform .4s cubic-bezier(.22,1,.36,1),top .35s ease;transform:translateX(0);}" +
+  "transition:transform .4s cubic-bezier(.22,1,.36,1),top .35s ease,opacity .25s ease,z-index 0s;transform:translateX(0);}" +
   ".wg-todo-dock[data-pos=right],#wg-todo-dock[data-pos=right]{transform:translateX(calc(100vw - 100% - 28px));}" +
   ".wg-todo-dock[data-pos=left],#wg-todo-dock[data-pos=left]{transform:translateX(0);}" +
+  /* While a highlight ring is up: sit under the ring so captions stay readable. */
+  ".wg-todo-dock.wg-todo-behind,#wg-todo-dock.wg-todo-behind{z-index:2147483643;opacity:.42;}" +
+  /* Collision tuck: shrink so a mid-page ring can still breathe. */
+  ".wg-todo-dock[data-tucked=\\"1\\"],#wg-todo-dock[data-tucked=\\"1\\"]{max-height:min(28vh,220px);}" +
+  /* Compact + cap: fold overflow rows; hover / data-expanded reveals more. */
+  ".wg-todo-dock[data-compact=\\"1\\"]:not(:hover):not([data-expanded=\\"1\\"]) li.wg-todo-fold{display:none;}" +
+  ".wg-todo-dock[data-compact=\\"1\\"]:is(:hover,[data-expanded=\\"1\\"]) li.wg-todo-fold-deep{display:none;}" +
+  ".wg-todo-dock .wg-todo-more{display:flex;align-items:center;gap:6px;margin-top:6px;padding:5px 8px;" +
+  "border-radius:8px;background:rgba(124,58,237,.22);border:1px solid rgba(124,58,237,.4);" +
+  "font:700 11px/1.2 system-ui,sans-serif;color:#e8dcff;cursor:pointer;user-select:none;}" +
+  ".wg-todo-dock .wg-todo-more:hover{background:rgba(124,58,237,.35);}" +
+  ".wg-todo-dock .wg-todo-dock-title{font:700 11px/1.2 system-ui,sans-serif;color:#c9a6ff;" +
+  "letter-spacing:.04em;text-transform:uppercase;margin:0 0 8px;}" +
   ".wg-todo-dock .wg-todos-list,#wg-todo-dock #wg-todos,.wg-todo-dock #wg-todos{list-style:none;margin:0;padding:0;background:transparent;border:none;}" +
   // Video device stage: keep recordVideo size fixed; center a device-sized shell.
   "html.wg-video-device-stage{background:#0b1220 !important;}" +
@@ -767,9 +781,17 @@ async function installOverlay(page, title) {
   const envTodoPos = (process.env.WAYGRAPH_TODO_POS || "left").toLowerCase();
   const todoPos = envTodoPos === "right" ? "right" : "left";
   const envAutoplay = process.env.WAYGRAPH_AUTOPLAY === "1";
+  const todoDockUi = resolveTodoDockUi();
   await page
     .evaluate(
-      ({ title, favicon, bannerPos, todoPos, envAutoplay }) => {
+      ({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }) => {
+        window.__wgTodoDockUi = todoDockUi || {
+          compact: true,
+          cap: 5,
+          expandCap: 14,
+          collision: true,
+          behindRing: true,
+        };
         // Seed the live autoplay toggle from the env default on first ever
         // load only - a real navigation re-runs this, and re-stamping here
         // would silently undo a human's mid-run checkbox click.
@@ -873,6 +895,57 @@ async function installOverlay(page, title) {
           if (labelLeft < margin) labelLeft = margin;
           ringLabel.style.left = labelLeft + "px";
           ringLabel.style.top = labelTop + "px";
+          if (window.__wgTodosSetBehind) window.__wgTodosSetBehind(true);
+          if (window.__wgTodosAvoidRingCollision) window.__wgTodosAvoidRingCollision(box);
+        };
+        /** Dim/lower floating todo docks while a ring caption is the focus. */
+        window.__wgTodosSetBehind = (on) => {
+          const ui = window.__wgTodoDockUi || {};
+          if (ui.behindRing === false) {
+            document.querySelectorAll(".wg-todo-dock, #wg-todo-dock").forEach((el) => {
+              el.classList.remove("wg-todo-behind");
+            });
+            return;
+          }
+          document.querySelectorAll(".wg-todo-dock, #wg-todo-dock").forEach((el) => {
+            el.classList.toggle("wg-todo-behind", !!on);
+          });
+        };
+        /**
+         * If the active ring box intersects a todo dock, flip L/R once.
+         * Locked until hideRing so follow-rAF does not thrash.
+         */
+        window.__wgTodosAvoidRingCollision = (box) => {
+          const ui = window.__wgTodoDockUi || {};
+          if (ui.collision === false) return;
+          if (!box || window.__wgTodoCollisionLocked) return;
+          const pad = 10;
+          const rx1 = box.x - pad;
+          const ry1 = box.y - pad;
+          const rx2 = box.x + box.width + pad;
+          const ry2 = box.y + box.height + pad;
+          const overlaps = (el) => {
+            const r = el.getBoundingClientRect();
+            return !(r.right < rx1 || r.left > rx2 || r.bottom < ry1 || r.top > ry2);
+          };
+          const docks = [...document.querySelectorAll(".wg-todo-dock, #wg-todo-dock")].filter(
+            (el, i, arr) => arr.indexOf(el) === i,
+          );
+          for (const dock of docks) {
+            if (!overlaps(dock)) continue;
+            const cur = dock.dataset.pos === "right" ? "right" : "left";
+            dock.dataset.pos = cur === "right" ? "left" : "right";
+            try {
+              localStorage.setItem("wg-todo-pos", dock.dataset.pos);
+            } catch {
+              /* ignore */
+            }
+            // Still colliding after flip - tuck (shorter max-height).
+            if (overlaps(dock)) dock.dataset.tucked = "1";
+            else delete dock.dataset.tucked;
+            window.__wgTodoCollisionLocked = true;
+            break;
+          }
         };
         /** Live-follow a selector with rAF (accurate under device shell scale). */
         window.__wgStopRingFollow = () => {
@@ -929,6 +1002,11 @@ async function installOverlay(page, title) {
           if (ring) ring.style.opacity = "0";
           if (ringLabel) ringLabel.style.opacity = "0";
           if (window.__wgClearFocus) window.__wgClearFocus();
+          if (window.__wgTodosSetBehind) window.__wgTodosSetBehind(false);
+          window.__wgTodoCollisionLocked = false;
+          document.querySelectorAll(".wg-todo-dock[data-tucked], #wg-todo-dock[data-tucked]").forEach((el) => {
+            delete el.dataset.tucked;
+          });
           // Honor zoomOut:false - keep camera until next zoom / desktop clear.
           const forceClear = opts && opts.clearZoom === true;
           const skipClear = opts && opts.clearZoom === false;
@@ -1444,6 +1522,7 @@ async function installOverlay(page, title) {
         //   { sync: "set", dock } / { sync:"set", list } -> render / recreate
         // Compat: bare array = set list (empty array = clear - legacy only).
         window.__wgSyncTodos = (payload, pos) => {
+          const syncPayload = payload;
           let sync = "set";
           let list = [];
           let dockState = null;
@@ -1593,7 +1672,35 @@ async function installOverlay(page, title) {
             const id = raw != null && String(raw).trim() ? String(raw).trim() : "";
             return id ? ' data-wg-todo-item="' + esc(id) + '"' : "";
           };
-          const renderItems = (items, style) => {
+          // Compact + cap: >cap rows folds overflow; hover shows up to expandCap; "+N more" pins expand.
+          const ui = (payload && !Array.isArray(payload) && payload.ui) || window.__wgTodoDockUi || {};
+          const COMPACT_AT = Number(ui.cap) > 0 ? Number(ui.cap) : 5;
+          const WINDOW = COMPACT_AT;
+          const EXPAND_MAX = Number(ui.expandCap) > 0 ? Number(ui.expandCap) : 14;
+          const compactEnabled = ui.compact !== false;
+          const flattenItems = () => {
+            if (dockState && Array.isArray(dockState.groups) && dockState.groups.length) {
+              const out = [];
+              for (const g of dockState.groups) {
+                for (const t of g.items || []) out.push({ ...t, __style: g.style || dockState.style });
+              }
+              return out;
+            }
+            return (list || []).map((t) => ({ ...t, __style: "sequential" }));
+          };
+          const windowBounds = (items, cap) => {
+            const n = items.length;
+            if (n <= cap) return { start: 0, end: n };
+            let cur = items.findIndex((t) => t.current);
+            if (cur < 0) cur = items.findIndex((t) => !t.done);
+            if (cur < 0) cur = 0;
+            let start = Math.max(0, cur - Math.floor((cap - 1) / 2));
+            let end = Math.min(n, start + cap);
+            start = Math.max(0, end - cap);
+            return { start, end };
+          };
+          const renderItems = (items, style, foldMeta, indexOffset) => {
+            const offset = indexOffset || 0;
             const rawStyle = String(style || "sequential").toLowerCase();
             const st =
               rawStyle === "checklist"
@@ -1606,13 +1713,18 @@ async function installOverlay(page, title) {
                     rawStyle === "plain"
                   ? "bullets"
                   : "sequential";
+            const foldStart = foldMeta ? foldMeta.foldStart : -1;
+            const foldEnd = foldMeta ? foldMeta.foldEnd : -1;
+            const deepStart = foldMeta ? foldMeta.deepStart : -1;
+            const deepEnd = foldMeta ? foldMeta.deepEnd : -1;
             return (
               '<ul class="wg-todos-list" data-wg-todo-style="' +
               st +
               '">' +
               (items || [])
-                .map((t) => {
-                  const cls =
+                .map((t, idx) => {
+                  const gi = offset + idx;
+                  const clsBase =
                     st === "bullets"
                       ? t.done
                         ? "wg-todo-done"
@@ -1622,6 +1734,9 @@ async function installOverlay(page, title) {
                         : t.done
                           ? "wg-todo-done"
                           : "wg-todo-pending";
+                  let foldCls = "";
+                  if (foldStart >= 0 && (gi < foldStart || gi >= foldEnd)) foldCls += " wg-todo-fold";
+                  if (deepStart >= 0 && (gi < deepStart || gi >= deepEnd)) foldCls += " wg-todo-fold-deep";
                   let mark;
                   if (st === "checklist") {
                     mark = t.done ? "\u2611" : "\u2610";
@@ -1633,7 +1748,8 @@ async function installOverlay(page, title) {
                   const rowId = t.id || t.name || "";
                   return (
                     '<li class="' +
-                    cls +
+                    clsBase +
+                    foldCls +
                     '"' +
                     attrId(rowId) +
                     '><span class="wg-todo-mark">' +
@@ -1651,12 +1767,28 @@ async function installOverlay(page, title) {
           if (dockKey !== "_default") dock.setAttribute("data-wg-todo-id", dockKey);
           else dock.removeAttribute("data-wg-todo-id");
 
+          const flat = flattenItems();
+          const compact = compactEnabled && flat.length > COMPACT_AT;
+          const win = windowBounds(flat, WINDOW);
+          const expand = windowBounds(flat, EXPAND_MAX);
+          const foldMeta = compact
+            ? {
+                foldStart: win.start,
+                foldEnd: win.end,
+                deepStart: expand.start,
+                deepEnd: expand.end,
+              }
+            : null;
+          const hiddenCompact = compact ? flat.length - (win.end - win.start) : 0;
+          const hiddenExpand = compact ? flat.length - (expand.end - expand.start) : 0;
+
           let html = "";
           if (dockState && Array.isArray(dockState.groups) && dockState.groups.length) {
             const dockTitle = dockState.title && String(dockState.title).trim();
             if (dockTitle) {
               html += '<div class="wg-todo-dock-title">' + esc(dockTitle) + "</div>";
             }
+            let globalIdx = 0;
             for (const g of dockState.groups) {
               const gTitle = g.title && String(g.title).trim();
               const gid = g.id || g.name || "";
@@ -1667,13 +1799,42 @@ async function installOverlay(page, title) {
               if (gTitle) {
                 html += '<div class="wg-todo-group-title">' + esc(gTitle) + "</div>";
               }
-              html += renderItems(g.items, g.style || dockState.style);
+              const gItems = g.items || [];
+              html += renderItems(gItems, g.style || dockState.style, foldMeta, globalIdx);
               html += "</div>";
+              globalIdx += gItems.length;
             }
           } else {
-            html = renderItems(list, "sequential");
+            html = renderItems(list, "sequential", foldMeta, 0);
+          }
+          if (compact && hiddenCompact > 0) {
+            const n = dock.dataset.expanded === "1" ? hiddenExpand : hiddenCompact;
+            if (n > 0) {
+              html +=
+                '<div class="wg-todo-more" data-wg-todo-more="1" title="Click to expand / collapse">' +
+                "+" +
+                n +
+                " more</div>";
+            }
+          }
+          if (compact) dock.dataset.compact = "1";
+          else {
+            delete dock.dataset.compact;
+            delete dock.dataset.expanded;
           }
           dock.innerHTML = html;
+          const moreBtn = dock.querySelector("[data-wg-todo-more]");
+          if (moreBtn) {
+            moreBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              if (dock.dataset.expanded === "1") delete dock.dataset.expanded;
+              else dock.dataset.expanded = "1";
+              if (window.__wgSyncTodos && dock._wgLastPayload) {
+                window.__wgSyncTodos(dock._wgLastPayload);
+              }
+            });
+          }
+          dock._wgLastPayload = syncPayload;
           relayoutTodoDocks();
           if (window.__wgStampModal) {
             window.__wgStampModal(dock, "todos", { ready: true });
@@ -1886,7 +2047,7 @@ async function installOverlay(page, title) {
           }
         };
       },
-      { title, favicon: WAYGRAPH_FAVICON, bannerPos, todoPos, envAutoplay },
+      { title, favicon: WAYGRAPH_FAVICON, bannerPos, todoPos, envAutoplay, todoDockUi },
     )
     .catch(() => {});
   // Navigations wipe #wg-device-shell - rebuild when video stage + device are live.
@@ -4992,8 +5153,21 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
   let result;
   /** Carry floating todo dock across steps (empty stubBefore must not wipe). */
   let lastTodoDock = undefined;
+  /** Author todoDockUi patches (merged); resolved against env each step. */
+  let lastTodoDockUiPatch = undefined;
   /** Multi-todo: every dock keyed by todoId (or "_default"), survives navigation. */
   const todoDockById = new Map();
+  const pushTodoDockUi = async (patch) => {
+    if (patch && typeof patch === "object") {
+      lastTodoDockUiPatch = { ...(lastTodoDockUiPatch || {}), ...patch };
+    }
+    const ui = resolveTodoDockUi(lastTodoDockUiPatch);
+    await page
+      .evaluate((u) => {
+        window.__wgTodoDockUi = u;
+      }, ui)
+      .catch(() => {});
+  };
   const dockRegistryKey = (dock) =>
     dock && dock.id && String(dock.id).trim() ? String(dock.id).trim() : "_default";
   const rememberTodoDock = (dock, sync, parallel) => {
@@ -5126,6 +5300,11 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
     const fixtures = r.highlightFixtures;
     const flowStyle = r.highlightStyle;
     const stubBeforePhase = await runStubPhase(r.block, "stubBefore", { fixtures, mem });
+    if (stubBeforePhase.todoDockUi) {
+      await pushTodoDockUi(stubBeforePhase.todoDockUi);
+    } else {
+      await pushTodoDockUi(undefined);
+    }
     stubBeforeRef.current = stubBeforePhase.highlights.map((h) =>
       applyHighlightStyleDefaults(h, flowStyle),
     );
@@ -5444,6 +5623,9 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         fixtures: fixturesAfter,
         mem,
       });
+      if (afterPhase.todoDockUi) {
+        await pushTodoDockUi(afterPhase.todoDockUi);
+      }
       logStubPhaseFixtures("after", {
         ...afterPhase,
         highlights: (afterPhase.highlights || []).map((h) => {
@@ -6662,6 +6844,10 @@ interface RunFlags {
   miniStepper?: boolean;
   /** demo: floating todo dock side (--todo-left | --todo-right). */
   todoPos?: "left" | "right";
+  /** demo: todo-dock UX — full list / no smart behaviors. */
+  todoUiFull?: boolean;
+  /** demo: todo-dock UX — smart compact/collision/behind (default). */
+  todoUiSmart?: boolean;
   /** demo/run: expand fastForwardComposeBlock inners as separate steps. */
   ffExpand?: boolean;
   /** demo/run: dispute mode — expand FF + keep blitz on former FF inners. */
@@ -6725,6 +6911,10 @@ function parseRunFlags(argv: string[]): RunFlags {
       out.todoPos = "left";
     } else if (a === "--todo-right") {
       out.todoPos = "right";
+    } else if (a === "--todo-full" || a === "--no-todo-smart") {
+      out.todoUiFull = true;
+    } else if (a === "--todo-smart") {
+      out.todoUiSmart = true;
     } else if (a === "--ff-expand") {
       out.ffExpand = true;
     } else if (a === "--ff-disabled" || a === "--no-ff") {
@@ -6878,6 +7068,11 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean; a
   }
   if (flags.todoPos === "left" || flags.todoPos === "right") {
     process.env.WAYGRAPH_TODO_POS = flags.todoPos;
+  }
+  if (flags.todoUiFull) {
+    process.env.WAYGRAPH_TODO_UI = "full";
+  } else if (flags.todoUiSmart) {
+    process.env.WAYGRAPH_TODO_UI = "smart";
   }
   if (flags.ffExpand) {
     process.env.WAYGRAPH_FF_EXPAND = "1";
@@ -7134,6 +7329,8 @@ Primary (less is more):
                  --full                    Classic wrap-all block chips (default: carousel)
                  --mini                    Force compact mini panel (Hide pill + Next); alias --stepper-mini
                  --todo-left|--todo-right  Floating checklist dock side (also ctx.todoPos / WAYGRAPH_TODO_POS)
+                 --todo-full               Opt out: full checklist, no compact/collision/behind-ring
+                 --todo-smart              Opt in: compact + collision + behind-ring (default)
                  --ff-expand               Expand fastForwardComposeBlock inners as separate steps
                  --ff-disabled             Dispute: expand FF (alias --no-ff); blitz kept on those inners
                  --auto-play-video         Unattended + recorded: --auto-next + --video (+ step); headless

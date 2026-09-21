@@ -28,6 +28,8 @@ import {
   normalizeHighlightWeight,
   formatHighlightCaption,
   resolveDeviceState,
+  resolveTodoDockUi,
+  type TodoDockUiOpts,
 } from "./highlights.js";
 
 // Real, direct user request: this overlay's own colors were an improvised
@@ -119,11 +121,13 @@ const OVERLAY_CSS = `
 .wg-pilot-fx-label[data-size=lg]{font-size:16px;padding:8px 14px;}
 .wg-pilot-fx-label[data-weight=bold]{font-weight:800;}
 #wg-pilot-fx-todos{
-  position:fixed;z-index:2147483645;top:72px;max-width:280px;
+  position:fixed;z-index:2147483645;top:72px;max-width:280px;max-height:calc(100vh - 100px);overflow:auto;
   font:12px/1.4 ui-sans-serif,system-ui,sans-serif;color:#fff;
   background:rgba(20,10,40,.94);border-radius:10px;padding:10px 12px;
-  box-shadow:0 2px 10px rgba(0,0,0,.3);pointer-events:none;
+  box-shadow:0 2px 10px rgba(0,0,0,.3);pointer-events:auto;
+  transition:opacity .25s ease;
 }
+#wg-pilot-fx-todos.wg-todo-behind{z-index:2147483643;opacity:.42;pointer-events:none;}
 #wg-pilot-fx-todos[data-pos=left]{left:14px;right:auto;}
 #wg-pilot-fx-todos[data-pos=right]{right:14px;left:auto;}
 #wg-pilot-fx-todos .wg-pilot-fx-todo-title{font-weight:700;color:#c9a6ff;margin-bottom:6px;}
@@ -131,6 +135,9 @@ const OVERLAY_CSS = `
 #wg-pilot-fx-todos li{margin:3px 0;color:#ddd;}
 #wg-pilot-fx-todos li.wg-pilot-fx-todo-done{color:#888;text-decoration:line-through;}
 #wg-pilot-fx-todos li.wg-pilot-fx-todo-now{color:#fff;font-weight:700;}
+#wg-pilot-fx-todos[data-compact="1"]:not(:hover) li.wg-todo-fold{display:none;}
+#wg-pilot-fx-todos .wg-todo-more{margin-top:6px;padding:4px 8px;border-radius:8px;
+  background:rgba(124,58,237,.22);font:700 11px/1.2 system-ui,sans-serif;color:#e8dcff;}
 /* Spotlight (demo focus:true) - dim page, cutout around target. */
 #wg-pilot-fx-focus{position:fixed;z-index:2147483644;pointer-events:none;
   border-radius:12px;box-shadow:0 0 0 9999px rgba(8,4,20,.62);
@@ -357,6 +364,11 @@ export type PilotHighlightFixtures = {
   /** Todo dock side. Default `right`. */
   todoPos?: "left" | "right";
   /**
+   * Todo-dock UX (compact / collision / behind-ring). Defaults smart-on;
+   * pass false fields to opt out. See {@link TodoDockUiOpts}.
+   */
+  todoUi?: TodoDockUiOpts;
+  /**
    * How long fixtures stay visible (ms). `0` = until the next highlight /
    * clear. Default `30000` (30s) unless specified.
    */
@@ -430,6 +442,7 @@ export async function showPilotFixtures(
   const todoIndex = fixtures.todoIndex ?? 0;
   const todoTitle = fixtures.todoTitle ?? "Plan";
   const todoPos = fixtures.todoPos === "left" ? "left" : "right";
+  const todoUi = resolveTodoDockUi(fixtures.todoUi ?? null);
 
   // Effective zoom: phase zoom, else last ring that authored zoom.
   let zoom =
@@ -496,6 +509,7 @@ export async function showPilotFixtures(
         zoomOut,
         clearAll,
         deviceLabel,
+        todoUi,
       }) => {
         const w = window as unknown as {
           __wgPilotFxHideTimer?: ReturnType<typeof setTimeout>;
@@ -640,19 +654,55 @@ export async function showPilotFixtures(
           title.className = "wg-pilot-fx-todo-title";
           title.textContent = todoTitle;
           dock.appendChild(title);
+          const WINDOW = todoUi.cap > 0 ? todoUi.cap : 5;
+          const compact = todoUi.compact !== false && todos.length > WINDOW;
+          if (compact) dock.dataset.compact = "1";
+          let start = 0;
+          let end = todos.length;
+          if (compact) {
+            start = Math.max(0, todoIndex - Math.floor((WINDOW - 1) / 2));
+            end = Math.min(todos.length, start + WINDOW);
+            start = Math.max(0, end - WINDOW);
+          }
           const ol = document.createElement("ol");
           todos.forEach((text, i) => {
             const li = document.createElement("li");
             li.textContent = text;
             if (i < todoIndex) li.className = "wg-pilot-fx-todo-done";
             else if (i === todoIndex) li.className = "wg-pilot-fx-todo-now";
+            if (compact && (i < start || i >= end)) li.classList.add("wg-todo-fold");
             ol.appendChild(li);
           });
           dock.appendChild(ol);
+          if (compact && todos.length - (end - start) > 0) {
+            const more = document.createElement("div");
+            more.className = "wg-todo-more";
+            more.textContent = "+" + (todos.length - (end - start)) + " more";
+            dock.appendChild(more);
+          }
           document.documentElement.appendChild(dock);
         }
 
         if (focusBox) applyFocus(focusBox);
+
+        // Dim todos under rings / focus so captions stay readable.
+        const dockEl = document.getElementById("wg-pilot-fx-todos");
+        if (dockEl && todoUi.behindRing !== false && (painted > 0 || focusBox)) {
+          dockEl.classList.add("wg-todo-behind");
+        }
+
+        // Collision flip: if a painted ring intersects the dock, flip side once.
+        if (dockEl && todoUi.collision !== false && painted > 0) {
+          const firstRing = document.querySelector(".wg-pilot-fx-ring");
+          if (firstRing) {
+            const rr = firstRing.getBoundingClientRect();
+            const dr = dockEl.getBoundingClientRect();
+            const hit = !(rr.right < dr.left || rr.left > dr.right || rr.bottom < dr.top || rr.top > dr.bottom);
+            if (hit) {
+              dockEl.dataset.pos = dockEl.dataset.pos === "right" ? "left" : "right";
+            }
+          }
+        }
 
         if (zoom > 1.001 && zoomSelector) {
           const target = document.querySelector(zoomSelector);
@@ -697,6 +747,7 @@ export async function showPilotFixtures(
         zoomOut,
         clearAll: fixtures.clear === true,
         deviceLabel,
+        todoUi,
       },
     )
     .catch(() => ({ painted: 0, missing: rings.map((r) => r.selector) }));

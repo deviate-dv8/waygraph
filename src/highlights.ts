@@ -115,6 +115,92 @@ export type WaygraphTodosOpts = {
   parallel?: boolean;
 };
 
+/**
+ * Floating todo-dock UX knobs (0.15.8+). Defaults are **smart on** so long
+ * FR/AC checklists do not bury highlight rings. Opt out per phase or globally.
+ *
+ * Defaults: `compact`, `collision`, `behindRing` = true; `cap` = 5; `expandCap` = 14.
+ *
+ * Global: `WAYGRAPH_TODO_UI=full` / `waygraph demo --todo-full` turns smart off.
+ * Per-knob env: `WAYGRAPH_TODO_COMPACT=0`, `WAYGRAPH_TODO_COLLISION=0`,
+ * `WAYGRAPH_TODO_BEHIND=0`, `WAYGRAPH_TODO_CAP`, `WAYGRAPH_TODO_EXPAND_CAP`.
+ */
+export type TodoDockUiOpts = {
+  /** Fold long lists around the current row (+N more / hover). Default true. */
+  compact?: boolean;
+  /** Visible rows when compact. Default 5. */
+  cap?: number;
+  /** Visible rows on hover / pinned expand. Default 14. */
+  expandCap?: number;
+  /** Flip dock L/R when an active ring overlaps it. Default true. */
+  collision?: boolean;
+  /** Dim + lower z-index while a highlight ring is up. Default true. */
+  behindRing?: boolean;
+};
+
+/** Resolved todo-dock UX (all fields present). */
+export type TodoDockUiResolved = {
+  compact: boolean;
+  cap: number;
+  expandCap: number;
+  collision: boolean;
+  behindRing: boolean;
+};
+
+function envFlagBool(env: NodeJS.ProcessEnv, key: string, fallback: boolean): boolean {
+  const v = env[key];
+  if (v === undefined || v === "") return fallback;
+  const s = String(v).trim().toLowerCase();
+  if (s === "0" || s === "false" || s === "off" || s === "no") return false;
+  if (s === "1" || s === "true" || s === "on" || s === "yes") return true;
+  return fallback;
+}
+
+function envFlagInt(env: NodeJS.ProcessEnv, key: string, fallback: number): number {
+  const n = Number(env[key]);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
+/**
+ * Resolve todo-dock UX from env + optional author patch.
+ * `WAYGRAPH_TODO_UI=full|off|legacy` forces compact/collision/behindRing off.
+ */
+export function resolveTodoDockUi(
+  patch?: TodoDockUiOpts | null,
+  env: NodeJS.ProcessEnv = process.env,
+): TodoDockUiResolved {
+  const mode = String(env.WAYGRAPH_TODO_UI || "smart")
+    .trim()
+    .toLowerCase();
+  const full =
+    mode === "full" || mode === "off" || mode === "0" || mode === "legacy" || mode === "classic";
+  const base: TodoDockUiResolved = {
+    compact: full ? false : envFlagBool(env, "WAYGRAPH_TODO_COMPACT", true),
+    collision: full ? false : envFlagBool(env, "WAYGRAPH_TODO_COLLISION", true),
+    behindRing: full ? false : envFlagBool(env, "WAYGRAPH_TODO_BEHIND", true),
+    cap: envFlagInt(env, "WAYGRAPH_TODO_CAP", 5),
+    expandCap: envFlagInt(env, "WAYGRAPH_TODO_EXPAND_CAP", 14),
+  };
+  if (base.expandCap < base.cap) base.expandCap = base.cap;
+  if (!patch) return base;
+  const cap =
+    patch.cap !== undefined && Number.isFinite(patch.cap)
+      ? Math.max(1, Math.floor(Number(patch.cap)))
+      : base.cap;
+  let expandCap =
+    patch.expandCap !== undefined && Number.isFinite(patch.expandCap)
+      ? Math.max(1, Math.floor(Number(patch.expandCap)))
+      : base.expandCap;
+  if (expandCap < cap) expandCap = cap;
+  return {
+    compact: patch.compact !== undefined ? !!patch.compact : base.compact,
+    collision: patch.collision !== undefined ? !!patch.collision : base.collision,
+    behindRing: patch.behindRing !== undefined ? !!patch.behindRing : base.behindRing,
+    cap,
+    expandCap,
+  };
+}
+
 /** Episode-level fixtures authored inside stubBefore/After/OnError(ctx). */
 export type StubPhaseFixtures = {
   todos?: readonly WaygraphTodoInput[];
@@ -145,6 +231,11 @@ export type StubPhaseFixtures = {
    * Authored control (also click / WAYGRAPH_TODO_POS / --todo-left|right).
    */
   todoPos?: "left" | "right";
+  /**
+   * Todo-dock UX (compact / collision / behind-ring). Merged onto env defaults.
+   * See {@link TodoDockUiOpts}.
+   */
+  todoDockUi?: TodoDockUiOpts;
   /**
    * Viewport preset: `mobile` | `tablet` | `desktop` (default / clear).
    * Omit on later blocks = **keep** (same persist pattern as todos).
@@ -644,6 +735,16 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
    * code; click / env / --todo-left|right are fallbacks.
    */
   todoPos(side: "left" | "right"): void;
+  /**
+   * Todo-dock UX: compact fold, collision flip, dim-behind-ring.
+   * Defaults are smart-on; pass false fields to opt out for this phase.
+   * @example
+   * ctx.todoDockUi({ compact: false }); // always show full list
+   * ctx.todoDockFull(); // shorthand: compact+collision+behindRing off
+   */
+  todoDockUi(opts: TodoDockUiOpts): void;
+  /** Shorthand: full checklist, no compact/collision/behind-ring for this phase. */
+  todoDockFull(): void;
   /** Batch-set rings + episode fixtures. */
   set(partial: { highlights?: HighlightStubPhase } & StubPhaseFixtures): void;
 };
@@ -677,6 +778,8 @@ export type StubPhaseResult = {
    * - `keep` - author omitted todos; demo must leave previous dock alone
    */
   todoSync?: "set" | "clear" | "keep";
+  /** Todo-dock UX for this phase (when author called {@link StubCtx.todoDockUi}). */
+  todoDockUi?: TodoDockUiOpts;
   /** Resolved device after this phase (undefined when keep with no prior). */
   device?: DeviceState;
   /**
@@ -1174,6 +1277,8 @@ type StubBagState = {
   zoomOut?: boolean | undefined;
   title?: string | undefined;
   todoPos?: "left" | "right" | undefined;
+  /** Author patched todo-dock UX this phase. */
+  todoDockUi?: TodoDockUiOpts | undefined;
   /** Keep sibling docks (compact todos opts.parallel). */
   todoParallel?: boolean | undefined;
 };
@@ -1536,6 +1641,17 @@ function createStubCtx<Out extends Checkpoint<string>>(
       const p = normalizeTodoPos(side);
       if (p) bag.todoPos = p;
     },
+    todoDockUi(opts) {
+      if (!opts || typeof opts !== "object") return;
+      bag.todoDockUi = { ...(bag.todoDockUi || {}), ...opts };
+    },
+    todoDockFull() {
+      bag.todoDockUi = {
+        compact: false,
+        collision: false,
+        behindRing: false,
+      };
+    },
     set(partial) {
       if (partial.highlights) bag.highlights = { ...partial.highlights };
       if (partial.todos !== undefined) {
@@ -1606,6 +1722,9 @@ function createStubCtx<Out extends Checkpoint<string>>(
       if (partial.title !== undefined) bag.title = String(partial.title ?? "");
       const tp = normalizeTodoPos(partial.todoPos);
       if (tp) bag.todoPos = tp;
+      if (partial.todoDockUi !== undefined && partial.todoDockUi && typeof partial.todoDockUi === "object") {
+        bag.todoDockUi = { ...(bag.todoDockUi || {}), ...partial.todoDockUi };
+      }
     },
   };
 }
@@ -1843,6 +1962,7 @@ export async function runStubPhase(
     ...(bag.zoomOut !== undefined ? { zoomOut: bag.zoomOut } : {}),
     ...(bag.title !== undefined && bag.title !== "" ? { title: bag.title } : {}),
     ...(bag.todoPos !== undefined ? { todoPos: bag.todoPos } : {}),
+    ...(bag.todoDockUi !== undefined ? { todoDockUi: bag.todoDockUi } : {}),
     ...(bag.todoParallel === true ? { todoParallel: true } : {}),
   };
 }
