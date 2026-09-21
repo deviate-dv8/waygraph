@@ -4,7 +4,7 @@ import { DashboardSel, DASHBOARD_URL } from "./dashboard.sel.js";
 
 /**
  * Kind: Nav
- * Route: (base_app)/dashboard/
+ * Route: (app_base)/dashboard/
  *
  * Fixed file name under the Waygraph Map convention - every page-slug
  * folder's own navigation Block is always nav.block.ts.

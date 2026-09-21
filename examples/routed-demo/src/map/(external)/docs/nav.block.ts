@@ -8,7 +8,7 @@ import { DocsSel, DOCS_URL } from "./docs.sel.js";
  *
  * `(external)` is a purely organizational group folder (Next.js route-group
  * style, parens never affect the Checkpoint tag) - separates cross-origin/
- * external tooling from the app's own `(base_app)` pages, matching the
+ * external tooling from the app's own `(app_base)` pages, matching the
  * already-established `*-external/` namespacing precedent from
  * waygraph-mail-adapters.
  */

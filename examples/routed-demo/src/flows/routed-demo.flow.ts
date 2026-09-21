@@ -1,9 +1,9 @@
 import { Engine, start, end } from "waygraph";
-import { NavDashboardBlock } from "../map/(base_app)/dashboard/nav.block.js";
-import { ClickWidgetBlock } from "../map/(base_app)/dashboard/methods/click-widget.block.js";
+import { NavDashboardBlock } from "../map/(app_base)/dashboard/nav.block.js";
+import { ClickWidgetBlock } from "../map/(app_base)/dashboard/methods/click-widget.block.js";
 import { NavDocsBlock } from "../map/(external)/docs/nav.block.js";
 // Page hubs registered for auto/docs grouping (arrival-only after nav).
-import "../map/(base_app)/dashboard/page.block.js";
+import "../map/(app_base)/dashboard/page.block.js";
 import "../map/(external)/docs/page.block.js";
 
 const engine = new Engine();

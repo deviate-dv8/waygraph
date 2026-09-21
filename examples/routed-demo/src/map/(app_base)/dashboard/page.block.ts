@@ -5,7 +5,7 @@ import { ClickWidgetBlock } from "./methods/click-widget.block.js";
 
 /**
  * Kind: Page
- * Route: (base_app)/dashboard/
+ * Route: (app_base)/dashboard/
  *
  * Fixed file name under the Waygraph Map convention - every page-slug
  * folder's own arrival hub is always page.block.ts. Arrival-only
@@ -13,7 +13,7 @@ import { ClickWidgetBlock } from "./methods/click-widget.block.js";
  */
 export const DashboardPageBlock = definePageBlock<Dashboard>({
   name: "page-dashboard",
-  description: "Dashboard hub - the routed-demo example's (base_app) group.",
+  description: "Dashboard hub - the routed-demo example's (app_base) group.",
   checkpoint: "Dashboard",
   verify: [Trait.visible(DashboardSel.heading)],
   methods: {

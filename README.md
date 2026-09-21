@@ -402,7 +402,7 @@ export const AssertItemAddedBlock = defineAssertBlock<ItemInCart>({
 engine.defineFlow([start, NavHomeBlock, AddItemBlock, AssertItemAddedBlock, ClearCartBlock, end])
 ```
 
-Live reference: `templates/scaffold/src/blocks/demo-web/methods/assert-item-added.method.block.ts`,
+Live reference: `templates/scaffold/src/map/(app_base)/home/methods/assert-item-added.method.block.ts`,
 wired into `shop.flow.ts`.
 
 **`methods/` folder:** on-page work lives next to the route, not free-floating.
@@ -517,7 +517,7 @@ preflight reject the run before it ever gets a chance to produce it - `requires`
 keys a caller truly must supply from outside the chain (like `ExpectedRecipient` above).
 
 Live reference, proven end to end against a real, throwaway Mailpit container:
-`templates/scaffold/src/blocks/demo-external/mailpit/` + `src/flows/mail-verify.flow.ts` +
+`templates/scaffold/src/map/(external)/mailpit/` + `src/flows/mail-verify.flow.ts` +
 `tests/mail-verify.spec.ts`.
 
 ### Reusable across scenarios: mem-driven, not one Block per email
@@ -798,27 +798,33 @@ recurse through any folder structure, matching only the `.block.ts` filename pat
 naming and depth are already 100% cosmetic to every existing command.
 
 ```text
-src/routes/
-  (base_app)/              # purely organizational - never part of any Checkpoint tag
-    dashboard/              # one folder per Checkpoint - "Dashboard"
+src/map/
+  (app_base)/              # the landing/base group - purely organizational, never part of
+    dashboard/              # any Checkpoint tag. One folder per Checkpoint - "Dashboard"
       page.block.ts          # arrival hub (definePageBlock) - fixed name, every folder
       nav.block.ts            # navigation (defineNavBlock) - fixed name, every folder
       dashboard.sel.ts
       methods/
         click-widget.block.ts
   (external)/
-    docs/                    # a different group, same shape - "Docs"
+    docs/                    # a genuinely cross-origin group, same shape - "Docs"
       page.block.ts
       nav.block.ts
       docs.sel.ts
 ```
 
-Same Block helpers as today's freeform "manual mode" (`definePageBlock`/`defineNavBlock`/
-`defineMethodBlock`/etc.) - this only changes *where files live and what they're named*,
-never what kind of Block authors them or how they execute. A project adopts it incrementally,
-folder by folder; the two styles compose in the same flow with no special-casing (proven in
-`templates/scaffold`'s own `routes-demo.flow.ts`: `nav-home` from `src/blocks/`, manual mode,
-into `nav-docs` from `src/routes/`, Map convention, one real navigation).
+**Not just a naming preference - a forced convention.** Folder nesting under `map/(group)/`
+must **verbatim-match** the real site's own URL path segments, `(group)` parens excluded
+(purely organizational, same as a Next.js route group): `/app/chats` lives at
+`map/(app_base)/app/chats/`, never `map/(auth)/chats/` for a fabricated grouping that was
+never a real `/auth/*` URL. `waygraph map [project]` (see [CLI reference](#cli-reference))
+enforces this mechanically and exits 1 on a mismatch - don't rely on review alone. Same Block
+helpers as today's freeform "manual mode" (`definePageBlock`/`defineNavBlock`/
+`defineMethodBlock`/etc.) either way - Map only changes *where files live and what they're
+named*, never what kind of Block authors them or how they execute. A project adopts it
+incrementally, folder by folder. Prefer [`map()`](#map---a-kind-checked-no-teleporting-flow-builder)
+over a hand-assembled `defineFlow([start, ...])` array when wiring these Blocks into a Flow -
+it's the one that can't silently accept a Block that didn't come from a real factory.
 
 **"waypack" - loading another project's Blocks needs no separate manifest either.** A second
 project depending on a Map-convention project as a plain `file:` dependency (the same
@@ -959,6 +965,7 @@ Flows are files (0.10.5+):
 | Detached session with a real visible browser | `waygraph auto --cli --detach --non-headless` |
 | Read the session's Checkpoint/Block history | `waygraph auto trace <sessionId>` |
 | Whole-project nav-escape + inline-selector + orphan sweep | `waygraph check [project]` |
+| Waygraph Map enforcement (verbatim url-vs-folder, exits 1 on a violation) | `waygraph map [project]` |
 | Graph crawl | `waygraph traverse [project] --parallel N --min-edge-coverage 80%` |
 | Coding-agent defs | `waygraph agent-dive --loop claude` |
 | One-shot temp-dir demo | `waygraph try demo` / `waygraph try auto` / `waygraph try auto:cli` |

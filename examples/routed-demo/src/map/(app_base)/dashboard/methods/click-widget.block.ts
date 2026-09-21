@@ -4,7 +4,7 @@ import { DashboardSel } from "../dashboard.sel.js";
 
 /**
  * Kind: Method
- * Route: (base_app)/dashboard/methods/
+ * Route: (app_base)/dashboard/methods/
  *
  * Fixed folder name under the Waygraph Map convention - every page-slug
  * folder's own actions live under methods/, same as today's freeform

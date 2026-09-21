@@ -48,7 +48,7 @@ otherwise.
 | Agent-skill hardening (one-action-per-Block, `defineAssertBlock`, Sel enforcement, orphan gates) | Shipped - `openspec/changes/waygraph-agent-skill-hardening/` |
 | `agent-dive` Claude Code Skills (`waygraph-pilot`/`waygraph-blind-pilot`, real hard-won Pilot/Blind-Pilot lessons, not `--help` restated) | Shipped - `templates/skills/*.skill.md`, `src/agent-dive.ts` (`claude` loop only), `tests/agent-dive/skills.spec.ts` |
 | Mail verification (browser-driven, `*-external/<tool>/` convention) | Shipped (Mailpit) - `openspec/changes/waygraph-mail-adapters/` |
-| Waygraph Map convention rename (`src/routes/` -> `src/map/`, `(app_base)`/`(external)` groups, verbatim-URL-nesting a **forced** convention, not just naming) | Shipped - `templates/scaffold/`, `examples/routed-demo/`, `src/map-check.ts` (`checkMap()`, not yet wired into `cli.ts` as `waygraph map` - see below) |
+| Waygraph Map convention rename (`src/routes/` -> `src/map/`, `(app_base)`/`(external)` groups, verbatim-URL-nesting a **forced** convention, not just naming) | Shipped - `templates/scaffold/`, `examples/routed-demo/`, `src/map-check.ts` + `waygraph map` CLI subcommand (`src/cli.ts`) |
 | `Layout` / `defineLayout` (cross-cutting, automatically-enforced `verify` for persistent UI across many Checkpoints, folder-convention-agnostic) | Shipped - `src/engine.ts`, `tests/verify/layout.spec.ts` |
 | `Engine.map()` / standalone `map()` fluent builder (kind-checked at runtime against `__waygraphKind`/`__waygraphSalt`, no-teleporting Checkpoint chain) | Shipped - `src/engine.ts` (`MapBuilder`), `tests/nav/map-builder.spec.ts` - see "Engine.map() builder" below |
 | Waygraph Pilot (plain-language ask -> narrate/agentic, built on AutoSession) | Proposed - `openspec/changes/waygraph-pilot/` |
@@ -419,8 +419,16 @@ Direct correction on Phase 6c above: Map is **not** just a naming/documentation 
 real pre-existing bug found along the way: `templates/scaffold`'s own `clear-cart.method.block.ts`
 had zero generics at all, silently invisible to `waygraph graph`). `src/map-check.ts`
 (`checkMap()`) exists and enforces verbatim folder-path-vs-real-URL matching (catches exactly a
-`(auth)/signin/` grouping a page whose real URL is `/signin`, not `/auth/signin`) but is **not
-yet wired into `cli.ts`** as a real `waygraph map` subcommand - still pending.
+`(auth)/signin/` grouping a page whose real URL is `/signin`, not `/auth/signin`) and is now
+wired into `cli.ts` as `waygraph map [project]` (exits 1 on a violation, unlike `check`'s
+warnings-only stance - a Map mismatch is a real correctness bug, not a style suggestion).
+Proven against a real `npm install`ed scratch project (local `file:` dependency) and against
+`examples/routed-demo/` directly - both correctly found the scaffold/demo's own offline fixture
+URLs (`home.html`/`docs.html`, a static-file-server naming artifact) don't verbatim-match their
+clean folder names (`home`/`docs`); this is the checker doing its job on a fixture that happens
+to use `.html`-suffixed static filenames, not a bug in the checker or a real production URL
+structure issue - left as-is rather than special-cased. Regression coverage:
+`tests/cli/map.spec.ts` (2 tests) + `tests/fixtures/map-check/`.
 
 Two more primitives shipped in direct response to real production pain in pia-waygraph /
 zsign-atomic-waygraph (external consumers, not in this repo): agents there kept hand-editing /
@@ -452,8 +460,7 @@ was tried and still got bypassed by a careless agent.
   structurally can't silently accept a hacked Block. Regression coverage:
   `tests/nav/map-builder.spec.ts` (10 tests).
 
-**Still pending, not started this pass:**
-- Wire `map-check.ts` into `cli.ts` as a real `waygraph map` subcommand.
+**Still pending:**
 - The original, most concrete ask that kicked off this whole escalation: restructure
   `veciro-waygraph` (a real consumer project, separate repo) from its old `src/routes/(app)/` +
   `src/routes/(auth)/` layout into `src/map/(app_base)/...` with verbatim URL nesting, removing

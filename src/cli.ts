@@ -20,6 +20,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./graph.js";
+import { checkMap } from "./map-check.js";
 import { runAutoExplore } from "./auto-explore-run.js";
 import { pilotStart } from "./pilot.js";
 import {
@@ -7075,6 +7076,12 @@ Primary (less is more):
 
 Also:
   waygraph list | nav | validate | check | graph | init <name>
+  waygraph map   [project]                 Waygraph Map convention enforcement: every static
+                                           Nav/Page url must verbatim-match its src/map/ folder
+                                           path ((group) segments excluded) - exits 1 on a
+                                           violation, unlike check's warnings-only stance. A
+                                           no-op (exit 0, informational) if the project has no
+                                           src/map/ directory at all.
   waygraph traverse [project]              Graph crawl (Phase B-E)
                  --blocks <glob|/re/|sub>  Phase C: filter *.block.ts discovery
                  --parallel N              Phase D: N clone workers (max 4)
@@ -7935,6 +7942,36 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
       printOrphanReport(proj, orphans);
       // Warnings only - never fail exit code. Orphans are reported for
       // human/agent cleanup; chain auto refuses while any remain.
+      break;
+    }
+
+    case "map": {
+      const proj = resolve(args[1] ?? process.cwd());
+      const result = await checkMap(proj);
+      if (!result.hasMapDir) {
+        console.log(
+          `waygraph map: no src/map/ directory under ${proj} - nothing to check ` +
+            "(this project isn't on the Waygraph Map convention, or hasn't been migrated yet)",
+        );
+        break;
+      }
+      console.log(`waygraph map: ${result.nodes.length} node(s) found under ${relative(proj, result.mapRoot)}`);
+      if (result.violations.length === 0) {
+        console.log("waygraph map: 0 violations - every static Nav/Page url verbatim-matches its folder path");
+      } else {
+        for (const v of result.violations) {
+          console.error(`waygraph map: ${v.file} (${v.block}) - ${v.reason}`);
+        }
+        console.error(
+          `waygraph map: ${result.violations.length} violation${result.violations.length === 1 ? "" : "s"}`,
+        );
+        // Unlike `check`'s warnings-only stance, a Map violation is exactly
+        // the class of bug this command exists to catch (a fabricated
+        // folder grouping that never matched the real site, e.g. the real
+        // (auth)/signin/ mistake this command's own header comment cites) -
+        // fail loud, not just warn.
+        process.exitCode = 1;
+      }
       break;
     }
 
