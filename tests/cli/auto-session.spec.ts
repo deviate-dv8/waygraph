@@ -124,6 +124,16 @@ async function reach(sessionId: string, checkpoint: string): Promise<{ ok: boole
   return JSON.parse(stdout.trim());
 }
 
+async function highlight(
+  sessionId: string,
+  body: Record<string, unknown>,
+): Promise<{ ok: boolean; painted?: number; missing?: string[]; [k: string]: unknown }> {
+  const stdout = await runCli(["auto", "highlight", sessionId, JSON.stringify(body)], {
+    cwd: sauceRoot,
+  });
+  return JSON.parse(stdout.trim());
+}
+
 test("--detach requires --cli", async () => {
   await expect(exec(node, [CLI, "auto", "--detach", sauceRoot])).rejects.toMatchObject({
     stderr: expect.stringContaining("--detach requires --cli"),
@@ -263,6 +273,40 @@ test("full non-interactive sequence: detach, drive login + add-to-cart, status, 
   const afterQuit = await status(sessionId);
   expect(afterQuit.ok).toBe(false);
   expect(String(afterQuit.error)).toMatch(/no such session/);
+});
+
+test("auto highlight: paints agent fixture rings on the live login page", async () => {
+  test.setTimeout(45_000);
+  const { sessionId } = await detach();
+  try {
+    // Session lands on saucedemo login - real #user-name / #password.
+    const painted = await highlight(sessionId, {
+      rings: [
+        { selector: "#user-name", label: "Username", tone: "planned" },
+        { selector: "#password", label: "Password", tone: "info" },
+      ],
+      todos: ["Fill username", "Fill password", "Submit"],
+      todoIndex: 0,
+      holdMs: 0,
+    });
+    expect(painted.ok).toBe(true);
+    expect(painted.painted).toBe(2);
+    expect(painted.missing ?? []).toEqual([]);
+
+    const missing = await highlight(sessionId, {
+      rings: [{ selector: "#no-such-element-waygraph", label: "Gone", tone: "danger" }],
+      holdMs: 0,
+    });
+    expect(missing.ok).toBe(true);
+    expect(missing.painted).toBe(0);
+    expect(missing.missing).toEqual(["#no-such-element-waygraph"]);
+
+    const cleared = await highlight(sessionId, { clear: true });
+    expect(cleared.ok).toBe(true);
+    expect(cleared.painted).toBe(0);
+  } finally {
+    await send(sessionId, "q");
+  }
 });
 
 test("auto reach: runs a real multi-step route to a Checkpoint in one call, against an already-running session", async () => {

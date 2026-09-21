@@ -7110,6 +7110,13 @@ Primary (less is more):
                                            --non-headless session someone is co-driving);
                                            send/reach never do this on their own, since they
                                            only re-detect when the position is already unknown
+  waygraph auto highlight <sessionId> '<json>'
+                                           Paint agent highlight fixtures on the live page
+                                           (rings + optional todos). Same visual language as
+                                           Block stubBefore in demo. JSON: rings[{selector,
+                                           label,tone?,size?,weight?}], todos[], todoIndex?,
+                                           todoTitle?, holdMs? (0=until next), clear:true.
+                                           Missing selectors listed in response, not fatal.
   waygraph pilot start                     Bootstrap for an agent: starts a --detach session
                                            (same as auto --cli --detach) AND reads back the
                                            whole project's Block graph (same as waygraph
@@ -7595,7 +7602,8 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           args[1] === "goto" ||
           args[1] === "reload" ||
           args[1] === "reach" ||
-          args[1] === "resync")
+          args[1] === "resync" ||
+          args[1] === "highlight")
       ) {
         const sub = args[1];
         const sessionId = args[2];
@@ -7781,6 +7789,34 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
         }
         if (sub === "resync") {
           const res = await requestSession(proj, sessionId, { op: "resync" });
+          console.log(JSON.stringify(res));
+          if (!res.ok) process.exitCode = 1;
+          break;
+        }
+        if (sub === "highlight") {
+          const raw = args[3];
+          if (raw === undefined) {
+            console.error(
+              'waygraph auto highlight: usage: waygraph auto highlight <sessionId> \'{"rings":[{"selector":"#x","label":"X"}]}\'',
+            );
+            process.exit(1);
+          }
+          let fixtures: Record<string, unknown>;
+          try {
+            fixtures = JSON.parse(raw) as Record<string, unknown>;
+          } catch {
+            console.error("waygraph auto highlight: body must be valid JSON");
+            process.exit(1);
+          }
+          if (fixtures.op !== undefined && fixtures.op !== "highlight") {
+            console.error('waygraph auto highlight: do not set "op" (or set it to "highlight")');
+            process.exit(1);
+          }
+          const { op: _ignore, ...rest } = fixtures as { op?: string } & Record<string, unknown>;
+          const res = await requestSession(proj, sessionId, {
+            op: "highlight",
+            ...(rest as import("./pilot-overlay.js").PilotHighlightFixtures),
+          });
           console.log(JSON.stringify(res));
           if (!res.ok) process.exitCode = 1;
           break;

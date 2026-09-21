@@ -25,7 +25,8 @@ permanent, reusable, typed coverage instead of leaving nothing behind.
    (`(group)/<page-slug>/page.block.ts` + `nav.block.ts` + `methods/*.block.ts` + one `*.sel.ts`)
    so the result becomes part of the Waygraph Map, not a scattered one-off file.
 4. `auto reload <sessionId>` to pick up the newly-written Block(s) without restarting.
-5. Run the new Block for real via `auto send` - prove it works before moving to the next
+5. Optionally narrate for a headful watcher: `auto highlight <sessionId> '{"rings":[...],"todos":[...]}'`
+6. Run the new Block for real via `auto send` - prove it works before moving to the next
    pattern, exactly like any other real Block.
 6. Ask the user a clarifying question only when something genuinely can't be resolved from
    the DOM alone (is this instance local or published? does a downstream integration exist?)

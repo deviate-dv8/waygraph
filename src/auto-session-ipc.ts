@@ -32,6 +32,9 @@ import {
   type StorageSnapshot,
   type StubFileKind,
 } from "./auto-session.js";
+import type { PilotHighlightFixtures } from "./pilot-overlay.js";
+
+export type { PilotHighlightFixtures, PilotFixtureRing } from "./pilot-overlay.js";
 
 export interface SessionMeta {
   sessionId: string;
@@ -56,7 +59,8 @@ type ServerRequest =
   | { op: "resync" }
   | { op: "console" }
   | { op: "storage" }
-  | { op: "upload"; selector: string; stub: StubFileKind | { filePath: string } };
+  | { op: "upload"; selector: string; stub: StubFileKind | { filePath: string } }
+  | ({ op: "highlight" } & PilotHighlightFixtures);
 
 export type StatusOrSendResponse =
   | { ok: true; snapshot: SessionSnapshot; quit: boolean }
@@ -72,13 +76,18 @@ export type StorageResponse = ({ ok: true } & StorageSnapshot) | { ok: false; er
 
 export type ReachResponse = ApplyPathResult;
 
+export type HighlightResponse =
+  | { ok: true; painted: number; missing: string[]; snapshot: SessionSnapshot }
+  | { ok: false; error: string };
+
 type ServerResponse =
   | StatusOrSendResponse
   | DomResponse
   | TraceResponse
   | ConsoleResponse
   | StorageResponse
-  | ReachResponse;
+  | ReachResponse
+  | HighlightResponse;
 
 function sessionDir(projectDir: string): string {
   return join(projectDir, ".waygraph-auto");
@@ -232,6 +241,12 @@ export async function requestSession(
 export async function requestSession(
   projectDir: string,
   sessionId: string,
+  request: { op: "highlight" } & PilotHighlightFixtures,
+  timeoutMs?: number,
+): Promise<HighlightResponse>;
+export async function requestSession(
+  projectDir: string,
+  sessionId: string,
   request: ServerRequest,
   timeoutMs = 15_000,
 ): Promise<ServerResponse> {
@@ -354,6 +369,9 @@ export async function serveSession(
           response = await session.applyPath(request.checkpoint);
         } else if (request.op === "resync") {
           response = await session.resync();
+        } else if (request.op === "highlight") {
+          const { op: _op, ...fixtures } = request;
+          response = await session.applyHighlight(fixtures);
         } else {
           response = { ok: false, error: `unknown op "${(request as { op: string }).op}"` };
         }

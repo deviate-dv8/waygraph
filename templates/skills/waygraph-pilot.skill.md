@@ -16,11 +16,28 @@ waygraph pilot start                      # bootstraps: {sessionId, socketPath, 
 waygraph auto status <sessionId>          # re-read the live menu, no side effects
 waygraph auto send <sessionId> "<pick>"   # run exactly one Block (by menu index or name)
 waygraph auto reach <sessionId> <Checkpoint>  # path-find + run a whole route in one call
+waygraph auto highlight <sessionId> '<json>'  # paint rings/todos on the live page (agent fixtures)
 ```
 
 `graph` in `pilot start`'s response is the **whole project's** Block/Checkpoint graph, not
 just what's reachable from here - use it to plan several steps ahead before you start
 sending picks.
+
+## Highlight fixtures (agent-sent narration)
+
+Block `stubBefore` / `withHighlightFixtures` only paint in `waygraph demo`. In Pilot they
+land in `auto trace` as metadata but do **not** draw on the page. When a human is watching
+a headful session (or you want to narrate intent before a send), paint yourself:
+
+```
+waygraph auto highlight <sessionId> '{"rings":[{"selector":"#user-name","label":"Username","tone":"planned"},{"selector":"#password","label":"Password","tone":"info"}],"todos":["Fill username","Fill password","Submit"],"todoIndex":0,"holdMs":0}'
+waygraph auto highlight <sessionId> '{"clear":true}'
+```
+
+- `tone`: `planned` (purple, default) | `auto` | `info` | `warning` | `danger` | `success` (pilot `orange` is for `auto dom` vision only)
+- `holdMs`: ms to keep fixtures; `0` = until the next highlight / clear (default 12000)
+- Missing selectors are listed in the JSON response (`missing`) - not a hard failure
+- Does not replace `auto send` - paint, then run the real Block
 
 ## Rule 1: run real Blocks, not raw primitives
 

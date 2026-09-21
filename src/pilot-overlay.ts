@@ -81,6 +81,44 @@ const OVERLAY_CSS = `
   opacity: 0; transform: translateY(4px); transition: opacity 0.15s, transform 0.15s;
 }
 #wg-pilot-activity.wg-pilot-toast-show { opacity: 1; transform: translateY(0); }
+/* Agent-sent fixture rings share tone/size CSS with #wg-ring (demo language). */
+.wg-pilot-fx-ring{position:fixed;z-index:2147483645;pointer-events:none;opacity:0;
+  border:3px solid #7C3AED;border-radius:10px;box-sizing:border-box;
+  transition:opacity .12s ease,left .12s,top .12s,width .12s,height .12s;}
+.wg-pilot-fx-ring[data-tone=planned]{border-color:#7C3AED;box-shadow:0 0 0 4px rgba(124,58,237,.16);}
+.wg-pilot-fx-ring[data-tone=auto]{border-color:#9CA3AF;box-shadow:0 0 0 4px rgba(156,163,175,.28);}
+.wg-pilot-fx-ring[data-tone=info]{border-color:#3B82F6;box-shadow:0 0 0 4px rgba(59,130,246,.22);}
+.wg-pilot-fx-ring[data-tone=warning]{border-color:#EAB308;box-shadow:0 0 0 4px rgba(234,179,8,.22);}
+.wg-pilot-fx-ring[data-tone=danger]{border-color:#EF4444;box-shadow:0 0 0 4px rgba(239,68,68,.22);}
+.wg-pilot-fx-ring[data-tone=success]{border-color:#22C55E;box-shadow:0 0 0 4px rgba(34,197,94,.22);}
+.wg-pilot-fx-ring[data-tone=orange]{border-color:#F97316;box-shadow:0 0 0 4px rgba(249,115,22,.22);}
+.wg-pilot-fx-label{position:fixed;z-index:2147483645;pointer-events:none;opacity:0;
+  font:600 12px/1.3 ui-sans-serif,system-ui,sans-serif;padding:5px 9px;border-radius:6px;
+  max-width:min(360px,80vw);box-shadow:0 2px 8px rgba(0,0,0,.25);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;transition:opacity .12s ease;}
+.wg-pilot-fx-label[data-tone=planned]{background:#7C3AED;color:#fff;}
+.wg-pilot-fx-label[data-tone=auto]{background:#6B7280;color:#fff;}
+.wg-pilot-fx-label[data-tone=info]{background:#2563EB;color:#fff;}
+.wg-pilot-fx-label[data-tone=warning]{background:#EAB308;color:#1c1917;}
+.wg-pilot-fx-label[data-tone=danger]{background:#DC2626;color:#fff;}
+.wg-pilot-fx-label[data-tone=success]{background:#16A34A;color:#fff;}
+.wg-pilot-fx-label[data-tone=orange]{background:#EA580C;color:#fff;}
+.wg-pilot-fx-ring[data-size=sm]{border-width:1.5px;border-radius:8px;}
+.wg-pilot-fx-ring[data-size=lg]{border-width:4px;border-radius:12px;}
+.wg-pilot-fx-label[data-size=sm]{font-size:10px;padding:4px 7px;}
+.wg-pilot-fx-label[data-size=lg]{font-size:16px;padding:8px 14px;}
+.wg-pilot-fx-label[data-weight=bold]{font-weight:800;}
+#wg-pilot-fx-todos{
+  position:fixed;z-index:2147483645;top:72px;left:14px;max-width:280px;
+  font:12px/1.4 ui-sans-serif,system-ui,sans-serif;color:#fff;
+  background:rgba(20,10,40,.94);border-radius:10px;padding:10px 12px;
+  box-shadow:0 2px 10px rgba(0,0,0,.3);pointer-events:none;
+}
+#wg-pilot-fx-todos .wg-pilot-fx-todo-title{font-weight:700;color:#c9a6ff;margin-bottom:6px;}
+#wg-pilot-fx-todos ol{margin:0;padding-left:18px;}
+#wg-pilot-fx-todos li{margin:3px 0;color:#ddd;}
+#wg-pilot-fx-todos li.wg-pilot-fx-todo-done{color:#888;text-decoration:line-through;}
+#wg-pilot-fx-todos li.wg-pilot-fx-todo-now{color:#fff;font-weight:700;}
 ` + WAYGRAPH_RING_CSS;
 
 /** Idempotent - safe to call before every update, matching narrate mode's own precedent. */
@@ -180,6 +218,9 @@ export async function showPilotActivity(page: Page, text: string): Promise<void>
  * raw click/type/upload IS a real Playwright-driven action (`auto` was
  * always documented as meaning exactly that), while a pure `auto dom` read
  * touches nothing, so it gets its own "orange" tone instead.
+ *
+ * For agent-authored multi-ring / todo narration, use {@link showPilotFixtures}
+ * (`auto highlight`) instead - this vision ring is one-shot inspect feedback.
  */
 export async function showPilotVision(
   page: Page,
@@ -237,6 +278,149 @@ export async function showPilotVision(
       { selector, label, tone },
     )
     .catch(() => {});
+}
+
+/** One ring the Pilot agent wants painted (same fields as demo stub rings). */
+export type PilotFixtureRing = {
+  selector: string;
+  label: string;
+  tone?: HighlightTone;
+  size?: "sm" | "md" | "lg";
+  weight?: "normal" | "bold";
+};
+
+/**
+ * Agent-sent highlight fixtures for a live Pilot / auto session.
+ * Painted by {@link showPilotFixtures}; driven via IPC `op: "highlight"`.
+ */
+export type PilotHighlightFixtures = {
+  /** Replace current fixture rings with these (empty + no todos = clear). */
+  rings?: readonly PilotFixtureRing[];
+  /** Optional floating todo list (demo-dock language, simplified). */
+  todos?: readonly string[];
+  /** 0-based index of the "current" todo row (others before it = done). */
+  todoIndex?: number;
+  /** Optional title above the todo list. */
+  todoTitle?: string;
+  /**
+   * How long fixtures stay visible (ms). `0` = until the next highlight /
+   * clear. Default `12000`. Vision rings (`showPilotVision`) stay separate.
+   */
+  holdMs?: number;
+  /** Drop every agent fixture ring/todo immediately. */
+  clear?: boolean;
+};
+
+/**
+ * Paint (or clear) agent-authored highlight fixtures on the live page.
+ * Multi-ring + optional todo strip - what Block `stubBefore` does in
+ * `waygraph demo`, available to the Pilot agent without going through demo.
+ * Does not import `cli.ts` (see file header).
+ */
+export async function showPilotFixtures(
+  page: Page,
+  fixtures: PilotHighlightFixtures,
+): Promise<{ painted: number; missing: string[] }> {
+  await ensureInstalled(page);
+  const holdMs =
+    fixtures.clear === true
+      ? 0
+      : fixtures.holdMs === undefined
+        ? 12_000
+        : Math.max(0, fixtures.holdMs);
+  const rings = fixtures.clear ? [] : (fixtures.rings ?? []);
+  const todos = fixtures.clear ? [] : (fixtures.todos ?? []);
+  const todoIndex = fixtures.todoIndex ?? 0;
+  const todoTitle = fixtures.todoTitle ?? "Plan";
+  return page
+    .evaluate(
+      ({ rings, todos, todoIndex, todoTitle, holdMs }) => {
+        const w = window as unknown as {
+          __wgPilotFxHideTimer?: ReturnType<typeof setTimeout>;
+          __wgPilotFxClear?: () => void;
+        };
+        if (w.__wgPilotFxHideTimer) clearTimeout(w.__wgPilotFxHideTimer);
+        const clearFx = () => {
+          document.querySelectorAll(".wg-pilot-fx-ring, .wg-pilot-fx-label").forEach((el) => el.remove());
+          document.getElementById("wg-pilot-fx-todos")?.remove();
+        };
+        w.__wgPilotFxClear = clearFx;
+        clearFx();
+        const missing: string[] = [];
+        let painted = 0;
+        for (const ring of rings) {
+          const el = document.querySelector(ring.selector);
+          if (!el) {
+            missing.push(ring.selector);
+            continue;
+          }
+          const rect = el.getBoundingClientRect();
+          if (rect.width === 0 && rect.height === 0) {
+            missing.push(ring.selector);
+            continue;
+          }
+          const tone = ring.tone || "planned";
+          const size = ring.size === "sm" || ring.size === "lg" ? ring.size : "md";
+          const weight = ring.weight === "bold" ? "bold" : "normal";
+          const pad = size === "sm" ? 3 : size === "lg" ? 10 : 6;
+          const ringEl = document.createElement("div");
+          ringEl.className = "wg-pilot-fx-ring";
+          ringEl.dataset.tone = tone;
+          ringEl.dataset.size = size;
+          ringEl.style.left = `${rect.left - pad}px`;
+          ringEl.style.top = `${rect.top - pad}px`;
+          ringEl.style.width = `${Math.max(4, rect.width + pad * 2)}px`;
+          ringEl.style.height = `${Math.max(4, rect.height + pad * 2)}px`;
+          ringEl.style.opacity = "1";
+          const labelEl = document.createElement("div");
+          labelEl.className = "wg-pilot-fx-label";
+          labelEl.dataset.tone = tone;
+          labelEl.dataset.size = size;
+          labelEl.dataset.weight = weight;
+          labelEl.textContent = ring.label;
+          labelEl.style.opacity = "1";
+          document.documentElement.appendChild(ringEl);
+          document.documentElement.appendChild(labelEl);
+          const lw = labelEl.offsetWidth;
+          const lh = labelEl.offsetHeight;
+          let labelLeft = rect.left - pad;
+          let labelTop = rect.top - pad + rect.height + pad * 2 + 8;
+          if (labelTop + lh > window.innerHeight - 6) labelTop = rect.top - pad - lh - 8;
+          if (labelTop < 6) labelTop = 6;
+          if (labelLeft + lw > window.innerWidth - 6) {
+            labelLeft = Math.max(6, window.innerWidth - 6 - lw);
+          }
+          if (labelLeft < 6) labelLeft = 6;
+          labelEl.style.left = `${labelLeft}px`;
+          labelEl.style.top = `${labelTop}px`;
+          painted += 1;
+        }
+        if (todos.length > 0) {
+          const dock = document.createElement("div");
+          dock.id = "wg-pilot-fx-todos";
+          const title = document.createElement("div");
+          title.className = "wg-pilot-fx-todo-title";
+          title.textContent = todoTitle;
+          dock.appendChild(title);
+          const ol = document.createElement("ol");
+          todos.forEach((text, i) => {
+            const li = document.createElement("li");
+            li.textContent = text;
+            if (i < todoIndex) li.className = "wg-pilot-fx-todo-done";
+            else if (i === todoIndex) li.className = "wg-pilot-fx-todo-now";
+            ol.appendChild(li);
+          });
+          dock.appendChild(ol);
+          document.documentElement.appendChild(dock);
+        }
+        if (holdMs > 0 && (painted > 0 || todos.length > 0)) {
+          w.__wgPilotFxHideTimer = setTimeout(() => clearFx(), holdMs);
+        }
+        return { painted, missing };
+      },
+      { rings, todos, todoIndex, todoTitle, holdMs },
+    )
+    .catch(() => ({ painted: 0, missing: rings.map((r) => r.selector) }));
 }
 
 /** Minimal shape needed to render the graph tree - matches WaygraphGraph. */

@@ -29,7 +29,8 @@ import {
 } from "./auto-explore-run.js";
 import { runStubPhase, type StubPhaseResult } from "./highlights.js";
 import { findBlockPathDetailed } from "./graph.js";
-import { updatePilotOverlay, showPilotActivity, showPilotVision } from "./pilot-overlay.js";
+import { updatePilotOverlay, showPilotActivity, showPilotVision, showPilotFixtures } from "./pilot-overlay.js";
+import type { PilotHighlightFixtures } from "./pilot-overlay.js";
 
 /** True when a stub-phase result actually carries authored content worth keeping. */
 function stubPhaseHasContent(r: StubPhaseResult): boolean {
@@ -869,6 +870,45 @@ export class AutoSession {
       snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
       quit: false,
     };
+  }
+
+  /**
+   * Agent-sent highlight fixtures (rings + optional todos) on the live page -
+   * the Pilot equivalent of Block `stubBefore` narration in `waygraph demo`.
+   * Does not run a Block; paint-only. Missing selectors are reported, not fatal.
+   */
+  async applyHighlight(
+    fixtures: PilotHighlightFixtures,
+  ): Promise<
+    | { ok: true; painted: number; missing: string[]; snapshot: SessionSnapshot }
+    | { ok: false; error: string }
+  > {
+    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    const label =
+      fixtures.clear === true
+        ? "clear fixtures"
+        : `${fixtures.rings?.length ?? 0} ring(s)` +
+          (fixtures.todos?.length ? `, ${fixtures.todos.length} todo(s)` : "");
+    await showPilotActivity(this.page, `Highlight: ${label}`);
+    try {
+      const { painted, missing } = await showPilotFixtures(this.page, fixtures);
+      const menu = await this.currentMenu();
+      this.lastRunNote = fixtures.clear
+        ? "highlight cleared"
+        : `highlight painted ${painted}` +
+          (missing.length ? ` (missing: ${missing.join(", ")})` : "");
+      return {
+        ok: true,
+        painted,
+        missing,
+        snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        error: `highlight failed - ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
   }
 
   /**
