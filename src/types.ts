@@ -321,16 +321,37 @@ export type DefinedBlock<In extends Checkpoint<string>, Out extends Checkpoint<s
 };
 
 /**
+ * Structural (not imported) twin of `engine.ts`'s `Layout` - `types.ts` sits
+ * below `engine.ts` in the module graph, so it can't import `Layout` without
+ * a cycle. Same shape, matched by TypeScript's structural typing: any real
+ * `Layout` satisfies this with no cast needed at the `connect()` call site.
+ */
+export interface ConnectLayout {
+  name: string;
+  appliesTo: (tag: string) => boolean;
+  verify: Trait[] | ((out: any) => Trait[]);
+}
+
+/**
  * Composes two Blocks into one, typechecked so this only compiles when A's output
  * tag equals B's input tag. The composed Block's act runs A's full instruction
  * (act -> observe? -> resolve) then hands the resulting Checkpoint into B's act;
  * its own observe/resolve are simply B's, since B is what decides the final Out.
+ *
+ * `layouts`, if given, also runs against the intermediate Checkpoint (A's
+ * resolved output, right before B's act) - the same enforcement `runGraph`'s
+ * own loop already applies to a chain's FINAL Checkpoint, but a
+ * `defineFlow`-built Flow never reaches that loop per-hop: `buildFlow`
+ * reduces the whole Block array into one `connect()`-composed super-Block, so
+ * every intermediate hop's verify (and now layout) has to run HERE, inside
+ * this recursive `act`, not in `runGraph`'s loop, which only ever sees the
+ * one composed Block run start to finish.
  */
 export function connect<
   A extends Checkpoint<string>,
   B extends Checkpoint<string>,
   C extends Checkpoint<string>,
->(a: Block<A, B>, b: Block<B, C>): Block<A, C> {
+>(a: Block<A, B>, b: Block<B, C>, layouts?: readonly ConnectLayout[]): Block<A, C> {
   const bObserve = b.instruction.observe;
   const bVerify = b.instruction.verify;
   const requires = [...(a.requires ?? []), ...(b.requires ?? [])];
@@ -346,6 +367,12 @@ export function connect<
           : undefined;
         const mid = await a.instruction.resolve(aObserved);
         await runVerify(a.instruction.verify, mid, page, mem, a.name);
+        if (layouts) {
+          for (const layout of layouts) {
+            if (!layout.appliesTo(mid.__state)) continue;
+            await runVerify(layout.verify, mid, page, mem, `${a.name} (layout: "${layout.name}")`);
+          }
+        }
         await runPrecondition(b.instruction.precondition, mid, page, mem, b.name);
         await b.instruction.act(page, mid, mem);
       },

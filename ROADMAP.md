@@ -48,6 +48,9 @@ otherwise.
 | Agent-skill hardening (one-action-per-Block, `defineAssertBlock`, Sel enforcement, orphan gates) | Shipped - `openspec/changes/waygraph-agent-skill-hardening/` |
 | `agent-dive` Claude Code Skills (`waygraph-pilot`/`waygraph-blind-pilot`, real hard-won Pilot/Blind-Pilot lessons, not `--help` restated) | Shipped - `templates/skills/*.skill.md`, `src/agent-dive.ts` (`claude` loop only), `tests/agent-dive/skills.spec.ts` |
 | Mail verification (browser-driven, `*-external/<tool>/` convention) | Shipped (Mailpit) - `openspec/changes/waygraph-mail-adapters/` |
+| Waygraph Map convention rename (`src/routes/` -> `src/map/`, `(app_base)`/`(external)` groups, verbatim-URL-nesting a **forced** convention, not just naming) | Shipped - `templates/scaffold/`, `examples/routed-demo/`, `src/map-check.ts` (`checkMap()`, not yet wired into `cli.ts` as `waygraph map` - see below) |
+| `Layout` / `defineLayout` (cross-cutting, automatically-enforced `verify` for persistent UI across many Checkpoints, folder-convention-agnostic) | Shipped - `src/engine.ts`, `tests/verify/layout.spec.ts` |
+| `Engine.map()` / standalone `map()` fluent builder (kind-checked at runtime against `__waygraphKind`/`__waygraphSalt`, no-teleporting Checkpoint chain) | Shipped - `src/engine.ts` (`MapBuilder`), `tests/nav/map-builder.spec.ts` - see "Engine.map() builder" below |
 | Waygraph Pilot (plain-language ask -> narrate/agentic, built on AutoSession) | Proposed - `openspec/changes/waygraph-pilot/` |
 | Narrated help-center video generation (core `waygraph render`) | Deferred to v1.0.x (`waygraph-demo` module) - not current focus, see below |
 | Stability declaration (1.0.0) | Gated on Waygraph Pilot demoable - see "1.0.0" below |
@@ -407,6 +410,62 @@ AF_UNIX path limit, ~108 bytes on Linux, on a long enough path). Fixed in `src/a
 nesting depth; confirmed against the exact previously-failing path.
 
 Full spec/design/tasks: `openspec/changes/waygraph-map/`.
+
+### Phase 6d - Map escalated to a forced convention, Layout, `map()` builder - shipped
+
+Direct correction on Phase 6c above: Map is **not** just a naming/documentation preference -
+"it's a forced convention. folder structure system." The rename actually happened
+(`src/routes/` -> `src/map/` across `templates/scaffold/` and `examples/routed-demo/`, fixing a
+real pre-existing bug found along the way: `templates/scaffold`'s own `clear-cart.method.block.ts`
+had zero generics at all, silently invisible to `waygraph graph`). `src/map-check.ts`
+(`checkMap()`) exists and enforces verbatim folder-path-vs-real-URL matching (catches exactly a
+`(auth)/signin/` grouping a page whose real URL is `/signin`, not `/auth/signin`) but is **not
+yet wired into `cli.ts`** as a real `waygraph map` subcommand - still pending.
+
+Two more primitives shipped in direct response to real production pain in pia-waygraph /
+zsign-atomic-waygraph (external consumers, not in this repo): agents there kept hand-editing /
+hand-composing Blocks into ad hoc shapes, causing recursive routing issues; a "locks" convention
+was tried and still got bypassed by a careless agent.
+
+- **`defineLayout`/`Layout`** - a cross-cutting `verify` enforced automatically by Checkpoint
+  tag (not folder path, so it works for both Map and the older freeform convention those two
+  real consumers still use). Threaded through `runGraph`'s own loop (terminal Checkpoint) *and*
+  `connect()`'s intermediate-hop verify (every Checkpoint a `defineFlow`-built Flow passes
+  through) - the latter was a real gap found and closed in the same pass: `Engine.defineFlow`
+  reduces its whole Block array into one `connect()`-composed super-Block, so `runGraph`'s loop
+  only ever sees that one super-Block run start to finish and never observes an intermediate
+  Checkpoint on its own. Regression coverage: `tests/verify/layout.spec.ts` (5 tests, including
+  one that would have caught the intermediate-hop gap before it was closed).
+- **`Engine.map()` / standalone `map()`** - a fluent builder (`.start().gotoPage(...).assert(...)
+  .gotoExternal(...).method(...).end()`) over `defineFlow`, kind-checked at runtime against the
+  `__waygraphKind`/`__waygraphSalt` markers `graph.ts`/`map-check.ts` already trust. Unlike a
+  hand-assembled `defineFlow([start, ...])` array, a plain object literal that merely *looks*
+  like a Block (TypeScript's structural typing can't tell the difference) is rejected immediately
+  with an error naming the step and the real factory it should have come from - this is the
+  actual fix for the "agent hacks the Blocks" failure mode a folder/naming convention alone
+  couldn't enforce. `gotoPage`/`gotoExternal` additionally cross-check a `homeOrigin` option
+  against each Nav/Page Block's own static `url`, when one exists. `map()` is sugar over
+  `defineFlow` - the result is a real `Flow`, every existing Flow-level feature (Layouts,
+  `withBlockVerify`, narration, `chainFlow`) works on it unchanged. **Recommended over hand-
+  assembled `defineFlow` arrays for new projects** - the array form isn't deprecated (real
+  consumers on the freeform convention still use it directly), but `map()` is the one that
+  structurally can't silently accept a hacked Block. Regression coverage:
+  `tests/nav/map-builder.spec.ts` (10 tests).
+
+**Still pending, not started this pass:**
+- Wire `map-check.ts` into `cli.ts` as a real `waygraph map` subcommand.
+- The original, most concrete ask that kicked off this whole escalation: restructure
+  `veciro-waygraph` (a real consumer project, separate repo) from its old `src/routes/(app)/` +
+  `src/routes/(auth)/` layout into `src/map/(app_base)/...` with verbatim URL nesting, removing
+  the fictional `(auth)` group (veciro has no real `/auth/*` URLs) - not yet started.
+- **A second scaffold flavor, explicitly backlogged**: `templates/scaffold` today only
+  demonstrates the Map convention. A second scaffold (or a `waygraph init --style router` flag on
+  the existing one) demonstrating the older freeform/"router" style is planned for real external
+  consumers who aren't on Map (pia-waygraph, zsign-atomic-waygraph) - **Map is the recommended
+  default either way**; the second flavor is about not leaving those existing consumers without a
+  matching starting point, not about treating the two styles as equally preferred.
+- A real example/project proving `AppShellLayout`-style Layout usage against an actual persistent
+  sidebar (e.g. once the veciro-waygraph restructure above happens).
 
 ## Narrated help-center video generation (planned - deferred to v1.0.x)
 

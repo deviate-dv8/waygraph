@@ -54,6 +54,88 @@ export function preflight(mem: MemPage, block: Block<any, any>): void {
 }
 
 /**
+ * A cross-cutting, automatically-enforced verify - the real engine
+ * primitive behind "persistent UI" (a sidebar, a header, anything that's
+ * supposed to be present on many/most Checkpoints, not just one page's own
+ * Block). Deliberately NOT tied to any folder convention - `appliesTo`
+ * matches by Checkpoint tag, explicitly, so this works the same whether a
+ * project uses the Waygraph Map folder convention or the older freeform
+ * "manual mode" layout real production consumers (pia-waygraph,
+ * zsign-atomic-waygraph) already use - registering a Layout with an Engine
+ * is the only requirement, folder structure is irrelevant to it.
+ *
+ * Not a Block: no `act`/`resolve`/Checkpoint of its own, never a graph
+ * node - it only ever adds extra `verify` Traits to Checkpoints something
+ * else already resolved to, the same way `runVerify` already runs after
+ * any Block's own `resolve()` (see `runGraph`'s own verify step, just
+ * below) - a Layout is that mechanism made reusable across many
+ * Checkpoints instead of hand-repeated per Block.
+ */
+export interface Layout {
+  name: string;
+  description?: string;
+  appliesTo: (tag: string) => boolean;
+  /** Function form gets the full resolved Checkpoint, same shape `runVerify`/a Block's own `verify` already use - not just the tag. */
+  verify: Trait[] | ((out: Checkpoint<string>) => Trait[]);
+}
+
+export interface LayoutOptions {
+  name: string;
+  description?: string;
+  /** A fixed tag list, or a predicate for open-ended matching (e.g. a naming pattern). */
+  appliesTo: readonly string[] | ((tag: string) => boolean);
+  verify: Trait[] | ((out: Checkpoint<string>) => Trait[]);
+}
+
+/**
+ * @example
+ * const AppShellLayout = defineLayout({
+ *   name: "app-shell",
+ *   appliesTo: ["AppHome", "Chats", "Notifications", "Settings"],
+ *   verify: [Trait.visible(SidebarSel.root)],
+ * });
+ * const engine = new Engine({ layouts: [AppShellLayout] });
+ * // Now every Block resolving to one of those four Checkpoints, in any
+ * // Flow this engine defines, also gets AppShellLayout's own verify run
+ * // automatically - a page that silently drops the sidebar fails loud,
+ * // even though no individual Block's own `verify` mentions it.
+ */
+export function defineLayout(options: LayoutOptions): Layout {
+  const appliesTo =
+    typeof options.appliesTo === "function"
+      ? options.appliesTo
+      : (tag: string) => (options.appliesTo as readonly string[]).includes(tag);
+  return {
+    name: options.name,
+    ...(options.description ? { description: options.description } : {}),
+    appliesTo,
+    verify: options.verify,
+  };
+}
+
+/**
+ * Runs every registered layout whose `appliesTo(tag)` matches the just-
+ * resolved Checkpoint, in registration order, right after the Block's own
+ * `verify` already ran. A layout's own Trait failing throws the same way
+ * any other `runVerify` failure does, naming the layout so it's clearly
+ * distinguishable from the Block's own verify in the error message.
+ */
+async function runLayouts(
+  layouts: readonly Layout[] | undefined,
+  tag: string,
+  out: Checkpoint<string>,
+  page: Page,
+  mem: MemPage,
+  blockName: string,
+): Promise<void> {
+  if (!layouts) return;
+  for (const layout of layouts) {
+    if (!layout.appliesTo(tag)) continue;
+    await runVerify(layout.verify, out, page, mem, `${blockName} (layout: "${layout.name}")`);
+  }
+}
+
+/**
  * Runs `entry` against a fresh tab and returns the resulting terminal Checkpoint.
  * The engine owns the tab's lifecycle, not any individual Block: the tab is
  * created before the first `act` runs and closed in `finally`, so it closes even
@@ -101,6 +183,7 @@ export async function runGraph<TOut extends Checkpoint<string>>(
       const checkpoint = await current.instruction.resolve(observed);
 
       await runVerify(current.instruction.verify, checkpoint, page, mem, current.name);
+      await runLayouts(options?.layouts, checkpoint.__state, checkpoint, page, mem, current.name);
 
       const next = current.next?.(checkpoint);
       if (!next) {
@@ -142,6 +225,14 @@ export interface RunGraphOptions {
    * `page` and `closeOnFinish` together) - it just does what you ask.
    */
   closeOnFinish?: boolean;
+  /**
+   * Layouts (see {@link defineLayout}) whose `verify` runs automatically
+   * after any Block in this run resolves to a Checkpoint they apply to -
+   * `Flow.run` threads this in from `EngineConfig.layouts` by default; pass
+   * it directly here to call `runGraph` standalone (outside a `Flow`) with
+   * layouts still enforced.
+   */
+  layouts?: readonly Layout[];
 }
 
 /**
@@ -455,7 +546,11 @@ function buildFlow<Out extends Checkpoint<string>>(
   // withSessionReset()/withTitle() instead (non-destructive decorators,
   // same pattern as withVerify), which also re-apply themselves after any
   // further withBlockVerify/modBlockVerify patch so the flag survives.
-  const chain = middle.reduce((a, b) => connect(a, b)) as unknown as Block<
+  // Layouts have to be threaded into every pairwise connect(), not just the
+  // trailing runGraph call - see connect()'s own doc comment in types.ts:
+  // buildFlow's reduce IS the only place a defineFlow-built Flow's
+  // intermediate (non-final) Checkpoints are ever verified at all.
+  const chain = middle.reduce((a, b) => connect(a, b, engineConfig.layouts)) as unknown as Block<
     Checkpoint<"__start__">,
     Out
   >;
@@ -495,7 +590,9 @@ function buildFlow<Out extends Checkpoint<string>>(
           config.recordVideo ? { recordVideo: config.recordVideo } : {},
         );
         try {
-          return await runGraph<Out>(chain, undefined, context, mem);
+          return await runGraph<Out>(chain, undefined, context, mem, 5000, {
+            ...(config.layouts !== undefined ? { layouts: config.layouts } : {}),
+          });
         } finally {
           // Playwright finalizes recordVideo on context.close(); skip when
           // not recording so mem-only runs with stub contexts stay unchanged.
@@ -522,9 +619,11 @@ function buildFlow<Out extends Checkpoint<string>>(
     // call from before this option existed. An explicit `closeOnFinish`
     // always wins either way.
     const closeOnFinish = options?.closeOnFinish ?? gotOwnPage;
+    const resolvedLayouts = options?.layouts ?? engineConfig.layouts;
     const result = await runGraph<Out>(chain, undefined, context, mem, 5000, {
       page,
       closeOnFinish: false,
+      ...(resolvedLayouts !== undefined ? { layouts: resolvedLayouts } : {}),
     });
     if (closeOnFinish) {
       await page.close();
@@ -1128,6 +1227,14 @@ export interface EngineConfig {
    * @example new Engine({ recordVideo: { dir: "./videos" } })
    */
   recordVideo?: { dir: string; size?: { width: number; height: number } };
+  /**
+   * Cross-cutting, automatically-enforced verify (see {@link defineLayout})
+   * - applies to every Flow this Engine defines. Works the same regardless
+   * of folder convention (Waygraph Map or freeform "manual mode") since
+   * matching is by Checkpoint tag, never by file path.
+   * @example new Engine({ layouts: [AppShellLayout] })
+   */
+  layouts?: readonly Layout[];
 }
 
 type S = Checkpoint<"__start__">;
@@ -1431,6 +1538,231 @@ export class Engine {
   defineFlow(blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker]): Flow<any> {
     return buildFlow(blocks.slice(1, -1) as Block<any, any>[], this.config);
   }
+
+  /**
+   * Fluent, kind-checked alternative to `defineFlow([start, ...blocks, end])` -
+   * see {@link MapBuilder}. Real, direct request this responds to: pia/zsign's
+   * own agents kept hand-editing/hand-composing Blocks into ad hoc shapes
+   * ("locks" convention tried, still got broken) - `map()` forces every step
+   * through this Engine's own `define*Block` factories (checked by the same
+   * `__waygraphKind`/`__waygraphSalt` runtime markers `graph.ts`/`map-check.ts`
+   * already trust), so a hand-rolled plain-object Block can never silently
+   * pass as a real navigation/assertion/method step. `homeOrigin`, if given,
+   * also gates `.gotoPage()`/`.gotoExternal()` against each Nav/Page Block's
+   * own static `url` (skipped, honestly, for click-based/dynamic nav - not
+   * statically checkable, same limitation `map-check.ts` already documents).
+   * @example
+   * const flow = engine.map({ homeOrigin: "https://app.example.com" })
+   *   .start()
+   *   .gotoPage(NavHomeBlock)
+   *   .assert(AssertHelloBlock)
+   *   .gotoExternal(NavMailpitBlock)
+   *   .end();
+   */
+  map(options?: MapBuilderOptions): MapBuilder<S> {
+    return MapBuilder.begin(this, options?.homeOrigin);
+  }
+}
+
+export interface MapBuilderOptions {
+  /**
+   * This project's own origin (e.g. `"https://app.example.com"`) - enables
+   * `.gotoPage()`/`.gotoExternal()`'s origin check against a Block's static
+   * `url`. Omit to skip that check entirely (still fully kind-checked either
+   * way; only the internal/external origin distinction is opt-in).
+   */
+  homeOrigin?: string;
+}
+
+function mapKindOf(block: unknown): string | undefined {
+  return (block as { __waygraphKind?: string } | null | undefined)?.__waygraphKind;
+}
+
+function mapSaltOf(block: unknown): string | undefined {
+  return (block as { __waygraphSalt?: string } | null | undefined)?.__waygraphSalt;
+}
+
+function mapNavUrlOf(block: unknown): string | undefined {
+  const url = (block as { __waygraphNavUrl?: unknown } | null | undefined)?.__waygraphNavUrl;
+  return typeof url === "string" ? url : undefined;
+}
+
+const MAP_KIND_FACTORY_HINT: Record<string, string> = {
+  nav: "defineNavBlock/defineMemNavBlock",
+  page: "definePageBlock",
+  assert: "defineAssertBlock",
+};
+const MAP_SALT_FACTORY_HINT: Record<string, string> = {
+  method: "defineMethodBlock",
+  effect: "defineEffectBlock",
+};
+
+function assertMapKind(block: Block<any, any>, allowed: readonly string[], method: string): void {
+  const kind = mapKindOf(block);
+  if (kind !== undefined && allowed.includes(kind)) return;
+  const wanted = allowed.map((k) => MAP_KIND_FACTORY_HINT[k] ?? k).join(" or ");
+  const found = kind ? `a Block of kind "${kind}"` : "an object with no waygraph kind marker at all";
+  throw new Error(
+    `Waygraph map: .${method}("${block?.name ?? "?"}") requires a Block built with ${wanted} ` +
+      `(found ${found} - a hand-built plain object doesn't count). This check is the whole point ` +
+      "of the map() builder: only real Blocks from waygraph's own factories can enter a chain.",
+  );
+}
+
+function assertMapSalt(block: Block<any, any>, allowed: readonly string[], method: string): void {
+  const salt = mapSaltOf(block);
+  if (salt !== undefined && allowed.includes(salt)) return;
+  const wanted = allowed.map((s) => MAP_SALT_FACTORY_HINT[s] ?? s).join(" or ");
+  const found = salt ? `a Block salted "${salt}"` : "an object with no waygraph salt marker at all";
+  throw new Error(
+    `Waygraph map: .${method}("${block?.name ?? "?"}") requires a Block built with ${wanted} ` +
+      `(found ${found} - a hand-built plain object doesn't count). This check is the whole point ` +
+      "of the map() builder: only real Blocks from waygraph's own factories can enter a chain.",
+  );
+}
+
+function assertMapOrigin(
+  block: Block<any, any>,
+  homeOrigin: string | undefined,
+  expect: "internal" | "external",
+  method: string,
+): void {
+  if (!homeOrigin) return; // not configured - can't validate, honest no-op
+  const navUrl = mapNavUrlOf(block);
+  if (navUrl === undefined) return; // click-based/dynamic nav - not statically checkable
+  let targetOrigin: string;
+  let wantOrigin: string;
+  try {
+    targetOrigin = new URL(navUrl, homeOrigin).origin;
+    wantOrigin = new URL(homeOrigin).origin;
+  } catch {
+    return; // malformed URL - not this check's job to validate that
+  }
+  const isExternal = targetOrigin !== wantOrigin;
+  if (expect === "internal" && isExternal) {
+    throw new Error(
+      `Waygraph map: .gotoPage("${block.name}") targets ${targetOrigin}, which is NOT this map's ` +
+        `home origin (${wantOrigin}) - use .gotoExternal() for a genuinely cross-origin destination.`,
+    );
+  }
+  if (expect === "external" && !isExternal) {
+    throw new Error(
+      `Waygraph map: .gotoExternal("${block.name}") targets ${targetOrigin}, which IS this map's ` +
+        `home origin (${wantOrigin}) - use .gotoPage() for an internal destination.`,
+    );
+  }
+}
+
+/**
+ * Fluent builder over {@link Engine.defineFlow} - see `map()`'s own doc
+ * comment for why this exists. Each step method is scoped to exactly the
+ * Block kind its name promises, checked at RUNTIME against the
+ * `__waygraphKind`/`__waygraphSalt` markers `defineNavBlock`/`definePageBlock`/
+ * `defineAssertBlock`/`defineMethodBlock`/`defineEffectBlock` already set
+ * (the same markers `graph.ts` and `map-check.ts` trust) - not just a type
+ * hint, since a hand-rolled object can satisfy the TypeScript `Block<In,Out>`
+ * shape without ever going through a real factory. Each call also
+ * typechecks the accumulated Checkpoint chain exactly like `defineFlow`'s
+ * own tuple overloads do (a step's `In` must equal the previous step's
+ * `Out`) - this is what "no teleporting" means: there is no method on this
+ * builder that can skip from one Checkpoint to an unrelated one without a
+ * real, kind-correct Block in between.
+ */
+export class MapBuilder<Out extends Checkpoint<string>> {
+  private constructor(
+    private readonly engine: Engine,
+    private readonly steps: readonly DefinedBlock<any, any>[],
+    private readonly homeOrigin: string | undefined,
+  ) {}
+
+  /** @internal - use `engine.map()` or the standalone `map()` export. */
+  static begin(engine: Engine, homeOrigin: string | undefined): MapBuilder<S> {
+    return new MapBuilder<S>(engine, [], homeOrigin);
+  }
+
+  /** Readable chain-opener - mirrors `defineFlow`'s leading `start` sentinel. Returns `this` unchanged; entirely optional. */
+  start(): MapBuilder<Out> {
+    return this;
+  }
+
+  /**
+   * Appends an internal navigation/page-arrival step - requires a Block from
+   * `defineNavBlock`/`defineMemNavBlock`/`definePageBlock`. Throws if given
+   * anything else, including a `homeOrigin`-mismatched static `url`.
+   */
+  gotoPage<NextOut extends Checkpoint<string>>(
+    block: Block<Out, NextOut> & { name: string },
+  ): MapBuilder<NextOut> {
+    assertMapKind(block, ["nav", "page"], "gotoPage");
+    assertMapOrigin(block, this.homeOrigin, "internal", "gotoPage");
+    return new MapBuilder<NextOut>(this.engine, [...this.steps, block as DefinedBlock<any, any>], this.homeOrigin);
+  }
+
+  /**
+   * Appends a genuinely cross-origin navigation step (e.g. `(external)/`
+   * Blocks in the Waygraph Map convention: mailpit, maildrop.cc) - same
+   * kind requirement as {@link gotoPage}, plus the inverse `homeOrigin` check.
+   */
+  gotoExternal<NextOut extends Checkpoint<string>>(
+    block: Block<Out, NextOut> & { name: string },
+  ): MapBuilder<NextOut> {
+    assertMapKind(block, ["nav", "page"], "gotoExternal");
+    assertMapOrigin(block, this.homeOrigin, "external", "gotoExternal");
+    return new MapBuilder<NextOut>(this.engine, [...this.steps, block as DefinedBlock<any, any>], this.homeOrigin);
+  }
+
+  /** Appends a self-loop verification step - requires a Block from `defineAssertBlock`. */
+  assert<NextOut extends Checkpoint<string>>(
+    block: Block<Out, NextOut> & { name: string },
+  ): MapBuilder<NextOut> {
+    assertMapKind(block, ["assert"], "assert");
+    return new MapBuilder<NextOut>(this.engine, [...this.steps, block as DefinedBlock<any, any>], this.homeOrigin);
+  }
+
+  /**
+   * Appends a non-navigating page action (submit, upload, add/remove an
+   * instance) - requires a Block from `defineMethodBlock`/`defineActionBlock`/
+   * `defineEffectBlock`/`defineMemEffectBlock`.
+   */
+  method<NextOut extends Checkpoint<string>>(
+    block: Block<Out, NextOut> & { name: string },
+  ): MapBuilder<NextOut> {
+    assertMapSalt(block, ["method", "effect"], "method");
+    return new MapBuilder<NextOut>(this.engine, [...this.steps, block as DefinedBlock<any, any>], this.homeOrigin);
+  }
+
+  /**
+   * Finalizes this chain into a real, runnable {@link Flow} - same object
+   * `defineFlow` returns, so `withBlockVerify`/`modBlockVerify` and every
+   * `withTitle`/`withHighlightFixtures`/etc. decorator still apply exactly
+   * as they do today; this builder only changes how the chain is assembled,
+   * never what it produces. Throws if no step was ever added - an empty map
+   * isn't a flow.
+   */
+  end(): Flow<Out> {
+    if (this.steps.length === 0) {
+      throw new Error(
+        "Waygraph map: .end() called with zero steps - add at least one .gotoPage()/.gotoExternal()/" +
+          ".assert()/.method() before .end()",
+      );
+    }
+    const chain = [start, ...this.steps, end] as unknown as readonly [
+      StartMarker,
+      Block<any, any>,
+      EndMarker,
+    ];
+    return (this.engine.defineFlow as (blocks: unknown) => Flow<Out>)(chain);
+  }
+}
+
+/**
+ * Standalone convenience for `new Engine(config).map(options)` - use this
+ * when a call site doesn't otherwise need its own `Engine` instance (no
+ * shared `headless`/`slowMo`/`layouts` across several flows).
+ * @example const flow = map({ homeOrigin: "https://app.example.com" }).gotoPage(NavHomeBlock).end();
+ */
+export function map(options?: MapBuilderOptions & EngineConfig): MapBuilder<S> {
+  return new Engine(options).map(options);
 }
 
 /**

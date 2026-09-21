@@ -138,6 +138,84 @@ structurally incapable of touching the browser or shared memory. `verify` runs o
   its own panel row; former FF inners keep blitz pacing so wall-clock stays comparable.
   `--ff-expand` is the older expand-only flag (same flatten).
 
+### Cross-cutting Layouts (`defineLayout`)
+
+Real, direct request this responds to: persistent chrome (a sidebar, say) that's supposed
+to stay on screen across most of an app shouldn't need its own `Trait` copy-pasted into
+every single Checkpoint's `verify` - one missed copy and a regression silently ships. A
+**Layout** is a `verify` that's enforced automatically, by Checkpoint tag, wherever it
+applies - not once per Block:
+
+```ts
+import { defineLayout, Engine } from "waygraph";
+
+const AppShellLayout = defineLayout({
+  name: "AppShell",
+  // string[] of exact Checkpoint tags, or a (tag) => boolean predicate for a
+  // broader match (e.g. "every Checkpoint except the signed-out ones")
+  appliesTo: ["AppHome", "Chats", "Notifications", "Settings"],
+  verify: [Trait.visible(AppShellSel.sidebar)],
+});
+
+const engine = new Engine({ layouts: [AppShellLayout] });
+```
+
+Every `Flow` this `Engine` defines - **and every intermediate Checkpoint inside it**, not
+just the final one - runs `AppShellLayout.verify` automatically whenever it resolves to a
+tag `appliesTo` matches, alongside that Block's own `verify`. `runGraph`/`Flow.run` also
+take `{ layouts }` directly (`RunGraphOptions.layouts`), for driving a Layout outside an
+`Engine`-owned Flow (e.g. `waygraph auto`'s own runtime pathfinding).
+
+Deliberately matched by Checkpoint tag, never by folder path - a Layout works identically
+whether a project uses the [Waygraph Map](#waygraph-map) convention or the older freeform
+folder style, since some real consumers of this package still use the latter.
+
+### `map()` - a kind-checked, no-teleporting flow builder
+
+`Engine.defineFlow([start, ...blocks, end])` already typechecks that each Block's `Out`
+matches the next one's `In`. It does **not** stop an agent (or a careless human) from
+handing it a hand-rolled plain object that merely *looks* like a Block - TypeScript's
+structural typing can't tell a real `defineNavBlock(...)` output from a copy-pasted
+object literal with the right shape. That gap is exactly what broke down in real
+consumer projects: agents editing/hand-composing Blocks into ad hoc shapes, a "locks"
+convention tried and still bypassed. `map()` closes it with an actual runtime check, not
+just a convention:
+
+```ts
+import { Engine } from "waygraph";
+
+const engine = new Engine();
+const flow = engine
+  .map({ homeOrigin: "https://app.example.com" })
+  .start()
+  .gotoPage(NavHomeBlock) // must be defineNavBlock / defineMemNavBlock / definePageBlock
+  .assert(AssertHelloBlock) // must be defineAssertBlock
+  .gotoExternal(NavMailpitBlock) // same kind requirement, plus the INVERSE origin check
+  .method(ClearCartBlock) // must be defineMethodBlock / defineActionBlock / defineEffectBlock
+  .end(); // -> a real Flow<Out> - withBlockVerify/withTitle/withHighlightFixtures/etc. all still apply
+```
+
+Each step method is scoped to exactly the Block kind its name promises, checked against
+the same `__waygraphKind`/`__waygraphSalt` runtime markers `waygraph check`/`graph`/`map`
+already trust - a Block that didn't come from a real `define*Block` factory throws
+immediately, naming the step and the factory it should have used, instead of silently
+entering the chain. Give `homeOrigin` and `.gotoPage()`/`.gotoExternal()` also cross-check
+each Nav/Page Block's own static `url` against it (skipped, honestly, for click-based or
+mem-dependent nav - not statically checkable). The Checkpoint chain itself is still
+typechecked exactly like `defineFlow`'s own tuple overloads - there is no method on this
+builder that can skip from one Checkpoint to an unrelated one without a real, kind-correct
+Block in between, which is what "no teleporting" means here.
+
+`map()` is sugar over `defineFlow`, not a new execution engine - the result is a real
+`Flow`, so every existing Flow-level feature (Layouts, `withBlockVerify`, demo narration,
+`chainFlow`) works on it unchanged. `import { map } from "waygraph"` is also available
+standalone (`map(options)` ~= `new Engine(options).map(options)`) for a call site that
+doesn't otherwise need its own `Engine` instance. **Recommended for new projects** over
+hand-assembled `defineFlow([start, ...])` arrays - the freeform array form still works
+and isn't going away (real consumers on the older folder convention depend on it), but
+`map()` is the one that actually stops a broken/hacked Block from entering a flow
+unnoticed.
+
 ### Traits beyond the page
 
 A hand-written `Trait`'s `check(page, mem)` receives `mem` too, for the same-Checkpoint

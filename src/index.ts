@@ -36,6 +36,9 @@ export {
   withExpectedFailure,
   withHighlightFixtures,
   chainFlow,
+  defineLayout,
+  map,
+  MapBuilder,
 } from "./engine.js";
 export {
   resolveHighlightSlots,
@@ -133,6 +136,9 @@ export type {
   EffectBlock,
   MemEffectBlock,
   MemNavBlock,
+  Layout,
+  LayoutOptions,
+  MapBuilderOptions,
 } from "./engine.js";
 export type { ActionPage } from "./types.js";
 export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./graph.js";
