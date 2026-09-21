@@ -46,7 +46,7 @@ otherwise.
 | DOM-inspection tool (`auto dom`: aria / full fidelity, `--selector` scoping) | Shipped - `openspec/changes/waygraph-auto-dom-inspect/` |
 | Visible-browser sessions + Checkpoint/Block trace (`--non-headless`, `auto trace`) | Shipped - `openspec/changes/waygraph-auto-headful-trace/` |
 | Agent-skill hardening (one-action-per-Block, `defineAssertBlock`, Sel enforcement, orphan gates) | Shipped - `openspec/changes/waygraph-agent-skill-hardening/` |
-| `agent-dive` Claude Code Skills (`waygraph-pilot`/`waygraph-blind-pilot`, real hard-won Pilot/Blind-Pilot lessons, not `--help` restated) | Shipped - `templates/skills/*.skill.md`, `src/agent-dive.ts` (`claude` loop only), `tests/agent-dive/skills.spec.ts` |
+| `agent-dive` Claude Code Skills (`waygraph-pilot`/`waygraph-blind-pilot`/`waygraph-convention`, real hard-won Pilot/Blind-Pilot lessons, not `--help` restated) | Shipped - `templates/skills/*.skill.md`, `src/agent-dive.ts` (`claude` loop + `waygraph --skill*` print flags), `tests/agent-dive/skills.spec.ts` / `tests/cli/skills.spec.ts` |
 | Mail verification (browser-driven, `*-external/<tool>/` convention) | Shipped (Mailpit) - `openspec/changes/waygraph-mail-adapters/` |
 | Waygraph Map convention rename (`src/routes/` -> `src/map/`, `(app_base)`/`(external)` groups, verbatim-URL-nesting a **forced** convention, not just naming) | Shipped - `templates/scaffold/`, `examples/routed-demo/`, `src/map-check.ts` + `waygraph map` CLI subcommand (`src/cli.ts`) |
 | `Layout` / `defineLayout` (cross-cutting, automatically-enforced `verify` for persistent UI across many Checkpoints, folder-convention-agnostic) | Shipped - `src/engine.ts`, `tests/verify/layout.spec.ts` |

@@ -108,6 +108,39 @@ export function loadSkillSpecs(): AgentSpec[] {
     .map((f) => parseAgentSpec(join(dir, f)));
 }
 
+/** CLI flag -> packaged skill file stem (under templates/skills/). */
+export const SKILL_FLAG_MAP = {
+  "--skill-pilot": "waygraph-pilot",
+  "--skill-pilot-blind": "waygraph-blind-pilot",
+  "--skill-convention": "waygraph-convention",
+} as const;
+
+export type SkillFlag = keyof typeof SKILL_FLAG_MAP;
+
+/** Raw skill markdown (frontmatter + body), as shipped in the package. */
+export function readSkillMarkdown(stem: string): string {
+  const path = join(skillsTemplateDir(), `${stem}.skill.md`);
+  if (!existsSync(path)) {
+    throw new Error(`waygraph: skill template missing at ${path}`);
+  }
+  const raw = readFileSync(path, "utf-8");
+  return raw.endsWith("\n") ? raw : raw + "\n";
+}
+
+/** Print `--skill` index (available flags + one-line descriptions). */
+export function printSkillIndex(): void {
+  const skills = loadSkillSpecs();
+  const byName = new Map(skills.map((s) => [s.name, s]));
+  console.log("waygraph skills (print full text with the matching flag):\n");
+  for (const [flag, stem] of Object.entries(SKILL_FLAG_MAP)) {
+    const spec = byName.get(stem);
+    const desc = spec?.description ?? stem;
+    console.log(`  npx waygraph ${flag}`);
+    console.log(`    ${desc}\n`);
+  }
+  console.log("Also: npx waygraph agent-dive --loop claude  # write .claude/skills/*/SKILL.md");
+}
+
 function writeFileLogged(path: string, content: string, kind: string): void {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, content.endsWith("\n") ? content : content + "\n");

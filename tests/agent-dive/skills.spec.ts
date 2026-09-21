@@ -21,6 +21,13 @@ test.describe("agent-dive: Claude Code Skills generation", () => {
       expect(blindPilotSkill).toMatch(/^---\nname: waygraph-blind-pilot\ndescription: /);
       expect(blindPilotSkill).toContain("auto reload");
 
+      const conventionSkill = await readFile(
+        join(dir, ".claude/skills/waygraph-convention/SKILL.md"),
+        "utf-8",
+      );
+      expect(conventionSkill).toMatch(/^---\nname: waygraph-convention\ndescription: /);
+      expect(conventionSkill).toContain("One distinct action per Block");
+
       // Agent personas still get written too - additive, not a replacement.
       const authorAgent = await readFile(join(dir, ".claude/agents/waygraph-author.md"), "utf-8");
       expect(authorAgent).toContain("name: waygraph-author");

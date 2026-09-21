@@ -9,6 +9,7 @@
  *   run    Execute; `--blocks` `--data` `--non-headless` `--video`
  *
  * Also: list / nav / validate / check / graph / init / agent-dive / traverse / try
+ * Skills: --skill / --skill-pilot / --skill-pilot-blind / --skill-convention
  * Aliases (one release): `chain` -> run/demo --blocks; `--autoplay` -> `--auto-next`
  *
  * "project" defaults to cwd. Flags beat WAYGRAPH_* env.
@@ -29,7 +30,14 @@ import {
   runAttachLoop,
   runAutoServeCommand,
 } from "./auto-session-ipc.js";
-import { runAgentDive, type AgentDiveLoop } from "./agent-dive.js";
+import {
+  runAgentDive,
+  printSkillIndex,
+  readSkillMarkdown,
+  SKILL_FLAG_MAP,
+  type AgentDiveLoop,
+  type SkillFlag,
+} from "./agent-dive.js";
 import { runTraverse } from "./traverse-run.js";
 import { parseMinEdgeCoverage } from "./traverse-coverage.js";
 import {
@@ -7375,6 +7383,12 @@ Also:
                  try auto:cli / --cli      Terminal menu instead
                  try auto --headed         Same as try auto (compat)
 
+Skills (print packaged skill markdown to stdout - for agents / paste):
+  waygraph --skill                         List available skills
+  waygraph --skill-pilot                   Drive an existing Block graph
+  waygraph --skill-pilot-blind             Cold-start: raw ops + author Blocks
+  waygraph --skill-convention              Block/Map authoring conventions
+
 Examples:
   waygraph list                                          # file → export map
   waygraph run src/flows/shop.flow.ts --data '{...}'
@@ -7404,6 +7418,16 @@ Hide stepper = compact "N / M · block" pill. Collapses while a step runs (click
 async function main(): Promise<void> {
   if (!command || command === "--help" || command === "-h") {
     usage();
+  }
+
+  if (command === "--skill") {
+    printSkillIndex();
+    process.exit(0);
+  }
+  if (command && command in SKILL_FLAG_MAP) {
+    const stem = SKILL_FLAG_MAP[command as SkillFlag];
+    process.stdout.write(readSkillMarkdown(stem));
+    process.exit(0);
   }
 
   switch (command) {

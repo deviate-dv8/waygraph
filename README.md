@@ -920,6 +920,7 @@ really a Nav/Page/Assert/Method from this package's own factories.
 | Interactive explore (Add/Remove/Open details from live page) | `cd examples/saucedemo && npm i && npx waygraph auto` |
 | Scaffold a new **offline** project (green `npm test` on local fixture `:4177`) | `npx create-waygraph my-app` **or** `npx waygraph init my-app` |
 | Install coding-agent defs for diving an app into Blocks | `npx waygraph agent-dive --loop claude` (also `opencode` / `cursor` / `vscode`) |
+| Print a packaged agent skill to stdout | `npx waygraph --skill` (list) / `--skill-pilot` / `--skill-pilot-blind` / `--skill-convention` |
 | Add waygraph to an existing repo | `npm install waygraph @playwright/test` |
 
 **Scaffold is not hidden inside waygraph alone** - the offline starter also ships as
@@ -1034,6 +1035,7 @@ Flows are files (0.10.5+):
 | Waygraph Map enforcement (verbatim url-vs-folder, exits 1 on a violation) | `waygraph map [project]` |
 | Graph crawl | `waygraph traverse [project] --parallel N --min-edge-coverage 80%` |
 | Coding-agent defs | `waygraph agent-dive --loop claude` |
+| Print packaged skills | `waygraph --skill` / `--skill-pilot` / `--skill-pilot-blind` / `--skill-convention` |
 | One-shot temp-dir demo | `waygraph try demo` / `waygraph try auto` / `waygraph try auto:cli` |
 
 `--blocks` / positional accepts a Flow export, a `.flow.ts` path, or `"a then b"`.
