@@ -6,7 +6,7 @@ import {
 } from "waygraph";
 import type { CartEmpty } from "../../../../states/demo.states.js";
 import { SelectedItem } from "../../../../states/demo.mem-keys.js";
-import { DemoSel } from "../home.sel.js";
+import { DemoSel } from "../_sel.js";
 
 /**
  * Kind: Effect

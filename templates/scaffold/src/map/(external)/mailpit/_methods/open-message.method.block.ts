@@ -1,12 +1,12 @@
 import { defineMethodBlock, checkpoint } from "waygraph";
 import type { MailpitInbox, MailpitMessageOpen } from "../../../../states/demo.states.js";
 import { ExpectedRecipient } from "../../../../states/demo.mem-keys.js";
-import { MailpitSel } from "../mailpit.sel.js";
+import { MailpitSel } from "../_sel.js";
 
 /**
  * Kind: Method
  * Helper: defineMethodBlock
- * Route: demo-external/mailpit/methods/
+ * Route: demo-external/mailpit/_methods/
  *
  * Opens the newest inbox row addressed to the mem-set recipient (not bare
  * inbox position - a prior run's leftover mail for a different recipient

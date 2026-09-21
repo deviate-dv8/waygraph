@@ -1,7 +1,7 @@
 import { defineAssertBlock, type Trait } from "waygraph";
 import type { MailpitMessageOpen } from "../../../../states/demo.states.js";
 import { ExpectedEmailContent } from "../../../../states/demo.mem-keys.js";
-import { MailpitSel } from "../mailpit.sel.js";
+import { MailpitSel } from "../_sel.js";
 
 /**
  * Mem-aware Trait: the expected copy varies per email scenario, so it can't
@@ -22,7 +22,7 @@ const bodyContainsExpectedText: Trait = {
 /**
  * Kind: Assert
  * Helper: defineAssertBlock
- * Route: demo-external/mailpit/methods/
+ * Route: demo-external/mailpit/_methods/
  *
  * "Does the email actually say what it's supposed to" - not just "does a
  * link exist somewhere in it." Reads the message body straight out of the

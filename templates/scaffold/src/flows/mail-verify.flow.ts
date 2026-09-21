@@ -1,12 +1,12 @@
 import { Engine, start, end, withTitle, withHighlightFixtures } from "waygraph";
-import { NavMailpitInboxBlock } from "../map/(external)/mailpit/nav.block.js";
-import { AssertEmailReceivedBlock } from "../map/(external)/mailpit/methods/assert-email-received.method.block.js";
-import { OpenMessageBlock } from "../map/(external)/mailpit/methods/open-message.method.block.js";
-import { AssertEmailContentBlock } from "../map/(external)/mailpit/methods/assert-email-content.method.block.js";
-import { ExtractEmailLinkBlock } from "../map/(external)/mailpit/methods/extract-email-link.method.block.js";
+import { NavMailpitInboxBlock } from "../map/(external)/mailpit/_nav.block.js";
+import { AssertEmailReceivedBlock } from "../map/(external)/mailpit/_methods/assert-email-received.method.block.js";
+import { OpenMessageBlock } from "../map/(external)/mailpit/_methods/open-message.method.block.js";
+import { AssertEmailContentBlock } from "../map/(external)/mailpit/_methods/assert-email-content.method.block.js";
+import { ExtractEmailLinkBlock } from "../map/(external)/mailpit/_methods/extract-email-link.method.block.js";
 import { NavVerificationLinkBlock } from "../map/(app_base)/home/nav-verification-link.block.js";
-import "../map/(external)/mailpit/page.block.js";
-import { MailpitSel } from "../map/(external)/mailpit/mailpit.sel.js";
+import "../map/(external)/mailpit/_page.block.js";
+import { MailpitSel } from "../map/(external)/mailpit/_sel.js";
 
 const engine = new Engine();
 

@@ -1,7 +1,7 @@
 import { defineNavBlock, Trait } from "waygraph";
 import type { HomeVerified } from "../../../states/demo.states.js";
 import { EmailLink } from "../../../states/demo.mem-keys.js";
-import { DemoSel } from "./home.sel.js";
+import { DemoSel } from "./_sel.js";
 
 /**
  * Kind: Nav

@@ -1,9 +1,9 @@
 import { definePageBlock, Trait } from "waygraph";
 import type { MailpitInbox } from "../../../states/demo.states.js";
-import { AssertEmailReceivedBlock } from "./methods/assert-email-received.method.block.js";
-import { OpenMessageBlock } from "./methods/open-message.method.block.js";
-import { AssertEmailContentBlock } from "./methods/assert-email-content.method.block.js";
-import { ExtractEmailLinkBlock } from "./methods/extract-email-link.method.block.js";
+import { AssertEmailReceivedBlock } from "./_methods/assert-email-received.method.block.js";
+import { OpenMessageBlock } from "./_methods/open-message.method.block.js";
+import { AssertEmailContentBlock } from "./_methods/assert-email-content.method.block.js";
+import { ExtractEmailLinkBlock } from "./_methods/extract-email-link.method.block.js";
 
 /**
  * Kind: Page

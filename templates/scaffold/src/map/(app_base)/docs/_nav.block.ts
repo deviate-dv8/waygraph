@@ -1,6 +1,6 @@
 import { defineNavBlock, Trait } from "waygraph";
 import type { Docs } from "../../../states/demo.states.js";
-import { DocsSel, DOCS_URL } from "./docs.sel.js";
+import { DocsSel, DOCS_URL } from "./_sel.js";
 
 /**
  * Kind: Nav

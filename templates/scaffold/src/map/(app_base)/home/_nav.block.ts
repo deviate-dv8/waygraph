@@ -1,5 +1,5 @@
 import { defineNavBlock, Trait } from "waygraph";
-import { DemoSel, HOME_URL } from "./home.sel.js";
+import { DemoSel, HOME_URL } from "./_sel.js";
 
 /**
  * Kind: Nav

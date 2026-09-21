@@ -1,7 +1,7 @@
 import { definePageBlock, Trait } from "waygraph";
 import type { Dashboard } from "../../../states/routed-demo.states.js";
-import { DashboardSel } from "./dashboard.sel.js";
-import { ClickWidgetBlock } from "./methods/click-widget.block.js";
+import { DashboardSel } from "./_sel.js";
+import { ClickWidgetBlock } from "./_methods/click-widget.block.js";
 
 /**
  * Kind: Page

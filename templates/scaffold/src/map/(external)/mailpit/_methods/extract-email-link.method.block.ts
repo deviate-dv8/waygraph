@@ -1,12 +1,12 @@
 import { defineMethodBlock, checkpoint } from "waygraph";
 import type { MailpitMessageOpen } from "../../../../states/demo.states.js";
 import { EmailLink, ExpectedLinkPattern } from "../../../../states/demo.mem-keys.js";
-import { MailpitSel } from "../mailpit.sel.js";
+import { MailpitSel } from "../_sel.js";
 
 /**
  * Kind: Method
  * Helper: defineMethodBlock
- * Route: demo-external/mailpit/methods/
+ * Route: demo-external/mailpit/_methods/
  *
  * Reads a link straight out of the open message's HTML preview iframe via a
  * real DOM read (getAttribute) - no mail-catcher REST API - and stores it in

@@ -1,6 +1,6 @@
 import { defineNavBlock, Trait } from "waygraph";
 import type { Dashboard } from "../../../states/routed-demo.states.js";
-import { DashboardSel, DASHBOARD_URL } from "./dashboard.sel.js";
+import { DashboardSel, DASHBOARD_URL } from "./_sel.js";
 
 /**
  * Kind: Nav

@@ -1,7 +1,7 @@
 import { defineAssertBlock, type Trait } from "waygraph";
 import type { MailpitInbox } from "../../../../states/demo.states.js";
 import { ExpectedRecipient } from "../../../../states/demo.mem-keys.js";
-import { MailpitSel } from "../mailpit.sel.js";
+import { MailpitSel } from "../_sel.js";
 
 /**
  * Mem-aware Trait: the selector depends on which recipient this run expects,
@@ -28,7 +28,7 @@ const emailReceived: Trait = {
 /**
  * Kind: Assert
  * Helper: defineAssertBlock
- * Route: demo-external/mailpit/methods/
+ * Route: demo-external/mailpit/_methods/
  *
  * "Did the email even arrive" - a lightweight existence check that does not
  * open or consume the message, so it's safe to run before deciding to open

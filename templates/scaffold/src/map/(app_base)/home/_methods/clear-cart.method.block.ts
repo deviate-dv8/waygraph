@@ -1,11 +1,11 @@
 import { defineMethodBlock, checkpoint, Trait } from "waygraph";
 import type { ItemInCart, CartEmpty } from "../../../../states/demo.states.js";
-import { DemoSel } from "../home.sel.js";
+import { DemoSel } from "../_sel.js";
 
 /**
  * Kind: Method
  * Helper: defineMethodBlock
- * Route: (app_base)/home/methods/
+ * Route: (app_base)/home/_methods/
  *
  * Real, pre-existing bug found live while verifying the Waygraph Map
  * rename: this Block had no explicit <In, Out> generic at all, so static

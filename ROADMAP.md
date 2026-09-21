@@ -460,11 +460,54 @@ was tried and still got bypassed by a careless agent.
   structurally can't silently accept a hacked Block. Regression coverage:
   `tests/nav/map-builder.spec.ts` (10 tests).
 
+**`waygraph map` CLI + a real drift fix, shipped after the above:** `src/map-check.ts`'s
+`checkMap()` wired into `cli.ts` as `waygraph map [project]` (exits 1 on a violation, unlike
+`check`'s warnings-only stance). Proven against a real `npm install`ed scratch project and
+`examples/routed-demo/` directly. Also fixed a real drift the proof surfaced:
+`examples/routed-demo` still used the pre-correction `(base_app)` group name on disk (four
+source files) from before the `(app_base)` naming was settled - renamed, confirmed via a clean
+`tsc` and the example's own real Playwright suite.
+
+**Fixed-name files/folders now underscore-prefixed - `_nav.block.ts`/`_page.block.ts`/
+`_sel.ts`/`_methods/`, shipped:** direct correction on the original `nav.block.ts`/
+`page.block.ts`/`<slug>.sel.ts`/`methods/` naming above - real request: "so i have clear
+distinction of endpoints vs block folders." A bare `methods/` folder was structurally
+indistinguishable from a real sibling endpoint folder (both are just subdirectories) without
+opening it; the leading underscore (same idea as Next.js's own private-folder convention)
+fixes that mechanically, not just visually - `map-check.ts`'s own folder-vs-URL comparison now
+excludes underscore segments the same way it already excludes `(group)` ones. `_sel.ts` also
+drops its slug prefix (`dashboard.sel.ts` -> `_sel.ts`), matching how `nav`/`page` were already
+fixed names, not slug-prefixed. `page.block.ts` -> `_page.block.ts` too, on confirmation that
+the underscore is specifically about telling apart the Map convention's own fixed machinery
+from hand-authored Blocks, not merely folders. Individual files inside `_methods/` keep their
+own descriptive names (`join-pool.method.block.ts`) - only the fixed containers get the
+underscore. Applied to `templates/scaffold/` and `examples/routed-demo/` (both re-verified: a
+real `waygraph init` scratch copy's `tsc --noEmit`/`check`/`graph`/`map` all clean, same
+counts as before the rename - a pure rename, nothing lost or broken; `examples/routed-demo`'s
+own real Playwright suite green). Regression coverage: a new `_extra`-folder fixture in
+`tests/fixtures/map-check/` + `tests/cli/map.spec.ts`.
+
+**`map()` demo flow, shipped:** `examples/routed-demo/src/flows/routed-demo-map.flow.ts` - the
+same real Blocks/Checkpoints/fixture server `routed-demo.flow.ts` already proves work via
+`defineFlow`, built with `engine.map()` instead, proving the builder against a real
+browser/DOM (not just the in-memory fakes `tests/nav/map-builder.spec.ts` covers in the main
+package). Also demonstrates a real, honest `homeOrigin` gotcha: `NavDocsBlock` lives under the
+`(external)/` group but this fixture actually serves `docs.html` from the same origin as
+`dashboard.html`, so `.gotoPage()` (not `.gotoExternal()`) is the call that's actually correct
+here - documented in the flow file's own comment rather than hidden. Proven via
+`tests/routed-demo-map.spec.ts` (real `flow.run(context, mem)`, 3/3 passing alongside the
+existing CLI-driven tests).
+
 **Still pending:**
 - The original, most concrete ask that kicked off this whole escalation: restructure
   `veciro-waygraph` (a real consumer project, separate repo) from its old `src/routes/(app)/` +
   `src/routes/(auth)/` layout into `src/map/(app_base)/...` with verbatim URL nesting, removing
-  the fictional `(auth)` group (veciro has no real `/auth/*` URLs) - not yet started.
+  the fictional `(auth)` group (veciro has no real `/auth/*` URLs). **Restructure itself is
+  done** (background task: all 10 Checkpoints moved, `waygraph map` reports 0 violations,
+  `check`/`graph` counts unchanged from before the move) but **not yet committed there**, and
+  **not yet updated to the underscore-prefixed naming** above (it used the pre-underscore
+  fixed names, current at the time it ran) - needs the same `_nav`/`_page`/`_sel`/`_methods`
+  rename pass applied before it's committed, to avoid a second churn commit on that repo.
 - **A second scaffold flavor, explicitly backlogged**: `templates/scaffold` today only
   demonstrates the Map convention. A second scaffold (or a `waygraph init --style router` flag on
   the existing one) demonstrating the older freeform/"router" style is planned for real external
@@ -472,7 +515,8 @@ was tried and still got bypassed by a careless agent.
   default either way**; the second flavor is about not leaving those existing consumers without a
   matching starting point, not about treating the two styles as equally preferred.
 - A real example/project proving `AppShellLayout`-style Layout usage against an actual persistent
-  sidebar (e.g. once the veciro-waygraph restructure above happens).
+  sidebar (e.g. once the veciro-waygraph restructure above is committed).
+- A router->map migration guide (requested, not yet written).
 
 ## Narrated help-center video generation (planned - deferred to v1.0.x)
 

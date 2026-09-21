@@ -1,10 +1,10 @@
 import { Engine, start, end, withTitle, withHighlightFixtures } from "waygraph";
-import { NavHomeBlock } from "../map/(app_base)/home/nav.block.js";
-import { AssertHelloBlock } from "../map/(app_base)/home/methods/assert-hello.method.block.js";
-import { NavDocsBlock } from "../map/(app_base)/docs/nav.block.js";
+import { NavHomeBlock } from "../map/(app_base)/home/_nav.block.js";
+import { AssertHelloBlock } from "../map/(app_base)/home/_methods/assert-hello.method.block.js";
+import { NavDocsBlock } from "../map/(app_base)/docs/_nav.block.js";
 // Page hubs registered for auto/docs grouping (arrival-only after nav).
-import "../map/(app_base)/home/page.block.js";
-import "../map/(app_base)/docs/page.block.js";
+import "../map/(app_base)/home/_page.block.js";
+import "../map/(app_base)/docs/_page.block.js";
 
 const engine = new Engine();
 

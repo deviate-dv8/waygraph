@@ -1,7 +1,7 @@
 import { defineAssertBlock, Trait, type Trait as TraitType } from "waygraph";
 import type { ItemInCart } from "../../../../states/demo.states.js";
 import { SelectedItem } from "../../../../states/demo.mem-keys.js";
-import { DemoSel } from "../home.sel.js";
+import { DemoSel } from "../_sel.js";
 
 /**
  * Mem-aware Trait: which item's Remove button should be visible depends on

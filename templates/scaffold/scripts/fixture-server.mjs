@@ -9,7 +9,7 @@ import { join, dirname, extname, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../src/map/(app_base)");
-// Each fixture HTML file lives beside its own page.block.ts under the
+// Each fixture HTML file lives beside its own _page.block.ts under the
 // Waygraph Map convention now (home/home.html, docs/docs.html) - no longer
 // a single flat directory, so this maps the request filename to its own
 // page's subfolder instead of assuming one shared ROOT holds every file.

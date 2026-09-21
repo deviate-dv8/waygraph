@@ -29,11 +29,15 @@ test("waygraph map flags a folder path that doesn't verbatim-match its Block's r
     output = (e.stdout ?? "") + (e.stderr ?? "");
   }
 
-  expect(output).toMatch(/2 node\(s\) found/);
+  expect(output).toMatch(/3 node\(s\) found/);
   expect(output).toMatch(
     /wrong-folder.*nav-wrong-fixture.*folder path "wrong-folder" doesn't verbatim-match.*"actually-different"/s,
   );
   expect(output).not.toMatch(/nav-home-fixture.*doesn't verbatim-match/);
+  // A leading-underscore folder segment (same convention as _methods/) is
+  // excluded from the comparison, same as a (group) segment - real folder
+  // is "nested/_extra", real url is just "/nested", still a compliant match.
+  expect(output).not.toMatch(/nav-nested-fixture.*doesn't verbatim-match/);
   expect(output).toMatch(/1 violation/);
 });
 

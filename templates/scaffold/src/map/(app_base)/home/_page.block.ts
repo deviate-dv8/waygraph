@@ -1,10 +1,10 @@
 import { definePageBlock, Trait } from "waygraph";
 import type { Home } from "../../../states/demo.states.js";
-import { DemoSel } from "./home.sel.js";
-import { AddItemBlock } from "./methods/add-item.effect.block.js";
-import { RemoveItemBlock } from "./methods/remove-item.effect.block.js";
-import { ClearCartBlock } from "./methods/clear-cart.method.block.js";
-import { AssertHelloBlock } from "./methods/assert-hello.method.block.js";
+import { DemoSel } from "./_sel.js";
+import { AddItemBlock } from "./_methods/add-item.effect.block.js";
+import { RemoveItemBlock } from "./_methods/remove-item.effect.block.js";
+import { ClearCartBlock } from "./_methods/clear-cart.method.block.js";
+import { AssertHelloBlock } from "./_methods/assert-hello.method.block.js";
 
 /**
  * Kind: Page

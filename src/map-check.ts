@@ -76,11 +76,21 @@ async function importModule(filePath: string): Promise<Record<string, unknown>> 
  * `(group)` segments never appear in the real URL (Next.js route-group
  * convention this whole system is explicitly modeled on) - excluded from
  * the comparison, not just cosmetically ignored by discoverGraph.
+ *
+ * A leading-underscore segment (`_methods/`, same as Next.js's own private-
+ * folder convention) is the fixed machinery belonging to ONE endpoint - not
+ * a route segment of its own - excluded from the comparison for the same
+ * reason `(group)` is: real direct request answering "so i have clear
+ * distinction of endpoints vs block folders" - a bare (non-underscore,
+ * non-parenthesized) folder name always means a real child Checkpoint/URL
+ * segment, no exceptions, so `_methods/foo.block.ts` never gets mistaken
+ * for a sibling endpoint the way a bare `methods/` folder structurally
+ * could be.
  */
 function realSegments(relPath: string): string[] {
   return dirname(relPath)
     .split(sep)
-    .filter((s) => s !== "." && s !== "" && !/^\(.*\)$/.test(s));
+    .filter((s) => s !== "." && s !== "" && !/^\(.*\)$/.test(s) && !s.startsWith("_"));
 }
 
 export async function checkMap(projectDir: string): Promise<MapCheckResult> {

@@ -402,7 +402,7 @@ export const AssertItemAddedBlock = defineAssertBlock<ItemInCart>({
 engine.defineFlow([start, NavHomeBlock, AddItemBlock, AssertItemAddedBlock, ClearCartBlock, end])
 ```
 
-Live reference: `templates/scaffold/src/map/(app_base)/home/methods/assert-item-added.method.block.ts`,
+Live reference: `templates/scaffold/src/map/(app_base)/home/_methods/assert-item-added.method.block.ts`,
 wired into `shop.flow.ts`.
 
 **`methods/` folder:** on-page work lives next to the route, not free-floating.
@@ -801,16 +801,16 @@ naming and depth are already 100% cosmetic to every existing command.
 src/map/
   (app_base)/              # the landing/base group - purely organizational, never part of
     dashboard/              # any Checkpoint tag. One folder per Checkpoint - "Dashboard"
-      page.block.ts          # arrival hub (definePageBlock) - fixed name, every folder
-      nav.block.ts            # navigation (defineNavBlock) - fixed name, every folder
-      dashboard.sel.ts
-      methods/
-        click-widget.block.ts
-  (external)/
+      _page.block.ts         # arrival hub (definePageBlock) - fixed name, every folder
+      _nav.block.ts           # navigation (defineNavBlock) - fixed name, every folder
+      _sel.ts                  # selectors for this Checkpoint - fixed name, every folder
+      _methods/                 # this Checkpoint's own action Blocks - fixed name, every
+        click-widget.block.ts    # folder. Contents keep their own descriptive names -
+  (external)/                     # only the folder itself is fixed.
     docs/                    # a genuinely cross-origin group, same shape - "Docs"
-      page.block.ts
-      nav.block.ts
-      docs.sel.ts
+      _page.block.ts
+      _nav.block.ts
+      _sel.ts
 ```
 
 **Not just a naming preference - a forced convention.** Folder nesting under `map/(group)/`
@@ -825,6 +825,19 @@ named*, never what kind of Block authors them or how they execute. A project ado
 incrementally, folder by folder. Prefer [`map()`](#map---a-kind-checked-no-teleporting-flow-builder)
 over a hand-assembled `defineFlow([start, ...])` array when wiring these Blocks into a Flow -
 it's the one that can't silently accept a Block that didn't come from a real factory.
+
+**Leading underscore = this Checkpoint's own fixed machinery, never a route segment.**
+`_nav.block.ts`/`_page.block.ts`/`_sel.ts`/`_methods/` (same private-folder idea as Next.js's
+own `_folder` convention) mark "this belongs to the endpoint whose folder it's directly in,"
+so a bare (non-underscore, non-`(group)`) folder name always means a real child
+Checkpoint/URL segment - `_methods/` can never be mistaken for a sibling endpoint folder the
+way a bare `methods/` structurally could be, since only ONE of those two readings is
+mechanically distinguishable at a glance. `waygraph map`'s own folder-vs-URL comparison
+excludes underscore segments the same way it excludes `(group)` ones - `_methods/foo.block.ts`
+compares against the URL as if `_methods/` weren't there at all. Individual files inside
+`_methods/` keep their own descriptive names (`join-pool.method.block.ts`, not
+`_join-pool...`) - they're hand-authored per-project content, not fixed convention names; the
+`_methods/` folder boundary alone already marks the whole subtree as non-route.
 
 **"waypack" - loading another project's Blocks needs no separate manifest either.** A second
 project depending on a Map-convention project as a plain `file:` dependency (the same

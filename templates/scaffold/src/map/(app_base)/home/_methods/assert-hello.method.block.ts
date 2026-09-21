@@ -1,5 +1,5 @@
 import { defineAssertBlock, Trait } from "waygraph";
-import { DemoSel } from "../home.sel.js";
+import { DemoSel } from "../_sel.js";
 
 /**
  * Kind: Assert
