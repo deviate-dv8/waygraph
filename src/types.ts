@@ -318,6 +318,29 @@ export type DefinedBlock<In extends Checkpoint<string>, Out extends Checkpoint<s
   withVerify(verify: Trait[] | ((out: Out) => Trait[])): DefinedBlock<In, Out>;
   modVerify(nameOrIndex: string | number, newCheck: Trait["check"] | Trait): DefinedBlock<In, Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): DefinedBlock<In, Out>;
+  /**
+   * Demo narration before act - prefer `(ctx) => { ctx.ring(...); ctx.mem?.get(...) }`.
+   * Chains after any existing stubBefore on this Block (library then call-site).
+   * Overloads keep `ctx` typed when the author passes a lifecycle function
+   * (a single union parameter would make the callback param `any`).
+   */
+  stubBefore(stub: import("./highlights.js").HighlightStubPhase): DefinedBlock<In, Out>;
+  stubBefore(stub: import("./highlights.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
+  stubBefore(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): DefinedBlock<In, Out>;
+  /** Demo narration after resolve. Prefer ctx callbacks over slot-map objects. */
+  stubAfter(stub: import("./highlights.js").HighlightStubPhase): DefinedBlock<In, Out>;
+  stubAfter(stub: import("./highlights.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
+  stubAfter(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): DefinedBlock<In, Out>;
+  /** Demo narration when the step fails / expected-failure path. */
+  stubOnError(stub: import("./highlights.js").HighlightStubPhase): DefinedBlock<In, Out>;
+  stubOnError(stub: import("./highlights.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
+  stubOnError(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): DefinedBlock<In, Out>;
 };
 
 /**

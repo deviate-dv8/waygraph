@@ -2403,6 +2403,7 @@ async function presentFailPanel(page, opts) {
     gatesFast,
     demoPace,
     gate,
+    mem,
   } = opts;
   if (hasAuthoredStubOnError(block, fixtures)) {
     await page
@@ -2418,6 +2419,7 @@ async function presentFailPanel(page, opts) {
       fixtures,
       error,
       out: opts.out,
+      mem,
     });
     const errHighlights = errPhase.highlights.map((h) => {
       const styled = applyHighlightStyleDefaults(h, opts.highlightStyle);
@@ -5123,7 +5125,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       !!r.wasFastForward;
     const fixtures = r.highlightFixtures;
     const flowStyle = r.highlightStyle;
-    const stubBeforePhase = await runStubPhase(r.block, "stubBefore", { fixtures });
+    const stubBeforePhase = await runStubPhase(r.block, "stubBefore", { fixtures, mem });
     stubBeforeRef.current = stubBeforePhase.highlights.map((h) =>
       applyHighlightStyleDefaults(h, flowStyle),
     );
@@ -5339,6 +5341,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         gatesFast: pacing.gatesFast,
         demoPace: pacing.demoPace,
         gate,
+        mem,
       });
       if (errEdits && errEdits.__wgRetry) {
         await resetPageState(context, page, baseURL);
@@ -5398,6 +5401,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
         gatesFast: pacing.gatesFast,
         demoPace: pacing.demoPace,
         gate,
+        mem,
       });
       if (errEdits && errEdits.__wgRetry) {
         await resetPageState(context, page, baseURL);
@@ -5438,6 +5442,7 @@ async function runStepMode(engine, start, end, context, page, mem, resolved, slo
       const afterPhase = await runStubPhase(r.block, "stubAfter", {
         out: result,
         fixtures: fixturesAfter,
+        mem,
       });
       logStubPhaseFixtures("after", {
         ...afterPhase,

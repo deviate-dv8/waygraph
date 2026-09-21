@@ -14,6 +14,7 @@
  */
 
 import type { Block, Checkpoint } from "./types.js";
+import type { MemPage } from "./mem-page.js";
 
 /** Shared dwell fields on stubs, fixtures, and yap slides. */
 export type FixtureDurationFields = {
@@ -550,6 +551,12 @@ export type HighlightStubPhase = Record<string, WaygraphHighlightStub>;
  * }
  */
 export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
+  /**
+   * Live Mem for this run - same store `act`/`observe` read. Prefer this over
+   * closing over outer scope or inventing parallel fixture bags.
+   * Undefined only if the caller ran a stub phase without passing mem (tests).
+   */
+  readonly mem: MemPage | undefined;
   /** Present after resolve (stubAfter). Undefined for stubBefore. */
   readonly out: Out | undefined;
   /** Present on stubOnError when the step threw. */
@@ -1375,9 +1382,10 @@ export function completeSequentialTodoDock(
 
 function createStubCtx<Out extends Checkpoint<string>>(
   bag: StubBagState,
-  opts: { out?: Out; error?: unknown },
+  opts: { out?: Out; error?: unknown; mem?: MemPage },
 ): StubCtx<Out> {
   return {
+    mem: opts.mem,
     out: opts.out,
     error: opts.error,
     highlights(slots) {
@@ -1729,6 +1737,7 @@ export async function runStubPhase(
   opts?: {
     out?: Checkpoint<string>;
     error?: unknown;
+    mem?: MemPage;
     fixtures?: HighlightFixtureMap;
   },
 ): Promise<StubPhaseResult> {
@@ -1736,6 +1745,7 @@ export async function runStubPhase(
   const ctx = createStubCtx(bag, {
     ...(opts?.out !== undefined ? { out: opts.out } : {}),
     ...(opts?.error !== undefined ? { error: opts.error } : {}),
+    ...(opts?.mem !== undefined ? { mem: opts.mem } : {}),
   });
   const raw = readStubRaw(block, phase);
 

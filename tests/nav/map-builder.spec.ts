@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint } from "../../src/index.js";
+import type { Checkpoint, AssertBlock } from "../../src/index.js";
 import {
   Engine,
   MemPage,
@@ -68,29 +68,29 @@ test.describe("Engine.map() builder", () => {
     );
   });
 
-  test("assert() rejects a real Block of the wrong kind (a NavBlock, not an AssertBlock)", () => {
-    // NavBlock's own In is the generic Checkpoint<string> (works from any
-    // state), so this still typechecks against .assert()'s Block<Out,
-    // NextOut> parameter - only the runtime __waygraphKind marker check
-    // catches it, which is exactly the point: the type system alone can't
-    // tell a Nav step from an Assert step, only the factory-set marker can.
+  test("assert() rejects a real Block of the wrong kind at runtime (cast past the brand)", () => {
+    // Compile-time brands already reject Nav in .assert(); this cast proves the
+    // runtime __waygraphKind marker still fails loud if something bypasses TS.
     const engine = new Engine();
-    expect(() => engine.map().start().assert(NavHome)).toThrow(
+    expect(() =>
+      engine.map().start().assert(NavHome as unknown as AssertBlock<Checkpoint<"__start__">>),
+    ).toThrow(
       /assert\("nav-home"\).*defineAssertBlock.*kind "nav"/s,
     );
   });
 
-  test("method() accepts a real AssertBlock too - defineAssertBlock is built on defineMethodBlock internally, so it already carries the same __waygraphSalt", async () => {
+  test("method() rejects AssertBlock at runtime when cast past the brand (use .assert())", () => {
     const engine = new Engine();
-    const flow = engine.map().start().gotoPage(NavHome).method(AssertHome).end();
-    const mem = new MemPage();
-    const result = await flow.run(fakeContext, mem);
-    expect(result).toEqual(checkpoint("Home"));
+    expect(() =>
+      engine.map().start().gotoPage(NavHome).method(AssertHome as unknown as typeof ClearThing),
+    ).toThrow(/method\("assert-home"\).*defineAssertBlock.*\.assert\(\)/s);
   });
 
   test("method() rejects a hand-rolled object with no waygraph salt marker at all", () => {
     const engine = new Engine();
-    expect(() => engine.map().start().gotoPage(NavHome).method(fakeBlock)).toThrow(
+    expect(() =>
+      engine.map().start().gotoPage(NavHome).method(fakeBlock as unknown as typeof ClearThing),
+    ).toThrow(
       /method\("sneaky-fake"\).*defineMethodBlock.*no waygraph salt marker/s,
     );
   });
@@ -121,6 +121,45 @@ test.describe("Engine.map() builder", () => {
   test("end() throws when called with zero steps", () => {
     const engine = new Engine();
     expect(() => engine.map().start().end()).toThrow(/zero steps/);
+  });
+
+  test("ffStart/ffEnd collapses inners into one fastForwardCompose step", async () => {
+    const engine = new Engine();
+    const flow = engine
+      .map()
+      .start()
+      .ffStart("ff-auth")
+      .gotoPage(NavHome)
+      .method(ClearThing)
+      .ffEnd()
+      .end();
+    const blocks = flow.blocks();
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]!.name).toBe("ff-auth");
+    expect((blocks[0]!.block as { fastForward?: boolean }).fastForward).toBe(true);
+    const mem = new MemPage();
+    const result = await flow.run(fakeContext, mem);
+    expect(result).toEqual(checkpoint("Home"));
+  });
+
+  test("ffEnd without ffStart / end while ff open throw", () => {
+    const engine = new Engine();
+    expect(() => engine.map().start().ffEnd()).toThrow(/no open/);
+    expect(() => engine.map().start().ffStart("x").end()).toThrow(/still open/);
+  });
+
+  test("Block.stubBefore chains ctx and keeps map() kind markers", async () => {
+    const { runStubPhase } = await import("../../src/index.js");
+    const decorated = ClearThing.stubBefore((ctx) => {
+      ctx.ring("x", { selector: "#x", label: "from decorate", tone: "info" });
+    });
+    expect((decorated as { __waygraphSalt?: string }).__waygraphSalt).toBe("method");
+    const phase = await runStubPhase(decorated, "stubBefore", { mem: new MemPage() });
+    expect(phase.highlights.some((h) => h.label?.includes("from decorate"))).toBe(true);
+    const engine = new Engine();
+    const flow = engine.map().start().gotoPage(NavHome).method(decorated).end();
+    const mem = new MemPage();
+    expect(await flow.run(fakeContext, mem)).toEqual(checkpoint("Home"));
   });
 
   test("the standalone map() export is equivalent to new Engine().map()", async () => {

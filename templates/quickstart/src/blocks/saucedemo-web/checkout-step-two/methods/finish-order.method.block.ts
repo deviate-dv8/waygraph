@@ -1,4 +1,4 @@
-import { defineMethodBlock, checkpoint, Trait, narrate } from "waygraph";
+import { defineMethodBlock, checkpoint, Trait, narrate, type StubCtx } from "waygraph";
 import type { CheckoutOverviewPage, OrderComplete } from "../../../../states/checkout.states.js";
 import { CheckoutOverviewSel } from "./checkout-overview.sel.js";
 
@@ -8,6 +8,7 @@ import { CheckoutOverviewSel } from "./checkout-overview.sel.js";
  * Route: saucedemo-web/checkout-step-two/methods/  (= /checkout-step-two.html)
  *
  * Places the order on the overview page - form/finish click, not a NavBlock.
+ * Stubs use open ctx lifecycles (preferred) - not static slot maps.
  */
 export const FinishOrderBlock = defineMethodBlock<CheckoutOverviewPage, OrderComplete>({
   name: "finish-order",
@@ -19,23 +20,23 @@ export const FinishOrderBlock = defineMethodBlock<CheckoutOverviewPage, OrderCom
     },
     resolve: () => checkpoint("OrderComplete"),
     verify: [Trait.text(CheckoutOverviewSel.completeHeader, "Thank you for your order!")],
-    stubBefore: {
-      finish: {
+    stubBefore: (ctx: StubCtx) => {
+      ctx.ring("finish", {
         selector: CheckoutOverviewSel.finishBtn,
         label: "Finish",
         detail: "tone: warning (yellow) - place order",
         tone: "warning",
         weight: "bold",
-      },
+      });
     },
-    stubAfter: {
-      thanks: {
+    stubAfter: (ctx: StubCtx) => {
+      ctx.ring("thanks", {
         selector: CheckoutOverviewSel.completeHeader,
         label: "Order confirmed",
         detail: "tone: success (green) - thank you!",
         tone: "success",
         duration: true,
-      },
+      });
     },
     // Shown AFTER act (order already placed) - selectors must match the
     // completion page, not #finish on the overview.

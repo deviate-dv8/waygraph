@@ -40,16 +40,17 @@ export const FillUsernameBlock = defineMethodBlock<LoginPage, LoginPage>({
         { title: "Device showcase", index: 0 },
       );
       ctx.zoom(1.35);
-      ctx.highlights({
-        username: {
-          selector: LoginSel.username,
-          label: "Username",
-          detail: "tone: info (blue)",
-          todo: "login-user",
-          tone: "info",
-          focus: true,
-          zoom: 1.4,
-        },
+      const fromMem = ctx.mem?.get(LoginCreds.key)?.username;
+      ctx.ring("username", {
+        selector: LoginSel.username,
+        label: "Username",
+        detail: fromMem
+          ? `tone: info (blue) - mem ${fromMem}`
+          : "tone: info (blue)",
+        tone: "info",
+        todo: "login-user",
+        focus: true,
+        zoom: 1.4,
       });
     },
     stubAfter: (ctx: StubCtx) => {

@@ -1,4 +1,4 @@
-import { Engine, start, end, withTitle, withSessionReset, withExpectedFailure } from "waygraph";
+import { Engine, withTitle, withSessionReset, withExpectedFailure } from "waygraph";
 import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
 import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
 import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
@@ -25,7 +25,14 @@ const engine = new Engine();
 export const viewerBlockedFlow = withExpectedFailure(
   withTitle(
     withSessionReset(
-      engine.defineFlow([start, NavLoginBlock, FillUsernameBlock, FillPasswordBlock, SubmitLoginBlock, end]),
+      engine
+        .map()
+        .start()
+        .gotoPage(NavLoginBlock)
+        .method(FillUsernameBlock)
+        .method(FillPasswordBlock)
+        .method(SubmitLoginBlock)
+        .end(),
     ),
     "Viewer: Blocked Login Attempt",
   ),

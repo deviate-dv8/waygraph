@@ -22,16 +22,14 @@ export const FillPasswordBlock = defineMethodBlock<LoginPage, LoginPage>({
     },
     resolve: () => checkpoint("LoginPage"),
     stubBefore: (ctx: StubCtx) => {
-      ctx.highlights({
-        password: {
-          selector: LoginSel.password,
-          label: "Password",
-          detail: "tone: planned (purple)",
-          todo: "login-pass",
-          tone: "planned",
-          focus: true,
-          zoom: 1.4,
-        },
+      ctx.ring("password", {
+        selector: LoginSel.password,
+        label: "Password",
+        detail: "tone: planned (purple)",
+        todo: "login-pass",
+        tone: "planned",
+        focus: true,
+        zoom: 1.4,
       });
     },
     stubAfter: (ctx: StubCtx) => {

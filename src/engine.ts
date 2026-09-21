@@ -1673,11 +1673,14 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     private readonly engine: Engine,
     private readonly steps: readonly DefinedBlock<any, any>[],
     private readonly homeOrigin: string | undefined,
+    private readonly ff:
+      | { name: string; buffer: readonly DefinedBlock<any, any>[] }
+      | null = null,
   ) {}
 
   /** @internal - use `engine.map()` or the standalone `map()` export. */
   static begin(engine: Engine, homeOrigin: string | undefined): MapBuilder<S> {
-    return new MapBuilder<S>(engine, [], homeOrigin);
+    return new MapBuilder<S>(engine, [], homeOrigin, null);
   }
 
   /** Readable chain-opener - mirrors `defineFlow`'s leading `start` sentinel. Returns `this` unchanged; entirely optional. */
@@ -1686,49 +1689,125 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   }
 
   /**
+   * Open a fast-forward window - steps until {@link ffEnd} collapse into one
+   * opaque `fastForwardComposeBlock` (blitz theater). Kind/salt checks still
+   * run on each inner step as it is added.
+   */
+  ffStart(name?: string): MapBuilder<Out> {
+    if (this.ff) {
+      throw new Error(
+        `Waygraph map: .ffStart() while already inside "${this.ff.name}" - call .ffEnd() first`,
+      );
+    }
+    const ffName =
+      typeof name === "string" && name.trim()
+        ? name.trim()
+        : `ff-${this.steps.length + 1}`;
+    return new MapBuilder<Out>(this.engine, this.steps, this.homeOrigin, {
+      name: ffName,
+      buffer: [],
+    });
+  }
+
+  /**
+   * Close the current fast-forward window and append one FFCompose step.
+   * Throws if empty or if {@link ffStart} was never opened.
+   */
+  ffEnd(): MapBuilder<Out> {
+    if (!this.ff) {
+      throw new Error("Waygraph map: .ffEnd() with no open .ffStart()");
+    }
+    if (this.ff.buffer.length === 0) {
+      throw new Error(
+        `Waygraph map: .ffEnd() for "${this.ff.name}" has no steps - add .gotoPage/.method/… inside the window`,
+      );
+    }
+    const composed = fastForwardComposeBlock(
+      this.ff.name,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.ff.buffer as any,
+    );
+    return new MapBuilder<Out>(
+      this.engine,
+      [...this.steps, composed as unknown as DefinedBlock<any, any>],
+      this.homeOrigin,
+      null,
+    );
+  }
+
+  private appendStep<NextOut extends Checkpoint<string>>(
+    block: DefinedBlock<any, any>,
+  ): MapBuilder<NextOut> {
+    if (this.ff) {
+      return new MapBuilder<NextOut>(this.engine, this.steps, this.homeOrigin, {
+        name: this.ff.name,
+        buffer: [...this.ff.buffer, block],
+      });
+    }
+    return new MapBuilder<NextOut>(
+      this.engine,
+      [...this.steps, block],
+      this.homeOrigin,
+      null,
+    );
+  }
+
+  /**
    * Appends an internal navigation/page-arrival step - requires a Block from
    * `defineNavBlock`/`defineMemNavBlock`/`definePageBlock`. Throws if given
    * anything else, including a `homeOrigin`-mismatched static `url`.
+   * Compile-time: {@link NavBlock} or {@link PageBlock} only (not Assert/Method).
    */
   gotoPage<NextOut extends Checkpoint<string>>(
-    block: Block<Out, NextOut> & { name: string },
+    block: (NavBlock<NextOut> | PageBlock<NextOut>) & { name: string },
   ): MapBuilder<NextOut> {
     assertMapKind(block, ["nav", "page"], "gotoPage");
     assertMapOrigin(block, this.homeOrigin, "internal", "gotoPage");
-    return new MapBuilder<NextOut>(this.engine, [...this.steps, block as DefinedBlock<any, any>], this.homeOrigin);
+    return this.appendStep(block as DefinedBlock<any, any>);
   }
 
   /**
    * Appends a genuinely cross-origin navigation step (e.g. `(external)/`
    * Blocks in the Waygraph Map convention: mailpit, maildrop.cc) - same
    * kind requirement as {@link gotoPage}, plus the inverse `homeOrigin` check.
+   * Compile-time: {@link NavBlock} or {@link PageBlock} only.
    */
   gotoExternal<NextOut extends Checkpoint<string>>(
-    block: Block<Out, NextOut> & { name: string },
+    block: (NavBlock<NextOut> | PageBlock<NextOut>) & { name: string },
   ): MapBuilder<NextOut> {
     assertMapKind(block, ["nav", "page"], "gotoExternal");
     assertMapOrigin(block, this.homeOrigin, "external", "gotoExternal");
-    return new MapBuilder<NextOut>(this.engine, [...this.steps, block as DefinedBlock<any, any>], this.homeOrigin);
+    return this.appendStep(block as DefinedBlock<any, any>);
   }
 
-  /** Appends a self-loop verification step - requires a Block from `defineAssertBlock`. */
-  assert<NextOut extends Checkpoint<string>>(
-    block: Block<Out, NextOut> & { name: string },
-  ): MapBuilder<NextOut> {
+  /**
+   * Appends a self-loop verification step - requires a Block from
+   * `defineAssertBlock`. Compile-time: {@link AssertBlock} only (not `.method()`).
+   */
+  assert(block: AssertBlock<Out> & { name: string }): MapBuilder<Out> {
     assertMapKind(block, ["assert"], "assert");
-    return new MapBuilder<NextOut>(this.engine, [...this.steps, block as DefinedBlock<any, any>], this.homeOrigin);
+    return this.appendStep(block as DefinedBlock<any, any>);
   }
 
   /**
    * Appends a non-navigating page action (submit, upload, add/remove an
    * instance) - requires a Block from `defineMethodBlock`/`defineActionBlock`/
    * `defineEffectBlock`/`defineMemEffectBlock`.
+   * Compile-time: {@link MethodBlock} or {@link EffectBlock} only - Assert
+   * Blocks must use `.assert()`. Runtime also rejects `__waygraphKind =
+   * "assert"` (those still carry method salt from the factory internals).
    */
   method<NextOut extends Checkpoint<string>>(
-    block: Block<Out, NextOut> & { name: string },
+    block: (MethodBlock<Out, NextOut> | EffectBlock<Out, NextOut>) & { name: string },
   ): MapBuilder<NextOut> {
+    if (mapKindOf(block) === "assert") {
+      throw new Error(
+        `Waygraph map: .method("${block.name}") got a defineAssertBlock - use .assert() for ` +
+          "self-loop verify steps (Assert Blocks share method salt internally but are not methods).",
+      );
+    }
     assertMapSalt(block, ["method", "effect"], "method");
-    return new MapBuilder<NextOut>(this.engine, [...this.steps, block as DefinedBlock<any, any>], this.homeOrigin);
+    return this.appendStep(block as DefinedBlock<any, any>);
   }
 
   /**
@@ -1740,6 +1819,11 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * isn't a flow.
    */
   end(): Flow<Out> {
+    if (this.ff) {
+      throw new Error(
+        `Waygraph map: .end() while .ffStart("${this.ff.name}") is still open - call .ffEnd() first`,
+      );
+    }
     if (this.steps.length === 0) {
       throw new Error(
         "Waygraph map: .end() called with zero steps - add at least one .gotoPage()/.gotoExternal()/" +
@@ -1822,6 +1906,7 @@ function stripMethods<In extends Checkpoint<string>, Out extends Checkpoint<stri
   next?: Block<In, Out>["next"];
   requires?: Block<In, Out>["requires"];
   routes?: Block<In, Out>["routes"];
+  instanceOptions?: Block<In, Out>["instanceOptions"];
 } {
   return {
     name: block.name,
@@ -1830,7 +1915,37 @@ function stripMethods<In extends Checkpoint<string>, Out extends Checkpoint<stri
     ...(block.next ? { next: block.next } : {}),
     ...(block.requires ? { requires: block.requires } : {}),
     ...(block.routes ? { routes: block.routes } : {}),
+    ...(block.instanceOptions ? { instanceOptions: block.instanceOptions } : {}),
   };
+}
+
+/** Copy non-enumerable waygraph markers so decorate/withVerify keep map() kind checks. */
+function copyWaygraphRuntime(from: object, to: object): void {
+  for (const key of [
+    "__waygraphKind",
+    "__waygraphSalt",
+    "__waygraphNavUrl",
+    "__waygraphNavClick",
+  ] as const) {
+    const desc = Object.getOwnPropertyDescriptor(from, key);
+    if (!desc) continue;
+    // Re-define as configurable so later decorate chains can copy again
+    // (factory markers are non-configurable on the original).
+    Object.defineProperty(to, key, {
+      value: desc.value,
+      enumerable: false,
+      writable: false,
+      configurable: true,
+    });
+  }
+  const ff = (from as { fastForward?: boolean }).fastForward;
+  if (ff === true) {
+    (to as { fastForward?: boolean }).fastForward = true;
+  }
+  const pace = (from as { demoPace?: unknown }).demoPace;
+  if (pace !== undefined) {
+    (to as { demoPace?: unknown }).demoPace = pace;
+  }
 }
 
 /**
@@ -1868,12 +1983,19 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
     ...(base.routes ? { routes: base.routes } : {}),
     ...(base.instanceOptions ? { instanceOptions: base.instanceOptions } : {}),
   };
-  return {
+  // Methods must close over `defined` (this object), not `plain` - factories
+  // attach __waygraphKind/__waygraphSalt on the returned object after
+  // defineBlock returns; decorate/withVerify need those markers.
+  const defined: DefinedBlock<In, Out> = {
     ...plain,
-    withVerify: (verify) => withVerify(plain, verify),
-    modVerify: (nameOrIndex, newCheck) => modVerify(plain, nameOrIndex, newCheck),
-    modVerifyAll: (patches) => modVerifyAll(plain, patches),
+    withVerify: (verify) => withVerify(defined, verify),
+    modVerify: (nameOrIndex, newCheck) => modVerify(defined, nameOrIndex, newCheck),
+    modVerifyAll: (patches) => modVerifyAll(defined, patches),
+    stubBefore: (stub) => withStubBefore(defined, stub),
+    stubAfter: (stub) => withStubAfter(defined, stub),
+    stubOnError: (stub) => withStubOnError(defined, stub),
   };
+  return defined;
 }
 
 /**
@@ -1883,8 +2005,41 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
  * `defineFlow([...])`, `connect()`, `composeBlock()` exactly like any other
  * Block - no special-casing needed anywhere that only expects a `Block`.
  * See `openspec/specs/nav-block-and-check/spec.md` for why this exists.
+ *
+ * `__wgFactory` is a TypeScript-only brand so {@link MapBuilder.gotoPage} /
+ * {@link MapBuilder.gotoExternal} can reject Assert/Method Blocks at compile
+ * time (runtime still checks `__waygraphKind`). Decorate methods are re-stated
+ * (via Omit) so `.stubBefore()` / `.withVerify()` keep the brand.
  */
-export type NavBlock<Out extends Checkpoint<string>> = DefinedBlock<Checkpoint<string>, Out>;
+export type NavBlock<Out extends Checkpoint<string>> = Omit<
+  DefinedBlock<Checkpoint<string>, Out>,
+  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
+> & {
+  readonly __wgFactory?: "nav";
+  withVerify(
+    verify: Trait[] | ((out: Out) => Trait[]),
+  ): NavBlock<Out>;
+  modVerify(
+    nameOrIndex: string | number,
+    newCheck: Trait["check"] | Trait,
+  ): NavBlock<Out>;
+  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): NavBlock<Out>;
+  stubBefore(stub: import("./highlights.js").HighlightStubPhase): NavBlock<Out>;
+  stubBefore(stub: import("./highlights.js").StubLifecycleFn<Out>): NavBlock<Out>;
+  stubBefore(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): NavBlock<Out>;
+  stubAfter(stub: import("./highlights.js").HighlightStubPhase): NavBlock<Out>;
+  stubAfter(stub: import("./highlights.js").StubLifecycleFn<Out>): NavBlock<Out>;
+  stubAfter(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): NavBlock<Out>;
+  stubOnError(stub: import("./highlights.js").HighlightStubPhase): NavBlock<Out>;
+  stubOnError(stub: import("./highlights.js").StubLifecycleFn<Out>): NavBlock<Out>;
+  stubOnError(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): NavBlock<Out>;
+};
 
 /**
  * `defineNavBlock`'s own options - exactly one of `url`/`click` required,
@@ -2074,7 +2229,35 @@ export function defineNavClickBlock<Out extends Checkpoint<string>>(
 export type MethodBlock<
   In extends Checkpoint<string>,
   Out extends Checkpoint<string>,
-> = DefinedBlock<In, Out>;
+> = Omit<
+  DefinedBlock<In, Out>,
+  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
+> & {
+  readonly __wgFactory?: "method";
+  withVerify(
+    verify: Trait[] | ((out: Out) => Trait[]),
+  ): MethodBlock<In, Out>;
+  modVerify(
+    nameOrIndex: string | number,
+    newCheck: Trait["check"] | Trait,
+  ): MethodBlock<In, Out>;
+  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): MethodBlock<In, Out>;
+  stubBefore(stub: import("./highlights.js").HighlightStubPhase): MethodBlock<In, Out>;
+  stubBefore(stub: import("./highlights.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
+  stubBefore(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): MethodBlock<In, Out>;
+  stubAfter(stub: import("./highlights.js").HighlightStubPhase): MethodBlock<In, Out>;
+  stubAfter(stub: import("./highlights.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
+  stubAfter(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): MethodBlock<In, Out>;
+  stubOnError(stub: import("./highlights.js").HighlightStubPhase): MethodBlock<In, Out>;
+  stubOnError(stub: import("./highlights.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
+  stubOnError(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): MethodBlock<In, Out>;
+};
 
 /** @deprecated Prefer {@link MethodBlock} - same type; Action was the 0.7 name. */
 export type ActionBlock<
@@ -2139,7 +2322,7 @@ export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<
  */
 export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<string>>(
   options: AssertBlockOptions<Out>,
-): MethodBlock<Out, Out> {
+): AssertBlock<Out> {
   const built = defineMethodBlock<Out, Out>({
     name: options.name,
     ...(options.description ? { description: options.description } : {}),
@@ -2175,8 +2358,44 @@ export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<st
     enumerable: false,
     configurable: false,
   });
-  return built;
+  // Brand for map().assert() - distinct from MethodBlock so .method(assert)
+  // is a compile error even though runtime still carries method salt.
+  return built as unknown as AssertBlock<Out>;
 }
+
+/**
+ * Self-loop verify Block from {@link defineAssertBlock}. Branded for
+ * {@link MapBuilder.assert} (not accepted by `.method()`).
+ */
+export type AssertBlock<Out extends Checkpoint<string>> = Omit<
+  DefinedBlock<Out, Out>,
+  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
+> & {
+  readonly __wgFactory?: "assert";
+  withVerify(
+    verify: Trait[] | ((out: Out) => Trait[]),
+  ): AssertBlock<Out>;
+  modVerify(
+    nameOrIndex: string | number,
+    newCheck: Trait["check"] | Trait,
+  ): AssertBlock<Out>;
+  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): AssertBlock<Out>;
+  stubBefore(stub: import("./highlights.js").HighlightStubPhase): AssertBlock<Out>;
+  stubBefore(stub: import("./highlights.js").StubLifecycleFn<Out>): AssertBlock<Out>;
+  stubBefore(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): AssertBlock<Out>;
+  stubAfter(stub: import("./highlights.js").HighlightStubPhase): AssertBlock<Out>;
+  stubAfter(stub: import("./highlights.js").StubLifecycleFn<Out>): AssertBlock<Out>;
+  stubAfter(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): AssertBlock<Out>;
+  stubOnError(stub: import("./highlights.js").HighlightStubPhase): AssertBlock<Out>;
+  stubOnError(stub: import("./highlights.js").StubLifecycleFn<Out>): AssertBlock<Out>;
+  stubOnError(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): AssertBlock<Out>;
+};
 
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */
 export type PageMethodEntry =
@@ -2217,10 +2436,39 @@ export type PageBlockOptions<Out extends Checkpoint<string>> = {
  * readability / auto grouping. Runtime is still a Block (`__waygraphKind = "page"`).
  * `act` is goto/click when `url`/`click` is set, otherwise a no-op (already here).
  * Child methods stay ordinary Blocks for graph edges - the page only registers them.
+ * Branded `__wgFactory: "page"` (not `"nav"`) - both are accepted by
+ * {@link MapBuilder.gotoPage} / {@link MapBuilder.gotoExternal}.
  */
-export type PageBlock<Out extends Checkpoint<string>> = NavBlock<Out> & {
+export type PageBlock<Out extends Checkpoint<string>> = Omit<
+  DefinedBlock<Checkpoint<string>, Out>,
+  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
+> & {
+  readonly __wgFactory?: "page";
   /** Resolved method Blocks registered at define time. */
   readonly methods: readonly DefinedBlock<any, any>[];
+  withVerify(
+    verify: Trait[] | ((out: Out) => Trait[]),
+  ): PageBlock<Out>;
+  modVerify(
+    nameOrIndex: string | number,
+    newCheck: Trait["check"] | Trait,
+  ): PageBlock<Out>;
+  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out>;
+  stubBefore(stub: import("./highlights.js").HighlightStubPhase): PageBlock<Out>;
+  stubBefore(stub: import("./highlights.js").StubLifecycleFn<Out>): PageBlock<Out>;
+  stubBefore(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): PageBlock<Out>;
+  stubAfter(stub: import("./highlights.js").HighlightStubPhase): PageBlock<Out>;
+  stubAfter(stub: import("./highlights.js").StubLifecycleFn<Out>): PageBlock<Out>;
+  stubAfter(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): PageBlock<Out>;
+  stubOnError(stub: import("./highlights.js").HighlightStubPhase): PageBlock<Out>;
+  stubOnError(stub: import("./highlights.js").StubLifecycleFn<Out>): PageBlock<Out>;
+  stubOnError(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): PageBlock<Out>;
 };
 
 function resolvePageMethods(
@@ -2328,9 +2576,36 @@ export function definePageBlock<Out extends Checkpoint<string>>(
 export type EffectBlock<
   In extends Checkpoint<string>,
   Out extends Checkpoint<string>,
-> = DefinedBlock<In, Out> & {
+> = Omit<
+  DefinedBlock<In, Out>,
+  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
+> & {
+  readonly __wgFactory?: "effect";
   requires: readonly MemKey<any>[];
   instanceOptions: NonNullable<Block<In, Out>["instanceOptions"]>;
+  withVerify(
+    verify: Trait[] | ((out: Out) => Trait[]),
+  ): EffectBlock<In, Out>;
+  modVerify(
+    nameOrIndex: string | number,
+    newCheck: Trait["check"] | Trait,
+  ): EffectBlock<In, Out>;
+  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): EffectBlock<In, Out>;
+  stubBefore(stub: import("./highlights.js").HighlightStubPhase): EffectBlock<In, Out>;
+  stubBefore(stub: import("./highlights.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
+  stubBefore(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): EffectBlock<In, Out>;
+  stubAfter(stub: import("./highlights.js").HighlightStubPhase): EffectBlock<In, Out>;
+  stubAfter(stub: import("./highlights.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
+  stubAfter(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): EffectBlock<In, Out>;
+  stubOnError(stub: import("./highlights.js").HighlightStubPhase): EffectBlock<In, Out>;
+  stubOnError(stub: import("./highlights.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
+  stubOnError(
+    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
+  ): EffectBlock<In, Out>;
 };
 
 /** @deprecated Prefer {@link EffectBlock} - same type; Mem* was an early name. */
@@ -2480,12 +2755,94 @@ export async function locate(
  * argument at all, only whatever `verify` each Block's own `instruction` (or
  * a `withVerify(...)` wrapping it) carries with it.
  */
-export function withVerify<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
+export function withVerify<B extends Block<any, any>>(
+  block: B,
+  verify: Trait[] | ((out: any) => Trait[]),
+): B {
+  const base = stripMethods(block);
+  const next = defineBlock({ ...base, instruction: { ...base.instruction, verify } });
+  copyWaygraphRuntime(block, next);
+  return next as unknown as B;
+}
+
+type StubPhaseFn<Out extends Checkpoint<string>> = import("./highlights.js").HighlightStubPhaseOrFn<Out>;
+
+function isHighlightStubPhase(v: unknown): v is import("./highlights.js").HighlightStubPhase {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+/** Run a prior stub (fn or slot map) into an open ctx so decorate can chain. */
+async function applyStubIntoCtx<Out extends Checkpoint<string>>(
+  raw: StubPhaseFn<Out> | undefined,
+  ctx: import("./highlights.js").StubCtx<Out>,
+): Promise<void> {
+  if (raw === undefined) return;
+  if (typeof raw === "function") {
+    const ret = await (raw as import("./highlights.js").StubLifecycleFn<Out>)(ctx);
+    if (isHighlightStubPhase(ret)) {
+      for (const [id, stub] of Object.entries(ret)) {
+        if (stub) ctx.ring(id, stub);
+      }
+    }
+    return;
+  }
+  if (isHighlightStubPhase(raw)) {
+    for (const [id, stub] of Object.entries(raw)) {
+      if (stub) ctx.ring(id, stub);
+    }
+  }
+}
+
+function withStubPhase<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   block: Block<In, Out>,
-  verify: Trait[] | ((out: Out) => Trait[]),
+  phase: "stubBefore" | "stubAfter" | "stubOnError",
+  stub: StubPhaseFn<Out>,
 ): DefinedBlock<In, Out> {
   const base = stripMethods(block);
-  return defineBlock({ ...base, instruction: { ...base.instruction, verify } });
+  const instr = base.instruction as {
+    stubBefore?: StubPhaseFn<Out>;
+    stubAfter?: StubPhaseFn<Out>;
+    stubOnError?: StubPhaseFn<Out>;
+  };
+  const prev = instr[phase];
+  const chained: import("./highlights.js").StubLifecycleFn<Out> = async (ctx) => {
+    await applyStubIntoCtx(prev, ctx);
+    await applyStubIntoCtx(stub, ctx);
+  };
+  const next = defineBlock({
+    ...base,
+    instruction: { ...base.instruction, [phase]: chained },
+  });
+  copyWaygraphRuntime(block, next);
+  return next;
+}
+
+/**
+ * Attach / chain a stubBefore lifecycle on a Block. Prefer
+ * `(ctx) => { ctx.ring(...); const x = ctx.mem?.get(Key); }`.
+ * @example FillUsernameBlock.stubBefore((ctx) => { ctx.ring("username", { ... }) })
+ */
+export function withStubBefore<B extends Block<any, any>>(
+  block: B,
+  stub: StubPhaseFn<any>,
+): B {
+  return withStubPhase(block, "stubBefore", stub) as unknown as B;
+}
+
+/** @see {@link withStubBefore} */
+export function withStubAfter<B extends Block<any, any>>(
+  block: B,
+  stub: StubPhaseFn<any>,
+): B {
+  return withStubPhase(block, "stubAfter", stub) as unknown as B;
+}
+
+/** @see {@link withStubBefore} */
+export function withStubOnError<B extends Block<any, any>>(
+  block: B,
+  stub: StubPhaseFn<any>,
+): B {
+  return withStubPhase(block, "stubOnError", stub) as unknown as B;
 }
 
 /**
@@ -2530,7 +2887,7 @@ export function modVerify<In extends Checkpoint<string>, Out extends Checkpoint<
       : newCheck;
   const updated = [...traits];
   updated[index] = replacement;
-  return withVerify(block, updated);
+  return withVerify(block, updated) as DefinedBlock<In, Out>;
 }
 
 /**
@@ -2546,8 +2903,10 @@ export function modVerifyAll<In extends Checkpoint<string>, Out extends Checkpoi
   block: Block<In, Out>,
   patches: Record<string, Trait["check"] | Trait>,
 ): DefinedBlock<In, Out> {
+  const seed = defineBlock(stripMethods(block));
+  copyWaygraphRuntime(block, seed);
   return Object.entries(patches).reduce(
     (current, [name, newCheck]) => modVerify(current, name, newCheck),
-    defineBlock(stripMethods(block)),
+    seed,
   );
 }
