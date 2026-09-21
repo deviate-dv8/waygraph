@@ -109,11 +109,13 @@ const OVERLAY_CSS = `
 .wg-pilot-fx-label[data-size=lg]{font-size:16px;padding:8px 14px;}
 .wg-pilot-fx-label[data-weight=bold]{font-weight:800;}
 #wg-pilot-fx-todos{
-  position:fixed;z-index:2147483645;top:72px;left:14px;max-width:280px;
+  position:fixed;z-index:2147483645;top:72px;max-width:280px;
   font:12px/1.4 ui-sans-serif,system-ui,sans-serif;color:#fff;
   background:rgba(20,10,40,.94);border-radius:10px;padding:10px 12px;
   box-shadow:0 2px 10px rgba(0,0,0,.3);pointer-events:none;
 }
+#wg-pilot-fx-todos[data-pos=left]{left:14px;right:auto;}
+#wg-pilot-fx-todos[data-pos=right]{right:14px;left:auto;}
 #wg-pilot-fx-todos .wg-pilot-fx-todo-title{font-weight:700;color:#c9a6ff;margin-bottom:6px;}
 #wg-pilot-fx-todos ol{margin:0;padding-left:18px;}
 #wg-pilot-fx-todos li{margin:3px 0;color:#ddd;}
@@ -303,6 +305,8 @@ export type PilotHighlightFixtures = {
   todoIndex?: number;
   /** Optional title above the todo list. */
   todoTitle?: string;
+  /** Todo dock side. Default `right` (keeps clear of the Pilot badge). */
+  todoPos?: "left" | "right";
   /**
    * How long fixtures stay visible (ms). `0` = until the next highlight /
    * clear. Default `12000`. Vision rings (`showPilotVision`) stay separate.
@@ -346,9 +350,10 @@ export async function showPilotFixtures(
   const todos = fixtures.clear ? [] : (fixtures.todos ?? []);
   const todoIndex = fixtures.todoIndex ?? 0;
   const todoTitle = fixtures.todoTitle ?? "Plan";
+  const todoPos = fixtures.todoPos === "left" ? "left" : "right";
   return page
     .evaluate(
-      ({ rings, todos, todoIndex, todoTitle, holdMs }) => {
+      ({ rings, todos, todoIndex, todoTitle, todoPos, holdMs }) => {
         const w = window as unknown as {
           __wgPilotFxHideTimer?: ReturnType<typeof setTimeout>;
           __wgPilotFxClear?: () => void;
@@ -412,6 +417,7 @@ export async function showPilotFixtures(
         if (todos.length > 0) {
           const dock = document.createElement("div");
           dock.id = "wg-pilot-fx-todos";
+          dock.dataset.pos = todoPos;
           const title = document.createElement("div");
           title.className = "wg-pilot-fx-todo-title";
           title.textContent = todoTitle;
@@ -432,7 +438,7 @@ export async function showPilotFixtures(
         }
         return { painted, missing };
       },
-      { rings, todos, todoIndex, todoTitle, holdMs },
+      { rings, todos, todoIndex, todoTitle, todoPos, holdMs },
     )
     .catch(() => ({ painted: 0, missing: rings.map((r) => r.selector) }));
 }

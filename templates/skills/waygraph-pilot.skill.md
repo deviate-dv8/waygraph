@@ -35,6 +35,7 @@ waygraph auto highlight <sessionId> '{"clear":true}'
 ```
 
 - `tone`: all demo tones - `planned` | `auto` | `info` | `warning` | `danger` | `success` | `orange` (aliases like `error`/`blue`/`green` work too)
+- `todoPos`: `right` (default) | `left`
 - `holdMs`: ms to keep fixtures; `0` = until the next highlight / clear (default 12000)
 - Bottom-left toast shows `Highlighting: …` (same strip as `Running (Dom): …`)
 - Missing selectors are listed in the JSON response (`missing`) - not a hard failure
