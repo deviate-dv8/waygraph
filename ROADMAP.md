@@ -119,6 +119,28 @@ all of them at once - same shape as the already-shipped "Waygraph Map" folder co
 "waypack" proof (`examples/routed-demo-consumer/`), just generalized to *multiple* consumer
 packages loaded together instead of one.
 
+### "Create a waygraph package" - which one? (backlogged, not scoped yet)
+
+Real, direct user ask (2026-09-21, right after the Federated pool discussion above), phrased
+ambiguously enough that it needs a real scoping decision before any work starts - explicitly
+backlogged rather than guessed at. Two genuinely different things could be meant:
+
+1. **Package an existing consumer's finished Blocks for reuse** - take a project like
+   `veciro-waygraph` (a plain local Blocks tree, not currently publishable) and turn it into a
+   real, installable package another waygraph project could add as a plain dependency and
+   immediately `waygraph graph node_modules/<pkg>` against - the actual "waypack" workflow the
+   Federated pool section above assumes already exists as a *capability*, but no command
+   currently produces one from an arbitrary consumer tree. `examples/routed-demo-consumer/`
+   proves LOADING a pre-built waygraph package works; nothing proves the reverse (author ->
+   publishable package) for a project that didn't start out shaped that way.
+2. **A nicer "start a new project" entry point** - `waygraph init` already exists and scaffolds
+   from `templates/scaffold`, but may not be discoverable/promoted enough (e.g. a
+   `npm create waygraph@latest` convention instead of `npx waygraph init` - the modern
+   scaffolding-tool pattern other ecosystems use).
+
+Needs a real scoping conversation before implementation - don't build either without asking
+which (or both) is actually wanted first.
+
 ### VirtualUser (planned, not yet spec'd)
 
 Two distinct modes, both real, direct user requests from the same session:
