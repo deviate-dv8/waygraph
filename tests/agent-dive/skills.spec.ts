@@ -13,6 +13,8 @@ test.describe("agent-dive: Claude Code Skills generation", () => {
       const pilotSkill = await readFile(join(dir, ".claude/skills/waygraph-pilot/SKILL.md"), "utf-8");
       expect(pilotSkill).toMatch(/^---\nname: waygraph-pilot\ndescription: /);
       expect(pilotSkill).toContain("resync");
+      expect(pilotSkill).toContain("auto highlight");
+      expect(pilotSkill).toMatch(/Pilot supports them|Yes, Pilot paints/i);
 
       const blindPilotSkill = await readFile(
         join(dir, ".claude/skills/waygraph-blind-pilot/SKILL.md"),

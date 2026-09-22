@@ -20,6 +20,8 @@ test("waygraph --skill-pilot prints the pilot skill markdown", async () => {
   expect(stdout).toMatch(/^---\nname: waygraph-pilot\n/);
   expect(stdout).toContain("resync");
   expect(stdout).toContain("auto send");
+  expect(stdout).toContain("auto highlight");
+  expect(stdout).toMatch(/Pilot supports them|Yes, Pilot paints/i);
 });
 
 test("waygraph --skill-pilot-blind prints the blind-pilot skill markdown", async () => {

@@ -1,6 +1,6 @@
 ---
 name: waygraph-pilot
-description: Drive an existing waygraph Block graph as a real agent - use when a task needs to operate a web app that already has waygraph Blocks written for it (login, checkout, matching, chat, admin flows, etc.), not when writing new Blocks from scratch.
+description: Drive an existing waygraph Block graph as a real agent - use when a task needs to operate a web app that already has waygraph Blocks written for it (login, checkout, matching, chat, admin flows, etc.), not when writing new Blocks from scratch. Includes how to paint demo-parity fixture highlights in Pilot via `auto highlight` (pilot:watch / --non-headless).
 ---
 
 Waygraph Pilot is not a planner you call and get an answer from - `pilot start` only
@@ -23,15 +23,42 @@ waygraph auto highlight <sessionId> '<json>'  # paint rings/todos on the live pa
 just what's reachable from here - use it to plan several steps ahead before you start
 sending picks.
 
-## Highlight fixtures (agent-sent narration)
+## Highlight fixtures (Pilot supports them — use `auto highlight`)
 
-Block `stubBefore` / `withHighlightFixtures` only paint in `waygraph demo`. In Pilot they
-land in `auto trace` as metadata but do **not** draw on the page. When a human is watching
-a headful session (or you want to narrate intent before a send), paint yourself with the
-same fixture surface:
+**Yes, Pilot paints rings/todos/zoom/device on the live page.** That is what
+`waygraph auto highlight` is for. It works on headful `pilot start --non-headless`
+(consumer `pilot:watch`) and on headless sessions alike. Same fixture surface as
+`waygraph demo` (rings, todos, focus veil, zoom badge, device viewport) — proven in
+`tests/cli/auto-session.spec.ts` ("auto highlight: paints agent fixture rings…").
+
+**Do not claim Pilot "doesn't support fixture highlights."** That is wrong. The only
+thing that differs from demo is *who* triggers the paint:
+
+| Mode | Who paints | How |
+|------|------------|-----|
+| `waygraph demo` | Engine, automatically | Block `stubBefore` / `stubAfter` / `withHighlightFixtures` run each step |
+| Pilot / `auto --detach` | **You (the agent)** | `waygraph auto highlight <sessionId> '<json>'` before (or between) sends |
+
+Block-authored `stubBefore` / `withHighlightFixtures` still exist on Blocks in Pilot —
+they show up in `auto trace` as metadata — but they do **not** auto-draw. You re-express
+the same intent with `auto highlight` (copy selectors/labels from the Block stubs or from
+`auto dom`). Paint, then `auto send` the real Block. Clear when done.
 
 ```
+# Headful watch session (rings visible to a human audience):
+waygraph pilot start --non-headless
+# → note sessionId from the bootstrap JSON
+
 waygraph auto highlight <sessionId> '{"rings":[{"selector":"#user-name","label":"Username","tone":"planned","focus":true},{"selector":"#password","label":"Password","tone":"info","detail":"secret"}],"todos":["Fill username","Fill password","Submit"],"todoIndex":0,"zoom":1.5,"holdMs":0}'
+waygraph auto send <sessionId> fill-username
+waygraph auto highlight <sessionId> '{"rings":[{"selector":"#password","label":"Password","tone":"planned","focus":true}],"todoIndex":1,"holdMs":0}'
+waygraph auto send <sessionId> fill-password
+waygraph auto highlight <sessionId> '{"clear":true}'
+```
+
+More shapes:
+
+```
 waygraph auto highlight <sessionId> '{"device":"mobile","rings":[{"selector":".inventory_item:last-child","label":"Last item","zoom":1.6,"focus":true}],"holdMs":30000}'
 waygraph auto highlight <sessionId> '{"clear":true}'
 ```
