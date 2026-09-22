@@ -1,6 +1,6 @@
 {
   "name": "waygraph",
-  "version": "0.15.11",
+  "version": "0.15.14",
   "type": "module",
   "description": "A typed graph of reusable Blocks for driving a browser through E2E flows.",
   "license": "MIT",
@@ -35,7 +35,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "node bin/waygraph typecheck .",
     "test": "playwright test",
     "docs:preview": "python3 -m http.server 4173 --directory docs",
     "example:saucedemo:install": "npm --prefix examples/saucedemo install",

@@ -718,16 +718,18 @@ outright rather than left as a caveat.
 
 **On-page indicator.** A headful (`--non-headless`) session looks like an ordinary browser
 tab otherwise - no sign anything is driving it, which matters once a human might be watching
-or co-driving the same visible session. Every session now injects a small badge (bottom-right
+or co-driving the same visible session. Every session injects a small badge (bottom-right
 corner: `Waygraph Pilot - session <id> - <Checkpoint>`) that click-expands into a panel
 listing the current live menu's real edges (block name, kind, target Checkpoint,
-description) - the same data `auto status` returns, rendered in the page itself. Both refresh
-automatically after every `send`/`reach`/`reload`/`resync`/raw action - there's nothing
-separate to call to keep it in sync. Particularly useful for Blind Pilot: watching the panel
-update as newly-authored Blocks get picked up via `reload` shows the map actually growing,
-live, not just a JSON diff in a terminal. Self-contained (`src/pilot-overlay.ts`), not built
-on `waygraph demo`'s own panel/banner system, for the same `cli.ts`-side-effect reason
-`pilot-v1`'s old narrate-mode ring wasn't either.
+description) - the same data `auto status` returns, rendered in the page itself. The overlay
+shell is installed via `context.addInitScript`, so it **persists on `about:blank`** and
+survives `goto` navigations (browser start defaults to blank; pilot navigates when a base URL
+exists). Headful sessions paint the badge immediately on start — no need to call `status`
+first. Bottom-left activity toasts label raw primitives as **`Running (no Block): …`**
+(click/type/goto/upload outside the Block library); Block runs stay **`Running (Block): …`**.
+Both refresh automatically after every `send`/`reach`/`reload`/`resync`/raw action.
+Self-contained (`src/pilot-overlay.ts`), not built on `waygraph demo`'s own panel/banner
+system.
 
 **Pilot itself does no planning, resolving, narrating, or acting** - `pilotStart`'s only job is
 starting the session and handing back its graph in one round trip; see `src/pilot.ts`. An

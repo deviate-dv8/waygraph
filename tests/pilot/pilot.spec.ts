@@ -137,6 +137,28 @@ test.describe("Pilot overlay (real on-page badge/panel, real saucedemo.com)", ()
     }
   });
 
+  test("overlay badge persists on about:blank (browser-style start)", async () => {
+    test.setTimeout(20_000);
+    const session = await AutoSession.start({
+      projectDir: sauceRoot,
+      headless: true,
+      skipInitialNavigation: true,
+      sessionId: "blank1234",
+    });
+    try {
+      expect(session["page"].url()).toBe("about:blank");
+      await session.currentSnapshot();
+      const badge = session["page"].locator("#wg-pilot-badge");
+      await badge.waitFor({ state: "attached", timeout: 5_000 });
+      const text = await badge.textContent();
+      expect(text).toContain("Waygraph Pilot");
+      expect(text).toContain("blank1234");
+      expect(text).toContain("blank page");
+    } finally {
+      await session.close();
+    }
+  });
+
   test("without a sessionId, the badge shows a graceful fallback, not a crash", async () => {
     test.setTimeout(30_000);
     const session = await AutoSession.start({ projectDir: sauceRoot, headless: true });
@@ -378,7 +400,7 @@ test.describe("rawUpload (real stub files, real bug this responds to)", () => {
   });
 });
 
-test.describe("warnUnmappedLinks (real coverage-gap detection)", () => {
+test.describe("warnUnmappedInteractions (href + button coverage-gap detection)", () => {
   // Real, direct user request: an agent driving Blind Pilot had no
   // structured signal for "this page has a link nowhere in the project's
   // own NavBlocks" - only manual DOM inspection, exactly what this whole
@@ -425,6 +447,29 @@ test.describe("warnUnmappedLinks (real coverage-gap detection)", () => {
         (e) => e.type === "console" && e.text.includes("unmapped nav link") && e.text.includes("/this-path-has-no-navblock"),
       );
       expect(warnings2.length).toBe(beforeWarningCount);
+    } finally {
+      await session.close();
+    }
+  });
+
+  test("warns on an unmapped visible button", async () => {
+    test.setTimeout(30_000);
+    const session = await AutoSession.start({ projectDir: sauceRoot, headless: true });
+    try {
+      await session.rawGoto("https://www.saucedemo.com/");
+      await session["page"].evaluate(() => {
+        const uncovered = document.createElement("button");
+        uncovered.id = "orphan-action-btn";
+        uncovered.textContent = "Do orphan thing";
+        document.body.appendChild(uncovered);
+      });
+
+      await session.currentSnapshot();
+      const log = session.getConsoleLog();
+      const buttonWarnings = log.filter((e) => e.type === "console" && e.text.includes("unmapped button"));
+      expect(buttonWarnings.some((w) => w.text.includes("#orphan-action-btn"))).toBe(true);
+      // Real saucedemo #login-button is covered via login.sel.ts — must not warn.
+      expect(buttonWarnings.some((w) => w.text.includes("#login-button"))).toBe(false);
     } finally {
       await session.close();
     }

@@ -23,12 +23,22 @@ import { spawn } from "node:child_process";
 import { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./graph.js";
 import { checkMap } from "./map-check.js";
 import { runAutoExplore } from "./auto-explore-run.js";
-import { pilotStart } from "./pilot.js";
+import { pilotStart, pilotAttach } from "./pilot.js";
+import {
+  browserStart,
+  listBrowserSessions,
+  stopBrowserSession,
+  stopAllBrowserSessions,
+  type SessionMeta,
+} from "./browser.js";
+import { resolveInjectRoots } from "./block-inject.js";
+import { collectPracticeWarnings, practiceKindLabel } from "./practices-check.js";
 import {
   spawnDetachedSession,
   requestSession,
   runAttachLoop,
   runAutoServeCommand,
+  resolveSessionMeta,
 } from "./auto-session-ipc.js";
 import {
   runAgentDive,
@@ -6770,7 +6780,8 @@ function initCommand(projectName: string): void {
   console.log("  npx playwright install chromium");
   console.log("  npm test");
   console.log("  waygraph list        # .flow.ts → export map");
-  console.log("  waygraph check       # nav hygiene + orphan Blocks");
+  console.log("  waygraph check       # nav hygiene + inline selectors + bad practices + orphan Blocks");
+  console.log("  waygraph typecheck   # tsc --noEmit + bad-practice warnings (use --no-practices to skip)");
   console.log("  waygraph auto        # interactive explore (headed panel)");
   console.log("  waygraph auto --cli  # same menus in the terminal");
   console.log("  waygraph demo --blocks exampleFlow");
@@ -6779,9 +6790,30 @@ function initCommand(projectName: string): void {
   console.log("  Layout: see STRUCTURE.md (or https://deviate-dv8.github.io/waygraph/scaffold.html)");
 }
 
+function printPracticeReport(
+  projectDir: string,
+  practiceWarnings: import("./practices-check.js").PracticeWarning[],
+): void {
+  if (practiceWarnings.length === 0) {
+    console.log(`waygraph check: no bad-practice patterns under ${projectDir}`);
+    return;
+  }
+  for (const w of practiceWarnings) {
+    console.warn(`waygraph check: ${w.file} (${practiceKindLabel(w.kind)}) — ${w.detail}`);
+  }
+  console.log(
+    `waygraph check: ${practiceWarnings.length} bad-practice warning${practiceWarnings.length === 1 ? "" : "s"}`,
+  );
+}
+
 async function checkCommand(
   projectDir: string,
-): Promise<{ navWarnings: CheckWarning[]; selWarnings: SelWarning[] }> {
+  opts?: { noPractices?: boolean },
+): Promise<{
+  navWarnings: CheckWarning[];
+  selWarnings: SelWarning[];
+  practiceWarnings: import("./practices-check.js").PracticeWarning[];
+}> {
   const files = discoverBlocks(projectDir);
   const navWarnings: CheckWarning[] = [];
   const selWarnings: SelWarning[] = [];
@@ -6811,7 +6843,25 @@ async function checkCommand(
       }
     }
   }
-  return { navWarnings, selWarnings };
+  const practiceWarnings = collectPracticeWarnings(projectDir, walkDir, {
+    disabled: opts?.noPractices === true,
+  });
+  return { navWarnings, selWarnings, practiceWarnings };
+}
+
+async function runTypecheckCommand(projectDir: string, noPractices: boolean): Promise<void> {
+  const { spawnSync } = await import("node:child_process");
+  const tsc = spawnSync("npx", ["tsc", "--noEmit"], {
+    cwd: projectDir,
+    stdio: "inherit",
+    shell: false,
+  });
+  if (tsc.status !== 0) {
+    process.exit(tsc.status === null ? 1 : tsc.status);
+  }
+  if (noPractices) return;
+  const practiceWarnings = collectPracticeWarnings(projectDir, walkDir);
+  printPracticeReport(projectDir, practiceWarnings);
 }
 
 // ---------------------------------------------------------------------------
@@ -6862,6 +6912,18 @@ interface RunFlags {
   ffDisabled?: boolean;
   /** Positional args with run flags stripped. */
   positionals: string[];
+  /** browser/pilot: merge Block trees from preset names or paths (repeatable). */
+  inject?: string[];
+  /** browser/pilot: navigate on start (disables blank page). */
+  goto?: string;
+  /** browser/pilot: force about:blank on start. */
+  blank?: boolean;
+  /** browser/pilot: headless session (default visible for browser). */
+  headlessBrowser?: boolean;
+  /** browser/pilot sessions: machine-readable JSON. */
+  json?: boolean;
+  /** check/typecheck: skip bad-practice warnings. */
+  noPractices?: boolean;
 }
 
 function takeFlagValue(argv: string[], i: number, a: string, flag: string): { value: string; nextI: number } {
@@ -6930,6 +6992,23 @@ function parseRunFlags(argv: string[]): RunFlags {
       out.ffExpand = true;
     } else if (a === "--non-headless") {
       out.nonHeadless = true;
+    } else if (a === "--headless") {
+      out.headlessBrowser = true;
+    } else if (a === "--json") {
+      out.json = true;
+    } else if (a === "--no-practices") {
+      out.noPractices = true;
+    } else if (a === "--blank") {
+      out.blank = true;
+    } else if (a === "--goto" || a.startsWith("--goto=")) {
+      const t = takeFlagValue(argv, i, a, "--goto");
+      out.goto = t.value;
+      i = t.nextI;
+    } else if (a === "--inject" || a.startsWith("--inject=")) {
+      const t = takeFlagValue(argv, i, a, "--inject");
+      out.inject ??= [];
+      out.inject.push(t.value);
+      i = t.nextI;
     } else if (a === "--cli") {
       out.cli = true;
     } else if (a === "--detach") {
@@ -7247,6 +7326,21 @@ async function expandSpecFlowFiles(projectDir: string, spec: string): Promise<st
 const args = process.argv.slice(2);
 const command = args[0];
 
+function printBrowserSessionsList(sessions: SessionMeta[], projectDir: string): void {
+  if (sessions.length === 0) {
+    console.log(`No live browser sessions for ${projectDir}.`);
+    console.log("  waygraph browser start");
+    return;
+  }
+  console.log(`Live browser sessions (${projectDir}):`);
+  for (const s of sessions) {
+    const mode = s.headless ? "headless" : "headful";
+    console.log(`  ${s.sessionId}  ${mode}  pid ${s.pid}`);
+    console.log(`    waygraph browser attach ${s.sessionId}`);
+    console.log(`    waygraph browser stop ${s.sessionId}`);
+  }
+}
+
 function usage(): void {
   console.log(`waygraph -- graph project tool + engine CLI
 
@@ -7325,16 +7419,23 @@ Primary (less is more):
                                            label,tone?,size?,weight?}], todos[], todoIndex?,
                                            todoTitle?, holdMs? (0=until next), clear:true.
                                            Missing selectors listed in response, not fatal.
-  waygraph pilot start                     Bootstrap for an agent: starts a --detach session
-                                           (same as auto --cli --detach) AND reads back the
-                                           whole project's Block graph (same as waygraph
-                                           graph) in one call - {sessionId, socketPath,
-                                           headless, graph, snapshot}. Drive it afterward with
-                                           auto send/status/dom/trace <sessionId> - pilot start
-                                           does not resolve, narrate, or act on anything itself;
-                                           planning a multi-step request is the agent's job.
-                 --non-headless            Real visible browser (same flag as auto/demo/run)
-                 --base-url / --data       Same as auto/demo/run
+  waygraph browser                         List live browser sessions for cwd
+  waygraph browser start                   Open a new session (headful by default, about:blank)
+                 --inject preset|path            Merge an external Block library (e.g. saucedemo)
+                 --goto <url>              Navigate on start (disables blank page)
+                 --blank                   Force about:blank on start (default)
+                 --headless                Headless session (default is visible browser)
+                 --cli                     After start, open the terminal picker (auto attach)
+  waygraph browser sessions [project]      List live browser sessions (attach/status/stop by id)
+  waygraph browser send|status|attach|…    Same session control as auto (see auto send/status/…)
+  waygraph pilot start                     Bootstrap: browser session + whole-project graph +
+                                           starting snapshot in one call. Does not plan or act.
+                 --inject / --goto / --headless / --cli / --base-url  Same flags as browser start
+  waygraph pilot sessions [project]        List live sessions (prefer attach over a new start)
+  waygraph pilot attach <sessionId>        Graph + snapshot for an existing session (no new browser)
+  waygraph pilot send|status|highlight|…   Same session control as browser/auto
+  waygraph auto                            Interactive explore (picker) — NOT the persistent browser
+                                           layer; use browser/pilot for agent-driven sessions.
   waygraph demo  [--blocks <flow|file|spec>]  Watch with step overlay (QA path)
                  --data '{...}'            Mem seed JSON (or inline flow({...}))
                  --auto-next               Auto-advance steps (alias: --autoplay)
@@ -7360,7 +7461,8 @@ Primary (less is more):
                  --ff-disabled             Same as demo (dispute: expand FF)
 
 Also:
-  waygraph list | nav | validate | check | graph | init <name>
+  waygraph list | nav | validate | check | typecheck | graph | init <name>
+                 check/typecheck --no-practices  Skip bad-practice warnings
   waygraph map   [project]                 Waygraph Map convention enforcement: every static
                                            Nav/Page url must verbatim-match its src/map/ folder
                                            path ((group) segments excluded) - exits 1 on a
@@ -7807,16 +7909,215 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
     }
 
     case "graph":
-    case "auto": {
+    case "auto":
+    case "browser":
+    case "pilot": {
+      if (command === "browser") {
+        const sub = args[1];
+        if (sub === "sessions") {
+          const rest = args.slice(2);
+          const json = rest.includes("--json");
+          const positional = rest.filter((a) => a !== "--json");
+          const proj = resolve(positional[0] ?? process.cwd());
+          const sessions = listBrowserSessions(proj);
+          if (json) {
+            console.log(JSON.stringify(sessions, null, 2));
+          } else {
+            printBrowserSessionsList(sessions, proj);
+          }
+          break;
+        }
+        if (sub === "stop") {
+          const proj = resolve(args[3] ?? process.cwd());
+          const target = args[2];
+          if (!target) {
+            console.error("waygraph browser stop: usage: waygraph browser stop <sessionId|--all> [project]");
+            process.exit(1);
+          }
+          if (target === "--all") {
+            const n = stopAllBrowserSessions(proj);
+            console.log(JSON.stringify({ stopped: n, projectDir: proj }));
+            break;
+          }
+          if (!stopBrowserSession(proj, target)) {
+            console.error(`waygraph browser stop: no such session "${target}"`);
+            process.exit(1);
+          }
+          console.log(JSON.stringify({ stopped: target }));
+          break;
+        }
+        if (!sub) {
+          const proj = resolve(process.cwd());
+          printBrowserSessionsList(listBrowserSessions(proj), proj);
+          break;
+        }
+        if (sub === "start" || sub.startsWith("-")) {
+          const flagArgs = sub === "start" ? args.slice(2) : args.slice(1);
+          const flags = parseRunFlags(flagArgs);
+          applyRunFlags(flags);
+          const proj = resolve(flags.positionals[0] ?? process.cwd());
+          if (!existsSync(proj)) {
+            console.error(`waygraph browser: no such directory: ${proj}`);
+            process.exit(1);
+          }
+          const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? resolveBaseUrl(proj);
+          try {
+            const inject = flags.inject?.length ? resolveInjectRoots(flags.inject, proj) : undefined;
+            const result = await browserStart({
+              projectDir: proj,
+              ...(inject?.length ? { inject } : {}),
+              ...(baseURL ? { baseURL } : {}),
+              ...(flags.goto
+                ? { startUrl: flags.goto, skipInitialNavigation: false }
+                : { skipInitialNavigation: flags.blank !== false }),
+              headless: flags.headlessBrowser === true,
+            });
+            console.log(JSON.stringify(result));
+            if (!result.headless) {
+              console.error(`Session ${result.sessionId} started. List all: waygraph browser sessions`);
+            }
+            if (flags.cli) {
+              await runAttachLoop(proj, result.sessionId);
+            }
+          } catch (err) {
+            console.error(`waygraph browser start: ${err instanceof Error ? err.message : String(err)}`);
+            process.exit(1);
+          }
+          break;
+        }
+        if (
+          sub !== "send" &&
+          sub !== "status" &&
+          sub !== "attach" &&
+          sub !== "dom" &&
+          sub !== "trace" &&
+          sub !== "console" &&
+          sub !== "storage" &&
+          sub !== "upload" &&
+          sub !== "click" &&
+          sub !== "type" &&
+          sub !== "press" &&
+          sub !== "goto" &&
+          sub !== "reload" &&
+          sub !== "reach" &&
+          sub !== "resync" &&
+          sub !== "highlight"
+        ) {
+          console.error(
+            "waygraph browser: usage:\n" +
+              "  waygraph browser                       List live sessions (cwd)\n" +
+              "  waygraph browser start [--inject preset|path] [--goto <url>] [--blank] [--headless] [--cli] [project]\n" +
+              "  waygraph browser sessions [--json] [project]\n" +
+              "  waygraph browser stop <sessionId|--all> [project]\n" +
+              "  waygraph browser send|status|attach|highlight|dom|… <sessionId> …  (same as auto)",
+          );
+          process.exit(1);
+        }
+      }
+
+      if (command === "pilot") {
+        if (args[1] === "sessions") {
+          const rest = args.slice(2);
+          const json = rest.includes("--json");
+          const positional = rest.filter((a) => a !== "--json");
+          const proj = resolve(positional[0] ?? process.cwd());
+          const sessions = listBrowserSessions(proj);
+          if (json) {
+            console.log(JSON.stringify(sessions, null, 2));
+          } else {
+            printBrowserSessionsList(sessions, proj);
+          }
+          break;
+        }
+        if (args[1] === "attach") {
+          const sessionId = args[2];
+          if (!sessionId) {
+            console.error("waygraph pilot attach: usage: waygraph pilot attach <sessionId> [--inject …] [project]");
+            process.exit(1);
+          }
+          const flags = parseRunFlags(args.slice(3));
+          const proj = resolve(flags.positionals[0] ?? process.cwd());
+          try {
+            const inject = flags.inject?.length ? resolveInjectRoots(flags.inject, proj) : undefined;
+            const result = await pilotAttach(proj, sessionId, inject);
+            console.log(JSON.stringify(result));
+          } catch (err) {
+            console.error(`waygraph pilot attach: ${err instanceof Error ? err.message : String(err)}`);
+            process.exit(1);
+          }
+          break;
+        }
+        if (args[1] === "start" || !args[1] || args[1].startsWith("-")) {
+          const flagArgs = args[1] === "start" ? args.slice(2) : args.slice(1);
+          const flags = parseRunFlags(flagArgs);
+          applyRunFlags(flags);
+          const proj = resolve(flags.positionals[0] ?? process.cwd());
+          const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? resolveBaseUrl(proj);
+          try {
+            const result = await pilotStart({
+              projectDir: proj,
+              ...(flags.inject?.length ? { injectTokens: flags.inject } : {}),
+              ...(baseURL ? { baseURL } : {}),
+              ...(flags.goto
+                ? { startUrl: flags.goto, skipInitialNavigation: false }
+                : flags.blank === true
+                  ? { skipInitialNavigation: true }
+                  : {}),
+              headless: flags.headlessBrowser === true,
+            });
+            console.log(JSON.stringify(result));
+            if (!result.headless) {
+              console.error(
+                `Chromium window opened (session ${result.sessionId}). ` +
+                  `Terminal menu: waygraph pilot attach ${result.sessionId}`,
+              );
+            }
+            if (flags.cli) {
+              await runAttachLoop(proj, result.sessionId);
+            }
+          } catch (err) {
+            console.error(`waygraph pilot start: ${err instanceof Error ? err.message : String(err)}`);
+            process.exit(1);
+          }
+          break;
+        }
+        if (
+          args[1] !== "send" &&
+          args[1] !== "status" &&
+          args[1] !== "dom" &&
+          args[1] !== "trace" &&
+          args[1] !== "console" &&
+          args[1] !== "storage" &&
+          args[1] !== "upload" &&
+          args[1] !== "click" &&
+          args[1] !== "type" &&
+          args[1] !== "press" &&
+          args[1] !== "goto" &&
+          args[1] !== "reload" &&
+          args[1] !== "reach" &&
+          args[1] !== "resync" &&
+          args[1] !== "highlight"
+        ) {
+          console.error(
+            "waygraph pilot: usage:\n" +
+              "  waygraph pilot start [--inject …] [--goto <url>] [--headless] [--cli] [--base-url <url>] [project]\n" +
+              "  waygraph pilot sessions [project]   # list live browser sessions\n" +
+              "  waygraph pilot attach <sessionId>   # graph + snapshot for an existing session\n" +
+              "  waygraph pilot send|status|attach|highlight|… <sessionId> …  (controls browser — same as browser/auto)",
+          );
+          process.exit(1);
+        }
+      }
+
       // auto send|status|attach <sessionId> - session control against a
       // --detach'd background session. Intercepted before the normal
       // project-directory resolution below, same pattern `try demo|auto|
       // auto:cli` already uses for a sub-verb positional.
       if (
-        command === "auto" &&
+        (command === "auto" || command === "browser" || command === "pilot") &&
         (args[1] === "send" ||
           args[1] === "status" ||
-          args[1] === "attach" ||
+          (args[1] === "attach" && command !== "pilot") ||
           args[1] === "dom" ||
           args[1] === "trace" ||
           args[1] === "console" ||
@@ -7834,10 +8135,19 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
         const sub = args[1];
         const sessionId = args[2];
         if (!sessionId) {
-          console.error(`waygraph auto ${sub}: missing <sessionId>`);
+          console.error(`waygraph ${command} ${sub}: missing <sessionId>`);
           process.exit(1);
         }
-        const proj = resolve(process.cwd());
+        const projHint = resolve(process.cwd());
+        const meta = resolveSessionMeta(sessionId, projHint);
+        if (!meta) {
+          console.error(
+            `waygraph ${command} ${sub}: no such session "${sessionId}" — ` +
+              "wrong directory? run `waygraph pilot sessions` from the project that started it",
+          );
+          process.exit(1);
+        }
+        const proj = meta.projectDir;
         if (sub === "attach") {
           await runAttachLoop(proj, sessionId);
           break;
@@ -8170,29 +8480,6 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
       break;
     }
 
-    case "pilot": {
-      if (args[1] !== "start") {
-        console.error('waygraph pilot: usage: waygraph pilot start [--non-headless] [--base-url <url>] [--data <json>]');
-        process.exit(1);
-      }
-      const flags = parseRunFlags(args.slice(2));
-      applyRunFlags(flags);
-      const proj = resolve(process.cwd());
-      const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? resolveBaseUrl(proj);
-      try {
-        const result = await pilotStart({
-          projectDir: proj,
-          ...(baseURL ? { baseURL } : {}),
-          ...(flags.nonHeadless ? { headless: false } : {}),
-        });
-        console.log(JSON.stringify(result));
-      } catch (err) {
-        console.error(`waygraph pilot start: ${err instanceof Error ? err.message : String(err)}`);
-        process.exit(1);
-      }
-      break;
-    }
-
     // Hidden: the detached server's own entry point, spawned by
     // `spawnDetachedSession` (auto --cli --detach). Not documented in
     // usage() - not meant to be invoked directly by a person.
@@ -8206,11 +8493,21 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
         process.exit(1);
       }
       const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? resolveBaseUrl(proj);
+      const inject = flags.inject?.length ? resolveInjectRoots(flags.inject, proj) : undefined;
+      let headless: boolean | undefined;
+      if (flags.headlessBrowser) headless = true;
+      else if (flags.nonHeadless) headless = false;
       await runAutoServeCommand(
         {
           projectDir: proj,
           ...(baseURL ? { baseURL } : {}),
-          ...(flags.nonHeadless ? { headless: false } : {}),
+          ...(flags.goto
+            ? { startUrl: flags.goto, skipInitialNavigation: false }
+            : flags.blank === true
+              ? { skipInitialNavigation: true }
+              : {}),
+          ...(headless !== undefined ? { headless } : {}),
+          ...(inject?.length ? { inject } : {}),
         },
         sessionId,
       );
@@ -8247,9 +8544,20 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
       break;
     }
 
+    case "typecheck": {
+      const flags = parseRunFlags(args.slice(1));
+      const proj = resolve(flags.positionals[0] ?? process.cwd());
+      await runTypecheckCommand(proj, flags.noPractices === true);
+      break;
+    }
+
     case "check": {
-      const proj = resolve(args[1] ?? process.cwd());
-      const { navWarnings, selWarnings } = await checkCommand(proj);
+      const flags = parseRunFlags(args.slice(1));
+      const proj = resolve(flags.positionals[0] ?? process.cwd());
+      const { navWarnings, selWarnings, practiceWarnings } = await checkCommand(
+        proj,
+        flags.noPractices ? { noPractices: true } : undefined,
+      );
       if (navWarnings.length === 0) {
         console.log(`waygraph check: no navigation found outside NavBlocks under ${proj}`);
       } else {
@@ -8267,6 +8575,9 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           console.warn(`waygraph check: ${rel} (${w.blockName}) has an inline selector literal in verify - move it into a *Sel object`);
         }
         console.log(`waygraph check: ${selWarnings.length} inline-selector warning${selWarnings.length === 1 ? "" : "s"}`);
+      }
+      if (!flags.noPractices) {
+        printPracticeReport(proj, practiceWarnings);
       }
       const orphans = await findOrphanBlocks(proj);
       printOrphanReport(proj, orphans);

@@ -29,8 +29,14 @@
  * new execution primitive.
  */
 import { discoverGraph, type WaygraphGraph } from "./graph.js";
-import { spawnDetachedSession, requestSession } from "./auto-session-ipc.js";
-import type { AutoSessionInit, SessionSnapshot } from "./auto-session.js";
+import {
+  requestSession,
+  listBrowserSessions,
+  resolveSessionMeta,
+  type SessionMeta,
+} from "./auto-session-ipc.js";
+import { browserStart, type BrowserStartInit } from "./browser.js";
+import type { SessionSnapshot } from "./auto-session.js";
 
 export interface PilotStartResult {
   sessionId: string;
@@ -49,17 +55,58 @@ export interface PilotStartResult {
  * one round trip instead of separately knowing to chain `auto --cli
  * --detach` and `waygraph graph` itself.
  */
-export async function pilotStart(init: AutoSessionInit): Promise<PilotStartResult> {
-  const [meta, graph] = await Promise.all([
-    spawnDetachedSession(init),
-    discoverGraph(init.projectDir),
-  ]);
-  const status = await requestSession(init.projectDir, meta.sessionId, { op: "status" });
+export async function pilotStart(init: BrowserStartInit): Promise<PilotStartResult> {
+  const { resolveInjectRoots } = await import("./block-inject.js");
+  const exploreInject =
+    init.inject ??
+    (init.injectTokens?.length ? resolveInjectRoots(init.injectTokens, init.projectDir) : undefined);
+  const started = await browserStart({
+    ...init,
+    ...(exploreInject?.length ? { inject: exploreInject } : {}),
+    // Pilot navigates to baseURL on start (unlike `browser`, which defaults to about:blank).
+    skipInitialNavigation: init.skipInitialNavigation ?? false,
+  });
+  const graph = await discoverGraph(
+    init.projectDir,
+    exploreInject?.length ? { inject: exploreInject } : undefined,
+  );
+  const status = await requestSession(init.projectDir, started.sessionId, { op: "status" });
+  return {
+    sessionId: started.sessionId,
+    socketPath: started.socketPath,
+    headless: started.headless,
+    graph,
+    snapshot: status.ok ? status.snapshot : null,
+  };
+}
+
+/** Reattach to an existing browser session — does not spawn a new browser. */
+export async function pilotAttach(
+  projectDir: string,
+  sessionId: string,
+  inject?: string[],
+): Promise<PilotStartResult> {
+  const meta = resolveSessionMeta(sessionId, projectDir);
+  if (!meta) {
+    throw new Error(
+      `waygraph pilot attach: no such session "${sessionId}" — run \`waygraph pilot sessions\` from the project dir`,
+    );
+  }
+  const graph = await discoverGraph(
+    meta.projectDir,
+    inject?.length ? { inject } : undefined,
+  );
+  const status = await requestSession(meta.projectDir, sessionId, { op: "status" });
+  if (!status.ok) {
+    throw new Error(`waygraph pilot attach: session "${sessionId}" not reachable (${status.error})`);
+  }
   return {
     sessionId: meta.sessionId,
     socketPath: meta.socketPath,
     headless: meta.headless,
     graph,
-    snapshot: status.ok ? status.snapshot : null,
+    snapshot: status.snapshot,
   };
 }
+
+export { listBrowserSessions, type SessionMeta };

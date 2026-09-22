@@ -9,10 +9,37 @@ the reasoning agent. Every multi-step decision (which Block to run next, when a 
 `reach` vs `send`, when to fall back to raw primitives) is yours to make, turn by turn, by
 reading each `auto status`/`auto send` response.
 
+## auto vs browser vs pilot (do not conflate them)
+
+| Layer | Command | What it is |
+|-------|---------|------------|
+| **auto** | `waygraph auto` | Interactive explore (picker / `--cli` menu). **Not** a persistent agent browser. |
+| **browser** | `waygraph browser start` | New persistent Playwright session — **headful by default**, **about:blank by default**. `waygraph browser` lists live sessions only. |
+| **pilot** | `waygraph pilot start` | Bootstrap only: `browser start` + whole-project `graph` + starting `snapshot` in one JSON payload. Does not plan or act. |
+
+Session control (`send`, `status`, `highlight`, `dom`, …) works on **`auto`**, **`browser`**, and **`pilot`** — same socket, same session id:
+
+```
+waygraph browser send <sessionId> "<pick>"     # same as auto send / pilot send
+```
+
+**Session lifecycle — list first, then attach or start:**
+
+```
+waygraph browser sessions [project]          # what's live right now
+waygraph browser attach <sessionId>          # terminal picker on an existing session
+waygraph browser stop <sessionId|--all>      # shut one down when done
+waygraph pilot attach <sessionId>          # graph + snapshot for an existing session
+```
+
+`browser start` / `pilot start` always open a **new** session. Check `browser sessions` before starting another.
+
 ## Starting a session
 
 ```
 waygraph pilot start                      # bootstraps: {sessionId, socketPath, headless, graph, snapshot}
+waygraph browser start [--inject path] [--goto <url>] [--cli]  # new browser session; --cli opens terminal picker
+waygraph pilot start [--cli]              # --cli opens terminal picker after bootstrap JSON
 waygraph auto status <sessionId>          # re-read the live menu, no side effects
 waygraph auto send <sessionId> "<pick>"   # run exactly one Block (by menu index or name)
 waygraph auto reach <sessionId> <Checkpoint>  # path-find + run a whole route in one call
@@ -22,6 +49,47 @@ waygraph auto highlight <sessionId> '<json>'  # paint rings/todos on the live pa
 `graph` in `pilot start`'s response is the **whole project's** Block/Checkpoint graph, not
 just what's reachable from here - use it to plan several steps ahead before you start
 sending picks.
+
+## Bad practices (`waygraph check` / `waygraph typecheck`)
+
+Run `waygraph typecheck .` (or `npm run typecheck`) — runs `tsc --noEmit` then bad-practice warnings.
+`waygraph check` includes the same practice scan plus nav/orphan/selector hygiene.
+Use `--no-practices` on either command to skip the practice scan.
+
+Patterns warned (does not fail `check`; fails `typecheck` only when `tsc` fails):
+
+- **`Checkpoint<string>` in Block generics** — e.g. `defineMethodBlock<Checkpoint<string>, …>` instead of a project Checkpoint type from `src/states/`.
+- **`defineAssertBlock({…})` without an explicit type arg** — use `defineAssertBlock<YourCheckpoint>({…})` so `defineFlow` typing stays honest.
+- **Multiple `.fill()` in one Method** — split into one Block per input (fill-username, fill-password, …).
+- **`.fill()` + `.click()` in one Method** — split fill and submit into separate Blocks.
+
+Opt out per file: `// waygraph-ignore-practices` or `// waygraph-ignore: multi-input, combined-action`.
+
+Fix these before adding more Blocks; wildcard Checkpoints hide real graph edges from the type checker.
+
+## Coverage gaps on the live page (`auto console`)
+
+After `auto status` / `auto send`, read `waygraph auto console <sessionId>` — the session warns once per page load about:
+
+- **Unmapped hrefs** — same-origin `<a href>` paths with no `defineNavBlock` URL.
+- **Unmapped buttons** — visible `button` / `[role=button]` / submit inputs with no Method or NavClick selector in the Block library.
+
+Example warnings:
+
+```
+[waygraph] unmapped nav link on this page: /settings - no NavBlock covers this URL; add defineNavBlock
+[waygraph] unmapped button on this page: #save-draft - no Method/NavClick Block selector matches; consider defineMethodBlock or defineNavClickBlock
+```
+
+When you see these, author the missing Block — do not keep clicking raw primitives.
+
+## Session reachability (multi-pane / wrong cwd)
+
+Session ids are registered globally under `/tmp/waygraph-auto/` as well as `<project>/.waygraph-auto/`. If `auto status` says unreachable:
+
+1. Run `waygraph pilot sessions` from the project that started the browser — reuse the id, do not spawn again.
+2. Or `waygraph pilot attach <sessionId>` for graph + snapshot without a new browser.
+3. Stale metadata (crashed pid) is pruned automatically — start fresh only when the pid is actually gone.
 
 ## Highlight fixtures (Pilot supports them — use `auto highlight`)
 
@@ -73,7 +141,7 @@ Supported fields (demo parity):
 - `clear`: true drops rings/todos/focus/zoom badge
 
 - `tone`: all demo tones - `planned` | `auto` | `info` | `warning` | `danger` | `success` | `orange` (aliases like `error`/`blue`/`green` work too)
-- Bottom-left toast shows `Highlighting: …` (same strip as `Running (Dom): …`)
+- Bottom-left toast shows `Highlighting: …` (same strip as `Running (no Block): …` for raw ops)
 - Missing selectors are listed in the JSON response (`missing`) - not a hard failure
 - Does not replace `auto send` - paint, then run the real Block
 
@@ -100,9 +168,8 @@ only ever be as good as the project's own Block coverage: if two Checkpoints sha
 and nothing in their `verify` arrays tells them apart, `resync` will confidently report the
 wrong one. This is a coverage gap in the project's Blocks, not a `resync` bug - if you hit
 one, fix the ambiguity (add a second, concrete `Trait.visible` condition that's only true in
-one of the two states - see `AppHomePageBlock`/`InPoolPageBlock` in a real veciro-waygraph
-example of exactly this: the same `/app` route, split by presence of a "Join Pool" vs
-"Leave pool" button).
+one of the two states — e.g. the same route with different visible buttons that distinguish
+pool membership vs home).
 
 ## Rule 3: mem is intent, Checkpoint is reality - never blur them
 

@@ -3,6 +3,13 @@ import { join, relative, resolve } from "node:path";
 import type { Page } from "@playwright/test";
 import type { Block, Checkpoint, WaygraphInstanceOption } from "./types.js";
 import { discoverGraph, type WaygraphGraph, type WaygraphEdge } from "./graph.js";
+import { exploreRoots, injectTaggedFile } from "./block-inject.js";
+
+export interface ExploreContextOpts {
+  blocksSelect?: import("./blocks-select.js").BlocksSelect;
+  /** Absolute paths of extra Block trees to merge (host projectDir is always first). */
+  inject?: string[];
+}
 
 export interface BlockEntry {
   block: Block<Checkpoint<string>, Checkpoint<string>>;
@@ -136,7 +143,7 @@ async function wildcardActionRunnable(page: Page, entry: BlockEntry, here: strin
  */
 export async function loadBlockLibrary(
   projectDir: string,
-  opts?: { blocksSelect?: import("./blocks-select.js").BlocksSelect },
+  opts?: ExploreContextOpts,
 ): Promise<{
   byName: Map<string, BlockEntry>;
   navBlocks: BlockEntry[];
@@ -144,9 +151,12 @@ export async function loadBlockLibrary(
   const { matchBlocksSelect } = await import("./blocks-select.js");
   const byName = new Map<string, BlockEntry>();
   const navBlocks: BlockEntry[] = [];
+  const navSeen = new Set<string>();
   const select = opts?.blocksSelect;
-  for (const file of walkDir(projectDir, /\.block\.ts$/)) {
-    const relFile = relative(projectDir, file).replace(/\\/g, "/");
+  for (const root of exploreRoots(projectDir, opts?.inject)) {
+    for (const file of walkDir(root, /\.block\.ts$/)) {
+    const relFile = relative(root, file).replace(/\\/g, "/");
+    const taggedFile = injectTaggedFile(projectDir, root, relFile);
     // Glob/bare: path filter before import. Regex: need block name — filter after.
     if (select && select.kind !== "regex" && !matchBlocksSelect(select, { relFile })) {
       continue;
@@ -173,12 +183,22 @@ export async function loadBlockLibrary(
       const entry: BlockEntry = {
         block: exported as Block<Checkpoint<string>, Checkpoint<string>>,
         exportName,
-        file: relFile,
+        file: taggedFile,
         kind,
         description: typeof exported.description === "string" ? exported.description : "",
       };
+      if (byName.has(exported.name)) {
+        console.error(
+          `waygraph: inject skipped duplicate Block name "${exported.name}" (${taggedFile})`,
+        );
+        continue;
+      }
       byName.set(exported.name, entry);
-      if (kind === "nav") navBlocks.push(entry);
+      if (kind === "nav" && !navSeen.has(exported.name)) {
+        navSeen.add(exported.name);
+        navBlocks.push(entry);
+      }
+    }
     }
   }
   navBlocks.sort((a, b) => {
@@ -396,7 +416,7 @@ export async function buildExploreMenu(
 
 export async function buildExploreContext(
   projectDir: string,
-  opts?: { blocksSelect?: import("./blocks-select.js").BlocksSelect },
+  opts?: ExploreContextOpts,
 ): Promise<{
   graph: WaygraphGraph;
   library: Awaited<ReturnType<typeof loadBlockLibrary>>;

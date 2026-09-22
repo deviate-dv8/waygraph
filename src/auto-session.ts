@@ -29,8 +29,20 @@ import {
 } from "./auto-explore-run.js";
 import { runStubPhase, type StubPhaseResult } from "./highlights.js";
 import { findBlockPathDetailed } from "./graph.js";
-import { updatePilotOverlay, showPilotActivity, showPilotVision, showPilotFixtures } from "./pilot-overlay.js";
+import {
+  updatePilotOverlay,
+  showPilotActivity,
+  showPilotVision,
+  showPilotFixtures,
+  installPersistentPilotOverlay,
+  type PilotOverlayInfo,
+} from "./pilot-overlay.js";
 import type { PilotHighlightFixtures } from "./pilot-overlay.js";
+import {
+  collectKnownInteractionSelectors,
+  unmappedInteractionsPageScript,
+  type UnmappedInteractionPayload,
+} from "./coverage-gap.js";
 
 /** True when a stub-phase result actually carries authored content worth keeping. */
 function stubPhaseHasContent(r: StubPhaseResult): boolean {
@@ -196,6 +208,10 @@ export interface AutoSessionInit {
   baseURL?: string;
   startUrl?: string;
   blocksSelect?: import("./blocks-select.js").BlocksSelect;
+  /** Absolute paths — merged Block libraries (see `waygraph browser --inject`). */
+  inject?: string[];
+  /** When true, open about:blank instead of baseURL/startUrl (browser default). */
+  skipInitialNavigation?: boolean;
   /** Default true. false launches a real visible browser window. */
   headless?: boolean;
   /**
@@ -328,9 +344,13 @@ export class AutoSession {
   private lastRunNote: string | null = null;
   private readonly trace: TraceStep[] = [];
   private readonly consoleLog: ConsoleLogEntry[] = [];
+  private readonly knownInteractionSelectors: string[];
+  private readonly headless: boolean;
+  private lastOverlayInfo: PilotOverlayInfo | null = null;
 
   private constructor(
     private readonly projectDir: string,
+    private readonly inject: string[] | undefined,
     private readonly blocksSelect: import("./blocks-select.js").BlocksSelect | undefined,
     private graph: Awaited<ReturnType<typeof buildExploreContext>>["graph"],
     private library: Awaited<ReturnType<typeof buildExploreContext>>["library"],
@@ -341,14 +361,24 @@ export class AutoSession {
     private page: Page,
     private readonly startUrl: string | undefined,
     private readonly sessionId: string | undefined,
-  ) {}
+    knownInteractionSelectors: string[],
+    headless: boolean,
+  ) {
+    this.knownInteractionSelectors = knownInteractionSelectors;
+    this.headless = headless;
+  }
 
   static async start(init: AutoSessionInit): Promise<AutoSession> {
     const baseURL = init.baseURL ?? resolveBaseUrl(init.projectDir);
-    const startUrl = init.startUrl ?? baseURL;
+    const skipNav = init.skipInitialNavigation === true;
+    const startUrl = skipNav ? undefined : (init.startUrl ?? baseURL);
+    const exploreOpts = {
+      ...(init.blocksSelect ? { blocksSelect: init.blocksSelect } : {}),
+      ...(init.inject?.length ? { inject: init.inject } : {}),
+    };
     const { graph, library } = await buildExploreContext(
       init.projectDir,
-      init.blocksSelect ? { blocksSelect: init.blocksSelect } : undefined,
+      Object.keys(exploreOpts).length ? exploreOpts : undefined,
     );
     const mem = new MemPage();
     seedDefaultMem(library.byName, mem);
@@ -365,6 +395,9 @@ export class AutoSession {
     // headless keeps the fixed viewport since there's no real window to size.
     const launchOpts: Parameters<typeof chromium.launch>[0] = {
       headless,
+      // Keep Playwright's default --no-startup-window for headful: without it
+      // Chromium opens its own "New Tab" window AND our context.newPage() opens
+      // a second about:blank window. bringToFront() below surfaces the real page.
       args: headless ? [] : ["--start-maximized"],
     };
     if (executablePath) launchOpts.executablePath = executablePath;
@@ -374,13 +407,22 @@ export class AutoSession {
     };
     if (baseURL) contextOpts.baseURL = baseURL;
     const context = await browser.newContext(contextOpts);
+    await installPersistentPilotOverlay(context);
     const page = await context.newPage();
     if (startUrl) {
       await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
       await page.waitForLoadState("load").catch(() => {});
+    } else {
+      await page.goto("about:blank").catch(() => {});
     }
+    const knownInteractionSelectors = collectKnownInteractionSelectors(
+      init.projectDir,
+      library,
+      init.inject,
+    );
     const session = new AutoSession(
       init.projectDir,
+      init.inject,
       init.blocksSelect,
       graph,
       library,
@@ -391,7 +433,16 @@ export class AutoSession {
       page,
       startUrl,
       init.sessionId,
+      knownInteractionSelectors,
+      headless,
     );
+    page.on("load", () => {
+      void session.repaintOverlayAfterNavigation();
+    });
+    if (!headless) {
+      await session.bootstrapOverlay().catch(() => {});
+      await page.bringToFront().catch(() => {});
+    }
     // Attached once, on the page created here - `ensureLivePage` only swaps
     // to a fresh Page if the current one closed (a rare case, e.g. the human
     // closing the tab), not on ordinary same-page SPA navigation, which is
@@ -466,61 +517,53 @@ export class AutoSession {
     // whole point is a human watching the screen sees the SAME state a
     // concurrent API caller just got back, not a stale frame that catches
     // up moments later.
-    await updatePilotOverlay(this.page, {
+    this.lastOverlayInfo = {
       sessionId: this.sessionId,
       snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
       graph: this.graph,
-    });
-    await this.warnUnmappedLinks();
+    };
+    await updatePilotOverlay(this.page, this.lastOverlayInfo);
+    await this.warnUnmappedInteractions();
     return menu;
   }
 
+  /** Paint the overlay on about:blank / immediately after session start (headful browser). */
+  private async bootstrapOverlay(): Promise<void> {
+    await this.currentMenu();
+  }
+
+  /** Re-apply cached overlay state after navigation (init script restores shell only). */
+  private async repaintOverlayAfterNavigation(): Promise<void> {
+    if (this.lastOverlayInfo) {
+      await updatePilotOverlay(this.page, this.lastOverlayInfo).catch(() => {});
+      return;
+    }
+    if (!this.headless) {
+      await this.bootstrapOverlay().catch(() => {});
+    }
+  }
+
   /**
-   * Real, direct user request: a Blind Pilot agent had no way to ask "which
-   * of the links visible on THIS page are already covered by a NavBlock" -
-   * only manual DOM inspection + guessing hrefs, exactly what this session
-   * had been doing by hand the whole time this feature was built. Compares
-   * every same-origin `<a href>` on the page against every NavBlock's own
-   * static url (`__waygraphNavUrl` - see `defineNavBlock`'s own comment for
-   * why only plain-string urls qualify), and `console.warn()`s each pathname
-   * with no NavBlock at all - surfaced through the same real console capture
-   * `auto console` already reads, not a separate channel. Deduped per path
-   * per page load (a `Set` living on `window`, so it survives repeated
-   * `currentMenu()` calls but resets on a real navigation) - once is enough
-   * to flag a gap, repeating it on every status/send call would just be noise.
+   * Flags same-origin `<a href>` paths and visible buttons with no NavBlock
+   * URL / Block selector in the loaded library — read via `auto console`.
+   * Deduped per page load so repeated status/send calls stay quiet.
    */
-  private async warnUnmappedLinks(): Promise<void> {
-    const known = new Set<string>();
+  private async warnUnmappedInteractions(): Promise<void> {
+    const knownPathnames: string[] = [];
     for (const entry of this.library.navBlocks) {
       const url = (entry.block as unknown as { __waygraphNavUrl?: string }).__waygraphNavUrl;
       if (!url) continue;
       try {
-        known.add(new URL(url, this.page.url()).pathname);
+        knownPathnames.push(new URL(url, this.page.url()).pathname);
       } catch {
         /* not a resolvable URL (relative to an unset base, etc.) - skip */
       }
     }
-    await this.page
-      .evaluate((knownPathnames: string[]) => {
-        const w = window as unknown as { __wgWarnedPaths?: Set<string> };
-        w.__wgWarnedPaths ??= new Set<string>();
-        const seenThisPass = new Set<string>();
-        for (const a of Array.from(document.querySelectorAll("a[href]"))) {
-          let url: URL;
-          try {
-            url = new URL(a.getAttribute("href") || "", location.href);
-          } catch {
-            continue;
-          }
-          if (url.origin !== location.origin) continue;
-          const path = url.pathname;
-          if (seenThisPass.has(path) || knownPathnames.includes(path) || w.__wgWarnedPaths!.has(path)) continue;
-          seenThisPass.add(path);
-          w.__wgWarnedPaths!.add(path);
-          console.warn(`[waygraph] unmapped nav link on this page: ${path} - no NavBlock covers this URL`);
-        }
-      }, Array.from(known))
-      .catch(() => {});
+    const payload: UnmappedInteractionPayload = {
+      knownPathnames,
+      knownSelectors: this.knownInteractionSelectors,
+    };
+    await this.page.evaluate(unmappedInteractionsPageScript, payload).catch(() => {});
   }
 
   /** Pure getter - no Block runs, no mem/page mutation. */
@@ -709,9 +752,13 @@ export class AutoSession {
    */
   async reloadLibrary(): Promise<void> {
     if (this.page) await showPilotActivity(this.page, "Running: reload");
+    const exploreOpts = {
+      ...(this.blocksSelect ? { blocksSelect: this.blocksSelect } : {}),
+      ...(this.inject?.length ? { inject: this.inject } : {}),
+    };
     const { graph, library } = await buildExploreContext(
       this.projectDir,
-      this.blocksSelect ? { blocksSelect: this.blocksSelect } : undefined,
+      Object.keys(exploreOpts).length ? exploreOpts : undefined,
     );
     this.graph = graph;
     this.library = library;
@@ -760,7 +807,7 @@ export class AutoSession {
    */
   async rawClick(selector: string): Promise<ApplyPickResult> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    await showPilotActivity(this.page, `Running (Dom): click "${selector}"`);
+    await showPilotActivity(this.page, `Running (no Block): click "${selector}"`);
     const locator = this.page.locator(selector).first();
     if ((await locator.count()) === 0) {
       return { ok: false, error: `no element matches selector "${selector}"` };
@@ -779,7 +826,7 @@ export class AutoSession {
 
   async rawType(selector: string, text: string): Promise<ApplyPickResult> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    await showPilotActivity(this.page, `Running (Dom): type into "${selector}"`);
+    await showPilotActivity(this.page, `Running (no Block): type into "${selector}"`);
     const locator = this.page.locator(selector).first();
     if ((await locator.count()) === 0) {
       return { ok: false, error: `no element matches selector "${selector}"` };
@@ -805,7 +852,7 @@ export class AutoSession {
    */
   async rawPress(selector: string, key: string): Promise<ApplyPickResult> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    await showPilotActivity(this.page, `Running (Dom): press "${key}" on "${selector}"`);
+    await showPilotActivity(this.page, `Running (no Block): press "${key}" on "${selector}"`);
     const locator = this.page.locator(selector).first();
     if ((await locator.count()) === 0) {
       return { ok: false, error: `no element matches selector "${selector}"` };
@@ -824,7 +871,7 @@ export class AutoSession {
 
   async rawGoto(url: string): Promise<ApplyPickResult> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    await showPilotActivity(this.page, `Running (Dom): goto "${url}"`);
+    await showPilotActivity(this.page, `Running (no Block): goto "${url}"`);
     try {
       await this.page.goto(url, { waitUntil: "domcontentloaded" });
     } catch (err) {
@@ -851,7 +898,7 @@ export class AutoSession {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
     const filePath = typeof stub === "string" ? stubFilePath(stub) : stub.filePath;
     const label = typeof stub === "string" ? stub : filePath;
-    await showPilotActivity(this.page, `Running (Dom): upload ${label} into "${selector}"`);
+    await showPilotActivity(this.page, `Running (no Block): upload ${label} into "${selector}"`);
     const locator = this.page.locator(selector).first();
     if ((await locator.count()) === 0) {
       return { ok: false, error: `no element matches selector "${selector}"` };

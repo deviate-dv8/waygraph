@@ -24,6 +24,14 @@ against a live site, use `--skill-pilot-blind`.
    an explicit type argument when it sits between two specifically-typed Blocks in a Flow.
 5. **`requires` = externally supplied.** A key an earlier Block in the same chain produces
    is never listed under `requires` - preflight checks the whole chain up front.
+6. **Keep Checkpoints typed — never `Checkpoint<string>`.** Block helpers take concrete
+   Checkpoint types from `src/states/` (e.g. `defineMethodBlock<LoginPage, LoginPage>`).
+   Wildcard `Checkpoint<string>` compiles but kills graph honesty; `waygraph check` / `waygraph typecheck` warn.
+   Same for `defineAssertBlock({…})` without an explicit type arg — use
+   `defineAssertBlock<YourCheckpoint>({…})`.
+7. **One input/action per Method Block.** No block that `.fill()`s two fields or `.fill()` + `.click()` in one
+   `act()` — split like saucedemo login (`fill-username`, `fill-password`, `submit-login`). Opt out per file:
+   `// waygraph-ignore: multi-input` or `// waygraph-ignore-practices`.
 
 ## Block kinds (file convention)
 
@@ -84,7 +92,9 @@ the site's `*-web/` tree. Browser-driven (DOM / iframe Traits), not the catcher'
 ## Verify before you call it done
 
 ```bash
-npx waygraph check .          # orphans + nav-escape + inline-selector warnings
+npx waygraph check .          # orphans + nav-escape + inline-selector + bad-practice warnings
+npx waygraph typecheck .      # tsc --noEmit + bad-practice warnings (npm run typecheck)
+npx waygraph check --no-practices .   # skip bad-practice scan only
 npx waygraph map .            # exit 1 if src/map/ folder path != real static url
 npx waygraph validate .       # every .flow.ts loads
 npx waygraph graph .          # nodes/edges/skipped/orphans - counts should make sense

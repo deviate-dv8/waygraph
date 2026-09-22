@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "waygraph typecheck .",
     "test": "playwright test",
     "fixture": "node scripts/fixture-server.mjs",
     "list": "waygraph list",

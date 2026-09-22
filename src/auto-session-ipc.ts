@@ -6,9 +6,11 @@
  */
 import { createServer, connect, type Socket } from "node:net";
 import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
 import {
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   writeFileSync,
   rmSync,
@@ -97,6 +99,20 @@ function metaPath(projectDir: string, sessionId: string): string {
   return join(sessionDir(projectDir), `${sessionId}.json`);
 }
 
+/** Global index so session control works even when cwd ≠ the project that spawned the session. */
+function globalMetaPath(sessionId: string): string {
+  return join(socketDir(), `${sessionId}.meta.json`);
+}
+
+function isPidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Deliberately NOT under the project directory (unlike meta/log files) -
  * a real bug found while proving out openspec/changes/waygraph-map's own
@@ -125,7 +141,7 @@ function generateSessionId(): string {
   return randomBytes(4).toString("hex");
 }
 
-function readSessionMeta(projectDir: string, sessionId: string): SessionMeta | null {
+export function readSessionMeta(projectDir: string, sessionId: string): SessionMeta | null {
   const p = metaPath(projectDir, sessionId);
   if (!existsSync(p)) return null;
   try {
@@ -135,9 +151,36 @@ function readSessionMeta(projectDir: string, sessionId: string): SessionMeta | n
   }
 }
 
+/**
+ * Resolve session metadata from a project hint (cwd) or the global registry.
+ * Fixes "session unreachable" when the agent calls status/send from a different
+ * directory or pane than the one that ran `pilot start`.
+ */
+export function resolveSessionMeta(sessionId: string, projectDirHint?: string): SessionMeta | null {
+  if (projectDirHint) {
+    const local = readSessionMeta(projectDirHint, sessionId);
+    if (local) return local;
+  }
+  const globalPath = globalMetaPath(sessionId);
+  if (existsSync(globalPath)) {
+    try {
+      return JSON.parse(readFileSync(globalPath, "utf-8")) as SessionMeta;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function writeGlobalSessionMeta(meta: SessionMeta): void {
+  mkdirSync(socketDir(), { recursive: true });
+  writeFileSync(globalMetaPath(meta.sessionId), JSON.stringify(meta, null, 2));
+}
+
 function removeSessionFiles(projectDir: string, sessionId: string): void {
   for (const p of [
     metaPath(projectDir, sessionId),
+    globalMetaPath(sessionId),
     socketPathFor(sessionId),
   ]) {
     try {
@@ -250,9 +293,21 @@ export async function requestSession(
   request: ServerRequest,
   timeoutMs = 15_000,
 ): Promise<ServerResponse> {
-  const meta = readSessionMeta(projectDir, sessionId);
+  const meta = resolveSessionMeta(sessionId, projectDir);
   if (!meta) {
-    return { ok: false, error: `no such session "${sessionId}" (no metadata under .waygraph-auto/)` };
+    return {
+      ok: false,
+      error:
+        `no such session "${sessionId}" (no metadata under ${projectDir}/.waygraph-auto/ or global registry) — ` +
+        "run from the project that started the session, or `waygraph pilot sessions` to list live ids",
+    };
+  }
+  if (!isPidAlive(meta.pid)) {
+    removeSessionFiles(meta.projectDir, sessionId);
+    return {
+      ok: false,
+      error: `session "${sessionId}" is not running (pid ${meta.pid} exited) — start a new session with pilot/browser start`,
+    };
   }
   return new Promise((resolvePromise) => {
     const sock = connect(meta.socketPath);
@@ -417,6 +472,7 @@ export async function serveSession(
     headless,
   };
   writeFileSync(metaPath(projectDir, sessionId), JSON.stringify(meta, null, 2));
+  writeGlobalSessionMeta(meta);
 
   process.on("SIGTERM", () => void shutdown());
   process.on("SIGINT", () => void shutdown());
@@ -445,15 +501,26 @@ export async function spawnDetachedSession(
 ): Promise<SessionMeta> {
   const sessionId = generateSessionId();
   mkdirSync(sessionDir(init.projectDir), { recursive: true });
-  const launcher = join(dirname(fileURLToPath(import.meta.url)), "..", "bin", "waygraph");
+  const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+  const require = createRequire(join(pkgRoot, "package.json"));
+  const tsxEsm = require.resolve("tsx/esm");
+  const cli = join(pkgRoot, "dist", "cli.js");
   const logFd = openSync(logPathFor(init.projectDir, sessionId), "a");
-  const args = ["__auto-serve", init.projectDir, "--session-id", sessionId];
+  const args = ["--import", tsxEsm, cli, "__auto-serve", init.projectDir, "--session-id", sessionId];
   if (init.baseURL) args.push("--base-url", init.baseURL);
+  if (init.startUrl) args.push("--goto", init.startUrl);
+  if (init.skipInitialNavigation) args.push("--blank");
   if (init.headless === false) args.push("--non-headless");
-  const child = spawn(process.execPath, [launcher, ...args], {
+  if (init.headless === true) args.push("--headless");
+  for (const p of init.inject ?? []) {
+    args.push("--inject", p);
+  }
+  // Spawn cli.js directly — not bin/waygraph (which would fork a second Node).
+  const child = spawn(process.execPath, args, {
     detached: true,
     stdio: ["ignore", logFd, logFd],
     windowsHide: true,
+    env: process.env,
   });
   child.unref();
 
@@ -467,6 +534,48 @@ export async function spawnDetachedSession(
     `session "${sessionId}" did not become ready within ${readyTimeoutMs}ms - ` +
       `check ${logPathFor(init.projectDir, sessionId)} for errors`,
   );
+}
+
+/** Stop one detached session (SIGTERM + cleanup metadata/socket). */
+export function stopBrowserSession(projectDir: string, sessionId: string): boolean {
+  const meta = resolveSessionMeta(sessionId, projectDir);
+  if (!meta) return false;
+  try {
+    process.kill(meta.pid, "SIGTERM");
+  } catch {
+    /* already gone */
+  }
+  removeSessionFiles(meta.projectDir, sessionId);
+  return true;
+}
+
+/** Stop every live session registered for a project. */
+export function stopAllBrowserSessions(projectDir: string): number {
+  const sessions = listBrowserSessions(projectDir);
+  for (const meta of sessions) {
+    stopBrowserSession(meta.projectDir, meta.sessionId);
+  }
+  return sessions.length;
+}
+
+/** Live browser sessions for a project (metadata + socket + pid still present). */
+export function listBrowserSessions(projectDir: string): SessionMeta[] {
+  const dir = sessionDir(projectDir);
+  if (!existsSync(dir)) return [];
+  const out: SessionMeta[] = [];
+  for (const f of readdirSync(dir)) {
+    if (!f.endsWith(".json")) continue;
+    const id = f.slice(0, -".json".length);
+    const meta = readSessionMeta(projectDir, id);
+    if (!meta) continue;
+    if (!existsSync(socketPathFor(id))) continue;
+    if (!isPidAlive(meta.pid)) {
+      removeSessionFiles(projectDir, id);
+      continue;
+    }
+    out.push(meta);
+  }
+  return out.sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 }
 
 function printSnapshotMenu(snapshot: SessionSnapshot): void {

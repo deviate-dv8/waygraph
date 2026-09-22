@@ -4,6 +4,7 @@ import {
   type BlocksSelect,
   matchBlocksSelect,
 } from "./blocks-select.js";
+import { exploreRoots, injectTaggedFile } from "./block-inject.js";
 
 /**
  * The state-machine shape `waygraph auto` discovers from a project's own
@@ -401,24 +402,27 @@ function extractDefineBlockGenerics(src: string): { in: string; out: string }[] 
  */
 export async function discoverGraph(
   projectDir: string,
-  opts?: { blocksSelect?: BlocksSelect },
+  opts?: { blocksSelect?: BlocksSelect; inject?: string[] },
 ): Promise<WaygraphGraph> {
-  let files = discoverBlocks(projectDir);
   const select = opts?.blocksSelect;
+  const nodeTags = new Set<string>();
+  const edges: WaygraphEdge[] = [];
+  const skipped: SkippedBlock[] = [];
+  const edgeSeen = new Set<string>();
+
+  for (const root of exploreRoots(projectDir, opts?.inject)) {
+  let files = discoverBlocks(root);
   // Glob/bare: drop files early. Regex needs block names — filter per export below.
   if (select && select.kind !== "regex") {
     files = files.filter((file) =>
       matchBlocksSelect(select, {
-        relFile: relative(projectDir, file).replace(/\\/g, "/"),
+        relFile: relative(root, file).replace(/\\/g, "/"),
       }),
     );
   }
-  const nodeTags = new Set<string>();
-  const edges: WaygraphEdge[] = [];
-  const skipped: SkippedBlock[] = [];
 
   for (const file of files) {
-    const relFile = relative(projectDir, file);
+    const relFile = injectTaggedFile(projectDir, root, relative(root, file).replace(/\\/g, "/"));
     let mod: Record<string, unknown>;
     try {
       mod = await importModule(file);
@@ -511,10 +515,14 @@ export async function discoverGraph(
         for (const to of toTags) {
           if (from !== "*") nodeTags.add(from);
           nodeTags.add(to);
+          const key = `${blockName}\0${from}\0${to}`;
+          if (edgeSeen.has(key)) continue;
+          edgeSeen.add(key);
           edges.push({ block: blockName, file: relFile, from, to, kind: "action" });
         }
       }
     }
+  }
   }
 
   return {

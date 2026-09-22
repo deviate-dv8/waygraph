@@ -43,7 +43,7 @@ test("waygraph pilot start returns a real session id, socket path, and the whole
   const result = JSON.parse(stdout.trim());
   expect(result.sessionId).toMatch(/^[0-9a-f]{8}$/);
   expect(result.socketPath).toContain(result.sessionId);
-  expect(result.headless).toBe(true);
+  expect(result.headless).toBe(false);
   expect(result.snapshot.here).toBe("LoginPage");
   const checkpointNames = result.graph.nodes.map((n: { checkpoint: string }) => n.checkpoint);
   expect(checkpointNames).toEqual(expect.arrayContaining(["LoginPage", "LoggedIn", "OrderComplete"]));
