@@ -29,10 +29,15 @@ test("each episode's title survives chaining, and blocks() reports the flattened
 
   expect(blocks.map((b) => b.name)).toEqual([
     "nav-login",
+    "fill-username",
+    "fill-password",
     "submit-login",
     "add-to-cart",
     "nav-cart",
     "nav-checkout-info",
+    "fill-first-name",
+    "fill-last-name",
+    "fill-postal-code",
     "submit-checkout-info",
     "finish-order",
   ]);
