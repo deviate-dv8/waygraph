@@ -1,11 +1,10 @@
 // Fixture — three fills in one Method block (bad practice).
-import { defineMethodBlock, checkpoint } from "../../../dist/index.js";
+import { defineMethodBlock, checkpoint, type Checkpoint } from "../../../dist/index.js";
 
-type FixtureScreen = "FixtureScreen";
+type FixtureScreen = Checkpoint<"FixtureScreen">;
 
 export const MultiInputFixtureBlock = defineMethodBlock<FixtureScreen, FixtureScreen>({
   name: "multi-input-fixture",
-  checkpoint: "FixtureScreen",
   instruction: {
     async act(page) {
       await page.locator("#a").fill("1");

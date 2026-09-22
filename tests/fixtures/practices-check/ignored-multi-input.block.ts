@@ -1,11 +1,10 @@
 // waygraph-ignore: multi-input
-import { defineMethodBlock, checkpoint } from "../../../dist/index.js";
+import { defineMethodBlock, checkpoint, type Checkpoint } from "../../../dist/index.js";
 
-type FixtureScreen = "FixtureScreen";
+type FixtureScreen = Checkpoint<"FixtureScreen">;
 
 export const IgnoredMultiInputBlock = defineMethodBlock<FixtureScreen, FixtureScreen>({
   name: "ignored-multi-input",
-  checkpoint: "FixtureScreen",
   instruction: {
     async act(page) {
       await page.locator("#a").fill("1");

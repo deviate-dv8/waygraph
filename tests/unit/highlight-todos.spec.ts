@@ -273,7 +273,7 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
     // not keep. keep must not invent a blank dock.
     const wiped = applyTodoPhase(midAct, {
       todoSync: "set",
-      todoDock: buildTodoDock({ todoId: "ep10", todos: ["A", "B", "C"], todoIndex: 0 }),
+      todoDock: buildTodoDock({ todoId: "ep10", todos: ["A", "B", "C"], todoIndex: 0 })!,
     });
     assert.equal(wiped.dock?.groups[0]?.items[0]?.current, true);
   });

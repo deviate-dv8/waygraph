@@ -1,7 +1,7 @@
 // Fixture for tests/cli/practices-check.spec.ts — properly typed assert block.
-import { defineAssertBlock, Trait } from "../../../dist/index.js";
+import { defineAssertBlock, Trait, type Checkpoint } from "../../../dist/index.js";
 
-type FixtureScreen = "FixtureScreen";
+type FixtureScreen = Checkpoint<"FixtureScreen">;
 
 export const TypedFixtureBlock = defineAssertBlock<FixtureScreen>({
   name: "typed-fixture",
