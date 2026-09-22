@@ -296,6 +296,13 @@ nothing is blocked, nothing fails to build. `waygraph check [project]` is the
 complementary whole-project sweep for contexts with no editor watching (CI, generated
 code, an autonomous agent authoring Blocks) - it warns, never fails the process.
 
+**`waygraph typecheck [project]`** runs `tsc --noEmit` then the same **bad-practice** scan
+(wildcard `Checkpoint<string>`, assert blocks missing type args, multi-`.fill()` Methods,
+fill+click in one Method). Practices warn only unless `tsc` fails; use `--no-practices` to
+skip the scan. Opt out per file: `// waygraph-ignore-practices` or
+`// waygraph-ignore: multi-input, combined-action`. Print full agent guidance:
+`waygraph --skill-convention`.
+
 ### Demo narration
 
 Automation rings are gray; authored stubs/slides can use
@@ -662,26 +669,51 @@ space is constrained to this project's own pre-verified Blocks (each with a real
 already checked) instead of freeform DOM/pixel guessing - narrower, but far more accurate and
 deterministic.
 
+### auto vs browser vs pilot
+
+| Layer | Command | What it is |
+|-------|---------|------------|
+| **auto** | `waygraph auto` | Interactive explore (picker / `--cli` menu). **Not** a persistent agent browser. |
+| **browser** | `waygraph browser start` | New persistent Playwright session — **headful by default**, **about:blank by default**. |
+| **pilot** | `waygraph pilot start` | Bootstrap only: `browser start` + whole-project `graph` + starting `snapshot` in one JSON payload. Does not plan or act. |
+
+Session control (`send`, `status`, `highlight`, `dom`, …) works on **`auto`**, **`browser`**, and
+**`pilot`** — same socket, same session id. Prefer the `browser`/`pilot` prefix when driving a
+detached session; `auto` remains for the interactive picker and legacy `--cli --detach`.
+
+**Session lifecycle is explicit** — list what's live before opening another:
+
 ```bash
-waygraph pilot start --non-headless
+waygraph browser                         # list live sessions (cwd)
+waygraph browser sessions [--json]       # same; --json for agents
+waygraph browser start                   # always opens a new session
+waygraph browser stop <sessionId>        # shut one down
+waygraph browser stop --all              # shut every session for this project
+waygraph browser attach <sessionId>        # terminal picker on an existing session
+waygraph pilot attach <sessionId>          # graph + snapshot, no new browser
+```
+
+```bash
+waygraph pilot start
 # {"sessionId":"bb65d74c","socketPath":"...","headless":false,"graph":{...},"snapshot":{...}}
 ```
 
-One call gives an agent everything it needs to start: a real, already-running Playwright
-session (the exact mechanism `auto --cli --detach` already provides), and the whole project's
-Block graph (`graph` - every Checkpoint/edge/description, not just what's reachable from the
-current position, so the agent can plan several steps ahead). From there, the agent drives the
-session itself, one pick at a time, using the session-control commands that already existed
-before Pilot did:
+`pilot start` is one round trip for agents that need the whole graph immediately. For browser-only
+work (no graph payload), use `browser start`. `auto --cli --detach` still works but is the older
+explore entry point — prefer `browser start` for agent-driven sessions.
+
+From a live session, drive one pick at a time:
 
 ```bash
-waygraph auto status <sessionId>              # read the current menu (no side effects)
-waygraph auto send <sessionId> "<pick>"       # run one pick, get the resulting menu back
-waygraph auto dom <sessionId>                 # inspect the live DOM/ARIA tree
-waygraph auto trace <sessionId>               # read the Checkpoint/Block history so far
-waygraph auto reach <sessionId> <Checkpoint>  # run a whole multi-step route in one call
-waygraph auto resync <sessionId>              # force here to re-detect from the real page
+waygraph browser status <sessionId>              # read the current menu (no side effects)
+waygraph browser send <sessionId> "<pick>"       # run one pick, get the resulting menu back
+waygraph browser dom <sessionId>                 # inspect the live DOM/ARIA tree
+waygraph browser trace <sessionId>               # read the Checkpoint/Block history so far
+waygraph browser reach <sessionId> <Checkpoint>  # run a whole multi-step route in one call
+waygraph browser resync <sessionId>              # force here to re-detect from the real page
 ```
+
+(`auto …` and `pilot …` accept the same subcommands with the same `<sessionId>`.)
 
 Worked example (run for real against `examples/saucedemo`, no new execution code involved): an
 agent gets a plain request - "log me in and buy the backpack" - reads the graph and the starting
@@ -1023,17 +1055,23 @@ Flows are files (0.10.5+):
 | Ad-hoc Blocks | `waygraph run --blocks "login then nav-cart" --data '{...}'` |
 | Headed execute | `waygraph run --blocks shopFlow --non-headless --video` |
 | Explore | `waygraph auto` / `waygraph auto --cli` |
+| List live browser sessions | `waygraph browser` / `waygraph browser sessions [--json]` |
+| Open a new persistent browser | `waygraph browser start` (headful, about:blank by default) |
+| Stop a browser session | `waygraph browser stop <sessionId>` / `stop --all` |
+| Pilot bootstrap (browser + graph + snapshot) | `waygraph pilot start` |
+| Attach to existing session (graph only) | `waygraph pilot attach <sessionId>` |
 | Path-find | `waygraph auto --blocks LoginPage OrderComplete` |
-| Run `--cli` as a background session | `waygraph auto --cli --detach` -> `{sessionId, socketPath}` |
-| Drive a detached session (no TTY) | `waygraph auto send <sessionId> "<pick>"` -> JSON state |
-| Read a detached session's state | `waygraph auto status <sessionId>` (no side effects) |
-| Reattach a terminal to a detached session | `waygraph auto attach <sessionId>` |
+| Run `--cli` as a background session (legacy) | `waygraph auto --cli --detach` -> `{sessionId, socketPath}` |
+| Drive a detached session (no TTY) | `waygraph browser send <sessionId> "<pick>"` -> JSON state |
+| Read a detached session's state | `waygraph browser status <sessionId>` (no side effects) |
+| Reattach a terminal to a detached session | `waygraph browser attach <sessionId>` |
 | Read the live page (aria, small/default) | `waygraph auto dom <sessionId>` |
 | Read the live page (raw DOM, bounded) | `waygraph auto dom <sessionId> --mode full` |
 | Scope either to one element | `waygraph auto dom <sessionId> --selector ".inventory_list"` |
 | Detached session with a real visible browser | `waygraph auto --cli --detach --non-headless` |
 | Read the session's Checkpoint/Block history | `waygraph auto trace <sessionId>` |
 | Whole-project nav-escape + inline-selector + orphan sweep | `waygraph check [project]` |
+| `tsc --noEmit` + bad-practice warnings | `waygraph typecheck [project]` (`--no-practices` to skip scan) |
 | Waygraph Map enforcement (verbatim url-vs-folder, exits 1 on a violation) | `waygraph map [project]` |
 | Graph crawl | `waygraph traverse [project] --parallel N --min-edge-coverage 80%` |
 | Coding-agent defs | `waygraph agent-dive --loop claude` |
@@ -1167,7 +1205,7 @@ it out from under you.
 git clone git@github.com:deviate-dv8/waygraph.git
 cd waygraph
 npm install
-npm run typecheck   # tsc --noEmit
+npm run typecheck   # waygraph typecheck . (tsc --noEmit + practice warnings)
 npm run test        # playwright test
 npm run build       # tsc -p tsconfig.build.json, emits dist/
 ```
