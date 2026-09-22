@@ -6,6 +6,8 @@ import {
   urlMatches,
   textEquals,
   visible,
+  disabled,
+  enabled,
   frameVisible,
   frameTextEquals,
   frameContainsText,
@@ -15,6 +17,13 @@ import {
 
 const FORM_URL = `data:text/html,${encodeURIComponent(
   `<!doctype html><html><body><h1 id="h">Hello</h1></body></html>`,
+)}`;
+
+const GATED_FORM_URL = `data:text/html,${encodeURIComponent(
+  `<!doctype html><html><body>
+    <button id="submit" disabled>Submit</button>
+    <button id="cancel">Cancel</button>
+  </body></html>`,
 )}`;
 
 const IFRAME_BODY = `<body>Please verify your account: <a href="https://app.example.com/verify?token=abc">Verify</a></body>`;
@@ -105,6 +114,62 @@ test("Trait.url can also be pinned to an exact query string when that precision 
       verify: [trait],
     },
   };
+
+  const result = await runGraph<Done>(block, undefined, context, new MemPage());
+  expect(result).toEqual(checkpoint("Done"));
+});
+
+test("disabled/enabled pass against a real gated button - the feature-state case, not just static content", async ({
+  context,
+}) => {
+  const block: Block<Start, Done> = {
+    name: "load",
+    instruction: {
+      async act(page) {
+        await page.goto(GATED_FORM_URL);
+      },
+      resolve: () => checkpoint("Done"),
+      verify: [disabled("#submit"), enabled("#cancel")],
+    },
+  };
+
+  const result = await runGraph<Done>(block, undefined, context, new MemPage());
+  expect(result).toEqual(checkpoint("Done"));
+});
+
+test("disabled fails loud, naming itself, when the element is actually enabled", async ({ context }) => {
+  const block: Block<Start, Done> = {
+    name: "load",
+    instruction: {
+      async act(page) {
+        await page.goto(GATED_FORM_URL);
+      },
+      resolve: () => checkpoint("Done"),
+      verify: [disabled("#cancel")],
+    },
+  };
+
+  await expect(runGraph<Done>(block, undefined, context, new MemPage())).rejects.toThrow(
+    /disabled\(#cancel\).*failed after "load"/,
+  );
+});
+
+test("Trait.disabled/Trait.enabled are the same factories as disabled/enabled, just discoverable off Trait.", async ({
+  context,
+}) => {
+  const block: Block<Start, Done> = {
+    name: "load",
+    instruction: {
+      async act(page) {
+        await page.goto(GATED_FORM_URL);
+      },
+      resolve: () => checkpoint("Done"),
+      verify: [Trait.disabled("#submit"), Trait.enabled("#cancel")],
+    },
+  };
+
+  expect(Trait.disabled).toBe(disabled);
+  expect(Trait.enabled).toBe(enabled);
 
   const result = await runGraph<Done>(block, undefined, context, new MemPage());
   expect(result).toEqual(checkpoint("Done"));

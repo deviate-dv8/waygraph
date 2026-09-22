@@ -85,6 +85,36 @@ export function visible(selector: string): Trait {
 }
 
 /**
+ * Passes when at least one element matching `selector` is currently disabled -
+ * a submit button greyed out until required fields are filled, a "Save" not
+ * yet re-enabled after a pending edit. A real, nameable feature *state*, not
+ * just static content or an action's result. Uses `.first()` for the same
+ * reason `visible` does. A point-in-time read via Playwright's own
+ * `isDisabled()` - no wait built in, so pair it with `Trait.visible` (or rely
+ * on `verify`'s own natural timing right after `resolve`) if the element
+ * itself might not be on the page yet.
+ * @example Trait.disabled(CheckoutSel.submitButton)
+ */
+export function disabled(selector: string): Trait {
+  return {
+    name: `disabled(${selector})`,
+    async check(page) {
+      return page.locator(selector).first().isDisabled();
+    },
+  };
+}
+
+/** The complement of {@link disabled} - passes once `selector` is enabled. */
+export function enabled(selector: string): Trait {
+  return {
+    name: `enabled(${selector})`,
+    async check(page) {
+      return page.locator(selector).first().isEnabled();
+    },
+  };
+}
+
+/**
  * `visible`, scoped to a frame (e.g. a mail catcher's message-preview iframe)
  * instead of the top-level page. `page.locator(selector)` alone never reaches
  * inside an iframe - Playwright requires `frameLocator` for that - so
@@ -143,6 +173,8 @@ export const Trait = {
   url: urlMatches,
   text: textEquals,
   visible,
+  disabled,
+  enabled,
   frameVisible,
   frameText: frameTextEquals,
   frameContains: frameContainsText,

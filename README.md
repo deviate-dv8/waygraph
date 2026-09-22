@@ -412,6 +412,36 @@ engine.defineFlow([start, NavHomeBlock, AddItemBlock, AssertItemAddedBlock, Clea
 Live reference: `templates/scaffold/src/map/(app_base)/home/_methods/assert-item-added.method.block.ts`,
 wired into `shop.flow.ts`.
 
+**An assert Block also names a feature *state*, not just a result or static content.** A
+submit button greyed out until required fields are filled, a "Save" button re-enabling
+after a successful edit, a field-level validation error appearing under one specific input
+- these are conditions the UI is *in*, worth a nameable Checkpoint of their own the same way
+`AssertItemAddedBlock` names "did add-item work." There's no built-in `Trait.disabled` -
+write the state check as a custom Trait against the real DOM condition (`isDisabled()`, a
+class, an `aria-disabled` attribute - whatever the app actually uses), the same pattern as
+`removeButtonVisibleForSelectedItem` above:
+
+```typescript
+const submitGatedUntilFieldsComplete: Trait = {
+  name: "submit-gated-until-fields-complete",
+  async check(page) {
+    return page.locator(CheckoutSel.submitButton).isDisabled();
+  },
+};
+
+export const AssertSubmitGatedBlock = defineAssertBlock<CheckoutInfoPage>({
+  name: "assert-submit-gated",
+  checkpoint: "CheckoutInfoPage",
+  verify: [submitGatedUntilFieldsComplete],
+});
+
+// wired right after the fields that gate it, before the ones that clear the gate:
+engine.defineFlow([start, NavCheckoutInfoBlock, AssertSubmitGatedBlock, FillFirstNameBlock, ...])
+```
+
+Same rule as any other assert Block: give it an explicit type argument when it sits
+mid-chain (see above), and keep the selector in a `*Sel` object, never inlined in the Trait.
+
 **`methods/` folder:** on-page work lives next to the route, not free-floating.
 
 **`*Sel`:** DOM selectors only (static strings + `(id) => ...` for item-no-1 style). Mem
@@ -747,6 +777,22 @@ ever re-detect when the position is already unknown, never to double-check a kno
 actually shows. Doesn't crash or corrupt anything if you never need it - it's a real, found
 gap (confirmed by reading the exact code path, `src/auto-session.ts`'s `currentMenu()`), fixed
 outright rather than left as a caveat.
+
+**Coverage gaps `waygraph check`/`graph` can't see, because there's no Block to scan yet.**
+Static tools only find gaps in Blocks that already exist - a real link or button on the live
+page with *no Block written for it at all* has nothing in source to catch it. Every live
+`auto`/`browser`/`pilot` session watches the real page instead and warns (once per element,
+via `console.warn`) on a same-origin `<a href>` no `defineNavBlock` covers, or a visible
+`button`/`[role=button]`/submit input no Method/NavClick Block selector matches:
+
+```text
+[waygraph] unmapped nav link on this page: /settings - no NavBlock covers this URL; add defineNavBlock
+[waygraph] unmapped button on this page: #save-draft - no Method/NavClick Block selector matches; consider defineMethodBlock or defineNavClickBlock
+```
+
+Read them back with `auto console <sessionId>` - the same channel real console/network errors
+already come through, not a separate command (`src/coverage-gap.ts`, wired into every session
+in `src/auto-session.ts`).
 
 **On-page indicator.** A headful (`--non-headless`) session looks like an ordinary browser
 tab otherwise - no sign anything is driving it, which matters once a human might be watching
@@ -1084,6 +1130,8 @@ Flows are files (0.10.5+):
 | Scope either to one element | `waygraph auto dom <sessionId> --selector ".inventory_list"` |
 | Detached session with a real visible browser | `waygraph auto --cli --detach --non-headless` |
 | Read the session's Checkpoint/Block history | `waygraph auto trace <sessionId>` |
+| Read real console/network errors + coverage-gap warnings | `waygraph auto console <sessionId>` |
+| Read localStorage/sessionStorage + service workers | `waygraph auto storage <sessionId>` |
 | Whole-project nav-escape + inline-selector + orphan sweep | `waygraph check [project]` |
 | `tsc --noEmit` + bad-practice warnings | `waygraph typecheck [project]` (`--no-practices` to skip scan) |
 | Waygraph Map enforcement (verbatim url-vs-folder, exits 1 on a violation) | `waygraph map [project]` |

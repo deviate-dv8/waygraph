@@ -22,6 +22,11 @@ against a live site, use `--skill-pilot-blind`.
    inline selector literals in `Trait.visible` / `Trait.text`.
 4. **Assert-only = `defineAssertBlock`.** Self-loop, no hand-written `act`/`resolve`. Pass
    an explicit type argument when it sits between two specifically-typed Blocks in a Flow.
+   Not just static content or an action's result - it also names a *feature state* worth a
+   Checkpoint of its own (a submit button greyed out until required fields are filled, a
+   field error under one input, a stale "Save" re-enabling). No built-in `Trait.disabled` -
+   write the state condition as a custom Trait (`isDisabled()`, a class, `aria-disabled`),
+   same as any other Trait: real DOM check, no inline selector.
 5. **`requires` = externally supplied.** A key an earlier Block in the same chain produces
    is never listed under `requires` - preflight checks the whole chain up front.
 6. **Keep Checkpoints typed — never `Checkpoint<string>`.** Block helpers take concrete
@@ -104,6 +109,22 @@ npm run typecheck             # when the consumer has it
 `waygraph check` should report zero nav warnings. Orphan Blocks (not in any `.flow.ts`)
 are still runnable in Pilot's live menu - orphan status only blocks
 `auto --blocks <From> <To>` pathfinding.
+
+**Static tools above only find gaps in Blocks that already exist.** A real link/button on
+the live page with *no Block written for it at all* has nothing in source for `check`/
+`graph` to scan - the only way to find that is to actually run the app. Every live
+`auto`/`browser`/`pilot` session watches the real page and warns (once per element) on
+anything with no matching Block:
+
+```text
+[waygraph] unmapped nav link on this page: /settings - no NavBlock covers this URL; add defineNavBlock
+[waygraph] unmapped button on this page: #save-draft - no Method/NavClick Block selector matches; consider defineMethodBlock or defineNavClickBlock
+```
+
+Read them back with `auto console <sessionId>` (same channel as real console/network
+errors) - see `--skill-pilot`'s "Coverage gaps on the live page" section for the full
+detection rules (same-origin `<a href>` only, visible clickables only, one warning per
+element per session).
 
 ## Related skills (print via CLI)
 
