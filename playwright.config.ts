@@ -6,9 +6,10 @@ export default defineConfig({
   // collecting it here breaks `playwright test` / `playwright test --ui`.
   testIgnore: "**/tests/unit/**",
   fullyParallel: true,
-  reporter: "list",
+  reporter: [["list"], ["html", { open: "never" }]],
   use: {
     headless: true,
+    trace: "retain-on-failure",
     launchOptions: {
       // Canonical Chromium on this machine is the Flatpak install - never let
       // Playwright download its own bundled binary. See .agent/manager-agent.md.

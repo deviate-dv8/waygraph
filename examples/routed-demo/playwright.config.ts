@@ -8,10 +8,11 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   timeout: 30_000,
-  reporter: "list",
+  reporter: [["list"], ["html", { open: "never" }]],
   use: {
     headless: true,
     baseURL: process.env.WAYGRAPH_BASE_URL || `http://${HOST}:${PORT}`,
+    trace: "retain-on-failure",
     launchOptions: {
       executablePath: process.env.CHROME_PATH || process.env.CHROMIUM_PATH,
       args: ["--no-sandbox", "--disable-dev-shm-usage"],

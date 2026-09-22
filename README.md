@@ -1045,7 +1045,12 @@ suite - it forwards to the local `node_modules/.bin/playwright` (falling back to
 exactly like `playwright test`, and anything after it (`--grep`, a spec path, `--headed`, …)
 passes straight through. `waygraph test ui` (or `waygraph test --ui`) launches Playwright's
 interactive UI Mode the same way. Scaffolded projects (`waygraph init`/`create-waygraph`)
-wire this up as `npm test` / `npm run test:ui`.
+wire this up as `npm test` / `npm run test:ui`, and ship `trace: "retain-on-failure"` plus
+the `html` reporter in `playwright.config.ts`, so a failing `waygraph test` already has a
+trace waiting - `waygraph test report` opens the HTML report, and
+`waygraph test show-trace <trace.zip>` opens one trace directly (both forward to Playwright's
+own `show-report`/`show-trace`, which live outside `playwright test`, so they're handled
+before the `test` forward rather than passed through it).
 
 Flows are files (0.10.5+):
 
@@ -1088,6 +1093,8 @@ Flows are files (0.10.5+):
 | One-shot temp-dir demo | `waygraph try demo` / `waygraph try auto` / `waygraph try auto:cli` |
 | Run the project's `@playwright/test` suite | `waygraph test` |
 | Same suite, Playwright's interactive UI Mode | `waygraph test ui` (or `--ui`) |
+| Open the last HTML report | `waygraph test report` |
+| Open one trace in the trace viewer | `waygraph test show-trace <trace.zip>` |
 
 `--blocks` / positional accepts a Flow export, a `.flow.ts` path, or `"a then b"`.
 `auto <file.flow.ts>` **runs** that flow (same as `run`); bare `auto` still explores.

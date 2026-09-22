@@ -5,10 +5,11 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   timeout: 30_000,
-  reporter: "list",
+  reporter: [["list"], ["html", { open: "never" }]],
   use: {
     headless: true,
     baseURL: "https://www.saucedemo.com",
+    trace: "retain-on-failure",
     launchOptions: {
       // Canonical Chromium on this machine is the Flatpak install - never let
       // Playwright download its own bundled binary. See .agent/manager-agent.md.

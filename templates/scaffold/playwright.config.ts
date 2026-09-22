@@ -7,9 +7,10 @@ const FIXTURE_ORIGIN = `http://${FIXTURE_HOST}:${FIXTURE_PORT}`;
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
-  reporter: "list",
+  reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: FIXTURE_ORIGIN,
+    trace: "retain-on-failure",
     launchOptions: {
       executablePath: process.env.CHROME_PATH || process.env.CHROMIUM_PATH,
     },

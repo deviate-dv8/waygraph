@@ -78,6 +78,8 @@ npm install
 npx playwright install chromium
 npm test          # offline example flow - green immediately
 npm run test:ui   # same suite, Playwright's interactive UI Mode
+npx waygraph test report               # open the HTML report (trace on failure)
+npx waygraph test show-trace &lt;trace.zip&gt;  # open one trace directly
 npm run list      # .flow.ts → export map
 npm run check     # nav hygiene + orphan Blocks
 npm run demo      # watch example.flow.ts (manual Next)

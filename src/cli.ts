@@ -7483,7 +7483,12 @@ Primary (less is more):
                                            thin wrapper: forwards to the local playwright
                                            binary (or npx playwright as a fallback)
                  test ui  /  test --ui     Playwright UI Mode (interactive, watch + trace)
+                 test report [dir]         Open the last HTML report (playwright show-report)
+                 test show-trace <file>    Open one trace.zip in the trace viewer
                  <any other args>          Forwarded verbatim (--grep, a spec path, --headed, …)
+                                           Scaffolds ship trace: "retain-on-failure" + the
+                                           html reporter, so a failed waygraph test already
+                                           has a trace - test report opens it.
 
 Also:
   waygraph list | nav | validate | check | typecheck | graph | init <name>
@@ -7623,18 +7628,35 @@ async function main(): Promise<void> {
 
     case "test": {
       const rest = args.slice(1);
+      const proj = process.cwd();
+      const localPlaywrightBin = join(proj, "node_modules", ".bin", "playwright");
+      const runPw = (pwArgs: string[]) =>
+        existsSync(localPlaywrightBin)
+          ? runInherited(localPlaywrightBin, pwArgs, proj)
+          : runInherited("npx", ["--yes", "playwright", ...pwArgs], proj);
+
+      // report/show-trace are separate top-level `playwright` commands, not
+      // `playwright test` subcommands - handled before the `test` forward below.
+      if (rest[0] === "report") {
+        process.exitCode = await runPw(["show-report", ...rest.slice(1)]);
+        break;
+      }
+      if (rest[0] === "show-trace") {
+        if (!rest[1]) {
+          console.error("waygraph test show-trace: missing <trace.zip> (or a test-results/ dir)");
+          process.exit(1);
+        }
+        process.exitCode = await runPw(["show-trace", ...rest.slice(1)]);
+        break;
+      }
+
       const wantsUi = rest[0] === "ui" || rest.includes("--ui");
       const forwarded = rest[0] === "ui" ? rest.slice(1) : rest;
       const pwArgs =
         wantsUi && !forwarded.includes("--ui")
           ? ["test", "--ui", ...forwarded]
           : ["test", ...forwarded];
-      const proj = process.cwd();
-      const localPlaywrightBin = join(proj, "node_modules", ".bin", "playwright");
-      const code = existsSync(localPlaywrightBin)
-        ? await runInherited(localPlaywrightBin, pwArgs, proj)
-        : await runInherited("npx", ["--yes", "playwright", ...pwArgs], proj);
-      process.exitCode = code;
+      process.exitCode = await runPw(pwArgs);
       break;
     }
 
