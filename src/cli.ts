@@ -7,6 +7,7 @@
  *   auto   Explore picker; `.flow.ts` / `--blocks From To` = run that path
  *   demo   Watch (step overlay); `--blocks` `--data` `--auto-next` `--fast` `--full` `--mini` `--ff-expand` `--ff-disabled`
  *   run    Execute; `--blocks` `--data` `--non-headless` `--video`
+ *   test   Runs the project's own @playwright/test suite; `test ui` / `--ui` = UI Mode
  *
  * Also: list / nav / validate / check / graph / init / agent-dive / traverse / try
  * Skills: --skill / --skill-pilot / --skill-pilot-blind / --skill-convention
@@ -7478,6 +7479,11 @@ Primary (less is more):
                  --video-viewport WxH       Recording size (default run: 1280x720)
                  --ff-expand               Same as demo (expand FFCompose inners)
                  --ff-disabled             Same as demo (dispute: expand FF)
+  waygraph test                            Runs the project's @playwright/test suite (cwd) -
+                                           thin wrapper: forwards to the local playwright
+                                           binary (or npx playwright as a fallback)
+                 test ui  /  test --ui     Playwright UI Mode (interactive, watch + trace)
+                 <any other args>          Forwarded verbatim (--grep, a spec path, --headed, …)
 
 Also:
   waygraph list | nav | validate | check | typecheck | graph | init <name>
@@ -7612,6 +7618,23 @@ async function main(): Promise<void> {
         if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
       }
       await runChain(proj, spec);
+      break;
+    }
+
+    case "test": {
+      const rest = args.slice(1);
+      const wantsUi = rest[0] === "ui" || rest.includes("--ui");
+      const forwarded = rest[0] === "ui" ? rest.slice(1) : rest;
+      const pwArgs =
+        wantsUi && !forwarded.includes("--ui")
+          ? ["test", "--ui", ...forwarded]
+          : ["test", ...forwarded];
+      const proj = process.cwd();
+      const localPlaywrightBin = join(proj, "node_modules", ".bin", "playwright");
+      const code = existsSync(localPlaywrightBin)
+        ? await runInherited(localPlaywrightBin, pwArgs, proj)
+        : await runInherited("npx", ["--yes", "playwright", ...pwArgs], proj);
+      process.exitCode = code;
       break;
     }
 

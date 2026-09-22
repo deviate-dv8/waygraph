@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
 import { normalizeTodos, resolveHighlightSlots, runStubPhase } from "../../src/highlights.js";
 import type { Block } from "../../src/types.js";
 import type { StubCtx } from "../../src/highlights.js";
@@ -6,7 +7,7 @@ import type { StubCtx } from "../../src/highlights.js";
 describe("normalizeTodos", () => {
   it("applies todoIndex for sequential done/current", () => {
     const rows = normalizeTodos(["A", "B", "C"], 1);
-    expect(rows).toEqual([
+    assert.deepEqual(rows, [
       { text: "A", done: true, current: false },
       { text: "B", done: false, current: true },
       { text: "C", done: false, current: false },
@@ -22,39 +23,39 @@ describe("normalizeTodos", () => {
       ],
       2,
     );
-    expect(rows[0]).toEqual({ text: "A", done: false, current: false });
-    expect(rows[1]).toEqual({ text: "B", done: true, current: true });
-    expect(rows[2]).toEqual({ text: "C", done: false, current: true });
+    assert.deepEqual(rows[0], { text: "A", done: false, current: false });
+    assert.deepEqual(rows[1], { text: "B", done: true, current: true });
+    assert.deepEqual(rows[2], { text: "C", done: false, current: true });
   });
 });
 
 describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
   it("normalizes left/right aliases", async () => {
     const { normalizeTodoPos } = await import("../../src/highlights.js");
-    expect(normalizeTodoPos("left")).toBe("left");
-    expect(normalizeTodoPos("RIGHT")).toBe("right");
-    expect(normalizeTodoPos("r")).toBe("right");
-    expect(normalizeTodoPos("nope")).toBeUndefined();
+    assert.equal(normalizeTodoPos("left"), "left");
+    assert.equal(normalizeTodoPos("RIGHT"), "right");
+    assert.equal(normalizeTodoPos("r"), "right");
+    assert.equal(normalizeTodoPos("nope"), undefined);
   });
 
   it("normalizes bullets style aliases", async () => {
     const { normalizeTodoStyle } = await import("../../src/highlights.js");
-    expect(normalizeTodoStyle("bullets")).toBe("bullets");
-    expect(normalizeTodoStyle("bullet")).toBe("bullets");
-    expect(normalizeTodoStyle("list")).toBe("bullets");
-    expect(normalizeTodoStyle("plain")).toBe("bullets");
-    expect(normalizeTodoStyle("checklist")).toBe("checklist");
+    assert.equal(normalizeTodoStyle("bullets"), "bullets");
+    assert.equal(normalizeTodoStyle("bullet"), "bullets");
+    assert.equal(normalizeTodoStyle("list"), "bullets");
+    assert.equal(normalizeTodoStyle("plain"), "bullets");
+    assert.equal(normalizeTodoStyle("checklist"), "checklist");
   });
 
   it("bullets style ignores todoIndex current marks", () => {
     const rows = normalizeTodos(["A", "B", "C"], 1, "bullets");
-    expect(rows.every((r) => !r.current)).toBe(true);
-    expect(rows.map((r) => r.text)).toEqual(["A", "B", "C"]);
+    assert.equal(rows.every((r) => !r.current), true);
+    assert.deepEqual(rows.map((r) => r.text), ["A", "B", "C"]);
   });
 
   it("exposes title + todoPos from stubBefore lifecycle", async () => {
     const { normalizeTodoPos } = await import("../../src/highlights.js");
-    expect(normalizeTodoPos("left")).toBe("left");
+    assert.equal(normalizeTodoPos("left"), "left");
     const block = {
       name: "submit-login",
       instruction: {
@@ -69,10 +70,10 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
     } as unknown as Block<any, any>;
 
     const phase = await runStubPhase(block, "stubBefore");
-    expect(phase.title).toBe("Signing in");
-    expect(phase.todoPos).toBe("right");
-    expect(phase.todoDock?.style).toBe("bullets");
-    expect(phase.todos.every((t) => !t.current)).toBe(true);
+    assert.equal(phase.title, "Signing in");
+    assert.equal(phase.todoPos, "right");
+    assert.equal(phase.todoDock?.style, "bullets");
+    assert.equal(phase.todos.every((t) => !t.current), true);
   });
 });
 
@@ -93,16 +94,16 @@ describe("open stubBefore(ctx) lifecycle", () => {
     } as unknown as Block<any, any>;
 
     const phase = await runStubPhase(block, "stubBefore");
-    expect(phase.todos).toEqual([
+    assert.deepEqual(phase.todos, [
       { text: "Email", done: true, current: false },
       { text: "Password", done: false, current: true },
       { text: "Submit", done: false, current: false },
     ]);
-    expect(phase.todoIndex).toBe(1);
-    expect(phase.zoom).toBe(1.35);
-    expect(phase.highlights).toHaveLength(1);
-    expect(phase.highlights[0]!.selector).toBe("#login-button");
-    expect(phase.highlights[0]!.zoom).toBe(1.35); // default zoom applied
+    assert.equal(phase.todoIndex, 1);
+    assert.equal(phase.zoom, 1.35);
+    assert.equal(phase.highlights.length, 1);
+    assert.equal(phase.highlights[0]!.selector, "#login-button");
+    assert.equal(phase.highlights[0]!.zoom, 1.35); // default zoom applied
   });
 
   it("bumps todoIndex sequentially across phases", async () => {
@@ -124,15 +125,15 @@ describe("open stubBefore(ctx) lifecycle", () => {
     } as unknown as Block<any, any>;
 
     const before = await runStubPhase(block, "stubBefore");
-    expect(before.todoIndex).toBe(0);
-    expect(before.todos[0]!.current).toBe(true);
+    assert.equal(before.todoIndex, 0);
+    assert.equal(before.todos[0]!.current, true);
 
     const after = await runStubPhase(block, "stubAfter", {
       out: { __state: "Inventory" },
     });
-    expect(after.todoIndex).toBe(2);
-    expect(after.todos[2]!.current).toBe(true);
-    expect(after.highlights[0]!.selector).toBe(".inventory");
+    assert.equal(after.todoIndex, 2);
+    assert.equal(after.todos[2]!.current, true);
+    assert.equal(after.highlights[0]!.selector, ".inventory");
   });
 
   it("object map shorthand still resolves rings", () => {
@@ -153,10 +154,10 @@ describe("open stubBefore(ctx) lifecycle", () => {
         },
       },
     });
-    expect(slots).toHaveLength(1);
-    expect(slots[0]!.zoom).toBe(1.5);
-    expect(slots[0]!.label).toBe("AC checklist");
-    expect(slots[0]!.selector).toBe("#login-button");
+    assert.equal(slots.length, 1);
+    assert.equal(slots[0]!.zoom, 1.5);
+    assert.equal(slots[0]!.label, "AC checklist");
+    assert.equal(slots[0]!.selector, "#login-button");
   });
 
   it("lifts legacy per-slot todos onto phase (0.12.23 compat)", async () => {
@@ -174,8 +175,8 @@ describe("open stubBefore(ctx) lifecycle", () => {
       },
     } as unknown as Block<any, any>;
     const phase = await runStubPhase(block, "stubBefore");
-    expect(phase.todos).toHaveLength(3);
-    expect(phase.todos[0]!.current).toBe(true);
+    assert.equal(phase.todos.length, 3);
+    assert.equal(phase.todos[0]!.current, true);
   });
 });
 
@@ -204,15 +205,15 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
     } as unknown as Block<any, any>;
 
     const setPhase = await runStubPhase(withTodos, "stubBefore");
-    expect(setPhase.todoSync).toBe("set");
-    expect(setPhase.todoDock?.id).toBe("ep10-coverage");
-    expect(setPhase.todos[0]!.id).toBe("fr-1");
-    expect(setPhase.todos[1]!.id).toBe("sc-2");
+    assert.equal(setPhase.todoSync, "set");
+    assert.equal(setPhase.todoDock?.id, "ep10-coverage");
+    assert.equal(setPhase.todos[0]!.id, "fr-1");
+    assert.equal(setPhase.todos[1]!.id, "sc-2");
 
     const keepPhase = await runStubPhase(bare, "stubBefore");
-    expect(keepPhase.todoSync).toBe("keep");
-    expect(keepPhase.todoDock).toBeUndefined();
-    expect(keepPhase.todos).toEqual([]);
+    assert.equal(keepPhase.todoSync, "keep");
+    assert.equal(keepPhase.todoDock, undefined);
+    assert.deepEqual(keepPhase.todos, []);
   });
 
   it("hideTodos / todos([]) returns todoSync clear", async () => {
@@ -232,8 +233,8 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
         },
       },
     } as unknown as Block<any, any>;
-    expect((await runStubPhase(hide, "stubBefore")).todoSync).toBe("clear");
-    expect((await runStubPhase(empty, "stubBefore")).todoSync).toBe("clear");
+    assert.equal((await runStubPhase(hide, "stubBefore")).todoSync, "clear");
+    assert.equal((await runStubPhase(empty, "stubBefore")).todoSync, "clear");
   });
 
   it("applyTodoPhase keeps previous dock when sync is keep", async () => {
@@ -246,15 +247,15 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
       ],
       todoIndex: 0,
     });
-    expect(prev?.id).toBe("ep10-coverage");
+    assert.equal(prev?.id, "ep10-coverage");
     const kept = applyTodoPhase(prev, { todoSync: "keep" });
-    expect(kept.sync).toBe("keep");
-    expect(kept.dock).toBe(prev);
-    expect(kept.dock?.groups[0]?.items[0]?.id).toBe("mailhog-back");
+    assert.equal(kept.sync, "keep");
+    assert.equal(kept.dock, prev);
+    assert.equal(kept.dock?.groups[0]?.items[0]?.id, "mailhog-back");
 
     const cleared = applyTodoPhase(prev, { todoSync: "clear" });
-    expect(cleared.sync).toBe("clear");
-    expect(cleared.dock).toBeUndefined();
+    assert.equal(cleared.sync, "clear");
+    assert.equal(cleared.dock, undefined);
   });
 
   it("applyTodoPhase keep preserves advanced current after mid-act style set", async () => {
@@ -265,15 +266,15 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
       todoIndex: 0,
     });
     const midAct = advanceTodoDock(base, 2);
-    expect(midAct?.groups[0]?.items[2]?.current).toBe(true);
+    assert.equal(midAct?.groups[0]?.items[2]?.current, true);
     const kept = applyTodoPhase(midAct, { todoSync: "keep" });
-    expect(kept.dock?.groups[0]?.items[2]?.current).toBe(true);
+    assert.equal(kept.dock?.groups[0]?.items[2]?.current, true);
     // A later stubBefore that re-sets index 0 would wipe - that is authoring,
     // not keep. keep must not invent a blank dock.
     const wiped = applyTodoPhase(midAct, {
       todoSync: "set",
       todoDock: buildTodoDock({ todoId: "ep10", todos: ["A", "B", "C"], todoIndex: 0 }),
     });
-    expect(wiped.dock?.groups[0]?.items[0]?.current).toBe(true);
+    assert.equal(wiped.dock?.groups[0]?.items[0]?.current, true);
   });
 });

@@ -6,7 +6,8 @@
   "description": "Full Sauce Demo (saucedemo.com) example - Effect / MemNav / waygraph auto.",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "playwright test",
+    "test": "waygraph test",
+    "test:ui": "waygraph test ui",
     "flows": "waygraph list",
     "demo": "waygraph demo --blocks \"loginFlow then shopFlow\" --data \"{\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"},\\\"saucedemo.selectedItem\\\":{\\\"id\\\":\\\"sauce-labs-backpack\\\",\\\"name\\\":\\\"Sauce Labs Backpack\\\"}}\"",
     "demo:step": "waygraph demo --blocks \"loginFlow then shopFlow\" --title \"Shop demo\" --data \"{\\\"saucedemo.credentials\\\":{\\\"username\\\":\\\"standard_user\\\",\\\"password\\\":\\\"secret_sauce\\\"},\\\"saucedemo.selectedItem\\\":{\\\"id\\\":\\\"sauce-labs-backpack\\\",\\\"name\\\":\\\"Sauce Labs Backpack\\\"}}\"",

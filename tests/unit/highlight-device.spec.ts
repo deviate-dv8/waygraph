@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
 import {
   applyDevicePhase,
   normalizeDevicePreset,
@@ -10,26 +11,26 @@ import type { StubCtx } from "../../src/highlights.js";
 
 describe("device presets + resolve", () => {
   it("normalizes aliases", () => {
-    expect(normalizeDevicePreset("mobile")).toBe("mobile");
-    expect(normalizeDevicePreset("phone")).toBe("mobile");
-    expect(normalizeDevicePreset("tablet")).toBe("tablet");
-    expect(normalizeDevicePreset("main")).toBe("desktop");
-    expect(normalizeDevicePreset("nope")).toBeUndefined();
+    assert.equal(normalizeDevicePreset("mobile"), "mobile");
+    assert.equal(normalizeDevicePreset("phone"), "mobile");
+    assert.equal(normalizeDevicePreset("tablet"), "tablet");
+    assert.equal(normalizeDevicePreset("main"), "desktop");
+    assert.equal(normalizeDevicePreset("nope"), undefined);
   });
 
   it("resolves mobile with touchMode by default", () => {
     const d = resolveDeviceState("mobile");
-    expect(d?.preset).toBe("mobile");
-    expect(d?.viewport.width).toBe(390);
-    expect(d?.touchMode).toBe(true);
-    expect(d?.isMobile).toBe(true);
+    assert.equal(d?.preset, "mobile");
+    assert.equal(d?.viewport.width, 390);
+    assert.equal(d?.touchMode, true);
+    assert.equal(d?.isMobile, true);
   });
 
   it("resolves desktop without touch", () => {
     const d = resolveDeviceState("desktop");
-    expect(d?.preset).toBe("desktop");
-    expect(d?.touchMode).toBe(false);
-    expect(d?.viewport.width).toBe(1280);
+    assert.equal(d?.preset, "desktop");
+    assert.equal(d?.touchMode, false);
+    assert.equal(d?.viewport.width, 1280);
   });
 });
 
@@ -37,21 +38,21 @@ describe("applyDevicePhase (todo-shaped persist)", () => {
   it("keep preserves previous; clear returns desktop", () => {
     const prev = resolveDeviceState("mobile")!;
     const kept = applyDevicePhase(prev, { deviceSync: "keep" });
-    expect(kept.sync).toBe("keep");
-    expect(kept.device).toBe(prev);
+    assert.equal(kept.sync, "keep");
+    assert.equal(kept.device, prev);
 
     const cleared = applyDevicePhase(prev, { deviceSync: "clear" });
-    expect(cleared.sync).toBe("clear");
-    expect(cleared.device?.preset).toBe("desktop");
-    expect(cleared.device?.touchMode).toBe(false);
+    assert.equal(cleared.sync, "clear");
+    assert.equal(cleared.device?.preset, "desktop");
+    assert.equal(cleared.device?.touchMode, false);
   });
 
   it("set replaces with authored device", () => {
     const prev = resolveDeviceState("mobile")!;
     const next = resolveDeviceState("tablet")!;
     const set = applyDevicePhase(prev, { deviceSync: "set", device: next });
-    expect(set.sync).toBe("set");
-    expect(set.device?.preset).toBe("tablet");
+    assert.equal(set.sync, "set");
+    assert.equal(set.device?.preset, "tablet");
   });
 });
 
@@ -67,10 +68,10 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
       },
     } as unknown as Block<any, any>;
     const phase = await runStubPhase(block, "stubBefore");
-    expect(phase.deviceSync).toBe("set");
-    expect(phase.device?.preset).toBe("mobile");
-    expect(phase.device?.touchMode).toBe(true);
-    expect(phase.highlights[0]?.gesture).toBe("tap");
+    assert.equal(phase.deviceSync, "set");
+    assert.equal(phase.device?.preset, "mobile");
+    assert.equal(phase.device?.touchMode, true);
+    assert.equal(phase.highlights[0]?.gesture, "tap");
   });
 
   it("omit device => keep; clearDevice => clear", async () => {
@@ -90,10 +91,10 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
         },
       },
     } as unknown as Block<any, any>;
-    expect((await runStubPhase(bare, "stubBefore")).deviceSync).toBe("keep");
+    assert.equal((await runStubPhase(bare, "stubBefore")).deviceSync, "keep");
     const cleared = await runStubPhase(hide, "stubBefore");
-    expect(cleared.deviceSync).toBe("clear");
-    expect(cleared.device?.preset).toBe("desktop");
+    assert.equal(cleared.deviceSync, "clear");
+    assert.equal(cleared.device?.preset, "desktop");
   });
 
   it("touch(true) alone enables theater on desktop-sized state", async () => {
@@ -106,21 +107,21 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
       },
     } as unknown as Block<any, any>;
     const phase = await runStubPhase(block, "stubBefore");
-    expect(phase.deviceSync).toBe("set");
-    expect(phase.device?.touchMode).toBe(true);
+    assert.equal(phase.deviceSync, "set");
+    assert.equal(phase.device?.touchMode, true);
   });
 
   it("landscape swaps mobile width/height", async () => {
     const { applyOrientation, resolveDeviceState, normalizeDeviceOrientation } =
       await import("../../src/highlights.js");
-    expect(normalizeDeviceOrientation("land")).toBe("landscape");
-    expect(normalizeDeviceOrientation("port")).toBe("portrait");
+    assert.equal(normalizeDeviceOrientation("land"), "landscape");
+    assert.equal(normalizeDeviceOrientation("port"), "portrait");
     const mobile = resolveDeviceState("mobile")!;
-    expect(mobile.viewport.width).toBeLessThan(mobile.viewport.height);
+    assert.ok(mobile.viewport.width < mobile.viewport.height);
     const land = applyOrientation(mobile, "landscape");
-    expect(land.viewport.width).toBe(844);
-    expect(land.viewport.height).toBe(390);
-    expect(land.orientation).toBe("landscape");
+    assert.equal(land.viewport.width, 844);
+    assert.equal(land.viewport.height, 390);
+    assert.equal(land.orientation, "landscape");
 
     const block = {
       name: "rotate",
@@ -132,8 +133,8 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
       },
     } as unknown as Block<any, any>;
     const phase = await runStubPhase(block, "stubBefore");
-    expect(phase.deviceSync).toBe("set");
-    expect(phase.device?.orientation).toBe("landscape");
-    expect(phase.device?.viewport.width).toBeGreaterThan(phase.device!.viewport.height);
+    assert.equal(phase.deviceSync, "set");
+    assert.equal(phase.device?.orientation, "landscape");
+    assert.ok(phase.device!.viewport.width > phase.device!.viewport.height);
   });
 });

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "typecheck": "waygraph typecheck .",
-    "test": "playwright test",
+    "test": "waygraph test",
+    "test:ui": "waygraph test ui",
     "fixture": "node scripts/fixture-server.mjs",
     "list": "waygraph list",
     "check": "waygraph check",

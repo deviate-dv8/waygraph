@@ -4,7 +4,8 @@
   "type": "module",
   "description": "Self-contained saucedemo quickstart (copied into a temp dir by `waygraph try demo`).",
   "scripts": {
-    "test": "playwright test",
+    "test": "waygraph test",
+    "test:ui": "waygraph test ui",
     "typecheck": "tsc --noEmit",
     "check": "waygraph check",
     "auto": "waygraph auto",

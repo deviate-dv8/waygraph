@@ -1039,6 +1039,14 @@ immediately - see "Waygraph Pilot" above for the full picture.
 when no Block covers that action yet, and `auto reload <sessionId>` picks up a Block just
 written to disk without restarting the session - see "Blind Pilot" above.
 
+**`waygraph test [...args]`** is a thin wrapper around the project's own `@playwright/test`
+suite - it forwards to the local `node_modules/.bin/playwright` (falling back to
+`npx playwright` if the project hasn't installed it locally yet), so `waygraph test` behaves
+exactly like `playwright test`, and anything after it (`--grep`, a spec path, `--headed`, …)
+passes straight through. `waygraph test ui` (or `waygraph test --ui`) launches Playwright's
+interactive UI Mode the same way. Scaffolded projects (`waygraph init`/`create-waygraph`)
+wire this up as `npm test` / `npm run test:ui`.
+
 Flows are files (0.10.5+):
 
 | Want | Command |
@@ -1078,6 +1086,8 @@ Flows are files (0.10.5+):
 | Coding-agent defs | `waygraph agent-dive --loop claude` |
 | Print packaged skills | `waygraph --skill` / `--skill-pilot` / `--skill-pilot-blind` / `--skill-convention` |
 | One-shot temp-dir demo | `waygraph try demo` / `waygraph try auto` / `waygraph try auto:cli` |
+| Run the project's `@playwright/test` suite | `waygraph test` |
+| Same suite, Playwright's interactive UI Mode | `waygraph test ui` (or `--ui`) |
 
 `--blocks` / positional accepts a Flow export, a `.flow.ts` path, or `"a then b"`.
 `auto <file.flow.ts>` **runs** that flow (same as `run`); bare `auto` still explores.
@@ -1207,7 +1217,8 @@ git clone git@github.com:deviate-dv8/waygraph.git
 cd waygraph
 npm install
 npm run typecheck   # waygraph typecheck . (tsc --noEmit + practice warnings)
-npm run test        # playwright test
+npm run test        # node --test tests/unit + playwright test
+npm run test:ui     # playwright test --ui
 npm run build       # tsc -p tsconfig.build.json, emits dist/
 ```
 

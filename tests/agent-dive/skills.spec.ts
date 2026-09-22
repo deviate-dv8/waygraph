@@ -21,7 +21,7 @@ test.describe("agent-dive: Claude Code Skills generation", () => {
         "utf-8",
       );
       expect(blindPilotSkill).toMatch(/^---\nname: waygraph-blind-pilot\ndescription: /);
-      expect(blindPilotSkill).toContain("auto reload");
+      expect(blindPilotSkill).toContain("browser reload");
 
       const conventionSkill = await readFile(
         join(dir, ".claude/skills/waygraph-convention/SKILL.md"),

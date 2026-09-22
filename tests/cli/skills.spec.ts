@@ -27,8 +27,8 @@ test("waygraph --skill-pilot prints the pilot skill markdown", async () => {
 test("waygraph --skill-pilot-blind prints the blind-pilot skill markdown", async () => {
   const { stdout } = await exec(node, [CLI, "--skill-pilot-blind"]);
   expect(stdout).toMatch(/^---\nname: waygraph-blind-pilot\n/);
-  expect(stdout).toContain("auto reload");
-  expect(stdout).toContain("auto goto");
+  expect(stdout).toContain("browser reload");
+  expect(stdout).toContain("browser goto");
 });
 
 test("waygraph --skill-convention prints the convention skill markdown", async () => {

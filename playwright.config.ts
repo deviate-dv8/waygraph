@@ -2,6 +2,9 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
+  // tests/unit runs on node:test (see `npm run test:unit`), not @playwright/test -
+  // collecting it here breaks `playwright test` / `playwright test --ui`.
+  testIgnore: "**/tests/unit/**",
   fullyParallel: true,
   reporter: "list",
   use: {

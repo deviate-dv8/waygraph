@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
 import {
   globToRegExp,
   isFileSelectToken,
@@ -8,53 +9,58 @@ import {
 
 describe("blocks-select (Phase C)", () => {
   it("classifies /regex/ vs glob vs bare", () => {
-    expect(isFileSelectToken("/mailpit/")).toBe(true);
-    expect(isFileSelectToken("**/mailpit/**/*.block.ts")).toBe(true);
-    expect(isFileSelectToken("shopFlow")).toBe(false);
-    expect(parseBlocksSelect("/auth|checkout/").kind).toBe("regex");
-    expect(parseBlocksSelect("src/blocks/**/*.block.ts").kind).toBe("glob");
-    expect(parseBlocksSelect("shopFlow").kind).toBe("bare");
+    assert.equal(isFileSelectToken("/mailpit/"), true);
+    assert.equal(isFileSelectToken("**/mailpit/**/*.block.ts"), true);
+    assert.equal(isFileSelectToken("shopFlow"), false);
+    assert.equal(parseBlocksSelect("/auth|checkout/").kind, "regex");
+    assert.equal(parseBlocksSelect("src/blocks/**/*.block.ts").kind, "glob");
+    assert.equal(parseBlocksSelect("shopFlow").kind, "bare");
   });
 
   it("glob matches relative paths", () => {
     const sel = parseBlocksSelect("**/mailpit/**/*.block.ts");
-    expect(
+    assert.equal(
       matchBlocksSelect(sel, {
         relFile: "src/blocks/pia-external/mailpit/methods/open.block.ts",
       }),
-    ).toBe(true);
-    expect(
+      true,
+    );
+    assert.equal(
       matchBlocksSelect(sel, {
         relFile: "src/blocks/pia-web/login/login.page.block.ts",
       }),
-    ).toBe(false);
+      false,
+    );
   });
 
   it("regex matches path or block name", () => {
     const sel = parseBlocksSelect("/mailpit|PiaMailpit/");
-    expect(
+    assert.equal(
       matchBlocksSelect(sel, {
         relFile: "src/blocks/other/x.block.ts",
         blockName: "PiaMailpitGui",
       }),
-    ).toBe(true);
-    expect(
+      true,
+    );
+    assert.equal(
       matchBlocksSelect(sel, {
         relFile: "src/blocks/pia-external/mailpit/nav.block.ts",
         blockName: "nav-x",
       }),
-    ).toBe(true);
-    expect(
+      true,
+    );
+    assert.equal(
       matchBlocksSelect(sel, {
         relFile: "src/blocks/login/login.block.ts",
         blockName: "submit-login",
       }),
-    ).toBe(false);
+      false,
+    );
   });
 
   it("globToRegExp handles * and **", () => {
-    expect(globToRegExp("a/*/b").test("a/x/b")).toBe(true);
-    expect(globToRegExp("a/*/b").test("a/x/y/b")).toBe(false);
-    expect(globToRegExp("a/**/b").test("a/x/y/b")).toBe(true);
+    assert.equal(globToRegExp("a/*/b").test("a/x/b"), true);
+    assert.equal(globToRegExp("a/*/b").test("a/x/y/b"), false);
+    assert.equal(globToRegExp("a/**/b").test("a/x/y/b"), true);
   });
 });
