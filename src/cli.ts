@@ -7326,6 +7326,25 @@ async function expandSpecFlowFiles(projectDir: string, spec: string): Promise<st
 const args = process.argv.slice(2);
 const command = args[0];
 
+function printBrowserUsage(): void {
+  console.log(`waygraph browser — persistent Playwright sessions (headful by default)
+
+  waygraph browser start [--inject preset|path] [--goto <url>] [--blank] [--headless] [--cli] [project]
+                           Open a new session (about:blank by default)
+  waygraph browser sessions [--json] [project]
+                           List live sessions for a project
+  waygraph browser stop <sessionId|--all> [project]
+  waygraph browser attach <sessionId>       Terminal picker on a live session
+
+  waygraph browser status <sessionId>       Current menu (no side effects)
+  waygraph browser send <sessionId> "<pick>"
+  waygraph browser reach <sessionId> <Checkpoint>
+  waygraph browser dom|trace|console|storage|highlight <sessionId> …
+  waygraph browser click|type|press|goto|upload|reload|resync <sessionId> …
+
+  auto send|status|… and pilot send|status|… use the same session ids.`);
+}
+
 function printBrowserSessionsList(sessions: SessionMeta[], projectDir: string): void {
   if (sessions.length === 0) {
     console.log(`No live browser sessions for ${projectDir}.`);
@@ -7419,7 +7438,7 @@ Primary (less is more):
                                            label,tone?,size?,weight?}], todos[], todoIndex?,
                                            todoTitle?, holdMs? (0=until next), clear:true.
                                            Missing selectors listed in response, not fatal.
-  waygraph browser                         List live browser sessions for cwd
+  waygraph browser                         Show browser subcommands
   waygraph browser start                   Open a new session (headful by default, about:blank)
                  --inject preset|path            Merge an external Block library (e.g. saucedemo)
                  --goto <url>              Navigate on start (disables blank page)
@@ -7947,8 +7966,7 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           break;
         }
         if (!sub) {
-          const proj = resolve(process.cwd());
-          printBrowserSessionsList(listBrowserSessions(proj), proj);
+          printBrowserUsage();
           break;
         }
         if (sub === "start" || sub.startsWith("-")) {
@@ -8003,14 +8021,8 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           sub !== "resync" &&
           sub !== "highlight"
         ) {
-          console.error(
-            "waygraph browser: usage:\n" +
-              "  waygraph browser                       List live sessions (cwd)\n" +
-              "  waygraph browser start [--inject preset|path] [--goto <url>] [--blank] [--headless] [--cli] [project]\n" +
-              "  waygraph browser sessions [--json] [project]\n" +
-              "  waygraph browser stop <sessionId|--all> [project]\n" +
-              "  waygraph browser send|status|attach|highlight|dom|… <sessionId> …  (same as auto)",
-          );
+          console.error("waygraph browser: unknown subcommand — run `waygraph browser` for usage");
+          printBrowserUsage();
           process.exit(1);
         }
       }

@@ -14,7 +14,7 @@ reading each `auto status`/`auto send` response.
 | Layer | Command | What it is |
 |-------|---------|------------|
 | **auto** | `waygraph auto` | Interactive explore (picker / `--cli` menu). **Not** a persistent agent browser. |
-| **browser** | `waygraph browser start` | New persistent Playwright session — **headful by default**, **about:blank by default**. `waygraph browser` lists live sessions only. |
+| **browser** | `waygraph browser start` | New persistent Playwright session — **headful by default**, **about:blank by default**. `waygraph browser` prints subcommands; `browser sessions` lists live ones. |
 | **pilot** | `waygraph pilot start` | Bootstrap only: `browser start` + whole-project `graph` + starting `snapshot` in one JSON payload. Does not plan or act. |
 
 Session control (`send`, `status`, `highlight`, `dom`, …) works on **`auto`**, **`browser`**, and **`pilot`** — same socket, same session id:

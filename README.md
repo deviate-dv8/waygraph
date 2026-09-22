@@ -684,8 +684,8 @@ detached session; `auto` remains for the interactive picker and legacy `--cli --
 **Session lifecycle is explicit** — list what's live before opening another:
 
 ```bash
-waygraph browser                         # list live sessions (cwd)
-waygraph browser sessions [--json]       # same; --json for agents
+waygraph browser                         # show browser subcommands
+waygraph browser sessions [--json]       # list live sessions; --json for agents
 waygraph browser start                   # always opens a new session
 waygraph browser stop <sessionId>        # shut one down
 waygraph browser stop --all              # shut every session for this project
@@ -1055,7 +1055,8 @@ Flows are files (0.10.5+):
 | Ad-hoc Blocks | `waygraph run --blocks "login then nav-cart" --data '{...}'` |
 | Headed execute | `waygraph run --blocks shopFlow --non-headless --video` |
 | Explore | `waygraph auto` / `waygraph auto --cli` |
-| List live browser sessions | `waygraph browser` / `waygraph browser sessions [--json]` |
+| Browser command reference | `waygraph browser` |
+| List live browser sessions | `waygraph browser sessions [--json]` |
 | Open a new persistent browser | `waygraph browser start` (headful, about:blank by default) |
 | Stop a browser session | `waygraph browser stop <sessionId>` / `stop --all` |
 | Pilot bootstrap (browser + graph + snapshot) | `waygraph pilot start` |

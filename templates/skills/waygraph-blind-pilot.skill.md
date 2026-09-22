@@ -13,7 +13,8 @@ permanent, reusable, typed coverage instead of leaving nothing behind.
 ## Session lifecycle (list first)
 
 ```
-waygraph browser                         # list live sessions (cwd)
+waygraph browser                         # show browser subcommands
+waygraph browser sessions                # list live sessions (cwd)
 waygraph browser start [--goto <url>]    # new headful session (about:blank by default)
 waygraph browser attach <sessionId>      # terminal picker on existing session
 waygraph browser stop <sessionId|--all>  # shut down when done
