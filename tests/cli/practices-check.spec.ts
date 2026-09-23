@@ -32,6 +32,18 @@ test("waygraph check flags multi-input and combined-action Method blocks", async
   expect(output).not.toMatch(/ignored-multi-input\.block\.ts \(multiple inputs in one Block\)/);
 });
 
+test("waygraph check flags empty/missing verify on a transition Block and on defineAssertBlock", async () => {
+  const { stdout, stderr } = await exec(node, [CLI, "check", fixtureDir]);
+  const output = stdout + stderr;
+
+  expect(output).toMatch(/empty-verify-transition\.block\.ts \(empty verify — transition unconfirmed\)/);
+  expect(output).toMatch(/missing-verify-transition\.block\.ts \(empty verify — transition unconfirmed\)/);
+  expect(output).toMatch(/empty-verify-assert\.block\.ts \(empty verify — transition unconfirmed\)/);
+  expect(output).not.toMatch(/selfloop-no-verify\.block\.ts \(empty verify/);
+  expect(output).not.toMatch(/verified-transition\.block\.ts \(empty verify/);
+  expect(output).not.toMatch(/ignored-empty-verify\.block\.ts \(empty verify/);
+});
+
 test("waygraph check --no-practices skips bad-practice warnings", async () => {
   const { stdout, stderr } = await exec(node, [CLI, "check", "--no-practices", fixtureDir]);
   const output = stdout + stderr;

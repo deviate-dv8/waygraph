@@ -24,9 +24,9 @@ against a live site, use `--skill-pilot-blind`.
    an explicit type argument when it sits between two specifically-typed Blocks in a Flow.
    Not just static content or an action's result - it also names a *feature state* worth a
    Checkpoint of its own (a submit button greyed out until required fields are filled, a
-   field error under one input, a stale "Save" re-enabling). No built-in `Trait.disabled` -
-   write the state condition as a custom Trait (`isDisabled()`, a class, `aria-disabled`),
-   same as any other Trait: real DOM check, no inline selector.
+   field error under one input, a stale "Save" re-enabling). `Trait.disabled(selector)` /
+   `Trait.enabled(selector)` cover that directly; write a custom Trait only for a state
+   condition neither one expresses.
 5. **`requires` = externally supplied.** A key an earlier Block in the same chain produces
    is never listed under `requires` - preflight checks the whole chain up front.
 6. **Keep Checkpoints typed — never `Checkpoint<string>`.** Block helpers take concrete
@@ -37,6 +37,16 @@ against a live site, use `--skill-pilot-blind`.
 7. **One input/action per Method Block.** No block that `.fill()`s two fields or `.fill()` + `.click()` in one
    `act()` — split like saucedemo login (`fill-username`, `fill-password`, `submit-login`). Opt out per file:
    `// waygraph-ignore: multi-input` or `// waygraph-ignore-practices`.
+8. **A transition never ships with an empty `verify`.** A framework can enforce that a check
+   *exists*; it can't author the semantic content of one - only whoever knows what "success"
+   means for this app can write it. That's the right line to draw, but it means an unfilled
+   `verify: []` placeholder (codegen's honest way of not guessing) is indistinguishable from
+   a Block that was never given real verification at all, and it passes `check`/`typecheck`/
+   the orphan scan/`tsc` silently unless something is actually looking for it. Something is:
+   `defineMethodBlock`/`defineEffectBlock` where `In`/`Out` genuinely differ (a transition,
+   not a self-loop) needs a non-empty `verify`, same for `defineAssertBlock`. Opt out only
+   when a *different* Block right after it in the `.flow.ts` is what actually confirms the
+   transition (e.g. an `AssertXBlock`) - `// waygraph-ignore: empty-verify`.
 
 ## Block kinds (file convention)
 

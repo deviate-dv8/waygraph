@@ -10,7 +10,8 @@ export type PracticeKind =
   | "wildcard-checkpoint"
   | "assert-no-type-arg"
   | "multi-input"
-  | "combined-action";
+  | "combined-action"
+  | "empty-verify";
 
 export interface PracticeWarning {
   kind: PracticeKind;
@@ -30,6 +31,24 @@ const WILDCARD_CHECKPOINT =
 
 /** defineAssertBlock({ … }) with no explicit Out type — defaults to wildcard. */
 const ASSERT_NO_TYPE_ARG = /\bdefineAssertBlock\s*\(\s*\{/;
+
+/** defineAssertBlock, any form - used to scope the empty-verify check below. */
+const IS_ASSERT_BLOCK = /\bdefineAssertBlock\s*[<(]/;
+
+/**
+ * define(Method|Effect)Block<In, Out> with two BARE identifier type args
+ * (never a nested generic like Checkpoint<string> - that's WILDCARD_CHECKPOINT's
+ * own warning) - lets a real transition (In !== Out) be told apart from a
+ * self-loop (In === Out, e.g. fill-username) using only source text.
+ */
+const METHOD_EFFECT_GENERIC =
+  /\bdefine(?:Method|Effect)Block\s*<\s*([A-Za-z_$][\w$]*)\s*,\s*([A-Za-z_$][\w$]*)\s*>/;
+
+/** `verify: []` - a literal empty array, the codegen-stub shape this check exists for. */
+const EMPTY_VERIFY_ARRAY = /\bverify\s*:\s*\[\s*\]/;
+
+/** Any `verify:` key at all, empty or not. */
+const HAS_VERIFY_KEY = /\bverify\s*:/;
 
 const SCAN_GLOB = /\.(block|flow)\.ts$/;
 
@@ -115,6 +134,32 @@ export function collectPracticeWarnings(
             "Method/Effect act() mixes .fill() and .click() — fill and submit must be separate Blocks (see examples/saucedemo login split)",
         });
       }
+      const genericMatch = METHOD_EFFECT_GENERIC.exec(src);
+      const isTransition = !!genericMatch && genericMatch[1] !== genericMatch[2];
+      if (
+        isTransition &&
+        !isIgnored("empty-verify", ignore) &&
+        (!HAS_VERIFY_KEY.test(src) || EMPTY_VERIFY_ARRAY.test(src))
+      ) {
+        warnings.push({
+          kind: "empty-verify",
+          file: rel,
+          detail:
+            `transition Block (${genericMatch![1]} → ${genericMatch![2]}) has no verify checks — resolve() moving ` +
+            "to a new Checkpoint is never confirmed by anything; add a Trait (or defineAssertBlock right after it), " +
+            "or opt out explicitly with // waygraph-ignore: empty-verify if that's intentional",
+        });
+      }
+    }
+
+    if (!isIgnored("empty-verify", ignore) && IS_ASSERT_BLOCK.test(src) && EMPTY_VERIFY_ARRAY.test(src)) {
+      warnings.push({
+        kind: "empty-verify",
+        file: rel,
+        detail:
+          "defineAssertBlock's verify array is empty — an assert Block whose only job is checking will pass " +
+          "trivially forever; fill in real Traits or remove the stub",
+      });
     }
   }
   return warnings;
@@ -130,6 +175,8 @@ export function practiceKindLabel(kind: PracticeKind): string {
       return "multiple inputs in one Block";
     case "combined-action":
       return "fill and click in one Block";
+    case "empty-verify":
+      return "empty verify — transition unconfirmed";
     default: {
       const _exhaustive: never = kind;
       return _exhaustive;

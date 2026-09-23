@@ -298,10 +298,26 @@ code, an autonomous agent authoring Blocks) - it warns, never fails the process.
 
 **`waygraph typecheck [project]`** runs `tsc --noEmit` then the same **bad-practice** scan
 (wildcard `Checkpoint<string>`, assert blocks missing type args, multi-`.fill()` Methods,
-fill+click in one Method). Practices warn only unless `tsc` fails; use `--no-practices` to
-skip the scan. Opt out per file: `// waygraph-ignore-practices` or
-`// waygraph-ignore: multi-input, combined-action`. Print full agent guidance:
-`waygraph --skill-convention`.
+fill+click in one Method, empty `verify` on a transition Block or `defineAssertBlock`).
+Practices warn only unless `tsc` fails; use `--no-practices` to skip the scan. Opt out per
+file: `// waygraph-ignore-practices` or `// waygraph-ignore: multi-input, combined-action,
+empty-verify`. Print full agent guidance: `waygraph --skill-convention`.
+
+**Empty verify is the one that matters most for codegen'd Blocks.** A framework can enforce
+that a check *exists* and stays structurally honest (typed, wired, right file) - it cannot
+author the semantic content of that check, since only someone who knows what "success" means
+for this specific app can write it. That's a correct place to draw the line, but it shifts
+all the risk onto whether anything catches a Block left with a placeholder `verify: []` by
+the time it ships - which would otherwise pass every static check, the orphan scan, and
+`tsc`, and run green in CI forever, because an empty array isn't a wrong check, it's the
+*absence* of one. `waygraph check`/`typecheck` now flag exactly that: a `defineMethodBlock`/
+`defineEffectBlock` whose `In`/`Out` Checkpoints actually differ (a real transition, not a
+self-loop like `fill-username`) with no `verify` key or a literal `verify: []`, and the same
+for `defineAssertBlock` (whose entire job is checking). Silence it deliberately, the same as
+any other practice warning, with `// waygraph-ignore: empty-verify` - e.g. when a downstream
+`defineAssertBlock` right after it in the `.flow.ts` is what actually confirms the transition
+(see `templates/scaffold`'s own `open-message.method.block.ts`, confirmed by
+`AssertEmailContentBlock` right after it, not by its own `verify`).
 
 ### Demo narration
 
