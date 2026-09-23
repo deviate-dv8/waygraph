@@ -25,7 +25,6 @@
         <li><a href="./consumer.html">Consumer layout</a></li>
         <li><a href="./deploy.html">Deploy / preview</a></li>
         <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
-        <li><a href="https://www.npmjs.com/package/create-waygraph">create-waygraph (npm)</a></li>
       </ul>
     </nav>
     <main>
@@ -59,19 +58,14 @@
             <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npm run auto</code></td>
           </tr>
           <tr>
-            <td><strong>create-waygraph</strong></td>
-            <td>New repo - offline scaffold (recommended if docs only mention one scaffold command)</td>
-            <td><code>npx create-waygraph my-app</code></td>
-          </tr>
-          <tr>
             <td><strong>waygraph init</strong></td>
-            <td>Same offline scaffold as <code>create-waygraph</code>, built into waygraph since 0.7.5</td>
+            <td>New repo - offline scaffold, built into waygraph since 0.7.5</td>
             <td><code>npx waygraph init my-app</code></td>
           </tr>
         </tbody>
       </table>
       <p>
-        After <code>create-waygraph</code> or <code>init</code>:
+        After <code>init</code>:
       </p>
       <pre><code>cd my-app
 npm install
@@ -86,10 +80,6 @@ npm run demo      # watch example.flow.ts (manual Next)
 npm run auto      # headed explore
 npm run auto:cli  # same menus in the terminal</code></pre>
       <p>
-        Package link:
-        <a href="https://github.com/deviate-dv8/create-waygraph">deviate-dv8/create-waygraph</a>
-        ·
-        <a href="https://www.npmjs.com/package/create-waygraph">npm</a>.
         <code>try demo</code> / <code>try auto</code> use the live saucedemo quickstart
         template, not the offline scaffold.
         Flags: <a href="./demo.html">Demo / run</a>.

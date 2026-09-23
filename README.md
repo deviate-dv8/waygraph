@@ -998,25 +998,22 @@ really a Nav/Page/Assert/Method from this package's own factories.
 |------|---------|
 | Watch Sauce Demo step-through (temp dir only) | `npx waygraph try demo` |
 | Interactive explore (Add/Remove/Open details from live page) | `cd examples/saucedemo && npm i && npx waygraph auto` |
-| Scaffold a new **offline** project (green `npm test` on local fixture `:4177`) | `npx create-waygraph my-app` **or** `npx waygraph init my-app` |
+| Scaffold a new **offline** project (green `npm test` on local fixture `:4177`) | `npx waygraph init my-app` |
 | Install coding-agent defs for diving an app into Blocks | `npx waygraph agent-dive --loop claude` (also `opencode` / `cursor` / `vscode`) |
 | Print a packaged agent skill to stdout | `npx waygraph --skill` (list) / `--skill-pilot` / `--skill-pilot-blind` / `--skill-convention` |
 | Add waygraph to an existing repo | `npm install waygraph @playwright/test` |
 
-**Scaffold is not hidden inside waygraph alone** - the offline starter also ships as
-[`create-waygraph`](https://github.com/deviate-dv8/create-waygraph) on npm (same template
-as `waygraph init` since 0.7.5). Use whichever entry you already have:
-`npx create-waygraph my-app` when reading the GitHub Pages docs, or `npx waygraph init my-app`
-when the CLI is already installed. After either:
-
 ```bash
+npx waygraph init my-app
 cd my-app && npm install && npx playwright install chromium && npm test
 ```
 
 `try demo` is different: live saucedemo.com, step-through **Sign In -> Shop & Checkout ->
 blocked Viewer login**, then headless tests. Permanent full example:
-[`examples/saucedemo`](./examples/saucedemo). Offline empty scaffold: `init` /
-`create-waygraph`.
+[`examples/saucedemo`](./examples/saucedemo). Offline empty scaffold: `init`.
+
+**`create-waygraph` (npm) is deprecated** - it was the identical `init` template shipped as
+a second package for no real benefit. Use `npx waygraph init my-app` instead.
 
 ```bash
 # From this checkout, after npm run build:
@@ -1090,8 +1087,8 @@ suite - it forwards to the local `node_modules/.bin/playwright` (falling back to
 `npx playwright` if the project hasn't installed it locally yet), so `waygraph test` behaves
 exactly like `playwright test`, and anything after it (`--grep`, a spec path, `--headed`, …)
 passes straight through. `waygraph test ui` (or `waygraph test --ui`) launches Playwright's
-interactive UI Mode the same way. Scaffolded projects (`waygraph init`/`create-waygraph`)
-wire this up as `npm test` / `npm run test:ui`, and ship `trace: "retain-on-failure"` plus
+interactive UI Mode the same way. Scaffolded projects (`waygraph init`) wire this up as
+`npm test` / `npm run test:ui`, and ship `trace: "retain-on-failure"` plus
 the `html` reporter in `playwright.config.ts`, so a failing `waygraph test` already has a
 trace waiting - `waygraph test report` opens the HTML report, and
 `waygraph test show-trace <trace.zip>` opens one trace directly (both forward to Playwright's
@@ -1321,7 +1318,7 @@ src/
   index.ts                           public barrel
 examples/saucedemo/         live Sauce Demo (Page + methods/ + Sel)
 templates/quickstart/       try demo / init template (mirrors sauce)
-templates/scaffold/         offline init/create-waygraph scaffold template
+templates/scaffold/         offline waygraph init scaffold template
 templates/agents/           waygraph agent-dive coding-agent definitions
 docs/                       GitHub Pages static HTML + docs/proposals/ RFCs
 openspec/                   spec-driven planning: specs/ (current), changes/ (in-flight),

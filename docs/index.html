@@ -26,7 +26,6 @@
         <li><a href="./deploy.html">Deploy / preview</a></li>
         <li><a href="https://github.com/deviate-dv8/waygraph">GitHub</a></li>
         <li><a href="https://www.npmjs.com/package/waygraph">npm (waygraph)</a></li>
-        <li><a href="https://www.npmjs.com/package/create-waygraph">npm (create-waygraph)</a></li>
       </ul>
     </nav>
     <main>
@@ -45,11 +44,11 @@
       <div class="cards">
         <a href="./quickstart.html#paths">
           <strong>Getting started</strong>
-          <span>Try demo, scaffold (<code>create-waygraph</code> / <code>init</code>), first Flow.</span>
+          <span>Try demo, scaffold (<code>init</code>), first Flow.</span>
         </a>
         <a href="./scaffold.html">
           <strong>Scaffold structure</strong>
-          <span>Tree from <code>init</code> / <code>create-waygraph</code> (0.12 route + stubs).</span>
+          <span>Tree from <code>init</code> (0.12 route + stubs).</span>
         </a>
         <a href="./demo.html">
           <strong>Demo / run</strong>
@@ -113,7 +112,7 @@
           </tr>
           <tr>
             <td>Scaffold a new offline project (green <code>npm test</code> on a <code>data:</code> URL)</td>
-            <td><code>npx create-waygraph my-app</code> <strong>or</strong> <code>npx waygraph init my-app</code></td>
+            <td><code>npx waygraph init my-app</code></td>
           </tr>
           <tr>
             <td>Add waygraph to an existing repo</td>
@@ -122,20 +121,16 @@
         </tbody>
       </table>
       <p>
-        <strong>Scaffold lives in two places on purpose.</strong>
-        <a href="https://www.npmjs.com/package/create-waygraph"><code>create-waygraph</code></a>
-        is its own npm package (same offline template as
-        <code>waygraph init</code> since 0.7.5) - scaffolding never pulls generator code into
-        your app's runtime <code>node_modules</code>.
-        <code>waygraph init</code> is the same shape when you already have the CLI installed.
-        After either scaffold: <code>cd my-app &amp;&amp; npm install &amp;&amp; npx playwright install chromium &amp;&amp; npm test</code>.
+        After scaffolding: <code>cd my-app &amp;&amp; npm install &amp;&amp; npx playwright install chromium &amp;&amp; npm test</code>.
+        (<code>create-waygraph</code> on npm is deprecated - it was the identical
+        <code>init</code> template as a second package. Use <code>waygraph init</code>.)
       </p>
       <p>
         <code>try demo</code> copies the live Sauce Demo quickstart into an OS temp folder,
         runs step-through <strong>Sign In -> Shop &amp; Checkout -> blocked Viewer login</strong>,
         then headless tests. Permanent tree:
         <code>examples/saucedemo</code> in this package. Offline empty scaffold:
-        <code>init</code> / <code>create-waygraph</code>.
+        <code>init</code>.
         Overlay details: <a href="./demo.html">Demo / run</a> ·
         <a href="./auto.html">Auto explore</a>.
       </p>
