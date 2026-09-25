@@ -28,7 +28,11 @@ against a live site, use `--skill-pilot-blind`.
    `Trait.enabled(selector)` cover that directly; write a custom Trait only for a state
    condition neither one expresses.
 5. **`requires` = externally supplied.** A key an earlier Block in the same chain produces
-   is never listed under `requires` - preflight checks the whole chain up front.
+   is never listed under `requires` - preflight checks the whole chain up front. For a
+   genuinely arbitrary key (a username, an email) that a demo/dev run shouldn't need
+   hand-supplied every time, `registerMemStub(key, fake)` + `withMemStub(flow)` (or
+   `--mem-stub`) fills it from a registry instead - a key with no registration still fails
+   preflight exactly as before, so this narrows what needs real input, never removes the guard.
 6. **Keep Checkpoints typed — never `Checkpoint<string>`.** Block helpers take concrete
    Checkpoint types from `src/states/` (e.g. `defineMethodBlock<LoginPage, LoginPage>`).
    Wildcard `Checkpoint<string>` compiles but kills graph honesty; `waygraph check` / `waygraph typecheck` warn.

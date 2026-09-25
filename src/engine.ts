@@ -470,6 +470,15 @@ export interface Flow<Out extends Checkpoint<string>> {
    */
   readonly highlightStyle?: import("./highlights.js").HighlightStyleDefaults;
   /**
+   * Set once this Flow has been wrapped in {@link withMemStub} - opts into
+   * auto-filling `requires` keys with registered fake values
+   * (`registerMemStub`, `src/mem-stub.ts`) instead of failing preflight when
+   * the caller didn't supply them. `run()` never reads this - the CLI's own
+   * `--data`/`--mem-stub` seeding, or a bare-library caller's own explicit
+   * `seedMemStub(mem, flow)` call, is what actually fills mem before `run()`.
+   */
+  readonly memStub?: boolean;
+  /**
    * This Flow's constituent Blocks, in order between `start`/`end`, as plain
    * data - for introspection/visualization tools, without running anything.
    * @example loginFlow.blocks() // [{ name: "login" }, { name: "add-to-cart", routes: {...} }]
@@ -696,6 +705,25 @@ export function withTitle<Out extends Checkpoint<string>>(flow: Flow<Out>, title
     title,
     withBlockVerify: (block, verify) => withTitle(flow.withBlockVerify(block, verify), title),
     modBlockVerify: (block, nameOrIndex, newCheck) => withTitle(flow.modBlockVerify(block, nameOrIndex, newCheck), title),
+  };
+}
+
+/**
+ * Opts this Flow into memStub: `requires` keys the caller didn't supply get
+ * filled from `registerMemStub`'s registry (`src/mem-stub.ts`) instead of
+ * failing preflight, for any key that has a registered fake generator - a
+ * required key with no registration still fails exactly as before.
+ * Non-destructive, same pattern as {@link withTitle}. `run()` never reads
+ * this itself - the CLI's `--data`/`--mem-stub` seeding, or a bare-library
+ * caller's own explicit `seedMemStub(mem, flow)` call, does the filling.
+ * @example const demoLogin = withMemStub(loginFlow);
+ */
+export function withMemStub<Out extends Checkpoint<string>>(flow: Flow<Out>): Flow<Out> {
+  return {
+    ...flow,
+    memStub: true,
+    withBlockVerify: (block, verify) => withMemStub(flow.withBlockVerify(block, verify)),
+    modBlockVerify: (block, nameOrIndex, newCheck) => withMemStub(flow.modBlockVerify(block, nameOrIndex, newCheck)),
   };
 }
 

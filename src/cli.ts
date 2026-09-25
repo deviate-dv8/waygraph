@@ -55,6 +55,7 @@ import {
   isFileSelectToken,
   parseBlocksSelect,
 } from "./blocks-select.js";
+import { parseHighlightShorthand } from "./highlight-shorthand.js";
 
 // ---------------------------------------------------------------------------
 // Filesystem
@@ -278,6 +279,7 @@ import {
   resolveDeviceState,
   resolveTodoDockUi,
   WAYGRAPH_RING_CSS,
+  getMemStub,
 } from "waygraph";
 
 function walkDir(dir, pattern) {
@@ -377,7 +379,7 @@ function parseChainSpec(spec) {
     });
 }
 
-function seedMemFromRequires(mem, requires, json, label) {
+function seedMemFromRequires(mem, requires, json, label, stubActive) {
   if (requires.length === 0) {
     if (json !== undefined) {
       throw new Error(
@@ -389,21 +391,34 @@ function seedMemFromRequires(mem, requires, json, label) {
   if (json === undefined) {
     // --data / WAYGRAPH_DATA supplies the same payload shape as blockName({...}).
     const fromEnv = process.env.WAYGRAPH_DATA;
-    if (fromEnv && fromEnv.trim()) {
-      json = fromEnv;
-    } else {
-      throw new Error(
-        "waygraph chain: \\"" + label + "\\" requires " + requires.map((k) => k.name).join(", ") +
-          " - give a JSON payload (inline blockName({...}) or --data '{...}')",
-      );
+    if (fromEnv && fromEnv.trim()) json = fromEnv;
+  }
+
+  let parsed;
+  let haveParsed = false;
+  if (json !== undefined) {
+    try {
+      parsed = JSON.parse(json);
+      haveParsed = true;
+    } catch (err) {
+      throw new Error("waygraph chain: \\"" + label + "\\" payload is not valid JSON - " + String(err));
     }
   }
-  let parsed;
-  try {
-    parsed = JSON.parse(json);
-  } catch (err) {
-    throw new Error("waygraph chain: \\"" + label + "\\" payload is not valid JSON - " + String(err));
+
+  if (!haveParsed) {
+    // No payload at all - only a hard failure when memStub isn't active for
+    // this flow; when it is, fall through with an empty object so the
+    // per-key loop below gets a chance to fill each one from the registry.
+    if (!stubActive) {
+      throw new Error(
+        "waygraph chain: \\"" + label + "\\" requires " + requires.map((k) => k.name).join(", ") +
+          " - give a JSON payload (inline blockName({...}) or --data '{...}'), or enable --mem-stub" +
+          " with registerMemStub for these keys",
+      );
+    }
+    parsed = {};
   }
+
   // Keyed-by-name when every require name is a top-level key (preferred for
   // --data and for {"saucedemo.credentials":{...}} even with one require).
   if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
@@ -413,26 +428,42 @@ function seedMemFromRequires(mem, requires, json, label) {
       return;
     }
   }
-  if (requires.length === 1) {
+  // Single-key shorthand: the whole payload IS that one key's value - only
+  // when a real payload was actually given (the stub-only "{}" fallback
+  // above must fall through to per-key stub resolution instead).
+  if (haveParsed && requires.length === 1) {
     mem.set(requires[0], parsed);
     return;
   }
-  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+  if (haveParsed && (parsed === null || typeof parsed !== "object" || Array.isArray(parsed))) {
     throw new Error(
       "waygraph chain: \\"" + label + "\\" requires " + requires.length + " keys (" +
         requires.map((k) => k.name).join(", ") + ") - payload must be an object keyed by each key's name",
     );
   }
+  const stillMissing = [];
   for (const k of requires) {
-    if (!(k.name in parsed)) {
-      throw new Error("waygraph chain: \\"" + label + "\\" payload is missing required key \\"" + k.name + "\\"");
+    if (k.name in parsed) {
+      mem.set(k, parsed[k.name]);
+      continue;
     }
-    mem.set(k, parsed[k.name]);
+    const fake = stubActive ? getMemStub(k) : undefined;
+    if (fake) {
+      mem.set(k, fake());
+      continue;
+    }
+    stillMissing.push(k);
+  }
+  if (stillMissing.length > 0) {
+    throw new Error(
+      "waygraph chain: \\"" + label + "\\" payload is missing required key(s): " +
+        stillMissing.map((k) => "\\"" + k.name + "\\"").join(", "),
+    );
   }
 }
 
-function seedMemForBlock(mem, resolved, json) {
-  seedMemFromRequires(mem, resolved.block.requires ?? [], json, resolved.exportName);
+function seedMemForBlock(mem, resolved, json, stubActive) {
+  seedMemFromRequires(mem, resolved.block.requires ?? [], json, resolved.exportName, stubActive);
 }
 
 /**
@@ -442,14 +473,14 @@ function seedMemForBlock(mem, resolved, json) {
  * name) and seeds them all from one JSON payload, same keyed-by-name shape
  * as a multi-key Block payload already uses.
  */
-function seedMemForFlow(mem, flowBlocks, json, label) {
+function seedMemForFlow(mem, flowBlocks, json, label, stubActive) {
   const seen = new Map();
   for (const bi of flowBlocks) {
     for (const k of bi.block.requires ?? []) {
       if (!seen.has(k.name)) seen.set(k.name, k);
     }
   }
-  seedMemFromRequires(mem, Array.from(seen.values()), json, label);
+  seedMemFromRequires(mem, Array.from(seen.values()), json, label, stubActive);
 }
 
 // ---------------------------------------------------------------------------
@@ -5934,7 +5965,8 @@ async function main() {
       // Same --data / WAYGRAPH_DATA seeding as the multi-segment path.
       // Without this, \`waygraph run shop.flow.ts --data '{...}'\` (and bare
       // export names) hit preflight with an empty MemPage.
-      const seedMem = () => seedMemForFlow(mem, blockInfos, undefined, bareRef);
+      const stubActive = flow.memStub === true || process.env.WAYGRAPH_MEM_STUB === "1";
+      const seedMem = () => seedMemForFlow(mem, blockInfos, undefined, bareRef, stubActive);
       resolved = blockInfos.map((bi, idx) => ({
         block: bi.block,
         exportName: bi.name,
@@ -6005,6 +6037,7 @@ async function main() {
       if (flow && typeof flow.blocks === "function") {
         flows.push(flow);
         episodeCounter += 1;
+        const stubActive = flow.memStub === true || process.env.WAYGRAPH_MEM_STUB === "1";
         flowMeta.push({
           episodeNumber: episodeCounter,
           episodeTitle: flow.title || seg.ref,
@@ -6012,18 +6045,21 @@ async function main() {
           highlightFixtures: flow.highlightFixtures,
           demoPace: flow.demoPace,
           highlightStyle: flow.highlightStyle,
-          seedMem: () => seedMemForFlow(mem, flow.blocks(), seg.json, seg.ref),
+          seedMem: () => seedMemForFlow(mem, flow.blocks(), seg.json, seg.ref, stubActive),
         });
       } else {
         const r = await findBlock(projectDir, seg.ref);
         flows.push(wrapEngine.defineFlow([start, r.block, end]));
+        // A bare Block segment (no Flow, no withMemStub to opt in) only gets
+        // memStub via the global --mem-stub/WAYGRAPH_MEM_STUB override.
+        const stubActive = process.env.WAYGRAPH_MEM_STUB === "1";
         flowMeta.push({
           episodeNumber: undefined,
           episodeTitle: undefined,
           highlightFixtures: undefined,
           demoPace: undefined,
           highlightStyle: undefined,
-          seedMem: () => seedMemForBlock(mem, r, seg.json),
+          seedMem: () => seedMemForBlock(mem, r, seg.json, stubActive),
         });
       }
     }
@@ -6884,6 +6920,8 @@ interface RunFlags {
   videoViewport?: string;
   /** Global Mem seed JSON (--data). */
   data?: string;
+  /** Fill any requires key with no --data coverage from registerMemStub's registry (--mem-stub). */
+  memStub?: boolean;
   /** Flow/chain spec from --blocks <spec>. */
   blocks?: string;
   /** auto path-find: --blocks <fromCheckpoint> <toCheckpoint>. */
@@ -7032,6 +7070,8 @@ function parseRunFlags(argv: string[]): RunFlags {
       const t = takeFlagValue(argv, i, a, "--data");
       out.data = t.value;
       i = t.nextI;
+    } else if (a === "--mem-stub") {
+      out.memStub = true;
     } else if (a === "--video" || a.startsWith("--video=")) {
       if (a.startsWith("--video=")) {
         out.video = a.slice("--video=".length);
@@ -7149,6 +7189,9 @@ function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boolean; a
   }
   if (flags.data !== undefined) {
     process.env.WAYGRAPH_DATA = flags.data;
+  }
+  if (flags.memStub) {
+    process.env.WAYGRAPH_MEM_STUB = "1";
   }
   if (flags.fast) {
     process.env.WAYGRAPH_DEMO_FAST = "1";
@@ -7375,7 +7418,12 @@ Primary (less is more):
                  --cli --detach --non-headless  Detached session with a real visible browser
                                            (same --non-headless flag run/demo already use)
   waygraph auto send <sessionId> "<pick>"  Send one pick to a --detach session, print
-                                           the resulting state as JSON (no TTY needed)
+                                           the resulting state as JSON (no TTY needed).
+                                           <pick> is a 1-based menu index, a Block name
+                                           (exact match; ambiguous names refuse rather than
+                                           guess), or "q"/"quit". Same command as
+                                           browser send <sessionId> "<pick>" (prefer that
+                                           prefix for a --detach/persistent session).
                  --timeout <ms>            Override the 15s default wait for this one call -
                                            a single Block can legitimately run a slow real
                                            interaction (e.g. a multi-step mouse drag)
@@ -7439,6 +7487,15 @@ Primary (less is more):
                                            label,tone?,size?,weight?}], todos[], todoIndex?,
                                            todoTitle?, holdMs? (0=until next), clear:true.
                                            Missing selectors listed in response, not fatal.
+                                           Same command as browser highlight <sessionId>
+                                           '<json>' (prefer that prefix for a --detach/
+                                           persistent session).
+                 <selector>|<label>[|<tone>]   Shorthand for 1-3 rings, no JSON braces/quotes
+                                           to escape - rings separated by ";", e.g.
+                                           "#x|Login button|warning; .err|Error banner|danger".
+                                           Covers selector/label/tone only; anything else
+                                           (size/weight/zoom/focus/todos/...) needs the JSON
+                                           form above.
   waygraph browser                         Show browser subcommands
   waygraph browser start                   Open a new session (headful by default, about:blank)
                  --inject preset|path            Merge an external Block library (e.g. saucedemo)
@@ -7458,6 +7515,10 @@ Primary (less is more):
                                            layer; use browser/pilot for agent-driven sessions.
   waygraph demo  [--blocks <flow|file|spec>]  Watch with step overlay (QA path)
                  --data '{...}'            Mem seed JSON (or inline flow({...}))
+                 --mem-stub                Fill any requires key --data didn't cover from
+                                           registerMemStub's registry (needs the key
+                                           registered, or the flow's own withMemStub - a
+                                           key with neither still fails preflight)
                  --auto-next               Auto-advance steps (alias: --autoplay)
                  --fast                    Shorter auto-next / Next gates (keeps smooth cursor)
                  --full                    Classic wrap-all block chips (default: carousel)
@@ -7474,6 +7535,7 @@ Primary (less is more):
                  --title / --base-url
   waygraph run   [--blocks <flow|file|spec>]  Execute (no overlay unless --step)
                  --data '{...}'
+                 --mem-stub                Same as demo's --mem-stub
                  --non-headless            Show browser
                  --video [dir]             Record .webm
                  --video-viewport WxH       Recording size (default run: 1280x720)
@@ -7607,7 +7669,7 @@ async function main(): Promise<void> {
             "  waygraph run src/flows/shop.flow.ts\n" +
             "  waygraph run --blocks shopFlow\n" +
             "  waygraph list   # file → export map\n" +
-            "  Flags: --blocks --data --non-headless --video [dir] --step/--no-step",
+            "  Flags: --blocks --data --mem-stub --non-headless --video [dir] --step/--no-step",
         );
         process.exit(1);
       }
@@ -7945,7 +8007,7 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           "waygraph demo: missing flow/spec — e.g.\n" +
             "  waygraph demo src/flows/shop.flow.ts\n" +
             "  waygraph demo --blocks shopFlow\n" +
-            "  Flags: --blocks --data --auto-next --fast --full --mini --ff-expand --ff-disabled --auto-play-video --title --base-url --video",
+            "  Flags: --blocks --data --mem-stub --auto-next --fast --full --mini --ff-expand --ff-disabled --auto-play-video --title --base-url --video",
         );
         process.exit(1);
       }
@@ -8390,19 +8452,29 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
           const raw = args[3];
           if (raw === undefined) {
             console.error(
-              'waygraph auto highlight: usage: waygraph auto highlight <sessionId> \'{"rings":[{"selector":"#x","label":"X"}]}\'',
+              `waygraph ${command} highlight: usage:\n` +
+                `  waygraph ${command} highlight <sessionId> '{"rings":[{"selector":"#x","label":"X"}]}'\n` +
+                `  waygraph ${command} highlight <sessionId> "#x|X" (shorthand: <selector>|<label>[|<tone>], rings separated by ";")`,
             );
             process.exit(1);
           }
           let fixtures: Record<string, unknown>;
           try {
             fixtures = JSON.parse(raw) as Record<string, unknown>;
-          } catch {
-            console.error("waygraph auto highlight: body must be valid JSON");
-            process.exit(1);
+          } catch (jsonErr) {
+            const shorthand = parseHighlightShorthand(raw);
+            if (shorthand.type === "error") {
+              console.error(
+                `waygraph ${command} highlight: body is neither valid JSON (${
+                  jsonErr instanceof Error ? jsonErr.message : String(jsonErr)
+                }) nor valid shorthand (${shorthand.reason})`,
+              );
+              process.exit(1);
+            }
+            fixtures = shorthand.fixtures;
           }
           if (fixtures.op !== undefined && fixtures.op !== "highlight") {
-            console.error('waygraph auto highlight: do not set "op" (or set it to "highlight")');
+            console.error(`waygraph ${command} highlight: do not set "op" (or set it to "highlight")`);
             process.exit(1);
           }
           const { op: _ignore, ...rest } = fixtures as { op?: string } & Record<string, unknown>;

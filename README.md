@@ -249,6 +249,40 @@ A Block's `requires: MemKey[]` gets checked by `preflight()` (built into `runGra
 before a tab even opens - a missing credential fails in milliseconds, not after several
 real browser actions already ran.
 
+### memStub - fake values for `requires`, opt-in per Flow
+
+Hand-supplying `--data '{...}'` every run gets old fast for a `requires` key that's
+genuinely arbitrary (a username, an email, a name) rather than something the run actually
+depends on. `registerMemStub(key, fake)` registers a generator for one `MemKey` (bring your
+own - Faker.js or anything else; waygraph takes no dependency on it); `withMemStub(flow)`
+opts that Flow into filling any `requires` key with no `--data` coverage from that registry
+instead of failing preflight. A key with no registration still fails exactly as before -
+this narrows the case that needs real input, it doesn't remove the guard:
+
+```typescript
+import { registerMemStub, withMemStub } from "waygraph";
+import { faker } from "@faker-js/faker";
+
+registerMemStub(LoginCreds.key, () => ({
+  username: faker.internet.userName(),
+  password: faker.internet.password(),
+}));
+
+export const demoLoginFlow = withMemStub(loginFlow);
+```
+```bash
+waygraph run demoLoginFlow                 # zero --data - fills from the registry
+waygraph run loginFlow --mem-stub          # same effect without a Flow-level wrapper -
+                                            # --mem-stub / WAYGRAPH_MEM_STUB=1 force it
+                                            # for one CLI call, opt-in or not
+```
+`--data` always wins for a key it actually covers - memStub only fills what's left over.
+Registered by `MemKey` *identity*, not by name (matching `MemPage`'s own store): two keys
+sharing a debug name never cross-contaminate. For a bare library `flow.run(mem)` call
+outside the CLI, call `seedMemStub(mem, flow)` yourself before `run()` when
+`flow.memStub` is true - `run()` never reads Flow flags itself, same as
+`resetSession`/`title`/every other `with*` wrapper.
+
 ### Engine config and pluggable browsers
 
 `new Engine({ headless, browserName, slowMo })` configures a browser the Engine launches
@@ -1135,7 +1169,9 @@ Flows are files (0.10.5+):
 | Attach to existing session (graph only) | `waygraph pilot attach <sessionId>` |
 | Path-find | `waygraph auto --blocks LoginPage OrderComplete` |
 | Run `--cli` as a background session (legacy) | `waygraph auto --cli --detach` -> `{sessionId, socketPath}` |
-| Drive a detached session (no TTY) | `waygraph browser send <sessionId> "<pick>"` -> JSON state |
+| Drive a detached session (no TTY) | `waygraph browser send <sessionId> "<pick>"` -> JSON state (`<pick>` is a menu index or a Block name) |
+| Paint highlight rings (shorthand) | `waygraph browser highlight <sessionId> "#x\|Label\|tone; .y\|Label2"` |
+| Paint highlight rings (full JSON) | `waygraph browser highlight <sessionId> '{"rings":[{"selector":"#x","label":"X"}]}'` |
 | Read a detached session's state | `waygraph browser status <sessionId>` (no side effects) |
 | Reattach a terminal to a detached session | `waygraph browser attach <sessionId>` |
 | Read the live page (aria, small/default) | `waygraph auto dom <sessionId>` |
@@ -1174,7 +1210,8 @@ Long FR/AC checklists used to bury highlight rings. **Smart defaults are on:**
 
 Per-knob env also: `WAYGRAPH_TODO_COMPACT`, `WAYGRAPH_TODO_CAP` (default 5),
 `WAYGRAPH_TODO_EXPAND_CAP` (default 14). Author API: `ctx.todoDockUi({ ... })`.
-Pilot `auto highlight` accepts the same knobs as `todoUi` on the JSON body.
+`browser highlight` (same as `auto`/`pilot highlight` - identical command, see "auto vs
+browser vs pilot" above) accepts the same knobs as `todoUi` on the JSON body.
 
 Run `waygraph --help` (or any subcommand with no args) for the full flag reference kept
 in `src/cli.ts`'s own `usage()` - that's the source of truth for flags, this table is the

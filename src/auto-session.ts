@@ -108,17 +108,36 @@ export type ParsedPick = PickResult | { type: "invalid"; reason: string };
 /**
  * Same number/`q`/range rules `cliPick` already applies, but returning a
  * result instead of looping to re-prompt - one request gets one answer.
+ * Also accepts a Block name (exact, case-sensitive) as a shorthand for its
+ * menu index - `send <id> "submit-login"` instead of hunting the number.
+ * Ambiguous (the same Block name appearing more than once in one menu)
+ * refuses rather than guessing which occurrence was meant - a pick runs a
+ * real browser action, not something to silently get wrong.
  */
-export function parsePick(raw: string, menuLength: number): ParsedPick {
-  const ans = raw.trim().toLowerCase();
-  if (ans === "q" || ans === "quit") return { type: "quit" };
-  const n = Number(ans);
-  if (Number.isInteger(n) && n >= 1 && n <= menuLength) {
+export function parsePick(raw: string, menu: { readonly flat: readonly { readonly block: string }[] }): ParsedPick {
+  const ans = raw.trim();
+  const lower = ans.toLowerCase();
+  if (lower === "q" || lower === "quit") return { type: "quit" };
+  const n = Number(lower);
+  if (Number.isInteger(n) && n >= 1 && n <= menu.flat.length) {
     return { type: "pick", index: n - 1 };
+  }
+  const matches: number[] = [];
+  menu.flat.forEach((edge, i) => {
+    if (edge.block === ans) matches.push(i);
+  });
+  if (matches.length === 1) {
+    return { type: "pick", index: matches[0]! };
+  }
+  if (matches.length > 1) {
+    return {
+      type: "invalid",
+      reason: `"${raw}" matches ${matches.length} menu entries - use the numeric index instead of the Block name`,
+    };
   }
   return {
     type: "invalid",
-    reason: `"${raw}" is not a valid pick - enter a number from 1 to ${menuLength}, or "q" to quit`,
+    reason: `"${raw}" is not a valid pick - enter a number from 1 to ${menu.flat.length}, a Block name, or "q" to quit`,
   };
 }
 
@@ -722,7 +741,7 @@ export class AutoSession {
   /** Applies exactly one pick: runs at most one Block, returns the resulting state. */
   async applyPick(raw: string): Promise<ApplyPickResult> {
     const menu = await this.currentMenu();
-    const pick = parsePick(raw, menu.flat.length);
+    const pick = parsePick(raw, menu);
     if (pick.type === "invalid") return { ok: false, error: pick.reason };
     if (pick.type === "quit") {
       return {
