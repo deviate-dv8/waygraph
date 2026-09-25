@@ -6,7 +6,7 @@ Read this before editing. The rules at the bottom are enforced by `npm run check
 
 ```text
 cli.ts ───────────── command line (flags, usage, subcommands)
-runner (being extracted from cli.ts) ─ the child process that runs `waygraph run/demo`
+runner/ ───────────── `waygraph run/demo/chain` execution (plain .js modules, exported as `waygraph/runner`)
 auto-session*.ts, pilot*.ts, auto-explore*.ts, traverse-run.ts ─ live sessions / exploration
 engine.ts ────────── Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
 highlights.ts ────── demo narration: stubs, todo dock, device presets, pace, ring CSS
@@ -22,7 +22,8 @@ engine/highlights runtime symbol into it.
 
 | You are adding... | It goes in |
 |---|---|
-| A new CLI subcommand | its own file (today: `cli.ts` `main()` switch; see the decomposition plan) |
+| A new CLI subcommand | its own file (today: `cli.ts` `main()` switch; being split into `src/commands/`) |
+| Demo overlay / step-mode behaviour | `src/runner/` - `overlay-install` (page UI), `step-panels`, `step-mode`, `rings`, `todo-dock`, `demo-log`, `seed-mem` (`--data`/`--mem-stub`). Read `CLI-STOMP-GUARD.md` first |
 | A `with*(flow, ...)` wrapper | `engine.ts`, next to `withTitle`; add the field to `Flow` and its `withBlockVerify`/`modBlockVerify` re-wraps |
 | A `define*Block` helper | `engine.ts` block-factory section; update `MapBuilder` types if it can appear in a map flow |
 | A `Trait` | `trait.ts` (+ `Trait` object + `index.ts` export) |
@@ -46,3 +47,12 @@ engine/highlights runtime symbol into it.
 - Code that runs inside `page.evaluate` must be self-contained (no closure over module scope) and
   is executed from `tsc` output, never tsx/esbuild (its `__name` helper breaks serialization).
 - Never mix a move with an edit in one commit.
+
+## The runner (how `waygraph run/demo` executes)
+
+`cli.ts` writes a 2-line bootstrap into the *target project* and spawns it, so `waygraph/runner`
+(and the engine + Playwright it imports) resolve from the project's own install - never the CLI's
+copy (two Playwright copies in one process is a hard error). Runner modules are plain `.js`
+(no type-check yet); `scripts/copy-runner.mjs` copies them to `dist/runner/` after `tsc`. They
+were moved verbatim out of a 6,000-line template string, so they're ripe for typing one module at
+a time. No shared mutable module state: safe to edit one module in isolation.
