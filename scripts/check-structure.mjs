@@ -16,7 +16,6 @@ const MAX_LINES = 800;
 
 /** Known-oversized files: current ceiling. Decompose, then lower or delete the entry. */
 const RATCHET = {
-  "pilot-overlay.ts": 960,
 };
 
 function walk(dir, out = []) {
