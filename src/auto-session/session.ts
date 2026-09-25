@@ -1,7 +1,7 @@
 // Split out of the former 1,078-line auto-session.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { CONSOLE_LOG_MAX_ENTRIES, FULL_MODE_DEFAULT_DEPTH, FULL_MODE_MAX_NODES, FULL_MODE_MAX_TEXT_LENGTH, TRACE_MAX_STEPS, buildSessionSnapshot, parsePick, stubFilePath, stubPhaseHasContent, walkFullDom } from "./helpers.js";
 import type { ApplyPathResult, ApplyPickResult, AutoSessionInit, ConsoleLogEntry, FullDomCaps, InspectDomOptions, InspectDomResult, SessionSnapshot, StorageSnapshot, StubFileKind, TraceStep } from "./helpers.js";
-import { instrumentPilotActions, installPersistentPilotOverlay, showPilotActivity, showPilotFixtures, showPilotVision, updatePilotOverlay } from "../pilot-overlay.js";
+import { instrumentPilotActions, installPersistentPilotOverlay, showPilotActivity, showPilotFixtures, showPilotVision, phaseToOverlayFixtures, describeOverlayFixtures, updatePilotOverlay } from "../pilot-overlay.js";
 import type { PilotHighlightFixtures, PilotOverlayInfo } from "../pilot-overlay.js";
 import { buildExploreContext, buildExploreMenu } from "../auto-explore.js";
 import type { BlockEntry, ExploreMenu } from "../auto-explore.js";
@@ -13,6 +13,7 @@ import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from
 import type { UnmappedInteractionPayload } from "../coverage-gap.js";
 import type { Checkpoint, WaygraphInstanceOption } from "../types.js";
 import { runStubPhase } from "../highlights.js";
+import { verboseLog } from "../verbose-log.js";
 import { findBlockPathDetailed } from "../graph.js";
 
 /**
@@ -355,6 +356,14 @@ export class AutoSession {
    * fallback when a Block's own `resolve()` doesn't set `__state` - same
    * behavior `applyPick` always had, just factored out, not changed.
    */
+  /** Paint + log a Block's authored waygraph overlay fixtures (same as demo does), best-effort. */
+  private async paintStubPhase(tag: string, phase: Awaited<ReturnType<typeof runStubPhase>>, holdMs: number): Promise<void> {
+    if (!this.page || !stubPhaseHasContent(phase)) return;
+    const fixtures = phaseToOverlayFixtures(phase, holdMs);
+    for (const line of describeOverlayFixtures(tag, fixtures)) verboseLog("pilot", line);
+    await showPilotFixtures(this.page, fixtures).catch(() => {});
+  }
+
   private async runNamedBlock(
     entry: BlockEntry,
     expectedTo: string,
@@ -362,6 +371,7 @@ export class AutoSession {
   ): Promise<ApplyPickResult> {
     const from = this.here;
     const stubBeforeResult = await runStubPhase(entry.block, "stubBefore");
+    await this.paintStubPhase("stub.before", stubBeforeResult, 6000);
     const stepBase: Pick<TraceStep, "block" | "from" | "timestamp" | "stubBefore"> = {
       block: entry.block.name,
       from,
@@ -379,6 +389,7 @@ export class AutoSession {
       this.here = (result as Checkpoint<string>).__state ?? expectedTo;
       this.lastRunNote = `${entry.block.name} -> ${this.here}`;
       const stubAfterResult = await runStubPhase(entry.block, "stubAfter", { out: result });
+      await this.paintStubPhase("stub.after", stubAfterResult, 6000);
       this.pushTrace({
         ...stepBase,
         to: this.here,
@@ -388,6 +399,7 @@ export class AutoSession {
       this.lastRunNote = `${entry.block.name} failed`;
       const message = err instanceof Error ? err.message : String(err);
       const stubOnErrorResult = await runStubPhase(entry.block, "stubOnError", { error: err });
+      await this.paintStubPhase("stub.error", stubOnErrorResult, 8000);
       this.pushTrace({
         ...stepBase,
         error: message,
@@ -633,6 +645,7 @@ export class AutoSession {
     // Same bottom-left activity toast as Running (Dom)/(Block) - agent narration.
     await showPilotActivity(this.page, `Highlighting: ${detail}`);
     try {
+      for (const line of describeOverlayFixtures("highlight", fixtures)) verboseLog("pilot", line);
       const { painted, missing } = await showPilotFixtures(this.page, fixtures);
       const menu = await this.currentMenu();
       this.lastRunNote = fixtures.clear
