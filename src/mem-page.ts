@@ -122,4 +122,19 @@ export class MemPage {
       this.set(k, v);
     }
   }
+
+  /**
+   * An independent copy of every key currently set - a later `.set()` on either the original or the
+   * clone never touches the other. For branch-session cloning (`runBranchRegression`): each explored
+   * branch gets its own mem, so one branch's writes can't bleed into a sibling that also gets tried
+   * from the same snapshot point. Shallow per value (same as `set()` always was - MemPage never
+   * owned deep-copying the values themselves, only which keys point to which).
+   */
+  clone(): MemPage {
+    const copy = new MemPage();
+    for (const [k, v] of this.store) {
+      copy.store.set(k, v);
+    }
+    return copy;
+  }
 }

@@ -58,7 +58,7 @@ export {
   collectBranchFlows,
   runBranchRegression,
 } from "./engine.js";
-export type { BranchEntry, BranchRunResult, BranchSkipReason } from "./engine/branch-regression.js";
+export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./engine/branch-regression.js";
 export {
   resolveHighlightSlots,
   resolveSlides,

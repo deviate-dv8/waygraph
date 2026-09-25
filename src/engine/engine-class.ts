@@ -480,7 +480,7 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
     }
     return branchFlow.run(context, mem, { ...options, page: first.page, closeOnFinish });
   }) as Flow<any>["run"];
-  const flow = {
+  return {
     resetSession: before.resetSession,
     ...(before.title !== undefined ? { title: before.title } : {}),
     ...(before.expectedFailureReason !== undefined ? { expectedFailureReason: before.expectedFailureReason } : {}),
@@ -488,6 +488,11 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
     ...(before.demoPace !== undefined ? { demoPace: before.demoPace } : {}),
     ...(before.highlightStyle !== undefined ? { highlightStyle: before.highlightStyle } : {}),
     ...(before.memStub !== undefined ? { memStub: before.memStub } : {}),
+    // Read by branchRoutes()/branchInfo() (branch-regression.ts) - real, ORDINARY (enumerable)
+    // properties, not hidden ones, specifically so a `with*` wrapper's `{ ...flow, ... }` spread
+    // (withSessionReset, withTitle, etc.) carries them through instead of silently dropping them -
+    // the same class of bug branch()'s missing copyWaygraphRuntime call already was.
+    __wgBranch: { before, routes },
     // Static introspection (`waygraph graph`/list): the fixed prefix, plus every branch's own
     // Blocks prefixed by the tag that leads to them - can't know at analysis time which one a real
     // run takes, so this shows all of them rather than none.
@@ -505,10 +510,6 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
       return buildBranchedFlow(before.modBlockVerify(block, nameOrIndex, newCheck), routes);
     },
   } as Flow<any>;
-  // Non-enumerable so it doesn't show up on a spread/JSON.stringify of the Flow - read by
-  // branchRoutes()/collectBranchFlows() (branch-regression.ts), not part of the public Flow shape.
-  Object.defineProperty(flow, "__wgBranchRoutes", { value: routes, enumerable: false, configurable: true });
-  return flow;
 }
 
 /**
