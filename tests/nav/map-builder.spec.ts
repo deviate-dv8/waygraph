@@ -309,4 +309,95 @@ test.describe("Engine.map() builder", () => {
     const result = await flow.run(fakeContext, mem);
     expect(result).toEqual(checkpoint("Home"));
   });
+
+  test("a route can itself end in another .branch() - a real 2-level tree, both levels actually dispatch independently", async () => {
+    const engine = new Engine();
+    const SubWhichWay = key<"near" | "far">("sub-which-way");
+    let ranAwayHome = false;
+    let ranFar = false;
+    const SubDecide = defineMethodBlock<Away, Home | Away>({
+      name: "sub-decide",
+      instruction: {
+        async act() {},
+        observe: async (_page, mem) => mem.get(SubWhichWay),
+        resolve: (which) => (which === "far" ? checkpoint("Away") : checkpoint("Home")),
+      },
+    });
+    const FarBlock = defineMethodBlock<Away, Home>({
+      name: "far-block",
+      instruction: {
+        async act() {
+          ranFar = true;
+        },
+        resolve: () => checkpoint("Home"),
+      },
+    });
+    const NearBlock = defineMethodBlock<Home, Home>({
+      name: "near-block",
+      instruction: {
+        async act() {
+          ranAwayHome = true;
+        },
+        resolve: () => checkpoint("Home"),
+      },
+    });
+    const flow = engine
+      .map()
+      .gotoPage(NavHome)
+      .method(Decide)
+      .branch({
+        Home: null,
+        // First dispatch reads WhichWay ("away") to get here; the second, independent dispatch
+        // reads a DIFFERENT mem key (SubWhichWay, "near") - proving this is a real second decision
+        // with its own condition, not the first branch's route reused.
+        Away: (m) =>
+          m.method(SubDecide).branch({
+            Home: (m2) => m2.method(NearBlock).end(),
+            Away: (m2) => m2.method(FarBlock).end(),
+          }),
+      });
+    const mem = new MemPage();
+    mem.set(WhichWay, "away");
+    mem.set(SubWhichWay, "near");
+    const result = await flow.run(fakeContext, mem);
+    expect(result).toEqual(checkpoint("Home"));
+    expect(ranAwayHome).toBe(true);
+    expect(ranFar).toBe(false);
+  });
+
+  test(".blocks() static introspection recurses into nested branches too - every block across every level is listed, tag-prefixed", () => {
+    const engine = new Engine();
+    const SubDecide = defineMethodBlock<Away, Home | Away>({
+      name: "sub-decide",
+      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+    });
+    const FarBlock = defineMethodBlock<Away, Home>({
+      name: "far-block",
+      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+    });
+    const NearBlock = defineMethodBlock<Home, Home>({
+      name: "near-block",
+      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+    });
+    const flow = engine
+      .map()
+      .gotoPage(NavHome)
+      .method(Decide)
+      .branch({
+        Home: null,
+        Away: (m) =>
+          m.method(SubDecide).branch({
+            Home: (m2) => m2.method(NearBlock).end(),
+            Away: (m2) => m2.method(FarBlock).end(),
+          }),
+      });
+    const names = flow.blocks().map((b) => b.name);
+    expect(names).toEqual([
+      "nav-home",
+      "decide",
+      "Away -> sub-decide",
+      "Away -> Home -> near-block",
+      "Away -> Away -> far-block",
+    ]);
+  });
 });
