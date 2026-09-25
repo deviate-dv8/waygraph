@@ -30,6 +30,7 @@ engine/highlights runtime symbol into it.
 | Demo overlay / step-mode behaviour | `src/runner/` - `overlay-install` (page UI), `step-panels`, `step-mode`, `rings`, `todo-dock`, `demo-log`, `seed-mem` (`--data`/`--mem-stub`). Read `CLI-STOMP-GUARD.md` first |
 | A `with*(flow, ...)` wrapper | `engine/flow.ts`, next to `withTitle`; add the field to `Flow` and its `withBlockVerify`/`modBlockVerify` re-wraps |
 | A `define*Block` helper | `engine/blocks/<kind>.ts`; update `MapBuilder` types if it can appear in a map flow |
+| A `MapBuilder` step/routing method | `engine/engine-class.ts` next to `.method()`/`.branch()`; `.branch()`'s routes are functions handed a fresh `MapBuilder` seeded at the branch's own Checkpoint, not a ready-made `Flow` (a `Flow` always starts at `S`) |
 | A `Trait` | `trait.ts` (+ `Trait` object + `index.ts` export) |
 | Overlay colours / ring, cursor, banner, dock CSS | real `.css` in `src/ui/css/` (see its README) - built on Open Props, bundled into `dist/ui/overlay.css`, injected once into the Shadow DOM by `ui/shadow.ts` |
 | Highlight/todo/device/pace behaviour | `highlights/<topic>.ts` |

@@ -4,6 +4,7 @@ import {
   Engine,
   MemPage,
   checkpoint,
+  key,
   defineNavBlock,
   defineAssertBlock,
   defineMethodBlock,
@@ -11,6 +12,7 @@ import {
 
 type Home = Checkpoint<"Home">;
 type Cleared = Checkpoint<"Home">;
+type Away = Checkpoint<"Away">;
 
 // Real Blocks, built through the real factories - what a compliant chain looks like.
 const NavHome = defineNavBlock<Home>({
@@ -51,6 +53,22 @@ const fakeBlock = {
 const fakeContext = {
   newPage: async () => ({ close: async () => {}, goto: async () => {} }),
 } as any;
+
+// A real two-outcome Block (Decision = Home | Away): observe() reads what act() wrote, resolve()
+// picks the tag from it - the actual shape .branch() has to dispatch on, not a hand-fixed Out.
+const WhichWay = key<"home" | "away">("which-way");
+const Decide = defineMethodBlock<Home, Home | Away>({
+  name: "decide",
+  instruction: {
+    async act() {},
+    observe: async (_page, mem) => mem.get(WhichWay),
+    resolve: (which) => (which === "away" ? checkpoint("Away") : checkpoint("Home")),
+  },
+});
+const AwayBlock = defineMethodBlock<Away, Home>({
+  name: "away-block",
+  instruction: { async act() {}, resolve: () => checkpoint("Home") },
+});
 
 test.describe("Engine.map() builder", () => {
   test("a chain of real Blocks (nav -> assert -> method) builds and runs a real Flow", async () => {
@@ -166,6 +184,128 @@ test.describe("Engine.map() builder", () => {
     const { map } = await import("../../src/index.js");
     const flow = map().gotoPage(NavHome).end();
     const mem = new MemPage();
+    const result = await flow.run(fakeContext, mem);
+    expect(result).toEqual(checkpoint("Home"));
+  });
+
+  test("branch() continues into the matching route's Flow, same page - real regression: connect() drops .next entirely, so branching only ever worked through a raw runGraph() call, never a Map-built Flow", async () => {
+    const engine = new Engine();
+    const flow = engine
+      .map()
+      .gotoPage(NavHome)
+      .method(Decide)
+      .branch({ Home: null, Away: (m) => m.method(AwayBlock).end() });
+    const mem = new MemPage();
+    mem.set(WhichWay, "away");
+    const result = await flow.run(fakeContext, mem);
+    expect(result).toEqual(checkpoint("Home"));
+  });
+
+  test("branch()'s route function is handed a MapBuilder seeded at the branch's OWN Checkpoint, not the special start S - a route Block whose In is that Checkpoint (not S) typechecks and runs", async () => {
+    // Real bug this guards: an earlier version took ready-made Flow<any> route values, but a
+    // fresh Flow always starts at S - AwayBlock's In is Away, not S, so `engine.map().method(AwayBlock)`
+    // (what a Flow route would have had to build) never typechecks. Only tsx's unchecked execution
+    // hid this - `tsc --noEmit` on the equivalent flow file caught it for real.
+    //
+    // What this does NOT prove (a real limit, not this test's job): the branch's first Block still
+    // sees `input.__state === "__start__"` in act(), not the real resolved tag - runGraph seeds
+    // every Flow's entry Block that way unconditionally (see run-graph.ts), same as any standalone
+    // `defineFlow([start, SomeMidChainBlock, end])` already behaves today. Real Blocks read
+    // page/mem, never `input`, for exactly this reason - `routeAware` here reads `page`, not input.
+    const engine = new Engine();
+    let ranOnAway = false;
+    const routeAware = defineMethodBlock<Away, Home>({
+      name: "route-aware",
+      instruction: {
+        async act() {
+          ranOnAway = true;
+        },
+        resolve: () => checkpoint("Home"),
+      },
+    });
+    const flow = engine
+      .map()
+      .gotoPage(NavHome)
+      .method(Decide)
+      .branch({ Home: null, Away: (m) => m.method(routeAware).end() });
+    const mem = new MemPage();
+    mem.set(WhichWay, "away");
+    const result = await flow.run(fakeContext, mem);
+    expect(ranOnAway).toBe(true);
+    expect(result).toEqual(checkpoint("Home"));
+  });
+
+  test("branch() takes the null (terminal) route without running the other branch's Flow at all", async () => {
+    const engine = new Engine();
+    let awayRan = false;
+    const spiedAway = defineMethodBlock<Away, Home>({
+      name: "away-block",
+      instruction: {
+        async act() {
+          awayRan = true;
+        },
+        resolve: () => checkpoint("Home"),
+      },
+    });
+    const flow = engine
+      .map()
+      .gotoPage(NavHome)
+      .method(Decide)
+      .branch({ Home: null, Away: (m) => m.method(spiedAway).end() });
+    const mem = new MemPage();
+    mem.set(WhichWay, "home");
+    const result = await flow.run(fakeContext, mem);
+    expect(result).toEqual(checkpoint("Home"));
+    expect(awayRan).toBe(false);
+  });
+
+  test("branch() with the same page across the branch: the SAME Page object is handed to the branch's Flow, not a fresh one", async () => {
+    const engine = new Engine();
+    const seenPages: unknown[] = [];
+    const spiedAway = defineMethodBlock<Away, Home>({
+      name: "away-block",
+      instruction: {
+        async act(page) {
+          seenPages.push(page);
+        },
+        resolve: () => checkpoint("Home"),
+      },
+    });
+    const flow = engine
+      .map()
+      .gotoPage(NavHome)
+      .method(Decide)
+      .branch({ Home: null, Away: (m) => m.method(spiedAway).end() });
+    const mem = new MemPage();
+    mem.set(WhichWay, "away");
+    const page = { close: async () => {}, goto: async () => {} };
+    const context = { newPage: async () => page } as any;
+    await flow.run(context, mem, { page: page as any });
+    expect(seenPages).toEqual([page]);
+  });
+
+  test("branch() rejects the mem-only run(mem, config) convenience form with a clear error, not a silent state loss", async () => {
+    const engine = new Engine();
+    const flow = engine
+      .map()
+      .gotoPage(NavHome)
+      .method(Decide)
+      .branch({ Home: null, Away: (m) => m.method(AwayBlock).end() });
+    const mem = new MemPage();
+    mem.set(WhichWay, "home");
+    await expect((flow.run as any)(mem, {})).rejects.toThrow(/run\(context, mem/);
+  });
+
+  test("branch()'s output still supports withBlockVerify (patches the prefix, rebuilds the same branched shape)", async () => {
+    const engine = new Engine();
+    const flow = engine
+      .map()
+      .gotoPage(NavHome)
+      .method(Decide)
+      .branch({ Home: null, Away: (m) => m.method(AwayBlock).end() })
+      .withBlockVerify("decide", []);
+    const mem = new MemPage();
+    mem.set(WhichWay, "home");
     const result = await flow.run(fakeContext, mem);
     expect(result).toEqual(checkpoint("Home"));
   });

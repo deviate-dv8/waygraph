@@ -5,6 +5,9 @@ import { end, start } from "./run-graph.js";
 import type { EndMarker, StartMarker } from "./run-graph.js";
 import { buildFlow } from "./flow.js";
 import type { Flow } from "./flow.js";
+import type { RunGraphOptions } from "./run-graph.js";
+import { MemPage } from "../mem-page.js";
+import type { BrowserContext, Page } from "@playwright/test";
 import { fastForwardComposeBlock } from "./compose.js";
 import type { NavBlock } from "./blocks/nav.js";
 import type { PageBlock } from "./blocks/page.js";
@@ -439,6 +442,72 @@ function assertMapOrigin(
 
 
 /**
+ * Builds the `Flow` object `MapBuilder.branch()` returns: run `before`, then dispatch on the
+ * resolved tag into whichever `routes` entry matches (same page/context/mem), or return that
+ * Checkpoint as-is when its route is `null`. Factored out so `withBlockVerify`/`modBlockVerify`
+ * can patch `before` and rebuild the same branched shape, exactly like a plain Flow's own.
+ */
+function buildBranchedFlow<Out extends Checkpoint<string>>(
+  before: Flow<Out>,
+  routes: Record<string, Flow<any> | null>,
+): Flow<any> {
+  const run = (async (
+    contextOrMem: BrowserContext | MemPage,
+    memOrConfig?: MemPage | EngineConfig,
+    options?: RunGraphOptions,
+  ) => {
+    if (contextOrMem instanceof MemPage) {
+      throw new Error(
+        "Waygraph map: a .branch()-ed Flow can't run via run(mem, config) - that convenience form " +
+          "always closes its own browser/page before a branch's tag is even known. Call " +
+          "run(context, mem[, options]) instead, keeping the same page across the branch.",
+      );
+    }
+    const context = contextOrMem;
+    const mem = memOrConfig as MemPage;
+    const gotOwnPage = options?.page === undefined;
+    const page = options?.page ?? (await context.newPage());
+    const closeOnFinish = options?.closeOnFinish ?? gotOwnPage;
+    const first = (await before.run(context, mem, { ...options, page, closeOnFinish: false })) as {
+      result: Out;
+      page: Page;
+    };
+    const branchFlow = routes[first.result.__state];
+    if (!branchFlow) {
+      if (options?.closeOnFinish === false) return { result: first.result, page: first.page };
+      if (closeOnFinish) await first.page.close();
+      return first.result;
+    }
+    return branchFlow.run(context, mem, { ...options, page: first.page, closeOnFinish });
+  }) as Flow<any>["run"];
+  return {
+    resetSession: before.resetSession,
+    ...(before.title !== undefined ? { title: before.title } : {}),
+    ...(before.expectedFailureReason !== undefined ? { expectedFailureReason: before.expectedFailureReason } : {}),
+    ...(before.highlightFixtures !== undefined ? { highlightFixtures: before.highlightFixtures } : {}),
+    ...(before.demoPace !== undefined ? { demoPace: before.demoPace } : {}),
+    ...(before.highlightStyle !== undefined ? { highlightStyle: before.highlightStyle } : {}),
+    ...(before.memStub !== undefined ? { memStub: before.memStub } : {}),
+    // Static introspection (`waygraph graph`/list): the fixed prefix, plus every branch's own
+    // Blocks prefixed by the tag that leads to them - can't know at analysis time which one a real
+    // run takes, so this shows all of them rather than none.
+    blocks: () => [
+      ...before.blocks(),
+      ...Object.entries(routes).flatMap(([tag, f]) =>
+        f ? f.blocks().map((b) => ({ ...b, name: `${tag} -> ${b.name}` })) : [],
+      ),
+    ],
+    run,
+    withBlockVerify(block, verify) {
+      return buildBranchedFlow(before.withBlockVerify(block, verify), routes);
+    },
+    modBlockVerify(block, nameOrIndex, newCheck) {
+      return buildBranchedFlow(before.modBlockVerify(block, nameOrIndex, newCheck), routes);
+    },
+  } as Flow<any>;
+}
+
+/**
  * Fluent builder over {@link Engine.defineFlow} - see `map()`'s own doc
  * comment for why this exists. Each step method is scoped to exactly the
  * Block kind its name promises, checked at RUNTIME against the
@@ -593,6 +662,67 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     }
     assertMapSalt(block, ["method", "effect"], "method");
     return this.appendStep(block as DefinedBlock<any, any>);
+  }
+
+  /**
+   * Branch: run everything added so far, then continue into whichever `routes[tag]` matches the
+   * resolved Checkpoint's tag - same page, same context, same mem. `routes` must cover every tag
+   * of `Out` (a missing one is a compile error, matching {@link branch}'s own exhaustiveness);
+   * `null` means that tag is terminal (the branched Flow just returns that Checkpoint).
+   *
+   * Each non-null route is a function, not a ready-made `Flow` - a fresh Flow always starts at the
+   * special `S` (start) Checkpoint, but a branch's blocks start from the TAG it routes on (e.g.
+   * `LoggedIn`), so the function is handed a brand-new `MapBuilder` already seeded at that exact
+   * Checkpoint to chain `.method()/.gotoPage()/.assert()/.end()` (or another `.branch()`) off of.
+   *
+   * Real gap this fixes: the plain `branch()` helper's `.next` routing is only ever consulted by
+   * `runGraph`'s own graph walk - `defineFlow`/`.end()` compose steps pairwise via `connect()`,
+   * which never looks at `.next` at all, so a Map-built Flow had no way to branch. This method
+   * branches at the Flow level instead: it finalizes the prefix, runs it, and picks the next Flow
+   * itself once the real tag is known - no engine-level routing involved.
+   *
+   * Only the `run(context, mem[, options])` signature is supported - the page must survive across
+   * the branch, and the bare `run(mem, config)` convenience form always closes its own browser
+   * before a tag is even known, so it throws instead of silently reopening a fresh (state-losing) page.
+   *
+   * The route's first Block still sees `input.__state === "__start__"` in `act()`, not the tag that
+   * routed there - `runGraph` seeds every Flow's entry Block that way unconditionally, the same as
+   * any standalone `defineFlow([start, block, end])` already does. Read `page`/`mem`, not `input`,
+   * in `act()` - every real Block in this codebase already follows that convention.
+   *
+   * @example
+   * map({ homeOrigin }).gotoPage(NavCartBlock).branch({
+   *   ItemInCart: (m) => m.method(RemoveFromCartBlock).end(),
+   *   LoggedIn: (m) => m.method(AddToCartBlock).end(),
+   * });
+   */
+  branch<
+    Routes extends {
+      [K in Out["__state"]]: ((m: MapBuilder<Extract<Out, Checkpoint<K>>>) => Flow<any>) | null;
+    },
+  >(
+    routes: Routes,
+  ): Flow<
+    {
+      [K in keyof Routes & string]: Routes[K] extends (m: any) => Flow<infer R>
+        ? R
+        : Extract<Out, Checkpoint<K>>;
+    }[keyof Routes & string]
+  > {
+    if (this.steps.length === 0) {
+      throw new Error(
+        "Waygraph map: .branch() needs at least one prior step - nothing to branch from. " +
+          "Add .gotoPage()/.gotoExternal()/.method()/.assert() first.",
+      );
+    }
+    const before = this.end();
+    const resolvedRoutes: Record<string, Flow<any> | null> = {};
+    for (const [tag, fn] of Object.entries(
+      routes as Record<string, ((m: MapBuilder<any>) => Flow<any>) | null>,
+    )) {
+      resolvedRoutes[tag] = fn ? fn(new MapBuilder<any>(this.engine, [], this.homeOrigin, null)) : null;
+    }
+    return buildBranchedFlow(before, resolvedRoutes) as never;
   }
 
   /**

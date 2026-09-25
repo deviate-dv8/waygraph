@@ -56,6 +56,11 @@ export function branch<In extends Checkpoint<string>, Out extends Checkpoint<str
     },
     routes: routesAsData,
   });
+  // Without this, branch()'s output carried no __waygraphKind/__waygraphSalt at all (defineBlock
+  // never stamps them - factories do, after defineBlock returns), so a branched Block could never
+  // pass MapBuilder's assertMapKind/assertMapSalt checks. Real bug: branching was unusable from the
+  // Waygraph Map, only from a raw runGraph() call.
+  copyWaygraphRuntime(block, routed);
   return routed;
 }
 
