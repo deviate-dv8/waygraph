@@ -16,6 +16,8 @@
  * dispatch as a side effect of loading a library module - unsafe. This
  * ships its own small, purpose-built badge + panel instead.
  */
+import { pilotFxRingCss } from "./ui/components/ring.js";
+import { SURFACE } from "./ui/tokens.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { SessionSnapshot } from "./auto-session.js";
 import {
@@ -55,7 +57,7 @@ const OVERLAY_CSS = `
 }
 #wg-pilot-panel {
   display: none; margin-top: 6px; max-width: 420px; max-height: 320px;
-  overflow-y: auto; background: rgba(20,10,40,.94); color: #fff; border-radius: 8px;
+  overflow-y: auto; background: ${SURFACE}; color: #fff; border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.25); padding: 8px 10px;
 }
 /* The graph tab renders a real Mermaid flowchart, which needs more room than
@@ -88,42 +90,17 @@ const OVERLAY_CSS = `
 #wg-pilot-activity {
   position: fixed; z-index: 2147483000; bottom: 12px; left: 12px;
   font: 12px/1.4 ui-monospace, "SF Mono", Consolas, monospace;
-  background: rgba(20,10,40,.94); color: #fff; padding: 6px 10px; border-radius: 8px;
+  background: ${SURFACE}; color: #fff; padding: 6px 10px; border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.25); white-space: nowrap; pointer-events: none;
   opacity: 0; transform: translateY(4px); transition: opacity 0.15s, transform 0.15s;
 }
 #wg-pilot-activity.wg-pilot-toast-show { opacity: 1; transform: translateY(0); }
-/* Agent-sent fixture rings share tone/size CSS with #wg-ring (demo language). */
-.wg-pilot-fx-ring{position:fixed;z-index:2147483645;pointer-events:none;opacity:0;
-  border:3px solid #7C3AED;border-radius:10px;box-sizing:border-box;
-  transition:opacity .12s ease,left .12s,top .12s,width .12s,height .12s;}
-.wg-pilot-fx-ring[data-tone=planned]{border-color:#7C3AED;box-shadow:0 0 0 4px rgba(124,58,237,.16);}
-.wg-pilot-fx-ring[data-tone=auto]{border-color:#9CA3AF;box-shadow:0 0 0 4px rgba(156,163,175,.28);}
-.wg-pilot-fx-ring[data-tone=info]{border-color:#3B82F6;box-shadow:0 0 0 4px rgba(59,130,246,.22);}
-.wg-pilot-fx-ring[data-tone=warning]{border-color:#EAB308;box-shadow:0 0 0 4px rgba(234,179,8,.22);}
-.wg-pilot-fx-ring[data-tone=danger]{border-color:#EF4444;box-shadow:0 0 0 4px rgba(239,68,68,.22);}
-.wg-pilot-fx-ring[data-tone=success]{border-color:#22C55E;box-shadow:0 0 0 4px rgba(34,197,94,.22);}
-.wg-pilot-fx-ring[data-tone=orange]{border-color:#F97316;box-shadow:0 0 0 4px rgba(249,115,22,.22);}
-.wg-pilot-fx-label{position:fixed;z-index:2147483645;pointer-events:none;opacity:0;
-  font:600 12px/1.3 ui-sans-serif,system-ui,sans-serif;padding:5px 9px;border-radius:6px;
-  max-width:min(360px,80vw);box-shadow:0 2px 8px rgba(0,0,0,.25);white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;transition:opacity .12s ease;}
-.wg-pilot-fx-label[data-tone=planned]{background:#7C3AED;color:#fff;}
-.wg-pilot-fx-label[data-tone=auto]{background:#6B7280;color:#fff;}
-.wg-pilot-fx-label[data-tone=info]{background:#2563EB;color:#fff;}
-.wg-pilot-fx-label[data-tone=warning]{background:#EAB308;color:#1c1917;}
-.wg-pilot-fx-label[data-tone=danger]{background:#DC2626;color:#fff;}
-.wg-pilot-fx-label[data-tone=success]{background:#16A34A;color:#fff;}
-.wg-pilot-fx-label[data-tone=orange]{background:#EA580C;color:#fff;}
-.wg-pilot-fx-ring[data-size=sm]{border-width:1.5px;border-radius:8px;}
-.wg-pilot-fx-ring[data-size=lg]{border-width:4px;border-radius:12px;}
-.wg-pilot-fx-label[data-size=sm]{font-size:10px;padding:4px 7px;}
-.wg-pilot-fx-label[data-size=lg]{font-size:16px;padding:8px 14px;}
-.wg-pilot-fx-label[data-weight=bold]{font-weight:800;}
+/* Agent-sent fixture rings: generated from ui/tokens (tones shared with #wg-ring). */
+${pilotFxRingCss()}
 #wg-pilot-fx-todos{
   position:fixed;z-index:2147483645;top:72px;max-width:280px;max-height:calc(100vh - 100px);overflow:auto;
   font:12px/1.4 ui-sans-serif,system-ui,sans-serif;color:#fff;
-  background:rgba(20,10,40,.94);border-radius:10px;padding:10px 12px;
+  background:${SURFACE};border-radius:10px;padding:10px 12px;
   box-shadow:0 2px 10px rgba(0,0,0,.3);pointer-events:auto;
   transition:opacity .25s ease;
 }
@@ -146,7 +123,7 @@ const OVERLAY_CSS = `
 /* Zoom HUD (demo parity - badge only; no CSS scale of the page). */
 #wg-pilot-fx-zoom{position:fixed;z-index:2147483646;bottom:14px;right:14px;
   display:flex;align-items:center;gap:7px;padding:6px 11px 6px 8px;
-  border-radius:999px;background:rgba(20,10,40,.94);color:#f0e8ff;
+  border-radius:999px;background:${SURFACE};color:#f0e8ff;
   border:1px solid rgba(250,204,21,.6);box-shadow:0 6px 18px rgba(0,0,0,.4);
   font:700 12px/1.2 system-ui,sans-serif;pointer-events:none;}
 #wg-pilot-fx-zoom .wg-pilot-fx-zoom-ico{width:18px;height:18px;display:flex;align-items:center;justify-content:center;
@@ -155,7 +132,7 @@ const OVERLAY_CSS = `
 #wg-pilot-fx-zoom .wg-pilot-fx-zoom-val{color:#fde68a;font-variant-numeric:tabular-nums;font-weight:800;min-width:3.2em;}
 #wg-pilot-fx-zoom[data-zoomed="1"]{border-color:#fbbf24;}
 #wg-pilot-fx-device{position:fixed;z-index:2147483646;top:14px;right:14px;
-  padding:8px 12px;border-radius:10px;background:rgba(20,10,40,.94);color:#f0e8ff;
+  padding:8px 12px;border-radius:10px;background:${SURFACE};color:#f0e8ff;
   border:1px solid rgba(124,58,237,.55);font:700 12px/1.2 system-ui,sans-serif;
   pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.35);}
 #wg-pilot-fx-device[data-preset=mobile]{border-color:#3B82F6;}

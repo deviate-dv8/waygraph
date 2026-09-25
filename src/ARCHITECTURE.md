@@ -11,6 +11,7 @@ runner/ ───────────── `waygraph run/demo/chain` execut
 auto-session.ts + auto-session/ (helpers, session), auto-session-ipc.ts, pilot*.ts, auto-explore*.ts, traverse-run.ts ─ live sessions / exploration
 engine.ts + engine/ ── barrel over engine/{core,config,run-graph,flow,compose,engine-class,locate,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
 highlights.ts ────── demo narration: stubs, todo dock, device presets, pace, ring CSS
+ui/ ────────────── overlay design tokens (tokens.ts) + CSS components (ring, cursor, banner) composed per surface (compose.ts); change a colour here, never inline
 graph.ts, map-check.ts, practices-check.ts, coverage-gap.ts ─ static analysis / lint
 types.ts, trait.ts, mem-page.ts, mem-stub.ts ─ core types and small primitives (no upward imports)
 index.ts ─────────── the public API: re-exports only; nothing inside src/ imports it
@@ -30,6 +31,7 @@ engine/highlights runtime symbol into it.
 | A `with*(flow, ...)` wrapper | `engine/flow.ts`, next to `withTitle`; add the field to `Flow` and its `withBlockVerify`/`modBlockVerify` re-wraps |
 | A `define*Block` helper | `engine/blocks/<kind>.ts`; update `MapBuilder` types if it can appear in a map flow |
 | A `Trait` | `trait.ts` (+ `Trait` object + `index.ts` export) |
+| Overlay colours / ring, cursor, banner CSS | `ui/tokens.ts` + `ui/components/*` (add a component, compose it in `ui/compose.ts`) |
 | Highlight/todo/device/pace behaviour | `highlights/<topic>.ts` |
 | A new practice warning | `practices-check.ts` (kind, regex, label) + a fixture in `tests/fixtures/practices-check/` |
 

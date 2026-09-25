@@ -1,6 +1,8 @@
 // Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
 import { WAYGRAPH_RING_CSS } from "../highlights.js";
+import { cursorCss } from "../ui/components/cursor.js";
+import { SURFACE } from "../ui/tokens.js";
 
 // ---------------------------------------------------------------------------
 // WAYGRAPH_STEP=1 - human-verification overlay: one Block at a time, a
@@ -26,20 +28,7 @@ export const RING_CSS =
   // Travel duration is JS-driven per call via --wg-cursor-ms, same reason
   // the clip engine's own comment gives: a hardcoded CSS duration would
   // make the speed param a no-op.
-  "#wg-cursor{position:fixed;z-index:2147483647;width:24px;height:24px;pointer-events:none;" +
-  "left:0;top:0;opacity:0;margin:0;" +
-  "transition:transform var(--wg-cursor-ms,600ms) cubic-bezier(.22,1,.36,1),opacity .2s ease;" +
-  "filter:drop-shadow(0 2px 4px rgba(12,12,26,.4));}" +
-  "#wg-click-pulse{position:fixed;z-index:2147483647;width:14px;height:14px;" +
-  "margin-left:-7px;margin-top:-7px;border-radius:50%;pointer-events:none;opacity:0;" +
-  "border:2px solid #7C3AED;background:rgba(124,58,237,.25);}" +
-  "#wg-click-pulse[data-tone=auto]{border-color:#9CA3AF;background:rgba(156,163,175,.28);}" +
-  "#wg-click-pulse[data-tone=info]{border-color:#3B82F6;background:rgba(59,130,246,.28);}" +
-  "#wg-click-pulse[data-tone=warning]{border-color:#EAB308;background:rgba(234,179,8,.28);}" +
-  "#wg-click-pulse[data-tone=danger]{border-color:#EF4444;background:rgba(239,68,68,.28);}" +
-  "#wg-click-pulse[data-tone=success]{border-color:#22C55E;background:rgba(34,197,94,.28);}" +
-  "#wg-click-pulse.wg-pulse{animation:wg-pulse .5s ease-out;}" +
-  "@keyframes wg-pulse{0%{opacity:.9;transform:scale(.4);}100%{opacity:0;transform:scale(2.4);}}" +
+  cursorCss() +
   // Spotlight: dim everything except the highlight target (focus: true).
   "#wg-focus-veil{position:fixed;z-index:2147483644;pointer-events:none;" +
   "border-radius:12px;box-shadow:0 0 0 9999px rgba(8,4,20,.62);" +
@@ -62,7 +51,7 @@ export const RING_CSS =
   "#wg-swipe-layer.wg-in .wg-swipe-label{opacity:1;}" +
   "#wg-panel{position:fixed;z-index:2147483647;left:50%;bottom:12px;transform:translateX(-50%);" +
   "max-width:min(92vw,640px);max-height:calc(100vh - 24px);overflow-y:auto;box-sizing:border-box;" +
-  "background:rgba(20,10,40,.94);color:#fff;border-radius:14px;" +
+  "background:" + SURFACE + ";color:#fff;border-radius:14px;" +
   "padding:16px 20px;font:14px/1.4 system-ui,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,.35);" +
   // .06s was tuned back when the panel was removed and recreated on
   // EVERY step - fast was the only way to avoid feeling laggy. Now that
@@ -106,7 +95,7 @@ export const RING_CSS =
   // Click a dock to slide left <-> right (WAYGRAPH_TODO_POS / --todo-left|right).
   ".wg-todo-dock,#wg-todo-dock{position:fixed;z-index:2147483646;top:72px;left:14px;" +
   "width:min(280px,42vw);max-height:calc(100vh - 100px);overflow:auto;box-sizing:border-box;" +
-  "padding:10px 12px;background:rgba(20,10,40,.94);color:#fff;border-radius:12px;" +
+  "padding:10px 12px;background:" + SURFACE + ";color:#fff;border-radius:12px;" +
   "border:1px solid rgba(124,58,237,.45);box-shadow:0 8px 24px rgba(0,0,0,.35);" +
   "pointer-events:auto;cursor:pointer;" +
   "transition:transform .4s cubic-bezier(.22,1,.36,1),top .35s ease,opacity .25s ease,z-index 0s;transform:translateX(0);}" +
@@ -147,7 +136,7 @@ export const RING_CSS =
   // Always-on zoom HUD - bottom-right (top-left is crowded: todos + banners).
   "#wg-zoom-badge{position:fixed;z-index:2147483646;bottom:14px;right:14px;" +
   "display:flex;align-items:center;gap:7px;padding:6px 11px 6px 8px;" +
-  "border-radius:999px;background:rgba(20,10,40,.94);color:#f0e8ff;" +
+  "border-radius:999px;background:" + SURFACE + ";color:#f0e8ff;" +
   "border:1px solid rgba(250,204,21,.6);box-shadow:0 6px 18px rgba(0,0,0,.4);" +
   "font:700 12px/1.2 system-ui,sans-serif;pointer-events:none;" +
   "opacity:1;transform:translateY(0);}" +
@@ -255,7 +244,7 @@ export const RING_CSS =
   "#wg-modules .wg-mod-current{background:#7C3AED;color:#fff;}" +
   "#wg-modules .wg-mod-upcoming{background:transparent;color:#5a4a80;border:1px solid #3a2a60;}" +
   "#wg-banner{position:fixed;z-index:2147483647;top:14px;max-width:320px;" +
-  "background:rgba(20,10,40,.94);color:#fff;border-radius:12px;padding:10px 16px;" +
+  "background:" + SURFACE + ";color:#fff;border-radius:12px;padding:10px 16px;" +
   "font:14px/1.4 system-ui,sans-serif;box-shadow:0 8px 20px rgba(0,0,0,.3);" +
   "border:1px solid rgba(124,58,237,.4);cursor:pointer;user-select:none;}" +
   "#wg-banner[data-pos=left]{left:14px;right:auto;transform:none;}" +

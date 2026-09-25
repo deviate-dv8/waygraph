@@ -1,53 +1,8 @@
 import type { Page } from "@playwright/test";
 import type { MemPage } from "./mem-page.js";
+import { composeStepOverlay } from "./ui/compose.js";
 
-const RING_CSS =
-  "#wg-ring{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
-  "border:2.5px solid #7C3AED;border-radius:10px;box-shadow:0 0 0 4px rgba(124,58,237,.16);" +
-  // Opacity only - tone color must snap (no gray/purple/yellow morph).
-  "transition:opacity .3s ease;}" +
-  // Automation = gray; semantic tones for authored highlights.
-  "#wg-ring[data-tone=planned]{border-color:#7C3AED;box-shadow:0 0 0 4px rgba(124,58,237,.16);}" +
-  "#wg-ring[data-tone=auto]{border-color:#9CA3AF;box-shadow:0 0 0 4px rgba(156,163,175,.28);}" +
-  "#wg-ring[data-tone=info]{border-color:#3B82F6;box-shadow:0 0 0 4px rgba(59,130,246,.22);}" +
-  "#wg-ring[data-tone=warning]{border-color:#EAB308;box-shadow:0 0 0 4px rgba(234,179,8,.22);}" +
-  "#wg-ring[data-tone=danger]{border-color:#EF4444;box-shadow:0 0 0 4px rgba(239,68,68,.22);}" +
-  "#wg-ring[data-tone=success]{border-color:#22C55E;box-shadow:0 0 0 4px rgba(34,197,94,.22);}" +
-  "#wg-ring-label{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
-  "white-space:nowrap;padding:4px 9px;border-radius:7px;background:#7C3AED;color:#fff;" +
-  "font:600 12px/1.2 system-ui,sans-serif;transition:opacity .3s ease;}" +
-  "#wg-ring-label[data-tone=planned]{background:#7C3AED;color:#fff;}" +
-  "#wg-ring-label[data-tone=auto]{background:#6B7280;color:#fff;}" +
-  "#wg-ring-label[data-tone=info]{background:#2563EB;color:#fff;}" +
-  "#wg-ring-label[data-tone=warning]{background:#EAB308;color:#1c1917;}" +
-  "#wg-ring-label[data-tone=danger]{background:#DC2626;color:#fff;}" +
-  "#wg-ring-label[data-tone=success]{background:#16A34A;color:#fff;}" +
-  "#wg-ring[data-size=sm]{border-width:1.5px;border-radius:8px;}" +
-  "#wg-ring[data-size=lg]{border-width:4px;border-radius:12px;}" +
-  "#wg-ring-label[data-size=sm]{font-size:10px;line-height:1.25;padding:4px 7px;border-radius:5px;}" +
-  "#wg-ring-label[data-size=lg]{font-size:16px;line-height:1.35;padding:8px 14px;border-radius:9px;}" +
-  "#wg-ring-label[data-weight=bold]{font-weight:800;}" +
-  "#wg-ring-label[data-weight=normal]{font-weight:600;}" +
-  "#wg-cursor{position:fixed;z-index:2147483647;width:24px;height:24px;pointer-events:none;" +
-  "left:0;top:0;opacity:0;margin:0;" +
-  "transition:transform var(--wg-cursor-ms,600ms) cubic-bezier(.22,1,.36,1),opacity .2s ease;" +
-  "filter:drop-shadow(0 2px 4px rgba(12,12,26,.4));}" +
-  "#wg-click-pulse{position:fixed;z-index:2147483647;width:14px;height:14px;" +
-  "margin-left:-7px;margin-top:-7px;border-radius:50%;pointer-events:none;opacity:0;" +
-  "border:2px solid #7C3AED;background:rgba(124,58,237,.25);}" +
-  "#wg-click-pulse[data-tone=auto]{border-color:#9CA3AF;background:rgba(156,163,175,.28);}" +
-  "#wg-click-pulse[data-tone=info]{border-color:#3B82F6;background:rgba(59,130,246,.28);}" +
-  "#wg-click-pulse[data-tone=warning]{border-color:#EAB308;background:rgba(234,179,8,.28);}" +
-  "#wg-click-pulse[data-tone=danger]{border-color:#EF4444;background:rgba(239,68,68,.28);}" +
-  "#wg-click-pulse[data-tone=success]{border-color:#22C55E;background:rgba(34,197,94,.28);}" +
-  "#wg-click-pulse.wg-pulse{animation:wg-pulse .5s ease-out;}" +
-  "@keyframes wg-pulse{0%{opacity:.9;transform:scale(.4);}100%{opacity:0;transform:scale(2.4);}}" +
-  "#wg-banner{position:fixed;z-index:2147483647;top:14px;left:14px;" +
-  "background:rgba(20,10,40,.94);color:#fff;border-radius:12px;padding:10px 16px;" +
-  "font:14px/1.4 system-ui,sans-serif;box-shadow:0 8px 20px rgba(0,0,0,.3);" +
-  "border:1px solid rgba(124,58,237,.4);}" +
-  "#wg-banner .wg-banner-tag{display:block;font-size:10px;font-weight:700;color:#c9a6ff;" +
-  "letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px;}";
+const RING_CSS = composeStepOverlay();
 
 const FAVICON =
   "data:image/svg+xml," +
