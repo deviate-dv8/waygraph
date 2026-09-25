@@ -203,20 +203,20 @@ export async function showPilotFixtures(
         if (w.__wgPilotFxHideTimer) clearTimeout(w.__wgPilotFxHideTimer);
 
         const clearFocus = () => {
-          const veil = document.getElementById("wg-pilot-fx-focus");
+          const veil = __wgById("wg-pilot-fx-focus");
           if (!veil) return;
           veil.classList.remove("wg-in");
           setTimeout(() => {
-            const v = document.getElementById("wg-pilot-fx-focus");
+            const v = __wgById("wg-pilot-fx-focus");
             if (v && !v.classList.contains("wg-in")) v.remove();
           }, 320);
         };
         const applyFocus = (box: { x: number; y: number; width: number; height: number }) => {
-          let veil = document.getElementById("wg-pilot-fx-focus");
+          let veil = __wgById("wg-pilot-fx-focus");
           if (!veil) {
             veil = document.createElement("div");
             veil.id = "wg-pilot-fx-focus";
-            document.documentElement.appendChild(veil);
+            __wgAdd(veil);
           }
           const pad = 10;
           veil.style.left = `${Math.max(0, box.x - pad)}px`;
@@ -228,11 +228,11 @@ export async function showPilotFixtures(
         };
         const setZoomBadge = (scale: number) => {
           const level = Number.isFinite(scale) && scale > 0 ? scale : 1;
-          let badge = document.getElementById("wg-pilot-fx-zoom");
+          let badge = __wgById("wg-pilot-fx-zoom");
           if (!badge) {
             badge = document.createElement("div");
             badge.id = "wg-pilot-fx-zoom";
-            document.documentElement.appendChild(badge);
+            __wgAdd(badge);
           }
           const zoomed = level > 1.001 || level < 0.999;
           badge.dataset.zoomed = zoomed ? "1" : "0";
@@ -246,26 +246,26 @@ export async function showPilotFixtures(
           root.style.removeProperty("transform");
           root.style.removeProperty("transform-origin");
           root.style.removeProperty("transition");
-          document.getElementById("wg-pilot-fx-zoom")?.remove();
+          __wgById("wg-pilot-fx-zoom")?.remove();
         };
         const setDeviceChip = (label: string) => {
-          document.getElementById("wg-pilot-fx-device")?.remove();
+          __wgById("wg-pilot-fx-device")?.remove();
           if (!label) return;
           const chip = document.createElement("div");
           chip.id = "wg-pilot-fx-device";
           chip.dataset.preset = label;
           chip.textContent = `device \u00b7 ${label}`;
-          document.documentElement.appendChild(chip);
+          __wgAdd(chip);
         };
 
         w.__wgPilotFxZoomOutOnHide = zoomOut;
         const clearFx = () => {
-          document.querySelectorAll(".wg-pilot-fx-ring, .wg-pilot-fx-label").forEach((el) => el.remove());
-          document.getElementById("wg-pilot-fx-todos")?.remove();
+          __wgQA(".wg-pilot-fx-ring, .wg-pilot-fx-label").forEach((el) => el.remove());
+          __wgById("wg-pilot-fx-todos")?.remove();
           clearFocus();
           if (w.__wgPilotFxZoomOutOnHide !== false || clearAll) clearZoom();
           if (clearAll) {
-            document.getElementById("wg-pilot-fx-device")?.remove();
+            __wgById("wg-pilot-fx-device")?.remove();
             clearZoom();
           }
         };
@@ -310,8 +310,8 @@ export async function showPilotFixtures(
           if (ring.color) {
             labelEl.style.color = ring.color;
           }
-          document.documentElement.appendChild(ringEl);
-          document.documentElement.appendChild(labelEl);
+          __wgAdd(ringEl);
+          __wgAdd(labelEl);
           const lw = labelEl.offsetWidth;
           const lh = labelEl.offsetHeight;
           let labelLeft = rect.left - pad;
@@ -364,20 +364,20 @@ export async function showPilotFixtures(
             more.textContent = "+" + (todos.length - (end - start)) + " more";
             dock.appendChild(more);
           }
-          document.documentElement.appendChild(dock);
+          __wgAdd(dock);
         }
 
         if (focusBox) applyFocus(focusBox);
 
         // Dim todos under rings / focus so captions stay readable.
-        const dockEl = document.getElementById("wg-pilot-fx-todos");
+        const dockEl = __wgById("wg-pilot-fx-todos");
         if (dockEl && todoUi.behindRing !== false && (painted > 0 || focusBox)) {
           dockEl.classList.add("wg-todo-behind");
         }
 
         // Collision flip: if a painted ring intersects the dock, flip side once.
         if (dockEl && todoUi.collision !== false && painted > 0) {
-          const firstRing = document.querySelector(".wg-pilot-fx-ring");
+          const firstRing = __wgQ(".wg-pilot-fx-ring");
           if (firstRing) {
             const rr = firstRing.getBoundingClientRect();
             const dr = dockEl.getBoundingClientRect();

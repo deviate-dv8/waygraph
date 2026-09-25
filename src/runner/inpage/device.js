@@ -10,7 +10,7 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
               ? payload.sync
               : "keep";
           const device = payload && payload.device ? payload.device : null;
-          const cursor = document.getElementById("wg-cursor");
+          const cursor = __wgById("wg-cursor");
           const MOUSE_SVG =
             "<svg viewBox='0 0 32 32' width='24' height='24'>" +
             "<path fill='#0C0C1A' stroke='#fff' stroke-width='1.4' stroke-linejoin='round' " +
@@ -45,12 +45,12 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
             }
           };
           const ensureChip = (preset, touch, remain, orientation) => {
-            let badge = document.getElementById("wg-device-badge");
+            let badge = __wgById("wg-device-badge");
             if (preset === "desktop" && !touch) {
               if (badge) {
                 badge.classList.remove("wg-in");
                 setTimeout(() => {
-                  const b = document.getElementById("wg-device-badge");
+                  const b = __wgById("wg-device-badge");
                   if (b) b.remove();
                 }, 320);
               }
@@ -60,7 +60,7 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
               badge = document.createElement("div");
               badge.id = "wg-device-badge";
               badge.setAttribute("data-wg-ui", "1");
-              document.documentElement.appendChild(badge);
+              __wgAdd(badge);
             }
             badge.dataset.preset = preset;
             badge.dataset.touch = touch ? "1" : "0";
@@ -85,7 +85,7 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
             badge.classList.add("wg-in");
           };
           const showToast = (preset, touch, title, sub, orientation) => {
-            let toast = document.getElementById("wg-device-toast");
+            let toast = __wgById("wg-device-toast");
             if (toast && toast._wgTimer) {
               clearTimeout(toast._wgTimer);
               toast._wgTimer = null;
@@ -94,10 +94,10 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
               toast = document.createElement("div");
               toast.id = "wg-device-toast";
               toast.setAttribute("data-wg-ui", "1");
-              document.documentElement.appendChild(toast);
+              __wgAdd(toast);
             }
             // Hide chip while toast is up (same corner).
-            const badge = document.getElementById("wg-device-badge");
+            const badge = __wgById("wg-device-badge");
             if (badge) badge.classList.remove("wg-in");
             toast.dataset.preset = preset;
             toast.innerHTML =
@@ -115,7 +115,7 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
               toast.classList.add("wg-out");
               toast.classList.remove("wg-in");
               setTimeout(() => {
-                const t = document.getElementById("wg-device-toast");
+                const t = __wgById("wg-device-toast");
                 if (t) t.remove();
                 if (preset !== "desktop" || touch) {
                   ensureChip(preset, touch, true, orientation);
@@ -142,13 +142,13 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
                 "landscape",
               );
               setTimeout(() => {
-                const badge = document.getElementById("wg-device-badge");
+                const badge = __wgById("wg-device-badge");
                 if (badge) badge.remove();
               }, 2600);
             } else {
-              const badge = document.getElementById("wg-device-badge");
+              const badge = __wgById("wg-device-badge");
               if (badge) badge.remove();
-              const toast = document.getElementById("wg-device-toast");
+              const toast = __wgById("wg-device-toast");
               if (toast) toast.remove();
             }
             window.__wgDevicePreset = "desktop";

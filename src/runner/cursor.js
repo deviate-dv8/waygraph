@@ -48,7 +48,7 @@ export async function playSwipeTrail(page, opts) {
           : "left";
       const ms = Math.max(280, Math.min(1400, Number(payload.ms) || 720));
       const label = payload.label || "swipe";
-      let layer = document.getElementById("wg-swipe-layer");
+      let layer = __wgById("wg-swipe-layer");
       if (layer) layer.remove();
       layer = document.createElement("div");
       layer.id = "wg-swipe-layer";
@@ -67,7 +67,7 @@ export async function playSwipeTrail(page, opts) {
         "border:1px solid rgba(56,189,248,.55);font:700 12px/1.2 system-ui,sans-serif;";
       layer.appendChild(lab);
       layer.appendChild(finger);
-      document.documentElement.appendChild(layer);
+      __wgAdd(layer);
       const vw = window.innerWidth || 390;
       const vh = window.innerHeight || 844;
       const pad = Math.min(vw, vh) * 0.18;
@@ -121,7 +121,7 @@ export async function playSwipeTrail(page, opts) {
           });
           if (i === steps) {
             setTimeout(() => {
-              const el = document.getElementById("wg-swipe-layer");
+              const el = __wgById("wg-swipe-layer");
               if (el) el.remove();
             }, 400);
           }

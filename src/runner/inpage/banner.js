@@ -12,7 +12,7 @@ export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay,
           }
         };
         if (title) {
-          let banner = document.getElementById("wg-banner");
+          let banner = __wgById("wg-banner");
           if (!banner) {
             banner = document.createElement("div");
             banner.id = "wg-banner";
@@ -39,7 +39,7 @@ export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay,
             text.textContent = title;
             banner.appendChild(tag);
             banner.appendChild(text);
-            document.documentElement.appendChild(banner);
+            __wgAdd(banner);
           } else {
             // Fixture / episode title changes every step - update in place
             // (banner is created once; do not leave the first step's text stuck).

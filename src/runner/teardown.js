@@ -38,17 +38,17 @@ import { formatHighlightCaption } from "../highlights.js";
 export async function markStepRunning(page, _opts) {
   await page
     .evaluate(() => {
-      const runBtn = document.getElementById("wg-run");
+      const runBtn = __wgById("wg-run");
       if (runBtn) {
         runBtn.disabled = true;
         runBtn.textContent = "Running \u25B6";
       }
-      const autoEl = document.getElementById("wg-gate-auto");
+      const autoEl = __wgById("wg-gate-auto");
       if (autoEl) autoEl.textContent = "Running...";
-      document.querySelectorAll("#wg-panel textarea[data-key]").forEach((ta) => {
+      __wgQA("#wg-panel textarea[data-key]").forEach((ta) => {
         ta.disabled = true;
       });
-      const panel = document.getElementById("wg-panel");
+      const panel = __wgById("wg-panel");
       if (panel) {
         panel.classList.add("wg-collapsed");
         panel.setAttribute("data-wg-collapsed", "1");
@@ -83,13 +83,13 @@ export async function markStepRunning(page, _opts) {
 export async function restoreTheaterAfterNavigation(page, todoDockRef, deviceRef, stubBeforeRef) {
   const needs =
     (await page
-      .evaluate(() => !window.__wgSyncTodos || !document.getElementById("wg-ring"))
+      .evaluate(() => !window.__wgSyncTodos || !__wgById("wg-ring"))
       .catch(() => true)) || false;
   if (!needs) {
     // Overlay survived (SPA / no full document wipe) - still refresh dock
     // if Node has a carry and the DOM lost .wg-todo-dock.
     const hasDock = await page
-      .evaluate(() => !!document.querySelector(".wg-todo-dock, #wg-todo-dock"))
+      .evaluate(() => !!__wgQ(".wg-todo-dock, #wg-todo-dock"))
       .catch(() => false);
     if (hasDock || !todoDockRef || !todoDockRef.current) return;
   }
@@ -162,10 +162,10 @@ export async function teardownOverlay(page) {
         "wg-device-toast",
         "wg-device-badge",
       ]) {
-        const el = document.getElementById(id);
+        const el = __wgById(id);
         if (el) el.remove();
       }
-      document.querySelectorAll(".wg-todo-dock").forEach((el) => el.remove());
+      __wgQA(".wg-todo-dock").forEach((el) => el.remove());
       document.documentElement.classList.remove("wg-video-device-stage");
     })
     .catch(() => {});

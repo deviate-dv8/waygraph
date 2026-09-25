@@ -60,3 +60,12 @@ copy (two Playwright copies in one process is a hard error). Runner modules are 
 (no type-check yet); `scripts/copy-runner.mjs` copies them to `dist/runner/` after `tsc`. They
 were moved verbatim out of a 6,000-line template string, so they're ripe for typing one module at
 a time. No shared mutable module state: safe to edit one module in isolation.
+
+## Overlay DOM lives in a shadow root
+
+All overlay UI (rings, banner, panels, docks, cursor, pilot badge) is mounted in one open shadow root
+(`#wg-root`, see `ui/shadow.ts`). In in-page overlay code use `__wgById / __wgQ / __wgQA / __wgAdd / __wgCss`
+instead of `document.getElementById / querySelector / documentElement.appendChild / addStyleTag`.
+Lookups fall back to the light DOM. CSS that must style the HOST page (device-stage `html`/`#wg-device-shell`)
+goes in `HOST_CSS` (runner/overlay-css.js), everything else in the shadow-mounted `RING_CSS`.
+Playwright locators (`#wg-panel`, ...) pierce open shadow roots, so specs keep working.

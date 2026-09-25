@@ -43,10 +43,10 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
             "_default";
 
           // Drop any in-panel leftover (old builds put #wg-todos in .wg-body).
-          document.querySelectorAll("#wg-panel #wg-todos").forEach((el) => el.remove());
+          __wgQA("#wg-panel #wg-todos").forEach((el) => el.remove());
 
           const allDocks = () =>
-            [...document.querySelectorAll(".wg-todo-dock, #wg-todo-dock")].filter(
+            [...__wgQA(".wg-todo-dock, #wg-todo-dock")].filter(
               (el, i, arr) => arr.indexOf(el) === i,
             );
           const relayoutTodoDocks = () => {
@@ -60,11 +60,11 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
           const findDock = (key) => {
             if (key === "_default") {
               return (
-                document.querySelector('.wg-todo-dock[data-wg-todo-key="_default"]') ||
-                document.getElementById("wg-todo-dock")
+                __wgQ('.wg-todo-dock[data-wg-todo-key="_default"]') ||
+                __wgById("wg-todo-dock")
               );
             }
-            const all = document.querySelectorAll(".wg-todo-dock");
+            const all = __wgQA(".wg-todo-dock");
             for (let i = 0; i < all.length; i++) {
               if (all[i].getAttribute("data-wg-todo-key") === String(key)) return all[i];
             }
@@ -141,7 +141,7 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
                 /* ignore */
               }
             });
-            document.documentElement.appendChild(dock);
+            __wgAdd(dock);
           } else if (wantPos) {
             dock.dataset.pos = wantPos;
             try {

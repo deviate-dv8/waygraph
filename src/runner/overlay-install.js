@@ -1,6 +1,7 @@
 // Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
-import { RING_CSS, WAYGRAPH_FAVICON } from "./overlay-css.js";
+import { HOST_CSS, RING_CSS, WAYGRAPH_FAVICON } from "./overlay-css.js";
+import { ensureShadowRoot } from "../ui/shadow.js";
 import { resolveTodoDockUi } from "../highlights.js";
 import { installCore } from "./inpage/core.js";
 import { installSwipeZoom } from "./inpage/swipe-zoom.js";
@@ -12,7 +13,9 @@ import { installDevice } from "./inpage/device.js";
 import { applyVideoDeviceStage } from "./device-stage.js";
 
 export async function installOverlay(page, title) {
-  await page.addStyleTag({ content: RING_CSS }).catch(() => {});
+  await ensureShadowRoot(page);
+  await page.evaluate(([css, key]) => __wgCss(css, key), [RING_CSS, "wg-overlay-css"]).catch(() => {});
+  await page.addStyleTag({ content: HOST_CSS }).catch(() => {});
   // Default top-left; override with WAYGRAPH_TITLE_POS=left|center|right.
   // Click cycles left -> center -> right (persisted in localStorage so a
   // navigation that rebuilds the banner keeps the human's last pick).

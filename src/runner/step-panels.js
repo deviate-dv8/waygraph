@@ -33,7 +33,7 @@ export async function renderBeforeStep(page, info) {
       // flash - it only ever fades in ONCE, the first time this page
       // genuinely has no panel yet (a real navigation wiped the whole
       // document, or this is the very first step).
-      let panel = document.getElementById("wg-panel");
+      let panel = __wgById("wg-panel");
       const isNewPanel = !panel;
       if (!panel) {
         panel = document.createElement("div");
@@ -126,7 +126,7 @@ export async function renderBeforeStep(page, info) {
         ">Auto-advancing...</div>";
       panel.innerHTML = html;
       if (isNewPanel) {
-        document.documentElement.appendChild(panel);
+        __wgAdd(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
       } else {
         panel.classList.add("wg-in");
@@ -204,7 +204,7 @@ export async function renderBeforeStep(page, info) {
       panel.querySelectorAll("textarea[data-key]").forEach((ta) => {
         ta.addEventListener("input", applyKeyPretty);
       });
-      const runBtn = document.getElementById("wg-run");
+      const runBtn = __wgById("wg-run");
       if (runBtn) {
         runBtn.addEventListener("click", () => {
           const edits = {};
@@ -220,7 +220,7 @@ export async function renderBeforeStep(page, info) {
       // still always wins over an active autoplay wait, whichever the
       // checkbox says - this is the "hybrid" control: autoplay is a
       // default, not a lockout.
-      const cb = document.getElementById("wg-autoplay-cb");
+      const cb = __wgById("wg-autoplay-cb");
       if (cb) {
         cb.addEventListener("change", () => {
           try {
@@ -228,8 +228,8 @@ export async function renderBeforeStep(page, info) {
           } catch {
             /* private mode / blocked storage - toggle still works this page */
           }
-          const manual = document.getElementById("wg-gate-manual");
-          const auto = document.getElementById("wg-gate-auto");
+          const manual = __wgById("wg-gate-manual");
+          const auto = __wgById("wg-gate-auto");
           if (manual) manual.style.display = cb.checked ? "none" : "";
           if (auto) auto.style.display = cb.checked ? "" : "none";
         });
@@ -256,8 +256,8 @@ export async function renderBeforeStep(page, info) {
           return {
             ok: !!(panel && textOk && opacityOk),
             beacons,
-            hasRun: !!document.getElementById("wg-run"),
-            readyAttr: document.getElementById("wg-panel")?.getAttribute("data-wg-ready") || null,
+            hasRun: !!__wgById("wg-run"),
+            readyAttr: __wgById("wg-panel")?.getAttribute("data-wg-ready") || null,
           };
         })
         .catch((e) => ({ ok: false, reason: String(e && e.message ? e.message : e) }));
@@ -412,7 +412,7 @@ export async function renderAfterStep(page, info) {
   await page
     .evaluate((info) => {
       // Reused in place - see renderBeforeStep's own comment on this.
-      let panel = document.getElementById("wg-panel");
+      let panel = __wgById("wg-panel");
       const isNewPanel = !panel;
       if (!panel) {
         panel = document.createElement("div");
@@ -497,7 +497,7 @@ export async function renderAfterStep(page, info) {
         resultHtml +
         gateHtml;
       if (isNewPanel) {
-        document.documentElement.appendChild(panel);
+        __wgAdd(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
       } else {
         panel.classList.add("wg-in");
@@ -546,9 +546,9 @@ export async function renderAfterStep(page, info) {
           panel.querySelector(".wg-result-json").style.display = wantPretty ? "none" : "block";
         });
       });
-      const runBtn = document.getElementById("wg-run");
+      const runBtn = __wgById("wg-run");
       if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
-      const cb = document.getElementById("wg-autoplay-cb");
+      const cb = __wgById("wg-autoplay-cb");
       if (cb) {
         cb.addEventListener("change", () => {
           try {
@@ -556,8 +556,8 @@ export async function renderAfterStep(page, info) {
           } catch {
             /* private mode / blocked storage - toggle still works this page */
           }
-          const manual = document.getElementById("wg-gate-manual");
-          const auto = document.getElementById("wg-gate-auto");
+          const manual = __wgById("wg-gate-manual");
+          const auto = __wgById("wg-gate-auto");
           if (manual) manual.style.display = cb.checked ? "none" : "";
           if (auto) auto.style.display = cb.checked ? "" : "none";
         });
@@ -579,7 +579,7 @@ async function renderStepError(page, info) {
   await page
     .evaluate((info) => {
       // Reused in place - see renderBeforeStep's own comment on this.
-      let panel = document.getElementById("wg-panel");
+      let panel = __wgById("wg-panel");
       const isNewPanel = !panel;
       if (!panel) {
         panel = document.createElement("div");
@@ -631,7 +631,7 @@ async function renderStepError(page, info) {
         "<button id=\"wg-run\" class=\"wg-error-stop\">Stop</button>" +
         "</div>";
       if (isNewPanel) {
-        document.documentElement.appendChild(panel);
+        __wgAdd(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
       } else {
         panel.classList.add("wg-in");
@@ -651,9 +651,9 @@ async function renderStepError(page, info) {
           ready: true,
         });
       }
-      const runBtn = document.getElementById("wg-run");
+      const runBtn = __wgById("wg-run");
       if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
-      const retryBtn = document.getElementById("wg-error-retry");
+      const retryBtn = __wgById("wg-error-retry");
       if (retryBtn) retryBtn.addEventListener("click", () => window.__wgNext({ __wgRetry: "1" }));
     }, errorPayload)
     .catch(() => {});

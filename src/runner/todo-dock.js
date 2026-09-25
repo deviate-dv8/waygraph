@@ -115,7 +115,7 @@ export async function syncTodoDockAdvance(page, todoDockRef, stubIndex, stub) {
 export async function probeTodoDocksOnPage(page) {
   return page
     .evaluate(() => {
-      const docks = [...document.querySelectorAll(".wg-todo-dock, #wg-todo-dock")];
+      const docks = [...__wgQA(".wg-todo-dock, #wg-todo-dock")];
       return docks.map((el) => {
         const r = el.getBoundingClientRect();
         const items = el.querySelectorAll("li");

@@ -1,5 +1,6 @@
 // Split out of the former 950-line pilot-overlay.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { SURFACE } from "../ui/tokens.js";
+import { ensureShadowRoot, installShadowRoot } from "../ui/shadow.js";
 import { pilotFxRingCss } from "../ui/components/ring.js";
 import { WAYGRAPH_RING_CSS } from "../highlights.js";
 import type { HighlightTone } from "../highlights.js";
@@ -114,11 +115,8 @@ ${pilotFxRingCss()}
 
 /** Browser-side shell install — runs on every document via context.addInitScript. */
 function installPilotOverlayShell(css: string): void {
-  if (document.getElementById("wg-pilot-overlay")) return;
-  const style = document.createElement("style");
-  style.id = "wg-pilot-overlay-css";
-  style.textContent = css;
-  document.documentElement.appendChild(style);
+  if (__wgById("wg-pilot-overlay")) return;
+  __wgCss(css, "wg-pilot-overlay-css");
   const root = document.createElement("div");
   root.id = "wg-pilot-overlay";
   root.innerHTML =
@@ -129,36 +127,36 @@ function installPilotOverlayShell(css: string): void {
     '<div id="wg-pilot-panel-current"></div>' +
     '<div id="wg-pilot-panel-graph" style="display:none"></div>' +
     "</div>";
-  document.documentElement.appendChild(root);
-  document.getElementById("wg-pilot-badge")!.addEventListener("click", () => {
-    document.getElementById("wg-pilot-panel")!.classList.toggle("wg-pilot-open");
+  __wgAdd(root);
+  __wgById("wg-pilot-badge")!.addEventListener("click", () => {
+    __wgById("wg-pilot-panel")!.classList.toggle("wg-pilot-open");
   });
-  document.getElementById("wg-pilot-view-current")!.addEventListener("click", () => {
-    document.getElementById("wg-pilot-view-current")!.classList.add("wg-pilot-tab-active");
-    document.getElementById("wg-pilot-view-graph")!.classList.remove("wg-pilot-tab-active");
-    document.getElementById("wg-pilot-panel-current")!.style.display = "";
-    document.getElementById("wg-pilot-panel-graph")!.style.display = "none";
+  __wgById("wg-pilot-view-current")!.addEventListener("click", () => {
+    __wgById("wg-pilot-view-current")!.classList.add("wg-pilot-tab-active");
+    __wgById("wg-pilot-view-graph")!.classList.remove("wg-pilot-tab-active");
+    __wgById("wg-pilot-panel-current")!.style.display = "";
+    __wgById("wg-pilot-panel-graph")!.style.display = "none";
   });
-  document.getElementById("wg-pilot-view-graph")!.addEventListener("click", () => {
-    document.getElementById("wg-pilot-view-graph")!.classList.add("wg-pilot-tab-active");
-    document.getElementById("wg-pilot-view-current")!.classList.remove("wg-pilot-tab-active");
-    document.getElementById("wg-pilot-panel-graph")!.style.display = "";
-    document.getElementById("wg-pilot-panel-current")!.style.display = "none";
+  __wgById("wg-pilot-view-graph")!.addEventListener("click", () => {
+    __wgById("wg-pilot-view-graph")!.classList.add("wg-pilot-tab-active");
+    __wgById("wg-pilot-view-current")!.classList.remove("wg-pilot-tab-active");
+    __wgById("wg-pilot-panel-graph")!.style.display = "";
+    __wgById("wg-pilot-panel-current")!.style.display = "none";
   });
-  if (!document.getElementById("wg-pilot-activity")) {
+  if (!__wgById("wg-pilot-activity")) {
     const toast = document.createElement("div");
     toast.id = "wg-pilot-activity";
-    document.documentElement.appendChild(toast);
+    __wgAdd(toast);
   }
-  if (!document.getElementById("wg-ring")) {
+  if (!__wgById("wg-ring")) {
     const ring = document.createElement("div");
     ring.id = "wg-ring";
-    document.documentElement.appendChild(ring);
+    __wgAdd(ring);
   }
-  if (!document.getElementById("wg-ring-label")) {
+  if (!__wgById("wg-ring-label")) {
     const ringLabel = document.createElement("div");
     ringLabel.id = "wg-ring-label";
-    document.documentElement.appendChild(ringLabel);
+    __wgAdd(ringLabel);
   }
 }
 
@@ -169,12 +167,14 @@ function installPilotOverlayShell(css: string): void {
  * page is blank or replaced.
  */
 export async function installPersistentPilotOverlay(context: BrowserContext): Promise<void> {
+  await context.addInitScript(installShadowRoot);
   await context.addInitScript(installPilotOverlayShell, OVERLAY_CSS);
 }
 
 
 /** Idempotent - safe to call before every update, matching narrate mode's own precedent. */
 export async function ensureInstalled(page: Page): Promise<void> {
+  await ensureShadowRoot(page);
   await page.evaluate(installPilotOverlayShell, OVERLAY_CSS).catch(() => {});
 }
 
@@ -193,7 +193,7 @@ export async function showPilotActivity(page: Page, text: string): Promise<void>
   await ensureInstalled(page);
   await page
     .evaluate((text) => {
-      const toast = document.getElementById("wg-pilot-activity");
+      const toast = __wgById("wg-pilot-activity");
       if (!toast) return;
       toast.textContent = text;
       toast.classList.add("wg-pilot-toast-show");
@@ -243,8 +243,8 @@ export async function showPilotVision(
   await page
     .evaluate(
       ({ selector, label, tone }) => {
-        const ring = document.getElementById("wg-ring");
-        const tag = document.getElementById("wg-ring-label");
+        const ring = __wgById("wg-ring");
+        const tag = __wgById("wg-ring-label");
         if (!ring || !tag) return;
         const w = window as unknown as { __wgVisionHideTimer?: ReturnType<typeof setTimeout> };
         if (w.__wgVisionHideTimer) clearTimeout(w.__wgVisionHideTimer);

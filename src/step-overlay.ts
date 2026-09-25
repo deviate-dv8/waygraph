@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import type { MemPage } from "./mem-page.js";
+import { ensureShadowRoot } from "./ui/shadow.js";
 import { composeStepOverlay } from "./ui/compose.js";
 
 const RING_CSS = composeStepOverlay();
@@ -16,43 +17,44 @@ export async function installDemoChrome(
   options: { banner?: boolean } = {},
 ): Promise<void> {
   const showBanner = options.banner !== false;
-  await page.addStyleTag({ content: RING_CSS }).catch(() => {});
+  await ensureShadowRoot(page);
+  await page.evaluate(([css, key]) => __wgCss(css, key), [RING_CSS, "wg-overlay-css"] as [string, string]).catch(() => {});
   await page
     .evaluate(
       ({ title, favicon, showBanner }) => {
-        if (!document.getElementById("wg-ring")) {
+        if (!__wgById("wg-ring")) {
           const ring = document.createElement("div");
           ring.id = "wg-ring";
-          document.documentElement.appendChild(ring);
+          __wgAdd(ring);
         }
-        if (!document.getElementById("wg-ring-label")) {
+        if (!__wgById("wg-ring-label")) {
           const ringLabel = document.createElement("div");
           ringLabel.id = "wg-ring-label";
-          document.documentElement.appendChild(ringLabel);
+          __wgAdd(ringLabel);
         }
-        if (!document.getElementById("wg-cursor")) {
+        if (!__wgById("wg-cursor")) {
           const cursor = document.createElement("div");
           cursor.id = "wg-cursor";
           cursor.innerHTML =
             "<svg viewBox='0 0 32 32' width='24' height='24'>" +
             "<path fill='#0C0C1A' stroke='#fff' stroke-width='1.4' stroke-linejoin='round' " +
             "d='M6 3.5l1.4 22.5 5.8-5.4 4.2 9.4 3.6-1.6-4.2-9.2H26z'/></svg>";
-          document.documentElement.appendChild(cursor);
+          __wgAdd(cursor);
         }
-        if (!document.getElementById("wg-click-pulse")) {
+        if (!__wgById("wg-click-pulse")) {
           const pulse = document.createElement("div");
           pulse.id = "wg-click-pulse";
-          document.documentElement.appendChild(pulse);
+          __wgAdd(pulse);
         }
         window.__wgMoveCursorTo = (x: number, y: number, ms?: number) => {
-          const cursor = document.getElementById("wg-cursor");
+          const cursor = __wgById("wg-cursor");
           if (!cursor) return;
           cursor.style.setProperty("--wg-cursor-ms", (ms || 600) + "ms");
           cursor.style.transform = "translate(" + x + "px," + y + "px)";
           cursor.style.opacity = "1";
         };
         window.__wgClickPulse = (x: number, y: number, tone?: string) => {
-          const pulse = document.getElementById("wg-click-pulse");
+          const pulse = __wgById("wg-click-pulse");
           if (!pulse) return;
           const raw = (tone || "planned") + "";
           pulse.dataset.tone =
@@ -75,8 +77,8 @@ export async function installDemoChrome(
           tone?: string,
           style?: { size?: string; weight?: string },
         ) => {
-          const ring = document.getElementById("wg-ring");
-          const ringLabel = document.getElementById("wg-ring-label");
+          const ring = __wgById("wg-ring");
+          const ringLabel = __wgById("wg-ring-label");
           if (!ring || !ringLabel) return;
           const raw = (tone || "planned") + "";
           const t =
@@ -108,22 +110,22 @@ export async function installDemoChrome(
           ringLabel.style.opacity = "1";
         };
         window.__wgHideRing = () => {
-          const ring = document.getElementById("wg-ring");
-          const ringLabel = document.getElementById("wg-ring-label");
+          const ring = __wgById("wg-ring");
+          const ringLabel = __wgById("wg-ring-label");
           if (ring) ring.style.opacity = "0";
           if (ringLabel) ringLabel.style.opacity = "0";
         };
-        if (showBanner && title && !document.getElementById("wg-banner")) {
+        if (showBanner && title && !__wgById("wg-banner")) {
           const banner = document.createElement("div");
           banner.id = "wg-banner";
           banner.innerHTML =
             "<span class='wg-banner-tag'>waygraph auto</span><span>" + title + "</span>";
-          document.documentElement.appendChild(banner);
+          __wgAdd(banner);
           banner.setAttribute("data-wg-ui", "1");
           banner.setAttribute("data-wg-modal", "banner");
           banner.setAttribute("data-wg-ready", "1");
         } else {
-          const existing = document.getElementById("wg-banner");
+          const existing = __wgById("wg-banner");
           if (existing) {
             existing.setAttribute("data-wg-ui", "1");
             existing.setAttribute("data-wg-modal", "banner");

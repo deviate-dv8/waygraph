@@ -1,4 +1,5 @@
 import { createInterface } from "node:readline/promises";
+import { ensureShadowRoot } from "./ui/shadow.js";
 import { stdin as input, stdout as output } from "node:process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -188,7 +189,7 @@ async function setAutoPanelRunning(page: Page, label: string): Promise<void> {
   await page
     .evaluate(
       (label) => {
-        const panel = document.getElementById("wg-auto-panel");
+        const panel = __wgById("wg-auto-panel");
         if (!panel) return;
         const body =
           "<h3>waygraph auto</h3><div style='padding:12px 0;color:#c9a6ff'>" +
@@ -333,9 +334,10 @@ function memKeysForMenu(menu: ExploreMenu, library: Map<string, BlockEntry>): re
 
 async function syncPanelMem(page: Page, mem: MemPage, keys: readonly MemKey<unknown>[]): Promise<void> {
   if (keys.length === 0) return;
+  await ensureShadowRoot(page);
   const edits = (await page.evaluate(() => {
     const out: Record<string, string> = {};
-    document.querySelectorAll("textarea.wg-mem-input").forEach((ta) => {
+    __wgQA("textarea.wg-mem-input").forEach((ta) => {
       const key = ta.getAttribute("data-mem-key");
       if (key) out[key] = (ta as HTMLTextAreaElement).value;
     });
@@ -433,15 +435,16 @@ async function headfulPick(
     `<style id="wg-auto-style">${PANEL_CSS}</style><div id="wg-auto-panel">` +
     html.slice(html.indexOf("<h3>"));
 
+  await ensureShadowRoot(page);
   await page.evaluate(
     `((inner) => {
-      let panel = document.getElementById("wg-auto-panel");
+      let panel = __wgById("wg-auto-panel");
       if (!panel) {
         panel = document.createElement("div");
-        document.documentElement.appendChild(panel);
+        __wgAdd(panel);
       }
       panel.outerHTML = inner;
-      const root = document.getElementById("wg-auto-panel");
+      const root = __wgById("wg-auto-panel");
       if (!root) return;
       window.__wgWirePanelChrome = (el, storageKey, chromeTitle) => {
         if (!el) return;
@@ -498,7 +501,7 @@ async function headfulPick(
         window.__wgOverlayBeacon =
           window.__wgOverlayBeacon ||
           (() =>
-            Array.from(document.querySelectorAll('[data-wg-ui="1"]')).map((el) => {
+            Array.from(__wgQA('[data-wg-ui="1"]')).map((el) => {
               const r = el.getBoundingClientRect();
               const st = getComputedStyle(el);
               return {

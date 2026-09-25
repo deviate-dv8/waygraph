@@ -20,7 +20,7 @@ export function installStamp({ title, favicon, bannerPos, todoPos, envAutoplay, 
           el.setAttribute("data-wg-ready", meta.ready === false ? "0" : "1");
         };
         window.__wgOverlayBeacon = () => {
-          return Array.from(document.querySelectorAll("[data-wg-ui=\"1\"]")).map((el) => {
+          return Array.from(__wgQA("[data-wg-ui=\"1\"]")).map((el) => {
             const r = el.getBoundingClientRect();
             const st = getComputedStyle(el);
             return {
@@ -41,6 +41,6 @@ export function installStamp({ title, favicon, bannerPos, todoPos, envAutoplay, 
             };
           });
         };
-        const existingBanner = document.getElementById("wg-banner");
+        const existingBanner = __wgById("wg-banner");
         if (existingBanner) window.__wgStampModal(existingBanner, "banner", { ready: true });
 }

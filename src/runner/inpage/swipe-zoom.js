@@ -15,7 +15,7 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
             o.label ||
             (dir === "left" || dir === "right" ? "swipe" : "swipe") +
               (o.hint ? " \u00b7 " + o.hint : "");
-          let layer = document.getElementById("wg-swipe-layer");
+          let layer = __wgById("wg-swipe-layer");
           if (layer && layer._wgTimer) {
             clearTimeout(layer._wgTimer);
             layer._wgTimer = null;
@@ -31,7 +31,7 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
           lab.textContent = label;
           layer.appendChild(lab);
           layer.appendChild(finger);
-          document.documentElement.appendChild(layer);
+          __wgAdd(layer);
           const vw = window.innerWidth || 390;
           const vh = window.innerHeight || 844;
           const pad = Math.min(vw, vh) * 0.18;
@@ -89,7 +89,7 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
               finger.style.opacity = "0";
               layer.classList.remove("wg-in");
               layer._wgTimer = setTimeout(() => {
-                const el = document.getElementById("wg-swipe-layer");
+                const el = __wgById("wg-swipe-layer");
                 if (el) el.remove();
               }, 380);
             }
@@ -108,7 +108,7 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
             delete el.dataset.wgZoomed;
           });
           // Undo any prior shell-camera experiment - restore device fit scale only.
-          const shell = document.getElementById("wg-device-shell");
+          const shell = __wgById("wg-device-shell");
           if (shell && shell.dataset.wgCamBase != null) {
             shell.style.transform = shell.dataset.wgCamBase;
             if (shell.dataset.wgCamOrigin) {
@@ -130,12 +130,12 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
         window.__wgSetZoomBadge = (scale, sel) => {
           const n = Number(scale);
           const level = Number.isFinite(n) && n > 0 ? n : 1;
-          let badge = document.getElementById("wg-zoom-badge");
+          let badge = __wgById("wg-zoom-badge");
           if (!badge) {
             badge = document.createElement("div");
             badge.id = "wg-zoom-badge";
             badge.setAttribute("data-wg-ui", "1");
-            document.documentElement.appendChild(badge);
+            __wgAdd(badge);
           }
           const zoomed = level > 1.001 || level < 0.999;
           badge.dataset.zoomed = zoomed ? "1" : "0";
@@ -156,12 +156,12 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
           }
         };
         window.__wgSetTypingBadge = (on, label) => {
-          let badge = document.getElementById("wg-typing-badge");
+          let badge = __wgById("wg-typing-badge");
           if (!on) {
             if (badge) {
               badge.classList.remove("wg-in");
               setTimeout(() => {
-                const b = document.getElementById("wg-typing-badge");
+                const b = __wgById("wg-typing-badge");
                 if (b && !b.classList.contains("wg-in")) b.remove();
               }, 220);
             }
@@ -171,7 +171,7 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
             badge = document.createElement("div");
             badge.id = "wg-typing-badge";
             badge.setAttribute("data-wg-ui", "1");
-            document.documentElement.appendChild(badge);
+            __wgAdd(badge);
           }
           const text = label ? String(label).slice(0, 40) : "typing";
           badge.innerHTML =
@@ -196,7 +196,7 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
             el.style.removeProperty("position");
             delete el.dataset.wgZoomed;
           });
-          const shell = document.getElementById("wg-device-shell");
+          const shell = __wgById("wg-device-shell");
           if (shell && shell.dataset.wgCamBase != null) {
             shell.style.transform = shell.dataset.wgCamBase;
             shell.style.transformOrigin = shell.dataset.wgCamOrigin || "center center";

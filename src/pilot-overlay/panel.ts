@@ -36,9 +36,9 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
   await page
     .evaluate(
       async ({ sessionId, snapshot, graph }) => {
-        const badge = document.getElementById("wg-pilot-badge");
-        const current = document.getElementById("wg-pilot-panel-current");
-        const graphPanel = document.getElementById("wg-pilot-panel-graph");
+        const badge = __wgById("wg-pilot-badge");
+        const current = __wgById("wg-pilot-panel-current");
+        const graphPanel = __wgById("wg-pilot-panel-graph");
         if (!badge || !current || !graphPanel) return;
         const idPart = sessionId ? `session ${sessionId}` : "no session id";
         const onBlank = location.href === "about:blank" || location.protocol === "about:";

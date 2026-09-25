@@ -69,7 +69,7 @@ export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAuto
             } catch {
               /* ignore */
             }
-            const runBtn = document.getElementById("wg-run");
+            const runBtn = __wgById("wg-run");
             const show = !!hidden && !auto && !!runBtn;
             miniNext.classList.toggle("wg-mini-next-show", show);
             if (runBtn) {
@@ -125,7 +125,7 @@ export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAuto
             miniNext.dataset.wgWired = "1";
             miniNext.addEventListener("click", (e) => {
               e.stopPropagation();
-              const runBtn = document.getElementById("wg-run");
+              const runBtn = __wgById("wg-run");
               if (runBtn && !runBtn.disabled) {
                 runBtn.click();
                 return;
@@ -133,7 +133,7 @@ export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAuto
               if (typeof window.__wgNext === "function") window.__wgNext({});
             });
           }
-          const autoCb = document.getElementById("wg-autoplay-cb");
+          const autoCb = __wgById("wg-autoplay-cb");
           if (autoCb && !autoCb.dataset.wgMiniWired) {
             autoCb.dataset.wgMiniWired = "1";
             autoCb.addEventListener("change", () => {

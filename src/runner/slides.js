@@ -66,7 +66,7 @@ export async function presentSlides(page, slides, _gate, opts) {
     }
     await page.evaluate(
       (info) => {
-        let panel = document.getElementById("wg-panel");
+        let panel = __wgById("wg-panel");
         const isNew = !panel;
         if (!panel) {
           panel = document.createElement("div");
@@ -139,7 +139,7 @@ export async function presentSlides(page, slides, _gate, opts) {
           ">Auto-advancing...</div>" +
           "</div>";
         if (isNew) {
-          document.documentElement.appendChild(panel);
+          __wgAdd(panel);
           requestAnimationFrame(() => panel.classList.add("wg-in"));
         }
         if (window.__wgWirePanelChrome) {
@@ -172,7 +172,7 @@ export async function presentSlides(page, slides, _gate, opts) {
         } catch {
           /* ignore */
         }
-        const cb = document.getElementById("wg-autoplay-cb");
+        const cb = __wgById("wg-autoplay-cb");
         if (cb) {
           cb.checked = autoNow;
           cb.addEventListener("change", () => {
@@ -181,17 +181,17 @@ export async function presentSlides(page, slides, _gate, opts) {
             } catch {
               /* ignore */
             }
-            const manual = document.getElementById("wg-gate-manual");
-            const auto = document.getElementById("wg-gate-auto");
+            const manual = __wgById("wg-gate-manual");
+            const auto = __wgById("wg-gate-auto");
             if (manual) manual.style.display = cb.checked ? "none" : "";
             if (auto) auto.style.display = cb.checked ? "" : "none";
           });
         }
-        const manual = document.getElementById("wg-gate-manual");
-        const auto = document.getElementById("wg-gate-auto");
+        const manual = __wgById("wg-gate-manual");
+        const auto = __wgById("wg-gate-auto");
         if (manual) manual.style.display = autoNow ? "none" : "";
         if (auto) auto.style.display = autoNow ? "" : "none";
-        const runBtn = document.getElementById("wg-run");
+        const runBtn = __wgById("wg-run");
         if (runBtn) {
           runBtn.removeAttribute("data-wg-acked");
           runBtn.addEventListener("click", (e) => {
@@ -205,8 +205,8 @@ export async function presentSlides(page, slides, _gate, opts) {
           const unlockAt = Date.now() + info.dwellMs;
           const tick = () => {
             const left = Math.max(0, unlockAt - Date.now());
-            const hint = document.getElementById("wg-dwell-hint");
-            const btn = document.getElementById("wg-run");
+            const hint = __wgById("wg-dwell-hint");
+            const btn = __wgById("wg-run");
             if (left <= 0) {
               if (hint) hint.remove();
               if (btn) btn.disabled = false;
@@ -248,7 +248,7 @@ export async function presentSlides(page, slides, _gate, opts) {
     for (;;) {
       const acked = await page
         .evaluate(() => {
-          const btn = document.getElementById("wg-run");
+          const btn = __wgById("wg-run");
           return !!(btn && btn.getAttribute("data-wg-acked") === "1");
         })
         .catch(() => false);

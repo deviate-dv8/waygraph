@@ -247,7 +247,7 @@ export async function cycleHighlightRings(page, highlights, gatesFast, opts) {
                 return;
               }
               // Fallback for pages that never got installOverlay sync helper.
-              const ul = document.getElementById("wg-todos");
+              const ul = __wgById("wg-todos");
               if (!ul) return;
               ul.innerHTML = todos
                 .map((t) => {

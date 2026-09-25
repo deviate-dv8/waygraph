@@ -115,24 +115,6 @@ export const RING_CSS =
   ".wg-todo-dock .wg-todo-dock-title{font:700 11px/1.2 system-ui,sans-serif;color:#c9a6ff;" +
   "letter-spacing:.04em;text-transform:uppercase;margin:0 0 8px;}" +
   ".wg-todo-dock .wg-todos-list,#wg-todo-dock #wg-todos,.wg-todo-dock #wg-todos{list-style:none;margin:0;padding:0;background:transparent;border:none;}" +
-  // Video device stage: keep recordVideo size fixed; center a device-sized shell.
-  "html.wg-video-device-stage{background:#0b1220 !important;}" +
-  "html.wg-video-device-stage body{margin:0 !important;min-height:100vh !important;" +
-  "display:flex !important;align-items:center !important;justify-content:center !important;" +
-  "background:#0b1220 !important;overflow:hidden !important;}" +
-  "#wg-device-shell{flex-shrink:0;overflow:auto;background:#fff;" +
-  "border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.08);" +
-  "transform-origin:center center;" +
-  /* Force radius clip on all corners (Chrome + transform/scale). */
-  "-webkit-mask-image:-webkit-radial-gradient(white,black);" +
-  "isolation:isolate;" +
-  "transition:border-radius .55s cubic-bezier(.22,1,.36,1),box-shadow .55s ease," +
-  "transform .55s cubic-bezier(.22,1,.36,1),width .5s ease,height .5s ease,max-width .5s ease,max-height .5s ease;}" +
-  "#wg-device-shell.wg-shell-enter{border-radius:0;box-shadow:none;}" +
-  "#wg-device-shell.wg-shell-shutter-out{border-radius:0 !important;" +
-  "box-shadow:none !important;outline:none !important;border:none !important;}" +
-  "#wg-device-shell.wg-shell-desktop-flat{border-radius:0 !important;box-shadow:none !important;" +
-  "outline:none !important;border:none !important;-webkit-mask-image:none;}" +
   // Always-on zoom HUD - bottom-right (top-left is crowded: todos + banners).
   "#wg-zoom-badge{position:fixed;z-index:2147483646;bottom:14px;right:14px;" +
   "display:flex;align-items:center;gap:7px;padding:6px 11px 6px 8px;" +
@@ -329,3 +311,24 @@ export const WAYGRAPH_FAVICON =
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>" +
       "<circle cx='16' cy='16' r='14' fill='#7C3AED'/></svg>",
   );
+
+// Rules that style the HOST page (device stage) - these must stay in the light DOM, outside the overlay's shadow root.
+export const HOST_CSS =
+  // Video device stage: keep recordVideo size fixed; center a device-sized shell.
+  "html.wg-video-device-stage{background:#0b1220 !important;}" +
+  "html.wg-video-device-stage body{margin:0 !important;min-height:100vh !important;" +
+  "display:flex !important;align-items:center !important;justify-content:center !important;" +
+  "background:#0b1220 !important;overflow:hidden !important;}" +
+  "#wg-device-shell{flex-shrink:0;overflow:auto;background:#fff;" +
+  "border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.08);" +
+  "transform-origin:center center;" +
+  /* Force radius clip on all corners (Chrome + transform/scale). */
+  "-webkit-mask-image:-webkit-radial-gradient(white,black);" +
+  "isolation:isolate;" +
+  "transition:border-radius .55s cubic-bezier(.22,1,.36,1),box-shadow .55s ease," +
+  "transform .55s cubic-bezier(.22,1,.36,1),width .5s ease,height .5s ease,max-width .5s ease,max-height .5s ease;}" +
+  "#wg-device-shell.wg-shell-enter{border-radius:0;box-shadow:none;}" +
+  "#wg-device-shell.wg-shell-shutter-out{border-radius:0 !important;" +
+  "box-shadow:none !important;outline:none !important;border:none !important;}" +
+  "#wg-device-shell.wg-shell-desktop-flat{border-radius:0 !important;box-shadow:none !important;" +
+  "outline:none !important;border:none !important;-webkit-mask-image:none;}";
