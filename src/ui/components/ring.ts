@@ -1,5 +1,8 @@
 import { TONES, type ToneName } from "../tokens.js";
 
+/** Prefix icon for gray (auto) labels. */
+const ROBOT = 'content:"\\1F916\\00a0";';
+
 const toneNames = Object.keys(TONES) as ToneName[];
 
 /** Tone rules for `sel[data-tone=x]{...}` from the token table. */
@@ -21,6 +24,8 @@ export function ringCss(): string {
     `max-width:min(360px,70vw);white-space:normal;padding:6px 10px;border-radius:7px;background:${p.labelBg};color:${p.labelFg};` +
     "font:600 12px/1.35 system-ui,sans-serif;transition:opacity .3s ease;}" +
     toneRules("#wg-ring-label", (t) => `background:${t.labelBg};color:${t.labelFg};`) +
+    // Gray = a real Playwright-driven instruction: mark it with a robot.
+    `#wg-ring-label[data-tone=auto]::before{${ROBOT}}` +
     "#wg-ring[data-size=sm]{border-width:1.5px;border-radius:8px;}" +
     "#wg-ring[data-size=lg]{border-width:4px;border-radius:12px;}" +
     "#wg-ring-label[data-size=sm]{font-size:10px;line-height:1.25;padding:4px 7px;border-radius:5px;}" +
@@ -43,6 +48,7 @@ export function pilotFxRingCss(): string {
     "max-width:min(360px,80vw);box-shadow:0 2px 8px rgba(0,0,0,.25);white-space:nowrap;" +
     "overflow:hidden;text-overflow:ellipsis;transition:opacity .12s ease;}" +
     toneRules(".wg-pilot-fx-label", (t) => `background:${t.labelBg};color:${t.labelFg};`) +
+    `.wg-pilot-fx-label[data-tone=auto]::before{${ROBOT}}` +
     ".wg-pilot-fx-ring[data-size=sm]{border-width:1.5px;border-radius:8px;}" +
     ".wg-pilot-fx-ring[data-size=lg]{border-width:4px;border-radius:12px;}" +
     ".wg-pilot-fx-label[data-size=sm]{font-size:10px;padding:4px 7px;}" +

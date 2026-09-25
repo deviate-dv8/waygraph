@@ -1,7 +1,7 @@
 // Split out of the former 1,078-line auto-session.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { CONSOLE_LOG_MAX_ENTRIES, FULL_MODE_DEFAULT_DEPTH, FULL_MODE_MAX_NODES, FULL_MODE_MAX_TEXT_LENGTH, TRACE_MAX_STEPS, buildSessionSnapshot, parsePick, stubFilePath, stubPhaseHasContent, walkFullDom } from "./helpers.js";
 import type { ApplyPathResult, ApplyPickResult, AutoSessionInit, ConsoleLogEntry, FullDomCaps, InspectDomOptions, InspectDomResult, SessionSnapshot, StorageSnapshot, StubFileKind, TraceStep } from "./helpers.js";
-import { installPersistentPilotOverlay, showPilotActivity, showPilotFixtures, showPilotVision, updatePilotOverlay } from "../pilot-overlay.js";
+import { instrumentPilotActions, installPersistentPilotOverlay, showPilotActivity, showPilotFixtures, showPilotVision, updatePilotOverlay } from "../pilot-overlay.js";
 import type { PilotHighlightFixtures, PilotOverlayInfo } from "../pilot-overlay.js";
 import { buildExploreContext, buildExploreMenu } from "../auto-explore.js";
 import type { BlockEntry, ExploreMenu } from "../auto-explore.js";
@@ -93,6 +93,7 @@ export class AutoSession {
     const context = await browser.newContext(contextOpts);
     await installPersistentPilotOverlay(context);
     const page = await context.newPage();
+    instrumentPilotActions(page, headless ? 0 : 450);
     if (startUrl) {
       await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
       await page.waitForLoadState("load").catch(() => {});

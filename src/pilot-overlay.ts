@@ -2,3 +2,4 @@
 export * from "./pilot-overlay/shell.js";
 export * from "./pilot-overlay/fixtures.js";
 export * from "./pilot-overlay/panel.js";
+export * from "./pilot-overlay/action-ring.js";
