@@ -30,7 +30,7 @@ engine/highlights runtime symbol into it.
 | A `with*(flow, ...)` wrapper | `engine/flow.ts`, next to `withTitle`; add the field to `Flow` and its `withBlockVerify`/`modBlockVerify` re-wraps |
 | A `define*Block` helper | `engine/blocks/<kind>.ts`; update `MapBuilder` types if it can appear in a map flow |
 | A `Trait` | `trait.ts` (+ `Trait` object + `index.ts` export) |
-| Highlight/todo/device/pace behaviour | `highlights.ts` |
+| Highlight/todo/device/pace behaviour | `highlights/<topic>.ts` |
 | A new practice warning | `practices-check.ts` (kind, regex, label) + a fixture in `tests/fixtures/practices-check/` |
 
 ## Rules (enforced)
