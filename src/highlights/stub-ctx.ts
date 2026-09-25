@@ -1,5 +1,5 @@
 // Split out of the former 2,100-line highlights.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import type { StubBagState, StubCtx, WaygraphHighlightStub, WaygraphTodoInput, WaygraphTodosOpts } from "./types.js";
+import type { BannerPos, StubBagState, StubCtx, WaygraphHighlightStub, WaygraphTodoInput, WaygraphTodosOpts } from "./types.js";
 import { normalizeTodoPos, normalizeTodoStyle } from "./todo-dock.js";
 import { applyOrientation, normalizeDeviceOrientation, resolveDeviceState } from "./device.js";
 import type { Checkpoint } from "../types.js";
@@ -151,11 +151,30 @@ export function createStubCtx<Out extends Checkpoint<string>>(
     zoomOut(keep) {
       bag.zoomOut = !!keep;
     },
-    title(text) {
+    title(text, opts) {
       bag.title = String(text ?? "");
+      const p = normalizeBannerPos(opts?.pos);
+      if (p) bag.titlePos = p;
     },
-    banner(text) {
+    banner(text, opts) {
       bag.title = String(text ?? "");
+      const p = normalizeBannerPos(opts?.pos);
+      if (p) bag.titlePos = p;
+    },
+    titlePos(side) {
+      const p = normalizeBannerPos(side);
+      if (p) bag.titlePos = p;
+    },
+    bannerPos(side) {
+      const p = normalizeBannerPos(side);
+      if (p) bag.titlePos = p;
+    },
+    bannerUi(opts) {
+      if (!opts || typeof opts !== "object") return;
+      bag.bannerUi = { ...(bag.bannerUi || {}), ...opts };
+    },
+    hideBanner() {
+      bag.bannerUi = { ...(bag.bannerUi || {}), hidden: true };
     },
     todoPos(side) {
       const p = normalizeTodoPos(side);
@@ -240,6 +259,11 @@ export function createStubCtx<Out extends Checkpoint<string>>(
       }
       if (partial.zoomOut !== undefined) bag.zoomOut = !!partial.zoomOut;
       if (partial.title !== undefined) bag.title = String(partial.title ?? "");
+      const bp = normalizeBannerPos(partial.titlePos);
+      if (bp) bag.titlePos = bp;
+      if (partial.bannerUi && typeof partial.bannerUi === "object") {
+        bag.bannerUi = { ...(bag.bannerUi || {}), ...partial.bannerUi };
+      }
       const tp = normalizeTodoPos(partial.todoPos);
       if (tp) bag.todoPos = tp;
       if (partial.todoDockUi !== undefined && partial.todoDockUi && typeof partial.todoDockUi === "object") {
@@ -264,4 +288,9 @@ export function liftLegacySlotTodos(bag: StubBagState): void {
       return;
     }
   }
+}
+
+function normalizeBannerPos(raw: unknown): BannerPos | undefined {
+  const v = String(raw ?? "").toLowerCase();
+  return v === "left" || v === "center" || v === "right" ? v : undefined;
 }

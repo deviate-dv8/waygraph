@@ -1,0 +1,31 @@
+/*
+ * Floating fixture todo dock for Pilot (#wg-pilot-fx-todos). The demo runner's OWN `.wg-todo-dock` /
+ * `#wg-todo-dock` (src/runner/overlay-css.js) is a separate, richer implementation - fold/tucked/
+ * slide-position transitions this file does not replicate - and deliberately NOT redefined here:
+ * two rule sets for the same selector, injected in different orders, is exactly the "sometimes it
+ * doesn't line up" bug class this split guards against. Only #wg-pilot-fx-todos, a genuine
+ * duplicate of this file's own rules, is consolidated.
+ */
+#wg-pilot-fx-todos {
+  position: fixed; z-index: var(--wg-z-fx); top: 72px; max-width: 280px; max-height: calc(100vh - 100px);
+  overflow: auto; font: 12px/1.4 ui-sans-serif, system-ui, sans-serif; color: #fff;
+  background: var(--wg-surface); border-radius: var(--wg-radius-md); padding: 10px 12px;
+  box-shadow: var(--wg-shadow-dock); pointer-events: auto; transition: opacity .25s ease;
+}
+#wg-pilot-fx-todos.wg-todo-behind { z-index: var(--wg-z-focus); opacity: .42; pointer-events: none; }
+#wg-pilot-fx-todos[data-pos=left]  { left: 14px; right: auto; }
+#wg-pilot-fx-todos[data-pos=right] { right: 14px; left: auto; }
+#wg-pilot-fx-todos .wg-pilot-fx-todo-title {
+  font: 700 11px/1.2 system-ui, sans-serif; color: var(--wg-accent-soft);
+  letter-spacing: .04em; text-transform: uppercase; margin: 0 0 8px;
+}
+#wg-pilot-fx-todos ol { list-style: none; margin: 0; padding: 0; }
+#wg-pilot-fx-todos li { margin: 3px 0; color: #ddd; }
+#wg-pilot-fx-todos li.wg-pilot-fx-todo-done { color: #888; text-decoration: line-through; }
+#wg-pilot-fx-todos li.wg-pilot-fx-todo-now { color: #fff; font-weight: 700; }
+#wg-pilot-fx-todos[data-compact="1"]:not(:hover) li.wg-todo-fold { display: none; }
+#wg-pilot-fx-todos .wg-todo-more {
+  margin-top: 6px; padding: 4px 8px; border-radius: var(--wg-radius-sm);
+  background: rgba(124,58,237,.22); font: 700 11px/1.2 system-ui, sans-serif; color: #e8dcff; cursor: pointer;
+}
+#wg-pilot-fx-todos .wg-todo-more:hover { background: rgba(124,58,237,.35); }

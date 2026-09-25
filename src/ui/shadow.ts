@@ -8,9 +8,15 @@
  * host-page markers such as `[data-wg-zoomed]` intentionally stay in the light DOM).
  */
 import type { BrowserContext, Page } from "@playwright/test";
+import { getOverlaySheet } from "./stylesheet.js";
 
-export function installShadowRoot(): void {
-  const w = window as unknown as Record<string, unknown>;
+/**
+ * `overlaySheet` is the ONE real-CSS bundle (`ui/stylesheet.ts` -> `dist/ui/overlay.css`, built on
+ * Open Props - see `src/ui/css/README.md`) every surface shares; passed in from Node since in-page
+ * code can't read a file. Installed once per shadow root, before anything else runs.
+ */
+export function installShadowRoot(overlaySheet?: string): void {
+  const w = window as unknown as Record<string, unknown> & { __wgCss?: (css: string, key: string) => void };
   if (w.__wgById) return;
   const root = (): ShadowRoot => {
     let host = document.getElementById("wg-root");
@@ -40,14 +46,15 @@ export function installShadowRoot(): void {
     }
     if (style.textContent !== css) style.textContent = css;
   };
+  if (overlaySheet) w.__wgCss(overlaySheet, "wg-overlay-css");
 }
 
-/** Idempotent; call before any overlay install on a page. */
+/** Idempotent; call before any overlay install on a page. Installs the shared stylesheet bundle. */
 export async function ensureShadowRoot(page: Page): Promise<void> {
-  await page.evaluate(installShadowRoot).catch(() => {});
+  await page.evaluate(installShadowRoot, getOverlaySheet()).catch(() => {});
 }
 
 /** Also define the helpers on every future document (pilot overlay persists across navigations). */
 export async function installShadowRootEverywhere(context: BrowserContext): Promise<void> {
-  await context.addInitScript(installShadowRoot);
+  await context.addInitScript(installShadowRoot, getOverlaySheet());
 }

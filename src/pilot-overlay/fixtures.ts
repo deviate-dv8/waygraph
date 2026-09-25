@@ -1,6 +1,6 @@
 // Split out of the former 950-line pilot-overlay.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { formatHighlightCaption, normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, resolveDeviceState, resolveTodoDockUi } from "../highlights.js";
-import type { DevicePreset, DeviceState, HighlightTone, TodoDockUiOpts } from "../highlights.js";
+import type { BannerPos, BannerUiOpts, DevicePreset, DeviceState, HighlightTone, TodoDockUiOpts } from "../highlights.js";
 import { ensureInstalled } from "./shell.js";
 import type { Page } from "@playwright/test";
 
@@ -74,6 +74,14 @@ export type PilotHighlightFixtures = {
   device?: DevicePreset | DeviceState;
   /** Drop every agent fixture ring/todo/focus/zoom immediately. */
   clear?: boolean;
+  /** Top banner title card (same as `ctx.title`). */
+  title?: string;
+  /** Banner position (same as `ctx.titlePos`). */
+  titlePos?: BannerPos;
+  /** Banner UX: collision / hidden (same as `ctx.bannerUi`). */
+  bannerUi?: BannerUiOpts;
+  /** Alias of {@link todoUi} - the name `ctx.todoDockUi` uses. */
+  todoDockUi?: TodoDockUiOpts;
 };
 
 
@@ -179,6 +187,11 @@ export async function showPilotFixtures(
           ? fixtures.device
           : fixtures.device.preset || "device";
 
+  const bannerTitle = fixtures.clear ? undefined : fixtures.title;
+  const bannerPos = fixtures.clear ? undefined : fixtures.titlePos;
+  const bannerHidden = !!fixtures.clear || !!fixtures.bannerUi?.hidden;
+  const bannerCollision = fixtures.bannerUi?.collision !== false;
+
   return page
     .evaluate(
       ({
@@ -194,7 +207,37 @@ export async function showPilotFixtures(
         clearAll,
         deviceLabel,
         todoUi,
+        bannerTitle,
+        bannerPos,
+        bannerHidden,
+        bannerCollision,
       }) => {
+        // Same #wg-banner element/CSS the demo runner paints (ui/css/banner.css, already in the
+        // shared bundle) - so ctx.title / ctx.titlePos / ctx.bannerUi behave identically on a Pilot
+        // session, not a separate re-implementation.
+        if (bannerHidden) {
+          const b = __wgById("wg-banner");
+          if (b) b.style.display = "none";
+        } else if (bannerTitle) {
+          let banner = __wgById("wg-banner");
+          if (!banner) {
+            banner = document.createElement("div");
+            banner.id = "wg-banner";
+            const tag = document.createElement("span");
+            tag.className = "wg-banner-tag";
+            tag.textContent = "waygraph pilot";
+            const text = document.createElement("span");
+            text.className = "wg-banner-text";
+            banner.appendChild(tag);
+            banner.appendChild(text);
+            __wgAdd(banner);
+          }
+          banner.style.display = "";
+          banner.dataset.pos = bannerPos || banner.dataset.pos || "left";
+          banner.dataset.collision = bannerCollision ? "1" : "0";
+          const textEl = banner.querySelector(".wg-banner-text");
+          if (textEl) textEl.textContent = bannerTitle;
+        }
         const w = window as unknown as {
           __wgPilotFxHideTimer?: ReturnType<typeof setTimeout>;
           __wgPilotFxClear?: () => void;
@@ -432,6 +475,10 @@ export async function showPilotFixtures(
         clearAll: fixtures.clear === true,
         deviceLabel,
         todoUi,
+        bannerTitle,
+        bannerPos,
+        bannerHidden,
+        bannerCollision,
       },
     )
     .catch(() => ({ painted: 0, missing: rings.map((r) => r.selector) }));

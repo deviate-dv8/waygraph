@@ -1,0 +1,17 @@
+/* Top title banner (#wg-banner). Sits BELOW the ring/label/dock layers (--wg-z-banner) - a title
+ * card must never shadow a highlight; see tokens.css. Moves out of the way of a ring it overlaps
+ * (data-collision, driven from inpage/banner.js's __wgBannerAvoidRing) unless authored off. */
+#wg-banner {
+  position: fixed; z-index: var(--wg-z-banner); top: 14px; left: 14px;
+  background: var(--wg-surface); color: #fff; border-radius: var(--wg-radius-lg); padding: 10px 16px;
+  font: 14px/1.4 var(--wg-font); box-shadow: var(--wg-shadow-banner);
+  border: 1px solid rgba(124,58,237,.4); cursor: pointer;
+  transition: left .3s var(--wg-ease), right .3s var(--wg-ease), transform .3s var(--wg-ease);
+}
+#wg-banner[data-pos=left]   { left: 14px; right: auto; transform: none; }
+#wg-banner[data-pos=center] { left: 50%; right: auto; transform: translateX(-50%); }
+#wg-banner[data-pos=right]  { right: 14px; left: auto; transform: none; }
+#wg-banner .wg-banner-tag {
+  display: block; font-size: 10px; font-weight: 700; color: var(--wg-accent-soft);
+  letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px;
+}

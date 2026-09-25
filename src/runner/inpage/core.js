@@ -114,6 +114,7 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
           ringLabel.style.top = labelTop + "px";
           if (window.__wgTodosSetBehind) window.__wgTodosSetBehind(true);
           if (window.__wgTodosAvoidRingCollision) window.__wgTodosAvoidRingCollision(box);
+          if (window.__wgBannerAvoidRing) window.__wgBannerAvoidRing(box);
         };
         /** Dim/lower floating todo docks while a ring caption is the focus. */
         window.__wgTodosSetBehind = (on) => {
@@ -220,6 +221,7 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
           if (ringLabel) ringLabel.style.opacity = "0";
           if (window.__wgClearFocus) window.__wgClearFocus();
           if (window.__wgTodosSetBehind) window.__wgTodosSetBehind(false);
+          if (window.__wgBannerRestore) window.__wgBannerRestore();
           window.__wgTodoCollisionLocked = false;
           __wgQA(".wg-todo-dock[data-tucked], #wg-todo-dock[data-tucked]").forEach((el) => {
             delete el.dataset.tucked;

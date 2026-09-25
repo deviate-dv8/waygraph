@@ -1,7 +1,5 @@
 // Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
-import { WAYGRAPH_RING_CSS } from "../highlights.js";
-import { cursorCss } from "../ui/components/cursor.js";
 import { SURFACE } from "../ui/tokens.js";
 
 // ---------------------------------------------------------------------------
@@ -13,22 +11,11 @@ import { SURFACE } from "../ui/tokens.js";
 // label-under-box language, minus everything camera/narration-specific).
 // Purely CLI-level orchestration - no engine changes, no change to the
 // non-STEP path above.
-export const RING_CSS =
-  // Shared with pilot-overlay.ts's showPilotVision - same ring/label CSS,
-  // one source of truth (highlights.ts), so a Blind Pilot vision ring and a
-  // demo stepper ring never visually drift apart.
-  WAYGRAPH_RING_CSS +
-  // Mouse cursor icon that travels to a target before it's acted on, plus a
-  // quick expanding ripple at the moment of a click - same idea as
-  // help-center-clip-engine's #clip-cursor/#clip-ring (video-pipeline). The
-  // shape itself is an inline SVG set as innerHTML in installOverlay below
-  // (dark fill + white stroke, same as the clip-engine's own cursor) - a
-  // plain solid-white CSS clip-path (the first attempt here) had no outline
-  // at all and all but disappeared against this app's light background.
-  // Travel duration is JS-driven per call via --wg-cursor-ms, same reason
-  // the clip engine's own comment gives: a hardcoded CSS duration would
-  // make the speed param a no-op.
-  cursorCss() +
+// Runner-only chrome (step panel, todo-dock legacy variant, zoom/typing/device chips) - NOT
+// ring/cursor/banner, which come from the one shared bundle every surface installs
+// (ui/css/*.css, see ensureShadowRoot in overlay-install.js). Injected under its own key so it
+// never collides with that bundle.
+export const RUNNER_EXTRA_CSS =
   // Spotlight: dim everything except the highlight target (focus: true).
   "#wg-focus-veil{position:fixed;z-index:2147483644;pointer-events:none;" +
   "border-radius:12px;box-shadow:0 0 0 9999px rgba(8,4,20,.62);" +
@@ -225,15 +212,7 @@ export const RING_CSS =
   "#wg-modules .wg-mod-done{background:#2a1650;color:#9a7ad1;}" +
   "#wg-modules .wg-mod-current{background:#7C3AED;color:#fff;}" +
   "#wg-modules .wg-mod-upcoming{background:transparent;color:#5a4a80;border:1px solid #3a2a60;}" +
-  "#wg-banner{position:fixed;z-index:2147483647;top:14px;max-width:320px;" +
-  "background:" + SURFACE + ";color:#fff;border-radius:12px;padding:10px 16px;" +
-  "font:14px/1.4 system-ui,sans-serif;box-shadow:0 8px 20px rgba(0,0,0,.3);" +
-  "border:1px solid rgba(124,58,237,.4);cursor:pointer;user-select:none;}" +
-  "#wg-banner[data-pos=left]{left:14px;right:auto;transform:none;}" +
-  "#wg-banner[data-pos=center]{left:50%;right:auto;transform:translateX(-50%);}" +
-  "#wg-banner[data-pos=right]{right:14px;left:auto;transform:none;}" +
-  "#wg-banner .wg-banner-tag{display:block;font-size:10px;font-weight:700;color:#c9a6ff;" +
-  "letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px;}" +
+  // #wg-banner: comes from the shared bundle (ui/css/banner.css) now - not redefined here.
   "#wg-panel .wg-key{margin:8px 0;}" +
   // A live, human-readable preview of what's about to be written for this
   // MemKey - Dan: "i want pretty to exist in memkeys too... it shows what

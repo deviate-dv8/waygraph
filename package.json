@@ -1,6 +1,6 @@
 {
   "name": "waygraph",
-  "version": "0.15.32",
+  "version": "0.15.33",
   "type": "module",
   "description": "A typed graph of reusable Blocks for driving a browser through E2E flows.",
   "license": "MIT",
@@ -37,7 +37,7 @@
     "url": "git+https://github.com/deviate-dv8/waygraph.git"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node scripts/copy-runner.mjs",
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-runner.mjs && node scripts/copy-ui-css.mjs",
     "typecheck": "node bin/waygraph typecheck .",
     "test": "npm run check:structure && npm run test:unit && playwright test",
     "test:ui": "playwright test --ui",
@@ -52,6 +52,7 @@
     "@playwright/test": "^1.40.0"
   },
   "dependencies": {
+    "open-props": "^1.7.23",
     "tsx": "^4.0.0"
   },
   "devDependencies": {

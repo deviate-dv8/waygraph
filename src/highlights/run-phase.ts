@@ -126,6 +126,8 @@ export async function runStubPhase(
     ...(bag.zoom !== undefined ? { zoom: bag.zoom } : {}),
     ...(bag.zoomOut !== undefined ? { zoomOut: bag.zoomOut } : {}),
     ...(bag.title !== undefined && bag.title !== "" ? { title: bag.title } : {}),
+    ...(bag.titlePos !== undefined ? { titlePos: bag.titlePos } : {}),
+    ...(bag.bannerUi !== undefined ? { bannerUi: bag.bannerUi } : {}),
     ...(bag.todoPos !== undefined ? { todoPos: bag.todoPos } : {}),
     ...(bag.todoDockUi !== undefined ? { todoDockUi: bag.todoDockUi } : {}),
     ...(bag.todoParallel === true ? { todoParallel: true } : {}),

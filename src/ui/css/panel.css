@@ -1,0 +1,6 @@
+/* Shared dark panel surface token (pilot panel, auto panel, step chrome). Consumers set their own
+ * layout (position/size); this file only supplies the shared look. */
+.wg-panel-surface {
+  background: var(--wg-surface); color: #fff; border-radius: var(--wg-radius-sm);
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}

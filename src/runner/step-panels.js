@@ -6,7 +6,7 @@ import { applyHighlightStyleDefaults, formatHighlightCaption, hasAuthoredStubOnE
 import { cycleHighlightRings } from "./rings.js";
 
 export async function renderBeforeStep(page, info) {
-  await installOverlay(page, info.title);
+  await installOverlay(page, info.title, info.bannerUi);
   // A ring left highlighting the PREVIOUS step's element (and its live
   // resize/scroll tracker) shouldn't linger once a new step's own panel is
   // up - only relevant when a Block's act() doesn't navigate away, since a
@@ -375,7 +375,7 @@ export async function presentFailPanel(page, opts) {
 
 
 export async function renderAfterStep(page, info) {
-  await installOverlay(page, info.title);
+  await installOverlay(page, info.title, info.bannerUi);
   // Clear any tracker from a previous highlight before cycling through this
   // step's own.
   await page
@@ -574,7 +574,7 @@ export async function renderAfterStep(page, info) {
  * regardless - main()'s own try/finally - but not before this is visible).
  */
 async function renderStepError(page, info) {
-  await installOverlay(page, info.title);
+  await installOverlay(page, info.title, info.bannerUi);
   const errorPayload = { ...info, stepLabel: miniStepLabel(info) };
   await page
     .evaluate((info) => {

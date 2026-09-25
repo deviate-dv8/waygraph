@@ -109,8 +109,14 @@ function demoTs() {
   );
 }
 
+let logSurface = "demo";
+/** Which surface is talking (demo | auto | browser | pilot) - same log format everywhere, only the tag differs. */
+export function setDemoLogSurface(name) {
+  logSurface = String(name || "demo");
+}
+
 function demoPrefix() {
-  return ansiPaint(ANSI.dim, "[" + demoTs() + "]") + " waygraph demo: ";
+  return ansiPaint(ANSI.dim, "[" + demoTs() + "]") + " waygraph " + logSurface + ": ";
 }
 
 export function demoLog(msg) {
@@ -170,6 +176,8 @@ export function logStubPhaseFixtures(phaseName, phase) {
   const tag = "stub." + phaseName;
   if (phase.title) demoFixture(tag, "ctx.title(...)", JSON.stringify(phase.title));
   if (phase.banner) demoFixture(tag, "ctx.banner(...)", JSON.stringify(phase.banner));
+  if (phase.titlePos) demoFixture(tag, "ctx.titlePos(...)", JSON.stringify(phase.titlePos));
+  if (phase.bannerUi) demoFixture(tag, "ctx.bannerUi(...)", JSON.stringify(phase.bannerUi));
   if (phase.deviceSync && phase.deviceSync !== "keep") {
     demoFixture(
       tag,

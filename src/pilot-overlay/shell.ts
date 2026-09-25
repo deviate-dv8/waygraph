@@ -1,8 +1,6 @@
 // Split out of the former 950-line pilot-overlay.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { SURFACE } from "../ui/tokens.js";
 import { ensureShadowRoot, installShadowRoot } from "../ui/shadow.js";
-import { pilotFxRingCss } from "../ui/components/ring.js";
-import { WAYGRAPH_RING_CSS } from "../highlights.js";
 import type { HighlightTone } from "../highlights.js";
 import type { BrowserContext, Page } from "@playwright/test";
 
@@ -67,26 +65,9 @@ const OVERLAY_CSS = `
   opacity: 0; transform: translateY(4px); transition: opacity 0.15s, transform 0.15s;
 }
 #wg-pilot-activity.wg-pilot-toast-show { opacity: 1; transform: translateY(0); }
-/* Agent-sent fixture rings: generated from ui/tokens (tones shared with #wg-ring). */
-${pilotFxRingCss()}
-#wg-pilot-fx-todos{
-  position:fixed;z-index:2147483645;top:72px;max-width:280px;max-height:calc(100vh - 100px);overflow:auto;
-  font:12px/1.4 ui-sans-serif,system-ui,sans-serif;color:#fff;
-  background:${SURFACE};border-radius:10px;padding:10px 12px;
-  box-shadow:0 2px 10px rgba(0,0,0,.3);pointer-events:auto;
-  transition:opacity .25s ease;
-}
-#wg-pilot-fx-todos.wg-todo-behind{z-index:2147483643;opacity:.42;pointer-events:none;}
-#wg-pilot-fx-todos[data-pos=left]{left:14px;right:auto;}
-#wg-pilot-fx-todos[data-pos=right]{right:14px;left:auto;}
-#wg-pilot-fx-todos .wg-pilot-fx-todo-title{font-weight:700;color:#c9a6ff;margin-bottom:6px;}
-#wg-pilot-fx-todos ol{margin:0;padding-left:18px;}
-#wg-pilot-fx-todos li{margin:3px 0;color:#ddd;}
-#wg-pilot-fx-todos li.wg-pilot-fx-todo-done{color:#888;text-decoration:line-through;}
-#wg-pilot-fx-todos li.wg-pilot-fx-todo-now{color:#fff;font-weight:700;}
-#wg-pilot-fx-todos[data-compact="1"]:not(:hover) li.wg-todo-fold{display:none;}
-#wg-pilot-fx-todos .wg-todo-more{margin-top:6px;padding:4px 8px;border-radius:8px;
-  background:rgba(124,58,237,.22);font:700 11px/1.2 system-ui,sans-serif;color:#e8dcff;}
+/* Agent fixture rings (.wg-pilot-fx-ring/label), #wg-pilot-fx-todos, #wg-ring/#wg-ring-label and
+   #wg-banner all come from the ONE shared bundle ensureShadowRoot installs (ui/css/*.css) - not
+   redefined here. */
 /* Spotlight (demo focus:true) - dim page, cutout around target. */
 #wg-pilot-fx-focus{position:fixed;z-index:2147483644;pointer-events:none;
   border-radius:12px;box-shadow:0 0 0 9999px rgba(8,4,20,.62);
@@ -110,7 +91,7 @@ ${pilotFxRingCss()}
 #wg-pilot-fx-device[data-preset=mobile]{border-color:#3B82F6;}
 #wg-pilot-fx-device[data-preset=tablet]{border-color:#22C55E;}
 #wg-pilot-fx-device[data-preset=desktop]{border-color:#9CA3AF;}
-` + WAYGRAPH_RING_CSS;
+`;
 
 
 /** Browser-side shell install — runs on every document via context.addInitScript. */

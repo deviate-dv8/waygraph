@@ -1,9 +1,6 @@
 import type { Page } from "@playwright/test";
 import type { MemPage } from "./mem-page.js";
 import { ensureShadowRoot } from "./ui/shadow.js";
-import { composeStepOverlay } from "./ui/compose.js";
-
-const RING_CSS = composeStepOverlay();
 
 const FAVICON =
   "data:image/svg+xml," +
@@ -17,8 +14,8 @@ export async function installDemoChrome(
   options: { banner?: boolean } = {},
 ): Promise<void> {
   const showBanner = options.banner !== false;
+  // ring/cursor/banner CSS comes from the one shared bundle - see ui/css/README.md.
   await ensureShadowRoot(page);
-  await page.evaluate(([css, key]) => __wgCss(css, key), [RING_CSS, "wg-overlay-css"] as [string, string]).catch(() => {});
   await page
     .evaluate(
       ({ title, favicon, showBanner }) => {

@@ -1,12 +1,13 @@
 // Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
 import { instrumentInteractionHighlighting } from "./interaction-patch.js";
-import { applyDevicePhase, applyHighlightStyleDefaults, applyTodoPhase, demoPaceGateMs, demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, formatHighlightCaption, hasAuthoredStubAfter, resolveSlides, resolveStepDemoPace, resolveTodoDockUi, runStubPhase } from "../highlights.js";
+import { applyHighlightStyleDefaults, demoPaceGateMs, demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, formatHighlightCaption, hasAuthoredStubAfter, resolveSlides, resolveStepDemoPace, resolveTodoDockUi, runStubPhase } from "../highlights.js";
 import { markStepRunning, resetPageState, teardownOverlay } from "./teardown.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
-import { applyDeviceToPage } from "./device-stage.js";
 import { extractVerifyHighlights, presentFailPanel, renderAfterStep, renderBeforeStep } from "./step-panels.js";
 import { probeTodoDocksOnPage } from "./todo-dock.js";
+import { logBannerDom, probeBanner } from "./banner-log.js";
+import { createOverlayStage } from "./overlay-stage.js";
 import { join } from "node:path";
 import { presentSlides } from "./slides.js";
 
@@ -26,9 +27,9 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
   const stepperMode = process.env.WAYGRAPH_STEPPER === "full" ? "full" : "carousel";
   const pacing = { gatesFast: demoFast, gatesSlow: false, skipTheater: false, demoPace: "normal" };
   const stubBeforeRef = { current: [] };
-  /** Live todo dock for Method fill/click advance (same carry as lastTodoDock). */
+  /** Live todo dock for Method fill/click advance (same carry as stage.state.lastTodoDock). */
   const todoDockRef = { current: undefined };
-  /** Live device fixture for touch theater (same carry as lastDevice). */
+  /** Live device fixture for touch theater (same carry as stage.state.lastDevice). */
   const deviceRef = { current: undefined };
   instrumentInteractionHighlighting(page, mem, slowMo, pacing, stubBeforeRef, todoDockRef, deviceRef);
   // Force the panel checkbox from this process's flags/env at run start.
@@ -158,73 +159,8 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
   }
 
   let result;
-  /** Carry floating todo dock across steps (empty stubBefore must not wipe). */
-  let lastTodoDock = undefined;
-  /** Author todoDockUi patches (merged); resolved against env each step. */
-  let lastTodoDockUiPatch = undefined;
-  /** Multi-todo: every dock keyed by todoId (or "_default"), survives navigation. */
-  const todoDockById = new Map();
-  const pushTodoDockUi = async (patch) => {
-    if (patch && typeof patch === "object") {
-      lastTodoDockUiPatch = { ...(lastTodoDockUiPatch || {}), ...patch };
-    }
-    const ui = resolveTodoDockUi(lastTodoDockUiPatch);
-    await page
-      .evaluate((u) => {
-        window.__wgTodoDockUi = u;
-      }, ui)
-      .catch(() => {});
-  };
-  const dockRegistryKey = (dock) =>
-    dock && dock.id && String(dock.id).trim() ? String(dock.id).trim() : "_default";
-  const rememberTodoDock = (dock, sync, parallel) => {
-    if (sync === "clear") {
-      todoDockById.clear();
-      return;
-    }
-    if (sync === "set" && dock) {
-      if (!parallel) todoDockById.clear();
-      todoDockById.set(dockRegistryKey(dock), dock);
-      return;
-    }
-    // keep: refresh / re-seed so syncAllTodoDocks never sees an empty map
-    // while lastTodoDock still carries (nav wipe + mid-act advance).
-    if (sync === "keep" && dock) {
-      todoDockById.set(dockRegistryKey(dock), dock);
-    }
-  };
-  const syncAllTodoDocks = async (opts) => {
-    const docks = [...todoDockById.values()];
-    const parallel = !!(opts && opts.parallel);
-    if (!docks.length) {
-      // Empty registry: do NOT clear the DOM. renderBefore/After may have
-      // just painted from lastTodoDock (keep). Clearing here made todos
-      // vanish until the next ctx.todos() set (PIA #15).
-      return;
-    }
-    await page
-      .evaluate(
-        ({ list, parallel }) => {
-          if (!window.__wgSyncTodos) return;
-          for (let i = 0; i < list.length; i++) {
-            const d = list[i];
-            window.__wgSyncTodos({
-              sync: "set",
-              dock: d,
-              todoId: (d && d.id) || null,
-              pos: (d && d.pos) || null,
-              // First dock replaces; later ones keep siblings when parallel.
-              replace: !(parallel && i > 0),
-              parallel: parallel && i > 0,
-            });
-          }
-        },
-        { list: docks, parallel },
-      )
-      .catch(() => {});
-  };
-  /** Carry device / touch fixture across steps (omit = keep, like todos). */
-  let lastDevice = undefined;
+  const stage = createOverlayStage(page, { todoDockRef, deviceRef });
+  const { pushTodoDockUi, rememberTodoDock, syncAllTodoDocks } = stage;
   for (let i = 0; i < resolved.length; i++) {
     const r = resolved[i];
     // The block breadcrumb is scoped to THIS step's own episode, not the
@@ -322,26 +258,12 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
         label: formatHighlightCaption(h),
       })),
     });
-    const appliedBefore = applyTodoPhase(lastTodoDock, {
-      todoSync: stubBeforePhase.todoSync,
-      todoDock: stubBeforePhase.todoDock,
-      todos: stubBeforePhase.todos,
-      todoPos: stubBeforePhase.todoPos,
-    });
-    lastTodoDock = appliedBefore.dock;
-    todoDockRef.current = lastTodoDock;
-    rememberTodoDock(appliedBefore.dock, appliedBefore.sync, !!stubBeforePhase.todoParallel);
-    const appliedDeviceBefore = applyDevicePhase(lastDevice, {
-      deviceSync: stubBeforePhase.deviceSync,
-      device: stubBeforePhase.device,
-    });
-    lastDevice = appliedDeviceBefore.device;
-    deviceRef.current = lastDevice;
-    if (appliedDeviceBefore.sync !== "keep" || lastDevice) {
-      await applyDeviceToPage(page, lastDevice, appliedDeviceBefore.sync);
-    }
+    const { appliedTodo: appliedBefore, appliedDevice: appliedDeviceBefore } = await stage.applyPhase(
+      stubBeforePhase,
+      { reapplyDeviceOnKeep: true },
+    );
     const stubBeforeTodos =
-      (lastTodoDock && lastTodoDock.groups[0] && lastTodoDock.groups[0].items) ||
+      (stage.state.lastTodoDock && stage.state.lastTodoDock.groups[0] && stage.state.lastTodoDock.groups[0].items) ||
       stubBeforePhase.todos ||
       [];
     const overlayTitle =
@@ -350,7 +272,7 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
       title ||
       "waygraph demo";
     const overlayTodoPos =
-      (lastTodoDock && lastTodoDock.pos) || stubBeforePhase.todoPos || undefined;
+      (stage.state.lastTodoDock && stage.state.lastTodoDock.pos) || stubBeforePhase.todoPos || undefined;
     const isNavBlock = r.block.__waygraphKind === "nav";
     const autoNow = await currentAutoplay();
     // Video / --mini: compact pill. Never pass false - Hide/localStorage wins.
@@ -391,7 +313,7 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
           " gatesFast=" +
           !!pacing.gatesFast,
       );
-      demoLog("  " + summarizeDevice(lastDevice));
+      demoLog("  " + summarizeDevice(stage.state.lastDevice));
       const phaseZoom =
         stubBeforePhase.zoom != null && Number(stubBeforePhase.zoom) > 0
           ? Number(stubBeforePhase.zoom)
@@ -404,7 +326,7 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
           (phaseZoomOut != null ? " zoomOut=" + phaseZoomOut : "") +
           " (StubCtx / API; live chip top-left when ring zoom >1)",
       );
-      logTodoDockFull(lastTodoDock, "  before");
+      logTodoDockFull(stage.state.lastTodoDock, "  before");
       demoLog("  todoSync=" + appliedBefore.sync);
     }
     await renderBeforeStep(page, {
@@ -419,22 +341,23 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
       allEpisodes,
       justEnteredEpisode,
       title: overlayTitle,
+      bannerUi: stage.state.lastBannerUi,
       todoPos: overlayTodoPos,
       episodeNumber: r.episodeNumber,
       episodeTitle: r.episodeTitle,
       stepperMode,
       forceCollapsed,
       todos: stubBeforeTodos,
-      todoDock: lastTodoDock,
+      todoDock: stage.state.lastTodoDock,
       todoSync: appliedBefore.sync,
-      todoId: lastTodoDock && lastTodoDock.id,
+      todoId: stage.state.lastTodoDock && stage.state.lastTodoDock.id,
       ...paceSpeak,
     });
     // Re-paint dock(s) - renderBeforeStep syncs the active one; this enforces replace.
     await syncAllTodoDocks({ parallel: !!stubBeforePhase.todoParallel });
     if (process.env.WAYGRAPH_JSON !== "1") {
       const docks = await probeTodoDocksOnPage(page);
-      if (!docks.length && lastTodoDock) {
+      if (!docks.length && stage.state.lastTodoDock) {
         demoLog("  WARN todos authored but dock-dom empty (not painted?)");
       } else if (docks.length) {
         demoLog(
@@ -462,6 +385,7 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
         );
       }
     }
+    if (process.env.WAYGRAPH_JSON !== "1") logBannerDom("before", await probeBanner(page));
     const edits = await gate();
     for (const k of requires) {
       if (edits[k.name] !== undefined) {
@@ -554,9 +478,9 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
       .catch(() => {});
     result = stepOutcome.result;
     // Mid-act Method fill/click advances live on todoDockRef - fold that
-    // back into lastTodoDock before stubAfter / next-block keep, or the
+    // back into stage.state.lastTodoDock before stubAfter / next-block keep, or the
     // next step reverts to the pre-act (blank / index-0) checklist.
-    if (todoDockRef.current) lastTodoDock = todoDockRef.current;
+    if (todoDockRef.current) stage.state.lastTodoDock = todoDockRef.current;
     // withExpectedFailure last block that SUCCEEDS on the intentional fail
     // branch (e.g. submit-login -> LoginPage + error banner). Still show
     // stubOnError rings + amber "expected outcome" panel - branching no
@@ -621,8 +545,8 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
     let stubAfterTodos = [];
     let afterOverlayTitle = overlayTitle;
     let afterTodoPos = overlayTodoPos;
-    let appliedAfter = { dock: lastTodoDock, sync: "keep" };
-    let appliedDeviceAfter = { device: lastDevice, sync: "keep" };
+    let appliedAfter = { dock: stage.state.lastTodoDock, sync: "keep" };
+    let appliedDeviceAfter = { device: stage.state.lastDevice, sync: "keep" };
     let afterTodoParallel = false;
     if (hasAuthoredStubAfter(r.block, result, fixturesAfter)) {
       const afterPhase = await runStubPhase(r.block, "stubAfter", {
@@ -641,33 +565,16 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
         }),
       });
       afterTodoParallel = !!afterPhase.todoParallel;
-      appliedAfter = applyTodoPhase(lastTodoDock, {
-        todoSync: afterPhase.todoSync,
-        todoDock: afterPhase.todoDock,
-        todos: afterPhase.todos,
-        todoPos: afterPhase.todoPos,
-      });
-      lastTodoDock = appliedAfter.dock;
-      todoDockRef.current = lastTodoDock;
-      rememberTodoDock(appliedAfter.dock, appliedAfter.sync, afterTodoParallel);
-      appliedDeviceAfter = applyDevicePhase(lastDevice, {
-        deviceSync: afterPhase.deviceSync,
-        device: afterPhase.device,
-      });
-      lastDevice = appliedDeviceAfter.device;
-      deviceRef.current = lastDevice;
-      if (appliedDeviceAfter.sync !== "keep" || (appliedDeviceAfter.sync === "set" && lastDevice)) {
-        await applyDeviceToPage(page, lastDevice, appliedDeviceAfter.sync);
-      }
+      ({ appliedTodo: appliedAfter, appliedDevice: appliedDeviceAfter } = await stage.applyPhase(afterPhase));
       stubAfterTodos =
-        (lastTodoDock && lastTodoDock.groups[0] && lastTodoDock.groups[0].items) ||
+        (stage.state.lastTodoDock && stage.state.lastTodoDock.groups[0] && stage.state.lastTodoDock.groups[0].items) ||
         afterPhase.todos ||
         [];
       if (afterPhase.title && String(afterPhase.title).trim()) {
         afterOverlayTitle = String(afterPhase.title).trim();
       }
       if (afterPhase.todoPos) afterTodoPos = afterPhase.todoPos;
-      if (lastTodoDock && lastTodoDock.pos) afterTodoPos = lastTodoDock.pos;
+      if (stage.state.lastTodoDock && stage.state.lastTodoDock.pos) afterTodoPos = stage.state.lastTodoDock.pos;
       highlights = afterPhase.highlights.map((h) => {
         const styled = applyHighlightStyleDefaults(h, r.highlightStyle);
         return {
@@ -707,14 +614,15 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
       moduleIndex,
       allEpisodes,
       title: afterOverlayTitle,
+      bannerUi: stage.state.lastBannerUi,
       todoPos: afterTodoPos,
       episodeNumber: r.episodeNumber,
       episodeTitle: r.episodeTitle,
       stepperMode,
       todos: stubAfterTodos,
-      todoDock: lastTodoDock,
+      todoDock: stage.state.lastTodoDock,
       todoSync: appliedAfter.sync,
-      todoId: lastTodoDock && lastTodoDock.id,
+      todoId: stage.state.lastTodoDock && stage.state.lastTodoDock.id,
       todoDockRef,
       forceCollapsed:
         !!process.env.WAYGRAPH_VIDEO ||
@@ -726,20 +634,20 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
     await syncAllTodoDocks({ parallel: afterTodoParallel });
     // Ring cycle / stubAfter may have advanced the dock - persist for next block.
     if (todoDockRef.current) {
-      lastTodoDock = todoDockRef.current;
+      stage.state.lastTodoDock = todoDockRef.current;
       rememberTodoDock(todoDockRef.current, "set", afterTodoParallel);
     }
     if (process.env.WAYGRAPH_JSON !== "1") {
       demoLog(
         "  after " +
-          summarizeDevice(lastDevice) +
+          summarizeDevice(stage.state.lastDevice) +
           " deviceSync=" +
           appliedDeviceAfter.sync,
       );
-      logTodoDockFull(lastTodoDock, "  after");
+      logTodoDockFull(stage.state.lastTodoDock, "  after");
       demoLog("  after todoSync=" + appliedAfter.sync);
       const docksAfter = await probeTodoDocksOnPage(page);
-      if (!docksAfter.length && lastTodoDock && appliedAfter.sync !== "clear") {
+      if (!docksAfter.length && stage.state.lastTodoDock && appliedAfter.sync !== "clear") {
         demoLog("  WARN after: todos authored but dock-dom empty");
       } else if (docksAfter.length) {
         demoLog(
@@ -769,6 +677,7 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
         demoLog("  after dock-dom cleared (expected)");
       }
     }
+    if (process.env.WAYGRAPH_JSON !== "1") logBannerDom("after", await probeBanner(page));
     await gate();
   }
   await teardownOverlay(page);

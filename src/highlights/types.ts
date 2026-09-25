@@ -51,6 +51,17 @@ export type WaygraphTodoInput = string | WaygraphTodoItem;
 export type TodoListStyle = "sequential" | "checklist" | "bullets";
 
 
+/** Where the top banner sits. */
+export type BannerPos = "left" | "center" | "right";
+
+/** Banner UX, mirrors {@link TodoDockUiOpts}: pass `false` fields to opt out for this phase. */
+export interface BannerUiOpts {
+  /** Move to a free spot while a highlight ring would overlap it (default true). */
+  collision?: boolean;
+  /** Hide the banner entirely for this phase. */
+  hidden?: boolean;
+}
+
 /** One titled group in the floating todo dock (FR / Scenarios / ACs, etc.). */
 export type WaygraphTodoGroupInput = {
   /** Stable group id -> `data-wg-todo-group`. */
@@ -168,6 +179,10 @@ export type StubPhaseFixtures = {
   zoomOut?: boolean;
   /** Top demo banner title (the purple "waygraph demo" card). */
   title?: string;
+  /** Banner side/position (`left` | `center` | `right`). Authored control, like {@link todoPos}. */
+  titlePos?: BannerPos;
+  /** Banner UX: collision (move away from a ring it overlaps), hidden. See {@link BannerUiOpts}. */
+  bannerUi?: BannerUiOpts;
   /**
    * Floating checklist dock side. `left` | `right`.
    * Authored control (also click / WAYGRAPH_TODO_POS / --todo-left|right).
@@ -434,10 +449,21 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
    * Default zoomOut for rings in this phase. `false` = keep camera between rings.
    */
   zoomOut(keep: boolean): void;
-  /** Top banner title (waygraph demo card). */
-  title(text: string): void;
+  /** Top banner title (waygraph demo card). `opts.pos` also places it (left | center | right). */
+  title(text: string, opts?: { pos?: BannerPos }): void;
   /** Alias for {@link StubCtx.title}. */
-  banner(text: string): void;
+  banner(text: string, opts?: { pos?: BannerPos }): void;
+  /** Place the banner: `left` | `center` | `right` (authored; click / env are fallbacks). */
+  titlePos(side: BannerPos): void;
+  /** Alias for {@link StubCtx.titlePos}. */
+  bannerPos(side: BannerPos): void;
+  /**
+   * Banner UX: `{ collision: false }` keeps it put even over a ring; `{ hidden: true }` hides it.
+   * @example ctx.bannerUi({ collision: false });
+   */
+  bannerUi(opts: BannerUiOpts): void;
+  /** Shorthand for `bannerUi({ hidden: true })`. */
+  hideBanner(): void;
   /**
    * Floating checklist dock side (`left` | `right`). Authors control this in
    * code; click / env / --todo-left|right are fallbacks.
@@ -503,6 +529,8 @@ export type StubPhaseResult = {
   zoom?: number;
   zoomOut?: boolean;
   title?: string;
+  titlePos?: BannerPos;
+  bannerUi?: BannerUiOpts;
   todoPos?: "left" | "right";
   /** When true, keep other docks (multi-todo). Default false = replace. */
   todoParallel?: boolean;
@@ -635,6 +663,8 @@ export type StubBagState = {
   zoom?: number | undefined;
   zoomOut?: boolean | undefined;
   title?: string | undefined;
+  titlePos?: BannerPos | undefined;
+  bannerUi?: BannerUiOpts | undefined;
   todoPos?: "left" | "right" | undefined;
   /** Author patched todo-dock UX this phase. */
   todoDockUi?: TodoDockUiOpts | undefined;

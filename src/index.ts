@@ -110,6 +110,8 @@ export type {
   WaygraphTodoGroupInput,
   WaygraphTodosOpts,
   TodoDockUiOpts,
+  BannerPos,
+  BannerUiOpts,
   TodoDockUiResolved,
   TodoDockState,
   TodoListStyle,
