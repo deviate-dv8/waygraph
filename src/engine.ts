@@ -10,3 +10,4 @@ export * from "./engine/blocks/method.js";
 export * from "./engine/blocks/page.js";
 export * from "./engine/blocks/effect.js";
 export * from "./engine/locate.js";
+export * from "./engine/branch-regression.js";

@@ -31,6 +31,7 @@ engine/highlights runtime symbol into it.
 | A `with*(flow, ...)` wrapper | `engine/flow.ts`, next to `withTitle`; add the field to `Flow` and its `withBlockVerify`/`modBlockVerify` re-wraps |
 | A `define*Block` helper | `engine/blocks/<kind>.ts`; update `MapBuilder` types if it can appear in a map flow |
 | A `MapBuilder` step/routing method | `engine/engine-class.ts` next to `.method()`/`.branch()`; `.branch()`'s routes are functions handed a fresh `MapBuilder` seeded at the branch's own Checkpoint, not a ready-made `Flow` (a `Flow` always starts at `S`) |
+| Regression-running a `.branch()` tree | `engine/branch-regression.ts` (`branchRoutes`/`collectBranchFlows`/`runBranchRegression`) - only runs a branch whose own first Block is nav/page (self-contained); others are reported `"skipped"`, never force-run into a misleading failure |
 | A `Trait` | `trait.ts` (+ `Trait` object + `index.ts` export) |
 | Overlay colours / ring, cursor, banner, dock CSS | real `.css` in `src/ui/css/` (see its README) - built on Open Props, bundled into `dist/ui/overlay.css`, injected once into the Shadow DOM by `ui/shadow.ts` |
 | Highlight/todo/device/pace behaviour | `highlights/<topic>.ts` |

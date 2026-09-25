@@ -10,6 +10,9 @@ import {
   defineMethodBlock,
   registerMemStub,
   seedMemStub,
+  branchRoutes,
+  collectBranchFlows,
+  runBranchRegression,
 } from "../../src/index.js";
 
 type Home = Checkpoint<"Home">;
@@ -431,5 +434,36 @@ test.describe("Engine.map() builder", () => {
     mem2.set(WhichWay, "home"); // still the branch that would NEVER reach needs-secret live
     seedMemStub(mem2, flow);
     expect(mem2.get(WantsSecret)).toBe("fake-secret");
+  });
+
+  test("branchRoutes()/collectBranchFlows() expose the branch tree for tooling; runBranchRegression() actually runs a navigable branch and skips a non-navigable one", async () => {
+    const engine = new Engine();
+    const NearBlock = defineMethodBlock<Home, Home>({
+      name: "near-block",
+      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+    });
+    const flow = engine
+      .map()
+      .gotoPage(NavHome)
+      .method(Decide)
+      .branch({
+        // Non-navigable: its own first Block is a Method (NearBlock), which assumes prior page
+        // state - only reachable in reality via THIS flow's own prefix, not on its own.
+        Home: (m) => m.method(NearBlock).end(),
+        // Navigable: its own first Block is NavHome itself - self-contained.
+        Away: (m) => m.gotoPage(NavHome).end(),
+      });
+
+    const routes = branchRoutes(flow);
+    expect([...routes!.keys()].sort()).toEqual(["Away", "Home"]);
+
+    const entries = collectBranchFlows(flow);
+    expect(entries.map((e) => e.path).sort()).toEqual(["Away", "Home"]);
+
+    const results = await runBranchRegression(flow, fakeContext);
+    const byPath = Object.fromEntries(results.map((r) => [r.path, r]));
+    expect(byPath.Home).toMatchObject({ status: "skipped" });
+    expect(byPath.Home!.reason).toMatch(/not nav\/page/);
+    expect(byPath.Away).toMatchObject({ status: "ok", result: { __state: "Home" } });
   });
 });

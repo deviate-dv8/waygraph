@@ -480,7 +480,7 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
     }
     return branchFlow.run(context, mem, { ...options, page: first.page, closeOnFinish });
   }) as Flow<any>["run"];
-  return {
+  const flow = {
     resetSession: before.resetSession,
     ...(before.title !== undefined ? { title: before.title } : {}),
     ...(before.expectedFailureReason !== undefined ? { expectedFailureReason: before.expectedFailureReason } : {}),
@@ -505,6 +505,10 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
       return buildBranchedFlow(before.modBlockVerify(block, nameOrIndex, newCheck), routes);
     },
   } as Flow<any>;
+  // Non-enumerable so it doesn't show up on a spread/JSON.stringify of the Flow - read by
+  // branchRoutes()/collectBranchFlows() (branch-regression.ts), not part of the public Flow shape.
+  Object.defineProperty(flow, "__wgBranchRoutes", { value: routes, enumerable: false, configurable: true });
+  return flow;
 }
 
 /**
