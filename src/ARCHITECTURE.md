@@ -7,7 +7,7 @@ Read this before editing. The rules at the bottom are enforced by `npm run check
 ```text
 cli.ts ───────────── ~100-line dispatcher: one `case` per subcommand
 commands/*.ts, cli/*.ts ─ one file per subcommand; shared flag parsing, usage text, discovery helpers
-runner/ ───────────── `waygraph run/demo/chain` execution (plain .js modules, exported as `waygraph/runner`)
+runner/ ───────────── `waygraph run/demo/chain` execution; runner/inpage/*.js = code injected into the page (self-contained) (plain .js modules, exported as `waygraph/runner`)
 auto-session.ts + auto-session/ (helpers, session), auto-session-ipc.ts, pilot*.ts, auto-explore*.ts, traverse-run.ts ─ live sessions / exploration
 engine.ts + engine/ ── barrel over engine/{core,config,run-graph,flow,compose,engine-class,locate,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
 highlights.ts ────── demo narration: stubs, todo dock, device presets, pace, ring CSS

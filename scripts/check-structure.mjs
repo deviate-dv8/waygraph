@@ -17,7 +17,6 @@ const MAX_LINES = 800;
 /** Known-oversized files: current ceiling. Decompose, then lower or delete the entry. */
 const RATCHET = {
   "pilot-overlay.ts": 960,
-  "runner/overlay-install.js": 1310, // one 1,290-line installOverlay function; break it up next
 };
 
 function walk(dir, out = []) {
