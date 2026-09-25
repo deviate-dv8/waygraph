@@ -7,7 +7,7 @@ import { DocsSel, DOCS_URL } from "./_sel.js";
  * Route: (app_base)/docs/
  *
  * Same origin as home/ (same fixture server, different HTML file) - lives
- * under (app_base), not (external). See README.md "Waygraph Map" and
+ * under (app_base), not (external). See docs/REFERENCE.md "Waygraph Map" and
  * openspec/changes/waygraph-map. `(app_base)` is purely organizational
  * (Next.js route-group style) - never part of the Checkpoint tag.
  */

@@ -1,81 +1,48 @@
-# Offline scaffold layout (`waygraph init` / `create-waygraph`)
+# Scaffold layout (`waygraph init`)
 
-Shipped under `templates/scaffold/` in the **waygraph** package.
-Docs: [docs/scaffold.html](../../docs/scaffold.html)
+This scaffold uses the **Waygraph Map**: folders under `src/map/` mirror your app's URLs.
+One folder = one page = one Checkpoint. `(group)` folders are organizational only (like
+Next.js route groups) and never appear in a URL or Checkpoint name.
 
 ```text
 .
 ├── package.json
-├── STRUCTURE.md              # this file
-├── README.md
 ├── src/
-│   ├── blocks/
-│   │   ├── SITE-MAP.md
-│   │   └── demo-web/         # synthetic "/" (HTTP fixture :4177)
-│   │       ├── NAV.md
-│   │       ├── home.html     # offline fixture (catalog + cart)
-│   │       ├── demo-sel.ts
-│   │       ├── nav-home.block.ts          # Nav
-│   │       ├── home.page.block.ts         # Page hub (methods registry)
-│   │       └── methods/
-│   │           ├── assert-hello.method.block.ts   # Method + stubs + YAP
-│   │           ├── add-item.effect.block.ts       # Effect + instanceOptions (auto)
-│   │           ├── remove-item.effect.block.ts    # Effect + instanceOptions
-│   │           └── clear-cart.method.block.ts     # Method
-│   ├── states/
-│   │   ├── demo.states.ts
-│   │   └── demo.mem-keys.ts  # SelectedItem for Effect / auto
-│   ├── flows/
-│   │   ├── example.flow.ts   # nav + assert (smoke)
-│   │   ├── shop.flow.ts      # nav + add-item + clear (Effect path)
-│   │   └── routes-demo.flow.ts  # Home (manual mode) -> Docs (Map convention)
-│   └── routes/                       # Waygraph Map convention - see README.md
-│       └── (external)/
-│           └── docs/
-│               ├── docs.sel.ts
-│               ├── nav.block.ts      # fixed name - every page-slug folder's Nav
-│               └── page.block.ts     # fixed name - every page-slug folder's arrival hub
-├── scripts/
-│   ├── fixture-server.mjs    # serves home.html on :4177
-│   └── with-fixture.mjs      # start server + run waygraph auto/demo/run
-└── tests/
-    └── example.spec.ts
+│   ├── map/
+│   │   ├── (app_base)/                # your app (served on :4177 here)
+│   │   │   ├── home/                  # URL /home.html
+│   │   │   │   ├── _nav.block.ts      # how to get here
+│   │   │   │   ├── _page.block.ts     # "you have arrived" hub
+│   │   │   │   ├── _sel.ts            # every selector for this page
+│   │   │   │   ├── home.html          # offline fixture page
+│   │   │   │   └── _methods/          # one action per Block
+│   │   │   │       ├── add-item.effect.block.ts       # + instanceOptions (auto menu)
+│   │   │   │       ├── remove-item.effect.block.ts
+│   │   │   │       ├── clear-cart.method.block.ts
+│   │   │   │       ├── assert-hello.method.block.ts   # + stubs + YAP slide
+│   │   │   │       └── assert-item-added.method.block.ts
+│   │   │   └── docs/                  # a second page, same shape
+│   │   └── (external)/mailpit/        # a different origin (mail catcher)
+│   ├── states/                        # Checkpoint types + mem keys
+│   └── flows/                         # example / shop / mail-verify
+├── scripts/                           # local fixture server
+└── tests/example.spec.ts
 ```
 
-## Features covered
+Underscore-prefixed files (`_nav`, `_page`, `_sel`, `_methods/`) are the fixed names every
+page folder uses, so any agent or teammate knows where to look without asking.
 
-| Feature | Where |
-|---------|--------|
-| Nav (`defineNavBlock`) | `nav-home.block.ts` |
-| Page hub (`definePageBlock` + `methods`) | `home.page.block.ts` |
-| Method (`defineMethodBlock`) | `assert-hello`, `clear-cart` |
-| Effect + `instanceOptions` (auto menus) | `add-item`, `remove-item` |
-| Mem (`keyGroup`) | `demo.mem-keys.ts` |
-| `stubBefore` / `stubAfter` / `stubOnError` | all instruction blocks |
-| Flow fixtures + title | `example.flow.ts`, `shop.flow.ts` |
-| YAP slides | `assert-hello` |
-| `withSessionReset` | `shop.flow.ts` |
-| `waygraph auto` / `auto --cli` | `npm run auto` |
-| `demo` / `run` / `list` / `check` / `graph` | `package.json` scripts |
+## What each piece is for
 
-## Auto
+| Want to... | Look at |
+|---|---|
+| Add a page | copy a folder under `src/map/`, keep the `_nav` / `_page` / `_sel` names |
+| Add an action on a page | one file in that page's `_methods/` |
+| Verify a state (button disabled, error shown) | `defineAssertBlock` + `Trait.disabled` / `Trait.enabled` |
+| Wire steps together | `src/flows/*.flow.ts` |
+| Give a flow fake data | `registerMemStub(key, fake)` + `withMemStub(flow)` (docs: docs/REFERENCE.md, "memStub") |
+| Explore by hand | `npm run auto` (headed) or `npm run auto:cli` |
+| Check your work | `npm run check`, `npm run graph`, `waygraph map` |
 
-```bash
-npm run auto        # headed explore - pick Add Alpha / Add Beta from live DOM
-npm run auto:cli    # same menus in the terminal
-```
-
-After `nav-home`, Effect blocks expose one menu row per visible Add/Remove button.
-
-## Two authoring modes
-
-`src/blocks/` (`demo-web/`, `demo-external/`) is **manual mode** - freeform, developer-chosen
-file layout, the default this whole scaffold otherwise uses.
-
-`src/routes/` is the **Waygraph Map** convention - `(group)/<page-slug>/page.block.ts` +
-`nav.block.ts` + `methods/*.block.ts`, one Checkpoint per folder, `(group)` purely
-organizational (parens, Next.js route-group style - never part of the Checkpoint tag). Same
-Block helpers, same execution - only where files live and what they're named changes. A
-project can adopt it folder by folder; `routes-demo.flow.ts` proves both modes compose in one
-flow (`nav-home` from `blocks/`, `nav-docs` from `routes/`). See the main package's own
-`README.md` "Waygraph Map" section and `openspec/changes/waygraph-map/`.
+`waygraph map` fails if a folder path stops matching the real URL it claims to represent.
+Full convention: https://deviate-dv8.github.io/waygraph/consumer.html

@@ -27,7 +27,7 @@ const bodyContainsExpectedText: Trait = {
  * "Does the email actually say what it's supposed to" - not just "does a
  * link exist somewhere in it." Reads the message body straight out of the
  * preview iframe (the top-level page's own `Trait.text`/`Trait.visible`
- * can't see inside an iframe at all - see README's "Mail adapters" section).
+ * can't see inside an iframe at all - see docs/REFERENCE.md "Mail adapters" section).
  * Self-loop on MailpitMessageOpen - no state change, verify only.
  *
  * Deliberately named for what it does, not for one scenario: the expected

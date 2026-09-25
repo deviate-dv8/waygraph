@@ -16,7 +16,7 @@
       <ul>
         <li><a href="./index.html">Home</a></li>
         <li><a href="./quickstart.html">Quick start</a></li>
-        <li><a href="./scaffold.html" aria-current="page">Scaffold</a></li>
+        <li><a href="./scaffold.html" aria-current="page">What init creates</a></li>
         <li><a href="./demo.html">Demo / run</a></li>
         <li><a href="./highlights.html">Demo narration</a></li>
         <li><a href="./auto.html">Auto explore</a></li>
@@ -29,99 +29,75 @@
       </ul>
     </nav>
     <main>
-      <h1>Scaffold structure</h1>
+      <h1>What <code>init</code> creates</h1>
       <p class="lede">
-        What <code>npx waygraph init my-app</code> copies (waygraph
-        <code>templates/scaffold/</code>, 0.12.7+). Includes
-        <strong>auto</strong> (Effect <code>instanceOptions</code>), Page hub,
-        narration, and mem - not a bare hello.
-      </p>
-      <p class="meta">
-        Source: <code>templates/scaffold/STRUCTURE.md</code>. Offline
-        <code>home.html</code> via local fixture server <code>:4177</code>
-        (not <code>file://</code>) - no external network for
-        <code>npm test</code> / <code>auto</code>.
+        <code>npx waygraph init my-app</code> gives you a small, fully offline project on the
+        <strong>Waygraph Map</strong> layout. Folders under <code>src/map/</code> mirror your
+        app's URLs: one folder = one page = one Checkpoint. <code>(group)</code> folders are
+        organizational only and never appear in a URL.
       </p>
 
-      <h2 id="tree">Tree</h2>
+      <h2 id="tree">The tree</h2>
       <pre><code>.
 ├── package.json
-├── STRUCTURE.md
-├── scripts/
-│   ├── fixture-server.mjs         # serves home.html on :4177
-│   └── with-fixture.mjs           # start server + waygraph auto/demo/run
 ├── src/
-│   ├── blocks/
-│   │   ├── SITE-MAP.md
-│   │   └── demo-web/
-│   │       ├── NAV.md
-│   │       ├── home.html              # offline catalog + cart
-│   │       ├── nav-home.block.ts      # Nav
-│   │       ├── home.page.block.ts     # Page hub
-│   │       └── methods/
-│   │           ├── assert-hello.method.block.ts
-│   │           ├── add-item.effect.block.ts      # auto menus
-│   │           ├── remove-item.effect.block.ts
-│   │           └── clear-cart.method.block.ts
-│   ├── states/
-│   │   ├── demo.states.ts
-│   │   └── demo.mem-keys.ts           # SelectedItem
-│   └── flows/
-│       ├── example.flow.ts            # smoke
-│       └── shop.flow.ts               # Effect path
-└── tests/
-    └── example.spec.ts</code></pre>
+│   ├── map/
+│   │   ├── (app_base)/                # your app (served on :4177 here)
+│   │   │   ├── home/                  # URL /home.html
+│   │   │   │   ├── _nav.block.ts      # how to get here
+│   │   │   │   ├── _page.block.ts     # "you have arrived" hub
+│   │   │   │   ├── _sel.ts            # every selector for this page
+│   │   │   │   ├── home.html          # offline fixture page
+│   │   │   │   └── _methods/          # one action per Block
+│   │   │   └── docs/                  # a second page, same shape
+│   │   └── (external)/mailpit/        # a different origin (mail catcher)
+│   ├── states/                        # Checkpoint types + mem keys
+│   └── flows/                         # example / shop / mail-verify
+├── scripts/                           # local fixture server
+└── tests/example.spec.ts</code></pre>
+      <p>
+        The underscore names (<code>_nav</code>, <code>_page</code>, <code>_sel</code>,
+        <code>_methods/</code>) are the same in every page folder, so anyone - or any agent -
+        knows where to look without asking.
+      </p>
 
-      <h2 id="features">Features covered</h2>
+      <h2 id="use">Using it</h2>
+      <pre><code>npm install
+npx playwright install chromium
+npm test               # green offline
+npm run test:ui        # Playwright's interactive UI
+npm run demo           # watch a flow with the step overlay
+npm run auto           # explore by picking Blocks
+npm run check          # lint your Blocks and folders</code></pre>
+
+      <h2 id="what">What to do where</h2>
       <table>
-        <thead>
-          <tr><th>Feature</th><th>In scaffold</th></tr>
-        </thead>
+        <thead><tr><th>Want to...</th><th>Look at</th></tr></thead>
         <tbody>
-          <tr><td>Nav</td><td><code>defineNavBlock</code> → <code>nav-home</code></td></tr>
-          <tr><td>Page hub</td><td><code>definePageBlock</code> + <code>methods{}</code></td></tr>
-          <tr><td>Method</td><td><code>assert-hello</code>, <code>clear-cart</code></td></tr>
-          <tr><td>Effect + auto</td><td><code>add-item</code> / <code>remove-item</code> + <code>instanceOptions</code></td></tr>
-          <tr><td>Mem</td><td><code>demo.selectedItem</code> keyGroup</td></tr>
-          <tr><td>Narration</td><td><code>stubBefore</code> / <code>stubAfter</code> / <code>stubOnError</code> + fixtures + YAP</td></tr>
-          <tr><td>CLI</td><td><code>demo</code>, <code>run</code>, <code>auto</code>, <code>auto:cli</code>, <code>list</code>, <code>check</code>, <code>graph</code></td></tr>
+          <tr><td>Add a page</td><td>Copy a folder under <code>src/map/</code>; keep the <code>_nav</code> / <code>_page</code> / <code>_sel</code> names</td></tr>
+          <tr><td>Add an action</td><td>One file in that page's <code>_methods/</code></td></tr>
+          <tr><td>Confirm a state (button disabled, error shown)</td><td><code>defineAssertBlock</code> with <code>Trait.disabled</code> / <code>Trait.enabled</code></td></tr>
+          <tr><td>Wire steps together</td><td><code>src/flows/*.flow.ts</code></td></tr>
+          <tr><td>Keep folders honest</td><td><code>waygraph map</code> fails if a folder stops matching its URL</td></tr>
         </tbody>
       </table>
 
-      <h2 id="auto">Auto</h2>
-      <pre><code>cd my-app
-npm install &amp;&amp; npx playwright install chromium
-npm run auto        # headed - after home, pick Add Alpha / Add Beta / …
-npm run auto:cli    # terminal menus
-npm run demo:shop   # scripted Effect path with --data selectedItem</code></pre>
-      <p>
-        Auto fills <code>SelectedItem</code> when you pick an Effect menu row.
-        Hand-written flows pass <code>--data '{"demo.selectedItem":{…}}'</code>.
-        More: <a href="./auto.html">Auto explore</a>.
-      </p>
-
       <h2 id="agents">Coding agents</h2>
+      <pre><code>npx waygraph agent-dive --loop claude      # also: opencode, cursor, vscode</code></pre>
       <p>
-        Mirror of Playwright <code>init-agents</code>:
-      </p>
-      <pre><code>npx waygraph agent-dive --loop claude
-npx waygraph agent-dive --loop opencode
-npx waygraph agent-dive --loop cursor
-npx waygraph agent-dive --loop vscode --prompts</code></pre>
-      <p>
-        Writes planner / author / healer agent files into the project so an agent can
-        dive an existing app into Nav/Page/Method/Effect coverage.
+        Writes planner / author / healer agent files (and Claude skills) into the project so an
+        agent can dive an existing app into Blocks.
       </p>
 
-      <h2 id="grow">Growing past the fixture</h2>
+      <h2 id="grow">Pointing it at your real app</h2>
       <ol>
-        <li>Point <code>waygraph.baseUrl</code> at your app; replace <code>home.html</code> nav with real routes.</li>
-        <li>Rename <code>demo-web/</code> to your origin namespace.</li>
-        <li>One folder per <code>page.tsx</code>; keep Effects for DOM-instance menus.</li>
+        <li>Set <code>waygraph.baseUrl</code> in <code>package.json</code>; drop the <code>scripts/with-fixture.mjs</code> wrappers.</li>
+        <li>Rename <code>(app_base)/</code> to your app's group; make each folder match the real URL.</li>
+        <li>Run <code>waygraph map</code> - it tells you which folders don't match.</li>
       </ol>
       <p>
-        Consumer rules: <a href="./consumer.html">Consumer layout</a>.
-        Sauce Demo reference: <a href="./saucedemo/index.html">Sauce Demo</a>.
+        Rules: <a href="./consumer.html">The Map layout</a> ·
+        Worked example: <a href="./saucedemo/index.html">Sauce Demo</a>.
       </p>
     </main>
   </div>

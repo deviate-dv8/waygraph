@@ -29,125 +29,116 @@
       </ul>
     </nav>
     <main>
-      <h1>Waygraph</h1>
-      <p class="lede">
-        A typed graph of reusable Blocks for driving a browser through E2E flows
-        (Playwright), instead of a flat pile of ad hoc helpers.
-      </p>
-      <p class="meta">
-        Package docs site · source
-        <a href="https://github.com/deviate-dv8/waygraph">deviate-dv8/waygraph</a>
-        · published URL after Pages is enabled:
-        <a href="https://deviate-dv8.github.io/waygraph/">deviate-dv8.github.io/waygraph</a>
+      <div class="hero">
+        <h1>Waygraph</h1>
+        <p class="pitch">
+          Write browser tests as a <strong>graph of small, reusable steps</strong> instead of one
+          long script. Built on Playwright. Each step says where it starts, where it ends, and how
+          to confirm it worked - so a whole app becomes something you (or an AI agent) can walk,
+          check, and demo.
+        </p>
+      </div>
+
+      <h2 id="start">Start here</h2>
+      <div class="paths">
+        <div>
+          <h3>1 · Just look</h3>
+          <p>Watch a full checkout on Sauce Demo, step by step. Nothing is written to your folder.</p>
+          <pre><code>npx waygraph try demo</code></pre>
+        </div>
+        <div>
+          <h3>2 · Start a project</h3>
+          <p>A working, fully offline project: tests pass immediately.</p>
+          <pre><code>npx waygraph init my-app
+cd my-app
+npm install
+npx playwright install chromium
+npm test</code></pre>
+        </div>
+        <div>
+          <h3>3 · Run the Sauce Demo</h3>
+          <p>The full example project, against the live site.</p>
+          <pre><code>git clone https://github.com/deviate-dv8/waygraph.git
+cd waygraph
+npm install &amp;&amp; npm run build
+npx playwright install chromium
+cd examples/saucedemo &amp;&amp; npm install
+npm test</code></pre>
+          <p><a href="./quickstart.html#saucedemo">More on the example &rarr;</a></p>
+        </div>
+      </div>
+
+      <h2>The four ideas</h2>
+      <div class="ideas">
+        <div><b>Checkpoint</b><span>A named place the app can be: <code>LoginPage</code>, <code>LoggedIn</code>.</span></div>
+        <div><b>Block</b><span>One action from one Checkpoint to another, with a <code>verify</code> that confirms it.</span></div>
+        <div><b>Flow</b><span>Blocks in order. Run it, demo it, or let <code>auto</code> pick the route.</span></div>
+        <div><b>Mem</b><span>Typed shared data for a run: credentials, the selected item.</span></div>
+      </div>
+
+      <h2>Where files go</h2>
+      <p>
+        Use the <a href="./consumer.html"><strong>Waygraph Map</strong></a>: folders under
+        <code>src/map/</code> mirror your app's URLs, one folder per page, and
+        <code>waygraph map</code> fails if a folder stops matching its real URL. That's what
+        <code>waygraph init</code> gives you. A plainer freeform layout still works for small
+        projects; the Map is where the tooling is headed.
       </p>
 
-      <div class="cards">
-        <a href="./quickstart.html#paths">
-          <strong>Getting started</strong>
-          <span>Try demo, scaffold (<code>init</code>), first Flow.</span>
+      <h2>Guides</h2>
+      <h3>Learn</h3>
+      <div class="cards compact">
+        <a href="./quickstart.html">
+          <strong>Quick start</strong>
+          <span>Install, your first Block and Flow, the Sauce Demo example.</span>
         </a>
         <a href="./scaffold.html">
-          <strong>Scaffold structure</strong>
-          <span>Tree from <code>init</code> (0.12 route + stubs).</span>
+          <strong>What <code>init</code> creates</strong>
+          <span>The scaffold's folder layout, explained.</span>
         </a>
+        <a href="./saucedemo/index.html">
+          <strong>Sauce Demo walkthrough</strong>
+          <span>A worked example of the Map layout.</span>
+        </a>
+        <a href="./consumer.html">
+          <strong>The Map layout</strong>
+          <span>Folders that mirror your app's URLs.</span>
+        </a>
+      </div>
+      <h3>Use</h3>
+      <div class="cards compact">
         <a href="./demo.html">
-          <strong>Demo / run</strong>
-          <span><code>demo</code> / <code>run</code> / <code>auto</code> + <code>--blocks</code> <code>--data</code> <code>--auto-next</code> <code>--fast</code> <code>--full</code>.</span>
+          <strong>Run and demo flows</strong>
+          <span><code>run</code>, <code>demo</code>, and their flags.</span>
+        </a>
+        <a href="./auto.html">
+          <strong>Explore with <code>auto</code></strong>
+          <span>Pick Blocks by hand, in a browser or the terminal.</span>
         </a>
         <a href="./highlights.html">
           <strong>Demo narration</strong>
-          <span><code>stubBefore</code> / <code>stubAfter</code> + flow fixtures (unlimited demo purposes on <code>.flow.ts</code>).</span>
+          <span>Highlights, checklists, and captions in a demo.</span>
         </a>
-        <a href="./auto.html">
-          <strong>Auto explore</strong>
-          <span>Prefer <code>auto --cli</code> first - same menus as the headed panel.</span>
-        </a>
-        <a href="./saucedemo/index.html">
-          <strong>Sauce Demo showcase</strong>
-          <span>Convention reference - route folders, Effect, auto menus.</span>
-        </a>
-        <a href="./quickstart.html">
-          <strong>Quick start</strong>
-          <span>Install, minimal Block + Flow, develop the package.</span>
-        </a>
+      </div>
+      <h3>Reference</h3>
+      <div class="cards compact">
         <a href="./handout.html">
           <strong>Engine handout</strong>
-          <span>Core model, NavBlock, Traits, chainFlow, CLI, recommendations.</span>
+          <span>The core model in one page.</span>
         </a>
-        <a href="./consumer.html">
-          <strong>Consumer layout</strong>
-          <span>Route folders = app URLs (Sauce Demo example).</span>
+        <a href="https://github.com/deviate-dv8/waygraph/blob/main/docs/REFERENCE.md">
+          <strong>Full reference</strong>
+          <span>Every feature in detail (long).</span>
         </a>
         <a href="./deploy.html">
-          <strong>Deploy / preview</strong>
-          <span>Local one-command preview and GitHub Pages workflow.</span>
+          <strong>Preview these docs</strong>
+          <span>Run this site locally or deploy it.</span>
         </a>
       </div>
 
-      <h2 id="paths">Getting started (pick one)</h2>
-      <table>
-        <thead>
-          <tr><th>Goal</th><th>Command</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>List flows / run a <code>.flow.ts</code> file</td>
-            <td><code>npx waygraph list</code> then <code>npx waygraph run|auto|demo src/flows/shop.flow.ts</code></td>
-          </tr>
-          <tr>
-            <td>Watch Sauce Demo in a browser (temp dir; Sign In + Shop + blocked Viewer)</td>
-            <td><code>npx waygraph try demo</code></td>
-          </tr>
-          <tr>
-            <td>Interactive explore Sauce Demo (temp dir; headed panel)</td>
-            <td><code>npx waygraph try auto</code></td>
-          </tr>
-          <tr>
-            <td>Interactive explore CLI (temp dir)</td>
-            <td><code>npx waygraph try auto:cli</code></td>
-          </tr>
-          <tr>
-            <td>Interactive explore headed (in-repo)</td>
-            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npm run auto</code></td>
-          </tr>
-          <tr>
-            <td>Scaffold a new offline project (green <code>npm test</code> on a <code>data:</code> URL)</td>
-            <td><code>npx waygraph init my-app</code></td>
-          </tr>
-          <tr>
-            <td>Add waygraph to an existing repo</td>
-            <td><code>npm install waygraph @playwright/test</code></td>
-          </tr>
-        </tbody>
-      </table>
-      <p>
-        After scaffolding: <code>cd my-app &amp;&amp; npm install &amp;&amp; npx playwright install chromium &amp;&amp; npm test</code>.
-        (<code>create-waygraph</code> on npm is deprecated - it was the identical
-        <code>init</code> template as a second package. Use <code>waygraph init</code>.)
-      </p>
-      <p>
-        <code>try demo</code> copies the live Sauce Demo quickstart into an OS temp folder,
-        runs step-through <strong>Sign In -> Shop &amp; Checkout -> blocked Viewer login</strong>,
-        then headless tests. Permanent tree:
-        <code>examples/saucedemo</code> in this package. Offline empty scaffold:
-        <code>init</code>.
-        Overlay details: <a href="./demo.html">Demo / run</a> ·
-        <a href="./auto.html">Auto explore</a>.
-      </p>
-      <p>
-        Requires Node 22+. <code>@playwright/test</code> is a peer dependency (^1.40).
-        Pin a published waygraph version for product work until you intentionally upgrade.
-      </p>
-
-      <h2>This site vs the package README</h2>
-      <p>
-        The package <a href="https://github.com/deviate-dv8/waygraph/blob/main/README.md">README</a>
-        remains the canonical API narrative in-repo. This Pages site packages the same
-        material (plus consumer layout guidance) for browser reading and cross-mesh handoff.
-      </p>
-
       <footer class="site">
-        ASCII docs · content mirrored from README + shared handouts · not v1.0 yet
+        Requires Node 22+ · <code>@playwright/test</code> is a peer dependency (^1.40) ·
+        <a href="https://github.com/deviate-dv8/waygraph">source</a> · not v1.0 yet
       </footer>
     </main>
   </div>

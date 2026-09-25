@@ -55,7 +55,7 @@
           <tr>
             <td><strong>In-repo example</strong></td>
             <td>Permanent Sauce Demo - headed <code>auto</code></td>
-            <td><code>cd examples/saucedemo &amp;&amp; npm i &amp;&amp; npm run auto</code></td>
+            <td><a href="#saucedemo">Clone and run it</a> (needs one root install + build first)</td>
           </tr>
           <tr>
             <td><strong>waygraph init</strong></td>
@@ -84,6 +84,29 @@ npm run auto:cli  # same menus in the terminal</code></pre>
         template, not the offline scaffold.
         Flags: <a href="./demo.html">Demo / run</a>.
         Explore: <a href="./auto.html">Auto explore</a> (headed by default; <code>--cli</code> for terminal).
+      </p>
+
+      <h2 id="saucedemo">Run the Sauce Demo example</h2>
+      <p>
+        <code>examples/saucedemo</code> is a complete project (Map layout, live tests, demos)
+        against <a href="https://www.saucedemo.com">saucedemo.com</a>. It links to the waygraph
+        checkout it lives in, so install and build the repo <em>first</em>:
+      </p>
+      <pre><code>git clone https://github.com/deviate-dv8/waygraph.git
+cd waygraph
+npm install &amp;&amp; npm run build     # 1. install + build waygraph itself
+npx playwright install chromium    # 2. browser (once)
+cd examples/saucedemo
+npm install                        # 3. links the example to your build
+npm test                           # 15 tests, mostly against the live site
+npm run demo                       # watch the checkout with the step overlay
+npm run auto                       # explore it by picking Blocks
+npm run test:ui                    # Playwright's interactive UI</code></pre>
+      <p>
+        Changed waygraph's source? Run <code>npm run build</code> at the repo root again - the
+        example picks it up immediately. Prefer not to clone? <code>npx waygraph try demo</code>
+        runs the same walkthrough from a temp folder. What each folder in the example is for:
+        <a href="./saucedemo/index.html">Sauce Demo walkthrough</a>.
       </p>
 
       <h2 id="demo">Watch / run / explore (0.10+)</h2>
@@ -194,7 +217,7 @@ npm test
 npm run build</code></pre>
 
       <footer class="site">
-        Canonical narrative: package <code>README.md</code> ·
+        Canonical narrative: <a href="https://github.com/deviate-dv8/waygraph/blob/main/docs/REFERENCE.md">full reference</a> ·
         <a href="./handout.html">next: engine handout</a>
       </footer>
     </main>
