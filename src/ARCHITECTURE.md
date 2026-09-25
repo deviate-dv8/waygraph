@@ -9,7 +9,7 @@ cli.ts ───────────── ~100-line dispatcher: one `case` 
 commands/*.ts, cli/*.ts ─ one file per subcommand; shared flag parsing, usage text, discovery helpers
 runner/ ───────────── `waygraph run/demo/chain` execution (plain .js modules, exported as `waygraph/runner`)
 auto-session*.ts, pilot*.ts, auto-explore*.ts, traverse-run.ts ─ live sessions / exploration
-engine.ts ────────── Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
+engine.ts + engine/ ── barrel over engine/{core,config,run-graph,flow,compose,engine-class,locate,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
 highlights.ts ────── demo narration: stubs, todo dock, device presets, pace, ring CSS
 graph.ts, map-check.ts, practices-check.ts, coverage-gap.ts ─ static analysis / lint
 types.ts, trait.ts, mem-page.ts, mem-stub.ts ─ core types and small primitives (no upward imports)
@@ -27,8 +27,8 @@ engine/highlights runtime symbol into it.
 | A new CLI flag for run/demo | `cli/flags.ts` (`RunFlags`, `parseRunFlags`, `applyRunFlags`) + `cli/usage.ts` |
 | A session command (`send`, `highlight`, ...) | `commands/session.ts` + `auto-session.ts` + IPC op in `auto-session-ipc.ts` |
 | Demo overlay / step-mode behaviour | `src/runner/` - `overlay-install` (page UI), `step-panels`, `step-mode`, `rings`, `todo-dock`, `demo-log`, `seed-mem` (`--data`/`--mem-stub`). Read `CLI-STOMP-GUARD.md` first |
-| A `with*(flow, ...)` wrapper | `engine.ts`, next to `withTitle`; add the field to `Flow` and its `withBlockVerify`/`modBlockVerify` re-wraps |
-| A `define*Block` helper | `engine.ts` block-factory section; update `MapBuilder` types if it can appear in a map flow |
+| A `with*(flow, ...)` wrapper | `engine/flow.ts`, next to `withTitle`; add the field to `Flow` and its `withBlockVerify`/`modBlockVerify` re-wraps |
+| A `define*Block` helper | `engine/blocks/<kind>.ts`; update `MapBuilder` types if it can appear in a map flow |
 | A `Trait` | `trait.ts` (+ `Trait` object + `index.ts` export) |
 | Highlight/todo/device/pace behaviour | `highlights.ts` |
 | A new practice warning | `practices-check.ts` (kind, regex, label) + a fixture in `tests/fixtures/practices-check/` |
