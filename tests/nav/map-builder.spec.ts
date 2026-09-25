@@ -8,6 +8,8 @@ import {
   defineNavBlock,
   defineAssertBlock,
   defineMethodBlock,
+  registerMemStub,
+  seedMemStub,
 } from "../../src/index.js";
 
 type Home = Checkpoint<"Home">;
@@ -399,5 +401,35 @@ test.describe("Engine.map() builder", () => {
       "Away -> Home -> near-block",
       "Away -> Away -> far-block",
     ]);
+  });
+
+  test("seedMemStub() fills requires for EVERY block across EVERY branch (and nested branch), not only whichever path a live run would take - regression coverage: a required key missing on an unreached branch still fails preflight", () => {
+    const engine = new Engine();
+    const WantsSecret = key<string>("wants-secret");
+    const NeedsSecret = defineMethodBlock<Away, Home>({
+      name: "needs-secret",
+      requires: [WantsSecret],
+      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+    });
+    const flow = engine
+      .map()
+      .gotoPage(NavHome)
+      .method(Decide)
+      .branch({
+        Home: null,
+        // Only the Away leg needs this key - a live run with WhichWay="home" would never touch it.
+        Away: (m) => m.method(NeedsSecret).end(),
+      });
+    // Unregistered: seedMemStub leaves it unset (matches withMemStub's own preflight-fails-loud contract).
+    const mem1 = new MemPage();
+    mem1.set(WhichWay, "home");
+    seedMemStub(mem1, flow);
+    expect(mem1.has(WantsSecret)).toBe(false);
+
+    registerMemStub(WantsSecret, () => "fake-secret");
+    const mem2 = new MemPage();
+    mem2.set(WhichWay, "home"); // still the branch that would NEVER reach needs-secret live
+    seedMemStub(mem2, flow);
+    expect(mem2.get(WantsSecret)).toBe("fake-secret");
   });
 });
