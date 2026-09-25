@@ -16,7 +16,6 @@ const MAX_LINES = 800;
 
 /** Known-oversized files: current ceiling. Decompose, then lower or delete the entry. */
 const RATCHET = {
-  "cli.ts": 2720,
   "engine.ts": 2950,
   "highlights.ts": 2100,
   "auto-session.ts": 1100,
