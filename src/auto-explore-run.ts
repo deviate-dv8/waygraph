@@ -3,7 +3,8 @@ import { stdin as input, stdout as output } from "node:process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Page, BrowserContext } from "@playwright/test";
-import { Engine, start, end, locate, MemPage } from "./index.js";
+import { Engine, start, end, locate } from "./engine.js";
+import { MemPage } from "./mem-page.js";
 import type { MemKey } from "./mem-page.js";
 import type { NavBlock } from "./engine.js";
 import {

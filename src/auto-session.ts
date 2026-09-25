@@ -10,7 +10,8 @@
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Engine, MemPage } from "./index.js";
+import { Engine } from "./engine.js";
+import { MemPage } from "./mem-page.js";
 import type { Checkpoint, WaygraphInstanceOption } from "./types.js";
 import {
   buildExploreContext,
