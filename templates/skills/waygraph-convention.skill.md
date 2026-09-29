@@ -19,7 +19,14 @@ against a live site, use `--skill-pilot-blind`.
    (no goto) even when the app changes URL as a side effect of a button click.
 3. **Selectors in `*Sel`, never inline.** DOM strings live in a `*Sel` next to the page
    (static + `(id) => …`). Mem keys store values, not selectors. `waygraph check` warns on
-   inline selector literals in `Trait.visible` / `Trait.text`.
+   inline selector literals in `Trait.visible` / `Trait.text`, and separately on any inline
+   selector literal (`.locator("#x")`, `click: "#x"`) in a directory that already has a `*Sel`.
+   **Plain CSS first, always.** An id, a class, or `[data-testid=…]` is the selector for
+   almost everything real apps have - reach for that before anything else. Don't invent a
+   regex/XPath match (`:has-text(/…/)`, `:text-matches(…)`, an XPath locator) for something a
+   one-line class or id selector already targets uniquely; `waygraph check` flags this too.
+   A regex/text match is for a genuinely unstable DOM with no stable attribute at all, not
+   the default first move.
 4. **Assert-only = `defineAssertBlock`.** Self-loop, no hand-written `act`/`resolve`. Pass
    an explicit type argument when it sits between two specifically-typed Blocks in a Flow.
    Not just static content or an action's result - it also names a *feature state* worth a

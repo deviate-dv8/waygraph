@@ -51,3 +51,20 @@ test("waygraph check --no-practices skips bad-practice warnings", async () => {
   expect(output).not.toMatch(/wildcard Checkpoint<string>/);
   expect(output).not.toMatch(/multiple inputs in one Block/);
 });
+
+test("waygraph check flags a regex/XPath selector where a plain one would do", async () => {
+  const { stdout, stderr } = await exec(node, [CLI, "check", fixtureDir]);
+  const output = stdout + stderr;
+
+  expect(output).toMatch(/overcomplex-selector\.block\.ts \(regex\/XPath selector where a plain one would do\)/);
+  expect(output).not.toMatch(/typed\.block\.ts \(regex\/XPath selector/);
+});
+
+test("waygraph check flags an inline selector literal in a directory that already has a *.sel.ts file", async () => {
+  const { stdout, stderr } = await exec(node, [CLI, "check", fixtureDir]);
+  const output = stdout + stderr;
+
+  expect(output).toMatch(/uses-inline\.method\.block\.ts \(inline selector — a \.sel\.ts file already exists here\)/);
+  // The shared top-level fixtures have no sibling *.sel.ts file, so this never fires there.
+  expect(output).not.toMatch(/multi-input\.block\.ts \(inline selector/);
+});

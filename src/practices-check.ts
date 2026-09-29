@@ -3,15 +3,17 @@
  * that compile but erode the typed graph. Warnings only (never fail exit code)
  * unless paired with `tsc` errors in `waygraph typecheck`.
  */
-import { readFileSync } from "node:fs";
-import { relative } from "node:path";
+import { readFileSync, readdirSync } from "node:fs";
+import { dirname, relative } from "node:path";
 
 export type PracticeKind =
   | "wildcard-checkpoint"
   | "assert-no-type-arg"
   | "multi-input"
   | "combined-action"
-  | "empty-verify";
+  | "empty-verify"
+  | "overcomplex-selector"
+  | "inline-selector-should-use-sel-file";
 
 export interface PracticeWarning {
   kind: PracticeKind;
@@ -51,6 +53,21 @@ const EMPTY_VERIFY_ARRAY = /\bverify\s*:\s*\[\s*\]/;
 const HAS_VERIFY_KEY = /\bverify\s*:/;
 
 const SCAN_GLOB = /\.(block|flow)\.ts$/;
+
+/**
+ * A selector string reaching for a regex-based Playwright text pseudo-class (`:has-text(/…/)`,
+ * `:text-matches(…)`) or a plain XPath - real, recurring pattern: an LLM asked to target a simple
+ * element (one class, one id, one data-attribute) instead writes a regex/XPath from scratch. Not a
+ * type error (Playwright's own selector syntax accepts all of this), so nothing else catches it.
+ */
+const TEXT_MATCHES_PSEUDO = /:text-matches\(/;
+const HAS_TEXT_REGEX_PSEUDO = /:has-text\(\s*\//;
+const XPATH_LOCATOR = /\.locator\(\s*["'`](?:xpath=)?\/\//;
+
+/** A selector string literal inline in a Block file (`.locator("…")`, `click: "…"`, `url: "…"`) -
+ *  scoped to simple, single-token selectors (id/class/attr/tag) so this doesn't fire on the
+ *  legitimate multi-part selectors `.sel.ts` files themselves are made of. */
+const INLINE_SIMPLE_SELECTOR = /(?:\.locator|\bclick|\burl)\s*[:(]\s*["'`](#|\.)[\w-]+["'`]/;
 
 const METHOD_OR_EFFECT_FILE = /\.(method|effect)\.block\.ts$/;
 const METHOD_OR_EFFECT_DEFINE = /\bdefine(?:Method|Effect)Block\b/;
@@ -152,6 +169,37 @@ export function collectPracticeWarnings(
       }
     }
 
+    if (
+      !isIgnored("overcomplex-selector", ignore) &&
+      (TEXT_MATCHES_PSEUDO.test(src) || HAS_TEXT_REGEX_PSEUDO.test(src) || XPATH_LOCATOR.test(src))
+    ) {
+      const via = TEXT_MATCHES_PSEUDO.test(src)
+        ? ":text-matches(...)"
+        : HAS_TEXT_REGEX_PSEUDO.test(src)
+          ? ":has-text(/regex/)"
+          : "an XPath locator";
+      warnings.push({
+        kind: "overcomplex-selector",
+        file: rel,
+        detail:
+          `uses ${via} — reach for a plain CSS selector (id/class/data-attribute, via a .sel.ts ` +
+          "export) instead of a regex/XPath match unless the DOM genuinely has no stable selector",
+      });
+    }
+
+    if (!isIgnored("inline-selector-should-use-sel-file", ignore) && INLINE_SIMPLE_SELECTOR.test(src)) {
+      const siblingSelFile = readdirSync(dirname(file)).some((f) => f.endsWith(".sel.ts"));
+      if (siblingSelFile) {
+        warnings.push({
+          kind: "inline-selector-should-use-sel-file",
+          file: rel,
+          detail:
+            "a selector string is inlined here, but this directory already has a *.sel.ts file — " +
+            "add/reuse the selector there instead of a new one-off literal",
+        });
+      }
+    }
+
     if (!isIgnored("empty-verify", ignore) && IS_ASSERT_BLOCK.test(src) && EMPTY_VERIFY_ARRAY.test(src)) {
       warnings.push({
         kind: "empty-verify",
@@ -177,6 +225,10 @@ export function practiceKindLabel(kind: PracticeKind): string {
       return "fill and click in one Block";
     case "empty-verify":
       return "empty verify — transition unconfirmed";
+    case "overcomplex-selector":
+      return "regex/XPath selector where a plain one would do";
+    case "inline-selector-should-use-sel-file":
+      return "inline selector — a .sel.ts file already exists here";
     default: {
       const _exhaustive: never = kind;
       return _exhaustive;
