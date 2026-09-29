@@ -39,6 +39,17 @@ type S = Checkpoint<"__start__">;
  */
 export type DefineFlowFn = (blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker]) => Flow<any>;
 
+/** Per-step options every `MapBuilder` step method (`.gotoPage()`/`.method()`/`.assert()`) takes. */
+export interface MapStepOpts {
+  /**
+   * Fast-forward just this step, inline - no `.ffStart()/.ffEnd()` bracket needed. Consecutive
+   * `{ ff: true }` steps merge into ONE fast-forward block, same result as the explicit bracket
+   * form; a step without the flag closes an auto-opened window first.
+   * @example map().gotoPage(NavLoginBlock, { ff: true }).method(FillUsernameBlock, { ff: true })
+   */
+  ff?: boolean;
+}
+
 export interface MapBuilderOptions {
   /**
    * This project's own origin (e.g. `"https://app.example.com"`) - enables
@@ -211,8 +222,11 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     private readonly defineFlow: DefineFlowFn,
     private readonly steps: readonly DefinedBlock<any, any>[],
     private readonly homeOrigin: string | undefined,
+    // `auto: true` = opened implicitly by a `{ ff: true }` step flag, not an explicit .ffStart() -
+    // closes silently at the next non-flagged step (or at .end()/.branch()) instead of demanding a
+    // matching .ffEnd(), since the author never opened anything they'd need to remember to close.
     private readonly ff:
-      | { name: string; buffer: readonly DefinedBlock<any, any>[] }
+      | { name: string; buffer: readonly DefinedBlock<any, any>[]; auto: boolean }
       | null = null,
   ) {}
 
@@ -242,6 +256,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     return new MapBuilder<Out>(this.defineFlow, this.steps, this.homeOrigin, {
       name: ffName,
       buffer: [],
+      auto: false,
     });
   }
 
@@ -253,13 +268,20 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     if (!this.ff) {
       throw new WaygraphError("WG_MAP_FF_NOT_OPEN", MSG_MAP_FF_NOT_OPEN);
     }
-    if (this.ff.buffer.length === 0) {
-      throw new WaygraphError("WG_MAP_FF_EMPTY", MSG_MAP_FF_EMPTY(this.ff.name));
+    return this.closeFf();
+  }
+
+  /** Shared by the explicit {@link ffEnd} and the implicit close a `{ ff: true }` step flag triggers. */
+  private closeFf(): MapBuilder<Out> {
+    const ff = this.ff;
+    if (!ff) return this;
+    if (ff.buffer.length === 0) {
+      throw new WaygraphError("WG_MAP_FF_EMPTY", MSG_MAP_FF_EMPTY(ff.name));
     }
     const composed = fastForwardComposeBlock(
-      this.ff.name,
+      ff.name,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.ff.buffer as any,
+      ff.buffer as any,
     );
     return new MapBuilder<Out>(
       this.defineFlow,
@@ -269,13 +291,35 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     );
   }
 
+  /**
+   * `ff`: inline fast-forward, no `.ffStart()/.ffEnd()` bracket needed - `.method(X, { ff: true })`
+   * marks just that step; consecutive `{ ff: true }` steps merge into ONE fast-forward block (same
+   * runtime result as the explicit bracket form), same as if they'd been wrapped in
+   * `.ffStart()/.ffEnd()`. A step WITHOUT the flag closes an auto-opened window first, so a plain
+   * step is never silently swept into one; an EXPLICIT `.ffStart()` window still behaves as before
+   * (stays open until its own `.ffEnd()`, regardless of whether a step passed `{ ff: true }`).
+   */
   private appendStep<NextOut extends Checkpoint<string>>(
     block: DefinedBlock<any, any>,
+    ff?: boolean,
   ): MapBuilder<NextOut> {
+    if (ff) {
+      const win = this.ff ?? { name: `ff-${this.steps.length + 1}`, buffer: [], auto: true };
+      return new MapBuilder<NextOut>(this.defineFlow, this.steps, this.homeOrigin, {
+        name: win.name,
+        buffer: [...win.buffer, block],
+        auto: win.auto,
+      });
+    }
+    if (this.ff && this.ff.auto) {
+      return (this.closeFf() as unknown as MapBuilder<NextOut>).appendStep(block);
+    }
     if (this.ff) {
+      // Explicit .ffStart() window still open - absorbs a plain step too, same as always.
       return new MapBuilder<NextOut>(this.defineFlow, this.steps, this.homeOrigin, {
         name: this.ff.name,
         buffer: [...this.ff.buffer, block],
+        auto: false,
       });
     }
     return new MapBuilder<NextOut>(
@@ -291,13 +335,15 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * `defineNavBlock`/`defineMemNavBlock`/`definePageBlock`. Throws if given
    * anything else, including a `homeOrigin`-mismatched static `url`.
    * Compile-time: {@link NavBlock} or {@link PageBlock} only (not Assert/Method).
+   * `{ ff: true }`: fast-forward this one step inline - see {@link appendStep}'s own comment.
    */
   gotoPage<NextOut extends Checkpoint<string>>(
     block: (NavBlock<NextOut> | PageBlock<NextOut>) & { name: string },
+    opts?: MapStepOpts,
   ): MapBuilder<NextOut> {
     assertMapKind(block, ["nav", "page"], "gotoPage");
     assertMapOrigin(block, this.homeOrigin, "internal", "gotoPage");
-    return this.appendStep(block as DefinedBlock<any, any>);
+    return this.appendStep(block as DefinedBlock<any, any>, opts?.ff);
   }
 
   /**
@@ -305,22 +351,25 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * Blocks in the Waygraph Map convention: mailpit, maildrop.cc) - same
    * kind requirement as {@link gotoPage}, plus the inverse `homeOrigin` check.
    * Compile-time: {@link NavBlock} or {@link PageBlock} only.
+   * `{ ff: true }`: fast-forward this one step inline - see {@link appendStep}'s own comment.
    */
   gotoExternal<NextOut extends Checkpoint<string>>(
     block: (NavBlock<NextOut> | PageBlock<NextOut>) & { name: string },
+    opts?: MapStepOpts,
   ): MapBuilder<NextOut> {
     assertMapKind(block, ["nav", "page"], "gotoExternal");
     assertMapOrigin(block, this.homeOrigin, "external", "gotoExternal");
-    return this.appendStep(block as DefinedBlock<any, any>);
+    return this.appendStep(block as DefinedBlock<any, any>, opts?.ff);
   }
 
   /**
    * Appends a self-loop verification step - requires a Block from
    * `defineAssertBlock`. Compile-time: {@link AssertBlock} only (not `.method()`).
+   * `{ ff: true }`: fast-forward this one step inline - see {@link appendStep}'s own comment.
    */
-  assert(block: AssertBlock<Out> & { name: string }): MapBuilder<Out> {
+  assert(block: AssertBlock<Out> & { name: string }, opts?: MapStepOpts): MapBuilder<Out> {
     assertMapKind(block, ["assert"], "assert");
-    return this.appendStep(block as DefinedBlock<any, any>);
+    return this.appendStep(block as DefinedBlock<any, any>, opts?.ff);
   }
 
   /**
@@ -330,15 +379,17 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * Compile-time: {@link MethodBlock} or {@link EffectBlock} only - Assert
    * Blocks must use `.assert()`. Runtime also rejects `__waygraphKind =
    * "assert"` (those still carry method salt from the factory internals).
+   * `{ ff: true }`: fast-forward this one step inline - see {@link appendStep}'s own comment.
    */
   method<NextOut extends Checkpoint<string>>(
     block: (MethodBlock<Out, NextOut> | EffectBlock<Out, NextOut>) & { name: string },
+    opts?: MapStepOpts,
   ): MapBuilder<NextOut> {
     if (mapKindOf(block) === "assert") {
       throw new WaygraphError("WG_MAP_WRONG_KIND", MSG_MAP_METHOD_GOT_ASSERT(block.name));
     }
     assertMapSalt(block, ["method", "effect"], "method");
-    return this.appendStep(block as DefinedBlock<any, any>);
+    return this.appendStep(block as DefinedBlock<any, any>, opts?.ff);
   }
 
   /**
@@ -405,11 +456,16 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * `withTitle`/`withHighlightFixtures`/etc. decorator still apply exactly
    * as they do today; this builder only changes how the chain is assembled,
    * never what it produces. Throws if no step was ever added - an empty map
-   * isn't a flow.
+   * isn't a flow. An auto-opened `{ ff: true }` window (see {@link MapStepOpts})
+   * left open at `.end()` closes silently; an EXPLICIT `.ffStart()` left open
+   * still throws - the author opened that one and needs to close it themselves.
    */
   end(): Flow<Out> {
-    if (this.ff) {
+    if (this.ff && !this.ff.auto) {
       throw new WaygraphError("WG_MAP_FF_NOT_CLOSED", MSG_MAP_FF_NOT_CLOSED(this.ff.name));
+    }
+    if (this.ff && this.ff.auto) {
+      return this.closeFf().end();
     }
     if (this.steps.length === 0) {
       throw new WaygraphError("WG_MAP_EMPTY", MSG_MAP_EMPTY);

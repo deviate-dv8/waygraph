@@ -170,6 +170,44 @@ test.describe("Engine.map() builder", () => {
     expect(() => engine.map().start().ffStart("x").end()).toThrow(/still open/);
   });
 
+  test("{ ff: true } fast-forwards a step inline, no ffStart/ffEnd bracket - PIA ask", async () => {
+    const engine = new Engine();
+    const flow = engine
+      .map()
+      .start()
+      .gotoPage(NavHome, { ff: true })
+      .method(ClearThing, { ff: true })
+      .end();
+    const blocks = flow.blocks();
+    expect(blocks).toHaveLength(1);
+    expect((blocks[0]!.block as { fastForward?: boolean }).fastForward).toBe(true);
+    const mem = new MemPage();
+    const result = await flow.run(fakeContext, mem);
+    expect(result).toEqual(checkpoint("Home"));
+  });
+
+  test("{ ff: true } steps merge into ONE fast-forward block, but a plain step after them is not swept in", () => {
+    const engine = new Engine();
+    const flow = engine
+      .map()
+      .start()
+      .gotoPage(NavHome, { ff: true })
+      .method(ClearThing, { ff: true })
+      .method(ClearThing)
+      .end();
+    const blocks = flow.blocks();
+    expect(blocks).toHaveLength(2);
+    expect((blocks[0]!.block as { fastForward?: boolean }).fastForward).toBe(true);
+    expect((blocks[1]!.block as { fastForward?: boolean }).fastForward).toBeUndefined();
+  });
+
+  test("an auto-opened { ff: true } window left open at .end() closes silently - no 'still open' error, unlike an explicit .ffStart()", () => {
+    const engine = new Engine();
+    expect(() =>
+      engine.map().start().gotoPage(NavHome, { ff: true }).end(),
+    ).not.toThrow();
+  });
+
   test("Block.stubBefore chains ctx and keeps map() kind markers", async () => {
     const { runStubPhase } = await import("../../src/index.js");
     const decorated = ClearThing.stubBefore((ctx) => {
