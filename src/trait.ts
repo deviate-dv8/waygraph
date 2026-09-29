@@ -1,9 +1,14 @@
 import type { Page } from "@playwright/test";
 import type { MemPage } from "./mem-page.js";
 // URLPattern is only a Node global from v23.8+ (and even then, Node's own, not a browser's) -
-// CI's Node 20/22 matrix has no global at all. The polyfill is spec-identical, so this works the
-// same everywhere instead of only on whatever Node happens to be running the tests.
-import { URLPattern } from "urlpattern-polyfill";
+// CI's Node 20/22 matrix has no global at all. Side-effect import only: the polyfill package sets
+// globalThis.URLPattern itself, but only when one doesn't already exist - so below Node 23.8 this
+// becomes THE global, and from 23.8 up it's a no-op and the native one stays. Playwright's own
+// waitForURL(pattern) checks `pattern instanceof globalThis.URLPattern` internally, so the instance
+// constructed below must always come from whatever ends up on globalThis, not this import
+// directly - a named `import { URLPattern }` gives a fixed class that's a different constructor
+// than the native global on newer Node, and `instanceof` would then fail on those versions.
+import "urlpattern-polyfill";
 
 /**
  * A named, independently-reportable check. `check` never runs before `resolve` has
@@ -56,10 +61,12 @@ export function urlMatches(pattern: URLPatternInit): Trait {
       // `verify()` case this was originally written for - just via the same
       // mechanism every other Trait already uses instead of its own
       // hardcoded, wrong-context value.
-      // Cast via Playwright's own declared param type, not a bare `URLPattern` reference - the
-      // polyfill's .d.ts re-declares the ambient global `URLPattern` (so Node 20/22, which have no
-      // native one, still resolve the type), which otherwise conflicts with lib.dom's own ambient
-      // declaration that Playwright's waitForURL signature was written against.
+      // Cast, not a bare `urlPattern` reference: @types/node and the polyfill both declare an
+      // ambient global `URLPattern` (`skipLibCheck` hides the conflict between them instead of
+      // erroring), and they resolve to two DIFFERENT types depending on where in the program the
+      // name is looked up - so the very same runtime value that satisfies Playwright's actual
+      // (structural, .test()-based) check at runtime fails typechecking as "not assignable" against
+      // whichever of the two ambient declarations Playwright's own .d.ts happens to see.
       await page.waitForURL(urlPattern as unknown as Parameters<Page["waitForURL"]>[0]);
       return true;
     },

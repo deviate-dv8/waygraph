@@ -64,7 +64,7 @@ test.describe("Flow.run(mem) - Engine owns its own browser", () => {
       },
     };
 
-    const slowEngine = new Engine({ headless: true, slowMo: 150 });
+    const slowEngine = new Engine({ headless: true, slowMo: 400 });
     const start1 = Date.now();
     await slowEngine.defineFlow([start, twoActions, end]).run(new MemPage());
     const slowElapsed = Date.now() - start1;
@@ -74,10 +74,14 @@ test.describe("Flow.run(mem) - Engine owns its own browser", () => {
     await fastEngine.defineFlow([start, twoActions, end]).run(new MemPage());
     const fastElapsed = Date.now() - start2;
 
-    // Two operations, each delayed ~150ms by slowMo, should add at least one
-    // full delay's worth of gap versus the un-delayed run - a generous bound
-    // to avoid flaking on CI timing, not a precise measurement.
-    expect(slowElapsed - fastElapsed).toBeGreaterThan(150);
+    // Two operations, each delayed ~400ms by slowMo, should add at least one
+    // full delay's worth of gap versus the un-delayed run. The threshold is
+    // held well below the ~800ms actually expected specifically so ordinary
+    // browser-launch jitter between the two independent Chromium launches
+    // (each engine launches its own, since slowMo is a launch-time option)
+    // can't cross it on a loaded CI runner - this flaked at the old 150/150
+    // margin on GitHub's shared runners, though never locally.
+    expect(slowElapsed - fastElapsed).toBeGreaterThan(400);
   });
 
   test("run(mem, config) overrides the Engine's own config for just that call", async () => {
