@@ -9,6 +9,13 @@ the **reference** for waygraph consumer conventions:
 - `instanceOptions` menus for `waygraph auto` (Add/Remove + Open details)
 - Detailed Kind / Helper / Route comments on every Block file
 - Per-route `NAV.md` + root `src/blocks/SITE-MAP.md`
+- Inline `{ ff: true }` fast-forward, no `.ffStart()/.ffEnd()` bracket - see
+  `checkoutFlow` (`src/flows/checkout.flow.ts`)
+- `defineApiBlock` - a real backend/HTTP check as one step in the same Flow as
+  a UI step, with its own live network-activity panel during a demo - see
+  `apiDemoFlow` (`src/flows/api-demo.flow.ts`)
+- `ctx.caption()` (bottom subtitle-bar) + `ctx.titlePos()` (banner
+  left/center/right) - also on `checkoutFlow`
 
 **GitHub Pages walkthrough:**
 [docs/saucedemo](https://deviate-dv8.github.io/waygraph/saucedemo/)
@@ -38,11 +45,15 @@ npx playwright install chromium
 | Parallel crawl + leases | `npm run traverse:parallel` |
 | Coverage JSON + min gate (10%) | `npm run traverse:coverage` |
 | Shop demo stepper | `npm run demo:step` |
-| Shop demo autoplay | `npm run demo:autoplay` |
+| Shop demo autoplay | `npm run demo:auto-next` |
 | **Device showcase** (mobile/tablet + portrait/landscape) | `npm run demo:device` |
 | Device showcase + `.webm` | `npm run demo:device:video` |
 | **Cart bulk** demo (add-all → remove-all) | `npm run demo:bulk` |
-| Cart bulk stepper | `npm run demo:bulk:step` |
+| Cart bulk autoplay | `npm run demo:bulk:auto-next` |
+| **Owner checkout** (inline `{ ff: true }`, `ctx.caption()`, banner position) | `npm run demo:checkout` |
+| Owner checkout + `.webm` | `npm run demo:checkout:video` |
+| **FE + BE in one Flow** (`defineApiBlock`, live network panel) | `npm run demo:api` |
+| FE + BE demo + `.webm` | `npm run demo:api:video` |
 | List flows | `npm run flows` |
 
 **Demo vs auto vs run for cart bulk**

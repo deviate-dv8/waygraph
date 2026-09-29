@@ -16,17 +16,23 @@ import { LoginSel } from "../blocks/saucedemo-web/methods/login.sel.js";
 const engine = new Engine({ headless: false, slowMo: 250 });
 
 /**
- * Owner checkout via map() + .ffStart/.ffEnd (no separate FfOwnerAuthBlock,
- * no HighlightFixtureMap). Auth collapses to one blitz step; post-login
- * blocks keep their own ctx stubBefore/stubAfter. Call-site decorate example
- * on fill-username when --ff-expand shows inners again.
+ * Owner checkout via map() with inline `{ ff: true }` (no separate
+ * FfOwnerAuthBlock, no HighlightFixtureMap, no .ffStart()/.ffEnd() bracket -
+ * the three auth steps below merge into one fast-forward block just by
+ * flagging each one). Auth collapses to one blitz step; post-login blocks
+ * keep their own ctx stubBefore/stubAfter. Call-site decorate example on
+ * fill-username when --ff-expand shows inners again.
+ *
+ * Also demonstrates two other recent conventions on the checkout-step-one
+ * leg: ctx.caption() (bottom subtitle-bar, ported from zsign's help-center
+ * clip engine) narrating each field, and ctx.titlePos() moving the banner
+ * left -> center -> right across three consecutive steps.
  */
 export const checkoutFlow = withTitle(
   engine
     .map()
     .start()
-    .ffStart("ff-owner-auth")
-    .gotoPage(NavLoginBlock)
+    .gotoPage(NavLoginBlock, { ff: true })
     .method(
       FillUsernameBlock.stubBefore((ctx) => {
         ctx.ring("username", {
@@ -38,6 +44,7 @@ export const checkoutFlow = withTitle(
           focus: true,
         });
       }),
+      { ff: true },
     )
     .method(
       FillPasswordBlock.stubBefore((ctx) => {
@@ -49,6 +56,7 @@ export const checkoutFlow = withTitle(
           focus: true,
         });
       }),
+      { ff: true },
     )
     .method(
       SubmitLoginForFlow.stubBefore((ctx) => {
@@ -62,15 +70,30 @@ export const checkoutFlow = withTitle(
           weight: "bold",
         });
       }),
+      { ff: true },
     )
-    .ffEnd()
     .method(AddToCartBlock)
     .gotoPage(NavCartBlock)
     .gotoPage(NavCheckoutInfoBlock)
-    .method(FillFirstNameBlock)
-    .method(FillLastNameBlock)
-    .method(FillPostalCodeBlock)
-    .method(SubmitCheckoutInfoBlock)
+    .method(
+      FillFirstNameBlock.stubBefore((ctx) => {
+        ctx.caption("Enter the first name on the order");
+        ctx.titlePos("left");
+      }),
+    )
+    .method(
+      FillLastNameBlock.stubBefore((ctx) => {
+        ctx.caption("Enter the last name on the order");
+        ctx.titlePos("center");
+      }),
+    )
+    .method(
+      FillPostalCodeBlock.stubBefore((ctx) => {
+        ctx.caption("Enter a postal code to calculate shipping");
+        ctx.titlePos("right");
+      }),
+    )
+    .method(SubmitCheckoutInfoBlock.stubBefore((ctx) => ctx.hideCaption()))
     .method(FinishOrderBlock)
     .end(),
   "Owner: Full Checkout",
