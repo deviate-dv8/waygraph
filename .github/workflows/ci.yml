@@ -84,5 +84,5 @@ jobs:
       - name: Install Playwright browsers
         run: npx --prefix examples/saucedemo playwright install --with-deps chromium
 
-      - name: List flows (smoke: discovery actually works against the built package)
+      - name: "List flows (smoke: discovery actually works against the built package)"
         run: node bin/waygraph list examples/saucedemo
