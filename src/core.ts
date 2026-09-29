@@ -10,5 +10,6 @@ export * from "./core/blocks/nav.js";
 export * from "./core/blocks/method.js";
 export * from "./core/blocks/page.js";
 export * from "./core/blocks/effect.js";
+export * from "./core/blocks/api.js";
 export * from "./core/locate.js";
 export * from "./core/branch-regression.js";

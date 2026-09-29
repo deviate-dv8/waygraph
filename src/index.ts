@@ -37,6 +37,7 @@ export {
   defineEffectBlock,
   defineMemEffectBlock,
   defineMemNavBlock,
+  defineApiBlock,
   locate,
   composeBlock,
   fastForwardComposeBlock,
@@ -62,6 +63,7 @@ export {
   runBranchRegression,
 } from "./core.js";
 export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./core/branch-regression.js";
+export type { ApiBlockOptions, ApiCallResult } from "./core/blocks/api.js";
 export {
   resolveHighlightSlots,
   resolveSlides,
