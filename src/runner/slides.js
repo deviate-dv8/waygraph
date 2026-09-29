@@ -43,14 +43,20 @@ export async function presentSlides(page, slides, _gate, opts) {
       try {
         await ensureSelectorInView(page, s.selector);
         await applyHighlightZoom(page, s.selector, s.zoom, s.zoomOut);
-        const box = await page
-          .evaluate((sel) => {
-            const el = document.querySelector(sel);
-            if (!el) return null;
-            const r = el.getBoundingClientRect();
-            return { x: r.x, y: r.y, width: r.width, height: r.height };
-          }, s.selector)
-          .catch(() => null);
+        // Playwright's own locator (>> piercing / :has-text() / :visible support), not a raw
+        // querySelector string - see rings.js's showRing for the same fix, same reason. count()
+        // gate: Locator.evaluate() has no timeout option and auto-waits ~30s for a match to
+        // appear - count() never waits, keeping this an immediate "does it exist now" check.
+        const sLoc = page.locator(s.selector).first();
+        const box =
+          (await sLoc.count().catch(() => 0)) > 0
+            ? await sLoc
+                .evaluate((el) => {
+                  const r = el.getBoundingClientRect();
+                  return { x: r.x, y: r.y, width: r.width, height: r.height };
+                })
+                .catch(() => null)
+            : null;
         if (box && box.width > 0 && box.height > 0) {
           await showRing(page, box, caption, slideTone, {
             ...slideStyle,

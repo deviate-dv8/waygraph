@@ -2,6 +2,7 @@
 import { buildTodoDock, formatHighlightCaption, normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, resolveDeviceState, resolveTodoDockUi } from "../highlights.js";
 import type { BannerPos, BannerUiOpts, DevicePreset, DeviceState, HighlightTone, TodoDockUiOpts, TodoListStyle, WaygraphTodoGroupInput } from "../highlights.js";
 import { ensureInstalled } from "./shell.js";
+import { verboseLog } from "../auto-session/verbose-log.js";
 import type { Page } from "@playwright/test";
 
 /** One ring the Pilot agent wants painted (same fields as demo stub rings). */
@@ -216,15 +217,45 @@ export async function showPilotFixtures(
       .catch(() => {});
   }
 
+  // Resolve every ring's box (and the zoom target, if any) through Playwright's own locator, not a
+  // selector string handed to the page for a raw DOM querySelector to fail silently on - >>
+  // piercing / :has-text() / :visible are Playwright-only selector syntax. "Prefer live in-page
+  // rect (honors device-shell scale)" still holds: .evaluate() runs the callback bound to the
+  // resolved element, in the page's own real JS context, same as before - only the RESOLUTION
+  // step moved from an in-page querySelector to Playwright's full selector engine. count() gate:
+  // Locator.evaluate() has no timeout option and auto-waits ~30s for a match to appear - count()
+  // never waits, so a genuinely-missing selector (a real, expected case - see `missing` below)
+  // still resolves immediately instead of hanging.
+  const ringBoxes = await Promise.all(
+    rings.map(async (r) => {
+      const loc = page.locator(r.selector).first();
+      if ((await loc.count().catch(() => 0)) === 0) return null;
+      return loc
+        .evaluate((el) => {
+          const rect = el.getBoundingClientRect();
+          if (rect.width === 0 && rect.height === 0) return null;
+          return { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+        })
+        .catch(() => null);
+    }),
+  );
+  const resolvedZoomSelector = zoomSelector ?? "";
+  const zoomHandle =
+    zoom > 1.001 && resolvedZoomSelector
+      ? await page.locator(resolvedZoomSelector).first().elementHandle({ timeout: 100 }).catch(() => null)
+      : null;
+
   return page
     .evaluate(
       ({
         rings,
+        ringBoxes,
         todoGroups,
         todoPos,
         holdMs,
         zoom,
         zoomSelector,
+        zoomEl,
         zoomOut,
         clearAll,
         todoUi,
@@ -306,17 +337,11 @@ export async function showPilotFixtures(
         // (window.__wgPaintRingAt, installed by runner/inpage/core.js's installCore - see
         // ensureInstalled) - one ring implementation, not a separate DOM-building copy here.
         rings.forEach((ring, i) => {
-          const el = document.querySelector(ring.selector);
-          if (!el) {
+          const box = ringBoxes[i];
+          if (!box) {
             missing.push(ring.selector);
             return;
           }
-          const rect = el.getBoundingClientRect();
-          if (rect.width === 0 && rect.height === 0) {
-            missing.push(ring.selector);
-            return;
-          }
-          const box = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
           const ringId = `wg-fx-ring-${i}`;
           const labelId = `wg-fx-ring-${i}-label`;
           if (window.__wgPaintRingAt) {
@@ -404,7 +429,7 @@ export async function showPilotFixtures(
         }
 
         if (zoom > 1.001 && zoomSelector) {
-          const target = document.querySelector(zoomSelector);
+          const target = zoomEl;
           if (target) {
             target.scrollIntoView({
               block: "center",
@@ -434,15 +459,26 @@ export async function showPilotFixtures(
       },
       {
         rings,
+        ringBoxes,
         todoGroups,
         todoPos,
         holdMs,
         zoom,
         zoomSelector: zoomSelector ?? "",
+        zoomEl: zoomHandle,
         zoomOut,
         clearAll: fixtures.clear === true,
         todoUi,
       },
     )
+    .then((result) => {
+      // Debuggability: a demo/pilot run is a sequential list of steps - when a ring silently
+      // doesn't render, "where in the flow" and "which selector" are exactly what's needed to fix
+      // it, not a quiet no-op. See rings.js/slides.js/teardown.js for the same fix, same reason.
+      for (const sel of result.missing) {
+        verboseLog("pilot", `ring not painted - selector matched nothing (or a zero-size element): ${sel}`);
+      }
+      return result;
+    })
     .catch(() => ({ painted: 0, missing: rings.map((r) => r.selector) }));
 }

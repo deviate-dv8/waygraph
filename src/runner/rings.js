@@ -207,15 +207,25 @@ export async function cycleHighlightRings(page, highlights, gatesFast, opts) {
     try {
       await ensureSelectorInView(page, h.selector);
       await applyHighlightZoom(page, h.selector, h.zoom, h.zoomOut);
-      // Prefer live in-page rect (honors device-shell scale) over Playwright box.
-      const box = await page
-        .evaluate((sel) => {
-          const el = document.querySelector(sel);
-          if (!el) return null;
-          const r = el.getBoundingClientRect();
-          return { x: r.x, y: r.y, width: r.width, height: r.height };
-        }, h.selector)
-        .catch(() => null);
+      // Prefer live in-page rect (honors device-shell scale) over Playwright's own boundingBox() -
+      // but resolve the element through Playwright's OWN locator (full selector engine: >>
+      // piercing, :has-text(), :visible, ...), not a raw DOM querySelector, which only understands
+      // real CSS and silently fails to match any Playwright-specific selector syntax.
+      // count() gate: a real, caught regression - Locator.evaluate() has no timeout option and
+      // auto-waits (Playwright's default ~30s) for a match to appear, unlike the instant
+      // document.querySelector it replaced. count() alone never waits, so this stays an immediate
+      // "does it exist right now" check - ensureSelectorInView above already gave the page a real
+      // moment to settle.
+      const hLoc = page.locator(h.selector).first();
+      const box =
+        (await hLoc.count().catch(() => 0)) > 0
+          ? await hLoc
+              .evaluate((el) => {
+                const r = el.getBoundingClientRect();
+                return { x: r.x, y: r.y, width: r.width, height: r.height };
+              })
+              .catch(() => null)
+          : null;
       if (box && box.width > 0 && box.height > 0) {
         await showRing(page, box, h.label, h.tone || "planned", {
           size: h.size,
@@ -318,44 +328,52 @@ export async function cycleHighlightRings(page, highlights, gatesFast, opts) {
   }
   if (list.length > 0) {
     const last = list[list.length - 1];
+    // Resolved through Playwright's own locator (>> piercing / :has-text() / :visible support),
+    // not handed to the page as a string for a raw DOM querySelector to fail silently on - see
+    // showRing's own comment (same fix, same reason) and __wgFollowRing's in core.js.
+    const handle = last.selector
+      ? await page.locator(last.selector).first().elementHandle({ timeout: 100 }).catch(() => null)
+      : null;
     await page
-      .evaluate((h) => {
-        if (!window.__wgFollowRing && !window.__wgPositionRing) return;
-        if (window.__wgFollowRing) {
-          window.__wgFollowRing(
-            h.selector,
-            h.label,
-            h.tone || "planned",
-            { size: h.size || "md", weight: h.weight || "normal" },
-            !!h.focus,
-          );
-          return;
-        }
-        const reposition = () => {
-          const el = document.querySelector(h.selector);
+      .evaluate(
+        ({ h, el }) => {
+          if (el && window.__wgFollowRing) {
+            window.__wgFollowRing(
+              el,
+              h.label,
+              h.tone || "planned",
+              { size: h.size || "md", weight: h.weight || "normal" },
+              !!h.focus,
+            );
+            return;
+          }
+          if (!window.__wgPositionRing) return;
           if (!el) {
             if (window.__wgHideRing) window.__wgHideRing();
             return;
           }
-          const box = el.getBoundingClientRect();
-          window.__wgPositionRing(box, h.label, h.tone || "planned", {
-            size: h.size || "md",
-            weight: h.weight || "normal",
-          });
-          if (h.focus && window.__wgApplyFocus) {
-            window.__wgApplyFocus({
-              x: box.x,
-              y: box.y,
-              width: box.width,
-              height: box.height,
+          const reposition = () => {
+            const box = el.getBoundingClientRect();
+            window.__wgPositionRing(box, h.label, h.tone || "planned", {
+              size: h.size || "md",
+              weight: h.weight || "normal",
             });
-          }
-        };
-        reposition();
-        window.__wgRingTrack = reposition;
-        window.addEventListener("resize", reposition);
-        window.addEventListener("scroll", reposition, true);
-      }, last)
+            if (h.focus && window.__wgApplyFocus) {
+              window.__wgApplyFocus({
+                x: box.x,
+                y: box.y,
+                width: box.width,
+                height: box.height,
+              });
+            }
+          };
+          reposition();
+          window.__wgRingTrack = reposition;
+          window.addEventListener("resize", reposition);
+          window.addEventListener("scroll", reposition, true);
+        },
+        { h: last, el: handle },
+      )
       .catch(() => {});
   } else {
     await hideRing(page);
@@ -417,11 +435,17 @@ export async function showRing(page, box, label, tone, style) {
   const weight = normalizeHighlightWeight(style && style.weight);
   const selector = style && style.selector ? String(style.selector) : "";
   const focus = !!(style && style.focus);
+  // Resolve through Playwright's own locator (full selector engine), not a selector string handed
+  // to the page for a raw DOM lookup - >> piercing / :has-text() / :visible are Playwright-only
+  // syntax, invisible to document.querySelector. The resolved element handle is passed straight
+  // into evaluate (Playwright unwraps it to the real DOM node inside the page), so __wgFollowRing's
+  // per-frame RAF loop tracks that exact element directly - no repeated selector re-resolution.
+  const handle = selector ? await page.locator(selector).first().elementHandle({ timeout: 100 }).catch(() => null) : null;
   await page
     .evaluate(
-      ({ box, label, tone, size, weight, selector, focus }) => {
-        if (selector && window.__wgFollowRing) {
-          window.__wgFollowRing(selector, label, tone || "planned", { size, weight }, focus);
+      ({ box, label, tone, size, weight, el, focus }) => {
+        if (el && window.__wgFollowRing) {
+          window.__wgFollowRing(el, label, tone || "planned", { size, weight }, focus);
           return;
         }
         if (window.__wgStopRingFollow) window.__wgStopRingFollow();
@@ -431,7 +455,7 @@ export async function showRing(page, box, label, tone, style) {
         if (focus && box && window.__wgApplyFocus) window.__wgApplyFocus(box);
         else if (!focus && window.__wgClearFocus) window.__wgClearFocus();
       },
-      { box, label, tone: tone || "planned", size, weight, selector, focus },
+      { box, label, tone: tone || "planned", size, weight, el: handle, focus },
     )
     .catch(() => {});
 }

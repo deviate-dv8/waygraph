@@ -2,6 +2,7 @@
 import { SURFACE } from "../ui/tokens.js";
 import { ensureShadowRoot, installShadowRoot } from "../ui/shadow.js";
 import type { HighlightTone } from "../highlights.js";
+import { verboseLog } from "../auto-session/verbose-log.js";
 import type { BrowserContext, Page } from "@playwright/test";
 
 // Real, direct user request: this overlay's own colors were an improvised
@@ -231,26 +232,38 @@ export async function showPilotVision(
   tone: HighlightTone = "auto",
 ): Promise<void> {
   await ensureInstalled(page);
+  // Resolved through Playwright's own locator (>> piercing / :has-text() / :visible support), not
+  // a raw querySelector string - see rings.js's showRing for the same fix, same reason. count()
+  // gate: Locator.evaluate() has no timeout option and auto-waits ~30s for a match to appear -
+  // count() never waits, keeping this an immediate "does it exist right now" check.
+  const visionLoc = page.locator(selector).first();
+  const box =
+    (await visionLoc.count().catch(() => 0)) > 0
+      ? await visionLoc
+          .evaluate((el) => {
+            const rect = el.getBoundingClientRect();
+            if (rect.width === 0 && rect.height === 0) return null;
+            return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+          })
+          .catch(() => null)
+      : null;
+  if (!box) {
+    verboseLog("pilot", `vision ring not painted - selector matched nothing (or a zero-size element): ${selector}`);
+  }
   await page
     .evaluate(
-      ({ selector, label, tone }) => {
+      ({ box, label, tone }) => {
         const ring = __wgById("wg-ring");
         const tag = __wgById("wg-ring-label");
         if (!ring || !tag) return;
         const w = window as unknown as { __wgVisionHideTimer?: ReturnType<typeof setTimeout> };
         if (w.__wgVisionHideTimer) clearTimeout(w.__wgVisionHideTimer);
-        const el = document.querySelector(selector);
-        if (!el) {
+        if (!box) {
           ring.style.opacity = "0";
           tag.style.opacity = "0";
           return;
         }
-        const rect = el.getBoundingClientRect();
-        if (rect.width === 0 && rect.height === 0) {
-          ring.style.opacity = "0";
-          tag.style.opacity = "0";
-          return;
-        }
+        const rect = box;
         ring.dataset.tone = tone;
         ring.dataset.size = "md";
         tag.dataset.tone = tone;
@@ -277,7 +290,7 @@ export async function showPilotVision(
           tag.style.opacity = "0";
         }, 4_000);
       },
-      { selector, label, tone },
+      { box, label, tone },
     )
     .catch(() => {});
 }

@@ -110,15 +110,22 @@ export async function restoreTheaterAfterNavigation(page, todoDockRef, deviceRef
   const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
   for (const h of stubs) {
     if (!h || !h.selector) continue;
-    const box = await page
-      .evaluate((sel) => {
-        const el = document.querySelector(sel);
-        if (!el) return null;
-        const r = el.getBoundingClientRect();
-        if (r.width < 2 || r.height < 2) return null;
-        return { x: r.x, y: r.y, width: r.width, height: r.height };
-      }, h.selector)
-      .catch(() => null);
+    // Playwright's own locator (>> piercing / :has-text() / :visible support), not a raw
+    // querySelector string - see rings.js's showRing for the same fix, same reason. count() gate:
+    // Locator.evaluate() has no timeout option and auto-waits ~30s for a match to appear - count()
+    // never waits, keeping this an immediate "does it still exist" check (this selector routinely
+    // won't, after a route change - that's the whole point of the loop).
+    const hLoc = page.locator(h.selector).first();
+    const box =
+      (await hLoc.count().catch(() => 0)) > 0
+        ? await hLoc
+            .evaluate((el) => {
+              const r = el.getBoundingClientRect();
+              if (r.width < 2 || r.height < 2) return null;
+              return { x: r.x, y: r.y, width: r.width, height: r.height };
+            })
+            .catch(() => null)
+        : null;
     if (box) {
       await showRing(page, box, formatHighlightCaption(h), h.tone || "planned", {
         size: h.size,

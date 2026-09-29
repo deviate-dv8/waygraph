@@ -189,22 +189,25 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
             break;
           }
         };
-        /** Live-follow a selector with rAF (accurate under device shell scale). */
+        /** Live-follow a resolved element with rAF (accurate under device shell scale). */
         window.__wgStopRingFollow = () => {
           if (window.__wgRingFollowRaf) {
             cancelAnimationFrame(window.__wgRingFollowRaf);
             window.__wgRingFollowRaf = 0;
           }
-          window.__wgRingFollowSel = "";
+          window.__wgRingFollowEl = null;
         };
-        window.__wgFollowRing = (sel, label, tone, style, focus) => {
+        // `el` is a real DOM element (a Playwright ElementHandle unwrapped by evaluate() - see
+        // rings.js's showRing), not a selector string - >> piercing / :has-text() are Playwright's
+        // own selector-engine syntax, which document.querySelector has no way to understand, so
+        // resolution happens once on the Node side via page.locator(), before this ever runs.
+        window.__wgFollowRing = (el, label, tone, style, focus) => {
           window.__wgStopRingFollow();
-          if (!sel) return;
-          window.__wgRingFollowSel = sel;
+          if (!el) return;
+          window.__wgRingFollowEl = el;
           const tick = () => {
-            if (window.__wgRingFollowSel !== sel) return;
-            const el = document.querySelector(sel);
-            if (!el) {
+            if (window.__wgRingFollowEl !== el) return;
+            if (!el.isConnected) {
               window.__wgRingFollowRaf = requestAnimationFrame(tick);
               return;
             }
