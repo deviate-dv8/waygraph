@@ -2,6 +2,7 @@ export type { Checkpoint, Instruction, Block, DefinedBlock, Start, WaygraphInsta
 export { connect, checkpoint } from "./types.js";
 export { MemKey, MemPage, key, keyGroup } from "./mem-page.js";
 export { registerMemStub, seedMemStub, getMemStub } from "./mem-stub.js";
+export { css, byText, byRole } from "./selector.js";
 export {
   Trait,
   urlMatches,

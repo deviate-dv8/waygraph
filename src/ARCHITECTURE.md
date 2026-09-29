@@ -36,6 +36,7 @@ engine/highlights runtime symbol into it.
 | Overlay colours / ring, cursor, banner, dock CSS | real `.css` in `src/ui/css/` (see its README) - built on Open Props, bundled into `dist/ui/overlay.css`, injected once into the Shadow DOM by `ui/shadow.ts` |
 | Highlight/todo/device/pace behaviour | `highlights/<topic>.ts` |
 | A new practice warning | `practices-check.ts` (kind, regex, label) + a fixture in `tests/fixtures/practices-check/` |
+| A selector helper (`css`/`byText`/`byRole`) | `selector.ts` - thin string builders only, no new selector type; a full generated `*Sel` registry is backlogged |
 
 ## Rules (enforced)
 
