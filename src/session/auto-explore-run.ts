@@ -405,6 +405,39 @@ async function headfulPick(
     }
   }
 
+  // Pre-resolve every candidate's hover-preview box THROUGH Playwright's own locator (>>
+  // piercing / :has-text() / :visible support), once, here on the Node side - not a raw selector
+  // string handed to the page for a per-mouseenter document.querySelector to fail silently on
+  // (same class of bug as rings.js's showRing; see its own comment for the full story). A
+  // mouseenter handler can't itself await a Node-side locator without visible hover lag, so the
+  // box is embedded as a data attribute instead and the in-page handler just reads it.
+  const hlSelectors = new Set<string>();
+  for (const section of menu.sections) {
+    for (const c of section.edges) {
+      const entry = library.get(c.block);
+      const navClick = (entry?.block as { __waygraphNavClick?: unknown } | undefined)?.__waygraphNavClick;
+      const hl = c.instanceOption?.highlight ?? (typeof navClick === "string" ? navClick : undefined);
+      if (hl) hlSelectors.add(hl);
+    }
+  }
+  const hlBoxes = new Map<string, { x: number; y: number; width: number; height: number } | null>();
+  await Promise.all(
+    [...hlSelectors].map(async (sel) => {
+      const loc = page.locator(sel).first();
+      const box =
+        (await loc.count().catch(() => 0)) > 0
+          ? await loc
+              .evaluate((el) => {
+                const r = el.getBoundingClientRect();
+                if (r.width < 1 && r.height < 1) return null;
+                return { x: r.x, y: r.y, width: r.width, height: r.height };
+              })
+              .catch(() => null)
+          : null;
+      hlBoxes.set(sel, box);
+    }),
+  );
+
   html += `<div class="wg-actions">`;
   let idx = 0;
   if (menu.sections.length === 0) {
@@ -417,7 +450,8 @@ async function headfulPick(
       const navClick = (entry?.block as { __waygraphNavClick?: unknown } | undefined)?.__waygraphNavClick;
       const hl =
         c.instanceOption?.highlight ?? (typeof navClick === "string" ? navClick : undefined);
-      const hlAttr = hl ? ` data-hl="${esc(hl)}"` : "";
+      const hlBox = hl ? hlBoxes.get(hl) : null;
+      const hlAttr = hlBox ? ` data-hl-box='${esc(JSON.stringify(hlBox))}'` : "";
       if (c.label) {
         html += `<button class="wg-act" data-idx="${idx}"${hlAttr}>${esc(c.label)}</button>`;
       } else {
@@ -528,14 +562,19 @@ async function headfulPick(
           window.__wgAutoPick?.(idx);
         });
         btn.addEventListener("mouseenter", () => {
-          const sel = btn.getAttribute("data-hl");
-          if (!sel) return;
-          const el = document.querySelector(sel);
-          if (!el || typeof window.__wgPositionRing !== "function") return;
-          const r = el.getBoundingClientRect();
-          if (r.width < 1 && r.height < 1) return;
+          // Pre-resolved on the Node side via Playwright's own locator (>> piercing / :has-text()
+          // support) when this menu was built - see headfulPick's own comment for why a
+          // mouseenter handler can't itself round-trip to a Node-side locator per hover.
+          const raw = btn.getAttribute("data-hl-box");
+          if (!raw || typeof window.__wgPositionRing !== "function") return;
+          let box;
+          try {
+            box = JSON.parse(raw);
+          } catch {
+            return;
+          }
           window.__wgPositionRing(
-            { x: r.x, y: r.y, width: r.width, height: r.height },
+            box,
             btn.textContent?.trim()?.slice(0, 80) || "target",
             "auto",
           );
