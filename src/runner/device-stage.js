@@ -242,6 +242,21 @@ export async function applyDeviceToPage(page, device, sync) {
   } catch {
     from = null;
   }
+  // Non-headless (no --video) used to literally resize the real OS browser window/viewport to
+  // each device's pixel size - a real, confirmed complaint: it didn't look like the same animated
+  // device-shell bezel the --video path already has, just a plain resize. Both now use the exact
+  // same applyVideoDeviceStage bezel technique - the "stage" (the fixed outer viewport the shell is
+  // centered within) is the recordVideo canvas size when recording, or the window's own size at
+  // the FIRST device switch when not (captured once, persisted on the page - the window itself is
+  // only really resized that one time, to establish a stable stage; every device switch after that
+  // paints the animated shell inside it instead of resizing the window again).
+  let establishingHeadedStage = false;
+  if (!videoStage && !page.__wgHeadedStage) {
+    page.__wgHeadedStage =
+      from && from.width > 0 && from.height > 0 ? { width: from.width, height: from.height } : { width: 1280, height: 720 };
+    establishingHeadedStage = true;
+  }
+  const stage = videoStage || page.__wgHeadedStage;
   const announce = mode === "set" || mode === "clear";
   const toDesktop =
     mode === "clear" || (d.preset === "desktop" && !d.touchMode);
@@ -275,13 +290,18 @@ export async function applyDeviceToPage(page, device, sync) {
   page.__wgDeviceOrient = nextOrient;
   page.__wgDevicePreset = toDesktop ? "desktop" : d.preset || "";
 
-  if (videoStage) {
-    // Lock Playwright viewport to the recordVideo size so frames fill the
-    // .webm; center the device shell inside (OS window centering alone does not).
-    // Do NOT fitWindow to the device size - that shrinks the viewport below the
-    // recordVideo canvas and Playwright pads the .webm with grey (top-left bias).
+  if (stage) {
+    // Lock the Playwright viewport to the stage size so frames/window fill it; center the device
+    // shell inside (OS window centering alone does not). Do NOT fitWindow to the device size -
+    // that shrinks the viewport below the stage and (when recording) pads the .webm with grey
+    // (top-left bias). Headed-without-video reuses this exact technique (see `stage`'s own
+    // comment above) - the real OS window is only ever resized once, right here, to establish the
+    // stage itself; every device switch after that paints the animated shell inside it instead.
+    if (!videoStage && establishingHeadedStage) {
+      await fitWindowToDeviceViewport(page, stage, { maximize: false }).catch(() => {});
+    }
     try {
-      await realSet(videoStage);
+      await realSet(stage);
     } catch {
       /* ignore */
     }
@@ -290,22 +310,22 @@ export async function applyDeviceToPage(page, device, sync) {
       // Zoom already cleared above. Full-bleed desktop shell (no matte frame).
       // Shutter-out: soft rounded -> radius 0, then flat edge-to-edge.
       const desk = {
-        width: videoStage.width,
-        height: videoStage.height,
+        width: stage.width,
+        height: stage.height,
       };
       page.__wgDeviceShell = { ...desk };
-      await applyVideoDeviceStage(page, desk, videoStage, {
+      await applyVideoDeviceStage(page, desk, stage, {
         clear: false,
         shutterOut: true,
         desktopFlat: true,
       });
       try {
-        await realSet(videoStage);
+        await realSet(stage);
       } catch {
         /* ignore */
       }
     } else {
-      // Lerp shell size when switching mobile <-> tablet mid-video.
+      // Lerp shell size when switching mobile <-> tablet mid-run.
       const firstDevice = !page.__wgDeviceShell;
       if (
         announce &&
@@ -322,22 +342,22 @@ export async function applyDeviceToPage(page, device, sync) {
             width: Math.round(shellFrom.width + (target.width - shellFrom.width) * e),
             height: Math.round(shellFrom.height + (target.height - shellFrom.height) * e),
           };
-          await applyVideoDeviceStage(page, mid, videoStage, {
+          await applyVideoDeviceStage(page, mid, stage, {
             clear: false,
             enterIn: i === 1 && firstDevice,
           });
           if (i < steps) await new Promise((r) => setTimeout(r, stepMs));
         }
       } else {
-        await applyVideoDeviceStage(page, target, videoStage, {
+        await applyVideoDeviceStage(page, target, stage, {
           clear: false,
           enterIn: firstDevice || announce,
         });
       }
       page.__wgDeviceShell = { ...target };
-      // Re-assert stage size after any prior non-video fitWindow.
+      // Re-assert stage size after any prior fitWindow.
       try {
-        await realSet(videoStage);
+        await realSet(stage);
       } catch {
         /* ignore */
       }
