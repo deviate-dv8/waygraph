@@ -1,7 +1,7 @@
 // In-page installer (runs inside the browser via page.evaluate): must stay self-contained - no module-scope closure.
 // Split out of the former single installOverlay evaluate (see src/ARCHITECTURE.md). Shares state only via window.__wg*.
 /* eslint-disable no-unused-vars */
-export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi, bannerUi }) {
+export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi, bannerUi, tag: bannerTag }) {
         const POSITIONS = ["left", "center", "right"];
         const applyPos = (el, pos) => {
           el.dataset.pos = pos;
@@ -34,7 +34,7 @@ export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay,
             });
             const tag = document.createElement("span");
             tag.className = "wg-banner-tag";
-            tag.textContent = "waygraph demo";
+            tag.textContent = bannerTag || "waygraph demo";
             const text = document.createElement("span");
             text.className = "wg-banner-text";
             text.textContent = title;

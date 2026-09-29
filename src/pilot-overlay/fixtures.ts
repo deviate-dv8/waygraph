@@ -202,6 +202,20 @@ export async function showPilotFixtures(
   const bannerHidden = !!fixtures.clear || !!fixtures.bannerUi?.hidden;
   const bannerCollision = fixtures.bannerUi?.collision !== false;
 
+  // Same #wg-banner installer the demo runner uses (runner/inpage/banner.js) - not a separate
+  // re-implementation. `tag: "waygraph pilot"` is the only Pilot-specific bit.
+  if (bannerTitle !== undefined || bannerHidden) {
+    const { installBanner } = await import("../runner/inpage/banner.js");
+    await page
+      .evaluate(installBanner, {
+        title: bannerTitle,
+        bannerPos: bannerPos || "left",
+        bannerUi: { hidden: bannerHidden, collision: bannerCollision, ...(bannerPos ? { pos: bannerPos } : {}) },
+        tag: "waygraph pilot",
+      })
+      .catch(() => {});
+  }
+
   return page
     .evaluate(
       ({
@@ -214,37 +228,7 @@ export async function showPilotFixtures(
         zoomOut,
         clearAll,
         todoUi,
-        bannerTitle,
-        bannerPos,
-        bannerHidden,
-        bannerCollision,
       }) => {
-        // Same #wg-banner element/CSS the demo runner paints (ui/css/banner.css, already in the
-        // shared bundle) - so ctx.title / ctx.titlePos / ctx.bannerUi behave identically on a Pilot
-        // session, not a separate re-implementation.
-        if (bannerHidden) {
-          const b = __wgById("wg-banner");
-          if (b) b.style.display = "none";
-        } else if (bannerTitle) {
-          let banner = __wgById("wg-banner");
-          if (!banner) {
-            banner = document.createElement("div");
-            banner.id = "wg-banner";
-            const tag = document.createElement("span");
-            tag.className = "wg-banner-tag";
-            tag.textContent = "waygraph pilot";
-            const text = document.createElement("span");
-            text.className = "wg-banner-text";
-            banner.appendChild(tag);
-            banner.appendChild(text);
-            __wgAdd(banner);
-          }
-          banner.style.display = "";
-          banner.dataset.pos = bannerPos || banner.dataset.pos || "left";
-          banner.dataset.collision = bannerCollision ? "1" : "0";
-          const textEl = banner.querySelector(".wg-banner-text");
-          if (textEl) textEl.textContent = bannerTitle;
-        }
         const w = window as unknown as {
           __wgPilotFxHideTimer?: ReturnType<typeof setTimeout>;
           __wgPilotFxClear?: () => void;
@@ -458,10 +442,6 @@ export async function showPilotFixtures(
         zoomOut,
         clearAll: fixtures.clear === true,
         todoUi,
-        bannerTitle,
-        bannerPos,
-        bannerHidden,
-        bannerCollision,
       },
     )
     .catch(() => ({ painted: 0, missing: rings.map((r) => r.selector) }));
