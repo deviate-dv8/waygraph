@@ -1,6 +1,6 @@
 // Split out of the former 950-line pilot-overlay.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { formatHighlightCaption, normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, resolveDeviceState, resolveTodoDockUi } from "../highlights.js";
-import type { BannerPos, BannerUiOpts, DevicePreset, DeviceState, HighlightTone, TodoDockUiOpts } from "../highlights.js";
+import { buildTodoDock, formatHighlightCaption, normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, resolveDeviceState, resolveTodoDockUi } from "../highlights.js";
+import type { BannerPos, BannerUiOpts, DevicePreset, DeviceState, HighlightTone, TodoDockUiOpts, TodoListStyle, WaygraphTodoGroupInput } from "../highlights.js";
 import { ensureInstalled } from "./shell.js";
 import type { Page } from "@playwright/test";
 
@@ -46,6 +46,10 @@ export type PilotHighlightFixtures = {
   todoTitle?: string;
   /** Todo dock side. Default `right`. */
   todoPos?: "left" | "right";
+  /** Presentation: `sequential` (default, arrow walkthrough) | `checklist` | `bullets`. Same as ctx.todoStyle. */
+  todoStyle?: TodoListStyle;
+  /** Multiple titled lists (FR/Scenarios/ACs, same as ctx.todoGroups) - replaces {@link todos} when set. */
+  todoGroups?: readonly WaygraphTodoGroupInput[];
   /**
    * Todo-dock UX (compact / collision / behind-ring). Defaults smart-on;
    * pass false fields to opt out. See {@link TodoDockUiOpts}.
@@ -130,11 +134,24 @@ export async function showPilotFixtures(
       focus: r.focus === true,
     };
   });
-  const todos = fixtures.clear ? [] : (fixtures.todos ?? []);
   const todoIndex = fixtures.todoIndex ?? 0;
   const todoTitle = fixtures.todoTitle ?? "Plan";
   const todoPos = fixtures.todoPos === "left" ? "left" : "right";
   const todoUi = resolveTodoDockUi(fixtures.todoUi ?? null);
+  // Real TodoDockState (groups/style), same builder the demo runner uses - not a flat string[]
+  // re-implementation, so a Block/agent that authors ctx.todoGroups()/ctx.todoStyle() looks the
+  // same on Pilot as it does in `waygraph demo`.
+  const todoDock = fixtures.clear
+    ? undefined
+    : buildTodoDock({
+        todos: fixtures.todos,
+        todoIndex,
+        todoTitle,
+        todoStyle: fixtures.todoStyle,
+        todoGroups: fixtures.todoGroups,
+        todoPos,
+      });
+  const todoGroups = todoDock?.groups ?? [];
 
   // Effective zoom: phase zoom, else last ring that authored zoom.
   let zoom =
@@ -163,29 +180,22 @@ export async function showPilotFixtures(
     if (hit?.zoomOut !== undefined) zoomOut = hit.zoomOut !== false;
   }
 
-  // Device viewport (Node-side) before paint so rings land on the new size.
+  // Device viewport - same runner/device-stage.js + inpage/device.js every other surface uses
+  // (toast + persistent chip + touch mode), not a separate, simpler Pilot-only chip.
   if (fixtures.clear === true) {
-    // Leave viewport alone on clear - only drop overlays.
+    const { applyDeviceToPage } = await import("../runner/device-stage.js");
+    await applyDeviceToPage(page, undefined, "clear").catch(() => {});
   } else if (fixtures.device !== undefined) {
     const d = resolveDeviceState(fixtures.device);
     if (d) {
-      await page
-        .setViewportSize({
-          width: Math.max(200, Math.floor(d.viewport.width)),
-          height: Math.max(200, Math.floor(d.viewport.height)),
-        })
-        .catch(() => {});
+      const [{ applyDeviceToPage }, { installDevice }] = await Promise.all([
+        import("../runner/device-stage.js"),
+        import("../runner/inpage/device.js"),
+      ]);
+      await page.evaluate(installDevice, {}).catch(() => {});
+      await applyDeviceToPage(page, d, "set").catch(() => {});
     }
   }
-
-  const deviceLabel =
-    fixtures.clear === true
-      ? ""
-      : fixtures.device === undefined
-        ? ""
-        : typeof fixtures.device === "string"
-          ? fixtures.device
-          : fixtures.device.preset || "device";
 
   const bannerTitle = fixtures.clear ? undefined : fixtures.title;
   const bannerPos = fixtures.clear ? undefined : fixtures.titlePos;
@@ -196,16 +206,13 @@ export async function showPilotFixtures(
     .evaluate(
       ({
         rings,
-        todos,
-        todoIndex,
-        todoTitle,
+        todoGroups,
         todoPos,
         holdMs,
         zoom,
         zoomSelector,
         zoomOut,
         clearAll,
-        deviceLabel,
         todoUi,
         bannerTitle,
         bannerPos,
@@ -291,16 +298,6 @@ export async function showPilotFixtures(
           root.style.removeProperty("transition");
           __wgById("wg-pilot-fx-zoom")?.remove();
         };
-        const setDeviceChip = (label: string) => {
-          __wgById("wg-pilot-fx-device")?.remove();
-          if (!label) return;
-          const chip = document.createElement("div");
-          chip.id = "wg-pilot-fx-device";
-          chip.dataset.preset = label;
-          chip.textContent = `device \u00b7 ${label}`;
-          __wgAdd(chip);
-        };
-
         w.__wgPilotFxZoomOutOnHide = zoomOut;
         const clearFx = () => {
           __wgQA(".wg-pilot-fx-ring, .wg-pilot-fx-label").forEach((el) => el.remove());
@@ -308,7 +305,6 @@ export async function showPilotFixtures(
           clearFocus();
           if (w.__wgPilotFxZoomOutOnHide !== false || clearAll) clearZoom();
           if (clearAll) {
-            __wgById("wg-pilot-fx-device")?.remove();
             clearZoom();
           }
         };
@@ -373,38 +369,53 @@ export async function showPilotFixtures(
           }
         }
 
-        if (todos.length > 0) {
+        // Real TodoDockState groups (same shape/builder the demo runner uses) - a group's own
+        // style (sequential/checklist/bullets) and its own done/current flags drive rendering here,
+        // not a re-derived index over a flattened string list.
+        const flat = todoGroups.flatMap((g) => g.items);
+        if (flat.length > 0) {
           const dock = document.createElement("div");
           dock.id = "wg-pilot-fx-todos";
           dock.dataset.pos = todoPos;
-          const title = document.createElement("div");
-          title.className = "wg-pilot-fx-todo-title";
-          title.textContent = todoTitle;
-          dock.appendChild(title);
           const WINDOW = todoUi.cap > 0 ? todoUi.cap : 5;
-          const compact = todoUi.compact !== false && todos.length > WINDOW;
+          const compact = todoUi.compact !== false && flat.length > WINDOW;
           if (compact) dock.dataset.compact = "1";
+          const currentFlat = Math.max(0, flat.findIndex((it) => it.current));
           let start = 0;
-          let end = todos.length;
+          let end = flat.length;
           if (compact) {
-            start = Math.max(0, todoIndex - Math.floor((WINDOW - 1) / 2));
-            end = Math.min(todos.length, start + WINDOW);
+            start = Math.max(0, currentFlat - Math.floor((WINDOW - 1) / 2));
+            end = Math.min(flat.length, start + WINDOW);
             start = Math.max(0, end - WINDOW);
           }
-          const ol = document.createElement("ol");
-          todos.forEach((text, i) => {
-            const li = document.createElement("li");
-            li.textContent = text;
-            if (i < todoIndex) li.className = "wg-pilot-fx-todo-done";
-            else if (i === todoIndex) li.className = "wg-pilot-fx-todo-now";
-            if (compact && (i < start || i >= end)) li.classList.add("wg-todo-fold");
-            ol.appendChild(li);
-          });
-          dock.appendChild(ol);
-          if (compact && todos.length - (end - start) > 0) {
+          let flatIdx = 0;
+          let shown = 0;
+          for (const group of todoGroups) {
+            if (group.items.length === 0) continue;
+            if (group.title) {
+              const title = document.createElement("div");
+              title.className = "wg-pilot-fx-todo-title";
+              title.textContent = group.title;
+              dock.appendChild(title);
+            }
+            const ol = document.createElement("ol");
+            const marker = group.style === "checklist" ? (done: boolean) => (done ? "\u2611 " : "\u2610 ") : group.style === "bullets" ? () => "\u2022 " : () => "";
+            for (const item of group.items) {
+              const i = flatIdx++;
+              const li = document.createElement("li");
+              li.textContent = marker(!!item.done) + item.text;
+              if (item.done) li.className = "wg-pilot-fx-todo-done";
+              else if (item.current) li.className = "wg-pilot-fx-todo-now";
+              if (compact && (i < start || i >= end)) li.classList.add("wg-todo-fold");
+              else shown++;
+              ol.appendChild(li);
+            }
+            dock.appendChild(ol);
+          }
+          if (compact && flat.length - shown > 0) {
             const more = document.createElement("div");
             more.className = "wg-todo-more";
-            more.textContent = "+" + (todos.length - (end - start)) + " more";
+            more.textContent = "+" + (flat.length - shown) + " more";
             dock.appendChild(more);
           }
           __wgAdd(dock);
@@ -452,11 +463,9 @@ export async function showPilotFixtures(
           setZoomBadge(zoom);
         }
 
-        if (deviceLabel) setDeviceChip(deviceLabel);
-
         if (
           holdMs > 0 &&
-          (painted > 0 || todos.length > 0 || zoom > 1.001 || !!deviceLabel)
+          (painted > 0 || todoGroups.some((g) => g.items.length > 0) || zoom > 1.001)
         ) {
           w.__wgPilotFxHideTimer = setTimeout(() => clearFx(), holdMs);
         }
@@ -464,16 +473,13 @@ export async function showPilotFixtures(
       },
       {
         rings,
-        todos,
-        todoIndex,
-        todoTitle,
+        todoGroups,
         todoPos,
         holdMs,
         zoom,
         zoomSelector: zoomSelector ?? "",
         zoomOut,
         clearAll: fixtures.clear === true,
-        deviceLabel,
         todoUi,
         bannerTitle,
         bannerPos,

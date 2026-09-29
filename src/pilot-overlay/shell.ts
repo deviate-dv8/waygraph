@@ -157,6 +157,10 @@ export async function installPersistentPilotOverlay(context: BrowserContext): Pr
 export async function ensureInstalled(page: Page): Promise<void> {
   await ensureShadowRoot(page);
   await page.evaluate(installPilotOverlayShell, OVERLAY_CSS).catch(() => {});
+  // Device toast/chip CSS (runner/overlay-css.js's RUNNER_EXTRA_CSS) - same rules the demo runner
+  // uses, reused here (not re-authored) so a device fixture looks identical on Pilot.
+  const { RUNNER_EXTRA_CSS } = await import("../runner/overlay-css.js");
+  await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as [string, string]).catch(() => {});
 }
 
 
