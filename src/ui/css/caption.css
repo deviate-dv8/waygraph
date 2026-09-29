@@ -8,7 +8,11 @@
  */
 #wg-caption-bar {
   position: fixed; z-index: var(--wg-z-focus); left: 0; right: 0; bottom: 0;
-  padding: 26px 6% 22px; display: flex; justify-content: center;
+  /* Bottom padding clears the collapsed step-pill (#wg-panel, bottom:12px, ~40px tall,
+     z-index:2147483647 - always on top) - without it the pill sat right over the caption text,
+     both centered at the bottom of the viewport (see #wg-typing-badge's own bottom:88px, same
+     reason). The gradient scrim itself still reaches the true bottom edge. */
+  padding: 26px 6% 64px; display: flex; justify-content: center;
   background: linear-gradient(180deg, transparent, rgba(6,5,20,.55) 40%, rgba(6,5,20,.82));
   pointer-events: none; opacity: 0; transition: opacity .3s ease;
 }

@@ -138,6 +138,9 @@ export async function runStubPhase(
     // actually hide the bar, not filtered out the way an empty title is (title's own "" means
     // "author didn't touch it this step", handled by simply omitting the field).
     ...(bag.caption !== undefined ? { caption: bag.caption } : {}),
+    // Boolean, not string - "" isn't a state here, so a plain undefined-check (like zoom/title)
+    // is enough; false is real ("author called hideNetworkTab()") and must still be forwarded.
+    ...(bag.networkTabVisible !== undefined ? { networkTabVisible: bag.networkTabVisible } : {}),
     ...(bag.todoPos !== undefined ? { todoPos: bag.todoPos } : {}),
     ...(bag.todoDockUi !== undefined ? { todoDockUi: bag.todoDockUi } : {}),
     ...(bag.todoParallel === true ? { todoParallel: true } : {}),

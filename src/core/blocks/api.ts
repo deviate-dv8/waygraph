@@ -87,8 +87,11 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
         // Same network-tab panel real page traffic feeds too (network-capture.js) - this is the
         // page.request side of it (a separate APIRequestContext, never seen by page.on('request')).
         try {
-          const { addNetworkEntry } = await import("../../runner/inpage/network.js");
-          await page.evaluate(addNetworkEntry, {
+          // recordNetworkEntry, not a bare addNetworkEntry evaluate - it also persists this entry
+          // to page.__wgNetworkHistory (Node-side, survives navigation), so it isn't lost the
+          // moment a later step in the same Flow navigates and wipes the panel's DOM.
+          const { recordNetworkEntry } = await import("../../runner/network-capture.js");
+          await recordNetworkEntry(page, {
             method: options.method || "GET",
             url: response.url(),
             status: response.status(),

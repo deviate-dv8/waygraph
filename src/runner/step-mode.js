@@ -343,6 +343,7 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
       title: overlayTitle,
       bannerUi: stage.state.lastBannerUi,
       caption: stubBeforePhase.caption,
+      networkTabVisible: stubBeforePhase.networkTabVisible,
       fastForward: !!r.block.fastForward,
       isApi: r.block.__waygraphKind === "api",
       todoPos: overlayTodoPos,
@@ -548,6 +549,7 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
     let stubAfterTodos = [];
     let afterOverlayTitle = overlayTitle;
     let afterCaption; // undefined = leave whatever's currently shown alone (see installOverlay's own comment)
+    let afterNetworkTabVisible; // undefined = leave the network tab's current shown/hidden state alone
     let afterTodoPos = overlayTodoPos;
     let appliedAfter = { dock: stage.state.lastTodoDock, sync: "keep" };
     let appliedDeviceAfter = { device: stage.state.lastDevice, sync: "keep" };
@@ -578,6 +580,7 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
         afterOverlayTitle = String(afterPhase.title).trim();
       }
       if (afterPhase.caption !== undefined) afterCaption = afterPhase.caption;
+      if (afterPhase.networkTabVisible !== undefined) afterNetworkTabVisible = afterPhase.networkTabVisible;
       if (afterPhase.todoPos) afterTodoPos = afterPhase.todoPos;
       if (stage.state.lastTodoDock && stage.state.lastTodoDock.pos) afterTodoPos = stage.state.lastTodoDock.pos;
       highlights = afterPhase.highlights.map((h) => {
@@ -621,6 +624,7 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
       title: afterOverlayTitle,
       bannerUi: stage.state.lastBannerUi,
       caption: afterCaption,
+      networkTabVisible: afterNetworkTabVisible,
       fastForward: !!r.block.fastForward,
       isApi: r.block.__waygraphKind === "api",
       todoPos: afterTodoPos,

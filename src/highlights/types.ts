@@ -195,6 +195,12 @@ export type StubPhaseFixtures = {
    */
   caption?: string;
   /**
+   * Network-tab overlay visibility - capture always happens in the background regardless; this
+   * only controls whether the panel itself is shown. Intentionally hidden by default (`undefined`
+   * on the very first phase); omit to leave whatever the previous step set alone.
+   */
+  networkTabVisible?: boolean;
+  /**
    * Floating checklist dock side. `left` | `right`.
    * Authored control (also click / WAYGRAPH_TODO_POS / --todo-left|right).
    */
@@ -485,6 +491,14 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   /** Shorthand for `bannerUi({ hidden: true })`. */
   hideBanner(): void;
   /**
+   * Shows the network-tab overlay (Postman-style inspector of real page traffic + defineApiBlock
+   * calls) - capture always runs in the background; this just reveals the panel. Hidden by default.
+   * @example ctx.showNetworkTab();
+   */
+  showNetworkTab(): void;
+  /** Hides the network-tab overlay (capture keeps running - only the panel disappears). */
+  hideNetworkTab(): void;
+  /**
    * Floating checklist dock side (`left` | `right`). Authors control this in
    * code; click / env / --todo-left|right are fallbacks.
    */
@@ -552,6 +566,7 @@ export type StubPhaseResult = {
   titlePos?: BannerPos;
   bannerUi?: BannerUiOpts;
   caption?: string;
+  networkTabVisible?: boolean;
   todoPos?: "left" | "right";
   /** When true, keep other docks (multi-todo). Default false = replace. */
   todoParallel?: boolean;
@@ -687,6 +702,7 @@ export type StubBagState = {
   titlePos?: BannerPos | undefined;
   bannerUi?: BannerUiOpts | undefined;
   caption?: string | undefined;
+  networkTabVisible?: boolean | undefined;
   todoPos?: "left" | "right" | undefined;
   /** Author patched todo-dock UX this phase. */
   todoDockUi?: TodoDockUiOpts | undefined;

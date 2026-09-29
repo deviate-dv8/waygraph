@@ -171,6 +171,12 @@ export function createStubCtx<Out extends Checkpoint<string>>(
     hideCaption() {
       bag.caption = "";
     },
+    showNetworkTab() {
+      bag.networkTabVisible = true;
+    },
+    hideNetworkTab() {
+      bag.networkTabVisible = false;
+    },
     bannerPos(side) {
       const p = normalizeBannerPos(side);
       if (p) bag.titlePos = p;
@@ -266,6 +272,7 @@ export function createStubCtx<Out extends Checkpoint<string>>(
       if (partial.zoomOut !== undefined) bag.zoomOut = !!partial.zoomOut;
       if (partial.title !== undefined) bag.title = String(partial.title ?? "");
       if (partial.caption !== undefined) bag.caption = String(partial.caption ?? "");
+      if (partial.networkTabVisible !== undefined) bag.networkTabVisible = !!partial.networkTabVisible;
       const bp = normalizeBannerPos(partial.titlePos);
       if (bp) bag.titlePos = bp;
       if (partial.bannerUi && typeof partial.bannerUi === "object") {

@@ -12,20 +12,40 @@ import { installPanelChrome } from "./inpage/panel-chrome.js";
 import { installTodos } from "./inpage/todos.js";
 import { installDevice } from "./inpage/device.js";
 import { applyVideoDeviceStage } from "./device-stage.js";
-import { installNetworkCapture } from "./network-capture.js";
+import { installNetworkCapture, restoreNetworkHistory } from "./network-capture.js";
+import { setNetworkTabVisible } from "./inpage/network.js";
 
 /**
  * `ui` = authored banner UX from the stub phase: { pos, collision, hidden } (all optional).
  * `caption` = bottom subtitle-bar text (ctx.caption()/ctx.hideCaption()) - `undefined` leaves it
  * alone (unset this step), `""` hides it, any other string shows/updates it.
+ * `networkTabVisible` = network-tab panel shown/hidden (ctx.showNetworkTab()/hideNetworkTab()) -
+ * `undefined` leaves it alone (default state is hidden, set the very first time restoreNetworkHistory
+ * builds a panel); capture itself is unconditional and unaffected by this either way.
  */
-export async function installOverlay(page, title, ui, caption) {
+export async function installOverlay(page, title, ui, caption, networkTabVisible) {
   // ring/cursor/banner/dock come from the ONE shared bundle every surface installs (ui/css/*.css).
   await ensureShadowRoot(page);
   // Idempotent (guarded on page.__wgNetworkCaptureInstalled) - safe to call every step even though
   // installOverlay itself runs every step; the page.on() listeners this installs are attached to
   // the Page object, not any one document, so they already survive navigations on their own.
   installNetworkCapture(page);
+  // Visibility is Node-side state too (page.__wgNetworkTabVisible), same reason history is: a
+  // navigation wipes window.__wgNetworkTabVisible along with the rest of the page-side JS state,
+  // so "shown" would silently revert to the hidden default on the very next navigated step without
+  // this. Default false (hidden) - matches addNetworkEntry's own default-hidden behavior.
+  if (networkTabVisible !== undefined) page.__wgNetworkTabVisible = !!networkTabVisible;
+  await page.evaluate((v) => { window.__wgNetworkTabVisible = v; }, !!page.__wgNetworkTabVisible).catch(() => {});
+  // Real bug this fixes: a navigation wipes the shadow root (and with it, the network panel's DOM
+  // and in-page entry list) - without replaying page.__wgNetworkHistory (Node-side, survives
+  // navigation) back in every step, the "network tab" silently reset to empty on any step that
+  // navigated, instead of staying persistent like a real Network tab.
+  await restoreNetworkHistory(page);
+  // Explicit toggle too, not just the flag write above - covers the case where the panel already
+  // existed (no restore ran this step) and this step's `networkTabVisible` differs from before.
+  if (networkTabVisible !== undefined) {
+    await page.evaluate(setNetworkTabVisible, networkTabVisible).catch(() => {});
+  }
   // Runner-only chrome (step panel, zoom/typing/device chips) - separate key, no collision.
   await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"]).catch(() => {});
   await page.addStyleTag({ content: HOST_CSS }).catch(() => {});

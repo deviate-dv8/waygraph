@@ -11,4 +11,5 @@ export interface NetworkEntry {
   resBody?: string | undefined;
 }
 export function addNetworkEntry(entry: NetworkEntry): void;
+export function setNetworkTabVisible(visible: boolean): void;
 export function clearNetworkLog(): void;

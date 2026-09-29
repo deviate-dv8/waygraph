@@ -176,11 +176,36 @@ export function addNetworkEntry(entry) {
   while (list.children.length > 30) list.removeChild(list.firstChild);
   const countEl = panel.querySelector(".wg-net-count");
   if (countEl) countEl.textContent = String(w.__wgNetworkEntries.length);
-  panel.classList.remove("wg-out");
-  void panel.offsetWidth;
-  panel.classList.add("wg-in");
-  void row.offsetWidth;
-  row.classList.add("wg-in");
+  // Always captured, only shown when explicitly turned on (ctx.showNetworkTab(); default hidden -
+  // see StubCtx's own doc comment) - the DOM/row still gets built either way, so toggling visible
+  // later shows the full history immediately, not just entries captured after that point.
+  if (w.__wgNetworkTabVisible) {
+    panel.classList.remove("wg-out");
+    void panel.offsetWidth;
+    panel.classList.add("wg-in");
+    void row.offsetWidth;
+    row.classList.add("wg-in");
+  }
+}
+
+/**
+ * Shows or hides the network-tab panel - capture keeps happening either way (addNetworkEntry
+ * always builds the DOM row; this only toggles whether the panel itself is visible). Safe to call
+ * before any entry exists yet - it just remembers the flag for addNetworkEntry to check later.
+ */
+export function setNetworkTabVisible(visible) {
+  if (typeof __wgById !== "function") return;
+  window.__wgNetworkTabVisible = !!visible;
+  const panel = __wgById("wg-network-log");
+  if (!panel) return;
+  if (visible) {
+    panel.classList.remove("wg-out");
+    panel.classList.add("wg-in");
+    __wgQA(".wg-net-row").forEach((r) => r.classList.add("wg-in"));
+  } else {
+    panel.classList.remove("wg-in");
+    panel.classList.add("wg-out");
+  }
 }
 
 /** Clears every captured entry and removes the panel - a fresh navigation/session starting over. */
