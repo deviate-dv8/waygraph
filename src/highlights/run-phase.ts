@@ -42,8 +42,14 @@ export async function runStubPhase(
     } catch {
       /* best-effort */
     }
-    // Compat: legacy `(out) => map` that expected Checkpoint (__state on arg)
-    if (Object.keys(bag.highlights).length === 0 && !bag.todos) {
+    // Compat: legacy `(out) => map` that expected Checkpoint (__state on arg). Only worth trying
+    // when the real ctx call genuinely did nothing - checked against the WHOLE bag, not just
+    // highlights/todos, so a stubBefore that only calls e.g. ctx.caption()/ctx.title()/ctx.zoom()
+    // (no highlights, no todos) isn't mistaken for "didn't run" and re-invoked with a bare
+    // Checkpoint that has none of StubCtx's methods - a real, previously-triggered bug (caught via
+    // examples/saucedemo/src/flows/checkout.flow.ts's own stubBefore(ctx) { ctx.caption(...) }).
+    const bagUntouched = Object.keys(bag).length === 1 && Object.keys(bag.highlights).length === 0;
+    if (bagUntouched) {
       try {
         const legacyOut = (opts?.out ?? { __state: "" }) as Checkpoint<string>;
         const ret2 = (raw as (o: Checkpoint<string>) => HighlightStubPhase)(legacyOut);

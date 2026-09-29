@@ -1,7 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { normalizeTodos, resolveHighlightSlots, runStubPhase } from "../../src/highlights.js";
-import type { Block } from "../../src/types.js";
+import { defineMethodBlock } from "../../src/core.js";
+import { checkpoint } from "../../src/types.js";
+import type { Block, Checkpoint } from "../../src/types.js";
 import type { StubCtx } from "../../src/highlights.js";
 
 describe("normalizeTodos", () => {
@@ -107,6 +109,22 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
     } as unknown as Block<any, any>;
     const untouchedPhase = await runStubPhase(untouched, "stubBefore");
     assert.equal(untouchedPhase.caption, undefined);
+  });
+
+  it("a caption-only stubBefore through .stubBefore(fn) (block-decorator chaining, not a raw instruction) does not crash - real regression: this exact shape (examples/saucedemo checkout.flow.ts) hit run-phase.ts's legacy-compat fallback, which only checked bag.highlights/bag.todos for 'did the real ctx call do nothing', so a caption-only call (touches neither) was wrongly re-invoked with a bare Checkpoint instead of a real StubCtx - 'ctx.caption is not a function'", async () => {
+    type S = Checkpoint<"S">;
+    const base = defineMethodBlock<S, S>({
+      name: "fill-something",
+      instruction: {
+        async act() {},
+        resolve: () => checkpoint("S"),
+      },
+    });
+    const decorated = base.stubBefore((ctx) => {
+      ctx.caption("Enter something");
+    });
+    const phase = await runStubPhase(decorated, "stubBefore");
+    assert.equal(phase.caption, "Enter something");
   });
 });
 

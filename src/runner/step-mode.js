@@ -545,6 +545,7 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
     let highlights;
     let stubAfterTodos = [];
     let afterOverlayTitle = overlayTitle;
+    let afterCaption; // undefined = leave whatever's currently shown alone (see installOverlay's own comment)
     let afterTodoPos = overlayTodoPos;
     let appliedAfter = { dock: stage.state.lastTodoDock, sync: "keep" };
     let appliedDeviceAfter = { device: stage.state.lastDevice, sync: "keep" };
@@ -574,6 +575,7 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
       if (afterPhase.title && String(afterPhase.title).trim()) {
         afterOverlayTitle = String(afterPhase.title).trim();
       }
+      if (afterPhase.caption !== undefined) afterCaption = afterPhase.caption;
       if (afterPhase.todoPos) afterTodoPos = afterPhase.todoPos;
       if (stage.state.lastTodoDock && stage.state.lastTodoDock.pos) afterTodoPos = stage.state.lastTodoDock.pos;
       highlights = afterPhase.highlights.map((h) => {
@@ -616,7 +618,7 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
       allEpisodes,
       title: afterOverlayTitle,
       bannerUi: stage.state.lastBannerUi,
-      caption: afterPhase.caption,
+      caption: afterCaption,
       todoPos: afterTodoPos,
       episodeNumber: r.episodeNumber,
       episodeTitle: r.episodeTitle,
