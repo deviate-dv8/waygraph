@@ -363,6 +363,55 @@ export async function cycleHighlightRings(page, highlights, gatesFast, opts) {
 }
 
 
+/**
+ * Paint a NAMED ring instance (ui/css/ring.css's shared `.wg-ring-el`/`.wg-ring-el-label`) at a
+ * known viewport box - the primitive both the demo/auto singleton (`showRing`, always "wg-ring")
+ * and Pilot's several simultaneous fixture rings (their own ids) paint through, so there is one
+ * ring-rendering implementation, not two. No collision/follow/focus - those are `#wg-ring`'s own
+ * extras (see `showRing`/`inpage/core.js`'s `__wgPositionRing`), meaningless for an independent
+ * fixture ring that isn't "the current action."
+ */
+export async function showRingAt(page, ringId, labelId, box, label, tone, style) {
+  const size = normalizeHighlightSize(style && style.size);
+  const weight = normalizeHighlightWeight(style && style.weight);
+  const color = style && style.color ? String(style.color) : "";
+  await page
+    .evaluate(
+      ({ ringId, labelId, box, label, tone, size, weight, color }) => {
+        if (window.__wgPaintRingAt) {
+          window.__wgPaintRingAt(ringId, labelId, box, label, tone, { size, weight, color });
+        }
+      },
+      { ringId, labelId, box, label, tone: tone || "planned", size, weight, color },
+    )
+    .catch(() => {});
+}
+
+/** Hide (not remove) a named ring instance painted via {@link showRingAt}. */
+export async function hideRingAt(page, ringId, labelId) {
+  await page
+    .evaluate(
+      ({ ringId, labelId }) => {
+        if (window.__wgHideRingAt) window.__wgHideRingAt(ringId, labelId);
+      },
+      { ringId, labelId },
+    )
+    .catch(() => {});
+}
+
+/** Remove a named ring instance entirely (Pilot's fixture rings are short-lived, not reused). */
+export async function removeRingAt(page, ringId, labelId) {
+  await page
+    .evaluate(
+      ({ ringId, labelId }) => {
+        __wgById(ringId)?.remove();
+        __wgById(labelId)?.remove();
+      },
+      { ringId, labelId },
+    )
+    .catch(() => {});
+}
+
 export async function showRing(page, box, label, tone, style) {
   const size = normalizeHighlightSize(style && style.size);
   const weight = normalizeHighlightWeight(style && style.weight);

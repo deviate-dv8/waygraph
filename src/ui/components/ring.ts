@@ -35,24 +35,7 @@ export function ringCss(): string {
   );
 }
 
-/** Agent-sent pilot fixture rings/labels (`.wg-pilot-fx-ring|label`), same tones as the demo ring. */
-export function pilotFxRingCss(): string {
-  const p = TONES.planned;
-  return (
-    ".wg-pilot-fx-ring{position:fixed;z-index:2147483645;pointer-events:none;opacity:0;" +
-    `border:3px solid ${p.ring};border-radius:10px;box-sizing:border-box;` +
-    "transition:opacity .12s ease,left .12s,top .12s,width .12s,height .12s;}" +
-    toneRules(".wg-pilot-fx-ring", (t) => `border-color:${t.ring};box-shadow:0 0 0 4px ${t.glow};`) +
-    ".wg-pilot-fx-label{position:fixed;z-index:2147483645;pointer-events:none;opacity:0;" +
-    "font:600 12px/1.3 ui-sans-serif,system-ui,sans-serif;padding:5px 9px;border-radius:6px;" +
-    "max-width:min(360px,80vw);box-shadow:0 2px 8px rgba(0,0,0,.25);white-space:nowrap;" +
-    "overflow:hidden;text-overflow:ellipsis;transition:opacity .12s ease;}" +
-    toneRules(".wg-pilot-fx-label", (t) => `background:${t.labelBg};color:${t.labelFg};`) +
-    `.wg-pilot-fx-label[data-tone=auto]::before{${ROBOT}}` +
-    ".wg-pilot-fx-ring[data-size=sm]{border-width:1.5px;border-radius:8px;}" +
-    ".wg-pilot-fx-ring[data-size=lg]{border-width:4px;border-radius:12px;}" +
-    ".wg-pilot-fx-label[data-size=sm]{font-size:10px;padding:4px 7px;}" +
-    ".wg-pilot-fx-label[data-size=lg]{font-size:16px;padding:8px 14px;}" +
-    ".wg-pilot-fx-label[data-weight=bold]{font-weight:800;}"
-  );
-}
+// A former `pilotFxRingCss()` used to live here, generating a SECOND, byte-identical copy of
+// ringCss()'s own rules under `.wg-pilot-fx-ring`/`.wg-pilot-fx-label`. Pilot's fixture rings now
+// paint through the same shared primitive (`ui/css/ring.css`'s `.wg-ring-el`, `runner/inpage/core.js`'s
+// `__wgPaintRingAt`) as the demo/auto singleton ring - see src/ui/css/ring.css's own header.

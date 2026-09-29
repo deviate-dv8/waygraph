@@ -300,7 +300,7 @@ export async function showPilotFixtures(
         };
         w.__wgPilotFxZoomOutOnHide = zoomOut;
         const clearFx = () => {
-          __wgQA(".wg-pilot-fx-ring, .wg-pilot-fx-label").forEach((el) => el.remove());
+          __wgQA('[id^="wg-fx-ring-"]').forEach((el) => el.remove());
           __wgById("wg-pilot-fx-todos")?.remove();
           clearFocus();
           if (w.__wgPilotFxZoomOutOnHide !== false || clearAll) clearZoom();
@@ -318,56 +318,33 @@ export async function showPilotFixtures(
         let painted = 0;
         let focusBox: { x: number; y: number; width: number; height: number } | null = null;
 
-        for (const ring of rings) {
+        // Paint through the SAME shared ring primitive the demo/auto singleton ring uses
+        // (window.__wgPaintRingAt, installed by runner/inpage/core.js's installCore - see
+        // ensureInstalled) - one ring implementation, not a separate DOM-building copy here.
+        rings.forEach((ring, i) => {
           const el = document.querySelector(ring.selector);
           if (!el) {
             missing.push(ring.selector);
-            continue;
+            return;
           }
           const rect = el.getBoundingClientRect();
           if (rect.width === 0 && rect.height === 0) {
             missing.push(ring.selector);
-            continue;
+            return;
           }
-          const pad = ring.size === "sm" ? 3 : ring.size === "lg" ? 10 : 6;
-          const ringEl = document.createElement("div");
-          ringEl.className = "wg-pilot-fx-ring";
-          ringEl.dataset.tone = ring.tone;
-          ringEl.dataset.size = ring.size;
-          ringEl.style.left = `${rect.left - pad}px`;
-          ringEl.style.top = `${rect.top - pad}px`;
-          ringEl.style.width = `${Math.max(4, rect.width + pad * 2)}px`;
-          ringEl.style.height = `${Math.max(4, rect.height + pad * 2)}px`;
-          ringEl.style.opacity = "1";
-          const labelEl = document.createElement("div");
-          labelEl.className = "wg-pilot-fx-label";
-          labelEl.dataset.tone = ring.tone;
-          labelEl.dataset.size = ring.size;
-          labelEl.dataset.weight = ring.weight;
-          labelEl.textContent = ring.label;
-          labelEl.style.opacity = "1";
-          if (ring.color) {
-            labelEl.style.color = ring.color;
+          const box = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+          const ringId = `wg-fx-ring-${i}`;
+          const labelId = `wg-fx-ring-${i}-label`;
+          if (window.__wgPaintRingAt) {
+            window.__wgPaintRingAt(ringId, labelId, box, ring.label, ring.tone, {
+              size: ring.size,
+              weight: ring.weight,
+              color: ring.color,
+            });
           }
-          __wgAdd(ringEl);
-          __wgAdd(labelEl);
-          const lw = labelEl.offsetWidth;
-          const lh = labelEl.offsetHeight;
-          let labelLeft = rect.left - pad;
-          let labelTop = rect.top - pad + rect.height + pad * 2 + 8;
-          if (labelTop + lh > window.innerHeight - 6) labelTop = rect.top - pad - lh - 8;
-          if (labelTop < 6) labelTop = 6;
-          if (labelLeft + lw > window.innerWidth - 6) {
-            labelLeft = Math.max(6, window.innerWidth - 6 - lw);
-          }
-          if (labelLeft < 6) labelLeft = 6;
-          labelEl.style.left = `${labelLeft}px`;
-          labelEl.style.top = `${labelTop}px`;
           painted += 1;
-          if (ring.focus) {
-            focusBox = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
-          }
-        }
+          if (ring.focus) focusBox = box;
+        });
 
         // Real TodoDockState groups (same shape/builder the demo runner uses) - a group's own
         // style (sequential/checklist/bullets) and its own done/current flags drive rendering here,
@@ -431,7 +408,7 @@ export async function showPilotFixtures(
 
         // Collision flip: if a painted ring intersects the dock, flip side once.
         if (dockEl && todoUi.collision !== false && painted > 0) {
-          const firstRing = __wgQ(".wg-pilot-fx-ring");
+          const firstRing = __wgQ('[id^="wg-fx-ring-"]:not([id$="-label"])');
           if (firstRing) {
             const rr = firstRing.getBoundingClientRect();
             const dr = dockEl.getBoundingClientRect();

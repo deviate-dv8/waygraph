@@ -300,6 +300,15 @@ test("auto highlight: paints agent fixture rings on the live login page", async 
     expect(painted.painted).toBe(2);
     expect(painted.missing ?? []).toEqual([]);
 
+    // Real proof the two rings paint through the SHARED primitive (runner/inpage/core.js's
+    // __wgPaintRingAt / ui/css/ring.css's .wg-ring-el), not a separate Pilot-only DOM-building
+    // copy - each fixture ring gets its own #wg-fx-ring-N id, same class as the demo/auto ring.
+    const ring0 = await dom(sessionId, ["--selector", "#wg-fx-ring-0"]);
+    expect(ring0.ok).toBe(true);
+    const ring1Label = await dom(sessionId, ["--selector", "#wg-fx-ring-1-label"]);
+    expect(ring1Label.ok).toBe(true);
+    expect(JSON.stringify((ring1Label.snapshot as { tree: unknown }).tree)).toContain("Password");
+
     const missing = await highlight(sessionId, {
       rings: [{ selector: "#no-such-element-waygraph", label: "Gone", tone: "danger" }],
       holdMs: 0,

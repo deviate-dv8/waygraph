@@ -65,7 +65,8 @@ const OVERLAY_CSS = `
   opacity: 0; transform: translateY(4px); transition: opacity 0.15s, transform 0.15s;
 }
 #wg-pilot-activity.wg-pilot-toast-show { opacity: 1; transform: translateY(0); }
-/* Agent fixture rings (.wg-pilot-fx-ring/label), #wg-pilot-fx-todos, #wg-ring/#wg-ring-label and
+/* Agent fixture rings (painted via the shared .wg-ring-el primitive, see ui/css/ring.css and
+   runner/inpage/core.js's __wgPaintRingAt), #wg-pilot-fx-todos, #wg-ring/#wg-ring-label and
    #wg-banner all come from the ONE shared bundle ensureShadowRoot installs (ui/css/*.css) - not
    redefined here. */
 /* Spotlight (demo focus:true) - dim page, cutout around target. */
@@ -157,6 +158,11 @@ export async function installPersistentPilotOverlay(context: BrowserContext): Pr
 export async function ensureInstalled(page: Page): Promise<void> {
   await ensureShadowRoot(page);
   await page.evaluate(installPilotOverlayShell, OVERLAY_CSS).catch(() => {});
+  // The shared ring primitive (__wgEnsureRingEl/__wgPaintRingAt) - so Pilot's fixture rings paint
+  // through the SAME implementation the demo/auto singleton ring uses (see ui/css/ring.css / this
+  // file's own header comment on redundancy), not a separate DOM-building copy.
+  const { installCore } = await import("../runner/inpage/core.js");
+  await page.evaluate(installCore, {}).catch(() => {});
   // Device toast/chip CSS (runner/overlay-css.js's RUNNER_EXTRA_CSS) - same rules the demo runner
   // uses, reused here (not re-authored) so a device fixture looks identical on Pilot.
   const { RUNNER_EXTRA_CSS } = await import("../runner/overlay-css.js");

@@ -19,16 +19,80 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
         } catch {
           /* private mode / blocked storage - falls back to manual gating */
         }
-        if (!__wgById("wg-ring")) {
-          const ring = document.createElement("div");
-          ring.id = "wg-ring";
-          __wgAdd(ring);
-        }
-        if (!__wgById("wg-ring-label")) {
-          const ringLabel = document.createElement("div");
-          ringLabel.id = "wg-ring-label";
-          __wgAdd(ringLabel);
-        }
+        // The one shared ring primitive (ui/css/ring.css) - #wg-ring/#wg-ring-label is just this
+        // surface's OWN ring instance, found by id like any other (see __wgEnsureRingEl below).
+        window.__wgEnsureRingEl = (ringId, labelId) => {
+          let ring = __wgById(ringId);
+          if (!ring) {
+            ring = document.createElement("div");
+            ring.id = ringId;
+            ring.className = "wg-ring-el";
+            __wgAdd(ring);
+          }
+          let label = __wgById(labelId);
+          if (!label) {
+            label = document.createElement("div");
+            label.id = labelId;
+            label.className = "wg-ring-el-label";
+            __wgAdd(label);
+          }
+          return [ring, label];
+        };
+        /** Bare positioning only - no collision/follow/focus-veil (those are #wg-ring's own extras, see __wgPositionRing). */
+        window.__wgPaintRingAt = (ringId, labelId, box, label, tone, style) => {
+          const [ring, ringLabel] = window.__wgEnsureRingEl(ringId, labelId);
+          if (!box) return null;
+          const raw = (tone || "planned") + "";
+          const t =
+            raw === "auto" || raw === "info" || raw === "warning" || raw === "danger" || raw === "success" || raw === "orange"
+              ? raw
+              : "planned";
+          const st = style && typeof style === "object" ? style : {};
+          const sizeRaw = (st.size || "md") + "";
+          const size = sizeRaw === "sm" || sizeRaw === "lg" ? sizeRaw : "md";
+          const weightRaw = (st.weight || "normal") + "";
+          const weight = weightRaw === "bold" ? "bold" : "normal";
+          ring.dataset.tone = t;
+          ringLabel.dataset.tone = t;
+          ring.dataset.size = size;
+          ringLabel.dataset.size = size;
+          ringLabel.dataset.weight = weight;
+          if (st.color) ringLabel.style.color = st.color;
+          else ringLabel.style.removeProperty("color");
+          const pad = size === "sm" ? 3 : size === "lg" ? 10 : 6;
+          const margin = 6;
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+          const left = box.x - pad;
+          const top = box.y - pad;
+          const width = Math.max(4, box.width + pad * 2);
+          const height = Math.max(4, box.height + pad * 2);
+          ring.style.left = left + "px";
+          ring.style.top = top + "px";
+          ring.style.width = width + "px";
+          ring.style.height = height + "px";
+          ring.style.opacity = "1";
+          ringLabel.textContent = label || "";
+          ringLabel.style.opacity = "1";
+          const lw = ringLabel.offsetWidth;
+          const lh = ringLabel.offsetHeight;
+          let labelLeft = left;
+          let labelTop = top + height + 8;
+          if (labelTop + lh > vh - margin) labelTop = top - lh - 8;
+          if (labelTop < margin) labelTop = margin;
+          if (labelLeft + lw > vw - margin) labelLeft = Math.max(margin, vw - margin - lw);
+          if (labelLeft < margin) labelLeft = margin;
+          ringLabel.style.left = labelLeft + "px";
+          ringLabel.style.top = labelTop + "px";
+          return [ring, ringLabel];
+        };
+        window.__wgHideRingAt = (ringId, labelId) => {
+          const ring = __wgById(ringId);
+          const label = __wgById(labelId);
+          if (ring) ring.style.opacity = "0";
+          if (label) label.style.opacity = "0";
+        };
+        window.__wgEnsureRingEl("wg-ring", "wg-ring-label");
         if (!__wgById("wg-cursor")) {
           const cursor = document.createElement("div");
           cursor.id = "wg-cursor";
@@ -65,53 +129,12 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
           const cursor = __wgById("wg-cursor");
           if (cursor) cursor.style.opacity = "0";
         };
+        // #wg-ring's own extras on top of the shared __wgPaintRingAt primitive: todo/banner
+        // collision avoidance only makes sense for the ONE "current action" ring, not Pilot's
+        // several independent fixture rings - kept here, not pushed down into the shared painter.
         window.__wgPositionRing = (box, label, tone, style) => {
-          const ring = __wgById("wg-ring");
-          const ringLabel = __wgById("wg-ring-label");
-          if (!ring || !ringLabel || !box) return;
-          const raw = (tone || "planned") + "";
-          const t =
-            raw === "auto" || raw === "info" || raw === "warning" || raw === "danger" || raw === "success"
-              ? raw
-              : "planned";
-          const st = style && typeof style === "object" ? style : {};
-          const sizeRaw = (st.size || "md") + "";
-          const size =
-            sizeRaw === "sm" || sizeRaw === "lg" ? sizeRaw : "md";
-          const weightRaw = (st.weight || "normal") + "";
-          const weight = weightRaw === "bold" ? "bold" : "normal";
-          ring.dataset.tone = t;
-          ringLabel.dataset.tone = t;
-          ring.dataset.size = size;
-          ringLabel.dataset.size = size;
-          ringLabel.dataset.weight = weight;
-          const pad = size === "sm" ? 3 : size === "lg" ? 10 : 6;
-          const margin = 6;
-          const vw = window.innerWidth;
-          const vh = window.innerHeight;
-          // Pin ring EXACTLY to the element - never clamp the ring away from
-          // the target (that looked "strapped on" the viewport).
-          const left = box.x - pad;
-          const top = box.y - pad;
-          const width = Math.max(4, box.width + pad * 2);
-          const height = Math.max(4, box.height + pad * 2);
-          ring.style.left = left + "px";
-          ring.style.top = top + "px";
-          ring.style.width = width + "px";
-          ring.style.height = height + "px";
-          ring.style.opacity = "1";
-          ringLabel.textContent = label || "";
-          ringLabel.style.opacity = "1";
-          const lw = ringLabel.offsetWidth;
-          const lh = ringLabel.offsetHeight;
-          let labelLeft = left;
-          let labelTop = top + height + 8;
-          if (labelTop + lh > vh - margin) labelTop = top - lh - 8;
-          if (labelTop < margin) labelTop = margin;
-          if (labelLeft + lw > vw - margin) labelLeft = Math.max(margin, vw - margin - lw);
-          if (labelLeft < margin) labelLeft = margin;
-          ringLabel.style.left = labelLeft + "px";
-          ringLabel.style.top = labelTop + "px";
+          if (!box) return;
+          window.__wgPaintRingAt("wg-ring", "wg-ring-label", box, label, tone, style);
           if (window.__wgTodosSetBehind) window.__wgTodosSetBehind(true);
           if (window.__wgTodosAvoidRingCollision) window.__wgTodosAvoidRingCollision(box);
           if (window.__wgBannerAvoidRing) window.__wgBannerAvoidRing(box);
