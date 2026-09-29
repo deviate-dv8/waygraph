@@ -276,7 +276,15 @@ export const RUNNER_EXTRA_CSS =
   // Hide / Show chrome: collapsed = compact "N / M · block" pill + Next (manual).
   "#wg-panel .wg-chrome{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;}" +
   "#wg-panel .wg-chrome-title{font:700 11px/1.2 system-ui,sans-serif;color:#c9a6ff;" +
-  "letter-spacing:.04em;text-transform:uppercase;flex:1;min-width:0;}" +
+  "letter-spacing:.04em;text-transform:uppercase;flex:1;min-width:0;display:flex;align-items:center;gap:4px;}" +
+  // Animated fast-forward indicator on the collapsed bottom-center pill - a blitzed/FF step has
+  // no ring, no narration theater, nothing else visible marking it as different, so it read as
+  // just another normal step with no explanation for why it snapped past instantly.
+  "#wg-panel .wg-ff-icon{display:inline-flex;align-items:center;flex-shrink:0;width:13px;height:13px;}" +
+  "#wg-panel .wg-ff-icon svg{width:100%;height:100%;display:block;}" +
+  "#wg-panel .wg-ff-icon .wg-ff-chev{animation:wg-ff-pulse 900ms ease-in-out infinite;}" +
+  "#wg-panel .wg-ff-icon .wg-ff-chev:nth-child(2){animation-delay:150ms;}" +
+  "@keyframes wg-ff-pulse{0%,100%{opacity:.3;transform:translateX(-1.5px);}50%{opacity:1;transform:translateX(1.5px);}}" +
   "#wg-panel .wg-chrome-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}" +
   "#wg-panel button.wg-hide-btn,#wg-panel button.wg-mini-next{margin:0;padding:4px 10px;font:600 11px system-ui,sans-serif;" +
   "background:#3a2a60;color:#e8dcff;border:1px solid #5b3aa8;border-radius:6px;cursor:pointer;}" +

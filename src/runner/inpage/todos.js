@@ -51,7 +51,12 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
             );
           const relayoutTodoDocks = () => {
             const docks = allDocks();
-            let top = 72;
+            // Must match .wg-todo-dock/#wg-todo-dock's own CSS `top` (runner/overlay-css.js,
+            // ui/css/dock.css) - this inline style OVERRIDES that CSS the instant more than one
+            // dock exists (multi-todo stacking), so a CSS-only change here is silently underwater;
+            // real bug this was: the CSS top was bumped 72 -> 104 for banner clearance, but this
+            // hardcoded 72 kept winning at runtime and nothing actually moved.
+            let top = 104;
             for (const el of docks) {
               el.style.top = top + "px";
               top += Math.max(48, el.getBoundingClientRect().height) + 10;

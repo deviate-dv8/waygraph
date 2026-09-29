@@ -135,6 +135,7 @@ export async function renderBeforeStep(page, info) {
         window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
           stepLabel: info.stepLabel || "",
           forceCollapsed: info.forceCollapsed === true ? true : undefined,
+          fastForward: !!info.fastForward,
         });
       }
       if (window.__wgSyncTodos) {
@@ -506,6 +507,7 @@ export async function renderAfterStep(page, info) {
         window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
           stepLabel: info.stepLabel || "",
           forceCollapsed: info.forceCollapsed === true ? true : undefined,
+          fastForward: !!info.fastForward,
         });
       }
       if (window.__wgSyncTodos) {
@@ -640,6 +642,7 @@ async function renderStepError(page, info) {
         window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
           stepLabel: info.stepLabel || "",
           forceCollapsed: info.forceCollapsed === true ? true : undefined,
+          fastForward: !!info.fastForward,
         });
       }
       if (window.__wgStampModal) {

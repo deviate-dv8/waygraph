@@ -60,6 +60,21 @@ export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAuto
           ensureChrome();
           const stepLabel = opts.stepLabel || panel.dataset.wgStepLabel || "";
           if (stepLabel) panel.dataset.wgStepLabel = stepLabel;
+          if (opts.fastForward !== undefined) {
+            panel.dataset.wgFastForward = opts.fastForward ? "1" : "0";
+          }
+          const buildFfIcon = () => {
+            const span = document.createElement("span");
+            span.className = "wg-ff-icon";
+            span.setAttribute("aria-hidden", "true");
+            span.innerHTML =
+              '<svg viewBox="0 0 16 16" fill="none">' +
+              '<path class="wg-ff-chev" d="M2 3l5 5-5 5" stroke="#c9a6ff" stroke-width="1.8" ' +
+              'stroke-linecap="round" stroke-linejoin="round"/>' +
+              '<path class="wg-ff-chev" d="M8 3l5 5-5 5" stroke="#c9a6ff" stroke-width="1.8" ' +
+              'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            return span;
+          };
           const syncMiniNext = (hidden) => {
             const miniNext = panel.querySelector("[data-wg-mini-next]");
             if (!miniNext) return;
@@ -85,10 +100,14 @@ export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAuto
             const t = panel.querySelector("[data-wg-toggle]");
             const titleEl = panel.querySelector(".wg-chrome-title");
             const label = panel.dataset.wgStepLabel || stepLabel;
+            const isFf = panel.dataset.wgFastForward === "1";
             if (titleEl) {
-              titleEl.textContent = hidden
+              const text = hidden
                 ? (label || chromeTitle || "waygraph demo")
                 : (chromeTitle || "waygraph demo");
+              titleEl.textContent = "";
+              if (hidden && isFf) titleEl.appendChild(buildFfIcon());
+              titleEl.appendChild(document.createTextNode(text));
             }
             if (t) t.textContent = hidden ? "Show" : "Hide";
             syncMiniNext(hidden);
