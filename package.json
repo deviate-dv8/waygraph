@@ -56,7 +56,8 @@
   },
   "dependencies": {
     "open-props": "^1.7.23",
-    "tsx": "^4.0.0"
+    "tsx": "^4.0.0",
+    "urlpattern-polyfill": "^10.1.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

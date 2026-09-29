@@ -1,5 +1,9 @@
 import type { Page } from "@playwright/test";
 import type { MemPage } from "./mem-page.js";
+// URLPattern is only a Node global from v23.8+ (and even then, Node's own, not a browser's) -
+// CI's Node 20/22 matrix has no global at all. The polyfill is spec-identical, so this works the
+// same everywhere instead of only on whatever Node happens to be running the tests.
+import { URLPattern } from "urlpattern-polyfill";
 
 /**
  * A named, independently-reportable check. `check` never runs before `resolve` has
@@ -52,7 +56,11 @@ export function urlMatches(pattern: URLPatternInit): Trait {
       // `verify()` case this was originally written for - just via the same
       // mechanism every other Trait already uses instead of its own
       // hardcoded, wrong-context value.
-      await page.waitForURL(urlPattern);
+      // Cast via Playwright's own declared param type, not a bare `URLPattern` reference - the
+      // polyfill's .d.ts re-declares the ambient global `URLPattern` (so Node 20/22, which have no
+      // native one, still resolve the type), which otherwise conflicts with lib.dom's own ambient
+      // declaration that Playwright's waitForURL signature was written against.
+      await page.waitForURL(urlPattern as unknown as Parameters<Page["waitForURL"]>[0]);
       return true;
     },
   };

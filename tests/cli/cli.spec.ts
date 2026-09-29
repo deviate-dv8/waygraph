@@ -3,10 +3,16 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { createRequire } from "node:module";
 
 const exec = promisify(execFile);
 const node = process.execPath;
 const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
+// `waygraph validate` dynamically imports the .ts flow fixtures below - real users always go
+// through bin/waygraph, which registers this loader before spawning dist/cli.js; spawning
+// dist/cli.js bare here skips that, so Node (any version without native .ts import - i.e. below
+// 23.6) throws "Unknown file extension .ts" instead of actually validating.
+const tsxEsm = createRequire(import.meta.url).resolve("tsx/esm");
 
 // Plain object literals, no `import { ... } from "waygraph"` - a Flow is a
 // duck-typed shape (`.run`), and these fixtures avoid needing their own
@@ -77,7 +83,7 @@ test("waygraph list reports no flows found", async () => {
 
 test("waygraph validate succeeds on valid flows", async () => {
   await withTmpProject("validate-ok", { "demo.flow.ts": VALID_FLOW }, async (dir) => {
-    const { stdout } = await exec(node, [CLI, "validate", dir]);
+    const { stdout } = await exec(node, ["--import", tsxEsm, CLI, "validate", dir]);
     expect(stdout).toContain("OK");
     expect(stdout).toContain("DemoFlow");
   });
@@ -85,7 +91,7 @@ test("waygraph validate succeeds on valid flows", async () => {
 
 test("waygraph validate fails on broken import", async () => {
   await withTmpProject("validate-broken", { "broken.flow.ts": BROKEN_FLOW }, async (dir) => {
-    await expect(exec(node, [CLI, "validate", dir])).rejects.toMatchObject({
+    await expect(exec(node, ["--import", tsxEsm, CLI, "validate", dir])).rejects.toMatchObject({
       stdout: expect.stringContaining("FAIL"),
     });
   });

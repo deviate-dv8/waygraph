@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join } from "node:path";
+import { createRequire } from "node:module";
 
 /**
  * Proof for `waygraph map` (src/map-check.ts wired into cli.ts): a static
@@ -16,11 +17,16 @@ const node = process.execPath;
 const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
 const fixtureDir = join(import.meta.dirname, "../fixtures/map-check");
 const noMapDir = join(import.meta.dirname, "../fixtures/inline-selector-check");
+// `waygraph map` dynamically imports the real .ts Block fixtures below - real users always go
+// through bin/waygraph, which registers this loader before spawning dist/cli.js; spawning
+// dist/cli.js bare here skips that, so Node (any version without native .ts import - i.e. below
+// 23.6) throws "Unknown file extension .ts" instead of running the check.
+const tsxEsm = createRequire(import.meta.url).resolve("tsx/esm");
 
 test("waygraph map flags a folder path that doesn't verbatim-match its Block's real url", async () => {
   let output = "";
   try {
-    const { stdout, stderr } = await exec(node, [CLI, "map", fixtureDir]);
+    const { stdout, stderr } = await exec(node, ["--import", tsxEsm, CLI, "map", fixtureDir]);
     output = stdout + stderr;
   } catch (err) {
     // A violation makes the CLI exit 1 - execFile rejects, but stdout/stderr
@@ -42,7 +48,7 @@ test("waygraph map flags a folder path that doesn't verbatim-match its Block's r
 });
 
 test("waygraph map is a no-op, not an error, when the project has no src/map/ directory at all", async () => {
-  const { stdout, stderr } = await exec(node, [CLI, "map", noMapDir]);
+  const { stdout, stderr } = await exec(node, ["--import", tsxEsm, CLI, "map", noMapDir]);
   const output = stdout + stderr;
   expect(output).toMatch(/no src\/map\/ directory under .* - nothing to check/);
 });
