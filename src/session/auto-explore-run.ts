@@ -1,21 +1,21 @@
 import { createInterface } from "node:readline/promises";
-import { ensureShadowRoot } from "./ui/shadow.js";
+import { ensureShadowRoot } from "../ui/shadow.js";
 import { stdin as input, stdout as output } from "node:process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Page, BrowserContext } from "@playwright/test";
-import { Engine, start, end, locate } from "./engine.js";
-import { MemPage } from "./mem-page.js";
-import type { MemKey } from "./mem-page.js";
-import type { NavBlock } from "./engine.js";
+import { Engine, start, end, locate } from "../engine.js";
+import { MemPage } from "../mem-page.js";
+import type { MemKey } from "../mem-page.js";
+import type { NavBlock } from "../engine.js";
 import {
   buildExploreContext,
   buildExploreMenu,
   type BlockEntry,
   type ExploreMenu,
 } from "./auto-explore.js";
-import type { Checkpoint } from "./types.js";
-import { installDemoChrome, instrumentInteractionHighlighting } from "./step-overlay.js";
+import type { Checkpoint } from "../types.js";
+import { installDemoChrome, instrumentInteractionHighlighting } from "../step-overlay.js";
 
 export interface AutoExploreOptions {
   /** Terminal menu (browser still runs for act()). Default false = headful picker panel. */
@@ -24,7 +24,7 @@ export interface AutoExploreOptions {
   /** Initial URL when the page is blank (defaults to baseURL). */
   startUrl?: string;
   /** Phase C: glob / regex / bare `--blocks` file select for discovery. */
-  blocksSelect?: import("./blocks-select.js").BlocksSelect;
+  blocksSelect?: import("../blocks-select.js").BlocksSelect;
 }
 
 export function resolveBaseUrl(projectDir: string): string | undefined {

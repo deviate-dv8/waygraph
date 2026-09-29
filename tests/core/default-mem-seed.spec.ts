@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { defaultMemValueForKey } from "../../src/auto-explore-run.js";
+import { defaultMemValueForKey } from "../../src/session/auto-explore-run.js";
 
 test.describe("defaultMemValueForKey (PIA login-email bug)", () => {
   test("exact credential keys get saucedemo defaults", () => {

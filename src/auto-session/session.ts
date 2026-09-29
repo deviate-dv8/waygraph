@@ -3,12 +3,12 @@ import { CONSOLE_LOG_MAX_ENTRIES, FULL_MODE_DEFAULT_DEPTH, FULL_MODE_MAX_NODES, 
 import type { ApplyPathResult, ApplyPickResult, AutoSessionInit, ConsoleLogEntry, FullDomCaps, InspectDomOptions, InspectDomResult, SessionSnapshot, StorageSnapshot, StubFileKind, TraceStep } from "./helpers.js";
 import { instrumentPilotActions, installPersistentPilotOverlay, showPilotActivity, showPilotFixtures, showPilotVision, phaseToOverlayFixtures, describeOverlayFixtures, updatePilotOverlay } from "../pilot-overlay.js";
 import type { PilotHighlightFixtures, PilotOverlayInfo } from "../pilot-overlay.js";
-import { buildExploreContext, buildExploreMenu } from "../auto-explore.js";
-import type { BlockEntry, ExploreMenu } from "../auto-explore.js";
+import { buildExploreContext, buildExploreMenu } from "../session/auto-explore.js";
+import type { BlockEntry, ExploreMenu } from "../session/auto-explore.js";
 import { MemPage } from "../mem-page.js";
 import { Engine } from "../engine.js";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
-import { detectHere, ensureLivePage, ensureMem, resolveBaseUrl, runOneBlock, seedDefaultMem } from "../auto-explore-run.js";
+import { detectHere, ensureLivePage, ensureMem, resolveBaseUrl, runOneBlock, seedDefaultMem } from "../session/auto-explore-run.js";
 import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from "../analysis/coverage-gap.js";
 import type { UnmappedInteractionPayload } from "../analysis/coverage-gap.js";
 import type { Checkpoint, WaygraphInstanceOption } from "../types.js";

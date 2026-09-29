@@ -1,12 +1,12 @@
 import { readdirSync, statSync, type Dirent } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import type { Page } from "@playwright/test";
-import type { Block, Checkpoint, WaygraphInstanceOption } from "./types.js";
-import { discoverGraph, type WaygraphGraph, type WaygraphEdge } from "./analysis/graph.js";
+import type { Block, Checkpoint, WaygraphInstanceOption } from "../types.js";
+import { discoverGraph, type WaygraphGraph, type WaygraphEdge } from "../analysis/graph.js";
 import { exploreRoots, injectTaggedFile } from "./block-inject.js";
 
 export interface ExploreContextOpts {
-  blocksSelect?: import("./blocks-select.js").BlocksSelect;
+  blocksSelect?: import("../blocks-select.js").BlocksSelect;
   /** Absolute paths of extra Block trees to merge (host projectDir is always first). */
   inject?: string[];
 }
@@ -148,7 +148,7 @@ export async function loadBlockLibrary(
   byName: Map<string, BlockEntry>;
   navBlocks: BlockEntry[];
 }> {
-  const { matchBlocksSelect } = await import("./blocks-select.js");
+  const { matchBlocksSelect } = await import("../blocks-select.js");
   const byName = new Map<string, BlockEntry>();
   const navBlocks: BlockEntry[] = [];
   const navSeen = new Set<string>();

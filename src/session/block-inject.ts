@@ -7,8 +7,14 @@ import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 
+/**
+ * This package's own installed root (contains `templates/`/`examples/`, sibling to `dist/`) -
+ * this file compiles to `dist/session/block-inject.js`, two levels down, not one. Same class of
+ * bug as `cli/util.ts`'s own `packageRoot()` (see its comment) - self-inflicted here by moving
+ * this file into `src/session/` without updating the path math to match the new depth.
+ */
 export function packageRoot(): string {
-  return resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 }
 
 /** Human label for an injected root (used in merged `file` paths). */

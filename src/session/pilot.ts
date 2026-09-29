@@ -28,7 +28,7 @@
  * hand-picking indices from each status response) that proved this needs no
  * new execution primitive.
  */
-import { discoverGraph, type WaygraphGraph } from "./analysis/graph.js";
+import { discoverGraph, type WaygraphGraph } from "../analysis/graph.js";
 import {
   requestSession,
   listBrowserSessions,
@@ -36,7 +36,7 @@ import {
   type SessionMeta,
 } from "./auto-session-ipc.js";
 import { browserStart, type BrowserStartInit } from "./browser.js";
-import type { SessionSnapshot } from "./auto-session.js";
+import type { SessionSnapshot } from "../auto-session.js";
 
 export interface PilotStartResult {
   sessionId: string;

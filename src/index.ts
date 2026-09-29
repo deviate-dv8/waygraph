@@ -203,8 +203,8 @@ export {
   readWgOverlayBeacon,
   readWgOverlayBeaconInPage,
   assertWgOverlayReady,
-} from "./overlay-beacon.js";
-export type { WgModalKind, WgBeaconRow } from "./overlay-beacon.js";
+} from "./session/overlay-beacon.js";
+export type { WgModalKind, WgBeaconRow } from "./session/overlay-beacon.js";
 export { AutoSession, stubFilePath } from "./auto-session.js";
 export type {
   AutoSessionInit,
@@ -220,5 +220,5 @@ export type {
   CookieInfo,
   StubFileKind,
 } from "./auto-session.js";
-export { pilotStart } from "./pilot.js";
-export type { PilotStartResult } from "./pilot.js";
+export { pilotStart } from "./session/pilot.js";
+export type { PilotStartResult } from "./session/pilot.js";

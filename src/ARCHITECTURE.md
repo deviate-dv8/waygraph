@@ -8,7 +8,8 @@ Read this before editing. The rules at the bottom are enforced by `npm run check
 cli.ts ───────────── ~100-line dispatcher: one `case` per subcommand
 commands/*.ts, cli/*.ts ─ one file per subcommand; shared flag parsing, usage text, discovery helpers
 runner/ ───────────── `waygraph run/demo/chain` execution; runner/inpage/*.js = code injected into the page (self-contained) (plain .js modules, exported as `waygraph/runner`)
-auto-session.ts + auto-session/ (helpers, session), auto-session-ipc.ts, pilot*.ts, auto-explore*.ts ─ live sessions / exploration
+auto-session.ts + auto-session/ (helpers, session) ─ the session class itself
+session/ (auto-session-ipc, browser, pilot, auto-explore, auto-explore-run, block-inject, overlay-beacon) ─ live session spawn/control, explore, cross-project inject
 traverse/ (run, coverage, lease) ─ live parallel graph exploration with session cloning (`waygraph traverse`)
 engine.ts + engine/ ── barrel over engine/{core,config,run-graph,flow,compose,engine-class,locate,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
 highlights.ts + highlights/ (types, style, device, demo-pace, todo-dock, merge, stub-ctx, run-phase, css, shorthand) ── demo narration: stubs, todo dock, device presets, pace, ring CSS

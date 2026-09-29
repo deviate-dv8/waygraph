@@ -4,7 +4,7 @@ import {
   type BlocksSelect,
   matchBlocksSelect,
 } from "../blocks-select.js";
-import { exploreRoots, injectTaggedFile } from "../block-inject.js";
+import { exploreRoots, injectTaggedFile } from "../session/block-inject.js";
 
 /**
  * The state-machine shape `waygraph auto` discovers from a project's own

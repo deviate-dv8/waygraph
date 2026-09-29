@@ -1,7 +1,7 @@
 // Split out of the former 1,078-line auto-session.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import type { StubPhaseResult } from "../highlights.js";
-import type { BlockEntry, ExploreMenu } from "../auto-explore.js";
-import type { PickResult } from "../auto-explore-run.js";
+import type { BlockEntry, ExploreMenu } from "../session/auto-explore.js";
+import type { PickResult } from "../session/auto-explore-run.js";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 

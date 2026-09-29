@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { exploreChoices, buildExploreMenu } from "../../src/auto-explore.js";
+import { exploreChoices, buildExploreMenu } from "../../src/session/auto-explore.js";
 import type { WaygraphGraph } from "../../src/analysis/graph.js";
 
 const sample: WaygraphGraph = {

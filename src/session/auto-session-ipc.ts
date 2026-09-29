@@ -33,10 +33,10 @@ import {
   type ConsoleLogEntry,
   type StorageSnapshot,
   type StubFileKind,
-} from "./auto-session.js";
-import type { PilotHighlightFixtures } from "./pilot-overlay.js";
+} from "../auto-session.js";
+import type { PilotHighlightFixtures } from "../pilot-overlay.js";
 
-export type { PilotHighlightFixtures, PilotFixtureRing } from "./pilot-overlay.js";
+export type { PilotHighlightFixtures, PilotFixtureRing } from "../pilot-overlay.js";
 
 export interface SessionMeta {
   sessionId: string;
@@ -501,7 +501,9 @@ export async function spawnDetachedSession(
 ): Promise<SessionMeta> {
   const sessionId = generateSessionId();
   mkdirSync(sessionDir(init.projectDir), { recursive: true });
-  const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+  // This file compiles to dist/session/auto-session-ipc.js - two levels down from the package
+  // root, not one. Same bug class as cli/util.ts's own packageRoot(); see its comment.
+  const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
   const require = createRequire(join(pkgRoot, "package.json"));
   const tsxEsm = require.resolve("tsx/esm");
   const cli = join(pkgRoot, "dist", "cli.js");

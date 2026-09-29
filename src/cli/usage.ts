@@ -1,5 +1,5 @@
 // Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import type { SessionMeta } from "../browser.js";
+import type { SessionMeta } from "../session/browser.js";
 
 export function printBrowserUsage(): void {
   console.log(`waygraph browser — persistent Playwright sessions (headful by default)

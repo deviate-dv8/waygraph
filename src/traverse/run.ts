@@ -14,9 +14,9 @@ import {
   buildExploreMenu,
   type BlockEntry,
   type ExploreEdge,
-} from "../auto-explore.js";
+} from "../session/auto-explore.js";
 import type { WaygraphGraph } from "../analysis/graph.js";
-import { defaultMemValueForKey } from "../auto-explore-run.js";
+import { defaultMemValueForKey } from "../session/auto-explore-run.js";
 import { EdgeLeaseCoordinator } from "./lease.js";
 import {
   buildCoverageReport,

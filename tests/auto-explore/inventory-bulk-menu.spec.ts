@@ -1,7 +1,7 @@
 import { test, expect, chromium } from "@playwright/test";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildExploreContext, buildExploreMenu } from "../../src/auto-explore.js";
+import { buildExploreContext, buildExploreMenu } from "../../src/session/auto-explore.js";
 import { MemPage, Engine, start, end } from "../../src/index.js";
 
 const sauceRoot = join(dirname(fileURLToPath(import.meta.url)), "../../examples/saucedemo");
