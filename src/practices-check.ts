@@ -182,19 +182,21 @@ export function collectPracticeWarnings(
         kind: "overcomplex-selector",
         file: rel,
         detail:
-          `uses ${via} — reach for a plain CSS selector (id/class/data-attribute, via a .sel.ts ` +
-          "export) instead of a regex/XPath match unless the DOM genuinely has no stable selector",
+          `uses ${via} — reach for a plain CSS selector (id/class/data-attribute, via a _sel.ts/` +
+          "*.sel.ts export) instead of a regex/XPath match unless the DOM genuinely has no stable selector",
       });
     }
 
     if (!isIgnored("inline-selector-should-use-sel-file", ignore) && INLINE_SIMPLE_SELECTOR.test(src)) {
-      const siblingSelFile = readdirSync(dirname(file)).some((f) => f.endsWith(".sel.ts"));
+      // Two real, coexisting conventions: the Map layout's own `_sel.ts` (one per page folder, next
+      // to `_nav`/`_page`/`_methods`) and the freeform layout's per-concern `<name>.sel.ts`.
+      const siblingSelFile = readdirSync(dirname(file)).some((f) => f === "_sel.ts" || f.endsWith(".sel.ts"));
       if (siblingSelFile) {
         warnings.push({
           kind: "inline-selector-should-use-sel-file",
           file: rel,
           detail:
-            "a selector string is inlined here, but this directory already has a *.sel.ts file — " +
+            "a selector string is inlined here, but this directory already has a _sel.ts / *.sel.ts file — " +
             "add/reuse the selector there instead of a new one-off literal",
         });
       }
@@ -228,7 +230,7 @@ export function practiceKindLabel(kind: PracticeKind): string {
     case "overcomplex-selector":
       return "regex/XPath selector where a plain one would do";
     case "inline-selector-should-use-sel-file":
-      return "inline selector — a .sel.ts file already exists here";
+      return "inline selector — a _sel.ts/*.sel.ts file already exists here";
     default: {
       const _exhaustive: never = kind;
       return _exhaustive;

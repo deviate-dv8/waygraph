@@ -64,7 +64,16 @@ test("waygraph check flags an inline selector literal in a directory that alread
   const { stdout, stderr } = await exec(node, [CLI, "check", fixtureDir]);
   const output = stdout + stderr;
 
-  expect(output).toMatch(/uses-inline\.method\.block\.ts \(inline selector — a \.sel\.ts file already exists here\)/);
+  expect(output).toMatch(/uses-inline\.method\.block\.ts \(inline selector — a _sel\.ts\/\*\.sel\.ts file already exists here\)/);
   // The shared top-level fixtures have no sibling *.sel.ts file, so this never fires there.
   expect(output).not.toMatch(/multi-input\.block\.ts \(inline selector/);
+});
+
+test("waygraph check flags an inline selector literal in a directory using the Map layout's _sel.ts convention (not just *.sel.ts)", async () => {
+  const { stdout, stderr } = await exec(node, [CLI, "check", fixtureDir]);
+  const output = stdout + stderr;
+
+  expect(output).toMatch(
+    /uses-inline\.method\.block\.ts \(inline selector — a _sel\.ts\/\*\.sel\.ts file already exists here\)/,
+  );
 });
