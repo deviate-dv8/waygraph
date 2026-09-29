@@ -1,7 +1,10 @@
 import { TONES, type ToneName } from "../tokens.js";
 
-/** Prefix icon for gray (auto) labels. */
-const ROBOT = 'content:"\\1F916\\00a0";';
+/** Prefix icon for gray (auto) labels - a real inline SVG (terminal chevron), not an emoji. */
+const ROBOT =
+  'content:"";display:inline-block;width:12px;height:12px;margin-right:5px;vertical-align:-1px;' +
+  "background-repeat:no-repeat;background-size:contain;" +
+  "background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M2.5 3.5l5 4.5-5 4.5M8.5 12.5h5' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\");";
 
 const toneNames = Object.keys(TONES) as ToneName[];
 

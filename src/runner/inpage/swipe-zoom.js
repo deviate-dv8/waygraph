@@ -125,7 +125,7 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
           if (window.__wgSetZoomBadge) window.__wgSetZoomBadge(1, "");
         };
         const ZOOM_ICO =
-          '<svg viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="#c9a6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
           '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
         window.__wgSetZoomBadge = (scale, sel) => {
           const n = Number(scale);

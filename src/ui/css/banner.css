@@ -11,6 +11,9 @@
 #wg-banner[data-pos=left]   { left: 14px; right: auto; transform: none; }
 #wg-banner[data-pos=center] { left: 50%; right: auto; transform: translateX(-50%); }
 #wg-banner[data-pos=right]  { right: 14px; left: auto; transform: none; }
+/* Same "auto opacity" step-back the todo dock already has (.wg-todo-behind) while a ring caption
+   is the current focus - added via __wgBannerSetBehind, not just the collision-driven move. */
+#wg-banner.wg-banner-behind { opacity: .42; }
 #wg-banner .wg-banner-tag {
   display: block; font-size: 10px; font-weight: 700; color: var(--wg-accent-soft);
   letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px;

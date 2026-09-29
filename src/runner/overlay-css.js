@@ -80,7 +80,7 @@ export const RUNNER_EXTRA_CSS =
   // Todo checklist(s) float outside #wg-panel so --mini / Hide never hide them.
   // Multiple docks (one per todoId) are supported - stacked on the same side.
   // Click a dock to slide left <-> right (WAYGRAPH_TODO_POS / --todo-left|right).
-  ".wg-todo-dock,#wg-todo-dock{position:fixed;z-index:2147483646;top:72px;left:14px;" +
+  ".wg-todo-dock,#wg-todo-dock{position:fixed;z-index:2147483646;top:82px;left:14px;" +
   "width:min(280px,42vw);max-height:calc(100vh - 100px);overflow:auto;box-sizing:border-box;" +
   "padding:10px 12px;background:" + SURFACE + ";color:#fff;border-radius:12px;" +
   "border:1px solid rgba(124,58,237,.45);box-shadow:0 8px 24px rgba(0,0,0,.35);" +
@@ -102,18 +102,20 @@ export const RUNNER_EXTRA_CSS =
   ".wg-todo-dock .wg-todo-dock-title{font:700 11px/1.2 system-ui,sans-serif;color:#c9a6ff;" +
   "letter-spacing:.04em;text-transform:uppercase;margin:0 0 8px;}" +
   ".wg-todo-dock .wg-todos-list,#wg-todo-dock #wg-todos,.wg-todo-dock #wg-todos{list-style:none;margin:0;padding:0;background:transparent;border:none;}" +
-  // Always-on zoom HUD - bottom-right (top-left is crowded: todos + banners).
+  // Always-on zoom HUD - bottom-right (top-left is crowded: todos + banners). Violet, matching the
+  // rest of the overlay's design tokens - this used to be a lone amber/yellow badge, the one
+  // surface that never got pulled into the shared palette when everything else did.
   "#wg-zoom-badge{position:fixed;z-index:2147483646;bottom:14px;right:14px;" +
   "display:flex;align-items:center;gap:7px;padding:6px 11px 6px 8px;" +
   "border-radius:999px;background:" + SURFACE + ";color:#f0e8ff;" +
-  "border:1px solid rgba(250,204,21,.6);box-shadow:0 6px 18px rgba(0,0,0,.4);" +
+  "border:1px solid rgba(124,58,237,.55);box-shadow:0 6px 18px rgba(0,0,0,.4);" +
   "font:700 12px/1.2 system-ui,sans-serif;pointer-events:none;" +
   "opacity:1;transform:translateY(0);}" +
   "#wg-zoom-badge .wg-zoom-ico{width:18px;height:18px;display:flex;align-items:center;justify-content:center;" +
-  "border-radius:6px;background:rgba(250,204,21,.22);}" +
+  "border-radius:6px;background:rgba(124,58,237,.28);}" +
   "#wg-zoom-badge .wg-zoom-ico svg{width:14px;height:14px;display:block;}" +
-  "#wg-zoom-badge .wg-zoom-val{color:#fde68a;font-variant-numeric:tabular-nums;font-weight:800;min-width:3.2em;}" +
-  "#wg-zoom-badge[data-zoomed=\"1\"]{border-color:#fbbf24;}" +
+  "#wg-zoom-badge .wg-zoom-val{color:#c9a6ff;font-variant-numeric:tabular-nums;font-weight:800;min-width:3.2em;}" +
+  "#wg-zoom-badge[data-zoomed=\"1\"]{border-color:#7C3AED;}" +
   // Typing chip (method fills: username / password / etc.)
   "#wg-typing-badge{position:fixed;z-index:2147483646;bottom:88px;left:50%;transform:translateX(-50%);" +
   "display:flex;align-items:center;gap:8px;padding:8px 14px;" +

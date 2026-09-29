@@ -136,6 +136,7 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
           if (!box) return;
           window.__wgPaintRingAt("wg-ring", "wg-ring-label", box, label, tone, style);
           if (window.__wgTodosSetBehind) window.__wgTodosSetBehind(true);
+          if (window.__wgBannerSetBehind) window.__wgBannerSetBehind(true);
           if (window.__wgTodosAvoidRingCollision) window.__wgTodosAvoidRingCollision(box);
           if (window.__wgBannerAvoidRing) window.__wgBannerAvoidRing(box);
         };
@@ -244,6 +245,7 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
           if (ringLabel) ringLabel.style.opacity = "0";
           if (window.__wgClearFocus) window.__wgClearFocus();
           if (window.__wgTodosSetBehind) window.__wgTodosSetBehind(false);
+          if (window.__wgBannerSetBehind) window.__wgBannerSetBehind(false);
           if (window.__wgBannerRestore) window.__wgBannerRestore();
           window.__wgTodoCollisionLocked = false;
           __wgQA(".wg-todo-dock[data-tucked], #wg-todo-dock[data-tucked]").forEach((el) => {

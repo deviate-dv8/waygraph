@@ -107,6 +107,14 @@ export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay,
           if (b.dataset.home) b.dataset.pos = b.dataset.home;
           delete b.dataset.moved;
         };
+        // Dim the banner while a ring caption is the focus - same "auto opacity" effect the todo
+        // dock already has via __wgTodosSetBehind, extended to the banner so both floating chrome
+        // pieces step back the same way instead of only one of them fading.
+        window.__wgBannerSetBehind = (on) => {
+          const b = __wgById("wg-banner");
+          if (!b) return;
+          b.classList.toggle("wg-banner-behind", !!on);
+        };
         // Tab title/favicon: a real navigation resets document.title and any
         // <link rel="icon"> the new document brings, so re-check (not
         // re-append) on every call instead of a one-time flag.
