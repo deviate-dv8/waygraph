@@ -128,6 +128,10 @@ export async function runStubPhase(
     ...(bag.title !== undefined && bag.title !== "" ? { title: bag.title } : {}),
     ...(bag.titlePos !== undefined ? { titlePos: bag.titlePos } : {}),
     ...(bag.bannerUi !== undefined ? { bannerUi: bag.bannerUi } : {}),
+    // Unlike title, "" is meaningful here (ctx.hideCaption()/caption("")) - forwarded so it can
+    // actually hide the bar, not filtered out the way an empty title is (title's own "" means
+    // "author didn't touch it this step", handled by simply omitting the field).
+    ...(bag.caption !== undefined ? { caption: bag.caption } : {}),
     ...(bag.todoPos !== undefined ? { todoPos: bag.todoPos } : {}),
     ...(bag.todoDockUi !== undefined ? { todoDockUi: bag.todoDockUi } : {}),
     ...(bag.todoParallel === true ? { todoParallel: true } : {}),

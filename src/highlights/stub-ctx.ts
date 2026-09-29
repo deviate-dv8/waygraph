@@ -165,6 +165,12 @@ export function createStubCtx<Out extends Checkpoint<string>>(
       const p = normalizeBannerPos(side);
       if (p) bag.titlePos = p;
     },
+    caption(text) {
+      bag.caption = String(text ?? "");
+    },
+    hideCaption() {
+      bag.caption = "";
+    },
     bannerPos(side) {
       const p = normalizeBannerPos(side);
       if (p) bag.titlePos = p;
@@ -259,6 +265,7 @@ export function createStubCtx<Out extends Checkpoint<string>>(
       }
       if (partial.zoomOut !== undefined) bag.zoomOut = !!partial.zoomOut;
       if (partial.title !== undefined) bag.title = String(partial.title ?? "");
+      if (partial.caption !== undefined) bag.caption = String(partial.caption ?? "");
       const bp = normalizeBannerPos(partial.titlePos);
       if (bp) bag.titlePos = bp;
       if (partial.bannerUi && typeof partial.bannerUi === "object") {

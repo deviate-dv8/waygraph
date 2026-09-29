@@ -189,6 +189,12 @@ export type StubPhaseFixtures = {
   /** Banner UX: collision (move away from a ring it overlaps), hidden. See {@link BannerUiOpts}. */
   bannerUi?: BannerUiOpts;
   /**
+   * Bottom subtitle-bar caption (ported from zsign's help-center-clip-engine) - a full-width,
+   * bottom-anchored gradient scrim with centered text, distinct from the banner (top, card-shaped).
+   * Omit/clear to hide it; set again to change the text, fading out/in.
+   */
+  caption?: string;
+  /**
    * Floating checklist dock side. `left` | `right`.
    * Authored control (also click / WAYGRAPH_TODO_POS / --todo-left|right).
    */
@@ -467,6 +473,15 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
    * @example ctx.bannerUi({ collision: false });
    */
   bannerUi(opts: BannerUiOpts): void;
+  /**
+   * Bottom subtitle-bar caption (ported from zsign's help-center-clip-engine) - a full-width,
+   * bottom-anchored gradient scrim with centered text; distinct from {@link StubCtx.title}, which
+   * is the top card. Fades in/out on change. Pass `""` (or call {@link StubCtx.hideCaption}) to clear.
+   * @example ctx.caption("Click Add to cart to continue");
+   */
+  caption(text: string): void;
+  /** Clears the caption (fades it out). */
+  hideCaption(): void;
   /** Shorthand for `bannerUi({ hidden: true })`. */
   hideBanner(): void;
   /**
@@ -536,6 +551,7 @@ export type StubPhaseResult = {
   title?: string;
   titlePos?: BannerPos;
   bannerUi?: BannerUiOpts;
+  caption?: string;
   todoPos?: "left" | "right";
   /** When true, keep other docks (multi-todo). Default false = replace. */
   todoParallel?: boolean;
@@ -670,6 +686,7 @@ export type StubBagState = {
   title?: string | undefined;
   titlePos?: BannerPos | undefined;
   bannerUi?: BannerUiOpts | undefined;
+  caption?: string | undefined;
   todoPos?: "left" | "right" | undefined;
   /** Author patched todo-dock UX this phase. */
   todoDockUi?: TodoDockUiOpts | undefined;

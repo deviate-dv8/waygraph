@@ -6,14 +6,19 @@ import { resolveTodoDockUi } from "../highlights.js";
 import { installCore } from "./inpage/core.js";
 import { installSwipeZoom } from "./inpage/swipe-zoom.js";
 import { installBanner } from "./inpage/banner.js";
+import { showCaption, hideCaption } from "./inpage/caption.js";
 import { installStamp } from "./inpage/stamp.js";
 import { installPanelChrome } from "./inpage/panel-chrome.js";
 import { installTodos } from "./inpage/todos.js";
 import { installDevice } from "./inpage/device.js";
 import { applyVideoDeviceStage } from "./device-stage.js";
 
-/** `ui` = authored banner UX from the stub phase: { pos, collision, hidden } (all optional). */
-export async function installOverlay(page, title, ui) {
+/**
+ * `ui` = authored banner UX from the stub phase: { pos, collision, hidden } (all optional).
+ * `caption` = bottom subtitle-bar text (ctx.caption()/ctx.hideCaption()) - `undefined` leaves it
+ * alone (unset this step), `""` hides it, any other string shows/updates it.
+ */
+export async function installOverlay(page, title, ui, caption) {
   // ring/cursor/banner/dock come from the ONE shared bundle every surface installs (ui/css/*.css).
   await ensureShadowRoot(page);
   // Runner-only chrome (step panel, zoom/typing/device chips) - separate key, no collision.
@@ -36,6 +41,13 @@ export async function installOverlay(page, title, ui) {
   await page.evaluate(installPanelChrome, args).catch(() => {});
   await page.evaluate(installTodos, args).catch(() => {});
   await page.evaluate(installDevice, args).catch(() => {});
+  if (caption !== undefined) {
+    if (caption === "") {
+      await page.evaluate(hideCaption).catch(() => {});
+    } else {
+      await page.evaluate(showCaption, caption).catch(() => {});
+    }
+  }
   // Navigations wipe #wg-device-shell - rebuild when video stage + device are live.
   // If we already shuttered to desktop-flat, re-apply FLAT (never re-add bezel).
   if (

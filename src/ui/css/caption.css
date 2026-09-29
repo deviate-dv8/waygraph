@@ -1,0 +1,19 @@
+/*
+ * Bottom subtitle-bar caption (#wg-caption-bar) - ported from zsign's help-center-clip-engine
+ * (services/help-center-clip-engine), whose narration-driven clips already drive this same look
+ * off a real timeline (lines.json -> a NARR array -> captionAt(t) fades text in/out in sync with
+ * voiceover). This is the same visual fixture, values kept as close to the original as the design
+ * language here allows (violet surface tokens instead of a bespoke plain black scrim); the
+ * timeline/TTS-sync side is not ported yet - see ARCHITECTURE.md's own note on this file.
+ */
+#wg-caption-bar {
+  position: fixed; z-index: var(--wg-z-focus); left: 0; right: 0; bottom: 0;
+  padding: 26px 6% 22px; display: flex; justify-content: center;
+  background: linear-gradient(180deg, transparent, rgba(6,5,20,.55) 40%, rgba(6,5,20,.82));
+  pointer-events: none; opacity: 0; transition: opacity .3s ease;
+}
+#wg-caption-bar.wg-in { opacity: 1; }
+#wg-caption-bar .wg-caption-text {
+  font: 500 20px/1.4 var(--wg-font); color: #fff; text-align: center;
+  max-width: 82%; text-wrap: balance; text-shadow: 0 2px 14px rgba(0,0,0,.5);
+}

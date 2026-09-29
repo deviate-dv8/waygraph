@@ -75,6 +75,39 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
     assert.equal(phase.todoDock?.style, "bullets");
     assert.equal(phase.todos.every((t) => !t.current), true);
   });
+
+  it("ctx.caption() / ctx.hideCaption() - the bottom subtitle-bar fixture ported from zsign's help-center-clip-engine", async () => {
+    const shown = {
+      name: "fill-username",
+      instruction: {
+        stubBefore: (ctx: StubCtx) => {
+          ctx.caption("Click Add to cart to continue");
+        },
+      },
+    } as unknown as Block<any, any>;
+    const shownPhase = await runStubPhase(shown, "stubBefore");
+    assert.equal(shownPhase.caption, "Click Add to cart to continue");
+
+    const hidden = {
+      name: "submit-login",
+      instruction: {
+        stubBefore: (ctx: StubCtx) => {
+          ctx.hideCaption();
+        },
+      },
+    } as unknown as Block<any, any>;
+    const hiddenPhase = await runStubPhase(hidden, "stubBefore");
+    // "" is meaningful (explicit hide), not "author never touched it" - must not be dropped
+    // the way an empty ctx.title("") is, or a real ctx.hideCaption() call would silently no-op.
+    assert.equal(hiddenPhase.caption, "");
+
+    const untouched = {
+      name: "no-op",
+      instruction: { stubBefore: () => {} },
+    } as unknown as Block<any, any>;
+    const untouchedPhase = await runStubPhase(untouched, "stubBefore");
+    assert.equal(untouchedPhase.caption, undefined);
+  });
 });
 
 describe("open stubBefore(ctx) lifecycle", () => {
