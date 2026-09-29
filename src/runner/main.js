@@ -356,6 +356,13 @@ async function main() {
         }
       }
     } finally {
+      // A recorded run's last visible state (a fixture ring, the network panel, a todo dock update)
+      // gets cut off mid-fade otherwise - context.close() used to fire the instant the flow's own
+      // promise resolved, with zero trailing room. Real, confirmed case: defineApiBlock's network
+      // panel only became visible in the recording's final ~1-2s because of this.
+      if (process.env.WAYGRAPH_VIDEO && pageForVideo && !pageForVideo.isClosed()) {
+        await new Promise((r) => setTimeout(r, 1800));
+      }
       await context.close();
       const savedVideo =
         pageForVideo?.video() !== null && pageForVideo?.video() !== undefined
