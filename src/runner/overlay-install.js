@@ -12,6 +12,7 @@ import { installPanelChrome } from "./inpage/panel-chrome.js";
 import { installTodos } from "./inpage/todos.js";
 import { installDevice } from "./inpage/device.js";
 import { applyVideoDeviceStage } from "./device-stage.js";
+import { installNetworkCapture } from "./network-capture.js";
 
 /**
  * `ui` = authored banner UX from the stub phase: { pos, collision, hidden } (all optional).
@@ -21,6 +22,10 @@ import { applyVideoDeviceStage } from "./device-stage.js";
 export async function installOverlay(page, title, ui, caption) {
   // ring/cursor/banner/dock come from the ONE shared bundle every surface installs (ui/css/*.css).
   await ensureShadowRoot(page);
+  // Idempotent (guarded on page.__wgNetworkCaptureInstalled) - safe to call every step even though
+  // installOverlay itself runs every step; the page.on() listeners this installs are attached to
+  // the Page object, not any one document, so they already survive navigations on their own.
+  installNetworkCapture(page);
   // Runner-only chrome (step panel, zoom/typing/device chips) - separate key, no collision.
   await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"]).catch(() => {});
   await page.addStyleTag({ content: HOST_CSS }).catch(() => {});

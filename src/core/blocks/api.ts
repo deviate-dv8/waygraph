@@ -26,6 +26,14 @@ export interface ApiBlockOptions<In extends Checkpoint<string>, Out extends Chec
    * @example call: ({ request }) => request.get("/api/orders/1")
    */
   call: (ctx: { request: APIRequestContext; mem: MemPage }) => Promise<APIResponse>;
+  /**
+   * HTTP method shown in the network-tab overlay (GET/POST/PATCH/...) - `APIResponse` (unlike a
+   * page's own `Response`) carries no back-reference to the request that produced it, so this
+   * can't be read back automatically; defaults to "GET" if omitted. Purely cosmetic - never
+   * affects the actual request `call` makes.
+   * @example method: "POST"
+   */
+  method?: string;
   /** Pure, like every other Block's resolve - classifies the response into a Checkpoint tag. */
   resolve: (result: ApiCallResult) => Out;
   verify?: Trait[] | ((out: Out) => Trait[]);
@@ -75,14 +83,19 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
         mem.set(API_RESULT_SCRATCH, { status: response.status(), ok: response.ok(), body });
         // Best-effort, demo-only visibility - an API step has no DOM change and no ring of its own,
         // so without this it's a silent title flash. No-ops outside a demo/pilot/auto run (see
-        // showNetworkEntry's own guard) and never fails the Block if painting the panel throws.
+        // addNetworkEntry's own guard) and never fails the Block if painting the panel throws.
+        // Same network-tab panel real page traffic feeds too (network-capture.js) - this is the
+        // page.request side of it (a separate APIRequestContext, never seen by page.on('request')).
         try {
-          const { showNetworkEntry } = await import("../../runner/inpage/network.js");
-          await page.evaluate(showNetworkEntry, {
+          const { addNetworkEntry } = await import("../../runner/inpage/network.js");
+          await page.evaluate(addNetworkEntry, {
+            method: options.method || "GET",
             url: response.url(),
             status: response.status(),
             ok: response.ok(),
             ms,
+            resHeaders: response.headers(),
+            resBody: typeof body === "string" ? body : body !== undefined ? JSON.stringify(body) : undefined,
           });
         } catch {
           /* overlay not installed / page already closed - not this Block's job to report that */

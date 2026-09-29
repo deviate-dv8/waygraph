@@ -136,6 +136,7 @@ export async function renderBeforeStep(page, info) {
           stepLabel: info.stepLabel || "",
           forceCollapsed: info.forceCollapsed === true ? true : undefined,
           fastForward: !!info.fastForward,
+          isApi: !!info.isApi,
         });
       }
       if (window.__wgSyncTodos) {
@@ -508,6 +509,7 @@ export async function renderAfterStep(page, info) {
           stepLabel: info.stepLabel || "",
           forceCollapsed: info.forceCollapsed === true ? true : undefined,
           fastForward: !!info.fastForward,
+          isApi: !!info.isApi,
         });
       }
       if (window.__wgSyncTodos) {
@@ -643,6 +645,7 @@ async function renderStepError(page, info) {
           stepLabel: info.stepLabel || "",
           forceCollapsed: info.forceCollapsed === true ? true : undefined,
           fastForward: !!info.fastForward,
+          isApi: !!info.isApi,
         });
       }
       if (window.__wgStampModal) {

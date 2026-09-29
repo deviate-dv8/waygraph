@@ -116,26 +116,60 @@ export const RUNNER_EXTRA_CSS =
   "#wg-zoom-badge .wg-zoom-ico svg{width:14px;height:14px;display:block;}" +
   "#wg-zoom-badge .wg-zoom-val{color:#c9a6ff;font-variant-numeric:tabular-nums;font-weight:800;min-width:3.2em;}" +
   "#wg-zoom-badge[data-zoomed=\"1\"]{border-color:#7C3AED;}" +
-  // Live network-activity panel (defineApiBlock calls) - bottom-left, the one corner free of the
-  // zoom HUD (bottom-right) and the typing chip (bottom-center). Fades out ~4s after the last entry.
-  "#wg-network-log{position:fixed;z-index:2147483646;bottom:14px;left:14px;min-width:220px;" +
-  "max-width:min(92vw,360px);padding:8px 10px;border-radius:10px;background:" + SURFACE + ";" +
-  "color:#f0e8ff;border:1px solid rgba(124,58,237,.45);box-shadow:0 8px 22px rgba(0,0,0,.4);" +
-  "font:12px/1.4 ui-monospace,\"SF Mono\",Consolas,monospace;pointer-events:none;" +
-  "opacity:0;transform:translateY(8px);transition:opacity .25s ease,transform .25s ease;}" +
+  // Network-tab overlay (real page traffic via network-capture.js + defineApiBlock's own
+  // page.request calls) - bottom-left, the one corner free of the zoom HUD (bottom-right) and the
+  // typing chip (bottom-center). Persistent (does not auto-fade) once any entry exists - this is a
+  // real Postman/DevTools-style inspector meant to be reviewed, not a flash-and-gone toast.
+  "#wg-network-log{position:fixed;z-index:2147483646;bottom:14px;left:14px;min-width:260px;" +
+  "max-width:min(92vw,420px);max-height:min(60vh,420px);display:flex;flex-direction:column;" +
+  "border-radius:10px;background:" + SURFACE + ";color:#f0e8ff;border:1px solid rgba(124,58,237,.45);" +
+  "box-shadow:0 8px 22px rgba(0,0,0,.4);font:12px/1.4 ui-monospace,\"SF Mono\",Consolas,monospace;" +
+  "opacity:0;transform:translateY(8px);transition:opacity .25s ease,transform .25s ease;overflow:hidden;}" +
   "#wg-network-log.wg-in{opacity:1;transform:translateY(0);}" +
-  "#wg-network-log.wg-out{opacity:0;transform:translateY(4px);}" +
+  "#wg-network-log.wg-net-collapsed .wg-net-list{display:none;}" +
+  "#wg-network-log .wg-net-header{display:flex;align-items:center;gap:6px;padding:8px 10px;" +
+  "border-bottom:1px solid rgba(124,58,237,.25);cursor:default;flex:0 0 auto;}" +
   "#wg-network-log .wg-net-title{font:700 10px/1.2 system-ui,sans-serif;color:#c9a6ff;" +
-  "letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}" +
-  "#wg-network-log .wg-net-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;}" +
-  "#wg-network-log .wg-net-row{display:flex;align-items:baseline;gap:7px;opacity:0;" +
-  "transform:translateX(-4px);transition:opacity .2s ease,transform .2s ease;}" +
+  "letter-spacing:.06em;text-transform:uppercase;flex:1 1 auto;}" +
+  "#wg-network-log .wg-net-count{font:700 10px/1.2 system-ui,sans-serif;color:#9CA3AF;" +
+  "background:rgba(124,58,237,.22);border-radius:999px;padding:1px 7px;}" +
+  "#wg-network-log .wg-net-collapse{flex:0 0 auto;width:18px;height:18px;border-radius:5px;border:none;" +
+  "background:rgba(124,58,237,.28);color:#e8dcff;font:700 13px/1 system-ui,sans-serif;cursor:pointer;" +
+  "pointer-events:auto;}" +
+  "#wg-network-log .wg-net-collapse:hover{background:rgba(124,58,237,.42);}" +
+  "#wg-network-log .wg-net-list{list-style:none;margin:0;padding:6px 8px;display:flex;" +
+  "flex-direction:column;gap:2px;overflow-y:auto;pointer-events:auto;}" +
+  "#wg-network-log .wg-net-row{display:flex;align-items:baseline;gap:7px;opacity:0;padding:3px 4px;" +
+  "border-radius:5px;cursor:pointer;transform:translateX(-4px);transition:opacity .2s ease,transform .2s ease;}" +
+  "#wg-network-log .wg-net-row:hover,#wg-network-log .wg-net-row.wg-net-open{background:rgba(124,58,237,.18);}" +
   "#wg-network-log .wg-net-row.wg-in{opacity:1;transform:translateX(0);}" +
+  "#wg-network-log .wg-net-method{flex:0 0 auto;font-weight:800;font-size:10px;min-width:38px;}" +
+  "#wg-network-log .wg-net-method-get{color:#3B82F6;}" +
+  "#wg-network-log .wg-net-method-post{color:#22C55E;}" +
+  "#wg-network-log .wg-net-method-put{color:#F97316;}" +
+  "#wg-network-log .wg-net-method-delete{color:#EF4444;}" +
+  "#wg-network-log .wg-net-method-other{color:#9CA3AF;}" +
   "#wg-network-log .wg-net-path{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;" +
   "white-space:nowrap;color:#e0e0f0;}" +
   "#wg-network-log .wg-net-status{flex:0 0 auto;font-weight:700;color:#22C55E;}" +
   "#wg-network-log .wg-net-row[data-ok=\"0\"] .wg-net-status{color:#EF4444;}" +
   "#wg-network-log .wg-net-ms{flex:0 0 auto;color:#9CA3AF;font-size:10px;}" +
+  "#wg-network-log .wg-net-detail{list-style:none;background:rgba(0,0,0,.28);border-radius:6px;" +
+  "padding:8px;margin:2px 0 6px;}" +
+  "#wg-network-log .wg-net-detail-section{margin-bottom:8px;}" +
+  "#wg-network-log .wg-net-detail-section:last-child{margin-bottom:0;}" +
+  "#wg-network-log .wg-net-detail-section h4{margin:0 0 4px;font:700 9px/1.2 system-ui,sans-serif;" +
+  "color:#9CA3AF;letter-spacing:.06em;text-transform:uppercase;}" +
+  "#wg-network-log .wg-net-headers{width:100%;border-collapse:collapse;font-size:11px;}" +
+  "#wg-network-log .wg-net-headers td{padding:1px 6px 1px 0;vertical-align:top;word-break:break-all;}" +
+  "#wg-network-log .wg-net-headers td:first-child{color:#c9a6ff;white-space:nowrap;}" +
+  "#wg-network-log .wg-net-body{margin:0;font-size:11px;white-space:pre-wrap;word-break:break-all;" +
+  "max-height:160px;overflow-y:auto;color:#e0e0f0;}" +
+  "#wg-network-log .wg-net-curl{color:#7dd3fc;}" +
+  "#wg-network-log .wg-net-empty{font-size:11px;color:#6b7280;font-style:italic;}" +
+  "#wg-network-log .wg-net-copy{margin-top:5px;padding:3px 9px;border-radius:5px;border:1px solid rgba(124,58,237,.5);" +
+  "background:rgba(124,58,237,.22);color:#e8dcff;font:700 10px system-ui,sans-serif;cursor:pointer;}" +
+  "#wg-network-log .wg-net-copy:hover{background:rgba(124,58,237,.38);}" +
   // Typing chip (method fills: username / password / etc.)
   "#wg-typing-badge{position:fixed;z-index:2147483646;bottom:88px;left:50%;transform:translateX(-50%);" +
   "display:flex;align-items:center;gap:8px;padding:8px 14px;" +
