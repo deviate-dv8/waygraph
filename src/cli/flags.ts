@@ -24,6 +24,10 @@ interface RunFlags {
   data?: string;
   /** Fill any requires key with no --data coverage from registerMemStub's registry (--mem-stub). */
   memStub?: boolean;
+  /** run only: explore every .branch() path (runBranchRegression), cloning the session at each branch point. */
+  allBranches?: boolean;
+  /** --all-branches only: one shared session (no cloning) - follows the single live-dispatch path instead. */
+  sharedSession?: boolean;
   /** Flow/chain spec from --blocks <spec>. */
   blocks?: string;
   /** auto path-find: --blocks <fromCheckpoint> <toCheckpoint>. */
@@ -177,6 +181,10 @@ export function parseRunFlags(argv: string[]): RunFlags {
       i = t.nextI;
     } else if (a === "--mem-stub") {
       out.memStub = true;
+    } else if (a === "--all-branches") {
+      out.allBranches = true;
+    } else if (a === "--shared-session") {
+      out.sharedSession = true;
     } else if (a === "--video" || a.startsWith("--video=")) {
       if (a.startsWith("--video=")) {
         out.video = a.slice("--video=".length);
@@ -299,6 +307,12 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
   }
   if (flags.memStub) {
     process.env.WAYGRAPH_MEM_STUB = "1";
+  }
+  if (flags.allBranches) {
+    process.env.WAYGRAPH_ALL_BRANCHES = "1";
+  }
+  if (flags.sharedSession) {
+    process.env.WAYGRAPH_SHARED_SESSION = "1";
   }
   if (flags.fast) {
     process.env.WAYGRAPH_DEMO_FAST = "1";

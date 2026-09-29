@@ -8,7 +8,7 @@ import { isExpectedChainFailure, parseVideoViewport, runChainedFlows, runJsonRep
 import { runStepMode } from "./step-mode.js";
 import { connect } from "../types.js";
 import { MemPage } from "../mem-page.js";
-import { Engine, start, end, chainFlow, isFastForwardBlock } from "../engine.js";
+import { Engine, start, end, chainFlow, isFastForwardBlock, branchRoutes, runBranchRegression } from "../engine.js";
 
 async function main() {
   const projectDir = process.argv[2];
@@ -275,6 +275,9 @@ async function main() {
       if (r.seedMem) r.seedMem();
     }
   }
+  if (process.env.WAYGRAPH_ALL_BRANCHES === "1") {
+    return runAllBranchesMode(chainFlows, mem, baseURL, headed, engine);
+  }
   if (step || jsonReport || baseURL || videoDir) {
     const { chromium } = await import("@playwright/test");
     // --start-maximized (step mode only): viewport: null alone only made
@@ -387,6 +390,53 @@ async function main() {
   } else {
     console.log("waygraph: chain finished -- " + JSON.stringify(result));
   }
+}
+
+/**
+ * `waygraph run --blocks <flowName> --all-branches`: explore every path through that flow's own
+ * `.branch()` tree (see src/engine/branch-regression.ts), not just whichever one the live state
+ * would dispatch to. Needs a single, bare Flow reference - a multi-segment chain spec has no one
+ * Flow to walk. `--shared-session` opts out of session cloning (WAYGRAPH_SHARED_SESSION=1).
+ */
+async function runAllBranchesMode(chainFlows, mem, baseURL, headed, engine) {
+  if (!chainFlows || chainFlows.length !== 1) {
+    console.error(
+      "waygraph run --all-branches: needs a single Flow reference (e.g. --blocks loginFlow), " +
+        "not a multi-segment chain spec - nothing else has one branch tree to explore.",
+    );
+    process.exitCode = 1;
+    return;
+  }
+  const flow = chainFlows[0];
+  if (!branchRoutes(flow)) {
+    console.error(
+      "waygraph run --all-branches: this Flow was not built with MapBuilder.branch() - " +
+        "there is no branch tree to explore. Run it normally instead.",
+    );
+    process.exitCode = 1;
+    return;
+  }
+  const { chromium } = await import("@playwright/test");
+  const browser = await chromium.launch({ headless: !headed });
+  const cloneSession = process.env.WAYGRAPH_SHARED_SESSION !== "1";
+  try {
+    const context = await browser.newContext(baseURL ? { baseURL } : undefined);
+    const results = await runBranchRegression(flow, context, mem, { cloneSession });
+    for (const r of results) {
+      const line = `waygraph run --all-branches: ${r.path || "(root)"} -> ${r.status}` +
+        (r.result ? ` (${JSON.stringify(r.result)})` : "") +
+        (r.error ? ` - ${r.error}` : "");
+      console.log(line);
+    }
+    const failed = results.filter((r) => r.status === "failed");
+    if (failed.length) {
+      console.error(`waygraph run --all-branches: ${failed.length}/${results.length} path(s) failed`);
+      process.exitCode = 1;
+    }
+  } finally {
+    await browser.close();
+  }
+  void engine;
 }
 
 export function startRunner() {

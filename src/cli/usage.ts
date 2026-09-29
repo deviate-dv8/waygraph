@@ -169,6 +169,11 @@ Primary (less is more):
   waygraph run   [--blocks <flow|file|spec>]  Execute (no overlay unless --step)
                  --data '{...}'
                  --mem-stub                Same as demo's --mem-stub
+                 --all-branches            Bare Flow ref only: explore every MapBuilder.branch()
+                                           path, cloning the session (storageState+URL) at each
+                                           branch point - see runBranchRegression()
+                 --shared-session          With --all-branches: one shared session instead of
+                                           cloning (follows only the live-dispatch path)
                  --non-headless            Show browser
                  --video [dir]             Record .webm
                  --video-viewport WxH       Recording size (default run: 1280x720)
