@@ -37,7 +37,8 @@
     "url": "git+https://github.com/deviate-dv8/waygraph.git"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node scripts/copy-runner.mjs && node scripts/copy-ui-css.mjs",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json && node scripts/copy-runner.mjs && node scripts/copy-ui-css.mjs",
     "typecheck": "node bin/waygraph typecheck .",
     "test": "npm run check:structure && npm run test:unit && playwright test",
     "test:ui": "playwright test --ui",

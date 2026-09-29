@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 // not a bug in AutoSession itself), the same reason
 // tests/fixtures/inline-selector-check/ already imports from dist/.
 import { pilotStart, AutoSession } from "../../dist/index.js";
-import { requestSession, serveSession } from "../../dist/auto-session-ipc.js";
+import { requestSession, serveSession } from "../../dist/session/auto-session-ipc.js";
 
 const sauceRoot = join(import.meta.dirname, "../../examples/saucedemo");
 // Zero .block.ts files - deliberately minimal, so a session started here pays
