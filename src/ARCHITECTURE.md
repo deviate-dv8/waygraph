@@ -11,7 +11,7 @@ runner/ ───────────── `waygraph run/demo/chain` execut
 auto-session.ts + auto-session/ (helpers, session) ─ the session class itself
 session/ (auto-session-ipc, browser, pilot, auto-explore, auto-explore-run, block-inject, overlay-beacon) ─ live session spawn/control, explore, cross-project inject
 traverse/ (run, coverage, lease) ─ live parallel graph exploration with session cloning (`waygraph traverse`)
-engine.ts + engine/ ── barrel over engine/{core,config,run-graph,flow,compose,engine-class,locate,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
+core.ts + core/ ── barrel over core/{block,config,run-graph,flow,compose,engine,map-builder,locate,branch-regression,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
 highlights.ts + highlights/ (types, style, device, demo-pace, todo-dock, merge, stub-ctx, run-phase, css, shorthand) ── demo narration: stubs, todo dock, device presets, pace, ring CSS
 ui/ ────────────── real .css overlay stylesheet built on Open Props, bundled by scripts/copy-ui-css.mjs into dist/ui/overlay.css and injected once by ui/shadow.ts - see src/ui/css/README.md; change a colour in ui/css/tokens.css, never inline
 analysis/ (graph, map-check, practices-check, coverage-gap) ─ static analysis / lint
@@ -19,8 +19,15 @@ types.ts, trait.ts, mem-page.ts, mem-stub.ts, errors.ts ─ core types and small
 index.ts ─────────── the public API: re-exports only; nothing inside src/ imports it
 ```
 
-`types.ts` sits *below* `engine.ts` and `highlights.ts` in the module graph. Never import an
-engine/highlights runtime symbol into it.
+`types.ts` sits *below* `core.ts` and `highlights.ts` in the module graph. Never import a
+core/highlights runtime symbol into it.
+
+`core/engine.ts` (the `Engine` class) and `core/map-builder.ts` (`MapBuilder` + the standalone
+`map()`) are two files, not one, despite being mutually referential at the type level:
+`Engine.map()` builds a `MapBuilder`, and `MapBuilder.end()` calls back into `defineFlow`.
+`MapBuilder` only depends on a plain `DefineFlowFn` function type, never on `Engine` the class -
+that's what makes the split legal under the no-cycles rule. Don't reintroduce a direct
+`Engine`/`MapBuilder` type dependency in either direction.
 
 ## Where to put new code
 
@@ -30,10 +37,11 @@ engine/highlights runtime symbol into it.
 | A new CLI flag for run/demo | `cli/flags.ts` (`RunFlags`, `parseRunFlags`, `applyRunFlags`) + `cli/usage.ts` |
 | A session command (`send`, `highlight`, ...) | `commands/session.ts` + `auto-session.ts` + IPC op in `auto-session-ipc.ts` |
 | Demo overlay / step-mode behaviour | `src/runner/` - `overlay-install` (page UI), `step-panels`, `step-mode`, `rings`, `todo-dock`, `demo-log`, `seed-mem` (`--data`/`--mem-stub`). Read `CLI-STOMP-GUARD.md` first |
-| A `with*(flow, ...)` wrapper | `engine/flow.ts`, next to `withTitle`; add the field to `Flow` and its `withBlockVerify`/`modBlockVerify` re-wraps |
-| A `define*Block` helper | `engine/blocks/<kind>.ts`; update `MapBuilder` types if it can appear in a map flow |
-| A `MapBuilder` step/routing method | `engine/engine-class.ts` next to `.method()`/`.branch()`; `.branch()`'s routes are functions handed a fresh `MapBuilder` seeded at the branch's own Checkpoint, not a ready-made `Flow` (a `Flow` always starts at `S`) |
-| Regression-running a `.branch()` tree | `engine/branch-regression.ts` (`branchRoutes`/`collectBranchFlows`/`runBranchRegression`) - clones the real session (storageState + URL) at each branch point so every route runs from a genuine copy of the live state; `cloneSession: false` opts out to one shared session. `__wgBranch` is an ordinary enumerable field so `with*` spreads carry it. CLI: `waygraph run --blocks <flow> --all-branches[--shared-session]` (wired in `runner/main.js`'s `runAllBranchesMode`) |
+| A `with*(flow, ...)` wrapper | `core/flow.ts`, next to `withTitle`; add the field to `Flow` and its `withBlockVerify`/`modBlockVerify` re-wraps |
+| A `define*Block` helper | `core/blocks/<kind>.ts`; update `MapBuilder` types if it can appear in a map flow |
+| A `MapBuilder` step/routing method | `core/map-builder.ts` next to `.method()`/`.branch()`; `.branch()`'s routes are functions handed a fresh `MapBuilder` seeded at the branch's own Checkpoint, not a ready-made `Flow` (a `Flow` always starts at `S`) |
+| An `Engine` method (`defineFlow`/`map`) | `core/engine.ts` - keep it depending only on `DefineFlowFn`/`MapBuilderOptions` (types) from `map-builder.ts`, never a value-level import of `MapBuilder` beyond that |
+| Regression-running a `.branch()` tree | `core/branch-regression.ts` (`branchRoutes`/`collectBranchFlows`/`runBranchRegression`) - clones the real session (storageState + URL) at each branch point so every route runs from a genuine copy of the live state; `cloneSession: false` opts out to one shared session. `__wgBranch` is an ordinary enumerable field so `with*` spreads carry it. CLI: `waygraph run --blocks <flow> --all-branches[--shared-session]` (wired in `runner/main.js`'s `runAllBranchesMode`) |
 | A `Trait` | `trait.ts` (+ `Trait` object + `index.ts` export) |
 | Overlay colours / ring, cursor, banner, dock CSS | real `.css` in `src/ui/css/` (see its README) - built on Open Props, bundled into `dist/ui/overlay.css`, injected once into the Shadow DOM by `ui/shadow.ts` |
 | A highlight ring on ANY surface | `runner/inpage/core.js`'s `__wgPaintRingAt(ringId, labelId, box, label, tone, style)` + `runner/rings.js`'s `showRingAt`/`hideRingAt`/`removeRingAt` (Node-side) - the ONE ring implementation. `#wg-ring`/`#wg-ring-label` (demo/auto's singleton "current action" ring, via `showRing`/`__wgPositionRing`) and Pilot's several simultaneous fixture rings (`#wg-fx-ring-<n>`, via `showPilotFixtures`) both paint through it - don't add a third, surface-specific ring painter |

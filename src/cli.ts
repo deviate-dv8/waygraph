@@ -16,8 +16,8 @@
  * "project" defaults to cwd. Flags beat WAYGRAPH_* env.
  */
 
-import { SKILL_FLAG_MAP, printSkillIndex, readSkillMarkdown } from "./agent-dive.js";
-import type { SkillFlag } from "./agent-dive.js";
+import { SKILL_FLAG_MAP, printSkillIndex, readSkillMarkdown } from "./commands/agent-dive-scaffold.js";
+import type { SkillFlag } from "./commands/agent-dive-scaffold.js";
 import { usage } from "./cli/usage.js";
 import { listCase, navCase } from "./commands/list.js";
 import { checkCase, typecheckCase, validateCase } from "./commands/check.js";

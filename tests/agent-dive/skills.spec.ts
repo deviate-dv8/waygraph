@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runAgentDive } from "../../src/agent-dive.js";
+import { runAgentDive } from "../../src/commands/agent-dive-scaffold.js";
 
 test.describe("agent-dive: Claude Code Skills generation", () => {
   test("claude loop writes real SKILL.md files for both waygraph skills", async () => {

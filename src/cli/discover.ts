@@ -148,7 +148,7 @@ export function isBlockLike(val: unknown): val is { name: string; instruction: {
 }
 
 
-/** Set by `defineNavBlock` (non-enumerable) - see src/engine.ts. */
+/** Set by `defineNavBlock` (non-enumerable) - see src/core.ts. */
 export function isNavBlockMarked(val: Record<string, unknown>): boolean {
   return (val as { __waygraphKind?: string }).__waygraphKind === "nav";
 }

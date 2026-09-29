@@ -8,7 +8,7 @@ import { isExpectedChainFailure, parseVideoViewport, runChainedFlows, runJsonRep
 import { runStepMode } from "./step-mode.js";
 import { connect } from "../types.js";
 import { MemPage } from "../mem-page.js";
-import { Engine, start, end, chainFlow, isFastForwardBlock, branchRoutes, runBranchRegression } from "../engine.js";
+import { Engine, start, end, chainFlow, isFastForwardBlock, branchRoutes, runBranchRegression } from "../core.js";
 
 async function main() {
   const projectDir = process.argv[2];
@@ -394,7 +394,7 @@ async function main() {
 
 /**
  * `waygraph run --blocks <flowName> --all-branches`: explore every path through that flow's own
- * `.branch()` tree (see src/engine/branch-regression.ts), not just whichever one the live state
+ * `.branch()` tree (see src/core/branch-regression.ts), not just whichever one the live state
  * would dispatch to. Needs a single, bare Flow reference - a multi-segment chain spec has no one
  * Flow to walk. `--shared-session` opts out of session cloning (WAYGRAPH_SHARED_SESSION=1).
  */

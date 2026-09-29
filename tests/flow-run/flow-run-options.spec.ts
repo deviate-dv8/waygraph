@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/types.js";
 import { checkpoint } from "../../src/types.js";
-import { Engine, start, end } from "../../src/engine.js";
+import { Engine, start, end } from "../../src/core.js";
 import { MemPage } from "../../src/mem-page.js";
 
 // Real gap this proves fixed: before `Flow.run`'s `page`/`closeOnFinish`

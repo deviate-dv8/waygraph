@@ -1,10 +1,24 @@
-// Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
+// Split out of engine-class.ts (which crammed Engine and MapBuilder into one file despite them
+// being two unrelated concepts - see src/ARCHITECTURE.md). Behavior unchanged.
 import type { Block, Checkpoint, DefinedBlock } from "../types.js";
-import { WaygraphError } from "../errors.js";
+import {
+  WaygraphError,
+  MSG_MAP_WRONG_KIND,
+  MSG_MAP_WRONG_SALT,
+  MSG_MAP_WRONG_ORIGIN_INTERNAL,
+  MSG_MAP_WRONG_ORIGIN_EXTERNAL,
+  MSG_MAP_BRANCH_SHARED_SESSION_UNSUPPORTED,
+  MSG_MAP_FF_ALREADY_OPEN,
+  MSG_MAP_FF_NOT_OPEN,
+  MSG_MAP_FF_EMPTY,
+  MSG_MAP_METHOD_GOT_ASSERT,
+  MSG_MAP_BRANCH_NO_PRIOR_STEP,
+  MSG_MAP_FF_NOT_CLOSED,
+  MSG_MAP_EMPTY,
+} from "../errors.js";
 import type { EngineConfig } from "./config.js";
 import { end, start } from "./run-graph.js";
 import type { EndMarker, StartMarker } from "./run-graph.js";
-import { buildFlow } from "./flow.js";
 import type { Flow } from "./flow.js";
 import type { RunGraphOptions } from "./run-graph.js";
 import { MemPage } from "../mem-page.js";
@@ -17,332 +31,13 @@ import type { EffectBlock } from "./blocks/effect.js";
 
 type S = Checkpoint<"__start__">;
 
-
 /**
- * Holds engine-level configuration shared across every flow defined from it -
- * for now, just how to launch a browser when a Flow owns its own
- * (`headless`/`browserName`/`slowMo`); traits/interstitials/watchers land here
- * in a later change.
- * @example const engine = new Engine({ headless: false, slowMo: 250 });
+ * The one capability MapBuilder needs from Engine - a plain defineFlow-shaped function, not the
+ * whole Engine class. Depending on Engine-the-type here would make engine.ts and map-builder.ts
+ * import each other (Engine.map() builds a MapBuilder; MapBuilder.end() calls back into
+ * defineFlow) - a real cycle check:structure forbids. This type is how that's avoided.
  */
-export class Engine {
-  constructor(private readonly config: EngineConfig = {}) {}
-
-  /**
-   * Builds a runnable {@link Flow} from `[start, ...Blocks, end]`, typechecked
-   * so each Block's `In` must match the previous Block's `Out` - the same
-   * check `connect()` does, just declared as a flat array instead of hand-nested
-   * calls. Overloaded for 2-9 array slots (1-8 real Blocks between `start`/`end`)
-   * rather than one fully-generic recursive tuple type, so each arity is as
-   * reliably checked as `connect<A,B,C>` itself.
-   * @example engine.defineFlow([start, LoginBlock, AddToCartBlock, end])
-   */
-  defineFlow<B extends Checkpoint<string>>(
-    blocks: readonly [StartMarker, Block<S, B>, EndMarker],
-  ): Flow<B>;
-  defineFlow<B extends Checkpoint<string>, C extends Checkpoint<string>>(
-    blocks: readonly [StartMarker, Block<S, B>, Block<B, C>, EndMarker],
-  ): Flow<C>;
-  defineFlow<B extends Checkpoint<string>, C extends Checkpoint<string>, D extends Checkpoint<string>>(
-    blocks: readonly [StartMarker, Block<S, B>, Block<B, C>, Block<C, D>, EndMarker],
-  ): Flow<D>;
-  defineFlow<
-    B extends Checkpoint<string>,
-    C extends Checkpoint<string>,
-    D extends Checkpoint<string>,
-    E extends Checkpoint<string>,
-  >(
-    blocks: readonly [StartMarker, Block<S, B>, Block<B, C>, Block<C, D>, Block<D, E>, EndMarker],
-  ): Flow<E>;
-  defineFlow<
-    B extends Checkpoint<string>,
-    C extends Checkpoint<string>,
-    D extends Checkpoint<string>,
-    E extends Checkpoint<string>,
-    F extends Checkpoint<string>,
-  >(
-    blocks: readonly [
-      StartMarker,
-      Block<S, B>,
-      Block<B, C>,
-      Block<C, D>,
-      Block<D, E>,
-      Block<E, F>,
-      EndMarker,
-    ],
-  ): Flow<F>;
-  defineFlow<
-    B extends Checkpoint<string>,
-    C extends Checkpoint<string>,
-    D extends Checkpoint<string>,
-    E extends Checkpoint<string>,
-    F extends Checkpoint<string>,
-    G extends Checkpoint<string>,
-  >(
-    blocks: readonly [
-      StartMarker,
-      Block<S, B>,
-      Block<B, C>,
-      Block<C, D>,
-      Block<D, E>,
-      Block<E, F>,
-      Block<F, G>,
-      EndMarker,
-    ],
-  ): Flow<G>;
-  defineFlow<
-    B extends Checkpoint<string>,
-    C extends Checkpoint<string>,
-    D extends Checkpoint<string>,
-    E extends Checkpoint<string>,
-    F extends Checkpoint<string>,
-    G extends Checkpoint<string>,
-    H extends Checkpoint<string>,
-  >(
-    blocks: readonly [
-      StartMarker,
-      Block<S, B>,
-      Block<B, C>,
-      Block<C, D>,
-      Block<D, E>,
-      Block<E, F>,
-      Block<F, G>,
-      Block<G, H>,
-      EndMarker,
-    ],
-  ): Flow<H>;
-  defineFlow<
-    B extends Checkpoint<string>,
-    C extends Checkpoint<string>,
-    D extends Checkpoint<string>,
-    E extends Checkpoint<string>,
-    F extends Checkpoint<string>,
-    G extends Checkpoint<string>,
-    H extends Checkpoint<string>,
-    I extends Checkpoint<string>,
-  >(
-    blocks: readonly [
-      StartMarker,
-      Block<S, B>,
-      Block<B, C>,
-      Block<C, D>,
-      Block<D, E>,
-      Block<E, F>,
-      Block<F, G>,
-      Block<G, H>,
-      Block<H, I>,
-      EndMarker,
-    ],
-  ): Flow<I>;
-  defineFlow<
-    B extends Checkpoint<string>,
-    C extends Checkpoint<string>,
-    D extends Checkpoint<string>,
-    E extends Checkpoint<string>,
-    F extends Checkpoint<string>,
-    G extends Checkpoint<string>,
-    H extends Checkpoint<string>,
-    I extends Checkpoint<string>,
-    J extends Checkpoint<string>,
-  >(
-    blocks: readonly [
-      StartMarker,
-      Block<S, B>,
-      Block<B, C>,
-      Block<C, D>,
-      Block<D, E>,
-      Block<E, F>,
-      Block<F, G>,
-      Block<G, H>,
-      Block<H, I>,
-      Block<I, J>,
-      EndMarker,
-    ],
-  ): Flow<J>;
-  defineFlow<
-    B extends Checkpoint<string>,
-    C extends Checkpoint<string>,
-    D extends Checkpoint<string>,
-    E extends Checkpoint<string>,
-    F extends Checkpoint<string>,
-    G extends Checkpoint<string>,
-    H extends Checkpoint<string>,
-    I extends Checkpoint<string>,
-    J extends Checkpoint<string>,
-    K extends Checkpoint<string>,
-  >(
-    blocks: readonly [
-      StartMarker,
-      Block<S, B>,
-      Block<B, C>,
-      Block<C, D>,
-      Block<D, E>,
-      Block<E, F>,
-      Block<F, G>,
-      Block<G, H>,
-      Block<H, I>,
-      Block<I, J>,
-      Block<J, K>,
-      EndMarker,
-    ],
-  ): Flow<K>;
-  defineFlow<
-    B extends Checkpoint<string>,
-    C extends Checkpoint<string>,
-    D extends Checkpoint<string>,
-    E extends Checkpoint<string>,
-    F extends Checkpoint<string>,
-    G extends Checkpoint<string>,
-    H extends Checkpoint<string>,
-    I extends Checkpoint<string>,
-    J extends Checkpoint<string>,
-    K extends Checkpoint<string>,
-    L extends Checkpoint<string>,
-  >(
-    blocks: readonly [
-      StartMarker,
-      Block<S, B>,
-      Block<B, C>,
-      Block<C, D>,
-      Block<D, E>,
-      Block<E, F>,
-      Block<F, G>,
-      Block<G, H>,
-      Block<H, I>,
-      Block<I, J>,
-      Block<J, K>,
-      Block<K, L>,
-      EndMarker,
-    ],
-  ): Flow<L>;
-  defineFlow<
-    B extends Checkpoint<string>,
-    C extends Checkpoint<string>,
-    D extends Checkpoint<string>,
-    E extends Checkpoint<string>,
-    F extends Checkpoint<string>,
-    G extends Checkpoint<string>,
-    H extends Checkpoint<string>,
-    I extends Checkpoint<string>,
-    J extends Checkpoint<string>,
-    K extends Checkpoint<string>,
-    L extends Checkpoint<string>,
-    M extends Checkpoint<string>,
-  >(
-    blocks: readonly [
-      StartMarker,
-      Block<S, B>,
-      Block<B, C>,
-      Block<C, D>,
-      Block<D, E>,
-      Block<E, F>,
-      Block<F, G>,
-      Block<G, H>,
-      Block<H, I>,
-      Block<I, J>,
-      Block<J, K>,
-      Block<K, L>,
-      Block<L, M>,
-      EndMarker,
-    ],
-  ): Flow<M>;
-  defineFlow<
-    B extends Checkpoint<string>,
-    C extends Checkpoint<string>,
-    D extends Checkpoint<string>,
-    E extends Checkpoint<string>,
-    F extends Checkpoint<string>,
-    G extends Checkpoint<string>,
-    H extends Checkpoint<string>,
-    I extends Checkpoint<string>,
-    J extends Checkpoint<string>,
-    K extends Checkpoint<string>,
-    L extends Checkpoint<string>,
-    M extends Checkpoint<string>,
-    N extends Checkpoint<string>,
-  >(
-    blocks: readonly [
-      StartMarker,
-      Block<S, B>,
-      Block<B, C>,
-      Block<C, D>,
-      Block<D, E>,
-      Block<E, F>,
-      Block<F, G>,
-      Block<G, H>,
-      Block<H, I>,
-      Block<I, J>,
-      Block<J, K>,
-      Block<K, L>,
-      Block<L, M>,
-      Block<M, N>,
-      EndMarker,
-    ],
-  ): Flow<N>;
-  defineFlow<
-    B extends Checkpoint<string>,
-    C extends Checkpoint<string>,
-    D extends Checkpoint<string>,
-    E extends Checkpoint<string>,
-    F extends Checkpoint<string>,
-    G extends Checkpoint<string>,
-    H extends Checkpoint<string>,
-    I extends Checkpoint<string>,
-    J extends Checkpoint<string>,
-    K extends Checkpoint<string>,
-    L extends Checkpoint<string>,
-    M extends Checkpoint<string>,
-    N extends Checkpoint<string>,
-    O extends Checkpoint<string>,
-  >(
-    blocks: readonly [
-      StartMarker,
-      Block<S, B>,
-      Block<B, C>,
-      Block<C, D>,
-      Block<D, E>,
-      Block<E, F>,
-      Block<F, G>,
-      Block<G, H>,
-      Block<H, I>,
-      Block<I, J>,
-      Block<J, K>,
-      Block<K, L>,
-      Block<L, M>,
-      Block<M, N>,
-      Block<N, O>,
-      EndMarker,
-    ],
-  ): Flow<O>;
-  defineFlow(blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker]): Flow<any> {
-    return buildFlow(blocks.slice(1, -1) as Block<any, any>[], this.config);
-  }
-
-  /**
-   * Fluent, kind-checked alternative to `defineFlow([start, ...blocks, end])` -
-   * see {@link MapBuilder}. Real, direct request this responds to: pia/zsign's
-   * own agents kept hand-editing/hand-composing Blocks into ad hoc shapes
-   * ("locks" convention tried, still got broken) - `map()` forces every step
-   * through this Engine's own `define*Block` factories (checked by the same
-   * `__waygraphKind`/`__waygraphSalt` runtime markers `graph.ts`/`map-check.ts`
-   * already trust), so a hand-rolled plain-object Block can never silently
-   * pass as a real navigation/assertion/method step. `homeOrigin`, if given,
-   * also gates `.gotoPage()`/`.gotoExternal()` against each Nav/Page Block's
-   * own static `url` (skipped, honestly, for click-based/dynamic nav - not
-   * statically checkable, same limitation `map-check.ts` already documents).
-   * @example
-   * const flow = engine.map({ homeOrigin: "https://app.example.com" })
-   *   .start()
-   *   .gotoPage(NavHomeBlock)
-   *   .assert(AssertHelloBlock)
-   *   .gotoExternal(NavMailpitBlock)
-   *   .end();
-   */
-  map(options?: MapBuilderOptions): MapBuilder<S> {
-    return MapBuilder.begin(this, options?.homeOrigin);
-  }
-}
-
+export type DefineFlowFn = (blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker]) => Flow<any>;
 
 export interface MapBuilderOptions {
   /**
@@ -388,12 +83,7 @@ function assertMapKind(block: Block<any, any>, allowed: readonly string[], metho
   if (kind !== undefined && allowed.includes(kind)) return;
   const wanted = allowed.map((k) => MAP_KIND_FACTORY_HINT[k] ?? k).join(" or ");
   const found = kind ? `a Block of kind "${kind}"` : "an object with no waygraph kind marker at all";
-  throw new WaygraphError(
-    "WG_MAP_WRONG_KIND",
-    `Waygraph map: .${method}("${block?.name ?? "?"}") requires a Block built with ${wanted} ` +
-      `(found ${found} - a hand-built plain object doesn't count). This check is the whole point ` +
-      "of the map() builder: only real Blocks from waygraph's own factories can enter a chain.",
-  );
+  throw new WaygraphError("WG_MAP_WRONG_KIND", MSG_MAP_WRONG_KIND(method, block?.name ?? "?", wanted, found));
 }
 
 
@@ -402,12 +92,7 @@ function assertMapSalt(block: Block<any, any>, allowed: readonly string[], metho
   if (salt !== undefined && allowed.includes(salt)) return;
   const wanted = allowed.map((s) => MAP_SALT_FACTORY_HINT[s] ?? s).join(" or ");
   const found = salt ? `a Block salted "${salt}"` : "an object with no waygraph salt marker at all";
-  throw new WaygraphError(
-    "WG_MAP_WRONG_SALT",
-    `Waygraph map: .${method}("${block?.name ?? "?"}") requires a Block built with ${wanted} ` +
-      `(found ${found} - a hand-built plain object doesn't count). This check is the whole point ` +
-      "of the map() builder: only real Blocks from waygraph's own factories can enter a chain.",
-  );
+  throw new WaygraphError("WG_MAP_WRONG_SALT", MSG_MAP_WRONG_SALT(method, block?.name ?? "?", wanted, found));
 }
 
 
@@ -430,18 +115,10 @@ function assertMapOrigin(
   }
   const isExternal = targetOrigin !== wantOrigin;
   if (expect === "internal" && isExternal) {
-    throw new WaygraphError(
-      "WG_MAP_WRONG_ORIGIN",
-      `Waygraph map: .gotoPage("${block.name}") targets ${targetOrigin}, which is NOT this map's ` +
-        `home origin (${wantOrigin}) - use .gotoExternal() for a genuinely cross-origin destination.`,
-    );
+    throw new WaygraphError("WG_MAP_WRONG_ORIGIN", MSG_MAP_WRONG_ORIGIN_INTERNAL(block.name, targetOrigin, wantOrigin));
   }
   if (expect === "external" && !isExternal) {
-    throw new WaygraphError(
-      "WG_MAP_WRONG_ORIGIN",
-      `Waygraph map: .gotoExternal("${block.name}") targets ${targetOrigin}, which IS this map's ` +
-        `home origin (${wantOrigin}) - use .gotoPage() for an internal destination.`,
-    );
+    throw new WaygraphError("WG_MAP_WRONG_ORIGIN", MSG_MAP_WRONG_ORIGIN_EXTERNAL(block.name, targetOrigin, wantOrigin));
   }
 }
 
@@ -462,12 +139,7 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
     options?: RunGraphOptions,
   ) => {
     if (contextOrMem instanceof MemPage) {
-      throw new WaygraphError(
-        "WG_MAP_BRANCH_SHARED_SESSION_UNSUPPORTED",
-        "Waygraph map: a .branch()-ed Flow can't run via run(mem, config) - that convenience form " +
-          "always closes its own browser/page before a branch's tag is even known. Call " +
-          "run(context, mem[, options]) instead, keeping the same page across the branch.",
-      );
+      throw new WaygraphError("WG_MAP_BRANCH_SHARED_SESSION_UNSUPPORTED", MSG_MAP_BRANCH_SHARED_SESSION_UNSUPPORTED);
     }
     const context = contextOrMem;
     const mem = memOrConfig as MemPage;
@@ -535,7 +207,8 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
  */
 export class MapBuilder<Out extends Checkpoint<string>> {
   private constructor(
-    private readonly engine: Engine,
+    // A plain defineFlow-shaped function, not the whole Engine - see DefineFlowFn's own comment.
+    private readonly defineFlow: DefineFlowFn,
     private readonly steps: readonly DefinedBlock<any, any>[],
     private readonly homeOrigin: string | undefined,
     private readonly ff:
@@ -544,8 +217,8 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   ) {}
 
   /** @internal - use `engine.map()` or the standalone `map()` export. */
-  static begin(engine: Engine, homeOrigin: string | undefined): MapBuilder<S> {
-    return new MapBuilder<S>(engine, [], homeOrigin, null);
+  static begin(defineFlow: DefineFlowFn, homeOrigin: string | undefined): MapBuilder<S> {
+    return new MapBuilder<S>(defineFlow, [], homeOrigin, null);
   }
 
   /** Readable chain-opener - mirrors `defineFlow`'s leading `start` sentinel. Returns `this` unchanged; entirely optional. */
@@ -560,16 +233,13 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    */
   ffStart(name?: string): MapBuilder<Out> {
     if (this.ff) {
-      throw new WaygraphError(
-        "WG_MAP_FF_ALREADY_OPEN",
-        `Waygraph map: .ffStart() while already inside "${this.ff.name}" - call .ffEnd() first`,
-      );
+      throw new WaygraphError("WG_MAP_FF_ALREADY_OPEN", MSG_MAP_FF_ALREADY_OPEN(this.ff.name));
     }
     const ffName =
       typeof name === "string" && name.trim()
         ? name.trim()
         : `ff-${this.steps.length + 1}`;
-    return new MapBuilder<Out>(this.engine, this.steps, this.homeOrigin, {
+    return new MapBuilder<Out>(this.defineFlow, this.steps, this.homeOrigin, {
       name: ffName,
       buffer: [],
     });
@@ -581,13 +251,10 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    */
   ffEnd(): MapBuilder<Out> {
     if (!this.ff) {
-      throw new WaygraphError("WG_MAP_FF_NOT_OPEN", "Waygraph map: .ffEnd() with no open .ffStart()");
+      throw new WaygraphError("WG_MAP_FF_NOT_OPEN", MSG_MAP_FF_NOT_OPEN);
     }
     if (this.ff.buffer.length === 0) {
-      throw new WaygraphError(
-        "WG_MAP_FF_EMPTY",
-        `Waygraph map: .ffEnd() for "${this.ff.name}" has no steps - add .gotoPage/.method/… inside the window`,
-      );
+      throw new WaygraphError("WG_MAP_FF_EMPTY", MSG_MAP_FF_EMPTY(this.ff.name));
     }
     const composed = fastForwardComposeBlock(
       this.ff.name,
@@ -595,7 +262,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
       this.ff.buffer as any,
     );
     return new MapBuilder<Out>(
-      this.engine,
+      this.defineFlow,
       [...this.steps, composed as unknown as DefinedBlock<any, any>],
       this.homeOrigin,
       null,
@@ -606,13 +273,13 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     block: DefinedBlock<any, any>,
   ): MapBuilder<NextOut> {
     if (this.ff) {
-      return new MapBuilder<NextOut>(this.engine, this.steps, this.homeOrigin, {
+      return new MapBuilder<NextOut>(this.defineFlow, this.steps, this.homeOrigin, {
         name: this.ff.name,
         buffer: [...this.ff.buffer, block],
       });
     }
     return new MapBuilder<NextOut>(
-      this.engine,
+      this.defineFlow,
       [...this.steps, block],
       this.homeOrigin,
       null,
@@ -668,11 +335,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     block: (MethodBlock<Out, NextOut> | EffectBlock<Out, NextOut>) & { name: string },
   ): MapBuilder<NextOut> {
     if (mapKindOf(block) === "assert") {
-      throw new WaygraphError(
-        "WG_MAP_WRONG_KIND",
-        `Waygraph map: .method("${block.name}") got a defineAssertBlock - use .assert() for ` +
-          "self-loop verify steps (Assert Blocks share method salt internally but are not methods).",
-      );
+      throw new WaygraphError("WG_MAP_WRONG_KIND", MSG_MAP_METHOD_GOT_ASSERT(block.name));
     }
     assertMapSalt(block, ["method", "effect"], "method");
     return this.appendStep(block as DefinedBlock<any, any>);
@@ -724,18 +387,14 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     }[keyof Routes & string]
   > {
     if (this.steps.length === 0) {
-      throw new WaygraphError(
-        "WG_MAP_BRANCH_NO_PRIOR_STEP",
-        "Waygraph map: .branch() needs at least one prior step - nothing to branch from. " +
-          "Add .gotoPage()/.gotoExternal()/.method()/.assert() first.",
-      );
+      throw new WaygraphError("WG_MAP_BRANCH_NO_PRIOR_STEP", MSG_MAP_BRANCH_NO_PRIOR_STEP);
     }
     const before = this.end();
     const resolvedRoutes: Record<string, Flow<any> | null> = {};
     for (const [tag, fn] of Object.entries(
       routes as Record<string, ((m: MapBuilder<any>) => Flow<any>) | null>,
     )) {
-      resolvedRoutes[tag] = fn ? fn(new MapBuilder<any>(this.engine, [], this.homeOrigin, null)) : null;
+      resolvedRoutes[tag] = fn ? fn(new MapBuilder<any>(this.defineFlow, [], this.homeOrigin, null)) : null;
     }
     return buildBranchedFlow(before, resolvedRoutes) as never;
   }
@@ -750,34 +409,16 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    */
   end(): Flow<Out> {
     if (this.ff) {
-      throw new WaygraphError(
-        "WG_MAP_FF_NOT_CLOSED",
-        `Waygraph map: .end() while .ffStart("${this.ff.name}") is still open - call .ffEnd() first`,
-      );
+      throw new WaygraphError("WG_MAP_FF_NOT_CLOSED", MSG_MAP_FF_NOT_CLOSED(this.ff.name));
     }
     if (this.steps.length === 0) {
-      throw new WaygraphError(
-        "WG_MAP_EMPTY",
-        "Waygraph map: .end() called with zero steps - add at least one .gotoPage()/.gotoExternal()/" +
-          ".assert()/.method() before .end()",
-      );
+      throw new WaygraphError("WG_MAP_EMPTY", MSG_MAP_EMPTY);
     }
     const chain = [start, ...this.steps, end] as unknown as readonly [
       StartMarker,
       Block<any, any>,
       EndMarker,
     ];
-    return (this.engine.defineFlow as (blocks: unknown) => Flow<Out>)(chain);
+    return (this.defineFlow as (blocks: unknown) => Flow<Out>)(chain);
   }
-}
-
-
-/**
- * Standalone convenience for `new Engine(config).map(options)` - use this
- * when a call site doesn't otherwise need its own `Engine` instance (no
- * shared `headless`/`slowMo`/`layouts` across several flows).
- * @example const flow = map({ homeOrigin: "https://app.example.com" }).gotoPage(NavHomeBlock).end();
- */
-export function map(options?: MapBuilderOptions & EngineConfig): MapBuilder<S> {
-  return new Engine(options).map(options);
 }

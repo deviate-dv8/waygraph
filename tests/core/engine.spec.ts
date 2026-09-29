@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { Block, Checkpoint } from "../../src/types.js";
-import { runGraph } from "../../src/engine.js";
+import { runGraph } from "../../src/core.js";
 import { checkpoint } from "../../src/types.js";
 import { MemPage } from "../../src/mem-page.js";
 

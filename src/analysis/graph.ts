@@ -286,13 +286,13 @@ function isBlockLike(val: unknown): val is { name: string; instruction: { act: u
   return instruction !== null && typeof instruction === "object" && typeof instruction?.act === "function";
 }
 
-/** Set by `defineNavBlock` (non-enumerable) - see src/engine.ts. */
+/** Set by `defineNavBlock` (non-enumerable) - see src/core.ts. */
 function isNavBlockMarked(val: Record<string, unknown>): boolean {
   const kind = (val as { __waygraphKind?: string }).__waygraphKind;
   return kind === "nav" || kind === "page";
 }
 
-/** Set by `defineAssertBlock` (non-enumerable) - see src/engine.ts. */
+/** Set by `defineAssertBlock` (non-enumerable) - see src/core.ts. */
 function isAssertBlockMarked(val: Record<string, unknown>): boolean {
   return (val as { __waygraphKind?: string }).__waygraphKind === "assert";
 }

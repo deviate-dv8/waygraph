@@ -5,8 +5,8 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
-import { Engine, start, end, locate } from "../engine.js";
-import type { NavBlock } from "../engine.js";
+import { Engine, start, end, locate } from "../core.js";
+import type { NavBlock } from "../core.js";
 import { MemPage, type MemKey } from "../mem-page.js";
 import type { Checkpoint } from "../types.js";
 import {

@@ -2,7 +2,7 @@
 import { checkpoint } from "../../types.js";
 import type { Checkpoint, DefinedBlock } from "../../types.js";
 import type { Trait } from "../../trait.js";
-import { defineBlock } from "../core.js";
+import { defineBlock } from "../block.js";
 import type { MemKey } from "../../mem-page.js";
 import type { Page } from "@playwright/test";
 

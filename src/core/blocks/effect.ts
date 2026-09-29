@@ -2,7 +2,7 @@
 import type { Block, Checkpoint, DefinedBlock } from "../../types.js";
 import type { MemKey } from "../../mem-page.js";
 import type { Trait } from "../../trait.js";
-import { defineBlock } from "../core.js";
+import { defineBlock } from "../block.js";
 
 /**
  * TypeScript salt over {@link defineBlock}: same runtime Block, but the type

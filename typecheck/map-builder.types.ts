@@ -5,7 +5,7 @@ import {
   defineAssertBlock,
   defineMethodBlock,
   map,
-} from "../src/engine.js";
+} from "../src/core.js";
 
 type Home = Checkpoint<"Home">;
 type Cleared = Checkpoint<"Cleared">;

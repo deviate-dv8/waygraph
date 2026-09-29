@@ -19,7 +19,7 @@ test("WaygraphError.message is prefixed with [code], and .code is readable separ
 });
 
 test("a real preflight failure throws a WaygraphError with .code, not a plain Error", async () => {
-  const { preflight } = await import("../../src/engine/run-graph.js");
+  const { preflight } = await import("../../src/core/run-graph.js");
   const { MemPage, key } = await import("../../src/mem-page.js");
   const mem = new MemPage();
   const need = key<string>("needed");

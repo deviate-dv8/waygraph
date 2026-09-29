@@ -2,12 +2,19 @@
 import type { ActionPage, Block, Checkpoint, DefinedBlock, Instruction } from "../types.js";
 import { MemPage } from "../mem-page.js";
 import type { Trait } from "../trait.js";
-import { WaygraphError } from "../errors.js";
+import {
+  WaygraphError,
+  MSG_FLOW_BLOCK_NOT_FOUND_BY_INDEX,
+  MSG_FLOW_BLOCK_NOT_FOUND_BY_NAME,
+  MSG_MODVERIFY_FUNCTION_FORM,
+  MSG_MODVERIFY_NOT_FOUND_BY_INDEX,
+  MSG_MODVERIFY_NOT_FOUND_BY_NAME,
+} from "../errors.js";
 
 export function findBlockIndex(middle: readonly Block<any, any>[], block: Block<any, any> | string | number): number {
   if (typeof block === "number") {
     if (block < 0 || block >= middle.length) {
-      throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", `Flow: no Block at index ${block} in this flow (has ${middle.length})`);
+      throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", MSG_FLOW_BLOCK_NOT_FOUND_BY_INDEX(block, middle.length));
     }
     return block;
   }
@@ -16,7 +23,7 @@ export function findBlockIndex(middle: readonly Block<any, any>[], block: Block<
   if (index === -1) {
     throw new WaygraphError(
       "WG_FLOW_BLOCK_NOT_FOUND",
-      `Flow: no Block named "${blockName}" in this flow (has: ${middle.map((b) => b.name).join(", ")})`,
+      MSG_FLOW_BLOCK_NOT_FOUND_BY_NAME(blockName, middle.map((b) => b.name).join(", ")),
     );
   }
   return index;
@@ -315,10 +322,7 @@ export function modVerify<In extends Checkpoint<string>, Out extends Checkpoint<
 ): DefinedBlock<In, Out> {
   const verify = block.instruction.verify;
   if (typeof verify === "function") {
-    throw new WaygraphError(
-      "WG_MODVERIFY_FUNCTION_FORM",
-      `modVerify: "${block.name}" has a function-form verify, which has no fixed list to address into - use withVerify to replace it wholesale instead`,
-    );
+    throw new WaygraphError("WG_MODVERIFY_FUNCTION_FORM", MSG_MODVERIFY_FUNCTION_FORM(block.name));
   }
   const traits = verify ?? [];
   const index = typeof nameOrIndex === "number" ? nameOrIndex : traits.findIndex((t) => t.name === nameOrIndex);
@@ -327,10 +331,8 @@ export function modVerify<In extends Checkpoint<string>, Out extends Checkpoint<
     throw new WaygraphError(
       "WG_MODVERIFY_NOT_FOUND",
       typeof nameOrIndex === "number"
-        ? `modVerify: "${block.name}" has no verify trait at index ${nameOrIndex} (has ${traits.length})`
-        : `modVerify: "${block.name}" has no verify trait named "${nameOrIndex}" (has: ${
-            traits.map((t) => t.name).join(", ") || "none"
-          })`,
+        ? MSG_MODVERIFY_NOT_FOUND_BY_INDEX(block.name, nameOrIndex, traits.length)
+        : MSG_MODVERIFY_NOT_FOUND_BY_NAME(block.name, nameOrIndex, traits.map((t) => t.name).join(", ")),
     );
   }
   const replacement: Trait =

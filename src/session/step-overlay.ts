@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
-import type { MemPage } from "./mem-page.js";
-import { ensureShadowRoot } from "./ui/shadow.js";
+import type { MemPage } from "../mem-page.js";
+import { ensureShadowRoot } from "../ui/shadow.js";
 
 const FAVICON =
   "data:image/svg+xml," +

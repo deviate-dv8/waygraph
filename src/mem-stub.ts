@@ -17,7 +17,7 @@
  */
 import type { MemKey } from "./mem-page.js";
 import type { MemPage } from "./mem-page.js";
-import type { Flow } from "./engine.js";
+import type { Flow } from "./core.js";
 
 const registry = new Map<MemKey<any>, () => unknown>();
 

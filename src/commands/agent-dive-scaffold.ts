@@ -24,8 +24,8 @@ export interface AgentSpec {
 }
 
 function packageRoot(): string {
-  // dist/agent-dive.js -> ..
-  return resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  // dist/commands/agent-dive-scaffold.js -> ../..
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 }
 
 function agentsTemplateDir(): string {

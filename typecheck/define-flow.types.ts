@@ -1,5 +1,5 @@
 import type { Checkpoint, Block } from "../src/types.js";
-import { Engine, start, end } from "../src/engine.js";
+import { Engine, start, end } from "../src/core.js";
 
 type Start = Checkpoint<"__start__">;
 type A = Checkpoint<"A">;

@@ -60,8 +60,8 @@ export {
   branchRoutes,
   collectBranchFlows,
   runBranchRegression,
-} from "./engine.js";
-export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./engine/branch-regression.js";
+} from "./core.js";
+export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./core/branch-regression.js";
 export {
   resolveHighlightSlots,
   resolveSlides,
@@ -167,7 +167,7 @@ export type {
   Layout,
   LayoutOptions,
   MapBuilderOptions,
-} from "./engine.js";
+} from "./core.js";
 export type { ActionPage } from "./types.js";
 export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./analysis/graph.js";
 export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock, OrphanBlock } from "./analysis/graph.js";

@@ -4,7 +4,7 @@ import type { Block, Checkpoint, DefinedBlock, WaygraphHighlight } from "../../t
 import type { Trait } from "../../trait.js";
 import { MemPage } from "../../mem-page.js";
 import type { MemKey } from "../../mem-page.js";
-import { defineBlock } from "../core.js";
+import { defineBlock } from "../block.js";
 import type { Page } from "@playwright/test";
 
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */

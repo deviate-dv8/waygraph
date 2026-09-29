@@ -1,6 +1,11 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { connect } from "../types.js";
-import { WaygraphError } from "../errors.js";
+import {
+  WaygraphError,
+  MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_INDEX,
+  MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_NAME,
+  MSG_CHAINFLOW_EMPTY,
+} from "../errors.js";
 import type { Block, Checkpoint } from "../types.js";
 import { preflight, runGraph } from "./run-graph.js";
 import type { RunGraphOptions } from "./run-graph.js";
@@ -9,7 +14,7 @@ import type { EngineConfig } from "./config.js";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { MemPage } from "../mem-page.js";
 import type { Trait } from "../trait.js";
-import { findBlockIndex, modVerify, withVerify } from "./core.js";
+import { findBlockIndex, modVerify, withVerify } from "./block.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../highlights.js";
 import type { DemoPace, HighlightStyleDefaults } from "../highlights.js";
 
@@ -490,14 +495,14 @@ function locateInChain(
       if (remaining < len) return { flowIndex: fi, localIndex: remaining };
       remaining -= len;
     }
-    throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", `chainFlow: no Block at index ${block} across ${flows.length} chained flows`);
+    throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_INDEX(block, flows.length));
   }
   const blockName = typeof block === "string" ? block : block.name;
   for (let fi = 0; fi < flows.length; fi++) {
     const localIndex = flows[fi]!.blocks().findIndex((bi) => bi.name === blockName);
     if (localIndex !== -1) return { flowIndex: fi, localIndex };
   }
-  throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", `chainFlow: no Block named "${blockName}" in any chained flow`);
+  throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_NAME(blockName));
 }
 
 
@@ -536,7 +541,7 @@ async function clearSessionState(context: BrowserContext, page: Page): Promise<v
  */
 export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
   if (flows.length === 0) {
-    throw new WaygraphError("WG_CHAINFLOW_EMPTY", "chainFlow: give at least one Flow");
+    throw new WaygraphError("WG_CHAINFLOW_EMPTY", MSG_CHAINFLOW_EMPTY);
   }
   const run = async function run(
     contextOrMem: BrowserContext | MemPage,
