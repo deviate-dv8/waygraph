@@ -9,6 +9,7 @@ export function bannerUiFromPhase(phase) {
   if (phase && phase.bannerUi) {
     if (phase.bannerUi.collision !== undefined) ui.collision = !!phase.bannerUi.collision;
     if (phase.bannerUi.hidden !== undefined) ui.hidden = !!phase.bannerUi.hidden;
+    if (phase.bannerUi.captionFadeMs !== undefined) ui.captionFadeMs = Number(phase.bannerUi.captionFadeMs);
   }
   return ui;
 }

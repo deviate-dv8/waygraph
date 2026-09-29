@@ -43,14 +43,31 @@ export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay,
             __wgAdd(banner);
           } else {
             // Fixture / episode title changes every step - update in place
-            // (banner is created once; do not leave the first step's text stuck).
+            // (banner is created once; do not leave the first step's text stuck). Fades out/in
+            // instead of an instant swap, so a title change reads as a deliberate beat, not a
+            // flicker - opt-out (or re-tune) via bannerUi.captionFadeMs, 0 = instant.
             let text = banner.querySelector(".wg-banner-text");
             if (!text) {
               text = document.createElement("span");
               text.className = "wg-banner-text";
               banner.appendChild(text);
             }
-            text.textContent = title;
+            if (text.textContent !== title) {
+              const fadeMs =
+                bannerUi && Number.isFinite(Number(bannerUi.captionFadeMs))
+                  ? Math.max(0, Number(bannerUi.captionFadeMs))
+                  : 220;
+              if (fadeMs <= 0 || !text.textContent) {
+                text.textContent = title;
+              } else {
+                text.style.transition = "opacity " + fadeMs + "ms ease";
+                text.style.opacity = "0";
+                setTimeout(() => {
+                  text.textContent = title;
+                  text.style.opacity = "1";
+                }, fadeMs);
+              }
+            }
           }
         }
         // Authored banner UX (StubCtx.titlePos / bannerUi): applied every step, wins over click/env.

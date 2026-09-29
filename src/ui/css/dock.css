@@ -7,7 +7,7 @@
  * duplicate of this file's own rules, is consolidated.
  */
 #wg-pilot-fx-todos {
-  position: fixed; z-index: var(--wg-z-fx); top: 82px; max-width: 280px; max-height: calc(100vh - 110px);
+  position: fixed; z-index: var(--wg-z-fx); top: 104px; max-width: 280px; max-height: calc(100vh - 132px);
   overflow: auto; font: 12px/1.4 ui-sans-serif, system-ui, sans-serif; color: #fff;
   background: var(--wg-surface); border-radius: var(--wg-radius-md); padding: 10px 12px;
   box-shadow: var(--wg-shadow-dock); pointer-events: auto; transition: opacity .25s ease;

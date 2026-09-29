@@ -97,6 +97,11 @@ export function createOverlayStage(page, { todoDockRef, deviceRef }) {
     deviceRef.current = state.lastDevice;
     if (appliedDevice.sync !== "keep" || (reapplyDeviceOnKeep && state.lastDevice)) {
       await applyDeviceToPage(page, state.lastDevice, appliedDevice.sync);
+      // A deliberate settle beat: applyDeviceToPage's own viewport lerp is fully awaited above, but
+      // a ring/camera-zoom transition kicked off immediately after (the very next thing this step
+      // does) reads as happening AT THE SAME TIME as the device change on video, with no visual
+      // breathing room between them - two transitions with no gap look like one confused one.
+      await new Promise((r) => setTimeout(r, 220));
     }
     return { appliedTodo, appliedDevice };
   };

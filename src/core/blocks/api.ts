@@ -63,7 +63,9 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
     ...(options.requires ? { requires: options.requires } : {}),
     instruction: {
       async act(page, _input, mem) {
+        const startedAt = Date.now();
         const response = await options.call({ request: page.request, mem });
+        const ms = Date.now() - startedAt;
         let body: unknown;
         try {
           body = await response.json();
@@ -71,6 +73,20 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
           body = await response.text().catch(() => undefined);
         }
         mem.set(API_RESULT_SCRATCH, { status: response.status(), ok: response.ok(), body });
+        // Best-effort, demo-only visibility - an API step has no DOM change and no ring of its own,
+        // so without this it's a silent title flash. No-ops outside a demo/pilot/auto run (see
+        // showNetworkEntry's own guard) and never fails the Block if painting the panel throws.
+        try {
+          const { showNetworkEntry } = await import("../../runner/inpage/network.js");
+          await page.evaluate(showNetworkEntry, {
+            url: response.url(),
+            status: response.status(),
+            ok: response.ok(),
+            ms,
+          });
+        } catch {
+          /* overlay not installed / page already closed - not this Block's job to report that */
+        }
       },
       async observe(_page, mem) {
         return mem.get(API_RESULT_SCRATCH);

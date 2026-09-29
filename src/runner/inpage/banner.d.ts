@@ -8,6 +8,14 @@ export function installBanner(args: {
   todoPos?: string | undefined;
   envAutoplay?: boolean | undefined;
   todoDockUi?: unknown;
-  bannerUi?: { hidden?: boolean | undefined; collision?: boolean | undefined; pos?: string | undefined } | undefined;
+  bannerUi?:
+    | {
+        hidden?: boolean | undefined;
+        collision?: boolean | undefined;
+        pos?: string | undefined;
+        /** Title-change fade duration in ms (default 220); 0 = instant swap, no fade. */
+        captionFadeMs?: number | undefined;
+      }
+    | undefined;
   tag?: string | undefined;
 }): void;

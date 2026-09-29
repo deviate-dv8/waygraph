@@ -80,7 +80,7 @@ export const RUNNER_EXTRA_CSS =
   // Todo checklist(s) float outside #wg-panel so --mini / Hide never hide them.
   // Multiple docks (one per todoId) are supported - stacked on the same side.
   // Click a dock to slide left <-> right (WAYGRAPH_TODO_POS / --todo-left|right).
-  ".wg-todo-dock,#wg-todo-dock{position:fixed;z-index:2147483646;top:82px;left:14px;" +
+  ".wg-todo-dock,#wg-todo-dock{position:fixed;z-index:2147483646;top:104px;left:14px;" +
   "width:min(280px,42vw);max-height:calc(100vh - 100px);overflow:auto;box-sizing:border-box;" +
   "padding:10px 12px;background:" + SURFACE + ";color:#fff;border-radius:12px;" +
   "border:1px solid rgba(124,58,237,.45);box-shadow:0 8px 24px rgba(0,0,0,.35);" +
@@ -116,6 +116,26 @@ export const RUNNER_EXTRA_CSS =
   "#wg-zoom-badge .wg-zoom-ico svg{width:14px;height:14px;display:block;}" +
   "#wg-zoom-badge .wg-zoom-val{color:#c9a6ff;font-variant-numeric:tabular-nums;font-weight:800;min-width:3.2em;}" +
   "#wg-zoom-badge[data-zoomed=\"1\"]{border-color:#7C3AED;}" +
+  // Live network-activity panel (defineApiBlock calls) - bottom-left, the one corner free of the
+  // zoom HUD (bottom-right) and the typing chip (bottom-center). Fades out ~4s after the last entry.
+  "#wg-network-log{position:fixed;z-index:2147483646;bottom:14px;left:14px;min-width:220px;" +
+  "max-width:min(92vw,360px);padding:8px 10px;border-radius:10px;background:" + SURFACE + ";" +
+  "color:#f0e8ff;border:1px solid rgba(124,58,237,.45);box-shadow:0 8px 22px rgba(0,0,0,.4);" +
+  "font:12px/1.4 ui-monospace,\"SF Mono\",Consolas,monospace;pointer-events:none;" +
+  "opacity:0;transform:translateY(8px);transition:opacity .25s ease,transform .25s ease;}" +
+  "#wg-network-log.wg-in{opacity:1;transform:translateY(0);}" +
+  "#wg-network-log.wg-out{opacity:0;transform:translateY(4px);}" +
+  "#wg-network-log .wg-net-title{font:700 10px/1.2 system-ui,sans-serif;color:#c9a6ff;" +
+  "letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}" +
+  "#wg-network-log .wg-net-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;}" +
+  "#wg-network-log .wg-net-row{display:flex;align-items:baseline;gap:7px;opacity:0;" +
+  "transform:translateX(-4px);transition:opacity .2s ease,transform .2s ease;}" +
+  "#wg-network-log .wg-net-row.wg-in{opacity:1;transform:translateX(0);}" +
+  "#wg-network-log .wg-net-path{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;" +
+  "white-space:nowrap;color:#e0e0f0;}" +
+  "#wg-network-log .wg-net-status{flex:0 0 auto;font-weight:700;color:#22C55E;}" +
+  "#wg-network-log .wg-net-row[data-ok=\"0\"] .wg-net-status{color:#EF4444;}" +
+  "#wg-network-log .wg-net-ms{flex:0 0 auto;color:#9CA3AF;font-size:10px;}" +
   // Typing chip (method fills: username / password / etc.)
   "#wg-typing-badge{position:fixed;z-index:2147483646;bottom:88px;left:50%;transform:translateX(-50%);" +
   "display:flex;align-items:center;gap:8px;padding:8px 14px;" +

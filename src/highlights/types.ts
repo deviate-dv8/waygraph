@@ -60,6 +60,11 @@ export interface BannerUiOpts {
   collision?: boolean;
   /** Hide the banner entirely for this phase. */
   hidden?: boolean;
+  /**
+   * Fade duration (ms) when the banner's title text changes, so a change reads as a deliberate
+   * beat instead of an instant flicker. Default 220; 0 disables the fade (instant swap).
+   */
+  captionFadeMs?: number;
 }
 
 /** One titled group in the floating todo dock (FR / Scenarios / ACs, etc.). */
