@@ -3,8 +3,8 @@ import { join, dirname, relative, resolve } from "node:path";
 import {
   type BlocksSelect,
   matchBlocksSelect,
-} from "./blocks-select.js";
-import { exploreRoots, injectTaggedFile } from "./block-inject.js";
+} from "../blocks-select.js";
+import { exploreRoots, injectTaggedFile } from "../block-inject.js";
 
 /**
  * The state-machine shape `waygraph auto` discovers from a project's own

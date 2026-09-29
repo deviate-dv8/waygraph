@@ -6,7 +6,7 @@ import {
   formatCoverageLine,
   normalizeHitKey,
   parseMinEdgeCoverage,
-} from "../../src/traverse-coverage.js";
+} from "../../src/traverse/coverage.js";
 
 describe("traverse-coverage (Phase E)", () => {
   it("parseMinEdgeCoverage accepts fraction, percent, and 0-100", () => {

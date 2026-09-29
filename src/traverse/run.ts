@@ -5,26 +5,26 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
-import { Engine, start, end, locate } from "./engine.js";
-import type { NavBlock } from "./engine.js";
-import { MemPage, type MemKey } from "./mem-page.js";
-import type { Checkpoint } from "./types.js";
+import { Engine, start, end, locate } from "../engine.js";
+import type { NavBlock } from "../engine.js";
+import { MemPage, type MemKey } from "../mem-page.js";
+import type { Checkpoint } from "../types.js";
 import {
   buildExploreContext,
   buildExploreMenu,
   type BlockEntry,
   type ExploreEdge,
-} from "./auto-explore.js";
-import type { WaygraphGraph } from "./graph.js";
-import { defaultMemValueForKey } from "./auto-explore-run.js";
-import { EdgeLeaseCoordinator } from "./traverse-lease.js";
+} from "../auto-explore.js";
+import type { WaygraphGraph } from "../analysis/graph.js";
+import { defaultMemValueForKey } from "../auto-explore-run.js";
+import { EdgeLeaseCoordinator } from "./lease.js";
 import {
   buildCoverageReport,
   collectGraphEdgeKeys,
   defaultCoverageOutPath,
   formatCoverageLine,
   writeCoverageReport,
-} from "./traverse-coverage.js";
+} from "./coverage.js";
 
 export type TraverseSessionMode = "clone" | "inherit";
 
@@ -55,7 +55,7 @@ export interface TraverseOptions {
   /** Traverse id for greppable lines (default traverse-1). */
   traverseId?: string;
   /** Phase C: glob / regex / bare `--blocks` file select. */
-  blocksSelect?: import("./blocks-select.js").BlocksSelect;
+  blocksSelect?: import("../blocks-select.js").BlocksSelect;
   /** Phase D: parallel workers (default 1). Cap 4. */
   parallel?: number;
   /** Phase D: clone (default) or inherit. Inherit refused when parallel > 1. */

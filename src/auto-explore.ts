@@ -2,7 +2,7 @@ import { readdirSync, statSync, type Dirent } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import type { Page } from "@playwright/test";
 import type { Block, Checkpoint, WaygraphInstanceOption } from "./types.js";
-import { discoverGraph, type WaygraphGraph, type WaygraphEdge } from "./graph.js";
+import { discoverGraph, type WaygraphGraph, type WaygraphEdge } from "./analysis/graph.js";
 import { exploreRoots, injectTaggedFile } from "./block-inject.js";
 
 export interface ExploreContextOpts {

@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { EdgeLeaseCoordinator } from "../../src/traverse-lease.js";
+import { EdgeLeaseCoordinator } from "../../src/traverse/lease.js";
 
 describe("EdgeLeaseCoordinator (Phase D)", () => {
   it("tryClaim is exclusive per edge", () => {

@@ -5,8 +5,8 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { exploreRoots } from "./block-inject.js";
-import type { BlockEntry } from "./auto-explore.js";
+import { exploreRoots } from "../block-inject.js";
+import type { BlockEntry } from "../auto-explore.js";
 
 const SELECTOR_LITERAL =
   /(?:locator|visible|click|fill|press|selector|getByRole)\(\s*['"`]([^'"`]+)['"`]/g;

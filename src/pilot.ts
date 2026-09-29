@@ -28,7 +28,7 @@
  * hand-picking indices from each status response) that proved this needs no
  * new execution primitive.
  */
-import { discoverGraph, type WaygraphGraph } from "./graph.js";
+import { discoverGraph, type WaygraphGraph } from "./analysis/graph.js";
 import {
   requestSession,
   listBrowserSessions,

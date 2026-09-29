@@ -1,10 +1,10 @@
 // Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { INLINE_SELECTOR_CALL, NAV_METHOD_CALLS, discoverBlocks, discoverFlows, importFlowFile, importModule, isBlockLike, isFlowLike, isNavBlockMarked, walkDir } from "../cli/discover.js";
 import { basename, relative, resolve } from "node:path";
-import { discoverGraph, findBlockPath, findOrphanBlocks } from "../graph.js";
+import { discoverGraph, findBlockPath, findOrphanBlocks } from "../analysis/graph.js";
 import { parseRunFlags, resolveBaseUrl } from "../cli/flags.js";
 import { runChain } from "../cli/run-chain.js";
-import { collectPracticeWarnings, practiceKindLabel } from "../practices-check.js";
+import { collectPracticeWarnings, practiceKindLabel } from "../analysis/practices-check.js";
 import { readFileSync } from "node:fs";
 
 // ---------------------------------------------------------------------------
@@ -110,7 +110,7 @@ export async function runChainAuto(projectDir: string, fromTag: string, toTag: s
 
 function printPracticeReport(
   projectDir: string,
-  practiceWarnings: import("../practices-check.js").PracticeWarning[],
+  practiceWarnings: import("../analysis/practices-check.js").PracticeWarning[],
 ): void {
   if (practiceWarnings.length === 0) {
     console.log(`waygraph check: no bad-practice patterns under ${projectDir}`);
@@ -131,7 +131,7 @@ async function checkCommand(
 ): Promise<{
   navWarnings: CheckWarning[];
   selWarnings: SelWarning[];
-  practiceWarnings: import("../practices-check.js").PracticeWarning[];
+  practiceWarnings: import("../analysis/practices-check.js").PracticeWarning[];
 }> {
   const files = discoverBlocks(projectDir);
   const navWarnings: CheckWarning[] = [];

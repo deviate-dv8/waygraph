@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { writeFile, mkdir, rm, symlink } from "node:fs/promises";
 import { join } from "node:path";
-import { discoverGraph } from "../../src/graph.js";
+import { discoverGraph } from "../../src/analysis/graph.js";
 
 const STATES_FILE = `
 import type { Checkpoint } from "waygraph";

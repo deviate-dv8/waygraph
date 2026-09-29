@@ -167,8 +167,8 @@ export type {
   MapBuilderOptions,
 } from "./engine.js";
 export type { ActionPage } from "./types.js";
-export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./graph.js";
-export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock, OrphanBlock } from "./graph.js";
+export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./analysis/graph.js";
+export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock, OrphanBlock } from "./analysis/graph.js";
 export {
   isFileSelectToken,
   parseBlocksSelect,
@@ -176,13 +176,13 @@ export {
   globToRegExp,
 } from "./blocks-select.js";
 export type { BlocksSelect, BlocksSelectKind } from "./blocks-select.js";
-export { EdgeLeaseCoordinator } from "./traverse-lease.js";
-export { runTraverse } from "./traverse-run.js";
+export { EdgeLeaseCoordinator } from "./traverse/lease.js";
+export { runTraverse } from "./traverse/run.js";
 export type {
   TraverseOptions,
   TraverseSessionMode,
   TraverseWorkerResult,
-} from "./traverse-run.js";
+} from "./traverse/run.js";
 export {
   buildCoverageReport,
   collectGraphEdgeKeys,
@@ -191,8 +191,8 @@ export {
   normalizeHitKey,
   parseMinEdgeCoverage,
   writeCoverageReport,
-} from "./traverse-coverage.js";
-export type { TraverseCoverageReport } from "./traverse-coverage.js";
+} from "./traverse/coverage.js";
+export type { TraverseCoverageReport } from "./traverse/coverage.js";
 export {
   WG_UI_SEL,
   WG_READY_PANEL_SEL,

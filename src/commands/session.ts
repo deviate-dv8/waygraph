@@ -9,10 +9,10 @@ import { existsSync, statSync } from "node:fs";
 import { resolveInjectRoots } from "../block-inject.js";
 import { requestSession, resolveSessionMeta, runAttachLoop, runAutoServeCommand, spawnDetachedSession } from "../auto-session-ipc.js";
 import { pilotAttach, pilotStart } from "../pilot.js";
-import { parseHighlightShorthand } from "../highlight-shorthand.js";
+import { parseHighlightShorthand } from "../highlights/shorthand.js";
 import { isFileSelectToken, parseBlocksSelect } from "../blocks-select.js";
 import { runAutoExplore } from "../auto-explore-run.js";
-import { discoverGraph, findOrphanBlocks, toMermaid } from "../graph.js";
+import { discoverGraph, findOrphanBlocks, toMermaid } from "../analysis/graph.js";
 
 export async function sessionCase(args: string[], command: string | undefined): Promise<void> {
       if (command === "browser") {

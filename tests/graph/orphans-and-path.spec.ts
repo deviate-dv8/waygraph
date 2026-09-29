@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { findOrphanBlocks, findBlockPath } from "../../src/graph.js";
-import type { WaygraphGraph } from "../../src/graph.js";
+import { findOrphanBlocks, findBlockPath } from "../../src/analysis/graph.js";
+import type { WaygraphGraph } from "../../src/analysis/graph.js";
 
 const BLOCK_A = `
 import { defineBlock, checkpoint } from "waygraph";

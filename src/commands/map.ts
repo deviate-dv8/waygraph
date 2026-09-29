@@ -1,6 +1,6 @@
 // Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { relative, resolve } from "node:path";
-import { checkMap } from "../map-check.js";
+import { checkMap } from "../analysis/map-check.js";
 
 export async function mapCase(args: string[]): Promise<void> {
       const proj = resolve(args[1] ?? process.cwd());

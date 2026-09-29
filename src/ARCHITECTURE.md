@@ -8,11 +8,12 @@ Read this before editing. The rules at the bottom are enforced by `npm run check
 cli.ts ───────────── ~100-line dispatcher: one `case` per subcommand
 commands/*.ts, cli/*.ts ─ one file per subcommand; shared flag parsing, usage text, discovery helpers
 runner/ ───────────── `waygraph run/demo/chain` execution; runner/inpage/*.js = code injected into the page (self-contained) (plain .js modules, exported as `waygraph/runner`)
-auto-session.ts + auto-session/ (helpers, session), auto-session-ipc.ts, pilot*.ts, auto-explore*.ts, traverse-run.ts ─ live sessions / exploration
+auto-session.ts + auto-session/ (helpers, session), auto-session-ipc.ts, pilot*.ts, auto-explore*.ts ─ live sessions / exploration
+traverse/ (run, coverage, lease) ─ live parallel graph exploration with session cloning (`waygraph traverse`)
 engine.ts + engine/ ── barrel over engine/{core,config,run-graph,flow,compose,engine-class,locate,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
-highlights.ts ────── demo narration: stubs, todo dock, device presets, pace, ring CSS
-ui/ ────────────── overlay design tokens (tokens.ts) + CSS components (ring, cursor, banner) composed per surface (compose.ts); change a colour here, never inline
-graph.ts, map-check.ts, practices-check.ts, coverage-gap.ts ─ static analysis / lint
+highlights.ts + highlights/ (types, style, device, demo-pace, todo-dock, merge, stub-ctx, run-phase, css, shorthand) ── demo narration: stubs, todo dock, device presets, pace, ring CSS
+ui/ ────────────── real .css overlay stylesheet built on Open Props, bundled by scripts/copy-ui-css.mjs into dist/ui/overlay.css and injected once by ui/shadow.ts - see src/ui/css/README.md; change a colour in ui/css/tokens.css, never inline
+analysis/ (graph, map-check, practices-check, coverage-gap) ─ static analysis / lint
 types.ts, trait.ts, mem-page.ts, mem-stub.ts ─ core types and small primitives (no upward imports)
 index.ts ─────────── the public API: re-exports only; nothing inside src/ imports it
 ```

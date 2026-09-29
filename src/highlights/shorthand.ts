@@ -13,7 +13,7 @@
  * `a, b` lists). A selector/label containing a literal `;` or `|` needs the
  * full-JSON form instead - documented, not silently mishandled.
  */
-import type { PilotFixtureRing, PilotHighlightFixtures } from "./pilot-overlay.js";
+import type { PilotFixtureRing, PilotHighlightFixtures } from "../pilot-overlay.js";
 
 export type ParsedHighlightShorthand =
   | { type: "ok"; fixtures: PilotHighlightFixtures }

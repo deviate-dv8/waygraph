@@ -9,12 +9,12 @@ import { MemPage } from "../mem-page.js";
 import { Engine } from "../engine.js";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { detectHere, ensureLivePage, ensureMem, resolveBaseUrl, runOneBlock, seedDefaultMem } from "../auto-explore-run.js";
-import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from "../coverage-gap.js";
-import type { UnmappedInteractionPayload } from "../coverage-gap.js";
+import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from "../analysis/coverage-gap.js";
+import type { UnmappedInteractionPayload } from "../analysis/coverage-gap.js";
 import type { Checkpoint, WaygraphInstanceOption } from "../types.js";
 import { runStubPhase } from "../highlights.js";
 import { verboseLog } from "../verbose-log.js";
-import { findBlockPathDetailed } from "../graph.js";
+import { findBlockPathDetailed } from "../analysis/graph.js";
 
 /**
  * Non-interactive explore session: same graph/library/mem/browser setup

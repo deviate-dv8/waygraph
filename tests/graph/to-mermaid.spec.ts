@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { toMermaid, type WaygraphGraph } from "../../src/graph.js";
+import { toMermaid, type WaygraphGraph } from "../../src/analysis/graph.js";
 
 test("toMermaid: a NavBlock's from:'*' renders as Mermaid's own [*] start marker", () => {
   const graph: WaygraphGraph = {

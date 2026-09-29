@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { exploreChoices, buildExploreMenu } from "../../src/auto-explore.js";
-import type { WaygraphGraph } from "../../src/graph.js";
+import type { WaygraphGraph } from "../../src/analysis/graph.js";
 
 const sample: WaygraphGraph = {
   nodes: [{ checkpoint: "LoginPage" }, { checkpoint: "LoggedIn" }],
