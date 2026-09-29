@@ -1,5 +1,6 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import type { Block, Checkpoint, DefinedBlock } from "../types.js";
+import { WaygraphError } from "../errors.js";
 import type { EngineConfig } from "./config.js";
 import { end, start } from "./run-graph.js";
 import type { EndMarker, StartMarker } from "./run-graph.js";
@@ -387,7 +388,8 @@ function assertMapKind(block: Block<any, any>, allowed: readonly string[], metho
   if (kind !== undefined && allowed.includes(kind)) return;
   const wanted = allowed.map((k) => MAP_KIND_FACTORY_HINT[k] ?? k).join(" or ");
   const found = kind ? `a Block of kind "${kind}"` : "an object with no waygraph kind marker at all";
-  throw new Error(
+  throw new WaygraphError(
+    "WG_MAP_WRONG_KIND",
     `Waygraph map: .${method}("${block?.name ?? "?"}") requires a Block built with ${wanted} ` +
       `(found ${found} - a hand-built plain object doesn't count). This check is the whole point ` +
       "of the map() builder: only real Blocks from waygraph's own factories can enter a chain.",
@@ -400,7 +402,8 @@ function assertMapSalt(block: Block<any, any>, allowed: readonly string[], metho
   if (salt !== undefined && allowed.includes(salt)) return;
   const wanted = allowed.map((s) => MAP_SALT_FACTORY_HINT[s] ?? s).join(" or ");
   const found = salt ? `a Block salted "${salt}"` : "an object with no waygraph salt marker at all";
-  throw new Error(
+  throw new WaygraphError(
+    "WG_MAP_WRONG_SALT",
     `Waygraph map: .${method}("${block?.name ?? "?"}") requires a Block built with ${wanted} ` +
       `(found ${found} - a hand-built plain object doesn't count). This check is the whole point ` +
       "of the map() builder: only real Blocks from waygraph's own factories can enter a chain.",
@@ -427,13 +430,15 @@ function assertMapOrigin(
   }
   const isExternal = targetOrigin !== wantOrigin;
   if (expect === "internal" && isExternal) {
-    throw new Error(
+    throw new WaygraphError(
+      "WG_MAP_WRONG_ORIGIN",
       `Waygraph map: .gotoPage("${block.name}") targets ${targetOrigin}, which is NOT this map's ` +
         `home origin (${wantOrigin}) - use .gotoExternal() for a genuinely cross-origin destination.`,
     );
   }
   if (expect === "external" && !isExternal) {
-    throw new Error(
+    throw new WaygraphError(
+      "WG_MAP_WRONG_ORIGIN",
       `Waygraph map: .gotoExternal("${block.name}") targets ${targetOrigin}, which IS this map's ` +
         `home origin (${wantOrigin}) - use .gotoPage() for an internal destination.`,
     );
@@ -457,7 +462,8 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
     options?: RunGraphOptions,
   ) => {
     if (contextOrMem instanceof MemPage) {
-      throw new Error(
+      throw new WaygraphError(
+        "WG_MAP_BRANCH_SHARED_SESSION_UNSUPPORTED",
         "Waygraph map: a .branch()-ed Flow can't run via run(mem, config) - that convenience form " +
           "always closes its own browser/page before a branch's tag is even known. Call " +
           "run(context, mem[, options]) instead, keeping the same page across the branch.",
@@ -554,7 +560,8 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    */
   ffStart(name?: string): MapBuilder<Out> {
     if (this.ff) {
-      throw new Error(
+      throw new WaygraphError(
+        "WG_MAP_FF_ALREADY_OPEN",
         `Waygraph map: .ffStart() while already inside "${this.ff.name}" - call .ffEnd() first`,
       );
     }
@@ -574,10 +581,11 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    */
   ffEnd(): MapBuilder<Out> {
     if (!this.ff) {
-      throw new Error("Waygraph map: .ffEnd() with no open .ffStart()");
+      throw new WaygraphError("WG_MAP_FF_NOT_OPEN", "Waygraph map: .ffEnd() with no open .ffStart()");
     }
     if (this.ff.buffer.length === 0) {
-      throw new Error(
+      throw new WaygraphError(
+        "WG_MAP_FF_EMPTY",
         `Waygraph map: .ffEnd() for "${this.ff.name}" has no steps - add .gotoPage/.method/… inside the window`,
       );
     }
@@ -660,7 +668,8 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     block: (MethodBlock<Out, NextOut> | EffectBlock<Out, NextOut>) & { name: string },
   ): MapBuilder<NextOut> {
     if (mapKindOf(block) === "assert") {
-      throw new Error(
+      throw new WaygraphError(
+        "WG_MAP_WRONG_KIND",
         `Waygraph map: .method("${block.name}") got a defineAssertBlock - use .assert() for ` +
           "self-loop verify steps (Assert Blocks share method salt internally but are not methods).",
       );
@@ -715,7 +724,8 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     }[keyof Routes & string]
   > {
     if (this.steps.length === 0) {
-      throw new Error(
+      throw new WaygraphError(
+        "WG_MAP_BRANCH_NO_PRIOR_STEP",
         "Waygraph map: .branch() needs at least one prior step - nothing to branch from. " +
           "Add .gotoPage()/.gotoExternal()/.method()/.assert() first.",
       );
@@ -740,12 +750,14 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    */
   end(): Flow<Out> {
     if (this.ff) {
-      throw new Error(
+      throw new WaygraphError(
+        "WG_MAP_FF_NOT_CLOSED",
         `Waygraph map: .end() while .ffStart("${this.ff.name}") is still open - call .ffEnd() first`,
       );
     }
     if (this.steps.length === 0) {
-      throw new Error(
+      throw new WaygraphError(
+        "WG_MAP_EMPTY",
         "Waygraph map: .end() called with zero steps - add at least one .gotoPage()/.gotoExternal()/" +
           ".assert()/.method() before .end()",
       );

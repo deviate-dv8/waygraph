@@ -11,6 +11,7 @@
 // behavior, one real dispatch down whichever path the live state actually takes. Useful as a
 // baseline, but it cannot explore siblings: once a branch's Blocks run, the page has moved on.
 import type { Checkpoint } from "../types.js";
+import { WaygraphError } from "../errors.js";
 import type { Flow } from "./flow.js";
 import type { RunGraphOptions } from "./run-graph.js";
 import { MemPage } from "../mem-page.js";
@@ -100,7 +101,8 @@ export async function runBranchRegression(
   const results: BranchRunResult[] = [];
   const browser: Browser | null = cloneSession ? context.browser() : null;
   if (cloneSession && !browser) {
-    throw new Error(
+    throw new WaygraphError(
+      "WG_BRANCH_REGRESSION_NO_BROWSER",
       "Waygraph runBranchRegression: cloneSession needs context.browser() (a persistent context " +
         "has none) - pass { cloneSession: false } to run the single live path in this context instead.",
     );

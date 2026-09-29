@@ -1,5 +1,6 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { MemPage } from "../mem-page.js";
+import { WaygraphError } from "../errors.js";
 import { checkpoint } from "../types.js";
 import type { Block, Checkpoint } from "../types.js";
 import { runPrecondition, runVerify } from "../trait.js";
@@ -17,7 +18,8 @@ import type { BrowserContext, Locator, Page } from "@playwright/test";
 export function preflight(mem: MemPage, block: Block<any, any>): void {
   const missing = (block.requires ?? []).filter((k) => !mem.has(k));
   if (missing.length > 0) {
-    throw new Error(
+    throw new WaygraphError(
+      "WG_PREFLIGHT_MISSING_KEY",
       `preflight: MemPage is missing required key(s) before "${block.name}" can run: ${missing
         .map((k) => `"${k.name}"`)
         .join(", ")}`,
@@ -149,7 +151,7 @@ export async function runGraph<TOut extends Checkpoint<string>>(
 
     for (;;) {
       if (++steps > maxSteps) {
-        throw new Error(`runGraph: exceeded ${maxSteps} steps - check for an unintended self-loop`);
+        throw new WaygraphError("WG_RUNGRAPH_MAX_STEPS", `runGraph: exceeded ${maxSteps} steps - check for an unintended self-loop`);
       }
 
       await runPrecondition(current.instruction.precondition, input, page, mem, current.name);
@@ -165,7 +167,8 @@ export async function runGraph<TOut extends Checkpoint<string>>(
       const next = current.next?.(checkpoint);
       if (!next) {
         if (terminals && !terminals.has(checkpoint.__state)) {
-          throw new Error(
+          throw new WaygraphError(
+            "WG_RUNGRAPH_NOT_TERMINAL",
             `runGraph: "${current.name}" resolved to "${checkpoint.__state}", which is not a registered terminal (expected one of: ${[...terminals].join(", ")})`,
           );
         }

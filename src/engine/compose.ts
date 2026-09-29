@@ -3,6 +3,7 @@ import type { BlockInfo } from "./flow.js";
 import { connect } from "../types.js";
 import type { Block, Checkpoint } from "../types.js";
 import type { Trait } from "../trait.js";
+import { WaygraphError } from "../errors.js";
 import { findBlockIndex, modVerify, withVerify } from "./core.js";
 
 /**
@@ -119,7 +120,7 @@ export function composeBlock(
   steps: readonly Block<any, any>[],
 ): ComposedBlock<any, any> {
   if (steps.length === 0) {
-    throw new Error(`composeBlock: "${name}" needs at least one step`);
+    throw new WaygraphError("WG_COMPOSE_EMPTY", `composeBlock: "${name}" needs at least one step`);
   }
   const chain = steps.reduce((a, b) => connect(a, b));
   return {
@@ -245,7 +246,7 @@ export function fastForwardComposeBlock(
   steps: readonly Block<any, any>[],
 ): FastForwardComposedBlock<any, any> {
   if (steps.length === 0) {
-    throw new Error(`fastForwardComposeBlock: "${name}" needs at least one step`);
+    throw new WaygraphError("WG_FASTFORWARD_EMPTY", `fastForwardComposeBlock: "${name}" needs at least one step`);
   }
   const base = composeBlock(name, steps as [Block<any, any>]);
   const origAct = base.instruction.act.bind(base.instruction);

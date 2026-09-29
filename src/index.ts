@@ -3,6 +3,8 @@ export { connect, checkpoint } from "./types.js";
 export { MemKey, MemPage, key, keyGroup } from "./mem-page.js";
 export { registerMemStub, seedMemStub, getMemStub } from "./mem-stub.js";
 export { css, byText, byRole } from "./selector.js";
+export { WaygraphError, WAYGRAPH_ERRORS } from "./errors.js";
+export type { WaygraphErrorCode } from "./errors.js";
 export {
   Trait,
   urlMatches,

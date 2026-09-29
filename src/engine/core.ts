@@ -2,18 +2,20 @@
 import type { ActionPage, Block, Checkpoint, DefinedBlock, Instruction } from "../types.js";
 import { MemPage } from "../mem-page.js";
 import type { Trait } from "../trait.js";
+import { WaygraphError } from "../errors.js";
 
 export function findBlockIndex(middle: readonly Block<any, any>[], block: Block<any, any> | string | number): number {
   if (typeof block === "number") {
     if (block < 0 || block >= middle.length) {
-      throw new Error(`Flow: no Block at index ${block} in this flow (has ${middle.length})`);
+      throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", `Flow: no Block at index ${block} in this flow (has ${middle.length})`);
     }
     return block;
   }
   const blockName = typeof block === "string" ? block : block.name;
   const index = middle.findIndex((b) => b.name === blockName);
   if (index === -1) {
-    throw new Error(
+    throw new WaygraphError(
+      "WG_FLOW_BLOCK_NOT_FOUND",
       `Flow: no Block named "${blockName}" in this flow (has: ${middle.map((b) => b.name).join(", ")})`,
     );
   }
@@ -313,7 +315,8 @@ export function modVerify<In extends Checkpoint<string>, Out extends Checkpoint<
 ): DefinedBlock<In, Out> {
   const verify = block.instruction.verify;
   if (typeof verify === "function") {
-    throw new Error(
+    throw new WaygraphError(
+      "WG_MODVERIFY_FUNCTION_FORM",
       `modVerify: "${block.name}" has a function-form verify, which has no fixed list to address into - use withVerify to replace it wholesale instead`,
     );
   }
@@ -321,7 +324,8 @@ export function modVerify<In extends Checkpoint<string>, Out extends Checkpoint<
   const index = typeof nameOrIndex === "number" ? nameOrIndex : traits.findIndex((t) => t.name === nameOrIndex);
   const existing = traits[index];
   if (!existing) {
-    throw new Error(
+    throw new WaygraphError(
+      "WG_MODVERIFY_NOT_FOUND",
       typeof nameOrIndex === "number"
         ? `modVerify: "${block.name}" has no verify trait at index ${nameOrIndex} (has ${traits.length})`
         : `modVerify: "${block.name}" has no verify trait named "${nameOrIndex}" (has: ${

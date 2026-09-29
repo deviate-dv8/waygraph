@@ -1,3 +1,4 @@
+import { WaygraphError } from "./errors.js";
 /**
  * A typed key into MemPage. The phantom `_phantom` field is never assigned - it
  * exists only so TypeScript can infer `T` at each call site. The store is keyed by
@@ -61,7 +62,7 @@ export class MemPage {
    */
   get<T>(k: MemKey<T>): T {
     if (!this.store.has(k as MemKey<unknown>)) {
-      throw new Error(`MemPage: "${k.name}" read before it was set`);
+      throw new WaygraphError("WG_MEM_READ_BEFORE_SET", `MemPage: "${k.name}" read before it was set`);
     }
     return this.store.get(k as MemKey<unknown>) as T;
   }

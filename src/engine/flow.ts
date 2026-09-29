@@ -1,5 +1,6 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { connect } from "../types.js";
+import { WaygraphError } from "../errors.js";
 import type { Block, Checkpoint } from "../types.js";
 import { preflight, runGraph } from "./run-graph.js";
 import type { RunGraphOptions } from "./run-graph.js";
@@ -489,14 +490,14 @@ function locateInChain(
       if (remaining < len) return { flowIndex: fi, localIndex: remaining };
       remaining -= len;
     }
-    throw new Error(`chainFlow: no Block at index ${block} across ${flows.length} chained flows`);
+    throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", `chainFlow: no Block at index ${block} across ${flows.length} chained flows`);
   }
   const blockName = typeof block === "string" ? block : block.name;
   for (let fi = 0; fi < flows.length; fi++) {
     const localIndex = flows[fi]!.blocks().findIndex((bi) => bi.name === blockName);
     if (localIndex !== -1) return { flowIndex: fi, localIndex };
   }
-  throw new Error(`chainFlow: no Block named "${blockName}" in any chained flow`);
+  throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", `chainFlow: no Block named "${blockName}" in any chained flow`);
 }
 
 
@@ -535,7 +536,7 @@ async function clearSessionState(context: BrowserContext, page: Page): Promise<v
  */
 export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
   if (flows.length === 0) {
-    throw new Error("chainFlow: give at least one Flow");
+    throw new WaygraphError("WG_CHAINFLOW_EMPTY", "chainFlow: give at least one Flow");
   }
   const run = async function run(
     contextOrMem: BrowserContext | MemPage,

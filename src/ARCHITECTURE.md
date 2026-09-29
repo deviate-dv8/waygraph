@@ -14,7 +14,7 @@ engine.ts + engine/ ── barrel over engine/{core,config,run-graph,flow,compos
 highlights.ts + highlights/ (types, style, device, demo-pace, todo-dock, merge, stub-ctx, run-phase, css, shorthand) ── demo narration: stubs, todo dock, device presets, pace, ring CSS
 ui/ ────────────── real .css overlay stylesheet built on Open Props, bundled by scripts/copy-ui-css.mjs into dist/ui/overlay.css and injected once by ui/shadow.ts - see src/ui/css/README.md; change a colour in ui/css/tokens.css, never inline
 analysis/ (graph, map-check, practices-check, coverage-gap) ─ static analysis / lint
-types.ts, trait.ts, mem-page.ts, mem-stub.ts ─ core types and small primitives (no upward imports)
+types.ts, trait.ts, mem-page.ts, mem-stub.ts, errors.ts ─ core types and small primitives (no upward imports)
 index.ts ─────────── the public API: re-exports only; nothing inside src/ imports it
 ```
 
@@ -38,6 +38,7 @@ engine/highlights runtime symbol into it.
 | Highlight/todo/device/pace behaviour | `highlights/<topic>.ts` |
 | A new practice warning | `practices-check.ts` (kind, regex, label) + a fixture in `tests/fixtures/practices-check/` |
 | A selector helper (`css`/`byText`/`byRole`) | `selector.ts` - thin string builders only, no new selector type; a full generated `*Sel` registry is backlogged |
+| An engine error a caller might need to branch on / look up | `errors.ts` - add a `WG_<AREA>_<WHAT>` code + its `where`/`means`/`fix` entry, `throw new WaygraphError(code, message)` at the real throw site. Never reuse or repurpose a shipped code. |
 
 ## Rules (enforced)
 
