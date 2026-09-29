@@ -343,6 +343,45 @@ test("auto highlight: paints agent fixture rings on the live login page", async 
   }
 });
 
+test("auto highlight: repainting with fewer rings clears the stale ones - no orphaned rings, no caption duplication (multi-element concern raised after the >>/:has-text() selector fix)", async () => {
+  const { sessionId } = await detach();
+  try {
+    // Three real rings first.
+    const three = await highlight(sessionId, {
+      rings: [
+        { selector: "#user-name", label: "Username", tone: "planned" },
+        { selector: "#password", label: "Password", tone: "info" },
+        { selector: "#login-button", label: "Login", tone: "success" },
+      ],
+      holdMs: 0,
+    });
+    expect(three.ok).toBe(true);
+    expect(three.painted).toBe(3);
+    for (const id of ["wg-fx-ring-0", "wg-fx-ring-1", "wg-fx-ring-2"]) {
+      const ring = await dom(sessionId, ["--selector", `#${id}`]);
+      expect(ring.ok).toBe(true);
+    }
+
+    // Repaint with just one - the previous call's #wg-fx-ring-1/#wg-fx-ring-2 must be GONE, not
+    // left behind under their old ids (an orphaned ring is a duplicate caption on screen even
+    // though `painted` correctly reports 1).
+    const one = await highlight(sessionId, {
+      rings: [{ selector: "#user-name", label: "Username", tone: "planned" }],
+      holdMs: 0,
+    });
+    expect(one.ok).toBe(true);
+    expect(one.painted).toBe(1);
+    const stillRing0 = await dom(sessionId, ["--selector", "#wg-fx-ring-0"]);
+    expect(stillRing0.ok).toBe(true);
+    const orphan1 = await dom(sessionId, ["--selector", "#wg-fx-ring-1"]);
+    expect(orphan1.ok).toBe(false);
+    const orphan2 = await dom(sessionId, ["--selector", "#wg-fx-ring-2"]);
+    expect(orphan2.ok).toBe(false);
+  } finally {
+    await send(sessionId, "q");
+  }
+});
+
 test("auto reach: runs a real multi-step route to a Checkpoint in one call, against an already-running session", async () => {
   test.setTimeout(60_000);
 
