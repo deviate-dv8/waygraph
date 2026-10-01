@@ -78,7 +78,25 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
           const lh = ringLabel.offsetHeight;
           let labelLeft = left;
           let labelTop = top + height + 8;
-          if (labelTop + lh > vh - margin) labelTop = top - lh - 8;
+          const aboveTop = top - lh - 8;
+          if (labelTop + lh > vh - margin) {
+            labelTop = aboveTop;
+          } else {
+            // Below the ringed box is often the NEXT form field in a tightly stacked list (e.g.
+            // saucedemo's checkout "First Name" / "Last Name" / "Zip" inputs) - a fixed +8px gap
+            // has no idea that's there and the label just sits on top of it. Sample a few points
+            // under the would-be label and flip above if any land on real page content (not our
+            // own ring/label elements, which are the only things expected there otherwise).
+            const probe = (x, y) => {
+              const el = document.elementFromPoint(x, y);
+              return el && el.id !== ringId && el.id !== labelId && !(el.closest && el.closest("#wg-root"));
+            };
+            const hitsPageContent =
+              probe(labelLeft + 2, labelTop + 2) ||
+              probe(labelLeft + lw - 2, labelTop + 2) ||
+              probe(labelLeft + 2, labelTop + lh - 2);
+            if (hitsPageContent && aboveTop >= margin) labelTop = aboveTop;
+          }
           if (labelTop < margin) labelTop = margin;
           if (labelLeft + lw > vw - margin) labelLeft = Math.max(margin, vw - margin - lw);
           if (labelLeft < margin) labelLeft = margin;
