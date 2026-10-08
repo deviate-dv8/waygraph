@@ -52,6 +52,7 @@ otherwise.
 | `Layout` / `defineLayout` (cross-cutting, automatically-enforced `verify` for persistent UI across many Checkpoints, folder-convention-agnostic) | Shipped - `src/engine.ts`, `tests/verify/layout.spec.ts` |
 | `Engine.map()` / standalone `map()` fluent builder (kind-checked at runtime against `__waygraphKind`/`__waygraphSalt`, no-teleporting Checkpoint chain) | Shipped - `src/engine.ts` (`MapBuilder`), `tests/nav/map-builder.spec.ts` - see "Engine.map() builder" below |
 | Waygraph Pilot (plain-language ask -> narrate/agentic, built on AutoSession) | Proposed - `openspec/changes/waygraph-pilot/` |
+| Network tab overlay (live page traffic capture, `defineApiBlock` method/status, click-to-expand headers/body, copy-as-cURL, `ctx.showNetworkTab()`/`hideNetworkTab()`) | Shipped - real request/response **mocking** (not just observing) is backlogged, see "Network tab mocking" below |
 | Narrated help-center video generation (core `waygraph render`) | Deferred to v1.0.x (`waygraph-demo` module) - not current focus, see below |
 | Stability declaration (1.0.0) | Gated on Waygraph Pilot demoable - see "1.0.0" below |
 
@@ -173,6 +174,23 @@ shows all the nodes like a node tree stuff"). Still real per-tone color coding t
 (existing `auto` tone) for a real Playwright-driven action (Block run / raw click-type-upload),
 a new `orange` tone for a pure DOM inspection (`auto dom`) - not yet implemented, `WAYGRAPH_RING_CSS`
 only has planned/auto/info/warning/danger/success right now.
+
+### Network tab mocking (backlogged, not yet researched)
+
+The network tab overlay (`src/runner/network-capture.js`, `src/runner/inpage/network.js`) is
+real, two-sided - it *observes* traffic (real page requests via `page.on('request'/
+'requestfinished'/'requestfailed')`, plus `defineApiBlock`'s own `page.request` calls) and
+renders it (method/status/headers/body, click-to-expand, copy-as-cURL), gated behind
+`ctx.showNetworkTab()`/`hideNetworkTab()` (default hidden, capture always runs). What it does
+**not** do yet: actually **mock** a response - intercept a real request and have the overlay (or
+a Block) serve a fabricated response back to the page, the way a Postman mock server or
+`page.route(...).fulfill(...)` would. Real, direct user ask ("so far, we aren't able to make a
+fully pledge mock for the network tabs"), explicitly deferred rather than guessed at - needs
+research into Playwright's own `page.route()`/`BrowserContext.route()` API (pattern matching,
+`route.fulfill()` vs `route.continue()` with a modified response, interaction with the real
+`requestfinished` events `installNetworkCapture` already listens for - a mocked response
+still needs to show up correctly in the panel, not just reach the page) before any design,
+let alone implementation, starts.
 
 ## Agent-authoring tooling and Waygraph Pilot (planned)
 
