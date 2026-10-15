@@ -42,9 +42,11 @@ against a live site, use `--skill-pilot-blind`.
    hand-supplied every time, `registerMemStub(key, fake)` + `withMemStub(flow)` (or
    `--mem-stub`) fills it from a registry instead - a key with no registration still fails
    preflight exactly as before, so this narrows what needs real input, never removes the guard.
-6. **Keep Checkpoints typed — never `Checkpoint<string>`.** Block helpers take concrete
-   Checkpoint types from `src/states/` (e.g. `defineMethodBlock<LoginPage, LoginPage>`).
-   Wildcard `Checkpoint<string>` compiles but kills graph honesty; `waygraph check` / `waygraph typecheck` warn.
+6. **Keep Checkpoints typed.** Block helpers take concrete Checkpoint types from `src/states/`
+   (e.g. `defineMethodBlock<LoginPage, LoggedIn>`). A Block's **output** must never be
+   `Checkpoint<string>` — `waygraph check` / `waygraph typecheck` warn. When a Block runs from a
+   few known states, name them as a union in `src/states/` (`type CanAddItem = Home | CartEmpty`);
+   a `Checkpoint<string>` **input** is only for a Block that's genuinely reachable from anywhere.
    Same for `defineAssertBlock({…})` without an explicit type arg — use
    `defineAssertBlock<YourCheckpoint>({…})`.
 7. **One input/action per Method Block.** No block that `.fill()`s two fields or `.fill()` + `.click()` in one

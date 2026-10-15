@@ -27,9 +27,21 @@ export interface PracticeCheckOptions {
   disabled?: boolean;
 }
 
-/** define*Block<…Checkpoint<string>…> — prefer project Checkpoint types. */
-const WILDCARD_CHECKPOINT =
-  /\bdefine(?:Method|Effect|Page|Nav|MemNav|NavClick|Action)Block\s*<[^>]*\bCheckpoint\s*<\s*string\s*>/;
+/** Every define*Block<In, Out> / <Out> generic list - args may themselves be Checkpoint<...>. */
+const BLOCK_GENERICS =
+  /\bdefine(?:Method|Effect|MemEffect|Page|Nav|MemNav|NavClick|Action)Block\s*<\s*((?:Checkpoint\s*<[^>]*>|[^,<>])+?)\s*(?:,\s*((?:Checkpoint\s*<[^>]*>|[^,<>])+?)\s*)?>/g;
+
+/**
+ * A wildcard Out (the Block's result is untyped). A wildcard In is fine - it's the documented
+ * "reachable from anywhere" form (graph.ts treats it like a NavBlock's "*").
+ */
+function hasWildcardOut(src: string): boolean {
+  for (const m of src.matchAll(BLOCK_GENERICS)) {
+    const out = (m[2] ?? m[1])!.trim();
+    if (/^Checkpoint\s*<\s*string\s*>$/.test(out)) return true;
+  }
+  return false;
+}
 
 /** defineAssertBlock({ … }) with no explicit Out type — defaults to wildcard. */
 const ASSERT_NO_TYPE_ARG = /\bdefineAssertBlock\s*\(\s*\{/;
@@ -115,12 +127,13 @@ export function collectPracticeWarnings(
     const src = readFileSync(file, "utf-8");
     const ignore = ignoredKindsForFile(src);
 
-    if (!isIgnored("wildcard-checkpoint", ignore) && WILDCARD_CHECKPOINT.test(src)) {
+    if (!isIgnored("wildcard-checkpoint", ignore) && hasWildcardOut(src)) {
       warnings.push({
         kind: "wildcard-checkpoint",
         file: rel,
         detail:
-          'uses Checkpoint<string> in a Block helper generic — prefer a typed Checkpoint from src/states/ (e.g. defineMethodBlock<LoginPage, LoginPage>)',
+          "the Block's output is Checkpoint<string>, so its result is untyped — use a typed Checkpoint from " +
+          "src/states/ (e.g. defineMethodBlock<LoginPage, LoggedIn>); a wildcard input is fine",
       });
     }
     if (!isIgnored("assert-no-type-arg", ignore) && ASSERT_NO_TYPE_ARG.test(src)) {

@@ -363,7 +363,7 @@ complementary whole-project sweep for contexts with no editor watching (CI, gene
 code, an autonomous agent authoring Blocks) - it warns, never fails the process.
 
 **`waygraph typecheck [project]`** runs `tsc --noEmit` then the same **bad-practice** scan
-(wildcard `Checkpoint<string>`, assert blocks missing type args, multi-`.fill()` Methods,
+(a wildcard `Checkpoint<string>` output, assert blocks missing type args, multi-`.fill()` Methods,
 fill+click in one Method, empty `verify` on a transition Block or `defineAssertBlock`).
 Practices warn only unless `tsc` fails; use `--no-practices` to skip the scan. Opt out per
 file: `// waygraph-ignore-practices` or `// waygraph-ignore: multi-input, combined-action,

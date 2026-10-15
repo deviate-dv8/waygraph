@@ -58,7 +58,7 @@ Use `--no-practices` on either command to skip the practice scan.
 
 Patterns warned (does not fail `check`; fails `typecheck` only when `tsc` fails):
 
-- **`Checkpoint<string>` in Block generics** — e.g. `defineMethodBlock<Checkpoint<string>, …>` instead of a project Checkpoint type from `src/states/`.
+- **`Checkpoint<string>` as a Block's output** — e.g. `defineMethodBlock<…, Checkpoint<string>>` instead of a project Checkpoint type from `src/states/` (a wildcard *input* means "reachable from anywhere" and is allowed).
 - **`defineAssertBlock({…})` without an explicit type arg** — use `defineAssertBlock<YourCheckpoint>({…})` so `defineFlow` typing stays honest.
 - **Multiple `.fill()` in one Method** — split into one Block per input (fill-username, fill-password, …).
 - **`.fill()` + `.click()` in one Method** — split fill and submit into separate Blocks.

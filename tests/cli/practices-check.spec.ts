@@ -20,6 +20,8 @@ test("waygraph check flags wildcard Checkpoint<string> and assert blocks missing
   expect(output).toMatch(/wildcard\.block\.ts \(wildcard Checkpoint<string>\)/);
   expect(output).toMatch(/assert-no-type\.block\.ts \(assert block missing type arg\)/);
   expect(output).not.toMatch(/typed\.block\.ts \(wildcard Checkpoint<string>\)/);
+  // A wildcard input is the "reachable from anywhere" form - only a wildcard output is flagged.
+  expect(output).not.toMatch(/wildcard-input\.block\.ts \(wildcard Checkpoint<string>\)/);
   expect(output).not.toMatch(/typed\.block\.ts \(assert block missing type arg\)/);
 });
 
