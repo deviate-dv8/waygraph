@@ -1,7 +1,10 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S npx tsx
 /**
- * Start fixture-server, run a child command, tear down on exit.
- * Usage: node scripts/with-fixture.mjs [--] <cmd> [args...]
+ * Start fixture-server, run a child command, tear down on exit - scaffold-fixture plumbing only,
+ * not part of the waygraph API itself. Every `npm run demo*`/`auto*`/`run*` script in
+ * package.json goes through this wrapper so the offline fixture pages have a real HTTP server
+ * behind them before `waygraph` ever tries to navigate to one.
+ * Usage: npx tsx scripts/with-fixture.ts <cmd> [args...]
  */
 import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
@@ -13,7 +16,7 @@ const HOST = process.env.WAYGRAPH_FIXTURE_HOST || "127.0.0.1";
 
 const argv = process.argv.slice(2).filter((a) => a !== "--");
 if (argv.length === 0) {
-  console.error("usage: node scripts/with-fixture.mjs <cmd> [args...]");
+  console.error("usage: npx tsx scripts/with-fixture.ts <cmd> [args...]");
   process.exit(1);
 }
 
@@ -25,12 +28,15 @@ const env = {
   WAYGRAPH_BASE_URL: process.env.WAYGRAPH_BASE_URL || `http://${HOST}:${PORT}`,
 };
 
-const server = spawn(process.execPath, [join(HERE, "fixture-server.mjs")], {
+const server = spawn(process.execPath, [
+  "--import", "tsx/esm",
+  join(HERE, "fixture-server.ts"),
+], {
   env,
   stdio: ["ignore", "ignore", "inherit"],
 });
 
-function killServer() {
+function killServer(): void {
   try {
     server.kill("SIGTERM");
   } catch {
@@ -38,7 +44,7 @@ function killServer() {
   }
 }
 
-async function waitReady(ms = 5000) {
+async function waitReady(ms = 5000): Promise<void> {
   const url = `http://${HOST}:${PORT}/home.html`;
   const start = Date.now();
   while (Date.now() - start < ms) {
@@ -56,8 +62,9 @@ async function waitReady(ms = 5000) {
 let code = 1;
 try {
   await waitReady();
-  const child = spawn(argv[0], argv.slice(1), { env, stdio: "inherit", shell: false });
-  code = await new Promise((resolve) => {
+  const [cmd, ...rest] = argv as [string, ...string[]];
+  const child = spawn(cmd, rest, { env, stdio: "inherit", shell: false });
+  code = await new Promise<number>((resolve) => {
     child.on("exit", (c, signal) => resolve(signal ? 1 : (c ?? 1)));
   });
 } catch (e) {

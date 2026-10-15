@@ -1,6 +1,10 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S npx tsx
 /**
- * Tiny static server for the offline scaffold fixture (home.html).
+ * Tiny static server for the offline scaffold fixture (home.html) - this is scaffold-fixture
+ * plumbing only, not part of the waygraph API itself. Run directly via `tsx` (already a
+ * transitive dependency through `waygraph`, listed explicitly here so `npm install` guarantees
+ * it) - same loader every `.block.ts`/`.flow.ts` file in this project already runs through, not
+ * a second, different toolchain.
  * Flatpak Chromium cannot open file:// under /tmp — HTTP localhost works.
  */
 import { createServer } from "node:http";
@@ -13,14 +17,14 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../src/map/(app_base
 // Waygraph Map convention now (home/home.html, docs/docs.html) - no longer
 // a single flat directory, so this maps the request filename to its own
 // page's subfolder instead of assuming one shared ROOT holds every file.
-const FILE_DIRS = {
+const FILE_DIRS: Record<string, string> = {
   "home.html": "home",
   "docs.html": "docs",
 };
 const PORT = Number(process.env.WAYGRAPH_FIXTURE_PORT || 4177);
 const HOST = process.env.WAYGRAPH_FIXTURE_HOST || "127.0.0.1";
 
-const TYPES = {
+const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",

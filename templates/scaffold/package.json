@@ -7,19 +7,20 @@
     "typecheck": "waygraph typecheck .",
     "test": "waygraph test",
     "test:ui": "waygraph test ui",
-    "fixture": "node scripts/fixture-server.mjs",
+    "fixture": "tsx scripts/fixture-server.ts",
     "list": "waygraph list",
     "check": "waygraph check",
     "graph": "waygraph graph",
     "graph:mermaid": "waygraph graph --mermaid",
-    "auto": "node scripts/with-fixture.mjs waygraph auto",
-    "auto:cli": "node scripts/with-fixture.mjs waygraph auto --cli",
-    "demo": "node scripts/with-fixture.mjs waygraph demo --blocks exampleFlow",
-    "demo:auto-next": "node scripts/with-fixture.mjs waygraph demo --blocks exampleFlow --auto-next --title \"Scaffold hello\"",
-    "demo:shop": "node scripts/with-fixture.mjs waygraph demo --blocks shopFlow --data \"{\\\"demo.selectedItem\\\":{\\\"id\\\":\\\"alpha\\\",\\\"name\\\":\\\"Alpha\\\"}}\" --title \"Scaffold shop\"",
-    "demo:shop:auto-next": "node scripts/with-fixture.mjs waygraph demo --blocks shopFlow --auto-next --data \"{\\\"demo.selectedItem\\\":{\\\"id\\\":\\\"alpha\\\",\\\"name\\\":\\\"Alpha\\\"}}\"",
-    "run": "node scripts/with-fixture.mjs waygraph run --blocks exampleFlow",
-    "run:shop": "node scripts/with-fixture.mjs waygraph run --blocks shopFlow --data \"{\\\"demo.selectedItem\\\":{\\\"id\\\":\\\"alpha\\\",\\\"name\\\":\\\"Alpha\\\"}}\""
+    "auto": "tsx scripts/with-fixture.ts waygraph auto",
+    "auto:cli": "tsx scripts/with-fixture.ts waygraph auto --cli",
+    "demo": "tsx scripts/with-fixture.ts waygraph demo --blocks exampleFlow",
+    "demo:auto-next": "tsx scripts/with-fixture.ts waygraph demo --blocks exampleFlow --auto-next --title \"Scaffold hello\"",
+    "demo:shop": "tsx scripts/with-fixture.ts waygraph demo --blocks shopFlow --title \"Scaffold shop\"",
+    "demo:shop:auto-next": "tsx scripts/with-fixture.ts waygraph demo --blocks shopFlow --auto-next",
+    "demo:shop:override-item": "tsx scripts/with-fixture.ts waygraph demo --blocks shopFlow --data \"{\\\"demo.selectedItem\\\":{\\\"id\\\":\\\"beta\\\",\\\"name\\\":\\\"Beta\\\"}}\" --title \"Scaffold shop (explicit --data overrides memStub)\"",
+    "run": "tsx scripts/with-fixture.ts waygraph run --blocks exampleFlow",
+    "run:shop": "tsx scripts/with-fixture.ts waygraph run --blocks shopFlow"
   },
   "waygraph": {
     "baseUrl": "http://127.0.0.1:4177"
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }
 }
