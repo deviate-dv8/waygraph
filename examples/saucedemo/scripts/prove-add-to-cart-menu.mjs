@@ -6,6 +6,7 @@ import { chromium } from "@playwright/test";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
+import { chromiumExecutablePath } from "waygraph";
 
 const require = createRequire(import.meta.url);
 await import(require.resolve("tsx/esm"));
@@ -18,7 +19,7 @@ const { buildExploreContext, buildExploreMenu } = await import(
 );
 const { MemPage, Engine, start, end } = await import(pathToFileURL(join(waygraphDist, "index.js")).href);
 
-const exe = process.env.CHROME_PATH || process.env.CHROMIUM_PATH;
+const exe = chromiumExecutablePath();
 
 async function runBlock(engine, entry, context, page, mem) {
   const flow = engine.defineFlow([start, entry.block, end]);

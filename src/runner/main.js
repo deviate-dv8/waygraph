@@ -10,6 +10,7 @@ import { connect } from "../types.js";
 import { MemPage } from "../mem-page.js";
 import { Engine, start, end, chainFlow, isFastForwardBlock, branchRoutes, runBranchRegression } from "../core.js";
 import { withWebServer } from "../webserver.js";
+import { chromiumExecutablePath } from "../browser-path.js";
 
 async function runMain() {
   const projectDir = process.argv[2];
@@ -286,11 +287,7 @@ async function runMain() {
     // launched at Chromium's own default size/position, which stayed put
     // where it was for a previous, larger monitor and looked chopped off on
     // a smaller one. Maximizing fills whatever screen it's actually on.
-    // Same CHROME_PATH/CHROMIUM_PATH rule as Engine.run(mem): prefer the
-    // system/Flatpak Chromium when set, otherwise Playwright's bundled build.
-    // Without this, STEP mode always launched a different-looking browser than
-    // headed Engine runs / waygraph-demo.mjs (which already resolve Flatpak).
-    const executablePath = process.env.CHROME_PATH || process.env.CHROMIUM_PATH || undefined;
+    const executablePath = chromiumExecutablePath();
     // Maximized for interactive step, and for fixed video viewport so the
     // locked record size can actually fit (otherwise .webm gets grey pad).
     const browser = await chromium.launch({

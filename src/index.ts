@@ -228,4 +228,5 @@ export type { PilotStartResult } from "./session/pilot.js";
 export { defineConfig, resolveBaseUrl } from "./config.js";
 export type { WaygraphConfig } from "./config.js";
 export { withWebServer } from "./webserver.js";
+export { chromiumExecutablePath } from "./browser-path.js";
 export type { WebServerConfig } from "./webserver.js";

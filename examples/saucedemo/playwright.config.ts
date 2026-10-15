@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+import { chromiumExecutablePath } from "waygraph";
 
 export default defineConfig({
   testDir: "./tests",
@@ -11,9 +12,7 @@ export default defineConfig({
     baseURL: "https://www.saucedemo.com",
     trace: "retain-on-failure",
     launchOptions: {
-      // Canonical Chromium on this machine is the Flatpak install - never let
-      // Playwright download its own bundled binary. See .agent/manager-agent.md.
-      executablePath: process.env.CHROME_PATH || process.env.CHROMIUM_PATH,
+      executablePath: chromiumExecutablePath(),
       args: ["--no-sandbox", "--disable-dev-shm-usage"],
     },
   },

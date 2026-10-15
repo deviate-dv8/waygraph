@@ -33,6 +33,7 @@
   "byText",
   "chainFlow",
   "checkpoint",
+  "chromiumExecutablePath",
   "collectBranchFlows",
   "collectGraphEdgeKeys",
   "completeSequentialTodoDock",

@@ -16,6 +16,7 @@ import type { Checkpoint } from "../types.js";
 import { installDemoChrome, instrumentInteractionHighlighting } from "./step-overlay.js";
 import { resolveBaseUrl } from "../config.js";
 import { withWebServer } from "../webserver.js";
+import { chromiumExecutablePath } from "../browser-path.js";
 
 export interface AutoExploreOptions {
   /** Terminal menu (browser still runs for act()). Default false = headful picker panel. */
@@ -603,7 +604,12 @@ async function cliPick(
   rl: ReturnType<typeof createInterface>,
 ): Promise<PickResult> {
   while (true) {
-    const ans = (await rl.question("Choose: ")).trim().toLowerCase();
+    let ans: string;
+    try {
+      ans = (await rl.question("Choose: ")).trim().toLowerCase();
+    } catch {
+      return { type: "quit" }; // stdin ended (piped / Ctrl-D) - same as q
+    }
     if (ans === "q" || ans === "quit") return { type: "quit" };
     const n = Number(ans);
     if (Number.isInteger(n) && n >= 1 && n <= menu.flat.length) {
@@ -639,7 +645,7 @@ async function runAutoExploreCore(projectDir: string, options: AutoExploreOption
   seedDefaultMem(library.byName, mem);
   const engine = cli ? new Engine({ headless: true }) : new Engine({ headless: false, slowMo: 250 });
   const { chromium } = await import("@playwright/test");
-  const executablePath = process.env.CHROME_PATH || process.env.CHROMIUM_PATH;
+  const executablePath = chromiumExecutablePath();
   const launchOpts: Parameters<typeof chromium.launch>[0] = {
     headless: cli,
     args: cli ? [] : ["--start-maximized"],

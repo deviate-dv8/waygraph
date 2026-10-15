@@ -14,12 +14,14 @@ const exec = promisify(execFile);
 const node = process.execPath;
 const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
 const saucedemo = join(import.meta.dirname, "..", "..", "examples", "saucedemo");
+// Assertions below expect an empty stderr - keep the machine's Chromium override out of it.
+const { CHROME_PATH: _c, CHROMIUM_PATH: _cc, ...cleanEnv } = process.env;
 
 test("a flow wrapped in withMemStub, with its key registered, runs with zero --data", async () => {
   const { stdout, stderr } = await exec(
     node,
     [CLI, "run", "src/flows/mem-stub-demo.flow.ts", "--mem-stub"],
-    { cwd: saucedemo, env: { ...process.env } },
+    { cwd: saucedemo, env: cleanEnv },
   );
   expect(stderr).toBe("");
   expect(stdout).toMatch(/chain finished/);
@@ -29,7 +31,7 @@ test("withMemStub alone (no --mem-stub flag) is enough - the flow's own opt-in d
   const { stdout, stderr } = await exec(
     node,
     [CLI, "run", "src/flows/mem-stub-demo.flow.ts"],
-    { cwd: saucedemo, env: { ...process.env } },
+    { cwd: saucedemo, env: cleanEnv },
   );
   expect(stderr).toBe("");
   expect(stdout).toMatch(/chain finished/);
@@ -37,7 +39,7 @@ test("withMemStub alone (no --mem-stub flag) is enough - the flow's own opt-in d
 
 test("a flow NOT wrapped in withMemStub, with no --data, still fails exactly as before - regression", async () => {
   await expect(
-    exec(node, [CLI, "run", "src/flows/login.flow.ts"], { cwd: saucedemo, env: { ...process.env } }),
+    exec(node, [CLI, "run", "src/flows/login.flow.ts"], { cwd: saucedemo, env: cleanEnv }),
   ).rejects.toMatchObject({
     stderr: expect.stringMatching(/--data|WAYGRAPH_DATA|requires/),
   });
@@ -45,7 +47,7 @@ test("a flow NOT wrapped in withMemStub, with no --data, still fails exactly as 
 
 test("--mem-stub alone does not silently succeed for a key with no registered generator", async () => {
   await expect(
-    exec(node, [CLI, "run", "src/flows/login.flow.ts", "--mem-stub"], { cwd: saucedemo, env: { ...process.env } }),
+    exec(node, [CLI, "run", "src/flows/login.flow.ts", "--mem-stub"], { cwd: saucedemo, env: cleanEnv }),
   ).rejects.toMatchObject({
     stderr: expect.stringMatching(/missing required key.*saucedemo\.credentials/),
   });

@@ -1,5 +1,6 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { connect } from "../types.js";
+import { chromiumExecutablePath } from "../browser-path.js";
 import {
   WaygraphError,
   MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_INDEX,
@@ -223,12 +224,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
       preflight(mem, chain);
       const browserName = config.browserName ?? "chromium";
       const launch = resolveLauncher(browserName, config);
-      // If CHROME_PATH/CHROMIUM_PATH is set in the environment (e.g. a system
-      // or Flatpak Chromium), launch that instead of Playwright's own bundled
-      // binary - only for chromium (the env var names a Chromium build, not a
-      // Firefox/WebKit one), and a no-op default anywhere that env var isn't set.
-      const executablePath =
-        browserName === "chromium" ? process.env.CHROME_PATH || process.env.CHROMIUM_PATH : undefined;
+      const executablePath = browserName === "chromium" ? chromiumExecutablePath() : undefined;
       const browser: Browser = await launch.launch({
         headless: config.headless ?? true,
         ...(config.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
@@ -557,8 +553,7 @@ export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
       // session reset, silently making withSessionReset a no-op).
       const browserName = config?.browserName ?? "chromium";
       const launch = resolveLauncher(browserName, config);
-      const executablePath =
-        browserName === "chromium" ? process.env.CHROME_PATH || process.env.CHROMIUM_PATH : undefined;
+      const executablePath = browserName === "chromium" ? chromiumExecutablePath() : undefined;
       const browser: Browser = await launch.launch({
         headless: config?.headless ?? true,
         ...(config?.slowMo !== undefined ? { slowMo: config.slowMo } : {}),

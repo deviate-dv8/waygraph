@@ -24,6 +24,7 @@ import {
   formatCoverageLine,
   writeCoverageReport,
 } from "./coverage.js";
+import { chromiumExecutablePath } from "../browser-path.js";
 
 export type TraverseSessionMode = "clone" | "inherit";
 
@@ -416,7 +417,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
   const leases = new EdgeLeaseCoordinator({ projectDir, persist: parallel > 1 });
   const engine = new Engine({ headless: !headed, slowMo: headed ? 100 : 0 });
   const { chromium } = await import("@playwright/test");
-  const executablePath = process.env.CHROME_PATH || process.env.CHROMIUM_PATH;
+  const executablePath = chromiumExecutablePath();
   const launchOpts: Parameters<typeof chromium.launch>[0] = {
     headless: !headed,
   };

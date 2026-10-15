@@ -15,6 +15,7 @@ import type { Checkpoint, WaygraphInstanceOption } from "../types.js";
 import { runStubPhase } from "../highlights.js";
 import { verboseLog } from "./verbose-log.js";
 import { findBlockPathDetailed } from "../analysis/graph.js";
+import { chromiumExecutablePath } from "../browser-path.js";
 
 /**
  * Non-interactive explore session: same graph/library/mem/browser setup
@@ -70,7 +71,7 @@ export class AutoSession {
     const headless = init.headless ?? true;
     const engine = new Engine({ headless });
     const { chromium } = await import("@playwright/test");
-    const executablePath = process.env.CHROME_PATH || process.env.CHROMIUM_PATH;
+    const executablePath = chromiumExecutablePath();
     // Real gap found live: a headed (--non-headless) session kept a fixed
     // 1280x720 content area even when the user maximized/fullscreened the
     // actual window - `viewport: null` alone only makes the PAGE track the

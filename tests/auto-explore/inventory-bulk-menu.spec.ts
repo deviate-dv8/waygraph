@@ -3,6 +3,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildExploreContext, buildExploreMenu } from "../../src/session/auto-explore.js";
 import { MemPage, Engine, start, end } from "../../src/index.js";
+import { chromiumExecutablePath } from "../../src/browser-path.js";
 
 const sauceRoot = join(dirname(fileURLToPath(import.meta.url)), "../../examples/saucedemo");
 
@@ -15,7 +16,7 @@ test("auto menu on inventory shows per-item + bulk add/remove", async () => {
   const { graph, library } = await buildExploreContext(sauceRoot);
   const mem = new MemPage();
 
-  const exe = process.env.CHROME_PATH || process.env.CHROMIUM_PATH;
+  const exe = chromiumExecutablePath();
   const browser = await chromium.launch({
     headless: true,
     ...(exe ? { executablePath: exe, args: ["--no-sandbox"] } : {}),

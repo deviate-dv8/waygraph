@@ -6,6 +6,7 @@ import { chromium } from "@playwright/test";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
+import { chromiumExecutablePath } from "waygraph";
 
 const require = createRequire(import.meta.url);
 await import(require.resolve("tsx/esm"));
@@ -25,7 +26,7 @@ const { SubmitLoginBlock } = await import(
 );
 const { LoginCreds } = await import(pathToFileURL(join(root, "src/states/checkout.mem-keys.js")).href);
 
-const exe = process.env.CHROME_PATH || process.env.CHROMIUM_PATH;
+const exe = chromiumExecutablePath();
 const baseURL = "https://www.saucedemo.com";
 
 console.log("RUNTIME: headless browser (wrong password test)...");
