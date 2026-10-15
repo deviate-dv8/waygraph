@@ -101,28 +101,36 @@ export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay,
             );
           };
           const home = b.dataset.home || b.dataset.pos || "left";
+          // Called every animation frame while a ring is followed - only log when the outcome changes.
+          const log = (state, line) => {
+            if (b.dataset.lastLog === state) return;
+            b.dataset.lastLog = state;
+            if (line) (window.__wgBannerLog = window.__wgBannerLog || []).push(line);
+          };
           b.dataset.pos = home;
           if (!hits()) {
             delete b.dataset.moved;
+            log("clear");
             return;
           }
           for (const cand of POSITIONS.filter((p) => p !== home)) {
             b.dataset.pos = cand;
             if (!hits()) {
               b.dataset.moved = home + ">" + cand;
-              (window.__wgBannerLog = window.__wgBannerLog || []).push("moved " + home + " -> " + cand + " (ring overlap)");
+              log("moved:" + cand, "moved " + home + " -> " + cand + " (ring overlap)");
               return;
             }
           }
           b.dataset.pos = home;
           b.dataset.moved = "none-free";
-          (window.__wgBannerLog = window.__wgBannerLog || []).push("overlap at every position (kept " + home + ")");
+          log("none-free", "overlap at every position (kept " + home + ")");
         };
         window.__wgBannerRestore = () => {
           const b = __wgById("wg-banner");
           if (!b) return;
           if (b.dataset.home) b.dataset.pos = b.dataset.home;
           delete b.dataset.moved;
+          delete b.dataset.lastLog;
         };
         // Dim the banner while a ring caption is the focus - same "auto opacity" effect the todo
         // dock already has via __wgTodosSetBehind, extended to the banner so both floating chrome
