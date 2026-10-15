@@ -1,37 +1,18 @@
-#!/usr/bin/env node
-/**
- * Tiny static server for this example's offline fixture pages.
- * Mirrors templates/scaffold's own scripts/fixture-server.mjs exactly.
- */
+// Stands in for this example's real app: serves src/pages/<name>.html at clean URLs (/dashboard, /docs).
+// Started and stopped by playwright.config.ts's webServer - waygraph run/demo/auto/test all honor it.
 import { createServer } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
-import { join, dirname, extname, normalize } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../src/pages");
-const PORT = Number(process.env.WAYGRAPH_FIXTURE_PORT || 4277);
-const HOST = process.env.WAYGRAPH_FIXTURE_HOST || "127.0.0.1";
+const PAGES = join(import.meta.dirname, "../src/pages");
 
-const TYPES = {
-  ".html": "text/html; charset=utf-8",
-};
-
-const server = createServer((req, res) => {
-  const raw = (req.url || "/").split("?")[0] || "/";
-  const rel = raw === "/" ? "dashboard.html" : raw.replace(/^\//, "");
-  const full = normalize(join(ROOT, rel));
-  if (!full.startsWith(ROOT) || !existsSync(full)) {
-    res.writeHead(404, { "content-type": "text/plain" });
-    res.end("not found");
+createServer((req, res) => {
+  const path = (req.url || "/").split("?")[0];
+  const name = path === "/" ? "dashboard" : path.slice(1);
+  const file = join(PAGES, `${name}.html`);
+  if (!/^[a-z-]+$/.test(name) || !existsSync(file)) {
+    res.writeHead(404).end("not found");
     return;
   }
-  const type = TYPES[extname(full)] || "application/octet-stream";
-  res.writeHead(200, { "content-type": type });
-  res.end(readFileSync(full));
-});
-
-server.listen(PORT, HOST, () => {
-  if (process.env.WAYGRAPH_FIXTURE_QUIET !== "1") {
-    console.error(`waygraph fixture: http://${HOST}:${PORT}/dashboard.html`);
-  }
-});
+  res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end(readFileSync(file));
+}).listen(4277, "127.0.0.1");

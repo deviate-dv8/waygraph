@@ -1,7 +1,5 @@
 import { defineConfig } from "@playwright/test";
-
-const PORT = process.env.WAYGRAPH_FIXTURE_PORT || "4277";
-const HOST = process.env.WAYGRAPH_FIXTURE_HOST || "127.0.0.1";
+import { chromiumExecutablePath } from "waygraph";
 
 export default defineConfig({
   testDir: "./tests",
@@ -9,13 +7,15 @@ export default defineConfig({
   workers: 1,
   timeout: 30_000,
   reporter: [["list"], ["html", { open: "never" }]],
+  webServer: {
+    command: "node scripts/fixture-server.mjs",
+    url: "http://127.0.0.1:4277/dashboard",
+    reuseExistingServer: !process.env.CI,
+  },
   use: {
     headless: true,
-    baseURL: process.env.WAYGRAPH_BASE_URL || `http://${HOST}:${PORT}`,
+    baseURL: "http://127.0.0.1:4277",
     trace: "retain-on-failure",
-    launchOptions: {
-      executablePath: process.env.CHROME_PATH || process.env.CHROMIUM_PATH,
-      args: ["--no-sandbox", "--disable-dev-shm-usage"],
-    },
+    launchOptions: { executablePath: chromiumExecutablePath() },
   },
 });
