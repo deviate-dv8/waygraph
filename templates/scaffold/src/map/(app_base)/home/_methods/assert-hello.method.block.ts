@@ -16,25 +16,6 @@ export const AssertHelloBlock = defineAssertBlock({
   checkpoint: "HomeVerified",
   waitForHeading: "Hello Waygraph",
   verify: [Trait.text(DemoSel.title, "Hello Waygraph"), Trait.visible(DemoSel.sub)],
-  stubBefore: {
-    title: { selector: DemoSel.title, label: "Heading about to check" },
-  },
-  stubAfter: {
-    title: {
-      selector: DemoSel.title,
-      label: "Hello confirmed",
-      detail: "Offline scaffold proof point.",
-      duration: true,
-    },
-    sub: { selector: DemoSel.sub, label: "Subcopy", duration: 1500 },
-  },
-  stubOnError: {
-    title: {
-      selector: DemoSel.title,
-      label: "Heading at failure",
-      tag: "FAIL",
-    },
-  },
   slides: [
     {
       caption: "Scaffold covers auto + narration",
@@ -43,4 +24,19 @@ export const AssertHelloBlock = defineAssertBlock({
       duration: true,
     },
   ],
-});
+})
+  .stubBefore((ctx) => {
+    ctx.ring("title", { selector: DemoSel.title, label: "Heading about to check" });
+  })
+  .stubAfter((ctx) => {
+    ctx.ring("title", {
+      selector: DemoSel.title,
+      label: "Hello confirmed",
+      detail: "Offline scaffold proof point.",
+      duration: true,
+    });
+    ctx.ring("sub", { selector: DemoSel.sub, label: "Subcopy", duration: 1500 });
+  })
+  .stubOnError((ctx) => {
+    ctx.ring("title", { selector: DemoSel.title, label: "Heading at failure", tag: "FAIL" });
+  });

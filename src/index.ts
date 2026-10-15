@@ -227,3 +227,5 @@ export { pilotStart } from "./session/pilot.js";
 export type { PilotStartResult } from "./session/pilot.js";
 export { defineConfig, resolveBaseUrl } from "./config.js";
 export type { WaygraphConfig } from "./config.js";
+export { withWebServer } from "./webserver.js";
+export type { WebServerConfig } from "./webserver.js";

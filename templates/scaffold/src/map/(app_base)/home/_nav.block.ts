@@ -8,15 +8,14 @@ import { DemoSel, HOME_URL } from "./_sel.js";
  */
 export const NavHomeBlock = defineNavBlock({
   name: "nav-home",
-  description: "Opens the offline catalog page (HTTP fixture :4177).",
+  description: "Opens the offline catalog page (file://, no server).",
   checkpoint: "Home",
   url: HOME_URL,
   verify: [Trait.text(DemoSel.title, "Hello Waygraph"), Trait.visible(DemoSel.catalog)],
-  stubBefore: {},
-  stubAfter: {
-    title: { selector: DemoSel.title, label: "Home heading", duration: true },
-  },
-  stubOnError: {
-    title: { selector: DemoSel.title, label: "Home heading at failure" },
-  },
-});
+})
+  .stubAfter((ctx) => {
+    ctx.ring("title", { selector: DemoSel.title, label: "Home heading", duration: true });
+  })
+  .stubOnError((ctx) => {
+    ctx.ring("title", { selector: DemoSel.title, label: "Home heading at failure" });
+  });

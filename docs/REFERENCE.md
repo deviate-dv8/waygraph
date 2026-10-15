@@ -1110,7 +1110,7 @@ really a Nav/Page/Assert/Method from this package's own factories.
 |------|---------|
 | Watch Sauce Demo step-through (temp dir only) | `npx waygraph try demo` |
 | Interactive explore (Add/Remove/Open details from live page) | clone + build the repo, `cd examples/saucedemo && npm install`, then `npx waygraph auto` |
-| Scaffold a new **offline** project (green `npm test` on local fixture `:4177`) | `npx waygraph init my-app` |
+| Scaffold a new **offline** project (green `npm test`, pages open via `file://`, no server) | `npx waygraph init my-app` |
 | Install coding-agent defs for diving an app into Blocks | `npx waygraph agent-dive --loop claude` (also `opencode` / `cursor` / `vscode`) |
 | Print a packaged agent skill to stdout | `npx waygraph --skill` (list) / `--skill-pilot` / `--skill-pilot-blind` / `--skill-convention` |
 | Add waygraph to an existing repo | `npm install waygraph @playwright/test` |

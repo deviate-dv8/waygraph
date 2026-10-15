@@ -1,28 +1,15 @@
 import { defineConfig } from "@playwright/test";
 
-const FIXTURE_PORT = process.env.WAYGRAPH_FIXTURE_PORT || "4177";
-const FIXTURE_HOST = process.env.WAYGRAPH_FIXTURE_HOST || "127.0.0.1";
-const FIXTURE_ORIGIN = `http://${FIXTURE_HOST}:${FIXTURE_PORT}`;
-
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    baseURL: FIXTURE_ORIGIN,
+    // Demo pages open via file:// - no server. Filled in by `waygraph init`.
+    baseURL: "__APP_BASE_DIR_FILE_URL__",
     trace: "retain-on-failure",
     launchOptions: {
       executablePath: process.env.CHROME_PATH || process.env.CHROMIUM_PATH,
-    },
-  },
-  webServer: {
-    command: "node scripts/fixture-server.mjs",
-    url: `${FIXTURE_ORIGIN}/home.html`,
-    reuseExistingServer: !process.env.CI,
-    env: {
-      WAYGRAPH_FIXTURE_PORT: FIXTURE_PORT,
-      WAYGRAPH_FIXTURE_HOST: FIXTURE_HOST,
-      WAYGRAPH_FIXTURE_QUIET: "1",
     },
   },
 });

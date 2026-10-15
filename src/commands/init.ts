@@ -2,6 +2,7 @@
 import { packageRoot } from "../cli/util.js";
 import { basename, join, relative, resolve } from "node:path";
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 function initCommand(projectName: string): void {
   if (!projectName) {
@@ -30,10 +31,17 @@ function initCommand(projectName: string): void {
     writeFileSync(join(targetDir, ".gitignore"), readFileSync(gitignoreSrc, "utf-8"));
     rmSync(gitignoreSrc);
   }
+  // Demo pages open via file://; the absolute path is only known once copied, so it's filled in here.
+  const appBaseDirUrl = pathToFileURL(join(targetDir, "src", "map", "(app_base)") + "/").href;
   const packageJsonPath = join(targetDir, "package.json");
   writeFileSync(
     packageJsonPath,
     readFileSync(packageJsonPath, "utf-8").replaceAll("__PROJECT_NAME__", pkgName),
+  );
+  const playwrightConfigPath = join(targetDir, "playwright.config.ts");
+  writeFileSync(
+    playwrightConfigPath,
+    readFileSync(playwrightConfigPath, "utf-8").replaceAll("__APP_BASE_DIR_FILE_URL__", appBaseDirUrl),
   );
   console.log(`Scaffolded ${pkgName}/`);
   console.log("");

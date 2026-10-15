@@ -15,6 +15,7 @@ import {
 import type { Checkpoint } from "../types.js";
 import { installDemoChrome, instrumentInteractionHighlighting } from "./step-overlay.js";
 import { resolveBaseUrl } from "../config.js";
+import { withWebServer } from "../webserver.js";
 
 export interface AutoExploreOptions {
   /** Terminal menu (browser still runs for act()). Default false = headful picker panel. */
@@ -616,6 +617,10 @@ async function cliPick(
  * Interactive waygraph auto: locate current Checkpoint, list runnable Blocks, pick one, repeat.
  */
 export async function runAutoExplore(projectDir: string, options: AutoExploreOptions = {}): Promise<void> {
+  await withWebServer(projectDir, () => runAutoExploreCore(projectDir, options));
+}
+
+async function runAutoExploreCore(projectDir: string, options: AutoExploreOptions = {}): Promise<void> {
   lastRunNote = null;
   const cli = options.cli === true;
   const baseURL = options.baseURL ?? (await resolveBaseUrl(projectDir)) ?? process.env.WAYGRAPH_BASE_URL;

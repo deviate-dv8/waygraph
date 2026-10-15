@@ -34,11 +34,6 @@ export const RemoveItemBlock = defineEffectBlock<Checkpoint<string>, CartEmpty>(
         },
       },
     ],
-    stubBefore: {},
-    stubAfter: {
-      cart: { selector: DemoSel.cartCount, label: "Cart count", duration: true },
-    },
-    stubOnError: {},
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     const buttons = page.locator("button.remove:not([hidden])");
@@ -60,4 +55,6 @@ export const RemoveItemBlock = defineEffectBlock<Checkpoint<string>, CartEmpty>(
     }
     return out;
   },
+}).stubAfter((ctx) => {
+  ctx.ring("cart", { selector: DemoSel.cartCount, label: "Cart count", duration: true });
 });

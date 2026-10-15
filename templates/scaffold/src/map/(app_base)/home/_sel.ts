@@ -1,7 +1,5 @@
-/** Offline catalog URL — HTTP fixture server (not file://; Flatpak Chromium blocks /tmp file URLs). */
-export const HOME_URL =
-  process.env.WAYGRAPH_HOME_URL ??
-  `http://${process.env.WAYGRAPH_FIXTURE_HOST || "127.0.0.1"}:${process.env.WAYGRAPH_FIXTURE_PORT || "4177"}/home.html`;
+// Relative to playwright.config.ts's baseURL (the (app_base) folder, set by `waygraph init`).
+export const HOME_URL = "home/home.html";
 
 export const DemoSel = {
   title: "h1",

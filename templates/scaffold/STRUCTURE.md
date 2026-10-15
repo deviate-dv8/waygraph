@@ -9,7 +9,7 @@ Next.js route groups) and never appear in a URL or Checkpoint name.
 ├── package.json
 ├── src/
 │   ├── map/
-│   │   ├── (app_base)/                # your app (served on :4177 here)
+│   │   ├── (app_base)/                # your app (opened via file:// here)
 │   │   │   ├── home/                  # URL /home.html
 │   │   │   │   ├── _nav.block.ts      # how to get here
 │   │   │   │   ├── _page.block.ts     # "you have arrived" hub
@@ -25,7 +25,6 @@ Next.js route groups) and never appear in a URL or Checkpoint name.
 │   │   └── (external)/mailpit/        # a different origin (mail catcher)
 │   ├── states/                        # Checkpoint types + mem keys
 │   └── flows/                         # example / shop / mail-verify
-├── scripts/                           # local fixture server
 └── tests/example.spec.ts
 ```
 

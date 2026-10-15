@@ -35,15 +35,6 @@ export const AddItemBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>({
         },
       },
     ],
-    stubBefore: {
-      add: { selector: DemoSel.catalog, label: "Catalog" },
-    },
-    stubAfter: {
-      cart: { selector: DemoSel.cartCount, label: "Cart count", duration: true },
-    },
-    stubOnError: {
-      cart: { selector: DemoSel.cartCount, label: "Cart at failure", tag: "FAIL" },
-    },
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     const buttons = page.locator("button.add:not([hidden])");
@@ -65,4 +56,13 @@ export const AddItemBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>({
     }
     return out;
   },
-});
+})
+  .stubBefore((ctx) => {
+    ctx.ring("add", { selector: DemoSel.catalog, label: "Catalog" });
+  })
+  .stubAfter((ctx) => {
+    ctx.ring("cart", { selector: DemoSel.cartCount, label: "Cart count", duration: true });
+  })
+  .stubOnError((ctx) => {
+    ctx.ring("cart", { selector: DemoSel.cartCount, label: "Cart at failure", tag: "FAIL" });
+  });

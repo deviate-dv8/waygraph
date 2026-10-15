@@ -12,7 +12,7 @@ organizational only and never appear in a URL.
 ├── package.json
 ├── src/
 │   ├── map/
-│   │   ├── (app_base)/                # your app (served on :4177 here)
+│   │   ├── (app_base)/                # your app (opened via file:// here)
 │   │   │   ├── home/                  # URL /home.html
 │   │   │   │   ├── _nav.block.ts      # how to get here
 │   │   │   │   ├── _page.block.ts     # "you have arrived" hub
@@ -23,7 +23,6 @@ organizational only and never appear in a URL.
 │   │   └── (external)/mailpit/        # a different origin (mail catcher)
 │   ├── states/                        # Checkpoint types + mem keys
 │   └── flows/                         # example / shop / mail-verify
-├── scripts/                           # local fixture server
 └── tests/example.spec.ts
 ```
 
@@ -64,7 +63,9 @@ agent can dive an existing app into Blocks.
 
 ## Pointing it at your real app
 
-1. Set `waygraph.baseUrl` in `package.json`; drop the `scripts/with-fixture.mjs` wrappers.
+1. Change each `_nav.block.ts`'s `url` from the local `file://` path to a real one, and set a
+   real `baseUrl` if your Nav Blocks use relative paths (`waygraph.config.ts`, a `.env`, or
+   `package.json`'s `"waygraph"` field - see [Project config](./REFERENCE#project-config-waygraph-config-env)).
 1. Rename `(app_base)/` to your app's group; make each folder match the real URL.
 1. Run `waygraph map` - it tells you which folders don't match.
 

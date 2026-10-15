@@ -9,8 +9,9 @@ import { runStepMode } from "./step-mode.js";
 import { connect } from "../types.js";
 import { MemPage } from "../mem-page.js";
 import { Engine, start, end, chainFlow, isFastForwardBlock, branchRoutes, runBranchRegression } from "../core.js";
+import { withWebServer } from "../webserver.js";
 
-async function main() {
+async function runMain() {
   const projectDir = process.argv[2];
   const spec = process.argv[3];
     const mem = new MemPage();
@@ -444,6 +445,12 @@ async function runAllBranchesMode(chainFlows, mem, baseURL, headed, engine) {
     await browser.close();
   }
   void engine;
+}
+
+// Here, not in the host CLI: importing playwright.config loads the project's own @playwright/test,
+// which would collide with the CLI's copy.
+async function main() {
+  await withWebServer(process.argv[2], runMain);
 }
 
 export function startRunner() {

@@ -1,7 +1,7 @@
 # __PROJECT_NAME__
 
 A waygraph project on the **Waygraph Map** layout: `src/map/` folders mirror your app's URLs.
-Runs fully offline - `npm test` is green on a local fixture page.
+Runs fully offline - the demo pages open directly via `file://`, no server or network needed.
 
 ## Run it
 
@@ -24,7 +24,9 @@ one Block per action, flows in `src/flows/`.
 
 ## Point it at your real app
 
-Set `waygraph.baseUrl` in `package.json`, drop the `scripts/with-fixture.mjs` wrappers, and
-keep each `src/map/` folder matching the URL it represents (`waygraph map` enforces this).
+Change each `_nav.block.ts`'s `url` from the local `file://` path to a real one, and set a real
+`baseUrl` if your Nav Blocks use relative paths (`waygraph.config.ts`, a `.env`, or
+`package.json`'s `"waygraph"` field - see the main docs' "Project config" section). Keep each
+`src/map/` folder matching the URL it represents (`waygraph map` enforces this).
 
 Docs: https://deviate-dv8.github.io/waygraph/
