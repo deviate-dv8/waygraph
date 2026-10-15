@@ -35,7 +35,7 @@ test("waygraph map flags a folder path that doesn't verbatim-match its Block's r
     output = (e.stdout ?? "") + (e.stderr ?? "");
   }
 
-  expect(output).toMatch(/3 node\(s\) found/);
+  expect(output).toMatch(/5 node\(s\) found/);
   expect(output).toMatch(
     /wrong-folder.*nav-wrong-fixture.*folder path "wrong-folder" doesn't verbatim-match.*"actually-different"/s,
   );
@@ -44,7 +44,11 @@ test("waygraph map flags a folder path that doesn't verbatim-match its Block's r
   // excluded from the comparison, same as a (group) segment - real folder
   // is "nested/_extra", real url is just "/nested", still a compliant match.
   expect(output).not.toMatch(/nav-nested-fixture.*doesn't verbatim-match/);
-  expect(output).toMatch(/1 violation/);
+  // Relative urls (the normal baseUrl case) are checked, not skipped.
+  expect(output).toMatch(/nav-relative-wrong-fixture.*folder path "relative-wrong" doesn't verbatim-match.*"somewhere-else"/s);
+  // A trailing index.html is its folder.
+  expect(output).not.toMatch(/nav-docs-index-fixture.*doesn't verbatim-match/);
+  expect(output).toMatch(/2 violations/);
 });
 
 test("waygraph map is a no-op, not an error, when the project has no src/map/ directory at all", async () => {

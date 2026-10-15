@@ -141,11 +141,13 @@ export async function checkMap(projectDir: string): Promise<MapCheckResult> {
       if (typeof navUrl !== "string") continue; // only statically-urled Nav/Page Blocks are checkable
       let pathname: string;
       try {
-        pathname = new URL(navUrl).pathname;
+        // Relative URLs (the normal baseUrl case) are paths from the app root.
+        pathname = new URL(navUrl, "http://app.invalid/").pathname;
       } catch {
-        continue; // a relative/templated URL - not verbatim-checkable
+        continue;
       }
       const urlSegments = pathname.split("/").filter(Boolean);
+      if (urlSegments.at(-1) === "index.html") urlSegments.pop(); // /docs/index.html is the docs/ folder
       const folderSegments = realSegments(relative(mapRoot, file));
       const matches =
         urlSegments.length === folderSegments.length && urlSegments.every((s, i) => s === folderSegments[i]);
