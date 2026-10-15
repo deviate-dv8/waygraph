@@ -52,7 +52,7 @@ export async function runStubPhase(
     if (bagUntouched) {
       try {
         const legacyOut = (opts?.out ?? { __state: "" }) as Checkpoint<string>;
-        const ret2 = (raw as (o: Checkpoint<string>) => HighlightStubPhase)(legacyOut);
+        const ret2 = (raw as unknown as (o: Checkpoint<string>) => HighlightStubPhase)(legacyOut);
         if (isStubPhase(ret2)) bag.highlights = { ...ret2 };
       } catch {
         /* ignore */
@@ -174,7 +174,7 @@ export function resolveHighlightSlots(
     } catch {
       try {
         const legacyOut = (opts?.out ?? { __state: "" }) as Checkpoint<string>;
-        const ret2 = (raw as (o: Checkpoint<string>) => HighlightStubPhase)(legacyOut);
+        const ret2 = (raw as unknown as (o: Checkpoint<string>) => HighlightStubPhase)(legacyOut);
         if (isStubPhase(ret2)) bag.highlights = { ...ret2 };
       } catch {
         bag.highlights = {};

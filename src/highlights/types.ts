@@ -527,12 +527,12 @@ export type StubLifecycleFn<Out extends Checkpoint<string>> = (
  * Block stub authoring:
  * - **preferred:** open lifecycle `stubBefore(ctx) { ctx.todos(...); ctx.ring(...) }`
  * - **shorthand:** static slot map `{ email: { selector, label } }`
- * - **legacy:** `(out) => slotMap` still accepted (treated as highlights only)
+ *
+ * Exactly one function member, so an inline `stubAfter(ctx) {}` gets `ctx` typed.
  */
 export type HighlightStubPhaseOrFn<Out extends Checkpoint<string>> =
   | HighlightStubPhase
-  | StubLifecycleFn<Out>
-  | ((out: Out) => HighlightStubPhase);
+  | StubLifecycleFn<Out>;
 
 
 /** Result of running a stub phase (rings + episode fixtures). */

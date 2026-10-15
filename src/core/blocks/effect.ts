@@ -30,19 +30,10 @@ export type EffectBlock<
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): EffectBlock<In, Out>;
   stubBefore(stub: import("../../highlights.js").HighlightStubPhase): EffectBlock<In, Out>;
   stubBefore(stub: import("../../highlights.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
-  stubBefore(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): EffectBlock<In, Out>;
   stubAfter(stub: import("../../highlights.js").HighlightStubPhase): EffectBlock<In, Out>;
   stubAfter(stub: import("../../highlights.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
-  stubAfter(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): EffectBlock<In, Out>;
   stubOnError(stub: import("../../highlights.js").HighlightStubPhase): EffectBlock<In, Out>;
   stubOnError(stub: import("../../highlights.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
-  stubOnError(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): EffectBlock<In, Out>;
 };
 
 

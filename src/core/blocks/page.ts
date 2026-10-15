@@ -68,19 +68,10 @@ export type PageBlock<Out extends Checkpoint<string>> = Omit<
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out>;
   stubBefore(stub: import("../../highlights.js").HighlightStubPhase): PageBlock<Out>;
   stubBefore(stub: import("../../highlights.js").StubLifecycleFn<Out>): PageBlock<Out>;
-  stubBefore(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): PageBlock<Out>;
   stubAfter(stub: import("../../highlights.js").HighlightStubPhase): PageBlock<Out>;
   stubAfter(stub: import("../../highlights.js").StubLifecycleFn<Out>): PageBlock<Out>;
-  stubAfter(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): PageBlock<Out>;
   stubOnError(stub: import("../../highlights.js").HighlightStubPhase): PageBlock<Out>;
   stubOnError(stub: import("../../highlights.js").StubLifecycleFn<Out>): PageBlock<Out>;
-  stubOnError(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): PageBlock<Out>;
 };
 
 

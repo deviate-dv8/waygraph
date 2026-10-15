@@ -35,19 +35,10 @@ export type NavBlock<Out extends Checkpoint<string>> = Omit<
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): NavBlock<Out>;
   stubBefore(stub: import("../../highlights.js").HighlightStubPhase): NavBlock<Out>;
   stubBefore(stub: import("../../highlights.js").StubLifecycleFn<Out>): NavBlock<Out>;
-  stubBefore(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): NavBlock<Out>;
   stubAfter(stub: import("../../highlights.js").HighlightStubPhase): NavBlock<Out>;
   stubAfter(stub: import("../../highlights.js").StubLifecycleFn<Out>): NavBlock<Out>;
-  stubAfter(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): NavBlock<Out>;
   stubOnError(stub: import("../../highlights.js").HighlightStubPhase): NavBlock<Out>;
   stubOnError(stub: import("../../highlights.js").StubLifecycleFn<Out>): NavBlock<Out>;
-  stubOnError(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): NavBlock<Out>;
 };
 
 

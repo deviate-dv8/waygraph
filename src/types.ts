@@ -326,21 +326,12 @@ export type DefinedBlock<In extends Checkpoint<string>, Out extends Checkpoint<s
    */
   stubBefore(stub: import("./highlights.js").HighlightStubPhase): DefinedBlock<In, Out>;
   stubBefore(stub: import("./highlights.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
-  stubBefore(
-    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
-  ): DefinedBlock<In, Out>;
   /** Demo narration after resolve. Prefer ctx callbacks over slot-map objects. */
   stubAfter(stub: import("./highlights.js").HighlightStubPhase): DefinedBlock<In, Out>;
   stubAfter(stub: import("./highlights.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
-  stubAfter(
-    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
-  ): DefinedBlock<In, Out>;
   /** Demo narration when the step fails / expected-failure path. */
   stubOnError(stub: import("./highlights.js").HighlightStubPhase): DefinedBlock<In, Out>;
   stubOnError(stub: import("./highlights.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
-  stubOnError(
-    stub: (out: Out) => import("./highlights.js").HighlightStubPhase,
-  ): DefinedBlock<In, Out>;
 };
 
 /**

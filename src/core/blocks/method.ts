@@ -32,19 +32,10 @@ export type MethodBlock<
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): MethodBlock<In, Out>;
   stubBefore(stub: import("../../highlights.js").HighlightStubPhase): MethodBlock<In, Out>;
   stubBefore(stub: import("../../highlights.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
-  stubBefore(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): MethodBlock<In, Out>;
   stubAfter(stub: import("../../highlights.js").HighlightStubPhase): MethodBlock<In, Out>;
   stubAfter(stub: import("../../highlights.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
-  stubAfter(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): MethodBlock<In, Out>;
   stubOnError(stub: import("../../highlights.js").HighlightStubPhase): MethodBlock<In, Out>;
   stubOnError(stub: import("../../highlights.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
-  stubOnError(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): MethodBlock<In, Out>;
 };
 
 
@@ -176,17 +167,8 @@ export type AssertBlock<Out extends Checkpoint<string>> = Omit<
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): AssertBlock<Out>;
   stubBefore(stub: import("../../highlights.js").HighlightStubPhase): AssertBlock<Out>;
   stubBefore(stub: import("../../highlights.js").StubLifecycleFn<Out>): AssertBlock<Out>;
-  stubBefore(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): AssertBlock<Out>;
   stubAfter(stub: import("../../highlights.js").HighlightStubPhase): AssertBlock<Out>;
   stubAfter(stub: import("../../highlights.js").StubLifecycleFn<Out>): AssertBlock<Out>;
-  stubAfter(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): AssertBlock<Out>;
   stubOnError(stub: import("../../highlights.js").HighlightStubPhase): AssertBlock<Out>;
   stubOnError(stub: import("../../highlights.js").StubLifecycleFn<Out>): AssertBlock<Out>;
-  stubOnError(
-    stub: (out: Out) => import("../../highlights.js").HighlightStubPhase,
-  ): AssertBlock<Out>;
 };
