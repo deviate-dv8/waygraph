@@ -30,7 +30,15 @@
     "!examples/**/.waygraph-traverse/**",
     "!examples/**/.waygraph-videos",
     "!examples/**/.waygraph-videos/**",
-    "!**/*.webm"
+    "!**/*.webm",
+    "!**/.waygraph-auto",
+    "!**/.waygraph-auto/**",
+    "!**/test-results",
+    "!**/test-results/**",
+    "!**/playwright-report",
+    "!**/playwright-report/**",
+    "!**/.waygraph-chain-*.mjs",
+    "!**/*.log"
   ],
   "repository": {
     "type": "git",

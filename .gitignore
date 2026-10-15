@@ -13,3 +13,4 @@ waygraph-artifact.html
 .waygraph-auto/
 **/.waygraph-videos/
 **/.tmp/
+.waygraph-chain-*.mjs
