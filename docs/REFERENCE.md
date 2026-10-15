@@ -384,6 +384,9 @@ Tracked on the project board / roadmap, not in this package today:
 - Interstitials/Watchers - background overlay handling (cookie banners, popups).
 - Split `requires` (externally-supplied vs producedBy) recovery hints.
 - Federated multi-package pool of waygraphs.
+- Network tab **mocking** - the demo overlay's network tab observes real traffic and
+  `defineApiBlock` calls today, but can't yet intercept a request and serve a fabricated
+  response (`page.route()`/`route.fulfill()`); see `ROADMAP.md`.
 
 ## Block helpers (Page, Method, Sel)
 
@@ -397,6 +400,7 @@ Runtime is still one type: `Block`. Helpers are TypeScript salt.
 | `defineEffectBlock` | Instance mutate + `instanceOptions` auto menu | `methods/*.effect.block.ts` |
 | `defineNavBlock` / `defineNavClickBlock` | `goto` / click-nav | `nav-*.block.ts` |
 | `defineMemNavBlock` | Nav + per-row `instanceOptions` | `nav-*.block.ts` |
+| `defineApiBlock` | Backend/API check via `page.request`, not a page action | `methods/*.api.block.ts` |
 | `defineActionBlock` | Deprecated alias of `defineMethodBlock` | - |
 
 **Page hub:** one Checkpoint = this screen. Methods hang off the page for readability /
@@ -528,6 +532,32 @@ export const InventoryPage = definePageBlock({
 Live reference: `examples/saucedemo/src/blocks/saucedemo-web/inventory/`
 (`inventory.page.block.ts` + `methods/` + `InventorySel`). Bulk `add-all-to-cart` /
 `remove-all-from-cart` are one menu row each (`from: "*"` - works after leave/return).
+
+**`defineApiBlock` - a backend check inside the same Flow.** Not a page action: `act`
+makes a real HTTP request through Playwright's own `page.request` (an `APIRequestContext`
+sharing the browser context's cookies/origin, so an already-logged-in session carries
+over automatically). Lets one Flow narrate a UI step and a backend check as the same
+state machine, checked by the same `verify`/Trait system every other Block uses:
+
+```typescript
+import { defineApiBlock, checkpoint } from "waygraph";
+
+export const CheckOrderCreatedBlock = defineApiBlock<LoggedIn, OrderConfirmed | OrderFailed>({
+  name: "check-order-created",
+  call: ({ request }) => request.get("/api/orders/latest"),
+  method: "GET", // cosmetic only - shown in the demo overlay's network tab, not read back from the response
+  resolve: (r) => (r.ok ? checkpoint("OrderConfirmed") : checkpoint("OrderFailed")),
+  verify: [Trait.disabled],
+});
+```
+
+`resolve` receives `{ status, ok, body }` (`body` is the parsed JSON, or raw text when it
+doesn't parse as JSON). Every call - real page traffic too - feeds the same demo-overlay
+network tab (hidden by default, `ctx.showNetworkTab()`/`hideNetworkTab()` to toggle); see
+[Demo narration → Network tab](./highlights#network-tab-demo-01549).
+
+Live reference: `examples/saucedemo/src/flows/api-demo.flow.ts` (a login chained into a
+health-check API call against a public test API, since saucedemo.com has no real backend).
 
 ## Mail adapters (cross-origin, browser-driven)
 

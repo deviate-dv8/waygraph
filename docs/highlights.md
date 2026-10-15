@@ -206,6 +206,48 @@ Opt out for the whole run: `waygraph demo ... --todo-full`
 `ctx.todoDockFull()` / `ctx.todoDockUi({ compact: false, ... })`.
 Full flag table: [Demo / run → Todo dock UI](./demo#todo-dock-ui).
 
+## Caption bar (demo, 0.15.49+)
+
+`ctx.caption(text)` shows a bottom-centered narration card (white, rounded, drop
+shadow) during `waygraph demo` - distinct from `ctx.title()`/`ctx.titlePos()`
+(the top banner card). Call it from `stubBefore`/`stubAfter` like any other
+open-lifecycle fixture:
+
+```sh
+instruction: {
+stubBefore(ctx) {
+ctx.caption("Enter the first name on the order");
+},
+}
+```
+
+`ctx.hideCaption()` (or `ctx.caption("")`) fades it out. Leaving `caption`
+untouched on a later phase keeps whatever the previous step set - it does not
+reset between steps on its own, so clear it explicitly once it no longer
+applies (see `examples/saucedemo`'s `checkout.flow.ts`, which calls
+`ctx.hideCaption()` on the final checkout-info field).
+
+## Network tab (demo, 0.15.49+)
+
+Real page traffic (`fetch`/`xhr`/navigation requests) and every `defineApiBlock`
+call are always captured into a Postman-style panel - method, URL, status,
+click-to-expand headers/request/response body, "Copy as cURL" - but the panel
+itself is **hidden by default**. Toggle it like any other overlay fixture:
+
+```sh
+stubBefore(ctx) {
+ctx.showNetworkTab();
+},
+```
+
+`ctx.hideNetworkTab()` hides the panel again; capture keeps running in the
+background either way, so nothing is lost by toggling visibility off. A block
+built with `defineApiBlock` also shows a terminal icon on the stepper while it
+runs, independent of whether the network tab itself is visible.
+
+Network *mocking* (intercepting a request and serving a fabricated response,
+not just observing real traffic) isn't implemented yet - see `ROADMAP.md`.
+
 ## Sauce Demo coverage
 
 The [Sauce Demo](./saucedemo/index) shows all features in a real block/flow:

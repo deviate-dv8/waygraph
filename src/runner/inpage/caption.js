@@ -1,6 +1,6 @@
 // In-page installer (page.evaluate target) - must stay self-contained, no module-scope closure.
-// Bottom subtitle-bar caption, ported from zsign's help-center-clip-engine (see ui/css/caption.css's
-// own header) - same visual fixture, narration-timeline/TTS sync not ported yet.
+// Bottom narration caption - a white rounded card, not the dark zsign-ported scrim this started as
+// (see ui/css/caption.css's own header); narration-timeline/TTS sync not ported yet.
 export function showCaption(text) {
   let bar = __wgById("wg-caption-bar");
   if (!bar) {
