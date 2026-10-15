@@ -2,8 +2,6 @@
  * Phase B+D: graph traverse (serial or --parallel with --session clone).
  * Walk unused legal edges until leaf / budget / break.
  */
-import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { Engine, start, end, locate } from "../core.js";
 import type { NavBlock } from "../core.js";
@@ -17,6 +15,7 @@ import {
 } from "../session/auto-explore.js";
 import type { WaygraphGraph } from "../analysis/graph.js";
 import { defaultMemValueForKey } from "../session/auto-explore-run.js";
+import { resolveBaseUrl } from "../config.js";
 import { EdgeLeaseCoordinator } from "./lease.js";
 import {
   buildCoverageReport,
@@ -69,20 +68,6 @@ export interface TraverseOptions {
   coverageOut?: string;
   /** Phase E: skip writing coverage.json (still prints the Coverage line). */
   noCoverageReport?: boolean;
-}
-
-function resolveBaseUrl(projectDir: string): string | undefined {
-  if (process.env.WAYGRAPH_BASE_URL) return process.env.WAYGRAPH_BASE_URL;
-  const pkgPath = join(projectDir, "package.json");
-  if (!existsSync(pkgPath)) return undefined;
-  try {
-    const pkg = JSON.parse(readFileSync(pkgPath, "utf-8")) as {
-      waygraph?: { baseUrl?: string };
-    };
-    return pkg.waygraph?.baseUrl;
-  } catch {
-    return undefined;
-  }
 }
 
 function seedMem(library: Map<string, BlockEntry>, mem: MemPage, dataJson?: string): void {
@@ -408,7 +393,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
   const maxVisitsPerEdge = options.maxVisitsPerEdge ?? 1;
   const timeoutMs = options.timeoutMs ?? 15 * 60_000;
   const headed = options.headed === true || process.env.WAYGRAPH_HEADED === "1";
-  const baseURL = options.baseURL ?? resolveBaseUrl(projectDir) ?? process.env.WAYGRAPH_BASE_URL;
+  const baseURL = options.baseURL ?? (await resolveBaseUrl(projectDir)) ?? process.env.WAYGRAPH_BASE_URL;
   const startUrl = options.startUrl ?? baseURL;
   const minEdgeCoverage =
     options.minEdgeCoverage != null && Number.isFinite(options.minEdgeCoverage)

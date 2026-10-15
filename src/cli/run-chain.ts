@@ -45,7 +45,7 @@ mod.startRunner();
 export async function runChain(projectDir: string, spec: string): Promise<void> {
   const expanded = await expandSpecFlowFiles(projectDir, spec);
   if (process.env.WAYGRAPH_VIDEO && !process.env.WAYGRAPH_BASE_URL) {
-    const resolved = resolveBaseUrl(projectDir);
+    const resolved = await resolveBaseUrl(projectDir);
     if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
   }
   const tsxEsm = import.meta.resolve("tsx/esm");

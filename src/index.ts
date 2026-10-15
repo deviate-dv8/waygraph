@@ -225,3 +225,5 @@ export type {
 } from "./auto-session.js";
 export { pilotStart } from "./session/pilot.js";
 export type { PilotStartResult } from "./session/pilot.js";
+export { defineConfig, resolveBaseUrl } from "./config.js";
+export type { WaygraphConfig } from "./config.js";

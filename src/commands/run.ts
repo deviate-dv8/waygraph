@@ -27,7 +27,7 @@ export async function runCase(args: string[]): Promise<void> {
         process.exit(1);
       }
       if (!process.env.WAYGRAPH_BASE_URL) {
-        const resolved = resolveBaseUrl(proj);
+        const resolved = await resolveBaseUrl(proj);
         if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
       }
       await runChain(proj, spec);
@@ -67,12 +67,12 @@ export async function chainCase(args: string[]): Promise<void> {
         flags.blocks ? (flags.positionals[0] ?? process.cwd()) : (flags.positionals[1] ?? process.cwd()),
       );
       if (!process.env.WAYGRAPH_BASE_URL) {
-        const resolved = resolveBaseUrl(proj);
+        const resolved = await resolveBaseUrl(proj);
         if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
       }
       // If caller asked for step overlay, behave like demo; else like run.
       if (flags.step === true || process.env.WAYGRAPH_STEP === "1") {
-        applyDemoDefaults(proj);
+        await applyDemoDefaults(proj);
       }
       await runChain(proj, spec);
       return;
@@ -101,7 +101,7 @@ export async function demoCase(args: string[]): Promise<void> {
       if (flags.step === undefined && process.env.WAYGRAPH_STEP === undefined) {
         process.env.WAYGRAPH_STEP = "1";
       }
-      applyDemoDefaults(proj);
+      await applyDemoDefaults(proj);
       console.error(
         `waygraph demo: STEP=${process.env.WAYGRAPH_STEP === "1" ? "on" : "off"}` +
           ` AUTO_NEXT=${process.env.WAYGRAPH_AUTOPLAY === "1" ? "on" : "off"}` +

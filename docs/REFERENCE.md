@@ -51,6 +51,36 @@ npm install waygraph @playwright/test
 (`^1.40.0` or later) since it's also what drives the rest of your test suite. Requires
 Node 22+ (uses `URL`/`URLPattern` from `@types/node` for `Trait.url`'s type checking).
 
+## Project config (`waygraph.config`, `.env`)
+
+Three places can supply a project's `baseUrl`, checked in this order (first one found wins):
+
+1. `WAYGRAPH_BASE_URL` - a real shell export, or one loaded from a `.env` file (next section).
+2. A `waygraph.config.ts`/`.mts`/`.mjs`/`.js`/`.cjs` file in the project root:
+   ```typescript
+   import { defineConfig } from "waygraph";
+
+   export default defineConfig({
+     baseUrl: "http://127.0.0.1:4177",
+   });
+   ```
+   `defineConfig` is purely a type-checking identity helper (same role it plays in
+   `playwright.config.ts`/`vite.config.ts`) - `export default { baseUrl: "..." }` works
+   identically without it. `.ts` works unmodified; no separate build/transpile step.
+3. `package.json`'s own `"waygraph": { "baseUrl": "..." }` field (still works exactly as
+   before - `waygraph.config.*` is additive, not a replacement).
+
+If none of those are set, a `playwright.config.*`'s own `baseURL` is read as a last resort.
+
+**Native `.env` support** - `.env`, `.env.local`, `.env.<mode>`, `.env.<mode>.local`
+(`<mode>` = `NODE_ENV`, default `"development"`) are auto-loaded from the project root before
+`baseUrl` resolution runs, same layering Vite/Next use. No `dotenv` dependency - a small
+built-in parser (`src/env-file.ts`), matching the "bring nothing, read what's already there"
+approach memStub already takes with Faker. A real, already-exported shell env var always wins
+over anything in a `.env` file - loading one only fills a gap, never silently overrides a
+value you actually set. This replaces the hack of manually re-exporting an FE project's own
+`.env` values, or duplicating them into `package.json`, just to get waygraph to see them.
+
 ## Core concepts
 
 - **`Checkpoint<Tag>`** - a state identified solely by its string tag. Carries no data.

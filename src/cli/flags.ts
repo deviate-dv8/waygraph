@@ -1,7 +1,8 @@
 // Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { basename, join, relative, resolve } from "node:path";
+import { basename, relative, resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { walkDir } from "./discover.js";
+import { resolveBaseUrl } from "../config.js";
 
 // ---------------------------------------------------------------------------
 // CLI plumbing - run flags (flags beat WAYGRAPH_* env)
@@ -342,44 +343,19 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
 
 
 /**
- * BASE_URL when neither --base-url nor WAYGRAPH_BASE_URL is set:
- * package.json `waygraph.baseUrl` (or `baseURL`), then playwright.config `baseURL`.
+ * BASE_URL when neither --base-url nor WAYGRAPH_BASE_URL is set - see `../config.js`'s own
+ * `resolveBaseUrl` for the full resolution order (env / `.env` / `waygraph.config.*` /
+ * package.json / playwright.config). Re-exported here so existing importers of this module
+ * don't need to change their import path.
  */
-export function resolveBaseUrl(projectDir: string): string | undefined {
-  const pkgPath = join(projectDir, "package.json");
-  if (existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(readFileSync(pkgPath, "utf-8")) as {
-        waygraph?: { baseUrl?: string; baseURL?: string };
-        config?: { waygraph?: { baseUrl?: string; baseURL?: string } };
-      };
-      const fromPkg =
-        pkg.waygraph?.baseUrl ??
-        pkg.waygraph?.baseURL ??
-        pkg.config?.waygraph?.baseUrl ??
-        pkg.config?.waygraph?.baseURL;
-      if (typeof fromPkg === "string" && fromPkg.trim()) return fromPkg.trim();
-    } catch {
-      // ignore malformed package.json - fall through to playwright
-    }
-  }
-  for (const name of ["playwright.config.ts", "playwright.config.mts", "playwright.config.js", "playwright.config.mjs"]) {
-    const p = join(projectDir, name);
-    if (!existsSync(p)) continue;
-    const src = readFileSync(p, "utf-8");
-    const m = src.match(/baseURL\s*:\s*["']([^"']+)["']/);
-    if (m?.[1]) return m[1];
-  }
-  return undefined;
-}
-
+export { resolveBaseUrl };
 
 /**
  * Friendly demo defaults: STEP on; headed only for live watch (no --video).
  * --video / --auto-play-video => headless unless --non-headless.
  * Call after applyRunFlags so explicit flags already won.
  */
-export function applyDemoDefaults(projectDir: string): void {
+export async function applyDemoDefaults(projectDir: string): Promise<void> {
   if (process.env.WAYGRAPH_STEP === undefined) process.env.WAYGRAPH_STEP = "1";
   if (process.env.WAYGRAPH_STEP === "1" && process.env.WAYGRAPH_HEADED === undefined) {
     // Recording locks headless - a live window fights fixed video viewport /
@@ -395,7 +371,7 @@ export function applyDemoDefaults(projectDir: string): void {
     }
   }
   if (!process.env.WAYGRAPH_BASE_URL) {
-    const resolved = resolveBaseUrl(projectDir);
+    const resolved = await resolveBaseUrl(projectDir);
     if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
   }
 }

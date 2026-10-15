@@ -54,7 +54,7 @@ export class AutoSession {
   }
 
   static async start(init: AutoSessionInit): Promise<AutoSession> {
-    const baseURL = init.baseURL ?? resolveBaseUrl(init.projectDir);
+    const baseURL = init.baseURL ?? (await resolveBaseUrl(init.projectDir));
     const skipNav = init.skipInitialNavigation === true;
     const startUrl = skipNav ? undefined : (init.startUrl ?? baseURL);
     const exploreOpts = {

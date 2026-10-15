@@ -1,8 +1,6 @@
 import { createInterface } from "node:readline/promises";
 import { ensureShadowRoot } from "../ui/shadow.js";
 import { stdin as input, stdout as output } from "node:process";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import type { Page, BrowserContext } from "@playwright/test";
 import { Engine, start, end, locate } from "../core.js";
 import { MemPage } from "../mem-page.js";
@@ -16,6 +14,7 @@ import {
 } from "./auto-explore.js";
 import type { Checkpoint } from "../types.js";
 import { installDemoChrome, instrumentInteractionHighlighting } from "./step-overlay.js";
+import { resolveBaseUrl } from "../config.js";
 
 export interface AutoExploreOptions {
   /** Terminal menu (browser still runs for act()). Default false = headful picker panel. */
@@ -27,27 +26,9 @@ export interface AutoExploreOptions {
   blocksSelect?: import("../blocks-select.js").BlocksSelect;
 }
 
-export function resolveBaseUrl(projectDir: string): string | undefined {
-  const pkgPath = join(projectDir, "package.json");
-  if (existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(readFileSync(pkgPath, "utf-8")) as {
-        waygraph?: { baseUrl?: string; baseURL?: string };
-      };
-      const fromPkg = pkg.waygraph?.baseUrl ?? pkg.waygraph?.baseURL;
-      if (typeof fromPkg === "string" && fromPkg.trim()) return fromPkg.trim();
-    } catch {
-      /* ignore */
-    }
-  }
-  for (const name of ["playwright.config.ts", "playwright.config.mts", "playwright.config.js"]) {
-    const p = join(projectDir, name);
-    if (!existsSync(p)) continue;
-    const m = readFileSync(p, "utf-8").match(/baseURL\s*:\s*["']([^"']+)["']/);
-    if (m?.[1]) return m[1];
-  }
-  return undefined;
-}
+/** See `../config.js`'s own `resolveBaseUrl` - re-exported so existing importers of this module
+ * don't need to change their import path. */
+export { resolveBaseUrl };
 
 /** URL-first - several Checkpoints share nav verify traits (e.g. LoggedIn = /inventory.html). */
 async function inferCheckpointFromUrl(page: Page): Promise<string | null> {
@@ -637,7 +618,7 @@ async function cliPick(
 export async function runAutoExplore(projectDir: string, options: AutoExploreOptions = {}): Promise<void> {
   lastRunNote = null;
   const cli = options.cli === true;
-  const baseURL = options.baseURL ?? resolveBaseUrl(projectDir) ?? process.env.WAYGRAPH_BASE_URL;
+  const baseURL = options.baseURL ?? (await resolveBaseUrl(projectDir)) ?? process.env.WAYGRAPH_BASE_URL;
   const startUrl = options.startUrl ?? baseURL;
   const { graph, library } = await buildExploreContext(
     projectDir,

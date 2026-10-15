@@ -54,6 +54,7 @@ otherwise.
 | Waygraph Pilot (plain-language ask -> narrate/agentic, built on AutoSession) | Proposed - `openspec/changes/waygraph-pilot/` |
 | Network tab overlay (live page traffic capture, `defineApiBlock` method/status, click-to-expand headers/body, copy-as-cURL, `ctx.showNetworkTab()`/`hideNetworkTab()`) | Shipped - real request/response **mocking** (not just observing) is backlogged, see "Network tab mocking" below |
 | Narrated help-center video generation (core `waygraph render`) | Deferred to v1.0.x (`waygraph-demo` module) - not current focus, see below |
+| `waygraph.config.*` + native `.env` loading, consolidated `resolveBaseUrl` (was 3 drifted copies), scaffold `memStub` example | Shipped - see "Project config + scaffold memStub" below |
 | Stability declaration (1.0.0) | Gated on Waygraph Pilot demoable - see "1.0.0" below |
 
 ### NavBlock + ActionPage + waygraph check + pluggable browser provider
@@ -174,6 +175,37 @@ shows all the nodes like a node tree stuff"). Still real per-tone color coding t
 (existing `auto` tone) for a real Playwright-driven action (Block run / raw click-type-upload),
 a new `orange` tone for a pure DOM inspection (`auto dom`) - not yet implemented, `WAYGRAPH_RING_CSS`
 only has planned/auto/info/warning/danger/success right now.
+
+### Project config + scaffold memStub - shipped
+
+Two real, direct user asks in the same session: "I think its time to add waygraph config
+now," plus FE consumers who keep their own `.env` and "sometimes they have to do hacks in
+waygraph to make it work" - no native `.env` support existed before this.
+
+- **`waygraph.config.ts`/`.mts`/`.mjs`/`.js`/`.cjs`** (`src/config.ts`, `defineConfig`) - new,
+  additive, optional. `package.json`'s `"waygraph"` field keeps working untouched; the config
+  file is a second, typed place for the same kind of setting. `.ts` works unmodified since
+  `bin/waygraph` already registers `tsx/esm` before `dist/cli.js` runs.
+- **Native `.env` loading** (`src/env-file.ts`) - `.env`/`.env.local`/`.env.<mode>`/
+  `.env.<mode>.local`, Vite/Next-style layering, no `dotenv` dependency (a ~20-line parser,
+  matching memStub's own "bring nothing, read what's already there" philosophy). A real
+  shell-exported env var always wins over a `.env` file.
+- **Consolidated `resolveBaseUrl`** - was three independently drifted copies
+  (`src/cli/flags.ts`, `src/traverse/run.ts`, `src/session/auto-explore-run.ts`), each
+  checking a different subset of sources in a different order; real duplication, found while
+  investigating "some parts are not easy to understand" feedback from other devs, not just a
+  style nit. Now one implementation in `src/config.ts`, re-exported from the other two files
+  so existing importers don't need to change their import path.
+- **Scaffold `memStub` example** - `templates/scaffold`'s own `shopFlow` now registers a
+  memStub for `SelectedItem` and wraps itself in `withMemStub`, so `waygraph demo --blocks
+  shopFlow` works with zero `--data` out of the box - `memStub` was a real, documented,
+  shipped feature (`src/mem-stub.ts`, used in `examples/saucedemo`) that the actual `waygraph
+  init` starter template never demonstrated at all, a real, direct user-reported gap.
+
+All four verified against a real scratch project (`waygraph init` into a throwaway dir, local
+`file:` dependency, real fixture server): `.env`-only resolution, `waygraph.config.ts`-only
+resolution, explicit env winning over both, `shopFlow` running end-to-end with zero `--data`,
+and `waygraph check`/`list` reporting no new warnings.
 
 ### Network tab mocking (backlogged, not yet researched)
 

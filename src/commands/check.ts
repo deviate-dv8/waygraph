@@ -101,7 +101,7 @@ export async function runChainAuto(projectDir: string, fromTag: string, toTag: s
   const spec = path.join(" then ");
   console.error(`waygraph chain auto: ${fromTag} -> ${toTag} via ${spec}`);
   if (!process.env.WAYGRAPH_BASE_URL) {
-    const resolved = resolveBaseUrl(projectDir);
+    const resolved = await resolveBaseUrl(projectDir);
     if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
   }
   await runChain(projectDir, spec);
