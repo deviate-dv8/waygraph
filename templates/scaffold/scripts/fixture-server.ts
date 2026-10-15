@@ -1,11 +1,9 @@
 #!/usr/bin/env -S npx tsx
 /**
- * Tiny static server for the offline scaffold fixture (home.html) - this is scaffold-fixture
- * plumbing only, not part of the waygraph API itself. Run directly via `tsx` (already a
- * transitive dependency through `waygraph`, listed explicitly here so `npm install` guarantees
- * it) - same loader every `.block.ts`/`.flow.ts` file in this project already runs through, not
- * a second, different toolchain.
- * Flatpak Chromium cannot open file:// under /tmp — HTTP localhost works.
+ * Tiny static server for the offline scaffold fixture pages (home.html, docs.html) - serves them
+ * over real HTTP, not file://, since some sandboxed browser installs refuse file:// outright and
+ * Playwright's own relative navigation assumes a real origin either way. Scaffold-only plumbing,
+ * not part of the waygraph API - see scripts/README.md.
  */
 import { createServer } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
