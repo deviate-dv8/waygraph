@@ -1,10 +1,9 @@
 import {
   defineEffectBlock,
   checkpoint,
-  type Checkpoint,
   type WaygraphInstanceOption,
 } from "waygraph";
-import type { ItemInCart } from "../../../../states/demo.states.js";
+import type { CanAddItem, ItemInCart } from "../../../../states/demo.states.js";
 import { SelectedItem } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
@@ -16,7 +15,7 @@ import { DemoSel } from "../_sel.js";
  * Mutates one catalog row from mem. `waygraph auto` lists one "Add …" row per
  * live Add button via instanceOptions.
  */
-export const AddItemBlock = defineEffectBlock<Checkpoint<string>, ItemInCart>({
+export const AddItemBlock = defineEffectBlock<CanAddItem, ItemInCart>({
   name: "add-item",
   description: "Adds the mem-selected catalog item to the cart.",
   requires: [SelectedItem.key],

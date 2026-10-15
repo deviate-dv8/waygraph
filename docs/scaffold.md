@@ -13,11 +13,11 @@ organizational only and never appear in a URL.
 ├── src/
 │   ├── map/
 │   │   ├── (app_base)/                # your app (opened via file:// here)
-│   │   │   ├── home/                  # URL /home.html
+│   │   │   ├── home/                  # URL /home
 │   │   │   │   ├── _nav.block.ts      # how to get here
 │   │   │   │   ├── _page.block.ts     # "you have arrived" hub
 │   │   │   │   ├── _sel.ts            # every selector for this page
-│   │   │   │   ├── home.html          # offline fixture page
+│   │   │   │   ├── index.html         # offline fixture page
 │   │   │   │   └── _methods/          # one action per Block
 │   │   │   └── docs/                  # a second page, same shape
 │   │   └── (external)/mailpit/        # a different origin (mail catcher)

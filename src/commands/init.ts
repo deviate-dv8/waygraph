@@ -32,7 +32,7 @@ function initCommand(projectName: string): void {
     rmSync(gitignoreSrc);
   }
   // Demo pages open via file://; the absolute path is only known once copied, so it's filled in here.
-  const appBaseDirUrl = pathToFileURL(join(targetDir, "src", "map", "(app_base)") + "/").href;
+  const appBaseUrl = pathToFileURL(join(targetDir, "src", "map", "(app_base)", "index.html")).href;
   const packageJsonPath = join(targetDir, "package.json");
   writeFileSync(
     packageJsonPath,
@@ -41,7 +41,7 @@ function initCommand(projectName: string): void {
   const playwrightConfigPath = join(targetDir, "playwright.config.ts");
   writeFileSync(
     playwrightConfigPath,
-    readFileSync(playwrightConfigPath, "utf-8").replaceAll("__APP_BASE_DIR_FILE_URL__", appBaseDirUrl),
+    readFileSync(playwrightConfigPath, "utf-8").replaceAll("__APP_BASE_URL__", appBaseUrl),
   );
   console.log(`Scaffolded ${pkgName}/`);
   console.log("");

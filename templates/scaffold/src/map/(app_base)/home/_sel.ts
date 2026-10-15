@@ -1,5 +1,5 @@
 // Relative to playwright.config.ts's baseURL (the (app_base) folder, set by `waygraph init`).
-export const HOME_URL = "home/home.html";
+export const HOME_URL = "home/index.html";
 
 export const DemoSel = {
   title: "h1",

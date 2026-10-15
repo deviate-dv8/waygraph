@@ -1,4 +1,5 @@
 import { defineAssertBlock, Trait } from "waygraph";
+import type { Home } from "../../../../states/demo.states.js";
 import { DemoSel } from "../_sel.js";
 
 /**
@@ -10,10 +11,10 @@ import { DemoSel } from "../_sel.js";
  * act/resolve to accidentally do a second thing. Same-URL assert after nav,
  * with stubs + fixtures + a YAP slide.
  */
-export const AssertHelloBlock = defineAssertBlock({
+export const AssertHelloBlock = defineAssertBlock<Home>({
   name: "assert-hello",
   description: "Confirms the hello heading is still visible after arrival.",
-  checkpoint: "HomeVerified",
+  checkpoint: "Home",
   waitForHeading: "Hello Waygraph",
   verify: [Trait.text(DemoSel.title, "Hello Waygraph"), Trait.visible(DemoSel.sub)],
   slides: [

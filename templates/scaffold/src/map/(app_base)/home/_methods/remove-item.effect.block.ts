@@ -1,10 +1,9 @@
 import {
   defineEffectBlock,
   checkpoint,
-  type Checkpoint,
   type WaygraphInstanceOption,
 } from "waygraph";
-import type { CartEmpty } from "../../../../states/demo.states.js";
+import type { CartEmpty, ItemInCart } from "../../../../states/demo.states.js";
 import { SelectedItem } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
@@ -15,7 +14,7 @@ import { DemoSel } from "../_sel.js";
  *
  * Removes one in-cart row. Auto menus one row per visible Remove button.
  */
-export const RemoveItemBlock = defineEffectBlock<Checkpoint<string>, CartEmpty>({
+export const RemoveItemBlock = defineEffectBlock<ItemInCart, CartEmpty>({
   name: "remove-item",
   description: "Removes the mem-selected catalog item from the cart.",
   requires: [SelectedItem.key],

@@ -10,11 +10,11 @@ Next.js route groups) and never appear in a URL or Checkpoint name.
 ├── src/
 │   ├── map/
 │   │   ├── (app_base)/                # your app (opened via file:// here)
-│   │   │   ├── home/                  # URL /home.html
+│   │   │   ├── home/                  # URL /home
 │   │   │   │   ├── _nav.block.ts      # how to get here
 │   │   │   │   ├── _page.block.ts     # "you have arrived" hub
 │   │   │   │   ├── _sel.ts            # every selector for this page
-│   │   │   │   ├── home.html          # offline fixture page
+│   │   │   │   ├── index.html         # offline fixture page
 │   │   │   │   └── _methods/          # one action per Block
 │   │   │   │       ├── add-item.effect.block.ts       # + instanceOptions (auto menu)
 │   │   │   │       ├── remove-item.effect.block.ts

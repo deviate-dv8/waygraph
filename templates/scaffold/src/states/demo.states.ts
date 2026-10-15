@@ -4,6 +4,8 @@ export type Home = Checkpoint<"Home">;
 export type HomeVerified = Checkpoint<"HomeVerified">;
 export type ItemInCart = Checkpoint<"ItemInCart">;
 export type CartEmpty = Checkpoint<"CartEmpty">;
+/** Anywhere an item can be added from: fresh on Home, or after the cart was emptied. */
+export type CanAddItem = Home | CartEmpty;
 
 // --- Mailpit (external tool surface, src/map/(external)/mailpit/) ---
 
