@@ -104,12 +104,6 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
           ringLabel.style.top = labelTop + "px";
           return [ring, ringLabel];
         };
-        window.__wgHideRingAt = (ringId, labelId) => {
-          const ring = __wgById(ringId);
-          const label = __wgById(labelId);
-          if (ring) ring.style.opacity = "0";
-          if (label) label.style.opacity = "0";
-        };
         window.__wgEnsureRingEl("wg-ring", "wg-ring-label");
         if (!__wgById("wg-cursor")) {
           const cursor = document.createElement("div");

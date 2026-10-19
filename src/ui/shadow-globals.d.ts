@@ -17,5 +17,4 @@ interface Window {
     tone: string,
     style?: { size?: string; weight?: string; color?: string },
   ) => void;
-  __wgHideRingAt?: (ringId: string, labelId: string) => void;
 }

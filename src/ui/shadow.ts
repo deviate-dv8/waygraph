@@ -7,7 +7,7 @@
  * lookups check the shadow root first and fall back to the light DOM (the device stage shell and
  * host-page markers such as `[data-wg-zoomed]` intentionally stay in the light DOM).
  */
-import type { BrowserContext, Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { getOverlaySheet } from "./stylesheet.js";
 
 /**
@@ -52,9 +52,4 @@ export function installShadowRoot(overlaySheet?: string): void {
 /** Idempotent; call before any overlay install on a page. Installs the shared stylesheet bundle. */
 export async function ensureShadowRoot(page: Page): Promise<void> {
   await page.evaluate(installShadowRoot, getOverlaySheet()).catch(() => {});
-}
-
-/** Also define the helpers on every future document (pilot overlay persists across navigations). */
-export async function installShadowRootEverywhere(context: BrowserContext): Promise<void> {
-  await context.addInitScript(installShadowRoot, getOverlaySheet());
 }

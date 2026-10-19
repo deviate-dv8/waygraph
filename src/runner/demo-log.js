@@ -109,14 +109,8 @@ function demoTs() {
   );
 }
 
-let logSurface = "demo";
-/** Which surface is talking (demo | auto | browser | pilot) - same log format everywhere, only the tag differs. */
-export function setDemoLogSurface(name) {
-  logSurface = String(name || "demo");
-}
-
 function demoPrefix() {
-  return ansiPaint(ANSI.dim, "[" + demoTs() + "]") + " waygraph " + logSurface + ": ";
+  return ansiPaint(ANSI.dim, "[" + demoTs() + "]") + " waygraph demo: ";
 }
 
 export function demoLog(msg) {

@@ -30,9 +30,3 @@ export const TONES: Record<ToneName, Tone> = {
 
 /** Dark surface shared by panels, banner, docks, HUD chips. */
 export const SURFACE = "rgba(20,10,40,.94)";
-export const ACCENT = "#7C3AED";
-/** Secondary accent used on the dark surface (section titles, kinds). */
-export const ACCENT_SOFT = "#c9a6ff";
-
-/** Stacking order: one scale instead of magic numbers. */
-export const Z = { top: 2147483647, ring: 2147483646, fx: 2147483645, focus: 2147483644, dock: 2147483000 } as const;

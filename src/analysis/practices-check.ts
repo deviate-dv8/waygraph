@@ -250,18 +250,3 @@ export function practiceKindLabel(kind: PracticeKind): string {
     }
   }
 }
-
-export function formatPracticeWarnings(projectDir: string, warnings: PracticeWarning[]): string[] {
-  const lines: string[] = [];
-  for (const w of warnings) {
-    lines.push(`waygraph practices: ${w.file} (${practiceKindLabel(w.kind)}) — ${w.detail}`);
-  }
-  if (warnings.length === 0) {
-    lines.push(`waygraph practices: no bad-practice patterns under ${projectDir}`);
-  } else {
-    lines.push(
-      `waygraph practices: ${warnings.length} bad-practice warning${warnings.length === 1 ? "" : "s"}`,
-    );
-  }
-  return lines;
-}

@@ -5,7 +5,6 @@
  * - has `*`/`**` -> glob on relative file path (POSIX-ish)
  * - otherwise    -> bare token (flow export / checkpoint / block name) — caller decides
  */
-import { relative } from "node:path";
 
 export type BlocksSelectKind = "regex" | "glob" | "bare";
 
@@ -81,21 +80,4 @@ export function matchBlocksSelect(
   if (name && name === select.pattern) return true;
   if (file.includes(select.pattern)) return true;
   return false;
-}
-
-export function filterByBlocksSelect<T extends { file: string; block?: string }>(
-  items: T[],
-  select: BlocksSelect | undefined,
-  projectDir: string,
-): T[] {
-  if (!select) return items;
-  return items.filter((it) => {
-    const relFile = it.file.startsWith(projectDir)
-      ? relative(projectDir, it.file)
-      : it.file;
-    return matchBlocksSelect(select, {
-      relFile: relFile.replace(/\\/g, "/"),
-      ...(it.block !== undefined ? { blockName: it.block } : {}),
-    });
-  });
 }
