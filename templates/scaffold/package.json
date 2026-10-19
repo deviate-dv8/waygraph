@@ -21,7 +21,7 @@
     "run:shop": "waygraph run --blocks shopFlow"
   },
   "dependencies": {
-    "waygraph": "^0.12.20"
+    "waygraph": "latest"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

@@ -34,10 +34,11 @@ function initCommand(projectName: string): void {
   // Demo pages open via file://; the absolute path is only known once copied, so it's filled in here.
   const appBaseUrl = pathToFileURL(join(targetDir, "src", "map", "(app_base)", "index.html")).href;
   const packageJsonPath = join(targetDir, "package.json");
-  writeFileSync(
-    packageJsonPath,
-    readFileSync(packageJsonPath, "utf-8").replaceAll("__PROJECT_NAME__", pkgName),
-  );
+  const pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8").replaceAll("__PROJECT_NAME__", pkgName));
+  // Pin the project to the waygraph that created it - a stale range here installs an old engine.
+  const ownVersion = JSON.parse(readFileSync(join(packageRoot(), "package.json"), "utf-8")).version;
+  pkg.dependencies.waygraph = `^${ownVersion}`;
+  writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + "\n");
   const playwrightConfigPath = join(targetDir, "playwright.config.ts");
   writeFileSync(
     playwrightConfigPath,
