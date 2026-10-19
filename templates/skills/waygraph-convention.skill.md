@@ -17,6 +17,9 @@ against a live site, use `--skill-pilot-blind`.
 2. **Navigation only inside Nav.** `page.goto` / NavBlock `click` live in
    `defineNavBlock` / `defineNavClickBlock` only. Method/Effect `act` uses ActionPage
    (no goto) even when the app changes URL as a side effect of a button click.
+   A Nav for a page that only exists after something else (every in-app page after sign-in)
+   declares `from: [...]` with the Checkpoints it is valid from (a `SIGNED_IN` list in
+   `src/states/`); without it, routing jumps there from anywhere, skipping sign-in.
 3. **Selectors in `*Sel`, never inline.** DOM strings live in a `*Sel` next to the page - `_sel.ts`
    in the Map layout (one per page folder, next to `_nav`/`_page`/`_methods`), `<name>.sel.ts` in a
    freeform layout (one per concern) - never a fresh file-naming convention per project (`_sel.ts`,

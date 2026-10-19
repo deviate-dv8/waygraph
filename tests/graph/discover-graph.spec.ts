@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { writeFile, mkdir, rm, symlink } from "node:fs/promises";
 import { join } from "node:path";
-import { discoverGraph } from "../../src/analysis/graph.js";
+import { discoverGraph, findBlockPath, findBlockPathDetailed } from "../../src/analysis/graph.js";
 
 const STATES_FILE = `
 import type { Checkpoint } from "waygraph";
@@ -199,4 +199,71 @@ test("discoverGraph: a whole small project's Blocks merge into one graph", async
       );
     },
   );
+});
+
+const NAV_DASHBOARD_SIGNED_IN = `
+import { defineNavBlock } from "waygraph";
+
+export const NavDashboardBlock = defineNavBlock({
+  name: "nav-dashboard",
+  checkpoint: "Dashboard",
+  url: "/dashboard",
+});
+`;
+
+const NAV_SETTINGS_FROM_SIGNED_IN = `
+import { defineNavBlock } from "waygraph";
+
+export const NavSettingsBlock = defineNavBlock({
+  name: "nav-settings",
+  checkpoint: "Settings",
+  url: "/settings",
+  from: ["Dashboard", "Settings"],
+});
+`;
+
+const SUBMIT_LOGIN_TO_DASHBOARD = `
+import { defineBlock, checkpoint } from "waygraph";
+import type { Checkpoint } from "waygraph";
+
+export const SubmitLoginBlock = defineBlock<Checkpoint<"LoginPage">, Checkpoint<"Dashboard">>({
+  name: "submit-login",
+  instruction: { async act() {}, resolve: () => checkpoint("Dashboard") },
+});
+`;
+
+test("a Nav with `from` gets one edge per tag, and routes from the login page go through sign-in", async () => {
+  await withFixtureProject(
+    "nav-from",
+    {
+      "nav-login.block.ts": NAV_LOGIN_BLOCK,
+      "submit-login.block.ts": SUBMIT_LOGIN_TO_DASHBOARD,
+      "nav-settings.block.ts": NAV_SETTINGS_FROM_SIGNED_IN,
+    },
+    async (dir) => {
+      const graph = await discoverGraph(dir);
+      const settings = graph.edges.filter((e) => e.block === "nav-settings");
+      expect(settings.map((e) => e.from).sort()).toEqual(["Dashboard", "Settings"]);
+      expect(settings.every((e) => e.to === "Settings" && e.kind === "nav")).toBe(true);
+      expect(graph.skipped).toEqual([]);
+
+      // The bug: Settings used to be a from:"*" edge, so this was just ["nav-settings"].
+      expect(findBlockPath(graph, "LoginPage", "Settings")).toEqual(["submit-login", "nav-settings"]);
+      // applyPath (pilot "reach") routes with the detailed variant - same answer, with each hop's target.
+      expect(findBlockPathDetailed(graph, "LoginPage", "Settings")).toEqual([
+        { block: "submit-login", to: "Dashboard" },
+        { block: "nav-settings", to: "Settings" },
+      ]);
+      // Already signed in: one hop.
+      expect(findBlockPath(graph, "Dashboard", "Settings")).toEqual(["nav-settings"]);
+    },
+  );
+});
+
+test("a Nav without `from` is still reachable from anywhere", async () => {
+  await withFixtureProject("nav-anywhere", { "nav-dashboard.block.ts": NAV_DASHBOARD_SIGNED_IN }, async (dir) => {
+    const graph = await discoverGraph(dir);
+    expect(graph.edges.map((e) => e.from)).toEqual(["*"]);
+    expect(findBlockPath(graph, "LoginPage", "Dashboard")).toEqual(["nav-dashboard"]);
+  });
 });

@@ -54,6 +54,15 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
   name: string;
   description?: string;
   checkpoint: Out["__state"];
+  /**
+   * Checkpoint tags this Nav can run from. Omit (the default) = reachable from anywhere. Set it for
+   * a page that only exists after something else - e.g. every in-app page after sign-in - so route
+   * finding (`auto --blocks`, `pilot reach`, `traverse`) goes through the sign-in steps instead of
+   * jumping straight there from the login page.
+   * @example const SIGNED_IN = ["Dashboard", "CommandCenter"] as const; // src/states/
+   * defineNavBlock({ ..., from: SIGNED_IN })
+   */
+  from?: readonly string[];
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
   stubBefore?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
@@ -152,6 +161,13 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
   });
   // Demo/step tooling: remember the click selector (or factory) so
   // overlays can label "nav click" without re-parsing source.
+  if (options.from && options.from.length > 0) {
+    Object.defineProperty(built, "__waygraphNavFrom", {
+      value: [...options.from],
+      enumerable: false,
+      configurable: false,
+    });
+  }
   if (options.click !== undefined) {
     Object.defineProperty(built, "__waygraphNavClick", {
       value: options.click,
@@ -188,6 +204,8 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   description?: string;
   checkpoint: Out["__state"];
   click: string | ((mem: MemPage) => string);
+  /** See {@link NavBlockOptions.from}. */
+  from?: readonly string[];
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
   stubBefore?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
@@ -212,6 +230,7 @@ export function defineNavClickBlock<Out extends Checkpoint<string>>(
     name: options.name,
     checkpoint: options.checkpoint,
     click: options.click,
+    ...(options.from ? { from: options.from } : {}),
     ...(options.description ? { description: options.description } : {}),
     ...(options.requires ? { requires: options.requires } : {}),
     ...(options.verify ? { verify: options.verify } : {}),

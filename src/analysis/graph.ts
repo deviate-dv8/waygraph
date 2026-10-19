@@ -21,7 +21,7 @@ export interface WaygraphEdge {
   block: string;
   /** Path the Block was discovered in, relative to the project root. */
   file: string;
-  /** `"*"` for a NavBlock - reachable from anywhere, by design. */
+  /** `"*"` for a NavBlock - reachable from anywhere, unless it declares `from` (then one edge per tag). */
   from: string;
   to: string;
   kind: "nav" | "action";
@@ -487,7 +487,12 @@ export async function discoverGraph(
             !isPage ||
             (exported as { __waygraphPageDeepLink?: boolean }).__waygraphPageDeepLink === true;
           if (deepLink) {
-            edges.push({ block: blockName, file: relFile, from: "*", to, kind: "nav" });
+            // `from: [...]` on the Nav = only those Checkpoints; otherwise reachable from anywhere.
+            const navFrom = (exported as { __waygraphNavFrom?: readonly string[] }).__waygraphNavFrom;
+            for (const from of navFrom ?? ["*"]) {
+              if (from !== "*") nodeTags.add(from);
+              edges.push({ block: blockName, file: relFile, from, to, kind: "nav" });
+            }
           }
         } catch {
           skipped.push({ block: blockName, file: relFile, reason: "NavBlock/PageBlock resolve() threw" });

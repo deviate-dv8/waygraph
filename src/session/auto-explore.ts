@@ -217,7 +217,7 @@ export function exploreChoices(graph: WaygraphGraph, here: string | null): Waygr
   const out: WaygraphEdge[] = [];
   for (const edge of graph.edges) {
     if (here === null) {
-      if (edge.kind !== "nav") continue;
+      if (edge.kind !== "nav" || edge.from !== "*") continue;
     } else if (edge.from !== here && edge.from !== "*") {
       continue;
     }
@@ -332,8 +332,9 @@ export async function buildExploreMenu(
 
     if (here === null) {
       // Bootstrap only: URL deep-links as "Start here". Click-nav needs a live
-      // control so it cannot seed an unknown page.
-      if (!isUrlNav(entry)) continue;
+      // control so it cannot seed an unknown page, and a Nav with `from` needs
+      // that state first (e.g. signed in) so it cannot start one either.
+      if (!isUrlNav(entry) || edge.from !== "*") continue;
       push(navigate, edge);
       continue;
     }
@@ -344,7 +345,8 @@ export async function buildExploreMenu(
     // Graph still marks NavBlocks from:"*" for pathfinding/traverse; auto menu
     // only offers click-nav whose control is visible on this page (navRunnable).
     // Otherwise LoginForm lists every app route + mailpit as if legal moves.
-    if (isUrlNav(entry)) continue;
+    // A url Nav that declares `from` is only an edge from those pages, so it IS a real move here.
+    if (isUrlNav(entry) && edge.from === "*") continue;
 
     if (isBackEdge(edge) && (edge.from === here || edge.from === "*")) {
       push(back, edge);

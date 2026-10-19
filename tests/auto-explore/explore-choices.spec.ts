@@ -128,3 +128,49 @@ test("buildExploreMenu when unknown only offers url nav", async ({ page }) => {
   expect(menu.sections[0]?.title).toBe("Start here");
   expect(menu.flat.map((e) => e.block)).toEqual(["nav-login"]);
 });
+
+// A url Nav that declares `from` is only a legal move from those pages (PIA: every in-app page
+// needs sign-in first) - never a "start here" row, but a real move once you're on a page it names.
+const SIGNED_IN_NAV_GRAPH: WaygraphGraph = {
+  nodes: [{ checkpoint: "LoginPage" }, { checkpoint: "Dashboard" }, { checkpoint: "Settings" }],
+  edges: [
+    { block: "nav-login", file: "a", from: "*", to: "LoginPage", kind: "nav" },
+    { block: "submit-login", file: "b", from: "LoginPage", to: "Dashboard", kind: "action" },
+    { block: "nav-settings", file: "c", from: "Dashboard", to: "Settings", kind: "nav" },
+  ],
+  skipped: [],
+};
+
+const urlNav = (name: string, exportName: string) => ({
+  block: { name, __waygraphKind: "nav", __waygraphNavUrl: `/${name}` } as never,
+  exportName,
+  file: name,
+  kind: "nav" as const,
+  description: "",
+});
+
+const SIGNED_IN_NAV_LIBRARY = {
+  byName: new Map<string, Parameters<typeof buildExploreMenu>[2]["byName"] extends Map<string, infer E> ? E : never>([
+    ["nav-login", urlNav("nav-login", "NavLoginBlock")],
+    ["nav-settings", urlNav("nav-settings", "NavSettingsBlock")],
+    [
+      "submit-login",
+      { block: { name: "submit-login" } as never, exportName: "SubmitLoginBlock", file: "b", kind: "action" as const, description: "" },
+    ],
+  ]),
+};
+
+test("a url Nav with `from` is not a 'start here' row on an unknown page", async ({ page }) => {
+  await page.setContent("<p>unknown</p>");
+  expect(exploreChoices(SIGNED_IN_NAV_GRAPH, null).map((c) => c.block)).toEqual(["nav-login"]);
+  const menu = await buildExploreMenu(page, SIGNED_IN_NAV_GRAPH, SIGNED_IN_NAV_LIBRARY, null);
+  expect(menu.flat.map((e) => e.block)).toEqual(["nav-login"]);
+});
+
+test("a url Nav with `from` is offered on the pages it names, and hidden elsewhere", async ({ page }) => {
+  await page.setContent("<p>app</p>");
+  const onDashboard = await buildExploreMenu(page, SIGNED_IN_NAV_GRAPH, SIGNED_IN_NAV_LIBRARY, "Dashboard");
+  expect(onDashboard.flat.map((e) => e.block)).toContain("nav-settings");
+  const onLogin = await buildExploreMenu(page, SIGNED_IN_NAV_GRAPH, SIGNED_IN_NAV_LIBRARY, "LoginPage");
+  expect(onLogin.flat.map((e) => e.block)).not.toContain("nav-settings");
+});

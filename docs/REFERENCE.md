@@ -355,6 +355,28 @@ action is navigating. Prefer `defineNavClickBlock` for click-nav in app code;
 methods, prefer `definePageBlock` (see [Block helpers](#block-helpers-page-method-sel)
 below).
 
+**`from` - a Nav that only exists after something else.** By default a Nav is reachable from
+anywhere (`from: "*"` in the graph), so route finding (`auto --blocks`, pilot reach, `traverse`)
+may jump straight to an in-app page from the login page without signing in. Pass `from` with
+the Checkpoints it is valid from and the route goes through the steps that get you there:
+
+```typescript
+// src/states/auth.states.ts
+export const SIGNED_IN = ["Dashboard", "CommandCenter", "ProductionPlan"] as const;
+
+// any in-app nav
+export const NavEquipmentNewBlock = defineNavBlock<EquipmentNew>({
+  name: "nav-equipment-new",
+  checkpoint: "EquipmentNew",
+  url: "/equipment/new",
+  from: SIGNED_IN,
+});
+```
+
+The graph then has one edge per listed tag instead of `"*"`, so `waygraph auto --blocks LoginPage
+EquipmentNew` runs the login Blocks first. Such a Nav is also a real move in `waygraph auto`'s
+menu on the pages it names, and never a "Start here" option on an unknown page.
+
 A regular `defineBlock` / `defineMethodBlock`'s `act()` receives `page` typed as
 `ActionPage` - `goto`/`reload`/`goBack`/`goForward` are `@deprecated` there (editor
 strike-through pointing at Nav/Page helpers). This is a soft, TypeScript-only signal:
@@ -790,7 +812,7 @@ engine.defineFlow([
 
 ### Where this shows up in `waygraph auto`
 
-A `NavBlock` always has wildcard `In` (`from: "*"` in the static graph), so it's reasonable to
+A `NavBlock` has wildcard `In` (`from: "*"` in the static graph) unless it declares `from`, so it's reasonable to
 wonder whether `nav-mailpit-inbox` clutters the live picker on every single screen. It
 doesn't - `waygraph auto`'s menu builder already special-cases exactly this
 (`src/auto-explore.ts`, `buildExploreMenu`): a URL-based Nav is excluded from the interactive
