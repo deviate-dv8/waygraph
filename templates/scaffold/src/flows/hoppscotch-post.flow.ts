@@ -1,4 +1,4 @@
-import { Engine, start, end } from "waygraph";
+import { Engine } from "waygraph";
 import { NavHoppscotchSettingsBlock } from "../map/(external)/hoppscotch/settings/_nav.block.js";
 import { PickExtensionInterceptorBlock } from "../map/(external)/hoppscotch/_methods/pick-extension-interceptor.method.block.js";
 import { NavHoppscotchRestBlock } from "../map/(external)/hoppscotch/_nav.block.js";
@@ -15,21 +15,18 @@ import "../map/(external)/hoppscotch/_page.block.js";
 const engine = new Engine();
 
 /** POST JSON with a header, check the status and the response body. Needs `extensions: ["hoppscotch"]`. */
-export const hoppscotchPostFlow = engine.defineFlow(
-  [
-    start,
-    NavHoppscotchSettingsBlock,
-    PickExtensionInterceptorBlock,
-    NavHoppscotchRestBlock,
-    SetMethodBlock,
-    SetUrlBlock,
-    SetHeadersBlock,
-    SetJsonBodyBlock,
-    SendRequestBlock,
-    AssertStatusBlock,
-    ReadResponseBodyBlock,
-    AssertResponseBodyBlock,
-    end,
-  ],
-  { title: "Scaffold: Hoppscotch POST with header and JSON body" },
-);
+export const hoppscotchPostFlow = engine
+  .map()
+  .start()
+  .gotoExternal(NavHoppscotchSettingsBlock)
+  .method(PickExtensionInterceptorBlock)
+  .gotoExternal(NavHoppscotchRestBlock)
+  .method(SetMethodBlock)
+  .method(SetUrlBlock)
+  .method(SetHeadersBlock)
+  .method(SetJsonBodyBlock)
+  .method(SendRequestBlock)
+  .assert(AssertStatusBlock)
+  .method(ReadResponseBodyBlock)
+  .assert(AssertResponseBodyBlock)
+  .end({ title: "Scaffold: Hoppscotch POST with header and JSON body" });

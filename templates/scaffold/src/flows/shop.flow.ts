@@ -1,4 +1,4 @@
-import { Engine, start, end, registerMemStub } from "waygraph";
+import { Engine, registerMemStub } from "waygraph";
 import { DemoSel } from "../map/(app_base)/home/_sel.js";
 import { NavHomeBlock } from "../map/(app_base)/home/_nav.block.js";
 import { AddItemBlock } from "../map/(app_base)/home/_methods/add-item.effect.block.js";
@@ -43,7 +43,13 @@ const AddItemShown = AddItemBlock.stubAfter((ctx) => {
   });
 });
 
-export const shopFlow = engine.defineFlow(
-  [start, NavHomeBlock, AddItemShown, AssertItemAddedBlock, RemoveItemBlock, AddItemShown, ClearCartBlock, end],
-  { title: "Scaffold: Shop (Effect + clear)", sessionReset: true, memStub: true },
-);
+export const shopFlow = engine
+  .map()
+  .start()
+  .gotoPage(NavHomeBlock)
+  .method(AddItemShown)
+  .assert(AssertItemAddedBlock)
+  .method(RemoveItemBlock)
+  .method(AddItemShown)
+  .method(ClearCartBlock)
+  .end({ title: "Scaffold: Shop (Effect + clear)", sessionReset: true, memStub: true });

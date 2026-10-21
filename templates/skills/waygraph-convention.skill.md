@@ -68,9 +68,10 @@ against a live site, use `--skill-pilot-blind`.
 
 ## Flows, stubs and config (the scaffold's shape)
 
-- **Flow settings go in `defineFlow`'s second argument**, not in nested wrappers:
-  `engine.defineFlow([start, ...blocks, end], { title: "Shop", memStub: true, sessionReset: true })`.
-  Never `withMemStub(withTitle(withSessionReset(...)))`. The same options exist on `map()...end(options)`.
+- **Build flows with `map()`** (`.start().gotoPage(Nav).method(B).assert(A).end({ ... })`; `.gotoExternal` for another origin),
+  not a raw `defineFlow([start, ...])` array. Flow settings go in `.end`'s options:
+  `.end({ title: "Shop", memStub: true, sessionReset: true })`. Never `withMemStub(withTitle(withSessionReset(...)))`.
+  (`defineFlow(blocks, options)` takes the same options.)
 - **Demo highlights are ctx stubs chained on the Block**, where it is used in the flow:
   `AddItemBlock.stubAfter((ctx) => { ctx.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart" }); })`.
   Not a static `withHighlightFixtures({ "add-item": { stubAfter: {...} } })` map, and not an inline
@@ -140,7 +141,7 @@ src/map/
 - `(group)` parentheses and leading-underscore segments (`_methods/`, `_page…`) are
   **not** URL segments. `waygraph map` excludes them when checking folder-vs-URL.
 - A bare non-underscore folder always means a real child Checkpoint/URL segment.
-- `map()` and `defineFlow([start, ...], options)` are both fine; `map()` additionally rejects Blocks that didn't come from a real factory (no silent teleporting).
+- `map()` rejects Blocks that didn't come from a real factory (no silent teleporting).
 
 Mail / external tools: under `*-external/<tool>/` or `map/(external)/<tool>/`, never under
 the site's `*-web/` tree. Browser-driven (DOM / iframe Traits), not the catcher's REST API.

@@ -1,4 +1,4 @@
-import { Engine, start, end } from "waygraph";
+import { Engine } from "waygraph";
 import { NavHoppscotchSettingsBlock } from "../map/(external)/hoppscotch/settings/_nav.block.js";
 import { PickExtensionInterceptorBlock } from "../map/(external)/hoppscotch/_methods/pick-extension-interceptor.method.block.js";
 import { NavHoppscotchRestBlock } from "../map/(external)/hoppscotch/_nav.block.js";
@@ -16,22 +16,19 @@ import "../map/(external)/hoppscotch/_page.block.js";
 const engine = new Engine();
 
 /** GET with query params and a bearer token, check the status, that the API received them, and a response header. Needs `extensions: ["hoppscotch"]`. */
-export const hoppscotchAuthFlow = engine.defineFlow(
-  [
-    start,
-    NavHoppscotchSettingsBlock,
-    PickExtensionInterceptorBlock,
-    NavHoppscotchRestBlock,
-    SetUrlBlock,
-    SetQueryParamsBlock,
-    SetBearerTokenBlock,
-    SendRequestBlock,
-    AssertStatusBlock,
-    ReadResponseBodyBlock,
-    AssertResponseBodyBlock,
-    ReadResponseHeadersBlock,
-    AssertResponseHeaderBlock,
-    end,
-  ],
-  { title: "Scaffold: Hoppscotch GET with query params and bearer token" },
-);
+export const hoppscotchAuthFlow = engine
+  .map()
+  .start()
+  .gotoExternal(NavHoppscotchSettingsBlock)
+  .method(PickExtensionInterceptorBlock)
+  .gotoExternal(NavHoppscotchRestBlock)
+  .method(SetUrlBlock)
+  .method(SetQueryParamsBlock)
+  .method(SetBearerTokenBlock)
+  .method(SendRequestBlock)
+  .assert(AssertStatusBlock)
+  .method(ReadResponseBodyBlock)
+  .assert(AssertResponseBodyBlock)
+  .method(ReadResponseHeadersBlock)
+  .assert(AssertResponseHeaderBlock)
+  .end({ title: "Scaffold: Hoppscotch GET with query params and bearer token" });

@@ -110,19 +110,23 @@ armed around the Block's action rather than written into it: `withDialog(CancelB
 
 ### Flow options and stubs, without wrappers
 
-`engine.defineFlow([...], options)` (and `map()...end(options)`) takes `title`, `memStub`, `sessionReset`,
-`demoPace`, `highlightStyle` and `expectedFailure`, the same things `withTitle(withMemStub(...))` set. Demo
-highlights stay on the Blocks as ctx stubs, chained where the Block is used:
+Build flows with `map()` and put their settings in `.end(options)`: `title`, `memStub`, `sessionReset`,
+`demoPace`, `highlightStyle`, `expectedFailure` (the same things `withTitle(withMemStub(...))` set;
+`engine.defineFlow(blocks, options)` takes them too). Demo highlights stay on the Blocks as ctx stubs, chained
+where the Block is used:
 
 ```typescript
 const AddShown = AddItemBlock.stubAfter((ctx) => {
   ctx.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart", tag: "AC", duration: true });
 });
 
-export const shopFlow = engine.defineFlow([start, NavHomeBlock, AddShown, ClearCartBlock, end], {
-  title: "Shop",
-  memStub: true,
-});
+export const shopFlow = engine
+  .map()
+  .start()
+  .gotoPage(NavHomeBlock)
+  .method(AddShown)
+  .method(ClearCartBlock)
+  .end({ title: "Shop", memStub: true });
 ```
 
 ### Browser extensions

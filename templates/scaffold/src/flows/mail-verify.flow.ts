@@ -1,4 +1,4 @@
-import { Engine, start, end } from "waygraph";
+import { Engine } from "waygraph";
 import { NavMailpitInboxBlock } from "../map/(external)/mailpit/_nav.block.js";
 import { AssertEmailReceivedBlock } from "../map/(external)/mailpit/_methods/assert-email-received.method.block.js";
 import { OpenMessageBlock } from "../map/(external)/mailpit/_methods/open-message.method.block.js";
@@ -37,10 +37,11 @@ const engine = new Engine();
  * arriving, or content that doesn't match, each fail loud, naming
  * themselves, not a silent pass.
  */
-export const mailVerifyFlow = engine.defineFlow(
-  [
-    start,
-    NavMailpitInboxBlock,
+export const mailVerifyFlow = engine
+  .map()
+  .start()
+  .gotoExternal(NavMailpitInboxBlock)
+  .assert(
     AssertEmailReceivedBlock.stubAfter((ctx) => {
       ctx.ring("note", {
         selector: MailpitSel.messageRow,
@@ -49,10 +50,14 @@ export const mailVerifyFlow = engine.defineFlow(
         tag: "AC",
       });
     }),
-    OpenMessageBlock,
+  )
+  .method(OpenMessageBlock)
+  .assert(
     AssertEmailContentBlock.stubAfter((ctx) => {
       ctx.ring("note", { selector: MailpitSel.previewIframe, label: "AC · email body matches expected copy", tag: "AC" });
     }),
+  )
+  .method(
     ExtractEmailLinkBlock.stubAfter((ctx) => {
       ctx.ring("note", {
         selector: MailpitSel.previewIframe,
@@ -61,8 +66,6 @@ export const mailVerifyFlow = engine.defineFlow(
         tag: "AC",
       });
     }),
-    NavVerificationLinkBlock,
-    end,
-  ],
-  { title: "Scaffold: Cross-origin mail verification (QA-rich)" },
-);
+  )
+  .gotoPage(NavVerificationLinkBlock)
+  .end({ title: "Scaffold: Cross-origin mail verification (QA-rich)" });
