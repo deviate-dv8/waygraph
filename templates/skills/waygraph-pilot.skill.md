@@ -104,10 +104,10 @@ thing that differs from demo is *who* triggers the paint:
 
 | Mode | Who paints | How |
 |------|------------|-----|
-| `waygraph demo` | Engine, automatically | Block `stubBefore` / `stubAfter` / `withHighlightFixtures` run each step |
+| `waygraph demo` | Engine, automatically | Block `stubBefore` / `stubAfter` ctx stubs run each step |
 | Pilot / `auto --detach` | **You (the agent)** | `waygraph auto highlight <sessionId> '<json>'` before (or between) sends |
 
-Block-authored `stubBefore` / `withHighlightFixtures` still exist on Blocks in Pilot —
+Block-authored `stubBefore` / `stubAfter` ctx stubs still exist on Blocks in Pilot —
 they show up in `auto trace` as metadata — but they do **not** auto-draw. You re-express
 the same intent with `auto highlight` (copy selectors/labels from the Block stubs or from
 `auto dom`). Paint, then `auto send` the real Block. Clear when done.

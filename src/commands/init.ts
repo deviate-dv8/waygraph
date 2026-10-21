@@ -54,6 +54,7 @@ function initCommand(projectName: string): void {
   console.log("  waygraph auto --cli  # same menus in the terminal");
   console.log("  waygraph demo --blocks exampleFlow");
   console.log("  waygraph graph       # static state graph JSON");
+  console.log("  waygraph agent-dive  # install the agent skills that teach this layout");
   console.log("");
   console.log("  Layout: see STRUCTURE.md (or https://deviate-dv8.github.io/waygraph/scaffold.html)");
 }

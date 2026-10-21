@@ -1,4 +1,5 @@
-import { Engine, start, end, withTitle, withHighlightFixtures } from "waygraph";
+import { Engine, start, end } from "waygraph";
+import { DemoSel } from "../map/(app_base)/home/_sel.js";
 import { NavHomeBlock } from "../map/(app_base)/home/_nav.block.js";
 import { AssertHelloBlock } from "../map/(app_base)/home/_methods/assert-hello.method.block.js";
 import { NavDocsBlock } from "../map/(app_base)/docs/_nav.block.js";
@@ -9,21 +10,21 @@ import "../map/(app_base)/docs/_page.block.js";
 const engine = new Engine();
 
 /** Smoke: nav + assert (no mem), then nav to the sibling docs/ page. Green offline. */
-export const exampleFlow = withHighlightFixtures(
-  withTitle(
-    engine.defineFlow([start, NavHomeBlock, AssertHelloBlock, NavDocsBlock, end]),
-    "Scaffold: Hello Waygraph",
-  ),
-  {
-    "assert-hello": {
-      stubAfter: {
-        title: {
-          label: "AC · Hello visible",
-          detail: "Replace this fixture copy with your ticket lines.",
-          tag: "AC",
-          duration: true,
-        },
-      },
-    },
-  },
+export const exampleFlow = engine.defineFlow(
+  [
+    start,
+    NavHomeBlock,
+    AssertHelloBlock.stubAfter((ctx) => {
+      ctx.ring("title", {
+        selector: DemoSel.title,
+        label: "AC · Hello visible",
+        detail: "Replace this copy with your ticket lines.",
+        tag: "AC",
+        duration: true,
+      });
+    }),
+    NavDocsBlock,
+    end,
+  ],
+  { title: "Scaffold: Hello Waygraph" },
 );

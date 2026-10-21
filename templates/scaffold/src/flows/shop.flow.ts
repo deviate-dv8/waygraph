@@ -1,13 +1,5 @@
-import {
-  Engine,
-  start,
-  end,
-  withTitle,
-  withHighlightFixtures,
-  withSessionReset,
-  withMemStub,
-  registerMemStub,
-} from "waygraph";
+import { Engine, start, end, registerMemStub } from "waygraph";
+import { DemoSel } from "../map/(app_base)/home/_sel.js";
 import { NavHomeBlock } from "../map/(app_base)/home/_nav.block.js";
 import { AddItemBlock } from "../map/(app_base)/home/_methods/add-item.effect.block.js";
 import { AssertItemAddedBlock } from "../map/(app_base)/home/_methods/assert-item-added.method.block.js";
@@ -41,34 +33,17 @@ registerMemStub(SelectedItem.key, () => ({ id: "alpha", name: "Alpha" }));
  * Clear cart (bulk Method, `clear-cart`) - keeps both the per-item and bulk
  * clear paths atomic and each wired into a real flow, not orphaned.
  */
-export const shopFlow = withMemStub(
-  withHighlightFixtures(
-    withTitle(
-      withSessionReset(
-        engine.defineFlow([
-          start,
-          NavHomeBlock,
-          AddItemBlock,
-          AssertItemAddedBlock,
-          RemoveItemBlock,
-          AddItemBlock,
-          ClearCartBlock,
-          end,
-        ]),
-      ),
-      "Scaffold: Shop (Effect + clear)",
-    ),
-    {
-      "add-item": {
-        stubAfter: {
-          cart: {
-            label: "AC · item in cart",
-            detail: "Cart count bumped after Add.",
-            tag: "AC",
-            duration: true,
-          },
-        },
-      },
-    },
-  ),
+const AddItemShown = AddItemBlock.stubAfter((ctx) => {
+  ctx.ring("cart", {
+    selector: DemoSel.cartCount,
+    label: "AC · item in cart",
+    detail: "Cart count bumped after Add.",
+    tag: "AC",
+    duration: true,
+  });
+});
+
+export const shopFlow = engine.defineFlow(
+  [start, NavHomeBlock, AddItemShown, AssertItemAddedBlock, RemoveItemBlock, AddItemShown, ClearCartBlock, end],
+  { title: "Scaffold: Shop (Effect + clear)", sessionReset: true, memStub: true },
 );

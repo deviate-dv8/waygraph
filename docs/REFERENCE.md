@@ -102,6 +102,23 @@ A project that still has a `playwright.config.*` keeps working: `waygraph test` 
 note, and `waygraph upgrade` lists it as deprecated.
 Editor integrations that look for a `playwright.config.ts` (the VS Code Playwright extension) won't find one; use `waygraph test` or `npm test`.
 
+### Flow options and stubs, without wrappers
+
+`engine.defineFlow([...], options)` (and `map()...end(options)`) takes `title`, `memStub`, `sessionReset`,
+`demoPace`, `highlightStyle` and `expectedFailure`, the same things `withTitle(withMemStub(...))` set. Demo
+highlights stay on the Blocks as ctx stubs, chained where the Block is used:
+
+```typescript
+const AddShown = AddItemBlock.stubAfter((ctx) => {
+  ctx.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart", tag: "AC", duration: true });
+});
+
+export const shopFlow = engine.defineFlow([start, NavHomeBlock, AddShown, ClearCartBlock, end], {
+  title: "Shop",
+  memStub: true,
+});
+```
+
 ### Browser extensions
 
 ```typescript

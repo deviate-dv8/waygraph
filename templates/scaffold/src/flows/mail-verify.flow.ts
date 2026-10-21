@@ -1,4 +1,4 @@
-import { Engine, start, end, withTitle, withHighlightFixtures } from "waygraph";
+import { Engine, start, end } from "waygraph";
 import { NavMailpitInboxBlock } from "../map/(external)/mailpit/_nav.block.js";
 import { AssertEmailReceivedBlock } from "../map/(external)/mailpit/_methods/assert-email-received.method.block.js";
 import { OpenMessageBlock } from "../map/(external)/mailpit/_methods/open-message.method.block.js";
@@ -37,49 +37,32 @@ const engine = new Engine();
  * arriving, or content that doesn't match, each fail loud, naming
  * themselves, not a silent pass.
  */
-export const mailVerifyFlow = withHighlightFixtures(
-  withTitle(
-    engine.defineFlow([
-      start,
-      NavMailpitInboxBlock,
-      AssertEmailReceivedBlock,
-      OpenMessageBlock,
-      AssertEmailContentBlock,
-      ExtractEmailLinkBlock,
-      NavVerificationLinkBlock,
-      end,
-    ]),
-    "Scaffold: Cross-origin mail verification (QA-rich)",
-  ),
-  {
-    "assert-email-received": {
-      stubAfter: {
-        note: {
-          selector: MailpitSel.messageRow,
-          label: "AC · email arrived",
-          detail: "Confirmed before opening anything.",
-          tag: "AC",
-        },
-      },
-    },
-    "assert-email-content": {
-      stubAfter: {
-        note: {
-          selector: MailpitSel.previewIframe,
-          label: "AC · email body matches expected copy",
-          tag: "AC",
-        },
-      },
-    },
-    "extract-email-link": {
-      stubAfter: {
-        note: {
-          selector: MailpitSel.previewIframe,
-          label: "AC · link found",
-          detail: "Read from the message preview iframe.",
-          tag: "AC",
-        },
-      },
-    },
-  },
+export const mailVerifyFlow = engine.defineFlow(
+  [
+    start,
+    NavMailpitInboxBlock,
+    AssertEmailReceivedBlock.stubAfter((ctx) => {
+      ctx.ring("note", {
+        selector: MailpitSel.messageRow,
+        label: "AC · email arrived",
+        detail: "Confirmed before opening anything.",
+        tag: "AC",
+      });
+    }),
+    OpenMessageBlock,
+    AssertEmailContentBlock.stubAfter((ctx) => {
+      ctx.ring("note", { selector: MailpitSel.previewIframe, label: "AC · email body matches expected copy", tag: "AC" });
+    }),
+    ExtractEmailLinkBlock.stubAfter((ctx) => {
+      ctx.ring("note", {
+        selector: MailpitSel.previewIframe,
+        label: "AC · link found",
+        detail: "Read from the message preview iframe.",
+        tag: "AC",
+      });
+    }),
+    NavVerificationLinkBlock,
+    end,
+  ],
+  { title: "Scaffold: Cross-origin mail verification (QA-rich)" },
 );

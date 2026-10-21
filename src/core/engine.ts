@@ -3,8 +3,8 @@
 import type { Block, Checkpoint } from "../types.js";
 import type { EngineConfig } from "./config.js";
 import type { EndMarker, StartMarker } from "./run-graph.js";
-import { buildFlow } from "./flow.js";
-import type { Flow } from "./flow.js";
+import { applyFlowOptions, buildFlow } from "./flow.js";
+import type { Flow, FlowOptions } from "./flow.js";
 import { MapBuilder } from "./map-builder.js";
 import type { DefineFlowFn, MapBuilderOptions } from "./map-builder.js";
 
@@ -27,16 +27,20 @@ export class Engine {
    * calls. Overloaded for 2-9 array slots (1-8 real Blocks between `start`/`end`)
    * rather than one fully-generic recursive tuple type, so each arity is as
    * reliably checked as `connect<A,B,C>` itself.
-   * @example engine.defineFlow([start, LoginBlock, AddToCartBlock, end])
+   * Options go in the second argument instead of wrapping the result in `withTitle(withMemStub(...))`.
+   * @example engine.defineFlow([start, LoginBlock, AddToCartBlock, end], { title: "Login", memStub: true })
    */
   defineFlow<B extends Checkpoint<string>>(
     blocks: readonly [StartMarker, Block<S, B>, EndMarker],
+    options?: FlowOptions,
   ): Flow<B>;
   defineFlow<B extends Checkpoint<string>, C extends Checkpoint<string>>(
     blocks: readonly [StartMarker, Block<S, B>, Block<B, C>, EndMarker],
+    options?: FlowOptions,
   ): Flow<C>;
   defineFlow<B extends Checkpoint<string>, C extends Checkpoint<string>, D extends Checkpoint<string>>(
     blocks: readonly [StartMarker, Block<S, B>, Block<B, C>, Block<C, D>, EndMarker],
+    options?: FlowOptions,
   ): Flow<D>;
   defineFlow<
     B extends Checkpoint<string>,
@@ -45,6 +49,7 @@ export class Engine {
     E extends Checkpoint<string>,
   >(
     blocks: readonly [StartMarker, Block<S, B>, Block<B, C>, Block<C, D>, Block<D, E>, EndMarker],
+    options?: FlowOptions,
   ): Flow<E>;
   defineFlow<
     B extends Checkpoint<string>,
@@ -62,6 +67,7 @@ export class Engine {
       Block<E, F>,
       EndMarker,
     ],
+    options?: FlowOptions,
   ): Flow<F>;
   defineFlow<
     B extends Checkpoint<string>,
@@ -81,6 +87,7 @@ export class Engine {
       Block<F, G>,
       EndMarker,
     ],
+    options?: FlowOptions,
   ): Flow<G>;
   defineFlow<
     B extends Checkpoint<string>,
@@ -102,6 +109,7 @@ export class Engine {
       Block<G, H>,
       EndMarker,
     ],
+    options?: FlowOptions,
   ): Flow<H>;
   defineFlow<
     B extends Checkpoint<string>,
@@ -125,6 +133,7 @@ export class Engine {
       Block<H, I>,
       EndMarker,
     ],
+    options?: FlowOptions,
   ): Flow<I>;
   defineFlow<
     B extends Checkpoint<string>,
@@ -150,6 +159,7 @@ export class Engine {
       Block<I, J>,
       EndMarker,
     ],
+    options?: FlowOptions,
   ): Flow<J>;
   defineFlow<
     B extends Checkpoint<string>,
@@ -177,6 +187,7 @@ export class Engine {
       Block<J, K>,
       EndMarker,
     ],
+    options?: FlowOptions,
   ): Flow<K>;
   defineFlow<
     B extends Checkpoint<string>,
@@ -206,6 +217,7 @@ export class Engine {
       Block<K, L>,
       EndMarker,
     ],
+    options?: FlowOptions,
   ): Flow<L>;
   defineFlow<
     B extends Checkpoint<string>,
@@ -237,6 +249,7 @@ export class Engine {
       Block<L, M>,
       EndMarker,
     ],
+    options?: FlowOptions,
   ): Flow<M>;
   defineFlow<
     B extends Checkpoint<string>,
@@ -270,6 +283,7 @@ export class Engine {
       Block<M, N>,
       EndMarker,
     ],
+    options?: FlowOptions,
   ): Flow<N>;
   defineFlow<
     B extends Checkpoint<string>,
@@ -305,9 +319,10 @@ export class Engine {
       Block<N, O>,
       EndMarker,
     ],
+    options?: FlowOptions,
   ): Flow<O>;
-  defineFlow(blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker]): Flow<any> {
-    return buildFlow(blocks.slice(1, -1) as Block<any, any>[], this.config);
+  defineFlow(blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker], options?: FlowOptions): Flow<any> {
+    return applyFlowOptions(buildFlow(blocks.slice(1, -1) as Block<any, any>[], this.config), options);
   }
 
   /**

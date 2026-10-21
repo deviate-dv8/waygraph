@@ -1,4 +1,4 @@
-import { Engine, start, end, withTitle } from "waygraph";
+import { Engine, start, end } from "waygraph";
 import { NavHoppscotchSettingsBlock } from "../map/(external)/hoppscotch/settings/_nav.block.js";
 import { PickExtensionInterceptorBlock } from "../map/(external)/hoppscotch/_methods/pick-extension-interceptor.method.block.js";
 import { NavHoppscotchRestBlock } from "../map/(external)/hoppscotch/_nav.block.js";
@@ -10,8 +10,8 @@ import "../map/(external)/hoppscotch/_page.block.js";
 const engine = new Engine();
 
 /** GET a URL and check the status. Needs `extensions: ["hoppscotch"]` in waygraph.config.ts. */
-export const hoppscotchGetFlow = withTitle(
-  engine.defineFlow([
+export const hoppscotchGetFlow = engine.defineFlow(
+  [
     start,
     NavHoppscotchSettingsBlock,
     PickExtensionInterceptorBlock,
@@ -20,6 +20,6 @@ export const hoppscotchGetFlow = withTitle(
     SendRequestBlock,
     AssertStatusBlock,
     end,
-  ]),
-  "Scaffold: Hoppscotch GET",
+  ],
+  { title: "Scaffold: Hoppscotch GET" },
 );

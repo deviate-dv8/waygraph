@@ -19,7 +19,7 @@ import {
 import type { EngineConfig } from "./config.js";
 import { end, start } from "./run-graph.js";
 import type { EndMarker, StartMarker } from "./run-graph.js";
-import type { Flow } from "./flow.js";
+import type { Flow, FlowOptions } from "./flow.js";
 import type { RunGraphOptions } from "./run-graph.js";
 import { MemPage } from "../mem-page.js";
 import type { BrowserContext, Page } from "@playwright/test";
@@ -37,7 +37,7 @@ type S = Checkpoint<"__start__">;
  * import each other (Engine.map() builds a MapBuilder; MapBuilder.end() calls back into
  * defineFlow) - a real cycle check:structure forbids. This type is how that's avoided.
  */
-export type DefineFlowFn = (blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker]) => Flow<any>;
+export type DefineFlowFn = (blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker], options?: FlowOptions) => Flow<any>;
 
 /** Per-step options every `MapBuilder` step method (`.gotoPage()`/`.method()`/`.assert()`) takes. */
 export interface MapStepOpts {
@@ -460,12 +460,12 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * left open at `.end()` closes silently; an EXPLICIT `.ffStart()` left open
    * still throws - the author opened that one and needs to close it themselves.
    */
-  end(): Flow<Out> {
+  end(options?: FlowOptions): Flow<Out> {
     if (this.ff && !this.ff.auto) {
       throw new WaygraphError("WG_MAP_FF_NOT_CLOSED", MSG_MAP_FF_NOT_CLOSED(this.ff.name));
     }
     if (this.ff && this.ff.auto) {
-      return this.closeFf().end();
+      return this.closeFf().end(options);
     }
     if (this.steps.length === 0) {
       throw new WaygraphError("WG_MAP_EMPTY", MSG_MAP_EMPTY);
@@ -475,6 +475,6 @@ export class MapBuilder<Out extends Checkpoint<string>> {
       Block<any, any>,
       EndMarker,
     ];
-    return (this.defineFlow as (blocks: unknown) => Flow<Out>)(chain);
+    return (this.defineFlow as (blocks: unknown, options?: FlowOptions) => Flow<Out>)(chain, options);
   }
 }

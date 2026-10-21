@@ -148,6 +148,7 @@ export type {
 } from "./highlights.js";
 export type {
   Flow,
+  FlowOptions,
   EngineConfig,
   ComposedBlock,
   FastForwardComposedBlock,

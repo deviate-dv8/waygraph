@@ -42,7 +42,7 @@ against a live site, use `--skill-pilot-blind`.
 5. **`requires` = externally supplied.** A key an earlier Block in the same chain produces
    is never listed under `requires` - preflight checks the whole chain up front. For a
    genuinely arbitrary key (a username, an email) that a demo/dev run shouldn't need
-   hand-supplied every time, `registerMemStub(key, fake)` + `withMemStub(flow)` (or
+   hand-supplied every time, `registerMemStub(key, fake)` + `memStub: true` on the flow (or
    `--mem-stub`) fills it from a registry instead - a key with no registration still fails
    preflight exactly as before, so this narrows what needs real input, never removes the guard.
 6. **Keep Checkpoints typed.** Block helpers take concrete Checkpoint types from `src/states/`
@@ -65,6 +65,28 @@ against a live site, use `--skill-pilot-blind`.
    not a self-loop) needs a non-empty `verify`, same for `defineAssertBlock`. Opt out only
    when a *different* Block right after it in the `.flow.ts` is what actually confirms the
    transition (e.g. an `AssertXBlock`) - `// waygraph-ignore: empty-verify`.
+
+## Flows, stubs and config (the scaffold's shape)
+
+- **Flow settings go in `defineFlow`'s second argument**, not in nested wrappers:
+  `engine.defineFlow([start, ...blocks, end], { title: "Shop", memStub: true, sessionReset: true })`.
+  Never `withMemStub(withTitle(withSessionReset(...)))`. The same options exist on `map()...end(options)`.
+- **Demo highlights are ctx stubs chained on the Block**, where it is used in the flow:
+  `AddItemBlock.stubAfter((ctx) => { ctx.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart" }); })`.
+  Not a static `withHighlightFixtures({ "add-item": { stubAfter: {...} } })` map, and not an inline
+  `instruction: { stubAfter() {} }`. A Block used twice gets one `const AddShown = AddItemBlock.stubAfter(...)`.
+- **Reading a value into `mem` happens in `act`** (`mem.set(Key, value)`), like Mailpit's `extract-email-link`.
+  `observe` is only for a Block that branches (it feeds `resolve`); an empty `act(){}` plus an `observe` that
+  writes `mem` is a misuse.
+- **Project settings live in `config/waygraph.config.ts`** (`defineConfig({ baseUrl, testDir, webServer,
+  extensions, playwright: {...} })`). A project needs no `playwright.config.ts` - `waygraph test` builds one
+  from it. A leftover `playwright.config.*` is deprecated.
+- **Another origin the test needs is a Map external** under `src/map/(external)/<tool>/`. For REST API
+  tests, `(external)/hoppscotch` (list `extensions: ["hoppscotch"]` in the config) drives hoppscotch.io's client
+  with the extension, so requests skip CORS: `set-method`, `set-url`, `set-headers`, `set-json-body`,
+  `send-request`, `assert-status`, `read-response-body`, `assert-response-body`.
+- **Updating an older project:** `npm install waygraph@latest`, then `waygraph upgrade` (dry run) to see new
+  and differing scaffold files; copy the paths you want with `--apply`.
 
 ## Block kinds (file convention)
 
@@ -116,8 +138,7 @@ src/map/
 - `(group)` parentheses and leading-underscore segments (`_methods/`, `_page…`) are
   **not** URL segments. `waygraph map` excludes them when checking folder-vs-URL.
 - A bare non-underscore folder always means a real child Checkpoint/URL segment.
-- Prefer `map()` over a hand-assembled `defineFlow([start, ...])` when wiring Map Blocks -
-  it rejects Blocks that didn't come from a real factory (no silent teleporting).
+- `map()` and `defineFlow([start, ...], options)` are both fine; `map()` additionally rejects Blocks that didn't come from a real factory (no silent teleporting).
 
 Mail / external tools: under `*-external/<tool>/` or `map/(external)/<tool>/`, never under
 the site's `*-web/` tree. Browser-driven (DOM / iframe Traits), not the catcher's REST API.

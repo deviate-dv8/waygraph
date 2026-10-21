@@ -103,20 +103,10 @@ function discoverFlows(projectDir: string): string[] {
   return walkDir(projectDir, /\.flow\.ts$/);
 }
 
-/** Block export ids listed inside any `defineFlow([...])` array in flow files. */
+/** Block export ids a flow file uses: every identifier outside its import lines (a Block can sit in the array or in a local like `const AddShown = AddBlock.stubAfter(...)`). */
 function extractFlowBlockRefs(flowSrc: string): string[] {
-  const refs: string[] = [];
-  const re = /defineFlow(?:<[\s\S]*?>)?\s*\(\s*\[([\s\S]*?)\]\s*\)/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(flowSrc)) !== null) {
-    for (const part of m[1]!.split(",")) {
-      const trimmed = part.trim().replace(/\/\/.*$/, "").trim();
-      const id = trimmed.split(/\s+/)[0];
-      if (!id || id === "start" || id === "end") continue;
-      refs.push(id);
-    }
-  }
-  return refs;
+  const body = flowSrc.replace(/^\s*import[\s\S]*?;\s*$/gm, "").replace(/\/\/.*$/gm, "");
+  return body.match(/[A-Za-z_$][\w$]*/g) ?? [];
 }
 
 function exportNameToBlockName(exportName: string): string {

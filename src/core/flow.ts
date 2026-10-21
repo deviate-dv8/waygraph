@@ -481,6 +481,35 @@ export function withHighlightFixtures<Out extends Checkpoint<string>>(
   };
 }
 
+/** Everything a `with*` wrapper can set, given up front: `engine.defineFlow([...], { title, memStub, ... })`. */
+export interface FlowOptions {
+  /** Shown as the banner while the Flow runs (`withTitle`). */
+  title?: string;
+  /** Fill missing `requires` keys from `registerMemStub` (`withMemStub`). */
+  memStub?: boolean;
+  /** Clear cookies and storage before this Flow's first Block when chained after another (`withSessionReset`). */
+  sessionReset?: boolean;
+  /** `withDemoPace`. */
+  demoPace?: DemoPace;
+  /** `withHighlightStyle`. */
+  highlightStyle?: HighlightStyleDefaults;
+  /** Marks a Flow that is supposed to throw, with the reason (`withExpectedFailure`). */
+  expectedFailure?: string;
+}
+
+/** Applies each set option through its `with*` wrapper, so both spellings produce the same Flow. */
+export function applyFlowOptions<Out extends Checkpoint<string>>(flow: Flow<Out>, options: FlowOptions | undefined): Flow<Out> {
+  if (!options) return flow;
+  let f = flow;
+  if (options.sessionReset) f = withSessionReset(f);
+  if (options.title !== undefined) f = withTitle(f, options.title);
+  if (options.demoPace) f = withDemoPace(f, options.demoPace);
+  if (options.highlightStyle) f = withHighlightStyle(f, options.highlightStyle);
+  if (options.expectedFailure !== undefined) f = withExpectedFailure(f, options.expectedFailure);
+  if (options.memStub) f = withMemStub(f);
+  return f;
+}
+
 
 function locateInChain(
   flows: readonly Flow<any>[],
