@@ -125,6 +125,20 @@ keys (`flows/hoppscotch-get`, `-post` and `-auth` are working examples):
 
 Not covered yet: other auth types (Basic, API key, OAuth), form/multipart bodies, non-JSON content types.
 
+### Updating an existing project
+
+`npm install waygraph@latest` updates the framework, but the scaffold files copied at `init` stay as they were.
+`waygraph upgrade [project]` compares the project with the scaffold shipped in the installed waygraph and lists
+**new** files, **differing** files and a stale `waygraph` dependency. It is a dry run until you pass `--apply`.
+Only the paths you name are copied (a real project usually deletes parts of the demo), and differing files are
+replaced only with `--overwrite`; `--diff` prints what changed. For example:
+
+```
+waygraph upgrade "src/map/(external)/hoppscotch" src/flows --apply
+```
+
+Shared files such as `src/states/*.ts` usually differ too, so review them with `--diff` and merge by hand.
+
 ## Core concepts
 
 - **`Checkpoint<Tag>`** - a state identified solely by its string tag. Carries no data.

@@ -191,6 +191,11 @@ Primary (less is more):
                                            has a trace - test report opens it.
 
 Also:
+  waygraph upgrade [project] [paths...] [--apply] [--overwrite] [--diff]
+                                           Compare a project with the scaffold in this waygraph:
+                                           lists new and differing files and a stale waygraph
+                                           dependency. Dry run unless --apply; only the paths you
+                                           name are copied, differing files only with --overwrite.
   waygraph extensions install [project] [--update]
                                            Download the browser extensions listed in
                                            waygraph.config.* (extensions: ["hoppscotch"]) into
