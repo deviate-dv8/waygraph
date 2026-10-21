@@ -191,6 +191,10 @@ Primary (less is more):
                                            has a trace - test report opens it.
 
 Also:
+  waygraph extensions install [project] [--update]
+                                           Download the browser extensions listed in
+                                           waygraph.config.* (extensions: ["hoppscotch"]) into
+                                           the user cache; runs also fetch them on first use.
   waygraph list | nav | validate | check | typecheck | graph | init <name>
                  check/typecheck --no-practices  Skip bad-practice warnings
   waygraph map   [project]                 Waygraph Map convention enforcement: every static

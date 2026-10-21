@@ -5,11 +5,16 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { extensionPathsFromEnv } from "./browser.js";
 import { loadEnvFiles } from "./env-file.js";
+import { resolveExtensions } from "./extensions.js";
+import type { ExtensionSpec } from "./extensions.js";
 
 export interface WaygraphConfig {
   /** Same value `resolveBaseUrl` would otherwise read from package.json's `waygraph.baseUrl`. */
   baseUrl?: string;
+  /** Chromium extensions to load in every run: `"hoppscotch"`, a Chrome Web Store id, or `{ path }` to an unpacked one. */
+  extensions?: ExtensionSpec[];
 }
 
 /** Identity helper, purely for editor type-checking/autocomplete - same role `defineConfig` plays
@@ -101,4 +106,12 @@ export async function resolveBaseUrl(projectDir: string): Promise<string | undef
     if (m?.[1]) return m[1];
   }
   return undefined;
+}
+
+/** Unpacked extension directories for a run: `WAYGRAPH_EXTENSIONS` if set, else the config file's `extensions` (fetched on first use). */
+export async function configuredExtensions(projectDir: string): Promise<string[]> {
+  const fromEnv = extensionPathsFromEnv();
+  if (fromEnv.length > 0) return fromEnv;
+  loadEnvFiles(projectDir);
+  return resolveExtensions((await loadWaygraphConfig(projectDir))?.extensions, projectDir);
 }

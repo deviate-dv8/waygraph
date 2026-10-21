@@ -1,4 +1,5 @@
 // Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
+import { configuredExtensions } from "../config.js";
 import { runInherited } from "../cli/util.js";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
@@ -26,6 +27,9 @@ export async function testCase(args: string[]): Promise<void> {
         process.exitCode = await runPw(["show-trace", ...rest.slice(1)]);
         return;
       }
+
+      const extensions = await configuredExtensions(proj);
+      if (extensions.length > 0) process.env.WAYGRAPH_EXTENSIONS = extensions.join(",");
 
       const wantsUi = rest[0] === "ui" || rest.includes("--ui");
       const forwarded = rest[0] === "ui" ? rest.slice(1) : rest;

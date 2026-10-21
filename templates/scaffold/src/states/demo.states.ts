@@ -15,5 +15,10 @@ export type MailpitInbox = Checkpoint<"MailpitInbox">;
 /** The message addressed to the expected recipient is open; preview iframe visible. */
 export type MailpitMessageOpen = Checkpoint<"MailpitMessageOpen">;
 
+// --- Hoppscotch (external API client, src/map/(external)/hoppscotch/) ---
+
+export type HoppscotchSettings = Checkpoint<"HoppscotchSettings">;
+export type HoppscotchRest = Checkpoint<"HoppscotchRest">;
+
 /** Reached via src/map/(app_base)/docs/ - see openspec/changes/waygraph-map. */
 export type Docs = Checkpoint<"Docs">;

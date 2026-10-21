@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline/promises";
 import { ensureShadowRoot } from "../ui/shadow.js";
 import { stdin as input, stdout as output } from "node:process";
-import type { Page, BrowserContext } from "@playwright/test";
+import type { Page, BrowserContext, BrowserContextOptions } from "@playwright/test";
 import { Engine, start, end, locate } from "../core.js";
 import { MemPage } from "../mem-page.js";
 import type { MemKey } from "../mem-page.js";
@@ -14,9 +14,9 @@ import {
 } from "./auto-explore.js";
 import type { Checkpoint } from "../types.js";
 import { installDemoChrome, instrumentInteractionHighlighting } from "./step-overlay.js";
-import { resolveBaseUrl } from "../config.js";
+import { configuredExtensions, resolveBaseUrl } from "../config.js";
 import { withWebServer } from "../webserver.js";
-import { chromiumExecutablePath } from "../browser-path.js";
+import { chromiumExecutablePath, launchContext } from "../browser.js";
 
 export interface AutoExploreOptions {
   /** Terminal menu (browser still runs for act()). Default false = headful picker panel. */
@@ -652,12 +652,16 @@ async function runAutoExploreCore(projectDir: string, options: AutoExploreOption
   };
   if (!cli) launchOpts.slowMo = 250;
   if (executablePath) launchOpts.executablePath = executablePath;
-  const browser = await chromium.launch(launchOpts);
-  const contextOpts: Parameters<typeof browser.newContext>[0] = cli
+  const contextOpts: BrowserContextOptions = cli
     ? { viewport: { width: 1280, height: 720 } }
     : { viewport: null };
   if (baseURL) contextOpts.baseURL = baseURL;
-  const context = await browser.newContext(contextOpts);
+  const { close: closeBrowser, context } = await launchContext({
+    launcher: chromium,
+    launch: launchOpts,
+    context: contextOpts,
+    extensions: await configuredExtensions(projectDir),
+  });
   let page = await context.newPage();
   if (startUrl) {
     await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
@@ -757,6 +761,6 @@ async function runAutoExploreCore(projectDir: string, options: AutoExploreOption
   } finally {
     cliRl?.close();
     await context.close();
-    await browser.close();
+    await closeBrowser();
   }
 }

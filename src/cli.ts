@@ -28,6 +28,7 @@ import { traverseCase } from "./commands/traverse.js";
 import { agentDiveCase } from "./commands/agent-dive.js";
 import { autoServeCase, sessionCase } from "./commands/session.js";
 import { tryCase } from "./commands/try.js";
+import { extensionsCase } from "./commands/extensions.js";
 import { mapCase } from "./commands/map.js";
 
 const args = process.argv.slice(2);
@@ -86,6 +87,8 @@ async function main(): Promise<void> {
     case "check": await checkCase(args); break;
 
     case "map": await mapCase(args); break;
+
+    case "extensions": await extensionsCase(args); break;
 
     default:
       console.error(`waygraph: unknown command "${command}"`);

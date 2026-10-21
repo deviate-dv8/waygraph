@@ -10,7 +10,7 @@ import { connect } from "../types.js";
 import { MemPage } from "../mem-page.js";
 import { Engine, start, end, chainFlow, isFastForwardBlock, branchRoutes, runBranchRegression } from "../core.js";
 import { withWebServer } from "../webserver.js";
-import { chromiumExecutablePath } from "../browser-path.js";
+import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../browser.js";
 
 async function runMain() {
   const projectDir = process.argv[2];
@@ -290,12 +290,6 @@ async function runMain() {
     const executablePath = chromiumExecutablePath();
     // Maximized for interactive step, and for fixed video viewport so the
     // locked record size can actually fit (otherwise .webm gets grey pad).
-    const browser = await chromium.launch({
-      headless: !headed,
-      slowMo,
-      args: step || fixedVideoViewport ? ["--start-maximized"] : [],
-      ...(executablePath ? { executablePath } : {}),
-    });
     const contextOpts = fixedVideoViewport
       ? {
           baseURL,
@@ -313,7 +307,17 @@ async function runMain() {
         ? { dir: videoDir, size: fixedVideoViewport }
         : { dir: videoDir };
     }
-    const context = await browser.newContext(contextOpts);
+    const { context, close: closeBrowser } = await launchContext({
+      launcher: chromium,
+      launch: {
+        headless: !headed,
+        slowMo,
+        args: step || fixedVideoViewport ? ["--start-maximized"] : [],
+        ...(executablePath ? { executablePath } : {}),
+      },
+      context: contextOpts,
+      extensions: extensionPathsFromEnv(),
+    });
     let pageForVideo = null;
     try {
       if (step) {
@@ -369,7 +373,7 @@ async function runMain() {
       if (savedVideo) {
         console.log("waygraph: video saved to " + savedVideo);
       }
-      await browser.close();
+      await closeBrowser();
     }
   } else {
     if (chainFlows && chainFlows.length > 0) {
@@ -420,6 +424,9 @@ async function runAllBranchesMode(chainFlows, mem, baseURL, headed, engine) {
     );
     process.exitCode = 1;
     return;
+  }
+  if (extensionPathsFromEnv().length > 0) {
+    console.warn("waygraph run --all-branches: extensions are not loaded (branches run in cloned contexts)");
   }
   const { chromium } = await import("@playwright/test");
   const browser = await chromium.launch({ headless: !headed });

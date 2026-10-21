@@ -29,3 +29,6 @@ export const ExpectedLinkPattern = key<string>("demo.expectedLinkPattern");
  * as ExpectedLinkPattern: one Block, many scenarios, driven by mem.
  */
 export const ExpectedEmailContent = key<string>("demo.expectedEmailContent");
+
+/** The URL send-request types into Hoppscotch's REST bar. */
+export const RequestUrl = key<string>("demo.requestUrl");

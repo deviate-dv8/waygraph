@@ -81,6 +81,30 @@ over anything in a `.env` file - loading one only fills a gap, never silently ov
 value you actually set. This replaces the hack of manually re-exporting an FE project's own
 `.env` values, or duplicating them into `package.json`, just to get waygraph to see them.
 
+### Browser extensions
+
+```typescript
+export default defineConfig({
+  extensions: ["hoppscotch", "./my-extension"],
+});
+```
+
+Each entry is a known name (`hoppscotch`), a Chrome Web Store id, a path to an unpacked extension,
+or `{ id, sha256 }` to pin the download. Store extensions are fetched on first use into
+`$WAYGRAPH_CACHE_DIR` (default `~/.cache/waygraph/extensions`) and never replaced silently;
+`waygraph extensions install [--update]` fetches or refreshes them ahead of time.
+`WAYGRAPH_EXTENSIONS` (comma-separated unpacked directories) overrides the config.
+
+Limits, because Chromium only loads extensions into a persistent profile:
+- Chromium only, and Playwright's own build - `CHROME_PATH` is ignored while extensions are on.
+- They load in the context waygraph launches (`run`, `demo`, `auto`, `pilot`, `Flow.run(mem)`),
+  not in a Playwright test's `context` fixture, and not in `traverse` or `--all-branches`.
+- An extension runs with its manifest permissions on every page of the run (Hoppscotch's asks for
+  `<all_urls>` and cookies). Only list ones you trust, and pin `sha256` in shared configs.
+
+The scaffold's `(external)/hoppscotch` map drives Hoppscotch's REST client through its extension,
+so requests skip CORS.
+
 ## Core concepts
 
 - **`Checkpoint<Tag>`** - a state identified solely by its string tag. Carries no data.

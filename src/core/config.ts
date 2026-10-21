@@ -59,4 +59,6 @@ export interface EngineConfig {
    * @example new Engine({ layouts: [AppShellLayout] })
    */
   layouts?: readonly Layout[];
+  /** Unpacked Chromium extension directories to load (see `extensions` in `waygraph.config.ts`). Default `WAYGRAPH_EXTENSIONS`. */
+  extensions?: readonly string[];
 }

@@ -1,6 +1,6 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { connect } from "../types.js";
-import { chromiumExecutablePath } from "../browser-path.js";
+import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../browser.js";
 import {
   WaygraphError,
   MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_INDEX,
@@ -12,7 +12,7 @@ import { preflight, runGraph } from "./run-graph.js";
 import type { RunGraphOptions } from "./run-graph.js";
 import { resolveLauncher } from "./config.js";
 import type { EngineConfig } from "./config.js";
-import type { Browser, BrowserContext, Page } from "@playwright/test";
+import type { BrowserContext, Page } from "@playwright/test";
 import { MemPage } from "../mem-page.js";
 import type { Trait } from "../trait.js";
 import { findBlockIndex, modVerify, withVerify } from "./block.js";
@@ -225,15 +225,17 @@ export function buildFlow<Out extends Checkpoint<string>>(
       const browserName = config.browserName ?? "chromium";
       const launch = resolveLauncher(browserName, config);
       const executablePath = browserName === "chromium" ? chromiumExecutablePath() : undefined;
-      const browser: Browser = await launch.launch({
-        headless: config.headless ?? true,
-        ...(config.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
-        ...(executablePath ? { executablePath } : {}),
+      const { context, close } = await launchContext({
+        launcher: launch,
+        launch: {
+          headless: config.headless ?? true,
+          ...(config.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
+          ...(executablePath ? { executablePath } : {}),
+        },
+        context: config.recordVideo ? { recordVideo: config.recordVideo } : {},
+        extensions: config.extensions ?? extensionPathsFromEnv(),
       });
       try {
-        const context = await browser.newContext(
-          config.recordVideo ? { recordVideo: config.recordVideo } : {},
-        );
         try {
           return await runGraph<Out>(chain, undefined, context, mem, 5000, {
             ...(config.layouts !== undefined ? { layouts: config.layouts } : {}),
@@ -246,7 +248,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
           }
         }
       } finally {
-        await browser.close();
+        await close();
       }
     }
     const context = contextOrMem;
@@ -554,22 +556,24 @@ export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
       const browserName = config?.browserName ?? "chromium";
       const launch = resolveLauncher(browserName, config);
       const executablePath = browserName === "chromium" ? chromiumExecutablePath() : undefined;
-      const browser: Browser = await launch.launch({
-        headless: config?.headless ?? true,
-        ...(config?.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
-        ...(executablePath ? { executablePath } : {}),
+      const { context, close } = await launchContext({
+        launcher: launch,
+        launch: {
+          headless: config?.headless ?? true,
+          ...(config?.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
+          ...(executablePath ? { executablePath } : {}),
+        },
+        context: config?.recordVideo ? { recordVideo: config.recordVideo } : {},
+        extensions: config?.extensions ?? extensionPathsFromEnv(),
       });
       try {
-        const context = await browser.newContext(
-          config?.recordVideo ? { recordVideo: config.recordVideo } : {},
-        );
         try {
           return await run(context, mem, { closeOnFinish: true });
         } finally {
           await context.close();
         }
       } finally {
-        await browser.close();
+        await close();
       }
     }
     const context = contextOrMem;

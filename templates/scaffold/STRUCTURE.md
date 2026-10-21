@@ -22,7 +22,8 @@ Next.js route groups) and never appear in a URL or Checkpoint name.
 │   │   │   │       ├── assert-hello.method.block.ts   # + stubs + YAP slide
 │   │   │   │       └── assert-item-added.method.block.ts
 │   │   │   └── docs/                  # a second page, same shape
-│   │   └── (external)/mailpit/        # a different origin (mail catcher)
+│   │   ├── (external)/mailpit/        # a different origin (mail catcher)
+│   │   └── (external)/hoppscotch/     # API client, needs the hoppscotch extension
 │   ├── states/                        # Checkpoint types + mem keys
 │   └── flows/                         # example / shop / mail-verify
 └── tests/example.spec.ts

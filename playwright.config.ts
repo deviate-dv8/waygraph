@@ -1,5 +1,5 @@
 import { defineConfig } from "@playwright/test";
-import { chromiumExecutablePath } from "./src/browser-path.js";
+import { chromiumExecutablePath } from "./src/browser.js";
 
 export default defineConfig({
   testDir: "./tests",

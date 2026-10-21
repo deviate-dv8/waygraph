@@ -24,7 +24,7 @@ import {
   formatCoverageLine,
   writeCoverageReport,
 } from "./coverage.js";
-import { chromiumExecutablePath } from "../browser-path.js";
+import { chromiumExecutablePath } from "../browser.js";
 
 export type TraverseSessionMode = "clone" | "inherit";
 
@@ -416,6 +416,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
   const allEdgeKeys = collectGraphEdgeKeys(graph.edges);
   const leases = new EdgeLeaseCoordinator({ projectDir, persist: parallel > 1 });
   const engine = new Engine({ headless: !headed, slowMo: headed ? 100 : 0 });
+  if (process.env.WAYGRAPH_EXTENSIONS) console.error("waygraph traverse: extensions are not loaded (workers use plain contexts)");
   const { chromium } = await import("@playwright/test");
   const executablePath = chromiumExecutablePath();
   const launchOpts: Parameters<typeof chromium.launch>[0] = {
