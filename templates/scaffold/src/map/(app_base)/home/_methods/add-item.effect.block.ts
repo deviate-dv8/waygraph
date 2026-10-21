@@ -48,13 +48,4 @@ export const AddItemBlock = defineEffectBlock<CanAddItem, ItemInCart>({
     }
     return out;
   },
-})
-  .stubBefore((ctx) => {
-    ctx.ring("add", { selector: DemoSel.catalog, label: "Catalog" });
-  })
-  .stubAfter((ctx) => {
-    ctx.ring("cart", { selector: DemoSel.cartCount, label: "Cart count", duration: true });
-  })
-  .stubOnError((ctx) => {
-    ctx.ring("cart", { selector: DemoSel.cartCount, label: "Cart at failure", tag: "FAIL" });
-  });
+});

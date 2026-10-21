@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { extensionPathsFromEnv } from "./browser.js";
 import type { PlaywrightTestConfig } from "@playwright/test";
-import { loadEnvFiles } from "./env-file.js";
+import { envMode, loadEnvFiles } from "./env-file.js";
 import { resolveExtensions } from "./extensions.js";
 import type { ExtensionSpec } from "./extensions.js";
 import type { WebServerConfig } from "./webserver.js";
@@ -25,10 +25,21 @@ export interface WaygraphConfig {
   playwright?: PlaywrightTestConfig;
 }
 
-/** Identity helper, purely for editor type-checking/autocomplete - same role `defineConfig` plays
- * in a `playwright.config.ts` or `vite.config.ts`. `export default defineConfig({ ... })`. */
-export function defineConfig(config: WaygraphConfig): WaygraphConfig {
-  return config;
+/** What a config function receives: the env mode and the environment with `.env` files already loaded. */
+export interface ConfigContext {
+  mode: string;
+  env: Record<string, string | undefined>;
+}
+
+/**
+ * Typed identity helper, like `defineConfig` in `vite.config.ts`. Pass an object, or a function when values come
+ * from `.env` files (`.env`, `.env.local`, `.env.<mode>`; pick the mode with `--env <mode>`):
+ * @example export default defineConfig(({ env }) => ({ baseUrl: env.BASE_URL }))
+ */
+export function defineConfig(config: WaygraphConfig | ((context: ConfigContext) => WaygraphConfig)): WaygraphConfig {
+  if (typeof config !== "function") return config;
+  loadEnvFiles(process.cwd());
+  return config({ mode: envMode(), env: process.env });
 }
 
 const CONFIG_NAMES = ["waygraph.config.ts", "waygraph.config.mts", "waygraph.config.mjs", "waygraph.config.js", "waygraph.config.cjs"];
@@ -44,6 +55,7 @@ const CONFIG_FILENAMES = [...CONFIG_NAMES.map((n) => join("config", n)), ...CONF
  * anything" instead of "your config file has a bug."
  */
 export async function loadWaygraphConfig(projectDir: string): Promise<WaygraphConfig | undefined> {
+  loadEnvFiles(projectDir);
   for (const name of CONFIG_FILENAMES) {
     const p = join(projectDir, name);
     if (!existsSync(p)) continue;

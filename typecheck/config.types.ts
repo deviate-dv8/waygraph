@@ -40,3 +40,9 @@ defineConfig({ extensions: [42] });
 // The same object feeds the Engine.
 import { Engine } from "../src/index.js";
 export const engine = new Engine(ok);
+
+// A function form reads the loaded .env values.
+export const fromEnv = defineConfig(({ mode, env }) => ({ baseUrl: env.BASE_URL ?? `https://${mode}.example.com` }));
+
+// @ts-expect-error unknown key in a function-form config
+defineConfig(() => ({ typo: 1 }));

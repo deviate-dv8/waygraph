@@ -72,13 +72,15 @@ against a live site, use `--skill-pilot-blind`.
   not a raw `defineFlow([start, ...])` array. Flow settings go in `.end`'s options:
   `.end({ title: "Shop", memStub: true, sessionReset: true })`. Never `withMemStub(withTitle(withSessionReset(...)))`.
   (`defineFlow(blocks, options)` takes the same options.)
-- **Demo highlights are ctx stubs chained on the Block**, where it is used in the flow:
+- **Blocks carry no stubs; the flow does.** Demo highlights are ctx stubs chained on the Block where the flow uses it:
   `AddItemBlock.stubAfter((ctx) => { ctx.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart" }); })`.
   Not a static `withHighlightFixtures({ "add-item": { stubAfter: {...} } })` map, and not an inline
   `instruction: { stubAfter() {} }`. A Block used twice gets one `const AddShown = AddItemBlock.stubAfter(...)`.
 - **Reading a value into `mem` happens in `act`** (`mem.set(Key, value)`), like Mailpit's `extract-email-link`.
   `observe` is only for a Block that branches (it feeds `resolve`); an empty `act(){}` plus an `observe` that
   writes `mem` is a misuse.
+- **Per-environment values** (a different `baseUrl` for staging) come from `.env` files read in the config function:
+  `defineConfig(({ env }) => ({ baseUrl: env.BASE_URL }))`; `--env staging` loads `.env.staging`. Never edit the config to switch.
 - **A browser dialog (`confirm`, `beforeunload`) is answered with `withDialog(block, { accept, into })`**, not inside the
   Block's `act`; the click Block stays a plain click.
 - **Project settings live in `config/waygraph.config.ts`** (`defineConfig({ baseUrl, testDir, webServer,

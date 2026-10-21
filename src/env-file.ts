@@ -27,28 +27,40 @@ function parseEnvFile(content: string): Record<string, string> {
   return out;
 }
 
+/** The env mode: `--env <mode>` / `WAYGRAPH_ENV`, else `NODE_ENV`, else "development". */
+export function envMode(): string {
+  return process.env.WAYGRAPH_ENV || process.env.NODE_ENV || "development";
+}
+
+/** Removes `--env <mode>` / `--env=<mode>` from argv and records it as `WAYGRAPH_ENV`, so it never reaches a forwarded command. */
+export function takeEnvFlag(argv: string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]!;
+    if (a === "--env" && argv[i + 1] !== undefined) process.env.WAYGRAPH_ENV = argv[++i]!;
+    else if (a.startsWith("--env=")) process.env.WAYGRAPH_ENV = a.slice("--env=".length);
+    else out.push(a);
+  }
+  return out;
+}
+
 /**
- * Auto-loads `.env` / `.env.local` / `.env.<mode>` / `.env.<mode>.local` from a project's root,
- * same layering Vite/Next use (`mode` defaults to `NODE_ENV`, falling back to "development"),
- * merged into `process.env` in increasing priority. A real, already-set `process.env` value -
- * whatever the shell actually exported - always wins over every file; a `.env` file only fills
- * a gap, it never silently overrides something the caller explicitly set. Safe to call more
- * than once (e.g. once eagerly at `cwd`, again once the real project dir is known) - loading
- * twice is a no-op the second time for any key already filled.
+ * Loads `.env` / `.env.local` / `.env.<mode>` / `.env.<mode>.local` from a project's root, the layering
+ * Vite and Next use: each later file overrides the earlier ones (`.env.<mode>.local` wins). A value the
+ * shell already exported always beats every file, so a file only fills gaps. Calling it twice is harmless.
  */
-export function loadEnvFiles(projectDir: string, mode: string = process.env.NODE_ENV || "development"): void {
-  const files = [".env", ".env.local", `.env.${mode}`, `.env.${mode}.local`];
-  for (const name of files) {
+export function loadEnvFiles(projectDir: string, mode: string = envMode()): void {
+  const merged: Record<string, string> = {};
+  for (const name of [".env", ".env.local", `.env.${mode}`, `.env.${mode}.local`]) {
     const p = join(projectDir, name);
     if (!existsSync(p)) continue;
-    let parsed: Record<string, string>;
     try {
-      parsed = parseEnvFile(readFileSync(p, "utf-8"));
+      Object.assign(merged, parseEnvFile(readFileSync(p, "utf-8")));
     } catch {
       continue; // unreadable file - never fail a run over an optional .env
     }
-    for (const [key, value] of Object.entries(parsed)) {
-      if (process.env[key] === undefined) process.env[key] = value;
-    }
+  }
+  for (const [key, value] of Object.entries(merged)) {
+    if (process.env[key] === undefined) process.env[key] = value;
   }
 }

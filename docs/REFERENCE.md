@@ -73,7 +73,7 @@ Three places can supply a project's `baseUrl`, checked in this order (first one 
 If none of those are set, a `playwright.config.*`'s own `baseURL` is read as a last resort.
 
 **Native `.env` support** - `.env`, `.env.local`, `.env.<mode>`, `.env.<mode>.local`
-(`<mode>` = `NODE_ENV`, default `"development"`) are auto-loaded from the project root before
+(`<mode>` = `--env <mode>` / `WAYGRAPH_ENV`, else `NODE_ENV`, else `"development"`) are auto-loaded from the project root before
 `baseUrl` resolution runs, same layering Vite/Next use. No `dotenv` dependency - a small
 built-in parser (`src/env-file.ts`), matching the "bring nothing, read what's already there"
 approach memStub already takes with Faker. A real, already-exported shell env var always wins
@@ -98,6 +98,20 @@ export default defineConfig({
 
 Defaults: `fullyParallel`, `list` + `html` reporters, `trace: "retain-on-failure"`, `use.baseURL` from `baseUrl`
 (`WAYGRAPH_BASE_URL` still wins). `webServer` is also started around `run`, `demo` and `auto`.
+**Different environments.** The config can be a function that reads `.env` values, so one project points at
+several base URLs:
+
+```typescript
+export default defineConfig(({ mode, env }) => ({
+  baseUrl: env.BASE_URL,            // .env: BASE_URL=http://localhost:3000, .env.staging: BASE_URL=https://staging.example.com
+  extensions: mode === "staging" ? [] : ["hoppscotch"],
+}));
+```
+
+`waygraph test --env staging` (any command takes `--env <mode>`; or `WAYGRAPH_ENV=staging`) loads `.env`, `.env.local`,
+`.env.staging`, `.env.staging.local` in that order, each overriding the one before; the default mode is `NODE_ENV`, else
+`development`. A value exported in the shell always wins over every file, and `WAYGRAPH_BASE_URL` still overrides `baseUrl`.
+
 Flows pass the same object to the Engine, so it is imported rather than read out of band:
 `import config from "../../config/waygraph.config.js"; const engine = new Engine(config);`. The Engine uses
 `baseUrl` and `extensions` for the browser it launches itself (`flow.run(mem)`); `waygraph test`, `run`, `demo`

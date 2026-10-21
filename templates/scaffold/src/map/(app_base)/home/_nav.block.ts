@@ -8,10 +8,4 @@ export const NavHomeBlock = defineNavBlock<Home>({
   checkpoint: "Home",
   url: HOME_URL,
   verify: [Trait.text(DemoSel.title, "Hello Waygraph"), Trait.visible(DemoSel.catalog)],
-})
-  .stubAfter((ctx) => {
-    ctx.ring("title", { selector: DemoSel.title, label: "Home heading", duration: true });
-  })
-  .stubOnError((ctx) => {
-    ctx.ring("title", { selector: DemoSel.title, label: "Home heading at failure" });
-  });
+});

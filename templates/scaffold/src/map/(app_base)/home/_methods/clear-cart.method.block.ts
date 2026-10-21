@@ -12,10 +12,4 @@ export const ClearCartBlock = defineMethodBlock<ItemInCart, CartEmpty>({
     resolve: () => checkpoint("CartEmpty"),
     verify: [Trait.text(DemoSel.cartCount, "0")],
   },
-})
-  .stubBefore((ctx) => {
-    ctx.ring("clear", { selector: DemoSel.clear, label: "Clear cart" });
-  })
-  .stubAfter((ctx) => {
-    ctx.ring("cart", { selector: DemoSel.cartCount, label: "Empty cart", duration: true });
-  });
+});

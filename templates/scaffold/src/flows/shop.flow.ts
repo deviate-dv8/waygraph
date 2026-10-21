@@ -12,23 +12,39 @@ import "../map/(app_base)/home/_page.block.js";
 const engine = new Engine(config);
 
 // `memStub: true` fills SelectedItem (alpha) from src/states/demo.mem-stubs.ts; --data overrides it.
-const AddItemShown = AddItemBlock.stubAfter((ctx) => {
-  ctx.ring("cart", {
-    selector: DemoSel.cartCount,
-    label: "AC · item in cart",
-    detail: "Cart count bumped after Add.",
-    tag: "AC",
-    duration: true,
+const AddShown = AddItemBlock.stubBefore((ctx) => {
+  ctx.ring("add", { selector: DemoSel.catalog, label: "Catalog" });
+})
+  .stubAfter((ctx) => {
+    ctx.ring("cart", {
+      selector: DemoSel.cartCount,
+      label: "AC · item in cart",
+      detail: "Cart count bumped after Add.",
+      tag: "AC",
+      duration: true,
+    });
+  })
+  .stubOnError((ctx) => {
+    ctx.ring("cart", { selector: DemoSel.cartCount, label: "Cart at failure", tag: "FAIL" });
   });
+
+const RemoveShown = RemoveItemBlock.stubAfter((ctx) => {
+  ctx.ring("cart", { selector: DemoSel.cartCount, label: "Cart count", duration: true });
+});
+
+const ClearShown = ClearCartBlock.stubBefore((ctx) => {
+  ctx.ring("clear", { selector: DemoSel.clear, label: "Clear cart" });
+}).stubAfter((ctx) => {
+  ctx.ring("cart", { selector: DemoSel.cartCount, label: "Empty cart", duration: true });
 });
 
 export const shopFlow = engine
   .map()
   .start()
   .gotoPage(NavHomeBlock)
-  .method(AddItemShown)
+  .method(AddShown)
   .assert(AssertItemAddedBlock)
-  .method(RemoveItemBlock)
-  .method(AddItemShown)
-  .method(ClearCartBlock)
+  .method(RemoveShown)
+  .method(AddShown)
+  .method(ClearShown)
   .end({ title: "Scaffold: Shop (Effect + clear)", sessionReset: true, memStub: true });

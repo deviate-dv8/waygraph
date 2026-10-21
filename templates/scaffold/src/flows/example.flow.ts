@@ -14,17 +14,30 @@ const engine = new Engine(config);
 export const exampleFlow = engine
   .map()
   .start()
-  .gotoPage(NavHomeBlock)
-  .assert(
-    AssertHelloBlock.stubAfter((ctx) => {
-      ctx.ring("title", {
-        selector: DemoSel.title,
-        label: "AC · Hello visible",
-        detail: "Replace this copy with your ticket lines.",
-        tag: "AC",
-        duration: true,
-      });
+  .gotoPage(
+    NavHomeBlock.stubAfter((ctx) => {
+      ctx.ring("title", { selector: DemoSel.title, label: "Home heading", duration: true });
+    }).stubOnError((ctx) => {
+      ctx.ring("title", { selector: DemoSel.title, label: "Home heading at failure" });
     }),
+  )
+  .assert(
+    AssertHelloBlock.stubBefore((ctx) => {
+      ctx.ring("title", { selector: DemoSel.title, label: "Heading about to check" });
+    })
+      .stubAfter((ctx) => {
+        ctx.ring("title", {
+          selector: DemoSel.title,
+          label: "AC · Hello visible",
+          detail: "Replace this copy with your ticket lines.",
+          tag: "AC",
+          duration: true,
+        });
+        ctx.ring("sub", { selector: DemoSel.sub, label: "Subcopy", duration: 1500 });
+      })
+      .stubOnError((ctx) => {
+        ctx.ring("title", { selector: DemoSel.title, label: "Heading at failure", tag: "FAIL" });
+      }),
   )
   .gotoPage(NavDocsBlock)
   .end({ title: "Scaffold: Hello Waygraph" });

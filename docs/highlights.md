@@ -1,116 +1,34 @@
-# Demo narration: stubs, fixtures, captions & slides
+# Demo narration: ctx stubs, captions & slides
 
-Catch-all highlight lifecycle on every block (`stubBefore` / `stubAfter`);
-unlimited demo purposes on the issue `.flow.ts`;
-multi-step yap slides with Next between each one.
-Shipped in `waygraph@0.11.2`.
-**Purple** = authored narration; **yellow** = automation
-checks (verify / unmatched fill-click) - watch the purple.
+Narration is written in the **flow**, as ctx stubs chained on the Blocks it uses (`stubBefore` / `stubAfter` /
+`stubOnError`). Blocks stay neutral and carry no stubs, so one Block can be narrated differently by every flow.
+**Purple** = authored narration; **yellow** = automation checks (verify / unmatched fill-click) - watch the purple.
 
 ## Mental model
 
 ```sh
-Every block     → stubBefore + stubAfter   (selectors + neutral labels; {} ok)
-Issue .flow.ts  → highlightFixtures        (unlimited demo purposes per phase/slot)
-Block or flow   → slides                   (multi-step yap, Next between each - not block lifecycle)
+Block           → what it does (act / resolve / verify), no narration
+Flow            → the story: ctx stubs chained on each Block, in the order the flow runs them
+Block or flow   → slides   (multi-step yap, Next between each - not block lifecycle)
 ```
-
-Same pattern as Mem: the block declares **slots**; the flow owns the
-**story**. Shared blocks stay library-neutral. Ticket AC copy, BUG/GATE
-tags, `detail` lines, and any other demo purpose live on the flow.
 
 | Feature | Where | Role |
 |---|---|---|
-| **Stubs** | Every block `instruction` | `stubBefore` + `stubAfter` - named slots (selector +
-neutral label). Catch-all lifecycle shape on every block (`{}` ok). |
-| **Fixtures** | Issue `.flow.ts` | **Unlimited demo purposes** - AC copy, BUG/GATE tags,
-`detail`, ticket sentences. Override per block / phase / slot. |
-| **Captions** | Every stub slot / slide | `label` (or `caption` on slides), optional `detail`
-and `tag`. Rendered as: `[TAG] primary - detail`. |
-| **Slides** | Block `instruction.slides` or flow fixture `slides` | Multi-step yap sequence. Demo pauses on each slide; user clicks
-**Next slide** (or auto-next) to advance. Separate from
-block lifecycle - slides run after the step resolves. |
+| **Stubs** | Chained on a Block inside a flow | `ctx.ring(...)`, `ctx.todos(...)`, `ctx.title(...)` before, after or on error. |
+| **Captions** | Every ring / slide | `label` (or `caption` on slides), optional `detail` and `tag`. Rendered as: `[TAG] primary - detail`. |
+| **Slides** | Block `slides` or a flow fixture | Multi-step yap sequence. Demo pauses on each slide; user clicks **Next slide** (or auto-next). Runs after the step resolves. |
 
-**Not** `modHighlight()` and
-**not** a `modBlock*` highlight decorator.
-(`modBlockVerify` is verify-only and unrelated.)
+## Phases
 
-## Phases (stubs)
+| Phase | When demo runs it |
+|---|---|
+| `stubBefore` | Before / during `act` - the inputs and buttons the step touches |
+| `stubAfter` | After resolve + verify - proof points (AC / GATE / ...) |
+| `stubOnError` | When the step throws - what was on screen at the failure |
 
-| Phase | When demo runs it | Block (library) | Flow fixture |
-|---|---|---|---|
-| `stubBefore` | Before / during `act` | Inputs / buttons the block touches | Unlimited purposes before/during interaction |
-| `stubAfter` | After resolve + verify | Post-step proof points | Unlimited purposes after the step (AC / GATE / ...) |
+## Chaining stubs in a flow
 
-## Block (neutral stubs)
-
-```sh
-instruction: {
-async act(page, _input, mem) { /* ... */ },
-resolve: () => checkpoint("LoginLinkSent"),
-verify: [Trait.visible("text=Check your inbox")],
-
-stubBefore: {
-email:  { selector: "#email",              label: "Email address" },
-submit: { selector: 'button[type="submit"]', label: "Send sign-in link" },
-},
-stubAfter: {
-sent: { selector: "text=Check your inbox", label: "Magic link sent" },
-},
-}
-```
-
-## Captions: `label`, `detail`, `tag`
-
-Every stub slot and every slide supports the same caption fields:
-
-| Field | Type | Purpose |
-|---|---|---|
-| `label` | string (required on stubs) | Primary ring / panel text |
-| `detail` | string (optional) | Second line in the panel body |
-| `tag` | string (optional) | Badge prefix: `AC`, `BUG`, `GATE`, `YAP`, ... |
-
-Rendered format: `[TAG] primary - detail` (hyphens, not em-dashes).
-
-## Slides: multi-step yap
-
-Slides are a demo-only narration sequence. They run after a block resolves
-(not part of the block's pass/fail lifecycle). Each slide pauses and waits for
-**Next slide** (or auto-next / auto-advance checkbox). An optional
-`selector` shows a ring while that slide is up.
-
-```sh
-// On a block:
-instruction: {
-stubBefore: { finish: { selector: "#finish", label: "Finish" } },
-stubAfter:  { thanks: { selector: ".complete-header", label: "Order confirmed" } },
-slides: [
-{
-caption: "Checkout is a short pipeline",
-detail:  "Cart -> info -> overview -> done.",
-tag:     "YAP",
-},
-{
-caption:  "Finish submits the overview",
-detail:   "This click is the only mutating step.",
-tag:      "YAP",
-selector: "#finish",
-},
-{
-caption:  "Completion banner is the proof",
-detail:   "The thank-you header is the durable signal.",
-tag:      "YAP",
-selector: ".complete-header",
-},
-],
-}
-```
-
-
-## In a flow: ctx stubs on the Block
-
-A flow adds its own narration by chaining a ctx stub on the Block where it is used - the same
-`ctx` the Block's own stubs get. No separate fixture map:
+Chain a ctx stub on the Block where the flow uses it. No separate fixture map:
 
 ```ts
 const SubmitLogin = SubmitLoginBlock

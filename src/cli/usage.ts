@@ -191,6 +191,8 @@ Primary (less is more):
                                            has a trace - test report opens it.
 
 Also:
+  --env <mode>   (any command) load .env.<mode> / .env.<mode>.local on top of .env, e.g.
+                 waygraph test --env staging   (default: NODE_ENV, else development)
   waygraph upgrade [project] [paths...] [--apply] [--overwrite] [--diff]
                                            Compare a project with the scaffold in this waygraph:
                                            lists new and differing files and a stale waygraph

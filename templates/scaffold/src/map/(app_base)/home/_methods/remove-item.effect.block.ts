@@ -47,6 +47,4 @@ export const RemoveItemBlock = defineEffectBlock<ItemInCart, CartEmpty>({
     }
     return out;
   },
-}).stubAfter((ctx) => {
-  ctx.ring("cart", { selector: DemoSel.cartCount, label: "Cart count", duration: true });
 });

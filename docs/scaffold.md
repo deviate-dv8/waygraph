@@ -59,6 +59,7 @@ export default defineConfig({
 ```
 
 `waygraph test` builds the test runner's config from it, so a project has no `playwright.config.ts`.
+Values can come from `.env` files: `baseUrl: env.BASE_URL`, with `waygraph test --env staging` loading `.env.staging`.
 Each flow imports it too - `const engine = new Engine(config)` - so `baseUrl` and `extensions` also apply when a
 flow launches its own browser.
 An older project that still has one keeps working and gets a deprecation note.
