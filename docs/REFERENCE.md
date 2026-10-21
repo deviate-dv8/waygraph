@@ -102,6 +102,12 @@ A project that still has a `playwright.config.*` keeps working: `waygraph test` 
 note, and `waygraph upgrade` lists it as deprecated.
 Editor integrations that look for a `playwright.config.ts` (the VS Code Playwright extension) won't find one; use `waygraph test` or `npm test`.
 
+### Browser dialogs
+
+A `confirm()`, `alert()`, `prompt()` or `beforeunload` freezes the page until it is answered, so the answer is
+armed around the Block's action rather than written into it: `withDialog(CancelBlock, { accept: true, into: LeaveWarning })`
+(`accept: false` dismisses; `into` keeps the dialog's text in `mem` for an assert Block to check).
+
 ### Flow options and stubs, without wrappers
 
 `engine.defineFlow([...], options)` (and `map()...end(options)`) takes `title`, `memStub`, `sessionReset`,
@@ -137,6 +143,10 @@ Limits, because Chromium only loads extensions into a persistent profile:
 - Chromium only, and Playwright's own build - `CHROME_PATH` is ignored while extensions are on.
 - They load in the context waygraph launches (`run`, `demo`, `auto`, `pilot`, `Flow.run(mem)`),
   not in a Playwright test's `context` fixture, and not in `traverse` or `--all-branches`.
+- A store extension keeps its store id (waygraph pins the `.crx`'s key in the manifest), so its requests carry a
+  stable `Origin`, e.g. `chrome-extension://amknoiejhlmhancpahfcfcfhllgkpbld` for Hoppscotch. An API that checks
+  `Origin` on writes (better-auth's `trustedOrigins`) can allow that one origin. Extensions cached by an older
+  waygraph have a path-derived id; `waygraph extensions install --update` refetches them.
 - An extension runs with its manifest permissions on every page of the run (Hoppscotch's asks for
   `<all_urls>` and cookies). Only list ones you trust, and pin `sha256` in shared configs.
 

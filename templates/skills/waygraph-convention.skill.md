@@ -78,6 +78,8 @@ against a live site, use `--skill-pilot-blind`.
 - **Reading a value into `mem` happens in `act`** (`mem.set(Key, value)`), like Mailpit's `extract-email-link`.
   `observe` is only for a Block that branches (it feeds `resolve`); an empty `act(){}` plus an `observe` that
   writes `mem` is a misuse.
+- **A browser dialog (`confirm`, `beforeunload`) is answered with `withDialog(block, { accept, into })`**, not inside the
+  Block's `act`; the click Block stays a plain click.
 - **Project settings live in `config/waygraph.config.ts`** (`defineConfig({ baseUrl, testDir, webServer,
   extensions, playwright: {...} })`). A project needs no `playwright.config.ts` - `waygraph test` builds one
   from it. A leftover `playwright.config.*` is deprecated.

@@ -60,8 +60,57 @@ function crxToZip(crx: Buffer): Buffer {
   throw new Error(`unsupported .crx version ${version}`);
 }
 
+/** Reads the length-delimited fields of one protobuf message as [fieldNumber, bytes] pairs; other wire types are skipped. */
+function protoFields(buf: Buffer): [number, Buffer][] {
+  const out: [number, Buffer][] = [];
+  let p = 0;
+  const varint = (): number => {
+    let n = 0;
+    for (let shift = 0; ; shift += 7) {
+      const b = buf[p++]!;
+      n += (b & 0x7f) * 2 ** shift;
+      if (!(b & 0x80)) return n;
+    }
+  };
+  while (p < buf.length) {
+    const tag = varint();
+    const wire = tag & 7;
+    if (wire === 2) {
+      const len = varint();
+      out.push([tag >>> 3, buf.subarray(p, p + len)]);
+      p += len;
+    } else if (wire === 0) varint();
+    else if (wire === 1) p += 8;
+    else if (wire === 5) p += 4;
+    else break;
+  }
+  return out;
+}
+
+/** The extension's public key (DER), from which Chrome derives its id: with it in the manifest the id equals the store's. */
+function crxPublicKey(crx: Buffer): Buffer | undefined {
+  const version = crx.readUInt32LE(4);
+  if (version === 2) return crx.subarray(16, 16 + crx.readUInt32LE(8));
+  const header = protoFields(crx.subarray(12, 12 + crx.readUInt32LE(8)));
+  const signed = header.find(([n]) => n === 10000)?.[1];
+  const crxId = signed ? protoFields(signed).find(([n]) => n === 1)?.[1] : undefined;
+  for (const [n, proof] of header) {
+    if (n !== 2 && n !== 3) continue;
+    const key = protoFields(proof).find(([f]) => f === 1)?.[1];
+    if (key && crxId && createHash("sha256").update(key).digest().subarray(0, 16).equals(crxId)) return key;
+  }
+  return undefined;
+}
+
+/** Unpacks a .crx and pins the manifest `key`, so the extension keeps its store id (its origin is then stable, e.g. for an API allowlist). */
 export function unpackCrx(crx: Buffer, dest: string): void {
   unzipTo(crxToZip(crx), dest);
+  const key = crxPublicKey(crx);
+  if (!key) return;
+  const file = join(dest, "manifest.json");
+  const manifest = JSON.parse(readFileSync(file, "utf-8")) as Record<string, unknown>;
+  manifest.key = key.toString("base64");
+  writeFileSync(file, JSON.stringify(manifest, null, 2));
 }
 
 function readManifest(dir: string): { name?: string; version?: string } {

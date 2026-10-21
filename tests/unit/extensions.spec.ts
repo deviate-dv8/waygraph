@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 import { deflateRawSync } from "node:zlib";
 import { extensionInfo, resolveExtension, unpackCrx } from "../../src/extensions.js";
 
@@ -49,6 +50,35 @@ function crx3(zipBuf: Buffer): Buffer {
   return Buffer.concat([head, Buffer.alloc(4), zipBuf]);
 }
 
+const field = (n: number, bytes: Buffer): Buffer => {
+  const tag = Buffer.from([(n << 3) | 2]);
+  const len: number[] = [];
+  for (let v = bytes.length; ; v >>>= 7) {
+    len.push((v & 0x7f) | (v > 0x7f ? 0x80 : 0));
+    if (v <= 0x7f) break;
+  }
+  return Buffer.concat([tag, Buffer.from(len), bytes]);
+};
+// field numbers above 15 need a two-byte tag; 10000 is crx's signed_header_data
+const bigField = (n: number, bytes: Buffer): Buffer => {
+  const tag: number[] = [];
+  for (let v = (n << 3) | 2; ; v >>>= 7) {
+    tag.push((v & 0x7f) | (v > 0x7f ? 0x80 : 0));
+    if (v <= 0x7f) break;
+  }
+  return Buffer.concat([Buffer.from(tag), Buffer.from([bytes.length]), bytes]);
+};
+
+function crx3WithKey(zipBuf: Buffer, publicKey: Buffer): Buffer {
+  const crxId = createHash("sha256").update(publicKey).digest().subarray(0, 16);
+  const header = Buffer.concat([field(2, field(1, publicKey)), bigField(10000, field(1, crxId))]);
+  const head = Buffer.alloc(12);
+  head.write("Cr24", 0, "latin1");
+  head.writeUInt32LE(3, 4);
+  head.writeUInt32LE(header.length, 8);
+  return Buffer.concat([head, header, zipBuf]);
+}
+
 const tmp = () => mkdtempSync(join(tmpdir(), "wg-ext-test-"));
 const manifest = JSON.stringify({ name: "Fake", version: "1.2" });
 
@@ -60,6 +90,13 @@ describe("extensions", () => {
       assert.deepEqual(extensionInfo(dest), { name: "Fake", version: "1.2" });
       assert.equal(readFileSync(join(dest, "js/a.js"), "utf-8"), "x".repeat(500));
     }
+  });
+
+  it("pins the manifest key to the crx's public key, so the extension keeps its store id", () => {
+    const publicKey = Buffer.from("not-a-real-key-but-bytes-are-bytes");
+    const dest = tmp();
+    unpackCrx(crx3WithKey(zip({ "manifest.json": manifest }), publicKey), dest);
+    assert.equal(JSON.parse(readFileSync(join(dest, "manifest.json"), "utf-8")).key, publicKey.toString("base64"));
   });
 
   it("refuses an archive that escapes the destination", () => {

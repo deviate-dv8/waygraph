@@ -54,6 +54,7 @@ export {
   withStubBefore,
   withStubAfter,
   withStubOnError,
+  withDialog,
   chainFlow,
   defineLayout,
   map,

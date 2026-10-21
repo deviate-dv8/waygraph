@@ -130,6 +130,7 @@
   "visible",
   "withBlockPace",
   "withDemoPace",
+  "withDialog",
   "withExpectedFailure",
   "withHighlightFixtures",
   "withHighlightStyle",
