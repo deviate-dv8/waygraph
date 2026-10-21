@@ -10,6 +10,7 @@ organizational only and never appear in a URL.
 ```sh
 .
 ├── package.json
+├── config/waygraph.config.ts          # baseUrl, tests, extensions, webServer - no playwright.config
 ├── src/
 │   ├── map/
 │   │   ├── (app_base)/                # your app (opened via file:// here)
@@ -20,10 +21,11 @@ organizational only and never appear in a URL.
 │   │   │   │   ├── index.html         # offline fixture page
 │   │   │   │   └── _methods/          # one action per Block
 │   │   │   └── docs/                  # a second page, same shape
-│   │   └── (external)/mailpit/        # a different origin (mail catcher)
+│   │   ├── (external)/mailpit/        # a different origin (mail catcher)
+│   │   └── (external)/hoppscotch/     # REST client, needs the hoppscotch extension
 │   ├── states/                        # Checkpoint types + mem keys
-│   └── flows/                         # example / shop / mail-verify
-└── tests/example.spec.ts
+│   └── flows/                         # example / shop / mail-verify / hoppscotch-*
+└── tests/                             # example, mail-verify, hoppscotch specs
 ```
 
 The underscore names (`_nav`, `_page`, `_sel`,
@@ -42,6 +44,40 @@ npm run auto           # explore by picking Blocks
 npm run check          # lint your Blocks and folders
 ```
 
+## Config
+
+Everything the project needs to run lives in one object, `config/waygraph.config.ts`:
+
+```ts
+export default defineConfig({
+  baseUrl: "http://localhost:3130",
+  extensions: ["hoppscotch"],                      // browser extensions to load
+  webServer: { command: "npm start", port: 3130 },  // started around test / run / demo / auto
+  playwright: { workers: 1, timeout: 180_000 },     // merged over waygraph's test defaults
+});
+```
+
+`waygraph test` builds the test runner's config from it, so a project has no `playwright.config.ts`.
+An older project that still has one keeps working and gets a deprecation note.
+
+## Testing a REST API
+
+`(external)/hoppscotch/` drives hoppscotch.io's REST client through its browser extension, so requests
+skip CORS and can hit `localhost`. Add `extensions: ["hoppscotch"]` to the config, then chain
+`set-method`, `set-url`, `set-headers`, `set-query-params`, `set-bearer-token`, `set-json-body`,
+`send-request`, `assert-status`, `read-response-body`, `assert-response-body` and the response-header
+Blocks. See `src/flows/hoppscotch-*.flow.ts` and [the reference](./REFERENCE#testing-a-rest-api-through-hoppscotch).
+
+## Updating an existing project
+
+```sh
+npm install waygraph@latest
+npx waygraph upgrade                          # dry run: new + differing scaffold files
+npx waygraph upgrade "src/map/(external)/hoppscotch" --apply
+```
+
+Only the paths you name are copied; differing files are replaced only with `--overwrite`.
+
 ## What to do where
 
 | Want to... | Look at |
@@ -49,7 +85,7 @@ npm run check          # lint your Blocks and folders
 | Add a page | Copy a folder under `src/map/`; keep the `_nav` / `_page` / `_sel` names |
 | Add an action | One file in that page's `_methods/` |
 | Confirm a state (button disabled, error shown) | `defineAssertBlock` with `Trait.disabled` / `Trait.enabled` |
-| Wire steps together | `src/flows/*.flow.ts` |
+| Wire steps together | `src/flows/*.flow.ts`, built with `map()` and `.end({ title, memStub, … })` |
 | Keep folders honest | `waygraph map` fails if a folder stops matching its URL |
 
 ## Coding agents
@@ -64,7 +100,7 @@ agent can dive an existing app into Blocks.
 ## Pointing it at your real app
 
 1. Change each `_nav.block.ts`'s `url` from the local `file://` path to a real one, and set a
-   real `baseUrl` if your Nav Blocks use relative paths (`waygraph.config.ts`, a `.env`, or
+   real `baseUrl` if your Nav Blocks use relative paths (`config/waygraph.config.ts`, a `.env`, or
    `package.json`'s `"waygraph"` field - see [Project config](./REFERENCE#project-config-waygraph-config-env)).
 1. Rename `(app_base)/` to your app's group; make each folder match the real URL.
 1. Run `waygraph map` - it tells you which folders don't match.

@@ -83,16 +83,16 @@ Same `.launch()` shape as Playwright. Puppeteer is out of scope.
 
 ## Multi-episode demos
 
-```sh
-import { chainFlow, withSessionReset, withTitle, withExpectedFailure } from "waygraph";
+```ts
+// each episode sets its own options in .end()
+const ownerFlow = engine.map().start()/* … */.end({ title: "Episode 1 - Owner", sessionReset: true });
+const viewerFlow = engine.map().start()/* … */.end({
+  title: "Episode 2 - Viewer",
+  sessionReset: true,
+  expectedFailure: "Viewer is locked out",
+});
 
-await chainFlow(
-withTitle(withSessionReset(ownerFlow), "Episode 1 - Owner"),
-withTitle(
-withExpectedFailure(withSessionReset(viewerFlow), "Viewer is locked out"),
-"Episode 2 - Viewer",
-),
-).run(context, mem);
+await chainFlow(ownerFlow, viewerFlow).run(context, mem);
 ```
 
 ## Verify / precondition

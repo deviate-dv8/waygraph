@@ -114,7 +114,7 @@ Interactive picker (same menus in CLI and GUI):
 [Auto explore](./auto).
 Demo ring captions / AC copy on flows:
 [Demo narration](./highlights)
-(`stubBefore` / `stubAfter` + `.flow.ts` fixtures).
+(`stubBefore` / `stubAfter` ctx stubs, chained on the Block in the flow).
 Floating checklist UX:
 [Todo dock UI](#todo-dock-ui).
 

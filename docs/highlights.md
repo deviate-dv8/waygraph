@@ -106,64 +106,47 @@ selector: ".complete-header",
 }
 ```
 
-Flow fixtures can override `slides` for a specific block
-(fixture wins over block): set `slides: [...]` on the block's fixture entry.
-Leave it unset to use the block's own slides.
 
-## Flow `.flow.ts` - fixtures + slides
+## In a flow: ctx stubs on the Block
 
-```sh
-import { withHighlightFixtures, withTitle } from "waygraph";
+A flow adds its own narration by chaining a ctx stub on the Block where it is used - the same
+`ctx` the Block's own stubs get. No separate fixture map:
 
-export const checkoutFlow = withHighlightFixtures(
-withTitle(engine.defineFlow([start, ...chain, end]), "Owner: Full Checkout"),
-{
-"submit-login": {
-stubBefore: {
-username: { label: "Demo user",  detail: "standard_user from Mem.", tag: "AC" },
-password: { label: "Password",   detail: "Filled from Mem credentials." },
-submit:   { label: "Sign in",    tag: "GATE" },
-},
-},
-"add-to-cart": {
-stubAfter: {
-badge: { label: "Cart now has the item", detail: "Badge updates after add.", tag: "AC" },
-},
-},
-"finish-order": {
-stubAfter: {
-thanks: { label: "Order placed", detail: "Completion header is the proof.", tag: "GATE" },
-},
-// slides: [...] here would override the block's own slides
-},
-},
-);
+```ts
+const SubmitLogin = SubmitLoginBlock
+  .stubBefore((ctx) => {
+    ctx.ring("username", { label: "Demo user", detail: "standard_user from Mem.", tag: "AC" });
+    ctx.ring("submit", { label: "Sign in", tag: "GATE" });
+  })
+  .stubAfter((ctx) => ctx.ring("badge", { label: "Signed in", tag: "AC", duration: true }));
+
+export const checkoutFlow = engine
+  .map()
+  .start()
+  .gotoPage(NavLoginBlock)
+  .method(SubmitLogin)
+  .end({ title: "Owner: Full Checkout" });
 ```
 
-Fixtures merge onto stub slots (label / detail / tag; selector optional -
-inherited from the block stub). Do not invent selectors the block never declared.
+A Block used twice gets one `const` and is reused. Selectors come from the Block's `*Sel`; do not invent
+ones the page does not have.
 
-## Reusable fixtures (HighlightFixtureMap)
+## Reusable stubs
 
-A `HighlightFixtureMap` is a plain object - define it once, reuse
-across multiple flows or export from a shared file:
+A stub is just a function of `ctx`, so share one the same way you share any function:
 
-```sh
-// src/fixtures/checkout-ac-fixtures.ts
-import type { HighlightFixtureMap } from "waygraph";
+```ts
+// src/stubs/checkout-ac.ts
+import type { StubCtx } from "waygraph";
 
-export const checkoutAcFixtures: HighlightFixtureMap = {
-"submit-login": {
-stubBefore: {
-username: { label: "AC-1: standard_user", tag: "AC" },
-},
-},
-};
+export const usernameAc = (ctx: StubCtx<any>) => ctx.ring("username", { label: "AC-1: standard_user", tag: "AC" });
 
 // src/flows/checkout.flow.ts
-import { checkoutAcFixtures } from "../fixtures/checkout-ac-fixtures.js";
-export const checkoutFlow = withHighlightFixtures(baseFlow, checkoutAcFixtures);
+.method(SubmitLoginBlock.stubBefore(usernameAc))
 ```
+
+`withHighlightFixtures(flow, map)` and `HighlightFixtureMap` still work (a static slot map keyed by Block name)
+but the ctx form above is the recommended one.
 
 ## TypeScript exports (waygraph@0.11.2)
 
