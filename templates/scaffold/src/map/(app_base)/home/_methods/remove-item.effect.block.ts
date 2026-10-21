@@ -7,13 +7,6 @@ import type { CartEmpty, ItemInCart } from "../../../../states/demo.states.js";
 import { SelectedItem } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
-/**
- * Kind: Effect
- * Helper: defineEffectBlock
- * Route: demo-web/methods/
- *
- * Removes one in-cart row. Auto menus one row per visible Remove button.
- */
 export const RemoveItemBlock = defineEffectBlock<ItemInCart, CartEmpty>({
   name: "remove-item",
   description: "Removes the mem-selected catalog item from the cart.",
@@ -35,7 +28,7 @@ export const RemoveItemBlock = defineEffectBlock<ItemInCart, CartEmpty>({
     ],
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
-    const buttons = page.locator("button.remove:not([hidden])");
+    const buttons = page.locator(DemoSel.removeButtons);
     const n = await buttons.count();
     const out: WaygraphInstanceOption[] = [];
     for (let i = 0; i < n; i++) {

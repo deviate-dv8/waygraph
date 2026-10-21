@@ -4,17 +4,7 @@ import type { MailpitInbox, MailpitMessageOpen } from "../../../../states/demo.s
 import { ExpectedRecipient } from "../../../../states/demo.mem-keys.js";
 import { MailpitSel } from "../_sel.js";
 
-/**
- * Kind: Method
- * Helper: defineMethodBlock
- * Route: demo-external/mailpit/_methods/
- *
- * Opens the newest inbox row addressed to the mem-set recipient (not bare
- * inbox position - a prior run's leftover mail for a different recipient
- * would otherwise pick the wrong row). UI click only, no mail-catcher REST
- * API - the row itself is a real link (`page.waitForURL` sees the client-side
- * route change the same as any other in-page navigation).
- */
+/** Opens the newest message for the expected recipient (matched by email, not position). */
 export const OpenMessageBlock = defineMethodBlock<MailpitInbox, MailpitMessageOpen>({
   name: "open-message",
   description: "Opens the newest message addressed to the expected recipient.",

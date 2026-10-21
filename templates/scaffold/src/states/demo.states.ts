@@ -20,5 +20,4 @@ export type MailpitMessageOpen = Checkpoint<"MailpitMessageOpen">;
 export type HoppscotchSettings = Checkpoint<"HoppscotchSettings">;
 export type HoppscotchRest = Checkpoint<"HoppscotchRest">;
 
-/** Reached via src/map/(app_base)/docs/ - see openspec/changes/waygraph-map. */
 export type Docs = Checkpoint<"Docs">;

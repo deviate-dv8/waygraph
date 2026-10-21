@@ -10,33 +10,7 @@ import { MailpitSel } from "../map/(external)/mailpit/_sel.js";
 
 const engine = new Engine();
 
-/**
- * Cross-origin mail demo, QA-rich: navigate to a real Mailpit inbox (a real,
- * separate web UI - not this app), confirm the email actually arrived,
- * open it, confirm its body says what it's supposed to, read a link
- * straight out of the DOM, then navigate back into the app with it - six
- * atomic Blocks, no mail-catcher REST API anywhere.
- *
- * The four mail-reading Blocks (`assert-email-received`, `open-message`,
- * `assert-email-content`, `extract-email-link`) are reusable across any
- * number of different email scenarios in a project (signup confirmation,
- * password reset, magic link, ...) with zero new Blocks per scenario - only
- * mem varies per run: `ExpectedRecipient` (who), `ExpectedLinkPattern`
- * (which link in the body to follow), `ExpectedEmailContent` (what the body
- * should say). This particular flow wires them to this scaffold's own
- * "verified" landing route (`nav-verification-link`, app-specific by
- * nature - a different scenario would use a different landing Nav) - see
- * tests/mail-verify.spec.ts for two different scenarios driven through the
- * same four mail-reading Blocks.
- *
- * Needs a real Mailpit instance reachable at WAYGRAPH_MAIL_URL (default
- * http://127.0.0.1:8025) with a message already waiting for
- * ExpectedRecipient's email - see tests/mail-verify.spec.ts for how the test
- * drives this end to end (spins up a real Mailpit container, sends a real
- * email, then runs this exact flow) - including the negative cases: no email
- * arriving, or content that doesn't match, each fail loud, naming
- * themselves, not a silent pass.
- */
+/** Needs a Mailpit at WAYGRAPH_MAIL_URL (default http://127.0.0.1:8025); tests/mail-verify.spec.ts starts one. */
 export const mailVerifyFlow = engine
   .map()
   .start()

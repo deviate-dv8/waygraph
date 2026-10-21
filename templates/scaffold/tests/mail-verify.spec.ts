@@ -6,17 +6,8 @@ import { mailVerifyFlow } from "../src/flows/mail-verify.flow.js";
 import { ExpectedRecipient, ExpectedLinkPattern, ExpectedEmailContent } from "../src/states/demo.mem-keys.js";
 import { HOME_URL } from "../src/map/(app_base)/home/_sel.js";
 
-/**
- * This scaffold has no real backend, so these tests play the role of "the
- * app sent a verification email" themselves: spin up a real, throwaway
- * Mailpit container, send a real SMTP message, then run mailVerifyFlow for
- * real - a real cross-origin browser hop into Mailpit's own web UI and
- * back, no mail-catcher REST API anywhere. Covers the happy path, both
- * failure paths its QA-facing asserts exist for (no email arrived, wrong
- * content), and - the actual point of making the mail-reading Blocks
- * mem-driven - a second, entirely different email scenario running through
- * the exact same four Blocks with zero new code.
- */
+// Plays "the app sent a verification email": starts a throwaway Mailpit container, sends a real SMTP message,
+// then runs mailVerifyFlow against it, including the no-email and wrong-content failure paths.
 
 function runMailpit(): { containerId: string; smtpPort: number; httpPort: number } {
   const run = spawnSync("docker", ["run", "--rm", "-d", "-p", "0:1025", "-p", "0:8025", "axllent/mailpit"], {

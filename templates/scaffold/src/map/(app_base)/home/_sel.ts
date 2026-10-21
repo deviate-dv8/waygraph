@@ -7,6 +7,8 @@ export const DemoSel = {
   cartCount: "[data-test=cart-count]",
   catalog: "#catalog",
   clear: "[data-test=clear-cart]",
+  addButtons: "button.add:not([hidden])",
+  removeButtons: "button.remove:not([hidden])",
   addBtn: (id: string) => `[data-test=add-${id}]`,
   removeBtn: (id: string) => `[data-test=remove-${id}]`,
   verifiedBanner: "#verified-banner",

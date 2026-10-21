@@ -6,15 +6,6 @@ import { RemoveItemBlock } from "./_methods/remove-item.effect.block.js";
 import { ClearCartBlock } from "./_methods/clear-cart.method.block.js";
 import { AssertHelloBlock } from "./_methods/assert-hello.method.block.js";
 
-/**
- * Kind: Page
- * Helper: definePageBlock
- * Route: (app_base)/home/
- *
- * Hub for the offline home screen. Methods hang here for docs/auto grouping;
- * edges in flows still reference the method Blocks directly.
- * Arrival-only (nav-home already landed on Home).
- */
 export const HomePageBlock = definePageBlock<Home>({
   name: "page-home",
   description: "Offline home hub - add/remove effects, clear, assert-hello.",

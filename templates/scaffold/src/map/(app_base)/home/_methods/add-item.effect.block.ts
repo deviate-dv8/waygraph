@@ -7,14 +7,7 @@ import type { CanAddItem, ItemInCart } from "../../../../states/demo.states.js";
 import { SelectedItem } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
-/**
- * Kind: Effect
- * Helper: defineEffectBlock
- * Route: demo-web/methods/
- *
- * Mutates one catalog row from mem. `waygraph auto` lists one "Add …" row per
- * live Add button via instanceOptions.
- */
+/** `waygraph auto` lists one "Add …" row per live Add button via `instanceOptions`. */
 export const AddItemBlock = defineEffectBlock<CanAddItem, ItemInCart>({
   name: "add-item",
   description: "Adds the mem-selected catalog item to the cart.",
@@ -36,7 +29,7 @@ export const AddItemBlock = defineEffectBlock<CanAddItem, ItemInCart>({
     ],
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
-    const buttons = page.locator("button.add:not([hidden])");
+    const buttons = page.locator(DemoSel.addButtons);
     const n = await buttons.count();
     const out: WaygraphInstanceOption[] = [];
     for (let i = 0; i < n; i++) {

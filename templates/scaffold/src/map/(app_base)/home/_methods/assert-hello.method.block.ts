@@ -2,15 +2,7 @@ import { defineAssertBlock, Trait } from "waygraph";
 import type { Home } from "../../../../states/demo.states.js";
 import { DemoSel } from "../_sel.js";
 
-/**
- * Kind: Assert
- * Helper: defineAssertBlock
- * Route: demo-web/methods/
- *
- * Self-loop-only "verify what's already on the page" check - no hand-written
- * act/resolve to accidentally do a second thing. Same-URL assert after nav,
- * with stubs + fixtures + a YAP slide.
- */
+/** Heading still shows after arrival; the slide is a YAP caption for the demo overlay. */
 export const AssertHelloBlock = defineAssertBlock<Home>({
   name: "assert-hello",
   description: "Confirms the hello heading is still visible after arrival.",
