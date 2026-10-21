@@ -1,9 +1,10 @@
-// Starts/stops a project's own playwright.config `webServer` around `waygraph run`/`demo`/`auto`,
+// Starts/stops a project's `webServer` (waygraph.config, or a legacy playwright.config) around `waygraph run`/`demo`/`auto`,
 // the same block `waygraph test` already honors.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { spawn, type ChildProcess } from "node:child_process";
+import { loadWaygraphConfig } from "./config.js";
 
 /** The subset of Playwright's `TestConfigWebServer` this drives - same field names. */
 export interface WebServerConfig {
@@ -27,6 +28,8 @@ const CONFIG_FILES = [
 ];
 
 async function loadWebServerConfigs(projectDir: string): Promise<WebServerConfig[]> {
+  const fromWaygraph = (await loadWaygraphConfig(projectDir))?.webServer;
+  if (fromWaygraph) return Array.isArray(fromWaygraph) ? fromWaygraph : [fromWaygraph];
   for (const name of CONFIG_FILES) {
     const p = join(projectDir, name);
     if (!existsSync(p)) continue;

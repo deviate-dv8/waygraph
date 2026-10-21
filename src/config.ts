@@ -6,15 +6,23 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { extensionPathsFromEnv } from "./browser.js";
+import type { PlaywrightTestConfig } from "@playwright/test";
 import { loadEnvFiles } from "./env-file.js";
 import { resolveExtensions } from "./extensions.js";
 import type { ExtensionSpec } from "./extensions.js";
+import type { WebServerConfig } from "./webserver.js";
 
 export interface WaygraphConfig {
   /** Same value `resolveBaseUrl` would otherwise read from package.json's `waygraph.baseUrl`. */
   baseUrl?: string;
   /** Chromium extensions to load in every run: `"hoppscotch"`, a Chrome Web Store id, or `{ path }` to an unpacked one. */
   extensions?: ExtensionSpec[];
+  /** Folder of test files, relative to the project. Default `"tests"`. */
+  testDir?: string;
+  /** App to start around `waygraph test`, `run`, `demo` and `auto` (same fields as Playwright's `webServer`). */
+  webServer?: WebServerConfig | WebServerConfig[];
+  /** Anything else for the test runner, e.g. `workers`, `timeout`, `reporter`, `use: { video: "on" }`. Merged over waygraph's defaults. */
+  playwright?: PlaywrightTestConfig;
 }
 
 /** Identity helper, purely for editor type-checking/autocomplete - same role `defineConfig` plays
@@ -23,13 +31,9 @@ export function defineConfig(config: WaygraphConfig): WaygraphConfig {
   return config;
 }
 
-const CONFIG_FILENAMES = [
-  "waygraph.config.ts",
-  "waygraph.config.mts",
-  "waygraph.config.mjs",
-  "waygraph.config.js",
-  "waygraph.config.cjs",
-];
+const CONFIG_NAMES = ["waygraph.config.ts", "waygraph.config.mts", "waygraph.config.mjs", "waygraph.config.js", "waygraph.config.cjs"];
+/** `config/` first, then the project root. */
+const CONFIG_FILENAMES = [...CONFIG_NAMES.map((n) => join("config", n)), ...CONFIG_NAMES];
 
 /**
  * Looks for the first `waygraph.config.*` in `projectDir` and imports it - `.ts` works

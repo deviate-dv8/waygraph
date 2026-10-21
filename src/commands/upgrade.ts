@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { packageRoot } from "../cli/util.js";
 
 // Filled in per project at init, so they never compare equal to the template.
-const SKIP = new Set(["package.json", "playwright.config.ts"]);
+const SKIP = new Set(["package.json", join("config", "waygraph.config.ts")]);
 
 function walk(dir: string, base = dir): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -58,6 +58,11 @@ export async function upgradeCase(args: string[]): Promise<void> {
   for (const rel of added) console.log(`  new         ${rel}`);
   for (const rel of differing) console.log(`  differs     ${rel}`);
   if (!depStale && added.length === 0 && differing.length === 0) console.log("  up to date");
+
+  const legacy = ["ts", "mts", "js", "mjs", "cjs"].find((e) => existsSync(join(proj, `playwright.config.${e}`)));
+  if (legacy) {
+    console.log(`  deprecated  playwright.config.${legacy} - move its settings into config/waygraph.config.ts (testDir, webServer, playwright: { ... })`);
+  }
 
   if (flags.has("--diff")) {
     for (const rel of differing.filter((r) => paths.length === 0 || selected(r))) {

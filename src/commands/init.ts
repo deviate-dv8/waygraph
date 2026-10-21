@@ -39,11 +39,8 @@ function initCommand(projectName: string): void {
   const ownVersion = JSON.parse(readFileSync(join(packageRoot(), "package.json"), "utf-8")).version;
   pkg.dependencies.waygraph = `^${ownVersion}`;
   writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + "\n");
-  const playwrightConfigPath = join(targetDir, "playwright.config.ts");
-  writeFileSync(
-    playwrightConfigPath,
-    readFileSync(playwrightConfigPath, "utf-8").replaceAll("__APP_BASE_URL__", appBaseUrl),
-  );
+  const configPath = join(targetDir, "config", "waygraph.config.ts");
+  writeFileSync(configPath, readFileSync(configPath, "utf-8").replaceAll("__APP_BASE_URL__", appBaseUrl));
   console.log(`Scaffolded ${pkgName}/`);
   console.log("");
   console.log(`  cd ${relative(process.cwd(), targetDir) || pkgName}`);

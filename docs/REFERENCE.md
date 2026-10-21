@@ -81,6 +81,27 @@ over anything in a `.env` file - loading one only fills a gap, never silently ov
 value you actually set. This replaces the hack of manually re-exporting an FE project's own
 `.env` values, or duplicating them into `package.json`, just to get waygraph to see them.
 
+### `config/waygraph.config.ts` replaces `playwright.config.ts`
+
+The scaffold keeps all settings in one object, `config/waygraph.config.ts` (the project root works too).
+`waygraph test` builds the test runner's config from it, so a project needs no `playwright.config.ts`:
+
+```typescript
+export default defineConfig({
+  baseUrl: "http://localhost:3130",
+  testDir: "tests",                       // default
+  webServer: { command: "npm start", port: 3130 },
+  extensions: ["hoppscotch"],
+  playwright: { workers: 1, timeout: 180_000, use: { video: "on" } },   // merged over the defaults
+});
+```
+
+Defaults: `fullyParallel`, `list` + `html` reporters, `trace: "retain-on-failure"`, `use.baseURL` from `baseUrl`
+(`WAYGRAPH_BASE_URL` still wins). `webServer` is also started around `run`, `demo` and `auto`.
+A project that still has a `playwright.config.*` keeps working: `waygraph test` uses it and prints a deprecation
+note, and `waygraph upgrade` lists it as deprecated.
+Editor integrations that look for a `playwright.config.ts` (the VS Code Playwright extension) won't find one; use `waygraph test` or `npm test`.
+
 ### Browser extensions
 
 ```typescript

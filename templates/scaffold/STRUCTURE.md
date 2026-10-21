@@ -7,6 +7,7 @@ Next.js route groups) and never appear in a URL or Checkpoint name.
 ```text
 .
 ├── package.json
+├── config/waygraph.config.ts          # baseUrl, tests, extensions, webServer - no playwright.config
 ├── src/
 │   ├── map/
 │   │   ├── (app_base)/                # your app (opened via file:// here)

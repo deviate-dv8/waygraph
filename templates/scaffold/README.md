@@ -25,8 +25,10 @@ one Block per action, flows in `src/flows/`.
 ## Point it at your real app
 
 Change each `_nav.block.ts`'s `url` from the local `file://` path to a real one, and set a real
-`baseUrl` if your Nav Blocks use relative paths (`waygraph.config.ts`, a `.env`, or
-`package.json`'s `"waygraph"` field - see the main docs' "Project config" section). Keep each
+`baseUrl` if your Nav Blocks use relative paths (`config/waygraph.config.ts`, a `.env`, or
+`package.json`'s `"waygraph"` field - see the main docs' "Project config" section). That file also
+holds the test settings (`testDir`, `webServer`, `playwright: { workers, timeout, ... }`), so the
+project needs no `playwright.config.ts`. Keep each
 `src/map/` folder matching the URL it represents (`waygraph map` enforces this).
 
 Docs: https://deviate-dv8.github.io/waygraph/

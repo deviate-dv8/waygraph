@@ -3,6 +3,7 @@ import { configuredExtensions } from "../config.js";
 import { runInherited } from "../cli/util.js";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
+import { packageRoot } from "../cli/util.js";
 
 export async function testCase(args: string[]): Promise<void> {
       const rest = args.slice(1);
@@ -31,12 +32,21 @@ export async function testCase(args: string[]): Promise<void> {
       const extensions = await configuredExtensions(proj);
       if (extensions.length > 0) process.env.WAYGRAPH_EXTENSIONS = extensions.join(",");
 
+      // No playwright.config in the project: waygraph builds one from config/waygraph.config.ts.
+      const hasOwnConfig = ["ts", "mts", "js", "mjs", "cjs"].some((e) => existsSync(join(proj, `playwright.config.${e}`)));
+      if (hasOwnConfig) {
+        console.error("waygraph: playwright.config is deprecated - move its settings into config/waygraph.config.ts");
+      } else {
+        process.env.WAYGRAPH_PROJECT_DIR = proj;
+      }
+      const configArgs = hasOwnConfig ? [] : ["-c", join(packageRoot(), "dist", "playwright.config.js")];
+
       const wantsUi = rest[0] === "ui" || rest.includes("--ui");
       const forwarded = rest[0] === "ui" ? rest.slice(1) : rest;
       const pwArgs =
         wantsUi && !forwarded.includes("--ui")
-          ? ["test", "--ui", ...forwarded]
-          : ["test", ...forwarded];
+          ? ["test", ...configArgs, "--ui", ...forwarded]
+          : ["test", ...configArgs, ...forwarded];
       process.exitCode = await runPw(pwArgs);
       return;
 }
