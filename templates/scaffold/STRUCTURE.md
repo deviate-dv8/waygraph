@@ -41,7 +41,7 @@ page folder uses, so any agent or teammate knows where to look without asking.
 | Add an action on a page | one file in that page's `_methods/` |
 | Verify a state (button disabled, error shown) | `defineAssertBlock` + `Trait.disabled` / `Trait.enabled` |
 | Wire steps together | `src/flows/*.flow.ts` |
-| Give a flow fake data | `registerMemStub(key, fake)` + `withMemStub(flow)` (docs: docs/REFERENCE.md, "memStub") |
+| Give a flow fake data | `registerMemStub(key, fake)` + `memStub: true` in the flow's options (docs: docs/REFERENCE.md, "memStub") |
 | Explore by hand | `npm run auto` (headed) or `npm run auto:cli` |
 | Check your work | `npm run check`, `npm run graph`, `waygraph map` |
 
