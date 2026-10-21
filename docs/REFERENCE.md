@@ -102,8 +102,24 @@ Limits, because Chromium only loads extensions into a persistent profile:
 - An extension runs with its manifest permissions on every page of the run (Hoppscotch's asks for
   `<all_urls>` and cookies). Only list ones you trust, and pin `sha256` in shared configs.
 
+### Testing a REST API through Hoppscotch
+
 The scaffold's `(external)/hoppscotch` map drives Hoppscotch's REST client through its extension,
-so requests skip CORS.
+so requests skip CORS and can hit `localhost` APIs. Chain the blocks you need and set their `mem`
+keys (`flows/hoppscotch-get.flow.ts` and `hoppscotch-post.flow.ts` are working examples):
+
+| Block | Reads from `mem` |
+|---|---|
+| `set-method` | `RequestMethod` (`"POST"`, `"PUT"`, ...) |
+| `set-url` | `RequestUrl` |
+| `set-headers` | `RequestHeaders` (`{ name: value }`) |
+| `set-json-body` | `RequestBody` (JSON text) |
+| `send-request` | - |
+| `assert-status` | `ExpectedStatus` |
+| `read-response-body` | writes `ResponseBody` |
+| `assert-response-body` | `ExpectedResponseText` (substring, whitespace ignored) |
+
+Not covered yet: auth tab, query params, form/multipart bodies, response headers.
 
 ## Core concepts
 

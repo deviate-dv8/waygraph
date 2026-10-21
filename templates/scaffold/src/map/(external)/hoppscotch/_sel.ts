@@ -1,7 +1,16 @@
 export const HoppscotchSel = {
   urlInput: ".cm-content",
   send: "#send",
+  methodInput: "input#method",
+  tab: (name: string) => `text="${name}"`,
+  keyCell: '[placeholder^="Key"]:visible',
+  valueCell: '[placeholder^="Value"]:visible',
+  contentTypeMenu: "text=Content Type >> xpath=following::button[1]",
+  editor: ".cm-content",
+  visibleEditor: ".cm-content:visible",
+  status: "text=/Status:\\s*\\d+/",
+  responseEditor: "text=Response Body >> xpath=following::*[contains(@class,'cm-content')][1]",
+  rawTab: "text=Raw",
   interceptorHeading: "h4:text('Interceptor')",
-  statusOk: "text=/Status:\\s*200/",
   extensionInterceptor: "text=/Browser extension: v/",
 } as const;

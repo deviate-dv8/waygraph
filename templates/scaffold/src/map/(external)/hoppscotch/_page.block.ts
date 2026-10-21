@@ -1,16 +1,28 @@
 import { definePageBlock, Trait } from "waygraph";
 import type { HoppscotchRest } from "../../../states/demo.states.js";
+import { SetMethodBlock } from "./_methods/set-method.method.block.js";
+import { SetUrlBlock } from "./_methods/set-url.method.block.js";
+import { SetHeadersBlock } from "./_methods/set-headers.method.block.js";
+import { SetJsonBodyBlock } from "./_methods/set-json-body.method.block.js";
 import { SendRequestBlock } from "./_methods/send-request.method.block.js";
-import { AssertResponseOkBlock } from "./_methods/assert-response-ok.method.block.js";
+import { AssertStatusBlock } from "./_methods/assert-status.method.block.js";
+import { ReadResponseBodyBlock } from "./_methods/read-response-body.method.block.js";
+import { AssertResponseBodyBlock } from "./_methods/assert-response-body.method.block.js";
 import { HoppscotchSel } from "./_sel.js";
 
 export const HoppscotchRestPageBlock = definePageBlock<HoppscotchRest>({
   name: "page-hoppscotch-rest",
-  description: "Hoppscotch REST client - send a request, check the response.",
+  description: "Hoppscotch REST client - build a request, send it, check the response.",
   checkpoint: "HoppscotchRest",
   verify: [Trait.visible(HoppscotchSel.send)],
   methods: {
+    setMethod: () => SetMethodBlock,
+    setUrl: () => SetUrlBlock,
+    setHeaders: () => SetHeadersBlock,
+    setJsonBody: () => SetJsonBodyBlock,
     sendRequest: () => SendRequestBlock,
-    assertResponseOk: () => AssertResponseOkBlock,
+    assertStatus: () => AssertStatusBlock,
+    readResponseBody: () => ReadResponseBodyBlock,
+    assertResponseBody: () => AssertResponseBodyBlock,
   },
 });

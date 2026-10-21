@@ -30,5 +30,13 @@ export const ExpectedLinkPattern = key<string>("demo.expectedLinkPattern");
  */
 export const ExpectedEmailContent = key<string>("demo.expectedEmailContent");
 
-/** The URL send-request types into Hoppscotch's REST bar. */
+export const RequestMethod = key<string>("demo.requestMethod");
 export const RequestUrl = key<string>("demo.requestUrl");
+export const RequestHeaders = key<Record<string, string>>("demo.requestHeaders");
+/** Raw JSON text typed into the request body editor. */
+export const RequestBody = key<string>("demo.requestBody");
+export const ExpectedStatus = key<number>("demo.expectedStatus");
+/** Substring the response body must contain. */
+export const ExpectedResponseText = key<string>("demo.expectedResponseText");
+/** The raw response body, set by read-response-body. */
+export const ResponseBody = key<string>("demo.responseBody");
