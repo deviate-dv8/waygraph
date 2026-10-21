@@ -207,6 +207,24 @@ All four verified against a real scratch project (`waygraph init` into a throwaw
 resolution, explicit env winning over both, `shopFlow` running end-to-end with zero `--data`,
 and `waygraph check`/`list` reporting no new warnings.
 
+### Checkpoints as values (backlogged - a breaking change, decide before 1.0.0)
+
+Today a Checkpoint is written twice: a type (`type Home = Checkpoint<"Home">`) and, in each Block, the tag
+string (`checkpoint: "Home"`). Types are erased at runtime, so the string can't be derived from the type
+without codegen. Idea: declare each Checkpoint once as a value, `export const Home = checkpoint("Home")`, and
+pass the value everywhere:
+
+- `defineNavBlock` / `definePageBlock` / `defineAssertBlock`: `checkpoint: Home` (type inferred from the value).
+- `defineMethodBlock` / `defineEffectBlock`: new `from: Home` (or `[Home, CartEmpty]` for a union) and `to: ItemInCart`,
+  replacing `<In, Out>`. No type imports or type arguments in Block files.
+- Same line count in `src/states/` (a `const` replaces the `type`); `typeof Home` where a type is still needed.
+- Each Block records its tag at runtime (like `__waygraphNavFrom`), so `waygraph graph` stops regex-parsing
+  `<In, Out>` out of source, which silently skipped Blocks without a type argument.
+
+It is a shift in how Blocks are written, closer to React's class-to-function move than a patch: every existing
+Block file changes. If done, keep the string and `<In, Out>` forms working for a deprecation period and add a
+`waygraph upgrade` codemod. Not started.
+
 ### Network tab mocking (backlogged, not yet researched)
 
 The network tab overlay (`src/runner/network-capture.js`, `src/runner/inpage/network.js`) is
