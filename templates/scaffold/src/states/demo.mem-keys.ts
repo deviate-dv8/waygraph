@@ -33,6 +33,8 @@ export const ExpectedEmailContent = key<string>("demo.expectedEmailContent");
 export const RequestMethod = key<string>("demo.requestMethod");
 export const RequestUrl = key<string>("demo.requestUrl");
 export const RequestHeaders = key<Record<string, string>>("demo.requestHeaders");
+export const RequestParams = key<Record<string, string>>("demo.requestParams");
+export const RequestBearerToken = key<string>("demo.requestBearerToken");
 /** Raw JSON text typed into the request body editor. */
 export const RequestBody = key<string>("demo.requestBody");
 export const ExpectedStatus = key<number>("demo.expectedStatus");
@@ -40,3 +42,6 @@ export const ExpectedStatus = key<number>("demo.expectedStatus");
 export const ExpectedResponseText = key<string>("demo.expectedResponseText");
 /** The raw response body, set by read-response-body. */
 export const ResponseBody = key<string>("demo.responseBody");
+/** Response headers (lower-cased names), set by read-response-headers. */
+export const ResponseHeaders = key<Record<string, string>>("demo.responseHeaders");
+export const ExpectedResponseHeader = keyGroup<{ name: string; value: string }>("demo.expectedResponseHeader");

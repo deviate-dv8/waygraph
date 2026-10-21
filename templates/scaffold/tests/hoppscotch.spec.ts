@@ -2,13 +2,17 @@ import { test, expect } from "@playwright/test";
 import { createServer, type Server } from "node:http";
 import { MemPage, checkpoint } from "waygraph";
 import { hoppscotchGetFlow } from "../src/flows/hoppscotch-get.flow.js";
+import { hoppscotchAuthFlow } from "../src/flows/hoppscotch-auth.flow.js";
 import { hoppscotchPostFlow } from "../src/flows/hoppscotch-post.flow.js";
 import {
+  ExpectedResponseHeader,
   ExpectedResponseText,
   ExpectedStatus,
+  RequestBearerToken,
   RequestBody,
   RequestHeaders,
   RequestMethod,
+  RequestParams,
   RequestUrl,
 } from "../src/states/demo.mem-keys.js";
 
@@ -23,7 +27,8 @@ test.beforeAll(async () => {
     req.on("end", () => {
       res.statusCode = req.method === "POST" ? 201 : 200;
       res.setHeader("content-type", "application/json");
-      res.end(JSON.stringify({ method: req.method, token: req.headers["x-token"], body }));
+      res.setHeader("x-request-id", "req-42");
+      res.end(JSON.stringify({ method: req.method, url: req.url, token: req.headers["x-token"], auth: req.headers.authorization, body }));
     });
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -69,4 +74,23 @@ test("a response body without the expected text fails the flow, naming assert-re
   mem.set(ExpectedStatus, 201);
   mem.set(ExpectedResponseText, '"token":"nope"');
   await expect(hoppscotchPostFlow.run(mem, {})).rejects.toThrow(/assert-response-body/);
+});
+
+const authMem = (headerValue: string): MemPage => {
+  const mem = new MemPage();
+  mem.set(RequestUrl, apiUrl);
+  mem.set(RequestParams, { q: "waygraph" });
+  mem.set(RequestBearerToken, "tok-9");
+  mem.set(ExpectedStatus, 200);
+  mem.set(ExpectedResponseText, '"url":"/items?q=waygraph","auth":"Bearer tok-9"');
+  mem.set(ExpectedResponseHeader({ name: "X-Request-Id", value: headerValue }));
+  return mem;
+};
+
+test("query params and a bearer token reach the API; a response header is checked", async () => {
+  expect(await hoppscotchAuthFlow.run(authMem("req-42"), {})).toEqual(checkpoint("HoppscotchRest"));
+});
+
+test("a wrong response header value fails the flow, naming assert-response-header", async () => {
+  await expect(hoppscotchAuthFlow.run(authMem("other"), {})).rejects.toThrow(/assert-response-header/);
 });

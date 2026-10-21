@@ -106,20 +106,24 @@ Limits, because Chromium only loads extensions into a persistent profile:
 
 The scaffold's `(external)/hoppscotch` map drives Hoppscotch's REST client through its extension,
 so requests skip CORS and can hit `localhost` APIs. Chain the blocks you need and set their `mem`
-keys (`flows/hoppscotch-get.flow.ts` and `hoppscotch-post.flow.ts` are working examples):
+keys (`flows/hoppscotch-get`, `-post` and `-auth` are working examples):
 
 | Block | Reads from `mem` |
 |---|---|
 | `set-method` | `RequestMethod` (`"POST"`, `"PUT"`, ...) |
 | `set-url` | `RequestUrl` |
 | `set-headers` | `RequestHeaders` (`{ name: value }`) |
+| `set-query-params` | `RequestParams` (`{ name: value }`) |
+| `set-bearer-token` | `RequestBearerToken` |
 | `set-json-body` | `RequestBody` (JSON text) |
 | `send-request` | - |
 | `assert-status` | `ExpectedStatus` |
+| `read-response-headers` | writes `ResponseHeaders` (lower-cased names) |
+| `assert-response-header` | `ExpectedResponseHeader({ name, value })` |
 | `read-response-body` | writes `ResponseBody` |
 | `assert-response-body` | `ExpectedResponseText` (substring, whitespace ignored) |
 
-Not covered yet: auth tab, query params, form/multipart bodies, response headers.
+Not covered yet: other auth types (Basic, API key, OAuth), form/multipart bodies, non-JSON content types.
 
 ## Core concepts
 

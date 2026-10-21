@@ -8,6 +8,10 @@ import { SendRequestBlock } from "./_methods/send-request.method.block.js";
 import { AssertStatusBlock } from "./_methods/assert-status.method.block.js";
 import { ReadResponseBodyBlock } from "./_methods/read-response-body.method.block.js";
 import { AssertResponseBodyBlock } from "./_methods/assert-response-body.method.block.js";
+import { SetQueryParamsBlock } from "./_methods/set-query-params.method.block.js";
+import { SetBearerTokenBlock } from "./_methods/set-bearer-token.method.block.js";
+import { ReadResponseHeadersBlock } from "./_methods/read-response-headers.method.block.js";
+import { AssertResponseHeaderBlock } from "./_methods/assert-response-header.method.block.js";
 import { HoppscotchSel } from "./_sel.js";
 
 export const HoppscotchRestPageBlock = definePageBlock<HoppscotchRest>({
@@ -19,9 +23,13 @@ export const HoppscotchRestPageBlock = definePageBlock<HoppscotchRest>({
     setMethod: () => SetMethodBlock,
     setUrl: () => SetUrlBlock,
     setHeaders: () => SetHeadersBlock,
+    setQueryParams: () => SetQueryParamsBlock,
+    setBearerToken: () => SetBearerTokenBlock,
     setJsonBody: () => SetJsonBodyBlock,
     sendRequest: () => SendRequestBlock,
     assertStatus: () => AssertStatusBlock,
+    readResponseHeaders: () => ReadResponseHeadersBlock,
+    assertResponseHeader: () => AssertResponseHeaderBlock,
     readResponseBody: () => ReadResponseBodyBlock,
     assertResponseBody: () => AssertResponseBodyBlock,
   },
