@@ -1,4 +1,5 @@
 import { Engine } from "waygraph";
+import config from "../../config/waygraph.config.js";
 import { NavMailpitInboxBlock } from "../map/(external)/mailpit/_nav.block.js";
 import { AssertEmailReceivedBlock } from "../map/(external)/mailpit/_methods/assert-email-received.method.block.js";
 import { OpenMessageBlock } from "../map/(external)/mailpit/_methods/open-message.method.block.js";
@@ -8,7 +9,7 @@ import { NavVerificationLinkBlock } from "../map/(app_base)/home/nav-verificatio
 import "../map/(external)/mailpit/_page.block.js";
 import { MailpitSel } from "../map/(external)/mailpit/_sel.js";
 
-const engine = new Engine();
+const engine = new Engine(config);
 
 /** Needs a Mailpit at WAYGRAPH_MAIL_URL (default http://127.0.0.1:8025); tests/mail-verify.spec.ts starts one. */
 export const mailVerifyFlow = engine

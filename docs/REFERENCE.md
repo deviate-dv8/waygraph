@@ -98,6 +98,10 @@ export default defineConfig({
 
 Defaults: `fullyParallel`, `list` + `html` reporters, `trace: "retain-on-failure"`, `use.baseURL` from `baseUrl`
 (`WAYGRAPH_BASE_URL` still wins). `webServer` is also started around `run`, `demo` and `auto`.
+Flows pass the same object to the Engine, so it is imported rather than read out of band:
+`import config from "../../config/waygraph.config.js"; const engine = new Engine(config);`. The Engine uses
+`baseUrl` and `extensions` for the browser it launches itself (`flow.run(mem)`); `waygraph test`, `run`, `demo`
+and `auto` read the file too, for everything else.
 A project that still has a `playwright.config.*` keeps working: `waygraph test` uses it and prints a deprecation
 note, and `waygraph upgrade` lists it as deprecated.
 Editor integrations that look for a `playwright.config.ts` (the VS Code Playwright extension) won't find one; use `waygraph test` or `npm test`.

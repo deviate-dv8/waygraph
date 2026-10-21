@@ -1,4 +1,5 @@
 import { Engine } from "waygraph";
+import config from "../../config/waygraph.config.js";
 import { NavHoppscotchSettingsBlock } from "../map/(external)/hoppscotch/settings/_nav.block.js";
 import { PickExtensionInterceptorBlock } from "../map/(external)/hoppscotch/_methods/pick-extension-interceptor.method.block.js";
 import { NavHoppscotchRestBlock } from "../map/(external)/hoppscotch/_nav.block.js";
@@ -12,7 +13,7 @@ import { ReadResponseBodyBlock } from "../map/(external)/hoppscotch/_methods/rea
 import { AssertResponseBodyBlock } from "../map/(external)/hoppscotch/_methods/assert-response-body.method.block.js";
 import "../map/(external)/hoppscotch/_page.block.js";
 
-const engine = new Engine();
+const engine = new Engine(config);
 
 /** POST JSON with a header, check the status and the response body. Needs `extensions: ["hoppscotch"]`. */
 export const hoppscotchPostFlow = engine

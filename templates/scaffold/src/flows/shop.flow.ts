@@ -1,4 +1,5 @@
 import { Engine } from "waygraph";
+import config from "../../config/waygraph.config.js";
 import { DemoSel } from "../map/(app_base)/home/_sel.js";
 import { NavHomeBlock } from "../map/(app_base)/home/_nav.block.js";
 import { AddItemBlock } from "../map/(app_base)/home/_methods/add-item.effect.block.js";
@@ -8,7 +9,7 @@ import { ClearCartBlock } from "../map/(app_base)/home/_methods/clear-cart.metho
 import "../states/demo.mem-stubs.js";
 import "../map/(app_base)/home/_page.block.js";
 
-const engine = new Engine();
+const engine = new Engine(config);
 
 // `memStub: true` fills SelectedItem (alpha) from src/states/demo.mem-stubs.ts; --data overrides it.
 const AddItemShown = AddItemBlock.stubAfter((ctx) => {

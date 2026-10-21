@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { createServer, type Server } from "node:http";
 import { MemPage, checkpoint } from "waygraph";
+import config from "../config/waygraph.config.js";
 import { hoppscotchGetFlow } from "../src/flows/hoppscotch-get.flow.js";
 import { hoppscotchAuthFlow } from "../src/flows/hoppscotch-auth.flow.js";
 import { hoppscotchPostFlow } from "../src/flows/hoppscotch-post.flow.js";
@@ -37,7 +38,7 @@ test.beforeAll(async () => {
 
 test.afterAll(() => server.close());
 
-test.skip(!process.env.WAYGRAPH_EXTENSIONS, 'add extensions: ["hoppscotch"] to waygraph.config.ts to run these');
+test.skip(!config.extensions?.includes("hoppscotch"), 'add extensions: ["hoppscotch"] to config/waygraph.config.ts to run these');
 test.setTimeout(120_000);
 
 test("GET returns 200", async () => {

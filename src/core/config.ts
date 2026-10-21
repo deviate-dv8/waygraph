@@ -2,6 +2,7 @@
 import { chromium, firefox, webkit } from "@playwright/test";
 import type { BrowserType } from "@playwright/test";
 import type { Layout } from "./run-graph.js";
+import type { ExtensionSpec } from "../extensions.js";
 
 const LAUNCHERS = { chromium, firefox, webkit };
 
@@ -59,6 +60,8 @@ export interface EngineConfig {
    * @example new Engine({ layouts: [AppShellLayout] })
    */
   layouts?: readonly Layout[];
-  /** Unpacked Chromium extension directories to load (see `extensions` in `waygraph.config.ts`). Default `WAYGRAPH_EXTENSIONS`. */
-  extensions?: readonly string[];
+  /** Chromium extensions to load: names, store ids or paths (see `extensions` in `waygraph.config.ts`). Default `WAYGRAPH_EXTENSIONS`. */
+  extensions?: readonly ExtensionSpec[];
+  /** Resolves relative `url`s in Nav Blocks when the Engine launches its own browser. Default `WAYGRAPH_BASE_URL`. */
+  baseUrl?: string;
 }

@@ -1,6 +1,8 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { connect } from "../types.js";
 import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../browser.js";
+import type { LaunchedContext } from "../browser.js";
+import { resolveExtensions } from "../extensions.js";
 import {
   WaygraphError,
   MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_INDEX,
@@ -187,6 +189,28 @@ export interface Flow<Out extends Checkpoint<string>> {
 }
 
 
+/** Launches the browser and context an Engine uses when the caller gave none, from its config. */
+async function openOwnContext(config: EngineConfig | undefined): Promise<LaunchedContext> {
+  const browserName = config?.browserName ?? "chromium";
+  const executablePath = browserName === "chromium" ? chromiumExecutablePath() : undefined;
+  const baseURL = config?.baseUrl ?? process.env.WAYGRAPH_BASE_URL;
+  return launchContext({
+    launcher: resolveLauncher(browserName, config),
+    launch: {
+      headless: config?.headless ?? true,
+      ...(config?.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
+      ...(executablePath ? { executablePath } : {}),
+    },
+    context: {
+      ...(baseURL ? { baseURL } : {}),
+      ...(config?.recordVideo ? { recordVideo: config.recordVideo } : {}),
+    },
+    extensions: await resolveExtensions(config?.extensions ?? extensionPathsFromEnv(), process.cwd()),
+  });
+}
+
+
+
 export function buildFlow<Out extends Checkpoint<string>>(
   middle: readonly Block<any, any>[],
   engineConfig: EngineConfig,
@@ -222,19 +246,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
       // before a page opens - the same "fail loud, cheaply" guarantee
       // run(context, mem) already has via an existing context.
       preflight(mem, chain);
-      const browserName = config.browserName ?? "chromium";
-      const launch = resolveLauncher(browserName, config);
-      const executablePath = browserName === "chromium" ? chromiumExecutablePath() : undefined;
-      const { context, close } = await launchContext({
-        launcher: launch,
-        launch: {
-          headless: config.headless ?? true,
-          ...(config.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
-          ...(executablePath ? { executablePath } : {}),
-        },
-        context: config.recordVideo ? { recordVideo: config.recordVideo } : {},
-        extensions: config.extensions ?? extensionPathsFromEnv(),
-      });
+      const { context, close } = await openOwnContext(config);
       try {
         try {
           return await runGraph<Out>(chain, undefined, context, mem, 5000, {
@@ -582,19 +594,7 @@ export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
       // config) would otherwise each launch a separate browser, defeating
       // the point of sequencing them (a fresh browser is itself a full
       // session reset, silently making withSessionReset a no-op).
-      const browserName = config?.browserName ?? "chromium";
-      const launch = resolveLauncher(browserName, config);
-      const executablePath = browserName === "chromium" ? chromiumExecutablePath() : undefined;
-      const { context, close } = await launchContext({
-        launcher: launch,
-        launch: {
-          headless: config?.headless ?? true,
-          ...(config?.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
-          ...(executablePath ? { executablePath } : {}),
-        },
-        context: config?.recordVideo ? { recordVideo: config.recordVideo } : {},
-        extensions: config?.extensions ?? extensionPathsFromEnv(),
-      });
+      const { context, close } = await openOwnContext(config);
       try {
         try {
           return await run(context, mem, { closeOnFinish: true });

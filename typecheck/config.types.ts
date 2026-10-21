@@ -36,3 +36,7 @@ defineConfig({
 
 // @ts-expect-error extensions entries are strings or { id | path | sha256 }
 defineConfig({ extensions: [42] });
+
+// The same object feeds the Engine.
+import { Engine } from "../src/index.js";
+export const engine = new Engine(ok);

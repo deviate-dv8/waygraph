@@ -82,8 +82,8 @@ against a live site, use `--skill-pilot-blind`.
 - **A browser dialog (`confirm`, `beforeunload`) is answered with `withDialog(block, { accept, into })`**, not inside the
   Block's `act`; the click Block stays a plain click.
 - **Project settings live in `config/waygraph.config.ts`** (`defineConfig({ baseUrl, testDir, webServer,
-  extensions, playwright: {...} })`). A project needs no `playwright.config.ts` - `waygraph test` builds one
-  from it. A leftover `playwright.config.*` is deprecated.
+  extensions, playwright: {...} })`). Flows import it and build the Engine from it (`new Engine(config)`); a project needs no
+  `playwright.config.ts` - `waygraph test` builds one from it. A leftover `playwright.config.*` is deprecated.
 - **Another origin the test needs is a Map external** under `src/map/(external)/<tool>/`. For REST API
   tests, `(external)/hoppscotch` (list `extensions: ["hoppscotch"]` in the config) drives hoppscotch.io's client
   with the extension, so requests skip CORS: `set-method`, `set-url`, `set-headers`, `set-json-body`,
