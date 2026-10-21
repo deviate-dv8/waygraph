@@ -7,6 +7,7 @@ Next.js route groups) and never appear in a URL or Checkpoint name.
 ```text
 .
 ├── package.json
+├── .agents/skills/                    # waygraph skills for coding agents
 ├── config/waygraph.config.ts          # baseUrl, tests, extensions, webServer - no playwright.config
 ├── src/
 │   ├── map/

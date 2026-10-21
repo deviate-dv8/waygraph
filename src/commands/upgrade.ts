@@ -1,7 +1,9 @@
-import { join, relative, resolve, dirname } from "node:path";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { basename, join, relative, resolve, dirname } from "node:path";
+import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { packageRoot } from "../cli/util.js";
+import { agentSkillFiles } from "./agent-dive-scaffold.js";
 
 // Filled in per project at init, so they never compare equal to the template.
 const SKIP = new Set(["package.json", join("config", "waygraph.config.ts")]);
@@ -42,11 +44,14 @@ export async function upgradeCase(args: string[]): Promise<void> {
 
   const added: string[] = [];
   const differing: string[] = [];
-  for (const rel of walk(templateDir)) {
-    if (SKIP.has(rel)) continue;
+  // Every shipped file as [path in the project, content]: the scaffold tree plus the agent skills.
+  const shipped = new Map<string, Buffer>();
+  for (const rel of walk(templateDir)) if (!SKIP.has(rel)) shipped.set(rel, readFileSync(join(templateDir, rel)));
+  for (const { rel, text } of agentSkillFiles()) shipped.set(rel, Buffer.from(text));
+  for (const [rel, content] of shipped) {
     const dest = join(proj, targetName(rel));
     if (!existsSync(dest)) added.push(rel);
-    else if (!readFileSync(dest).equals(readFileSync(join(templateDir, rel)))) differing.push(rel);
+    else if (!readFileSync(dest).equals(content)) differing.push(rel);
   }
   const selected = (rel: string): boolean => paths.some((p) => rel === p || rel.startsWith(p.replace(/\/?$/, "/")));
 
@@ -66,7 +71,10 @@ export async function upgradeCase(args: string[]): Promise<void> {
 
   if (flags.has("--diff")) {
     for (const rel of differing.filter((r) => paths.length === 0 || selected(r))) {
-      spawnSync("diff", ["-u", join(proj, targetName(rel)), join(templateDir, rel)], { stdio: "inherit" });
+      const shippedCopy = join(tmpdir(), `waygraph-upgrade-${process.pid}-${basename(rel)}`);
+      writeFileSync(shippedCopy, shipped.get(rel)!);
+      spawnSync("diff", ["-u", join(proj, targetName(rel)), shippedCopy], { stdio: "inherit" });
+      rmSync(shippedCopy, { force: true });
     }
   }
   if (!flags.has("--apply")) {
@@ -89,7 +97,7 @@ export async function upgradeCase(args: string[]): Promise<void> {
   for (const rel of copy) {
     const dest = join(proj, targetName(rel));
     mkdirSync(dirname(dest), { recursive: true });
-    copyFileSync(join(templateDir, rel), dest);
+    writeFileSync(dest, shipped.get(rel)!);
     console.log(`  wrote       ${rel}`);
   }
   if (copy.length === 0 && paths.length > 0) console.log("nothing matched those paths");

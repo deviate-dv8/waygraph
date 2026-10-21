@@ -1,6 +1,7 @@
 // Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { packageRoot } from "../cli/util.js";
-import { basename, join, relative, resolve } from "node:path";
+import { agentSkillFiles } from "./agent-dive-scaffold.js";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
@@ -41,6 +42,10 @@ function initCommand(projectName: string): void {
   writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + "\n");
   const configPath = join(targetDir, "config", "waygraph.config.ts");
   writeFileSync(configPath, readFileSync(configPath, "utf-8").replaceAll("__APP_BASE_URL__", appBaseUrl));
+  for (const { rel, text } of agentSkillFiles()) {
+    mkdirSync(dirname(join(targetDir, rel)), { recursive: true });
+    writeFileSync(join(targetDir, rel), text);
+  }
   console.log(`Scaffolded ${pkgName}/`);
   console.log("");
   console.log(`  cd ${relative(process.cwd(), targetDir) || pkgName}`);
@@ -54,7 +59,7 @@ function initCommand(projectName: string): void {
   console.log("  waygraph auto --cli  # same menus in the terminal");
   console.log("  waygraph demo --blocks exampleFlow");
   console.log("  waygraph graph       # static state graph JSON");
-  console.log("  waygraph agent-dive  # install the agent skills that teach this layout");
+  console.log("  .agents/skills/      # waygraph skills for coding agents (waygraph agent-dive adds agent personas)");
   console.log("");
   console.log("  Layout: see STRUCTURE.md (or https://deviate-dv8.github.io/waygraph/scaffold.html)");
 }

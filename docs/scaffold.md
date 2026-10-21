@@ -10,6 +10,7 @@ organizational only and never appear in a URL.
 ```sh
 .
 ├── package.json
+├── .agents/skills/                    # waygraph skills for coding agents
 ├── config/waygraph.config.ts          # baseUrl, tests, extensions, webServer - no playwright.config
 ├── src/
 │   ├── map/
@@ -94,7 +95,8 @@ Only the paths you name are copied; differing files are replaced only with `--ov
 npx waygraph agent-dive --loop claude      # also: opencode, cursor, vscode
 ```
 
-Writes planner / author / healer agent files (and Claude skills) into the project so an
+The skills themselves (`waygraph-convention`, `waygraph-pilot`, `waygraph-blind-pilot`) already ship in
+`.agents/skills/`; `waygraph upgrade` keeps them current. `agent-dive` additionally writes planner / author / healer agent files (and Claude skills) into the project so an
 agent can dive an existing app into Blocks.
 
 ## Pointing it at your real app

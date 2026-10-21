@@ -13,6 +13,13 @@ test("upgrade reports missing files, copies only the named paths, never overwrit
   try {
     wg(root, "init", "p");
     const proj = join(root, "p");
+    const skill = ".agents/skills/waygraph-convention/SKILL.md";
+    expect(existsSync(join(proj, skill))).toBe(true);
+    rmSync(join(proj, skill));
+    expect(wg(proj, "upgrade").stdout).toContain(`new         ${skill}`);
+    wg(proj, "upgrade", ".agents", "--apply");
+    expect(existsSync(join(proj, skill))).toBe(true);
+
     const hop = "src/map/(external)/hoppscotch";
     rmSync(join(proj, hop), { recursive: true });
     writeFileSync(join(proj, "src/flows/shop.flow.ts"), "// mine\n");

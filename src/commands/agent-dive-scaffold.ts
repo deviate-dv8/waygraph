@@ -127,6 +127,14 @@ export function readSkillMarkdown(stem: string): string {
   return raw.endsWith("\n") ? raw : raw + "\n";
 }
 
+/** Every packaged skill as `.agents/skills/<name>/SKILL.md` (relative path + markdown), the cross-agent skills folder. */
+export function agentSkillFiles(): { rel: string; text: string }[] {
+  return Object.values(SKILL_FLAG_MAP).map((stem) => ({
+    rel: join(".agents", "skills", stem, "SKILL.md"),
+    text: readSkillMarkdown(stem),
+  }));
+}
+
 /** Print `--skill` index (available flags + one-line descriptions). */
 export function printSkillIndex(): void {
   const skills = loadSkillSpecs();
