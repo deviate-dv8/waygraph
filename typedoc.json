@@ -1,0 +1,26 @@
+{
+  "entryPoints": [
+    "src/index.ts"
+  ],
+  "tsconfig": "tsconfig.build.json",
+  "out": "docs/api",
+  "plugin": [
+    "typedoc-plugin-markdown",
+    "typedoc-vitepress-theme"
+  ],
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "excludeNotDocumented": false,
+  "hidePageTitle": false,
+  "entryFileName": "index",
+  "githubPages": false,
+  "gitRevision": "main",
+  "sourceLinkTemplate": "https://github.com/deviate-dv8/waygraph/blob/main/{path}#L{line}",
+  "navigation": {
+    "includeCategories": false,
+    "includeGroups": true
+  },
+  "docsRoot": "./docs",
+  "json": "docs/api/api.json"
+}
