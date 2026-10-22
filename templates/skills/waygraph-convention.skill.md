@@ -79,6 +79,8 @@ against a live site, use `--skill-pilot-blind`.
 - **Reading a value into `mem` happens in `act`** (`mem.set(Key, value)`), like Mailpit's `extract-email-link`.
   `observe` is only for a Block that branches (it feeds `resolve`); an empty `act(){}` plus an `observe` that
   writes `mem` is a misuse.
+- **Demo pace is a map option or config, never a wrapper.** `.method(SetBearerTokenBlock, { pace: "blitz" })` speeds one step,
+  `.end({ demoPace: "fast" })` a flow, `demo: { pace, typingMs, slowMo }` in the config the whole project. Not `withBlockPace(...)`.
 - **Per-environment values** (a different `baseUrl` for staging) come from `.env` files read in the config function:
   `defineConfig(({ env }) => ({ baseUrl: env.BASE_URL }))`; `--env staging` loads `.env.staging`. Never edit the config to switch.
 - **A browser dialog (`confirm`, `beforeunload`) is answered with `withDialog(block, { accept, into })`**, not inside the

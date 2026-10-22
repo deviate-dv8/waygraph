@@ -35,6 +35,7 @@ import { mapCase } from "./commands/map.js";
 
 const args = takeEnvFlag(process.argv.slice(2));
 const command = args[0];
+if (command) process.env.WAYGRAPH_COMMAND = command;
 async function main(): Promise<void> {
   if (!command || command === "--help" || command === "-h") {
     usage();

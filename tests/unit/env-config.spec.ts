@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadEnvFiles, takeEnvFlag } from "../../src/env-file.js";
-import { defineConfig } from "../../src/config.js";
+import { applyConfigEnv, defineConfig } from "../../src/config.js";
 
 const KEYS = ["WG_T_BASE", "WG_T_ONLY_ENV", "WG_T_SHELL", "WAYGRAPH_ENV", "NODE_ENV"];
 let saved: Record<string, string | undefined>;
@@ -67,5 +67,59 @@ describe("defineConfig", () => {
     } finally {
       process.chdir(cwd);
     }
+  });
+});
+
+describe("applyConfigEnv", () => {
+  const NAMES = ["WAYGRAPH_SLOWMO", "WAYGRAPH_HEADED", "WAYGRAPH_DEMO_PACE", "WAYGRAPH_TYPING_MS", "WAYGRAPH_AUTOPLAY", "WAYGRAPH_VIDEO_VIEWPORT"];
+  let before: Record<string, string | undefined>;
+  beforeEach(() => {
+    before = Object.fromEntries(NAMES.map((k) => [k, process.env[k]]));
+    for (const k of NAMES) delete process.env[k];
+  });
+  afterEach(() => {
+    for (const k of NAMES) {
+      if (before[k] === undefined) delete process.env[k];
+      else process.env[k] = before[k]!;
+    }
+  });
+
+  const config = {
+    slowMo: 100,
+    headed: false,
+    video: { viewport: "1280x720" },
+    run: { slowMo: 0 },
+    demo: { slowMo: 350, headed: true, pace: "fast" as const, typingMs: 5, autoNext: true, video: { viewport: "1920x1080" } },
+  };
+
+  it("demo takes the shared values, overridden by its own section, plus its demo-only settings", () => {
+    applyConfigEnv(config, "demo");
+    assert.equal(process.env.WAYGRAPH_SLOWMO, "350");
+    assert.equal(process.env.WAYGRAPH_HEADED, "1");
+    assert.equal(process.env.WAYGRAPH_VIDEO_VIEWPORT, "1920x1080");
+    assert.equal(process.env.WAYGRAPH_DEMO_PACE, "fast");
+    assert.equal(process.env.WAYGRAPH_TYPING_MS, "5");
+    assert.equal(process.env.WAYGRAPH_AUTOPLAY, "1");
+  });
+
+  it("run takes its own section and none of the demo-only settings", () => {
+    applyConfigEnv(config, "run");
+    assert.equal(process.env.WAYGRAPH_SLOWMO, "0");
+    assert.equal(process.env.WAYGRAPH_HEADED, "0");
+    assert.equal(process.env.WAYGRAPH_VIDEO_VIEWPORT, "1280x720");
+    assert.equal(process.env.WAYGRAPH_DEMO_PACE, undefined);
+    assert.equal(process.env.WAYGRAPH_TYPING_MS, undefined);
+  });
+
+  it("any other command gets only the shared values", () => {
+    applyConfigEnv(config, "auto");
+    assert.equal(process.env.WAYGRAPH_SLOWMO, "100");
+    assert.equal(process.env.WAYGRAPH_DEMO_PACE, undefined);
+  });
+
+  it("never overrides something already set", () => {
+    process.env.WAYGRAPH_SLOWMO = "999";
+    applyConfigEnv(config, "demo");
+    assert.equal(process.env.WAYGRAPH_SLOWMO, "999");
   });
 });

@@ -231,6 +231,9 @@ async function runMain() {
         : "waygraph demo: opaque FFCompose in flow -> Playwright slowMo=0 (blitz); set WAYGRAPH_SLOWMO to override",
     );
   }
+  // Step (demo) mode: slowMo is waygraph's own beat after each action, not Playwright's per-operation slowMo, so a
+  // step's pace can remove it and typing is not taxed per keystroke. The browser launches at 0.
+  const launchSlowMo = step ? 0 : slowMo;
   const baseURL = process.env.WAYGRAPH_BASE_URL;
   const title = process.env.WAYGRAPH_TITLE;
   // Comma-separated Block names (their real .name, e.g. "login") that
@@ -263,7 +266,7 @@ async function runMain() {
   const fixedVideoViewport = videoDir
     ? (videoViewportParsed ?? (step ? DEFAULT_VIDEO_VIEWPORT : DEFAULT_RUN_VIDEO_VIEWPORT))
     : null;
-  const engine = new Engine({ headless: !headed, slowMo });
+  const engine = new Engine({ headless: !headed, slowMo: launchSlowMo });
   let result;
   // Non-interactive execution (no --step) runs the whole chain as one
   // composed flow with no per-block loop of its own to defer seeding
@@ -312,7 +315,7 @@ async function runMain() {
       launcher: chromium,
       launch: {
         headless: !headed,
-        slowMo,
+        slowMo: launchSlowMo,
         args: step || fixedVideoViewport ? ["--start-maximized"] : [],
         ...(executablePath ? { executablePath } : {}),
       },

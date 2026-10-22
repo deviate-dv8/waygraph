@@ -109,12 +109,13 @@ function stripMethods<In extends Checkpoint<string>, Out extends Checkpoint<stri
 
 
 /** Copy non-enumerable waygraph markers so decorate/withVerify keep map() kind checks. */
-function copyWaygraphRuntime(from: object, to: object): void {
+export function copyWaygraphRuntime(from: object, to: object): void {
   for (const key of [
     "__waygraphKind",
     "__waygraphSalt",
     "__waygraphNavUrl",
     "__waygraphNavClick",
+    "__waygraphNavFrom",
   ] as const) {
     const desc = Object.getOwnPropertyDescriptor(from, key);
     if (!desc) continue;

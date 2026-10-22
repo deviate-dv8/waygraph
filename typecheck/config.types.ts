@@ -58,3 +58,14 @@ defineConfig({
   // @ts-expect-error viewport is a "WxH" string
   video: { viewport: 1920 },
 });
+
+export const perCommand = defineConfig({
+  slowMo: 100,
+  run: { slowMo: 0, headed: false, video: { viewport: "1280x720" } },
+  demo: { pace: "fast", typingMs: 10, slowMo: 350, autoNext: true, fast: false },
+});
+
+defineConfig({
+  // @ts-expect-error pace is "fast" | "slow" | "blitz" | "normal" | a number
+  demo: { pace: "turbo" },
+});

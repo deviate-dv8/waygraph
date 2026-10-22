@@ -10,9 +10,20 @@ const config = defineConfig(({ env }) => ({
   //   dir: "~/Downloads/waygraph-videos",   //   where they are saved (default: Downloads/waygraph-videos/<project>)
   //   viewport: "1920x1080",                //   recording size: demo defaults to 1920x1080, run to 1280x720
   // },
-  // slowMo: 250,                            // ms to pause before each browser action, so a run is watchable
-  // headed: true,                           // show the browser window (demo and auto already do)
-  // demo: { autoNext: true, fast: false },  // advance demo steps without clicking Next; blitz fast-forward steps
+  // slowMo: 250,                            // shared by run and demo: ms to pause around each browser action
+  // headed: true,                           // shared: show the browser window (demo and auto already do)
+  // run: {                                  // `waygraph run` only; overrides the shared values above
+  //   slowMo: 0,
+  //   video: { viewport: "1280x720" },
+  // },
+  // demo: {                                 // `waygraph demo` only; overrides the shared values above
+  //   pace: "fast",                         //   default pace for steps that set none: "fast" | "slow" | "blitz" | 0.5 | 2
+  //   typingMs: 30,                         //   typing animation, ms per character (0 types instantly)
+  //   slowMo: 350,                          //   pause after each action, once per action (a step with pace "blitz" skips it)
+  //   autoNext: true,                       //   advance steps without clicking Next
+  //   fast: false,                          //   shorter Next / auto-next gates
+  //   video: { viewport: "1920x1080" },
+  // },
   // webServer: { command: "npm start", port: 3000 },   // started around test / run / demo / auto
 
   // ── test runner (Playwright) ──────────────────────────────────────────────────────────────────

@@ -21,7 +21,36 @@ export function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stu
   // (shorter Next/autoplay gates) and must NOT skip theater, or the whole demo
   // looks like plain waygraph run.
   const skipTheater = () => !!pacing.skipTheater;
-  const typeDelay = () => (skipTheater() ? 0 : slowMo ? 0 : 30);
+  // `slowMo` here is the demo's own beat: ms to rest after each action (once per call, never per keystroke). The browser
+  // itself is launched with slowMo 0 in step mode, so a step whose pace is blitz really does run at full speed.
+  const beat = () => (skipTheater() ? 0 : slowMo || 0);
+  const pause = (ms) => (ms > 0 ? new Promise((res) => setTimeout(res, ms)) : undefined);
+  // Per-character typing delay (WAYGRAPH_TYPING_MS, default 30). 0 for blitz steps.
+  const typingMs = () => {
+    if (skipTheater()) return 0;
+    const n = Number(process.env.WAYGRAPH_TYPING_MS);
+    return process.env.WAYGRAPH_TYPING_MS !== undefined && Number.isFinite(n) && n >= 0 ? n : 30;
+  };
+  const typeDelay = typingMs;
+  const keyboard = page.keyboard;
+  if (!keyboard.__wgBeatPatched) {
+    keyboard.__wgBeatPatched = true;
+    const originalType = keyboard.type.bind(keyboard);
+    keyboard.type = async (text, options) => {
+      await originalType(text, { delay: typingMs(), ...(options || {}) });
+      await pause(beat());
+    };
+    const originalPress = keyboard.press.bind(keyboard);
+    keyboard.press = async (key, options) => {
+      await originalPress(key, options);
+      await pause(beat());
+    };
+    const originalInsertText = keyboard.insertText.bind(keyboard);
+    keyboard.insertText = async (text) => {
+      await originalInsertText(text);
+      await pause(beat());
+    };
+  }
   // Click is a single action, not per-character, so it doesn't compound
   // the same way - but slowMo still adds its own pause around the actual
   // click, so trim our own explicit "pop" pauses when it's already active
@@ -155,6 +184,7 @@ export function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stu
       // it - it was sticking around through the whole rest of the step.
       await hideRing(page);
       await restoreTheaterAfterNavigation(page, todoDockRef, deviceRef, stubBeforeRef);
+      await pause(beat());
       return result;
     };
   }
@@ -285,6 +315,7 @@ export function instrumentInteractionHighlighting(page, mem, slowMo, pacing, stu
       await hideRing(page);
       // Full document navigation drops #wg-todo-dock + rings; restore carry.
       await restoreTheaterAfterNavigation(page, todoDockRef, deviceRef, stubBeforeRef);
+      await pause(beat());
       return result;
     };
   }

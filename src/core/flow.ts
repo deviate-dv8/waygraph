@@ -17,7 +17,7 @@ import type { EngineConfig } from "./config.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import { MemPage } from "../mem-page.js";
 import type { Trait } from "../trait.js";
-import { findBlockIndex, modVerify, withVerify } from "./block.js";
+import { copyWaygraphRuntime, findBlockIndex, modVerify, withVerify } from "./block.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../highlights.js";
 import type { DemoPace, HighlightStyleDefaults } from "../highlights.js";
 
@@ -437,10 +437,9 @@ export function withBlockPace<In extends Checkpoint<string>, Out extends Checkpo
   block: Block<In, Out>,
   pace: DemoPace,
 ): Block<In, Out> {
-  return {
-    ...block,
-    demoPace: pace,
-  } as Block<In, Out> & { demoPace: DemoPace };
+  const next = { ...block, demoPace: pace } as Block<In, Out> & { demoPace: DemoPace };
+  copyWaygraphRuntime(block, next);
+  return next;
 }
 
 

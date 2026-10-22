@@ -24,6 +24,8 @@ import type { RunGraphOptions } from "./run-graph.js";
 import { MemPage } from "../mem-page.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import { fastForwardComposeBlock } from "./compose.js";
+import { withBlockPace } from "./flow.js";
+import type { DemoPace } from "../highlights.js";
 import type { NavBlock } from "./blocks/nav.js";
 import type { PageBlock } from "./blocks/page.js";
 import type { AssertBlock, MethodBlock } from "./blocks/method.js";
@@ -40,6 +42,11 @@ type S = Checkpoint<"__start__">;
 export type DefineFlowFn = (blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker], options?: FlowOptions) => Flow<any>;
 
 /** Per-step options every `MapBuilder` step method (`.gotoPage()`/`.method()`/`.assert()`) takes. */
+/** Applies a step's `pace` option, keeping the Block's runtime markers. */
+function paced(block: object, opts: MapStepOpts | undefined): DefinedBlock<any, any> {
+  return (opts?.pace === undefined ? block : withBlockPace(block as DefinedBlock<any, any>, opts.pace)) as DefinedBlock<any, any>;
+}
+
 export interface MapStepOpts {
   /**
    * Fast-forward just this step, inline - no `.ffStart()/.ffEnd()` bracket needed. Consecutive
@@ -48,6 +55,12 @@ export interface MapStepOpts {
    * @example map().gotoPage(NavLoginBlock, { ff: true }).method(FillUsernameBlock, { ff: true })
    */
   ff?: boolean;
+  /**
+   * Demo pace for just this step (`"blitz"` skips the typing animation and the pause after the action; `"fast"`, `"slow"`,
+   * or a number scale the narration gates). The map equivalent of `withBlockPace`, with no wrapper.
+   * @example map().method(SetBearerTokenBlock, { pace: "blitz" })
+   */
+  pace?: DemoPace;
 }
 
 export interface MapBuilderOptions {
@@ -343,7 +356,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   ): MapBuilder<NextOut> {
     assertMapKind(block, ["nav", "page"], "gotoPage");
     assertMapOrigin(block, this.homeOrigin, "internal", "gotoPage");
-    return this.appendStep(block as DefinedBlock<any, any>, opts?.ff);
+    return this.appendStep(paced(block, opts), opts?.ff);
   }
 
   /**
@@ -359,7 +372,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   ): MapBuilder<NextOut> {
     assertMapKind(block, ["nav", "page"], "gotoExternal");
     assertMapOrigin(block, this.homeOrigin, "external", "gotoExternal");
-    return this.appendStep(block as DefinedBlock<any, any>, opts?.ff);
+    return this.appendStep(paced(block, opts), opts?.ff);
   }
 
   /**
@@ -369,7 +382,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    */
   assert(block: AssertBlock<Out> & { name: string }, opts?: MapStepOpts): MapBuilder<Out> {
     assertMapKind(block, ["assert"], "assert");
-    return this.appendStep(block as DefinedBlock<any, any>, opts?.ff);
+    return this.appendStep(paced(block, opts), opts?.ff);
   }
 
   /**
@@ -389,7 +402,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
       throw new WaygraphError("WG_MAP_WRONG_KIND", MSG_MAP_METHOD_GOT_ASSERT(block.name));
     }
     assertMapSalt(block, ["method", "effect"], "method");
-    return this.appendStep(block as DefinedBlock<any, any>, opts?.ff);
+    return this.appendStep(paced(block, opts), opts?.ff);
   }
 
   /**

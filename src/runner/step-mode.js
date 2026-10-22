@@ -1,7 +1,7 @@
 // Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
 import { instrumentInteractionHighlighting } from "./interaction-patch.js";
-import { applyHighlightStyleDefaults, demoPaceGateMs, demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, formatHighlightCaption, hasAuthoredStubAfter, resolveSlides, resolveStepDemoPace, resolveTodoDockUi, runStubPhase } from "../highlights.js";
+import { applyHighlightStyleDefaults, normalizeDemoPace, demoPaceGateMs, demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, formatHighlightCaption, hasAuthoredStubAfter, resolveSlides, resolveStepDemoPace, resolveTodoDockUi, runStubPhase } from "../highlights.js";
 import { markStepRunning, resetPageState, teardownOverlay } from "./teardown.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
 import { extractVerifyHighlights, presentFailPanel, renderAfterStep, renderBeforeStep } from "./step-panels.js";
@@ -213,15 +213,18 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
     }
     // Episode pace: block > flow > CLI --fast (only when no authored pace).
     // Authoring wins: withDemoPace("slow"|2|4500) keeps slow dwell even under --fast.
+    // `demo.pace` in the config (WAYGRAPH_DEMO_PACE) is the default for flows and steps that set none.
+    const defaultPace = process.env.WAYGRAPH_DEMO_PACE ? normalizeDemoPace(process.env.WAYGRAPH_DEMO_PACE) : undefined;
     const stepPace = resolveStepDemoPace({
       blockPace: r.block.demoPace,
-      flowPace: r.demoPace,
+      flowPace: r.demoPace ?? defaultPace,
       fastForward: !!r.block.fastForward,
       wasFastForward: !!r.wasFastForward,
     });
     const authoredPace =
       (r.block.demoPace != null && r.block.demoPace !== "") ||
-      (r.demoPace != null && r.demoPace !== "");
+      (r.demoPace != null && r.demoPace !== "") ||
+      defaultPace != null;
     const cliFast = demoFast || fastBlockNames.has(r.block.name);
     pacing.demoPace =
       stepPace === "normal" && cliFast && !authoredPace

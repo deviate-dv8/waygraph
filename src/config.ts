@@ -11,30 +11,54 @@ import { envMode, loadEnvFiles } from "./env-file.js";
 import { resolveExtensions } from "./extensions.js";
 import type { ExtensionSpec } from "./extensions.js";
 import type { WebServerConfig } from "./webserver.js";
+import type { DemoPace } from "./highlights.js";
+
+export interface VideoSettings {
+  /** Where recordings are saved: absolute, `~/…`, or relative to the project. Default `~/Downloads/waygraph-videos/<project>` (the project's `.waygraph-videos/` where there is no Downloads folder, and on CI). */
+  dir?: string;
+  /** Recording size, e.g. `"1920x1080"` (demo default) or `"1280x720"` (run default). */
+  viewport?: string;
+}
+
+/** Settings `waygraph run` and `waygraph demo` share. */
+export interface RunSettings {
+  /** Show the browser window. */
+  headed?: boolean;
+  /**
+   * `run`: Playwright's `slowMo`, ms before every operation. `demo`: waygraph's own pause after each action (default 350),
+   * applied once per action rather than per keystroke, and removed by a step's `pace: "blitz"`.
+   */
+  slowMo?: number;
+  video?: VideoSettings;
+}
+
+/** Settings for `waygraph demo`. */
+export interface DemoSettings extends RunSettings {
+  /** Default pace for flows and steps that set none: `"fast"`, `"slow"`, `"blitz"`, or a multiplier like `0.5` / `2`. Narration gates and dwell scale with it; `"blitz"` also skips typing animation. */
+  pace?: DemoPace;
+  /** Typing animation: ms per character (default 30). `0` types instantly. */
+  typingMs?: number;
+  /** Advance steps automatically instead of waiting for Next. */
+  autoNext?: boolean;
+  /** Shorter Next / auto-next gates; keeps the cursor and typing animation. */
+  fast?: boolean;
+}
 
 export interface WaygraphConfig {
   /** Same value `resolveBaseUrl` would otherwise read from package.json's `waygraph.baseUrl`. */
   baseUrl?: string;
   /** Chromium extensions to load in every run: `"hoppscotch"`, a Chrome Web Store id, or `{ path }` to an unpacked one. */
   extensions?: ExtensionSpec[];
-  /** Recording with `--video` (`waygraph run` / `demo`). */
-  video?: {
-    /** Where recordings are saved: absolute, `~/…`, or relative to the project. Default `~/Downloads/waygraph-videos/<project>` (the project's `.waygraph-videos/` where there is no Downloads folder, and on CI). */
-    dir?: string;
-    /** Recording size, e.g. `"1920x1080"` (demo default) or `"1280x720"` (run default). */
-    viewport?: string;
-  };
-  /** Milliseconds to pause before each browser action in `run` / `demo`, to make it watchable. */
+  /** Recording with `--video` (`waygraph run` / `demo`); `run` and `demo` below can override it. */
+  video?: VideoSettings;
+  /** Default for `run` and `demo`: milliseconds to pause around each browser action, so a run is watchable. */
   slowMo?: number;
-  /** Show the browser window. Default: `demo` and `auto` are headed, `run` is headless. */
+  /** Default for `run` and `demo`: show the browser window. Without it `demo` and `auto` are headed and `run` is headless. */
   headed?: boolean;
-  /** `waygraph demo` defaults. */
-  demo?: {
-    /** Advance steps automatically instead of waiting for Next. */
-    autoNext?: boolean;
-    /** Blitz through fast-forward steps. */
-    fast?: boolean;
-  };
+  /** Settings for `waygraph run` only. They override the shared ones above. */
+  run?: RunSettings;
+  /** Settings for `waygraph demo` only. They override the shared ones above. */
+  demo?: DemoSettings;
   /** Folder of test files, relative to the project. Default `"tests"`. */
   testDir?: string;
   /** App to start around `waygraph test`, `run`, `demo` and `auto` (same fields as Playwright's `webServer`). */
@@ -153,18 +177,28 @@ export async function configuredExtensions(projectDir: string): Promise<string[]
 }
 
 /**
- * Applies the config's run settings as the `WAYGRAPH_*` variables the runner reads. A flag, a shell variable or a `.env`
- * value that is already set always wins, so the config only supplies defaults.
+ * Applies the config's run settings as the `WAYGRAPH_*` variables the runner reads, for the command being run
+ * (`WAYGRAPH_COMMAND`, set by the CLI). The `run` / `demo` section overrides the shared top-level values. A flag, a shell
+ * variable or a `.env` value that is already set always wins, so the config only supplies defaults.
  */
-export function applyConfigEnv(config: WaygraphConfig | undefined): void {
+export function applyConfigEnv(config: WaygraphConfig | undefined, command: string | undefined = process.env.WAYGRAPH_COMMAND): void {
   if (!config) return;
+  const isDemo = command === "demo" || command === "try";
+  const section: DemoSettings | undefined = isDemo ? config.demo : command === "run" ? config.run : undefined;
   const set = (name: string, value: string | undefined): void => {
     if (value !== undefined && process.env[name] === undefined) process.env[name] = value;
   };
-  set("WAYGRAPH_VIDEO_DIR", config.video?.dir);
-  set("WAYGRAPH_VIDEO_VIEWPORT", config.video?.viewport);
-  set("WAYGRAPH_SLOWMO", config.slowMo === undefined ? undefined : String(config.slowMo));
-  set("WAYGRAPH_HEADED", config.headed === undefined ? undefined : config.headed ? "1" : "0");
-  set("WAYGRAPH_AUTOPLAY", config.demo?.autoNext === undefined ? undefined : config.demo.autoNext ? "1" : "0");
-  set("WAYGRAPH_DEMO_FAST", config.demo?.fast ? "1" : undefined);
+  const flag = (b: boolean | undefined): string | undefined => (b === undefined ? undefined : b ? "1" : "0");
+  const video = { ...config.video, ...section?.video };
+  const slowMo = section?.slowMo ?? config.slowMo;
+  set("WAYGRAPH_VIDEO_DIR", video.dir);
+  set("WAYGRAPH_VIDEO_VIEWPORT", video.viewport);
+  set("WAYGRAPH_SLOWMO", slowMo === undefined ? undefined : String(slowMo));
+  set("WAYGRAPH_HEADED", flag(section?.headed ?? config.headed));
+  if (isDemo) {
+    set("WAYGRAPH_AUTOPLAY", flag(config.demo?.autoNext));
+    set("WAYGRAPH_DEMO_FAST", config.demo?.fast ? "1" : undefined);
+    set("WAYGRAPH_DEMO_PACE", config.demo?.pace === undefined ? undefined : String(config.demo.pace));
+    set("WAYGRAPH_TYPING_MS", config.demo?.typingMs === undefined ? undefined : String(config.demo.typingMs));
+  }
 }

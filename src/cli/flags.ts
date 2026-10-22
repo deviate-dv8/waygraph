@@ -2,7 +2,7 @@
 import { basename, relative, resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { walkDir } from "./discover.js";
-import { resolveBaseUrl } from "../config.js";
+import { loadWaygraphConfig, resolveBaseUrl } from "../config.js";
 
 // ---------------------------------------------------------------------------
 // CLI plumbing - run flags (flags beat WAYGRAPH_* env)
@@ -356,6 +356,8 @@ export { resolveBaseUrl };
  * Call after applyRunFlags so explicit flags already won.
  */
 export async function applyDemoDefaults(projectDir: string): Promise<void> {
+  // Config first: its defaults (headed, autoNext, pace...) must land before the demo defaults below fill the same variables.
+  await loadWaygraphConfig(projectDir);
   if (process.env.WAYGRAPH_STEP === undefined) process.env.WAYGRAPH_STEP = "1";
   if (process.env.WAYGRAPH_STEP === "1" && process.env.WAYGRAPH_HEADED === undefined) {
     // Recording locks headless - a live window fights fixed video viewport /

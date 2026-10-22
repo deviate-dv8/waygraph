@@ -112,6 +112,22 @@ export default defineConfig(({ mode, env }) => ({
 `.env.staging`, `.env.staging.local` in that order, each overriding the one before; the default mode is `NODE_ENV`, else
 `development`. A value exported in the shell always wins over every file, and `WAYGRAPH_BASE_URL` still overrides `baseUrl`.
 
+**Run and demo settings.** Each command has its own section, over shared top-level defaults:
+
+```typescript
+export default defineConfig({
+  slowMo: 100,                                   // shared by run and demo
+  run:  { slowMo: 0, video: { viewport: "1280x720" } },
+  demo: { pace: "fast", typingMs: 20, slowMo: 350, autoNext: true, video: { viewport: "1920x1080" } },
+});
+```
+
+`demo.pace` is the default pace for flows and steps that set none (`"fast"`, `"slow"`, `"blitz"`, or a multiplier);
+`demo.typingMs` is the typing animation in ms per character (`0` types instantly). In `demo`, `slowMo` is waygraph's own
+pause after each action, applied once per action and not per keystroke, so a step's pace can remove it; in `run` it is
+Playwright's `slowMo`. A single step takes `{ pace }` in the map: `.method(SetBearerTokenBlock, { pace: "blitz" })`, which
+skips that step's typing animation and its pause. A flow takes `.end({ demoPace })`. No `withBlockPace` / `withDemoPace`.
+
 Run settings can be defaults in the config, applied only when no flag, shell variable or `.env` value sets them:
 `video: { dir, viewport }`, `slowMo`, `headed`, `demo: { autoNext, fast }`. `extensions`, `video`, `slowMo`, `headed`, `demo`,
 `webServer` and `testDir` are waygraph's own; only the `playwright: {…}` block is Playwright's (browser extensions are not a
