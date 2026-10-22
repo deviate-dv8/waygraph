@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadEnvFiles, takeEnvFlag } from "../../src/env-file.js";
@@ -134,5 +134,30 @@ describe("pace speeds", () => {
     assert.equal(demoPaceScale("blitz"), 0.1);
     assert.equal(demoPaceScale("slow"), 2);
     delete process.env.WAYGRAPH_PACE_SPEEDS;
+  });
+});
+
+describe("--config", () => {
+  it("takeConfigFlag removes the flag and records it", async () => {
+    const { takeConfigFlag } = await import("../../src/config.js");
+    assert.deepEqual(takeConfigFlag(["test", "--config", "staging", "x"]), ["test", "x"]);
+    assert.equal(process.env.WAYGRAPH_CONFIG, "staging");
+    assert.deepEqual(takeConfigFlag(["run", "--config=config/a.ts"]), ["run"]);
+    assert.equal(process.env.WAYGRAPH_CONFIG, "config/a.ts");
+    delete process.env.WAYGRAPH_CONFIG;
+  });
+
+  it("a short name finds config/waygraph.<name>.config.*; a missing one fails loudly", async () => {
+    const { loadWaygraphConfig } = await import("../../src/config.js");
+    mkdirSync(join(dir, "config"));
+    writeFileSync(join(dir, "config", "waygraph.config.mjs"), 'export default { baseUrl: "https://default.example.com" };\n');
+    writeFileSync(join(dir, "config", "waygraph.staging.config.mjs"), 'export default { baseUrl: "https://staging.example.com" };\n');
+    delete process.env.WAYGRAPH_CONFIG;
+    assert.equal((await loadWaygraphConfig(dir))?.baseUrl, "https://default.example.com");
+    process.env.WAYGRAPH_CONFIG = "staging";
+    assert.equal((await loadWaygraphConfig(dir))?.baseUrl, "https://staging.example.com");
+    process.env.WAYGRAPH_CONFIG = "nope";
+    await assert.rejects(loadWaygraphConfig(dir), /not found/);
+    delete process.env.WAYGRAPH_CONFIG;
   });
 });

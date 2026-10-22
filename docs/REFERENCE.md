@@ -140,6 +140,13 @@ container) or on CI the default is the project's `.waygraph-videos/`. waygraph c
 first write into Downloads can trigger a one-time permission prompt for your terminal, and if it is refused waygraph warns and
 saves in the project instead.
 
+**Several configs.** A project can keep more than one: `config/waygraph.staging.config.ts` next to the default, chosen with
+`waygraph test --config staging` (any command takes `--config <name|path>`, or set `WAYGRAPH_CONFIG`). The chosen config
+replaces the default for everything: `baseUrl`, `extensions`, `webServer`, the `playwright` block, `run` / `demo`. A second
+config can build on the first: `defineConfig({ ...base, baseUrl: "https://staging.example.com" })`. Each config file may export
+its own `engine`; and an engine built from any config still follows the selected one for the browser it launches itself, so a
+flow's static `import { engine }` does not pin the run to the default config.
+
 Flows pass the same object to the Engine, so it is imported rather than read out of band:
 the config file exports `export const engine = new Engine(config)`, and flows `import { engine } from "../../config/waygraph.config.js"`. The Engine uses
 `baseUrl` and `extensions` for the browser it launches itself (`flow.run(mem)`); `waygraph test`, `run`, `demo`

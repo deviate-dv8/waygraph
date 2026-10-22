@@ -193,6 +193,8 @@ Primary (less is more):
                                            has a trace - test report opens it.
 
 Also:
+  --config <name|file>   (any command) use another config instead of waygraph.config.ts, e.g.
+                 waygraph test --config staging   (config/waygraph.staging.config.ts)
   --env <mode>   (any command) load .env.<mode> / .env.<mode>.local on top of .env, e.g.
                  waygraph test --env staging   (default: NODE_ENV, else development)
   waygraph upgrade [project] [paths...] [--apply] [--overwrite] [--diff]

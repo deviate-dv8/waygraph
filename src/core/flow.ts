@@ -3,6 +3,7 @@ import { connect } from "../types.js";
 import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../browser.js";
 import type { LaunchedContext } from "../browser.js";
 import { resolveExtensions } from "../extensions.js";
+import { loadWaygraphConfig } from "../config.js";
 import {
   WaygraphError,
   MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_INDEX,
@@ -190,7 +191,17 @@ export interface Flow<Out extends Checkpoint<string>> {
 
 
 /** Launches the browser and context an Engine uses when the caller gave none, from its config. */
-async function openOwnContext(config: EngineConfig | undefined): Promise<LaunchedContext> {
+async function openOwnContext(engineConfig: EngineConfig | undefined): Promise<LaunchedContext> {
+  // A config chosen with `--config` / WAYGRAPH_CONFIG wins over the one the Engine was built with, so a flow that imports
+  // an engine from one config file still follows the config the run selected.
+  const chosen = process.env.WAYGRAPH_CONFIG ? await loadWaygraphConfig(process.cwd()) : undefined;
+  const config: EngineConfig | undefined = chosen
+    ? {
+        ...engineConfig,
+        ...(chosen.baseUrl !== undefined ? { baseUrl: chosen.baseUrl } : {}),
+        ...(chosen.extensions !== undefined ? { extensions: chosen.extensions } : {}),
+      }
+    : engineConfig;
   const browserName = config?.browserName ?? "chromium";
   const executablePath = browserName === "chromium" ? chromiumExecutablePath() : undefined;
   const baseURL = config?.baseUrl ?? process.env.WAYGRAPH_BASE_URL;

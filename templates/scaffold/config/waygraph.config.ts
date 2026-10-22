@@ -27,6 +27,8 @@ const config = defineConfig(({ env }) => ({
   // },
   // webServer: { command: "npm start", port: 3000 },   // started around test / run / demo / auto
 
+  // Another config for another environment: config/waygraph.staging.config.ts, chosen with `waygraph test --config staging`.
+
   // ── test runner (Playwright) ──────────────────────────────────────────────────────────────────
   // testDir: "tests",
   // playwright: {                           // any Playwright test option, merged over waygraph's defaults

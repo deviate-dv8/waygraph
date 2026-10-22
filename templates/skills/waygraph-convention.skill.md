@@ -83,6 +83,8 @@ against a live site, use `--skill-pilot-blind`.
   `map({ demoPace: "fast" })` a flow, `demo: { pace, typingMs, slowMo }` in the config the whole project. Not `withBlockPace(...)`.
 - **Per-environment values** (a different `baseUrl` for staging) come from `.env` files read in the config function:
   `defineConfig(({ env }) => ({ baseUrl: env.BASE_URL }))`; `--env staging` loads `.env.staging`. Never edit the config to switch.
+- **More than one config** (staging, another app) is another file, `config/waygraph.<name>.config.ts`, chosen with `--config <name>`.
+  The engine a config exports, and every engine in a flow, follows the selected config.
 - **A browser dialog (`confirm`, `beforeunload`) is answered with `withDialog(block, { accept, into })`**, not inside the
   Block's `act`; the click Block stays a plain click.
 - **Project settings live in `config/waygraph.config.ts`** (`defineConfig({ baseUrl, testDir, webServer,

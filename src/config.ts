@@ -3,7 +3,7 @@
 // setting, for consumers who'd rather have a real typed file than a JSON field. Real ask: "I
 // think its time to add waygraph config now."
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { extensionPathsFromEnv } from "./browser.js";
 import type { PlaywrightTestConfig } from "@playwright/test";
@@ -95,6 +95,30 @@ const CONFIG_NAMES = ["waygraph.config.ts", "waygraph.config.mts", "waygraph.con
 const CONFIG_FILENAMES = [...CONFIG_NAMES.map((n) => join("config", n)), ...CONFIG_NAMES];
 
 /**
+ * Which config file(s) to try. `--config <file>` / `WAYGRAPH_CONFIG` picks one: a path (`config/staging.ts`), or a short name
+ * (`staging` -> `config/waygraph.staging.config.ts`, also tried in the project root). Without it, `waygraph.config.*`.
+ */
+function configCandidates(): string[] {
+  const chosen = process.env.WAYGRAPH_CONFIG;
+  if (!chosen) return CONFIG_FILENAMES;
+  if (/[\\/]/.test(chosen) || /\.[cm]?[jt]s$/.test(chosen)) return [chosen];
+  const names = ["ts", "mts", "mjs", "js", "cjs"].map((e) => `waygraph.${chosen}.config.${e}`);
+  return [...names.map((n) => join("config", n)), ...names, chosen];
+}
+
+/** Removes `--config <file>` / `--config=<file>` from argv and records it as `WAYGRAPH_CONFIG`, so every command reads that config. */
+export function takeConfigFlag(argv: string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]!;
+    if (a === "--config" && argv[i + 1] !== undefined) process.env.WAYGRAPH_CONFIG = argv[++i]!;
+    else if (a.startsWith("--config=")) process.env.WAYGRAPH_CONFIG = a.slice("--config=".length);
+    else out.push(a);
+  }
+  return out;
+}
+
+/**
  * Looks for the first `waygraph.config.*` in `projectDir` and imports it - `.ts` works
  * unmodified because `bin/waygraph` already registers `tsx/esm` before `dist/cli.js` ever runs
  * (the same mechanism that already lets a consumer's `.block.ts`/`.flow.ts` import directly), so
@@ -104,9 +128,14 @@ const CONFIG_FILENAMES = [...CONFIG_NAMES.map((n) => join("config", n)), ...CONF
  */
 export async function loadWaygraphConfig(projectDir: string): Promise<WaygraphConfig | undefined> {
   loadEnvFiles(projectDir);
-  for (const name of CONFIG_FILENAMES) {
-    const p = join(projectDir, name);
-    if (!existsSync(p)) continue;
+  for (const name of configCandidates()) {
+    const p = isAbsolute(name) ? name : join(projectDir, name);
+    if (!existsSync(p)) {
+      if (process.env.WAYGRAPH_CONFIG && name === process.env.WAYGRAPH_CONFIG) {
+        throw new Error(`waygraph: config "${process.env.WAYGRAPH_CONFIG}" not found (looked for ${p})`);
+      }
+      continue;
+    }
     let mod: { default?: WaygraphConfig } & WaygraphConfig;
     try {
       mod = (await import(pathToFileURL(p).href)) as { default?: WaygraphConfig } & WaygraphConfig;

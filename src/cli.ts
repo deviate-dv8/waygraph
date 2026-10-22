@@ -19,6 +19,7 @@
 import { SKILL_FLAG_MAP, printSkillIndex, readSkillMarkdown } from "./commands/agent-dive-scaffold.js";
 import type { SkillFlag } from "./commands/agent-dive-scaffold.js";
 import { takeEnvFlag } from "./env-file.js";
+import { takeConfigFlag } from "./config.js";
 import { usage } from "./cli/usage.js";
 import { listCase, navCase } from "./commands/list.js";
 import { checkCase, typecheckCase, validateCase } from "./commands/check.js";
@@ -33,7 +34,7 @@ import { upgradeCase } from "./commands/upgrade.js";
 import { extensionsCase } from "./commands/extensions.js";
 import { mapCase } from "./commands/map.js";
 
-const args = takeEnvFlag(process.argv.slice(2));
+const args = takeConfigFlag(takeEnvFlag(process.argv.slice(2)));
 const command = args[0];
 if (command) process.env.WAYGRAPH_COMMAND = command;
 async function main(): Promise<void> {
