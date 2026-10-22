@@ -36,7 +36,7 @@ import {
 } from "../auto-session.js";
 import type { PilotHighlightFixtures } from "../pilot-overlay.js";
 
-export type { PilotHighlightFixtures, PilotFixtureRing } from "../pilot-overlay.js";
+export type { PilotHighlightFixtures } from "../pilot-overlay.js";
 
 export interface SessionMeta {
   sessionId: string;
@@ -141,7 +141,7 @@ function generateSessionId(): string {
   return randomBytes(4).toString("hex");
 }
 
-export function readSessionMeta(projectDir: string, sessionId: string): SessionMeta | null {
+function readSessionMeta(projectDir: string, sessionId: string): SessionMeta | null {
   const p = metaPath(projectDir, sessionId);
   if (!existsSync(p)) return null;
   try {

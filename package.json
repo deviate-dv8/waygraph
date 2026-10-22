@@ -48,7 +48,7 @@
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "npm run clean && tsc -p tsconfig.build.json && node scripts/copy-runner.mjs && node scripts/copy-ui-css.mjs",
     "typecheck": "node bin/waygraph typecheck .",
-    "test": "npm run check:structure && npm run test:unit && playwright test",
+    "test": "npm run check:structure && npm run knip && npm run test:unit && playwright test",
     "test:ui": "playwright test --ui",
     "test:unit": "node --import tsx/esm --test tests/unit/*.spec.ts",
     "example:saucedemo:install": "npm --prefix examples/saucedemo install",
@@ -58,7 +58,8 @@
     "docs:dev": "npm run docs:api && vitepress dev docs",
     "docs:build": "npm run docs:api && vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "docs:api": "typedoc && node scripts/gen-deprecated.mjs"
+    "docs:api": "typedoc && node scripts/gen-deprecated.mjs",
+    "knip": "knip"
   },
   "peerDependencies": {
     "@playwright/test": "^1.40.0"
@@ -71,6 +72,7 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.0.0",
+    "knip": "^6.42.1",
     "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.14.1",
     "typedoc-vitepress-theme": "^1.1.4",

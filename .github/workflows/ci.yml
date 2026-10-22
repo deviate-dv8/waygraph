@@ -37,6 +37,9 @@ jobs:
       - name: check:structure (no file over 800 lines, no import cycles)
         run: npm run check:structure
 
+      - name: knip (unused files, exports and dependencies)
+        run: npm run knip
+
       - name: Unit tests
         run: npm run test:unit
 

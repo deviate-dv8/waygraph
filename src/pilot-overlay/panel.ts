@@ -4,7 +4,7 @@ import { ensureInstalled } from "./shell.js";
 import type { Page } from "@playwright/test";
 
 /** Minimal shape needed to render the graph tree - matches WaygraphGraph. */
-export interface PilotOverlayGraph {
+interface PilotOverlayGraph {
   nodes: readonly { checkpoint: string }[];
   edges: readonly { block: string; from: string; to: string; kind: "nav" | "action" }[];
 }

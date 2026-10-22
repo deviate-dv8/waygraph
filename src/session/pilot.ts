@@ -31,9 +31,7 @@
 import { discoverGraph, type WaygraphGraph } from "../analysis/graph.js";
 import {
   requestSession,
-  listBrowserSessions,
   resolveSessionMeta,
-  type SessionMeta,
 } from "./auto-session-ipc.js";
 import { browserStart, type BrowserStartInit } from "./browser.js";
 import type { SessionSnapshot } from "../auto-session.js";
@@ -109,4 +107,3 @@ export async function pilotAttach(
   };
 }
 
-export { listBrowserSessions, type SessionMeta };

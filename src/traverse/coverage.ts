@@ -41,7 +41,7 @@ export interface TraverseCoverageReport {
 }
 
 /** Static graph edge key = Block runtime name. */
-export function edgeKeyFromGraphEdge(edge: { block: string }): string {
+function edgeKeyFromGraphEdge(edge: { block: string }): string {
   return edge.block;
 }
 

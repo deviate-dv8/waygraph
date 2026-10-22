@@ -43,7 +43,7 @@ export function normalizeDemoPace(raw: unknown): DemoPace {
  * What each named pace means, as a multiplier of normal dwell (1 = normal). `demo.speeds` in the config (or
  * `WAYGRAPH_PACE_SPEEDS`, a JSON object) overrides any of them; the defaults are blitz 0.05, fast 0.33, slow 2.
  */
-export function paceSpeeds(): { blitz: number; fast: number; slow: number } {
+function paceSpeeds(): { blitz: number; fast: number; slow: number } {
   const out = { blitz: 0.05, fast: 0.33, slow: 2 };
   try {
     const raw = process.env.WAYGRAPH_PACE_SPEEDS ? JSON.parse(process.env.WAYGRAPH_PACE_SPEEDS) : {};

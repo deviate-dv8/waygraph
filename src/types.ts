@@ -8,22 +8,7 @@ import type {
   WaygraphSlidesOrFn,
 } from "./highlights.js";
 
-export type {
-  WaygraphHighlight,
-  WaygraphHighlightStub,
-  WaygraphHighlightFixture,
-  WaygraphSlide,
-  HighlightStubPhase,
-  HighlightStubPhaseOrFn,
-  HighlightFixtureMap,
-  ResolvedHighlight,
-  StubCtx,
-  StubLifecycleFn,
-  StubPhaseResult,
-  StubPhaseFixtures,
-  WaygraphTodoItem,
-  WaygraphTodoInput,
-} from "./highlights.js";
+export type { WaygraphHighlight } from "./highlights.js";
 
 /**
  * A Checkpoint is identified solely by its string tag - a phantom marker with no

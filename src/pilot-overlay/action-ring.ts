@@ -4,7 +4,7 @@ import { ensureInstalled } from "./shell.js";
 type Box = { x: number; y: number; width: number; height: number };
 
 /** Paint the gray "auto" ring (Playwright is about to act here) at a viewport rectangle. */
-export async function showPilotRect(page: Page, box: Box, label: string, tone = "auto"): Promise<void> {
+async function showPilotRect(page: Page, box: Box, label: string, tone = "auto"): Promise<void> {
   await ensureInstalled(page);
   await page
     .evaluate(

@@ -228,7 +228,7 @@ export type {
 export { pilotStart } from "./session/pilot.js";
 export type { PilotStartResult } from "./session/pilot.js";
 export { defineConfig, resolveBaseUrl } from "./config.js";
-export type { WaygraphConfig, ConfigContext } from "./config.js";
+export type { WaygraphConfig, ConfigContext, VideoSettings, RunSettings, DemoSettings } from "./config.js";
 export { withWebServer } from "./webserver.js";
 export { chromiumExecutablePath } from "./browser.js";
 export { resolveExtension, KNOWN_EXTENSIONS } from "./extensions.js";

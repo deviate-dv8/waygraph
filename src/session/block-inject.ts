@@ -13,12 +13,12 @@ import { homedir } from "node:os";
  * bug as `cli/util.ts`'s own `packageRoot()` (see its comment) - self-inflicted here by moving
  * this file into `src/session/` without updating the path math to match the new depth.
  */
-export function packageRoot(): string {
+function packageRoot(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 }
 
 /** Human label for an injected root (used in merged `file` paths). */
-export function injectLabel(root: string): string {
+function injectLabel(root: string): string {
   return basename(root.replace(/\/$/, ""));
 }
 
@@ -53,7 +53,7 @@ const PRESETS: Record<string, () => string | null> = {
 /**
  * Resolve one `--inject` token to an absolute directory (preset name or path).
  */
-export function resolveInjectRoot(token: string, cwd = process.cwd()): string {
+function resolveInjectRoot(token: string, cwd = process.cwd()): string {
   const raw = token.trim();
   if (!raw) throw new Error("waygraph inject: empty --inject value");
   const preset = PRESETS[raw.toLowerCase()];

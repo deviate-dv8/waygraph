@@ -17,13 +17,13 @@ import { existsSync, readdirSync, statSync, type Dirent } from "node:fs";
 import { join, dirname, relative, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
-export interface MapViolation {
+interface MapViolation {
   file: string;
   block: string;
   reason: string;
 }
 
-export interface MapNode {
+interface MapNode {
   block: string;
   checkpoint: string | undefined;
   file: string;

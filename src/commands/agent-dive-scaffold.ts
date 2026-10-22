@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 export type AgentDiveLoop = "claude" | "opencode" | "cursor" | "vscode";
 
-export interface AgentSpec {
+interface AgentSpec {
   name: string;
   description: string;
   model?: string;
@@ -37,7 +37,7 @@ function skillsTemplateDir(): string {
 }
 
 /** Minimal YAML-ish frontmatter parser for `*.agent.md` templates. */
-export function parseAgentSpec(filePath: string): AgentSpec {
+function parseAgentSpec(filePath: string): AgentSpec {
   const raw = readFileSync(filePath, "utf-8");
   if (!raw.startsWith("---\n")) {
     throw new Error(`agent-dive: missing frontmatter in ${filePath}`);
@@ -80,7 +80,7 @@ export function parseAgentSpec(filePath: string): AgentSpec {
   };
 }
 
-export function loadAgentSpecs(): AgentSpec[] {
+function loadAgentSpecs(): AgentSpec[] {
   const dir = agentsTemplateDir();
   if (!existsSync(dir)) {
     throw new Error(`agent-dive: templates missing at ${dir}`);
@@ -99,7 +99,7 @@ export function loadAgentSpecs(): AgentSpec[] {
  * `claude` loop only. Reuses the same `name: .../description: ...` +
  * body frontmatter shape `parseAgentSpec` already parses.
  */
-export function loadSkillSpecs(): AgentSpec[] {
+function loadSkillSpecs(): AgentSpec[] {
   const dir = skillsTemplateDir();
   if (!existsSync(dir)) return [];
   return readdirSync(dir)

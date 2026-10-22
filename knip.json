@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/index.ts",
+    "src/cli.ts",
+    "src/playwright.config.ts",
+    "src/runner/index.*",
+    "scripts/*.mjs",
+    "tests/**/*.spec.ts",
+    "typecheck/*.ts"
+  ],
+  "project": [
+    "src/**/*.{ts,js}",
+    "scripts/**",
+    "tests/**/*.ts",
+    "typecheck/**/*.ts"
+  ],
+  "ignore": [
+    "tests/fixtures/**"
+  ],
+  "ignoreDependencies": [
+    "open-props"
+  ],
+  "ignoreBinaries": [
+    "diff"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "rules": {
+    "duplicates": "off"
+  }
+}

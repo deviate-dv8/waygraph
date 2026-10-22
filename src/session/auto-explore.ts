@@ -31,7 +31,7 @@ export interface ExploreEdge extends WaygraphEdge {
   instanceOption?: WaygraphInstanceOption;
 }
 
-export interface ExploreSection {
+interface ExploreSection {
   title: string;
   edges: ExploreEdge[];
 }
