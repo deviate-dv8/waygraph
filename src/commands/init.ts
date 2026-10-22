@@ -1,9 +1,34 @@
 // Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { packageRoot } from "../cli/util.js";
 import { agentSkillFiles } from "./agent-dive-scaffold.js";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+
+/**
+ * Running from a checkout (not an installed package), npm doesn't have this build's code, so a plain `^version` would install an
+ * older waygraph and break the scaffold's types. Pack this checkout into the project and depend on that file instead.
+ */
+function packLocalBuild(targetDir: string): string | undefined {
+  const root = packageRoot();
+  if (root.split(sep).includes("node_modules")) return undefined;
+  const dir = join(targetDir, ".waygraph-local");
+  mkdirSync(dir, { recursive: true });
+  const packed = spawnSync("npm", ["pack", "--pack-destination", dir, "--silent"], {
+    cwd: root,
+    encoding: "utf-8",
+    shell: process.platform === "win32",
+  });
+  const file = packed.stdout?.trim().split("\n").pop();
+  if (packed.status !== 0 || !file) {
+    console.error("waygraph init: could not pack this checkout; the project will depend on the published waygraph");
+    rmSync(dir, { recursive: true, force: true });
+    return undefined;
+  }
+  writeFileSync(join(targetDir, ".gitignore"), readFileSync(join(targetDir, ".gitignore"), "utf-8") + ".waygraph-local/\n");
+  return `file:.waygraph-local/${file}`;
+}
 
 function initCommand(projectName: string): void {
   if (!projectName) {
@@ -38,7 +63,9 @@ function initCommand(projectName: string): void {
   const pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8").replaceAll("__PROJECT_NAME__", pkgName));
   // Pin the project to the waygraph that created it - a stale range here installs an old engine.
   const ownVersion = JSON.parse(readFileSync(join(packageRoot(), "package.json"), "utf-8")).version;
-  pkg.dependencies.waygraph = `^${ownVersion}`;
+  const local = packLocalBuild(targetDir);
+  pkg.dependencies.waygraph = local ?? `^${ownVersion}`;
+  if (local) console.log(`(running from a waygraph checkout: depending on its local build, ${local})`);
   writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + "\n");
   const configPath = join(targetDir, "config", "waygraph.config.ts");
   writeFileSync(configPath, readFileSync(configPath, "utf-8").replaceAll("__APP_BASE_URL__", appBaseUrl));

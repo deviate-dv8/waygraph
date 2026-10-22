@@ -57,7 +57,7 @@ export async function upgradeCase(args: string[]): Promise<void> {
 
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
   const current = pkg.dependencies?.waygraph as string | undefined;
-  const depStale = current !== undefined && isOlder(major(current), major(ownVersion));
+  const depStale = current !== undefined && !current.startsWith("file:") && isOlder(major(current), major(ownVersion));
   console.log(`waygraph upgrade: ${proj} (waygraph ${current ?? "not a dependency"} -> ${ownVersion})`);
   if (depStale) console.log(`  dependency  waygraph ${current} -> ^${ownVersion}`);
   for (const rel of added) console.log(`  new         ${rel}`);
