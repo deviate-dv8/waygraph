@@ -16,7 +16,11 @@ import "../map/(external)/hoppscotch/_page.block.js";
 export const hoppscotchPostFlow = engine
   .map()
   .start()
-  .gotoExternal(NavHoppscotchSettingsBlock)
+  .gotoExternal(
+    NavHoppscotchSettingsBlock.stubBefore((ctx) => {
+      ctx.title("Scaffold: Hoppscotch POST with header and JSON body");
+    }),
+  )
   .method(PickExtensionInterceptorBlock)
   .gotoExternal(NavHoppscotchRestBlock)
   .method(SetMethodBlock)
@@ -27,4 +31,4 @@ export const hoppscotchPostFlow = engine
   .assert(AssertStatusBlock)
   .method(ReadResponseBodyBlock)
   .assert(AssertResponseBodyBlock)
-  .end({ title: "Scaffold: Hoppscotch POST with header and JSON body" });
+  .end();

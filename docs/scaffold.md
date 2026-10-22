@@ -89,7 +89,7 @@ Only the paths you name are copied; differing files are replaced only with `--ov
 | Add a page | Copy a folder under `src/map/`; keep the `_nav` / `_page` / `_sel` names |
 | Add an action | One file in that page's `_methods/` |
 | Confirm a state (button disabled, error shown) | `defineAssertBlock` with `Trait.disabled` / `Trait.enabled` |
-| Wire steps together | `src/flows/*.flow.ts`, built with `map()` and `.end({ title, memStub, … })` |
+| Wire steps together | `src/flows/*.flow.ts`, built with `map({ memStub, … })`; nest one with `.flow(sub, { reset })` |
 | Keep folders honest | `waygraph map` fails if a folder stops matching its URL |
 
 ## Coding agents

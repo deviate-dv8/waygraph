@@ -33,12 +33,12 @@ ${rows}
 | Deprecated | Use instead |
 | --- | --- |
 | \`playwright.config.ts\` in a project | \`config/waygraph.config.ts\` (\`testDir\`, \`webServer\`, \`playwright: { … }\`). \`waygraph test\` still uses an existing one and prints a note. |
-| Nested wrappers: \`withTitle(withMemStub(withSessionReset(flow)))\` | Options in \`.end({ title, memStub, sessionReset, … })\` or \`engine.defineFlow(blocks, options)\`. |
+| Nested wrappers: \`withTitle(withMemStub(withSessionReset(flow)))\` | Settings in \`engine.map({ memStub, expectedFailure, demoPace, highlightStyle })\`; the title is \`ctx.title(…)\` in a stub; a reset is \`.flow(sub, { reset: true })\`. |
 | \`withHighlightFixtures(flow, map)\` and \`HighlightFixtureMap\` | ctx stubs chained on the Block where the flow uses it: \`AddItemBlock.stubAfter((ctx) => { ctx.ring(…) })\`. |
-| \`withBlockPace(block, pace)\` / \`withDemoPace(flow, pace)\` | \`.method(Block, { pace })\`, \`.end({ demoPace })\`, or \`demo.pace\` in the config. |
+| \`withBlockPace(block, pace)\` / \`withDemoPace(flow, pace)\` | \`.method(Block, { pace })\`, \`map({ demoPace })\`, or \`demo.pace\` in the config. |
 | Stubs written inside Block files | Stubs in the flow. Blocks carry no narration. |
 | \`new Engine()\` in every flow | \`import { engine } from "../../config/waygraph.config.js"\` (built from the loaded config). |
-| Raw \`defineFlow([start, …, end])\` arrays | \`engine.map().start().gotoPage(…).method(…).end()\`, which checks each step's Block kind. |
+| \`defineFlow([start, …, end])\`, \`chainFlow(a, b)\` and \`.end(options)\` | \`engine.map()…end()\`; nest with \`.flow(sub, { reset })\`. |
 | \`act(){}\` plus an \`observe\` that writes \`mem\` | Read into \`mem\` inside \`act\`. \`observe\` is only for a Block that branches. |
 | \`NavBlockOptions.highlights\` | Prefer \`stubAfter\`. |
 | \`package.json\` \`"waygraph": { "baseUrl" }\` | \`baseUrl\` in \`config/waygraph.config.ts\` (the field still works). |

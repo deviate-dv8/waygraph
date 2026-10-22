@@ -24,8 +24,9 @@ import type { RunGraphOptions } from "./run-graph.js";
 import { MemPage } from "../mem-page.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import { fastForwardComposeBlock } from "./compose.js";
-import { withBlockPace } from "./flow.js";
-import type { DemoPace } from "../highlights.js";
+import { clearSessionState, withBlockPace } from "./flow.js";
+import { copyWaygraphRuntime } from "./block.js";
+import type { DemoPace, HighlightStyleDefaults } from "../highlights.js";
 import type { NavBlock } from "./blocks/nav.js";
 import type { PageBlock } from "./blocks/page.js";
 import type { AssertBlock, MethodBlock } from "./blocks/method.js";
@@ -42,6 +43,24 @@ type S = Checkpoint<"__start__">;
 export type DefineFlowFn = (blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker], options?: FlowOptions) => Flow<any>;
 
 /** Per-step options every `MapBuilder` step method (`.gotoPage()`/`.method()`/`.assert()`) takes. */
+/** The same Block, but it clears cookies and storage before it acts. Keeps the runtime markers. */
+function resetBefore(block: Block<any, any>): Block<any, any> {
+  const act = block.instruction.act.bind(block.instruction);
+  const next = {
+    ...block,
+    instruction: {
+      ...block.instruction,
+      async act(page: Page, input: unknown, mem: MemPage) {
+        await clearSessionState(page.context(), page as unknown as Page);
+        return (act as (p: unknown, i: unknown, m: MemPage) => unknown)(page, input, mem);
+      },
+    },
+  } as Block<any, any>;
+  copyWaygraphRuntime(block, next);
+  Object.defineProperty(next, "__waygraphResetBefore", { value: true, enumerable: false, configurable: true });
+  return next;
+}
+
 /** Applies a step's `pace` option, keeping the Block's runtime markers. */
 function paced(block: object, opts: MapStepOpts | undefined): DefinedBlock<any, any> {
   return (opts?.pace === undefined ? block : withBlockPace(block as DefinedBlock<any, any>, opts.pace)) as DefinedBlock<any, any>;
@@ -71,6 +90,20 @@ export interface MapBuilderOptions {
    * way; only the internal/external origin distinction is opt-in).
    */
   homeOrigin?: string;
+  /** Fill missing `requires` keys from `registerMemStub` when the flow runs (what `withMemStub` did). */
+  memStub?: boolean;
+  /** Marks a flow that is supposed to throw, with the reason shown in the demo (what `withExpectedFailure` did). */
+  expectedFailure?: string;
+  /** Default demo pace for the whole flow (what `withDemoPace` did). */
+  demoPace?: DemoPace;
+  /** Default ring tone, size and weight for the whole flow (what `withHighlightStyle` did). */
+  highlightStyle?: HighlightStyleDefaults;
+}
+
+/** What `.flow()` takes for the sub-flow it runs inline. */
+export interface MapFlowOpts {
+  /** Clear cookies and storage right before the sub-flow, e.g. to start a second user fresh (what `withSessionReset` + `chainFlow` did). */
+  reset?: boolean;
 }
 
 
@@ -406,6 +439,20 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   }
 
   /**
+   * Runs another flow's steps inline here, in the same page, browser and `mem`. This is how flows nest:
+   * `map().flow(loginFlow).flow(viewerFlow, { reset: true })`. With `{ reset: true }` cookies and storage are cleared
+   * right before the sub-flow's first step. Replaces `chainFlow` and `withSessionReset`.
+   */
+  flow<NextOut extends Checkpoint<string>>(sub: Flow<NextOut>, opts?: MapFlowOpts): MapBuilder<NextOut> {
+    let next = this as unknown as MapBuilder<any>;
+    sub.blocks().forEach((info, i) => {
+      const block = i === 0 && opts?.reset ? resetBefore(info.block) : info.block;
+      next = next.appendStep(block as DefinedBlock<any, any>);
+    });
+    return next as MapBuilder<NextOut>;
+  }
+
+  /**
    * Branch: run everything added so far, then continue into whichever `routes[tag]` matches the
    * resolved Checkpoint's tag - same page, same context, same mem. `routes` must cover every tag
    * of `Out` (a missing one is a compile error, matching {@link branch}'s own exhaustiveness);
@@ -473,6 +520,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * left open at `.end()` closes silently; an EXPLICIT `.ffStart()` left open
    * still throws - the author opened that one and needs to close it themselves.
    */
+  /** @param options @deprecated Pass flow settings to `map({ … })` instead. */
   end(options?: FlowOptions): Flow<Out> {
     if (this.ff && !this.ff.auto) {
       throw new WaygraphError("WG_MAP_FF_NOT_CLOSED", MSG_MAP_FF_NOT_CLOSED(this.ff.name));

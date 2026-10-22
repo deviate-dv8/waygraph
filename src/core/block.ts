@@ -277,6 +277,7 @@ function withStubPhase<In extends Checkpoint<string>, Out extends Checkpoint<str
  * Attach / chain a stubBefore lifecycle on a Block. Prefer
  * `(ctx) => { ctx.ring(...); const x = ctx.mem?.get(Key); }`.
  * @example FillUsernameBlock.stubBefore((ctx) => { ctx.ring("username", { ... }) })
+ * @deprecated Use the chained method: `Block.stubBefore((ctx) => …)`.
  */
 export function withStubBefore<B extends Block<any, any>>(
   block: B,
@@ -286,7 +287,8 @@ export function withStubBefore<B extends Block<any, any>>(
 }
 
 
-/** @see {@link withStubBefore} */
+/** @see {@link withStubBefore}  * @deprecated Use the chained method: `Block.stubAfter((ctx) => …)`.
+ */
 export function withStubAfter<B extends Block<any, any>>(
   block: B,
   stub: StubPhaseFn<any>,
@@ -295,7 +297,8 @@ export function withStubAfter<B extends Block<any, any>>(
 }
 
 
-/** @see {@link withStubBefore} */
+/** @see {@link withStubBefore}  * @deprecated Use the chained method: `Block.stubOnError((ctx) => …)`.
+ */
 export function withStubOnError<B extends Block<any, any>>(
   block: B,
   stub: StubPhaseFn<any>,

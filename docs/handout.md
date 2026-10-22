@@ -84,15 +84,14 @@ Same `.launch()` shape as Playwright. Puppeteer is out of scope.
 ## Multi-episode demos
 
 ```ts
-// each episode sets its own options in .end()
-const ownerFlow = engine.map().start()/* … */.end({ title: "Episode 1 - Owner", sessionReset: true });
-const viewerFlow = engine.map().start()/* … */.end({
-  title: "Episode 2 - Viewer",
-  sessionReset: true,
-  expectedFailure: "Viewer is locked out",
-});
-
-await chainFlow(ownerFlow, viewerFlow).run(context, mem);
+// flows nest as steps; reset starts the next user fresh
+const showcase = engine
+  .map()
+  .start()
+  .flow(ownerFlow)                              // Episode 1 - Owner
+  .flow(viewerFlow, { reset: true })            // Episode 2 - Viewer, locked out
+  .end();
+await showcase.run(context, mem);
 ```
 
 ## Verify / precondition

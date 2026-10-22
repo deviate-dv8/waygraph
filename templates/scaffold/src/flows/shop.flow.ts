@@ -8,7 +8,7 @@ import { ClearCartBlock } from "../map/(app_base)/home/_methods/clear-cart.metho
 import "../states/demo.mem-stubs.js";
 import "../map/(app_base)/home/_page.block.js";
 
-// `memStub: true` fills SelectedItem (alpha) from src/states/demo.mem-stubs.ts; --data overrides it.
+// `map({ memStub: true })` fills SelectedItem (alpha) from src/states/demo.mem-stubs.ts; --data overrides it.
 const AddShown = AddItemBlock.stubBefore((ctx) => {
   ctx.ring("add", { selector: DemoSel.catalog, label: "Catalog" });
 })
@@ -36,12 +36,16 @@ const ClearShown = ClearCartBlock.stubBefore((ctx) => {
 });
 
 export const shopFlow = engine
-  .map()
+  .map({ memStub: true })
   .start()
-  .gotoPage(NavHomeBlock)
+  .gotoPage(
+    NavHomeBlock.stubBefore((ctx) => {
+      ctx.title("Scaffold: Shop (Effect + clear)");
+    }),
+  )
   .method(AddShown)
   .assert(AssertItemAddedBlock)
   .method(RemoveShown)
   .method(AddShown)
   .method(ClearShown)
-  .end({ title: "Scaffold: Shop (Effect + clear)", sessionReset: true, memStub: true });
+  .end();

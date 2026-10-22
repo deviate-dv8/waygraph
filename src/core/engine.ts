@@ -21,6 +21,8 @@ export class Engine {
   constructor(private readonly config: EngineConfig = {}) {}
 
   /**
+   * @deprecated Build flows with `engine.map()`, which checks each step's Block kind and nests flows with `.flow()`.
+   *
    * Builds a runnable {@link Flow} from `[start, ...Blocks, end]`, typechecked
    * so each Block's `In` must match the previous Block's `Out` - the same
    * check `connect()` does, just declared as a flat array instead of hand-nested
@@ -346,7 +348,9 @@ export class Engine {
    *   .end();
    */
   map(options?: MapBuilderOptions): MapBuilder<S> {
-    return MapBuilder.begin(this.defineFlow.bind(this) as DefineFlowFn, options?.homeOrigin);
+    const { homeOrigin, ...flowOptions } = options ?? {};
+    const define = this.defineFlow.bind(this) as DefineFlowFn;
+    return MapBuilder.begin((blocks, extra) => define(blocks, { ...flowOptions, ...extra }), homeOrigin);
   }
 }
 

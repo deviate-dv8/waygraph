@@ -65,7 +65,7 @@ export {
 } from "./core.js";
 export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./core/branch-regression.js";
 export type { ApiBlockOptions, ApiCallResult } from "./core/blocks/api.js";
-export type { MapStepOpts } from "./core/map-builder.js";
+export type { MapStepOpts, MapFlowOpts } from "./core/map-builder.js";
 export {
   resolveHighlightSlots,
   resolveSlides,

@@ -12,7 +12,9 @@ export const exampleFlow = engine
   .map()
   .start()
   .gotoPage(
-    NavHomeBlock.stubAfter((ctx) => {
+    NavHomeBlock.stubBefore((ctx) => {
+      ctx.title("Scaffold: Hello Waygraph");
+    }).stubAfter((ctx) => {
       ctx.ring("title", { selector: DemoSel.title, label: "Home heading", duration: true });
     }).stubOnError((ctx) => {
       ctx.ring("title", { selector: DemoSel.title, label: "Home heading at failure" });
@@ -37,4 +39,4 @@ export const exampleFlow = engine
       }),
   )
   .gotoPage(NavDocsBlock)
-  .end({ title: "Scaffold: Hello Waygraph" });
+  .end();

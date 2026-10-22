@@ -301,7 +301,13 @@ export function buildFlow<Out extends Checkpoint<string>>(
   };
   return {
     resetSession: false,
-    blocks: () => middle.map((b) => ({ name: b.name, block: b, ...(b.routes ? { routes: b.routes } : {}) })),
+    blocks: () =>
+      middle.map((b) => ({
+        name: b.name,
+        block: b,
+        ...(b.routes ? { routes: b.routes } : {}),
+        ...((b as { __waygraphResetBefore?: boolean }).__waygraphResetBefore ? { resetSessionBefore: true } : {}),
+      })),
     run: run as Flow<Out>["run"],
     withBlockVerify(block, verify) {
       const index = findBlockIndex(middle, block);
@@ -333,6 +339,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
  * exactly as if a human had opened the app fresh, not wherever the
  * previous Flow in the chain happened to leave the page.
  * @example const loginFlow = withSessionReset(engine.defineFlow([start, LoginBlock, end]));
+ * @deprecated Use `map().flow(sub, { reset: true })`; the reset belongs to where flows are joined.
  */
 export function withSessionReset<Out extends Checkpoint<string>>(flow: Flow<Out>): Flow<Out> {
   return {
@@ -350,6 +357,7 @@ export function withSessionReset<Out extends Checkpoint<string>>(flow: Flow<Out>
  * Blocks are executing, instead of one fixed title for the whole run.
  * Non-destructive, same pattern as {@link withSessionReset}.
  * @example const ticket123 = withTitle(loginFlow, "Ticket #123 - Sales rep signs in");
+ * @deprecated Name a flow with `ctx.title(...)` in a stub on its first step.
  */
 export function withTitle<Out extends Checkpoint<string>>(flow: Flow<Out>, title: string): Flow<Out> {
   return {
@@ -370,6 +378,7 @@ export function withTitle<Out extends Checkpoint<string>>(flow: Flow<Out>, title
  * this itself - the CLI's `--data`/`--mem-stub` seeding, or a bare-library
  * caller's own explicit `seedMemStub(mem, flow)` call, does the filling.
  * @example const demoLogin = withMemStub(loginFlow);
+ * @deprecated Use `engine.map({ memStub: true })`.
  */
 export function withMemStub<Out extends Checkpoint<string>>(flow: Flow<Out>): Flow<Out> {
   return {
@@ -389,6 +398,7 @@ export function withMemStub<Out extends Checkpoint<string>>(flow: Flow<Out>): Fl
  * @example withDemoPace(happyFlow, 0.5)  // 2x faster than normal
  * @example withDemoPace(gapFlow, 2.5)    // 2.5x slower
  * @example withDemoPace(gapFlow, 4500)   // absolute ~4.5s gates/dwells
+ * @deprecated Use `engine.map({ demoPace })`, a step `{ pace }`, or `demo.pace` in the config.
  */
 export function withDemoPace<Out extends Checkpoint<string>>(
   flow: Flow<Out>,
@@ -409,6 +419,7 @@ export function withDemoPace<Out extends Checkpoint<string>>(
  * Default highlight look for a Flow episode (size / weight / optional tone).
  * Per-slot stub or {@link withHighlightFixtures} values win when set.
  * @example withHighlightStyle(withDemoPace(gapFlow, "slow"), { size: "lg", weight: "bold" })
+ * @deprecated Use `engine.map({ highlightStyle })`.
  */
 export function withHighlightStyle<Out extends Checkpoint<string>>(
   flow: Flow<Out>,
@@ -432,6 +443,7 @@ export function withHighlightStyle<Out extends Checkpoint<string>>(
 /**
  * Demo pacing for one Block or compose unit (not FF - use fastForwardComposeBlock for blitz).
  * @example withBlockPace(composeBlock("gap-review", [...]), "slow")
+ * @deprecated Use a step option: `.method(Block, { pace })`.
  */
 export function withBlockPace<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   block: Block<In, Out>,
@@ -460,6 +472,7 @@ export function withBlockPace<In extends Checkpoint<string>, Out extends Checkpo
  *   engine.defineFlow([start, NavLoginBlock, SubmitLoginActionBlock, end]),
  *   "locked_out_user stays on LoginPage with the error banner - working as intended.",
  * );
+ * @deprecated Use `engine.map({ expectedFailure: reason })`.
  */
 export function withExpectedFailure<Out extends Checkpoint<string>>(flow: Flow<Out>, reason: string): Flow<Out> {
   return {
@@ -478,6 +491,7 @@ export function withExpectedFailure<Out extends Checkpoint<string>>(flow: Flow<O
  * stubOnError slots. Non-destructive, same pattern as {@link withTitle}.
  * Demo/`chain --step` reads `flow.highlightFixtures`; `run()` ignores it.
  * @example withHighlightFixtures(issueFlow, { "submit-login": { stubBefore: { email: { label: "AC-1" } } } })
+ * @deprecated Chain ctx stubs on the Block: `Block.stubAfter((ctx) => …)`.
  */
 export function withHighlightFixtures<Out extends Checkpoint<string>>(
   flow: Flow<Out>,
@@ -544,7 +558,7 @@ function locateInChain(
 }
 
 
-async function clearSessionState(context: BrowserContext, page: Page): Promise<void> {
+export async function clearSessionState(context: BrowserContext, page: Page): Promise<void> {
   await context.clearCookies().catch(() => {});
   await page
     .evaluate(() => {
@@ -576,6 +590,7 @@ async function clearSessionState(context: BrowserContext, page: Page): Promise<v
  * chain - nothing to reset yet). The combined result is whatever the LAST
  * flow resolved to.
  * @example chainFlow(ticket123Flow, ticket456Flow).run(context, mem)
+ * @deprecated Nest flows with `map().flow(a).flow(b, { reset: true })`.
  */
 export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
   if (flows.length === 0) {

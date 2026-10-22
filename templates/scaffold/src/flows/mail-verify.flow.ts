@@ -12,7 +12,11 @@ import { MailpitSel } from "../map/(external)/mailpit/_sel.js";
 export const mailVerifyFlow = engine
   .map()
   .start()
-  .gotoExternal(NavMailpitInboxBlock)
+  .gotoExternal(
+    NavMailpitInboxBlock.stubBefore((ctx) => {
+      ctx.title("Scaffold: Cross-origin mail verification (QA-rich)");
+    }),
+  )
   .assert(
     AssertEmailReceivedBlock.stubAfter((ctx) => {
       ctx.ring("note", {
@@ -40,4 +44,4 @@ export const mailVerifyFlow = engine
     }),
   )
   .gotoPage(NavVerificationLinkBlock)
-  .end({ title: "Scaffold: Cross-origin mail verification (QA-rich)" });
+  .end();

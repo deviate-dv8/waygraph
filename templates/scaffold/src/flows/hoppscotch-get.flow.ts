@@ -11,10 +11,14 @@ import "../map/(external)/hoppscotch/_page.block.js";
 export const hoppscotchGetFlow = engine
   .map()
   .start()
-  .gotoExternal(NavHoppscotchSettingsBlock)
+  .gotoExternal(
+    NavHoppscotchSettingsBlock.stubBefore((ctx) => {
+      ctx.title("Scaffold: Hoppscotch GET");
+    }),
+  )
   .method(PickExtensionInterceptorBlock)
   .gotoExternal(NavHoppscotchRestBlock)
   .method(SetUrlBlock)
   .method(SendRequestBlock)
   .assert(AssertStatusBlock)
-  .end({ title: "Scaffold: Hoppscotch GET" });
+  .end();

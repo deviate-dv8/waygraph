@@ -17,7 +17,11 @@ import "../map/(external)/hoppscotch/_page.block.js";
 export const hoppscotchAuthFlow = engine
   .map()
   .start()
-  .gotoExternal(NavHoppscotchSettingsBlock)
+  .gotoExternal(
+    NavHoppscotchSettingsBlock.stubBefore((ctx) => {
+      ctx.title("Scaffold: Hoppscotch GET with query params and bearer token");
+    }),
+  )
   .method(PickExtensionInterceptorBlock)
   .gotoExternal(NavHoppscotchRestBlock)
   .method(SetUrlBlock)
@@ -29,4 +33,4 @@ export const hoppscotchAuthFlow = engine
   .assert(AssertResponseBodyBlock)
   .method(ReadResponseHeadersBlock)
   .assert(AssertResponseHeaderBlock)
-  .end({ title: "Scaffold: Hoppscotch GET with query params and bearer token" });
+  .end();

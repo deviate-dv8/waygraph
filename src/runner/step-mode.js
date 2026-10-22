@@ -26,6 +26,8 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
   const demoFast = process.env.WAYGRAPH_DEMO_FAST === "1";
   const stepperMode = process.env.WAYGRAPH_STEPPER === "full" ? "full" : "carousel";
   const pacing = { gatesFast: demoFast, gatesSlow: false, skipTheater: false, demoPace: "normal" };
+  // A title set by a stub (`ctx.title`) names the flow from that step on, until another stub sets a new one.
+  let stickyTitle;
   const stubBeforeRef = { current: [] };
   /** Live todo dock for Method fill/click advance (same carry as stage.state.lastTodoDock). */
   const todoDockRef = { current: undefined };
@@ -269,8 +271,9 @@ export async function runStepMode(engine, start, end, context, page, mem, resolv
       (stage.state.lastTodoDock && stage.state.lastTodoDock.groups[0] && stage.state.lastTodoDock.groups[0].items) ||
       stubBeforePhase.todos ||
       [];
+    if (stubBeforePhase.title && String(stubBeforePhase.title).trim()) stickyTitle = String(stubBeforePhase.title).trim();
     const overlayTitle =
-      (stubBeforePhase.title && String(stubBeforePhase.title).trim()) ||
+      stickyTitle ||
       (r.episodeTitle && String(r.episodeTitle).trim()) ||
       title ||
       "waygraph demo";

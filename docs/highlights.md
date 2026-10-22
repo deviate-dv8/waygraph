@@ -43,7 +43,7 @@ export const checkoutFlow = engine
   .start()
   .gotoPage(NavLoginBlock)
   .method(SubmitLogin)
-  .end({ title: "Owner: Full Checkout" });
+  .end();
 ```
 
 A Block used twice gets one `const` and is reused. Selectors come from the Block's `*Sel`; do not invent

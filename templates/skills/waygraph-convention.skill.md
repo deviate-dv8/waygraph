@@ -68,10 +68,10 @@ against a live site, use `--skill-pilot-blind`.
 
 ## Flows, stubs and config (the scaffold's shape)
 
-- **Build flows with `map()`** (`.start().gotoPage(Nav).method(B).assert(A).end({ ... })`; `.gotoExternal` for another origin),
-  not a raw `defineFlow([start, ...])` array. Flow settings go in `.end`'s options:
-  `.end({ title: "Shop", memStub: true, sessionReset: true })`. Never `withMemStub(withTitle(withSessionReset(...)))`.
-  (`defineFlow(blocks, options)` takes the same options.)
+- **Build flows with `map()`** (`engine.map({ memStub }).start().gotoPage(Nav).method(B, { pace }).assert(A).end()`;
+  `.gotoExternal` for another origin), never a raw `defineFlow([start, ...])`. Flow settings go in `map({ … })` before the chain
+  and `.end()` takes nothing. The flow's title is `ctx.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**,
+  not `chainFlow` / `withSessionReset`. No `withMemStub(withTitle(...))` wrappers.
 - **Blocks carry no stubs; the flow does.** Demo highlights are ctx stubs chained on the Block where the flow uses it:
   `AddItemBlock.stubAfter((ctx) => { ctx.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart" }); })`.
   Not a static `withHighlightFixtures({ "add-item": { stubAfter: {...} } })` map, and not an inline
@@ -80,7 +80,7 @@ against a live site, use `--skill-pilot-blind`.
   `observe` is only for a Block that branches (it feeds `resolve`); an empty `act(){}` plus an `observe` that
   writes `mem` is a misuse.
 - **Demo pace is a map option or config, never a wrapper.** `.method(SetBearerTokenBlock, { pace: "blitz" })` speeds one step,
-  `.end({ demoPace: "fast" })` a flow, `demo: { pace, typingMs, slowMo }` in the config the whole project. Not `withBlockPace(...)`.
+  `map({ demoPace: "fast" })` a flow, `demo: { pace, typingMs, slowMo }` in the config the whole project. Not `withBlockPace(...)`.
 - **Per-environment values** (a different `baseUrl` for staging) come from `.env` files read in the config function:
   `defineConfig(({ env }) => ({ baseUrl: env.BASE_URL }))`; `--env staging` loads `.env.staging`. Never edit the config to switch.
 - **A browser dialog (`confirm`, `beforeunload`) is answered with `withDialog(block, { accept, into })`**, not inside the

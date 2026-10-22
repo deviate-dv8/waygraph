@@ -126,7 +126,7 @@ export default defineConfig({
 `demo.speeds` defines the named paces as multipliers of normal dwell and gate time (defaults `{ blitz: 0.05, fast: 0.33, slow: 2 }`, lower is faster), e.g. `speeds: { fast: 0.5 }`. `demo.typingMs` is the typing animation in ms per character (`0` types instantly). In `demo`, `slowMo` is waygraph's own
 pause after each action, applied once per action and not per keystroke, so a step's pace can remove it; in `run` it is
 Playwright's `slowMo`. A single step takes `{ pace }` in the map: `.method(SetBearerTokenBlock, { pace: "blitz" })`, which
-skips that step's typing animation and its pause. A flow takes `.end({ demoPace })`. No `withBlockPace` / `withDemoPace`.
+skips that step's typing animation and its pause. A flow takes `map({ demoPace })`. No `withBlockPace` / `withDemoPace`.
 
 Run settings can be defaults in the config, applied only when no flag, shell variable or `.env` value sets them:
 `video: { dir, viewport }`, `slowMo`, `headed`, `demo: { autoNext, fast }`. `extensions`, `video`, `slowMo`, `headed`, `demo`,
@@ -154,12 +154,11 @@ A `confirm()`, `alert()`, `prompt()` or `beforeunload` freezes the page until it
 armed around the Block's action rather than written into it: `withDialog(CancelBlock, { accept: true, into: LeaveWarning })`
 (`accept: false` dismisses; `into` keeps the dialog's text in `mem` for an assert Block to check).
 
-### Flow options and stubs, without wrappers
+### Flows: `map()` is the one way to define them
 
-Build flows with `map()` and put their settings in `.end(options)`: `title`, `memStub`, `sessionReset`,
-`demoPace`, `highlightStyle`, `expectedFailure` (the same things `withTitle(withMemStub(...))` set;
-`engine.defineFlow(blocks, options)` takes them too). Demo highlights stay on the Blocks as ctx stubs, chained
-where the Block is used:
+A flow is built with `engine.map()`. Its run settings go in `map({ … })`, before the chain (`memStub`, `expectedFailure`,
+`demoPace`, `highlightStyle`, `homeOrigin`); `.end()` takes nothing. The flow's title and narration are ctx stubs chained on
+the Block where they apply (`ctx.title(…)` names the flow from that step on), and a step's pace is its `{ pace }` option:
 
 ```typescript
 const AddShown = AddItemBlock.stubAfter((ctx) => {
@@ -167,13 +166,29 @@ const AddShown = AddItemBlock.stubAfter((ctx) => {
 });
 
 export const shopFlow = engine
+  .map({ memStub: true })
+  .start()
+  .gotoPage(NavHomeBlock.stubBefore((ctx) => ctx.title("Shop")))
+  .method(AddShown)
+  .method(ClearCartBlock, { pace: "blitz" })
+  .end();
+```
+
+**Nesting flows** is a step too: `.flow(sub, { reset })` runs another flow's steps inline, in the same page, browser and `mem`.
+`{ reset: true }` clears cookies and storage right before the sub-flow, for a second user that must start fresh:
+
+```typescript
+export const showcase = engine
   .map()
   .start()
-  .gotoPage(NavHomeBlock)
-  .method(AddShown)
-  .method(ClearCartBlock)
-  .end({ title: "Shop", memStub: true });
+  .flow(ownerFlow)
+  .flow(viewerFlow, { reset: true })
+  .end();
 ```
+
+This replaces `defineFlow([start, …, end])`, `chainFlow`, and the `withTitle` / `withMemStub` / `withSessionReset` /
+`withDemoPace` / `withHighlightStyle` / `withExpectedFailure` / `withHighlightFixtures` / `withBlockPace` /
+`withStubBefore|After|OnError` wrappers, which still work but are deprecated (see the Deprecated page).
 
 ### Browser extensions
 
