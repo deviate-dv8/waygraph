@@ -22,19 +22,19 @@ test("upgrade reports missing files, copies only the named paths, never overwrit
 
     const hop = "src/map/(external)/hoppscotch";
     rmSync(join(proj, hop), { recursive: true });
-    writeFileSync(join(proj, "src/flows/shop.flow.ts"), "// mine\n");
+    writeFileSync(join(proj, "src/flows/home/cart.flow.ts"), "// mine\n");
 
     const dry = wg(proj, "upgrade");
     expect(dry.stdout).toContain(`new         ${hop}/_sel.ts`);
-    expect(dry.stdout).toContain("differs     src/flows/shop.flow.ts");
+    expect(dry.stdout).toContain("differs     src/flows/home/cart.flow.ts");
     expect(existsSync(join(proj, hop))).toBe(false);
 
     wg(proj, "upgrade", hop, "--apply");
     expect(existsSync(join(proj, hop, "_sel.ts"))).toBe(true);
-    expect(readFileSync(join(proj, "src/flows/shop.flow.ts"), "utf8")).toBe("// mine\n");
+    expect(readFileSync(join(proj, "src/flows/home/cart.flow.ts"), "utf8")).toBe("// mine\n");
 
-    wg(proj, "upgrade", "src/flows/shop.flow.ts", "--apply", "--overwrite");
-    expect(readFileSync(join(proj, "src/flows/shop.flow.ts"), "utf8")).not.toBe("// mine\n");
+    wg(proj, "upgrade", "src/flows/home/cart.flow.ts", "--apply", "--overwrite");
+    expect(readFileSync(join(proj, "src/flows/home/cart.flow.ts"), "utf8")).not.toBe("// mine\n");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

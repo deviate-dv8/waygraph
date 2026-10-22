@@ -216,6 +216,22 @@ network panel rows, the step banner and panel text. Real fix: a closed shadow ro
 Pilot's `auto dom` and the overlay-beacon tests would need to read through `page.evaluate` instead of locators.
 Until then, prefer structural selectors (roles, aria-labels, ids) over bare text in demo-mode flows.
 
+### Waygraph UI (planned, AdonisJS)
+
+A web UI over a project's waygraph, built as a separate AdonisJS app (not part of the `waygraph` package) that talks to a
+project through what the CLI already emits, so the package grows no server code:
+
+- **Map and graph:** `waygraph graph` (nodes, edges, orphans, skipped Blocks) rendered as a navigable Checkpoint graph, each
+  node linking to its Block files, selectors and the flows that use it. Also `waygraph list` for the flow catalogue.
+- **Use cases:** the `src/flows/<page>/` folders as a tree: every success, failure and bad-input scenario of a page, with its
+  last run result.
+- **Runs:** start `run` / `demo` / `test` from the UI (`--json` report, video and trace links from the configured video folder),
+  with history per flow and `--config` / `--env` as a picker for environments.
+- **Live sessions:** the Pilot's `auto` / `pilot` session sockets for watching and driving a session.
+- **Config:** a form over `config/waygraph.config.ts` (`WaygraphConfig` is already typed).
+
+First slice to build: read-only (graph + flow catalogue + run results), because it needs nothing new from the package.
+
 ### Checkpoints as values (backlogged - a breaking change, decide before 1.0.0)
 
 Today a Checkpoint is written twice: a type (`type Home = Checkpoint<"Home">`) and, in each Block, the tag
