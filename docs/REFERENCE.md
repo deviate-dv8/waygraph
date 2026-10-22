@@ -123,7 +123,7 @@ export default defineConfig({
 ```
 
 `demo.pace` is the default pace for flows and steps that set none (`"fast"`, `"slow"`, `"blitz"`, or a multiplier);
-`demo.typingMs` is the typing animation in ms per character (`0` types instantly). In `demo`, `slowMo` is waygraph's own
+`demo.speeds` defines the named paces as multipliers of normal dwell and gate time (defaults `{ blitz: 0.05, fast: 0.33, slow: 2 }`, lower is faster), e.g. `speeds: { fast: 0.5 }`. `demo.typingMs` is the typing animation in ms per character (`0` types instantly). In `demo`, `slowMo` is waygraph's own
 pause after each action, applied once per action and not per keystroke, so a step's pace can remove it; in `run` it is
 Playwright's `slowMo`. A single step takes `{ pace }` in the map: `.method(SetBearerTokenBlock, { pace: "blitz" })`, which
 skips that step's typing animation and its pause. A flow takes `.end({ demoPace })`. No `withBlockPace` / `withDemoPace`.

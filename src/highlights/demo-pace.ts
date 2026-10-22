@@ -39,14 +39,32 @@ export function normalizeDemoPace(raw: unknown): DemoPace {
 
 
 /** Named / numeric pace -> scale vs normal (1 = normal). Absolute ms (>20) maps via default dwell. */
+/**
+ * What each named pace means, as a multiplier of normal dwell (1 = normal). `demo.speeds` in the config (or
+ * `WAYGRAPH_PACE_SPEEDS`, a JSON object) overrides any of them; the defaults are blitz 0.05, fast 0.33, slow 2.
+ */
+export function paceSpeeds(): { blitz: number; fast: number; slow: number } {
+  const out = { blitz: 0.05, fast: 0.33, slow: 2 };
+  try {
+    const raw = process.env.WAYGRAPH_PACE_SPEEDS ? JSON.parse(process.env.WAYGRAPH_PACE_SPEEDS) : {};
+    for (const k of ["blitz", "fast", "slow"] as const) {
+      if (typeof raw[k] === "number" && raw[k] > 0) out[k] = Math.min(10, raw[k]);
+    }
+  } catch {
+    /* ignore a malformed value: defaults apply */
+  }
+  return out;
+}
+
+
 export function demoPaceScale(pace: DemoPace): number {
   if (typeof pace === "number") {
     if (pace > 20) return Math.min(10, Math.max(0.05, pace / FIXTURE_DURATION_MS_DEFAULT));
     return Math.min(10, Math.max(0.05, pace));
   }
-  if (pace === "blitz") return 0.05;
-  if (pace === "fast") return 0.33;
-  if (pace === "slow") return 2;
+  if (pace === "blitz") return paceSpeeds().blitz;
+  if (pace === "fast") return paceSpeeds().fast;
+  if (pace === "slow") return paceSpeeds().slow;
   return 1;
 }
 
@@ -77,6 +95,9 @@ export function demoPaceIsSlow(pace: DemoPace): boolean {
 
 /** Autoplay / Next-gate ms for this pace (base is WAYGRAPH_AUTOPLAY_MS or 1800). */
 export function demoPaceGateMs(pace: DemoPace, baseAutoplayMs: number): number {
+  if (pace === "blitz" && process.env.WAYGRAPH_PACE_SPEEDS) {
+    return Math.min(30000, Math.max(20, Math.round(baseAutoplayMs * paceSpeeds().blitz)));
+  }
   if (demoPaceIsBlitz(pace)) return Math.min(80, baseAutoplayMs);
   if (typeof pace === "number" && pace > 20) {
     return Math.min(30000, Math.max(80, Math.round(pace)));

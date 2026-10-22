@@ -123,3 +123,16 @@ describe("applyConfigEnv", () => {
     assert.equal(process.env.WAYGRAPH_SLOWMO, "999");
   });
 });
+
+describe("pace speeds", () => {
+  it("demo.speeds redefines the named paces; defaults otherwise", async () => {
+    const { demoPaceScale } = await import("../../src/highlights/demo-pace.js");
+    delete process.env.WAYGRAPH_PACE_SPEEDS;
+    assert.equal(demoPaceScale("fast"), 0.33);
+    applyConfigEnv({ demo: { speeds: { fast: 0.5, blitz: 0.1 } } }, "demo");
+    assert.equal(demoPaceScale("fast"), 0.5);
+    assert.equal(demoPaceScale("blitz"), 0.1);
+    assert.equal(demoPaceScale("slow"), 2);
+    delete process.env.WAYGRAPH_PACE_SPEEDS;
+  });
+});

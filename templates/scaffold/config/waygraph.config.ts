@@ -18,6 +18,7 @@ const config = defineConfig(({ env }) => ({
   // },
   // demo: {                                 // `waygraph demo` only; overrides the shared values above
   //   pace: "fast",                         //   default pace for steps that set none: "fast" | "slow" | "blitz" | 0.5 | 2
+  //   speeds: { blitz: 0.05, fast: 0.33, slow: 2 },   // what each pace means, x normal dwell (lower = faster)
   //   typingMs: 30,                         //   typing animation, ms per character (0 types instantly)
   //   slowMo: 350,                          //   pause after each action, once per action (a step with pace "blitz" skips it)
   //   autoNext: true,                       //   advance steps without clicking Next

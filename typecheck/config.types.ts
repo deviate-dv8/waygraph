@@ -69,3 +69,5 @@ defineConfig({
   // @ts-expect-error pace is "fast" | "slow" | "blitz" | "normal" | a number
   demo: { pace: "turbo" },
 });
+defineConfig({ demo: { speeds: { fast: 0.5 } } }); // @ts-expect-error
+defineConfig({ demo: { speeds: { turbo: 1 } } });

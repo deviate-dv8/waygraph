@@ -36,6 +36,12 @@ export interface RunSettings {
 export interface DemoSettings extends RunSettings {
   /** Default pace for flows and steps that set none: `"fast"`, `"slow"`, `"blitz"`, or a multiplier like `0.5` / `2`. Narration gates and dwell scale with it; `"blitz"` also skips typing animation. */
   pace?: DemoPace;
+  /**
+   * What the named paces mean, as multipliers of normal dwell and gate time (1 = normal): blitz 0.05, fast 0.33, slow 2 by
+   * default. Lower is faster. `blitz` also skips the cursor, ring pops and typing animation.
+   * @example speeds: { fast: 0.5, blitz: 0.1 }
+   */
+  speeds?: { blitz?: number; fast?: number; slow?: number };
   /** Typing animation: ms per character (default 30). `0` types instantly. */
   typingMs?: number;
   /** Advance steps automatically instead of waiting for Next. */
@@ -199,6 +205,7 @@ export function applyConfigEnv(config: WaygraphConfig | undefined, command: stri
     set("WAYGRAPH_AUTOPLAY", flag(config.demo?.autoNext));
     set("WAYGRAPH_DEMO_FAST", config.demo?.fast ? "1" : undefined);
     set("WAYGRAPH_DEMO_PACE", config.demo?.pace === undefined ? undefined : String(config.demo.pace));
+    set("WAYGRAPH_PACE_SPEEDS", config.demo?.speeds ? JSON.stringify(config.demo.speeds) : undefined);
     set("WAYGRAPH_TYPING_MS", config.demo?.typingMs === undefined ? undefined : String(config.demo.typingMs));
   }
 }
