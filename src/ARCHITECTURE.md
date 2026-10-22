@@ -2,7 +2,25 @@
 
 Read this before editing. The rules at the bottom are enforced by `npm run check:structure`.
 
-## Layers (imports point downward only)
+## Target layers (enforced; refactor in progress)
+
+Waygraph is an opinionated Playwright: Blocks move between Checkpoints, Flows chain Blocks, a demo layer narrates them.
+Every file belongs to one layer, and a layer imports only the layers listed (checked by `npm run check:structure`;
+`scripts/layer-debt.json` holds the violations still being removed, and may only shrink):
+
+| Layer | Holds | May import |
+|---|---|---|
+| `core` | Checkpoints, Blocks, Traits, MemPage, Flows, the map builder, `runGraph` | core |
+| `manifest` | the one project scanner: Blocks, Flows, Checkpoints, edges, maps | core |
+| `analysis` | pure functions over the manifest: paths, map-check, practices, orphans | core, manifest |
+| `runtime` | config, `.env`, browser launch, extensions, web server, video folder, run logs | core |
+| `demo` | narration (stubs, pace, device, todos), the in-page overlay, the step-through runner | core, runtime |
+| `live` | driving a running browser: auto, pilot, sessions, traverse | core, manifest, analysis, runtime, demo |
+| `cli` | argv parsing and one file per command | anything |
+
+The plan and phases: `ROADMAP.md`, "Architecture refactor".
+
+## Current layout (imports point downward only)
 
 ```text
 cli.ts ───────────── ~100-line dispatcher: one `case` per subcommand

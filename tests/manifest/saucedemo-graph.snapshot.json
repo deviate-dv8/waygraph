@@ -1,0 +1,41 @@
+{
+  "nodes": [
+    "CartPage",
+    "CheckoutInfoPage",
+    "CheckoutOverviewPage",
+    "ItemDetailPage",
+    "ItemInCart",
+    "LoggedIn",
+    "LoginPage",
+    "OrderComplete"
+  ],
+  "edges": [
+    "action add-all-to-cart: * -> ItemInCart (src/blocks/saucedemo-web/inventory/methods/add-all-to-cart.method.block.ts)",
+    "action add-all-to-cart: * -> LoggedIn (src/blocks/saucedemo-web/inventory/methods/add-all-to-cart.method.block.ts)",
+    "action add-to-cart: * -> ItemInCart (src/blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.ts)",
+    "action fill-first-name: CheckoutInfoPage -> CheckoutInfoPage (src/blocks/saucedemo-web/checkout-step-one/methods/fill-first-name.method.block.ts)",
+    "action fill-last-name: CheckoutInfoPage -> CheckoutInfoPage (src/blocks/saucedemo-web/checkout-step-one/methods/fill-last-name.method.block.ts)",
+    "action fill-password: LoginPage -> LoginPage (src/blocks/saucedemo-web/methods/fill-password.method.block.ts)",
+    "action fill-postal-code: CheckoutInfoPage -> CheckoutInfoPage (src/blocks/saucedemo-web/checkout-step-one/methods/fill-postal-code.method.block.ts)",
+    "action fill-username: LoginPage -> LoginPage (src/blocks/saucedemo-web/methods/fill-username.method.block.ts)",
+    "action finish-order: CheckoutOverviewPage -> OrderComplete (src/blocks/saucedemo-web/checkout-step-two/methods/finish-order.method.block.ts)",
+    "action remove-all-from-cart: * -> ItemInCart (src/blocks/saucedemo-web/inventory/methods/remove-all-from-cart.method.block.ts)",
+    "action remove-all-from-cart: * -> LoggedIn (src/blocks/saucedemo-web/inventory/methods/remove-all-from-cart.method.block.ts)",
+    "action remove-from-cart: * -> ItemInCart (src/blocks/saucedemo-web/inventory/methods/remove-from-cart.effect.block.ts)",
+    "action remove-from-cart: * -> LoggedIn (src/blocks/saucedemo-web/inventory/methods/remove-from-cart.effect.block.ts)",
+    "action submit-checkout-info: CheckoutInfoPage -> CheckoutOverviewPage (src/blocks/saucedemo-web/checkout-step-one/methods/submit-checkout-info.method.block.ts)",
+    "action submit-login: LoginPage -> LoggedIn (src/blocks/saucedemo-web/methods/submit-login.method.block.ts)",
+    "action submit-login: LoginPage -> LoginPage (src/blocks/saucedemo-web/methods/submit-login.method.block.ts)",
+    "action submit-logout: LoggedIn -> LoginPage (src/blocks/saucedemo-web/methods/submit-logout.method.block.ts)",
+    "nav nav-back-to-inventory: * -> LoggedIn (src/blocks/saucedemo-web/inventory-item/nav-back-to-inventory.block.ts)",
+    "nav nav-back-to-products: * -> LoggedIn (src/blocks/saucedemo-web/inventory-item/nav-back-to-products.block.ts)",
+    "nav nav-cart: * -> CartPage (src/blocks/saucedemo-web/cart/nav-cart.block.ts)",
+    "nav nav-checkout-info: * -> CheckoutInfoPage (src/blocks/saucedemo-web/cart/nav-checkout-info.block.ts)",
+    "nav nav-continue-shopping: * -> LoggedIn (src/blocks/saucedemo-web/inventory-item/nav-continue-shopping.block.ts)",
+    "nav nav-item-detail: * -> ItemDetailPage (src/blocks/saucedemo-web/inventory/nav-item-detail.block.ts)",
+    "nav nav-login: * -> LoginPage (src/blocks/saucedemo-web/nav-login.block.ts)"
+  ],
+  "skipped": [
+    "ff-owner-auth (src/blocks/saucedemo-web/ff-owner-auth.block.ts)"
+  ]
+}

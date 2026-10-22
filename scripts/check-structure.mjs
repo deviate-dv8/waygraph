@@ -4,6 +4,7 @@
  *   1. Every src/**\/*.ts and src/runner/*.js stays under MAX_LINES, unless listed in RATCHET - a per-file ceiling
  *      that may only go DOWN (lower the number when you shrink a file; never raise it).
  *   2. No circular value imports between src modules (type-only imports are ignored).
+ *   3. Layers: each file's layer may only import the layers allowed for it; scripts/layer-debt.json may only shrink.
  * Run: npm run check:structure
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -74,8 +75,55 @@ function dfs(n) {
 for (const f of files) if (!state.get(f)) dfs(f);
 for (const c of cycles) problems.push("import cycle: " + c.map((p) => relative(srcDir, p)).join(" -> "));
 
+// --- layers (see src/ARCHITECTURE.md) ---
+// Each file belongs to one layer; a layer may only import the layers listed for it. Existing violations are in
+// scripts/layer-debt.json: that list may only shrink (a fixed violation must be removed from it, a new one fails).
+const LAYER_OF = [
+  ["core/", "core"], ["core.ts", "core"], ["types.ts", "core"], ["trait.ts", "core"], ["mem-page.ts", "core"],
+  ["mem-stub.ts", "core"], ["errors.ts", "core"], ["selector.ts", "core"],
+  ["manifest/", "manifest"],
+  ["analysis/", "analysis"], ["blocks-select.ts", "analysis"],
+  ["runtime/", "runtime"], ["config.ts", "runtime"], ["env-file.ts", "runtime"], ["browser.ts", "runtime"],
+  ["extensions.ts", "runtime"], ["webserver.ts", "runtime"], ["video-dir.ts", "runtime"], ["playwright-config.ts", "runtime"],
+  ["playwright.config.ts", "runtime"],
+  ["demo/", "demo"], ["highlights", "demo"], ["runner/", "demo"], ["ui/", "demo"], ["pilot-overlay", "demo"],
+  ["session/step-overlay.ts", "demo"],
+  ["live/", "live"], ["session/", "live"], ["auto-session", "live"], ["traverse/", "live"],
+  ["cli/", "cli"], ["cli.ts", "cli"], ["commands/", "cli"],
+  ["index.ts", "public"],
+];
+const MAY_IMPORT = {
+  core: ["core"],
+  manifest: ["core", "manifest"],
+  analysis: ["core", "manifest", "analysis"],
+  runtime: ["core", "runtime"],
+  demo: ["core", "runtime", "demo"],
+  live: ["core", "manifest", "analysis", "runtime", "demo", "live"],
+  cli: null,
+  public: null,
+};
+const layerOf = (rel) => (LAYER_OF.find(([prefix]) => rel === prefix || rel.startsWith(prefix)) ?? [null, "unassigned"])[1];
+const ANY_IMPORT_RE = /(?:^\s*(?:import|export)\s[^;]*?from\s+|\bimport\()["'](\.[^"']+)["']/gm;
+const violations = [];
+for (const f of files) {
+  const rel = relative(srcDir, f).replace(/\\/g, "/");
+  const from = layerOf(rel);
+  if (from === "unassigned") problems.push(`${rel}: not assigned to a layer (add it to LAYER_OF in scripts/check-structure.mjs)`);
+  const allowed = MAY_IMPORT[from];
+  if (!allowed) continue;
+  for (const m of readFileSync(f, "utf8").matchAll(ANY_IMPORT_RE)) {
+    const target = relative(srcDir, resolve(dirname(f), m[1])).replace(/\\/g, "/").replace(/\.js$/, ".ts");
+    const to = layerOf(target);
+    if (to !== "unassigned" && !allowed.includes(to)) violations.push(`${rel} -> ${target}`);
+  }
+}
+const debtFile = join(root, "scripts", "layer-debt.json");
+const debt = new Set(JSON.parse(readFileSync(debtFile, "utf8")));
+for (const v of violations) if (!debt.has(v)) problems.push(`layer: ${v} (a ${v.split(" -> ").map((x) => layerOf(x)).join(" layer may not import the ")} layer)`);
+for (const d of debt) if (!violations.includes(d)) problems.push(`layer debt fixed, remove it from scripts/layer-debt.json: ${d}`);
+
 if (problems.length) {
   console.error("check:structure failed:\n  " + problems.join("\n  "));
   process.exit(1);
 }
-console.log(`check:structure ok (${files.length} files, no cycles, ${Object.keys(RATCHET).length} ratcheted)`);
+console.log(`check:structure ok (${files.length} files, no cycles, ${Object.keys(RATCHET).length} ratcheted, ${debt.size} layer violations left)`);

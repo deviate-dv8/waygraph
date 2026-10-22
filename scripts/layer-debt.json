@@ -1,0 +1,23 @@
+[
+  "analysis/coverage-gap.ts -> session/auto-explore.ts",
+  "analysis/coverage-gap.ts -> session/block-inject.ts",
+  "analysis/graph.ts -> session/block-inject.ts",
+  "config.ts -> highlights.ts",
+  "core/blocks/api.ts -> highlights.ts",
+  "core/blocks/api.ts -> runner/network-capture.ts",
+  "core/blocks/effect.ts -> highlights.ts",
+  "core/blocks/method.ts -> highlights.ts",
+  "core/blocks/nav.ts -> highlights.ts",
+  "core/blocks/page.ts -> highlights.ts",
+  "core/block.ts -> highlights.ts",
+  "core/config.ts -> extensions.ts",
+  "core/flow.ts -> browser.ts",
+  "core/flow.ts -> config.ts",
+  "core/flow.ts -> extensions.ts",
+  "core/flow.ts -> highlights.ts",
+  "core/map-builder.ts -> highlights.ts",
+  "pilot-overlay/fixtures.ts -> auto-session/verbose-log.ts",
+  "pilot-overlay/panel.ts -> auto-session.ts",
+  "pilot-overlay/shell.ts -> auto-session/verbose-log.ts",
+  "types.ts -> highlights.ts"
+]

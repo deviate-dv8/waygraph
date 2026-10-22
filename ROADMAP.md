@@ -216,7 +216,24 @@ network panel rows, the step banner and panel text. Real fix: a closed shadow ro
 Pilot's `auto dom` and the overlay-beacon tests would need to read through `page.evaluate` instead of locators.
 Until then, prefer structural selectors (roles, aria-labels, ids) over bare text in demo-mode flows.
 
-### Waygraph UI (planned, AdonisJS)
+### Architecture refactor (in progress, ships as 0.16.0)
+
+Goal: a short layout where each folder is one concept (`core`, `manifest`, `analysis`, `runtime`, `demo`, `live`, `cli`;
+see `src/ARCHITECTURE.md`), with two files the package writes for Waygraph UI and map packages: a **manifest** (every
+Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/runs/*.jsonl`). Phases:
+
+0. Guardrails: layer rule with a shrinking debt list (`scripts/layer-debt.json`), graph snapshot test. **Done.**
+1. Core stands alone: no imports of demo, runtime or extensions from the engine.
+2. Checkpoints as values (`checkpoint: Home`, `from`/`to`), old forms deprecated, codemod in `waygraph upgrade`.
+3. One manifest replaces the five project scanners and the `<In, Out>` source parse; `waygraph manifest --json`.
+4. Run events: typed emitter in `runGraph`; console, JSON report and run-log file are subscribers.
+5. Demo runner from JavaScript to TypeScript under `demo/`.
+6. One overlay for demo, auto and pilot.
+7. `live/` for sessions, pilot and traverse.
+8. Thin CLI.
+9. Map packages: a map group owns its states and keys, `waygraph map pack`, `maps: [...]` in the config.
+
+
 
 A web UI over a project's waygraph, built as a separate AdonisJS app (not part of the `waygraph` package) that talks to a
 project through what the CLI already emits, so the package grows no server code:
