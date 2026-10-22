@@ -125,7 +125,7 @@ first write into Downloads can trigger a one-time permission prompt for your ter
 saves in the project instead.
 
 Flows pass the same object to the Engine, so it is imported rather than read out of band:
-`import config from "../../config/waygraph.config.js"; const engine = new Engine(config);`. The Engine uses
+the config file exports `export const engine = new Engine(config)`, and flows `import { engine } from "../../config/waygraph.config.js"`. The Engine uses
 `baseUrl` and `extensions` for the browser it launches itself (`flow.run(mem)`); `waygraph test`, `run`, `demo`
 and `auto` read the file too, for everything else.
 A project that still has a `playwright.config.*` keeps working: `waygraph test` uses it and prints a deprecation

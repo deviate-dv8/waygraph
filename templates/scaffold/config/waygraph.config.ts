@@ -1,6 +1,6 @@
-import { defineConfig } from "waygraph";
+import { Engine, defineConfig } from "waygraph";
 
-export default defineConfig(({ env }) => ({
+const config = defineConfig(({ env }) => ({
   // Where the app under test lives. BASE_URL comes from .env / .env.<mode>:  waygraph test --env staging
   baseUrl: env.BASE_URL ?? "__APP_BASE_URL__",
 
@@ -24,3 +24,8 @@ export default defineConfig(({ env }) => ({
   //   use: { video: "on", trace: "on", screenshot: "only-on-failure", viewport: { width: 1280, height: 720 } },
   // },
 }));
+
+export default config;
+
+// Flows import this, so they run with the config above already applied.
+export const engine = new Engine(config);

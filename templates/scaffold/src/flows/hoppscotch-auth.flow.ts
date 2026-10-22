@@ -1,5 +1,4 @@
-import { Engine } from "waygraph";
-import config from "../../config/waygraph.config.js";
+import { engine } from "../../config/waygraph.config.js";
 import { NavHoppscotchSettingsBlock } from "../map/(external)/hoppscotch/settings/_nav.block.js";
 import { PickExtensionInterceptorBlock } from "../map/(external)/hoppscotch/_methods/pick-extension-interceptor.method.block.js";
 import { NavHoppscotchRestBlock } from "../map/(external)/hoppscotch/_nav.block.js";
@@ -13,8 +12,6 @@ import { AssertResponseHeaderBlock } from "../map/(external)/hoppscotch/_methods
 import { ReadResponseBodyBlock } from "../map/(external)/hoppscotch/_methods/read-response-body.method.block.js";
 import { AssertResponseBodyBlock } from "../map/(external)/hoppscotch/_methods/assert-response-body.method.block.js";
 import "../map/(external)/hoppscotch/_page.block.js";
-
-const engine = new Engine(config);
 
 /** GET with query params and a bearer token, check the status, that the API received them, and a response header. Needs `extensions: ["hoppscotch"]`. */
 export const hoppscotchAuthFlow = engine
