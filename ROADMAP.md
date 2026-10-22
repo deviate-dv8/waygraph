@@ -207,6 +207,15 @@ All four verified against a real scratch project (`waygraph init` into a throwaw
 resolution, explicit env winning over both, `shopFlow` running end-to-end with zero `--data`,
 and `waygraph check`/`list` reporting no new warnings.
 
+### Demo overlay text is matchable by the page's own text selectors (partly fixed)
+
+Waygraph's demo/auto overlay is an open shadow root, and Playwright's text engines pierce open shadow roots, so a
+selector like `getByText("POST")` can match waygraph's own UI as well as the page (found recording the Hoppscotch flow
+in demo mode). Fixed for the demo ring's caption (drawn from `data-label`, not DOM text). Still matchable: the
+network panel rows, the step banner and panel text. Real fix: a closed shadow root with in-page helpers, which the
+Pilot's `auto dom` and the overlay-beacon tests would need to read through `page.evaluate` instead of locators.
+Until then, prefer structural selectors (roles, aria-labels, ids) over bare text in demo-mode flows.
+
 ### Checkpoints as values (backlogged - a breaking change, decide before 1.0.0)
 
 Today a Checkpoint is written twice: a type (`type Home = Checkpoint<"Home">`) and, in each Block, the tag

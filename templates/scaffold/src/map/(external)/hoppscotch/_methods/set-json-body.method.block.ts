@@ -17,9 +17,9 @@ export const SetJsonBodyBlock = defineMethodBlock<HoppscotchRest, HoppscotchRest
   requires: [RequestBody],
   instruction: {
     async act(page, _in, mem) {
-      await page.locator(HoppscotchSel.tab("Body")).first().click();
+      await page.locator(HoppscotchSel.tab("Body")).click();
       await page.locator(HoppscotchSel.contentTypeMenu).click();
-      await page.getByText("application/json", { exact: true }).click();
+      await page.locator(HoppscotchSel.menuItem("application/json")).click();
       const editor = page.locator(HoppscotchSel.visibleEditor).last();
       await editor.click();
       const body = mem.get(RequestBody);

@@ -34,6 +34,7 @@
   font: 600 12px/1.35 var(--wg-font); transition: opacity .3s ease;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.25);
 }
+#wg-ring-label::after { content: attr(data-label); }
 .wg-ring-el-label[data-tone=planned] { --wg-tone-bg: var(--wg-tone-planned-bg); --wg-tone-fg: var(--wg-tone-planned-fg); }
 .wg-ring-el-label[data-tone=auto]    { --wg-tone-bg: var(--wg-tone-auto-bg);    --wg-tone-fg: var(--wg-tone-auto-fg); }
 .wg-ring-el-label[data-tone=info]    { --wg-tone-bg: var(--wg-tone-info-bg);    --wg-tone-fg: var(--wg-tone-info-fg); }

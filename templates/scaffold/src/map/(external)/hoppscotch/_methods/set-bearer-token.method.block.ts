@@ -9,9 +9,9 @@ export const SetBearerTokenBlock = defineMethodBlock<HoppscotchRest, HoppscotchR
   requires: [RequestBearerToken],
   instruction: {
     async act(page, _in, mem) {
-      await page.locator(HoppscotchSel.tab("Authorization")).first().click();
+      await page.locator(HoppscotchSel.tab("Authorization")).click();
       await page.locator(HoppscotchSel.authTypeMenu).click();
-      await page.getByText("Bearer", { exact: true }).click();
+      await page.locator(HoppscotchSel.menuItem("Bearer")).click();
       await page.locator(HoppscotchSel.bearerToken).locator(HoppscotchSel.editor).click();
       await page.keyboard.type(mem.get(RequestBearerToken));
     },

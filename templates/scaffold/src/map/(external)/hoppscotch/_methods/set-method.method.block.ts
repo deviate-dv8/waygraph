@@ -10,7 +10,7 @@ export const SetMethodBlock = defineMethodBlock<HoppscotchRest, HoppscotchRest>(
   instruction: {
     async act(page, _in, mem) {
       await page.locator(HoppscotchSel.methodInput).click();
-      await page.getByText(mem.get(RequestMethod), { exact: true }).click();
+      await page.locator(HoppscotchSel.menuItem(mem.get(RequestMethod))).click();
     },
     resolve: () => checkpoint("HoppscotchRest"),
   },

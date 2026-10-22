@@ -101,7 +101,9 @@ export async function installDemoChrome(
           ring.style.width = box.width + pad * 2 + "px";
           ring.style.height = box.height + pad * 2 + "px";
           ring.style.opacity = "1";
-          ringLabel.textContent = label;
+          // Drawn from data-label (CSS ::after), not DOM text, so the page's own text selectors never match it.
+          ringLabel.dataset.label = label;
+          ringLabel.textContent = "";
           ringLabel.style.left = box.x + "px";
           ringLabel.style.top = box.y + box.height + 8 + "px";
           ringLabel.style.opacity = "1";

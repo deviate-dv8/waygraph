@@ -26,6 +26,7 @@ export function ringCss(): string {
     "#wg-ring-label{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
     `max-width:min(360px,70vw);white-space:normal;padding:6px 10px;border-radius:7px;background:${p.labelBg};color:${p.labelFg};` +
     "font:600 12px/1.35 system-ui,sans-serif;transition:opacity .3s ease;}" +
+    "#wg-ring-label::after{content:attr(data-label);}" +
     toneRules("#wg-ring-label", (t) => `background:${t.labelBg};color:${t.labelFg};`) +
     // Gray = a real Playwright-driven instruction: mark it with a robot.
     `#wg-ring-label[data-tone=auto]::before{${ROBOT}}` +

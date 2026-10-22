@@ -72,7 +72,14 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
           ring.style.width = width + "px";
           ring.style.height = height + "px";
           ring.style.opacity = "1";
-          ringLabel.textContent = label || "";
+          if (labelId === "wg-ring-label") {
+            // The demo ring's caption is drawn from data-label (CSS ::after), not DOM text, so the page's own
+            // text selectors (getByText, text=...) never match waygraph's overlay twice.
+            ringLabel.dataset.label = label || "";
+            ringLabel.textContent = "";
+          } else {
+            ringLabel.textContent = label || "";
+          }
           ringLabel.style.opacity = "1";
           const lw = ringLabel.offsetWidth;
           const lh = ringLabel.offsetHeight;

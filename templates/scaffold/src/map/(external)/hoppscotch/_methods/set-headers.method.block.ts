@@ -9,7 +9,7 @@ export const SetHeadersBlock = defineMethodBlock<HoppscotchRest, HoppscotchRest>
   requires: [RequestHeaders],
   instruction: {
     async act(page, _in, mem) {
-      await page.locator(HoppscotchSel.tab("Headers")).first().click();
+      await page.locator(HoppscotchSel.tab("Headers")).click();
       const headers = Object.entries(mem.get(RequestHeaders));
       for (const [i, [name, value]] of headers.entries()) {
         await page.locator(HoppscotchSel.keyCell).nth(i).locator(HoppscotchSel.editor).click();

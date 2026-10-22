@@ -8,7 +8,7 @@ export const ReadResponseBodyBlock = defineMethodBlock<HoppscotchRest, Hoppscotc
   description: "Reads the raw response body into mem.",
   instruction: {
     async act(page, _in, mem) {
-      await page.locator(HoppscotchSel.rawTab).first().click();
+      await page.locator(HoppscotchSel.rawTab).click();
       const body = page.locator(HoppscotchSel.responseEditor);
       await body.waitFor();
       mem.set(ResponseBody, (await body.innerText()).trim());

@@ -9,7 +9,7 @@ export const SetQueryParamsBlock = defineMethodBlock<HoppscotchRest, HoppscotchR
   requires: [RequestParams],
   instruction: {
     async act(page, _in, mem) {
-      await page.locator(HoppscotchSel.tab("Parameters")).first().click();
+      await page.locator(HoppscotchSel.tab("Parameters")).click();
       for (const [i, [name, value]] of Object.entries(mem.get(RequestParams)).entries()) {
         await page.locator(HoppscotchSel.keyCell).nth(i).locator(HoppscotchSel.editor).click();
         await page.keyboard.type(name);
