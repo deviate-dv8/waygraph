@@ -36,6 +36,8 @@ const TAUGHT = [
   ...walk(join(root, "docs")).filter((f) => f.endsWith(".md") && !f.endsWith("deprecated.md") && !f.includes("/public/")),
   ...walk(join(root, "templates/skills")),
   ...walk(join(root, "templates/scaffold")).filter((f) => /\.(md|ts)$/.test(f)),
+  ...walk(join(root, "templates/quickstart")).filter((f) => /\.(md|ts)$/.test(f)),
+  ...walk(join(root, "examples")).filter((f) => /\.(md|ts)$/.test(f)),
   join(root, "README.md"),
 ];
 const EXCUSE = /deprecat|replac|instead|no more|never|not |old |legacy|still work|older|was |used to|migrat|\bnot\b|\bno\b/i;

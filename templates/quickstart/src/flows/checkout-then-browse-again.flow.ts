@@ -1,13 +1,5 @@
-import { Engine, start, end, withTitle } from "waygraph";
-import type {
-  LoginPage,
-  LoggedIn,
-  ItemInCart,
-  CartPage,
-  CheckoutInfoPage,
-  CheckoutOverviewPage,
-  OrderComplete,
-} from "../states/checkout.states.js";
+import { engine } from "../../config/waygraph.config.js";
+import "../states/checkout.mem-stubs.js";
 import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
 import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
 import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
@@ -22,41 +14,27 @@ import { SubmitCheckoutInfoBlock } from "../blocks/saucedemo-web/checkout-step-o
 import { FinishOrderBlock } from "../blocks/saucedemo-web/checkout-step-two/methods/finish-order.method.block.js";
 import { NavBackToProductsBlock } from "../blocks/saucedemo-web/inventory-item/nav-back-to-products.block.js";
 
-const engine = new Engine({ headless: false, slowMo: 250 });
-
-// Same atomic checkout chain, plus click-based nav-back-to-products
-// (proves OrderComplete -> LoggedIn without a goto teleport).
-export const checkoutThenBrowseAgainFlow = withTitle(
-  engine.defineFlow<
-    LoginPage,
-    LoginPage,
-    LoginPage,
-    LoggedIn,
-    ItemInCart,
-    CartPage,
-    CheckoutInfoPage,
-    CheckoutInfoPage,
-    CheckoutInfoPage,
-    CheckoutInfoPage,
-    CheckoutOverviewPage,
-    OrderComplete,
-    LoggedIn
-  >([
-    start,
-    NavLoginBlock,
-    FillUsernameBlock,
-    FillPasswordBlock,
-    SubmitLoginForFlow,
-    AddToCartBlock,
-    NavCartBlock,
-    NavCheckoutInfoBlock,
-    FillFirstNameBlock,
-    FillLastNameBlock,
-    FillPostalCodeBlock,
-    SubmitCheckoutInfoBlock,
-    FinishOrderBlock,
-    NavBackToProductsBlock,
-    end,
-  ]),
-  "Owner: Checkout, then click Back Home (click-based NavBlock demo)",
-);
+/** Full checkout, then the "Back Home" click-based Nav Block returns to the catalogue. */
+export const checkoutThenBrowseAgainFlow = engine
+  .map({ memStub: true })
+  .start()
+  .gotoPage(
+    NavLoginBlock.stubBefore((ctx) =>
+      ctx.title(
+        "Owner: Checkout, then click Back Home (click-based NavBlock demo)",
+      ),
+    ),
+  )
+  .method(FillUsernameBlock)
+  .method(FillPasswordBlock)
+  .method(SubmitLoginForFlow)
+  .method(AddToCartBlock)
+  .gotoPage(NavCartBlock)
+  .gotoPage(NavCheckoutInfoBlock)
+  .method(FillFirstNameBlock)
+  .method(FillLastNameBlock)
+  .method(FillPostalCodeBlock)
+  .method(SubmitCheckoutInfoBlock)
+  .method(FinishOrderBlock)
+  .gotoPage(NavBackToProductsBlock)
+  .end();

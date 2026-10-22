@@ -69,7 +69,7 @@ against a live site, use `--skill-pilot-blind`.
 ## Flows, stubs and config (the scaffold's shape)
 
 - **Build flows with `map()`** (`engine.map({ memStub }).start().gotoPage(Nav).method(B, { pace }).assert(A).end()`;
-  `.gotoExternal` for another origin), never a raw `defineFlow([start, ...])`. Flow settings go in `map({ … })` before the chain
+  `.gotoExternal` for another origin), never a raw `defineFlow([start, ...])`. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`) go in `map({ … })` before the chain
   and `.end()` takes nothing. The flow's title is `ctx.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**,
   not `chainFlow` / `withSessionReset`. No `withMemStub(withTitle(...))` wrappers.
 - **`src/flows/` holds use cases and mirrors the front end's endpoints**: a folder per page (`flows/auth/login/`) with one

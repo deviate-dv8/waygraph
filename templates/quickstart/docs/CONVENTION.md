@@ -82,5 +82,4 @@ waygraph chain "loginFlow" --step --no-autoplay
 
 Flags beat env: `--step` / `--no-step`, `--autoplay` / `--no-autoplay`,
 `--base-url <url>`, `--title <text>`. Default BASE_URL resolution order for
-`demo`: `--base-url` > `WAYGRAPH_BASE_URL` > `package.json` `waygraph.baseUrl`
-> `playwright.config` `baseURL`.
+`demo`: `--base-url` > `WAYGRAPH_BASE_URL` > `baseUrl` in `config/waygraph.config.ts`.

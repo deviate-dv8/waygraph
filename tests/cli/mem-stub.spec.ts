@@ -14,6 +14,7 @@ const exec = promisify(execFile);
 const node = process.execPath;
 const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
 const saucedemo = join(import.meta.dirname, "..", "..", "examples", "saucedemo");
+const unregistered = join(import.meta.dirname, "..", "fixtures", "mem-stub-unregistered");
 // Assertions below expect an empty stderr - keep the machine's Chromium override out of it.
 const { CHROME_PATH: _c, CHROMIUM_PATH: _cc, ...cleanEnv } = process.env;
 
@@ -37,9 +38,9 @@ test("withMemStub alone (no --mem-stub flag) is enough - the flow's own opt-in d
   expect(stdout).toMatch(/chain finished/);
 });
 
-test("a flow NOT wrapped in withMemStub, with no --data, still fails exactly as before - regression", async () => {
+test("a flow that does not opt into memStub, with no --data, still fails exactly as before - regression", async () => {
   await expect(
-    exec(node, [CLI, "run", "src/flows/login.flow.ts"], { cwd: saucedemo, env: cleanEnv }),
+    exec(node, [CLI, "run", "src/flows/viewer-blocked.flow.ts"], { cwd: saucedemo, env: cleanEnv }),
   ).rejects.toMatchObject({
     stderr: expect.stringMatching(/--data|WAYGRAPH_DATA|requires/),
   });
@@ -47,9 +48,9 @@ test("a flow NOT wrapped in withMemStub, with no --data, still fails exactly as 
 
 test("--mem-stub alone does not silently succeed for a key with no registered generator", async () => {
   await expect(
-    exec(node, [CLI, "run", "src/flows/login.flow.ts", "--mem-stub"], { cwd: saucedemo, env: cleanEnv }),
+    exec(node, [CLI, "run", "src/flows/needs-key.flow.ts", "--mem-stub"], { cwd: unregistered, env: cleanEnv }),
   ).rejects.toMatchObject({
-    stderr: expect.stringMatching(/missing required key.*saucedemo\.credentials/),
+    stderr: expect.stringMatching(/missing required key.*fixture\.needs-a-key|requires fixture\.needs-a-key/),
   });
 });
 

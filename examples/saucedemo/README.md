@@ -7,7 +7,6 @@ the **reference** for waygraph consumer conventions:
 - **Nav** / **Effect** / **Action** file kinds (helpers are TypeScript salt;
   runtime is still `Block`)
 - `instanceOptions` menus for `waygraph auto` (Add/Remove + Open details)
-- Detailed Kind / Helper / Route comments on every Block file
 - Per-route `NAV.md` + root `src/blocks/SITE-MAP.md`
 - Inline `{ ff: true }` fast-forward, no `.ffStart()/.ffEnd()` bracket - see
   `checkoutFlow` (`src/flows/checkout.flow.ts`)
@@ -44,29 +43,29 @@ npx playwright install chromium
 | Graph crawl (Phase B-E) | `npm run traverse` |
 | Parallel crawl + leases | `npm run traverse:parallel` |
 | Coverage JSON + min gate (10%) | `npm run traverse:coverage` |
-| Shop demo stepper | `npm run demo:step` |
+| Shop demo (login, then shop) | `npm run demo` |
 | Shop demo autoplay | `npm run demo:auto-next` |
-| **Device showcase** (mobile/tablet + portrait/landscape) | `npm run demo:device` |
-| Device showcase + `.webm` | `npm run demo:device:video` |
+| **Device showcase** (mobile/tablet + portrait/landscape; narration in `src/stubs/device-showcase.ts`) | `npm run demo:device` |
+| Device showcase + `.webm` | `npm run demo:video` |
 | **Cart bulk** demo (add-all → remove-all) | `npm run demo:bulk` |
-| Cart bulk autoplay | `npm run demo:bulk:auto-next` |
 | **Owner checkout** (inline `{ ff: true }`, `ctx.caption()`, banner position) | `npm run demo:checkout` |
-| Owner checkout + `.webm` | `npm run demo:checkout:video` |
 | **FE + BE in one Flow** (`defineApiBlock`, live network panel) | `npm run demo:api` |
-| FE + BE demo + `.webm` | `npm run demo:api:video` |
+| Record (headless `.webm`) | `npm run record` |
 | List flows | `npm run flows` |
+
+Credentials and the selected item come from `registerMemStub` in `src/states/checkout.mem-stubs.ts` (`memStub: true` on the
+flows), so no command needs `--data`. Settings, the base URL and the shared `engine` are in `config/waygraph.config.ts`.
+Narration is chained on Blocks in the flows (`src/flows/`) or shared from `src/stubs/`; the Block files carry none.
 
 **Demo vs auto vs run for cart bulk**
 
 | | CLI | Needs `.flow.ts`? |
 |--|-----|-------------------|
-| **`run --blocks`** | `npm run run:bulk` — Block names + `--data` | No |
-| **`demo --blocks`** | `npm run demo:bulk` — named flow + `--data` | Optional (`cartBulkFlow`) |
+| **`run --blocks`** | `waygraph run --blocks "loginFlow then add-all-to-cart"` | No |
+| **`demo --blocks`** | `npm run demo:bulk` — named flow | Optional (`cartBulkFlow`) |
 | **`auto`** | `npm run auto` / `auto:cli` | No — live menu |
-| **`traverse`** | `npm run traverse` / `traverse:parallel` / `traverse:coverage` | No — graph crawl + `.waygraph-traverse/coverage.json` |
+| **`traverse`** | `npm run traverse` | No — graph crawl + `.waygraph-traverse/coverage.json` |
 | **`auto --blocks From To`** | path-find on graph | No — checkpoints only |
-
-QA watch+record: `npm run demo:bulk:video` (`--auto-play-video`).
 
 ## Layout (short)
 

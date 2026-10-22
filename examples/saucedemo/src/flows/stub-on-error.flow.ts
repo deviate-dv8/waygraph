@@ -1,50 +1,31 @@
-import {
-  Engine,
-  start,
-  end,
-  withTitle,
-  withSessionReset,
-  withExpectedFailure,
-  withHighlightFixtures,
-  Trait,
-} from "waygraph";
+import { engine } from "../../config/waygraph.config.js";
+import "../states/checkout.mem-stubs.js";
+import { Trait } from "waygraph";
 import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
 import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
 import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
 import { SubmitLoginBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
-
-const engine = new Engine();
+import { loginFailed } from "../stubs/login.js";
 
 /**
- * Prove stubOnError (waygraph 0.12.4+): force verify to demand /inventory.html
- * while mem is locked_out_user — step throws, demo rings the error banner
- * before the error panel, then expected-failure styling.
- *
- *   waygraph demo --blocks stubOnErrorFlow --auto-next --fast \\
- *     --data '{"saucedemo.credentials":{"username":"locked_out_user","password":"secret_sauce"}}'
+ * Forces a verify failure (locked_out_user is refused, but the verify demands the inventory page) to show `stubOnError` ringing
+ * the error banner before the failure panel. Needs locked_out_user credentials: `--data` or mem.
  */
-const forcedInventoryVerify = withSessionReset(
-  engine
-    .defineFlow([start, NavLoginBlock, FillUsernameBlock, FillPasswordBlock, SubmitLoginBlock, end])
-    .withBlockVerify("submit-login", [Trait.url({ pathname: "/inventory.html" })]),
-);
-
-export const stubOnErrorFlow = withHighlightFixtures(
-  withExpectedFailure(
-    withTitle(forcedInventoryVerify, "stubOnError: locked_out fail rings"),
-    "Intentional verify fail - stubOnError rings the error banner before the panel",
-  ),
-  {
-    "submit-login": {
-      stubOnError: {
-        error: {
-          label: "BUG · locked out still on login",
-          detail: "Verify demanded inventory; banner is the proof point.",
-          tag: "FAIL",
-          duration: true,
-          fastMode: 500,
-        },
-      },
-    },
-  },
-);
+export const stubOnErrorFlow = engine
+  .map({
+    expectedFailure:
+      "Intentional verify fail - stubOnError rings the error banner before the panel",
+  })
+  .start()
+  .gotoPage(
+    NavLoginBlock.stubBefore((ctx) =>
+      ctx.title("stubOnError: locked_out fail rings"),
+    ),
+  )
+  .method(FillUsernameBlock)
+  .method(FillPasswordBlock)
+  .method(SubmitLoginBlock.stubOnError(loginFailed))
+  .end()
+  .withBlockVerify("submit-login", [
+    Trait.url({ pathname: "/inventory.html" }),
+  ]);

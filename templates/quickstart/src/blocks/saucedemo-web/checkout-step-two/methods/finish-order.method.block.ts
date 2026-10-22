@@ -1,5 +1,8 @@
-import { defineMethodBlock, checkpoint, Trait, narrate, type StubCtx } from "waygraph";
-import type { CheckoutOverviewPage, OrderComplete } from "../../../../states/checkout.states.js";
+import { defineMethodBlock, checkpoint, Trait, narrate } from "waygraph";
+import type {
+  CheckoutOverviewPage,
+  OrderComplete,
+} from "../../../../states/checkout.states.js";
 import { CheckoutOverviewSel } from "./checkout-overview.sel.js";
 
 /**
@@ -10,34 +13,27 @@ import { CheckoutOverviewSel } from "./checkout-overview.sel.js";
  * Places the order on the overview page - form/finish click, not a NavBlock.
  * Stubs use open ctx lifecycles (preferred) - not static slot maps.
  */
-export const FinishOrderBlock = defineMethodBlock<CheckoutOverviewPage, OrderComplete>({
+export const FinishOrderBlock = defineMethodBlock<
+  CheckoutOverviewPage,
+  OrderComplete
+>({
   name: "finish-order",
-  description: "Places the order and confirms the 'Thank you for your order!' completion page.",
+  description:
+    "Places the order and confirms the 'Thank you for your order!' completion page.",
   instruction: {
     async act(page) {
       const finishButton = page.locator(CheckoutOverviewSel.finishBtn);
-      await narrate(finishButton, "Placing the order", () => finishButton.click());
+      await narrate(finishButton, "Placing the order", () =>
+        finishButton.click(),
+      );
     },
     resolve: () => checkpoint("OrderComplete"),
-    verify: [Trait.text(CheckoutOverviewSel.completeHeader, "Thank you for your order!")],
-    stubBefore: (ctx: StubCtx) => {
-      ctx.ring("finish", {
-        selector: CheckoutOverviewSel.finishBtn,
-        label: "Finish",
-        detail: "tone: warning (yellow) - place order",
-        tone: "warning",
-        weight: "bold",
-      });
-    },
-    stubAfter: (ctx: StubCtx) => {
-      ctx.ring("thanks", {
-        selector: CheckoutOverviewSel.completeHeader,
-        label: "Order confirmed",
-        detail: "tone: success (green) - thank you!",
-        tone: "success",
-        duration: true,
-      });
-    },
+    verify: [
+      Trait.text(
+        CheckoutOverviewSel.completeHeader,
+        "Thank you for your order!",
+      ),
+    ],
     // Shown AFTER act (order already placed) - selectors must match the
     // completion page, not #finish on the overview.
     slides: [
@@ -50,7 +46,8 @@ export const FinishOrderBlock = defineMethodBlock<CheckoutOverviewPage, OrderCom
       },
       {
         caption: "Completion page is the durable proof",
-        detail: "tone: success - the thank-you header is what verify asserts on.",
+        detail:
+          "tone: success - the thank-you header is what verify asserts on.",
         tag: "YAP",
         tone: "success",
         selector: CheckoutOverviewSel.completeHeader,

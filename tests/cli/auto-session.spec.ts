@@ -241,15 +241,13 @@ test("full non-interactive sequence: detach, drive login + add-to-cart, status, 
   expect((afterSubmit.snapshot as { here: string }).here).toBe("LoggedIn");
 
   // trace: a Checkpoint/Block-level record of the login sequence, in order,
-  // not raw clicks - and fill-username/submit-login carry their authored
-  // stubBefore/stubAfter fixtures since those Blocks author them.
+  // not raw clicks.
   const traceRes = await trace(sessionId);
   expect(traceRes.ok).toBe(true);
-  const steps = traceRes.trace as { block: string; from: string | null; to?: string; stubBefore?: unknown }[];
+  const steps = traceRes.trace as { block: string; from: string | null; to?: string }[];
   expect(steps.map((s) => s.block)).toEqual(["fill-username", "fill-password", "submit-login"]);
   expect(steps[0]!.from).toBe("LoginPage");
   expect(steps[2]!.to).toBe("LoggedIn");
-  expect(steps[0]!.stubBefore).toBeDefined();
   // The invalid pick from earlier never ran a Block, so it added no step.
   expect(steps.length).toBe(3);
 

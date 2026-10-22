@@ -1,40 +1,32 @@
-import { Engine, withTitle, withSessionReset, withExpectedFailure } from "waygraph";
+import { engine } from "../../config/waygraph.config.js";
+import "../states/checkout.mem-stubs.js";
 import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
 import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
 import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
 import { SubmitLoginBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
+import { loginRefused } from "../stubs/login.js";
 
-const engine = new Engine();
-
-// A genuinely DIFFERENT scenario from checkoutFlow - not the same steps
-// split in half. Same login blocks, different user, different outcome:
-// locked_out_user attempts the exact same login an Owner (standard_user,
-// checkoutFlow) just completed successfully, and is blocked -
-// saucedemo.com's real response, verified live: stays on "/", shows
-// "Epic sadface: Sorry, this user has been locked out."
-//
-// withSessionReset matters here for real, not cosmetically - entered right
-// after checkoutFlow's already-authenticated session, this needs its own
-// genuinely fresh cookies/storage, or the previous user's session would
-// still be live and this login attempt wouldn't mean anything.
-//
-// submit-login branches: observe sees no /inventory.html navigation,
-// resolve -> LoginPage, verify confirms the error banner. Demo still wraps
-// withExpectedFailure so step 9/9 shows stubOnError rings + amber
-// "expected outcome" panel (branching no longer throws).
-export const viewerBlockedFlow = withExpectedFailure(
-  withTitle(
-    withSessionReset(
-      engine
-        .map()
-        .start()
-        .gotoPage(NavLoginBlock)
-        .method(FillUsernameBlock)
-        .method(FillPasswordBlock)
-        .method(SubmitLoginBlock)
-        .end(),
+/**
+ * locked_out_user attempts the login a standard user just completed and is refused: the app stays on the login page and
+ * shows the error banner. Run it after another flow to see it needs a reset: `.flow(viewerBlockedFlow, { reset: true })`.
+ */
+export const viewerBlockedFlow = engine
+  .map({
+    sessionReset: true,
+    expectedFailure:
+      "locked_out_user stays on LoginPage with the error banner - this is the product working as intended.",
+  })
+  .start()
+  .gotoPage(
+    NavLoginBlock.stubBefore((ctx) =>
+      ctx.title("Viewer: Blocked Login Attempt"),
     ),
-    "Viewer: Blocked Login Attempt",
-  ),
-  "locked_out_user stays on LoginPage with the error banner - this is the product working as intended.",
-);
+  )
+  .method(FillUsernameBlock)
+  .method(FillPasswordBlock)
+  .method(
+    SubmitLoginBlock.stubAfter((ctx) => {
+      if (ctx.out?.__state === "LoginPage") loginRefused(ctx);
+    }),
+  )
+  .end();

@@ -164,7 +164,8 @@ armed around the Block's action rather than written into it: `withDialog(CancelB
 ### Flows: `map()` is the one way to define them
 
 A flow is built with `engine.map()`. Its run settings go in `map({ … })`, before the chain (`memStub`, `expectedFailure`,
-`demoPace`, `highlightStyle`, `homeOrigin`); `.end()` takes nothing. The flow's title and narration are ctx stubs chained on
+`demoPace`, `highlightStyle`, `sessionReset`, `homeOrigin`); `.end()` takes nothing. `sessionReset: true` says the flow wants a fresh
+browser session when it runs after another one, in a CLI chain (`waygraph run "a then b"`) or nested with `.flow()`. The flow's title and narration are ctx stubs chained on
 the Block where they apply (`ctx.title(…)` names the flow from that step on), and a step's pace is its `{ pace }` option:
 
 ```typescript
@@ -182,7 +183,7 @@ export const shopFlow = engine
 ```
 
 **Nesting flows** is a step too: `.flow(sub, { reset })` runs another flow's steps inline, in the same page, browser and `mem`.
-`{ reset: true }` clears cookies and storage right before the sub-flow, for a second user that must start fresh:
+`{ reset: true }` (default: the sub-flow's own `sessionReset`) clears cookies and storage right before the sub-flow, for a second user that must start fresh:
 
 ```typescript
 export const showcase = engine

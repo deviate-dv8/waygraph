@@ -8,11 +8,15 @@ src/blocks/
   SITE-MAP.md
   saucedemo-web/                      # URL /
     NAV.md
-    nav-login.block.ts                # Nav  defineNavBlock url:/
+    nav-login.block.ts                # Page  definePageBlock url:/
+    ff-owner-auth.block.ts            # FFCompose (nav-login + fill-username + fill-password + submit-login)
     methods/
-      submit-login.method.block.ts    # Method defineMethodBlock
+      fill-username.method.block.ts   # Method defineMethodBlock (self-loop on LoginPage)
+      fill-password.method.block.ts   # Method defineMethodBlock (self-loop on LoginPage)
+      submit-login.method.block.ts    # Method defineMethodBlock (click only; branches)
       submit-login-for-flow.ts        # helper (not a discoverable *.block.ts alone)
       submit-logout.method.block.ts   # Method defineMethodBlock
+      login.sel.ts                    # LoginSel (not a Block)
     inventory/                        # URL /inventory.html
       inventory.page.block.ts       # Page definePageBlock
       NAV.md
@@ -25,20 +29,27 @@ src/blocks/
         remove-from-cart.effect.block.ts
     inventory-item/                   # URL /inventory-item.html
       NAV.md
+      item-detail.sel.ts              # ItemDetailSel (not a Block)
       nav-continue-shopping.block.ts
       nav-back-to-products.block.ts
       nav-back-to-inventory.block.ts
     cart/                             # URL /cart.html
       NAV.md
+      cart.sel.ts                     # CartSel (not a Block)
       nav-cart.block.ts               # Nav click header cart
       nav-checkout-info.block.ts
     checkout-step-one/                # URL /checkout-step-one.html
       NAV.md
       methods/
-        submit-checkout-info.method.block.ts
+        checkout-info.sel.ts               # CheckoutInfoSel (not a Block)
+        fill-first-name.method.block.ts    # Method defineMethodBlock (self-loop on CheckoutInfoPage)
+        fill-last-name.method.block.ts     # Method defineMethodBlock (self-loop on CheckoutInfoPage)
+        fill-postal-code.method.block.ts   # Method defineMethodBlock (self-loop on CheckoutInfoPage)
+        submit-checkout-info.method.block.ts  # Method defineMethodBlock (click only)
     checkout-step-two/                # URL /checkout-step-two.html
       NAV.md
       methods/
+        checkout-overview.sel.ts      # CheckoutOverviewSel (not a Block)
         finish-order.method.block.ts
 ```
 

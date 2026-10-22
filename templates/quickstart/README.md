@@ -1,10 +1,7 @@
 # waygraph quickstart (Sauce Demo)
 
-Temp-dir template for `npx waygraph try demo`. Same Blocks as
-`examples/saucedemo` (route-folder convention under `src/blocks/saucedemo-web/`).
+Temp-dir template for `npx waygraph try demo`. A copy of `examples/saucedemo` (freeform route-folder layout under
+`src/blocks/saucedemo-web/`, flows in `src/flows/`, narration in `src/stubs/`, settings in `config/waygraph.config.ts`).
 
-Convention walkthrough on Pages:
-https://deviate-dv8.github.io/waygraph/saucedemo/
-
-Do not edit this tree as the long-lived showcase - edit `examples/saucedemo`,
-then re-copy Blocks here when shipping a release that bumps `try demo`.
+Do not edit this tree as the long-lived showcase: edit `examples/saucedemo`, then run `npm run sync:quickstart` in the
+waygraph repo before a release.

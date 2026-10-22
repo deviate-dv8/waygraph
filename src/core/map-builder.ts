@@ -92,6 +92,11 @@ export interface MapBuilderOptions {
   homeOrigin?: string;
   /** Fill missing `requires` keys from `registerMemStub` when the flow runs (what `withMemStub` did). */
   memStub?: boolean;
+  /**
+   * This flow wants a fresh browser session (cookies and storage cleared) when it runs after another one, in a CLI chain
+   * (`waygraph run "a then b"`) or nested with `.flow(sub)`: a second user signing in, a logged-out check.
+   */
+  sessionReset?: boolean;
   /** Marks a flow that is supposed to throw, with the reason shown in the demo (what `withExpectedFailure` did). */
   expectedFailure?: string;
   /** Default demo pace for the whole flow (what `withDemoPace` did). */
@@ -102,7 +107,7 @@ export interface MapBuilderOptions {
 
 /** What `.flow()` takes for the sub-flow it runs inline. */
 export interface MapFlowOpts {
-  /** Clear cookies and storage right before the sub-flow, e.g. to start a second user fresh (what `withSessionReset` + `chainFlow` did). */
+  /** Clear cookies and storage right before the sub-flow, e.g. to start a second user fresh. Defaults to the sub-flow's own `sessionReset`. */
   reset?: boolean;
 }
 
@@ -446,7 +451,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   flow<NextOut extends Checkpoint<string>>(sub: Flow<NextOut>, opts?: MapFlowOpts): MapBuilder<NextOut> {
     let next = this as unknown as MapBuilder<any>;
     sub.blocks().forEach((info, i) => {
-      const block = i === 0 && opts?.reset ? resetBefore(info.block) : info.block;
+      const block = i === 0 && (opts?.reset ?? sub.resetSession) ? resetBefore(info.block) : info.block;
       next = next.appendStep(block as DefinedBlock<any, any>);
     });
     return next as MapBuilder<NextOut>;

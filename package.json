@@ -59,7 +59,8 @@
     "docs:build": "npm run docs:api && vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "docs:api": "typedoc && node scripts/gen-deprecated.mjs",
-    "knip": "knip"
+    "knip": "knip",
+    "sync:quickstart": "node scripts/sync-quickstart.mjs"
   },
   "peerDependencies": {
     "@playwright/test": "^1.40.0"

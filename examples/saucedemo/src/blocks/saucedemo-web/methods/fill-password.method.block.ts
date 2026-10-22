@@ -1,4 +1,4 @@
-import { defineMethodBlock, checkpoint, type StubCtx } from "waygraph";
+import { defineMethodBlock, checkpoint } from "waygraph";
 import type { LoginPage } from "../../../states/checkout.states.js";
 import { LoginCreds } from "../../../states/checkout.mem-keys.js";
 import { LoginSel } from "./login.sel.js";
@@ -21,30 +21,5 @@ export const FillPasswordBlock = defineMethodBlock<LoginPage, LoginPage>({
       await page.locator(LoginSel.password).fill(password);
     },
     resolve: () => checkpoint("LoginPage"),
-    stubBefore: (ctx: StubCtx) => {
-      ctx.ring("password", {
-        selector: LoginSel.password,
-        label: "Password",
-        detail: "tone: planned (purple)",
-        todo: "login-pass",
-        tone: "planned",
-        focus: true,
-        zoom: 1.4,
-      });
-    },
-    stubAfter: (ctx: StubCtx) => {
-      ctx.todos(
-        "saucedemo",
-        [
-          { id: "login-user", text: "Enter username", done: true },
-          { id: "login-pass", text: "Enter password", done: true },
-          { id: "login-submit", text: "Tap Login" },
-          { id: "cart-find", text: "Find the product" },
-          { id: "cart-add", text: "Add to cart" },
-          { id: "cart-open", text: "Open cart" },
-        ],
-        { title: "Device showcase", index: 2 },
-      );
-    },
   },
 });

@@ -1,4 +1,5 @@
-import { Engine, withTitle } from "waygraph";
+import { engine } from "../../config/waygraph.config.js";
+import "../states/checkout.mem-stubs.js";
 import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
 import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
 import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
@@ -13,65 +14,71 @@ import { SubmitCheckoutInfoBlock } from "../blocks/saucedemo-web/checkout-step-o
 import { FinishOrderBlock } from "../blocks/saucedemo-web/checkout-step-two/methods/finish-order.method.block.js";
 import { LoginSel } from "../blocks/saucedemo-web/methods/login.sel.js";
 
-const engine = new Engine({ headless: false, slowMo: 250 });
-
-/**
- * Owner checkout via map() + .ffStart/.ffEnd (no separate FfOwnerAuthBlock,
- * no HighlightFixtureMap). Auth collapses to one blitz step; post-login
- * blocks keep their own ctx stubBefore/stubAfter. Call-site decorate example
- * on fill-username when --ff-expand shows inners again.
- */
-export const checkoutFlow = withTitle(
-  engine
-    .map()
-    .start()
-    .ffStart("ff-owner-auth")
-    .gotoPage(NavLoginBlock)
-    .method(
-      FillUsernameBlock.stubBefore((ctx) => {
-        ctx.ring("username", {
-          selector: LoginSel.username,
-          label: "Demo user",
-          detail: "standard_user from Mem - library block stays neutral underneath",
-          tag: "AC",
-          duration: true,
-          focus: true,
-        });
-      }),
-    )
-    .method(
-      FillPasswordBlock.stubBefore((ctx) => {
-        ctx.ring("password", {
-          selector: LoginSel.password,
-          label: "Password",
-          detail: "Filled from Mem credentials.",
-          duration: 1500,
-          focus: true,
-        });
-      }),
-    )
-    .method(
-      SubmitLoginForFlow.stubBefore((ctx) => {
-        ctx.ring("submit", {
-          selector: LoginSel.loginButton,
-          label: "Sign in",
-          tag: "GATE",
-          duration: true,
-          fastMode: 500,
-          focus: true,
-          weight: "bold",
-        });
-      }),
-    )
-    .ffEnd()
-    .method(AddToCartBlock)
-    .gotoPage(NavCartBlock)
-    .gotoPage(NavCheckoutInfoBlock)
-    .method(FillFirstNameBlock)
-    .method(FillLastNameBlock)
-    .method(FillPostalCodeBlock)
-    .method(SubmitCheckoutInfoBlock)
-    .method(FinishOrderBlock)
-    .end(),
-  "Owner: Full Checkout",
-);
+export const checkoutFlow = engine
+  .map({ memStub: true })
+  .start()
+  .gotoPage(NavLoginBlock, { ff: true })
+  .method(
+    FillUsernameBlock.stubBefore((ctx) => {
+      ctx.ring("username", {
+        selector: LoginSel.username,
+        label: "Demo user",
+        detail:
+          "standard_user from Mem - library block stays neutral underneath",
+        tag: "AC",
+        duration: true,
+        focus: true,
+      });
+    }),
+    { ff: true },
+  )
+  .method(
+    FillPasswordBlock.stubBefore((ctx) => {
+      ctx.ring("password", {
+        selector: LoginSel.password,
+        label: "Password",
+        detail: "Filled from Mem credentials.",
+        duration: 1500,
+        focus: true,
+      });
+    }),
+    { ff: true },
+  )
+  .method(
+    SubmitLoginForFlow.stubBefore((ctx) => {
+      ctx.ring("submit", {
+        selector: LoginSel.loginButton,
+        label: "Sign in",
+        tag: "GATE",
+        duration: true,
+        fastMode: 500,
+        focus: true,
+        weight: "bold",
+      });
+    }),
+    { ff: true },
+  )
+  .method(AddToCartBlock.stubBefore((ctx) => ctx.title("Owner: Full Checkout")))
+  .gotoPage(NavCartBlock)
+  .gotoPage(NavCheckoutInfoBlock)
+  .method(
+    FillFirstNameBlock.stubBefore((ctx) => {
+      ctx.caption("Enter the first name on the order");
+      ctx.titlePos("left");
+    }),
+  )
+  .method(
+    FillLastNameBlock.stubBefore((ctx) => {
+      ctx.caption("Enter the last name on the order");
+      ctx.titlePos("center");
+    }),
+  )
+  .method(
+    FillPostalCodeBlock.stubBefore((ctx) => {
+      ctx.caption("Enter a postal code to calculate shipping");
+      ctx.titlePos("right");
+    }),
+  )
+  .method(SubmitCheckoutInfoBlock.stubBefore((ctx) => ctx.hideCaption()))
+  .method(FinishOrderBlock)
+  .end();

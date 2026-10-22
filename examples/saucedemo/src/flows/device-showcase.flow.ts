@@ -1,32 +1,31 @@
-import { Engine, start, end, withTitle } from "waygraph";
+import { engine } from "../../config/waygraph.config.js";
+import "../states/checkout.mem-stubs.js";
 import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
 import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
 import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
 import { SubmitLoginForFlow } from "../blocks/saucedemo-web/methods/submit-login-for-flow.js";
 import { AddToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.js";
 import { NavCartBlock } from "../blocks/saucedemo-web/cart/nav-cart.block.js";
+import { deviceShowcase as d } from "../stubs/device-showcase.js";
 
-const engine = new Engine();
-
-/**
- * Short device/orientation showcase (0.13.3+):
- *   login mobile portrait -> land on inventory landscape ->
- *   add-to-cart tablet portrait -> open cart tablet landscape -> desktop
- *
- * Run:
- *   npm run demo:device
- *   npm run demo:device:video
- */
-export const deviceShowcaseFlow = withTitle(
-  engine.defineFlow([
-    start,
-    NavLoginBlock,
-    FillUsernameBlock,
-    FillPasswordBlock,
-    SubmitLoginForFlow,
-    AddToCartBlock,
-    NavCartBlock,
-    end,
-  ]),
-  "Device showcase",
-);
+/** Sign in on a phone, shop on a tablet, open the cart in landscape: the device and zoom narration in src/stubs/device-showcase.ts. */
+export const deviceShowcaseFlow = engine
+  .map({ memStub: true })
+  .start()
+  .gotoPage(NavLoginBlock)
+  .method(
+    FillUsernameBlock.stubBefore(d.username.before).stubAfter(d.username.after),
+  )
+  .method(
+    FillPasswordBlock.stubBefore(d.password.before).stubAfter(d.password.after),
+  )
+  .method(
+    SubmitLoginForFlow.stubBefore(d.submit.before).stubAfter(d.submit.after),
+  )
+  .method(
+    AddToCartBlock.stubBefore(d.addToCart.before).stubAfter(d.addToCart.after),
+  )
+  .gotoPage(
+    NavCartBlock.stubBefore(d.openCart.before).stubAfter(d.openCart.after),
+  )
+  .end();

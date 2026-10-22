@@ -1,30 +1,28 @@
 import { test, expect } from "@playwright/test";
-import { MemPage, checkpoint, chainFlow } from "waygraph";
+import { MemPage, checkpoint } from "waygraph";
+import { engine } from "../config/waygraph.config.js";
 import { loginFlow } from "../src/flows/login.flow.js";
 import { shopFlow } from "../src/flows/shop.flow.js";
 import { LoginCreds, SelectedItem } from "../src/states/checkout.mem-keys.js";
 
-// Proves the 2-episode chainFlow scenario the step-mode CLI demo shows
+// Proves the 2-episode nested-flow scenario the step-mode CLI demo shows
 // interactively ("Episode 1: Sign In" -> "Episode 2: Shop & Checkout") also
 // works as a real, automated, headless test - not just something you have
 // to click through by hand. loginFlow/shopFlow are the exact same Flow
 // objects `waygraph chain "loginFlow(...) then shopFlow"` drives.
-test("chainFlow sequences 2 titled episodes (loginFlow then shopFlow) against the real live site", async () => {
+test("nested flows run 2 episodes (loginFlow then shopFlow) against the real live site", async () => {
   const mem = new MemPage();
   mem.set(LoginCreds({ username: "standard_user", password: "secret_sauce" }));
   mem.set(SelectedItem({ id: "sauce-labs-backpack", name: "Sauce Labs Backpack" }));
 
-  const combined = chainFlow(loginFlow, shopFlow);
+  const combined = engine.map().start().flow(loginFlow).flow(shopFlow).end();
   const result = await combined.run(mem);
 
   expect(result).toEqual(checkpoint("OrderComplete"));
 });
 
-test("each episode's title survives chaining, and blocks() reports the flattened chain in order", () => {
-  expect(loginFlow.title).toBe("Sign In");
-  expect(shopFlow.title).toBe("Shop & Checkout");
-
-  const combined = chainFlow(loginFlow, shopFlow);
+test("blocks() reports the flattened chain in order", () => {
+  const combined = engine.map().start().flow(loginFlow).flow(shopFlow).end();
   const blocks = combined.blocks();
 
   expect(blocks.map((b) => b.name)).toEqual([

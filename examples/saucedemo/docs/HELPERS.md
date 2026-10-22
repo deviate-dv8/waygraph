@@ -110,7 +110,7 @@ branch(SubmitLoginBlock, {
 });
 ```
 
-Linear `defineFlow([start, …, end])` usually skips `branch()` (one happy path).
+A linear `map()` chain usually skips `branch()` (one happy path).
 
 ---
 

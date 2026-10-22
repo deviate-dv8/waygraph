@@ -1,4 +1,4 @@
-import { defineMethodBlock, checkpoint, type StubCtx } from "waygraph";
+import { defineMethodBlock, checkpoint } from "waygraph";
 import type { LoginPage } from "../../../states/checkout.states.js";
 import { LoginCreds } from "../../../states/checkout.mem-keys.js";
 import { LoginSel } from "./login.sel.js";
@@ -23,49 +23,5 @@ export const FillUsernameBlock = defineMethodBlock<LoginPage, LoginPage>({
       await page.locator(LoginSel.username).fill(username);
     },
     resolve: () => checkpoint("LoginPage"),
-    stubBefore: (ctx: StubCtx) => {
-      ctx.title("Signing in · mobile");
-      ctx.device("mobile");
-      ctx.portrait();
-      ctx.todos(
-        "saucedemo",
-        [
-          { id: "login-user", text: "Enter username" },
-          { id: "login-pass", text: "Enter password" },
-          { id: "login-submit", text: "Tap Login" },
-          { id: "cart-find", text: "Find the product" },
-          { id: "cart-add", text: "Add to cart" },
-          { id: "cart-open", text: "Open cart" },
-        ],
-        { title: "Device showcase", index: 0 },
-      );
-      ctx.zoom(1.35);
-      const fromMem = ctx.mem?.get(LoginCreds.key)?.username;
-      ctx.ring("username", {
-        selector: LoginSel.username,
-        label: "Username",
-        detail: fromMem
-          ? `tone: info (blue) - mem ${fromMem}`
-          : "tone: info (blue)",
-        tone: "info",
-        todo: "login-user",
-        focus: true,
-        zoom: 1.4,
-      });
-    },
-    stubAfter: (ctx: StubCtx) => {
-      ctx.todos(
-        "saucedemo",
-        [
-          { id: "login-user", text: "Enter username", done: true },
-          { id: "login-pass", text: "Enter password" },
-          { id: "login-submit", text: "Tap Login" },
-          { id: "cart-find", text: "Find the product" },
-          { id: "cart-add", text: "Add to cart" },
-          { id: "cart-open", text: "Open cart" },
-        ],
-        { title: "Device showcase", index: 1 },
-      );
-    },
   },
 });

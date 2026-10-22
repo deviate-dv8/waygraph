@@ -1,3 +1,4 @@
+import { getMemStub } from "../mem-stub.js";
 import { createInterface } from "node:readline/promises";
 import { ensureShadowRoot } from "../ui/shadow.js";
 import { stdin as input, stdout as output } from "node:process";
@@ -133,6 +134,11 @@ export function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage): 
       if (mem.has(k)) continue;
       if (k.name in envParsed) {
         mem.set(k, envParsed[k.name]);
+        continue;
+      }
+      const stub = getMemStub(k);
+      if (stub) {
+        mem.set(k, stub());
         continue;
       }
       const def = defaultMemValueForKey(k.name);
