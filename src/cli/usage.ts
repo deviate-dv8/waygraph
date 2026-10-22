@@ -163,7 +163,9 @@ Primary (less is more):
                  --ff-disabled             Dispute: expand FF (alias --no-ff); blitz kept on those inners
                  --auto-play-video         Unattended + recorded: --auto-next + --video (+ step); headless
                  --auto-play-video-head    Same, but keep the browser visible (--non-headless)
-                 --video [dir]             Record .webm (demo: headless unless --non-headless)
+                 --video [dir]             Record .webm (demo: headless unless --non-headless);
+                                           default folder ~/Downloads/waygraph-videos/<project>,
+                                           or video.dir in the config / WAYGRAPH_VIDEO_DIR
                  --video-viewport WxH       Recording size (default demo: 1920x1080)
                  --title / --base-url
   waygraph run   [--blocks <flow|file|spec>]  Execute (no overlay unless --step)

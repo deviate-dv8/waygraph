@@ -10,6 +10,7 @@ import { connect } from "../types.js";
 import { MemPage } from "../mem-page.js";
 import { Engine, start, end, chainFlow, isFastForwardBlock, branchRoutes, runBranchRegression } from "../core.js";
 import { withWebServer } from "../webserver.js";
+import { resolveVideoDir } from "../video-dir.js";
 import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../browser.js";
 
 async function runMain() {
@@ -252,7 +253,7 @@ async function runMain() {
   const videoEnv = process.env.WAYGRAPH_VIDEO;
   let videoDir = null;
   if (videoEnv) {
-    videoDir = videoEnv === "1" ? join(projectDir, ".waygraph-videos") : videoEnv;
+    videoDir = videoEnv === "1" ? await resolveVideoDir(projectDir) : videoEnv;
     mkdirSync(videoDir, { recursive: true });
   }
   /** Fixed 16:9 capture for --video (demo QA and headless run). Step+video no longer maximizes. */

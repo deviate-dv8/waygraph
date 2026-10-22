@@ -6,6 +6,7 @@ import { packageRoot, runInherited } from "../cli/util.js";
 import { tmpdir } from "node:os";
 import { runChain } from "../cli/run-chain.js";
 import { applyRunFlags, parseRunFlags } from "../cli/flags.js";
+import { resolveVideoDir } from "../video-dir.js";
 
 interface TryPrereqStatus {
   ok: boolean;
@@ -216,7 +217,7 @@ async function runTryDemo(): Promise<void> {
   console.log(
     videoTo
       ? "waygraph try demo: step-through + record (Sign In -> Shop & Checkout -> blocked Viewer login) - click Next; video -> " +
-          (videoTo === "1" ? ".waygraph-videos/" : videoTo)
+          (videoTo === "1" ? await resolveVideoDir(destDir) : videoTo)
       : "waygraph try demo: step-through (Sign In -> Shop & Checkout -> blocked Viewer login) - click Next for each step ...",
   );
   await runChain(destDir, TRY_DEMO_CHAIN);

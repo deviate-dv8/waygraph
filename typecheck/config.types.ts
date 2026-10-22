@@ -46,3 +46,15 @@ export const fromEnv = defineConfig(({ mode, env }) => ({ baseUrl: env.BASE_URL 
 
 // @ts-expect-error unknown key in a function-form config
 defineConfig(() => ({ typo: 1 }));
+
+export const runSettings = defineConfig({
+  video: { dir: "~/Downloads/waygraph-videos", viewport: "1920x1080" },
+  slowMo: 250,
+  headed: true,
+  demo: { autoNext: true, fast: false },
+});
+
+defineConfig({
+  // @ts-expect-error viewport is a "WxH" string
+  video: { viewport: 1920 },
+});

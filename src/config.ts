@@ -17,6 +17,24 @@ export interface WaygraphConfig {
   baseUrl?: string;
   /** Chromium extensions to load in every run: `"hoppscotch"`, a Chrome Web Store id, or `{ path }` to an unpacked one. */
   extensions?: ExtensionSpec[];
+  /** Recording with `--video` (`waygraph run` / `demo`). */
+  video?: {
+    /** Where recordings are saved: absolute, `~/…`, or relative to the project. Default `~/Downloads/waygraph-videos/<project>` (the project's `.waygraph-videos/` where there is no Downloads folder, and on CI). */
+    dir?: string;
+    /** Recording size, e.g. `"1920x1080"` (demo default) or `"1280x720"` (run default). */
+    viewport?: string;
+  };
+  /** Milliseconds to pause before each browser action in `run` / `demo`, to make it watchable. */
+  slowMo?: number;
+  /** Show the browser window. Default: `demo` and `auto` are headed, `run` is headless. */
+  headed?: boolean;
+  /** `waygraph demo` defaults. */
+  demo?: {
+    /** Advance steps automatically instead of waiting for Next. */
+    autoNext?: boolean;
+    /** Blitz through fast-forward steps. */
+    fast?: boolean;
+  };
   /** Folder of test files, relative to the project. Default `"tests"`. */
   testDir?: string;
   /** App to start around `waygraph test`, `run`, `demo` and `auto` (same fields as Playwright's `webServer`). */
@@ -67,7 +85,9 @@ export async function loadWaygraphConfig(projectDir: string): Promise<WaygraphCo
         `waygraph: failed to load ${name}: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
-    return mod.default ?? mod;
+    const loaded = mod.default ?? mod;
+    applyConfigEnv(loaded);
+    return loaded;
   }
   return undefined;
 }
@@ -130,4 +150,21 @@ export async function configuredExtensions(projectDir: string): Promise<string[]
   if (fromEnv.length > 0) return fromEnv;
   loadEnvFiles(projectDir);
   return resolveExtensions((await loadWaygraphConfig(projectDir))?.extensions, projectDir);
+}
+
+/**
+ * Applies the config's run settings as the `WAYGRAPH_*` variables the runner reads. A flag, a shell variable or a `.env`
+ * value that is already set always wins, so the config only supplies defaults.
+ */
+export function applyConfigEnv(config: WaygraphConfig | undefined): void {
+  if (!config) return;
+  const set = (name: string, value: string | undefined): void => {
+    if (value !== undefined && process.env[name] === undefined) process.env[name] = value;
+  };
+  set("WAYGRAPH_VIDEO_DIR", config.video?.dir);
+  set("WAYGRAPH_VIDEO_VIEWPORT", config.video?.viewport);
+  set("WAYGRAPH_SLOWMO", config.slowMo === undefined ? undefined : String(config.slowMo));
+  set("WAYGRAPH_HEADED", config.headed === undefined ? undefined : config.headed ? "1" : "0");
+  set("WAYGRAPH_AUTOPLAY", config.demo?.autoNext === undefined ? undefined : config.demo.autoNext ? "1" : "0");
+  set("WAYGRAPH_DEMO_FAST", config.demo?.fast ? "1" : undefined);
 }

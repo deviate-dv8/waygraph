@@ -112,6 +112,18 @@ export default defineConfig(({ mode, env }) => ({
 `.env.staging`, `.env.staging.local` in that order, each overriding the one before; the default mode is `NODE_ENV`, else
 `development`. A value exported in the shell always wins over every file, and `WAYGRAPH_BASE_URL` still overrides `baseUrl`.
 
+Run settings can be defaults in the config, applied only when no flag, shell variable or `.env` value sets them:
+`video: { dir, viewport }`, `slowMo`, `headed`, `demo: { autoNext, fast }`. `extensions`, `video`, `slowMo`, `headed`, `demo`,
+`webServer` and `testDir` are waygraph's own; only the `playwright: {…}` block is Playwright's (browser extensions are not a
+Playwright config option at all - waygraph launches a persistent context for them).
+
+**Videos.** `--video` saves recordings to `<Downloads>/waygraph-videos/<project>` by default. Set `video.dir` in the config
+(absolute, `~/…`, or relative to the project) or `WAYGRAPH_VIDEO_DIR` to put them elsewhere; `--video <dir>` wins over both.
+"Downloads" is `~/Downloads` on macOS and Windows and `XDG_DOWNLOAD_DIR` on Linux. Without a Downloads folder (a server, a
+container) or on CI the default is the project's `.waygraph-videos/`. waygraph checks the folder is writable first: on macOS the
+first write into Downloads can trigger a one-time permission prompt for your terminal, and if it is refused waygraph warns and
+saves in the project instead.
+
 Flows pass the same object to the Engine, so it is imported rather than read out of band:
 `import config from "../../config/waygraph.config.js"; const engine = new Engine(config);`. The Engine uses
 `baseUrl` and `extensions` for the browser it launches itself (`flow.run(mem)`); `waygraph test`, `run`, `demo`
