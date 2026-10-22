@@ -70,7 +70,7 @@ but the ctx form above is the recommended one.
 
 | Export | Kind | What it does |
 |---|---|---|
-| `withHighlightFixtures(flow, map)` | function | Attach a `HighlightFixtureMap` to a Flow |
+| `withHighlightFixtures(flow, map)` | function | **Deprecated** - chain ctx stubs on the Block instead. Attached a `HighlightFixtureMap` to a Flow |
 | `resolveHighlightSlots(block, phase, opts)` | function | Resolve stubBefore / stubAfter slots with fixture merge |
 | `resolveSlides(block, opts)` | function | Resolve slides (fixture wins over block) |
 | `formatHighlightCaption(h)` | function | Format `[TAG] label - detail` string |

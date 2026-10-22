@@ -20,6 +20,10 @@ test("upgrade reports missing files, copies only the named paths, never overwrit
     wg(proj, "upgrade", ".agents", "--apply");
     expect(existsSync(join(proj, skill))).toBe(true);
 
+    writeFileSync(join(proj, skill), "stale skill text\n");
+    wg(proj, "upgrade", "--skills");
+    expect(readFileSync(join(proj, skill), "utf8")).not.toContain("stale skill text");
+
     const hop = "src/map/(external)/hoppscotch";
     rmSync(join(proj, hop), { recursive: true });
     writeFileSync(join(proj, "src/flows/home/cart.flow.ts"), "// mine\n");

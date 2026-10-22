@@ -20,7 +20,7 @@ shape. At runtime the engine only sees `Block`.
 | `EffectBlock` / `defineEffectBlock` | Instance-menu salt (add/remove/toggle via mem + `instanceOptions`) |
 | `MemPage` + `key()` | Typed shared memory across the run |
 | `Trait` | verify after resolve; precondition before act |
-| `Engine` + `defineFlow` | `[start, ...blocks, end]` -> runnable Flow |
+| `Engine` + `map()` | `engine.map().start()…end()` -> runnable Flow |
 | `Flow.run` | `run(mem)` owns browser, or `run(context, mem)` |
 
 ## Navigation belongs in defineNavBlock
@@ -153,7 +153,7 @@ Full table and post-scaffold steps: [quick start - three ways in](./quickstart#p
 1. Stealth / odd launchers via `EngineConfig.browsers`.
 1. Run `waygraph check` in CI on `*.block.ts` trees.
 1. Credentials in MemPage `requires` - fail in preflight.
-1. Demos: `chainFlow` + session/title helpers - do not hand-roll cookie clears in Blocks.
+1. Demos: nest flows with `.flow(sub, { reset: true })` - do not hand-roll cookie clears in Blocks.
 1. Hand page back with `{ closeOnFinish: false }` when demos must keep the tab.
 1. Popups: arm `context.once("page", …)` before the click; drive with `{ page: popup }`.
 1. Extend via composition - do not invent a parallel engine.
@@ -169,5 +169,5 @@ Full table and post-scaffold steps: [quick start - three ways in](./quickstart#p
 | `branch` / self-loops | Routing with `maxSteps` cap |
 | `spawnTab` | Second tab, same context |
 | `withVerify` / `flow.withBlockVerify` | Patch confirmation from outside |
-| `chainFlow` + episode helpers | Multi-episode showcase |
+| `.flow(sub, { reset })` | Multi-episode showcase (nest flows) |
 

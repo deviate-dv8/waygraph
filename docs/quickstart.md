@@ -6,7 +6,7 @@ Three entry paths, then your first Block + Flow.
 
 | Path | When | Command |
 |---|---|---|
-| **Try demo** | Onboarding - watch chainFlow on saucedemo.com; nothing written to your cwd | `npx waygraph try demo` |
+| **Try demo** | Onboarding - watch nested flows on saucedemo.com; nothing written to your cwd | `npx waygraph try demo` |
 | **Try auto** | Temp Sauce Demo headed explorer (creds pre-seeded) | `npx waygraph try auto` |
 | **Try auto:cli** | Same explorer, terminal menu | `npx waygraph try auto:cli` |
 | **In-repo example** | Permanent Sauce Demo - headed `auto` | [Clone and run it](#saucedemo) (needs one root install + build first) |
@@ -86,43 +86,38 @@ npm install waygraph @playwright/test
 Prefer `defineNavBlock` for navigation and regular Blocks for page actions.
 Full handout examples live on the [engine handout](./handout) page.
 
-```sh
-import { Engine, start, end, MemPage, key, checkpoint, defineNavBlock, Trait } from "waygraph";
-import type { Block, Checkpoint, Start } from "waygraph";
+```ts
+import { Engine, MemPage, key, checkpoint, defineNavBlock, defineMethodBlock, Trait } from "waygraph";
+import type { Checkpoint } from "waygraph";
 
 type LoginForm = Checkpoint<"LoginForm">;
 type LoggedIn = Checkpoint<"LoggedIn">;
 
 const Username = key<string>("username");
 
-const NavLogin = defineNavBlock({
-name: "nav-login",
-checkpoint: "LoginForm",
-url: "https://example.com/login",
+const NavLogin = defineNavBlock<LoginForm>({
+  name: "nav-login",
+  checkpoint: "LoginForm",
+  url: "https://example.com/login",
 });
 
-const SubmitLogin: Block<LoginForm, LoggedIn> = {
-name: "submit-login",
-requires: [Username],
-instruction: {
-async act(page, _input, mem) {
-await page.getByLabel("Username").fill(mem.get(Username));
-await page.getByRole("button", { name: "Sign in" }).click();
-},
-resolve: () => checkpoint("LoggedIn"),
-verify: [Trait.url({ pathname: "/dashboard" })],
-},
-};
+const SubmitLogin = defineMethodBlock<LoginForm, LoggedIn>({
+  name: "submit-login",
+  requires: [Username],
+  instruction: {
+    async act(page, _input, mem) {
+      await page.getByLabel("Username").fill(mem.get(Username));
+      await page.getByRole("button", { name: "Sign in" }).click();
+    },
+    resolve: () => checkpoint("LoggedIn"),
+    verify: [Trait.url({ pathname: "/dashboard" })],
+  },
+});
 
 const mem = new MemPage();
 mem.set(Username, "alice");
 
-const flow = new Engine({ headless: true }).defineFlow([
-start,
-NavLogin,
-SubmitLogin,
-end,
-]);
+const flow = new Engine({ headless: true }).map().start().gotoPage(NavLogin).method(SubmitLogin).end();
 
 await flow.run(mem);
 // Or inside @playwright/test: await flow.run(context, mem);

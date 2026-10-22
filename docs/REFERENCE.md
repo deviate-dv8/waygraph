@@ -257,7 +257,7 @@ replaced only with `--overwrite`; `--diff` prints what changed. For example:
 waygraph upgrade "src/map/(external)/hoppscotch" src/flows --apply
 ```
 
-Shared files such as `src/states/*.ts` usually differ too, so review them with `--diff` and merge by hand.
+`waygraph upgrade --skills` refreshes the agent skills in `.agents/skills` to the installed waygraph's (they are waygraph's own text, so it overwrites them). Shared files such as `src/states/*.ts` usually differ too, so review them with `--diff` and merge by hand.
 
 ## Core concepts
 
@@ -270,37 +270,45 @@ Shared files such as `src/states/*.ts` usually differ too, so review them with `
 - **`Trait`** - a named, independently-reportable check (`{ name, check(page, mem) }`).
   Built-in factories: `Trait.url` / `Trait.text` / `Trait.visible` (also importable as
   free functions `urlMatches` / `textEquals` / `visible`).
-- **`Flow`** - several Blocks chained with `Engine().defineFlow([start, ...blocks, end])`,
+- **`Flow`** - several Blocks chained with `engine.map().start().gotoPage(...).method(...).end()`,
   run with `flow.run(mem)` (Engine launches its own browser) or `flow.run(context, mem)`
   (reuse an existing `@playwright/test` `context` fixture).
 
 ## Quick start
 
 ```typescript
-import { Engine, start, end, MemPage, key, checkpoint, Trait } from "waygraph";
-import type { Block, Checkpoint, Start } from "waygraph";
+import { Engine, MemPage, key, defineNavBlock, defineMethodBlock, checkpoint, Trait } from "waygraph";
+import type { Checkpoint } from "waygraph";
 
+type LoginForm = Checkpoint<"LoginForm">;
 type LoggedIn = Checkpoint<"LoggedIn">;
 
 const Username = key<string>("username");
 
-const Login: Block<Start, LoggedIn> = {
-  name: "login",
+const NavLogin = defineNavBlock<LoginForm>({
+  name: "nav-login",
+  checkpoint: "LoginForm",
+  url: "https://example.com/login",
+  verify: [Trait.visible("button:text-is('Sign in')")],
+});
+
+const SignIn = defineMethodBlock<LoginForm, LoggedIn>({
+  name: "sign-in",
+  requires: [Username],
   instruction: {
     async act(page, _input, mem) {
-      await page.goto("https://example.com/login");
       await page.getByLabel("Username").fill(mem.get(Username));
       await page.getByRole("button", { name: "Sign in" }).click();
     },
     resolve: () => checkpoint("LoggedIn"),
     verify: [Trait.url({ pathname: "/dashboard" })],
   },
-};
+});
 
 const mem = new MemPage();
 mem.set(Username, "alice");
 
-const flow = new Engine().defineFlow([start, Login, end]);
+const flow = new Engine().map().start().gotoPage(NavLogin).method(SignIn).end();
 const result = await flow.run(mem); // Engine launches its own browser
 // result === { __state: "LoggedIn" }
 ```
@@ -308,11 +316,11 @@ const result = await flow.run(mem); // Engine launches its own browser
 Inside an existing `@playwright/test` file, reuse its `context` fixture instead of having
 the Engine launch its own browser: `await flow.run(context, mem)`.
 
-See `tests/define-flow.spec.ts` here, and
+See `tests/core/` here, and
 `examples/saucedemo/tests/checkout-flow.spec.ts` (a real multi-Block flow against live
 saucedemo.com), for this running for real. The lower-level `connect()`/`runGraph()` still
-exist and are what `defineFlow` builds on - reach for them directly only if you need a
-shape `defineFlow`'s array can't express yet.
+exist and are what flows build on - reach for them directly only if you need a
+shape `map()` can't express yet.
 
 ## Engine features
 
@@ -338,7 +346,7 @@ structurally incapable of touching the browser or shared memory. `verify` runs o
   Block with no per-step confirmation. `composedBlock.withStepVerify` / `modStepVerify`
   patch one step from outside, addressed the same three ways as `withBlockVerify`. A
   `composeBlock` result is a plain Block, so it drops straight into
-  `defineFlow([start, ..., composed, ..., end])` like any other.
+  `.method(composed)` in a `map()` chain like any other.
 - **`fastForwardComposeBlock(name, steps)`** is the same shape marked for wall-clock
   **fast-forward**: one opaque demo step that blitzes (no per-inner gate, no smooth cursor
   theater, Playwright `slowMo` off for that flow unless `WAYGRAPH_SLOWMO` is set) unless
@@ -382,7 +390,7 @@ folder style, since some real consumers of this package still use the latter.
 
 ### `map()` - a kind-checked, no-teleporting flow builder
 
-`Engine.defineFlow([start, ...blocks, end])` already typechecks that each Block's `Out`
+The deprecated `Engine.defineFlow([start, ...blocks, end])` also typechecked that each Block's `Out`
 matches the next one's `In`. It does **not** stop an agent (or a careless human) from
 handing it a hand-rolled plain object that merely *looks* like a Block - TypeScript's
 structural typing can't tell a real `defineNavBlock(...)` output from a copy-pasted
@@ -412,19 +420,17 @@ immediately, naming the step and the factory it should have used, instead of sil
 entering the chain. Give `homeOrigin` and `.gotoPage()`/`.gotoExternal()` also cross-check
 each Nav/Page Block's own static `url` against it (skipped, honestly, for click-based or
 mem-dependent nav - not statically checkable). The Checkpoint chain itself is still
-typechecked exactly like `defineFlow`'s own tuple overloads - there is no method on this
+typechecked like `defineFlow`'s tuple overloads were - there is no method on this
 builder that can skip from one Checkpoint to an unrelated one without a real, kind-correct
 Block in between, which is what "no teleporting" means here.
 
-`map()` is sugar over `defineFlow`, not a new execution engine - the result is a real
-`Flow`, so every existing Flow-level feature (Layouts, `withBlockVerify`, demo narration,
-`chainFlow`) works on it unchanged. `import { map } from "waygraph"` is also available
+`map()` is not a new execution engine - the result is a real
+`Flow`, so every Flow-level feature (Layouts, `withBlockVerify`, demo narration) works on it unchanged, and flows nest
+with `.flow(sub, { reset })`. `import { map } from "waygraph"` is also available
 standalone (`map(options)` ~= `new Engine(options).map(options)`) for a call site that
-doesn't otherwise need its own `Engine` instance. **Recommended for new projects** over
-hand-assembled `defineFlow([start, ...])` arrays - the freeform array form still works
-and isn't going away (real consumers on the older folder convention depend on it), but
-`map()` is the one that actually stops a broken/hacked Block from entering a flow
-unnoticed.
+doesn't otherwise need its own `Engine` instance. **The one way to define a flow.** The older
+`defineFlow([start, ...])` array form still works but is deprecated: `map()` is the one that actually stops a
+broken/hacked Block from entering a flow unnoticed.
 
 ### Traits beyond the page
 
@@ -464,13 +470,13 @@ real browser actions already ran.
 Hand-supplying `--data '{...}'` every run gets old fast for a `requires` key that's
 genuinely arbitrary (a username, an email, a name) rather than something the run actually
 depends on. `registerMemStub(key, fake)` registers a generator for one `MemKey` (bring your
-own - Faker.js or anything else; waygraph takes no dependency on it); `withMemStub(flow)`
+own - Faker.js or anything else; waygraph takes no dependency on it); `engine.map({ memStub: true })`
 opts that Flow into filling any `requires` key with no `--data` coverage from that registry
 instead of failing preflight. A key with no registration still fails exactly as before -
 this narrows the case that needs real input, it doesn't remove the guard:
 
 ```typescript
-import { registerMemStub, withMemStub } from "waygraph";
+import { registerMemStub } from "waygraph";
 import { faker } from "@faker-js/faker";
 
 registerMemStub(LoginCreds.key, () => ({
@@ -478,7 +484,7 @@ registerMemStub(LoginCreds.key, () => ({
   password: faker.internet.password(),
 }));
 
-export const demoLoginFlow = withMemStub(loginFlow);
+export const demoLoginFlow = engine.map({ memStub: true }).start() /* … same steps as loginFlow … */.end();
 ```
 ```bash
 waygraph run demoLoginFlow                 # zero --data - fills from the registry
@@ -590,9 +596,9 @@ any other practice warning, with `// waygraph-ignore: empty-verify` - e.g. when 
 Automation rings are gray; authored stubs/slides can use
 `tone: "info" | "warning" | "danger" | "success"` (iconified captions), plus
 `size: "sm" | "md" | "lg"` and `weight: "normal" | "bold"`. Flow episode defaults:
-`withHighlightStyle(flow, { size, weight, tone? })` (slot/fixture wins). Episode pacing:
-`withDemoPace(flow, "fast" | "slow" | "normal" | "blitz" | number)` or
-`withBlockPace(block, ...)` (`number <= 20` = scale vs normal, e.g. `0.5` / `2`; `> 20` =
+`map({ highlightStyle: { size, weight, tone? } })` (slot/fixture wins). Episode pacing:
+`map({ demoPace: "fast" | "slow" | "normal" | "blitz" | number })` or a step's
+`{ pace }` (`number <= 20` = scale vs normal, e.g. `0.5` / `2`; `> 20` =
 absolute ms, e.g. `4500`). FFCompose stays blitz. Living objectives:
 `docs/proposals/OBJECTIVES.md`.
 
@@ -666,8 +672,8 @@ export const AssertInventoryHeaderBlock = defineAssertBlock({
 
 **Give `defineAssertBlock` an explicit type argument when it sits mid-chain.** Without one,
 `Out` defaults to wildcard `Checkpoint<string>` on both sides - harmless when the assert is
-the last real Block before `end` (nothing downstream needs it narrower), but a `defineFlow`
-array's tuple typing breaks once a wildcard Block is sandwiched between two
+the last real Block before `end` (nothing downstream needs it narrower), but the flow's
+chain typing breaks once a wildcard Block is sandwiched between two
 specifically-typed ones. Write `defineAssertBlock<LoggedIn>({ ..., checkpoint: "LoggedIn",
 ... })` any time the assert has a real Block after it, not just before.
 
@@ -692,7 +698,7 @@ export const AssertItemAddedBlock = defineAssertBlock<ItemInCart>({
 });
 
 // wired right after the action it checks:
-engine.defineFlow([start, NavHomeBlock, AddItemBlock, AssertItemAddedBlock, ClearCartBlock, end])
+engine.map().start().gotoPage(NavHomeBlock).method(AddItemBlock).assert(AssertItemAddedBlock).method(ClearCartBlock).end()
 ```
 
 Live reference: `templates/scaffold/src/map/(app_base)/home/_methods/assert-item-added.method.block.ts`,
@@ -722,7 +728,7 @@ export const AssertSubmitGatedBlock = defineAssertBlock<CheckoutInfoPage>({
 });
 
 // wired right after the fields that gate it, before the ones that clear the gate:
-engine.defineFlow([start, NavCheckoutInfoBlock, AssertSubmitGatedBlock, FillFirstNameBlock, ...])
+engine.map().start().gotoPage(NavCheckoutInfoBlock).assert(AssertSubmitGatedBlock).method(FillFirstNameBlock) /* … */
 ```
 
 Same rule as any other assert Block: give it an explicit type argument when it sits
@@ -982,10 +988,16 @@ needs to vary per run, as both examples above do. Wired into the chain right whe
 belong:
 
 ```typescript
-engine.defineFlow([
-  start, NavMailpitInboxBlock, AssertEmailReceivedBlock, OpenMessageBlock,
-  AssertEmailContentBlock, ExtractEmailLinkBlock, NavVerificationLinkBlock, end,
-])
+engine
+  .map()
+  .start()
+  .gotoExternal(NavMailpitInboxBlock)
+  .assert(AssertEmailReceivedBlock)
+  .method(OpenMessageBlock)
+  .assert(AssertEmailContentBlock)
+  .method(ExtractEmailLinkBlock)
+  .gotoPage(NavVerificationLinkBlock)
+  .end()
 ```
 
 ### Where this shows up in `waygraph auto`
@@ -1214,9 +1226,8 @@ enforces this mechanically and exits 1 on a mismatch - don't rely on review alon
 helpers as today's freeform "manual mode" (`definePageBlock`/`defineNavBlock`/
 `defineMethodBlock`/etc.) either way - Map only changes *where files live and what they're
 named*, never what kind of Block authors them or how they execute. A project adopts it
-incrementally, folder by folder. Prefer [`map()`](#map---a-kind-checked-no-teleporting-flow-builder)
-over a hand-assembled `defineFlow([start, ...])` array when wiring these Blocks into a Flow -
-it's the one that can't silently accept a Block that didn't come from a real factory.
+incrementally, folder by folder. Build flows with [`map()`](#map---a-kind-checked-no-teleporting-flow-builder) -
+it can't silently accept a Block that didn't come from a real factory.
 
 **Leading underscore = this Checkpoint's own fixed machinery, never a route segment.**
 `_nav.block.ts`/`_page.block.ts`/`_sel.ts`/`_methods/` (same private-folder idea as Next.js's
@@ -1299,9 +1310,8 @@ filename pattern, never folder depth or naming.
    (a bad import silently dropped a Block from discovery is the usual cause), not something to
    wave off as "close enough."
 
-Once the folder structure is settled, prefer building/rebuilding Flows over these Blocks with
-[`map()`](#map---a-kind-checked-no-teleporting-flow-builder) instead of a hand-assembled
-`defineFlow([start, ...])` array - it's the one that can't silently accept a Block that isn't
+Once the folder structure is settled, build Flows over these Blocks with
+[`map()`](#map---a-kind-checked-no-teleporting-flow-builder) (the `defineFlow([start, ...])` array is deprecated) - it can't silently accept a Block that isn't
 really a Nav/Page/Assert/Method from this package's own factories.
 
 ## Getting started (pick one)
@@ -1482,13 +1492,13 @@ scannable summary.
 
 ## Example
 
-Two Tier-0 Blocks (only `act` + `resolve`, no branching), each confirmed with `verify`
-after the fact rather than asserting mid-`observe`, defined as a flow and run against a
+A navigation Block and a method Block (only `act` + `resolve`, no branching), each confirmed with `verify`
+after the fact rather than asserting mid-`observe`, built into a flow and run against a
 real page:
 
 ```typescript
-import { Engine, start, end, MemPage, key, checkpoint } from "waygraph";
-import type { Block, Checkpoint, Start } from "waygraph";
+import { Engine, MemPage, key, checkpoint, defineNavBlock, defineMethodBlock } from "waygraph";
+import type { Checkpoint } from "waygraph";
 
 type FormLoaded = Checkpoint<"FormLoaded">;
 type Submitted = Checkpoint<"Submitted">;
@@ -1496,18 +1506,15 @@ type Submitted = Checkpoint<"Submitted">;
 const EmailKey = key<string>("form.email");
 const PasswordKey = key<string>("form.password");
 
-const GotoForm: Block<Start, FormLoaded> = {
+const GotoForm = defineNavBlock<FormLoaded>({
   name: "goto-form",
-  instruction: {
-    async act(page) {
-      await page.goto("https://example.com/login");
-    },
-    resolve: () => checkpoint("FormLoaded"),
-  },
-};
+  checkpoint: "FormLoaded",
+  url: "https://example.com/login",
+});
 
-const FillAndSubmit: Block<FormLoaded, Submitted> = {
+const FillAndSubmit = defineMethodBlock<FormLoaded, Submitted>({
   name: "fill-and-submit",
+  requires: [EmailKey, PasswordKey],
   instruction: {
     async act(page, _input, mem) {
       await page.getByPlaceholder("Email").fill(mem.get(EmailKey));
@@ -1525,15 +1532,14 @@ const FillAndSubmit: Block<FormLoaded, Submitted> = {
       },
     ],
   },
-};
+});
 
 const mem = new MemPage();
 mem.set(EmailKey, "alice@test.com");
 mem.set(PasswordKey, "hunter2");
 
-const engine = new Engine();
-const flow = engine.defineFlow([start, GotoForm, FillAndSubmit, end]);
-const result = await flow.run(context, mem);
+const flow = new Engine().map().start().gotoPage(GotoForm).method(FillAndSubmit).end();
+const result = await flow.run(mem);
 // result === { __state: "Submitted" }
 ```
 

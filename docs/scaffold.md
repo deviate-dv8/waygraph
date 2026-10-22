@@ -80,7 +80,8 @@ npx waygraph upgrade                          # dry run: new + differing scaffol
 npx waygraph upgrade "src/map/(external)/hoppscotch" --apply
 ```
 
-Only the paths you name are copied; differing files are replaced only with `--overwrite`.
+Only the paths you name are copied; differing files are replaced only with `--overwrite`. `npx waygraph upgrade --skills` refreshes the
+agent skills in `.agents/skills` after you update waygraph.
 
 ## Flows are use cases
 

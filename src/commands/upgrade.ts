@@ -23,13 +23,19 @@ const isOlder = (a: number[], b: number[]): boolean => {
 };
 
 /**
- * `waygraph upgrade [project] [paths...] [--apply] [--overwrite] [--diff]`
+ * `waygraph upgrade [project] [paths...] [--apply] [--overwrite] [--diff] [--skills]`
  * Compares the project with the scaffold shipped in this waygraph. Dry run by default.
  * Only the paths you name are copied, because a real project deliberately drops parts of the demo.
  */
 export async function upgradeCase(args: string[]): Promise<void> {
   const flags = new Set(args.filter((a) => a.startsWith("--")));
   const positional = args.slice(1).filter((a) => !a.startsWith("--"));
+  // --skills: the agent skills are waygraph's own text, never edited by a project, so refresh them in place.
+  if (flags.has("--skills")) {
+    flags.add("--apply");
+    flags.add("--overwrite");
+    positional.push(".agents/skills");
+  }
   const first = positional[0];
   const hasProject = first !== undefined && existsSync(join(resolve(first), "package.json"));
   const proj = resolve(hasProject ? first : process.cwd());

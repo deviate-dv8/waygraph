@@ -16,7 +16,14 @@ export const SubmitLoginBlock = defineMethodBlock<LoginPage, LoggedIn>({
 });
 
 // A Flow = Blocks in order.
-export const loginFlow = engine.defineFlow([start, NavLoginBlock, FillUsernameBlock, FillPasswordBlock, SubmitLoginBlock, end]);
+export const loginFlow = engine
+  .map()
+  .start()
+  .gotoPage(NavLoginBlock)
+  .method(FillUsernameBlock)
+  .method(FillPasswordBlock)
+  .method(SubmitLoginBlock)
+  .end();
 ```
 
 ## Try it in 60 seconds

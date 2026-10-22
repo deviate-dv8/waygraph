@@ -197,11 +197,12 @@ Also:
                  waygraph test --config staging   (config/waygraph.staging.config.ts)
   --env <mode>   (any command) load .env.<mode> / .env.<mode>.local on top of .env, e.g.
                  waygraph test --env staging   (default: NODE_ENV, else development)
-  waygraph upgrade [project] [paths...] [--apply] [--overwrite] [--diff]
+  waygraph upgrade [project] [paths...] [--apply] [--overwrite] [--diff] [--skills]
                                            Compare a project with the scaffold in this waygraph:
                                            lists new and differing files and a stale waygraph
                                            dependency. Dry run unless --apply; only the paths you
                                            name are copied, differing files only with --overwrite.
+                                           --skills refreshes .agents/skills to this waygraph's.
   waygraph extensions install [project] [--update]
                                            Download the browser extensions listed in
                                            waygraph.config.* (extensions: ["hoppscotch"]) into

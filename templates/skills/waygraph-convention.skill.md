@@ -99,7 +99,7 @@ against a live site, use `--skill-pilot-blind`.
   with the extension, so requests skip CORS: `set-method`, `set-url`, `set-headers`, `set-json-body`,
   `send-request`, `assert-status`, `read-response-body`, `assert-response-body`.
 - **Updating an older project:** `npm install waygraph@latest`, then `waygraph upgrade` (dry run) to see new
-  and differing scaffold files; copy the paths you want with `--apply`.
+  and differing scaffold files; copy the paths you want with `--apply`. `waygraph upgrade --skills` refreshes these skills.
 
 ## Block kinds (file convention)
 
