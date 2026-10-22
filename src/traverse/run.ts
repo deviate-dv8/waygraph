@@ -26,8 +26,10 @@ import {
 } from "./coverage.js";
 import { chromiumExecutablePath } from "../browser.js";
 
+/** How `traverse` workers share a browser: one session, or a clone per worker. */
 export type TraverseSessionMode = "clone" | "inherit";
 
+/** What one `traverse` worker did: edges walked and failures. */
 export interface TraverseWorkerResult {
   exitCode: number;
   steps: number;
@@ -35,6 +37,7 @@ export interface TraverseWorkerResult {
   leaf?: string;
 }
 
+/** Options for `runTraverse`: workers, session mode, step limit, coverage gate. */
 export interface TraverseOptions {
   baseURL?: string;
   startUrl?: string;

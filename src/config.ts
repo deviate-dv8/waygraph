@@ -13,6 +13,7 @@ import type { ExtensionSpec } from "./extensions.js";
 import type { WebServerConfig } from "./webserver.js";
 import type { DemoPace } from "./highlights.js";
 
+/** Where `--video` recordings are saved and at what size. */
 export interface VideoSettings {
   /** Where recordings are saved: absolute, `~/…`, or relative to the project. Default `~/Downloads/waygraph-videos/<project>` (the project's `.waygraph-videos/` where there is no Downloads folder, and on CI). */
   dir?: string;
@@ -50,6 +51,7 @@ export interface DemoSettings extends RunSettings {
   fast?: boolean;
 }
 
+/** The project config in `config/waygraph.config.ts`: base URL, extensions, run and demo settings, web server and the Playwright block. */
 export interface WaygraphConfig {
   /** Same value `resolveBaseUrl` would otherwise read from package.json's `waygraph.baseUrl`. */
   baseUrl?: string;

@@ -46,6 +46,7 @@ export type ActionBlock<
 > = MethodBlock<In, Out>;
 
 
+/** Builds a Block for one page action (fill, submit, click) that does not navigate. */
 export function defineMethodBlock<
   In extends Checkpoint<string>,
   Out extends Checkpoint<string>,
@@ -64,6 +65,7 @@ export function defineMethodBlock<
 export const defineActionBlock = defineMethodBlock;
 
 
+/** Options for `defineAssertBlock`: a Checkpoint to stay on and the Traits that must hold. */
 export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<string>> {
   name: string;
   description?: string;

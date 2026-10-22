@@ -16,6 +16,7 @@ export function stubPhaseHasContent(r: StubPhaseResult): boolean {
 }
 
 
+/** One available move in a session snapshot: a Block and the Checkpoint it leads to. */
 export interface SessionSnapshotEdge {
   /** 1-based, matching the numbers a human/agent picks by (same as printCliMenu). */
   index: number;
@@ -27,12 +28,14 @@ export interface SessionSnapshotEdge {
 }
 
 
+/** A group of moves in a session snapshot, by page. */
 export interface SessionSnapshotSection {
   title: string;
   edges: SessionSnapshotEdge[];
 }
 
 
+/** The state of a live session: where it is, the moves available from there, and the trace so far. */
 export interface SessionSnapshot {
   here: string | null;
   sections: SessionSnapshotSection[];
@@ -199,6 +202,7 @@ export function walkFullDom(root: Element, caps: FullDomCaps): { tree: FullDomNo
 }
 
 
+/** What `AutoSession.start` needs: project, selection, headless mode and the session id. */
 export interface AutoSessionInit {
   projectDir: string;
   baseURL?: string;
@@ -221,11 +225,13 @@ export interface AutoSessionInit {
 }
 
 
+/** The result of running one menu pick in a live session. */
 export type ApplyPickResult =
   | { ok: true; snapshot: SessionSnapshot; quit: boolean }
   | { ok: false; error: string };
 
 
+/** The result of running a multi-step route in a live session. */
 export type ApplyPathResult =
   | { ok: true; path: string[]; snapshot: SessionSnapshot }
   | { ok: false; error: string };
@@ -258,6 +264,7 @@ export interface TraceStep {
 export const TRACE_MAX_STEPS = 500;
 
 
+/** Which stub file a live session wrote: before, after or on-error. */
 export type StubFileKind = "image" | "pdf" | "video";
 
 
@@ -313,6 +320,7 @@ export interface ConsoleLogEntry {
 export const CONSOLE_LOG_MAX_ENTRIES = 200;
 
 
+/** One service worker registration as reported by a live session. */
 export interface ServiceWorkerRegistrationInfo {
   scope: string;
   activeUrl?: string;
@@ -320,6 +328,7 @@ export interface ServiceWorkerRegistrationInfo {
 }
 
 
+/** One cookie as reported by a live session's `auto cookies`. */
 export interface CookieInfo {
   name: string;
   value: string;
@@ -330,6 +339,7 @@ export interface CookieInfo {
 }
 
 
+/** Local and session storage of a live session's page. */
 export interface StorageSnapshot {
   localStorage: Record<string, string>;
   sessionStorage: Record<string, string>;

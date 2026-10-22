@@ -10,6 +10,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
+/** The edge-coverage report `traverse` writes: which graph edges were walked. */
 export interface TraverseCoverageReport {
   version: 1;
   generatedAt: string;
@@ -95,6 +96,7 @@ export function parseMinEdgeCoverage(raw: unknown): number | null {
   return null;
 }
 
+/** Builds the `traverse` coverage report from the edges walked and the graph's edges. */
 export function buildCoverageReport(opts: {
   projectDir: string;
   parallel: number;
@@ -156,10 +158,12 @@ export function formatCoverageLine(report: TraverseCoverageReport): string {
   return `[Coverage edges=${report.edgesHit}/${report.edgesTotal} ratio=${pct}%${minPart}]`;
 }
 
+/** Where `traverse` writes its coverage report by default. */
 export function defaultCoverageOutPath(projectDir: string): string {
   return join(projectDir, ".waygraph-traverse", "coverage.json");
 }
 
+/** Writes the `traverse` coverage report to disk. */
 export function writeCoverageReport(path: string, report: TraverseCoverageReport): void {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, JSON.stringify(report, null, 2) + "\n", "utf-8");

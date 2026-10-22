@@ -16,6 +16,7 @@ export interface WaygraphNode {
   checkpoint: string;
 }
 
+/** A move in the graph: a Block from one Checkpoint tag to another. */
 export interface WaygraphEdge {
   /** The Block's own runtime `.name`. */
   block: string;
@@ -27,12 +28,14 @@ export interface WaygraphEdge {
   kind: "nav" | "action";
 }
 
+/** A Block `waygraph graph` found but could not place in the graph, with the reason. */
 export interface SkippedBlock {
   block: string;
   file: string;
   reason: string;
 }
 
+/** The static graph of a project: Checkpoint nodes, Block edges, skipped and orphan Blocks. */
 export interface WaygraphGraph {
   nodes: WaygraphNode[];
   edges: WaygraphEdge[];

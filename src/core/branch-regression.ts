@@ -63,6 +63,7 @@ export function collectBranchFlows(flow: Flow<any>): BranchEntry[] {
   return out;
 }
 
+/** The outcome of one branch path in a branch regression run. */
 export interface BranchRunResult {
   path: string;
   status: "ok" | "failed";

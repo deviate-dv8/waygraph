@@ -12,13 +12,19 @@
 
 import type { Page } from "@playwright/test";
 
+/** Selector matching every element waygraph's overlay draws into a page. */
 export const WG_UI_SEL = '[data-wg-ui="1"]';
+/** Selector of the overlay element that appears when the step panel is ready. */
 export const WG_READY_PANEL_SEL = '[data-wg-modal="panel"][data-wg-ready="1"]';
+/** Selector of the overlay element that appears when the auto panel is ready. */
 export const WG_READY_AUTO_SEL = '[data-wg-modal="auto-panel"][data-wg-ready="1"]';
+/** Selector of the overlay element that appears when the banner is ready. */
 export const WG_READY_BANNER_SEL = '[data-wg-modal="banner"][data-wg-ready="1"]';
 
+/** The kind of modal the overlay beacon reports. */
 export type WgModalKind = "panel" | "banner" | "auto-panel";
 
+/** One overlay element a session reports through its beacon. */
 export type WgBeaconRow = {
   id: string | null;
   modal: string | null;
@@ -59,6 +65,7 @@ export function readWgOverlayBeaconInPage(): WgBeaconRow[] {
   });
 }
 
+/** Reads the overlay beacon from a page: what waygraph's own UI is showing. */
 export async function readWgOverlayBeacon(page: Page): Promise<WgBeaconRow[]> {
   return page.evaluate(() => {
     const w = window as unknown as { __wgOverlayBeacon?: () => unknown };

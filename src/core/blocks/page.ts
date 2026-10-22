@@ -13,6 +13,7 @@ export type PageMethodEntry =
   | (() => DefinedBlock<any, any>);
 
 
+/** Options for `definePageBlock`: the Checkpoint a page hub confirms and the Methods that hang off it. */
 export type PageBlockOptions<Out extends Checkpoint<string>> = {
   name: string;
   description?: string;

@@ -53,6 +53,7 @@ export interface Layout {
 }
 
 
+/** Options for `defineLayout`: which Checkpoints it applies to and the Traits it enforces. */
 export interface LayoutOptions {
   name: string;
   description?: string;
@@ -342,6 +343,7 @@ export async function narrate<T>(
 /** Reserved markers bookending a `defineFlow([start, ...blocks, end])` call. */
 export const start = Symbol("waygraph.start");
 
+/** Marks the end of a hand-built chain. Only the deprecated `defineFlow` needs it; `map()` does not. */
 export const end = Symbol("waygraph.end");
 
 export type StartMarker = typeof start;

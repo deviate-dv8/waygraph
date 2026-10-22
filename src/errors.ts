@@ -212,6 +212,7 @@ export const MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_NAME = (blockName: string) =>
 
 export const MSG_CHAINFLOW_EMPTY = "chainFlow: give at least one Flow";
 
+/** The code of a `WaygraphError`, e.g. `WG_PREFLIGHT_MISSING_KEY`. */
 export type WaygraphErrorCode = keyof typeof WAYGRAPH_ERRORS;
 
 /** A thrown engine error with a stable, greppable `.code` - see WAYGRAPH_ERRORS for the full list. */

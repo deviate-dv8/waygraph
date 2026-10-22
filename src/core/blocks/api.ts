@@ -17,6 +17,7 @@ export interface ApiCallResult {
   body: unknown;
 }
 
+/** Options for `defineApiBlock`: the HTTP call, how its result maps to a Checkpoint, and the demo network panel. */
 export interface ApiBlockOptions<In extends Checkpoint<string>, Out extends Checkpoint<string>> {
   name: string;
   description?: string;

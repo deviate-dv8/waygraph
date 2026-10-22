@@ -86,6 +86,7 @@ export interface BlockInfo {
 }
 
 
+/** A runnable chain of Blocks built by `engine.map()`. `run(mem)` launches its own browser; `run(context, mem)` reuses one. */
 export interface Flow<Out extends Checkpoint<string>> {
   /**
    * True once this Flow has been wrapped in {@link withSessionReset} - a

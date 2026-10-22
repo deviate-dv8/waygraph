@@ -39,6 +39,7 @@ export type WaygraphTodoItem = {
 };
 
 
+/** One todo item as authored: a string or `{ id, text, done }`. */
 export type WaygraphTodoInput = string | WaygraphTodoItem;
 
 
@@ -83,6 +84,7 @@ export type WaygraphTodoGroupInput = {
 };
 
 
+/** A titled checklist in the demo todo dock. */
 export type WaygraphTodoGroup = {
   id?: string;
   title?: string;
@@ -357,6 +359,7 @@ export type WaygraphHighlightFixture = Partial<Pick<WaygraphHighlightStub, "sele
   FixtureDurationFields;
 
 
+/** A static stub phase: named ring slots to paint before or after a step. */
 export type HighlightStubPhase = Record<string, WaygraphHighlightStub>;
 
 
@@ -518,6 +521,7 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
 };
 
 
+/** A stub callback: receives the stub `ctx` and paints rings, titles and todos. */
 export type StubLifecycleFn<Out extends Checkpoint<string>> = (
   ctx: StubCtx<Out>,
 ) => void | HighlightStubPhase | Promise<void | HighlightStubPhase>;
@@ -638,6 +642,7 @@ export type HighlightStyleDefaults = {
  */
 export type DemoPaceName = "blitz" | "fast" | "normal" | "slow";
 
+/** How fast a demo step runs: `"fast"`, `"slow"`, `"blitz"`, `"normal"`, or a multiplier (`0.5`, `2`). */
 export type DemoPace = DemoPaceName | number;
 
 
@@ -672,6 +677,7 @@ export interface WaygraphHighlight {
 }
 
 
+/** A ring or caption after its defaults and overrides are merged, ready to paint. */
 export type ResolvedHighlight = WaygraphHighlightStub;
 
 

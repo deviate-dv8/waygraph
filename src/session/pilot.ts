@@ -36,6 +36,7 @@ import {
 import { browserStart, type BrowserStartInit } from "./browser.js";
 import type { SessionSnapshot } from "../auto-session.js";
 
+/** What `pilotStart` returns: the session id, socket path and first snapshot. */
 export interface PilotStartResult {
   sessionId: string;
   socketPath: string;

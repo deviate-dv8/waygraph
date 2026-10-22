@@ -184,6 +184,7 @@ function wrapFfError(ffName: string, err: unknown): Error {
 }
 
 
+/** Like `composeBlock`, but the steps run as one blitz-paced unit in a demo. */
 export function fastForwardComposeBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   name: string,
   steps: readonly [Block<In, Out>],

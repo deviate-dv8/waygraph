@@ -11,6 +11,7 @@ export interface EdgeLeaseRecord {
   claimedAt: number;
 }
 
+/** Hands out graph edges to parallel `traverse` workers so no two workers walk the same edge. */
 export class EdgeLeaseCoordinator {
   private readonly held = new Map<string, EdgeLeaseRecord>();
   private readonly dir: string | null;

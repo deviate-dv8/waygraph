@@ -219,6 +219,7 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
 };
 
 
+/** A Block whose only action is clicking a link; built with `defineNavClickBlock`. */
 export type NavClickBlock<Out extends Checkpoint<string>> = NavBlock<Out>;
 
 

@@ -66,6 +66,7 @@ function paced(block: object, opts: MapStepOpts | undefined): DefinedBlock<any, 
   return (opts?.pace === undefined ? block : withBlockPace(block as DefinedBlock<any, any>, opts.pace)) as DefinedBlock<any, any>;
 }
 
+/** Per-step options for the map builder: `ff` fast-forwards the step, `pace` sets its demo pace. */
 export interface MapStepOpts {
   /**
    * Fast-forward just this step, inline - no `.ffStart()/.ffEnd()` bracket needed. Consecutive
@@ -82,6 +83,7 @@ export interface MapStepOpts {
   pace?: DemoPace;
 }
 
+/** Flow-level settings for `engine.map({ … })`: `memStub`, `sessionReset`, `expectedFailure`, `demoPace`, `highlightStyle`, `homeOrigin`. */
 export interface MapBuilderOptions {
   /**
    * This project's own origin (e.g. `"https://app.example.com"`) - enables

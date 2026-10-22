@@ -30,6 +30,7 @@ export const DEVICE_PRESETS: Record<DevicePreset, Omit<DeviceState, "touchMode">
 };
 
 
+/** Turns a device name (`mobile`, `tablet`, ...) into a known preset. */
 export function normalizeDevicePreset(raw: unknown): DevicePreset | undefined {
   const s = String(raw ?? "")
     .trim()
@@ -41,6 +42,7 @@ export function normalizeDevicePreset(raw: unknown): DevicePreset | undefined {
 }
 
 
+/** Turns `portrait` / `landscape` spellings into a device orientation. */
 export function normalizeDeviceOrientation(raw: unknown): DeviceOrientation | undefined {
   const s = String(raw ?? "")
     .trim()

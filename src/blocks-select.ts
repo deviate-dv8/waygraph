@@ -8,6 +8,7 @@
 
 export type BlocksSelectKind = "regex" | "glob" | "bare";
 
+/** A parsed `--blocks` selector: which Blocks, by name, glob or file, a command should use. */
 export interface BlocksSelect {
   kind: BlocksSelectKind;
   /** Original token. */
@@ -26,6 +27,7 @@ export function isFileSelectToken(token: string): boolean {
   return token.includes("*");
 }
 
+/** Parses a `--blocks` argument into a selector. */
 export function parseBlocksSelect(token: string): BlocksSelect {
   const raw = token.trim();
   if (raw.length >= 2 && raw.startsWith("/") && raw.endsWith("/")) {
@@ -63,6 +65,7 @@ export function globToRegExp(glob: string): RegExp {
   return new RegExp("^" + out + "$");
 }
 
+/** True when a Block name and file match a parsed `--blocks` selector. */
 export function matchBlocksSelect(
   select: BlocksSelect,
   opts: { relFile: string; blockName?: string },

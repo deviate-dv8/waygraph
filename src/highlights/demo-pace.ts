@@ -18,6 +18,7 @@ export const SLIDE_DURATION_MS_DEFAULT = FIXTURE_DURATION_MS_DEFAULT;
 export const SLIDE_DURATION_FAST_MS_DEFAULT = FIXTURE_DURATION_FAST_MS_DEFAULT;
 
 
+/** Turns any accepted pace spelling into a `DemoPace`; unknown values mean normal. */
 export function normalizeDemoPace(raw: unknown): DemoPace {
   if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return raw;
   if (typeof raw === "string") {
@@ -57,6 +58,7 @@ function paceSpeeds(): { blitz: number; fast: number; slow: number } {
 }
 
 
+/** The multiplier a pace applies to dwell and gate time (1 = normal); `demo.speeds` redefines the named ones. */
 export function demoPaceScale(pace: DemoPace): number {
   if (typeof pace === "number") {
     if (pace > 20) return Math.min(10, Math.max(0.05, pace / FIXTURE_DURATION_MS_DEFAULT));
@@ -69,6 +71,7 @@ export function demoPaceScale(pace: DemoPace): number {
 }
 
 
+/** True when a pace is blitz: no cursor, ring pop or typing animation. */
 export function demoPaceIsBlitz(pace: DemoPace): boolean {
   return pace === "blitz" || (typeof pace === "number" && pace > 0 && pace <= 0.1);
 }
@@ -83,6 +86,7 @@ export function demoPaceIsFast(pace: DemoPace): boolean {
 }
 
 
+/** True when a pace lengthens dwell and gates. */
 export function demoPaceIsSlow(pace: DemoPace): boolean {
   if (pace === "slow") return true;
   if (typeof pace === "number") {
