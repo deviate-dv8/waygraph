@@ -1,12 +1,12 @@
-import { engine } from "../../config/waygraph.config.js";
-import { DemoSel } from "../map/(app_base)/home/_sel.js";
-import { NavHomeBlock } from "../map/(app_base)/home/_nav.block.js";
-import { AddItemBlock } from "../map/(app_base)/home/_methods/add-item.effect.block.js";
-import { AssertItemAddedBlock } from "../map/(app_base)/home/_methods/assert-item-added.method.block.js";
-import { RemoveItemBlock } from "../map/(app_base)/home/_methods/remove-item.effect.block.js";
-import { ClearCartBlock } from "../map/(app_base)/home/_methods/clear-cart.method.block.js";
-import "../states/demo.mem-stubs.js";
-import "../map/(app_base)/home/_page.block.js";
+import { engine } from "../../../config/waygraph.config.js";
+import { DemoSel } from "../../map/(app_base)/home/_sel.js";
+import { NavHomeBlock } from "../../map/(app_base)/home/_nav.block.js";
+import { AddItemBlock } from "../../map/(app_base)/home/_methods/add-item.effect.block.js";
+import { AssertItemAddedBlock } from "../../map/(app_base)/home/_methods/assert-item-added.method.block.js";
+import { RemoveItemBlock } from "../../map/(app_base)/home/_methods/remove-item.effect.block.js";
+import { ClearCartBlock } from "../../map/(app_base)/home/_methods/clear-cart.method.block.js";
+import "../../states/demo.mem-stubs.js";
+import "../../map/(app_base)/home/_page.block.js";
 
 // `map({ memStub: true })` fills SelectedItem (alpha) from src/states/demo.mem-stubs.ts; --data overrides it.
 const AddShown = AddItemBlock.stubBefore((ctx) => {
@@ -35,7 +35,7 @@ const ClearShown = ClearCartBlock.stubBefore((ctx) => {
   ctx.ring("cart", { selector: DemoSel.cartCount, label: "Empty cart", duration: true });
 });
 
-export const shopFlow = engine
+export const homeCartFlow = engine
   .map({ memStub: true })
   .start()
   .gotoPage(

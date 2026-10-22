@@ -20,7 +20,7 @@ More: `npm run check` (lint your Blocks), `npm run graph` (see the whole graph),
 ## Where things live
 
 See [STRUCTURE.md](./STRUCTURE.md). Short version: one folder per page under `src/map/`,
-one Block per action, flows in `src/flows/`.
+one Block per action, one flow per use case in `src/flows/` (a folder per page: its success, its failures, its bad inputs).
 
 ## Point it at your real app
 

@@ -84,7 +84,7 @@ function initCommand(projectName: string): void {
   console.log("  waygraph typecheck   # tsc --noEmit + bad-practice warnings (use --no-practices to skip)");
   console.log("  waygraph auto        # interactive explore (headed panel)");
   console.log("  waygraph auto --cli  # same menus in the terminal");
-  console.log("  waygraph demo --blocks exampleFlow");
+  console.log("  waygraph demo --blocks homeHelloFlow");
   console.log("  waygraph graph       # static state graph JSON");
   console.log("  .agents/skills/      # waygraph skills for coding agents (waygraph agent-dive adds agent personas)");
   console.log("");

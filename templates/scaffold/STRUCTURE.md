@@ -27,7 +27,10 @@ Next.js route groups) and never appear in a URL or Checkpoint name.
 │   │   ├── (external)/mailpit/        # a different origin (mail catcher)
 │   │   └── (external)/hoppscotch/     # API client, REST client, needs the hoppscotch extension
 │   ├── states/                        # Checkpoint types + mem keys
-│   └── flows/                         # example / shop / mail-verify
+│   └── flows/                         # use cases, one file per scenario (see flows/README.md)
+│       ├── home/                      #   a page: hello, cart
+│       ├── (user-stories)/            #   flows that cross pages
+│       └── (external)/hoppscotch/     #   a tool on another origin
 └── tests/example.spec.ts
 ```
 
@@ -41,7 +44,7 @@ page folder uses, so any agent or teammate knows where to look without asking.
 | Add a page | copy a folder under `src/map/`, keep the `_nav` / `_page` / `_sel` names |
 | Add an action on a page | one file in that page's `_methods/` |
 | Verify a state (button disabled, error shown) | `defineAssertBlock` + `Trait.disabled` / `Trait.enabled` |
-| Wire steps together | `src/flows/*.flow.ts` |
+| Define a use case (success, failed, bad input) | one `*.flow.ts` in `src/flows/<page>/`, or `(user-stories)/` for one that crosses pages |
 | Give a flow fake data | `registerMemStub(key, fake)` + `memStub: true` in the flow's options (docs: docs/REFERENCE.md, "memStub") |
 | Explore by hand | `npm run auto` (headed) or `npm run auto:cli` |
 | Check your work | `npm run check`, `npm run graph`, `waygraph map` |

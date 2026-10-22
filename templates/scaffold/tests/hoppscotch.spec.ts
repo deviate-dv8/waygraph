@@ -2,9 +2,9 @@ import { test, expect } from "@playwright/test";
 import { createServer, type Server } from "node:http";
 import { MemPage, checkpoint } from "waygraph";
 import config from "../config/waygraph.config.js";
-import { hoppscotchGetFlow } from "../src/flows/hoppscotch-get.flow.js";
-import { hoppscotchAuthFlow } from "../src/flows/hoppscotch-auth.flow.js";
-import { hoppscotchPostFlow } from "../src/flows/hoppscotch-post.flow.js";
+import { hoppscotchGetFlow } from "../src/flows/(external)/hoppscotch/get.flow.js";
+import { hoppscotchAuthFlow } from "../src/flows/(external)/hoppscotch/auth.flow.js";
+import { hoppscotchPostFlow } from "../src/flows/(external)/hoppscotch/post.flow.js";
 import {
   ExpectedResponseHeader,
   ExpectedResponseText,

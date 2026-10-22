@@ -25,7 +25,7 @@ organizational only and never appear in a URL.
 │   │   ├── (external)/mailpit/        # a different origin (mail catcher)
 │   │   └── (external)/hoppscotch/     # REST client, needs the hoppscotch extension
 │   ├── states/                        # Checkpoint types + mem keys
-│   └── flows/                         # example / shop / mail-verify / hoppscotch-*
+│   └── flows/                         # use cases: <page>/, (user-stories)/, (external)/<tool>/
 └── tests/                             # example, mail-verify, hoppscotch specs
 ```
 
@@ -81,6 +81,14 @@ npx waygraph upgrade "src/map/(external)/hoppscotch" --apply
 ```
 
 Only the paths you name are copied; differing files are replaced only with `--overwrite`.
+
+## Flows are use cases
+
+`src/flows/` mirrors the front end's endpoints like the map does, but holds the *stories* of a page, not its pieces:
+one folder per page (`flows/auth/login/`), one file per scenario (`success`, `wrong-password`, `empty-fields`), so a page's
+folder shows every way a user can go through it. A `(user-stories)/` folder (any `(group)` name) holds flows that cross pages:
+checkout end to end, onboarding. A file is named for its outcome, and its export is `<page><Outcome>Flow`.
+`src/flows/README.md` in the scaffold has the full convention.
 
 ## What to do where
 

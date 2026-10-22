@@ -2,12 +2,12 @@ import { test, expect } from "@playwright/test";
 import { spawnSync } from "node:child_process";
 import net from "node:net";
 import { MemPage, checkpoint } from "waygraph";
-import { mailVerifyFlow } from "../src/flows/mail-verify.flow.js";
+import { emailVerificationFlow } from "../src/flows/(user-stories)/email-verification.flow.js";
 import { ExpectedRecipient, ExpectedLinkPattern, ExpectedEmailContent } from "../src/states/demo.mem-keys.js";
 import { HOME_URL } from "../src/map/(app_base)/home/_sel.js";
 
 // Plays "the app sent a verification email": starts a throwaway Mailpit container, sends a real SMTP message,
-// then runs mailVerifyFlow against it, including the no-email and wrong-content failure paths.
+// then runs emailVerificationFlow against it, including the no-email and wrong-content failure paths.
 
 function runMailpit(): { containerId: string; smtpPort: number; httpPort: number } {
   const run = spawnSync("docker", ["run", "--rm", "-d", "-p", "0:1025", "-p", "0:8025", "axllent/mailpit"], {
@@ -80,7 +80,7 @@ async function withMailpit<T>(fn: (opts: { httpPort: number; smtpPort: number })
 
 const VERIFICATION_CONTENT = "Please confirm your email address to finish setting up your account.";
 
-test("mailVerifyFlow: confirms arrival, confirms content, reads the real link, navigates to it", async ({
+test("emailVerificationFlow: confirms arrival, confirms content, reads the real link, navigates to it", async ({
   context,
 }) => {
   test.skip(!dockerAvailable(), "Docker not reachable in this environment");
@@ -100,7 +100,7 @@ test("mailVerifyFlow: confirms arrival, confirms content, reads the real link, n
     mem.set(ExpectedRecipient({ email: recipient }));
     mem.set(ExpectedLinkPattern, "verified=1");
     mem.set(ExpectedEmailContent, VERIFICATION_CONTENT);
-    const result = await mailVerifyFlow.run(context, mem);
+    const result = await emailVerificationFlow.run(context, mem);
     expect(result).toEqual(checkpoint("HomeVerified"));
   });
 });
@@ -130,7 +130,7 @@ test("the same four mail-reading Blocks handle a second, unrelated email scenari
     mem.set(ExpectedRecipient({ email: recipient }));
     mem.set(ExpectedLinkPattern, "verified=1");
     mem.set(ExpectedEmailContent, resetContent);
-    const result = await mailVerifyFlow.run(context, mem);
+    const result = await emailVerificationFlow.run(context, mem);
     expect(result).toEqual(checkpoint("HomeVerified"));
   });
 });
@@ -149,7 +149,7 @@ test("assert-email-received fails loud, naming itself, when no email ever arrive
     // not just the leaf Block - real, useful QA context, not a bug - so this
     // matches the accumulated name ending at assert-email-received, not an
     // exact "failed after \"assert-email-received\"" alone.
-    await expect(mailVerifyFlow.run(context, mem)).rejects.toThrow(
+    await expect(emailVerificationFlow.run(context, mem)).rejects.toThrow(
       /trait "email-received" failed after ".*assert-email-received"/,
     );
   });
@@ -175,7 +175,7 @@ test("assert-email-content fails loud, naming itself, when the email's copy does
     mem.set(ExpectedRecipient({ email: recipient }));
     mem.set(ExpectedLinkPattern, "verified=1");
     mem.set(ExpectedEmailContent, VERIFICATION_CONTENT);
-    await expect(mailVerifyFlow.run(context, mem)).rejects.toThrow(
+    await expect(emailVerificationFlow.run(context, mem)).rejects.toThrow(
       /trait "body-contains-expected-text" failed after ".*assert-email-content"/,
     );
   });

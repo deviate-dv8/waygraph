@@ -13,12 +13,12 @@
     "graph:mermaid": "waygraph graph --mermaid",
     "auto": "waygraph auto",
     "auto:cli": "waygraph auto --cli",
-    "demo": "waygraph demo --blocks exampleFlow",
-    "demo:auto-next": "waygraph demo --blocks exampleFlow --auto-next",
-    "demo:shop": "waygraph demo --blocks shopFlow",
-    "demo:shop:auto-next": "waygraph demo --blocks shopFlow --auto-next",
-    "run": "waygraph run --blocks exampleFlow",
-    "run:shop": "waygraph run --blocks shopFlow"
+    "demo": "waygraph demo --blocks homeHelloFlow",
+    "demo:auto-next": "waygraph demo --blocks homeHelloFlow --auto-next",
+    "demo:shop": "waygraph demo --blocks homeCartFlow",
+    "demo:shop:auto-next": "waygraph demo --blocks homeCartFlow --auto-next",
+    "run": "waygraph run --blocks homeHelloFlow",
+    "run:shop": "waygraph run --blocks homeCartFlow"
   },
   "dependencies": {
     "waygraph": "latest"

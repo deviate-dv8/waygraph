@@ -72,6 +72,10 @@ against a live site, use `--skill-pilot-blind`.
   `.gotoExternal` for another origin), never a raw `defineFlow([start, ...])`. Flow settings go in `map({ … })` before the chain
   and `.end()` takes nothing. The flow's title is `ctx.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**,
   not `chainFlow` / `withSessionReset`. No `withMemStub(withTitle(...))` wrappers.
+- **`src/flows/` holds use cases and mirrors the front end's endpoints**: a folder per page (`flows/auth/login/`) with one
+  file per scenario named for its outcome (`success.flow.ts`, `wrong-password.flow.ts`, `empty-fields.flow.ts`), and
+  `(user-stories)/` (any `(group)`) for flows that cross pages. Export names are `<page><Outcome>Flow`. Not one file per
+  Block chain, not a flat folder of unrelated flows.
 - **Blocks carry no stubs; the flow does.** Demo highlights are ctx stubs chained on the Block where the flow uses it:
   `AddItemBlock.stubAfter((ctx) => { ctx.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart" }); })`.
   Not a static `withHighlightFixtures({ "add-item": { stubAfter: {...} } })` map, and not an inline
