@@ -1,0 +1,25 @@
+---
+tags:
+  - waygraph
+  - concept
+aliases:
+  - MemPage
+  - Memory
+---
+
+# Mem
+
+**Mem** is what a run carries between steps: the credentials to type, the item just added, the link read out of an
+email. Each value has a typed key:
+
+```ts
+export const Credentials = key<{ username: string; password: string }>("app.credentials");
+```
+
+- A [[Blocks|Block]] lists the keys it `requires`; the run checks they are set before it starts.
+- `act` reads them (`mem.get(Credentials)`) and writes new ones (`mem.set(EmailLink, url)`).
+- Values come from `--data '{...}'` on the CLI, from a test, or from **mem stubs**: registered fakes used when a flow
+  says `map({ memStub: true })` or the CLI says `--mem-stub`.
+- In the demo, the panel shows a step's keys and lets you edit them before it runs.
+
+Code: `src/engine/mem/`.

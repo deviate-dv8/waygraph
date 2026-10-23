@@ -1,0 +1,217 @@
+{
+  "nodes": [
+    {
+      "id": "be29a029d7c41381",
+      "type": "group",
+      "x": -40,
+      "y": -60,
+      "width": 980,
+      "height": 300,
+      "label": "You write",
+      "color": "4"
+    },
+    {
+      "id": "7bc19edeffc9c583",
+      "type": "text",
+      "x": 0,
+      "y": 0,
+      "width": 260,
+      "height": 120,
+      "text": "## Checkpoints\nStates: `LoginPage`, `LoggedIn`, `ItemInCart`\n\n[[Checkpoints]]"
+    },
+    {
+      "id": "4d42edf1d9ce5a85",
+      "type": "text",
+      "x": 330,
+      "y": 0,
+      "width": 260,
+      "height": 120,
+      "text": "## Blocks\nOne step from a Checkpoint to another (the clip)\n\n[[Blocks]]"
+    },
+    {
+      "id": "ec419bddd37cfe0f",
+      "type": "text",
+      "x": 660,
+      "y": 0,
+      "width": 260,
+      "height": 120,
+      "text": "## Flows\n`map()` lines Blocks up - the timeline. Cuts must line up\n\n[[Flows]]"
+    },
+    {
+      "id": "67734b124d5267f0",
+      "type": "group",
+      "x": -40,
+      "y": 300,
+      "width": 980,
+      "height": 460,
+      "label": "Playing a flow (waygraph run / demo)",
+      "color": "5"
+    },
+    {
+      "id": "b5c0f7b8d78b4810",
+      "type": "text",
+      "x": 0,
+      "y": 360,
+      "width": 220,
+      "height": 120,
+      "text": "## Plan\nspec -> steps\n`runner/plan/`"
+    },
+    {
+      "id": "518e19d0aa23ccda",
+      "type": "text",
+      "x": 250,
+      "y": 360,
+      "width": 220,
+      "height": 120,
+      "text": "## Session\nopen the browser\n`runner/session.ts`"
+    },
+    {
+      "id": "45e3ecefb6006a1b",
+      "type": "text",
+      "x": 500,
+      "y": 360,
+      "width": 400,
+      "height": 120,
+      "text": "## One loop\nfor each step: before -> engine -> after\n`runner/play-steps.ts`"
+    },
+    {
+      "id": "8a034d64dde6e9db",
+      "type": "text",
+      "x": 500,
+      "y": 560,
+      "width": 400,
+      "height": 150,
+      "text": "## The engine\nact -> observe -> resolve -> verify\n\n[[The Engine]]",
+      "color": "6"
+    },
+    {
+      "id": "d6dafdf173542265",
+      "type": "text",
+      "x": 0,
+      "y": 540,
+      "width": 440,
+      "height": 190,
+      "text": "## Mode\n**run**: nothing around\n**demo**: panels, rings, Next\n**report**: JSON\n**branches**: every route\n\n[[Playing a Flow]]",
+      "color": "2"
+    },
+    {
+      "id": "dea027e07e124485",
+      "type": "group",
+      "x": 980,
+      "y": 300,
+      "width": 340,
+      "height": 460,
+      "label": "Outputs",
+      "color": "3"
+    },
+    {
+      "id": "5a4ced159d34f3e8",
+      "type": "text",
+      "x": 1020,
+      "y": 360,
+      "width": 260,
+      "height": 220,
+      "text": "## What waygraph writes\nrun log `.waygraph/runs/*.jsonl`\nvideo, JSON report\nmanifest\n\n[[What Waygraph Writes]]"
+    },
+    {
+      "id": "69e54b29385321bc",
+      "type": "group",
+      "x": 980,
+      "y": -60,
+      "width": 340,
+      "height": 300,
+      "label": "No timeline",
+      "color": "1"
+    },
+    {
+      "id": "119a76955a590b2e",
+      "type": "text",
+      "x": 1020,
+      "y": 0,
+      "width": 260,
+      "height": 180,
+      "text": "## Live sessions\n`auto`, `pilot`, `traverse`: pick the next Block from a menu\n\n[[Live Sessions]]"
+    }
+  ],
+  "edges": [
+    {
+      "id": "5dbd878247e7e620",
+      "fromNode": "7bc19edeffc9c583",
+      "fromSide": "right",
+      "toNode": "4d42edf1d9ce5a85",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "from / to"
+    },
+    {
+      "id": "c2b874bdd7b54e82",
+      "fromNode": "4d42edf1d9ce5a85",
+      "fromSide": "right",
+      "toNode": "ec419bddd37cfe0f",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "map()"
+    },
+    {
+      "id": "167344e3bc47f339",
+      "fromNode": "b5c0f7b8d78b4810",
+      "fromSide": "right",
+      "toNode": "518e19d0aa23ccda",
+      "toSide": "left",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "6bd07a9daf5edba0",
+      "fromNode": "518e19d0aa23ccda",
+      "fromSide": "right",
+      "toNode": "45e3ecefb6006a1b",
+      "toSide": "left",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "68e28f561a77ed19",
+      "fromNode": "45e3ecefb6006a1b",
+      "fromSide": "bottom",
+      "toNode": "8a034d64dde6e9db",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "each Block"
+    },
+    {
+      "id": "b325f4d68003a563",
+      "fromNode": "d6dafdf173542265",
+      "fromSide": "right",
+      "toNode": "45e3ecefb6006a1b",
+      "toSide": "bottom",
+      "toEnd": "arrow",
+      "label": "around each step"
+    },
+    {
+      "id": "c2e2f09dea999d42",
+      "fromNode": "ec419bddd37cfe0f",
+      "fromSide": "bottom",
+      "toNode": "b5c0f7b8d78b4810",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "waygraph run cartFlow"
+    },
+    {
+      "id": "4f2c8a5bae917e21",
+      "fromNode": "8a034d64dde6e9db",
+      "fromSide": "right",
+      "toNode": "5a4ced159d34f3e8",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "run events"
+    },
+    {
+      "id": "b3c961b090e7713f",
+      "fromNode": "4d42edf1d9ce5a85",
+      "fromSide": "top",
+      "toNode": "119a76955a590b2e",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "menu of Blocks from here"
+    }
+  ]
+}

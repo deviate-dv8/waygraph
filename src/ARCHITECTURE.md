@@ -5,7 +5,8 @@ Waygraph is an opinionated Playwright. **Blocks** are steps between **Checkpoint
 are two ways of playing the same steps: `run` plays them like a Playwright test, `demo` adds the waygraph UI around
 each one.
 
-There are two places to start reading, one per side:
+A high-level tour with pictures is the Obsidian vault in `obsidian/` (open the folder as a vault; start at
+`Start Here.md`). There are two places to start reading the code, one per side:
 
 | You want to know... | Start at | It reads as |
 |---|---|---|
