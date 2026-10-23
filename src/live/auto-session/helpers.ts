@@ -1,7 +1,6 @@
-// Split out of the former 1,078-line auto-session.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import type { StubPhaseResult } from "../demo/narration/index.js";
-import type { BlockEntry, ExploreMenu } from "../session/auto-explore.js";
-import type { PickResult } from "../session/auto-explore-run.js";
+import type { StubPhaseResult } from "../../demo/narration/index.js";
+import type { BlockEntry, ExploreMenu } from "../auto-explore.js";
+import type { PickResult } from "../auto-explore-run.js";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -207,7 +206,7 @@ export interface AutoSessionInit {
   projectDir: string;
   baseURL?: string;
   startUrl?: string;
-  blocksSelect?: import("../manifest/select.js").BlocksSelect;
+  blocksSelect?: import("../../manifest/select.js").BlocksSelect;
   /** Absolute paths — merged Block libraries (see `waygraph browser --inject`). */
   inject?: string[];
   /** When true, open about:blank instead of baseURL/startUrl (browser default). */
@@ -289,7 +288,7 @@ export type StubFileKind = "image" | "pdf" | "video";
  * exist for more than a moment.
  */
 export function stubFilePath(kind: StubFileKind): string {
-  const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+  const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
   const names: Record<StubFileKind, string> = {
     image: "stub.png",
     pdf: "stub.pdf",

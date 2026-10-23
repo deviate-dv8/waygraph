@@ -86,7 +86,7 @@ const LAYER_OF = [
   // runner/ is the run command's child process entry: it orchestrates like a command.
   ["runner/", "cli"],
   ["demo/", "demo"], ["ui/", "demo"],
-  ["live/", "live"], ["session/", "live"], ["auto-session", "live"], ["traverse/", "live"],
+  ["live/", "live"],
   ["cli/", "cli"], ["cli.ts", "cli"], ["commands/", "cli"],
   ["index.ts", "public"],
 ];

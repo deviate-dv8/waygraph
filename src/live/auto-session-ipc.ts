@@ -33,7 +33,7 @@ import {
   type ConsoleLogEntry,
   type StorageSnapshot,
   type StubFileKind,
-} from "../auto-session.js";
+} from "./auto-session/index.js";
 import type { PilotHighlightFixtures } from "../demo/overlay/pilot-fixtures.js";
 
 export type { PilotHighlightFixtures } from "../demo/overlay/pilot-fixtures.js";
@@ -501,7 +501,7 @@ export async function spawnDetachedSession(
 ): Promise<SessionMeta> {
   const sessionId = generateSessionId();
   mkdirSync(sessionDir(init.projectDir), { recursive: true });
-  // This file compiles to dist/session/auto-session-ipc.js - two levels down from the package
+  // This file compiles to dist/live/auto-session-ipc.js - two levels down from the package
   // root, not one. Same bug class as cli/util.ts's own packageRoot(); see its comment.
   const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
   const require = createRequire(join(pkgRoot, "package.json"));

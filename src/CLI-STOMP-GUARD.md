@@ -18,7 +18,7 @@ Owned by Dan's waygraph camera/stepper seat (2026-09-18).
    `#wg-todo-dock`, `#wg-auto-panel`) must stamp `data-wg-ui` / `data-wg-modal` / `data-wg-ready="1"` via
    `window.__wgStampModal`. Agents must not claim the stepper works unless
    `assertWgOverlayReady(page)` or `WAYGRAPH_PROVE_EXIT=1` passes (see
-   `src/overlay-beacon.ts`, `tests/cli/overlay-beacon.spec.ts`).
+   `src/live/overlay-beacon.ts`, `tests/cli/overlay-beacon.spec.ts`).
 
 If you are another agent: do **not** rewrite `__wgWirePanelChrome` or yap `remove("wg-collapsed")` without Dan saying so.
 Do **not** put `#wg-todos` back inside `.wg-body` (mini collapse hides it).

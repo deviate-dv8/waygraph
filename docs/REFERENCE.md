@@ -1059,7 +1059,7 @@ engine
 A `NavBlock` has wildcard `In` (`from: "*"` in the static graph) unless it declares `from`, so it's reasonable to
 wonder whether `nav-mailpit-inbox` clutters the live picker on every single screen. It
 doesn't - `waygraph auto`'s menu builder already special-cases exactly this
-(`src/auto-explore.ts`, `buildExploreMenu`): a URL-based Nav is excluded from the interactive
+(`src/live/auto-explore.ts`, `buildExploreMenu`): a URL-based Nav is excluded from the interactive
 menu once you're on a known screen, offered only as a "Start here" bootstrap option. The
 static graph still keeps the `from: "*"` edge for `waygraph graph`/`findBlockPath`/`traverse`,
 so `waygraph auto --blocks "<AppCheckpoint> MailpitInbox"` can still route there deliberately -
@@ -1153,7 +1153,7 @@ someone is co-driving, for instance - leaves `here` silently stale, since `send`
 ever re-detect when the position is already unknown, never to double-check a known one.
 `resync` forces that re-detection unconditionally, right now, against whatever the real page
 actually shows. Doesn't crash or corrupt anything if you never need it - it's a real, found
-gap (confirmed by reading the exact code path, `src/auto-session.ts`'s `currentMenu()`), fixed
+gap (confirmed by reading the exact code path, `src/live/auto-session/`'s `currentMenu()`), fixed
 outright rather than left as a caveat.
 
 **Coverage gaps `waygraph check`/`graph` can't see, because there's no Block to scan yet.**
@@ -1170,7 +1170,7 @@ via `console.warn`) on a same-origin `<a href>` no `defineNavBlock` covers, or a
 
 Read them back with `auto console <sessionId>` - the same channel real console/network errors
 already come through, not a separate command (`src/coverage-gap.ts`, wired into every session
-in `src/auto-session.ts`).
+in `src/live/auto-session/`).
 
 **On-page indicator.** A headful (`--non-headless`) session looks like an ordinary browser
 tab otherwise - no sign anything is driving it, which matters once a human might be watching
@@ -1185,10 +1185,10 @@ first. Bottom-left activity toasts label raw primitives as **`Running (no Block)
 (click/type/goto/upload outside the Block library); Block runs stay **`Running (Block): …`**.
 Both refresh automatically after every `send`/`reach`/`reload`/`resync`/raw action.
 It lives in `src/demo/overlay/` (`pilot-shell.ts`, `pilot-fixtures.ts`) next to the demo overlay and paints rings
-through the same `inpage/core.ts` primitive; the session menu panel is `src/session/pilot-panel.ts`.
+through the same `inpage/core.ts` primitive; the session menu panel is `src/live/pilot-panel.ts`.
 
 **Pilot itself does no planning, resolving, narrating, or acting** - `pilotStart`'s only job is
-starting the session and handing back its graph in one round trip; see `src/pilot.ts`. An
+starting the session and handing back its graph in one round trip; see `src/live/pilot.ts`. An
 earlier shape (`pilot ask "<text>"`, a deterministic ask-to-one-edge text matcher) was built,
 shipped, and then explicitly rejected as not matching this goal - preserved for reference at git
 tag `waygraph-pilot-v1-logs-prettified`, not on any active branch.
@@ -1670,7 +1670,7 @@ WAYGRAPH_PROVE_EXIT=1 WAYGRAPH_PROVE_SHOT=/tmp/wg.png \
 # stderr: WAYGRAPH_PROVE {"ok":true,"beacons":[...],"readyAttr":"1"}
 ```
 
-Tests: `tests/cli/overlay-beacon.spec.ts`. Helpers: `src/session/overlay-beacon.ts`. Rules for
+Tests: `tests/cli/overlay-beacon.spec.ts`. Helpers: `src/live/overlay-beacon.ts`. Rules for
 touching the stepper/overlay chrome itself: `src/CLI-STOMP-GUARD.md`.
 
 ## Layout
@@ -1686,7 +1686,7 @@ src/                      layers and import rules: src/ARCHITECTURE.md
                           step-mode/ (step-through runner)
   ui/                     overlay CSS (Open Props) + shadow root
   runner/                 `waygraph run/demo` child process entry (exported as waygraph/runner)
-  session/, auto-session/, traverse/   live browser sessions, auto, pilot, traverse
+  live/                   live browser sessions, auto, pilot, traverse
   commands/, cli/, cli.ts the CLI: one file per subcommand
   index.ts                public API
 examples/saucedemo/         live Sauce Demo (Page + methods/ + Sel)

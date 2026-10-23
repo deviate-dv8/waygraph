@@ -27,9 +27,8 @@ cli.ts ───────────── ~100-line dispatcher: one `case` 
 commands/*.ts, cli/*.ts ─ one file per subcommand; shared flag parsing, usage text, discovery helpers
 runner/ ───────────── `waygraph run/demo/chain` child process entry (main, discovery, seed-mem, chain-run), exported as `waygraph/runner`
 demo/ ─────────────── narration/ (stub ctx, pace, device, todo dock, highlight styles), overlay/ (the one overlay for demo, auto and pilot: install, rings, cursor, device stage, network tab, auto-chrome, pilot-shell, pilot-fixtures; overlay/inpage/*.ts = code injected into the page, self-contained), step-mode/ (the step-through runner: gates, panels, slides, teardown, demo log)
-auto-session.ts + auto-session/ (helpers, session) ─ the session class itself
-session/ (auto-session-ipc, browser, pilot, pilot-panel, auto-explore, auto-explore-run, overlay-beacon) ─ live session spawn/control, explore, cross-project inject
-traverse/ (run, coverage, lease) ─ live parallel graph exploration with session cloning (`waygraph traverse`)
+live/ ─────────────── driving a running browser: auto-session/ (the session class), auto-session-ipc (spawn/control),
+                      browser, pilot, pilot-panel, auto-explore(-run), overlay-beacon, traverse/ (run, coverage, lease)
 core.ts + core/ ── barrel over core/{block,config,run-graph,flow,compose,engine,map-builder,locate,branch-regression,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
 ui/ ────────────── real .css overlay stylesheet built on Open Props, bundled by scripts/copy-ui-css.mjs into dist/ui/overlay.css and injected once by ui/shadow.ts - see src/ui/css/README.md; change a colour in ui/css/tokens.css, never inline
 manifest/ (scan, project, roots, select, manifest, legacy-generics) ─ the one project scanner: walks and imports Blocks/Flows, reads routes, builds the JSON manifest
@@ -55,7 +54,7 @@ that's what makes the split legal under the no-cycles rule. Don't reintroduce a 
 |---|---|
 | A new CLI subcommand | `src/commands/<name>.ts` exporting `<name>Case(args, command)`, plus one `case` line in `cli.ts` and its lines in `cli/usage.ts` |
 | A new CLI flag for run/demo | `cli/flags.ts` (`RunFlags`, `parseRunFlags`, `applyRunFlags`) + `cli/usage.ts` |
-| A session command (`send`, `highlight`, ...) | `commands/session.ts` + `auto-session.ts` + IPC op in `auto-session-ipc.ts` |
+| A session command (`send`, `highlight`, ...) | `commands/session.ts` + `live/auto-session/session.ts` + IPC op in `live/auto-session-ipc.ts` |
 | Demo overlay / step-mode behaviour | `demo/overlay/` (`overlay-install` page UI, `rings`, `cursor`) and `demo/step-mode/` (`step-mode`, `step-panels`, `todo-dock`, `demo-log`); `runner/seed-mem` for `--data`/`--mem-stub`. Read `CLI-STOMP-GUARD.md` first |
 | A `with*(flow, ...)` wrapper | `core/flow.ts`, next to `withTitle`; add the field to `Flow` and its `withBlockVerify`/`modBlockVerify` re-wraps |
 | A `define*Block` helper | `core/blocks/<kind>.ts`; update `MapBuilder` types if it can appear in a map flow |

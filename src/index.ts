@@ -191,13 +191,13 @@ export {
   globToRegExp,
 } from "./manifest/select.js";
 export type { BlocksSelect, BlocksSelectKind } from "./manifest/select.js";
-export { EdgeLeaseCoordinator } from "./traverse/lease.js";
-export { runTraverse } from "./traverse/run.js";
+export { EdgeLeaseCoordinator } from "./live/traverse/lease.js";
+export { runTraverse } from "./live/traverse/run.js";
 export type {
   TraverseOptions,
   TraverseSessionMode,
   TraverseWorkerResult,
-} from "./traverse/run.js";
+} from "./live/traverse/run.js";
 export {
   buildCoverageReport,
   collectGraphEdgeKeys,
@@ -206,8 +206,8 @@ export {
   normalizeHitKey,
   parseMinEdgeCoverage,
   writeCoverageReport,
-} from "./traverse/coverage.js";
-export type { TraverseCoverageReport } from "./traverse/coverage.js";
+} from "./live/traverse/coverage.js";
+export type { TraverseCoverageReport } from "./live/traverse/coverage.js";
 export {
   WG_UI_SEL,
   WG_READY_PANEL_SEL,
@@ -216,9 +216,9 @@ export {
   readWgOverlayBeacon,
   readWgOverlayBeaconInPage,
   assertWgOverlayReady,
-} from "./session/overlay-beacon.js";
-export type { WgModalKind, WgBeaconRow } from "./session/overlay-beacon.js";
-export { AutoSession, stubFilePath } from "./auto-session.js";
+} from "./live/overlay-beacon.js";
+export type { WgModalKind, WgBeaconRow } from "./live/overlay-beacon.js";
+export { AutoSession, stubFilePath } from "./live/auto-session/index.js";
 export type {
   AutoSessionInit,
   SessionSnapshot,
@@ -232,9 +232,9 @@ export type {
   ServiceWorkerRegistrationInfo,
   CookieInfo,
   StubFileKind,
-} from "./auto-session.js";
-export { pilotStart } from "./session/pilot.js";
-export type { PilotStartResult } from "./session/pilot.js";
+} from "./live/auto-session/index.js";
+export { pilotStart } from "./live/pilot.js";
+export type { PilotStartResult } from "./live/pilot.js";
 export { defineConfig, resolveBaseUrl } from "./runtime/config.js";
 export type { WaygraphConfig, ConfigContext, VideoSettings, RunSettings, DemoSettings } from "./runtime/config.js";
 export { withWebServer } from "./runtime/webserver.js";

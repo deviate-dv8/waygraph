@@ -34,7 +34,7 @@ import {
   resolveSessionMeta,
 } from "./auto-session-ipc.js";
 import { browserStart, type BrowserStartInit } from "./browser.js";
-import type { SessionSnapshot } from "../auto-session.js";
+import type { SessionSnapshot } from "./auto-session/index.js";
 
 /** What `pilotStart` returns: the session id, socket path and first snapshot. */
 export interface PilotStartResult {

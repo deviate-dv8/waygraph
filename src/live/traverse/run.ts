@@ -3,19 +3,19 @@
  * Walk unused legal edges until leaf / budget / break.
  */
 import type { Browser, BrowserContext, Page } from "@playwright/test";
-import { Engine, start, end, locate } from "../core.js";
-import type { NavBlock } from "../core.js";
-import { MemPage, type MemKey } from "../core/mem-page.js";
-import type { Checkpoint } from "../core/types.js";
+import { Engine, start, end, locate } from "../../core.js";
+import type { NavBlock } from "../../core.js";
+import { MemPage, type MemKey } from "../../core/mem-page.js";
+import type { Checkpoint } from "../../core/types.js";
 import {
   buildExploreContext,
   buildExploreMenu,
   type BlockEntry,
   type ExploreEdge,
-} from "../session/auto-explore.js";
-import type { WaygraphGraph } from "../analysis/graph.js";
-import { defaultMemValueForKey } from "../session/auto-explore-run.js";
-import { resolveBaseUrl } from "../runtime/config.js";
+} from "../auto-explore.js";
+import type { WaygraphGraph } from "../../analysis/graph.js";
+import { defaultMemValueForKey } from "../auto-explore-run.js";
+import { resolveBaseUrl } from "../../runtime/config.js";
 import { EdgeLeaseCoordinator } from "./lease.js";
 import {
   buildCoverageReport,
@@ -24,7 +24,7 @@ import {
   formatCoverageLine,
   writeCoverageReport,
 } from "./coverage.js";
-import { chromiumExecutablePath } from "../runtime/browser.js";
+import { chromiumExecutablePath } from "../../runtime/browser.js";
 
 /** How `traverse` workers share a browser: one session, or a clone per worker. */
 export type TraverseSessionMode = "clone" | "inherit";
@@ -58,7 +58,7 @@ export interface TraverseOptions {
   /** Traverse id for greppable lines (default traverse-1). */
   traverseId?: string;
   /** Phase C: glob / regex / bare `--blocks` file select. */
-  blocksSelect?: import("../manifest/select.js").BlocksSelect;
+  blocksSelect?: import("../../manifest/select.js").BlocksSelect;
   /** Phase D: parallel workers (default 1). Cap 4. */
   parallel?: number;
   /** Phase D: clone (default) or inherit. Inherit refused when parallel > 1. */

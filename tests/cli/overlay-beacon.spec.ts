@@ -8,7 +8,7 @@ import {
   assertWgOverlayReady,
   readWgOverlayBeacon,
   WG_READY_PANEL_SEL,
-} from "../../dist/session/overlay-beacon.js";
+} from "../../dist/live/overlay-beacon.js";
 
 const exec = promisify(execFile);
 const node = process.execPath;

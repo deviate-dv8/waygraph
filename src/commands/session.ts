@@ -4,14 +4,14 @@ import { applyRunFlags, looksLikeFlowFileRef, parseRunFlags, resolveBaseUrl } fr
 import { runChain } from "../cli/run-chain.js";
 import { runChainAuto } from "./check.js";
 import { resolve } from "node:path";
-import { browserStart, listBrowserSessions, stopAllBrowserSessions, stopBrowserSession } from "../session/browser.js";
+import { browserStart, listBrowserSessions, stopAllBrowserSessions, stopBrowserSession } from "../live/browser.js";
 import { existsSync, statSync } from "node:fs";
 import { resolveInjectRoots } from "../manifest/roots.js";
-import { requestSession, resolveSessionMeta, runAttachLoop, runAutoServeCommand, spawnDetachedSession } from "../session/auto-session-ipc.js";
-import { pilotAttach, pilotStart } from "../session/pilot.js";
+import { requestSession, resolveSessionMeta, runAttachLoop, runAutoServeCommand, spawnDetachedSession } from "../live/auto-session-ipc.js";
+import { pilotAttach, pilotStart } from "../live/pilot.js";
 import { parseHighlightShorthand } from "../demo/narration/shorthand.js";
 import { isFileSelectToken, parseBlocksSelect } from "../manifest/select.js";
-import { runAutoExplore } from "../session/auto-explore-run.js";
+import { runAutoExplore } from "../live/auto-explore-run.js";
 import { discoverGraph, findOrphanBlocks, toMermaid } from "../analysis/graph.js";
 
 export async function sessionCase(args: string[], command: string | undefined): Promise<void> {

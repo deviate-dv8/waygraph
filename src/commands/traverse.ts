@@ -2,8 +2,8 @@
 import { resolve } from "node:path";
 import { existsSync, statSync } from "node:fs";
 import { parseBlocksSelect } from "../manifest/select.js";
-import { parseMinEdgeCoverage } from "../traverse/coverage.js";
-import { runTraverse } from "../traverse/run.js";
+import { parseMinEdgeCoverage } from "../live/traverse/coverage.js";
+import { runTraverse } from "../live/traverse/run.js";
 
 export async function traverseCase(args: string[]): Promise<void> {
       if (args.includes("--step") || args.includes("--auto-next") || args.includes("--autoplay")) {
