@@ -68,9 +68,10 @@ function kindOf(block: object): BlockKind {
   return "block";
 }
 
+/** A file that fails to import is left out of the scan, and said so: a silent skip reads as "nothing there". */
 function defaultImportError(relFile: string, err: unknown): void {
   const msg = err instanceof Error ? err.message : String(err);
-  if (/second time|playwright/i.test(msg)) console.error(`waygraph: skip ${relFile}: ${msg.split("\n")[0]}`);
+  console.error(`waygraph: skip ${relFile}: ${msg.split("\n")[0]}`);
 }
 
 /** Imports every `*.block.ts` (and `*.flow.ts`) under the project and its injected roots. */

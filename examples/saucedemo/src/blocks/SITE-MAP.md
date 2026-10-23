@@ -9,7 +9,6 @@ src/blocks/
   saucedemo-web/                      # URL /
     NAV.md
     nav-login.block.ts                # Page  definePageBlock url:/
-    ff-owner-auth.block.ts            # FFCompose (nav-login + fill-username + fill-password + submit-login)
     methods/
       fill-username.method.block.ts   # Method defineMethodBlock (self-loop on LoginPage)
       fill-password.method.block.ts   # Method defineMethodBlock (self-loop on LoginPage)

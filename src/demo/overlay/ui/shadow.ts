@@ -46,6 +46,34 @@ export function installShadowRoot(overlaySheet?: string): void {
     }
     if (style.textContent !== css) style.textContent = css;
   };
+  // Overlay elements are built with the DOM, never from HTML strings: text (page text, authored labels) is always a
+  // text node, so nothing it contains is parsed as markup.
+  type Child = string | number | Node | null | undefined | false | readonly Child[];
+  const toNodes = (children: readonly Child[], out: Node[] = []): Node[] => {
+    for (const c of children) {
+      if (c == null || c === false) continue;
+      if (Array.isArray(c)) toNodes(c, out);
+      else out.push(c instanceof Node ? c : document.createTextNode(String(c)));
+    }
+    return out;
+  };
+  w.__wgEl = (tag: string, props: WgElProps | null | undefined, ...children: Child[]) => {
+    const el = document.createElement(tag);
+    if (props?.id) el.id = props.id;
+    if (props?.class) el.className = props.class;
+    if (props?.style) el.style.cssText = props.style;
+    if (props?.title) el.title = props.title;
+    for (const [k, v] of Object.entries(props?.data ?? {})) if (v != null) el.dataset[k] = String(v);
+    for (const [k, v] of Object.entries(props?.attrs ?? {})) if (v != null) el.setAttribute(k, String(v));
+    el.append(...toNodes(children));
+    return el;
+  };
+  w.__wgSet = (el: Element, ...children: Child[]) => el.replaceChildren(...toNodes(children));
+  // Waygraph's own static icons (constants in this package, never page or author text), parsed as SVG.
+  w.__wgSvg = (markup: string) => {
+    const xml = markup.includes("xmlns=") ? markup : markup.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+    return document.importNode(new DOMParser().parseFromString(xml, "image/svg+xml").documentElement, true);
+  };
   if (overlaySheet) w.__wgCss(overlaySheet, "wg-overlay-css");
 }
 

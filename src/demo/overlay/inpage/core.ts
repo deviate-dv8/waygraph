@@ -117,10 +117,13 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
           // Dark fill + white stroke, same as help-center-clip-engine's own
           // #clip-cursor - visible against any page background, light or
           // dark, unlike a plain solid-white shape.
-          cursor.innerHTML =
-            "<svg viewBox='0 0 32 32' width='24' height='24'>" +
-            "<path fill='#0C0C1A' stroke='#fff' stroke-width='1.4' stroke-linejoin='round' " +
-            "d='M6 3.5l1.4 22.5 5.8-5.4 4.2 9.4 3.6-1.6-4.2-9.2H26z'/></svg>";
+          cursor.append(
+            __wgSvg(
+              "<svg viewBox='0 0 32 32' width='24' height='24'>" +
+                "<path fill='#0C0C1A' stroke='#fff' stroke-width='1.4' stroke-linejoin='round' " +
+                "d='M6 3.5l1.4 22.5 5.8-5.4 4.2 9.4 3.6-1.6-4.2-9.2H26z'/></svg>",
+            ),
+          );
           __wgAdd(cursor);
         }
         if (!__wgById("wg-click-pulse")) {

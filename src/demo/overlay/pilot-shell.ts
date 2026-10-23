@@ -99,16 +99,23 @@ const OVERLAY_CSS = `
 function installPilotOverlayShell(css: string): void {
   if (__wgById("wg-pilot-overlay")) return;
   __wgCss(css, "wg-pilot-overlay-css");
-  const root = document.createElement("div");
-  root.id = "wg-pilot-overlay";
-  root.innerHTML =
-    '<div id="wg-pilot-badge">Waygraph Pilot</div>' +
-    '<div id="wg-pilot-panel">' +
-    '<div id="wg-pilot-panel-toggle"><button id="wg-pilot-view-current" class="wg-pilot-tab-active">Here</button>' +
-    '<button id="wg-pilot-view-graph">All nodes</button></div>' +
-    '<div id="wg-pilot-panel-current"></div>' +
-    '<div id="wg-pilot-panel-graph" style="display:none"></div>' +
-    "</div>";
+  const root = __wgEl(
+    "div",
+    { id: "wg-pilot-overlay" },
+    __wgEl("div", { id: "wg-pilot-badge" }, "Waygraph Pilot"),
+    __wgEl(
+      "div",
+      { id: "wg-pilot-panel" },
+      __wgEl(
+        "div",
+        { id: "wg-pilot-panel-toggle" },
+        __wgEl("button", { id: "wg-pilot-view-current", class: "wg-pilot-tab-active" }, "Here"),
+        __wgEl("button", { id: "wg-pilot-view-graph" }, "All nodes"),
+      ),
+      __wgEl("div", { id: "wg-pilot-panel-current" }),
+      __wgEl("div", { id: "wg-pilot-panel-graph", style: "display:none" }),
+    ),
+  );
   __wgAdd(root);
   __wgById("wg-pilot-badge")!.addEventListener("click", () => {
     __wgById("wg-pilot-panel")!.classList.toggle("wg-pilot-open");

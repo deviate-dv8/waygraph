@@ -83,69 +83,48 @@ export async function presentSlides(page: WgPage, slides: any, _gate: any, opts:
         panel.classList.remove("wg-error", "wg-expected");
         // Do not clear wg-collapsed - WirePanelChrome honors Hide (localStorage)
         // unless forceCollapsed:true (--mini / --video).
-        const esc = (t: any) =>
-          String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
         const episodeLine =
           info.episodeNumber !== undefined && info.episodeNumber !== null
-            ? "<div class=\"wg-episode\">Episode " +
-              info.episodeNumber +
-              (info.episodeTitle ? ": " + esc(info.episodeTitle) : "") +
-              " · yap slides</div>"
-            : "";
-        const paceHtml =
+            ? __wgEl("div", { class: "wg-episode" }, "Episode " + info.episodeNumber + (info.episodeTitle ? ": " + info.episodeTitle : "") + " · yap slides")
+            : null;
+        const pace =
           info.paceBadge || info.paceLabel
-            ? "<div class=\"wg-pace\" data-pace-kind=\"" +
-              esc(info.paceKind || "normal") +
-              "\"><span class=\"wg-pace-badge\">" +
-              esc(info.paceBadge || "1x") +
-              "</span><span>" +
-              esc(info.paceLabel || "") +
-              "</span></div>"
-            : "";
-        panel.innerHTML =
-          "<div class=\"wg-chrome\"><span class=\"wg-chrome-title\">waygraph demo</span>" +
-          "<button type=\"button\" class=\"wg-hide-btn\" data-wg-toggle=\"1\">Hide</button></div>" +
-          "<div class=\"wg-body\">" +
-          episodeLine +
-          paceHtml +
-          "<h3>Slide " +
-          (info.index + 1) +
-          " / " +
-          info.total +
-          (info.blockName ? " · " + esc(info.blockName) : "") +
-          "</h3>" +
-          (info.tag
-            ? "<div style=\"border:none;padding:0;margin:0 0 6px;font-size:11px;color:#c9a6ff\">" +
-              esc(info.tag) +
-              "</div>"
-            : "") +
-          "<div class=\"wg-narration\">" +
-          esc(info.caption) +
-          "</div>" +
-          (info.detail
-            ? "<div class=\"wg-result-pretty\" style=\"margin:0 0 12px;color:#f0e8ff\">" +
-              esc(info.detail) +
-              "</div>"
-            : "") +
-          (info.dwellMs != null
-            ? "<div class=\"wg-auto\" id=\"wg-dwell-hint\" style=\"margin:0 0 8px\">Hold " +
-              (info.dwellMs / 1000).toFixed(1) +
-              "s before next...</div>"
-            : "") +
-          "<div class=\"wg-autoplay-row\"><label><input type=\"checkbox\" id=\"wg-autoplay-cb\"" +
-          (info.autoNow ? " checked" : "") +
-          "> Auto-advance</label></div>" +
-          "<div id=\"wg-gate-manual\"" +
-          (info.autoNow ? " style=\"display:none\"" : "") +
-          "><button type=\"button\" id=\"wg-run\"" +
-          (info.dwellMs != null ? " disabled" : "") +
-          ">" +
-          (info.isLast ? "Continue \u25B6" : "Next slide \u25B6") +
-          "</button></div>" +
-          "<div id=\"wg-gate-auto\" class=\"wg-auto\"" +
-          (info.autoNow ? "" : " style=\"display:none\"") +
-          ">Auto-advancing...</div>" +
-          "</div>";
+            ? __wgEl(
+                "div",
+                { class: "wg-pace", data: { paceKind: info.paceKind || "normal" } },
+                __wgEl("span", { class: "wg-pace-badge" }, info.paceBadge || "1x"),
+                __wgEl("span", null, info.paceLabel || ""),
+              )
+            : null;
+        const autoplay = __wgEl("input", { id: "wg-autoplay-cb", attrs: { type: "checkbox" } });
+        autoplay.checked = !!info.autoNow;
+        const run = __wgEl("button", { id: "wg-run", attrs: { type: "button" } }, info.isLast ? "Continue \u25B6" : "Next slide \u25B6");
+        run.disabled = info.dwellMs != null;
+        __wgSet(
+          panel,
+          __wgEl(
+            "div",
+            { class: "wg-chrome" },
+            __wgEl("span", { class: "wg-chrome-title" }, "waygraph demo"),
+            __wgEl("button", { class: "wg-hide-btn", data: { wgToggle: "1" }, attrs: { type: "button" } }, "Hide"),
+          ),
+          __wgEl(
+            "div",
+            { class: "wg-body" },
+            episodeLine,
+            pace,
+            __wgEl("h3", null, "Slide " + (info.index + 1) + " / " + info.total + (info.blockName ? " · " + info.blockName : "")),
+            info.tag ? __wgEl("div", { style: "border:none;padding:0;margin:0 0 6px;font-size:11px;color:#c9a6ff" }, info.tag) : null,
+            __wgEl("div", { class: "wg-narration" }, String(info.caption)),
+            info.detail ? __wgEl("div", { class: "wg-result-pretty", style: "margin:0 0 12px;color:#f0e8ff" }, info.detail) : null,
+            info.dwellMs != null
+              ? __wgEl("div", { class: "wg-auto", id: "wg-dwell-hint", style: "margin:0 0 8px" }, "Hold " + (info.dwellMs / 1000).toFixed(1) + "s before next...")
+              : null,
+            __wgEl("div", { class: "wg-autoplay-row" }, __wgEl("label", null, autoplay, " Auto-advance")),
+            __wgEl("div", { id: "wg-gate-manual", style: info.autoNow ? "display:none" : "" }, run),
+            __wgEl("div", { id: "wg-gate-auto", class: "wg-auto", style: info.autoNow ? "" : "display:none" }, "Auto-advancing..."),
+          ),
+        );
         if (isNew) {
           __wgAdd(panel);
           requestAnimationFrame(() => panel.classList.add("wg-in"));

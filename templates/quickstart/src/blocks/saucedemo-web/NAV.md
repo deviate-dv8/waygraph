@@ -27,11 +27,7 @@ Fill and submit are three separate Blocks (not one that fills both fields and
 clicks Login) so the graph/demo show each as its own step - no Block does
 more than one distinct action.
 
-## Other
-
-| File | Kind | Notes |
-|------|------|-------|
-| `ff-owner-auth.block.ts` | FFCompose | Collapses nav-login + fill-username + fill-password + submit-login into one opaque demo/run step (`--ff-expand` shows all 4 again) |
+A flow that wants to skip watching auth marks those steps `{ ff: true }` (see `src/flows/checkout.flow.ts`).
 
 ## Related mem keys / checkpoints
 

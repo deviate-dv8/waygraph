@@ -35,7 +35,5 @@
     "nav nav-item-detail: * -> ItemDetailPage (src/blocks/saucedemo-web/inventory/nav-item-detail.block.ts)",
     "nav nav-login: * -> LoginPage (src/blocks/saucedemo-web/nav-login.block.ts)"
   ],
-  "skipped": [
-    "ff-owner-auth (src/blocks/saucedemo-web/ff-owner-auth.block.ts)"
-  ]
+  "skipped": []
 }

@@ -138,12 +138,7 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
           const zoomed = level > 1.001 || level < 0.999;
           badge.dataset.zoomed = zoomed ? "1" : "0";
           const txt = level.toFixed(2) + "\u00d7";
-          badge.innerHTML =
-            '<span class="wg-zoom-ico">' +
-            ZOOM_ICO +
-            '</span><span class="wg-zoom-val">' +
-            txt +
-            "</span>";
+          __wgSet(badge, __wgEl("span", { class: "wg-zoom-ico" }, __wgSvg(ZOOM_ICO)), __wgEl("span", { class: "wg-zoom-val" }, txt));
           badge.classList.add("wg-in");
           window.__wgZoomLevel = level;
           window.__wgZoomSel = sel || "";
@@ -172,10 +167,7 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
             __wgAdd(badge);
           }
           const text = label ? String(label).slice(0, 40) : "typing";
-          badge.innerHTML =
-            '<span class="wg-ty-dots">\u25cf\u25cf\u25cf</span><span>typing \u00b7 ' +
-            text.replace(/</g, "&lt;") +
-            "</span>";
+          __wgSet(badge, __wgEl("span", { class: "wg-ty-dots" }, "\u25cf\u25cf\u25cf"), __wgEl("span", null, "typing \u00b7 " + text));
           void badge.offsetWidth;
           badge.classList.add("wg-in");
         };

@@ -87,14 +87,16 @@ the runtime through `engine/run/launch.ts` (`runtime/launch.ts`, loaded by `inde
 
 ## Rules
 
-Enforced: no file over 800 lines, no import cycles, the layer table above, no re-exports outside `src/index.ts`.
+Enforced: no file over 800 lines, no import cycles, the layer table above, no re-exports outside `src/index.ts`, no HTML
+strings written into the page.
 Adding an `index.ts` export changes the public API: update `tests/unit/api-surface.snapshot.json` deliberately.
 
 By convention:
 - Code that runs inside `page.evaluate` (`demo/overlay/inpage/`) must be self-contained and is run from `tsc` output,
   never tsx/esbuild (its `__name` helper breaks serialization). In-page globals are typed in `demo/overlay/ui/shadow-globals.d.ts`.
 - All overlay UI lives in one open shadow root (`#wg-root`, `demo/overlay/ui/shadow.ts`); in-page code uses
-  `__wgById / __wgQ / __wgQA / __wgAdd / __wgCss`. CSS for the host page (the device stage) is `HOST_CSS` in `demo/overlay/overlay-css.ts`.
+  `__wgById / __wgQ / __wgQA / __wgAdd / __wgCss`, and builds elements with `__wgEl / __wgSet / __wgSvg`: text is always a
+  text node, never parsed as HTML (`check:structure` rejects `innerHTML` and the other HTML sinks). CSS for the host page (the device stage) is `HOST_CSS` in `demo/overlay/overlay-css.ts`.
 - The runner is spawned inside the target project, so `waygraph/runner` and Playwright resolve from the project's own
   install (two Playwright copies in one process is a hard error). Read `CLI-STOMP-GUARD.md` before changing the stepper.
 - Never mix a move with an edit in one commit.

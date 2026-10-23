@@ -4,6 +4,23 @@ declare function __wgQ<E extends Element = HTMLElement>(selector: string): E | n
 declare function __wgQA<E extends Element = HTMLElement>(selector: string): E[];
 declare function __wgAdd<T extends Node>(node: T): T;
 declare function __wgCss(css: string, key: string): void;
+/** Attributes for {@link __wgEl}. */
+interface WgElProps {
+  id?: string;
+  class?: string;
+  style?: string;
+  title?: string;
+  data?: Record<string, string | number | undefined>;
+  attrs?: Record<string, string | number | undefined>;
+}
+/** A child for {@link __wgEl}: text becomes a text node; arrays are flattened; null / undefined / false are skipped. */
+type WgChild = string | number | Node | null | undefined | false | readonly WgChild[];
+/** Builds an element: `__wgEl("span", { class: "wg-x" }, "text", child)`. Text is never parsed as HTML. */
+declare function __wgEl<K extends keyof HTMLElementTagNameMap>(tag: K, props?: WgElProps | null, ...children: WgChild[]): HTMLElementTagNameMap[K];
+/** Replaces an element's children. */
+declare function __wgSet(el: Element, ...children: WgChild[]): void;
+/** One of waygraph's static SVG icon constants as an element. */
+declare function __wgSvg(markup: string): Element;
 
 // Installed by demo/overlay/inpage/core.ts's installCore - the shared ring primitive every surface
 // (demo/auto's singleton #wg-ring, Pilot's several fixture rings) paints through. Optional on

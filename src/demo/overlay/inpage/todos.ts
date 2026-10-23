@@ -150,16 +150,7 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
             }
           }
 
-          const esc = (s: any) =>
-            String(s)
-              .replace(/&/g, "&amp;")
-              .replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;")
-              .replace(/"/g, "&quot;");
-          const attrId = (raw: any) => {
-            const id = raw != null && String(raw).trim() ? String(raw).trim() : "";
-            return id ? ' data-wg-todo-item="' + esc(id) + '"' : "";
-          };
+          const trimmedId = (raw: any) => (raw != null && String(raw).trim() ? String(raw).trim() : undefined);
           // Compact + cap: >cap rows folds overflow; hover shows up to expandCap; "+N more" pins expand.
           const ui = (payload && !Array.isArray(payload) && payload.ui) || window.__wgTodoDockUi || {};
           const COMPACT_AT = Number(ui.cap) > 0 ? Number(ui.cap) : 5;
@@ -205,50 +196,39 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
             const foldEnd = foldMeta ? foldMeta.foldEnd : -1;
             const deepStart = foldMeta ? foldMeta.deepStart : -1;
             const deepEnd = foldMeta ? foldMeta.deepEnd : -1;
-            return (
-              '<ul class="wg-todos-list" data-wg-todo-style="' +
-              st +
-              '">' +
-              (items || [])
-                .map((t: any, idx: number) => {
-                  const gi = offset + idx;
-                  const clsBase =
-                    st === "bullets"
-                      ? t.done
+            return __wgEl(
+              "ul",
+              { class: "wg-todos-list", data: { wgTodoStyle: st } },
+              (items || []).map((t: any, idx: number) => {
+                const gi = offset + idx;
+                const clsBase =
+                  st === "bullets"
+                    ? t.done
+                      ? "wg-todo-done"
+                      : "wg-todo-pending"
+                    : t.current
+                      ? "wg-todo-current"
+                      : t.done
                         ? "wg-todo-done"
-                        : "wg-todo-pending"
-                      : t.current
-                        ? "wg-todo-current"
-                        : t.done
-                          ? "wg-todo-done"
-                          : "wg-todo-pending";
-                  let foldCls = "";
-                  if (foldStart >= 0 && (gi < foldStart || gi >= foldEnd)) foldCls += " wg-todo-fold";
-                  if (deepStart >= 0 && (gi < deepStart || gi >= deepEnd)) foldCls += " wg-todo-fold-deep";
-                  let mark;
-                  if (st === "checklist") {
-                    mark = t.done ? "☑" : "☐";
-                  } else if (st === "bullets") {
-                    mark = "•";
-                  } else {
-                    mark = t.done ? "✓" : t.current ? "→" : "○";
-                  }
-                  const rowId = t.id || t.name || "";
-                  return (
-                    '<li class="' +
-                    clsBase +
-                    foldCls +
-                    '"' +
-                    attrId(rowId) +
-                    '><span class="wg-todo-mark">' +
-                    mark +
-                    "</span><span>" +
-                    esc(t.text || "") +
-                    "</span></li>"
-                  );
-                })
-                .join("") +
-              "</ul>"
+                        : "wg-todo-pending";
+                let foldCls = "";
+                if (foldStart >= 0 && (gi < foldStart || gi >= foldEnd)) foldCls += " wg-todo-fold";
+                if (deepStart >= 0 && (gi < deepStart || gi >= deepEnd)) foldCls += " wg-todo-fold-deep";
+                let mark;
+                if (st === "checklist") {
+                  mark = t.done ? "☑" : "☐";
+                } else if (st === "bullets") {
+                  mark = "•";
+                } else {
+                  mark = t.done ? "✓" : t.current ? "→" : "○";
+                }
+                return __wgEl(
+                  "li",
+                  { class: clsBase + foldCls, data: { wgTodoItem: trimmedId(t.id) } },
+                  __wgEl("span", { class: "wg-todo-mark" }, mark),
+                  __wgEl("span", null, t.text || ""),
+                );
+              }),
             );
           };
 
@@ -270,39 +250,31 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
           const hiddenCompact = compact ? flat.length - (win.end - win.start) : 0;
           const hiddenExpand = compact ? flat.length - (expand.end - expand.start) : 0;
 
-          let html = "";
+          const children: WgChild[] = [];
           if (dockState && Array.isArray(dockState.groups) && dockState.groups.length) {
             const dockTitle = dockState.title && String(dockState.title).trim();
-            if (dockTitle) {
-              html += '<div class="wg-todo-dock-title">' + esc(dockTitle) + "</div>";
-            }
+            if (dockTitle) children.push(__wgEl("div", { class: "wg-todo-dock-title" }, dockTitle));
             let globalIdx = 0;
             for (const g of dockState.groups) {
               const gTitle = g.title && String(g.title).trim();
-              const gid = g.id || g.name || "";
-              html +=
-                '<div class="wg-todo-group"' +
-                (gid ? ' data-wg-todo-group="' + esc(gid) + '"' : "") +
-                ">";
-              if (gTitle) {
-                html += '<div class="wg-todo-group-title">' + esc(gTitle) + "</div>";
-              }
               const gItems = g.items || [];
-              html += renderItems(gItems, g.style || dockState.style, foldMeta, globalIdx);
-              html += "</div>";
+              children.push(
+                __wgEl(
+                  "div",
+                  { class: "wg-todo-group", data: { wgTodoGroup: trimmedId(g.id) } },
+                  gTitle ? __wgEl("div", { class: "wg-todo-group-title" }, gTitle) : null,
+                  renderItems(gItems, g.style || dockState.style, foldMeta, globalIdx),
+                ),
+              );
               globalIdx += gItems.length;
             }
           } else {
-            html = renderItems(list, "sequential", foldMeta, 0);
+            children.push(renderItems(list, "sequential", foldMeta, 0));
           }
           if (compact && hiddenCompact > 0) {
             const n = dock.dataset.expanded === "1" ? hiddenExpand : hiddenCompact;
             if (n > 0) {
-              html +=
-                '<div class="wg-todo-more" data-wg-todo-more="1" title="Click to expand / collapse">' +
-                "+" +
-                n +
-                " more</div>";
+              children.push(__wgEl("div", { class: "wg-todo-more", data: { wgTodoMore: "1" }, title: "Click to expand / collapse" }, "+" + n + " more"));
             }
           }
           if (compact) dock.dataset.compact = "1";
@@ -310,7 +282,7 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
             delete dock.dataset.compact;
             delete dock.dataset.expanded;
           }
-          dock.innerHTML = html;
+          __wgSet(dock, children);
           const moreBtn = dock.querySelector<HTMLElement>("[data-wg-todo-more]");
           if (moreBtn) {
             moreBtn.addEventListener("click", (e) => {

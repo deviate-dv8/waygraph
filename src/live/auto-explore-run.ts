@@ -164,12 +164,7 @@ async function setAutoPanelRunning(page: Page, label: string): Promise<void> {
       (label) => {
         const panel = __wgById("wg-auto-panel");
         if (!panel) return;
-        const body =
-          "<h3>waygraph auto</h3><div style='padding:12px 0;color:#c9a6ff'>" +
-          "Running: <strong>" +
-          label +
-          "</strong></div>";
-        panel.innerHTML = body;
+        __wgSet(panel, __wgEl("h3", null, "waygraph auto"), __wgEl("div", { style: "padding:12px 0;color:#c9a6ff" }, "Running: ", __wgEl("strong", null, label)));
         if (typeof window.__wgWirePanelChrome === "function") {
           window.__wgWirePanelChrome(panel, "wg-auto-panel-hidden", "waygraph auto");
         }
@@ -274,10 +269,6 @@ const PANEL_CSS =
   "#wg-auto-panel button.wg-act{padding:12px;font-size:14px;}" +
   "}";
 
-function esc(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
-}
-
 export type PickResult = { type: "pick"; index: number } | { type: "quit" };
 
 /** Shown in the headful panel after each Block run. */
@@ -348,35 +339,19 @@ async function headfulPick(
   const hereLabel =
     here ?? (menu.flat.length > 0 ? "Unknown - pick Start here" : "Unknown - no moves available");
   const menuMemKeys = memKeysForMenu(menu, library);
-  let html =
-    `<style id="wg-auto-style">${PANEL_CSS}</style><div id="wg-auto-panel">` +
-    `<h3>waygraph auto</h3>`;
-  if (lastRunNote) {
-    html += `<div style="margin-bottom:8px;font-size:12px;color:#a7f3d0">${esc(lastRunNote)}</div>`;
-  }
-  html += `<div class="wg-here">You are here: <strong>${esc(hereLabel)}</strong></div>`;
-
-  if (menuMemKeys.length > 0) {
-    html +=
-      `<div class="wg-section">Mem - edit credentials, then click a block below</div>`;
-    let memIdx = 0;
-    for (const k of menuMemKeys) {
-      let value = "{}";
-      try {
-        if (mem.has(k)) value = JSON.stringify(mem.get(k), null, 2);
-        else {
-          const def = memStubValue(k);
-          if (def !== undefined) value = JSON.stringify(def, null, 2);
-        }
-      } catch {
-        /* ignore */
+  const memFields: { name: string; value: string }[] = menuMemKeys.map((k) => {
+    let value = "{}";
+    try {
+      if (mem.has(k)) value = JSON.stringify(mem.get(k), null, 2);
+      else {
+        const def = memStubValue(k);
+        if (def !== undefined) value = JSON.stringify(def, null, 2);
       }
-      html +=
-        `<label class="wg-mem">${esc(k.name)}</label>` +
-        `<textarea class="wg-mem-input" data-mem-key="${esc(k.name)}" id="wg-mem-${memIdx}" rows="4">${esc(value)}</textarea>`;
-      memIdx++;
+    } catch {
+      /* a value JSON can't encode shows as {} for the person to fill in */
     }
-  }
+    return { name: k.name, value };
+  });
 
   // Pre-resolve every candidate's hover-preview box THROUGH Playwright's own locator (>>
   // piercing / :has-text() / :visible support), once, here on the Node side - not a raw selector
@@ -411,80 +386,96 @@ async function headfulPick(
     }),
   );
 
-  html += `<div class="wg-actions">`;
+  type MenuButton = { idx: number; hlBox: string | undefined; label?: string; kind?: string; block?: string; to?: string; description?: string };
   let idx = 0;
-  if (menu.sections.length === 0) {
-    html += `<div style="opacity:.85;padding:8px 0">No moves from this screen right now.</div>`;
-  }
-  for (const section of menu.sections) {
-    html += `<div class="wg-section">${esc(section.title)}</div>`;
-    for (const c of section.edges) {
+  const sections = menu.sections.map((section) => ({
+    title: section.title,
+    buttons: section.edges.map((c): MenuButton => {
       const entry = library.get(c.block);
       const navClick = (entry?.block as { __waygraphNavClick?: unknown } | undefined)?.__waygraphNavClick;
-      const hl =
-        c.instanceOption?.highlight ?? (typeof navClick === "string" ? navClick : undefined);
+      const hl = c.instanceOption?.highlight ?? (typeof navClick === "string" ? navClick : undefined);
       const hlBox = hl ? hlBoxes.get(hl) : null;
-      const hlAttr = hlBox ? ` data-hl-box='${esc(JSON.stringify(hlBox))}'` : "";
-      if (c.label) {
-        html += `<button class="wg-act" data-idx="${idx}"${hlAttr}>${esc(c.label)}</button>`;
-      } else {
-        const desc = entry?.description ? `<br><span style="opacity:.85">${esc(entry.description)}</span>` : "";
-        html +=
-          `<button class="wg-act" data-idx="${idx}"${hlAttr}><span class="wg-kind">${esc(c.kind)}</span> ` +
-          `<strong>${esc(c.block)}</strong> -> ${esc(c.to)}${desc}</button>`;
-      }
-      idx++;
-    }
-  }
-  html += `</div><button class="wg-act wg-quit" data-quit="1">Quit</button></div>`;
-  // Wrap body; chrome + Hide/Show wired in page (shared with stepper).
-  html =
-    `<style id="wg-auto-style">${PANEL_CSS}</style><div id="wg-auto-panel">` +
-    html.slice(html.indexOf("<h3>"));
+      const base = { idx: idx++, hlBox: hlBox ? JSON.stringify(hlBox) : undefined };
+      if (c.label) return { ...base, label: c.label };
+      return { ...base, kind: c.kind, block: c.block, to: c.to, ...(entry?.description ? { description: entry.description } : {}) };
+    }),
+  }));
 
   await ensureShadowRoot(page);
   await page.evaluate(
-    `((inner) => {
-      let panel = __wgById("wg-auto-panel");
-      if (!panel) {
-        panel = document.createElement("div");
-        __wgAdd(panel);
-      }
-      panel.outerHTML = inner;
-      const root = __wgById("wg-auto-panel");
-      if (!root) return;
-      window.__wgWirePanelChrome = (el, storageKey, chromeTitle) => {
+    ({ css, note, hereLabel, memFields, sections }) => {
+      __wgCss(css, "wg-auto-style");
+      __wgById("wg-auto-panel")?.remove();
+      const root = __wgEl(
+        "div",
+        { id: "wg-auto-panel" },
+        __wgEl("h3", null, "waygraph auto"),
+        note ? __wgEl("div", { style: "margin-bottom:8px;font-size:12px;color:#a7f3d0" }, note) : null,
+        __wgEl("div", { class: "wg-here" }, "You are here: ", __wgEl("strong", null, hereLabel)),
+        memFields.length ? __wgEl("div", { class: "wg-section" }, "Mem - edit credentials, then click a block below") : null,
+        memFields.map((f, i) => {
+          const field = __wgEl("textarea", { class: "wg-mem-input", id: "wg-mem-" + i, data: { memKey: f.name }, attrs: { rows: 4 } });
+          field.value = f.value;
+          return [__wgEl("label", { class: "wg-mem" }, f.name), field];
+        }),
+        __wgEl(
+          "div",
+          { class: "wg-actions" },
+          sections.length === 0 ? __wgEl("div", { style: "opacity:.85;padding:8px 0" }, "No moves from this screen right now.") : null,
+          sections.map((section) => [
+            __wgEl("div", { class: "wg-section" }, section.title),
+            section.buttons.map((b) =>
+              __wgEl(
+                "button",
+                { class: "wg-act", data: { idx: b.idx, hlBox: b.hlBox } },
+                b.label !== undefined
+                  ? b.label
+                  : [
+                      __wgEl("span", { class: "wg-kind" }, b.kind ?? ""),
+                      " ",
+                      __wgEl("strong", null, b.block ?? ""),
+                      " -> " + (b.to ?? ""),
+                      b.description ? [__wgEl("br"), __wgEl("span", { style: "opacity:.85" }, b.description)] : null,
+                    ],
+              ),
+            ),
+          ]),
+        ),
+        __wgEl("button", { class: "wg-act wg-quit", data: { quit: "1" } }, "Quit"),
+      );
+      __wgAdd(root);
+      // Chrome + Hide/Show, shared with setAutoPanelRunning.
+      window.__wgWirePanelChrome = (el: HTMLElement, storageKey: string, chromeTitle?: string) => {
         if (!el) return;
         if (!el.querySelector(":scope > .wg-chrome")) {
-          const body = document.createElement("div");
-          body.className = "wg-body";
-          while (el.firstChild) body.appendChild(el.firstChild);
-          const chrome = document.createElement("div");
-          chrome.className = "wg-chrome";
-          const titleEl = document.createElement("span");
-          titleEl.className = "wg-chrome-title";
-          titleEl.textContent = chromeTitle || "waygraph auto";
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "wg-hide-btn";
-          btn.setAttribute("data-wg-toggle", "1");
-          btn.textContent = "Hide";
-          chrome.appendChild(titleEl);
-          chrome.appendChild(btn);
-          el.appendChild(chrome);
-          el.appendChild(body);
+          const body = __wgEl("div", { class: "wg-body" }, Array.from(el.childNodes));
+          const chrome = __wgEl(
+            "div",
+            { class: "wg-chrome" },
+            __wgEl("span", { class: "wg-chrome-title" }, chromeTitle || "waygraph auto"),
+            __wgEl("button", { class: "wg-hide-btn", data: { wgToggle: "1" }, attrs: { type: "button" } }, "Hide"),
+          );
+          el.append(chrome, body);
         }
-        const apply = (hidden) => {
+        const apply = (hidden: boolean) => {
           el.classList.toggle("wg-collapsed", hidden);
           el.setAttribute("data-wg-collapsed", hidden ? "1" : "0");
           const t = el.querySelector("[data-wg-toggle]");
           if (t) t.textContent = hidden ? "Show" : "Hide";
-          try { localStorage.setItem(storageKey, hidden ? "1" : "0"); } catch {}
+          try {
+            localStorage.setItem(storageKey, hidden ? "1" : "0");
+          } catch {
+            /* blocked storage: Hide still works for this page */
+          }
         };
         let hidden = false;
-        try { hidden = localStorage.getItem(storageKey) === "1"; } catch {}
+        try {
+          hidden = localStorage.getItem(storageKey) === "1";
+        } catch {
+          /* blocked storage: starts shown */
+        }
         apply(hidden);
-        const toggle = el.querySelector("[data-wg-toggle]");
+        const toggle = el.querySelector<HTMLElement>("[data-wg-toggle]");
         if (toggle && !toggle.dataset.wgWired) {
           toggle.dataset.wgWired = "1";
           toggle.addEventListener("click", (e) => {
@@ -500,10 +491,7 @@ async function headfulPick(
         root.setAttribute("data-wg-ui", "1");
         root.setAttribute("data-wg-modal", "auto-panel");
         root.setAttribute("data-wg-phase", "pick");
-        root.setAttribute(
-          "data-wg-collapsed",
-          root.classList.contains("wg-collapsed") ? "1" : "0",
-        );
+        root.setAttribute("data-wg-collapsed", root.classList.contains("wg-collapsed") ? "1" : "0");
         root.setAttribute("data-wg-ready", "1");
         window.__wgOverlayBeacon =
           window.__wgOverlayBeacon ||
@@ -518,9 +506,7 @@ async function headfulPick(
                 phase: el.getAttribute("data-wg-phase"),
                 step: el.getAttribute("data-wg-step"),
                 block: el.getAttribute("data-wg-block"),
-                collapsed:
-                  el.getAttribute("data-wg-collapsed") === "1" ||
-                  el.classList.contains("wg-collapsed"),
+                collapsed: el.getAttribute("data-wg-collapsed") === "1" || el.classList.contains("wg-collapsed"),
                 opacity: st.opacity,
                 textLen: (el.innerText || "").trim().length,
                 w: Math.round(r.width),
@@ -529,36 +515,21 @@ async function headfulPick(
               };
             }));
       }
-      root.querySelectorAll("button[data-idx]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const idx = Number(btn.getAttribute("data-idx"));
-          window.__wgAutoPick?.(idx);
-        });
+      root.querySelectorAll<HTMLElement>("button[data-idx]").forEach((btn) => {
+        btn.addEventListener("click", () => window.__wgAutoPick?.(Number(btn.dataset.idx)));
         btn.addEventListener("mouseenter", () => {
           // Pre-resolved on the Node side via Playwright's own locator (>> piercing / :has-text()
           // support) when this menu was built - see headfulPick's own comment for why a
           // mouseenter handler can't itself round-trip to a Node-side locator per hover.
-          const raw = btn.getAttribute("data-hl-box");
+          const raw = btn.dataset.hlBox;
           if (!raw || typeof window.__wgPositionRing !== "function") return;
-          let box;
-          try {
-            box = JSON.parse(raw);
-          } catch {
-            return;
-          }
-          window.__wgPositionRing(
-            box,
-            btn.textContent?.trim()?.slice(0, 80) || "target",
-            "auto",
-          );
+          window.__wgPositionRing(JSON.parse(raw), btn.textContent?.trim()?.slice(0, 80) || "target", "auto");
         });
-        btn.addEventListener("mouseleave", () => {
-          window.__wgHideRing?.();
-        });
+        btn.addEventListener("mouseleave", () => window.__wgHideRing?.());
       });
-      const quit = root.querySelector("[data-quit]");
-      if (quit) quit.addEventListener("click", () => window.__wgAutoQuit?.());
-    })(${JSON.stringify(html)})`,
+      root.querySelector("[data-quit]")?.addEventListener("click", () => window.__wgAutoQuit?.());
+    },
+    { css: PANEL_CSS, note: lastRunNote, hereLabel, memFields, sections },
   );
 
   return waitPick();

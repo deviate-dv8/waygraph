@@ -36,12 +36,7 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
     .evaluate(
       async ({ sessionId, snapshot, graph }) => {
         // Block names, labels and descriptions can carry the page's own text (an Effect's instance label is read off
-        // the live DOM), so they go in as text, never as markup.
-        const esc = (s: unknown): string => {
-          const el = document.createElement("span");
-          el.textContent = s == null ? "" : String(s);
-          return el.innerHTML.replace(/"/g, "&quot;");
-        };
+        // the live DOM), so they go in as text nodes (__wgEl), never as markup.
         const badge = __wgById("wg-pilot-badge");
         const current = __wgById("wg-pilot-panel-current");
         const graphPanel = __wgById("wg-pilot-panel-graph");
@@ -52,25 +47,33 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
         badge.textContent = `Waygraph Pilot - ${idPart} - ${hereLabel}`;
         const totalEdges = snapshot.sections.reduce((n, s) => n + s.edges.length, 0);
         if (totalEdges === 0) {
-          current.innerHTML = onBlank
-            ? '<div class="wg-pilot-empty">Blank page — no Block moves yet. Use auto goto or a nav Block when ready.</div>'
-            : '<div class="wg-pilot-empty">No Block moves from here right now.</div>';
+          __wgSet(
+            current,
+            __wgEl(
+              "div",
+              { class: "wg-pilot-empty" },
+              onBlank ? "Blank page — no Block moves yet. Use auto goto or a nav Block when ready." : "No Block moves from here right now.",
+            ),
+          );
         } else {
-          current.innerHTML = snapshot.sections
-            .map((section) => {
-              const rows = section.edges
-                .map((edge) => {
-                  const desc = edge.description ? ` - ${esc(edge.description)}` : "";
-                  const label = edge.label ? ` (${esc(edge.label)})` : "";
-                  return `<div class="wg-pilot-edge">[${edge.index}] <span class="wg-pilot-kind">${esc(edge.kind)}</span> ${esc(edge.block)}${label} -&gt; ${esc(edge.to)}${desc}</div>`;
-                })
-                .join("");
-              return `<div class="wg-pilot-section">${esc(section.title)}</div>${rows}`;
-            })
-            .join("");
+          __wgSet(
+            current,
+            snapshot.sections.map((section) => [
+              __wgEl("div", { class: "wg-pilot-section" }, section.title),
+              section.edges.map((edge) =>
+                __wgEl(
+                  "div",
+                  { class: "wg-pilot-edge" },
+                  `[${edge.index}] `,
+                  __wgEl("span", { class: "wg-pilot-kind" }, edge.kind),
+                  ` ${edge.block}${edge.label ? ` (${edge.label})` : ""} -> ${edge.to}${edge.description ? ` - ${edge.description}` : ""}`,
+                ),
+              ),
+            ]),
+          );
         }
         if (!graph || graph.nodes.length === 0) {
-          graphPanel.innerHTML = '<div class="wg-pilot-empty">No graph data yet.</div>';
+          __wgSet(graphPanel, __wgEl("div", { class: "wg-pilot-empty" }, "No graph data yet."));
           return;
         }
         // Flat indented-text tree - the ORIGINAL "All nodes" rendering.
@@ -79,21 +82,17 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
         // when Mermaid genuinely can't load (e.g. offline), not the primary
         // rendering anymore.
         const renderTextTree = () => {
-          graphPanel.innerHTML = graph.nodes
-            .map((node) => {
+          __wgSet(
+            graphPanel,
+            graph.nodes.map((node) => {
               const outgoing = graph.edges.filter((e) => e.from === node.checkpoint || e.from === "*");
               const rows = outgoing.length
-                ? outgoing
-                    .map(
-                      (e) =>
-                        `<div class="wg-pilot-graph-edge"><span class="wg-pilot-kind">${esc(e.kind)}</span> ${esc(e.block)} -&gt; ${esc(e.to)}</div>`,
-                    )
-                    .join("")
-                : '<div class="wg-pilot-graph-edge wg-pilot-empty">(no outgoing edges)</div>';
+                ? outgoing.map((e) => __wgEl("div", { class: "wg-pilot-graph-edge" }, __wgEl("span", { class: "wg-pilot-kind" }, e.kind), ` ${e.block} -> ${e.to}`))
+                : [__wgEl("div", { class: "wg-pilot-graph-edge wg-pilot-empty" }, "(no outgoing edges)")];
               const here = node.checkpoint === snapshot.here ? " (here)" : "";
-              return `<div class="wg-pilot-graph-node"><div class="wg-pilot-graph-checkpoint">${esc(node.checkpoint)}${here}</div>${rows}</div>`;
-            })
-            .join("");
+              return __wgEl("div", { class: "wg-pilot-graph-node" }, __wgEl("div", { class: "wg-pilot-graph-checkpoint" }, node.checkpoint + here), rows);
+            }),
+          );
         };
         try {
           const w = window as unknown as {
@@ -118,7 +117,8 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
           if (!w.mermaid) throw new Error("mermaid did not attach to window after load");
           // Real, direct user request: "left to right stuff. maybe mermaid?
           // with square ish arrows???" - LR layout, linear (non-curvy) edges.
-          w.mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "loose", flowchart: { curve: "linear" } });
+          // strict: Mermaid escapes label text itself; plain SVG labels (no HTML) so the result parses as SVG.
+          w.mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "strict", flowchart: { curve: "linear", htmlLabels: false } });
           const sanitize = (s: string) => s.replace(/[^A-Za-z0-9_]/g, "_");
           // Every Nav Block gets a `from:"*"` wildcard edge for pathfinding
           // (see auto-explore.ts's own isUrlNav comment). Real, screenshot-
@@ -173,8 +173,17 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
             lines.push(`  ${sanitize(e.from)} -->|${e.block}| ${sanitize(e.to)}`);
           }
           const { svg } = await w.mermaid.render(`wg-mermaid-${Date.now()}`, lines.join("\n"));
-          graphPanel.innerHTML =
-            svg + `<div class="wg-pilot-graph-note">[nav] = also directly reachable via sidebar/URL from anywhere (not drawn as an edge - see the "Here" tab for what's live on this page).</div>`;
+          const diagram = __wgSvg(svg);
+          if (diagram.nodeName !== "svg") throw new Error("mermaid output did not parse as SVG");
+          __wgSet(
+            graphPanel,
+            diagram,
+            __wgEl(
+              "div",
+              { class: "wg-pilot-graph-note" },
+              '[nav] = also directly reachable via sidebar/URL from anywhere (not drawn as an edge - see the "Here" tab for what\'s live on this page).',
+            ),
+          );
           // Real, direct user request: "i hope it is zoomed to the current
           // node" - the diagram is usually bigger than the panel, so scroll
           // (not zoom - the SVG itself stays real size, legible) the "here"

@@ -12,13 +12,7 @@
 export function addNetworkEntry(entry: any) {
   // No-op outside a demo/pilot/auto run - ensureShadowRoot() (and its __wgById/__wgAdd globals)
   // is never installed for a plain `waygraph run`/Playwright test, and this must not throw there.
-  if (typeof __wgById !== "function" || typeof __wgAdd !== "function") return;
-
-  function esc(s: any) {
-    const d = document.createElement("div");
-    d.textContent = String(s == null ? "" : s);
-    return d.innerHTML;
-  }
+  if (typeof __wgById !== "function" || typeof __wgAdd !== "function" || typeof __wgEl !== "function") return;
 
   function methodClass(method: any) {
     const m = (method || "GET").toUpperCase();
@@ -43,45 +37,37 @@ export function addNetworkEntry(entry: any) {
   function renderHeaders(headers: any) {
     const h = headers || {};
     const keys = Object.keys(h);
-    if (keys.length === 0) return '<div class="wg-net-empty">(none)</div>';
-    return (
-      '<table class="wg-net-headers">' +
-      keys.map((k) => "<tr><td>" + esc(k) + "</td><td>" + esc(h[k]) + "</td></tr>").join("") +
-      "</table>"
-    );
+    if (keys.length === 0) return __wgEl("div", { class: "wg-net-empty" }, "(none)");
+    return __wgEl("table", { class: "wg-net-headers" }, keys.map((k) => __wgEl("tr", null, __wgEl("td", null, k), __wgEl("td", null, String(h[k])))));
   }
 
   function renderBody(body: any) {
-    if (body === undefined || body === null || body === "") return '<div class="wg-net-empty">(empty)</div>';
+    if (body === undefined || body === null || body === "") return __wgEl("div", { class: "wg-net-empty" }, "(empty)");
     let text = body;
     try {
       text = JSON.stringify(JSON.parse(body), null, 2);
     } catch {
       /* not JSON - show raw */
     }
-    return "<pre class=\"wg-net-body\">" + esc(String(text).slice(0, 4000)) + "</pre>";
+    return __wgEl("pre", { class: "wg-net-body" }, String(text).slice(0, 4000));
   }
 
-  function renderDetail(e: any) {
-    return (
-      '<div class="wg-net-detail-section"><h4>Request headers</h4>' +
-      renderHeaders(e.reqHeaders) +
-      "</div>" +
-      (e.reqBody
-        ? '<div class="wg-net-detail-section"><h4>Request body</h4>' + renderBody(e.reqBody) + "</div>"
-        : "") +
-      '<div class="wg-net-detail-section"><h4>Response headers</h4>' +
-      renderHeaders(e.resHeaders) +
-      "</div>" +
-      '<div class="wg-net-detail-section"><h4>Response body</h4>' +
-      renderBody(e.resBody) +
-      "</div>" +
-      '<div class="wg-net-detail-section"><h4>cURL</h4>' +
-      '<pre class="wg-net-body wg-net-curl">' +
-      esc(toCurl(e)) +
-      "</pre>" +
-      '<button type="button" class="wg-net-copy" data-copy="1">Copy as cURL</button></div>'
-    );
+  function section(heading: string, ...content: WgChild[]) {
+    return __wgEl("div", { class: "wg-net-detail-section" }, __wgEl("h4", null, heading), ...content);
+  }
+
+  function renderDetail(e: any): WgChild[] {
+    return [
+      section("Request headers", renderHeaders(e.reqHeaders)),
+      e.reqBody ? section("Request body", renderBody(e.reqBody)) : null,
+      section("Response headers", renderHeaders(e.resHeaders)),
+      section("Response body", renderBody(e.resBody)),
+      section(
+        "cURL",
+        __wgEl("pre", { class: "wg-net-body wg-net-curl" }, toCurl(e)),
+        __wgEl("button", { class: "wg-net-copy", data: { copy: "1" }, attrs: { type: "button" } }, "Copy as cURL"),
+      ),
+    ];
   }
 
   let panel = __wgById("wg-network-log");
@@ -133,18 +119,13 @@ export function addNetworkEntry(entry: any) {
   } catch {
     /* not an absolute URL - show as given */
   }
-  row.innerHTML =
-    '<span class="wg-net-method wg-net-method-' +
-    methodClass(entry.method) +
-    '">' +
-    esc((entry.method || "GET").toUpperCase()) +
-    '</span><span class="wg-net-path" title="' +
-    esc(entry.url) +
-    '">' +
-    esc(path) +
-    '</span><span class="wg-net-status">' +
-    esc(entry.status) +
-    (entry.ms !== undefined ? '</span><span class="wg-net-ms">' + esc(entry.ms) + "ms</span>" : "</span>");
+  __wgSet(
+    row,
+    __wgEl("span", { class: "wg-net-method wg-net-method-" + methodClass(entry.method) }, (entry.method || "GET").toUpperCase()),
+    __wgEl("span", { class: "wg-net-path", title: String(entry.url) }, path),
+    __wgEl("span", { class: "wg-net-status" }, String(entry.status ?? "")),
+    entry.ms !== undefined ? __wgEl("span", { class: "wg-net-ms" }, entry.ms + "ms") : null,
+  );
   row.addEventListener("click", () => {
     const open = row.classList.contains("wg-net-open");
     __wgQA(".wg-net-row.wg-net-open").forEach((r) => {
@@ -156,7 +137,7 @@ export function addNetworkEntry(entry: any) {
     row.classList.add("wg-net-open");
     const detail = document.createElement("li");
     detail.className = "wg-net-detail";
-    detail.innerHTML = renderDetail(entry);
+    __wgSet(detail, renderDetail(entry));
     const copyBtn = detail.querySelector<HTMLElement>("[data-copy]");
     if (copyBtn) {
       copyBtn.addEventListener("click", (ev) => {

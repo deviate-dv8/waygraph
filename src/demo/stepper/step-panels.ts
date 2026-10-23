@@ -40,15 +40,15 @@ export async function renderBeforeStep(page: WgPage, info: any) {
         panel.id = "wg-panel";
       }
       const pct = Math.round((info.index / info.total) * 100);
-      const esc = (s: any) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
       // A real tab bar, not a single text line - every episode this chain
       // touches, the current one reading as active (Dan: "if episode 1 is
       // active, the episode 2 tab is inactive"). Absent entirely for an ad
       // hoc block chain with no named Flows.
-      const episodesHtml = info.allEpisodes && info.allEpisodes.length > 0
-        ? "<div id=\"wg-episodes\">" +
-          info.allEpisodes
-            .map((e: any) => {
+      const episodes = info.allEpisodes && info.allEpisodes.length > 0
+        ? __wgEl(
+            "div",
+            { id: "wg-episodes" },
+            info.allEpisodes.map((e: any) => {
               const cls = e.episodeNumber < info.episodeNumber ? "wg-ep-done"
                 : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
                 : "wg-ep-upcoming";
@@ -57,74 +57,60 @@ export async function renderBeforeStep(page: WgPage, info: any) {
               const enteredCls = info.justEnteredEpisode && e.episodeNumber === info.episodeNumber
                 ? " wg-ep-entered"
                 : "";
-              return "<span class=\"wg-ep-tab " + cls + enteredCls + "\">Episode " + e.episodeNumber + ": " +
-                esc(e.episodeTitle || "") + "</span>";
-            })
-            .join("") +
-          "</div>"
-        : "";
+              return __wgEl("span", { class: "wg-ep-tab " + cls + enteredCls }, "Episode " + e.episodeNumber + ": " + (e.episodeTitle || ""));
+            }),
+          )
+        : null;
       // Scoped to THIS episode's own blocks (info.allNames is already the
       // episode-local subset the caller computed) - moduleIndex is this
       // step's position WITHIN that subset, not the whole chain's index -
       // "in episode 2 it shows 2nd to the last... it should start from the
       // first block" (Dan).
       const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
-      const modulesHtml = info.allNames
-        .map((name: any, idx: number) => {
-          const cls = idx < info.moduleIndex ? "wg-mod-done" : idx === info.moduleIndex ? "wg-mod-current" : "wg-mod-upcoming";
-          const desc = info.allDescriptions && info.allDescriptions[idx];
-          const titleAttr = desc ? " title=\"" + esc(desc) + "\"" : "";
-          return "<span class=\"wg-mod " + cls + "\"" + titleAttr + ">" + name + "</span>";
-        })
-        .join("");
-      const narrationHtml = info.description
-        ? "<div class=\"wg-narration\">" + esc(info.description) + "</div>"
-        : "";
-      const paceHtml =
+      const modules = info.allNames.map((name: any, idx: number) => {
+        const cls = idx < info.moduleIndex ? "wg-mod-done" : idx === info.moduleIndex ? "wg-mod-current" : "wg-mod-upcoming";
+        const desc = info.allDescriptions && info.allDescriptions[idx];
+        return __wgEl("span", { class: "wg-mod " + cls, title: desc || undefined }, String(name));
+      });
+      const pace =
         info.paceBadge || info.paceLabel
-          ? "<div class=\"wg-pace\" data-pace-kind=\"" +
-            esc(info.paceKind || "normal") +
-            "\"><span class=\"wg-pace-badge\">" +
-            esc(info.paceBadge || "1x") +
-            "</span><span>" +
-            esc(info.paceLabel || "") +
-            "</span></div>"
-          : "";
-      // Todos render into floating #wg-todo-dock via __wgSyncTodos - never
-      // inside .wg-body (would vanish under --mini / Hide collapse).
-      let html =
-        "<div id=\"wg-progress\"><div id=\"wg-progress-bar\" style=\"width:" + pct + "%\"></div></div>" +
-        episodesHtml +
-        paceHtml +
-        "<div id=\"wg-modules\" class=\"" + modulesClass + "\">" + modulesHtml + "</div>" +
-        "<h3>Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + "</h3>" +
-        narrationHtml;
-      if (info.keys.length === 0) {
-        html += "<div class=\"wg-key\">(no MemKeys required)</div>";
-      }
-      for (const k of info.keys) {
-        html +=
-          "<div class=\"wg-key\"><label>" + k.name + "</label>" +
-          "<textarea data-key=\"" + k.name + "\" rows=\"2\">" +
-          k.value.replace(/</g, "&lt;") + "</textarea>" +
-          "<div class=\"wg-key-pretty\" data-pretty-for=\"" + esc(k.name) + "\"></div>" +
-          "</div>";
-      }
+          ? __wgEl(
+              "div",
+              { class: "wg-pace", data: { paceKind: info.paceKind || "normal" } },
+              __wgEl("span", { class: "wg-pace-badge" }, info.paceBadge || "1x"),
+              __wgEl("span", null, info.paceLabel || ""),
+            )
+          : null;
+      const keys = info.keys.length === 0
+        ? [__wgEl("div", { class: "wg-key" }, "(no MemKeys required)")]
+        : info.keys.map((k: any) => {
+            const field = __wgEl("textarea", { data: { key: k.name }, attrs: { rows: 2 } });
+            field.value = k.value;
+            return __wgEl("div", { class: "wg-key" }, __wgEl("label", null, k.name), field, __wgEl("div", { class: "wg-key-pretty", data: { prettyFor: k.name } }));
+          });
       let autoNow = false;
       try {
         autoNow = localStorage.getItem("wg-autoplay") === "1";
       } catch {
         /* private mode / blocked storage - defaults to manual */
       }
-      html +=
-        "<div class=\"wg-autoplay-row\"><label><input type=\"checkbox\" id=\"wg-autoplay-cb\"" +
-        (autoNow ? " checked" : "") +
-        "> Auto-advance</label></div>" +
-        "<div id=\"wg-gate-manual\"" + (autoNow ? " style=\"display:none\"" : "") +
-        "><button id=\"wg-run\">Run this step \u25B6</button></div>" +
-        "<div id=\"wg-gate-auto\" class=\"wg-auto\"" + (autoNow ? "" : " style=\"display:none\"") +
-        ">Auto-advancing...</div>";
-      panel.innerHTML = html;
+      const autoplay = __wgEl("input", { id: "wg-autoplay-cb", attrs: { type: "checkbox" } });
+      autoplay.checked = autoNow;
+      // Todos render into floating #wg-todo-dock via __wgSyncTodos - never
+      // inside .wg-body (would vanish under --mini / Hide collapse).
+      __wgSet(
+        panel,
+        __wgEl("div", { id: "wg-progress" }, __wgEl("div", { id: "wg-progress-bar", style: "width:" + pct + "%" })),
+        episodes,
+        pace,
+        __wgEl("div", { id: "wg-modules", class: modulesClass }, modules),
+        __wgEl("h3", null, "Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName),
+        info.description ? __wgEl("div", { class: "wg-narration" }, info.description) : null,
+        keys,
+        __wgEl("div", { class: "wg-autoplay-row" }, __wgEl("label", null, autoplay, " Auto-advance")),
+        __wgEl("div", { id: "wg-gate-manual", style: autoNow ? "display:none" : "" }, __wgEl("button", { id: "wg-run" }, "Run this step \u25B6")),
+        __wgEl("div", { id: "wg-gate-auto", class: "wg-auto", style: autoNow ? "" : "display:none" }, "Auto-advancing..."),
+      );
       if (isNewPanel) {
         __wgAdd(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
@@ -174,32 +160,28 @@ export async function renderBeforeStep(page: WgPage, info: any) {
       // Hidden entirely in JSON mode - shares the SAME global toggle the
       // result display's own Pretty/JSON buttons already set, not a
       // second, separate preference.
-      const prettyMemValue = (raw: any) => {
+      const prettyMemValue = (raw: any): WgChild[] => {
         let parsed;
         try {
           parsed = JSON.parse(raw);
         } catch {
-          return "<em>(invalid JSON)</em>";
+          return [__wgEl("em", null, "(invalid JSON)")];
         }
         if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-          return esc(JSON.stringify(parsed));
+          return [JSON.stringify(parsed)];
         }
-        return Object.entries(parsed)
-          .map(([field, value]) => {
-            const label = field.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
-            return "<div class=\"wg-key-pretty-row\"><span class=\"wg-key-pretty-label\">" +
-              esc(label) + ":</span> " + esc(String(value)) + "</div>";
-          })
-          .join("");
+        return Object.entries(parsed).map(([field, value]) => {
+          const label = field.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+          return __wgEl("div", { class: "wg-key-pretty-row" }, __wgEl("span", { class: "wg-key-pretty-label" }, label + ":"), " " + String(value));
+        });
       };
       const applyKeyPretty = () => {
         const prettyOn = window.__wgPretty !== false;
         panel.querySelectorAll<HTMLTextAreaElement>("textarea[data-key]").forEach((ta) => {
-          const key = ta.getAttribute("data-key");
-          const previewEl = panel.querySelector<HTMLElement>(".wg-key-pretty[data-pretty-for=\"" + key + "\"]");
+          const previewEl = ta.parentElement?.querySelector<HTMLElement>(".wg-key-pretty");
           if (!previewEl) return;
           previewEl.style.display = prettyOn ? "" : "none";
-          if (prettyOn) previewEl.innerHTML = prettyMemValue((ta as HTMLTextAreaElement).value);
+          if (prettyOn) __wgSet(previewEl, prettyMemValue(ta.value));
         });
       };
       applyKeyPretty();
@@ -422,16 +404,12 @@ export async function renderAfterStep(page: WgPage, info: any) {
         ? "End of chain - " + info.total + " / " + info.total + " blocks covered - " + info.blockName + " done"
         : "Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + " done";
       const buttonLabel = info.isLast ? "Finish" : "Next \u25B6";
-      const escA = (s: any) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
       const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
-      const modulesHtml = info.allNames
-        .map((name: any, idx: number) => {
-          const cls = idx <= info.moduleIndex ? "wg-mod-done" : "wg-mod-upcoming";
-          const desc = info.allDescriptions && info.allDescriptions[idx];
-          const titleAttr = desc ? " title=\"" + escA(desc) + "\"" : "";
-          return "<span class=\"wg-mod " + cls + "\"" + titleAttr + ">" + name + "</span>";
-        })
-        .join("");
+      const modules = info.allNames.map((name: any, idx: number) => {
+        const cls = idx <= info.moduleIndex ? "wg-mod-done" : "wg-mod-upcoming";
+        const desc = info.allDescriptions && info.allDescriptions[idx];
+        return __wgEl("span", { class: "wg-mod " + cls, title: desc || undefined }, String(name));
+      });
       // QA-friendly by default ("LoginSuccess" -> "Login Success") - raw
       // JSON is one click away for whoever actually wants __state.
       const stateTag = info.result && info.result.__state ? info.result.__state : "";
@@ -439,62 +417,55 @@ export async function renderAfterStep(page: WgPage, info: any) {
         .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
         .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2") || info.resultTag;
       const pretty = window.__wgPretty !== false;
-      const resultHtml =
-        "<div class=\"wg-toggle\">" +
-        "<button class=\"wg-toggle-btn" + (pretty ? " wg-active" : "") + "\" data-mode=\"pretty\">Pretty</button>" +
-        "<button class=\"wg-toggle-btn" + (pretty ? "" : " wg-active") + "\" data-mode=\"json\">JSON</button>" +
-        "</div>" +
-        "<div class=\"wg-result wg-result-pretty\" style=\"display:" + (pretty ? "block" : "none") + "\">" +
-        prettyText + "</div>" +
-        "<div class=\"wg-result wg-result-json\" style=\"display:" + (pretty ? "none" : "block") + "\">" +
-        info.resultTag + "</div>";
       let autoNow = false;
       try {
         autoNow = localStorage.getItem("wg-autoplay") === "1";
       } catch {
         /* private mode / blocked storage - defaults to manual */
       }
-      const gateHtml =
-        "<div class=\"wg-autoplay-row\"><label><input type=\"checkbox\" id=\"wg-autoplay-cb\"" +
-        (autoNow ? " checked" : "") +
-        "> Auto-advance</label></div>" +
-        "<div id=\"wg-gate-manual\"" + (autoNow ? " style=\"display:none\"" : "") +
-        "><button id=\"wg-run\">" + buttonLabel + "</button></div>" +
-        "<div id=\"wg-gate-auto\" class=\"wg-auto\"" + (autoNow ? "" : " style=\"display:none\"") +
-        ">Auto-advancing...</div>";
-      const episodesHtml = info.allEpisodes && info.allEpisodes.length > 0
-        ? "<div id=\"wg-episodes\">" +
-          info.allEpisodes
-            .map((e: any) => {
+      const autoplay = __wgEl("input", { id: "wg-autoplay-cb", attrs: { type: "checkbox" } });
+      autoplay.checked = autoNow;
+      const episodes = info.allEpisodes && info.allEpisodes.length > 0
+        ? __wgEl(
+            "div",
+            { id: "wg-episodes" },
+            info.allEpisodes.map((e: any) => {
               const cls = e.episodeNumber < info.episodeNumber ? "wg-ep-done"
                 : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
                 : "wg-ep-upcoming";
-              return "<span class=\"wg-ep-tab " + cls + "\">Episode " + e.episodeNumber + ": " +
-                escA(e.episodeTitle || "") + "</span>";
-            })
-            .join("") +
-          "</div>"
-        : "";
-      const paceHtml =
+              return __wgEl("span", { class: "wg-ep-tab " + cls }, "Episode " + e.episodeNumber + ": " + (e.episodeTitle || ""));
+            }),
+          )
+        : null;
+      const pace =
         info.paceBadge || info.paceLabel
-          ? "<div class=\"wg-pace\" data-pace-kind=\"" +
-            escA(info.paceKind || "normal") +
-            "\"><span class=\"wg-pace-badge\">" +
-            escA(info.paceBadge || "1x") +
-            "</span><span>" +
-            escA(info.paceLabel || "") +
-            "</span></div>"
-          : "";
-      const todosHtml = ""; // todos float in #wg-todo-dock via __wgSyncTodos
-      panel.innerHTML =
-        "<div id=\"wg-progress\"><div id=\"wg-progress-bar\" style=\"width:" + pct + "%\"></div></div>" +
-        episodesHtml +
-        paceHtml +
-        "<div id=\"wg-modules\" class=\"" + modulesClass + "\">" + modulesHtml + "</div>" +
-        "<h3>" + heading + "</h3>" +
-        todosHtml +
-        resultHtml +
-        gateHtml;
+          ? __wgEl(
+              "div",
+              { class: "wg-pace", data: { paceKind: info.paceKind || "normal" } },
+              __wgEl("span", { class: "wg-pace-badge" }, info.paceBadge || "1x"),
+              __wgEl("span", null, info.paceLabel || ""),
+            )
+          : null;
+      // Todos float in #wg-todo-dock via __wgSyncTodos, never in the panel.
+      __wgSet(
+        panel,
+        __wgEl("div", { id: "wg-progress" }, __wgEl("div", { id: "wg-progress-bar", style: "width:" + pct + "%" })),
+        episodes,
+        pace,
+        __wgEl("div", { id: "wg-modules", class: modulesClass }, modules),
+        __wgEl("h3", null, heading),
+        __wgEl(
+          "div",
+          { class: "wg-toggle" },
+          __wgEl("button", { class: "wg-toggle-btn" + (pretty ? " wg-active" : ""), data: { mode: "pretty" } }, "Pretty"),
+          __wgEl("button", { class: "wg-toggle-btn" + (pretty ? "" : " wg-active"), data: { mode: "json" } }, "JSON"),
+        ),
+        __wgEl("div", { class: "wg-result wg-result-pretty", style: "display:" + (pretty ? "block" : "none") }, String(prettyText)),
+        __wgEl("div", { class: "wg-result wg-result-json", style: "display:" + (pretty ? "none" : "block") }, String(info.resultTag)),
+        __wgEl("div", { class: "wg-autoplay-row" }, __wgEl("label", null, autoplay, " Auto-advance")),
+        __wgEl("div", { id: "wg-gate-manual", style: autoNow ? "display:none" : "" }, __wgEl("button", { id: "wg-run" }, buttonLabel)),
+        __wgEl("div", { id: "wg-gate-auto", class: "wg-auto", style: autoNow ? "" : "display:none" }, "Auto-advancing..."),
+      );
       if (isNewPanel) {
         __wgAdd(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));
@@ -591,46 +562,42 @@ async function renderStepError(page: WgPage, info: any) {
       panel.classList.remove("wg-error", "wg-expected");
       panel.classList.add(errClass);
       if (!isNewPanel) panel.classList.add("wg-in");
-      const esc = (s: any) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-      const episodesHtml = info.allEpisodes && info.allEpisodes.length > 0
-        ? "<div id=\"wg-episodes\">" +
-          info.allEpisodes
-            .map((e: any) => {
+      const episodes = info.allEpisodes && info.allEpisodes.length > 0
+        ? __wgEl(
+            "div",
+            { id: "wg-episodes" },
+            info.allEpisodes.map((e: any) => {
               const cls = e.episodeNumber < info.episodeNumber ? "wg-ep-done"
                 : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
                 : "wg-ep-upcoming";
-              return "<span class=\"wg-ep-tab " + cls + "\">Episode " + e.episodeNumber + ": " +
-                esc(e.episodeTitle || "") + "</span>";
-            })
-            .join("") +
-          "</div>"
-        : "";
+              return __wgEl("span", { class: "wg-ep-tab " + cls }, "Episode " + e.episodeNumber + ": " + (e.episodeTitle || ""));
+            }),
+          )
+        : null;
       const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
-      const modulesHtml = info.allNames
-        .map((name: any, idx: number) => {
-          const cls = idx === info.moduleIndex ? "wg-mod-current" : idx < info.moduleIndex ? "wg-mod-done" : "wg-mod-upcoming";
-          const desc = info.allDescriptions && info.allDescriptions[idx];
-          const titleAttr = desc ? " title=\"" + esc(desc) + "\"" : "";
-          return "<span class=\"wg-mod " + cls + "\"" + titleAttr + ">" + name + "</span>";
-        })
-        .join("");
+      const modules = info.allNames.map((name: any, idx: number) => {
+        const cls = idx === info.moduleIndex ? "wg-mod-current" : idx < info.moduleIndex ? "wg-mod-done" : "wg-mod-upcoming";
+        const desc = info.allDescriptions && info.allDescriptions[idx];
+        return __wgEl("span", { class: "wg-mod " + cls, title: desc || undefined }, String(name));
+      });
       const retryLabel = info.episodeNumber !== undefined ? "Retry Episode " + info.episodeNumber : "Retry";
       const headingText = isExpected
         ? "Expected outcome - Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + " failed as intended"
         : "Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + " threw";
-      const reasonHtml = isExpected
-        ? "<div class=\"wg-expected-reason\">" + esc(info.expectedFailureReason) + "</div>"
-        : "";
-      panel.innerHTML =
-        episodesHtml +
-        "<div id=\"wg-modules\" class=\"" + modulesClass + "\">" + modulesHtml + "</div>" +
-        "<h3 class=\"" + (isExpected ? "wg-expected-heading" : "wg-error-heading") + "\">" + headingText + "</h3>" +
-        reasonHtml +
-        "<div class=\"wg-error-msg\">" + esc(info.message) + "</div>" +
-        "<div class=\"wg-error-actions\">" +
-        "<button id=\"wg-error-retry\" class=\"wg-error-retry\">" + esc(retryLabel) + "</button>" +
-        "<button id=\"wg-run\" class=\"wg-error-stop\">Stop</button>" +
-        "</div>";
+      __wgSet(
+        panel,
+        episodes,
+        __wgEl("div", { id: "wg-modules", class: modulesClass }, modules),
+        __wgEl("h3", { class: isExpected ? "wg-expected-heading" : "wg-error-heading" }, headingText),
+        isExpected ? __wgEl("div", { class: "wg-expected-reason" }, String(info.expectedFailureReason)) : null,
+        __wgEl("div", { class: "wg-error-msg" }, String(info.message)),
+        __wgEl(
+          "div",
+          { class: "wg-error-actions" },
+          __wgEl("button", { id: "wg-error-retry", class: "wg-error-retry" }, retryLabel),
+          __wgEl("button", { id: "wg-run", class: "wg-error-stop" }, "Stop"),
+        ),
+      );
       if (isNewPanel) {
         __wgAdd(panel);
         requestAnimationFrame(() => panel.classList.add("wg-in"));

@@ -234,37 +234,7 @@ export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFa
               : normalizeTodos(h.todos, h.todoIndex);
           await page
             .evaluate((todos: any) => {
-              if (window.__wgSyncTodos) {
-                window.__wgSyncTodos({ sync: "set", list: todos });
-                return;
-              }
-              // Fallback for pages that never got installOverlay sync helper.
-              const ul = __wgById("wg-todos");
-              if (!ul) return;
-              ul.innerHTML = todos
-                .map((t: any) => {
-                  const cls = t.current
-                    ? "wg-todo-current"
-                    : t.done
-                      ? "wg-todo-done"
-                      : "wg-todo-pending";
-                  const mark = t.done ? "\u2713" : t.current ? "\u2192" : "\u25CB";
-                  const esc = (s: any) =>
-                    String(s)
-                      .replace(/&/g, "&amp;")
-                      .replace(/</g, "&lt;")
-                      .replace(/>/g, "&gt;");
-                  return (
-                    "<li class=\"" +
-                    cls +
-                    "\"><span class=\"wg-todo-mark\">" +
-                    mark +
-                    "</span><span>" +
-                    esc(t.text || "") +
-                    "</span></li>"
-                  );
-                })
-                .join("");
+              if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", list: todos });
             }, rows)
             .catch(() => {});
         }

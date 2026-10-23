@@ -1,6 +1,6 @@
 // In-page (runs inside the browser via page.evaluate, must stay self-contained): the step panel's Hide/Show chrome and mini Next.
 export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
-        // Hide/Show for #wg-panel - call after every panel.innerHTML refresh.
+        // Hide/Show for #wg-panel - call after every panel content refresh.
         // Collapsed = "N / M · block" + Next (when not auto). Never pass
         // forceCollapsed:false - omit so Hide/localStorage wins.
         window.__wgWirePanelChrome = (panel: any, storageKey: any, chromeTitle: any, opts: any) => {
@@ -68,12 +68,15 @@ export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAuto
             const span = document.createElement("span");
             span.className = "wg-ff-icon";
             span.setAttribute("aria-hidden", "true");
-            span.innerHTML =
-              '<svg viewBox="0 0 16 16" fill="none">' +
-              '<path class="wg-ff-chev" d="M2 3l5 5-5 5" stroke="#c9a6ff" stroke-width="1.8" ' +
-              'stroke-linecap="round" stroke-linejoin="round"/>' +
-              '<path class="wg-ff-chev" d="M8 3l5 5-5 5" stroke="#c9a6ff" stroke-width="1.8" ' +
-              'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            span.append(
+              __wgSvg(
+                '<svg viewBox="0 0 16 16" fill="none">' +
+                  '<path class="wg-ff-chev" d="M2 3l5 5-5 5" stroke="#c9a6ff" stroke-width="1.8" ' +
+                  'stroke-linecap="round" stroke-linejoin="round"/>' +
+                  '<path class="wg-ff-chev" d="M8 3l5 5-5 5" stroke="#c9a6ff" stroke-width="1.8" ' +
+                  'stroke-linecap="round" stroke-linejoin="round"/></svg>',
+              ),
+            );
             return span;
           };
           // Terminal icon: the current step is an API check (defineApiBlock) - no DOM change, no
@@ -84,12 +87,15 @@ export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAuto
             const span = document.createElement("span");
             span.className = "wg-api-icon";
             span.setAttribute("aria-hidden", "true");
-            span.innerHTML =
-              '<svg viewBox="0 0 16 16" fill="none">' +
-              '<rect x="1" y="2" width="14" height="12" rx="1.5" stroke="#7dd3fc" stroke-width="1.3"/>' +
-              '<path d="M3.5 5.5l2.5 2.5-2.5 2.5" stroke="#7dd3fc" stroke-width="1.3" ' +
-              'stroke-linecap="round" stroke-linejoin="round"/>' +
-              '<path d="M7.5 10.5h4" stroke="#7dd3fc" stroke-width="1.3" stroke-linecap="round"/></svg>';
+            span.append(
+              __wgSvg(
+                '<svg viewBox="0 0 16 16" fill="none">' +
+                  '<rect x="1" y="2" width="14" height="12" rx="1.5" stroke="#7dd3fc" stroke-width="1.3"/>' +
+                  '<path d="M3.5 5.5l2.5 2.5-2.5 2.5" stroke="#7dd3fc" stroke-width="1.3" ' +
+                  'stroke-linecap="round" stroke-linejoin="round"/>' +
+                  '<path d="M7.5 10.5h4" stroke="#7dd3fc" stroke-width="1.3" stroke-linecap="round"/></svg>',
+              ),
+            );
             return span;
           };
           const syncMiniNext = (hidden: any) => {

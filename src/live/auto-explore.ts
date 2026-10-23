@@ -98,10 +98,6 @@ export async function loadBlockLibrary(
     blocksSelect: opts?.blocksSelect,
     inject: opts?.inject,
     flows: false,
-    onImportError: (relFile, err) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (/second time|playwright/i.test(msg)) console.error(`waygraph auto: skip ${relFile}: ${msg.split("\n")[0]}`);
-    },
   });
   // A Block's required keys get the project's own defaults: every `*.mem-stubs.ts` registers its fakes on import.
   for (const file of walkDir(join(projectDir, "src"), /\.mem-stubs\.ts$/)) await importFresh(file);

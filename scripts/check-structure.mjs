@@ -6,6 +6,8 @@
  *   2. No circular value imports between src modules (type-only imports are ignored).
  *   3. Layers: each file's layer may only import the layers allowed for it; scripts/layer-debt.json may only shrink.
  *   4. No barrels: only src/index.ts (the package API) re-exports; everything else is imported from where it is declared.
+ *   5. No HTML strings into the page: overlay elements are built with __wgEl / __wgSet / __wgSvg (demo/overlay/ui/shadow.ts),
+ *      so page and author text is always a text node.
  * Run: npm run check:structure
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -121,6 +123,13 @@ const REEXPORT_RE = /^\s*export\s+(?:type\s+)?(?:\*|\{[^}]*\})\s+from\s+["']/m;
 for (const f of files) {
   const rel = relative(srcDir, f).replace(/\\/g, "/");
   if (rel !== "index.ts" && REEXPORT_RE.test(readFileSync(f, "utf8"))) problems.push(`${rel}: re-exports another module (import from where it is declared; only src/index.ts re-exports)`);
+}
+// --- no HTML strings into the page ---
+const HTML_SINK_RE = /\.(?:innerHTML|outerHTML)\s*\+?=|\binsertAdjacentHTML\s*\(|\bdocument\.write\s*\(/;
+for (const f of files) {
+  const rel = relative(srcDir, f).replace(/\\/g, "/");
+  const line = readFileSync(f, "utf8").split("\n").findIndex((l) => HTML_SINK_RE.test(l));
+  if (line >= 0) problems.push(`${rel}:${line + 1}: writes an HTML string into the page (build it with __wgEl / __wgSet / __wgSvg)`);
 }
 
 const debtFile = join(root, "scripts", "layer-debt.json");

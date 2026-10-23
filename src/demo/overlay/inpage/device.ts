@@ -18,6 +18,10 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
             "<ellipse cx='16' cy='22' rx='7' ry='8' fill='#0C0C1A' stroke='#fff' stroke-width='1.4'/>" +
             "<rect x='12' y='6' width='8' height='16' rx='4' fill='#0C0C1A' stroke='#fff' stroke-width='1.4'/>" +
             "</svg>";
+          const DESKTOP_ICON =
+            '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+              '<rect x="2.5" y="3.5" width="19" height="12.5" rx="1.5"/>' +
+              '<path d="M8 20h8M12 16v4"/></svg>';
           const ICONS: Record<string, string> = {
             mobile:
               '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
@@ -27,19 +31,16 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
               '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
               '<rect x="3.5" y="4" width="17" height="16" rx="2"/>' +
               '<circle cx="12" cy="17.2" r="1" fill="#fff" stroke="none"/></svg>',
-            desktop:
-              '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
-              '<rect x="2.5" y="3.5" width="19" height="12.5" rx="1.5"/>' +
-              '<path d="M8 20h8M12 16v4"/></svg>',
+            desktop: DESKTOP_ICON,
           };
           const setCursor = (touch: any) => {
             if (!cursor) return;
             if (touch) {
               cursor.setAttribute("data-touch", "1");
-              cursor.innerHTML = FINGER_SVG;
+              __wgSet(cursor, __wgSvg(FINGER_SVG));
             } else {
               cursor.removeAttribute("data-touch");
-              cursor.innerHTML = MOUSE_SVG;
+              __wgSet(cursor, __wgSvg(MOUSE_SVG));
             }
           };
           const ensureChip = (preset: any, touch: any, remain: any, orientation: any) => {
@@ -73,12 +74,11 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
                 : preset +
                   (orient ? " · " + (orient === "landscape" ? "land" : "port") : "") +
                   (remain ? " · remain" : "");
-            badge.innerHTML =
-              '<span class="wg-dev-icon">' +
-              (ICONS[preset] || ICONS.desktop) +
-              '</span><span class="wg-dev-label">' +
-              chipLabel +
-              "</span>";
+            __wgSet(
+              badge,
+              __wgEl("span", { class: "wg-dev-icon" }, __wgSvg(ICONS[preset] ?? DESKTOP_ICON)),
+              __wgEl("span", { class: "wg-dev-label" }, chipLabel),
+            );
             void badge.offsetWidth;
             badge.classList.add("wg-in");
           };
@@ -98,14 +98,11 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
             const badge = __wgById("wg-device-badge");
             if (badge) badge.classList.remove("wg-in");
             toast.dataset.preset = preset;
-            toast.innerHTML =
-              '<span class="wg-dev-icon">' +
-              (ICONS[preset] || ICONS.desktop) +
-              '</span><span class="wg-dev-copy"><div class="wg-dev-title">' +
-              title +
-              '</div><div class="wg-dev-sub">' +
-              sub +
-              "</div></span>";
+            __wgSet(
+              toast,
+              __wgEl("span", { class: "wg-dev-icon" }, __wgSvg(ICONS[preset] ?? DESKTOP_ICON)),
+              __wgEl("span", { class: "wg-dev-copy" }, __wgEl("div", { class: "wg-dev-title" }, title), __wgEl("div", { class: "wg-dev-sub" }, sub)),
+            );
             toast.classList.remove("wg-out");
             void toast.offsetWidth;
             toast.classList.add("wg-in");

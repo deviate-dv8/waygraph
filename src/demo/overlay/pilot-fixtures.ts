@@ -301,9 +301,15 @@ export async function showPilotFixtures(
           }
           const zoomed = level > 1.001 || level < 0.999;
           badge.dataset.zoomed = zoomed ? "1" : "0";
-          badge.innerHTML =
-            '<span class="wg-pilot-fx-zoom-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>' +
-            `<span class="wg-pilot-fx-zoom-val">${level.toFixed(2)}\u00d7</span>`;
+          __wgSet(
+            badge,
+            __wgEl(
+              "span",
+              { class: "wg-pilot-fx-zoom-ico" },
+              __wgSvg('<svg viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'),
+            ),
+            __wgEl("span", { class: "wg-pilot-fx-zoom-val" }, level.toFixed(2) + "\u00d7"),
+          );
         };
         const clearZoom = () => {
           // Undo any leftover CSS-scale from older Pilot zoom path.
