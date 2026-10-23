@@ -39,7 +39,7 @@ export type PilotFixtureRing = {
 
 /**
  * Agent-sent highlight fixtures for a live Pilot / auto session.
- * Painted by {@link showPilotFixtures}; driven via IPC `op: "highlight"`.
+ * Painted by `showPilotFixtures`; driven via IPC `op: "highlight"`.
  * Mirrors demo stub surface: rings, todos, zoom, focus, device.
  */
 export type PilotHighlightFixtures = {

@@ -167,7 +167,7 @@ export function resolveDeviceState(
 
 /**
  * Carry-forward for device fixtures (mirror {@link applyTodoPhase}).
- * - clear: hideDevice / clearDevice / device("desktop") with clear intent
+ * - clear: hideDevice / device("desktop") with clear intent
  * - set: author set device/viewport/touch this phase
  * - keep: omit - preserve previous (whole episode remain)
  */

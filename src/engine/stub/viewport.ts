@@ -12,7 +12,7 @@ export type DeviceViewport = {
 
 /**
  * Carried device fixture (todo-dock shaped persist).
- * Omit on a later step = keep; hideDevice/clearDevice/desktop = clear to desktop.
+ * Omit on a later step = keep; hideDevice / desktop = clear to desktop.
  */
 export type DeviceState = {
   preset: DevicePreset;

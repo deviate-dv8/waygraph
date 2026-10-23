@@ -201,10 +201,10 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
 export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   name: string;
   description?: string;
-  /** See {@link NavBlockOptions.checkpoint}. */
+  /** The Checkpoint this Nav lands on: its value (`Home`). */
   checkpoint: Out;
   click: string | ((mem: MemPage) => string);
-  /** See {@link NavBlockOptions.from}. */
+  /** Where the click can start: the Checkpoints whose page shows the link. Leave out for "from anywhere". */
   from?: readonly Checkpoint<string>[];
   requires?: readonly MemKey<unknown>[];
   verify?: Trait[] | ((out: Out) => Trait[]);

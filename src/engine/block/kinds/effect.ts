@@ -46,7 +46,7 @@ export type EffectBlock<
  * toggles a live instance rather than navigating. Runtime result is an ordinary
  * Block - the helper is TypeScript salt only.
  */
-type EffectExtras<In extends Checkpoint<string>, Out extends Checkpoint<string>> = {
+export type EffectExtras<In extends Checkpoint<string>, Out extends Checkpoint<string>> = {
   requires: readonly MemKey<unknown>[];
   instanceOptions: NonNullable<Block<In, Out>["instanceOptions"]>;
 };

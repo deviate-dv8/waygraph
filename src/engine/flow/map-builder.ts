@@ -389,7 +389,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * `defineNavBlock`/`defineMemNavBlock`/`definePageBlock`. Throws if given
    * anything else, including a `homeOrigin`-mismatched static `url`.
    * Compile-time: {@link NavBlock} or {@link PageBlock} only (not Assert/Method).
-   * `{ ff: true }`: fast-forward this one step inline - see {@link appendStep}'s own comment.
+   * `{ ff: true }`: fast-forward this one step inline - see `appendStep`'s own comment.
    */
   gotoPage<NextOut extends Checkpoint<string>>(
     block: (NavBlock<NextOut> | PageBlock<NextOut>) & { name: string },
@@ -405,7 +405,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * Blocks in the Waygraph Map convention: mailpit, maildrop.cc) - same
    * kind requirement as {@link gotoPage}, plus the inverse `homeOrigin` check.
    * Compile-time: {@link NavBlock} or {@link PageBlock} only.
-   * `{ ff: true }`: fast-forward this one step inline - see {@link appendStep}'s own comment.
+   * `{ ff: true }`: fast-forward this one step inline - see `appendStep`'s own comment.
    */
   gotoExternal<NextOut extends Checkpoint<string>>(
     block: (NavBlock<NextOut> | PageBlock<NextOut>) & { name: string },
@@ -419,7 +419,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   /**
    * Appends a self-loop verification step - requires a Block from
    * `defineAssertBlock`. Compile-time: {@link AssertBlock} only (not `.method()`).
-   * `{ ff: true }`: fast-forward this one step inline - see {@link appendStep}'s own comment.
+   * `{ ff: true }`: fast-forward this one step inline - see `appendStep`'s own comment.
    */
   assert(block: AssertBlock<Out> & { name: string }, opts?: MapStepOpts): MapBuilder<Out> {
     assertMapKind(block, ["assert"], "assert");
@@ -433,7 +433,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * Compile-time: {@link MethodBlock} or {@link EffectBlock} only - Assert
    * Blocks must use `.assert()`. Runtime also rejects `__waygraphKind =
    * "assert"` (those still carry method salt from the factory internals).
-   * `{ ff: true }`: fast-forward this one step inline - see {@link appendStep}'s own comment.
+   * `{ ff: true }`: fast-forward this one step inline - see `appendStep`'s own comment.
    */
   method<NextOut extends Checkpoint<string>>(
     block: (MethodBlock<Out, NextOut> | EffectBlock<Out, NextOut>) & { name: string },

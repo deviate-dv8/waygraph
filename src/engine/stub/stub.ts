@@ -139,7 +139,7 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   /**
    * Viewport / device fixture (0.13+). `mobile` | `tablet` | `desktop`.
    * Omit on later blocks = **keep** (same persist as todos). Use
-   * {@link StubCtx.hideDevice} / {@link StubCtx.clearDevice} to return to desktop.
+   * {@link StubCtx.hideDevice} or `device("desktop")` to return to desktop.
    */
   device(preset: DevicePreset | DeviceState): void;
   /** Explicit CSS-pixel viewport (implies mobile-ish unless desktop-sized). */
@@ -236,7 +236,7 @@ export type StubPhaseResult = {
   /**
    * Device intent (mirror todoSync):
    * - `set` - apply {@link device}
-   * - `clear` - reset to desktop (hideDevice / clearDevice / device desktop)
+   * - `clear` - reset to desktop (hideDevice / device desktop)
    * - `keep` - author omitted device; demo must leave previous alone
    */
   deviceSync?: "set" | "clear" | "keep";

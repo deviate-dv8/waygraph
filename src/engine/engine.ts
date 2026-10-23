@@ -7,7 +7,8 @@ import { buildFlow, withSettings } from "./flow/flow.js";
 import { MapBuilder } from "./flow/map-builder.js";
 import type { MapBuilderOptions } from "./flow/map-builder.js";
 
-type S = Checkpoint<"__start__">;
+/** Where every `map()` starts: before its first step. */
+export type MapStart = Checkpoint<"__start__">;
 
 /**
  * Holds engine-level configuration shared across every flow defined from it -
@@ -39,7 +40,7 @@ export class Engine {
    *   .gotoExternal(NavMailpitBlock)
    *   .end();
    */
-  map(options?: MapBuilderOptions): MapBuilder<S> {
+  map(options?: MapBuilderOptions): MapBuilder<MapStart> {
     const { homeOrigin, ...settings } = options ?? {};
     return MapBuilder.begin((steps, flowSettings) => withSettings(buildFlow(steps, this.config), flowSettings), settings, homeOrigin);
   }
@@ -51,6 +52,6 @@ export class Engine {
  * shared `headless`/`slowMo`/`layouts` across several flows).
  * @example const flow = map({ homeOrigin: "https://app.example.com" }).gotoPage(NavHomeBlock).end();
  */
-export function map(options?: MapBuilderOptions & EngineConfig): MapBuilder<S> {
+export function map(options?: MapBuilderOptions & EngineConfig): MapBuilder<MapStart> {
   return new Engine(options).map(options);
 }

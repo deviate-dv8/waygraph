@@ -9,11 +9,12 @@ export type RunEvent =
   | { type: "run:end"; runId: string; at: number; ok: boolean; result?: string; error?: string; ms: number }
   | { type: "run:artifact"; runId: string; at: number; kind: "video" | "trace" | "screenshot"; path: string };
 
-type Listener = (event: RunEvent) => void;
-const listeners = new Set<Listener>();
+/** What {@link onRunEvent} calls with each event. */
+export type RunEventListener = (event: RunEvent) => void;
+const listeners = new Set<RunEventListener>();
 
 /** Subscribes to every run event in this process; returns the unsubscribe function. */
-export function onRunEvent(listener: Listener): () => void {
+export function onRunEvent(listener: RunEventListener): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
