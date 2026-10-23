@@ -94,7 +94,7 @@ the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by 
 
 ## Rules
 
-Enforced: no file over 800 lines, no import cycles, the layer table above, no re-exports outside `src/index.ts`, no HTML
+Enforced: no file over 500 lines (the few above it are ratcheted in `scripts/check-structure.mjs` and may only shrink), no import cycles, the layer table above, no re-exports outside `src/index.ts`, no HTML
 strings written into the page, `WAYGRAPH_*` variables only through `engine/env.ts` (its registry generates `docs/env.md`), no `.catch(() => {})` in Node
 code (`engine/page-gone.ts`: `ignorePageGone` when the page went away, `ignoreTimeout` for a probe), and `any` only goes
 down (`scripts/any-debt.json`, per file; "any Block" is `SomeBlock` in `engine/block/block.ts`).
