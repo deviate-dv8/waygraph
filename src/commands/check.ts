@@ -150,7 +150,7 @@ async function checkCommand(
       // Nav-escape: NavBlocks are exempt (their generated act() is the one
       // legitimate goto/click call site).
       if (
-        !isNavBlockMarked(exported as Record<string, unknown>) &&
+        !isNavBlockMarked(exported as unknown as Record<string, unknown>) &&
         NAV_METHOD_CALLS.some((needle) => src!.includes(needle))
       ) {
         navWarnings.push({ file, blockName: exported.name, exportName });

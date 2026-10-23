@@ -167,7 +167,7 @@ test("discoverGraph: a Block with no defineBlock<In, Out> generic is skipped, no
     const graph = await discoverGraph(dir);
     expect(graph.edges).toEqual([]);
     expect(graph.skipped).toEqual([
-      { block: "mystery", file: "src/blocks/mystery.block.ts", reason: "no defineBlock/defineMethodBlock/defineEffectBlock<In, Out> generic call found" },
+      { block: "mystery", file: "src/blocks/mystery.block.ts", reason: "no route: declare from/to with Checkpoint values" },
     ]);
   });
 });

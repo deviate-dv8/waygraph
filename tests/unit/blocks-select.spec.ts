@@ -5,7 +5,7 @@ import {
   isFileSelectToken,
   matchBlocksSelect,
   parseBlocksSelect,
-} from "../../src/blocks-select.js";
+} from "../../src/manifest/select.js";
 
 describe("blocks-select (Phase C)", () => {
   it("classifies /regex/ vs glob vs bare", () => {

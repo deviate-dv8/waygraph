@@ -1,7 +1,4 @@
 [
-  "analysis/coverage-gap.ts -> session/auto-explore.ts",
-  "analysis/coverage-gap.ts -> session/block-inject.ts",
-  "analysis/graph.ts -> session/block-inject.ts",
   "pilot-overlay/fixtures.ts -> auto-session/verbose-log.ts",
   "pilot-overlay/panel.ts -> auto-session.ts",
   "pilot-overlay/shell.ts -> auto-session/verbose-log.ts"

@@ -207,7 +207,7 @@ export interface AutoSessionInit {
   projectDir: string;
   baseURL?: string;
   startUrl?: string;
-  blocksSelect?: import("../blocks-select.js").BlocksSelect;
+  blocksSelect?: import("../manifest/select.js").BlocksSelect;
   /** Absolute paths — merged Block libraries (see `waygraph browser --inject`). */
   inject?: string[];
   /** When true, open about:blank instead of baseURL/startUrl (browser default). */

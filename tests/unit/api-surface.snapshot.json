@@ -29,6 +29,7 @@
   "branch",
   "branchRoutes",
   "buildCoverageReport",
+  "buildManifest",
   "buildTodoDock",
   "byRole",
   "byText",

@@ -26,7 +26,7 @@ export interface AutoExploreOptions {
   /** Initial URL when the page is blank (defaults to baseURL). */
   startUrl?: string;
   /** Phase C: glob / regex / bare `--blocks` file select for discovery. */
-  blocksSelect?: import("../blocks-select.js").BlocksSelect;
+  blocksSelect?: import("../manifest/select.js").BlocksSelect;
 }
 
 /** See `../config.js`'s own `resolveBaseUrl` - re-exported so existing importers of this module

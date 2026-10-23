@@ -55,7 +55,7 @@ export interface PilotStartResult {
  * --detach` and `waygraph graph` itself.
  */
 export async function pilotStart(init: BrowserStartInit): Promise<PilotStartResult> {
-  const { resolveInjectRoots } = await import("./block-inject.js");
+  const { resolveInjectRoots } = await import("../manifest/roots.js");
   const exploreInject =
     init.inject ??
     (init.injectTokens?.length ? resolveInjectRoots(init.injectTokens, init.projectDir) : undefined);

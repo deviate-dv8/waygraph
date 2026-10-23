@@ -38,7 +38,7 @@ export class AutoSession {
   private constructor(
     private readonly projectDir: string,
     private readonly inject: string[] | undefined,
-    private readonly blocksSelect: import("../blocks-select.js").BlocksSelect | undefined,
+    private readonly blocksSelect: import("../manifest/select.js").BlocksSelect | undefined,
     private graph: Awaited<ReturnType<typeof buildExploreContext>>["graph"],
     private library: Awaited<ReturnType<typeof buildExploreContext>>["library"],
     private readonly mem: MemPage,

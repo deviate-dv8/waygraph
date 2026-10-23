@@ -177,14 +177,16 @@ export type {
 } from "./core.js";
 export type { ActionPage } from "./core/types.js";
 export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./analysis/graph.js";
+export { buildManifest } from "./manifest/manifest.js";
+export type { Manifest, ManifestBlock, ManifestFlow } from "./manifest/manifest.js";
 export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock, OrphanBlock } from "./analysis/graph.js";
 export {
   isFileSelectToken,
   parseBlocksSelect,
   matchBlocksSelect,
   globToRegExp,
-} from "./blocks-select.js";
-export type { BlocksSelect, BlocksSelectKind } from "./blocks-select.js";
+} from "./manifest/select.js";
+export type { BlocksSelect, BlocksSelectKind } from "./manifest/select.js";
 export { EdgeLeaseCoordinator } from "./traverse/lease.js";
 export { runTraverse } from "./traverse/run.js";
 export type {

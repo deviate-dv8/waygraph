@@ -8,7 +8,7 @@
  */
 import { spawnDetachedSession } from "./auto-session-ipc.js";
 import type { AutoSessionInit } from "../auto-session.js";
-import { resolveInjectRoots } from "./block-inject.js";
+import { resolveInjectRoots } from "../manifest/roots.js";
 
 export interface BrowserStartInit extends AutoSessionInit {
   /** Preset names or paths; resolved before spawn. */

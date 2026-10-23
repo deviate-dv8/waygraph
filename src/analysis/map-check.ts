@@ -13,9 +13,9 @@
  * Self-contained (no import from cli.ts), same reasoning as graph.ts's own
  * header comment: cli.ts runs main() unconditionally at module load.
  */
-import { existsSync, readdirSync, statSync, type Dirent } from "node:fs";
+import { existsSync } from "node:fs";
 import { join, dirname, relative, sep } from "node:path";
-import { pathToFileURL } from "node:url";
+import { importFresh, isBlockLike, walkDir } from "../manifest/scan.js";
 
 interface MapViolation {
   file: string;
@@ -37,40 +37,8 @@ export interface MapCheckResult {
   violations: MapViolation[];
 }
 
-function walkBlockFiles(dir: string): string[] {
-  const results: string[] = [];
-  let entries: Dirent[];
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return results;
-  }
-  for (const entry of entries) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === "node_modules" || entry.name === "dist" || entry.name === ".git") continue;
-      results.push(...walkBlockFiles(full));
-    } else if (/\.block\.ts$/.test(entry.name)) {
-      results.push(full);
-    }
-  }
-  return results;
-}
-
-function isBlockLike(val: unknown): val is Record<string, unknown> & { name: string } {
-  if (val === null || typeof val !== "object") return false;
-  const obj = val as Record<string, unknown>;
-  if (typeof obj.name !== "string") return false;
-  const instruction = obj.instruction as Record<string, unknown> | undefined;
-  return instruction !== null && typeof instruction === "object" && typeof instruction?.act === "function";
-}
-
-async function importModule(filePath: string): Promise<Record<string, unknown>> {
-  const url = pathToFileURL(filePath);
-  const mtimeMs = statSync(filePath).mtimeMs;
-  url.searchParams.set("t", String(mtimeMs));
-  return (await import(url.href)) as Record<string, unknown>;
-}
+const walkBlockFiles = (dir: string): string[] => walkDir(dir, /\.block\.ts$/);
+const importModule = importFresh;
 
 /**
  * `(group)` segments never appear in the real URL (Next.js route-group

@@ -9,9 +9,7 @@ import { homedir } from "node:os";
 
 /**
  * This package's own installed root (contains `templates/`/`examples/`, sibling to `dist/`) -
- * this file compiles to `dist/session/block-inject.js`, two levels down, not one. Same class of
- * bug as `cli/util.ts`'s own `packageRoot()` (see its comment) - self-inflicted here by moving
- * this file into `src/session/` without updating the path math to match the new depth.
+ * this file compiles to `dist/manifest/roots.js`, two levels down.
  */
 function packageRoot(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");

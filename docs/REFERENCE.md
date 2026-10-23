@@ -306,6 +306,14 @@ Because the route is recorded on the Block, `waygraph graph`, `auto`, `traverse`
 instead of parsing source text. The older forms (`checkpoint: "Home"`, `defineMethodBlock<Home, ItemInCart>`) still work
 but are deprecated; `waygraph upgrade --codemod checkpoints` rewrites a project's states and Block files.
 
+## The manifest
+
+`waygraph manifest [project] [--out <file>]` prints everything the project defines as JSON: every Block (`kind`,
+`description`, route `from` -> `to`, `requires`, `file`, and its `map` group under `src/map/`), every Flow (its `useCase`
+from the `src/flows/<page>/<outcome>.flow.ts` path, its `steps` in run order and its settings) and every Checkpoint.
+`buildManifest(projectDir)` returns the same object in code. It is read at runtime from the Blocks themselves, the same
+scan `graph`, `check`, `map`, `auto`, `traverse` and the runner use, and is what Waygraph UI and map packages read.
+
 ## Quick start
 
 ```typescript

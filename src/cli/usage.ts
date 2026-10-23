@@ -193,6 +193,11 @@ Primary (less is more):
                                            has a trace - test report opens it.
 
 Also:
+  waygraph manifest [project] [--out <file>]
+                                           Every Block (kind, route from -> to, requires, map
+                                           group), Flow (use case, steps, settings) and
+                                           Checkpoint of the project, as JSON - what Waygraph UI
+                                           and map packages read.
   --config <name|file>   (any command) use another config instead of waygraph.config.ts, e.g.
                  waygraph test --config staging   (config/waygraph.staging.config.ts)
   --env <mode>   (any command) load .env.<mode> / .env.<mode>.local on top of .env, e.g.

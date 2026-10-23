@@ -31,6 +31,7 @@ import { agentDiveCase } from "./commands/agent-dive.js";
 import { autoServeCase, sessionCase } from "./commands/session.js";
 import { tryCase } from "./commands/try.js";
 import { upgradeCase } from "./commands/upgrade.js";
+import { manifestCase } from "./commands/manifest.js";
 import { extensionsCase } from "./commands/extensions.js";
 import { mapCase } from "./commands/map.js";
 
@@ -93,6 +94,8 @@ async function main(): Promise<void> {
     case "map": await mapCase(args); break;
 
     case "upgrade": await upgradeCase(args); break;
+
+    case "manifest": await manifestCase(args); break;
 
     case "extensions": await extensionsCase(args); break;
 

@@ -32,7 +32,8 @@ traverse/ (run, coverage, lease) ─ live parallel graph exploration with sessio
 core.ts + core/ ── barrel over core/{block,config,run-graph,flow,compose,engine,map-builder,locate,branch-regression,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
 highlights.ts + highlights/ (types, style, device, demo-pace, todo-dock, merge, stub-ctx, run-phase, css, shorthand) ── demo narration: stubs, todo dock, device presets, pace, ring CSS
 ui/ ────────────── real .css overlay stylesheet built on Open Props, bundled by scripts/copy-ui-css.mjs into dist/ui/overlay.css and injected once by ui/shadow.ts - see src/ui/css/README.md; change a colour in ui/css/tokens.css, never inline
-analysis/ (graph, map-check, practices-check, coverage-gap) ─ static analysis / lint
+manifest/ (scan, project, roots, select, manifest, legacy-generics) ─ the one project scanner: walks and imports Blocks/Flows, reads routes, builds the JSON manifest
+analysis/ (graph, map-check, practices-check, coverage-gap) ─ static analysis / lint over the scan
 core/{types,trait,mem-page,mem-stub,errors,selector,narration,hooks,launch}.ts ─ core types and primitives; narration.ts is the stub/pace contract Blocks carry, hooks.ts and launch.ts are where the demo and runtime layers plug in
 runtime/ (config, env-file, browser, extensions, webserver, video-dir, playwright-config, launch) ─ config loading and browser launch
 index.ts ─────────── the public API: re-exports only; nothing inside src/ imports it

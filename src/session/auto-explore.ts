@@ -1,23 +1,16 @@
-import { readdirSync, statSync, type Dirent } from "node:fs";
-import { join, relative, resolve } from "node:path";
 import type { Page } from "@playwright/test";
-import type { Block, Checkpoint, WaygraphInstanceOption } from "../core/types.js";
+import type { WaygraphInstanceOption } from "../core/types.js";
 import { discoverGraph, type WaygraphGraph, type WaygraphEdge } from "../analysis/graph.js";
-import { exploreRoots, injectTaggedFile } from "./block-inject.js";
+import { scanProject } from "../manifest/project.js";
 
 export interface ExploreContextOpts {
-  blocksSelect?: import("../blocks-select.js").BlocksSelect;
+  blocksSelect?: import("../manifest/select.js").BlocksSelect;
   /** Absolute paths of extra Block trees to merge (host projectDir is always first). */
   inject?: string[];
 }
 
-export interface BlockEntry {
-  block: Block<Checkpoint<string>, Checkpoint<string>>;
-  exportName: string;
-  file: string;
-  kind: "nav" | "action";
-  description: string;
-}
+export type { BlockEntry } from "../manifest/project.js";
+import type { BlockEntry } from "../manifest/project.js";
 
 /**
  * One menu row. Usually just a `WaygraphEdge` as discovered statically; when
@@ -43,58 +36,8 @@ export interface ExploreMenu {
   flat: ExploreEdge[];
 }
 
-function walkDir(dir: string, pattern: RegExp): string[] {
-  const results: string[] = [];
-  let entries: Dirent[];
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return results;
-  }
-  for (const entry of entries) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === "node_modules" || entry.name === "dist" || entry.name === ".git") continue;
-      results.push(...walkDir(full, pattern));
-    } else if (pattern.test(entry.name)) {
-      results.push(full);
-    }
-  }
-  return results;
-}
 
-/**
- * Real, confirmed bug this fixes: a bare `import(url.href)` is permanently
- * cached by Node's ESM loader for the lifetime of the process, keyed on the
- * exact specifier. `AutoSession.reloadLibrary()` exists specifically so a
- * Block edited on disk mid-session takes effect without restarting the
- * session - but a SECOND `reload` of a file already imported once in this
- * process silently kept returning the FIRST version's content, no matter
- * how many times the file changed on disk after that. A one-shot CLI
- * process (`waygraph graph`, etc.) never hits this - it only ever imports
- * each file once anyway - but a long-running `--detach` session calling
- * `reloadLibrary()` repeatedly does.
- *
- * Fix: bust the cache with the file's own mtime as a query param - a
- * genuinely changed file gets a new specifier (forcing a fresh import); an
- * UNCHANGED file between two reloads keeps hitting the SAME specifier (no
- * unbounded accumulation of dead module instances across many reloads).
- */
-async function importModule(filePath: string): Promise<Record<string, unknown>> {
-  const resolved = resolve(filePath);
-  const url = new URL(`file://${resolved}`);
-  const mtimeMs = statSync(resolved).mtimeMs;
-  url.searchParams.set("t", String(mtimeMs));
-  return (await import(url.href)) as Record<string, unknown>;
-}
 
-function isBlockLike(val: unknown): val is Block<Checkpoint<string>, Checkpoint<string>> & { description?: string } {
-  if (val === null || typeof val !== "object") return false;
-  const obj = val as Record<string, unknown>;
-  if (typeof obj.name !== "string") return false;
-  const instruction = obj.instruction as Record<string, unknown> | undefined;
-  return instruction !== null && typeof instruction === "object" && typeof instruction?.act === "function";
-}
 
 function isNavBlockMarked(val: unknown): boolean {
   const kind = (val as { __waygraphKind?: string }).__waygraphKind;
@@ -148,58 +91,26 @@ export async function loadBlockLibrary(
   byName: Map<string, BlockEntry>;
   navBlocks: BlockEntry[];
 }> {
-  const { matchBlocksSelect } = await import("../blocks-select.js");
   const byName = new Map<string, BlockEntry>();
   const navBlocks: BlockEntry[] = [];
-  const navSeen = new Set<string>();
-  const select = opts?.blocksSelect;
-  for (const root of exploreRoots(projectDir, opts?.inject)) {
-    for (const file of walkDir(root, /\.block\.ts$/)) {
-    const relFile = relative(root, file).replace(/\\/g, "/");
-    const taggedFile = injectTaggedFile(projectDir, root, relFile);
-    // Glob/bare: path filter before import. Regex: need block name — filter after.
-    if (select && select.kind !== "regex" && !matchBlocksSelect(select, { relFile })) {
-      continue;
-    }
-    let mod: Record<string, unknown>;
-    try {
-      mod = await importModule(file);
-    } catch (err) {
+  const scan = await scanProject(projectDir, {
+    blocksSelect: opts?.blocksSelect,
+    inject: opts?.inject,
+    flows: false,
+    onImportError: (relFile, err) => {
       const msg = err instanceof Error ? err.message : String(err);
-      if (/second time|playwright/i.test(msg)) {
-        console.error(`waygraph auto: skip ${relFile}: ${msg.split("\n")[0]}`);
-      }
+      if (/second time|playwright/i.test(msg)) console.error(`waygraph auto: skip ${relFile}: ${msg.split("\n")[0]}`);
+    },
+  });
+  for (const b of scan.blocks) {
+    const kind = isNavBlockMarked(b.block) ? "nav" : "action";
+    if (byName.has(b.name)) {
+      console.error(`waygraph: inject skipped duplicate Block name "${b.name}" (${b.file})`);
       continue;
     }
-    for (const [exportName, exported] of Object.entries(mod)) {
-      if (!isBlockLike(exported)) continue;
-      if (
-        select &&
-        !matchBlocksSelect(select, { relFile, blockName: exported.name })
-      ) {
-        continue;
-      }
-      const kind = isNavBlockMarked(exported) ? "nav" : "action";
-      const entry: BlockEntry = {
-        block: exported as Block<Checkpoint<string>, Checkpoint<string>>,
-        exportName,
-        file: taggedFile,
-        kind,
-        description: typeof exported.description === "string" ? exported.description : "",
-      };
-      if (byName.has(exported.name)) {
-        console.error(
-          `waygraph: inject skipped duplicate Block name "${exported.name}" (${taggedFile})`,
-        );
-        continue;
-      }
-      byName.set(exported.name, entry);
-      if (kind === "nav" && !navSeen.has(exported.name)) {
-        navSeen.add(exported.name);
-        navBlocks.push(entry);
-      }
-    }
-    }
+    const entry: BlockEntry = { block: b.block, exportName: b.exportName, file: b.file, kind, description: b.description };
+    byName.set(b.name, entry);
+    if (kind === "nav") navBlocks.push(entry);
   }
   navBlocks.sort((a, b) => {
     const aUrl = isUrlNav(a) ? 0 : 1;

@@ -1,31 +1,11 @@
 // Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { readFileSync, readdirSync } from "node:fs";
-import type { Dirent } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { importFresh, isBlockLike, walkDir } from "../manifest/scan.js";
 
 // ---------------------------------------------------------------------------
 // Filesystem
 // ---------------------------------------------------------------------------
 
-export function walkDir(dir: string, pattern: RegExp): string[] {
-  const results: string[] = [];
-  let entries: Dirent[];
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return results;
-  }
-  for (const entry of entries) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === "node_modules" || entry.name === "dist" || entry.name === ".git") continue;
-      results.push(...walkDir(full, pattern));
-    } else if (pattern.test(entry.name)) {
-      results.push(full);
-    }
-  }
-  return results;
-}
 
 
 export function discoverFlows(projectDir: string): string[] {
@@ -108,14 +88,11 @@ export function extractUrlTraits(filePath: string): string[] {
 // Dynamic import + validation
 // ---------------------------------------------------------------------------
 
-export async function importModule(filePath: string): Promise<Record<string, unknown>> {
-  const url = new URL(`file://${resolve(filePath)}`);
-  return (await import(url.href)) as Record<string, unknown>;
-}
 
 
 /** Kept as a named alias - `run`/`validate` below were written against this name first. */
-export const importFlowFile = importModule;
+export const importFlowFile = importFresh;
+export { walkDir, isBlockLike, importFresh as importModule };
 
 
 export function isFlowLike(val: unknown): val is { run: (...args: unknown[]) => Promise<unknown> } {
@@ -139,13 +116,6 @@ export function discoverBlocks(projectDir: string): string[] {
 }
 
 
-export function isBlockLike(val: unknown): val is { name: string; instruction: { act: unknown } } {
-  if (val === null || typeof val !== "object") return false;
-  const obj = val as Record<string, unknown>;
-  if (typeof obj.name !== "string") return false;
-  const instruction = obj.instruction as Record<string, unknown> | undefined;
-  return instruction !== null && typeof instruction === "object" && typeof instruction?.act === "function";
-}
 
 
 /** Set by `defineNavBlock` (non-enumerable) - see src/core.ts. */

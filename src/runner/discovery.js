@@ -1,35 +1,7 @@
 // Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
-
-function walkDir(dir, pattern) {
-  const results = [];
-  let entries;
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return results;
-  }
-  for (const entry of entries) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === "node_modules" || entry.name === "dist" || entry.name === ".git") continue;
-      results.push(...walkDir(full, pattern));
-    } else if (pattern.test(entry.name)) {
-      results.push(full);
-    }
-  }
-  return results;
-}
-
-
-function isBlockLike(val) {
-  if (val === null || typeof val !== "object") return false;
-  if (typeof val.name !== "string") return false;
-  if (val.instruction === null || typeof val.instruction !== "object") return false;
-  return typeof val.instruction.act === "function";
-}
+import { pathToFileURL } from "node:url";
+import { isBlockLike, walkDir } from "../manifest/scan.js";
 
 
 export async function findBlock(projectDir, ref) {
@@ -38,7 +10,7 @@ export async function findBlock(projectDir, ref) {
   for (const file of files) {
     let mod;
     try {
-      mod = await import("file://" + file);
+      mod = await import(pathToFileURL(file).href);
     } catch {
       continue;
     }
@@ -73,7 +45,7 @@ export async function findFlow(projectDir, flowName) {
   for (const file of files) {
     let mod;
     try {
-      mod = await import("file://" + file);
+      mod = await import(pathToFileURL(file).href);
     } catch {
       continue;
     }

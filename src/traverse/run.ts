@@ -58,7 +58,7 @@ export interface TraverseOptions {
   /** Traverse id for greppable lines (default traverse-1). */
   traverseId?: string;
   /** Phase C: glob / regex / bare `--blocks` file select. */
-  blocksSelect?: import("../blocks-select.js").BlocksSelect;
+  blocksSelect?: import("../manifest/select.js").BlocksSelect;
   /** Phase D: parallel workers (default 1). Cap 4. */
   parallel?: number;
   /** Phase D: clone (default) or inherit. Inherit refused when parallel > 1. */

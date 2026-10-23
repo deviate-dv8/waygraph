@@ -1,10 +1,9 @@
-import { existsSync, readFileSync, readdirSync, statSync, type Dirent } from "node:fs";
-import { join, dirname, relative, resolve } from "node:path";
-import {
-  type BlocksSelect,
-  matchBlocksSelect,
-} from "../blocks-select.js";
-import { exploreRoots, injectTaggedFile } from "../session/block-inject.js";
+import { readFileSync } from "node:fs";
+import { relative } from "node:path";
+import type { BlocksSelect } from "../manifest/select.js";
+import { scanProject } from "../manifest/project.js";
+import type { ProjectScan } from "../manifest/project.js";
+import { importFresh, isBlockLike, walkDir } from "../manifest/scan.js";
 
 /**
  * The state-machine shape `waygraph auto` discovers from a project's own
@@ -69,42 +68,9 @@ export function toMermaid(graph: WaygraphGraph): string {
   return lines.join("\n");
 }
 
-// ---------------------------------------------------------------------------
-// Discovery - deliberately self-contained (no import from cli.ts): cli.ts
-// runs its own main() unconditionally at module load, so it can't safely be
-// imported from a test (or from here) without also running the whole CLI.
-// These are small, stable duplicates of cli.ts's own discoverBlocks/
-// isBlockLike/isNavBlockMarked/importModule, not a shared abstraction -
-// simpler and lower-risk than a circular import between the two modules.
-// ---------------------------------------------------------------------------
-
-function walkDir(dir: string, pattern: RegExp): string[] {
-  const results: string[] = [];
-  let entries: Dirent[];
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return results;
-  }
-  for (const entry of entries) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === "node_modules" || entry.name === "dist" || entry.name === ".git") continue;
-      results.push(...walkDir(full, pattern));
-    } else if (pattern.test(entry.name)) {
-      results.push(full);
-    }
-  }
-  return results;
-}
-
-function discoverBlocks(projectDir: string): string[] {
-  return walkDir(projectDir, /\.block\.ts$/);
-}
-
-function discoverFlows(projectDir: string): string[] {
-  return walkDir(projectDir, /\.flow\.ts$/);
-}
+const discoverBlocks = (projectDir: string): string[] => walkDir(projectDir, /\.block\.ts$/);
+const discoverFlows = (projectDir: string): string[] => walkDir(projectDir, /\.flow\.ts$/);
+const importModule = importFresh;
 
 /** Block export ids a flow file uses: every identifier outside its import lines (a Block can sit in the array or in a local like `const AddShown = AddBlock.stubAfter(...)`). */
 function extractFlowBlockRefs(flowSrc: string): string[] {
@@ -253,295 +219,49 @@ export function findBlockPathDetailed(graph: WaygraphGraph, fromTag: string, toT
   return null;
 }
 
-/**
- * Same real, confirmed reload-caching bug `auto-explore.ts`'s own copy of
- * this function fixes (see its own comment) - `discoverGraph` (used for
- * `this.graph`/path-finding) and `loadBlockLibrary` (used for `this.library`/
- * the live menu) are two independent importers, each with their own
- * duplicate `importModule`, so each needed the same mtime-based cache-bust
- * fix separately - fixing only one left the other still serving a session's
- * `reloadLibrary()` a stale (or, for a brand-new file only ever discovered
- * through THIS path, silently absent) graph.
- */
-async function importModule(filePath: string): Promise<Record<string, unknown>> {
-  const resolved = resolve(filePath);
-  const url = new URL(`file://${resolved}`);
-  const mtimeMs = statSync(resolved).mtimeMs;
-  url.searchParams.set("t", String(mtimeMs));
-  return (await import(url.href)) as Record<string, unknown>;
-}
 
-function isBlockLike(val: unknown): val is { name: string; instruction: { act: unknown; resolve: unknown } } {
-  if (val === null || typeof val !== "object") return false;
-  const obj = val as Record<string, unknown>;
-  if (typeof obj.name !== "string") return false;
-  const instruction = obj.instruction as Record<string, unknown> | undefined;
-  return instruction !== null && typeof instruction === "object" && typeof instruction?.act === "function";
-}
 
-/** Set by `defineNavBlock` (non-enumerable) - see src/core.ts. */
-function isNavBlockMarked(val: Record<string, unknown>): boolean {
-  const kind = (val as { __waygraphKind?: string }).__waygraphKind;
-  return kind === "nav" || kind === "page";
-}
 
-/** Set by `defineAssertBlock` (non-enumerable) - see src/core.ts. */
-function isAssertBlockMarked(val: Record<string, unknown>): boolean {
-  return (val as { __waygraphKind?: string }).__waygraphKind === "assert";
-}
 
 /**
- * Resolves `typeName` to every literal Checkpoint tag it can mean, within
- * one `*.states.ts` file's own source text - `type X = Checkpoint<"Tag">`
- * directly, or `type X = A | B | Checkpoint<"C">` (a union of other type
- * names and/or inline Checkpoint literals) recursively. A cycle or unknown
- * identifier just contributes no tags, rather than throwing - callers treat
- * an empty result as "couldn't resolve," not a crash.
- */
-function resolveCheckpointTags(statesSrc: string, typeName: string, seen: Set<string> = new Set()): string[] {
-  if (seen.has(typeName)) return [];
-  seen.add(typeName);
-  const direct = new RegExp(`type\\s+${typeName}\\s*=\\s*Checkpoint<"([^"]+)">`).exec(statesSrc);
-  if (direct) return [direct[1]!];
-  const aliased = new RegExp(`type\\s+${typeName}\\s*=\\s*([^;]+);`).exec(statesSrc);
-  if (!aliased) return [];
-  const tags: string[] = [];
-  for (const member of aliased[1]!.split("|").map((s) => s.trim()).filter(Boolean)) {
-    const inline = /^Checkpoint<"([^"]+)">$/.exec(member);
-    if (inline) {
-      tags.push(inline[1]!);
-    } else if (/^[A-Za-z_$][\w]*$/.test(member)) {
-      tags.push(...resolveCheckpointTags(statesSrc, member, seen));
-    }
-  }
-  return tags;
-}
-
-/**
- * Finds which file `blockFilePath`'s own `import type { ... }` statements
- * say `typeName` comes from, resolved to a real path on disk (`.js` ->
- * `.ts`, matching this project's own NodeNext import convention). Only
- * follows relative imports - `typeName` imported from a package (e.g.
- * `waygraph` itself, for `Checkpoint`) has no project file to read.
- */
-function findTypeSourceFile(blockFilePath: string, typeName: string): string | null {
-  const src = readFileSync(blockFilePath, "utf-8");
-  const importRe = /import\s+type\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/g;
-  let m: RegExpExecArray | null;
-  while ((m = importRe.exec(src)) !== null) {
-    const names = m[1]!.split(",").map((s) => s.trim());
-    if (!names.includes(typeName)) continue;
-    const importPath = m[2]!;
-    if (!importPath.startsWith(".")) continue;
-    const resolved = join(dirname(blockFilePath), importPath.replace(/\.js$/, ".ts"));
-    if (existsSync(resolved)) return resolved;
-  }
-  return null;
-}
-
-/** `findTypeSourceFile` + `resolveCheckpointTags`, chained - `[]` on any failure along the way. */
-function resolveTypeToTags(blockFilePath: string, typeName: string): string[] {
-  const statesFile = findTypeSourceFile(blockFilePath, typeName);
-  if (!statesFile) return [];
-  return resolveCheckpointTags(readFileSync(statesFile, "utf-8"), typeName);
-}
-
-/**
- * Resolves one `defineBlock<In, Out>` generic argument, as captured by
- * `extractDefineBlockGenerics` - either a plain type identifier (goes
- * through `resolveTypeToTags`), an inline `Checkpoint<"Tag">` literal, or
- * the documented wildcard forms `Checkpoint<string>`/`Checkpoint<any>` (a
- * Block reused across several entry points, e.g. this project's own
- * `AddToCartBlock` - reachable from anywhere, same as a NavBlock's own `"*"`).
- */
-function resolveGenericArg(blockFilePath: string, arg: string): string[] {
-  if (arg === "Checkpoint<string>" || arg === "Checkpoint<any>") return ["*"];
-  const inline = /^Checkpoint<"([^"]+)">$/.exec(arg);
-  if (inline) return [inline[1]!];
-  return resolveTypeToTags(blockFilePath, arg);
-}
-
-/** Every `defineBlock` / `defineEffectBlock` / `defineMemEffectBlock` `<In, Out>` call site. */
-function extractDefineBlockGenerics(src: string): { in: string; out: string }[] {
-  // Each argument is either a plain identifier or an inline `Checkpoint<...>`
-  // (its own angle brackets, so the outer defineX<...> pair alone won't
-  // balance correctly against a naive greedy match) - captured as a single
-  // alternation so both shapes come out of the same two capture groups.
-  // Effect helpers are TypeScript salt over defineBlock - same In/Out edges.
-  const arg = String.raw`(Checkpoint<[^>]*>|[A-Za-z_$][\w]*)`;
-  const re = new RegExp(
-    String.raw`define(?:(?:Mem)?Effect|Method|Action)?Block<\s*${arg}\s*,\s*${arg}\s*>`,
-    "g",
-  );
-  // Matches: defineBlock | defineMethodBlock | defineActionBlock | defineEffectBlock |
-  // defineMemEffectBlock (Nav / NavClick / Page use runtime markers, not this regex.)
-  const calls: { in: string; out: string }[] = [];
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src)) !== null) {
-    calls.push({ in: m[1]!, out: m[2]! });
-  }
-  return calls;
-}
-
-/**
- * Walks every `*.block.ts` file under `projectDir` and builds the app's own
- * state graph. Shares the same in-process-import limitation `waygraph
- * check` already has: a target project whose own `waygraph`/`playwright`
- * are genuinely separate installs (not symlinked into this same
- * node_modules resolution) can crash Playwright's own "second copy" guard
- * on import - acceptable for an introspection command the same way it
- * already is for `check`, unlike `chain`, which spawns a child process
- * specifically because it also EXECUTES Blocks, not just imports them.
+ * The project's state graph: Checkpoints are nodes, Blocks are edges. Built from the manifest scan, which reads each Block's
+ * route at runtime (or, for the deprecated `<In, Out>` form, from source).
  */
 export async function discoverGraph(
   projectDir: string,
   opts?: { blocksSelect?: BlocksSelect; inject?: string[] },
 ): Promise<WaygraphGraph> {
-  const select = opts?.blocksSelect;
+  const scan = await scanProject(projectDir, { blocksSelect: opts?.blocksSelect, inject: opts?.inject, flows: false });
+  return graphFromScan(scan);
+}
+
+/** The graph of an existing scan. */
+export function graphFromScan(scan: ProjectScan): WaygraphGraph {
   const nodeTags = new Set<string>();
   const edges: WaygraphEdge[] = [];
-  const skipped: SkippedBlock[] = [];
-  const edgeSeen = new Set<string>();
-
-  for (const root of exploreRoots(projectDir, opts?.inject)) {
-  let files = discoverBlocks(root);
-  // Glob/bare: drop files early. Regex needs block names — filter per export below.
-  if (select && select.kind !== "regex") {
-    files = files.filter((file) =>
-      matchBlocksSelect(select, {
-        relFile: relative(root, file).replace(/\\/g, "/"),
-      }),
-    );
-  }
-
-  for (const file of files) {
-    const relFile = injectTaggedFile(projectDir, root, relative(root, file).replace(/\\/g, "/"));
-    let mod: Record<string, unknown>;
-    try {
-      mod = await importModule(file);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      // Dual @playwright/test installs fail here - surface instead of empty graph.
-      if (/second time|playwright/i.test(msg)) {
-        console.error(`waygraph graph: skip ${relFile}: ${msg.split("\n")[0]}`);
-      }
+  const seen = new Set<string>();
+  for (const b of scan.blocks) {
+    if (b.to.length === 0) continue;
+    // Arrival-only Page hubs register the Checkpoint but are not a way to get there; a deep-linking Page is.
+    if (b.kind === "page" && (b.block as { __waygraphPageDeepLink?: boolean }).__waygraphPageDeepLink !== true) {
+      for (const to of b.to) nodeTags.add(to);
       continue;
     }
-    const src = readFileSync(file, "utf-8");
-    // Assumes source order matches export-object iteration order - true for
-    // this codebase's own convention of one Block per file; a file with
-    // several regular Blocks in an unusual order is a known edge case, not
-    // handled specially here.
-    const calls = extractDefineBlockGenerics(src);
-    let callIndex = 0;
-
-    for (const exported of Object.values(mod)) {
-      if (!isBlockLike(exported)) continue;
-      const blockName = exported.name;
-      if (
-        select &&
-        !matchBlocksSelect(select, {
-          relFile: relFile.replace(/\\/g, "/"),
-          blockName,
-        })
-      ) {
-        continue;
-      }
-
-      if (isAssertBlockMarked(exported as Record<string, unknown>)) {
-        try {
-          // Same input-independent resolve() shape Nav/Page Blocks already
-          // get this shortcut for - defineAssertBlock's own resolve() is
-          // always `() => checkpoint(options.checkpoint)`, so no <In, Out>
-          // generic needs to appear in source text for this to be found.
-          const resolveFn = exported.instruction.resolve as (input: unknown) => Promise<{ __state: string }> | { __state: string };
-          const resolved = await resolveFn(undefined);
-          const to = resolved.__state;
-          nodeTags.add(to);
-          // Self-loop by construction (defineAssertBlock is self-loop-only).
-          edges.push({ block: blockName, file: relFile, from: to, to, kind: "action" });
-        } catch {
-          skipped.push({ block: blockName, file: relFile, reason: "assertBlock resolve() threw" });
-        }
-        continue;
-      }
-
-      if (isNavBlockMarked(exported as Record<string, unknown>)) {
-        try {
-          // NavBlock / PageBlock resolve() ignores input - always checkpoint(tag).
-          const resolveFn = exported.instruction.resolve as (input: unknown) => Promise<{ __state: string }> | { __state: string };
-          const resolved = await resolveFn(undefined);
-          const to = resolved.__state;
-          nodeTags.add(to);
-          // Arrival-only Page hubs register the Checkpoint node but do not emit
-          // a Start-here edge (no deep link). Methods own the action edges.
-          const isPage = (exported as { __waygraphKind?: string }).__waygraphKind === "page";
-          const deepLink =
-            !isPage ||
-            (exported as { __waygraphPageDeepLink?: boolean }).__waygraphPageDeepLink === true;
-          if (deepLink) {
-            // `from: [...]` on the Nav = only those Checkpoints; otherwise reachable from anywhere.
-            const navFrom = (exported as { __waygraphNavFrom?: readonly string[] }).__waygraphNavFrom;
-            for (const from of navFrom ?? ["*"]) {
-              if (from !== "*") nodeTags.add(from);
-              edges.push({ block: blockName, file: relFile, from, to, kind: "nav" });
-            }
-          }
-        } catch {
-          skipped.push({ block: blockName, file: relFile, reason: "NavBlock/PageBlock resolve() threw" });
-        }
-        continue;
-      }
-
-      // A Block declared with Checkpoint values (`from`/`to`) carries its route at runtime.
-      const marked = exported as { __waygraphFrom?: readonly string[]; __waygraphTo?: readonly string[] };
-      if (marked.__waygraphTo) {
-        for (const from of marked.__waygraphFrom ?? ["*"]) {
-          for (const to of marked.__waygraphTo) {
-            if (from !== "*") nodeTags.add(from);
-            nodeTags.add(to);
-            const key = `${blockName}\0${from}\0${to}`;
-            if (edgeSeen.has(key)) continue;
-            edgeSeen.add(key);
-            edges.push({ block: blockName, file: relFile, from, to, kind: "action" });
-          }
-        }
-        continue;
-      }
-
-      const call = calls[callIndex++];
-      if (!call) {
-        skipped.push({
-          block: blockName,
-          file: relFile,
-          reason: "no defineBlock/defineMethodBlock/defineEffectBlock<In, Out> generic call found",
-        });
-        continue;
-      }
-      const fromTags = resolveGenericArg(file, call.in);
-      const toTags = resolveGenericArg(file, call.out);
-      if (fromTags.length === 0 || toTags.length === 0) {
-        const badName = fromTags.length === 0 ? call.in : call.out;
-        skipped.push({ block: blockName, file: relFile, reason: `couldn't resolve "${badName}" to a Checkpoint tag` });
-        continue;
-      }
-      for (const from of fromTags) {
-        for (const to of toTags) {
-          if (from !== "*") nodeTags.add(from);
-          nodeTags.add(to);
-          const key = `${blockName}\0${from}\0${to}`;
-          if (edgeSeen.has(key)) continue;
-          edgeSeen.add(key);
-          edges.push({ block: blockName, file: relFile, from, to, kind: "action" });
-        }
+    const kind = b.kind === "nav" || b.kind === "page" ? "nav" : "action";
+    for (const from of b.from) {
+      for (const to of b.to) {
+        if (from !== "*") nodeTags.add(from);
+        nodeTags.add(to);
+        const key = `${b.name}\0${from}\0${to}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        edges.push({ block: b.name, file: b.file, from, to, kind });
       }
     }
   }
-  }
-
   return {
     nodes: [...nodeTags].sort().map((checkpoint) => ({ checkpoint })),
     edges,
-    skipped,
+    skipped: scan.skipped,
   };
 }

@@ -83,6 +83,9 @@ const LAYER_OF = [
   ["manifest/", "manifest"],
   ["analysis/", "analysis"], ["blocks-select.ts", "analysis"],
   ["runtime/", "runtime"],
+  // The run command's child process entry orchestrates like a command; the rest of runner/ is the demo layer.
+  ["runner/main.js", "cli"], ["runner/index.js", "cli"], ["runner/discovery.js", "cli"], ["runner/seed-mem.js", "cli"],
+  ["runner/chain-run.js", "cli"],
   ["demo/", "demo"], ["highlights", "demo"], ["runner/", "demo"], ["ui/", "demo"], ["pilot-overlay", "demo"],
   ["session/step-overlay.ts", "demo"],
   ["live/", "live"], ["session/", "live"], ["auto-session", "live"], ["traverse/", "live"],
