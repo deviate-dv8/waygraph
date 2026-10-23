@@ -40,7 +40,7 @@ export const deviceShowcase = {
     before: (ctx: StubCtx) => {
       ctx.title("Signing in · mobile");
       ctx.device("mobile");
-      ctx.portrait();
+      ctx.orientation("portrait");
       ctx.todos("saucedemo", ...checklist(0, 0));
       ctx.zoom(1.35);
       const fromMem = ctx.mem?.get(LoginCreds.key)?.username;
@@ -93,8 +93,8 @@ export const deviceShowcase = {
       });
     },
     after: (ctx: StubCtx) => {
-      ctx.banner("Inventory · landscape");
-      ctx.landscape();
+      ctx.title("Inventory · landscape");
+      ctx.orientation("landscape");
       ctx.todos("saucedemo", ...checklist(3, 3));
       ctx.ring("shelf", {
         selector: ".inventory_list",
@@ -111,7 +111,7 @@ export const deviceShowcase = {
     before: (ctx: StubCtx) => {
       ctx.title("Pick a product · tablet");
       ctx.device("tablet");
-      ctx.portrait();
+      ctx.orientation("portrait");
       ctx.todos("saucedemo", ...checklist(3, 3));
       ctx.zoom(1.35);
       ctx.zoomOut(false);
@@ -138,7 +138,7 @@ export const deviceShowcase = {
       });
     },
     after: (ctx: StubCtx) => {
-      ctx.banner("In the cart");
+      ctx.title("In the cart");
       ctx.todos("saucedemo", ...checklist(4, 4));
       ctx.zoomOut(false);
       ctx.ring("badge", {
@@ -155,7 +155,7 @@ export const deviceShowcase = {
   openCart: {
     before: (ctx: StubCtx) => {
       ctx.title("Open cart · landscape");
-      ctx.landscape();
+      ctx.orientation("landscape");
       ctx.todos("saucedemo", ...checklist(5, 5));
       ctx.zoom(1.4);
       ctx.zoomOut(false);
@@ -173,8 +173,8 @@ export const deviceShowcase = {
       });
     },
     after: (ctx: StubCtx) => {
-      ctx.banner("Your cart · desktop");
-      ctx.clearDevice();
+      ctx.title("Your cart · desktop");
+      ctx.hideDevice();
       ctx.hideTodos();
       ctx.zoomOut(true);
       ctx.ring("items", {

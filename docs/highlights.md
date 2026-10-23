@@ -79,7 +79,7 @@ The older `withHighlightFixtures(flow, map)` slot map was removed in 0.16.0; cha
 
 ## Todo dock UI (demo, 0.15.8+)
 
-`ctx.todos(...)` / `ctx.todoDock(...)` paint a floating
+`ctx.todos(id, items, { title, index, style, pos })` paints a floating
 checklist during `waygraph demo` (and Pilot overlay). Smart defaults
 keep long FR/AC lists from burying highlight rings:
 
@@ -89,7 +89,7 @@ keep long FR/AC lists from burying highlight rings:
 
 Opt out for the whole run: `waygraph demo ... --todo-full`
 (or `WAYGRAPH_TODO_UI=full`). Per-block:
-`ctx.todoDockFull()` / `ctx.todoDockUi({ compact: false, ... })`.
+`ctx.todoDockUi({ compact: false, collision: false, behindRing: false })`.
 Full flag table: [Demo / run → Todo dock UI](./demo#todo-dock-ui).
 
 ## Caption bar (demo, 0.15.49+)

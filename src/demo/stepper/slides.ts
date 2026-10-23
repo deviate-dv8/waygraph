@@ -243,8 +243,7 @@ export async function presentSlides(page: WgPage, slides: any, _gate: any, opts:
         paceKind: demoPaceKind(demoPace),
         forceCollapsed:
           !!process.env.WAYGRAPH_VIDEO ||
-          process.env.WAYGRAPH_MINI === "1" ||
-          process.env.WAYGRAPH_STEPPER_MINI === "1"
+          process.env.WAYGRAPH_MINI === "1"
             ? true
             : undefined,
       },

@@ -78,6 +78,6 @@ export function viewOf(ctx: StepperContext, index: number): StepView {
 /** Video and --mini get the compact pill; never false, so the person's Hide/Show choice wins otherwise. */
 export function forceCollapsed(): true | undefined {
   const env = process.env;
-  return env.WAYGRAPH_VIDEO || env.WAYGRAPH_MINI === "1" || env.WAYGRAPH_STEPPER_MINI === "1" ? true : undefined;
+  return env.WAYGRAPH_VIDEO || env.WAYGRAPH_MINI === "1" ? true : undefined;
 }
 

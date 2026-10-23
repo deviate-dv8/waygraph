@@ -83,7 +83,7 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
       name: "hide",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.clearDevice();
+          ctx.hideDevice();
         },
       },
     } as unknown as Block<any, any>;
@@ -124,7 +124,7 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
       instruction: {
         stubBefore: (ctx: StubCtx) => {
           ctx.device("mobile");
-          ctx.landscape();
+          ctx.orientation("landscape");
         },
       },
     } as unknown as Block<any, any>;

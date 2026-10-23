@@ -30,8 +30,6 @@ export type WaygraphTodoItem = {
    * Stamped as `data-wg-todo-item` on the row.
    */
   id?: string;
-  /** Alias for {@link WaygraphTodoItem.id}. */
-  name?: string;
   /** Explicit done. If omitted, derived from todoIndex (index < todoIndex). */
   done?: boolean;
   /** Explicit current. If omitted, derived from todoIndex (index === todoIndex). */
@@ -72,11 +70,9 @@ export interface BannerUiOpts {
 export type WaygraphTodoGroupInput = {
   /** Stable group id -> `data-wg-todo-group`. */
   id?: string;
-  /** Alias for {@link WaygraphTodoGroupInput.id}. */
-  name?: string;
   /** Group heading shown above the items. */
   title?: string;
-  /** Per-group style; falls back to dock default ({@link StubCtx.todoStyle}). */
+  /** Per-group style; falls back to dock default ({@link WaygraphTodosOpts.style}). */
   style?: TodoListStyle;
   items: readonly WaygraphTodoInput[];
   /** Sequential only: which item is current (0-based). */
@@ -102,7 +98,7 @@ export type TodoDockState = {
   id?: string;
   /** Default style for groups that omit their own. */
   style: TodoListStyle;
-  /** Single-list title when using {@link StubCtx.todos} + {@link StubCtx.todoTitle}. */
+  /** Single-list title when using {@link StubCtx.todos} with `title`. */
   title?: string;
   groups: WaygraphTodoGroup[];
   pos?: "left" | "right";
@@ -186,7 +182,7 @@ export type StubPhaseFixtures = {
   zoomOut?: boolean;
   /** Top demo banner title (the purple "waygraph demo" card). */
   title?: string;
-  /** Banner side/position (`left` | `center` | `right`). Authored control, like {@link todoPos}. */
+  /** Banner side/position (`left` | `center` | `right`). Authored control, like the todo dock's `pos`. */
   titlePos?: BannerPos;
   /** Banner UX: collision (move away from a ring it overlaps), hidden. See {@link BannerUiOpts}. */
   bannerUi?: BannerUiOpts;
@@ -303,7 +299,6 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
   focus?: boolean;
   /**
    * Caption text color (CSS color). Overrides tone label color when set.
-   * Aliases accepted at runtime: `color`, `labelColor`, `textColor`.
    */
   color?: string;
   /**
@@ -339,8 +334,7 @@ export type HighlightStubPhase = Record<string, WaygraphHighlightStub>;
  *
  * @example
  * stubBefore: (ctx) => {
- *   ctx.todos(["Enter email", "Enter password", "Click Sign in"]);
- *   ctx.todoIndex(0);
+ *   ctx.todos("sign-in", ["Enter email", "Enter password", "Click Sign in"], { index: 0 });
  *   ctx.zoom(1.35);
  *   ctx.highlights({
  *     email: { selector: "#email", label: "Email" },
@@ -349,7 +343,6 @@ export type HighlightStubPhase = Record<string, WaygraphHighlightStub>;
  * }
  * // Sequential plan: bump todoIndex in a later phase / later block's stubBefore
  * stubAfter: (ctx) => {
- *   ctx.todos(["Enter email", "Enter password", "Click Sign in"]);
  *   ctx.todoIndex(2);
  *   ctx.ring("inventory", { selector: ".inventory_list", label: "Landed" });
  * }
@@ -370,43 +363,20 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   /** Set / overwrite one named ring. */
   ring(id: string, stub: WaygraphHighlightStub): void;
   /**
-   * Floating checklist. Prefer the compact form:
-   *   ctx.todos("login", ["Enter email", "Enter password"], { title: "Sign in", index: 0 })
-   * Legacy: ctx.todos([...]); ctx.todoId(...); ctx.todoIndex(...); …
-   * Default = one dock (setting todos replaces). Pass `{ parallel: true }` to keep others.
+   * Floating checklist: `ctx.todos("login", ["Enter email", "Enter password"], { title: "Sign in", index: 0 })`.
+   * The id is the dock's `data-wg-todo-id` (stable through redirects). One dock at a time (setting todos replaces it);
+   * pass `{ parallel: true }` to keep docks with other ids. An empty list hides the dock.
    */
-  todos(items: readonly WaygraphTodoInput[]): void;
-  todos(
-    id: string,
-    items: readonly WaygraphTodoInput[],
-    opts?: WaygraphTodosOpts,
-  ): void;
-  /** Current checklist index (bump for sequential plans). */
+  todos(id: string, items: readonly WaygraphTodoInput[], opts?: WaygraphTodosOpts): void;
+  /** Moves the current dock's current item (sequential plans: a later step bumps it). */
   todoIndex(n: number): void;
-  /** Heading above the single {@link StubCtx.todos} list. */
-  todoTitle(text: string): void;
-  /**
-   * Stable dock id for external selectors after redirects
-   * (`#wg-todo-dock[data-wg-todo-id="ep10-coverage"]`).
-   */
-  todoId(id: string): void;
-  /**
-   * Dock presentation: `sequential` (arrow walkthrough), `checklist`
-   * (independent checkboxes), or `bullets` (flat • list, no progress marks).
-   */
-  todoStyle(style: TodoListStyle): void;
-  /**
-   * Multiple titled lists (e.g. Functional Requirements / Scenarios / ACs).
-   * Replaces a bare {@link StubCtx.todos} list when set.
-   */
-  todoGroups(groups: readonly WaygraphTodoGroupInput[]): void;
+  /** Several titled lists in one dock (e.g. Functional Requirements / Scenarios / ACs), with the same id and options as {@link StubCtx.todos}. */
+  todoGroups(id: string, groups: readonly WaygraphTodoGroupInput[], opts?: Omit<WaygraphTodosOpts, "index">): void;
   /**
    * Hide the floating todo dock. Omit todos on a later block = **keep** the
-   * previous dock (carry forward). Only hideTodos / clearTodos / todos([]) clears it.
+   * previous dock (carry forward). Only hideTodos or an empty todos list clears it.
    */
   hideTodos(): void;
-  /** Alias for {@link StubCtx.hideTodos}. */
-  clearTodos(): void;
   /**
    * Viewport / device fixture (0.13+). `mobile` | `tablet` | `desktop`.
    * Omit on later blocks = **keep** (same persist as todos). Use
@@ -422,17 +392,11 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
    * Keeps current preset; swaps width/height. Toast + lerp like device().
    */
   orientation(o: DeviceOrientation): void;
-  /** Alias for {@link StubCtx.orientation}("landscape"). */
-  landscape(): void;
-  /** Alias for {@link StubCtx.orientation}("portrait"). */
-  portrait(): void;
   /**
    * Reset to desktop viewport and clear touch mode. Omit device on a later
-   * block = **keep**; only hideDevice / clearDevice / device("desktop") clears.
+   * block = **keep**; only hideDevice / device("desktop") clears.
    */
   hideDevice(): void;
-  /** Alias for {@link StubCtx.hideDevice}. */
-  clearDevice(): void;
   /** Default camera zoom for rings without their own zoom. */
   zoom(n: number): void;
   /**
@@ -441,12 +405,8 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   zoomOut(keep: boolean): void;
   /** Top banner title (waygraph demo card). `opts.pos` also places it (left | center | right). */
   title(text: string, opts?: { pos?: BannerPos }): void;
-  /** Alias for {@link StubCtx.title}. */
-  banner(text: string, opts?: { pos?: BannerPos }): void;
   /** Place the banner: `left` | `center` | `right` (authored; click / env are fallbacks). */
   titlePos(side: BannerPos): void;
-  /** Alias for {@link StubCtx.titlePos}. */
-  bannerPos(side: BannerPos): void;
   /**
    * Banner UX: `{ collision: false }` keeps it put even over a ring; `{ hidden: true }` hides it.
    * @example ctx.bannerUi({ collision: false });
@@ -472,22 +432,12 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   /** Hides the network-tab overlay (capture keeps running - only the panel disappears). */
   hideNetworkTab(): void;
   /**
-   * Floating checklist dock side (`left` | `right`). Authors control this in
-   * code; click / env / --todo-left|right are fallbacks.
-   */
-  todoPos(side: "left" | "right"): void;
-  /**
    * Todo-dock UX: compact fold, collision flip, dim-behind-ring.
    * Defaults are smart-on; pass false fields to opt out for this phase.
    * @example
-   * ctx.todoDockUi({ compact: false }); // always show full list
-   * ctx.todoDockFull(); // shorthand: compact+collision+behindRing off
+   * ctx.todoDockUi({ compact: false }); // always show the full list
    */
   todoDockUi(opts: TodoDockUiOpts): void;
-  /** Shorthand: full checklist, no compact/collision/behind-ring for this phase. */
-  todoDockFull(): void;
-  /** Batch-set rings + episode fixtures. */
-  set(partial: { highlights?: HighlightStubPhase } & StubPhaseFixtures): void;
 };
 
 

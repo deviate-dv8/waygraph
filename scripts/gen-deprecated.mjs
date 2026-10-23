@@ -54,6 +54,12 @@ ${found.length ? `| Name | Kind | Use instead |\n| --- | --- | --- |\n${rows}` :
 | \`defineMemEffectBlock\`, \`MemEffectBlock\` | \`defineEffectBlock\`, \`EffectBlock\` |
 | \`highlights: [...]\` on an instruction, a Nav or a Page Block; \`WaygraphHighlight\` | \`.stubAfter((ctx) => { ctx.ring(…) })\` |
 | A stub written as \`(out) => ({ slot: … })\`, and per-slot \`todos\` | \`(ctx) => { ctx.ring(…); ctx.todos(…) }\` |
+| \`ctx.todos([...])\` with \`ctx.todoId\` / \`todoTitle\` / \`todoStyle\` / \`todoPos\` | \`ctx.todos(id, items, { title, style, pos, index })\` (codemod \`flows\`) |
+| \`ctx.todoGroups(groups)\` | \`ctx.todoGroups(id, groups, { title, style, pos })\` |
+| \`ctx.banner\`, \`ctx.bannerPos\`, \`ctx.clearDevice\`, \`ctx.clearTodos\` | \`ctx.title\`, \`ctx.titlePos\`, \`ctx.hideDevice\`, \`ctx.hideTodos\` |
+| \`ctx.landscape()\` / \`ctx.portrait()\`, \`ctx.todoDockFull()\` | \`ctx.orientation("landscape" \| "portrait")\`, \`ctx.todoDockUi({ compact: false, collision: false, behindRing: false })\` |
+| \`ctx.set({...})\`, a todo item's \`name\` | One call per thing (\`ctx.ring\`, \`ctx.todos\`, …); \`id\` |
+| \`WAYGRAPH_STEPPER_MINI\` | \`WAYGRAPH_MINI\` (\`--mini\`) |
 | \`resolveSlideDwellMs\`, \`SLIDE_DURATION_MS_DEFAULT\`, \`SLIDE_DURATION_FAST_MS_DEFAULT\` | \`resolveFixtureDwellMs\`, \`FIXTURE_DURATION_MS_DEFAULT\`, \`FIXTURE_DURATION_FAST_MS_DEFAULT\` |
 
 ## Removed in 0.16.0: project and CLI

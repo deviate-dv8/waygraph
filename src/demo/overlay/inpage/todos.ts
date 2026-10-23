@@ -2,7 +2,7 @@
 export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
         // Floating todo dock - lives outside #wg-panel so --mini / Hide never
         // hide the checklist. Click cycles left <-> right with CSS transform.
-        // Authors set side via ctx.todoPos("left"|"right"); env / --todo-* fallback.
+        // Authors set side via ctx.todos(id, items, { pos }); env / --todo-* fallback.
         // Payload:
         //   { sync: "clear" }                         -> remove dock
         //   { sync: "keep" }                          -> leave dock alone (no wipe)

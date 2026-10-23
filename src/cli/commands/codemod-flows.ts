@@ -2,12 +2,14 @@
 // flow wrappers (`withTitle`, `withMemStub`, `withSessionReset`, `withExpectedFailure`, `withDemoPace`,
 // `withHighlightStyle`, `withBlockPace`, `withStub*`) into `map()` chains. Works on the TypeScript AST (ts-morph); each
 // Block's kind (nav, method, assert, ...) comes from the project's own runtime scan, so it picks the right step method.
+// The same pass moves ctx stubs onto their one form (codemod-stubs.ts).
 import { existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { Node, Project, SyntaxKind } from "ts-morph";
 import type { CallExpression, Expression, SourceFile } from "ts-morph";
 import { scanProject } from "../../manifest/project.js";
 import { walkDir } from "../../manifest/scan.js";
+import { convertStubs } from "./codemod-stubs.js";
 
 /** A Block's kind by the file and export it is declared in; undefined when it isn't a known Block. */
 export type KindOf = (file: string, exportName: string) => string | undefined;
@@ -255,7 +257,10 @@ export async function codemodFlows(projectDir: string): Promise<{ changed: strin
   const tsconfig = join(projectDir, "tsconfig.json");
   const project = new Project({ ...(existsSync(tsconfig) ? { tsConfigFilePath: tsconfig } : {}), skipAddingFilesFromTsConfig: true });
   for (const file of walkDir(projectDir, /\.ts$/)) if (!file.endsWith(".d.ts")) project.addSourceFileAtPath(file);
-  const { changed, problems } = convertFlows(project, (file, name) => kinds.get(`${file}#${name}`));
+  const flows = convertFlows(project, (file, name) => kinds.get(`${file}#${name}`));
+  const stubs = convertStubs(project);
+  const changed = [...new Set([...flows.changed, ...stubs.changed])];
+  const problems = [...flows.problems, ...stubs.problems];
   for (const sf of changed) sf.saveSync();
   return {
     changed: changed.map((sf) => relative(projectDir, sf.getFilePath())),

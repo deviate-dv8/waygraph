@@ -56,7 +56,7 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
     assert.deepEqual(rows.map((r) => r.text), ["A", "B", "C"]);
   });
 
-  it("exposes title + todoPos from stubBefore lifecycle", async () => {
+  it("exposes title + the dock's pos and style from stubBefore lifecycle", async () => {
     const { normalizeTodoPos } = await import("../../src/demo/narration/todo-dock.js");
     assert.equal(normalizeTodoPos("left"), "left");
     const block = {
@@ -64,10 +64,7 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
       instruction: {
         stubBefore: (ctx: StubCtx) => {
           ctx.title("Signing in");
-          ctx.todoPos("right");
-          ctx.todoStyle("bullets");
-          ctx.todos(["Email", "Password"]);
-          ctx.todoIndex(0);
+          ctx.todos("sign-in", ["Email", "Password"], { pos: "right", style: "bullets", index: 0 });
         },
       },
     } as unknown as Block<any, any>;
@@ -136,8 +133,7 @@ describe("open stubBefore(ctx) lifecycle", () => {
       name: "submit-login",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.todos(["Email", "Password", "Submit"]);
-          ctx.todoIndex(1);
+          ctx.todos("sign-in", ["Email", "Password", "Submit"], { index: 1 });
           ctx.zoom(1.35);
           ctx.highlights({
             plan: { selector: "#login-button", label: "Plan" },
@@ -165,13 +161,11 @@ describe("open stubBefore(ctx) lifecycle", () => {
       name: "submit-login",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.todos([...todos]);
-          ctx.todoIndex(0);
+          ctx.todos("sign-in", [...todos], { index: 0 });
           ctx.ring("email", { selector: "#email", label: "Email" });
         },
         stubAfter: (ctx: StubCtx) => {
-          ctx.todos([...todos]);
-          ctx.todoIndex(2);
+          ctx.todos("sign-in", [...todos], { index: 2 });
           ctx.ring("inv", { selector: ".inventory", label: "Inventory" });
         },
       },
@@ -213,12 +207,14 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
       name: "teach",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.todoId("ep10-coverage");
-          ctx.todos([
-            { id: "fr-1", text: "FR: manpower read" },
-            { name: "sc-2", text: "Scenario: open dock" },
-          ]);
-          ctx.todoIndex(0);
+          ctx.todos(
+            "ep10-coverage",
+            [
+              { id: "fr-1", text: "FR: manpower read" },
+              { id: "sc-2", text: "Scenario: open dock" },
+            ],
+            { index: 0 },
+          );
         },
       },
     } as unknown as Block<any, any>;
@@ -243,7 +239,7 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
     assert.deepEqual(keepPhase.todos, []);
   });
 
-  it("hideTodos / todos([]) returns todoSync clear", async () => {
+  it("hideTodos / an empty todos list returns todoSync clear", async () => {
     const hide = {
       name: "hide",
       instruction: {
@@ -256,7 +252,7 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
       name: "empty",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.todos([]);
+          ctx.todos("sign-in", []);
         },
       },
     } as unknown as Block<any, any>;

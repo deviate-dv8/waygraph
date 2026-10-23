@@ -89,8 +89,7 @@ export interface Instruction<
    * Prefer `stubBefore(ctx) { ctx.todos(...); ctx.ring(...) }` — not a closed
    * slot object. Object map `{ email: { selector, label } }` remains a shorthand.
    * @example stubBefore: (ctx) => {
-   *   ctx.todos(["Email", "Password", "Submit"]);
-   *   ctx.todoIndex(0);
+   *   ctx.todos("sign-in", ["Email", "Password", "Submit"], { index: 0 });
    *   ctx.highlights({ email: { selector: "#email", label: "Email" } });
    * }
    */

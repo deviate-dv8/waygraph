@@ -49,7 +49,7 @@ export type PilotHighlightFixtures = {
   todoTitle?: string;
   /** Todo dock side. Default `right`. */
   todoPos?: "left" | "right";
-  /** Presentation: `sequential` (default, arrow walkthrough) | `checklist` | `bullets`. Same as ctx.todoStyle. */
+  /** Presentation: `sequential` (default, arrow walkthrough) | `checklist` | `bullets`. Same as ctx.todos(id, items, { style }). */
   todoStyle?: TodoListStyle;
   /** Multiple titled lists (FR/Scenarios/ACs, same as ctx.todoGroups) - replaces {@link todos} when set. */
   todoGroups?: readonly WaygraphTodoGroupInput[];
@@ -87,8 +87,6 @@ export type PilotHighlightFixtures = {
   titlePos?: BannerPos;
   /** Banner UX: collision / hidden (same as `ctx.bannerUi`). */
   bannerUi?: BannerUiOpts;
-  /** Alias of {@link todoUi} - the name `ctx.todoDockUi` uses. */
-  todoDockUi?: TodoDockUiOpts;
 };
 
 
@@ -142,7 +140,7 @@ export async function showPilotFixtures(
   const todoPos = fixtures.todoPos === "left" ? "left" : "right";
   const todoUi = resolveTodoDockUi(fixtures.todoUi ?? null);
   // Real TodoDockState (groups/style), same builder the demo runner uses - not a flat string[]
-  // re-implementation, so a Block/agent that authors ctx.todoGroups()/ctx.todoStyle() looks the
+  // re-implementation, so a Block/agent that authors ctx.todoGroups() or a todos style looks the
   // same on Pilot as it does in `waygraph demo`.
   const todoDock = fixtures.clear
     ? undefined

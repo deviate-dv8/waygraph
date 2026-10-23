@@ -7,11 +7,11 @@ Owned by Dan's waygraph camera/stepper seat (2026-09-18).
 1. Never pass `forceCollapsed: false` - omit or `true` only.
 2. Hide preference = `localStorage['wg-panel-hidden']` - honor across steps.
 3. Collapsed mini chrome must show **Next** when not auto-advance (`wg-mini-next`).
-4. CLI flag: `--mini` / `--stepper-mini` -> `WAYGRAPH_MINI=1` (compat: `WAYGRAPH_STEPPER_MINI`).
+4. CLI flag: `--mini` -> `WAYGRAPH_MINI=1`.
 5. Todos live in `#wg-todo-dock` (outside `#wg-panel`) so `--mini` / Hide never hide them.
-   Authors: `ctx.todoPos("left"|"right")`; also click dock / `--todo-left|--todo-right` /
+   Authors: `ctx.todos(id, items, { pos: "left"|"right" })`; also click dock / `--todo-left|--todo-right` /
    `WAYGRAPH_TODO_POS`.
-6. Banner text: `ctx.title(...)` / `ctx.banner(...)` must update `#wg-banner .wg-banner-text`
+6. Banner text: `ctx.title(...)` must update `#wg-banner .wg-banner-text`
    every step (installOverlay creates once, then updates). Episode tab label = the flow's export name (a stub's `ctx.title(...)` sets the banner).
 7. Ring/label tone CSS: `transition:opacity` only — never border-color/background morph.
 8. **Blind-agent beacons (anti-blank):** every modal root (`#wg-panel`, `#wg-banner`,

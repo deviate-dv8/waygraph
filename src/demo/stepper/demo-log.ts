@@ -165,13 +165,12 @@ export function logStubPhaseFixtures(phaseName: any, phase: any) {
   if (demoQuiet() || !phase) return;
   const tag = "stub." + phaseName;
   if (phase.title) demoFixture(tag, "ctx.title(...)", JSON.stringify(phase.title));
-  if (phase.banner) demoFixture(tag, "ctx.banner(...)", JSON.stringify(phase.banner));
   if (phase.titlePos) demoFixture(tag, "ctx.titlePos(...)", JSON.stringify(phase.titlePos));
   if (phase.bannerUi) demoFixture(tag, "ctx.bannerUi(...)", JSON.stringify(phase.bannerUi));
   if (phase.deviceSync && phase.deviceSync !== "keep") {
     demoFixture(
       tag,
-      phase.deviceSync === "clear" ? "ctx.clearDevice()" : "ctx.device(...)",
+      phase.deviceSync === "clear" ? "ctx.hideDevice()" : "ctx.device(...)",
       phase.device
         ? {
             preset: phase.device.preset,

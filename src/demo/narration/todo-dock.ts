@@ -107,7 +107,7 @@ export function normalizeTodos(
     if (typeof t === "object" && t) {
       if (t.done !== undefined) item.done = !!t.done;
       if (t.current !== undefined) item.current = !!t.current;
-      const idRaw = t.id ?? t.name;
+      const idRaw = t.id;
       if (idRaw != null && String(idRaw).trim()) item.id = String(idRaw).trim();
     }
     if (style === "checklist") {
@@ -151,7 +151,7 @@ export function buildTodoDock(opts: {
         if (!items.length) return null;
         const group: WaygraphTodoGroup = { style: gs, items };
         if (g.title && String(g.title).trim()) group.title = String(g.title).trim();
-        const gid = g.id ?? g.name;
+        const gid = g.id;
         if (gid != null && String(gid).trim()) group.id = String(gid).trim();
         return group;
       })
@@ -227,7 +227,6 @@ export function advanceTodoDock(dock: TodoDockState | undefined, index: number):
       const raw = g.items.map((it) => {
         const row: WaygraphTodoItem = { text: it.text };
         if (it.id) row.id = it.id;
-        else if (it.name) row.id = it.name;
         return row;
       });
       return {
@@ -256,7 +255,6 @@ export function completeSequentialTodoDock(
         items: g.items.map((it) => {
           const row: WaygraphTodoItem = { text: it.text, done: true, current: false };
           if (it.id) row.id = it.id;
-          else if (it.name) row.id = it.name;
           return row;
         }),
       };

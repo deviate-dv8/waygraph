@@ -194,7 +194,9 @@ Removed in 0.16.0: `defineFlow([start, …, end])`, `chainFlow` and the `with*` 
 `withStubBefore|After|OnError`). `waygraph upgrade --codemod flows` rewrites a project onto
 `map()`: it reads each Block's kind to pick the step, folds wrappers into `map({ … })`, moves a title into
 `ctx.title(…)` on the first step, and lists anything it can't convert (a Block not made by a factory, a
-`withHighlightFixtures` map) with the fix.
+`withHighlightFixtures` map) with the fix. The same pass moves ctx stubs onto their one form: `ctx.todos([...])` with
+`todoId` / `todoTitle` / `todoStyle` / `todoPos` / `todoIndex` becomes `ctx.todos(id, items, { title, style, pos, index })`,
+and the method aliases become the names they stood for (`banner` -> `title`, `clearDevice` -> `hideDevice`, ...).
 
 ### Browser extensions
 
@@ -1552,7 +1554,7 @@ Long FR/AC checklists used to bury highlight rings. **Smart defaults are on:**
 
 | Behavior | Default | Opt out |
 |----------|---------|---------|
-| Compact fold (~5 rows around current; hover expands; `+N more`) | on | `ctx.todoDockFull()` / `ctx.todoDockUi({ compact: false })` / `--todo-full` / `WAYGRAPH_TODO_UI=full` |
+| Compact fold (~5 rows around current; hover expands; `+N more`) | on | `ctx.todoDockUi({ compact: false })` / `--todo-full` / `WAYGRAPH_TODO_UI=full` |
 | Collision flip (dock L/R when a ring overlaps) | on | `ctx.todoDockUi({ collision: false })` / `WAYGRAPH_TODO_COLLISION=0` |
 | Behind ring (dim + lower z-index while a ring is up) | on | `ctx.todoDockUi({ behindRing: false })` / `WAYGRAPH_TODO_BEHIND=0` |
 
