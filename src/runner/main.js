@@ -10,6 +10,8 @@ import { connect } from "../core/types.js";
 import { MemPage } from "../core/mem-page.js";
 import { Engine, start, end, chainFlow, isFastForwardBlock, branchRoutes, runBranchRegression } from "../core.js";
 import { withWebServer } from "../runtime/webserver.js";
+import { beginRun, endRun, recordArtifact } from "../core/events.js";
+import "../runtime/run-log.js";
 import { resolveVideoDir } from "../runtime/video-dir.js";
 import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../runtime/browser.js";
 
@@ -376,6 +378,7 @@ async function runMain() {
           : null;
       if (savedVideo) {
         console.log("waygraph: video saved to " + savedVideo);
+        recordArtifact("video", savedVideo);
       }
       await closeBrowser();
     }
@@ -458,7 +461,17 @@ async function runAllBranchesMode(chainFlows, mem, baseURL, headed, engine) {
 // Here, not in the host CLI: importing playwright.config loads the project's own @playwright/test,
 // which would collide with the CLI's copy.
 async function main() {
-  await withWebServer(process.argv[2], runMain);
+  // One run for the whole chain, however the steps below are driven.
+  const opened = beginRun(process.argv[3]);
+  let failure;
+  try {
+    await withWebServer(process.argv[2], runMain);
+  } catch (err) {
+    failure = err;
+    throw err;
+  } finally {
+    endRun(opened, failure === undefined ? {} : { error: failure });
+  }
 }
 
 export function startRunner() {

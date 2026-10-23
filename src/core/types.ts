@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import type { MemPage, MemKey } from "./mem-page.js";
 import type { Trait } from "./trait.js";
 import { runVerify, runPrecondition } from "./trait.js";
+import { isConnected, lastLeaf, stepEnded, stepStarted } from "./events.js";
 import type {
   HighlightStubPhaseOrFn,
   WaygraphHighlight,
@@ -354,11 +355,12 @@ export function connect<
   const bObserve = b.instruction.observe;
   const bVerify = b.instruction.verify;
   const requires = [...(a.requires ?? []), ...(b.requires ?? [])];
-  return {
+  const connected: Block<A, C> = {
     name: `${a.name} -> ${b.name}`,
     ...(requires.length > 0 ? { requires } : {}),
     instruction: {
       async act(page, input, mem) {
+        if (!isConnected(a)) stepStarted(a.name, input.__state);
         await runPrecondition(a.instruction.precondition, input, page, mem, a.name);
         await a.instruction.act(page, input, mem);
         const aObserved = a.instruction.observe
@@ -372,6 +374,8 @@ export function connect<
             await runVerify(layout.verify, mid, page, mem, `${a.name} (layout: "${layout.name}")`);
           }
         }
+        stepEnded(lastLeaf(a), mid.__state);
+        if (!isConnected(b)) stepStarted(b.name, mid.__state);
         await runPrecondition(b.instruction.precondition, mid, page, mem, b.name);
         await b.instruction.act(page, mid, mem);
       },
@@ -382,4 +386,6 @@ export function connect<
       ...(bVerify ? { verify: bVerify } : {}),
     },
   };
+  Object.defineProperty(connected, "__wgLastLeaf", { value: lastLeaf(b), enumerable: false });
+  return connected;
 }

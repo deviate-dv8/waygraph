@@ -1,5 +1,6 @@
 // Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { configuredExtensions } from "../runtime/config.js";
+import { defaultRunLogDir } from "../runtime/run-log.js";
 import { expandSpecFlowFiles, resolveBaseUrl } from "./flags.js";
 import { join } from "node:path";
 import { rmSync, writeFileSync } from "node:fs";
@@ -50,6 +51,7 @@ export async function runChain(projectDir: string, spec: string): Promise<void> 
     if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
   }
   const extensions = await configuredExtensions(projectDir);
+  process.env.WAYGRAPH_RUN_LOG ??= defaultRunLogDir(projectDir);
   if (extensions.length > 0) process.env.WAYGRAPH_EXTENSIONS = extensions.join(",");
   const tsxEsm = import.meta.resolve("tsx/esm");
   const scriptPath = join(projectDir, `.waygraph-chain-${process.pid}.mjs`);

@@ -3,6 +3,7 @@ import { MemPage } from "./mem-page.js";
 import { WaygraphError, MSG_PREFLIGHT_MISSING_KEY, MSG_RUNGRAPH_MAX_STEPS, MSG_RUNGRAPH_NOT_TERMINAL } from "./errors.js";
 import { checkpoint } from "./types.js";
 import type { Block, Checkpoint } from "./types.js";
+import { beginRun, endRun, isConnected, lastLeaf, stepEnded, stepFailed, stepStarted } from "./events.js";
 import { runPrecondition, runVerify } from "./trait.js";
 import type { Trait } from "./trait.js";
 import type { BrowserContext, Locator, Page } from "@playwright/test";
@@ -142,6 +143,9 @@ export async function runGraph<TOut extends Checkpoint<string>>(
   preflight(mem, entry);
   const page = options?.page ?? (await context.newPage());
   const closeOnFinish = options?.closeOnFinish ?? true;
+  const opened = beginRun();
+  let result: string | undefined;
+  let failure: unknown;
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let current: Block<any, any> = entry;
@@ -153,6 +157,7 @@ export async function runGraph<TOut extends Checkpoint<string>>(
         throw new WaygraphError("WG_RUNGRAPH_MAX_STEPS", MSG_RUNGRAPH_MAX_STEPS(maxSteps));
       }
 
+      if (!isConnected(current)) stepStarted(current.name, input.__state);
       await runPrecondition(current.instruction.precondition, input, page, mem, current.name);
       await current.instruction.act(page, input, mem);
       const observed = current.instruction.observe
@@ -162,6 +167,7 @@ export async function runGraph<TOut extends Checkpoint<string>>(
 
       await runVerify(current.instruction.verify, checkpoint, page, mem, current.name);
       await runLayouts(options?.layouts, checkpoint.__state, checkpoint, page, mem, current.name);
+      stepEnded(lastLeaf(current), checkpoint.__state);
 
       const next = current.next?.(checkpoint);
       if (!next) {
@@ -171,13 +177,19 @@ export async function runGraph<TOut extends Checkpoint<string>>(
             MSG_RUNGRAPH_NOT_TERMINAL(current.name, checkpoint.__state, [...terminals].join(", ")),
           );
         }
+        result = checkpoint.__state;
         return checkpoint as TOut;
       }
 
       current = next;
       input = checkpoint;
     }
+  } catch (err) {
+    failure = err;
+    stepFailed(err);
+    throw err;
   } finally {
+    endRun(opened, failure === undefined ? { ...(result !== undefined ? { result } : {}) } : { error: failure });
     if (closeOnFinish) {
       await page.close();
     }

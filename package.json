@@ -38,7 +38,9 @@
     "!**/playwright-report",
     "!**/playwright-report/**",
     "!**/.waygraph-chain-*.mjs",
-    "!**/*.log"
+    "!**/*.log",
+    "!examples/**/.waygraph",
+    "!examples/**/.waygraph/**"
   ],
   "repository": {
     "type": "git",

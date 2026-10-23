@@ -226,7 +226,7 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 1. Core stands alone: no imports of demo, runtime or extensions from the engine. **Done.**
 2. Checkpoints as values (`checkpoint: Home`, `from`/`to`), old forms deprecated, codemod in `waygraph upgrade`. **Done.**
 3. One manifest replaces the five project scanners and the `<In, Out>` source parse; `waygraph manifest`. **Done.**
-4. Run events: typed emitter in `runGraph`; console, JSON report and run-log file are subscribers.
+4. Run events: typed emitter in `runGraph` (`onRunEvent`), written to `.waygraph/runs/*.jsonl` by the CLI. **Done.** (Demo log and JSON report still read results directly; they move onto events with the demo layer in phase 5.)
 5. Demo runner from JavaScript to TypeScript under `demo/`.
 6. One overlay for demo, auto and pilot.
 7. `live/` for sessions, pilot and traverse.

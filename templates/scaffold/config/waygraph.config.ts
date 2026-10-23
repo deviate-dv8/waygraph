@@ -26,6 +26,7 @@ const config = defineConfig(({ env }) => ({
   //   video: { viewport: "1920x1080" },
   // },
   // webServer: { command: "npm start", port: 3000 },   // started around test / run / demo / auto
+  // runLog: false,                          // each run is logged to .waygraph/runs/ (what Waygraph UI shows)
 
   // Another config for another environment: config/waygraph.staging.config.ts, chosen with `waygraph test --config staging`.
 

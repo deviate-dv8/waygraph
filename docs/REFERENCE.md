@@ -314,6 +314,13 @@ from the `src/flows/<page>/<outcome>.flow.ts` path, its `steps` in run order and
 `buildManifest(projectDir)` returns the same object in code. It is read at runtime from the Blocks themselves, the same
 scan `graph`, `check`, `map`, `auto`, `traverse` and the runner use, and is what Waygraph UI and map packages read.
 
+## Run events and the run log
+
+Every run emits events: `run:start`, then `step:start` / `step:end` (Block, from/to Checkpoint, duration) or `step:error`
+for each Block, `run:artifact` for a saved video, and `run:end` (ok, result or error). Subscribe in code with
+`onRunEvent((event) => …)`. The CLI (`run`, `demo`, `test`) also writes them to `.waygraph/runs/<runId>.jsonl` in the
+project: the run history Waygraph UI shows. `runLog: false` in the config turns it off, `runLog: "<folder>"` moves it.
+
 ## Quick start
 
 ```typescript

@@ -1,5 +1,7 @@
 // The runtime layer supplies how an Engine launches its own browser (config, Chromium path, extensions).
 import "./runtime/launch.js";
+// Run events are written to the project's run log (.waygraph/runs) when the CLI turns it on.
+import "./runtime/run-log.js";
 export type { Checkpoint, Instruction, Block, DefinedBlock, Start, WaygraphInstanceOption } from "./core/types.js";
 export { connect, checkpoint } from "./core/types.js";
 export { MemKey, MemPage, key, keyGroup } from "./core/mem-page.js";
@@ -178,6 +180,8 @@ export type {
 export type { ActionPage } from "./core/types.js";
 export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./analysis/graph.js";
 export { buildManifest } from "./manifest/manifest.js";
+export { onRunEvent } from "./core/events.js";
+export type { RunEvent } from "./core/events.js";
 export type { Manifest, ManifestBlock, ManifestFlow } from "./manifest/manifest.js";
 export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock, OrphanBlock } from "./analysis/graph.js";
 export {

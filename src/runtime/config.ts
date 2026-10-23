@@ -67,6 +67,8 @@ export interface WaygraphConfig {
   run?: RunSettings;
   /** Settings for `waygraph demo` only. They override the shared ones above. */
   demo?: DemoSettings;
+  /** Write each run's events to `.waygraph/runs/<runId>.jsonl` (the history Waygraph UI shows), or to this folder. Default true. */
+  runLog?: boolean | string;
   /** Folder of test files, relative to the project. Default `"tests"`. */
   testDir?: string;
   /** App to start around `waygraph test`, `run`, `demo` and `auto` (same fields as Playwright's `webServer`). */
@@ -228,6 +230,8 @@ export function applyConfigEnv(config: WaygraphConfig | undefined, command: stri
   const flag = (b: boolean | undefined): string | undefined => (b === undefined ? undefined : b ? "1" : "0");
   const video = { ...config.video, ...section?.video };
   const slowMo = section?.slowMo ?? config.slowMo;
+  if (config.runLog === false) set("WAYGRAPH_RUN_LOG", "0");
+  else if (typeof config.runLog === "string") set("WAYGRAPH_RUN_LOG", config.runLog);
   set("WAYGRAPH_VIDEO_DIR", video.dir);
   set("WAYGRAPH_VIDEO_VIEWPORT", video.viewport);
   set("WAYGRAPH_SLOWMO", slowMo === undefined ? undefined : String(slowMo));

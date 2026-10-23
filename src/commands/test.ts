@@ -1,5 +1,6 @@
 // Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { configuredExtensions } from "../runtime/config.js";
+import { defaultRunLogDir } from "../runtime/run-log.js";
 import { runInherited } from "../cli/util.js";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
@@ -30,6 +31,7 @@ export async function testCase(args: string[]): Promise<void> {
       }
 
       const extensions = await configuredExtensions(proj);
+      process.env.WAYGRAPH_RUN_LOG ??= defaultRunLogDir(proj);
       if (extensions.length > 0) process.env.WAYGRAPH_EXTENSIONS = extensions.join(",");
 
       // No playwright.config in the project: waygraph builds one from config/waygraph.config.ts.
