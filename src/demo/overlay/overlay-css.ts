@@ -234,7 +234,7 @@ export const RUNNER_EXTRA_CSS =
   "#wg-progress-bar{height:100%;background:#7C3AED;border-radius:2px;transition:width .3s ease;}" +
   // A real tab bar for episodes - the currently-active episode reads as
   // active (filled underline, full-brightness text), every other episode
-  // reads as inactive (dimmed, no underline) - Dan's own ask: "if episode
+  // reads as inactive (dimmed, no underline) - the user's own ask: "if episode
   // 1 is active, the episode 2 tab is inactive." Only rendered when the
   // chain spec actually named real Flows (chainFlow tags each via
   // BlockInfo - same gate the "Episode N:" heading already uses); an
@@ -245,7 +245,7 @@ export const RUNNER_EXTRA_CSS =
   "#wg-episodes .wg-ep-current{color:#fff;border-bottom-color:#7C3AED;}" +
   "#wg-episodes .wg-ep-done{color:#9a7ad1;}" +
   "#wg-episodes .wg-ep-upcoming{color:#5a4a80;}" +
-  // A one-time, gentle signal for "you just entered this episode" - Dan:
+  // A one-time, gentle signal for "you just entered this episode" - the user:
   // "i want a clear ui eyes friendly to remind me that i am on next
   // episode." A slow outward glow, not an opacity blink/strobe (that's
   // exactly the kind of flashing that already caused the original
@@ -270,7 +270,7 @@ export const RUNNER_EXTRA_CSS =
   // #wg-banner: comes from the shared bundle (ui/css/banner.css) now - not redefined here.
   "#wg-panel .wg-key{margin:8px 0;}" +
   // A live, human-readable preview of what's about to be written for this
-  // MemKey - Dan: "i want pretty to exist in memkeys too... it shows what
+  // MemKey - the user: "i want pretty to exist in memkeys too... it shows what
   // input its gonig to be written." Same global Pretty/JSON preference the
   // result display already has (window.__wgPretty) - hidden entirely in
   // JSON mode, since the raw textarea already speaks for itself there.

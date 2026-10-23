@@ -28,7 +28,7 @@ export async function renderBeforeStep(page: WgPage, info: any) {
     .evaluate((info: any) => {
       // Reused in place, not removed + recreated, every step - the old
       // remove()-then-fade-back-in cycle was a real flash on every single
-      // transition (Dan: "the appear and disappear... hurts eyes and
+      // transition (the user: "the appear and disappear... hurts eyes and
       // dizzy"). Updating one persistent element's content has nothing to
       // flash - it only ever fades in ONCE, the first time this page
       // genuinely has no panel yet (a real navigation wiped the whole
@@ -41,7 +41,7 @@ export async function renderBeforeStep(page: WgPage, info: any) {
       }
       const pct = Math.round((info.index / info.total) * 100);
       // A real tab bar, not a single text line - every episode this chain
-      // touches, the current one reading as active (Dan: "if episode 1 is
+      // touches, the current one reading as active (the user: "if episode 1 is
       // active, the episode 2 tab is inactive"). Absent entirely for an ad
       // hoc block chain with no named Flows.
       const episodes = info.allEpisodes && info.allEpisodes.length > 0
@@ -65,7 +65,7 @@ export async function renderBeforeStep(page: WgPage, info: any) {
       // episode-local subset the caller computed) - moduleIndex is this
       // step's position WITHIN that subset, not the whole chain's index -
       // "in episode 2 it shows 2nd to the last... it should start from the
-      // first block" (Dan).
+      // first block" (the user).
       const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
       const modules = info.allNames.map((name: any, idx: number) => {
         const cls = idx < info.moduleIndex ? "wg-mod-done" : idx === info.moduleIndex ? "wg-mod-current" : "wg-mod-upcoming";

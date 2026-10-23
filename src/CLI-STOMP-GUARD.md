@@ -1,6 +1,6 @@
 # Do not revert Hide / mini stepper (`src/demo/`: `overlay/overlay-install.ts`, `stepper/step-panels.ts`, `stepper/stepper.ts`)
 
-Owned by Dan's waygraph camera/stepper seat (2026-09-18).
+Owned by the waygraph camera/stepper seat (2026-09-18).
 
 **Hard rules (0.12.42+):**
 
@@ -20,6 +20,6 @@ Owned by Dan's waygraph camera/stepper seat (2026-09-18).
    `assertWgOverlayReady(page)` or `WAYGRAPH_PROVE_EXIT=1` passes (see
    `src/live/overlay-beacon.ts`, `tests/cli/overlay-beacon.spec.ts`).
 
-If you are another agent: do **not** rewrite `__wgWirePanelChrome` or yap `remove("wg-collapsed")` without Dan saying so.
+If you are another agent: do **not** rewrite `__wgWirePanelChrome` or yap `remove("wg-collapsed")` without the project owner saying so.
 Do **not** put `#wg-todos` back inside `.wg-body` (mini collapse hides it).
 Do **not** strip beacon stamps or weaken `assertWgOverlayReady` / `WAYGRAPH_PROVE_EXIT`.

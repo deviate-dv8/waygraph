@@ -4,7 +4,7 @@ import { resolveDeviceState } from "../narration/device.js";
 
 /**
  * Fit + center the OS browser window on the device viewport so mobile/tablet
- * is not stuck top-left inside a maximized frame (Dan 0.13.4).
+ * is not stuck top-left inside a maximized frame (0.13.4).
  * Desktop clear restores maximized.
  */
 async function fitWindowToDeviceViewport(page: WgPage, viewport: any, opts: any) {

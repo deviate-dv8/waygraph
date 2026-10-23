@@ -1,11 +1,12 @@
 // The auto session's overlay: the same ring, cursor and click pulse the demo runner installs (inpage/core.ts), plus a
-// small "waygraph auto" banner, and fill/click patches that point at what the automation touches.
+// small "waygraph auto" banner, and a locator theater (locator-theater.ts) that points at what the automation touches.
 import type { Page } from "@playwright/test";
 import type { MemPage } from "../../engine/mem/mem.js";
 import { ensureShadowRoot } from "./ui/shadow.js";
 import { installCore } from "./inpage/core.js";
 import { clickPulseAt, moveCursorTo } from "./cursor.js";
 import { hideRing } from "./rings.js";
+import { setLocatorTheater } from "./locator-theater.js";
 
 export async function installDemoChrome(
   page: Page,
@@ -71,79 +72,41 @@ export function instrumentAutoInteractions(
     return originalGet(key as never);
   };
 
-  const proto = Object.getPrototypeOf(page.locator("html"));
-
-  if (!proto.__wgFillPatched) {
-    proto.__wgFillPatched = true;
-    const originalFill = proto.fill;
-    proto.fill = async function (this: ReturnType<Page["locator"]>, value: string, options?: object) {
-      try {
-        await installDemoChrome(page, "", { banner: false });
-        const box = await this.boundingBox();
-        if (box) {
-          const label =
-            memTrack.lastKeyName && Date.now() - memTrack.at < 3000
-              ? "from mem: " + memTrack.lastKeyName
-              : "writing from mem";
-          await moveCursorTo(page, box, cursorMs(500));
-          await showRing(page, box, label);
-          await new Promise((res) => setTimeout(res, 200));
-        }
-      } catch {
-        /* best-effort */
-      }
-      let result;
-      try {
-        await originalFill.call(this, "", {
-          timeout: (options as { timeout?: number } | undefined)?.timeout,
-        });
-        const seqOpts: { delay: number; timeout?: number } = { delay: typeDelay() };
-        const to = (options as { timeout?: number } | undefined)?.timeout;
-        if (to !== undefined) seqOpts.timeout = to;
-        result = await this.pressSequentially(String(value), seqOpts);
-      } catch {
-        result = await originalFill.call(this, value, options);
-      }
+  setLocatorTheater(page, {
+    async beforeFill(locator) {
+      await installDemoChrome(page, "", { banner: false });
+      const box = await locator.boundingBox();
+      if (!box) return;
+      const label = memTrack.lastKeyName && Date.now() - memTrack.at < 3000 ? "from mem: " + memTrack.lastKeyName : "writing from mem";
+      await moveCursorTo(page, box, cursorMs(500));
+      await showRing(page, box, label);
+      await new Promise((res) => setTimeout(res, 200));
+    },
+    typingDelay: typeDelay,
+    async afterFill() {
       await hideRing(page);
-      return result;
-    };
-  }
-
-  if (!proto.__wgClickPatched) {
-    proto.__wgClickPatched = true;
-    const originalClick = proto.click;
-    proto.click = async function (this: ReturnType<Page["locator"]>, options?: object) {
-      let clickPoint: { x: number; y: number } | null = null;
-      try {
-        await installDemoChrome(page, "", { banner: false });
-        await this.waitFor({
-          state: "visible",
-          timeout: (options as { timeout?: number } | undefined)?.timeout || 30000,
-        }).catch(() => {});
-        const box = await this.boundingBox();
-        if (box) {
-          let label = "click";
-          try {
-            const text = (await this.textContent())?.trim();
-            if (text && text.length > 0 && text.length <= 30) label = text;
-          } catch {
-            /* ignore */
-          }
-          clickPoint = await moveCursorTo(page, box, cursorMs(600));
-          await showRing(page, box, label);
-          await new Promise((res) => setTimeout(res, clickPrePop()));
-        }
-      } catch {
-        /* best-effort */
-      }
+    },
+    async beforeClick(locator, options) {
+      await installDemoChrome(page, "", { banner: false });
+      await locator.waitFor({ state: "visible", timeout: options?.timeout || 30000 }).catch(() => {});
+      const box = await locator.boundingBox();
+      if (!box) return "click";
+      let label = "click";
+      const text = (await locator.textContent().catch(() => null))?.trim();
+      if (text && text.length <= 30) label = text;
+      const clickPoint = await moveCursorTo(page, box, cursorMs(600));
+      await showRing(page, box, label);
+      await new Promise((res) => setTimeout(res, clickPrePop()));
       if (clickPoint) {
         await clickPulseAt(page, clickPoint.x, clickPoint.y, "auto");
         await new Promise((res) => setTimeout(res, 80));
       }
-      const result = await originalClick.call(this, options);
+      return "click";
+    },
+    holdMs: () => 600,
+    async afterClick() {
       await new Promise((res) => setTimeout(res, clickPostPop()));
       await hideRing(page);
-      return result;
-    };
-  }
+    },
+  });
 }

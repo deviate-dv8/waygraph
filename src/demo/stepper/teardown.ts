@@ -18,7 +18,7 @@ import { formatHighlightCaption } from "../narration/style.js";
 /**
  * Called once the gate resolves - manual click OR autoplay timeout, both
  * covered from here rather than duplicating this in the in-page click
- * handler - right before the Block's own act() actually starts. Dan: "i
+ * handler - right before the Block's own act() actually starts. the user: "i
  * want the button, step is running thing. so i wont be able to interrupt
  * the playwright automation" - the "Run this step" button used to sit
  * there still looking clickable for the entire multi-second duration a
@@ -32,7 +32,7 @@ import { formatHighlightCaption } from "../narration/style.js";
  * ("subtree intercepts pointer events"). Empty/partial fills + a lucky
  * edge click on Login then produced Sauce Demo's Epic sadface, verify
  * still passed on the error banner, and the next block blew up. Collapse
- * also matches Dan's "step is running / can't interrupt" ask. (_opts kept
+ * also matches the user's "step is running / can't interrupt" ask. (_opts kept
  * for call-site compat; autoCollapsePanel is now unconditional.)
  */
 export async function markStepRunning(page: WgPage, _opts: any) {
