@@ -4,7 +4,7 @@
 // runs Playwright's own method untouched. Playwright has no hook for this, so the wrap is the seam; nothing else patches
 // these methods.
 import type { Locator, Page } from "@playwright/test";
-import { ignorePageGone } from "../../engine/page-gone.js";
+import { isPageGone } from "../../engine/page-gone.js";
 
 /** How a click is performed once the theater has shown it. */
 export type ClickGesture = "click" | "tap" | "hold";
@@ -44,6 +44,15 @@ export function setLocatorTheater(page: Page, theater: LocatorTheater): void {
   patchPage(Object.getPrototypeOf(page) as PageProto);
 }
 
+/**
+ * The theater only shows the action; the action itself must still run. So a theater failure is printed (unless the page
+ * simply went away) and the real fill / click goes ahead.
+ */
+function theaterFailed(err: unknown): undefined {
+  if (!isPageGone(err)) console.error(`waygraph: overlay: ${err instanceof Error ? err.message.split("\n")[0] : String(err)}`);
+  return undefined;
+}
+
 function patchLocator(proto: LocatorProto): void {
   if (proto.__wgTheaterPatched) return;
   proto.__wgTheaterPatched = true;
@@ -52,7 +61,7 @@ function patchLocator(proto: LocatorProto): void {
   proto.fill = async function (value, options) {
     const theater = theaters.get(this.page());
     if (!theater) return fill.call(this, value, options);
-    await theater.beforeFill(this, options).catch(ignorePageGone);
+    await theater.beforeFill(this, options).catch(theaterFailed);
     try {
       // Not this.clear(): Locator.clear() is fill(""), which would come back into this wrapper.
       await fill.call(this, "", { ...(options?.timeout !== undefined ? { timeout: options.timeout } : {}) });
@@ -67,7 +76,7 @@ function patchLocator(proto: LocatorProto): void {
   proto.click = async function (options) {
     const theater = theaters.get(this.page());
     if (!theater) return click.call(this, options);
-    const gesture = await theater.beforeClick(this, options).catch((): ClickGesture => "click");
+    const gesture = (await theater.beforeClick(this, options).catch(theaterFailed)) ?? "click";
     if (gesture === "hold") await click.call(this, { ...(options ?? {}), delay: theater.holdMs() });
     else if (gesture === "tap") {
       try {

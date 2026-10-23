@@ -91,8 +91,8 @@ export function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage): 
   if (raw) {
     try {
       envParsed = JSON.parse(raw) as Record<string, unknown>;
-    } catch {
-      /* ignore */
+    } catch (err) {
+      throw new Error(`waygraph: --data / WAYGRAPH_DATA is not valid JSON: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
   for (const entry of library.values()) {

@@ -20,114 +20,110 @@ import { ignorePageGone } from "../../engine/page-gone.js";
  */
 export async function ensureLocatorInView(locator: Locator, opts: any) {
   const instant = !!(opts && opts.instant);
-  try {
-    if (instant) {
-      await locator.scrollIntoViewIfNeeded().catch(ignorePageGone);
-      return;
-    }
-    // Touch mode: if the target is off-screen, show a swipe trail in the
-    // finger direction that would scroll it into view (not device morph).
-    const scrollPlan = await locator
-      .evaluate((el: HTMLElement) => {
-        if (!el || typeof el.getBoundingClientRect !== "function") return null;
-        const touch =
-          window.__wgDeviceTouch === true ||
-          document.documentElement.dataset.wgTouch === "1" ||
-          window.__wgDevicePreset === "mobile" ||
-          window.__wgDevicePreset === "tablet";
-        if (!touch) return null;
-        const r = el.getBoundingClientRect();
-        const vw = window.innerWidth || 390;
-        const vh = window.innerHeight || 844;
-        const margin = 48;
-        const below = r.top > vh - margin;
-        const above = r.bottom < margin;
-        const right = r.left > vw - margin;
-        const left = r.right < margin;
-        if (!below && !above && !left && !right) return null;
-        // Finger direction to reveal the target (swipe up => content moves up).
-        let dir = "up";
-        if (below) dir = "up";
-        else if (above) dir = "down";
-        else if (right) dir = "left";
-        else if (left) dir = "right";
-        return { dir, hint: "scroll" };
-      })
-      .catch(() => null);
-    if (scrollPlan && scrollPlan.dir) {
-      demoLog("  swipe trail dir=" + scrollPlan.dir + " hint=scroll");
-      await playSwipeTrail(locator.page(), {
-        dir: scrollPlan.dir,
-        label: "swipe \u00b7 scroll",
-        hint: "scroll",
-        ms: envNumber("WAYGRAPH_SWIPE_MS") ?? 650,
-      });
-    }
-    await locator
-      .evaluate(async (el: HTMLElement) => {
-        if (!el || typeof el.scrollIntoView !== "function") return;
-        const waitScroll = (node: any, ms: number) =>
-          new Promise<void>((resolve) => {
-            let done = false;
-            const finish = () => {
-              if (done) return;
-              done = true;
-              try {
-                node.removeEventListener("scrollend", finish);
-              } catch {
-                /* ignore */
-              }
-              clearTimeout(t);
-              resolve();
-            };
-            const t = setTimeout(finish, ms);
+  if (instant) {
+    await locator.scrollIntoViewIfNeeded().catch(ignorePageGone);
+    return;
+  }
+  // Touch mode: if the target is off-screen, show a swipe trail in the
+  // finger direction that would scroll it into view (not device morph).
+  const scrollPlan = await locator
+    .evaluate((el: HTMLElement) => {
+      if (!el || typeof el.getBoundingClientRect !== "function") return null;
+      const touch =
+        window.__wgDeviceTouch === true ||
+        document.documentElement.dataset.wgTouch === "1" ||
+        window.__wgDevicePreset === "mobile" ||
+        window.__wgDevicePreset === "tablet";
+      if (!touch) return null;
+      const r = el.getBoundingClientRect();
+      const vw = window.innerWidth || 390;
+      const vh = window.innerHeight || 844;
+      const margin = 48;
+      const below = r.top > vh - margin;
+      const above = r.bottom < margin;
+      const right = r.left > vw - margin;
+      const left = r.right < margin;
+      if (!below && !above && !left && !right) return null;
+      // Finger direction to reveal the target (swipe up => content moves up).
+      let dir = "up";
+      if (below) dir = "up";
+      else if (above) dir = "down";
+      else if (right) dir = "left";
+      else if (left) dir = "right";
+      return { dir, hint: "scroll" };
+    })
+    .catch(() => null);
+  if (scrollPlan && scrollPlan.dir) {
+    demoLog("  swipe trail dir=" + scrollPlan.dir + " hint=scroll");
+    await playSwipeTrail(locator.page(), {
+      dir: scrollPlan.dir,
+      label: "swipe \u00b7 scroll",
+      hint: "scroll",
+      ms: envNumber("WAYGRAPH_SWIPE_MS") ?? 650,
+    });
+  }
+  await locator
+    .evaluate(async (el: HTMLElement) => {
+      if (!el || typeof el.scrollIntoView !== "function") return;
+      const waitScroll = (node: any, ms: number) =>
+        new Promise<void>((resolve) => {
+          let done = false;
+          const finish = () => {
+            if (done) return;
+            done = true;
             try {
-              node.addEventListener("scrollend", finish, { once: true });
-            } catch {
-              /* scrollend unsupported - timeout only */
-            }
-          });
-        try {
-          el.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
-        } catch {
-          try {
-            el.scrollIntoView({ block: "center", inline: "center" });
-          } catch {
-            try {
-              el.scrollIntoView(true);
+              node.removeEventListener("scrollend", finish);
             } catch {
               /* ignore */
             }
+            clearTimeout(t);
+            resolve();
+          };
+          const t = setTimeout(finish, ms);
+          try {
+            node.addEventListener("scrollend", finish, { once: true });
+          } catch {
+            /* scrollend unsupported - timeout only */
+          }
+        });
+      try {
+        el.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+      } catch {
+        try {
+          el.scrollIntoView({ block: "center", inline: "center" });
+        } catch {
+          try {
+            el.scrollIntoView(true);
+          } catch {
+            /* ignore */
           }
         }
-        await waitScroll(document.scrollingElement || document.documentElement, 650);
-        let p = el.parentElement;
-        while (p && p !== document.documentElement && p !== document.body) {
-          const st = getComputedStyle(p);
-          const ox = st.overflowX;
-          const oy = st.overflowY;
-          if (/(auto|scroll|overlay)/.test(ox) || /(auto|scroll|overlay)/.test(oy)) {
-            const er = el.getBoundingClientRect();
-            const pr = p.getBoundingClientRect();
-            if (er.left < pr.left || er.right > pr.right || er.top < pr.top || er.bottom > pr.bottom) {
-              const left = p.scrollLeft + (er.left + er.width / 2 - (pr.left + pr.width / 2));
-              const top = p.scrollTop + (er.top + er.height / 2 - (pr.top + pr.height / 2));
-              try {
-                p.scrollTo({ left, top, behavior: "smooth" });
-              } catch {
-                p.scrollLeft = left;
-                p.scrollTop = top;
-              }
-              await waitScroll(p, 650);
+      }
+      await waitScroll(document.scrollingElement || document.documentElement, 650);
+      let p = el.parentElement;
+      while (p && p !== document.documentElement && p !== document.body) {
+        const st = getComputedStyle(p);
+        const ox = st.overflowX;
+        const oy = st.overflowY;
+        if (/(auto|scroll|overlay)/.test(ox) || /(auto|scroll|overlay)/.test(oy)) {
+          const er = el.getBoundingClientRect();
+          const pr = p.getBoundingClientRect();
+          if (er.left < pr.left || er.right > pr.right || er.top < pr.top || er.bottom > pr.bottom) {
+            const left = p.scrollLeft + (er.left + er.width / 2 - (pr.left + pr.width / 2));
+            const top = p.scrollTop + (er.top + er.height / 2 - (pr.top + pr.height / 2));
+            try {
+              p.scrollTo({ left, top, behavior: "smooth" });
+            } catch {
+              p.scrollLeft = left;
+              p.scrollTop = top;
             }
+            await waitScroll(p, 650);
           }
-          p = p.parentElement;
         }
-      })
-      .catch(ignorePageGone);
-  } catch {
-    /* best-effort */
-  }
+        p = p.parentElement;
+      }
+    })
+    .catch(ignorePageGone);
 }
 
 
@@ -383,7 +379,7 @@ async function matchStubForLocator(page: WgPage, locator: Locator, stubs: any) {
         return s;
       }
     } catch {
-      /* skip */
+      // A stub selector Playwright can't parse can't be this element either.
     }
   }
   return null;
@@ -408,7 +404,7 @@ export async function matchStubIndexForLocator(page: WgPage, locator: Locator, s
         return i;
       }
     } catch {
-      /* skip */
+      // A stub selector Playwright can't parse can't be this element either.
     }
   }
   return -1;

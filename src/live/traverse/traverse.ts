@@ -107,11 +107,7 @@ function snapshotMem(
   for (const entry of library.values()) {
     for (const k of entry.block.requires ?? []) {
       if (mem.has(k) && !(k.name in out)) {
-        try {
-          out[k.name] = mem.get(k);
-        } catch {
-          /* skip */
-        }
+        out[k.name] = mem.get(k);
       }
     }
   }

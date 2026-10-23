@@ -302,11 +302,7 @@ export async function applyDeviceToPage(page: WgPage, device: any, sync: any) {
     if (!videoStage && establishingHeadedStage) {
       await fitWindowToDeviceViewport(page, stage, { maximize: false }).catch(ignorePageGone);
     }
-    try {
-      await realSet(stage);
-    } catch {
-      /* ignore */
-    }
+    await realSet(stage).catch(ignorePageGone);
     const shellFrom = page.__wgDeviceShell || target;
     if (toDesktop) {
       // Zoom already cleared above. Full-bleed desktop shell (no matte frame).
@@ -321,11 +317,7 @@ export async function applyDeviceToPage(page: WgPage, device: any, sync: any) {
         shutterOut: true,
         desktopFlat: true,
       });
-      try {
-        await realSet(stage);
-      } catch {
-        /* ignore */
-      }
+      await realSet(stage).catch(ignorePageGone);
     } else {
       // Lerp shell size when switching mobile <-> tablet mid-run.
       const firstDevice = !page.__wgDeviceShell;
@@ -358,11 +350,7 @@ export async function applyDeviceToPage(page: WgPage, device: any, sync: any) {
       }
       page.__wgDeviceShell = { ...target };
       // Re-assert stage size after any prior fitWindow.
-      try {
-        await realSet(stage);
-      } catch {
-        /* ignore */
-      }
+      await realSet(stage).catch(ignorePageGone);
     }
   } else {
     // Unmaximize + center early so the lerp does not sit in the corner of a

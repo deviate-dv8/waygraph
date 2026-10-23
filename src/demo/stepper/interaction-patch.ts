@@ -202,12 +202,8 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         }
         // Prefer "nav: …" when this locator is a NavBlock click target
         // (set on page by runStepMode just before act).
-        try {
-          const navLabel = await page.evaluate(() => window.__wgPendingNavClickLabel || null);
-          if (navLabel) fallback = String(navLabel);
-        } catch {
-          /* ignore */
-        }
+        const navLabel = await page.evaluate(() => window.__wgPendingNavClickLabel || null).catch(ignorePageGone);
+        if (navLabel) fallback = String(navLabel);
         const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
         const cap = await captionForLocator(page, locator, stubs, fallback);
         const stubIdx = await matchStubIndexForLocator(page, locator, stubs);
