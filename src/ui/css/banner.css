@@ -1,6 +1,6 @@
 /* Top title banner (#wg-banner). Sits BELOW the ring/label/dock layers (--wg-z-banner) - a title
  * card must never shadow a highlight; see tokens.css. Moves out of the way of a ring it overlaps
- * (data-collision, driven from inpage/banner.js's __wgBannerAvoidRing) unless authored off. */
+ * (data-collision, driven from inpage/banner.ts's __wgBannerAvoidRing) unless authored off. */
 #wg-banner {
   position: fixed; z-index: var(--wg-z-banner); top: 14px; left: 14px;
   background: var(--wg-surface); color: #fff; border-radius: var(--wg-radius-lg); padding: 10px 16px;

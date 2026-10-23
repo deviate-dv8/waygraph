@@ -1685,11 +1685,12 @@ src/
   auto-explore-run.ts            waygraph auto interactive loop (headful + --cli)
   highlights.ts                  stub/fixture/slide/todo-dock/device narration types + helpers
   step-overlay.ts                 demo step overlay chrome (panel, ring, cursor)
+  runner/                         demo/run step-through runner (TypeScript, in-page code in runner/inpage/)
   overlay-beacon.ts                blind-agent overlay readiness beacons
   traverse-run.ts                   waygraph traverse crawl (serial/parallel)
   traverse-coverage.ts               traverse coverage report + CI gate
   traverse-lease.ts                  traverse edge lease coordinator
-  blocks-select.ts                   shared --blocks glob/regex/bare grammar
+  manifest/                          one project scanner (scan, project, roots, select) + waygraph manifest
   agent-dive.ts                      waygraph agent-dive coding-agent scaffolding
   cli.ts                             waygraph CLI entrypoint (all subcommands)
   index.ts                           public barrel

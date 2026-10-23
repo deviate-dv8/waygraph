@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Structure guard: keeps src/ from re-growing into files nobody (human or agent) can edit safely.
- *   1. Every src/**\/*.ts and src/runner/*.js stays under MAX_LINES, unless listed in RATCHET - a per-file ceiling
+ *   1. Every src/**\/*.ts stays under MAX_LINES, unless listed in RATCHET - a per-file ceiling
  *      that may only go DOWN (lower the number when you shrink a file; never raise it).
  *   2. No circular value imports between src modules (type-only imports are ignored).
  *   3. Layers: each file's layer may only import the layers allowed for it; scripts/layer-debt.json may only shrink.
@@ -84,8 +84,8 @@ const LAYER_OF = [
   ["analysis/", "analysis"], ["blocks-select.ts", "analysis"],
   ["runtime/", "runtime"],
   // The run command's child process entry orchestrates like a command; the rest of runner/ is the demo layer.
-  ["runner/main.js", "cli"], ["runner/index.js", "cli"], ["runner/discovery.js", "cli"], ["runner/seed-mem.js", "cli"],
-  ["runner/chain-run.js", "cli"],
+  ["runner/main.ts", "cli"], ["runner/index.ts", "cli"], ["runner/discovery.ts", "cli"], ["runner/seed-mem.ts", "cli"],
+  ["runner/chain-run.ts", "cli"],
   ["demo/", "demo"], ["highlights", "demo"], ["runner/", "demo"], ["ui/", "demo"], ["pilot-overlay", "demo"],
   ["session/step-overlay.ts", "demo"],
   ["live/", "live"], ["session/", "live"], ["auto-session", "live"], ["traverse/", "live"],

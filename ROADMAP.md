@@ -227,7 +227,8 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 2. Checkpoints as values (`checkpoint: Home`, `from`/`to`), old forms deprecated, codemod in `waygraph upgrade`. **Done.**
 3. One manifest replaces the five project scanners and the `<In, Out>` source parse; `waygraph manifest`. **Done.**
 4. Run events: typed emitter in `runGraph` (`onRunEvent`), written to `.waygraph/runs/*.jsonl` by the CLI. **Done.** (Demo log and JSON report still read results directly; they move onto events with the demo layer in phase 5.)
-5. Demo runner from JavaScript to TypeScript under `demo/`.
+5. Demo runner from JavaScript to TypeScript, compiled by `tsc` (no copy step). **Typing done**; the move under `demo/` and
+   moving the demo log and JSON report onto run events follow.
 6. One overlay for demo, auto and pilot.
 7. `live/` for sessions, pilot and traverse.
 8. Thin CLI.
@@ -269,7 +270,7 @@ Block file changes. If done, keep the string and `<In, Out>` forms working for a
 
 ### Network tab mocking (backlogged, not yet researched)
 
-The network tab overlay (`src/runner/network-capture.js`, `src/runner/inpage/network.js`) is
+The network tab overlay (`src/runner/network-capture.ts`, `src/runner/inpage/network.ts`) is
 real, two-sided - it *observes* traffic (real page requests via `page.on('request'/
 'requestfinished'/'requestfailed')`, plus `defineApiBlock`'s own `page.request` calls) and
 renders it (method/status/headers/body, click-to-expand, copy-as-cURL), gated behind

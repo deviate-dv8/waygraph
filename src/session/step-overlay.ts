@@ -271,16 +271,17 @@ export function instrumentInteractionHighlighting(
 
 declare global {
   interface Window {
-    __wgMoveCursorTo?: (x: number, y: number, ms?: number) => void;
+    __wgMoveCursorTo?: (x: number, y: number, ms?: number, instant?: boolean) => void;
     __wgClickPulse?: (x: number, y: number, tone?: string) => void;
     __wgPositionRing?: (
       box: { x: number; y: number; width: number; height: number },
       label: string,
       tone?: string,
+      style?: { size?: string; weight?: string; color?: string },
     ) => void;
-    __wgHideRing?: () => void;
+    __wgHideRing?: (opts?: { clearZoom?: boolean }) => void;
     __wgPendingNavClickLabel?: string;
-    __wgWirePanelChrome?: (panel: HTMLElement, storageKey: string, chromeTitle?: string) => void;
+    __wgWirePanelChrome?: (panel: HTMLElement, storageKey: string, chromeTitle?: string, opts?: Record<string, unknown>) => void;
     __wgStampModal?: (
       el: Element,
       kind: string,

@@ -1,0 +1,192 @@
+// In-page installer (runs inside the browser via page.evaluate): must stay self-contained - no module-scope closure.
+// Split out of the former single installOverlay evaluate (see src/ARCHITECTURE.md). Shares state only via window.__wg*.
+/* eslint-disable no-unused-vars */
+export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
+        // Hide/Show for #wg-panel - call after every panel.innerHTML refresh.
+        // Collapsed = "N / M · block" + Next (when not auto). Never pass
+        // forceCollapsed:false - omit so Hide/localStorage wins.
+        window.__wgWirePanelChrome = (panel: any, storageKey: any, chromeTitle: any, opts: any) => {
+          if (!panel) return;
+          opts = opts || {};
+          const ensureChrome = () => {
+            let chrome = panel.querySelector(":scope > .wg-chrome");
+            if (!chrome) {
+              const body = document.createElement("div");
+              body.className = "wg-body";
+              while (panel.firstChild) body.appendChild(panel.firstChild);
+              chrome = document.createElement("div");
+              chrome.className = "wg-chrome";
+              const titleEl = document.createElement("span");
+              titleEl.className = "wg-chrome-title";
+              titleEl.textContent = chromeTitle || "waygraph demo";
+              const actions = document.createElement("div");
+              actions.className = "wg-chrome-actions";
+              const nextBtn = document.createElement("button");
+              nextBtn.type = "button";
+              nextBtn.className = "wg-mini-next";
+              nextBtn.setAttribute("data-wg-mini-next", "1");
+              nextBtn.textContent = "Next ▶";
+              const btn = document.createElement("button");
+              btn.type = "button";
+              btn.className = "wg-hide-btn";
+              btn.setAttribute("data-wg-toggle", "1");
+              btn.textContent = "Hide";
+              actions.appendChild(nextBtn);
+              actions.appendChild(btn);
+              chrome.appendChild(titleEl);
+              chrome.appendChild(actions);
+              panel.appendChild(chrome);
+              panel.appendChild(body);
+              return;
+            }
+            // Yap slides ship a bare chrome - ensure actions + mini Next exist.
+            let actions = chrome.querySelector(".wg-chrome-actions");
+            if (!actions) {
+              actions = document.createElement("div");
+              actions.className = "wg-chrome-actions";
+              const hide = chrome.querySelector("[data-wg-toggle]");
+              if (hide) actions.appendChild(hide);
+              chrome.appendChild(actions);
+            }
+            if (!actions.querySelector("[data-wg-mini-next]")) {
+              const nextBtn = document.createElement("button");
+              nextBtn.type = "button";
+              nextBtn.className = "wg-mini-next";
+              nextBtn.setAttribute("data-wg-mini-next", "1");
+              nextBtn.textContent = "Next ▶";
+              actions.insertBefore(nextBtn, actions.firstChild);
+            }
+          };
+          ensureChrome();
+          const stepLabel = opts.stepLabel || panel.dataset.wgStepLabel || "";
+          if (stepLabel) panel.dataset.wgStepLabel = stepLabel;
+          if (opts.fastForward !== undefined) {
+            panel.dataset.wgFastForward = opts.fastForward ? "1" : "0";
+          }
+          if (opts.isApi !== undefined) {
+            panel.dataset.wgIsApi = opts.isApi ? "1" : "0";
+          }
+          const buildFfIcon = () => {
+            const span = document.createElement("span");
+            span.className = "wg-ff-icon";
+            span.setAttribute("aria-hidden", "true");
+            span.innerHTML =
+              '<svg viewBox="0 0 16 16" fill="none">' +
+              '<path class="wg-ff-chev" d="M2 3l5 5-5 5" stroke="#c9a6ff" stroke-width="1.8" ' +
+              'stroke-linecap="round" stroke-linejoin="round"/>' +
+              '<path class="wg-ff-chev" d="M8 3l5 5-5 5" stroke="#c9a6ff" stroke-width="1.8" ' +
+              'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            return span;
+          };
+          // Terminal icon: the current step is an API check (defineApiBlock) - no DOM change, no
+          // ring of its own, so without this it's an unexplained instant step with nothing visibly
+          // happening on the page at all (worse than a fast-forward block, which at least has the
+          // FF icon marking it as different).
+          const buildApiIcon = () => {
+            const span = document.createElement("span");
+            span.className = "wg-api-icon";
+            span.setAttribute("aria-hidden", "true");
+            span.innerHTML =
+              '<svg viewBox="0 0 16 16" fill="none">' +
+              '<rect x="1" y="2" width="14" height="12" rx="1.5" stroke="#7dd3fc" stroke-width="1.3"/>' +
+              '<path d="M3.5 5.5l2.5 2.5-2.5 2.5" stroke="#7dd3fc" stroke-width="1.3" ' +
+              'stroke-linecap="round" stroke-linejoin="round"/>' +
+              '<path d="M7.5 10.5h4" stroke="#7dd3fc" stroke-width="1.3" stroke-linecap="round"/></svg>';
+            return span;
+          };
+          const syncMiniNext = (hidden: any) => {
+            const miniNext = panel.querySelector("[data-wg-mini-next]");
+            if (!miniNext) return;
+            let auto = false;
+            try {
+              auto = localStorage.getItem("wg-autoplay") === "1";
+            } catch {
+              /* ignore */
+            }
+            const runBtn = __wgById<HTMLButtonElement>("wg-run");
+            const show = !!hidden && !auto && !!runBtn;
+            miniNext.classList.toggle("wg-mini-next-show", show);
+            if (runBtn) {
+              miniNext.textContent = runBtn.textContent || "Next ▶";
+              miniNext.disabled = !!runBtn.disabled;
+            } else {
+              miniNext.disabled = true;
+            }
+          };
+          const apply = (hidden: any, persist: any) => {
+            panel.classList.toggle("wg-collapsed", hidden);
+            panel.setAttribute("data-wg-collapsed", hidden ? "1" : "0");
+            const t = panel.querySelector("[data-wg-toggle]");
+            const titleEl = panel.querySelector(".wg-chrome-title");
+            const label = panel.dataset.wgStepLabel || stepLabel;
+            const isFf = panel.dataset.wgFastForward === "1";
+            const isApi = panel.dataset.wgIsApi === "1";
+            if (titleEl) {
+              const text = hidden
+                ? (label || chromeTitle || "waygraph demo")
+                : (chromeTitle || "waygraph demo");
+              titleEl.textContent = "";
+              if (hidden && isFf) titleEl.appendChild(buildFfIcon());
+              if (hidden && isApi) titleEl.appendChild(buildApiIcon());
+              titleEl.appendChild(document.createTextNode(text));
+            }
+            if (t) t.textContent = hidden ? "Show" : "Hide";
+            syncMiniNext(hidden);
+            if (persist !== false) {
+              try {
+                localStorage.setItem(storageKey, hidden ? "1" : "0");
+              } catch {
+                /* private mode */
+              }
+            }
+          };
+          let hidden = false;
+          if (opts.forceCollapsed === true) {
+            hidden = true;
+          } else {
+            try {
+              hidden = localStorage.getItem(storageKey) === "1";
+            } catch {
+              /* ignore */
+            }
+          }
+          // force mini does not overwrite Hide preference in storage.
+          apply(hidden, opts.forceCollapsed === true ? false : true);
+          const toggle = panel.querySelector("[data-wg-toggle]");
+          if (toggle && !toggle.dataset.wgWired) {
+            toggle.dataset.wgWired = "1";
+            toggle.addEventListener("click", (e: any) => {
+              e.stopPropagation();
+              apply(!panel.classList.contains("wg-collapsed"), true);
+            });
+          }
+          const miniNext = panel.querySelector("[data-wg-mini-next]");
+          if (miniNext && !miniNext.dataset.wgWired) {
+            miniNext.dataset.wgWired = "1";
+            miniNext.addEventListener("click", (e: any) => {
+              e.stopPropagation();
+              const runBtn = __wgById<HTMLButtonElement>("wg-run");
+              if (runBtn && !runBtn.disabled) {
+                runBtn.click();
+                return;
+              }
+              if (typeof window.__wgNext === "function") window.__wgNext({});
+            });
+          }
+          const autoCb = __wgById<HTMLInputElement>("wg-autoplay-cb");
+          if (autoCb && !autoCb.dataset.wgMiniWired) {
+            autoCb.dataset.wgMiniWired = "1";
+            autoCb.addEventListener("change", () => {
+              syncMiniNext(panel.classList.contains("wg-collapsed"));
+            });
+          }
+          const cur = panel.querySelector("#wg-modules .wg-mod-current");
+          if (cur && typeof cur.scrollIntoView === "function") {
+            try {
+              cur.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+            } catch {
+              cur.scrollIntoView(false);
+            }
+          }
+        };
+}

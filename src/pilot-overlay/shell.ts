@@ -67,7 +67,7 @@ const OVERLAY_CSS = `
 }
 #wg-pilot-activity.wg-pilot-toast-show { opacity: 1; transform: translateY(0); }
 /* Agent fixture rings (painted via the shared .wg-ring-el primitive, see ui/css/ring.css and
-   runner/inpage/core.js's __wgPaintRingAt), #wg-pilot-fx-todos, #wg-ring/#wg-ring-label and
+   runner/inpage/core.ts's __wgPaintRingAt), #wg-pilot-fx-todos, #wg-ring/#wg-ring-label and
    #wg-banner all come from the ONE shared bundle ensureShadowRoot installs (ui/css/*.css) - not
    redefined here. */
 /* Spotlight (demo focus:true) - dim page, cutout around target. */
@@ -164,7 +164,7 @@ export async function ensureInstalled(page: Page): Promise<void> {
   // file's own header comment on redundancy), not a separate DOM-building copy.
   const { installCore } = await import("../runner/inpage/core.js");
   await page.evaluate(installCore, {}).catch(() => {});
-  // Device toast/chip CSS (runner/overlay-css.js's RUNNER_EXTRA_CSS) - same rules the demo runner
+  // Device toast/chip CSS (runner/overlay-css.ts's RUNNER_EXTRA_CSS) - same rules the demo runner
   // uses, reused here (not re-authored) so a device fixture looks identical on Pilot.
   const { RUNNER_EXTRA_CSS } = await import("../runner/overlay-css.js");
   await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as [string, string]).catch(() => {});

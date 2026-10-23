@@ -2,7 +2,7 @@
  * ONE ring implementation, shared by every surface (demo/auto's singleton #wg-ring, and Pilot's
  * multiple simultaneous fixture rings) - `.wg-ring-el`/`.wg-ring-el-label` is the real class every
  * ring element carries; `#wg-ring`/`#wg-ring-label` and Pilot's per-instance ids are just how each
- * surface finds/targets ITS OWN ring(s) in JS (runner/inpage/core.js's __wgEnsureRingEl/
+ * surface finds/targets ITS OWN ring(s) in JS (runner/inpage/core.ts's __wgEnsureRingEl/
  * __wgPaintRingAt). Before this file existed as one, the demo/auto ring and Pilot's fixture ring
  * were two byte-identical copies of the same tone/size/weight rules - a real, provable case of the
  * "why do we have two of everything" complaint that's easy to lose track of once it's spread across
