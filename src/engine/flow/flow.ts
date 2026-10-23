@@ -108,7 +108,7 @@ export interface Flow<Out extends Checkpoint<string>> {
   /**
    * `map({ memStub: true })` - opts into
    * auto-filling `requires` keys with registered fake values
-   * (`registerMemStub`, `src/core/mem-stub.ts`) instead of failing preflight when
+   * (`registerMemStub`, `src/engine/mem/mem-stub.ts`) instead of failing preflight when
    * the caller didn't supply them. `run()` never reads this - the CLI's own
    * `--data`/`--mem-stub` seeding, or a bare-library caller's own explicit
    * `seedMemStub(mem, flow)` call, is what actually fills mem before `run()`.

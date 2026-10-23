@@ -106,7 +106,7 @@ async function status(sessionId: string): Promise<{ ok: boolean; [k: string]: un
     const stdout = await runCli(["auto", "status", sessionId], { cwd: sauceRoot });
     return JSON.parse(stdout.trim());
   } catch (err) {
-    // An unknown / ended session is a plain stderr message with exit 1 (not JSON) - see commands/session.ts.
+    // An unknown / ended session is a plain stderr message with exit 1 (not JSON) - see cli/commands/session.ts.
     const stderr = (err as { stderr?: string }).stderr;
     if (stderr) return { ok: false, error: stderr.trim() };
     throw err;

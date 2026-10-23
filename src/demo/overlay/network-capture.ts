@@ -2,7 +2,7 @@
 // inpage/network.ts's own header). Playwright's page.on('request'/'requestfinished') events cover
 // every real request the PAGE makes (XHR/fetch/navigation) - not page.request.get()-style calls,
 // which go through a separate APIRequestContext entirely and never touch the browser at all (that
-// side is covered by defineApiBlock's own explicit call, in src/core/blocks/api.ts).
+// side is covered by defineApiBlock's own explicit call, in src/engine/block/kinds/api.ts).
 import type { WgPage } from "../types.js";
 import { addNetworkEntry, clearNetworkLog } from "./inpage/network.js";
 import { setApiCallRecorder } from "../../engine/run/hooks.js";

@@ -57,7 +57,7 @@ export async function runChain(projectDir: string, spec: string): Promise<void> 
   const scriptPath = join(projectDir, `.waygraph-chain-${process.pid}.mjs`);
   writeFileSync(scriptPath, CHAIN_RUNNER_BOOTSTRAP);
   try {
-    // webServer is started inside the child (runner/main.ts), never here - see CHAIN_RUNNER_BOOTSTRAP.
+    // webServer is started inside the child (runner/runner.ts), never here - see CHAIN_RUNNER_BOOTSTRAP.
     const code = await new Promise<number>((res, rej) => {
       const child = spawn(process.execPath, ["--import", tsxEsm, scriptPath, projectDir, expanded], {
         stdio: "inherit",

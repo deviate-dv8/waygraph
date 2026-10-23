@@ -12,7 +12,7 @@ import { getOverlaySheet } from "./stylesheet.js";
 
 /**
  * `overlaySheet` is the ONE real-CSS bundle (`ui/stylesheet.ts` -> `dist/ui/overlay.css`, built on
- * Open Props - see `src/ui/css/README.md`) every surface shares; passed in from Node since in-page
+ * Open Props - see `src/demo/overlay/ui/css/README.md`) every surface shares; passed in from Node since in-page
  * code can't read a file. Installed once per shadow root, before anything else runs.
  */
 export function installShadowRoot(overlaySheet?: string): void {

@@ -1,4 +1,4 @@
-# `src/ui/css/`
+# `src/demo/overlay/ui/css/`
 
 The overlay's actual stylesheet - real `.css`, not a JS template-string generator. One rule set,
 loaded once, injected into the Shadow DOM every overlay surface mounts in (`ui/shadow.ts`). No
@@ -12,7 +12,7 @@ scoped to a shadow root's `:host` instead of `:root`. Brand tones (`--wg-tone-*`
 - `ring.css`, `cursor.css`, `banner.css`, `dock.css`, `panel.css` - one component per file.
 
 `scripts/copy-ui-css.mjs` concatenates Open Props' subset + these files, in a fixed order, into
-`dist/ui/overlay.css` after `tsc` (see `npm run build`). Add a new `.css` file here and you MUST
+`dist/demo/overlay/ui/overlay.css` after `tsc` (see `npm run build`). Add a new `.css` file here and you MUST
 add it to that script's `ORDER` array, or the build fails loudly instead of silently dropping it.
 
-Loaded at runtime by `src/ui/stylesheet.ts` (`getOverlaySheet()`), cached after the first read.
+Loaded at runtime by `src/demo/overlay/ui/stylesheet.ts` (`getOverlaySheet()`), cached after the first read.

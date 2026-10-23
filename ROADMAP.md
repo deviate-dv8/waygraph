@@ -13,12 +13,12 @@ The package is one published unit today, organized internally along these lines:
 
 | Module | Where | What it owns |
 |---|---|---|
-| `waygraph-core` | `src/types.ts`, `src/mem-page.ts`, `src/trait.ts` | Checkpoint, Block, MemPage, Trait, `connect()`. Stable. |
-| `waygraph-engine` | `src/core/` | `Engine`, `map()`, `runGraph`, `composeBlock`, browser launching (pluggable via `EngineConfig.browsers`). |
-| `waygraph-cli` | `src/cli.ts` (non-overlay commands) | `list` / `nav` / `validate` / `run` / `check` / `graph` / `init` / `agent-dive` / `traverse`. |
-| `waygraph-demo` | `src/cli.ts` (`demo` / `chain --step` overlay), `src/demo/` (`narration/`, `overlay/`, `step-mode/`), `src/live/overlay-beacon.ts` | The step-through browser overlay: panel, ring, cursor, todo dock, `narrate()`, episode headings, stub/fixture/slide narration. |
-| `waygraph-auto` | `src/graph.ts`, `src/live/auto-explore.ts`, `src/live/auto-explore-run.ts`, `locate()` in `src/engine.ts` | State-machine discovery (`discoverGraph` / `toMermaid`) + page recognition (`locate`) + the interactive `waygraph auto` explore loop. |
-| `waygraph-traverse` | `src/live/traverse/run.ts`, `src/live/traverse/coverage.ts`, `src/live/traverse/lease.ts` | `waygraph traverse` graph crawl: serial/parallel workers, edge leases, coverage report + CI gate. |
+| `waygraph-core` | `src/engine/checkpoint/`, `block/`, `mem/`, `trait/`, `run/connect.ts` | Checkpoint, Block, MemPage, Trait, `connect()`. Stable. |
+| `waygraph-engine` | `src/engine/` (start at `engine.ts`) | `Engine`, `map()`, `runGraph`, `composeBlock`, browser launching (pluggable via `EngineConfig.browsers`). |
+| `waygraph-cli` | `src/cli/` (`cli.ts`, `commands/`) | `list` / `nav` / `validate` / `run` / `check` / `graph` / `init` / `agent-dive` / `traverse`. |
+| `waygraph-demo` | `src/runner/` (`runner.ts`, `modes/demo.ts`), `src/demo/` (`stepper/`, `overlay/`, `narration/`), `src/live/overlay-beacon.ts` | The step-through browser overlay: panel, ring, cursor, todo dock, `narrate()`, episode headings, stub/fixture/slide narration. |
+| `waygraph-auto` | `src/analysis/graph.ts`, `src/live/auto-explore.ts`, `src/live/auto-explore-run.ts`, `src/engine/locate.ts` | State-machine discovery (`discoverGraph` / `toMermaid`) + page recognition (`locate`) + the interactive `waygraph auto` explore loop. |
+| `waygraph-traverse` | `src/live/traverse/traverse.ts`, `src/live/traverse/coverage.ts`, `src/live/traverse/lease.ts` | `waygraph traverse` graph crawl: serial/parallel workers, edge leases, coverage report + CI gate. |
 
 Whether these become physically separate npm packages, or stay one package with clearer
 internal boundaries, is an open decision - not committed to either way yet.
@@ -48,9 +48,9 @@ otherwise.
 | Agent-skill hardening (one-action-per-Block, `defineAssertBlock`, Sel enforcement, orphan gates) | Shipped - `openspec/changes/waygraph-agent-skill-hardening/` |
 | `agent-dive` Claude Code Skills (`waygraph-pilot`/`waygraph-blind-pilot`/`waygraph-convention`, real hard-won Pilot/Blind-Pilot lessons, not `--help` restated) | Shipped - `templates/skills/*.skill.md`, `src/agent-dive.ts` (`claude` loop + `waygraph --skill*` print flags), `tests/agent-dive/skills.spec.ts` / `tests/cli/skills.spec.ts` |
 | Mail verification (browser-driven, `*-external/<tool>/` convention) | Shipped (Mailpit) - `openspec/changes/waygraph-mail-adapters/` |
-| Waygraph Map convention rename (`src/routes/` -> `src/map/`, `(app_base)`/`(external)` groups, verbatim-URL-nesting a **forced** convention, not just naming) | Shipped - `templates/scaffold/`, `examples/routed-demo/`, `src/map-check.ts` + `waygraph map` CLI subcommand (`src/cli.ts`) |
-| `Layout` / `defineLayout` (cross-cutting, automatically-enforced `verify` for persistent UI across many Checkpoints, folder-convention-agnostic) | Shipped - `src/engine.ts`, `tests/verify/layout.spec.ts` |
-| `Engine.map()` / standalone `map()` fluent builder (kind-checked at runtime against `__waygraphKind`/`__waygraphSalt`, no-teleporting Checkpoint chain) | Shipped - `src/engine.ts` (`MapBuilder`), `tests/nav/map-builder.spec.ts` - see "Engine.map() builder" below |
+| Waygraph Map convention rename (`src/routes/` -> `src/map/`, `(app_base)`/`(external)` groups, verbatim-URL-nesting a **forced** convention, not just naming) | Shipped - `templates/scaffold/`, `examples/routed-demo/`, `src/analysis/map-check.ts` + `waygraph map` CLI subcommand (`src/cli/commands/map.ts`) |
+| `Layout` / `defineLayout` (cross-cutting, automatically-enforced `verify` for persistent UI across many Checkpoints, folder-convention-agnostic) | Shipped - `src/engine/run/run.ts`, `tests/verify/layout.spec.ts` |
+| `Engine.map()` / standalone `map()` fluent builder (kind-checked at runtime against `__waygraphKind`/`__waygraphSalt`, no-teleporting Checkpoint chain) | Shipped - `src/engine/flow/map-builder.ts` (`MapBuilder`), `tests/nav/map-builder.spec.ts` - see "Engine.map() builder" below |
 | Waygraph Pilot (plain-language ask -> narrate/agentic, built on AutoSession) | Proposed - `openspec/changes/waygraph-pilot/` |
 | Network tab overlay (live page traffic capture, `defineApiBlock` method/status, click-to-expand headers/body, copy-as-cURL, `ctx.showNetworkTab()`/`hideNetworkTab()`) | Shipped - real request/response **mocking** (not just observing) is backlogged, see "Network tab mocking" below |
 | Narrated help-center video generation (core `waygraph render`) | Deferred to v1.0.x (`waygraph-demo` module) - not current focus, see below |
@@ -97,7 +97,7 @@ history in `openspec/changes/archive/2026-09-19-flow-run-tab-options/`.
 
 **Shipped:** `discoverGraph` / `toMermaid` / `waygraph auto` CLI and
 `locate(page, library)` reverse-match NavBlocks by their own `verify` Traits. See
-`src/graph.ts`, `tests/graph/`, `tests/nav/locate.spec.ts`.
+`src/analysis/graph.ts`, `tests/graph/`, `tests/nav/locate.spec.ts`.
 
 **Still open:** split a MemKey's `requires` into externally-supplied
 (credentials/config) vs producedBy-another-Block so a failed `preflight()` can
@@ -218,7 +218,7 @@ Until then, prefer structural selectors (roles, aria-labels, ids) over bare text
 
 ### Architecture refactor (in progress, ships as 0.16.0)
 
-Goal: a short layout where each folder is one concept (`core`, `manifest`, `analysis`, `runtime`, `demo`, `live`, `cli`;
+Goal: a short layout where each folder is one concept (`engine`, `manifest`, `analysis`, `runtime`, `demo`, `live`, `runner`, `cli`;
 see `src/ARCHITECTURE.md`), with two files the package writes for Waygraph UI and map packages: a **manifest** (every
 Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/runs/*.jsonl`). Phases:
 
@@ -228,7 +228,7 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 3. One manifest replaces the five project scanners and the `<In, Out>` source parse; `waygraph manifest`. **Done.**
 4. Run events: typed emitter in `runGraph` (`onRunEvent`), written to `.waygraph/runs/*.jsonl` by the CLI. **Done.** (Demo log and JSON report still read results directly; they move onto events with the demo layer in phase 5.)
 5. Demo runner from JavaScript to TypeScript, compiled by `tsc` (no copy step), under `demo/` (`narration/`, `overlay/`,
-   `step-mode/`); `runner/` is only the child process entry; the JSON report carries the run's `runId`. **Done.**
+   `step-mode/`, since split into `runner/modes/demo.ts` + `demo/stepper/`); `runner/` is only the child process entry; the JSON report carries the run's `runId`. **Done.**
 6. One overlay for demo, auto and pilot: `demo/overlay/` (auto's ring/cursor/pulse are the demo's `inpage/core.ts`), the
    pilot menu panel in `session/`. Layer debt is zero. **Done.**
 7. `live/` for sessions, pilot and traverse (`session/`, `auto-session/`, `traverse/` moved in). **Done.**
@@ -239,6 +239,11 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
    found from the project's dependencies (no config list needed). Scaffold hoppscotch and mailpit converted. **Done.**
 10. `map()` is the only way to build a flow: `defineFlow`, `start`/`end`, `chainFlow` and the `with*` flow wrappers are
     removed; `waygraph upgrade --codemod flows` (on the TypeScript AST via ts-morph) converts a project. **Done.**
+11. Code that reads like its own story (`src/ARCHITECTURE.md` "where the code starts"): `runner/runner.ts` plays planned
+    steps through one loop (`play-steps.ts`) with a mode (`modes/`: run, demo, report, branches) - run and demo are the
+    same pipeline; the demo UI is `demo/stepper/`. `core/` became `engine/` by concept (checkpoint, block, flow, run,
+    mem, trait), `cli/` holds `cli.ts` + `commands/`, a main file named after each feature folder, and no barrels
+    (check-structure allows re-exports only in `src/index.ts`). **Done.**
 
 
 
@@ -534,7 +539,7 @@ Direct correction on Phase 6c above: Map is **not** just a naming/documentation 
 "it's a forced convention. folder structure system." The rename actually happened
 (`src/routes/` -> `src/map/` across `templates/scaffold/` and `examples/routed-demo/`, fixing a
 real pre-existing bug found along the way: `templates/scaffold`'s own `clear-cart.method.block.ts`
-had zero generics at all, silently invisible to `waygraph graph`). `src/map-check.ts`
+had zero generics at all, silently invisible to `waygraph graph`). `src/analysis/map-check.ts`
 (`checkMap()`) exists and enforces verbatim folder-path-vs-real-URL matching (catches exactly a
 `(auth)/signin/` grouping a page whose real URL is `/signin`, not `/auth/signin`) and is now
 wired into `cli.ts` as `waygraph map [project]` (exits 1 on a violation, unlike `check`'s
@@ -577,7 +582,7 @@ was tried and still got bypassed by a careless agent.
   structurally can't silently accept a hacked Block. Regression coverage:
   `tests/nav/map-builder.spec.ts` (10 tests).
 
-**`waygraph map` CLI + a real drift fix, shipped after the above:** `src/map-check.ts`'s
+**`waygraph map` CLI + a real drift fix, shipped after the above:** `src/analysis/map-check.ts`'s
 `checkMap()` wired into `cli.ts` as `waygraph map [project]` (exits 1 on a violation, unlike
 `check`'s warnings-only stance). Proven against a real `npm install`ed scratch project and
 `examples/routed-demo/` directly. Also fixed a real drift the proof surfaced:

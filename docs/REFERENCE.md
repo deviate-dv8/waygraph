@@ -1576,7 +1576,7 @@ Per-knob env also: `WAYGRAPH_TODO_COMPACT`, `WAYGRAPH_TODO_CAP` (default 5),
 browser vs pilot" above) accepts the same knobs as `todoUi` on the JSON body.
 
 Run `waygraph --help` (or any subcommand with no args) for the full flag reference kept
-in `src/cli.ts`'s own `usage()` - that's the source of truth for flags, this table is the
+in `src/cli/usage.ts`'s `usage()` - that's the source of truth for flags, this table is the
 scannable summary.
 
 ## Example
@@ -1713,16 +1713,14 @@ touching the stepper/overlay chrome itself: `src/CLI-STOMP-GUARD.md`.
 ```
 package.json              the "waygraph" npm package itself
 src/                      layers and import rules: src/ARCHITECTURE.md
-  core/                   the engine: Checkpoints, Blocks (blocks/*), Traits, MemPage, Flows, map(), runGraph, run events
-  manifest/               the one project scanner + `waygraph manifest`
-  analysis/               graph, map check, practices check, coverage gap
+  engine/                 the engine - start at engine.ts: checkpoint/, block/ (+ kinds/), flow/ (map()), run/ (runGraph), mem/, trait/
+  runner/                 `waygraph run/demo` - start at runner.ts: plan/ -> session -> play-steps.ts with a mode (modes/: run, demo, report, branches)
+  demo/                   stepper/ (the UI around each demo step), overlay/ (rings, banner, todos, device; ui/ = shadow root + CSS), narration/
+  live/                   live browser sessions: auto, pilot, traverse
+  manifest/               the one project scanner + `waygraph manifest` + map packages
+  analysis/               graph, map check, practices check, validate / check, coverage gap
   runtime/                config, env, browser launch, extensions, webServer, video dir, playwright config, run log
-  demo/                   narration/ (stub ctx, pace, device, todos), overlay/ (the one in-page UI for demo, auto, pilot),
-                          stepper/ (the step-through UI around each demo step)
-  ui/                     overlay CSS (Open Props) + shadow root
-  runner/                 `waygraph run/demo`: runner.ts plays steps through one loop; modes/ (run, demo, report, branches)
-  live/                   live browser sessions, auto, pilot, traverse
-  commands/, cli/, cli.ts the CLI: one file per subcommand
+  cli/                    cli.ts (the dispatcher) + commands/ (one file per subcommand)
   index.ts                public API
 examples/saucedemo/         live Sauce Demo (Page + methods/ + Sel)
 templates/quickstart/       try demo / init template (mirrors sauce)

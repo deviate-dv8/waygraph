@@ -13,7 +13,7 @@ function isFlowLike(val: unknown): boolean {
   return val !== null && typeof val === "object" && typeof (val as { run?: unknown }).run === "function";
 }
 
-/** Set by `defineNavBlock` (non-enumerable) - see src/core.ts. */
+/** Set by `defineNavBlock` (non-enumerable) - see engine/block/kinds/nav.ts. */
 function isNavBlockMarked(val: Record<string, unknown>): boolean {
   return (val as { __waygraphKind?: string }).__waygraphKind === "nav";
 }
