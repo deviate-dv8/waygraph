@@ -1,6 +1,6 @@
 import { SURFACE } from "../ui/tokens.js";
 import { ensureShadowRoot, installShadowRoot } from "../ui/shadow.js";
-import type { HighlightTone } from "../../../engine/narration.js";
+import type { HighlightTone } from "../../../engine/stub/ring.js";
 import { verboseLog } from "../../verbose-log.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import { ignorePageGone } from "../../../engine/page-gone.js";

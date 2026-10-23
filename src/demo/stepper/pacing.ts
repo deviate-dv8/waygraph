@@ -1,6 +1,6 @@
 // How fast one demo step goes: its own pace, else its flow's, else the config's; --fast and WAYGRAPH_FAST_BLOCKS only
 // speed up steps nobody gave a pace. The interaction patches read this object live while the step runs.
-import type { DemoPace } from "../../engine/narration.js";
+import type { DemoPace } from "../../engine/stub/pace.js";
 import { demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, normalizeDemoPace, resolveStepDemoPace } from "../narration/demo-pace.js";
 import { envString } from "../../engine/env.js";
 

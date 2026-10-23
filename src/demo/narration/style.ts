@@ -1,5 +1,5 @@
-import type { HighlightSize, HighlightStyleDefaults, HighlightTone, HighlightWeight } from "../../engine/narration.js";
-import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/narration.js";
+import type { HighlightSize, HighlightStyleDefaults, HighlightTone, HighlightWeight } from "../../engine/stub/ring.js";
+import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/stub/ring.js";
 
 /** Apply Flow defaults under per-slot authored values (slot wins when set). */
 export function applyHighlightStyleDefaults<

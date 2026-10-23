@@ -1,4 +1,4 @@
-import type { TodoDockState, TodoDockUiOpts, TodoDockUiResolved, TodoListStyle, WaygraphTodoGroup, WaygraphTodoGroupInput, WaygraphTodoInput, WaygraphTodoItem } from "../../engine/narration.js";
+import type { TodoDockState, TodoDockUiOpts, TodoDockUiResolved, TodoListStyle, WaygraphTodoGroup, WaygraphTodoGroupInput, WaygraphTodoInput, WaygraphTodoItem } from "../../engine/stub/todos.js";
 import { envNumber, envString, envSwitch } from "../../engine/env.js";
 
 const positiveInt = (n: number | undefined, fallback: number): number => (n !== undefined && n > 0 ? Math.floor(n) : fallback);

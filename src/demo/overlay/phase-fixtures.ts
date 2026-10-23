@@ -1,4 +1,4 @@
-import type { StubPhaseResult } from "../../engine/narration.js";
+import type { StubPhaseResult } from "../../engine/stub/stub.js";
 import type { PilotHighlightFixtures } from "./pilot/fixtures.js";
 
 /**

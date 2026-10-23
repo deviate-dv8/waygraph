@@ -1,54 +1,11 @@
-// The narration contract a Block can carry (stubBefore / stubAfter / stubOnError, pace, rings): types only; demo/ plays it.
-import type { Checkpoint } from "./checkpoint/checkpoint.js";
-import type { MemPage } from "./mem/mem.js";
-
-/** Shared dwell fields on stubs, fixtures, and yap slides. */
-export type FixtureDurationFields = {
-  /**
-   * Min time this fixture stays visible before the demo advances.
-   * - `true` - defaults (2000ms normal, {@link FixtureDurationFields.fastMode} or 600ms when --fast)
-   * - `number` - override normal dwell ms
-   * - omit / false - no authored dwell (caller keeps its default timing)
-   */
-  duration?: boolean | number;
-  /**
-   * Dwell ms when demo `--fast` / gatesFast (only when {@link duration} is set).
-   * Default 600.
-   */
-  fastMode?: number;
-};
-
-
-/**
- * One checklist row for episode planning (demo panel).
- * Set via {@link StubCtx.todos} / {@link StubCtx.todoIndex} inside the lifecycle.
- */
-export type WaygraphTodoItem = {
-  text: string;
-  /**
-   * Stable id for external asserts / redirects (Mailhog, deep links).
-   * Stamped as `data-wg-todo-item` on the row.
-   */
-  id?: string;
-  /** Explicit done. If omitted, derived from todoIndex (index < todoIndex). */
-  done?: boolean;
-  /** Explicit current. If omitted, derived from todoIndex (index === todoIndex). */
-  current?: boolean;
-};
-
-
-/** One todo item as authored: a string or `{ id, text, done }`. */
-export type WaygraphTodoInput = string | WaygraphTodoItem;
-
-
-/**
- * Dock list presentation:
- * - `sequential` - arrow on current, strike done (demo walkthrough)
- * - `checklist` - checkbox done/pending only (no current arrow; independent checks)
- * - `bullets` - flat bullet list (no arrow/checkbox; open notes / trimmed dock)
- */
-export type TodoListStyle = "sequential" | "checklist" | "bullets";
-
+// The ctx stub API: what a stub (stubBefore / stubAfter / stubOnError, chained on a Block in a flow) is given and
+// what it records. The demo plays the record (demo/narration/narration.ts); ring.ts, todos.ts, viewport.ts and pace.ts
+// are the parts it paints.
+import type { Checkpoint } from "../checkpoint/checkpoint.js";
+import type { MemPage } from "../mem/mem.js";
+import type { TodoDockState, TodoDockUiOpts, TodoListStyle, WaygraphTodoGroupInput, WaygraphTodoInput, WaygraphTodoItem, WaygraphTodosOpts } from "./todos.js";
+import type { DeviceOrientation, DevicePreset, DeviceState, DeviceViewport } from "./viewport.js";
+import type { HighlightStubPhase, ResolvedHighlight, WaygraphHighlightStub } from "./ring.js";
 
 /** Where the top banner sits. */
 export type BannerPos = "left" | "center" | "right";
@@ -65,97 +22,6 @@ export interface BannerUiOpts {
    */
   captionFadeMs?: number;
 }
-
-/** One titled group in the floating todo dock (FR / Scenarios / ACs, etc.). */
-export type WaygraphTodoGroupInput = {
-  /** Stable group id -> `data-wg-todo-group`. */
-  id?: string;
-  /** Group heading shown above the items. */
-  title?: string;
-  /** Per-group style; falls back to dock default ({@link WaygraphTodosOpts.style}). */
-  style?: TodoListStyle;
-  items: readonly WaygraphTodoInput[];
-  /** Sequential only: which item is current (0-based). */
-  todoIndex?: number;
-};
-
-
-/** A titled checklist in the demo todo dock. */
-export type WaygraphTodoGroup = {
-  id?: string;
-  title?: string;
-  style: TodoListStyle;
-  items: WaygraphTodoItem[];
-};
-
-
-/** Full floating dock payload passed to the browser. */
-export type TodoDockState = {
-  /**
-   * Stable dock id for external targeting after redirects
-   * (`#wg-todo-dock[data-wg-todo-id="…"]`).
-   */
-  id?: string;
-  /** Default style for groups that omit their own. */
-  style: TodoListStyle;
-  /** Single-list title when using {@link StubCtx.todos} with `title`. */
-  title?: string;
-  groups: WaygraphTodoGroup[];
-  pos?: "left" | "right";
-};
-
-
-/** Options for compact {@link StubCtx.todos}(`id`, items, opts). */
-export type WaygraphTodosOpts = {
-  /** Dock heading. */
-  title?: string;
-  /** Current item index (0-based). */
-  index?: number;
-  /** `sequential` | `checklist` | `bullets`. */
-  style?: TodoListStyle;
-  /** Dock side. */
-  pos?: "left" | "right";
-  /**
-   * Keep other docks with different ids (multi-todo). Default false —
-   * one checklist at a time (setting todos replaces the previous dock).
-   */
-  parallel?: boolean;
-};
-
-
-/**
- * Floating todo-dock UX knobs (0.15.8+). Defaults are **smart on** so long
- * FR/AC checklists do not bury highlight rings. Opt out per phase or globally.
- *
- * Defaults: `compact`, `collision`, `behindRing` = true; `cap` = 5; `expandCap` = 14.
- *
- * Global: `WAYGRAPH_TODO_UI=full` / `waygraph demo --todo-full` turns smart off.
- * Per-knob env: `WAYGRAPH_TODO_COMPACT=0`, `WAYGRAPH_TODO_COLLISION=0`,
- * `WAYGRAPH_TODO_BEHIND=0`, `WAYGRAPH_TODO_CAP`, `WAYGRAPH_TODO_EXPAND_CAP`.
- */
-export type TodoDockUiOpts = {
-  /** Fold long lists around the current row (+N more / hover). Default true. */
-  compact?: boolean;
-  /** Visible rows when compact. Default 5. */
-  cap?: number;
-  /** Visible rows on hover / pinned expand. Default 14. */
-  expandCap?: number;
-  /** Flip dock L/R when an active ring overlaps it. Default true. */
-  collision?: boolean;
-  /** Dim + lower z-index while a highlight ring is up. Default true. */
-  behindRing?: boolean;
-};
-
-
-/** Resolved todo-dock UX (all fields present). */
-export type TodoDockUiResolved = {
-  compact: boolean;
-  cap: number;
-  expandCap: number;
-  collision: boolean;
-  behindRing: boolean;
-};
-
 
 /** Episode-level fixtures authored inside stubBefore/After/OnError(ctx). */
 export type StubPhaseFixtures = {
@@ -220,113 +86,6 @@ export type StubPhaseFixtures = {
   /** Portrait / landscape (swaps preset width/height). */
   orientation?: DeviceOrientation;
 };
-
-
-/** Named viewport presets (0.13+). */
-export type DevicePreset = "mobile" | "tablet" | "desktop";
-
-
-/** Explicit viewport box. */
-export type DeviceViewport = {
-  width: number;
-  height: number;
-  deviceScaleFactor?: number;
-};
-
-
-/**
- * Carried device fixture (todo-dock shaped persist).
- * Omit on a later step = keep; hideDevice/clearDevice/desktop = clear to desktop.
- */
-export type DeviceState = {
-  preset: DevicePreset;
-  viewport: DeviceViewport;
-  /** Playwright-ish: treat as mobile layout. */
-  isMobile: boolean;
-  /** Context needs hasTouch for touchscreen.tap (demo launches with hasTouch). */
-  hasTouch: boolean;
-  /** Demo gesture theater: finger cursor, tap/hold timing, prefer touchscreen. */
-  touchMode: boolean;
-  /** Viewport orientation (0.13.3+). Default derived from width/height. */
-  orientation?: DeviceOrientation;
-};
-
-
-/** Portrait (tall) or landscape (wide). */
-export type DeviceOrientation = "portrait" | "landscape";
-
-
-/** One named highlight slot on a block (selector + caption). */
-export interface WaygraphHighlightStub extends FixtureDurationFields {
-  selector: string;
-  /** Primary caption line. */
-  label: string;
-  /** Extra caption line (ring / slide body). */
-  detail?: string;
-  /** Short badge, e.g. AC / BUG / GATE / YAP. */
-  tag?: string;
-  /**
-   * Demo ring color + icon:
-   * - `planned` purple (authored narration, default)
-   * - `auto` gray (engine automation / verify fallback)
-   * - `info` blue · `warning` yellow · `danger` red · `success` green
-   */
-  tone?: HighlightTone;
-  /**
-   * Ring padding + label font scale: `sm` | `md` (default) | `lg`.
-   * Aliases: small/medium/large, s/m/l.
-   */
-  size?: HighlightSize;
-  /**
-   * Label font weight: `normal` (default) | `bold`.
-   * Aliases: regular, strong.
-   */
-  weight?: HighlightWeight;
-  /**
-   * Camera zoom while this ring is up (Screen Studio style - page scales toward
-   * the target / cursor). Typical `1.25` .. `2`. Cleared when the ring hides
-   * unless `zoomOut: false`. Episode default: {@link StubCtx.zoom}.
-   */
-  zoom?: number;
-  /**
-   * When false, keep the camera zoomed after this ring (pan to the next target
-   * instead of zooming out). Default true. Phase default: {@link StubCtx.zoomOut}.
-   */
-  zoomOut?: boolean;
-  /**
-   * Spotlight: dim the rest of the page, keep this target as the focal point.
-   */
-  focus?: boolean;
-  /**
-   * Caption text color (CSS color). Overrides tone label color when set.
-   */
-  color?: string;
-  /**
-   * Move the demo cursor to the target while this ring is up (default true
-   * for authored stub queues; set false to keep cursor hidden).
-   */
-  cursor?: boolean;
-  /**
-   * Optional link to a todo item id. When set, Method fill/click advances that
-   * todo row instead of relying on stub array index (avoids password/submit/username
-   * alphabetical reorder bugs).
-   */
-  todo?: string;
-  /** Slot key from stubBefore/After map (e.g. "username") - set by resolver. */
-  slotId?: string;
-  /**
-   * Pointer feel when touchMode is on (0.13+):
-   * - `tap` - short press via touchscreen (default in touch mode)
-   * - `hold` - long-press (~600ms) then release
-   * - `click` - mouse click even in touch mode
-   */
-  gesture?: "tap" | "hold" | "click" | "swipe";
-}
-
-
-/** A static stub phase: named ring slots to paint before or after a step. */
-export type HighlightStubPhase = Record<string, WaygraphHighlightStub>;
-
 
 /**
  * Open stub lifecycle context. Authors set rings + episode fixtures freely —
@@ -440,12 +199,10 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   todoDockUi(opts: TodoDockUiOpts): void;
 };
 
-
 /** A stub callback: receives the stub `ctx` and paints rings, titles and todos. */
 export type StubLifecycleFn<Out extends Checkpoint<string>> = (
   ctx: StubCtx<Out>,
 ) => void | Promise<void>;
-
 
 /**
  * Block stub authoring:
@@ -457,7 +214,6 @@ export type StubLifecycleFn<Out extends Checkpoint<string>> = (
 export type HighlightStubPhaseOrFn<Out extends Checkpoint<string>> =
   | HighlightStubPhase
   | StubLifecycleFn<Out>;
-
 
 /** Result of running a stub phase (rings + episode fixtures). */
 export type StubPhaseResult = {
@@ -496,88 +252,8 @@ export type StubPhaseResult = {
   todoParallel?: boolean;
 };
 
-
-/**
- * One yap/slide in a multi-step demo caption sequence.
- * Not block lifecycle - demo pauses (Next / auto-next) between slides.
- */
-export interface WaygraphSlide extends FixtureDurationFields {
-  /** Primary caption (required). */
-  caption: string;
-  detail?: string;
-  tag?: string;
-  /** Optional ring while this slide is showing. */
-  selector?: string;
-  tone?: HighlightTone;
-  size?: HighlightSize;
-  weight?: HighlightWeight;
-  /** Magnify via camera (Screen Studio) while this slide is showing. */
-  zoom?: number;
-}
-
-
-/**
- * Demo ring tones (iconified).
- * Automation (`auto`) is gray so authored planned/info/warning/danger/success stand out.
- * `orange` added for Blind Pilot's own real, direct user request: a visible
- * color distinction between a real Playwright-driven action (a Block run,
- * or a raw click/type/upload - `auto` gray, already meant exactly this) and
- * a pure DOM inspection (`auto dom` - orange, new) - "gray is waygraph
- * playwright run. orange is dom check."
- */
-export type HighlightTone =
-  | "planned"
-  | "auto"
-  | "info"
-  | "warning"
-  | "danger"
-  | "success"
-  | "orange";
-
-
-/** Ring + label scale. */
-export type HighlightSize = "sm" | "md" | "lg";
-
-
-/** Label font weight. */
-export type HighlightWeight = "normal" | "bold";
-
-
-/** Optional Flow-level defaults for demo rings (episode-wide). Stub/fixture wins. */
-export type HighlightStyleDefaults = {
-  tone?: HighlightTone;
-  size?: HighlightSize;
-  weight?: HighlightWeight;
-};
-
-
-/**
- * Demo pacing for a Flow episode or a Block/compose group.
- * - `blitz` - FF-like: skip theater + short gates (same as fastForwardComposeBlock)
- * - `fast` - shorter gates, keep cursor theater (~0.33x normal)
- * - `normal` - default demo pace (1x)
- * - `slow` - longer autoplay + fixture dwell (~2x)
- * - `number` - scale vs normal when `<= 20` (e.g. `0.5`, `1.5`, `3`);
- *   absolute gate/dwell ms when `> 20` (e.g. `4500`)
- */
-export type DemoPaceName = "blitz" | "fast" | "normal" | "slow";
-
-/** How fast a demo step runs: `"fast"`, `"slow"`, `"blitz"`, `"normal"`, or a multiplier (`0.5`, `2`). */
-export type DemoPace = DemoPaceName | number;
-
-
-export type WaygraphSlidesOrFn<Out extends Checkpoint<string>> =
-  | readonly WaygraphSlide[]
-  | ((out: Out) => readonly WaygraphSlide[]);
-
-
 /** Demo stub phase names. */
 export type HighlightStubPhaseName = "stubBefore" | "stubAfter" | "stubOnError";
-
-
-/** A ring or caption after its defaults and overrides are merged, ready to paint. */
-export type ResolvedHighlight = WaygraphHighlightStub;
-
 
 export type StubBagState = {
   highlights: HighlightStubPhase;
@@ -613,37 +289,3 @@ export type StubBagState = {
   /** Keep sibling docks (compact todos opts.parallel). */
   todoParallel?: boolean | undefined;
 };
-
-
-/** Map author aliases (`error` -> danger) to a canonical tone. */
-export function normalizeHighlightTone(raw: unknown): HighlightTone {
-  if (typeof raw !== "string") return "planned";
-  const t = raw.trim().toLowerCase();
-  if (t === "auto" || t === "automation" || t === "engine") return "auto";
-  if (t === "info" || t === "blue") return "info";
-  if (t === "warning" || t === "warn" || t === "yellow") return "warning";
-  if (t === "danger" || t === "error" || t === "red") return "danger";
-  if (t === "success" || t === "ok" || t === "green") return "success";
-  if (t === "orange" || t === "amber" || t === "dom" || t === "inspect") return "orange";
-  if (t === "planned" || t === "purple" || t === "authored") return "planned";
-  return "planned";
-}
-
-
-/** Map size aliases to sm/md/lg. */
-export function normalizeHighlightSize(raw: unknown): HighlightSize {
-  if (typeof raw !== "string") return "md";
-  const t = raw.trim().toLowerCase();
-  if (t === "sm" || t === "s" || t === "small" || t === "tiny") return "sm";
-  if (t === "lg" || t === "l" || t === "large" || t === "big" || t === "xl") return "lg";
-  return "md";
-}
-
-
-/** Map weight aliases to normal/bold. */
-export function normalizeHighlightWeight(raw: unknown): HighlightWeight {
-  if (typeof raw !== "string") return "normal";
-  const t = raw.trim().toLowerCase();
-  if (t === "bold" || t === "strong" || t === "heavy" || t === "b") return "bold";
-  return "normal";
-}

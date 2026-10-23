@@ -2,7 +2,8 @@
 // below build, decorate and route Blocks.
 import type { Page } from "@playwright/test";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
-import type { HighlightStubPhaseOrFn, WaygraphSlidesOrFn } from "../narration.js";
+import type { HighlightStubPhaseOrFn } from "../stub/stub.js";
+import type { WaygraphSlidesOrFn } from "../stub/ring.js";
 import { MemPage } from "../mem/mem.js";
 import type { MemKey } from "../mem/mem.js";
 import type { Trait } from "../trait/trait.js";
@@ -214,7 +215,7 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
    * Demo pacing for this Block (the `{ pace }` step option).
    * Demo/step only - `runGraph` ignores. Prefer `fastForwardComposeBlock` for blitz.
    */
-  demoPace?: import("../narration.js").DemoPace;
+  demoPace?: import("../stub/pace.js").DemoPace;
   /**
    * Optional. When this Block's real choices depend on the live page
    * (which of several items to add to cart, which of several rows to
@@ -275,14 +276,14 @@ export type DefinedBlock<In extends Checkpoint<string>, Out extends Checkpoint<s
    * Overloads keep `ctx` typed when the author passes a lifecycle function
    * (a single union parameter would make the callback param `any`).
    */
-  stubBefore(stub: import("../narration.js").HighlightStubPhase): DefinedBlock<In, Out>;
-  stubBefore(stub: import("../narration.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
+  stubBefore(stub: import("../stub/ring.js").HighlightStubPhase): DefinedBlock<In, Out>;
+  stubBefore(stub: import("../stub/stub.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
   /** Demo narration after resolve. Prefer ctx callbacks over slot-map objects. */
-  stubAfter(stub: import("../narration.js").HighlightStubPhase): DefinedBlock<In, Out>;
-  stubAfter(stub: import("../narration.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
+  stubAfter(stub: import("../stub/ring.js").HighlightStubPhase): DefinedBlock<In, Out>;
+  stubAfter(stub: import("../stub/stub.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
   /** Demo narration when the step fails / expected-failure path. */
-  stubOnError(stub: import("../narration.js").HighlightStubPhase): DefinedBlock<In, Out>;
-  stubOnError(stub: import("../narration.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
+  stubOnError(stub: import("../stub/ring.js").HighlightStubPhase): DefinedBlock<In, Out>;
+  stubOnError(stub: import("../stub/stub.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
 };
 
 /**
@@ -493,10 +494,10 @@ export function withVerify<B extends SomeBlock>(
 }
 
 
-type StubPhaseFn<Out extends Checkpoint<string>> = import("../narration.js").HighlightStubPhaseOrFn<Out>;
+type StubPhaseFn<Out extends Checkpoint<string>> = import("../stub/stub.js").HighlightStubPhaseOrFn<Out>;
 
 
-function isHighlightStubPhase(v: unknown): v is import("../narration.js").HighlightStubPhase {
+function isHighlightStubPhase(v: unknown): v is import("../stub/ring.js").HighlightStubPhase {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
@@ -504,11 +505,11 @@ function isHighlightStubPhase(v: unknown): v is import("../narration.js").Highli
 /** Run a prior stub (fn or slot map) into an open ctx so decorate can chain. */
 async function applyStubIntoCtx<Out extends Checkpoint<string>>(
   raw: StubPhaseFn<Out> | undefined,
-  ctx: import("../narration.js").StubCtx<Out>,
+  ctx: import("../stub/stub.js").StubCtx<Out>,
 ): Promise<void> {
   if (raw === undefined) return;
   if (typeof raw === "function") {
-    const ret = await (raw as import("../narration.js").StubLifecycleFn<Out>)(ctx);
+    const ret = await (raw as import("../stub/stub.js").StubLifecycleFn<Out>)(ctx);
     if (isHighlightStubPhase(ret)) {
       for (const [id, stub] of Object.entries(ret)) {
         if (stub) ctx.ring(id, stub);
@@ -536,7 +537,7 @@ function withStubPhase<In extends Checkpoint<string>, Out extends Checkpoint<str
     stubOnError?: StubPhaseFn<Out>;
   };
   const prev = instr[phase];
-  const chained: import("../narration.js").StubLifecycleFn<Out> = async (ctx) => {
+  const chained: import("../stub/stub.js").StubLifecycleFn<Out> = async (ctx) => {
     await applyStubIntoCtx(prev, ctx);
     await applyStubIntoCtx(stub, ctx);
   };

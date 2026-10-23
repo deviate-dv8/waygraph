@@ -1,6 +1,8 @@
 // Plays a Block's narration for one phase (stubBefore / stubAfter / stubOnError): runs its ctx stub and returns the
 // rings, todos, device, title and caption it set, for the overlay to paint.
-import type { DeviceState, HighlightStubPhaseName, ResolvedHighlight, StubBagState, StubCtx, StubLifecycleFn, StubPhaseResult, WaygraphSlide, WaygraphSlidesOrFn } from "../../engine/narration.js";
+import type { DeviceState } from "../../engine/stub/viewport.js";
+import type { HighlightStubPhaseName, StubBagState, StubCtx, StubLifecycleFn, StubPhaseResult } from "../../engine/stub/stub.js";
+import type { ResolvedHighlight, WaygraphSlide, WaygraphSlidesOrFn } from "../../engine/stub/ring.js";
 import { createStubCtx } from "./stub-ctx.js";
 import { applyDefaultZoom, applyDefaultZoomOut, isStubPhase, readStubRaw, resolvePhaseMap } from "./merge.js";
 import { buildTodoDock, normalizeTodoStyle, normalizeTodos } from "./todo-dock.js";

@@ -1,6 +1,6 @@
 // The demo's console log ([hh:mm:ss] waygraph demo: ...): what each step painted, so an agent without eyes can follow.
 import { demoPaceIsFast, demoPaceIsSlow, formatDemoPaceBadge, formatDemoPaceLabel, normalizeDemoPace } from "../narration/demo-pace.js";
-import { normalizeHighlightTone } from "../../engine/narration.js";
+import { normalizeHighlightTone } from "../../engine/stub/ring.js";
 import { envFlag } from "../../engine/env.js";
 
 export function demoPaceKind(pace: any) {

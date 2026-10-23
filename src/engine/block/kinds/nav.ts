@@ -35,12 +35,12 @@ export type NavBlock<Out extends Checkpoint<string>> = Omit<
     newCheck: Trait["check"] | Trait,
   ): NavBlock<Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): NavBlock<Out>;
-  stubBefore(stub: import("../../narration.js").HighlightStubPhase): NavBlock<Out>;
-  stubBefore(stub: import("../../narration.js").StubLifecycleFn<Out>): NavBlock<Out>;
-  stubAfter(stub: import("../../narration.js").HighlightStubPhase): NavBlock<Out>;
-  stubAfter(stub: import("../../narration.js").StubLifecycleFn<Out>): NavBlock<Out>;
-  stubOnError(stub: import("../../narration.js").HighlightStubPhase): NavBlock<Out>;
-  stubOnError(stub: import("../../narration.js").StubLifecycleFn<Out>): NavBlock<Out>;
+  stubBefore(stub: import("../../stub/ring.js").HighlightStubPhase): NavBlock<Out>;
+  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): NavBlock<Out>;
+  stubAfter(stub: import("../../stub/ring.js").HighlightStubPhase): NavBlock<Out>;
+  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): NavBlock<Out>;
+  stubOnError(stub: import("../../stub/ring.js").HighlightStubPhase): NavBlock<Out>;
+  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): NavBlock<Out>;
 };
 
 
@@ -68,9 +68,9 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
   from?: readonly Checkpoint<string>[];
   requires?: readonly MemKey<unknown>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
-  stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubBefore?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
   /**
    * Live per-instance menu rows for `waygraph auto` (see {@link Block.instanceOptions}).
    * When set, the explore menu lists one row per option instead of a single
@@ -208,9 +208,9 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   from?: readonly Checkpoint<string>[];
   requires?: readonly MemKey<unknown>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
-  stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubBefore?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
 };
 

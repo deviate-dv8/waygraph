@@ -4,7 +4,8 @@ import type { BrowserContext } from "@playwright/test";
 import type { Checkpoint } from "../engine/checkpoint/checkpoint.js";
 import type { EngineConfig } from "../engine/config.js";
 import type { MemPage } from "../engine/mem/mem.js";
-import type { DemoPace, HighlightStyleDefaults } from "../engine/narration.js";
+import type { DemoPace } from "../engine/stub/pace.js";
+import type { HighlightStyleDefaults } from "../engine/stub/ring.js";
 import type { WgPage } from "../demo/types.js";
 import type { SomeBlock } from "../engine/block/block.js";
 

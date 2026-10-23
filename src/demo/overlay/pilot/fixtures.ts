@@ -1,8 +1,11 @@
 import { buildTodoDock, resolveTodoDockUi } from "../../narration/todo-dock.js";
 import { formatHighlightCaption } from "../../narration/style.js";
-import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../../engine/narration.js";
+import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../../engine/stub/ring.js";
 import { resolveDeviceState } from "../../narration/device.js";
-import type { BannerPos, BannerUiOpts, DevicePreset, DeviceState, HighlightTone, TodoDockUiOpts, TodoListStyle, WaygraphTodoGroupInput } from "../../../engine/narration.js";
+import type { BannerPos, BannerUiOpts } from "../../../engine/stub/stub.js";
+import type { DevicePreset, DeviceState } from "../../../engine/stub/viewport.js";
+import type { HighlightTone } from "../../../engine/stub/ring.js";
+import type { TodoDockUiOpts, TodoListStyle, WaygraphTodoGroupInput } from "../../../engine/stub/todos.js";
 import { ensureInstalled } from "./shell.js";
 import { verboseLog } from "../../verbose-log.js";
 import type { Page } from "@playwright/test";

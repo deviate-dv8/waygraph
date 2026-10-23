@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { applyDevicePhase, normalizeDevicePreset, resolveDeviceState } from "../../src/demo/narration/device.js";
 import { runStubPhase } from "../../src/demo/narration/narration.js";
 import type { Block } from "../../src/engine/block/block.js";
-import type { StubCtx } from "../../src/engine/narration.js";
+import type { StubCtx } from "../../src/engine/stub/stub.js";
 
 describe("device presets + resolve", () => {
   it("normalizes aliases", () => {

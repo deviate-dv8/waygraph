@@ -1,4 +1,5 @@
-import type { BannerPos, StubBagState, StubCtx, WaygraphTodosOpts } from "../../engine/narration.js";
+import type { BannerPos, StubBagState, StubCtx } from "../../engine/stub/stub.js";
+import type { WaygraphTodosOpts } from "../../engine/stub/todos.js";
 import { normalizeTodoPos, normalizeTodoStyle } from "./todo-dock.js";
 import { applyOrientation, normalizeDeviceOrientation, resolveDeviceState } from "./device.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";

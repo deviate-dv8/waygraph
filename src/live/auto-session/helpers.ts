@@ -1,4 +1,4 @@
-import type { StubPhaseResult } from "../../engine/narration.js";
+import type { StubPhaseResult } from "../../engine/stub/stub.js";
 import type { ExploreMenu } from "../auto/explore.js";
 import type { BlockEntry } from "../../manifest/project.js";
 import type { PickResult } from "../auto/auto.js";

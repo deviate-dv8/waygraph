@@ -16,8 +16,9 @@ import type { BrowserContext, Page } from "@playwright/test";
 import { MemPage } from "../mem/mem.js";
 import type { Trait } from "../trait/trait.js";
 import { findBlockIndex, modVerify, withVerify } from "../block/block.js";
-import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../narration.js";
-import type { DemoPace, HighlightStyleDefaults } from "../narration.js";
+import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../stub/ring.js";
+import type { DemoPace } from "../stub/pace.js";
+import type { HighlightStyleDefaults } from "../stub/ring.js";
 import { ignorePageGone } from "../page-gone.js";
 import type { SomeBlock } from "../block/block.js";
 
@@ -100,12 +101,12 @@ export interface Flow<Out extends Checkpoint<string>> {
    * Demo pacing for this Flow's episode (`map({ demoPace })`).
    * `run()` ignores; step/demo applies per Block in the episode.
    */
-  readonly demoPace?: import("../narration.js").DemoPace;
+  readonly demoPace?: import("../stub/pace.js").DemoPace;
   /**
    * Default highlight size/weight/tone for this Flow's episode (`map({ highlightStyle })`).
    * Per-slot stub/fixture values win. `run()` ignores.
    */
-  readonly highlightStyle?: import("../narration.js").HighlightStyleDefaults;
+  readonly highlightStyle?: import("../stub/ring.js").HighlightStyleDefaults;
   /**
    * `map({ memStub: true })` - opts into
    * auto-filling `requires` keys with registered fake values

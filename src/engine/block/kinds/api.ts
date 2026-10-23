@@ -48,9 +48,9 @@ export interface ApiBlockOptions<In extends Checkpoint<string>, Out extends Chec
   resolve?: (result: ApiCallResult) => Out;
   verify?: Trait[] | ((out: Out) => Trait[]);
   requires?: readonly MemKey<unknown>[];
-  stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubBefore?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
 }
 
 // Internal scratch key threading act()'s result to observe()/resolve() - Instruction has no other

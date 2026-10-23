@@ -11,7 +11,7 @@ import { envMode, loadEnvFiles } from "./env-file.js";
 import { resolveExtensions } from "./extensions.js";
 import type { ExtensionSpec } from "../engine/config.js";
 import type { WebServerConfig } from "./webserver.js";
-import type { DemoPace } from "../engine/narration.js";
+import type { DemoPace } from "../engine/stub/pace.js";
 import { envString, setEnv } from "../engine/env.js";
 import type { WaygraphEnvName } from "../engine/env.js";
 import { takeGlobalFlag } from "./global-flag.js";

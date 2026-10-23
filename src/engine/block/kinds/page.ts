@@ -23,9 +23,9 @@ export type PageBlockOptions<Out extends Checkpoint<string>> = {
   /** The Checkpoint this page hub confirms: its value (`Home`). */
   checkpoint: Out;
   verify?: Trait[] | ((out: Out) => Trait[]);
-  stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubBefore?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
   requires?: readonly MemKey<unknown>[];
   /**
    * Methods available on this page. Array, or a record of Blocks / `() => Block`
@@ -66,12 +66,12 @@ export type PageBlock<Out extends Checkpoint<string>> = Omit<
     newCheck: Trait["check"] | Trait,
   ): PageBlock<Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out>;
-  stubBefore(stub: import("../../narration.js").HighlightStubPhase): PageBlock<Out>;
-  stubBefore(stub: import("../../narration.js").StubLifecycleFn<Out>): PageBlock<Out>;
-  stubAfter(stub: import("../../narration.js").HighlightStubPhase): PageBlock<Out>;
-  stubAfter(stub: import("../../narration.js").StubLifecycleFn<Out>): PageBlock<Out>;
-  stubOnError(stub: import("../../narration.js").HighlightStubPhase): PageBlock<Out>;
-  stubOnError(stub: import("../../narration.js").StubLifecycleFn<Out>): PageBlock<Out>;
+  stubBefore(stub: import("../../stub/ring.js").HighlightStubPhase): PageBlock<Out>;
+  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out>;
+  stubAfter(stub: import("../../stub/ring.js").HighlightStubPhase): PageBlock<Out>;
+  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out>;
+  stubOnError(stub: import("../../stub/ring.js").HighlightStubPhase): PageBlock<Out>;
+  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out>;
 };
 
 

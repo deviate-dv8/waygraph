@@ -28,7 +28,8 @@ engine/           the engine (layer: engine - imports nothing outside engine/)
   run/              run.ts (runGraph), connect.ts (joins Blocks), events.ts (run events), launch.ts, hooks.ts
   mem/              mem.ts (MemPage, keys), mem-stub.ts
   trait/            trait.ts (verify checks), selector.ts
-  narration.ts, errors.ts, config.ts, locate.ts
+  stub/             stub.ts (StubCtx: what a ctx stub can paint), ring.ts, todos.ts, viewport.ts, pace.ts
+  env.ts (every WAYGRAPH_* variable), page-gone.ts, errors.ts, config.ts, locate.ts
 runner/           waygraph run / demo, spawned inside the project (exported as waygraph/runner)
   runner.ts         plan -> session -> playSteps(mode)
   play-steps.ts     the one loop: seed mem, reset between episodes, mode.before, run the Block, mode.after / failed

@@ -3,7 +3,7 @@
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import { hasAuthoredStubAfter, resolveSlides, runStubPhase } from "../narration/narration.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
-import type { StubPhaseResult } from "../../engine/narration.js";
+import type { StubPhaseResult } from "../../engine/stub/stub.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
 import { extractVerifyHighlights, renderAfterStep } from "./step-panels.js";
 import { presentSlides } from "./slides.js";

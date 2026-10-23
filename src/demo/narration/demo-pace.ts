@@ -1,4 +1,5 @@
-import type { DemoPace, FixtureDurationFields } from "../../engine/narration.js";
+import type { DemoPace } from "../../engine/stub/pace.js";
+import type { FixtureDurationFields } from "../../engine/stub/ring.js";
 import { envString } from "../../engine/env.js";
 
 /** Default fixture dwell when `duration: true`. */

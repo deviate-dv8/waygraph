@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { normalizeHighlightTone, normalizeHighlightSize, normalizeHighlightWeight } from "../../src/engine/narration.js";
+import { normalizeHighlightTone, normalizeHighlightSize, normalizeHighlightWeight } from "../../src/engine/stub/ring.js";
 import { formatHighlightCaption } from "../../src/demo/narration/style.js";
 import {
   normalizeDemoPace,

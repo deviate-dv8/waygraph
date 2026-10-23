@@ -5,7 +5,7 @@ import { resolveHighlightSlots, runStubPhase } from "../../src/demo/narration/na
 import { defineMethodBlock } from "../../src/engine/block/kinds/method.js";
 import { checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
 import type { Block } from "../../src/engine/block/block.js";
-import type { StubCtx } from "../../src/engine/narration.js";
+import type { StubCtx } from "../../src/engine/stub/stub.js";
 
 describe("normalizeTodos", () => {
   it("applies todoIndex for sequential done/current", () => {
