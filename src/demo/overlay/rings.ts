@@ -161,7 +161,7 @@ export async function applyHighlightZoom(page: WgPage, selector: any, zoom: any,
 
 export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFast: any, opts: any) {
   const list = highlights || [];
-  // defaultHoldMs: when set (fail path), use instead of legacy 900/200 so BUG
+  // defaultHoldMs: when set (fail path), use instead of the default 900/200 so BUG
   // rings stay visible ~2s before the error panel (PIA stubOnError RFC).
   const defaultHoldMs = opts && opts.defaultHoldMs != null ? opts.defaultHoldMs : null;
   const pace = opts && opts.pace !== undefined ? opts.pace : undefined;
@@ -269,9 +269,9 @@ export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFa
             .catch(() => {});
         }
         const authored = resolveFixtureDwellMs(h, { gatesFast, pace });
-        const legacyMs = i === list.length - 1 ? 200 : 900;
+        const defaultMs = i === list.length - 1 ? 200 : 900;
         const holdMs =
-          authored != null ? authored : defaultHoldMs != null ? defaultHoldMs : legacyMs;
+          authored != null ? authored : defaultHoldMs != null ? defaultHoldMs : defaultMs;
         const gap = lastRingEndedAt != null ? ringStarted - lastRingEndedAt : null;
         const holdExtra =
           "hold=" +

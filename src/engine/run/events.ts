@@ -47,7 +47,7 @@ export function beginRun(label?: string): boolean {
     return false;
   }
   const at = Date.now();
-  open = { runId: `${new Date(at).toISOString().replace(/[:.]/g, "-")}-${Math.random().toString(36).slice(2, 6)}`, startedAt: at, depth: 1, index: 0 };
+  open = { runId: `${new Date(at).toISOString().replace(/[:.]/g, "-")}-${crypto.randomUUID().slice(0, 8)}`, startedAt: at, depth: 1, index: 0 };
   emit({ type: "run:start", runId: open.runId, at, ...(label ? { label } : {}) });
   return true;
 }

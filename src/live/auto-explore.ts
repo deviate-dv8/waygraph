@@ -1,7 +1,9 @@
+import { join } from "node:path";
 import type { Page } from "@playwright/test";
 import type { WaygraphInstanceOption } from "../engine/block/block.js";
 import { discoverGraph, type WaygraphGraph, type WaygraphEdge } from "../analysis/graph.js";
 import { scanProject } from "../manifest/project.js";
+import { importFresh, walkDir } from "../manifest/scan.js";
 
 export interface ExploreContextOpts {
   blocksSelect?: import("../manifest/select.js").BlocksSelect;
@@ -101,6 +103,8 @@ export async function loadBlockLibrary(
       if (/second time|playwright/i.test(msg)) console.error(`waygraph auto: skip ${relFile}: ${msg.split("\n")[0]}`);
     },
   });
+  // A Block's required keys get the project's own defaults: every `*.mem-stubs.ts` registers its fakes on import.
+  for (const file of walkDir(join(projectDir, "src"), /\.mem-stubs\.ts$/)) await importFresh(file);
   for (const b of scan.blocks) {
     const kind = isNavBlockMarked(b.block) ? "nav" : "action";
     if (byName.has(b.name)) {

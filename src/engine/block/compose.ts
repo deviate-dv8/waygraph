@@ -28,7 +28,6 @@ export interface ComposedBlock<In extends Checkpoint<string>, Out extends Checkp
    */
   withStepVerify(
     step: Block<any, any> | string | number,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     verify: Trait[] | ((out: any) => Trait[]),
   ): ComposedBlock<In, Out>;
   /**

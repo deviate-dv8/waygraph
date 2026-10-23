@@ -16,7 +16,7 @@ import {
   type ExploreEdge,
 } from "../auto-explore.js";
 import type { WaygraphGraph } from "../../analysis/graph.js";
-import { defaultMemValueForKey } from "../auto-explore-run.js";
+import { memStubValue } from "../auto-explore-run.js";
 import { resolveBaseUrl } from "../../runtime/config.js";
 import { EdgeLeaseCoordinator } from "./lease.js";
 import {
@@ -93,7 +93,7 @@ function seedMem(library: Map<string, BlockEntry>, mem: MemPage, dataJson?: stri
         mem.set(k, envParsed[k.name]);
         continue;
       }
-      const def = defaultMemValueForKey(k.name);
+      const def = memStubValue(k);
       if (def !== undefined) mem.set(k, def);
     }
   }

@@ -55,13 +55,11 @@ interface Window {
 
 // The overlay's in-page bridge: every `window.__wg*` value the demo, auto and pilot overlays install and call.
 interface Window {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: `__wg${string}`]: any;
 }
 
 // Timers and payloads the overlay parks on its own elements.
 interface HTMLElement {
   _wgTimer?: ReturnType<typeof setTimeout> | undefined;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _wgLastPayload?: any;
 }

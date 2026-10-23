@@ -332,7 +332,6 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     }
     const composed = fastForwardComposeBlock(
       ff.name,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ff.buffer as any,
     );
     return new MapBuilder<Out>(

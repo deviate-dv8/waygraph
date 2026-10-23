@@ -8,7 +8,7 @@ export type FixtureDurationFields = {
    * Min time this fixture stays visible before the demo advances.
    * - `true` - defaults (2000ms normal, {@link FixtureDurationFields.fastMode} or 600ms when --fast)
    * - `number` - override normal dwell ms
-   * - omit / false - no authored dwell (caller keeps legacy timing)
+   * - omit / false - no authored dwell (caller keeps its default timing)
    */
   duration?: boolean | number;
   /**

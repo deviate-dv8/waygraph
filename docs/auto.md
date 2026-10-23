@@ -21,7 +21,7 @@ Page hubs + Methods / Effects hang off the graph. CLI and GUI share
 | In-repo Sauce Demo | [see clone steps](./quickstart#saucedemo), then `npm run auto` |
 
 `--data` seeds MemKeys (same JSON shape as demo/run). Alias env:
-`WAYGRAPH_AUTO_MEM`. Project path optional (defaults to cwd).
+`WAYGRAPH_AUTO_MEM`. Project path optional (defaults to cwd). Keys `--data` leaves out default to the project's mem stubs (every `*.mem-stubs.ts` under `src/`).
 Pass a `.flow.ts` path to **run** that flow (not explore).
 On Sauce Demo LoginPage you should see `submit-login` (needs
 `waygraph@0.10.6+` for headed `try auto` / file-path

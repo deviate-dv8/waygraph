@@ -72,7 +72,6 @@ export interface BlockInfo {
    * The actual Block, re-runnable on its own - e.g. step-through tooling that runs a Flow's Blocks one at a time.
    * Introspection that only wants to read the shape (a visualizer) can ignore this and use `name`/`routes` alone.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   block: Block<any, any>;
 }
 
@@ -149,7 +148,6 @@ export interface Flow<Out extends Checkpoint<string>> {
    */
   withBlockVerify(
     block: Block<any, any> | string | number,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     verify: Trait[] | ((out: any) => Trait[]),
   ): Flow<Out>;
   /**

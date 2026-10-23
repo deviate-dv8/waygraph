@@ -42,7 +42,7 @@ export function getMemStub<T>(key: MemKey<T>): (() => T) | undefined {
  * own `--mem-stub`-aware seeding) - call this yourself before `run()` when
  * `flow.memStub` is true, the same way external tooling already reads
  * `flow.resetSession`/`flow.title`/etc. (`run()` itself never reads Flow
- * flags - see the `with*` helpers in engine.ts).
+ * flags; the settings come from `map({ ... })`).
  * @example
  * if (flow.memStub) seedMemStub(mem, flow);
  * await flow.run(mem, config);

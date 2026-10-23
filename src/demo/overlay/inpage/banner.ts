@@ -1,6 +1,5 @@
 // In-page (runs inside the browser via page.evaluate, must stay self-contained): the title banner card.
 import type { WgBox } from "../../types.js";
-/* eslint-disable no-unused-vars */
 export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi, bannerUi, tag: bannerTag }: any) {
         const POSITIONS = ["left", "center", "right"];
         const applyPos = (el: HTMLElement, pos: any) => {

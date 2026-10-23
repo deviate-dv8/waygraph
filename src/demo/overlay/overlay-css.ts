@@ -10,7 +10,7 @@ import { SURFACE } from "./ui/tokens.js";
 // label-under-box language, minus everything camera/narration-specific).
 // Purely CLI-level orchestration - no engine changes, no change to the
 // non-STEP path above.
-// Runner-only chrome (step panel, todo-dock legacy variant, zoom/typing/device chips) - NOT
+// Runner-only chrome (step panel, zoom/typing/device chips) - NOT
 // ring/cursor/banner, which come from the one shared bundle every surface installs
 // (ui/css/*.css, see ensureShadowRoot in overlay.ts). Injected under its own key so it
 // never collides with that bundle.

@@ -1,5 +1,4 @@
 // In-page (runs inside the browser via page.evaluate, must stay self-contained): readiness stamps agents read to know a panel painted.
-/* eslint-disable no-unused-vars */
 export function installStamp({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
         // Blind-agent overlay beacons: every modal root gets data-wg-ui /
         // data-wg-modal / data-wg-ready so tests can fail on a blank panel.

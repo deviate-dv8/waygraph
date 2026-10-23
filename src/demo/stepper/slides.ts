@@ -251,7 +251,7 @@ export async function presentSlides(page: WgPage, slides: any, _gate: any, opts:
     );
     const started = Date.now();
     // When duration is set: floor both manual Next and auto-next to dwellMs.
-    // When unset: legacy - auto uses autoplayMs, manual Next is immediate.
+    // When unset: auto uses autoplayMs, manual Next is immediate.
     const autoWaitMs = dwellMs != null ? dwellMs : autoplayMs;
     for (;;) {
       const acked = await page

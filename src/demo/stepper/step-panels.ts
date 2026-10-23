@@ -391,7 +391,7 @@ export async function renderAfterStep(page: WgPage, info: any) {
   // Cycle through EVERY declared/recovered highlight in order, each shown
   // long enough to actually register - "it highlights something [...] then
   // it highlights something [else] and next," not just the first one.
-  // duration / fastMode on stubAfter (or flow fixtures) override the legacy
+  // duration / fastMode on stubAfter (or flow fixtures) override the default
   // 900ms / 200ms holds when set.
   await cycleHighlightRings(page, highlights, gatesFast, {
     pace: info.pace,

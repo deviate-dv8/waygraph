@@ -184,14 +184,12 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
    */
   description?: string;
   /** The act/observe/resolve/verify pipeline itself. See {@link Instruction}. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   instruction: Instruction<In, Out, any>;
   /**
    * Routing attached by {@link branch}. Unset on a plain or `connect()`-composed
    * Block, meaning "terminal after one step". Returning the Block itself is a
    * self-loop - see `runGraph`'s `maxSteps` for the safety net that needs.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   next?(checkpoint: Out): Block<any, any> | null | undefined;
   /**
    * `branch()`'s routing table as plain, readable data - Checkpoint tag ->
@@ -212,7 +210,6 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
    * `act`.
    * @example requires: [LoginCreds.key]
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   requires?: readonly MemKey<any>[];
   /**
    * Demo pacing for this Block (the `{ pace }` step option).
@@ -240,7 +237,6 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
    * @example LoginBlock.withVerify([])              // navigation-only, no DOM confirmation
    * @example LoginBlock.withVerify([urlMatches(/dashboard/)])
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   withVerify?(verify: Trait[] | ((out: Out) => Trait[])): Block<In, Out>;
   /**
    * Replaces one existing Trait in this Block's `verify` list, by its `name`
@@ -250,14 +246,12 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
    * exist - use {@link Block.withVerify} if there's nothing there yet to replace.
    * @example LoginBlock.modVerify("url-matches", urlMatches(/dashboard\.html/))
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   modVerify?(nameOrIndex: string | number, newCheck: Trait["check"] | Trait): Block<In, Out>;
   /**
    * {@link Block.modVerify}, but for several named checks in one call - a v2
    * variant that differs in five ways from v1 shouldn't need five nested calls.
    * @example LoginBlock.modVerifyAll({ "url-matches": urlMatches(/v2/), "cart-badge": textEquals(".badge-v2", "1") })
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   modVerifyAll?(patches: Record<string, Trait["check"] | Trait>): Block<In, Out>;
 }
 
@@ -328,7 +322,6 @@ export function branch<In extends Checkpoint<string>, Out extends Checkpoint<str
   routes: { [K in Out["__state"]]: Block<Extract<Out, Checkpoint<K>>, any> | null },
 ): DefinedBlock<In, any> {
   const base = stripMethods(block);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let routed!: DefinedBlock<In, any>;
   const routesAsData: Record<string, string | null> = {};
   for (const [tag, target] of Object.entries(routes as Record<string, Block<any, any> | null>)) {
@@ -364,7 +357,6 @@ export function branch<In extends Checkpoint<string>, Out extends Checkpoint<str
  * `branch()` added routing to afterward, and without this step the result would
  * silently drop that routing, since the stale closure never knew about it.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stripMethods<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   block: Block<In, Out>,
 ): {

@@ -83,28 +83,14 @@ function missingMemKeys(entry: BlockEntry, mem: MemPage): MemKey<unknown>[] {
   return requires.filter((k) => !mem.has(k));
 }
 
-const DEFAULT_CREDENTIALS = { username: "standard_user", password: "secret_sauce" };
-
-/**
- * Saucedemo-only defaults. Exact key names only — never substring `"login"`.
- * A consumer's own `key<string>("login-email")` must stay unset here, or it
- * silently gets a saucedemo credentials object instead of its own default.
- */
-export function defaultMemValueForKey(keyName: string): unknown | undefined {
-  if (
-    keyName === "login-credentials" ||
-    keyName === "credentials" ||
-    keyName === "saucedemo.credentials"
-  ) {
-    return DEFAULT_CREDENTIALS;
-  }
-  return undefined;
+/** The project's own default for a key: its `registerMemStub` fake (live sessions load every `*.mem-stubs.ts`). */
+export function memStubValue(key: MemKey<unknown>): unknown | undefined {
+  return getMemStub(key)?.();
 }
 
-function defaultMemJsonPrompt(keyName: string): string {
-  const def = defaultMemValueForKey(keyName);
-  if (def !== undefined) return JSON.stringify(def);
-  return "{}";
+function defaultMemJsonPrompt(key: MemKey<unknown>): string {
+  const def = memStubValue(key);
+  return def === undefined ? "{}" : JSON.stringify(def);
 }
 
 function seedMemFromEnv(mem: MemPage, entry: BlockEntry): boolean {
@@ -121,7 +107,7 @@ function seedMemFromEnv(mem: MemPage, entry: BlockEntry): boolean {
   }
 }
 
-/** Pre-seed known demo keys (saucedemo creds) so headful/cli do not stop for mem forms. */
+/** Pre-seeds required keys from WAYGRAPH_DATA and the project's mem stubs, so a session does not stop for mem forms. */
 export function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage): void {
   const raw = process.env.WAYGRAPH_DATA ?? process.env.WAYGRAPH_AUTO_MEM;
   let envParsed: Record<string, unknown> = {};
@@ -139,12 +125,7 @@ export function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage): 
         mem.set(k, envParsed[k.name]);
         continue;
       }
-      const stub = getMemStub(k);
-      if (stub) {
-        mem.set(k, stub());
-        continue;
-      }
-      const def = defaultMemValueForKey(k.name);
+      const def = memStubValue(k);
       if (def !== undefined) mem.set(k, def);
     }
   }
@@ -154,7 +135,7 @@ async function promptMemCli(entry: BlockEntry, mem: MemPage): Promise<void> {
   const rl = createInterface({ input, output });
   try {
     for (const k of missingMemKeys(entry, mem)) {
-      const def = defaultMemJsonPrompt(k.name);
+      const def = defaultMemJsonPrompt(k);
       const line = await rl.question(`  ${k.name} JSON [${def}]: `);
       const json = line.trim() || def;
       mem.set(k, JSON.parse(json));
@@ -384,7 +365,7 @@ async function headfulPick(
       try {
         if (mem.has(k)) value = JSON.stringify(mem.get(k), null, 2);
         else {
-          const def = defaultMemValueForKey(k.name);
+          const def = memStubValue(k);
           if (def !== undefined) value = JSON.stringify(def, null, 2);
         }
       } catch {

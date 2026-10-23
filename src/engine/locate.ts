@@ -46,7 +46,6 @@ export async function locate(
         const traits = typeof verify === "function" ? verify(resolved) : (verify ?? []);
         let allPass = true;
         for (const trait of traits) {
-          // eslint-disable-next-line no-await-in-loop
           if (!(await trait.check(page, mem))) {
             allPass = false;
             break;

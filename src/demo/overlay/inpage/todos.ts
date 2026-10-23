@@ -1,5 +1,4 @@
 // In-page (runs inside the browser via page.evaluate, must stay self-contained): the todo dock(s).
-/* eslint-disable no-unused-vars */
 export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
         // Floating todo dock - lives outside #wg-panel so --mini / Hide never
         // hide the checklist. Click cycles left <-> right with CSS transform.

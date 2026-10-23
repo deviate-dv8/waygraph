@@ -1,5 +1,4 @@
 // In-page (runs inside the browser via page.evaluate, must stay self-contained): swipe trails and ring zoom.
-/* eslint-disable no-unused-vars */
 export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
         /**
          * Finger swipe trail for touch theater (orientation rotate / device change).

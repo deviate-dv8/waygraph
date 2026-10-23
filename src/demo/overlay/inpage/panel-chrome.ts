@@ -1,5 +1,4 @@
 // In-page (runs inside the browser via page.evaluate, must stay self-contained): the step panel's Hide/Show chrome and mini Next.
-/* eslint-disable no-unused-vars */
 export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
         // Hide/Show for #wg-panel - call after every panel.innerHTML refresh.
         // Collapsed = "N / M · block" + Next (when not auto). Never pass

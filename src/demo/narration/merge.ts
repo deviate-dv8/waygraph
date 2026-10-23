@@ -61,7 +61,7 @@ export function resolvePhaseMap(phaseMap: HighlightStubPhase): ResolvedHighlight
   const phaseKeys = Object.keys(phaseMap);
   const allNumeric =
     phaseKeys.length > 0 && phaseKeys.every((k) => Number.isFinite(Number(k)) && String(Number(k)) === k);
-  // Numeric stub ids (legacy "0","1") sort by number. Named stubs keep author
+  // Numeric stub ids ("0", "1") sort by number. Named stubs keep author
   // insertion order - localeCompare used to reorder password/submit/username
   // and advance the wrong todo index on fill.
   const ordered = allNumeric ? [...phaseKeys].sort((a, b) => Number(a) - Number(b)) : phaseKeys;

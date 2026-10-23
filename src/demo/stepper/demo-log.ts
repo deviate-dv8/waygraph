@@ -28,15 +28,12 @@ function demoQuiet() {
   return process.env.WAYGRAPH_JSON === "1";
 }
 
-function demoColorEnabled() {
-  // FORCE_COLOR wins (agents/CI often set NO_COLOR=1).
-  if (process.env.FORCE_COLOR && process.env.FORCE_COLOR !== "0") return true;
-  if (process.env.NO_COLOR === "1" || process.env.NO_COLOR === "true") return false;
-  if (process.env.FORCE_COLOR === "0") return false;
-  return !!(
-    (process.stderr && process.stderr.isTTY) ||
-    (process.stdout && process.stdout.isTTY)
-  );
+/** Node's own colour rule (FORCE_COLOR, NO_COLOR, NODE_DISABLE_COLORS, TERM=dumb); off a terminal, only FORCE_COLOR turns it on. */
+function demoColorEnabled(): boolean {
+  const terminal = [process.stderr, process.stdout].find((s) => s.isTTY);
+  if (terminal) return terminal.hasColors();
+  const force = process.env.FORCE_COLOR;
+  return force !== undefined && force !== "0" && force !== "false";
 }
 
 const ESC = String.fromCharCode(27);

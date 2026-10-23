@@ -1,26 +1,17 @@
 import { test, expect } from "@playwright/test";
-import { defaultMemValueForKey } from "../../src/live/auto-explore-run.js";
+import { memStubValue } from "../../src/live/auto-explore-run.js";
+import { key } from "../../src/engine/mem/mem.js";
+import { registerMemStub } from "../../src/engine/mem/mem-stub.js";
 
-test.describe("defaultMemValueForKey (PIA login-email bug)", () => {
-  test("exact credential keys get saucedemo defaults", () => {
-    expect(defaultMemValueForKey("login-credentials")).toEqual({
-      username: "standard_user",
-      password: "secret_sauce",
-    });
-    expect(defaultMemValueForKey("credentials")).toEqual({
-      username: "standard_user",
-      password: "secret_sauce",
-    });
-    expect(defaultMemValueForKey("saucedemo.credentials")).toEqual({
-      username: "standard_user",
-      password: "secret_sauce",
-    });
+test.describe("live sessions default a required key from the project's mem stubs", () => {
+  test("a key with a registered stub gets the stub's value", () => {
+    const creds = key<{ username: string }>("default-seed.credentials");
+    registerMemStub(creds, () => ({ username: "from-stub" }));
+    expect(memStubValue(creds)).toEqual({ username: "from-stub" });
   });
 
-  test("login-email and other login* string keys stay unset", () => {
-    expect(defaultMemValueForKey("login-email")).toBeUndefined();
-    expect(defaultMemValueForKey("login")).toBeUndefined();
-    expect(defaultMemValueForKey("user-login")).toBeUndefined();
-    expect(defaultMemValueForKey("email")).toBeUndefined();
+  test("a key without a stub stays unset, even when its name looks like a credential", () => {
+    expect(memStubValue(key<string>("login-email"))).toBeUndefined();
+    expect(memStubValue(key<string>("credentials"))).toBeUndefined();
   });
 });

@@ -541,6 +541,8 @@ waygraph run loginFlow --mem-stub          # same effect without a Flow-level wr
                                             # for one CLI call, opt-in or not
 ```
 `--data` always wins for a key it actually covers - memStub only fills what's left over.
+Live sessions (`auto`, `pilot`, `traverse`) load every `*.mem-stubs.ts` under `src/` and use those fakes as the
+default for a Block's `requires`, so put `registerMemStub` calls in files with that name.
 Registered by `MemKey` *identity*, not by name (matching `MemPage`'s own store): two keys
 sharing a debug name never cross-contaminate. For a bare library `flow.run(mem)` call
 outside the CLI, call `seedMemStub(mem, flow)` yourself before `run()` when

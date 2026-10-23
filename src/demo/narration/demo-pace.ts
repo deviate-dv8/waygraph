@@ -149,7 +149,7 @@ export function formatDemoPaceLabel(pace: DemoPace, baseAutoplayMs = 1800): stri
 
 /**
  * Resolve min dwell ms for any fixture (stub / flow fixture / yap slide),
- * or `null` when duration is unset (caller keeps legacy timing).
+ * or `null` when duration is unset (caller keeps its default timing).
  *
  * Authoring wins: an explicit slow/numeric pace is not crushed by CLI `--fast`
  * (`gatesFast`). `--fast` only shortens when pace is unset/normal.

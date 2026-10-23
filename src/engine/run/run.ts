@@ -149,7 +149,6 @@ export async function runGraph<TOut extends Checkpoint<string>>(
   let result: string | undefined;
   let failure: unknown;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let current: Block<any, any> = entry;
     let input: Checkpoint<string> = checkpoint("__start__");
     let steps = 0;
