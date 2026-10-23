@@ -6,7 +6,7 @@ Read this before editing. The rules at the bottom are enforced by `npm run check
 
 Waygraph is an opinionated Playwright: Blocks move between Checkpoints, Flows chain Blocks, a demo layer narrates them.
 Every file belongs to one layer, and a layer imports only the layers listed (checked by `npm run check:structure`;
-`scripts/layer-debt.json` holds the violations still being removed, and may only shrink):
+`scripts/layer-debt.json` lists allowed exceptions and is empty; it may only shrink):
 
 | Layer | Holds | May import |
 |---|---|---|
@@ -26,9 +26,9 @@ The plan and phases: `ROADMAP.md`, "Architecture refactor".
 cli.ts ───────────── ~100-line dispatcher: one `case` per subcommand
 commands/*.ts, cli/*.ts ─ one file per subcommand; shared flag parsing, usage text, discovery helpers
 runner/ ───────────── `waygraph run/demo/chain` child process entry (main, discovery, seed-mem, chain-run), exported as `waygraph/runner`
-demo/ ─────────────── narration/ (stub ctx, pace, device, todo dock, highlight styles), overlay/ (install, rings, cursor, device stage, network tab; overlay/inpage/*.ts = code injected into the page, self-contained), step-mode/ (the step-through runner: gates, panels, slides, teardown, demo log)
+demo/ ─────────────── narration/ (stub ctx, pace, device, todo dock, highlight styles), overlay/ (the one overlay for demo, auto and pilot: install, rings, cursor, device stage, network tab, auto-chrome, pilot-shell, pilot-fixtures; overlay/inpage/*.ts = code injected into the page, self-contained), step-mode/ (the step-through runner: gates, panels, slides, teardown, demo log)
 auto-session.ts + auto-session/ (helpers, session) ─ the session class itself
-session/ (auto-session-ipc, browser, pilot, auto-explore, auto-explore-run, overlay-beacon) ─ live session spawn/control, explore, cross-project inject
+session/ (auto-session-ipc, browser, pilot, pilot-panel, auto-explore, auto-explore-run, overlay-beacon) ─ live session spawn/control, explore, cross-project inject
 traverse/ (run, coverage, lease) ─ live parallel graph exploration with session cloning (`waygraph traverse`)
 core.ts + core/ ── barrel over core/{block,config,run-graph,flow,compose,engine,map-builder,locate,branch-regression,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
 ui/ ────────────── real .css overlay stylesheet built on Open Props, bundled by scripts/copy-ui-css.mjs into dist/ui/overlay.css and injected once by ui/shadow.ts - see src/ui/css/README.md; change a colour in ui/css/tokens.css, never inline

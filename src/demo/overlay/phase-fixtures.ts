@@ -1,5 +1,5 @@
-import type { StubPhaseResult } from "../demo/narration/index.js";
-import type { PilotHighlightFixtures } from "./fixtures.js";
+import type { StubPhaseResult } from "../narration/index.js";
+import type { PilotHighlightFixtures } from "./pilot-fixtures.js";
 
 /**
  * The reverse: a resolved stub phase (what `runStubPhase` returns for a Block's stubBefore/After/OnError)

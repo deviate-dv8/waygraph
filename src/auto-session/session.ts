@@ -1,8 +1,13 @@
 // Split out of the former 1,078-line auto-session.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { CONSOLE_LOG_MAX_ENTRIES, FULL_MODE_DEFAULT_DEPTH, FULL_MODE_MAX_NODES, FULL_MODE_MAX_TEXT_LENGTH, TRACE_MAX_STEPS, buildSessionSnapshot, parsePick, stubFilePath, stubPhaseHasContent, walkFullDom } from "./helpers.js";
 import type { ApplyPathResult, ApplyPickResult, AutoSessionInit, ConsoleLogEntry, FullDomCaps, InspectDomOptions, InspectDomResult, SessionSnapshot, StorageSnapshot, StubFileKind, TraceStep } from "./helpers.js";
-import { instrumentPilotActions, installPersistentPilotOverlay, showPilotActivity, showPilotFixtures, showPilotVision, phaseToOverlayFixtures, describeOverlayFixtures, updatePilotOverlay } from "../pilot-overlay.js";
-import type { PilotHighlightFixtures, PilotOverlayInfo } from "../pilot-overlay.js";
+import { installPersistentPilotOverlay, showPilotActivity, showPilotVision } from "../demo/overlay/pilot-shell.js";
+import { showPilotFixtures } from "../demo/overlay/pilot-fixtures.js";
+import type { PilotHighlightFixtures } from "../demo/overlay/pilot-fixtures.js";
+import { instrumentPilotActions } from "../demo/overlay/pilot-actions.js";
+import { phaseToOverlayFixtures, describeOverlayFixtures } from "../demo/overlay/phase-fixtures.js";
+import { updatePilotOverlay } from "../session/pilot-panel.js";
+import type { PilotOverlayInfo } from "../session/pilot-panel.js";
 import { buildExploreContext, buildExploreMenu } from "../session/auto-explore.js";
 import type { BlockEntry, ExploreMenu } from "../session/auto-explore.js";
 import { MemPage } from "../core/mem-page.js";
@@ -13,7 +18,7 @@ import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from
 import type { UnmappedInteractionPayload } from "../analysis/coverage-gap.js";
 import type { Checkpoint, WaygraphInstanceOption } from "../core/types.js";
 import { runStubPhase } from "../demo/narration/index.js";
-import { verboseLog } from "./verbose-log.js";
+import { verboseLog } from "../demo/verbose-log.js";
 import { findBlockPathDetailed } from "../analysis/graph.js";
 import { configuredExtensions } from "../runtime/config.js";
 import { chromiumExecutablePath, launchContext } from "../runtime/browser.js";

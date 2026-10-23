@@ -19,6 +19,40 @@ interface Window {
   ) => void;
 }
 
+// Ring, cursor, panel and beacon calls the overlay installs (inpage/core.ts, stamp.ts, panel-chrome.ts).
+interface Window {
+  __wgMoveCursorTo?: (x: number, y: number, ms?: number, instant?: boolean) => void;
+  __wgClickPulse?: (x: number, y: number, tone?: string) => void;
+  __wgPositionRing?: (
+    box: { x: number; y: number; width: number; height: number },
+    label: string,
+    tone?: string,
+    style?: { size?: string; weight?: string; color?: string },
+  ) => void;
+  __wgHideRing?: (opts?: { clearZoom?: boolean }) => void;
+  __wgPendingNavClickLabel?: string;
+  __wgWirePanelChrome?: (panel: HTMLElement, storageKey: string, chromeTitle?: string, opts?: Record<string, unknown>) => void;
+  __wgStampModal?: (
+    el: Element,
+    kind: string,
+    meta?: Record<string, unknown>,
+  ) => void;
+  __wgOverlayBeacon?: () => Array<{
+    id: string | null;
+    modal: string | null;
+    ready: boolean;
+    phase: string | null;
+    step: string | null;
+    block: string | null;
+    collapsed: boolean;
+    opacity: string;
+    textLen: number;
+    w: number;
+    h: number;
+    visible: boolean;
+  }>;
+}
+
 // The overlay's in-page bridge: every `window.__wg*` value the demo, auto and pilot overlays install and call.
 interface Window {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

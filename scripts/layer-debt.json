@@ -1,5 +1,1 @@
-[
-  "pilot-overlay/fixtures.ts -> auto-session/verbose-log.ts",
-  "pilot-overlay/panel.ts -> auto-session.ts",
-  "pilot-overlay/shell.ts -> auto-session/verbose-log.ts"
-]
+[]

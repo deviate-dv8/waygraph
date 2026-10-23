@@ -34,9 +34,9 @@ import {
   type StorageSnapshot,
   type StubFileKind,
 } from "../auto-session.js";
-import type { PilotHighlightFixtures } from "../pilot-overlay.js";
+import type { PilotHighlightFixtures } from "../demo/overlay/pilot-fixtures.js";
 
-export type { PilotHighlightFixtures } from "../pilot-overlay.js";
+export type { PilotHighlightFixtures } from "../demo/overlay/pilot-fixtures.js";
 
 export interface SessionMeta {
   sessionId: string;

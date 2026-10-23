@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { installDemoChrome } from "../../dist/session/step-overlay.js";
+import { installDemoChrome } from "../../dist/demo/overlay/auto-chrome.js";
 
 test("the demo ring's caption is not DOM text, so the page's text selectors match only the page", async ({ page }) => {
   await page.setContent('<button id="go">Browser extension: v1</button>');

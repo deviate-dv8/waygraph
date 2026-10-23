@@ -457,7 +457,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
           const { op: _ignore, ...rest } = fixtures as { op?: string } & Record<string, unknown>;
           const res = await requestSession(proj, sessionId, {
             op: "highlight",
-            ...(rest as import("../pilot-overlay.js").PilotHighlightFixtures),
+            ...(rest as import("../demo/overlay/pilot-fixtures.js").PilotHighlightFixtures),
           });
           console.log(JSON.stringify(res));
           if (!res.ok) process.exitCode = 1;

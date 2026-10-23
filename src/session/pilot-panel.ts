@@ -1,6 +1,5 @@
-// Split out of the former 950-line pilot-overlay.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import type { SessionSnapshot } from "../auto-session.js";
-import { ensureInstalled } from "./shell.js";
+import { ensureInstalled } from "../demo/overlay/pilot-shell.js";
 import type { Page } from "@playwright/test";
 
 /** Minimal shape needed to render the graph tree - matches WaygraphGraph. */

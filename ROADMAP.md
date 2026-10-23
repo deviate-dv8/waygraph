@@ -16,7 +16,7 @@ The package is one published unit today, organized internally along these lines:
 | `waygraph-core` | `src/types.ts`, `src/mem-page.ts`, `src/trait.ts` | Checkpoint, Block, MemPage, Trait, `connect()`. Stable. |
 | `waygraph-engine` | `src/engine.ts` | `Engine`, `defineFlow`, `runGraph`, `chainFlow`, `composeBlock`, browser launching (pluggable via `EngineConfig.browsers`). |
 | `waygraph-cli` | `src/cli.ts` (non-overlay commands) | `list` / `nav` / `validate` / `run` / `check` / `graph` / `init` / `agent-dive` / `traverse`. |
-| `waygraph-demo` | `src/cli.ts` (`demo` / `chain --step` overlay), `src/step-overlay.ts`, `demo/narration/index.ts`, `src/overlay-beacon.ts` | The step-through browser overlay: panel, ring, cursor, todo dock, `narrate()`, episode headings, stub/fixture/slide narration. |
+| `waygraph-demo` | `src/cli.ts` (`demo` / `chain --step` overlay), `src/demo/` (`narration/`, `overlay/`, `step-mode/`), `src/overlay-beacon.ts` | The step-through browser overlay: panel, ring, cursor, todo dock, `narrate()`, episode headings, stub/fixture/slide narration. |
 | `waygraph-auto` | `src/graph.ts`, `src/auto-explore.ts`, `src/auto-explore-run.ts`, `locate()` in `src/engine.ts` | State-machine discovery (`discoverGraph` / `toMermaid`) + page recognition (`locate`) + the interactive `waygraph auto` explore loop. |
 | `waygraph-traverse` | `src/traverse-run.ts`, `src/traverse-coverage.ts`, `src/traverse-lease.ts` | `waygraph traverse` graph crawl: serial/parallel workers, edge leases, coverage report + CI gate. |
 
@@ -166,7 +166,7 @@ Two distinct modes, both real, direct user requests from the same session:
 
 ### Pilot overlay (shipped, still evolving)
 
-`src/pilot-overlay.ts` - badge + expandable panel + activity toast + vision ring, all sharing
+`src/demo/overlay/pilot-shell.ts` + `src/session/pilot-panel.ts` - badge + expandable panel + activity toast + vision ring, all sharing
 `cli.ts`'s own demo-panel color language (`#7C3AED` purple, `rgba(20,10,40,.94)` dark panel,
 `#c9a6ff` accent - not a separate palette). Panel now has two tabs: "Here" (current live menu,
 original behavior) and "All nodes" (the whole project graph as a tree, one entry per Checkpoint
@@ -229,7 +229,8 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 4. Run events: typed emitter in `runGraph` (`onRunEvent`), written to `.waygraph/runs/*.jsonl` by the CLI. **Done.** (Demo log and JSON report still read results directly; they move onto events with the demo layer in phase 5.)
 5. Demo runner from JavaScript to TypeScript, compiled by `tsc` (no copy step), under `demo/` (`narration/`, `overlay/`,
    `step-mode/`); `runner/` is only the child process entry; the JSON report carries the run's `runId`. **Done.**
-6. One overlay for demo, auto and pilot.
+6. One overlay for demo, auto and pilot: `demo/overlay/` (auto's ring/cursor/pulse are the demo's `inpage/core.ts`), the
+   pilot menu panel in `session/`. Layer debt is zero. **Done.**
 7. `live/` for sessions, pilot and traverse.
 8. Thin CLI.
 9. Map packages: a map group owns its states and keys, `waygraph map pack`, `maps: [...]` in the config.

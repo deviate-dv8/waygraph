@@ -7,7 +7,7 @@ import { ringCss } from "../../ui/components/ring.js";
  * SAME "waygraph vision" ring can import pure CSS text, not the rendering
  * engine around it - `cli.ts` runs `main().catch(...)` unconditionally at
  * module load with no `import.meta.url` guard, so importing anything from it
- * is unsafe as a library dependency (see `pilot-overlay.ts`'s own doc
+ * is unsafe as a library dependency (see `overlay/pilot-shell.ts`'s own doc
  * comment for the same reasoning re: the badge/panel). This file has always
  * been the pure, side-effect-free home for tone/size/weight - the CSS that
  * renders them belongs alongside it for the same reason. `cli.ts` imports

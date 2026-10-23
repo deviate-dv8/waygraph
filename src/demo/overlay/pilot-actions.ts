@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import { ensureInstalled } from "./shell.js";
+import { ensureInstalled } from "./pilot-shell.js";
 
 type Box = { x: number; y: number; width: number; height: number };
 

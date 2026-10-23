@@ -1184,8 +1184,8 @@ exists). Headful sessions paint the badge immediately on start — no need to ca
 first. Bottom-left activity toasts label raw primitives as **`Running (no Block): …`**
 (click/type/goto/upload outside the Block library); Block runs stay **`Running (Block): …`**.
 Both refresh automatically after every `send`/`reach`/`reload`/`resync`/raw action.
-Self-contained (`src/pilot-overlay.ts`), not built on `waygraph demo`'s own panel/banner
-system.
+It lives in `src/demo/overlay/` (`pilot-shell.ts`, `pilot-fixtures.ts`) next to the demo overlay and paints rings
+through the same `inpage/core.ts` primitive; the session menu panel is `src/session/pilot-panel.ts`.
 
 **Pilot itself does no planning, resolving, narrating, or acting** - `pilotStart`'s only job is
 starting the session and handing back its graph in one round trip; see `src/pilot.ts`. An
@@ -1682,10 +1682,11 @@ src/                      layers and import rules: src/ARCHITECTURE.md
   manifest/               the one project scanner + `waygraph manifest`
   analysis/               graph, map check, practices check, coverage gap
   runtime/                config, env, browser launch, extensions, webServer, video dir, playwright config, run log
-  demo/                   narration/ (stub ctx, pace, device, todos), overlay/ (in-page UI), step-mode/ (step-through runner)
+  demo/                   narration/ (stub ctx, pace, device, todos), overlay/ (the one in-page UI for demo, auto, pilot),
+                          step-mode/ (step-through runner)
   ui/                     overlay CSS (Open Props) + shadow root
   runner/                 `waygraph run/demo` child process entry (exported as waygraph/runner)
-  session/, auto-session/, pilot-overlay/, traverse/   live browser sessions, auto, pilot, traverse
+  session/, auto-session/, traverse/   live browser sessions, auto, pilot, traverse
   commands/, cli/, cli.ts the CLI: one file per subcommand
   index.ts                public API
 examples/saucedemo/         live Sauce Demo (Page + methods/ + Sel)

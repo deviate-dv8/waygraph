@@ -1,8 +1,7 @@
-// Split out of the former 950-line pilot-overlay.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { SURFACE } from "../ui/tokens.js";
-import { ensureShadowRoot, installShadowRoot } from "../ui/shadow.js";
-import type { HighlightTone } from "../demo/narration/index.js";
-import { verboseLog } from "../auto-session/verbose-log.js";
+import { SURFACE } from "../../ui/tokens.js";
+import { ensureShadowRoot, installShadowRoot } from "../../ui/shadow.js";
+import type { HighlightTone } from "../narration/index.js";
+import { verboseLog } from "../verbose-log.js";
 import type { BrowserContext, Page } from "@playwright/test";
 
 // Real, direct user request: this overlay's own colors were an improvised
@@ -162,11 +161,11 @@ export async function ensureInstalled(page: Page): Promise<void> {
   // The shared ring primitive (__wgEnsureRingEl/__wgPaintRingAt) - so Pilot's fixture rings paint
   // through the SAME implementation the demo/auto singleton ring uses (see ui/css/ring.css / this
   // file's own header comment on redundancy), not a separate DOM-building copy.
-  const { installCore } = await import("../demo/overlay/inpage/core.js");
+  const { installCore } = await import("./inpage/core.js");
   await page.evaluate(installCore, {}).catch(() => {});
   // Device toast/chip CSS (demo/overlay/overlay-css.ts's RUNNER_EXTRA_CSS) - same rules the demo runner
   // uses, reused here (not re-authored) so a device fixture looks identical on Pilot.
-  const { RUNNER_EXTRA_CSS } = await import("../demo/overlay/overlay-css.js");
+  const { RUNNER_EXTRA_CSS } = await import("./overlay-css.js");
   await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as [string, string]).catch(() => {});
 }
 
