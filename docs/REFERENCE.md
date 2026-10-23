@@ -1668,32 +1668,24 @@ WAYGRAPH_PROVE_EXIT=1 WAYGRAPH_PROVE_SHOT=/tmp/wg.png \
 # stderr: WAYGRAPH_PROVE {"ok":true,"beacons":[...],"readyAttr":"1"}
 ```
 
-Tests: `tests/cli/overlay-beacon.spec.ts`. Helpers: `src/overlay-beacon.ts`. Rules for
+Tests: `tests/cli/overlay-beacon.spec.ts`. Helpers: `src/session/overlay-beacon.ts`. Rules for
 touching the stepper/overlay chrome itself: `src/CLI-STOMP-GUARD.md`.
 
 ## Layout
 
 ```
 package.json              the "waygraph" npm package itself
-src/
-  types.ts                 Checkpoint, Instruction, Block, connect()
-  mem-page.ts               MemKey, key(), MemPage
-  trait.ts                   Trait (type + discoverable Trait.url/.text/.visible), runVerify()
-  engine.ts                   runGraph(), definePageBlock, defineMethodBlock, Engine, ...
-  graph.ts                     discoverGraph, orphans, paths
-  auto-explore.ts               waygraph auto menu building
-  auto-explore-run.ts            waygraph auto interactive loop (headful + --cli)
-  highlights.ts                  stub/fixture/slide/todo-dock/device narration types + helpers
-  step-overlay.ts                 demo step overlay chrome (panel, ring, cursor)
-  runner/                         demo/run step-through runner (TypeScript, in-page code in runner/inpage/)
-  overlay-beacon.ts                blind-agent overlay readiness beacons
-  traverse-run.ts                   waygraph traverse crawl (serial/parallel)
-  traverse-coverage.ts               traverse coverage report + CI gate
-  traverse-lease.ts                  traverse edge lease coordinator
-  manifest/                          one project scanner (scan, project, roots, select) + waygraph manifest
-  agent-dive.ts                      waygraph agent-dive coding-agent scaffolding
-  cli.ts                             waygraph CLI entrypoint (all subcommands)
-  index.ts                           public barrel
+src/                      layers and import rules: src/ARCHITECTURE.md
+  core/                   the engine: Checkpoints, Blocks (blocks/*), Traits, MemPage, Flows, map(), runGraph, run events
+  manifest/               the one project scanner + `waygraph manifest`
+  analysis/               graph, map check, practices check, coverage gap
+  runtime/                config, env, browser launch, extensions, webServer, video dir, playwright config, run log
+  demo/                   narration/ (stub ctx, pace, device, todos), overlay/ (in-page UI), step-mode/ (step-through runner)
+  ui/                     overlay CSS (Open Props) + shadow root
+  runner/                 `waygraph run/demo` child process entry (exported as waygraph/runner)
+  session/, auto-session/, pilot-overlay/, traverse/   live browser sessions, auto, pilot, traverse
+  commands/, cli/, cli.ts the CLI: one file per subcommand
+  index.ts                public API
 examples/saucedemo/         live Sauce Demo (Page + methods/ + Sel)
 templates/quickstart/       try demo / init template (mirrors sauce)
 templates/scaffold/         offline waygraph init scaffold template

@@ -41,5 +41,5 @@ export function ringCss(): string {
 
 // A former `pilotFxRingCss()` used to live here, generating a SECOND, byte-identical copy of
 // ringCss()'s own rules under `.wg-pilot-fx-ring`/`.wg-pilot-fx-label`. Pilot's fixture rings now
-// paint through the same shared primitive (`ui/css/ring.css`'s `.wg-ring-el`, `runner/inpage/core.ts`'s
+// paint through the same shared primitive (`ui/css/ring.css`'s `.wg-ring-el`, `demo/overlay/inpage/core.ts`'s
 // `__wgPaintRingAt`) as the demo/auto singleton ring - see src/ui/css/ring.css's own header.

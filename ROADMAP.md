@@ -16,7 +16,7 @@ The package is one published unit today, organized internally along these lines:
 | `waygraph-core` | `src/types.ts`, `src/mem-page.ts`, `src/trait.ts` | Checkpoint, Block, MemPage, Trait, `connect()`. Stable. |
 | `waygraph-engine` | `src/engine.ts` | `Engine`, `defineFlow`, `runGraph`, `chainFlow`, `composeBlock`, browser launching (pluggable via `EngineConfig.browsers`). |
 | `waygraph-cli` | `src/cli.ts` (non-overlay commands) | `list` / `nav` / `validate` / `run` / `check` / `graph` / `init` / `agent-dive` / `traverse`. |
-| `waygraph-demo` | `src/cli.ts` (`demo` / `chain --step` overlay), `src/step-overlay.ts`, `src/highlights.ts`, `src/overlay-beacon.ts` | The step-through browser overlay: panel, ring, cursor, todo dock, `narrate()`, episode headings, stub/fixture/slide narration. |
+| `waygraph-demo` | `src/cli.ts` (`demo` / `chain --step` overlay), `src/step-overlay.ts`, `demo/narration/index.ts`, `src/overlay-beacon.ts` | The step-through browser overlay: panel, ring, cursor, todo dock, `narrate()`, episode headings, stub/fixture/slide narration. |
 | `waygraph-auto` | `src/graph.ts`, `src/auto-explore.ts`, `src/auto-explore-run.ts`, `locate()` in `src/engine.ts` | State-machine discovery (`discoverGraph` / `toMermaid`) + page recognition (`locate`) + the interactive `waygraph auto` explore loop. |
 | `waygraph-traverse` | `src/traverse-run.ts`, `src/traverse-coverage.ts`, `src/traverse-lease.ts` | `waygraph traverse` graph crawl: serial/parallel workers, edge leases, coverage report + CI gate. |
 
@@ -227,8 +227,8 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 2. Checkpoints as values (`checkpoint: Home`, `from`/`to`), old forms deprecated, codemod in `waygraph upgrade`. **Done.**
 3. One manifest replaces the five project scanners and the `<In, Out>` source parse; `waygraph manifest`. **Done.**
 4. Run events: typed emitter in `runGraph` (`onRunEvent`), written to `.waygraph/runs/*.jsonl` by the CLI. **Done.** (Demo log and JSON report still read results directly; they move onto events with the demo layer in phase 5.)
-5. Demo runner from JavaScript to TypeScript, compiled by `tsc` (no copy step). **Typing done**; the move under `demo/` and
-   moving the demo log and JSON report onto run events follow.
+5. Demo runner from JavaScript to TypeScript, compiled by `tsc` (no copy step), under `demo/` (`narration/`, `overlay/`,
+   `step-mode/`); `runner/` is only the child process entry. **Done** except moving the demo log and JSON report onto run events.
 6. One overlay for demo, auto and pilot.
 7. `live/` for sessions, pilot and traverse.
 8. Thin CLI.
@@ -270,7 +270,7 @@ Block file changes. If done, keep the string and `<In, Out>` forms working for a
 
 ### Network tab mocking (backlogged, not yet researched)
 
-The network tab overlay (`src/runner/network-capture.ts`, `src/runner/inpage/network.ts`) is
+The network tab overlay (`demo/overlay/network-capture.ts`, `demo/overlay/inpage/network.ts`) is
 real, two-sided - it *observes* traffic (real page requests via `page.on('request'/
 'requestfinished'/'requestfailed')`, plus `defineApiBlock`'s own `page.request` calls) and
 renders it (method/status/headers/body, click-to-expand, copy-as-cURL), gated behind

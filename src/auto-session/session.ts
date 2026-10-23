@@ -12,7 +12,7 @@ import { detectHere, ensureLivePage, ensureMem, resolveBaseUrl, runOneBlock, see
 import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from "../analysis/coverage-gap.js";
 import type { UnmappedInteractionPayload } from "../analysis/coverage-gap.js";
 import type { Checkpoint, WaygraphInstanceOption } from "../core/types.js";
-import { runStubPhase } from "../highlights.js";
+import { runStubPhase } from "../demo/narration/index.js";
 import { verboseLog } from "./verbose-log.js";
 import { findBlockPathDetailed } from "../analysis/graph.js";
 import { configuredExtensions } from "../runtime/config.js";

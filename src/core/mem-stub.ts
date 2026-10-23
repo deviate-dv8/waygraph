@@ -6,7 +6,7 @@
  *
  * "Stub" here is unrelated to the other two meanings already in this
  * codebase: `stubBefore`/`stubAfter`/`stubOnError` (demo narration fixtures,
- * see highlights.ts's `runStubPhase`) and `upload`'s `stub: "image"|"pdf"|
+ * see demo/narration/index.ts's `runStubPhase`) and `upload`'s `stub: "image"|"pdf"|
  * "video"` (a placeholder file). This is a third, separate "stub."
  *
  * Opt-in only, per Flow (`withMemStub`, engine.ts) or per-run (`--mem-stub` /

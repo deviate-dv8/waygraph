@@ -1,5 +1,5 @@
 // Split out of the former 1,078-line auto-session.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import type { StubPhaseResult } from "../highlights.js";
+import type { StubPhaseResult } from "../demo/narration/index.js";
 import type { BlockEntry, ExploreMenu } from "../session/auto-explore.js";
 import type { PickResult } from "../session/auto-explore-run.js";
 import { dirname, join, resolve } from "node:path";
@@ -252,7 +252,7 @@ export interface TraceStep {
    * Resolved demo-narration fixtures (highlights/todos/device), when the
    * Block actually authors `stubBefore`/`stubAfter`/`stubOnError` - the same
    * data `waygraph demo`'s lifecycle logging already computes (`runStubPhase`
-   * in highlights.ts), reused here for extra context on what a step meant to
+   * in demo/narration/index.ts), reused here for extra context on what a step meant to
    * convey. Omitted when the Block has none, or the result carries nothing.
    */
   stubBefore?: StubPhaseResult;

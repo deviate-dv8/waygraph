@@ -1,6 +1,6 @@
 /**
  * One log format for every overlay surface (demo / auto / browser / pilot): `waygraph <surface>: ...`
- * with a `HH:MM:SS.mmm` prefix, same shape as `runner/demo-log.ts`'s (demo stays on the JS copy since
+ * with a `HH:MM:SS.mmm` prefix, same shape as `demo/step-mode/demo-log.ts`'s (demo stays on the JS copy since
  * it runs in the target project's own process; this one is for TS-side code — pilot/auto/browser —
  * that can't import a plain .js runner module). Silenced by WAYGRAPH_JSON=1, same convention as demo.
  */

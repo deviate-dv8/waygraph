@@ -114,7 +114,7 @@ export {
   SLIDE_DURATION_MS_DEFAULT,
   SLIDE_DURATION_FAST_MS_DEFAULT,
   WAYGRAPH_RING_CSS,
-} from "./highlights.js";
+} from "./demo/narration/index.js";
 export type {
   WaygraphHighlightStub,
   WaygraphHighlightFixture,
@@ -150,7 +150,7 @@ export type {
   DeviceViewport,
   DeviceState,
   DeviceOrientation,
-} from "./highlights.js";
+} from "./demo/narration/index.js";
 export type {
   Flow,
   FlowOptions,

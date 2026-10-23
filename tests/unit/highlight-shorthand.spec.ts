@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { parseHighlightShorthand } from "../../src/highlights/shorthand.js";
+import { parseHighlightShorthand } from "../../src/demo/narration/shorthand.js";
 
 describe("parseHighlightShorthand", () => {
   it("parses a single ring with selector + label", () => {

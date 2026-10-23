@@ -1,7 +1,7 @@
 // Split out of the former 950-line pilot-overlay.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { SURFACE } from "../ui/tokens.js";
 import { ensureShadowRoot, installShadowRoot } from "../ui/shadow.js";
-import type { HighlightTone } from "../highlights.js";
+import type { HighlightTone } from "../demo/narration/index.js";
 import { verboseLog } from "../auto-session/verbose-log.js";
 import type { BrowserContext, Page } from "@playwright/test";
 
@@ -67,7 +67,7 @@ const OVERLAY_CSS = `
 }
 #wg-pilot-activity.wg-pilot-toast-show { opacity: 1; transform: translateY(0); }
 /* Agent fixture rings (painted via the shared .wg-ring-el primitive, see ui/css/ring.css and
-   runner/inpage/core.ts's __wgPaintRingAt), #wg-pilot-fx-todos, #wg-ring/#wg-ring-label and
+   demo/overlay/inpage/core.ts's __wgPaintRingAt), #wg-pilot-fx-todos, #wg-ring/#wg-ring-label and
    #wg-banner all come from the ONE shared bundle ensureShadowRoot installs (ui/css/*.css) - not
    redefined here. */
 /* Spotlight (demo focus:true) - dim page, cutout around target. */
@@ -162,11 +162,11 @@ export async function ensureInstalled(page: Page): Promise<void> {
   // The shared ring primitive (__wgEnsureRingEl/__wgPaintRingAt) - so Pilot's fixture rings paint
   // through the SAME implementation the demo/auto singleton ring uses (see ui/css/ring.css / this
   // file's own header comment on redundancy), not a separate DOM-building copy.
-  const { installCore } = await import("../runner/inpage/core.js");
+  const { installCore } = await import("../demo/overlay/inpage/core.js");
   await page.evaluate(installCore, {}).catch(() => {});
-  // Device toast/chip CSS (runner/overlay-css.ts's RUNNER_EXTRA_CSS) - same rules the demo runner
+  // Device toast/chip CSS (demo/overlay/overlay-css.ts's RUNNER_EXTRA_CSS) - same rules the demo runner
   // uses, reused here (not re-authored) so a device fixture looks identical on Pilot.
-  const { RUNNER_EXTRA_CSS } = await import("../runner/overlay-css.js");
+  const { RUNNER_EXTRA_CSS } = await import("../demo/overlay/overlay-css.js");
   await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as [string, string]).catch(() => {});
 }
 
@@ -206,7 +206,7 @@ export async function showPilotActivity(page: Page, text: string): Promise<void>
  * JSON blob in a terminal. Real, direct user request.
  *
  * Reuses the real `#wg-ring`/`#wg-ring-label` elements + `WAYGRAPH_RING_CSS`
- * (see `highlights.ts`) - the exact same visual language `cli.ts`'s own demo
+ * (see `demo/narration/index.ts`) - the exact same visual language `cli.ts`'s own demo
  * stepper paints rings with, not a separate look-alike. Still a purpose-built
  * renderer here (position/show/hide only, via plain `getBoundingClientRect` -
  * no camera zoom/spotlight/todo-dock/pacing), since that whole engine still

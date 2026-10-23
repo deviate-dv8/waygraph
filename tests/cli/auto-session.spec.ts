@@ -298,7 +298,7 @@ test("auto highlight: paints agent fixture rings on the live login page", async 
     expect(painted.painted).toBe(2);
     expect(painted.missing ?? []).toEqual([]);
 
-    // Real proof the two rings paint through the SHARED primitive (runner/inpage/core.js's
+    // Real proof the two rings paint through the SHARED primitive (demo/overlay/inpage/core.js's
     // __wgPaintRingAt / ui/css/ring.css's .wg-ring-el), not a separate Pilot-only DOM-building
     // copy - each fixture ring gets its own #wg-fx-ring-N id, same class as the demo/auto ring.
     const ring0 = await dom(sessionId, ["--selector", "#wg-fx-ring-0"]);

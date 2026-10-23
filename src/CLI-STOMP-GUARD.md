@@ -1,4 +1,4 @@
-# Do not revert Hide / mini stepper (`src/runner/`: `overlay-install.js`, `step-panels.js`, `step-mode.js`)
+# Do not revert Hide / mini stepper (`src/demo/`: `overlay/overlay-install.ts`, `step-mode/step-panels.ts`, `step-mode/step-mode.ts`)
 
 Owned by Dan's waygraph camera/stepper seat (2026-09-18).
 

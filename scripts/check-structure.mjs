@@ -81,12 +81,11 @@ for (const c of cycles) problems.push("import cycle: " + c.map((p) => relative(s
 const LAYER_OF = [
   ["core/", "core"], ["core.ts", "core"],
   ["manifest/", "manifest"],
-  ["analysis/", "analysis"], ["blocks-select.ts", "analysis"],
+  ["analysis/", "analysis"],
   ["runtime/", "runtime"],
-  // The run command's child process entry orchestrates like a command; the rest of runner/ is the demo layer.
-  ["runner/main.ts", "cli"], ["runner/index.ts", "cli"], ["runner/discovery.ts", "cli"], ["runner/seed-mem.ts", "cli"],
-  ["runner/chain-run.ts", "cli"],
-  ["demo/", "demo"], ["highlights", "demo"], ["runner/", "demo"], ["ui/", "demo"], ["pilot-overlay", "demo"],
+  // runner/ is the run command's child process entry: it orchestrates like a command.
+  ["runner/", "cli"],
+  ["demo/", "demo"], ["ui/", "demo"], ["pilot-overlay", "demo"],
   ["session/step-overlay.ts", "demo"],
   ["live/", "live"], ["session/", "live"], ["auto-session", "live"], ["traverse/", "live"],
   ["cli/", "cli"], ["cli.ts", "cli"], ["commands/", "cli"],

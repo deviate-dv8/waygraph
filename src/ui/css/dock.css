@@ -1,6 +1,6 @@
 /*
  * Floating fixture todo dock for Pilot (#wg-pilot-fx-todos). The demo runner's OWN `.wg-todo-dock` /
- * `#wg-todo-dock` (src/runner/overlay-css.ts) is a separate, richer implementation - fold/tucked/
+ * `#wg-todo-dock` (demo/overlay/overlay-css.ts) is a separate, richer implementation - fold/tucked/
  * slide-position transitions this file does not replicate - and deliberately NOT redefined here:
  * two rule sets for the same selector, injected in different orders, is exactly the "sometimes it
  * doesn't line up" bug class this split guards against. Only #wg-pilot-fx-todos, a genuine

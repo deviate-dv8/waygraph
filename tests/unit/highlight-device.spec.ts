@@ -5,9 +5,9 @@ import {
   normalizeDevicePreset,
   resolveDeviceState,
   runStubPhase,
-} from "../../src/highlights.js";
+} from "../../src/demo/narration/index.js";
 import type { Block } from "../../src/core/types.js";
-import type { StubCtx } from "../../src/highlights.js";
+import type { StubCtx } from "../../src/demo/narration/index.js";
 
 describe("device presets + resolve", () => {
   it("normalizes aliases", () => {
@@ -113,7 +113,7 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
 
   it("landscape swaps mobile width/height", async () => {
     const { applyOrientation, resolveDeviceState, normalizeDeviceOrientation } =
-      await import("../../src/highlights.js");
+      await import("../../src/demo/narration/index.js");
     assert.equal(normalizeDeviceOrientation("land"), "landscape");
     assert.equal(normalizeDeviceOrientation("port"), "portrait");
     const mobile = resolveDeviceState("mobile")!;

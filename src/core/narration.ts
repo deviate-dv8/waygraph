@@ -1,4 +1,3 @@
-// Split out of the former 2,100-line highlights.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import type { Checkpoint } from "./types.js";
 import type { MemPage } from "./mem-page.js";
 

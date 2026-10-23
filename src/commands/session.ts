@@ -9,7 +9,7 @@ import { existsSync, statSync } from "node:fs";
 import { resolveInjectRoots } from "../manifest/roots.js";
 import { requestSession, resolveSessionMeta, runAttachLoop, runAutoServeCommand, spawnDetachedSession } from "../session/auto-session-ipc.js";
 import { pilotAttach, pilotStart } from "../session/pilot.js";
-import { parseHighlightShorthand } from "../highlights/shorthand.js";
+import { parseHighlightShorthand } from "../demo/narration/shorthand.js";
 import { isFileSelectToken, parseBlocksSelect } from "../manifest/select.js";
 import { runAutoExplore } from "../session/auto-explore-run.js";
 import { discoverGraph, findOrphanBlocks, toMermaid } from "../analysis/graph.js";

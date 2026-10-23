@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { resolveTodoDockUi } from "../../src/highlights.js";
+import { resolveTodoDockUi } from "../../src/demo/narration/index.js";
 
 describe("resolveTodoDockUi", () => {
   it("defaults to smart on", () => {

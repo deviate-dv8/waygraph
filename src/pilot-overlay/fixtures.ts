@@ -1,6 +1,6 @@
 // Split out of the former 950-line pilot-overlay.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { buildTodoDock, formatHighlightCaption, normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, resolveDeviceState, resolveTodoDockUi } from "../highlights.js";
-import type { BannerPos, BannerUiOpts, DevicePreset, DeviceState, HighlightTone, TodoDockUiOpts, TodoListStyle, WaygraphTodoGroupInput } from "../highlights.js";
+import { buildTodoDock, formatHighlightCaption, normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, resolveDeviceState, resolveTodoDockUi } from "../demo/narration/index.js";
+import type { BannerPos, BannerUiOpts, DevicePreset, DeviceState, HighlightTone, TodoDockUiOpts, TodoListStyle, WaygraphTodoGroupInput } from "../demo/narration/index.js";
 import { ensureInstalled } from "./shell.js";
 import { verboseLog } from "../auto-session/verbose-log.js";
 import type { Page } from "@playwright/test";
@@ -181,17 +181,17 @@ export async function showPilotFixtures(
     if (hit?.zoomOut !== undefined) zoomOut = hit.zoomOut !== false;
   }
 
-  // Device viewport - same runner/device-stage.ts + inpage/device.ts every other surface uses
+  // Device viewport - same demo/overlay/device-stage.ts + inpage/device.ts every other surface uses
   // (toast + persistent chip + touch mode), not a separate, simpler Pilot-only chip.
   if (fixtures.clear === true) {
-    const { applyDeviceToPage } = await import("../runner/device-stage.js");
+    const { applyDeviceToPage } = await import("../demo/overlay/device-stage.js");
     await applyDeviceToPage(page, undefined, "clear").catch(() => {});
   } else if (fixtures.device !== undefined) {
     const d = resolveDeviceState(fixtures.device);
     if (d) {
       const [{ applyDeviceToPage }, { installDevice }] = await Promise.all([
-        import("../runner/device-stage.js"),
-        import("../runner/inpage/device.js"),
+        import("../demo/overlay/device-stage.js"),
+        import("../demo/overlay/inpage/device.js"),
       ]);
       await page.evaluate(installDevice, {}).catch(() => {});
       await applyDeviceToPage(page, d, "set").catch(() => {});
@@ -203,10 +203,10 @@ export async function showPilotFixtures(
   const bannerHidden = !!fixtures.clear || !!fixtures.bannerUi?.hidden;
   const bannerCollision = fixtures.bannerUi?.collision !== false;
 
-  // Same #wg-banner installer the demo runner uses (runner/inpage/banner.ts) - not a separate
+  // Same #wg-banner installer the demo runner uses (demo/overlay/inpage/banner.ts) - not a separate
   // re-implementation. `tag: "waygraph pilot"` is the only Pilot-specific bit.
   if (bannerTitle !== undefined || bannerHidden) {
-    const { installBanner } = await import("../runner/inpage/banner.js");
+    const { installBanner } = await import("../demo/overlay/inpage/banner.js");
     await page
       .evaluate(installBanner, {
         title: bannerTitle,
@@ -334,7 +334,7 @@ export async function showPilotFixtures(
         let focusBox: { x: number; y: number; width: number; height: number } | null = null;
 
         // Paint through the SAME shared ring primitive the demo/auto singleton ring uses
-        // (window.__wgPaintRingAt, installed by runner/inpage/core.ts's installCore - see
+        // (window.__wgPaintRingAt, installed by demo/overlay/inpage/core.ts's installCore - see
         // ensureInstalled) - one ring implementation, not a separate DOM-building copy here.
         rings.forEach((ring, i) => {
           const box = ringBoxes[i];

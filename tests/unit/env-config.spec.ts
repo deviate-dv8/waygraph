@@ -126,7 +126,7 @@ describe("applyConfigEnv", () => {
 
 describe("pace speeds", () => {
   it("demo.speeds redefines the named paces; defaults otherwise", async () => {
-    const { demoPaceScale } = await import("../../src/highlights/demo-pace.js");
+    const { demoPaceScale } = await import("../../src/demo/narration/demo-pace.js");
     delete process.env.WAYGRAPH_PACE_SPEEDS;
     assert.equal(demoPaceScale("fast"), 0.33);
     applyConfigEnv({ demo: { speeds: { fast: 0.5, blitz: 0.1 } } }, "demo");

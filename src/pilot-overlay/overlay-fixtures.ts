@@ -1,4 +1,4 @@
-import type { StubPhaseResult } from "../highlights.js";
+import type { StubPhaseResult } from "../demo/narration/index.js";
 import type { PilotHighlightFixtures } from "./fixtures.js";
 
 /**

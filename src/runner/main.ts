@@ -4,7 +4,7 @@ import { findBlock, findFlow, parseChainSpec } from "./discovery.js";
 import { seedMemForBlock, seedMemForFlow } from "./seed-mem.js";
 import { mkdirSync } from "node:fs";
 import { isExpectedChainFailure, parseVideoViewport, runChainedFlows, runJsonReportMode } from "./chain-run.js";
-import { runStepMode } from "./step-mode.js";
+import { runStepMode } from "../demo/step-mode/step-mode.js";
 import { connect } from "../core/types.js";
 import { MemPage } from "../core/mem-page.js";
 import { Engine, start, end, chainFlow, isFastForwardBlock, branchRoutes, runBranchRegression } from "../core.js";
