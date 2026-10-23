@@ -1,7 +1,7 @@
-// Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { configuredExtensions } from "../runtime/config.js";
 import { defaultRunLogDir } from "../runtime/run-log.js";
 import { expandSpecFlowFiles, resolveBaseUrl } from "./flags.js";
+import { discoverGraph, findBlockPath, findOrphanBlocks } from "../analysis/graph.js";
 import { join } from "node:path";
 import { rmSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
@@ -72,4 +72,37 @@ export async function runChain(projectDir: string, spec: string): Promise<void> 
   } finally {
     rmSync(scriptPath, { force: true });
   }
+}
+
+
+async function requireNoOrphans(projectDir: string, forCommand: string): Promise<boolean> {
+  const orphans = await findOrphanBlocks(projectDir);
+  if (orphans.length === 0) return true;
+  console.error(
+    `waygraph ${forCommand}: ${orphans.length} orphan Block(s) - wire every Block into a .flow.ts before auto shorthand. Run: waygraph check ${projectDir === process.cwd() ? "." : JSON.stringify(projectDir)}`,
+  );
+  for (const o of orphans) {
+    console.error(`  - ${o.file} (${o.exportName} / "${o.block}")`);
+  }
+  process.exitCode = 1;
+  return false;
+}
+
+
+export async function runChainAuto(projectDir: string, fromTag: string, toTag: string): Promise<void> {
+  if (!(await requireNoOrphans(projectDir, "chain auto"))) return;
+  const graph = await discoverGraph(projectDir);
+  const path = findBlockPath(graph, fromTag, toTag);
+  if (!path) {
+    console.error(`waygraph chain auto: no Block path from "${fromTag}" to "${toTag}" in the discovered graph`);
+    process.exitCode = 1;
+    return;
+  }
+  const spec = path.join(" then ");
+  console.error(`waygraph chain auto: ${fromTag} -> ${toTag} via ${spec}`);
+  if (!process.env.WAYGRAPH_BASE_URL) {
+    const resolved = await resolveBaseUrl(projectDir);
+    if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
+  }
+  await runChain(projectDir, spec);
 }

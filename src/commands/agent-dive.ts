@@ -1,4 +1,3 @@
-// Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { runAgentDive } from "./agent-dive-scaffold.js";
 import type { AgentDiveLoop } from "./agent-dive-scaffold.js";
 import { resolve } from "node:path";

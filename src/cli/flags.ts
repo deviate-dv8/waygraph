@@ -1,7 +1,6 @@
-// Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { basename, relative, resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
-import { walkDir } from "./discover.js";
+import { walkDir } from "../manifest/scan.js";
 import { loadWaygraphConfig, resolveBaseUrl } from "../runtime/config.js";
 
 // ---------------------------------------------------------------------------

@@ -1,66 +1,11 @@
-// Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { INLINE_SELECTOR_CALL, NAV_METHOD_CALLS, discoverBlocks, discoverFlows, importFlowFile, importModule, isBlockLike, isFlowLike, isNavBlockMarked, walkDir } from "../cli/discover.js";
-import { basename, relative, resolve } from "node:path";
-import { discoverGraph, findBlockPath, findOrphanBlocks } from "../analysis/graph.js";
-import { parseRunFlags, resolveBaseUrl } from "../cli/flags.js";
-import { runChain } from "../cli/run-chain.js";
+import { relative, resolve } from "node:path";
+import { findOrphanBlocks } from "../analysis/graph.js";
+import { checkProject, validateFlows } from "../analysis/check.js";
+import { parseRunFlags } from "../cli/flags.js";
+import { walkDir } from "../manifest/scan.js";
 import { collectPracticeWarnings, practiceKindLabel } from "../analysis/practices-check.js";
-import { readFileSync } from "node:fs";
+import type { PracticeWarning } from "../analysis/practices-check.js";
 
-// ---------------------------------------------------------------------------
-// `validate`
-// ---------------------------------------------------------------------------
-
-interface FlowInfo {
-  file: string;
-  name: string;
-  valid: boolean;
-  error?: string;
-}
-
-
-async function validateFlows(projectDir: string): Promise<FlowInfo[]> {
-  const files = discoverFlows(projectDir);
-  const results: FlowInfo[] = [];
-  for (const file of files) {
-    try {
-      const mod = await importFlowFile(file);
-      for (const [exportName, exported] of Object.entries(mod)) {
-        if (isFlowLike(exported)) {
-          results.push({ file, name: exportName, valid: true });
-        }
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      results.push({ file, name: basename(file, ".ts"), valid: false, error: msg });
-    }
-  }
-  return results;
-}
-
-
-interface CheckWarning {
-  file: string;
-  blockName: string;
-  exportName: string;
-}
-
-
-interface SelWarning {
-  file: string;
-  blockName: string;
-  exportName: string;
-}
-
-
-/**
- * Walks every `*.block.ts` file under `projectDir`, imports each to find its
- * exported Blocks, and for any Block NOT built via `defineNavBlock`, scans
- * that file's own source text for a navigation call. Warning only - never
- * throws, never changes the caller's exit code on its own account (a Block
- * file that fails to import for unrelated reasons is silently skipped here;
- * `validate` is the command that reports import failures).
- */
 function printOrphanReport(projectDir: string, orphans: Awaited<ReturnType<typeof findOrphanBlocks>>): void {
   if (orphans.length === 0) {
     console.log(`waygraph check: no orphan Blocks (every *.block.ts export is wired into a flow)`);
@@ -75,42 +20,9 @@ function printOrphanReport(projectDir: string, orphans: Awaited<ReturnType<typeo
 }
 
 
-async function requireNoOrphans(projectDir: string, forCommand: string): Promise<boolean> {
-  const orphans = await findOrphanBlocks(projectDir);
-  if (orphans.length === 0) return true;
-  console.error(
-    `waygraph ${forCommand}: ${orphans.length} orphan Block(s) - wire every Block into a .flow.ts before auto shorthand. Run: waygraph check ${projectDir === process.cwd() ? "." : JSON.stringify(projectDir)}`,
-  );
-  for (const o of orphans) {
-    console.error(`  - ${o.file} (${o.exportName} / "${o.block}")`);
-  }
-  process.exitCode = 1;
-  return false;
-}
-
-
-export async function runChainAuto(projectDir: string, fromTag: string, toTag: string): Promise<void> {
-  if (!(await requireNoOrphans(projectDir, "chain auto"))) return;
-  const graph = await discoverGraph(projectDir);
-  const path = findBlockPath(graph, fromTag, toTag);
-  if (!path) {
-    console.error(`waygraph chain auto: no Block path from "${fromTag}" to "${toTag}" in the discovered graph`);
-    process.exitCode = 1;
-    return;
-  }
-  const spec = path.join(" then ");
-  console.error(`waygraph chain auto: ${fromTag} -> ${toTag} via ${spec}`);
-  if (!process.env.WAYGRAPH_BASE_URL) {
-    const resolved = await resolveBaseUrl(projectDir);
-    if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
-  }
-  await runChain(projectDir, spec);
-}
-
-
 function printPracticeReport(
   projectDir: string,
-  practiceWarnings: import("../analysis/practices-check.js").PracticeWarning[],
+  practiceWarnings: PracticeWarning[],
 ): void {
   if (practiceWarnings.length === 0) {
     console.log(`waygraph check: no bad-practice patterns under ${projectDir}`);
@@ -122,50 +34,6 @@ function printPracticeReport(
   console.log(
     `waygraph check: ${practiceWarnings.length} bad-practice warning${practiceWarnings.length === 1 ? "" : "s"}`,
   );
-}
-
-
-async function checkCommand(
-  projectDir: string,
-  opts?: { noPractices?: boolean },
-): Promise<{
-  navWarnings: CheckWarning[];
-  selWarnings: SelWarning[];
-  practiceWarnings: import("../analysis/practices-check.js").PracticeWarning[];
-}> {
-  const files = discoverBlocks(projectDir);
-  const navWarnings: CheckWarning[] = [];
-  const selWarnings: SelWarning[] = [];
-  for (const file of files) {
-    let mod: Record<string, unknown>;
-    try {
-      mod = await importModule(file);
-    } catch {
-      continue;
-    }
-    let src: string | undefined;
-    for (const [exportName, exported] of Object.entries(mod)) {
-      if (!isBlockLike(exported)) continue;
-      src ??= readFileSync(file, "utf-8");
-      // Nav-escape: NavBlocks are exempt (their generated act() is the one
-      // legitimate goto/click call site).
-      if (
-        !isNavBlockMarked(exported as unknown as Record<string, unknown>) &&
-        NAV_METHOD_CALLS.some((needle) => src!.includes(needle))
-      ) {
-        navWarnings.push({ file, blockName: exported.name, exportName });
-      }
-      // Inline selector: applies to every Block kind, including NavBlocks -
-      // a Nav's own `verify` array is just as likely to inline a selector.
-      if (INLINE_SELECTOR_CALL.test(src)) {
-        selWarnings.push({ file, blockName: exported.name, exportName });
-      }
-    }
-  }
-  const practiceWarnings = collectPracticeWarnings(projectDir, walkDir, {
-    disabled: opts?.noPractices === true,
-  });
-  return { navWarnings, selWarnings, practiceWarnings };
 }
 
 
@@ -211,7 +79,7 @@ export async function typecheckCase(args: string[]): Promise<void> {
 export async function checkCase(args: string[]): Promise<void> {
       const flags = parseRunFlags(args.slice(1));
       const proj = resolve(flags.positionals[0] ?? process.cwd());
-      const { navWarnings, selWarnings, practiceWarnings } = await checkCommand(
+      const { navWarnings, selWarnings, practiceWarnings } = await checkProject(
         proj,
         flags.noPractices ? { noPractices: true } : undefined,
       );

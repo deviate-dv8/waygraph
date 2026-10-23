@@ -110,6 +110,7 @@ against a live site, use `--skill-pilot-blind`.
 | Effect | `*.effect.block.ts` in `methods/` / `_methods/` | `defineEffectBlock` | No |
 | Method | `*.method.block.ts` in `methods/` / `_methods/` | `defineMethodBlock` | No |
 | Assert | with Method/Effect peers | `defineAssertBlock` | No |
+| API | `*.api.block.ts` in `methods/` | `defineApiBlock({ from, to, call })` (a real HTTP request; `map().method(...)`) | No |
 
 Effects that appear in `waygraph auto` menus need `instanceOptions` that scan the live DOM
 (or mem) for labeled rows.

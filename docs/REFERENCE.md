@@ -828,19 +828,22 @@ over automatically). Lets one Flow narrate a UI step and a backend check as the 
 state machine, checked by the same `verify`/Trait system every other Block uses:
 
 ```typescript
-import { defineApiBlock, checkpoint } from "waygraph";
+import { defineApiBlock } from "waygraph";
+import { LoggedIn, OrderConfirmed, OrderFailed } from "../states/app.js";
 
-export const CheckOrderCreatedBlock = defineApiBlock<LoggedIn, OrderConfirmed | OrderFailed>({
+export const CheckOrderCreatedBlock = defineApiBlock({
   name: "check-order-created",
+  from: LoggedIn,
+  to: [OrderConfirmed, OrderFailed],
   call: ({ request }) => request.get("/api/orders/latest"),
   method: "GET", // cosmetic only - shown in the demo overlay's network tab, not read back from the response
-  resolve: (r) => (r.ok ? checkpoint("OrderConfirmed") : checkpoint("OrderFailed")),
+  resolve: (r) => (r.ok ? OrderConfirmed : OrderFailed),
   verify: [Trait.disabled],
 });
 ```
 
 `resolve` receives `{ status, ok, body }` (`body` is the parsed JSON, or raw text when it
-doesn't parse as JSON). Every call - real page traffic too - feeds the same demo-overlay
+doesn't parse as JSON); leave it out when `to` is one Checkpoint. Put it in a flow with `map().method(CheckOrderCreatedBlock)`. Every call - real page traffic too - feeds the same demo-overlay
 network tab (hidden by default, `ctx.showNetworkTab()`/`hideNetworkTab()` to toggle); see
 [Demo narration → Network tab](./highlights#network-tab-demo-01549).
 

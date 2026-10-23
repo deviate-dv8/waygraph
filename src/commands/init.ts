@@ -1,4 +1,3 @@
-// Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { packageRoot } from "../cli/util.js";
 import { agentSkillFiles } from "./agent-dive-scaffold.js";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";

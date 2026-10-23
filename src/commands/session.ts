@@ -1,8 +1,7 @@
-// Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { printBrowserSessionsList, printBrowserUsage } from "../cli/usage.js";
 import { applyRunFlags, looksLikeFlowFileRef, parseRunFlags, resolveBaseUrl } from "../cli/flags.js";
 import { runChain } from "../cli/run-chain.js";
-import { runChainAuto } from "./check.js";
+import { runChainAuto } from "../cli/run-chain.js";
 import { resolve } from "node:path";
 import { browserStart, listBrowserSessions, stopAllBrowserSessions, stopBrowserSession } from "../live/browser.js";
 import { existsSync, statSync } from "node:fs";

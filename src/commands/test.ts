@@ -1,4 +1,3 @@
-// Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { configuredExtensions } from "../runtime/config.js";
 import { defaultRunLogDir } from "../runtime/run-log.js";
 import { runInherited } from "../cli/util.js";

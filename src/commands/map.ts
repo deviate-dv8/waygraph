@@ -1,4 +1,3 @@
-// Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { relative, resolve } from "node:path";
 import { checkMap } from "../analysis/map-check.js";
 

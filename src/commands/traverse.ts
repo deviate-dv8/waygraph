@@ -1,4 +1,3 @@
-// Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { resolve } from "node:path";
 import { existsSync, statSync } from "node:fs";
 import { parseBlocksSelect } from "../manifest/select.js";

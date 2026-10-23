@@ -24,7 +24,8 @@ The plan and phases: `ROADMAP.md`, "Architecture refactor".
 
 ```text
 cli.ts ───────────── ~100-line dispatcher: one `case` per subcommand
-commands/*.ts, cli/*.ts ─ one file per subcommand; shared flag parsing, usage text, discovery helpers
+commands/*.ts, cli/*.ts ─ one file per subcommand that only parses argv and prints; cli/ holds flag parsing, usage text,
+                      and run-chain (spawning the runner, `chain auto`)
 runner/ ───────────── `waygraph run/demo/chain` child process entry (main, discovery, seed-mem, chain-run), exported as `waygraph/runner`
 demo/ ─────────────── narration/ (stub ctx, pace, device, todo dock, highlight styles), overlay/ (the one overlay for demo, auto and pilot: install, rings, cursor, device stage, network tab, auto-chrome, pilot-shell, pilot-fixtures; overlay/inpage/*.ts = code injected into the page, self-contained), step-mode/ (the step-through runner: gates, panels, slides, teardown, demo log)
 live/ ─────────────── driving a running browser: auto-session/ (the session class), auto-session-ipc (spawn/control),
@@ -32,7 +33,8 @@ live/ ─────────────── driving a running browser: a
 core.ts + core/ ── barrel over core/{block,config,run-graph,flow,compose,engine,map-builder,locate,branch-regression,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
 ui/ ────────────── real .css overlay stylesheet built on Open Props, bundled by scripts/copy-ui-css.mjs into dist/ui/overlay.css and injected once by ui/shadow.ts - see src/ui/css/README.md; change a colour in ui/css/tokens.css, never inline
 manifest/ (scan, project, roots, select, manifest, legacy-generics) ─ the one project scanner: walks and imports Blocks/Flows, reads routes, builds the JSON manifest
-analysis/ (graph, map-check, practices-check, coverage-gap) ─ static analysis / lint over the scan
+analysis/ (graph, map-check, practices-check, check, source, coverage-gap) ─ static analysis / lint over the scan;
+                      check = validate + nav-escape + inline-selector, source = the regex reads `list`/`nav` print
 core/{types,trait,mem-page,mem-stub,errors,selector,narration,hooks,launch}.ts ─ core types and primitives; narration.ts is the stub/pace contract Blocks carry, hooks.ts and launch.ts are where the demo and runtime layers plug in
 runtime/ (config, env-file, browser, extensions, webserver, video-dir, playwright-config, launch) ─ config loading and browser launch
 index.ts ─────────── the public API: re-exports only; nothing inside src/ imports it

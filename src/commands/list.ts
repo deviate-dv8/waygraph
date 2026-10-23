@@ -1,5 +1,5 @@
-// Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { blockExportToLabel, discoverFlows, extractFlowNames, extractGotos, extractUrlTraits, parseBlockImports, walkDir } from "../cli/discover.js";
+import { blockExportToLabel, extractFlowNames, extractGotos, extractUrlTraits, parseBlockImports } from "../analysis/source.js";
+import { walkDir } from "../manifest/scan.js";
 import { relative, resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 
@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from "node:fs";
 // ---------------------------------------------------------------------------
 
 function listCommand(projectDir: string): void {
-  const files = discoverFlows(projectDir);
+  const files = walkDir(projectDir, /\.flow\.ts$/);
   if (files.length === 0) {
     console.log(`waygraph: no flows found under ${projectDir}`);
     return;
@@ -27,7 +27,7 @@ function listCommand(projectDir: string): void {
 // ---------------------------------------------------------------------------
 
 function navCommand(projectDir: string, flowName: string | undefined): void {
-  const files = discoverFlows(projectDir);
+  const files = walkDir(projectDir, /\.flow\.ts$/);
   const targets = flowName
     ? files.filter((f) => extractFlowNames(f).includes(flowName))
     : files;

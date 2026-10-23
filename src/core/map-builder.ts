@@ -139,6 +139,7 @@ const MAP_KIND_FACTORY_HINT: Record<string, string> = {
 const MAP_SALT_FACTORY_HINT: Record<string, string> = {
   method: "defineMethodBlock",
   effect: "defineEffectBlock",
+  api: "defineApiBlock",
 };
 
 
@@ -441,7 +442,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     if (mapKindOf(block) === "assert") {
       throw new WaygraphError("WG_MAP_WRONG_KIND", MSG_MAP_METHOD_GOT_ASSERT(block.name));
     }
-    assertMapSalt(block, ["method", "effect"], "method");
+    assertMapSalt(block, ["method", "effect", "api"], "method");
     return this.appendStep(paced(block, opts), opts?.ff);
   }
 

@@ -1,5 +1,5 @@
 import { checkpoint, defineApiBlock } from "waygraph";
-import type { Checkpoint, StubCtx } from "waygraph";
+import type { StubCtx } from "waygraph";
 import { engine } from "../../config/waygraph.config.js";
 import { loginFlow } from "./login.flow.js";
 
@@ -15,15 +15,17 @@ import { loginFlow } from "./login.flow.js";
  * hits a well-known public REST test API (jsonplaceholder) purely to prove
  * the mechanism - a real project would point `call` at its own backend.
  */
-export type BackendHealthy = Checkpoint<"BackendHealthy">;
-export type BackendDown = Checkpoint<"BackendDown">;
+export const BackendHealthy = checkpoint("BackendHealthy");
+export type BackendHealthy = typeof BackendHealthy;
+export const BackendDown = checkpoint("BackendDown");
+export type BackendDown = typeof BackendDown;
 
-const CheckBackendHealth = defineApiBlock<any, BackendHealthy | BackendDown>({
+const CheckBackendHealth = defineApiBlock({
   name: "check-backend-health",
+  to: [BackendHealthy, BackendDown],
   call: ({ request }) =>
     request.get("https://jsonplaceholder.typicode.com/todos/1"),
-  resolve: (result) =>
-    result.ok ? checkpoint("BackendHealthy") : checkpoint("BackendDown"),
+  resolve: (result) => (result.ok ? BackendHealthy : BackendDown),
   stubBefore: (ctx: StubCtx<BackendHealthy | BackendDown>) => {
     ctx.title("Checking backend health · real HTTP request, no browser");
   },

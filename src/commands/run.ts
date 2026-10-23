@@ -1,9 +1,8 @@
-// Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import { applyDemoDefaults, applyRunFlags, parseRunFlags, resolveBaseUrl, resolveProjectDir, resolveSpec } from "../cli/flags.js";
 import { runChain } from "../cli/run-chain.js";
 import { resolve } from "node:path";
 import { existsSync } from "node:fs";
-import { runChainAuto } from "./check.js";
+import { runChainAuto } from "../cli/run-chain.js";
 
 export async function runCase(args: string[]): Promise<void> {
       const flags = parseRunFlags(args.slice(1));

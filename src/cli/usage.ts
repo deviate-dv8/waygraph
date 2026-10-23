@@ -1,4 +1,3 @@
-// Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import type { SessionMeta } from "../live/browser.js";
 
 export function printBrowserUsage(): void {

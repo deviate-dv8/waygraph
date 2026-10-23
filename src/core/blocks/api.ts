@@ -3,6 +3,8 @@
 // by the same Trait system everything else uses. Built on Playwright's own `page.request`
 // (APIRequestContext) - no shell-out to curl, no second HTTP client to depend on.
 import { recordApiCall } from "../hooks.js";
+import { checkpoint } from "../types.js";
+import { markRouteOf, tagsOf } from "../route.js";
 import type { Checkpoint, DefinedBlock } from "../types.js";
 import type { Trait } from "../trait.js";
 import { defineBlock } from "../block.js";
@@ -36,8 +38,12 @@ export interface ApiBlockOptions<In extends Checkpoint<string>, Out extends Chec
    * @example method: "POST"
    */
   method?: string;
-  /** Pure, like every other Block's resolve - classifies the response into a Checkpoint tag. */
-  resolve: (result: ApiCallResult) => Out;
+  /** Where it runs: one Checkpoint value or a list; leave it out for "from anywhere". */
+  from?: In | readonly In[];
+  /** Where it lands: one Checkpoint value (then `resolve` may be left out) or a list. */
+  to?: Out | readonly Out[];
+  /** Pure, like every other Block's resolve - picks the Checkpoint from the response. Optional when `to` is one Checkpoint. */
+  resolve?: (result: ApiCallResult) => Out;
   verify?: Trait[] | ((out: Out) => Trait[]);
   requires?: readonly MemKey<any>[];
   stubBefore?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
@@ -57,16 +63,24 @@ const API_RESULT_SCRATCH = key<ApiCallResult>("__wgApiBlockResult");
  * machine, checked by the same Trait/verify system. Runs through `page.request`, so it shares the
  * browser context's cookies/origin - no separate auth dance for an already-logged-in session.
  * @example
- * const CheckOrderCreated = defineApiBlock<LoggedIn, OrderConfirmed | OrderFailed>({
+ * const CheckOrderCreated = defineApiBlock({
  *   name: "check-order-created",
+ *   from: LoggedIn,
+ *   to: [OrderConfirmed, OrderFailed],
  *   call: ({ request }) => request.get("/api/orders/latest"),
- *   resolve: (r) => (r.ok ? checkpoint("OrderConfirmed") : checkpoint("OrderFailed")),
+ *   resolve: (r) => (r.ok ? OrderConfirmed : OrderFailed),
  *   verify: [Trait.disabled],
  * });
  */
 export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   options: ApiBlockOptions<In, Out>,
 ): DefinedBlock<In, Out> {
+  const targets = options.to === undefined ? [] : tagsOf(options.to);
+  const pick = options.resolve;
+  if (!pick && targets.length !== 1) {
+    throw new Error(`waygraph: API Block "${options.name}" needs a resolve() (or a single \`to\` Checkpoint)`);
+  }
+  const resolve = pick ?? ((): Out => checkpoint(targets[0]!) as Out);
   const built = defineBlock<In, Out>({
     name: options.name,
     ...(options.description ? { description: options.description } : {}),
@@ -101,13 +115,16 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
       async observe(_page, mem) {
         return mem.get(API_RESULT_SCRATCH);
       },
-      resolve: (observed) => options.resolve(observed as ApiCallResult),
+      resolve: (observed) => resolve(observed as ApiCallResult),
       ...(options.verify !== undefined ? { verify: options.verify } : {}),
       ...(options.stubBefore !== undefined ? { stubBefore: options.stubBefore } : {}),
       ...(options.stubAfter !== undefined ? { stubAfter: options.stubAfter } : {}),
       ...(options.stubOnError !== undefined ? { stubOnError: options.stubOnError } : {}),
     },
   }) as DefinedBlock<In, Out>;
+  markRouteOf(built, options);
   Object.defineProperty(built, "__waygraphKind", { value: "api", enumerable: false, configurable: false });
+  // Accepted by map().method(), like a Method: one step that lands on a Checkpoint.
+  Object.defineProperty(built, "__waygraphSalt", { value: "api", enumerable: false, configurable: false });
   return built;
 }

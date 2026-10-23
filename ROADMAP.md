@@ -232,7 +232,8 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 6. One overlay for demo, auto and pilot: `demo/overlay/` (auto's ring/cursor/pulse are the demo's `inpage/core.ts`), the
    pilot menu panel in `session/`. Layer debt is zero. **Done.**
 7. `live/` for sessions, pilot and traverse (`session/`, `auto-session/`, `traverse/` moved in). **Done.**
-8. Thin CLI.
+8. Thin CLI: `cli/discover.ts` gone (scanning in `manifest/`, `validate`/`check` scans in `analysis/check.ts`, `list`/`nav`
+   source reads in `analysis/source.ts`), `chain auto` in `cli/run-chain.ts`. **Done.**
 9. Map packages: a map group owns its states and keys, `waygraph map pack`, `maps: [...]` in the config.
 
 
