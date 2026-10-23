@@ -1,5 +1,5 @@
 // Every WAYGRAPH_* variable waygraph reads, in one place: what it means and how it is read. The CLI writes most of them
-// from flags (cli/flags.ts) and the config file (runtime/config.ts) so the runner child it spawns inherits them; the
+// from flags (cli/flags.ts) and the config file (runtime/waygraph-config.ts) so the runner child it spawns inherits them; the
 // rest are environment-only knobs. Nothing else touches process.env.WAYGRAPH_* (check:structure enforces it).
 
 export const WAYGRAPH_ENV = {

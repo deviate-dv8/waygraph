@@ -4,7 +4,7 @@ import type { WgPage } from "../types.js";
 import type { MemPage } from "../../engine/mem/mem.js";
 import { installOverlay } from "../overlay/overlay.js";
 import { applyHighlightZoom, captionForLocator, dwellMatchedStub, ensureLocatorInView, hideRing, matchStubIndexForLocator, showRing, wasJustNarrated } from "../overlay/rings.js";
-import { syncTodoDockAdvance } from "./todo-dock.js";
+import { syncTodoDockAdvance } from "./todo-advance.js";
 import { clickPulseAt, moveCursorTo } from "../overlay/cursor.js";
 import { demoHighlight } from "./demo-log.js";
 import { repaintOverlay } from "../overlay/reattach.js";

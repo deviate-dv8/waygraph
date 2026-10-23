@@ -28,13 +28,13 @@
  * hand-picking indices from each status response) that proved this needs no
  * new execution primitive.
  */
-import { discoverGraph, type WaygraphGraph } from "../analysis/graph.js";
+import { discoverGraph, type WaygraphGraph } from "../../analysis/graph.js";
 import {
   requestSession,
   resolveSessionMeta,
-} from "./auto-session-ipc.js";
-import { browserStart, type BrowserStartInit } from "./browser.js";
-import type { SessionSnapshot } from "./auto-session/helpers.js";
+} from "../auto-session/ipc.js";
+import { browserStart, type BrowserStartInit } from "../auto-session/start.js";
+import type { SessionSnapshot } from "../auto-session/helpers.js";
 
 /** What `pilotStart` returns: the session id, socket path and first snapshot. */
 export interface PilotStartResult {
@@ -55,7 +55,7 @@ export interface PilotStartResult {
  * --detach` and `waygraph graph` itself.
  */
 export async function pilotStart(init: BrowserStartInit): Promise<PilotStartResult> {
-  const { resolveInjectRoots } = await import("../manifest/roots.js");
+  const { resolveInjectRoots } = await import("../../manifest/roots.js");
   const exploreInject =
     init.inject ??
     (init.injectTokens?.length ? resolveInjectRoots(init.injectTokens, init.projectDir) : undefined);

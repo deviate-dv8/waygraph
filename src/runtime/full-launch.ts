@@ -3,7 +3,7 @@ import type { EngineConfig } from "../engine/config.js";
 import { resolveLauncher } from "../engine/config.js";
 import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "./browser.js";
 import { resolveExtensions } from "./extensions.js";
-import { loadWaygraphConfig } from "./config.js";
+import { loadWaygraphConfig } from "./waygraph-config.js";
 import { envString } from "../engine/env.js";
 
 // An Engine's own browser follows the selected config (--config), the Chromium override and the configured extensions.

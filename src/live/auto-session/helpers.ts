@@ -1,7 +1,7 @@
 import type { StubPhaseResult } from "../../engine/narration.js";
-import type { ExploreMenu } from "../auto-explore.js";
+import type { ExploreMenu } from "../auto/explore.js";
 import type { BlockEntry } from "../../manifest/project.js";
-import type { PickResult } from "../auto-explore-run.js";
+import type { PickResult } from "../auto/auto.js";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 

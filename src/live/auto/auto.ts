@@ -1,28 +1,28 @@
-import type { BlockEntry } from "../manifest/project.js";
-import { getMemStub } from "../engine/mem/mem-stub.js";
+import type { BlockEntry } from "../../manifest/project.js";
+import { getMemStub } from "../../engine/mem/mem-stub.js";
 import { createInterface } from "node:readline/promises";
-import { ensureShadowRoot } from "../demo/overlay/ui/shadow.js";
+import { ensureShadowRoot } from "../../demo/overlay/ui/shadow.js";
 import { stdin as input, stdout as output } from "node:process";
 import type { Page, BrowserContext, BrowserContextOptions } from "@playwright/test";
-import { Engine } from "../engine/engine.js";
-import { buildFlow } from "../engine/flow/flow.js";
-import { locate } from "../engine/locate.js";
-import { MemPage } from "../engine/mem/mem.js";
-import type { MemKey } from "../engine/mem/mem.js";
-import type { NavBlock } from "../engine/block/kinds/nav.js";
+import { Engine } from "../../engine/engine.js";
+import { buildFlow } from "../../engine/flow/flow.js";
+import { locate } from "../../engine/locate.js";
+import { MemPage } from "../../engine/mem/mem.js";
+import type { MemKey } from "../../engine/mem/mem.js";
+import type { NavBlock } from "../../engine/block/kinds/nav.js";
 import {
   buildExploreContext,
   buildExploreMenu,
   type ExploreMenu,
-} from "./auto-explore.js";
-import type { Checkpoint } from "../engine/checkpoint/checkpoint.js";
-import { installDemoChrome, instrumentAutoInteractions } from "../demo/overlay/auto-chrome.js";
-import { keepOverlayOnNavigation } from "../demo/overlay/reattach.js";
-import { configuredExtensions, resolveBaseUrl } from "../runtime/config.js";
-import { withWebServer } from "../runtime/webserver.js";
-import { chromiumExecutablePath, launchContext } from "../runtime/browser.js";
-import { envString } from "../engine/env.js";
-import { ignorePageGone, ignoreTimeout } from "../engine/page-gone.js";
+} from "./explore.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
+import { installDemoChrome, instrumentAutoInteractions } from "../../demo/overlay/auto-chrome.js";
+import { keepOverlayOnNavigation } from "../../demo/overlay/reattach.js";
+import { configuredExtensions, resolveBaseUrl } from "../../runtime/waygraph-config.js";
+import { withWebServer } from "../../runtime/webserver.js";
+import { chromiumExecutablePath, launchContext } from "../../runtime/browser.js";
+import { envString } from "../../engine/env.js";
+import { ignorePageGone, ignoreTimeout } from "../../engine/page-gone.js";
 
 export interface AutoExploreOptions {
   /** Terminal menu (browser still runs for act()). Default false = headful picker panel. */
@@ -31,7 +31,7 @@ export interface AutoExploreOptions {
   /** Initial URL when the page is blank (defaults to baseURL). */
   startUrl?: string;
   /** Phase C: glob / regex / bare `--blocks` file select for discovery. */
-  blocksSelect?: import("../manifest/select.js").BlocksSelect;
+  blocksSelect?: import("../../manifest/select.js").BlocksSelect;
 }
 
 

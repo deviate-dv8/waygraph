@@ -152,10 +152,10 @@ for (const f of files) {
 }
 
 // --- no silent catch-alls in Node code ---
-// In-page code (demo/overlay/inpage/) runs in the browser, where page-gone.ts doesn't exist. auto-session-ipc.ts keeps its
+// In-page code (demo/overlay/inpage/) runs in the browser, where page-gone.ts doesn't exist. auto-session/ipc.ts keeps its
 // request queue going after a failed request; the caller still gets that error from the promise it was handed.
 const SWALLOW_RE = /\.catch\(\s*\(\s*\)\s*=>\s*(?:\{\s*\}|undefined)\s*\)/;
-const SWALLOW_ALLOWED = new Set(["live/auto-session-ipc.ts"]);
+const SWALLOW_ALLOWED = new Set(["live/auto-session/ipc.ts"]);
 for (const f of files) {
   const rel = relative(srcDir, f).replace(/\\/g, "/");
   if (rel.startsWith("demo/overlay/inpage/") || SWALLOW_ALLOWED.has(rel)) continue;

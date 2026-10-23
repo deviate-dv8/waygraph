@@ -11,7 +11,7 @@ import { showCaption, hideCaption } from "./inpage/caption.js";
 import { installStamp } from "./inpage/stamp.js";
 import { installPanelChrome } from "./inpage/panel-chrome.js";
 import { installTodos } from "./inpage/todos.js";
-import { installDevice } from "./inpage/device.js";
+import { installDevice } from "./inpage/device-chip.js";
 import { applyVideoDeviceStage } from "./device-stage.js";
 import { installNetworkCapture, restoreNetworkHistory } from "./network-capture.js";
 import { setNetworkTabVisible } from "./inpage/network.js";

@@ -1,6 +1,6 @@
 // Loaded by `waygraph test` (playwright test -c) for projects that keep their settings in config/waygraph.config.ts.
 import { defineConfig } from "@playwright/test";
-import { loadWaygraphConfig, resolveBaseUrl } from "./config.js";
+import { loadWaygraphConfig, resolveBaseUrl } from "./waygraph-config.js";
 import { playwrightConfigFrom } from "./playwright-config.js";
 import { envString } from "../engine/env.js";
 

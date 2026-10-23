@@ -1,5 +1,5 @@
 import { optionHelp } from "./flags.js";
-import type { SessionMeta } from "../live/auto-session-ipc.js";
+import type { SessionMeta } from "../live/auto-session/ipc.js";
 
 export function printBrowserUsage(): void {
   console.log(`waygraph browser — persistent Playwright sessions (headful by default)

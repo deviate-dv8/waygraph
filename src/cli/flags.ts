@@ -4,7 +4,7 @@ import type { OptionSpec } from "./args.js";
 import { existsSync } from "node:fs";
 import { walkDir } from "../manifest/scan.js";
 import { exportedNames, parseSource } from "../manifest/source.js";
-import { loadWaygraphConfig, resolveBaseUrl } from "../runtime/config.js";
+import { loadWaygraphConfig, resolveBaseUrl } from "../runtime/waygraph-config.js";
 import { envFlag, envString, setEnv } from "../engine/env.js";
 
 // ---------------------------------------------------------------------------

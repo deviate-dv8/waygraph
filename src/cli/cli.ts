@@ -18,7 +18,7 @@
 import { SKILL_FLAG_MAP, printSkillIndex, readSkillMarkdown } from "./commands/agent-dive-scaffold.js";
 import type { SkillFlag } from "./commands/agent-dive-scaffold.js";
 import { takeEnvFlag } from "../runtime/env-file.js";
-import { takeConfigFlag } from "../runtime/config.js";
+import { takeConfigFlag } from "../runtime/waygraph-config.js";
 import { usage } from "./usage.js";
 import { listCase, navCase } from "./commands/list.js";
 import { checkCase, typecheckCase, validateCase } from "./commands/check.js";

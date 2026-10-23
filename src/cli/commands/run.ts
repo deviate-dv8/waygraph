@@ -1,4 +1,4 @@
-import { resolveBaseUrl } from "../../runtime/config.js";
+import { resolveBaseUrl } from "../../runtime/waygraph-config.js";
 import { applyDemoDefaults, applyRunFlags, parseRunFlags, resolveProjectDir, resolveSpec } from "../flags.js";
 import { runChain } from "../run-chain.js";
 import { resolve } from "node:path";

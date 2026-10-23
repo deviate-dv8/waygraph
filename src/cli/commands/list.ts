@@ -1,4 +1,4 @@
-import { blockExportToLabel, extractFlowNames, extractGotos, extractUrlTraits, parseBlockImports } from "../../analysis/source.js";
+import { blockExportToLabel, extractFlowNames, extractGotos, extractUrlTraits, parseBlockImports } from "../../analysis/flow-source.js";
 import { walkDir } from "../../manifest/scan.js";
 import { exportedNames, parseSource } from "../../manifest/source.js";
 import { relative, resolve } from "node:path";

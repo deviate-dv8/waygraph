@@ -155,7 +155,7 @@ export async function loadWaygraphConfig(projectDir: string): Promise<WaygraphCo
 
 /**
  * Single source of truth for a project's base URL. Was three independently drifted copies
- * (`src/cli/flags.ts`, `src/live/traverse/run.ts`, `src/live/auto-explore-run.ts`), each checking
+ * (`src/cli/flags.ts`, `src/live/traverse/traverse.ts`, `src/live/auto/auto.ts`), each checking
  * a slightly different subset of sources in a different order - real duplication, not just
  * stylistic, since one copy skipped `config.waygraph.*` nesting and another checked
  * `WAYGRAPH_BASE_URL` first instead of last. Checked in this order:

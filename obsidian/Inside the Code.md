@@ -26,10 +26,10 @@ No barrels: things are imported from the file that declares them.
 | `engine/mem/`, `engine/trait/` | `mem.ts`, `trait.ts` | [[Mem]], verify checks | |
 | `runner/` | `runner.ts` | [[Playing a Flow]]: plan -> session -> one loop with a mode | `modes/` = run, demo, report, branches |
 | `demo/` | `stepper/stepper.ts` | [[Demo UI]]: stepper, overlay, narration | |
-| `live/` | | [[Live Sessions]]: auto, pilot, browser, traverse | |
+| `live/` | `auto/auto.ts`, `auto-session/auto-session.ts`, `pilot/pilot.ts`, `traverse/traverse.ts` | [[Live Sessions]]: one folder per surface | |
 | `manifest/` | `manifest.ts` | the project scan and [[What Waygraph Writes#The manifest]] | also map packages |
 | `analysis/` | | graph, lint checks, map check | |
-| `runtime/` | `config.ts` | the config file, `.env`, browser launch, run log | |
+| `runtime/` | `waygraph-config.ts` | the config file, `.env`, browser launch, run log | |
 | `cli/` | `cli.ts` | `waygraph <command>`; `commands/` = one file per command | |
 
 Layer rule (checked by `npm run check:structure`): the engine depends on nothing; the demo on the engine; live

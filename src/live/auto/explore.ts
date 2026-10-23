@@ -1,17 +1,17 @@
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
-import type { WaygraphInstanceOption } from "../engine/block/block.js";
-import { discoverGraph, type WaygraphGraph, type WaygraphEdge } from "../analysis/graph.js";
-import { scanProject } from "../manifest/project.js";
-import { importFresh, walkDir } from "../manifest/scan.js";
+import type { WaygraphInstanceOption } from "../../engine/block/block.js";
+import { discoverGraph, type WaygraphGraph, type WaygraphEdge } from "../../analysis/graph.js";
+import { scanProject } from "../../manifest/project.js";
+import { importFresh, walkDir } from "../../manifest/scan.js";
 
 export interface ExploreContextOpts {
-  blocksSelect?: import("../manifest/select.js").BlocksSelect;
+  blocksSelect?: import("../../manifest/select.js").BlocksSelect;
   /** Absolute paths of extra Block trees to merge (host projectDir is always first). */
   inject?: string[];
 }
 
-import type { BlockEntry } from "../manifest/project.js";
+import type { BlockEntry } from "../../manifest/project.js";
 
 /**
  * One menu row. Usually just a `WaygraphEdge` as discovered statically; when

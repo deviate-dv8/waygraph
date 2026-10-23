@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, isAbsolute, join, resolve } from "node:path";
-import { loadWaygraphConfig } from "./config.js";
+import { loadWaygraphConfig } from "./waygraph-config.js";
 import { envString } from "../engine/env.js";
 
 /** The user's Downloads folder, or undefined when there is none (a server, a container). */

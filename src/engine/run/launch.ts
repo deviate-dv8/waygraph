@@ -31,7 +31,7 @@ async function plainLaunch(config: EngineConfig | undefined): Promise<OwnContext
 
 let launcher: OwnContextLauncher = plainLaunch;
 
-/** The runtime layer registers the full launch (selected config, Chromium path, extensions); see `runtime/launch.ts`. */
+/** The runtime layer registers the full launch (selected config, Chromium path, extensions); see `runtime/full-launch.ts`. */
 export function setOwnContextLauncher(next: OwnContextLauncher): void {
   launcher = next;
 }

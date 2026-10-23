@@ -1,4 +1,4 @@
-import { configuredExtensions } from "../../runtime/config.js";
+import { configuredExtensions } from "../../runtime/waygraph-config.js";
 import { defaultRunLogDir } from "../../runtime/run-log.js";
 import { runInherited } from "../util.js";
 import { join } from "node:path";

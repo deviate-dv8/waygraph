@@ -1,18 +1,18 @@
-import { resolveBaseUrl } from "../../runtime/config.js";
+import { resolveBaseUrl } from "../../runtime/waygraph-config.js";
 import { printBrowserSessionsList, printBrowserUsage } from "../usage.js";
 import { applyRunFlags, looksLikeFlowFileRef, parseRunFlags } from "../flags.js";
 import { runChain } from "../run-chain.js";
 import { runChainAuto } from "../run-chain.js";
 import { resolve } from "node:path";
-import { browserStart } from "../../live/browser.js";
-import { listBrowserSessions, stopAllBrowserSessions, stopBrowserSession } from "../../live/auto-session-ipc.js";
+import { browserStart } from "../../live/auto-session/start.js";
+import { listBrowserSessions, stopAllBrowserSessions, stopBrowserSession } from "../../live/auto-session/ipc.js";
 import { existsSync, statSync } from "node:fs";
 import { resolveInjectRoots } from "../../manifest/roots.js";
-import { requestSession, resolveSessionMeta, runAttachLoop, runAutoServeCommand } from "../../live/auto-session-ipc.js";
-import { pilotAttach, pilotStart } from "../../live/pilot.js";
+import { requestSession, resolveSessionMeta, runAttachLoop, runAutoServeCommand } from "../../live/auto-session/ipc.js";
+import { pilotAttach, pilotStart } from "../../live/pilot/pilot.js";
 import { parseHighlightShorthand } from "../../demo/narration/shorthand.js";
 import { isFileSelectToken, parseBlocksSelect } from "../../manifest/select.js";
-import { runAutoExplore } from "../../live/auto-explore-run.js";
+import { runAutoExplore } from "../../live/auto/auto.js";
 import { discoverGraph, findOrphanBlocks, toMermaid } from "../../analysis/graph.js";
 import { envString, setEnv } from "../../engine/env.js";
 import { parseCommand } from "../args.js";
@@ -460,7 +460,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
           const { op: _ignore, ...rest } = fixtures as { op?: string } & Record<string, unknown>;
           const res = await requestSession(proj, sessionId, {
             op: "highlight",
-            ...(rest as import("../../demo/overlay/pilot-fixtures.js").PilotHighlightFixtures),
+            ...(rest as import("../../demo/overlay/pilot/fixtures.js").PilotHighlightFixtures),
           });
           console.log(JSON.stringify(res));
           if (!res.ok) process.exitCode = 1;

@@ -2,7 +2,7 @@
 // the same block `waygraph test` already honors.
 import { join } from "node:path";
 import { spawn, type ChildProcess } from "node:child_process";
-import { loadWaygraphConfig } from "./config.js";
+import { loadWaygraphConfig } from "./waygraph-config.js";
 
 /** The subset of Playwright's `TestConfigWebServer` this drives - same field names. */
 export interface WebServerConfig {

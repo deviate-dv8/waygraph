@@ -1181,10 +1181,10 @@ first. Bottom-left activity toasts label raw primitives as **`Running (no Block)
 (click/type/goto/upload outside the Block library); Block runs stay **`Running (Block): …`**.
 Both refresh automatically after every `send`/`reach`/`reload`/`resync`/raw action.
 It lives in `src/demo/overlay/` (`pilot-shell.ts`, `pilot-fixtures.ts`) next to the demo overlay and paints rings
-through the same `inpage/core.ts` primitive; the session menu panel is `src/live/pilot-panel.ts`.
+through the same `inpage/core.ts` primitive; the session menu panel is `src/live/pilot/panel.ts`.
 
 **Pilot itself does no planning, resolving, narrating, or acting** - `pilotStart`'s only job is
-starting the session and handing back its graph in one round trip; see `src/live/pilot.ts`. An
+starting the session and handing back its graph in one round trip; see `src/live/pilot/pilot.ts`. An
 earlier shape (`pilot ask "<text>"`, a deterministic ask-to-one-edge text matcher) was built,
 shipped, and then explicitly rejected as not matching this goal - preserved for reference at git
 tag `waygraph-pilot-v1-logs-prettified`, not on any active branch.
@@ -1697,7 +1697,7 @@ WAYGRAPH_PROVE_EXIT=1 WAYGRAPH_PROVE_SHOT=/tmp/wg.png \
 # stderr: WAYGRAPH_PROVE {"ok":true,"beacons":[...],"readyAttr":"1"}
 ```
 
-Tests: `tests/cli/overlay-beacon.spec.ts`. Helpers: `src/live/overlay-beacon.ts`. Rules for
+Tests: `tests/cli/overlay-beacon.spec.ts`. Helpers: `src/demo/overlay/beacon.ts`. Rules for
 touching the stepper/overlay chrome itself: `src/CLI-STOMP-GUARD.md`.
 
 ## Layout

@@ -1,7 +1,7 @@
-import type { SessionSnapshot } from "./auto-session/helpers.js";
-import { ensureInstalled } from "../demo/overlay/pilot-shell.js";
+import type { SessionSnapshot } from "../auto-session/helpers.js";
+import { ensureInstalled } from "../../demo/overlay/pilot/shell.js";
 import type { Page } from "@playwright/test";
-import { ignorePageGone } from "../engine/page-gone.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 /** Minimal shape needed to render the graph tree - matches WaygraphGraph. */
 interface PilotOverlayGraph {
@@ -122,7 +122,7 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
           w.mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "strict", flowchart: { curve: "linear", htmlLabels: false } });
           const sanitize = (s: string) => s.replace(/[^A-Za-z0-9_]/g, "_");
           // Every Nav Block gets a `from:"*"` wildcard edge for pathfinding
-          // (see auto-explore.ts's own isUrlNav comment). Real, screenshot-
+          // (see live/auto/explore.ts's own isUrlNav comment). Real, screenshot-
           // confirmed finding, TWICE over:
           // 1. Collapsing all of these into one shared "Anywhere" hub node
           //    still broke the layout - ~9 of 10 Checkpoints have their own

@@ -39,12 +39,18 @@ runner/           waygraph run / demo, spawned inside the project (exported as w
 demo/             everything the demo shows (layer: demo)
   stepper/          stepper.ts: the panels before / after each step, the Next gate, pacing, slides, demo log
   overlay/          overlay.ts: rings, cursor, banner, caption, todos, device stage, network tab; inpage/ (code that runs
-                    in the page, self-contained); ui/ (shadow root + the real .css bundle); auto-chrome and pilot-* for live sessions
+                    in the page, self-contained); ui/ (shadow root + the real .css bundle); locator-theater (the one fill/click
+                    patch), reattach, beacon (overlay readiness); auto-chrome and pilot/ for the live sessions' overlay
   narration/        narration.ts: plays a Block's ctx stubs into rings, todos, device, title; stub-ctx, pace, style, todo dock
-live/             driving a running browser: auto-session/ (auto-session.ts), auto-session-ipc, browser, pilot, traverse/ (traverse.ts)
+live/             driving a running browser, one folder per surface:
+  auto/             auto.ts: `waygraph auto`, the explore loop (picker or terminal menu); explore.ts (library, menu)
+  auto-session/     auto-session.ts: a detached session (`browser start`); ipc.ts (socket + spawn), start.ts, helpers
+  pilot/            pilot.ts: `pilot start` (session + graph + snapshot in one call); panel.ts (its overlay panel)
+  traverse/         traverse.ts: `waygraph traverse`, the graph crawl; coverage, lease
 manifest/         manifest.ts: every Block, Flow and Checkpoint as JSON, from one scan (scan.ts, project.ts); maps.ts + pack.ts (map packages)
-analysis/         graph, map-check, practices-check, check (validate, nav-escape, inline selectors), source (list / nav), coverage-gap
-runtime/          config.ts (waygraph.config.ts), .env, browser launch, extensions, web server, video folder, run log, playwright config
+analysis/         graph, map-check, practices-check, check (validate, nav-escape, inline selectors), flow-source (list / nav), coverage-gap
+runtime/          waygraph-config.ts (config/waygraph.config.ts), .env, full-launch + browser, extensions, web server, video folder,
+                  run log, playwright config, global-flag (--config / --env)
 cli/              cli.ts (the `waygraph <command>` dispatcher), commands/ (one file per command), flags, usage, run-chain (spawns the runner)
 index.ts          the public API
 ```
@@ -62,7 +68,7 @@ index.ts          the public API
 | `cli` (cli/, runner/) and `index.ts` | anything |
 
 The engine never imports the demo or runtime: the demo plugs in through `engine/run/hooks.ts` (the network panel) and
-the runtime through `engine/run/launch.ts` (`runtime/launch.ts`, loaded by `index.ts`, registers the full launcher).
+the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by `index.ts`, registers the full launcher).
 `Engine.map()` builds a `MapBuilder`, and `MapBuilder.end()` calls back through a plain `BuildFlowFn`, so `engine.ts` and
 `map-builder.ts` never import each other.
 
@@ -77,7 +83,7 @@ the runtime through `engine/run/launch.ts` (`runtime/launch.ts`, loaded by `inde
 | A flow setting (`map({ … })`) | `MapBuilderOptions` in `engine/flow/map-builder.ts`, `FlowSettings` / `withSettings` in `engine/flow/flow.ts`, the field on `Flow` |
 | A `define*Block` helper | `engine/block/kinds/<kind>.ts`; its step method in `map-builder.ts` if it can appear in a flow |
 | A `Trait` | `engine/trait/trait.ts` (+ the `Trait` object + an `index.ts` export) |
-| A session command (`send`, `highlight`, ...) | `cli/commands/session.ts` + `live/auto-session/auto-session.ts` + an IPC op in `live/auto-session-ipc.ts` |
+| A session command (`send`, `highlight`, ...) | `cli/commands/session.ts` + `live/auto-session/auto-session.ts` + an IPC op in `live/auto-session/ipc.ts` |
 | Highlight / todo / device / pace behaviour | `demo/narration/<topic>.ts` |
 | Overlay colours, ring, cursor, banner, dock CSS | real `.css` in `demo/overlay/ui/css/` (see its README), bundled into `dist/demo/overlay/ui/overlay.css` |
 | Keeping an overlay through navigation (redirects, reloads) | `demo/overlay/reattach.ts`: register the surface's repaint with `keepOverlayOnNavigation(page, repaint)`; demo, auto and pilot all do |

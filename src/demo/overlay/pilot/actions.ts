@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
-import { ensureInstalled } from "./pilot-shell.js";
-import { ignorePageGone } from "../../engine/page-gone.js";
+import { ensureInstalled } from "./shell.js";
+import { ignorePageGone } from "../../../engine/page-gone.js";
 
 type Box = { x: number; y: number; width: number; height: number };
 

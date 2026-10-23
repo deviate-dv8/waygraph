@@ -22,4 +22,4 @@ Not everything plays a saved [[Flows|Flow]]. These open a browser and work from 
 They use the same [[The Engine|engine]] for each Block and the same overlay as the [[Demo UI]]. The menu comes from
 the project scan ([[What Waygraph Writes#The manifest]]).
 
-Code: `src/live/`.
+Code: `src/live/`, one folder per surface: `auto/`, `auto-session/` (what `browser start` runs), `pilot/`, `traverse/`.

@@ -1,5 +1,5 @@
 // The runtime layer supplies how an Engine launches its own browser (config, Chromium path, extensions).
-import "./runtime/launch.js";
+import "./runtime/full-launch.js";
 // Run events are written to the project's run log (.waygraph/runs) when the CLI turns it on.
 import "./runtime/run-log.js";
 export type { Checkpoint, Start } from "./engine/checkpoint/checkpoint.js";
@@ -93,15 +93,15 @@ export {
   readWgOverlayBeacon,
   readWgOverlayBeaconInPage,
   assertWgOverlayReady,
-} from "./live/overlay-beacon.js";
-export type { WgModalKind, WgBeaconRow } from "./live/overlay-beacon.js";
+} from "./demo/overlay/beacon.js";
+export type { WgModalKind, WgBeaconRow } from "./demo/overlay/beacon.js";
 export { AutoSession } from "./live/auto-session/auto-session.js";
 export { stubFilePath } from "./live/auto-session/helpers.js";
 export type { AutoSessionInit, SessionSnapshot, SessionSnapshotEdge, SessionSnapshotSection, ApplyPickResult, ApplyPathResult, TraceStep, ConsoleLogEntry, StorageSnapshot, ServiceWorkerRegistrationInfo, CookieInfo, StubFileKind } from "./live/auto-session/helpers.js";
-export { pilotStart } from "./live/pilot.js";
-export type { PilotStartResult } from "./live/pilot.js";
-export { defineConfig, resolveBaseUrl } from "./runtime/config.js";
-export type { WaygraphConfig, ConfigContext, VideoSettings, RunSettings, DemoSettings } from "./runtime/config.js";
+export { pilotStart } from "./live/pilot/pilot.js";
+export type { PilotStartResult } from "./live/pilot/pilot.js";
+export { defineConfig, resolveBaseUrl } from "./runtime/waygraph-config.js";
+export type { WaygraphConfig, ConfigContext, VideoSettings, RunSettings, DemoSettings } from "./runtime/waygraph-config.js";
 export { withWebServer } from "./runtime/webserver.js";
 export { chromiumExecutablePath } from "./runtime/browser.js";
 export { resolveExtension, KNOWN_EXTENSIONS } from "./runtime/extensions.js";

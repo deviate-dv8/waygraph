@@ -12,10 +12,10 @@ import {
   buildExploreContext,
   buildExploreMenu,
   type ExploreEdge,
-} from "../auto-explore.js";
+} from "../auto/explore.js";
 import type { WaygraphGraph } from "../../analysis/graph.js";
-import { detectHere, memStubValue } from "../auto-explore-run.js";
-import { resolveBaseUrl } from "../../runtime/config.js";
+import { detectHere, memStubValue } from "../auto/auto.js";
+import { resolveBaseUrl } from "../../runtime/waygraph-config.js";
 import { EdgeLeaseCoordinator } from "./lease.js";
 import {
   buildCoverageReport,

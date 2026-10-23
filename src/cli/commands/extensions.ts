@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { loadWaygraphConfig } from "../../runtime/config.js";
+import { loadWaygraphConfig } from "../../runtime/waygraph-config.js";
 import { extensionInfo, resolveExtension } from "../../runtime/extensions.js";
 import { parseCommand } from "../args.js";
 

@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import type { PlaywrightTestConfig } from "@playwright/test";
-import type { WaygraphConfig } from "./config.js";
+import type { WaygraphConfig } from "./waygraph-config.js";
 
 /** The test runner's config for a project, built from its waygraph config. `waygraph test` uses this when there is no playwright.config. */
 export function playwrightConfigFrom(config: WaygraphConfig, projectDir: string, baseURL: string | undefined): PlaywrightTestConfig {

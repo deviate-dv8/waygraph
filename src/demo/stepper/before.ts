@@ -5,7 +5,7 @@ import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narratio
 import type { StubPhaseResult } from "../../engine/narration.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
 import { renderBeforeStep } from "./step-panels.js";
-import { probeTodoDocksOnPage } from "./todo-dock.js";
+import { probeTodoDocksOnPage } from "./todo-advance.js";
 import { logBannerDom, probeBanner } from "./banner-log.js";
 import { forceCollapsed } from "./view.js";
 import type { StepperContext, StepView } from "./view.js";

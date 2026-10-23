@@ -1,7 +1,7 @@
-import { configuredExtensions } from "../runtime/config.js";
+import { configuredExtensions } from "../runtime/waygraph-config.js";
 import { defaultRunLogDir } from "../runtime/run-log.js";
 import { expandSpecFlowFiles } from "./flags.js";
-import { resolveBaseUrl } from "../runtime/config.js";
+import { resolveBaseUrl } from "../runtime/waygraph-config.js";
 import { discoverGraph, findBlockPath, findOrphanBlocks } from "../analysis/graph.js";
 import { join } from "node:path";
 import { rmSync, writeFileSync } from "node:fs";
