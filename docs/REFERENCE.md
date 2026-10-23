@@ -720,13 +720,6 @@ export const AssertInventoryHeaderBlock = defineAssertBlock({
 (`Trait.visible("#some-id")`) instead of referencing a `*Sel` object - the exact pattern
 `defineAssertBlock` exists to make easy to avoid.
 
-**Give `defineAssertBlock` an explicit type argument when it sits mid-chain.** Without one,
-`Out` defaults to wildcard `Checkpoint<string>` on both sides - harmless when the assert is
-the last real Block before `end` (nothing downstream needs it narrower), but the flow's
-chain typing breaks once a wildcard Block is sandwiched between two
-specifically-typed ones. Write `defineAssertBlock({ ..., checkpoint: LoggedIn,
-... })` any time the assert has a real Block after it, not just before.
-
 **An assert Block can check the *result* of an action, not just static page state.** Since
 `Trait.check(page, mem)` receives mem as well as the page, an assert placed right after a
 Method/Effect can confirm what that specific action actually did - not a duplicate of that
