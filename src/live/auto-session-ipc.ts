@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
-import { AutoSession } from "./auto-session/session.js";
+import { AutoSession } from "./auto-session/auto-session.js";
 import { type AutoSessionInit, type SessionSnapshot, type InspectDomOptions, type DomSnapshot, type TraceStep, type ApplyPathResult, type ConsoleLogEntry, type StorageSnapshot, type StubFileKind } from "./auto-session/helpers.js";
 import type { PilotHighlightFixtures } from "../demo/overlay/pilot-fixtures.js";
 
@@ -495,7 +495,7 @@ export async function spawnDetachedSession(
   const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
   const require = createRequire(join(pkgRoot, "package.json"));
   const tsxEsm = require.resolve("tsx/esm");
-  const cli = join(pkgRoot, "dist", "cli.js");
+  const cli = join(pkgRoot, "dist", "cli", "cli.js");
   const logFd = openSync(logPathFor(init.projectDir, sessionId), "a");
   const args = ["--import", tsxEsm, cli, "__auto-serve", init.projectDir, "--session-id", sessionId];
   if (init.baseURL) args.push("--base-url", init.baseURL);

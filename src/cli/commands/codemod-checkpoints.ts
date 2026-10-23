@@ -2,7 +2,7 @@
 // Checkpoint values (`export const Home = checkpoint("Home")`, `checkpoint: Home`, `from: Home, to: ItemInCart`).
 import { readFileSync, writeFileSync } from "node:fs";
 import { relative } from "node:path";
-import { walkDir } from "../manifest/scan.js";
+import { walkDir } from "../../manifest/scan.js";
 
 /** Checkpoint name -> tag, and union aliases -> member names, found in the states files. */
 interface StatesInfo {

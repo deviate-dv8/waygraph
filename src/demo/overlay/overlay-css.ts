@@ -1,6 +1,5 @@
-// Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
-// Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
-import { SURFACE } from "../../ui/tokens.js";
+// CSS for the runner-only chrome (step panel, chips) and for the host page (device stage), next to the shared bundle in ui/css.
+import { SURFACE } from "./ui/tokens.js";
 
 // ---------------------------------------------------------------------------
 // WAYGRAPH_STEP=1 - human-verification overlay: one Block at a time, a

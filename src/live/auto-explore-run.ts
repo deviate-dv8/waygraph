@@ -1,7 +1,7 @@
 import type { BlockEntry } from "../manifest/project.js";
 import { getMemStub } from "../engine/mem/mem-stub.js";
 import { createInterface } from "node:readline/promises";
-import { ensureShadowRoot } from "../ui/shadow.js";
+import { ensureShadowRoot } from "../demo/overlay/ui/shadow.js";
 import { stdin as input, stdout as output } from "node:process";
 import type { Page, BrowserContext, BrowserContextOptions } from "@playwright/test";
 import { Engine } from "../engine/engine.js";

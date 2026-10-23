@@ -6,8 +6,8 @@ import { existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { Node, Project, SyntaxKind } from "ts-morph";
 import type { CallExpression, Expression, SourceFile } from "ts-morph";
-import { scanProject } from "../manifest/project.js";
-import { walkDir } from "../manifest/scan.js";
+import { scanProject } from "../../manifest/project.js";
+import { walkDir } from "../../manifest/scan.js";
 
 /** A Block's kind by the file and export it is declared in; undefined when it isn't a known Block. */
 export type KindOf = (file: string, exportName: string) => string | undefined;

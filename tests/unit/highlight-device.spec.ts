@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { applyDevicePhase, normalizeDevicePreset, resolveDeviceState } from "../../src/demo/narration/device.js";
-import { runStubPhase } from "../../src/demo/narration/run-phase.js";
+import { runStubPhase } from "../../src/demo/narration/narration.js";
 import type { Block } from "../../src/engine/block/block.js";
 import type { StubCtx } from "../../src/engine/narration.js";
 

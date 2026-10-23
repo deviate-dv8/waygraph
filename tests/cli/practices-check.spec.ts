@@ -10,7 +10,7 @@ import { join } from "node:path";
 
 const exec = promisify(execFile);
 const node = process.execPath;
-const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
+const CLI = join(import.meta.dirname, "..", "..", "dist", "cli", "cli.js");
 const fixtureDir = join(import.meta.dirname, "../fixtures/practices-check");
 
 test("waygraph check flags wildcard Checkpoint<string> and assert blocks missing type args", async () => {

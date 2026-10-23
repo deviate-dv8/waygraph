@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 const exec = promisify(execFile);
 const node = process.execPath;
-const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
+const CLI = join(import.meta.dirname, "..", "..", "dist", "cli", "cli.js");
 
 test("demo without blocks/spec exits with new flag hints", async () => {
   await expect(exec(node, [CLI, "demo"])).rejects.toMatchObject({

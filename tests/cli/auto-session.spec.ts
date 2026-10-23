@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 
 const exec = promisify(execFile);
 const node = process.execPath;
-const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
+const CLI = join(import.meta.dirname, "..", "..", "dist", "cli", "cli.js");
 const sauceRoot = join(import.meta.dirname, "../../examples/saucedemo");
 const autoDir = join(sauceRoot, ".waygraph-auto");
 

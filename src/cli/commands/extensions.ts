@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
-import { loadWaygraphConfig } from "../runtime/config.js";
-import { extensionInfo, resolveExtension } from "../runtime/extensions.js";
+import { loadWaygraphConfig } from "../../runtime/config.js";
+import { extensionInfo, resolveExtension } from "../../runtime/extensions.js";
 
 export async function extensionsCase(args: string[]): Promise<void> {
   const update = args.includes("--update");

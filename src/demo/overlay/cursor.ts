@@ -1,5 +1,4 @@
-// Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
-// Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
+// The demo cursor: travels to what a step clicks, pulses on the click, draws a swipe trail on touch devices.
 
 import type { WgBox, WgPage } from "../types.js";
 export async function moveCursorTo(page: WgPage, box: WgBox, ms: number) {

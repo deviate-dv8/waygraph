@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { Project } from "ts-morph";
-import { convertFlows } from "../../src/commands/codemod-flows.js";
+import { convertFlows } from "../../src/cli/commands/codemod-flows.js";
 
 const KINDS: Record<string, string> = {
   NavHomeBlock: "nav",

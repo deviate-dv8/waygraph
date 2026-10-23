@@ -1,5 +1,4 @@
-// Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
-// Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
+// Highlight rings: shows, cycles and zooms the rings a step's narration names, and matches a clicked element to its ring.
 import type { WgBox, WgPage } from "../types.js";
 import type { Locator } from "@playwright/test";
 import { ANSI, ansiPaint, demoFixture, demoHighlight, demoLog } from "../stepper/demo-log.js";

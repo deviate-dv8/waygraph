@@ -1,3 +1,5 @@
+// Plays a Block's narration for one phase (stubBefore / stubAfter / stubOnError): runs its ctx stub and returns the
+// rings, todos, device, title and caption it set, for the overlay to paint.
 import type { DeviceState, HighlightStubPhase, HighlightStubPhaseName, ResolvedHighlight, StubBagState, StubCtx, StubLifecycleFn, StubPhaseResult, WaygraphSlide, WaygraphSlidesOrFn } from "../../engine/narration.js";
 import { createStubCtx, liftLegacySlotTodos } from "./stub-ctx.js";
 import { applyDefaultZoom, applyDefaultZoomOut, applyLegacyHighlightsShim, isStubPhase, readStubRaw, resolvePhaseMap } from "./merge.js";

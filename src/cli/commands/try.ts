@@ -1,11 +1,11 @@
 import { join } from "node:path";
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { packageRoot, runInherited } from "../cli/util.js";
+import { packageRoot, runInherited } from "../util.js";
 import { tmpdir } from "node:os";
-import { runChain } from "../cli/run-chain.js";
-import { applyRunFlags, parseRunFlags } from "../cli/flags.js";
-import { resolveVideoDir } from "../runtime/video-dir.js";
+import { runChain } from "../run-chain.js";
+import { applyRunFlags, parseRunFlags } from "../flags.js";
+import { resolveVideoDir } from "../../runtime/video-dir.js";
 
 interface TryPrereqStatus {
   ok: boolean;

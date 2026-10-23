@@ -25,7 +25,7 @@ interface AgentSpec {
 
 function packageRoot(): string {
   // dist/commands/agent-dive-scaffold.js -> ../..
-  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 }
 
 function agentsTemplateDir(): string {

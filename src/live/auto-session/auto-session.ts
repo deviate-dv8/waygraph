@@ -18,7 +18,7 @@ import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from
 import type { UnmappedInteractionPayload } from "../../analysis/coverage-gap.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import type { WaygraphInstanceOption } from "../../engine/block/block.js";
-import { runStubPhase } from "../../demo/narration/run-phase.js";
+import { runStubPhase } from "../../demo/narration/narration.js";
 import { verboseLog } from "../../demo/verbose-log.js";
 import { findBlockPathDetailed } from "../../analysis/graph.js";
 import { configuredExtensions } from "../../runtime/config.js";

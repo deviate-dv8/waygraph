@@ -124,7 +124,7 @@ export function takeConfigFlag(argv: string[]): string[] {
 
 /**
  * Looks for the first `waygraph.config.*` in `projectDir` and imports it - `.ts` works
- * unmodified because `bin/waygraph` already registers `tsx/esm` before `dist/cli.js` ever runs
+ * unmodified because `bin/waygraph` already registers `tsx/esm` before `dist/cli/cli.js` ever runs
  * (the same mechanism that already lets a consumer's `.block.ts`/`.flow.ts` import directly), so
  * no separate loader/transpile step is needed here. A broken config file throws loud, naming the
  * file - silently swallowing it would make a missing `baseUrl` look like "nobody configured

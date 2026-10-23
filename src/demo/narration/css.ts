@@ -1,4 +1,4 @@
-import { ringCss } from "../../ui/components/ring.js";
+import { ringCss } from "../overlay/ui/components/ring.js";
 
 /**
  * The `#wg-ring` / `#wg-ring-label` CSS (tone/size/weight variants) - the

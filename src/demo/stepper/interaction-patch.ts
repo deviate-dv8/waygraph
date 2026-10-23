@@ -1,8 +1,7 @@
-// Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
-// Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
+// During a demo, every fill and click moves the cursor there, rings the target and types visibly; patched onto Locator.
 import type { WgPage } from "../types.js";
 import type { MemPage } from "../../engine/mem/mem.js";
-import { installOverlay } from "../overlay/overlay-install.js";
+import { installOverlay } from "../overlay/overlay.js";
 import { applyHighlightZoom, captionForLocator, dwellMatchedStub, ensureLocatorInView, hideRing, matchStubIndexForLocator, showRing, wasJustNarrated } from "../overlay/rings.js";
 import { syncTodoDockAdvance } from "./todo-dock.js";
 import { clickPulseAt, moveCursorTo } from "../overlay/cursor.js";

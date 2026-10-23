@@ -12,7 +12,7 @@ import {
 
 const exec = promisify(execFile);
 const node = process.execPath;
-const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
+const CLI = join(import.meta.dirname, "..", "..", "dist", "cli", "cli.js");
 const saucedemo = join(import.meta.dirname, "..", "..", "examples", "saucedemo");
 
 /** Inject stamp helpers the same shape installOverlay installs in the page. */

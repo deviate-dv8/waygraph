@@ -1,18 +1,18 @@
-import { printBrowserSessionsList, printBrowserUsage } from "../cli/usage.js";
-import { applyRunFlags, looksLikeFlowFileRef, parseRunFlags, resolveBaseUrl } from "../cli/flags.js";
-import { runChain } from "../cli/run-chain.js";
-import { runChainAuto } from "../cli/run-chain.js";
+import { printBrowserSessionsList, printBrowserUsage } from "../usage.js";
+import { applyRunFlags, looksLikeFlowFileRef, parseRunFlags, resolveBaseUrl } from "../flags.js";
+import { runChain } from "../run-chain.js";
+import { runChainAuto } from "../run-chain.js";
 import { resolve } from "node:path";
-import { browserStart } from "../live/browser.js";
-import { listBrowserSessions, stopAllBrowserSessions, stopBrowserSession } from "../live/auto-session-ipc.js";
+import { browserStart } from "../../live/browser.js";
+import { listBrowserSessions, stopAllBrowserSessions, stopBrowserSession } from "../../live/auto-session-ipc.js";
 import { existsSync, statSync } from "node:fs";
-import { resolveInjectRoots } from "../manifest/roots.js";
-import { requestSession, resolveSessionMeta, runAttachLoop, runAutoServeCommand, spawnDetachedSession } from "../live/auto-session-ipc.js";
-import { pilotAttach, pilotStart } from "../live/pilot.js";
-import { parseHighlightShorthand } from "../demo/narration/shorthand.js";
-import { isFileSelectToken, parseBlocksSelect } from "../manifest/select.js";
-import { runAutoExplore } from "../live/auto-explore-run.js";
-import { discoverGraph, findOrphanBlocks, toMermaid } from "../analysis/graph.js";
+import { resolveInjectRoots } from "../../manifest/roots.js";
+import { requestSession, resolveSessionMeta, runAttachLoop, runAutoServeCommand, spawnDetachedSession } from "../../live/auto-session-ipc.js";
+import { pilotAttach, pilotStart } from "../../live/pilot.js";
+import { parseHighlightShorthand } from "../../demo/narration/shorthand.js";
+import { isFileSelectToken, parseBlocksSelect } from "../../manifest/select.js";
+import { runAutoExplore } from "../../live/auto-explore-run.js";
+import { discoverGraph, findOrphanBlocks, toMermaid } from "../../analysis/graph.js";
 
 export async function sessionCase(args: string[], command: string | undefined): Promise<void> {
       if (command === "browser") {
@@ -457,7 +457,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
           const { op: _ignore, ...rest } = fixtures as { op?: string } & Record<string, unknown>;
           const res = await requestSession(proj, sessionId, {
             op: "highlight",
-            ...(rest as import("../demo/overlay/pilot-fixtures.js").PilotHighlightFixtures),
+            ...(rest as import("../../demo/overlay/pilot-fixtures.js").PilotHighlightFixtures),
           });
           console.log(JSON.stringify(res));
           if (!res.ok) process.exitCode = 1;

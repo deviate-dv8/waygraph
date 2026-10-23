@@ -1,6 +1,6 @@
 import { relative, resolve } from "node:path";
-import { checkMap } from "../analysis/map-check.js";
-import { packMapGroup } from "../manifest/pack.js";
+import { checkMap } from "../../analysis/map-check.js";
+import { packMapGroup } from "../../manifest/pack.js";
 
 function option(args: string[], name: string): string | undefined {
   const i = args.indexOf(name);

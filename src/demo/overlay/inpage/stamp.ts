@@ -1,5 +1,4 @@
-// In-page installer (runs inside the browser via page.evaluate): must stay self-contained - no module-scope closure.
-// Split out of the former single installOverlay evaluate (see src/ARCHITECTURE.md). Shares state only via window.__wg*.
+// In-page (runs inside the browser via page.evaluate, must stay self-contained): readiness stamps agents read to know a panel painted.
 /* eslint-disable no-unused-vars */
 export function installStamp({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
         // Blind-agent overlay beacons: every modal root gets data-wg-ui /

@@ -86,9 +86,9 @@ const LAYER_OF = [
   ["runtime/", "runtime"],
   // runner/ is the run command's child process entry: it orchestrates like a command.
   ["runner/", "cli"],
-  ["demo/", "demo"], ["ui/", "demo"],
+  ["demo/", "demo"],
   ["live/", "live"],
-  ["cli/", "cli"], ["cli.ts", "cli"], ["commands/", "cli"],
+  ["cli/", "cli"],
   ["index.ts", "public"],
 ];
 const MAY_IMPORT = {

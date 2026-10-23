@@ -37,7 +37,7 @@ export { branchRoutes, collectBranchFlows, runBranchRegression } from "./engine/
 export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./engine/flow/branch-regression.js";
 export type { ApiBlockOptions, ApiCallResult } from "./engine/block/kinds/api.js";
 export type { MapStepOpts, MapFlowOpts } from "./engine/flow/map-builder.js";
-export { resolveHighlightSlots, resolveSlides, runStubPhase, hasAuthoredStubAfter, hasAuthoredStubOnError } from "./demo/narration/run-phase.js";
+export { resolveHighlightSlots, resolveSlides, runStubPhase, hasAuthoredStubAfter, hasAuthoredStubOnError } from "./demo/narration/narration.js";
 export { resolveFixtureDwellMs, resolveSlideDwellMs, normalizeDemoPace, resolveStepDemoPace, demoPaceScale, demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, demoPaceGateMs, formatDemoPaceBadge, formatDemoPaceLabel, FIXTURE_DURATION_MS_DEFAULT, FIXTURE_DURATION_FAST_MS_DEFAULT, FIXTURE_DURATION_SLOW_MS_DEFAULT, SLIDE_DURATION_MS_DEFAULT, SLIDE_DURATION_FAST_MS_DEFAULT } from "./demo/narration/demo-pace.js";
 export { formatHighlightCaption, applyHighlightStyleDefaults, toneIconPrefix } from "./demo/narration/style.js";
 export { normalizeHighlightTone, normalizeHighlightSize, normalizeHighlightWeight } from "./engine/narration.js";
@@ -69,12 +69,12 @@ export {
 } from "./manifest/select.js";
 export type { BlocksSelect, BlocksSelectKind } from "./manifest/select.js";
 export { EdgeLeaseCoordinator } from "./live/traverse/lease.js";
-export { runTraverse } from "./live/traverse/run.js";
+export { runTraverse } from "./live/traverse/traverse.js";
 export type {
   TraverseOptions,
   TraverseSessionMode,
   TraverseWorkerResult,
-} from "./live/traverse/run.js";
+} from "./live/traverse/traverse.js";
 export {
   buildCoverageReport,
   collectGraphEdgeKeys,
@@ -95,7 +95,7 @@ export {
   assertWgOverlayReady,
 } from "./live/overlay-beacon.js";
 export type { WgModalKind, WgBeaconRow } from "./live/overlay-beacon.js";
-export { AutoSession } from "./live/auto-session/session.js";
+export { AutoSession } from "./live/auto-session/auto-session.js";
 export { stubFilePath } from "./live/auto-session/helpers.js";
 export type { AutoSessionInit, SessionSnapshot, SessionSnapshotEdge, SessionSnapshotSection, ApplyPickResult, ApplyPathResult, TraceStep, ConsoleLogEntry, StorageSnapshot, ServiceWorkerRegistrationInfo, CookieInfo, StubFileKind } from "./live/auto-session/helpers.js";
 export { pilotStart } from "./live/pilot.js";

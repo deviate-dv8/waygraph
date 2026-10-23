@@ -1,7 +1,7 @@
 // After a demo step ran: show its slides, play its stubAfter narration (or, without one, ring what its verify checked),
 // show the result panel, then wait at the Next gate.
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
-import { hasAuthoredStubAfter, resolveSlides, runStubPhase } from "../narration/run-phase.js";
+import { hasAuthoredStubAfter, resolveSlides, runStubPhase } from "../narration/narration.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
 import type { StubPhaseResult } from "../../engine/narration.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";

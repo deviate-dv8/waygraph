@@ -1,5 +1,4 @@
-// In-page installer (runs inside the browser via page.evaluate): must stay self-contained - no module-scope closure.
-// Split out of the former single installOverlay evaluate (see src/ARCHITECTURE.md). Shares state only via window.__wg*.
+// In-page (runs inside the browser via page.evaluate, must stay self-contained): the device toast and chip.
 /* eslint-disable no-unused-vars */
 export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
         // Device toast + chip (0.13.2+) - announce on set/clear; quiet chip on keep.

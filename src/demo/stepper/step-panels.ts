@@ -1,9 +1,8 @@
-// Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
-// Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
+// The stepper's panels: before a step (what will happen, its mem), after it (the result and rings), and on failure.
 import type { WgPage } from "../types.js";
-import { installOverlay } from "../overlay/overlay-install.js";
+import { installOverlay } from "../overlay/overlay.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
-import { hasAuthoredStubOnError, runStubPhase } from "../narration/run-phase.js";
+import { hasAuthoredStubOnError, runStubPhase } from "../narration/narration.js";
 import { normalizeHighlightTone } from "../../engine/narration.js";
 import { cycleHighlightRings } from "../overlay/rings.js";
 

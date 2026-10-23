@@ -1,10 +1,9 @@
-// Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
-// Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
+// Slides: a step's multi-page explanation shown after it runs, each page gated by Next.
 import type { WgPage } from "../types.js";
 import { demoPaceGateMs, formatDemoPaceBadge, formatDemoPaceLabel, normalizeDemoPace, resolveFixtureDwellMs } from "../narration/demo-pace.js";
 import { formatHighlightCaption } from "../narration/style.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/narration.js";
-import { installOverlay } from "../overlay/overlay-install.js";
+import { installOverlay } from "../overlay/overlay.js";
 import { applyHighlightZoom, ensureSelectorInView, hideRing, showRing } from "../overlay/rings.js";
 import { demoPaceKind } from "./demo-log.js";
 

@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { convertBlocks, convertStates } from "../../src/commands/codemod-checkpoints.js";
+import { convertBlocks, convertStates } from "../../src/cli/commands/codemod-checkpoints.js";
 
 const states = `import type { Checkpoint } from "waygraph";
 

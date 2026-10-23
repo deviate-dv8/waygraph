@@ -1,6 +1,6 @@
 // Before a demo step runs: play the Block's stubBefore narration (rings, todos, device, title, caption) and show the
 // step's panel, then log what was painted so an agent without eyes can check it.
-import { runStubPhase } from "../narration/run-phase.js";
+import { runStubPhase } from "../narration/narration.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
 import type { StubPhaseResult } from "../../engine/narration.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";

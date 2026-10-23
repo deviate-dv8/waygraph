@@ -1,9 +1,9 @@
-import { configuredExtensions } from "../runtime/config.js";
-import { defaultRunLogDir } from "../runtime/run-log.js";
-import { runInherited } from "../cli/util.js";
+import { configuredExtensions } from "../../runtime/config.js";
+import { defaultRunLogDir } from "../../runtime/run-log.js";
+import { runInherited } from "../util.js";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
-import { packageRoot } from "../cli/util.js";
+import { packageRoot } from "../util.js";
 
 export async function testCase(args: string[]): Promise<void> {
       const rest = args.slice(1);

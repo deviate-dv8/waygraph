@@ -12,7 +12,7 @@ import { join } from "node:path";
 
 const exec = promisify(execFile);
 const node = process.execPath;
-// bin/waygraph, not dist/cli.js directly: `discoverGraph` (run in-process by
+// bin/waygraph, not dist/cli/cli.js directly: `discoverGraph` (run in-process by
 // `pilot start`) imports this project's own .block.ts files, whose
 // .js-suffixed sibling imports need tsx/esm registered - the same reason
 // `waygraph graph` itself has always needed bin/waygraph, not a pilot-specific

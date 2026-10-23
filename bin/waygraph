@@ -6,7 +6,7 @@
  *   - macOS BSD `readlink` has no `-f` (GNU) -> "illegal option -- f" / broken bin
  *   - Windows npm expects a Node shebang for `.cmd` shims
  *
- * Still registers `tsx/esm` before `dist/cli.js` so consumer `.block.ts` /
+ * Still registers `tsx/esm` before `dist/cli/cli.js` so consumer `.block.ts` /
  * `.flow.ts` dynamic imports resolve the same as the old shell wrapper.
  */
 import { spawn } from "node:child_process";
@@ -28,7 +28,7 @@ try {
   process.exit(1);
 }
 
-const cli = join(pkgRoot, "dist", "cli.js");
+const cli = join(pkgRoot, "dist", "cli", "cli.js");
 const child = spawn(
   process.execPath,
   ["--import", tsxEsm, cli, ...process.argv.slice(2)],

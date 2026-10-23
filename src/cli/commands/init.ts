@@ -1,4 +1,4 @@
-import { packageRoot } from "../cli/util.js";
+import { packageRoot } from "../util.js";
 import { agentSkillFiles } from "./agent-dive-scaffold.js";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { spawnSync } from "node:child_process";

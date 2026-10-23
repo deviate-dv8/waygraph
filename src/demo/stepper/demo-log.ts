@@ -1,5 +1,4 @@
-// Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
-// Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
+// The demo's console log ([hh:mm:ss] waygraph demo: ...): what each step painted, so an agent without eyes can follow.
 import { demoPaceIsFast, demoPaceIsSlow, formatDemoPaceBadge, formatDemoPaceLabel, normalizeDemoPace } from "../narration/demo-pace.js";
 import { normalizeHighlightTone } from "../../engine/narration.js";
 

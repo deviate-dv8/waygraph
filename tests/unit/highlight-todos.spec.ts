@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { normalizeTodos } from "../../src/demo/narration/todo-dock.js";
-import { resolveHighlightSlots, runStubPhase } from "../../src/demo/narration/run-phase.js";
+import { resolveHighlightSlots, runStubPhase } from "../../src/demo/narration/narration.js";
 import { defineMethodBlock } from "../../src/engine/block/kinds/method.js";
 import { checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
 import type { Block } from "../../src/engine/block/block.js";

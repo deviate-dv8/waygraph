@@ -1,8 +1,8 @@
-// Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
-// Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
+// The demo overlay on a page: installs the shadow root, styles and every in-page piece (rings, banner, caption, panel,
+// todos, device, network tab). Idempotent; called before every step since a navigation wipes the page.
 import type { WgPage } from "../types.js";
 import { HOST_CSS, RUNNER_EXTRA_CSS, WAYGRAPH_FAVICON } from "./overlay-css.js";
-import { ensureShadowRoot } from "../../ui/shadow.js";
+import { ensureShadowRoot } from "./ui/shadow.js";
 import { resolveTodoDockUi } from "../narration/todo-dock.js";
 import { installCore } from "./inpage/core.js";
 import { installSwipeZoom } from "./inpage/swipe-zoom.js";

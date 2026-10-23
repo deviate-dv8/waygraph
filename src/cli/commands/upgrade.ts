@@ -2,7 +2,7 @@ import { basename, join, relative, resolve, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { packageRoot } from "../cli/util.js";
+import { packageRoot } from "../util.js";
 import { agentSkillFiles } from "./agent-dive-scaffold.js";
 import { codemodCheckpoints } from "./codemod-checkpoints.js";
 import { codemodFlows } from "./codemod-flows.js";

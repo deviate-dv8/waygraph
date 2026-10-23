@@ -1,7 +1,6 @@
-// Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
-// Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
+// Marking a step as running, restoring the overlay after a navigation, and removing it all when the demo ends.
 import type { WgPage } from "../types.js";
-import { installOverlay } from "../overlay/overlay-install.js";
+import { installOverlay } from "../overlay/overlay.js";
 import { applyDeviceToPage } from "../overlay/device-stage.js";
 import { showRing } from "../overlay/rings.js";
 import { formatHighlightCaption } from "../narration/style.js";

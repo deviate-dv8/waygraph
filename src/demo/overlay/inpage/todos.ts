@@ -1,5 +1,4 @@
-// In-page installer (runs inside the browser via page.evaluate): must stay self-contained - no module-scope closure.
-// Split out of the former single installOverlay evaluate (see src/ARCHITECTURE.md). Shares state only via window.__wg*.
+// In-page (runs inside the browser via page.evaluate, must stay self-contained): the todo dock(s).
 /* eslint-disable no-unused-vars */
 export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
         // Floating todo dock - lives outside #wg-panel so --mini / Hide never

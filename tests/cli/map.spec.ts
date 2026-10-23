@@ -14,12 +14,12 @@ import { createRequire } from "node:module";
 
 const exec = promisify(execFile);
 const node = process.execPath;
-const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
+const CLI = join(import.meta.dirname, "..", "..", "dist", "cli", "cli.js");
 const fixtureDir = join(import.meta.dirname, "../fixtures/map-check");
 const noMapDir = join(import.meta.dirname, "../fixtures/inline-selector-check");
 // `waygraph map` dynamically imports the real .ts Block fixtures below - real users always go
-// through bin/waygraph, which registers this loader before spawning dist/cli.js; spawning
-// dist/cli.js bare here skips that, so Node (any version without native .ts import - i.e. below
+// through bin/waygraph, which registers this loader before spawning dist/cli/cli.js; spawning
+// dist/cli/cli.js bare here skips that, so Node (any version without native .ts import - i.e. below
 // 23.6) throws "Unknown file extension .ts" instead of running the check.
 const tsxEsm = createRequire(import.meta.url).resolve("tsx/esm");
 

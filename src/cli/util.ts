@@ -15,9 +15,9 @@ import { spawn } from "node:child_process";
  * This package's own installed root (contains `templates/`, sibling to `dist/`) - this file
  * compiles to `dist/cli/util.js`, so it's TWO levels up, not one. Real regression once, from the
  * 0.15.24 cli.ts split: this function was copied verbatim from its old top-level `src/cli.ts`
- * location (one level: `dist/cli.js` -> `..`) into `src/cli/util.ts` (compiles one level deeper)
+ * location (one level: `dist/cli/cli.js` -> `..`) into `src/cli/util.ts` (compiles one level deeper)
  * without adjusting the path math - silently broke `waygraph init`/`try` (no build-level test
- * caught it, since tests never ran the actual compiled dist/cli.js for these two commands).
+ * caught it, since tests never ran the actual compiled dist/cli/cli.js for these two commands).
  */
 export function packageRoot(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");

@@ -12,7 +12,7 @@ import { join } from "node:path";
 
 const exec = promisify(execFile);
 const node = process.execPath;
-const CLI = join(import.meta.dirname, "..", "..", "dist", "cli.js");
+const CLI = join(import.meta.dirname, "..", "..", "dist", "cli", "cli.js");
 const saucedemo = join(import.meta.dirname, "..", "..", "examples", "saucedemo");
 const unregistered = join(import.meta.dirname, "..", "fixtures", "mem-stub-unregistered");
 // Assertions below expect an empty stderr - keep the machine's Chromium override out of it.

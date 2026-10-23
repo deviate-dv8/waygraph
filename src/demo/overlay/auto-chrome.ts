@@ -2,7 +2,7 @@
 // small "waygraph auto" banner, and fill/click patches that point at what the automation touches.
 import type { Page } from "@playwright/test";
 import type { MemPage } from "../../engine/mem/mem.js";
-import { ensureShadowRoot } from "../../ui/shadow.js";
+import { ensureShadowRoot } from "./ui/shadow.js";
 import { installCore } from "./inpage/core.js";
 import { clickPulseAt, moveCursorTo } from "./cursor.js";
 import { hideRing } from "./rings.js";

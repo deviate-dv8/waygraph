@@ -1,5 +1,4 @@
-// In-page installer (runs inside the browser via page.evaluate): must stay self-contained - no module-scope closure.
-// Split out of the former single installOverlay evaluate (see src/ARCHITECTURE.md). Shares state only via window.__wg*.
+// In-page (runs inside the browser via page.evaluate, must stay self-contained): the title banner card.
 import type { WgBox } from "../../types.js";
 /* eslint-disable no-unused-vars */
 export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi, bannerUi, tag: bannerTag }: any) {

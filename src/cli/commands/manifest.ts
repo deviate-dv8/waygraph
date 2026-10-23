@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { buildManifest } from "../manifest/manifest.js";
+import { buildManifest } from "../../manifest/manifest.js";
 
 /** `waygraph manifest [project] [--out <file>]`: every Block, Flow and Checkpoint of the project, as JSON. */
 export async function manifestCase(args: string[]): Promise<void> {

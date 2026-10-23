@@ -1,5 +1,4 @@
-// Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
-// Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
+// Device emulation for a step (ctx.device): resizes the page, switches touch, and frames it on a video.
 import type { WgPage } from "../types.js";
 import { resolveDeviceState } from "../narration/device.js";
 

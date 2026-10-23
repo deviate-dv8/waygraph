@@ -1,10 +1,10 @@
 import { relative, resolve } from "node:path";
-import { findOrphanBlocks } from "../analysis/graph.js";
-import { checkMapGroups, checkProject, validateFlows } from "../analysis/check.js";
-import { parseRunFlags } from "../cli/flags.js";
-import { walkDir } from "../manifest/scan.js";
-import { collectPracticeWarnings, practiceKindLabel } from "../analysis/practices-check.js";
-import type { PracticeWarning } from "../analysis/practices-check.js";
+import { findOrphanBlocks } from "../../analysis/graph.js";
+import { checkMapGroups, checkProject, validateFlows } from "../../analysis/check.js";
+import { parseRunFlags } from "../flags.js";
+import { walkDir } from "../../manifest/scan.js";
+import { collectPracticeWarnings, practiceKindLabel } from "../../analysis/practices-check.js";
+import type { PracticeWarning } from "../../analysis/practices-check.js";
 
 function printOrphanReport(projectDir: string, orphans: Awaited<ReturnType<typeof findOrphanBlocks>>): void {
   if (orphans.length === 0) {
