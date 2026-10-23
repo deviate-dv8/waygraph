@@ -196,18 +196,10 @@ describe("open stubBefore(ctx) lifecycle", () => {
         },
       },
     } as unknown as Block<any, any>;
-    const slots = resolveHighlightSlots(block, "stubBefore", {
-      fixtures: {
-        "submit-login": {
-          stubBefore: {
-            plan: { label: "AC checklist", zoom: 1.5 },
-          },
-        },
-      },
-    });
+    const slots = resolveHighlightSlots(block, "stubBefore");
     assert.equal(slots.length, 1);
-    assert.equal(slots[0]!.zoom, 1.5);
-    assert.equal(slots[0]!.label, "AC checklist");
+    assert.equal(slots[0]!.zoom, 1.4);
+    assert.equal(slots[0]!.label, "Plan");
     assert.equal(slots[0]!.selector, "#login-button");
   });
 

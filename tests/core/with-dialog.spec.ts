@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { Engine, start, end, checkpoint, key, MemPage, withDialog } from "../../src/index.js";
+import { Engine, checkpoint, key, MemPage, withDialog } from "../../src/index.js";
 import type { Block, Checkpoint } from "../../src/index.js";
+import { buildFlow } from "../../src/core/flow.js";
 
 type Done = Checkpoint<"Done">;
 const Warning = key<string>("test.warning");
@@ -21,7 +22,7 @@ test("withDialog answers the confirm the click opens and keeps its text in mem",
   const page = await context.newPage();
   await page.setContent(html);
   const mem = new MemPage();
-  const flow = new Engine().defineFlow([start, withDialog(clickLeave, { into: Warning }), end]);
+  const flow = buildFlow([withDialog(clickLeave, { into: Warning })], new Engine().config);
   await flow.run(context, mem, { page, closeOnFinish: false });
   expect(mem.get(Warning)).toBe("Leave anyway?");
   expect(await page.title()).toBe("left");
@@ -30,7 +31,7 @@ test("withDialog answers the confirm the click opens and keeps its text in mem",
 test("accept: false dismisses it", async ({ context }) => {
   const page = await context.newPage();
   await page.setContent(html);
-  const flow = new Engine().defineFlow([start, withDialog(clickLeave, { accept: false }), end]);
+  const flow = buildFlow([withDialog(clickLeave, { accept: false })], new Engine().config);
   await flow.run(context, new MemPage(), { page, closeOnFinish: false });
   expect(await page.title()).toBe("stayed");
 });

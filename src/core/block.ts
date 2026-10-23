@@ -184,9 +184,9 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
     withVerify: (verify) => withVerify(defined, verify),
     modVerify: (nameOrIndex, newCheck) => modVerify(defined, nameOrIndex, newCheck),
     modVerifyAll: (patches) => modVerifyAll(defined, patches),
-    stubBefore: (stub) => withStubBefore(defined, stub),
-    stubAfter: (stub) => withStubAfter(defined, stub),
-    stubOnError: (stub) => withStubOnError(defined, stub),
+    stubBefore: (stub) => withStubPhase(defined, "stubBefore", stub),
+    stubAfter: (stub) => withStubPhase(defined, "stubAfter", stub),
+    stubOnError: (stub) => withStubPhase(defined, "stubOnError", stub),
   };
   return defined;
 }
@@ -200,13 +200,8 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
  * anticipation. Same move as `branch()`: decorate an existing Block, don't ask
  * every Block to pre-build its own override mechanism.
  *
- * Wrap the one Block you want to change, in place, wherever it already sits in
- * a `defineFlow([...])` array - every other Block stays untouched:
- * `defineFlow([start, LoginBlock, withVerify(AddToCartBlock, [...]), end])`.
- * There is no separate positional array to keep in sync and no `null`
- * placeholder for "skip this one" - `defineFlow` has no per-slot verify
- * argument at all, only whatever `verify` each Block's own `instruction` (or
- * a `withVerify(...)` wrapping it) carries with it.
+ * Wrap the one Block you want to change, in place, where a flow uses it:
+ * `map().gotoPage(NavLoginBlock).method(withVerify(AddToCartBlock, [...]))`.
  */
 export function withVerify<B extends Block<any, any>>(
   block: B,
@@ -272,40 +267,6 @@ function withStubPhase<In extends Checkpoint<string>, Out extends Checkpoint<str
   });
   copyWaygraphRuntime(block, next);
   return next;
-}
-
-
-/**
- * Attach / chain a stubBefore lifecycle on a Block. Prefer
- * `(ctx) => { ctx.ring(...); const x = ctx.mem?.get(Key); }`.
- * @example FillUsernameBlock.stubBefore((ctx) => { ctx.ring("username", { ... }) })
- * @deprecated Use the chained method: `Block.stubBefore((ctx) => …)`.
- */
-export function withStubBefore<B extends Block<any, any>>(
-  block: B,
-  stub: StubPhaseFn<any>,
-): B {
-  return withStubPhase(block, "stubBefore", stub) as unknown as B;
-}
-
-
-/** @see {@link withStubBefore}  * @deprecated Use the chained method: `Block.stubAfter((ctx) => …)`.
- */
-export function withStubAfter<B extends Block<any, any>>(
-  block: B,
-  stub: StubPhaseFn<any>,
-): B {
-  return withStubPhase(block, "stubAfter", stub) as unknown as B;
-}
-
-
-/** @see {@link withStubBefore}  * @deprecated Use the chained method: `Block.stubOnError((ctx) => …)`.
- */
-export function withStubOnError<B extends Block<any, any>>(
-  block: B,
-  stub: StubPhaseFn<any>,
-): B {
-  return withStubPhase(block, "stubOnError", stub) as unknown as B;
 }
 
 

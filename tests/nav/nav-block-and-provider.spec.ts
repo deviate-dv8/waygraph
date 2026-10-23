@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
-import { Engine, start, end, MemPage, checkpoint, defineNavBlock, defineBlock, key } from "../../src/index.js";
+import { Engine, MemPage, checkpoint, defineNavBlock, defineBlock, key } from "../../src/index.js";
+import { buildFlow } from "../../src/core/flow.js";
 
 type Start = Checkpoint<"__start__">;
 type A = Checkpoint<"A">;
@@ -15,7 +16,7 @@ test.describe("defineNavBlock", () => {
     });
 
     const engine = new Engine();
-    const flow = engine.defineFlow([start, nav, end]);
+    const flow = buildFlow([nav], engine.config);
     const fakeContext = { newPage: async () => page } as any;
     const outcome = await flow.run(fakeContext, new MemPage(), { page, closeOnFinish: false });
 
@@ -36,7 +37,7 @@ test.describe("defineNavBlock", () => {
     const mem = new MemPage();
     mem.set(RequestId, "42");
     const engine = new Engine();
-    const flow = engine.defineFlow([start, nav, end]);
+    const flow = buildFlow([nav], engine.config);
     const fakeContext = { newPage: async () => page } as any;
     await flow.run(fakeContext, mem, { page, closeOnFinish: false });
 
@@ -62,7 +63,7 @@ test.describe("defineNavBlock", () => {
     });
 
     const engine = new Engine();
-    const flow = engine.defineFlow([start, nav, end]);
+    const flow = buildFlow([nav], engine.config);
     const fakeContext = { newPage: async () => page } as any;
     const outcome = await flow.run(fakeContext, new MemPage(), { page, closeOnFinish: false });
 
@@ -89,7 +90,7 @@ test.describe("defineNavBlock", () => {
     const mem = new MemPage();
     mem.set(RowId, "42");
     const engine = new Engine();
-    const flow = engine.defineFlow([start, nav, end]);
+    const flow = buildFlow([nav], engine.config);
     const fakeContext = { newPage: async () => page } as any;
     await flow.run(fakeContext, mem, { page, closeOnFinish: false });
 
@@ -105,7 +106,7 @@ test.describe("defineNavBlock", () => {
 
     const engine = new Engine();
     // Typechecks + builds without any special-casing for NavBlock.
-    const flow = engine.defineFlow([start, nav, after, end]);
+    const flow = buildFlow([nav, after], engine.config);
     expect(flow.blocks().map((b) => b.name)).toEqual(["nav-x", "after"]);
   });
 
@@ -140,7 +141,7 @@ test.describe("ActionPage (regular Blocks)", () => {
     });
 
     const engine = new Engine();
-    const flow = engine.defineFlow([start, block, end]);
+    const flow = buildFlow([block], engine.config);
     const fakeContext = { newPage: async () => page } as any;
     const result = await flow.run(fakeContext, new MemPage());
 
@@ -172,7 +173,7 @@ test.describe("EngineConfig.browsers (pluggable browser provider)", () => {
       instruction: { async act() {}, resolve: () => checkpoint("A") },
     };
     const engine = new Engine({ browsers: { chromium: fakeChromium } });
-    const flow = engine.defineFlow([start, block, end]);
+    const flow = buildFlow([block], engine.config);
     const result = await flow.run(new MemPage());
 
     expect(calls).toEqual(["custom-launch", "browser-closed"]);
@@ -185,7 +186,7 @@ test.describe("EngineConfig.browsers (pluggable browser provider)", () => {
       instruction: { async act() {}, resolve: () => checkpoint("A") },
     };
     const engine = new Engine({ headless: true });
-    const flow = engine.defineFlow([start, block, end]);
+    const flow = buildFlow([block], engine.config);
     const result = await flow.run(new MemPage());
 
     expect(result).toEqual(checkpoint("A"));

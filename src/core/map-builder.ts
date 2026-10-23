@@ -17,14 +17,12 @@ import {
   MSG_MAP_EMPTY,
 } from "./errors.js";
 import type { EngineConfig } from "./config.js";
-import { end, start } from "./run-graph.js";
-import type { EndMarker, StartMarker } from "./run-graph.js";
-import type { Flow, FlowOptions } from "./flow.js";
+import type { Flow, FlowSettings } from "./flow.js";
 import type { RunGraphOptions } from "./run-graph.js";
 import { MemPage } from "./mem-page.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import { fastForwardComposeBlock } from "./compose.js";
-import { clearSessionState, withBlockPace } from "./flow.js";
+import { clearSessionState } from "./flow.js";
 import { copyWaygraphRuntime } from "./block.js";
 import type { DemoPace, HighlightStyleDefaults } from "./narration.js";
 import type { NavBlock } from "./blocks/nav.js";
@@ -35,12 +33,10 @@ import type { EffectBlock } from "./blocks/effect.js";
 type S = Checkpoint<"__start__">;
 
 /**
- * The one capability MapBuilder needs from Engine - a plain defineFlow-shaped function, not the
- * whole Engine class. Depending on Engine-the-type here would make engine.ts and map-builder.ts
- * import each other (Engine.map() builds a MapBuilder; MapBuilder.end() calls back into
- * defineFlow) - a real cycle check:structure forbids. This type is how that's avoided.
+ * The one capability MapBuilder needs from Engine: turn the finished steps into a Flow with the engine's config. A
+ * function, not the Engine class, so engine.ts and map-builder.ts don't import each other.
  */
-export type DefineFlowFn = (blocks: readonly [StartMarker, ...Block<any, any>[], EndMarker], options?: FlowOptions) => Flow<any>;
+export type BuildFlowFn = (steps: readonly Block<any, any>[], settings: FlowSettings) => Flow<any>;
 
 /** Per-step options every `MapBuilder` step method (`.gotoPage()`/`.method()`/`.assert()`) takes. */
 /** The same Block, but it clears cookies and storage before it acts. Keeps the runtime markers. */
@@ -63,7 +59,10 @@ function resetBefore(block: Block<any, any>): Block<any, any> {
 
 /** Applies a step's `pace` option, keeping the Block's runtime markers. */
 function paced(block: object, opts: MapStepOpts | undefined): DefinedBlock<any, any> {
-  return (opts?.pace === undefined ? block : withBlockPace(block as DefinedBlock<any, any>, opts.pace)) as DefinedBlock<any, any>;
+  if (opts?.pace === undefined) return block as DefinedBlock<any, any>;
+  const next = { ...block, demoPace: opts.pace } as DefinedBlock<any, any>;
+  copyWaygraphRuntime(block as DefinedBlock<any, any>, next);
+  return next;
 }
 
 /** Per-step options for the map builder: `ff` fast-forwards the step, `pace` sets its demo pace. */
@@ -77,7 +76,7 @@ export interface MapStepOpts {
   ff?: boolean;
   /**
    * Demo pace for just this step (`"blitz"` skips the typing animation and the pause after the action; `"fast"`, `"slow"`,
-   * or a number scale the narration gates). The map equivalent of `withBlockPace`, with no wrapper.
+   * or a number scale the narration gates).
    * @example map().method(SetBearerTokenBlock, { pace: "blitz" })
    */
   pace?: DemoPace;
@@ -92,18 +91,18 @@ export interface MapBuilderOptions {
    * way; only the internal/external origin distinction is opt-in).
    */
   homeOrigin?: string;
-  /** Fill missing `requires` keys from `registerMemStub` when the flow runs (what `withMemStub` did). */
+  /** Fill missing `requires` keys from `registerMemStub` when the flow runs. */
   memStub?: boolean;
   /**
    * This flow wants a fresh browser session (cookies and storage cleared) when it runs after another one, in a CLI chain
    * (`waygraph run "a then b"`) or nested with `.flow(sub)`: a second user signing in, a logged-out check.
    */
   sessionReset?: boolean;
-  /** Marks a flow that is supposed to throw, with the reason shown in the demo (what `withExpectedFailure` did). */
+  /** Marks a flow that is supposed to throw, with the reason shown in the demo. */
   expectedFailure?: string;
-  /** Default demo pace for the whole flow (what `withDemoPace` did). */
+  /** Default demo pace for the whole flow. */
   demoPace?: DemoPace;
-  /** Default ring tone, size and weight for the whole flow (what `withHighlightStyle` did). */
+  /** Default ring tone, size and weight for the whole flow. */
   highlightStyle?: HighlightStyleDefaults;
 }
 
@@ -225,15 +224,13 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
   }) as Flow<any>["run"];
   return {
     resetSession: before.resetSession,
-    ...(before.title !== undefined ? { title: before.title } : {}),
     ...(before.expectedFailureReason !== undefined ? { expectedFailureReason: before.expectedFailureReason } : {}),
-    ...(before.highlightFixtures !== undefined ? { highlightFixtures: before.highlightFixtures } : {}),
     ...(before.demoPace !== undefined ? { demoPace: before.demoPace } : {}),
     ...(before.highlightStyle !== undefined ? { highlightStyle: before.highlightStyle } : {}),
     ...(before.memStub !== undefined ? { memStub: before.memStub } : {}),
     // Read by branchRoutes()/branchInfo() (branch-regression.ts) - real, ORDINARY (enumerable)
-    // properties, not hidden ones, specifically so a `with*` wrapper's `{ ...flow, ... }` spread
-    // (withSessionReset, withTitle, etc.) carries them through instead of silently dropping them -
+    // properties, not hidden ones, specifically so a `{ ...flow, ... }` spread (withSettings) carries them
+    // through instead of silently dropping them -
     // the same class of bug branch()'s missing copyWaygraphRuntime call already was.
     __wgBranch: { before, routes },
     // Static introspection (`waygraph graph`/list): the fixed prefix, plus every branch's own
@@ -256,7 +253,7 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
 }
 
 /**
- * Fluent builder over {@link Engine.defineFlow} - see `map()`'s own doc
+ * The flow builder behind `engine.map()` - see `map()`'s own doc
  * comment for why this exists. Each step method is scoped to exactly the
  * Block kind its name promises, checked at RUNTIME against the
  * `__waygraphKind`/`__waygraphSalt` markers `defineNavBlock`/`definePageBlock`/
@@ -264,16 +261,16 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
  * (the same markers `graph.ts` and `map-check.ts` trust) - not just a type
  * hint, since a hand-rolled object can satisfy the TypeScript `Block<In,Out>`
  * shape without ever going through a real factory. Each call also
- * typechecks the accumulated Checkpoint chain exactly like `defineFlow`'s
- * own tuple overloads do (a step's `In` must equal the previous step's
+ * typechecks the accumulated Checkpoint chain (a step's `In` must equal the previous step's
  * `Out`) - this is what "no teleporting" means: there is no method on this
  * builder that can skip from one Checkpoint to an unrelated one without a
  * real, kind-correct Block in between.
  */
 export class MapBuilder<Out extends Checkpoint<string>> {
   private constructor(
-    // A plain defineFlow-shaped function, not the whole Engine - see DefineFlowFn's own comment.
-    private readonly defineFlow: DefineFlowFn,
+    // From Engine.map(): see BuildFlowFn.
+    private readonly build: BuildFlowFn,
+    private readonly settings: FlowSettings,
     private readonly steps: readonly DefinedBlock<any, any>[],
     private readonly homeOrigin: string | undefined,
     // `auto: true` = opened implicitly by a `{ ff: true }` step flag, not an explicit .ffStart() -
@@ -285,11 +282,11 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   ) {}
 
   /** @internal - use `engine.map()` or the standalone `map()` export. */
-  static begin(defineFlow: DefineFlowFn, homeOrigin: string | undefined): MapBuilder<S> {
-    return new MapBuilder<S>(defineFlow, [], homeOrigin, null);
+  static begin(build: BuildFlowFn, settings: FlowSettings, homeOrigin: string | undefined): MapBuilder<S> {
+    return new MapBuilder<S>(build, settings, [], homeOrigin, null);
   }
 
-  /** Readable chain-opener - mirrors `defineFlow`'s leading `start` sentinel. Returns `this` unchanged; entirely optional. */
+  /** Readable chain-opener. Returns `this` unchanged; entirely optional. */
   start(): MapBuilder<Out> {
     return this;
   }
@@ -307,7 +304,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
       typeof name === "string" && name.trim()
         ? name.trim()
         : `ff-${this.steps.length + 1}`;
-    return new MapBuilder<Out>(this.defineFlow, this.steps, this.homeOrigin, {
+    return new MapBuilder<Out>(this.build, this.settings, this.steps, this.homeOrigin, {
       name: ffName,
       buffer: [],
       auto: false,
@@ -338,7 +335,8 @@ export class MapBuilder<Out extends Checkpoint<string>> {
       ff.buffer as any,
     );
     return new MapBuilder<Out>(
-      this.defineFlow,
+      this.build,
+      this.settings,
       [...this.steps, composed as unknown as DefinedBlock<any, any>],
       this.homeOrigin,
       null,
@@ -359,7 +357,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   ): MapBuilder<NextOut> {
     if (ff) {
       const win = this.ff ?? { name: `ff-${this.steps.length + 1}`, buffer: [], auto: true };
-      return new MapBuilder<NextOut>(this.defineFlow, this.steps, this.homeOrigin, {
+      return new MapBuilder<NextOut>(this.build, this.settings, this.steps, this.homeOrigin, {
         name: win.name,
         buffer: [...win.buffer, block],
         auto: win.auto,
@@ -370,14 +368,15 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     }
     if (this.ff) {
       // Explicit .ffStart() window still open - absorbs a plain step too, same as always.
-      return new MapBuilder<NextOut>(this.defineFlow, this.steps, this.homeOrigin, {
+      return new MapBuilder<NextOut>(this.build, this.settings, this.steps, this.homeOrigin, {
         name: this.ff.name,
         buffer: [...this.ff.buffer, block],
         auto: false,
       });
     }
     return new MapBuilder<NextOut>(
-      this.defineFlow,
+      this.build,
+      this.settings,
       [...this.steps, block],
       this.homeOrigin,
       null,
@@ -449,7 +448,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   /**
    * Runs another flow's steps inline here, in the same page, browser and `mem`. This is how flows nest:
    * `map().flow(loginFlow).flow(viewerFlow, { reset: true })`. With `{ reset: true }` cookies and storage are cleared
-   * right before the sub-flow's first step. Replaces `chainFlow` and `withSessionReset`.
+   * right before the sub-flow's first step.
    */
   flow<NextOut extends Checkpoint<string>>(sub: Flow<NextOut>, opts?: MapFlowOpts): MapBuilder<NextOut> {
     let next = this as unknown as MapBuilder<any>;
@@ -472,7 +471,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * Checkpoint to chain `.method()/.gotoPage()/.assert()/.end()` (or another `.branch()`) off of.
    *
    * Real gap this fixes: the plain `branch()` helper's `.next` routing is only ever consulted by
-   * `runGraph`'s own graph walk - `defineFlow`/`.end()` compose steps pairwise via `connect()`,
+   * `runGraph`'s own graph walk - `.end()` composes steps pairwise via `connect()`,
    * which never looks at `.next` at all, so a Map-built Flow had no way to branch. This method
    * branches at the Flow level instead: it finalizes the prefix, runs it, and picks the next Flow
    * itself once the real tag is known - no engine-level routing involved.
@@ -483,7 +482,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    *
    * The route's first Block still sees `input.__state === "__start__"` in `act()`, not the tag that
    * routed there - `runGraph` seeds every Flow's entry Block that way unconditionally, the same as
-   * any standalone `defineFlow([start, block, end])` already does. Read `page`/`mem`, not `input`,
+   * any single-Block Flow does. Read `page`/`mem`, not `input`,
    * in `act()` - every real Block in this codebase already follows that convention.
    *
    * @example
@@ -513,37 +512,28 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     for (const [tag, fn] of Object.entries(
       routes as Record<string, ((m: MapBuilder<any>) => Flow<any>) | null>,
     )) {
-      resolvedRoutes[tag] = fn ? fn(new MapBuilder<any>(this.defineFlow, [], this.homeOrigin, null)) : null;
+      resolvedRoutes[tag] = fn ? fn(new MapBuilder<any>(this.build, this.settings, [], this.homeOrigin, null)) : null;
     }
     return buildBranchedFlow(before, resolvedRoutes) as never;
   }
 
   /**
-   * Finalizes this chain into a real, runnable {@link Flow} - same object
-   * `defineFlow` returns, so `withBlockVerify`/`modBlockVerify` and every
-   * `withTitle`/`withHighlightFixtures`/etc. decorator still apply exactly
-   * as they do today; this builder only changes how the chain is assembled,
-   * never what it produces. Throws if no step was ever added - an empty map
+   * Finalizes this chain into a runnable {@link Flow} with the settings given to `map({ ... })`;
+   * `withBlockVerify`/`modBlockVerify` work on it. Throws if no step was ever added - an empty map
    * isn't a flow. An auto-opened `{ ff: true }` window (see {@link MapStepOpts})
    * left open at `.end()` closes silently; an EXPLICIT `.ffStart()` left open
    * still throws - the author opened that one and needs to close it themselves.
    */
-  /** @param options @deprecated Pass flow settings to `map({ … })` instead. */
-  end(options?: FlowOptions): Flow<Out> {
+  end(): Flow<Out> {
     if (this.ff && !this.ff.auto) {
       throw new WaygraphError("WG_MAP_FF_NOT_CLOSED", MSG_MAP_FF_NOT_CLOSED(this.ff.name));
     }
     if (this.ff && this.ff.auto) {
-      return this.closeFf().end(options);
+      return this.closeFf().end();
     }
     if (this.steps.length === 0) {
       throw new WaygraphError("WG_MAP_EMPTY", MSG_MAP_EMPTY);
     }
-    const chain = [start, ...this.steps, end] as unknown as readonly [
-      StartMarker,
-      Block<any, any>,
-      EndMarker,
-    ];
-    return (this.defineFlow as (blocks: unknown, options?: FlowOptions) => Flow<Out>)(chain, options);
+    return this.build(this.steps, this.settings) as Flow<Out>;
   }
 }

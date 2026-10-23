@@ -13,7 +13,7 @@ function printOrphanReport(projectDir: string, orphans: Awaited<ReturnType<typeo
   }
   for (const o of orphans) {
     console.warn(
-      `waygraph check: orphan Block ${o.file} (${o.exportName} / "${o.block}") is not referenced in any defineFlow([...]) - wire it into a .flow.ts before chain auto shorthand`,
+      `waygraph check: orphan Block ${o.file} (${o.exportName} / "${o.block}") is not used in any flow - wire it into a .flow.ts before chain auto shorthand`,
     );
   }
   console.log(`waygraph check: ${orphans.length} orphan Block${orphans.length === 1 ? "" : "s"}`);

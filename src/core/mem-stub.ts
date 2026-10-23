@@ -9,7 +9,7 @@
  * see demo/narration/index.ts's `runStubPhase`) and `upload`'s `stub: "image"|"pdf"|
  * "video"` (a placeholder file). This is a third, separate "stub."
  *
- * Opt-in only, per Flow (`withMemStub`, engine.ts) or per-run (`--mem-stub` /
+ * Opt-in only, per Flow (`map({ memStub: true })`) or per-run (`--mem-stub` /
  * WAYGRAPH_MEM_STUB=1) - a required key with no registered generator still
  * fails preflight exactly as before. Registered per MemKey *instance*
  * (identity, not `.name`), matching MemPage's own store - two keys sharing a
@@ -32,7 +32,7 @@ export function registerMemStub<T>(key: MemKey<T>, fake: () => T): void {
   registry.set(key, fake);
 }
 
-/** Used by waygraph's own `--mem-stub`-aware CLI seeding and by {@link seedMemStub} - flow authors normally use {@link registerMemStub}/{@link withMemStub} instead. */
+/** Used by waygraph's own `--mem-stub`-aware CLI seeding and by {@link seedMemStub} - flow authors normally use {@link registerMemStub} and `map({ memStub: true })` instead. */
 export function getMemStub<T>(key: MemKey<T>): (() => T) | undefined {
   return registry.get(key) as (() => T) | undefined;
 }

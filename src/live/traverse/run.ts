@@ -3,7 +3,7 @@
  * Walk unused legal edges until leaf / budget / break.
  */
 import type { Browser, BrowserContext, Page } from "@playwright/test";
-import { Engine, start, end, locate } from "../../core.js";
+import { Engine, buildFlow, locate } from "../../core.js";
 import type { NavBlock } from "../../core.js";
 import { MemPage, type MemKey } from "../../core/mem-page.js";
 import type { Checkpoint } from "../../core/types.js";
@@ -171,7 +171,7 @@ async function runOneBlock(
   page: Page,
   mem: MemPage,
 ): Promise<Checkpoint<string>> {
-  const flow = engine.defineFlow([start, entry.block, end]);
+  const flow = buildFlow([entry.block], engine.config);
   const BLOCK_TIMEOUT_MS = 45_000;
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {

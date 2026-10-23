@@ -14,7 +14,7 @@ import type { EngineConfig } from "./config.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import { MemPage } from "./mem-page.js";
 import type { Trait } from "./trait.js";
-import { copyWaygraphRuntime, findBlockIndex, modVerify, withVerify } from "./block.js";
+import { findBlockIndex, modVerify, withVerify } from "./block.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "./narration.js";
 import type { DemoPace, HighlightStyleDefaults } from "./narration.js";
 
@@ -63,19 +63,13 @@ export interface BlockInfo {
   /** `branch()`'s routing table, if this Block has one - see {@link Block.routes}. */
   routes?: Readonly<Record<string, string | null>>;
   /**
-   * True when {@link chainFlow} inserted a session-reset boundary
-   * immediately before this Block - i.e. this is the first Block of a
-   * sub-flow that was wrapped in {@link withSessionReset}, and it isn't
-   * the very first sub-flow in the chain. Absent (not just false) from
-   * `Flow.blocks()` on an ordinary, non-chained Flow.
+   * True when a session-reset boundary runs immediately before this Block: the first Block of a sub-flow nested with
+   * `.flow(sub, { reset: true })` (or a CLI chain segment whose flow has `sessionReset`). Absent on an ordinary Flow.
    */
   resetSessionBefore?: boolean;
   /**
-   * The actual Block, re-runnable on its own via
-   * `engine.defineFlow([start, info.block, end])` - e.g. step-through
-   * tooling that runs a Flow's Blocks one at a time. Introspection that only
-   * wants to read the shape (a visualizer) can ignore this and use `name`/
-   * `routes` alone.
+   * The actual Block, re-runnable on its own - e.g. step-through tooling that runs a Flow's Blocks one at a time.
+   * Introspection that only wants to read the shape (a visualizer) can ignore this and use `name`/`routes` alone.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   block: Block<any, any>;
@@ -85,24 +79,12 @@ export interface BlockInfo {
 /** A runnable chain of Blocks built by `engine.map()`. `run(mem)` launches its own browser; `run(context, mem)` reuses one. */
 export interface Flow<Out extends Checkpoint<string>> {
   /**
-   * True once this Flow has been wrapped in {@link withSessionReset} - a
-   * hint for `chainFlow`, not something `run()` itself checks: it marks
-   * this Flow as one that expects to start from a genuinely fresh,
-   * unauthenticated browser state (e.g. a login flow meant to be
-   * re-entered later in a longer chain). `chainFlow` clears cookies and
-   * storage right before this Flow's first Block runs, but only when this
-   * Flow isn't the very first thing in the chain (nothing to reset yet).
+   * `map({ sessionReset: true })`: this Flow wants a fresh browser session when it runs after another one (nested with
+   * `.flow(sub)` or chained on the CLI). `run()` itself never reads it.
    */
   readonly resetSession: boolean;
   /**
-   * Set once this Flow has been wrapped in {@link withTitle} - a display
-   * hint for a step-through overlay/showcase (e.g. "Ticket #123"), not
-   * something `run()` itself uses.
-   */
-  readonly title?: string;
-  /**
-   * Set once this Flow has been wrapped in {@link withExpectedFailure} - a
-   * display hint for a step-through overlay: this Flow is DESIGNED to throw
+   * `map({ expectedFailure })` - a display hint for a step-through overlay: this Flow is DESIGNED to throw
    * (e.g. a blocked user's login attempt genuinely failing), not a bug in
    * the demo itself. `run()` never reads this - the Flow still throws
    * exactly as it would otherwise; only the overlay's error panel reads it,
@@ -111,23 +93,17 @@ export interface Flow<Out extends Checkpoint<string>> {
    */
   readonly expectedFailureReason?: string;
   /**
-   * Set once this Flow has been wrapped in {@link withHighlightFixtures} -
-   * demo narration overrides (unlimited purposes on `.flow.ts`) keyed by
-   * block.name. `run()` never reads this; step/`demo` merges onto block stubs.
-   */
-  readonly highlightFixtures?: import("./narration.js").HighlightFixtureMap;
-  /**
-   * Demo pacing for this Flow's episode (`withDemoPace`).
+   * Demo pacing for this Flow's episode (`map({ demoPace })`).
    * `run()` ignores; step/demo applies per Block in the episode.
    */
   readonly demoPace?: import("./narration.js").DemoPace;
   /**
-   * Default highlight size/weight/tone for this Flow's episode (`withHighlightStyle`).
+   * Default highlight size/weight/tone for this Flow's episode (`map({ highlightStyle })`).
    * Per-slot stub/fixture values win. `run()` ignores.
    */
   readonly highlightStyle?: import("./narration.js").HighlightStyleDefaults;
   /**
-   * Set once this Flow has been wrapped in {@link withMemStub} - opts into
+   * `map({ memStub: true })` - opts into
    * auto-filling `requires` keys with registered fake values
    * (`registerMemStub`, `src/core/mem-stub.ts`) instead of failing preflight when
    * the caller didn't supply them. `run()` never reads this - the CLI's own
@@ -194,14 +170,11 @@ export function buildFlow<Out extends Checkpoint<string>>(
   middle: readonly Block<any, any>[],
   engineConfig: EngineConfig,
 ): Flow<Out> {
-  // resetSession/title start false/unset here - defineFlow itself carries
-  // no such options anymore. They're set by wrapping the result in
-  // withSessionReset()/withTitle() instead (non-destructive decorators,
-  // same pattern as withVerify), which also re-apply themselves after any
-  // further withBlockVerify/modBlockVerify patch so the flag survives.
+  // Settings (sessionReset, memStub, ...) are added afterwards by withSettings, which re-applies them after any
+  // withBlockVerify/modBlockVerify patch so they survive.
   // Layouts have to be threaded into every pairwise connect(), not just the
   // trailing runGraph call - see connect()'s own doc comment in types.ts:
-  // buildFlow's reduce IS the only place a defineFlow-built Flow's
+  // buildFlow's reduce IS the only place a Flow's
   // intermediate (non-final) Checkpoints are ever verified at all.
   const chain = middle.reduce((a, b) => connect(a, b, engineConfig.layouts)) as unknown as Block<
     Checkpoint<"__start__">,
@@ -304,214 +277,40 @@ export function buildFlow<Out extends Checkpoint<string>>(
 }
 
 
-/**
- * Marks a Flow as expecting to start from a genuinely fresh, unauthenticated
- * browser state - e.g. a login flow meant to be re-entered later in a longer
- * showcase. Non-destructive, same pattern as {@link withVerify}: returns a
- * new Flow: the original is untouched, and the flag survives any further
- * `withBlockVerify`/`modBlockVerify` patch applied to the result.
- *
- * By itself this does nothing - `Flow.run()` never reads `resetSession`.
- * It's a hint {@link chainFlow} looks for: right before this Flow's first
- * Block runs (skipped if it's the very first thing in the chain - nothing
- * to reset yet), chainFlow clears cookies and storage so this Flow starts
- * exactly as if a human had opened the app fresh, not wherever the
- * previous Flow in the chain happened to leave the page.
- * @example const loginFlow = withSessionReset(engine.defineFlow([start, LoginBlock, end]));
- * @deprecated Use `map().flow(sub, { reset: true })`; the reset belongs to where flows are joined.
- */
-export function withSessionReset<Out extends Checkpoint<string>>(flow: Flow<Out>): Flow<Out> {
-  return {
-    ...flow,
-    resetSession: true,
-    withBlockVerify: (block, verify) => withSessionReset(flow.withBlockVerify(block, verify)),
-    modBlockVerify: (block, nameOrIndex, newCheck) => withSessionReset(flow.modBlockVerify(block, nameOrIndex, newCheck)),
-  };
-}
-
-
-/**
- * Names a Flow for display - a step-through overlay/showcase (waygraph's
- * `chain --step`) shows this as the running banner while this Flow's own
- * Blocks are executing, instead of one fixed title for the whole run.
- * Non-destructive, same pattern as {@link withSessionReset}.
- * @example const ticket123 = withTitle(loginFlow, "Ticket #123 - Sales rep signs in");
- * @deprecated Name a flow with `ctx.title(...)` in a stub on its first step.
- */
-export function withTitle<Out extends Checkpoint<string>>(flow: Flow<Out>, title: string): Flow<Out> {
-  return {
-    ...flow,
-    title,
-    withBlockVerify: (block, verify) => withTitle(flow.withBlockVerify(block, verify), title),
-    modBlockVerify: (block, nameOrIndex, newCheck) => withTitle(flow.modBlockVerify(block, nameOrIndex, newCheck), title),
-  };
-}
-
-
-/**
- * Opts this Flow into memStub: `requires` keys the caller didn't supply get
- * filled from `registerMemStub`'s registry (`src/core/mem-stub.ts`) instead of
- * failing preflight, for any key that has a registered fake generator - a
- * required key with no registration still fails exactly as before.
- * Non-destructive, same pattern as {@link withTitle}. `run()` never reads
- * this itself - the CLI's `--data`/`--mem-stub` seeding, or a bare-library
- * caller's own explicit `seedMemStub(mem, flow)` call, does the filling.
- * @example const demoLogin = withMemStub(loginFlow);
- * @deprecated Use `engine.map({ memStub: true })`.
- */
-export function withMemStub<Out extends Checkpoint<string>>(flow: Flow<Out>): Flow<Out> {
-  return {
-    ...flow,
-    memStub: true,
-    withBlockVerify: (block, verify) => withMemStub(flow.withBlockVerify(block, verify)),
-    modBlockVerify: (block, nameOrIndex, newCheck) => withMemStub(flow.modBlockVerify(block, nameOrIndex, newCheck)),
-  };
-}
-
-
-/**
- * Demo pacing for a whole Flow episode (fast review vs slow gap/wrong walkthrough).
- * Non-destructive. `fastForwardComposeBlock` is always blitz for its own step;
- * use this when an entire episode should be fast or slow.
- * @example withDemoPace(withTitle(gapFlow, "Episode 2 - gaps"), "slow")
- * @example withDemoPace(happyFlow, 0.5)  // 2x faster than normal
- * @example withDemoPace(gapFlow, 2.5)    // 2.5x slower
- * @example withDemoPace(gapFlow, 4500)   // absolute ~4.5s gates/dwells
- * @deprecated Use `engine.map({ demoPace })`, a step `{ pace }`, or `demo.pace` in the config.
- */
-export function withDemoPace<Out extends Checkpoint<string>>(
-  flow: Flow<Out>,
-  pace: DemoPace,
-): Flow<Out> {
-  const demoPace = pace;
-  return {
-    ...flow,
-    demoPace,
-    withBlockVerify: (block, verify) => withDemoPace(flow.withBlockVerify(block, verify), demoPace),
-    modBlockVerify: (block, nameOrIndex, newCheck) =>
-      withDemoPace(flow.modBlockVerify(block, nameOrIndex, newCheck), demoPace),
-  };
-}
-
-
-/**
- * Default highlight look for a Flow episode (size / weight / optional tone).
- * Per-slot stub or {@link withHighlightFixtures} values win when set.
- * @example withHighlightStyle(withDemoPace(gapFlow, "slow"), { size: "lg", weight: "bold" })
- * @deprecated Use `engine.map({ highlightStyle })`.
- */
-export function withHighlightStyle<Out extends Checkpoint<string>>(
-  flow: Flow<Out>,
-  style: HighlightStyleDefaults,
-): Flow<Out> {
-  const highlightStyle: HighlightStyleDefaults = {
-    ...(style.tone !== undefined ? { tone: normalizeHighlightTone(style.tone) } : {}),
-    ...(style.size !== undefined ? { size: normalizeHighlightSize(style.size) } : {}),
-    ...(style.weight !== undefined ? { weight: normalizeHighlightWeight(style.weight) } : {}),
-  };
-  return {
-    ...flow,
-    highlightStyle,
-    withBlockVerify: (block, verify) => withHighlightStyle(flow.withBlockVerify(block, verify), highlightStyle),
-    modBlockVerify: (block, nameOrIndex, newCheck) =>
-      withHighlightStyle(flow.modBlockVerify(block, nameOrIndex, newCheck), highlightStyle),
-  };
-}
-
-
-/**
- * Demo pacing for one Block or compose unit (not FF - use fastForwardComposeBlock for blitz).
- * @example withBlockPace(composeBlock("gap-review", [...]), "slow")
- * @deprecated Use a step option: `.method(Block, { pace })`.
- */
-export function withBlockPace<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
-  block: Block<In, Out>,
-  pace: DemoPace,
-): Block<In, Out> {
-  const next = { ...block, demoPace: pace } as Block<In, Out> & { demoPace: DemoPace };
-  copyWaygraphRuntime(block, next);
-  return next;
-}
-
-
-/**
- * Marks a Flow as one that's SUPPOSED to throw - e.g. a locked-out user's
- * login attempt genuinely failing, demonstrating the app's own real
- * behavior rather than a bug in the demo. Non-destructive, same pattern as
- * {@link withTitle}.
- *
- * By itself this changes nothing about how the Flow runs - it still throws
- * Marks a Flow whose last step is an intentional product failure (demo overlay).
- * Step mode shows stubOnError rings + an amber "expected outcome" panel when:
- * - the last block **throws**, or
- * - the last block **succeeds** on the fail branch (e.g. LoginPage + error banner
- *   after submit-login branched instead of throwing).
- * Headless `run()` is unchanged - branching success returns the checkpoint.
- * @example const viewerBlockedFlow = withExpectedFailure(
- *   engine.defineFlow([start, NavLoginBlock, SubmitLoginActionBlock, end]),
- *   "locked_out_user stays on LoginPage with the error banner - working as intended.",
- * );
- * @deprecated Use `engine.map({ expectedFailure: reason })`.
- */
-export function withExpectedFailure<Out extends Checkpoint<string>>(flow: Flow<Out>, reason: string): Flow<Out> {
-  return {
-    ...flow,
-    expectedFailureReason: reason,
-    withBlockVerify: (block, verify) => withExpectedFailure(flow.withBlockVerify(block, verify), reason),
-    modBlockVerify: (block, nameOrIndex, newCheck) =>
-      withExpectedFailure(flow.modBlockVerify(block, nameOrIndex, newCheck), reason),
-  };
-}
-
-
-/**
- * Attaches demo highlight fixtures to a Flow - unlimited purposes on `.flow.ts`
- * (AC copy, BUG/GATE tags, detail) merged onto each block's stubBefore/stubAfter/
- * stubOnError slots. Non-destructive, same pattern as {@link withTitle}.
- * Demo/`chain --step` reads `flow.highlightFixtures`; `run()` ignores it.
- * @example withHighlightFixtures(issueFlow, { "submit-login": { stubBefore: { email: { label: "AC-1" } } } })
- * @deprecated Chain ctx stubs on the Block: `Block.stubAfter((ctx) => …)`.
- */
-export function withHighlightFixtures<Out extends Checkpoint<string>>(
-  flow: Flow<Out>,
-  fixtures: import("./narration.js").HighlightFixtureMap,
-): Flow<Out> {
-  return {
-    ...flow,
-    highlightFixtures: fixtures,
-    withBlockVerify: (block, verify) => withHighlightFixtures(flow.withBlockVerify(block, verify), fixtures),
-    modBlockVerify: (block, nameOrIndex, newCheck) =>
-      withHighlightFixtures(flow.modBlockVerify(block, nameOrIndex, newCheck), fixtures),
-  };
-}
-
-/** Everything a `with*` wrapper can set, given up front: `engine.defineFlow([...], { title, memStub, ... })`. */
-export interface FlowOptions {
-  /** Shown as the banner while the Flow runs (`withTitle`). */
-  title?: string;
-  /** Fill missing `requires` keys from `registerMemStub` (`withMemStub`). */
+/** The settings `map({ ... })` gives a Flow. */
+export interface FlowSettings {
   memStub?: boolean;
-  /** Clear cookies and storage before this Flow's first Block when chained after another (`withSessionReset`). */
   sessionReset?: boolean;
-  /** `withDemoPace`. */
-  demoPace?: DemoPace;
-  /** `withHighlightStyle`. */
-  highlightStyle?: HighlightStyleDefaults;
-  /** Marks a Flow that is supposed to throw, with the reason (`withExpectedFailure`). */
   expectedFailure?: string;
+  demoPace?: DemoPace;
+  highlightStyle?: HighlightStyleDefaults;
 }
 
-/** Applies each set option through its `with*` wrapper, so both spellings produce the same Flow. */
-export function applyFlowOptions<Out extends Checkpoint<string>>(flow: Flow<Out>, options: FlowOptions | undefined): Flow<Out> {
-  if (!options) return flow;
-  let f = flow;
-  if (options.sessionReset) f = withSessionReset(f);
-  if (options.title !== undefined) f = withTitle(f, options.title);
-  if (options.demoPace) f = withDemoPace(f, options.demoPace);
-  if (options.highlightStyle) f = withHighlightStyle(f, options.highlightStyle);
-  if (options.expectedFailure !== undefined) f = withExpectedFailure(f, options.expectedFailure);
-  if (options.memStub) f = withMemStub(f);
-  return f;
+/** The Flow with its `map()` settings set; they survive `withBlockVerify`/`modBlockVerify` patches. */
+export function withSettings<Out extends Checkpoint<string>>(flow: Flow<Out>, settings: FlowSettings): Flow<Out> {
+  const style = settings.highlightStyle;
+  const fields = {
+    ...(settings.sessionReset ? { resetSession: true } : {}),
+    ...(settings.memStub ? { memStub: true } : {}),
+    ...(settings.expectedFailure !== undefined ? { expectedFailureReason: settings.expectedFailure } : {}),
+    ...(settings.demoPace ? { demoPace: settings.demoPace } : {}),
+    ...(style
+      ? {
+          highlightStyle: {
+            ...(style.tone !== undefined ? { tone: normalizeHighlightTone(style.tone) } : {}),
+            ...(style.size !== undefined ? { size: normalizeHighlightSize(style.size) } : {}),
+            ...(style.weight !== undefined ? { weight: normalizeHighlightWeight(style.weight) } : {}),
+          },
+        }
+      : {}),
+  };
+  if (Object.keys(fields).length === 0) return flow;
+  return {
+    ...flow,
+    ...fields,
+    withBlockVerify: (block, verify) => withSettings(flow.withBlockVerify(block, verify), settings),
+    modBlockVerify: (block, nameOrIndex, newCheck) => withSettings(flow.modBlockVerify(block, nameOrIndex, newCheck), settings),
+  };
 }
 
 
@@ -553,23 +352,9 @@ export async function clearSessionState(context: BrowserContext, page: Page): Pr
 
 
 /**
- * Runs several complete, independent Flows one after another, reusing the
- * same page/context/mem in order - each remains its own validated
- * start-to-end unit (a Flow's own `[start, ...blocks, end]` contract is
- * untouched), this only sequences whole Flows. Deliberately NOT the same
- * thing as {@link composeBlock}: composeBlock nests several Blocks into
- * one Block that can drop back into another `defineFlow([...])` - a
- * chainFlow result is a Flow, but not meant to be nested inside another
- * Flow's own Block list. Recursive nesting stays composeBlock's job alone;
- * chainFlow is a flat, one-level sequencing of complete showcases (e.g.
- * "ticket #123 end to end, then ticket #456 end to end").
- *
- * A sub-flow wrapped in {@link withSessionReset} gets its cookies/storage
- * cleared right before it runs (skipped for the very first flow in the
- * chain - nothing to reset yet). The combined result is whatever the LAST
- * flow resolved to.
- * @example chainFlow(ticket123Flow, ticket456Flow).run(context, mem)
- * @deprecated Nest flows with `map().flow(a).flow(b, { reset: true })`.
+ * Runs whole Flows one after another on the same page, context and mem - the runner's way of executing a CLI chain
+ * (`waygraph run "a then b"`) with each segment still its own episode. A Flow with `resetSession` gets its cookies and
+ * storage cleared right before it runs (skipped for the first one). Authors nest flows with `map().flow(sub)` instead.
  */
 export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
   if (flows.length === 0) {
@@ -586,7 +371,7 @@ export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
       // One browser for the WHOLE chain - each sub-flow's own run(mem,
       // config) would otherwise each launch a separate browser, defeating
       // the point of sequencing them (a fresh browser is itself a full
-      // session reset, silently making withSessionReset a no-op).
+      // session reset, silently making sessionReset a no-op).
       const { context, close } = await launchOwnContext(config);
       try {
         try {

@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
-import { Engine, start, end, MemPage, checkpoint, composeBlock, connect } from "../../src/index.js";
+import { Engine, MemPage, checkpoint, composeBlock, connect } from "../../src/index.js";
+import { buildFlow } from "../../src/core/flow.js";
 
 const fakePage = { close: async () => {} } as unknown as import("@playwright/test").Page;
 const fakeContext = { newPage: async () => fakePage } as any;
@@ -44,8 +45,8 @@ test.describe("composeBlock", () => {
     const composed = composeBlock("three-steps", [step1, step2, step3]);
     const handWritten = connect(connect(step1, step2), step3);
 
-    const flowA = new Engine().defineFlow([start, composed, end]);
-    const flowB = new Engine().defineFlow([start, handWritten as Block<Start, Done>, end]);
+    const flowA = buildFlow([composed], new Engine().config);
+    const flowB = buildFlow([handWritten as Block<Start, Done>], new Engine().config);
     const outA = await flowA.run(fakeContext, new MemPage());
     const outB = await flowB.run(fakeContext, new MemPage());
     expect(outA).toEqual(outB);
@@ -65,7 +66,7 @@ test.describe("composeBlock", () => {
       instruction: { ...step2.instruction, verify: [{ name: "step-2-check", check: async () => false }] },
     };
     const composed = composeBlock("three-steps", [step1, failingStep2, step3]);
-    const flow = new Engine().defineFlow([start, composed, end]);
+    const flow = buildFlow([composed], new Engine().config);
     await expect(flow.run(fakeContext, new MemPage())).rejects.toThrow(/step-2-check/);
     await expect(flow.run(fakeContext, new MemPage())).rejects.toThrow(/step-2/);
   });
@@ -75,11 +76,11 @@ test.describe("composeBlock", () => {
     const composed = composeBlock("three-steps", [step1, step2, step3]);
     const patched = composed.withStepVerify("step-2", []);
 
-    const flow = new Engine().defineFlow([start, patched, end]);
+    const flow = buildFlow([patched], new Engine().config);
     await expect(flow.run(fakeContext, new MemPage())).resolves.toEqual(checkpoint("Done"));
 
     // Original composed Block untouched - still has step-2's original (passing) check.
-    const original = new Engine().defineFlow([start, composed, end]);
+    const original = buildFlow([composed], new Engine().config);
     await expect(original.run(fakeContext, new MemPage())).resolves.toEqual(checkpoint("Done"));
   });
 
@@ -88,11 +89,11 @@ test.describe("composeBlock", () => {
     const composed = composeBlock("three-steps", [step1, step2, step3]);
     const patched = composed.modStepVerify("step-2", "step-2-check", async () => false);
 
-    const flow = new Engine().defineFlow([start, patched, end]);
+    const flow = buildFlow([patched], new Engine().config);
     await expect(flow.run(fakeContext, new MemPage())).rejects.toThrow(/step-2-check/);
 
     // Original untouched.
-    const original = new Engine().defineFlow([start, composed, end]);
+    const original = buildFlow([composed], new Engine().config);
     await expect(original.run(fakeContext, new MemPage())).resolves.toEqual(checkpoint("Done"));
   });
 
@@ -103,7 +104,7 @@ test.describe("composeBlock", () => {
     const oncePatched = composed.withStepVerify(step2, [{ name: "step-2-check-v2", check: async () => true }]);
     const twicePatched = oncePatched.modStepVerify(step2, "step-2-check-v2", async () => false);
 
-    const flow = new Engine().defineFlow([start, twicePatched, end]);
+    const flow = buildFlow([twicePatched], new Engine().config);
     await expect(flow.run(fakeContext, new MemPage())).rejects.toThrow(/step-2-check-v2/);
   });
 
@@ -115,7 +116,7 @@ test.describe("composeBlock", () => {
       .modStepVerify("step-1", "step-1-check", async () => false)
       .modStepVerify("step-3", "step-3-check", async () => false);
 
-    const flow = new Engine().defineFlow([start, doublyPatched, end]);
+    const flow = buildFlow([doublyPatched], new Engine().config);
     // step-1 runs first - its patch should fire before step-3's ever gets a chance to.
     await expect(flow.run(fakeContext, new MemPage())).rejects.toThrow(/step-1-check/);
   });
@@ -134,7 +135,7 @@ test.describe("composeBlock", () => {
   test("the composed Block is a plain Block - usable directly inside defineFlow like any other", async () => {
     const { step1, step2, step3 } = threeSteps();
     const composed = composeBlock("three-steps", [step1, step2, step3]);
-    const flow = new Engine().defineFlow([start, composed, end]);
+    const flow = buildFlow([composed], new Engine().config);
     await expect(flow.run(fakeContext, new MemPage())).resolves.toEqual(checkpoint("Done"));
   });
 });

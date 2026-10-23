@@ -335,29 +335,6 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
 }
 
 
-/** Flow fixture patch: label required; selector optional (inherits from stub). */
-export type WaygraphHighlightFixture = Partial<Pick<WaygraphHighlightStub, "selector">> &
-  Required<Pick<WaygraphHighlightStub, "label">> &
-  Pick<
-    WaygraphHighlightStub,
-    | "detail"
-    | "tag"
-    | "tone"
-    | "size"
-    | "weight"
-    | "zoom"
-    | "zoomOut"
-    | "focus"
-    | "followMouse"
-    | "follow"
-    | "color"
-    | "cursor"
-    | "todo"
-    | "gesture"
-  > &
-  FixtureDurationFields;
-
-
 /** A static stub phase: named ring slots to paint before or after a step. */
 export type HighlightStubPhase = Record<string, WaygraphHighlightStub>;
 
@@ -650,22 +627,8 @@ export type WaygraphSlidesOrFn<Out extends Checkpoint<string>> =
   | ((out: Out) => readonly WaygraphSlide[]);
 
 
-/** Demo stub phase names (block instruction + flow fixtures). */
+/** Demo stub phase names. */
 export type HighlightStubPhaseName = "stubBefore" | "stubAfter" | "stubOnError";
-
-
-/** Per-block fixture map attached to a Flow via {@link withHighlightFixtures}. */
-export type HighlightFixtureMap = Record<
-  string,
-  {
-    stubBefore?: Record<string, WaygraphHighlightFixture>;
-    stubAfter?: Record<string, WaygraphHighlightFixture>;
-    /** Fail-path rings (demo step throw) - distinct copy from success stubAfter. */
-    stubOnError?: Record<string, WaygraphHighlightFixture>;
-    /** Override / supply multi-step yap slides for this block (demo only). */
-    slides?: readonly WaygraphSlide[];
-  }
->;
 
 
 /** Legacy array highlight (shimmed to stubAfter keys "0", "1", ...). */

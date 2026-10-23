@@ -2,14 +2,13 @@ import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
 import {
   Engine,
-  start,
-  end,
   MemPage,
   checkpoint,
   composeBlock,
   fastForwardComposeBlock,
   isFastForwardBlock,
 } from "../../src/index.js";
+import { buildFlow } from "../../src/core/flow.js";
 
 const fakePage = { close: async () => {} } as unknown as import("@playwright/test").Page;
 const fakeContext = { newPage: async () => fakePage } as any;
@@ -59,9 +58,8 @@ test.describe("fastForwardComposeBlock", () => {
     expect(ff.name).toBe("ff-three");
     expect(ff.steps().map((s) => s.name)).toEqual(["step-1", "step-2", "step-3"]);
 
-    const outFf = await new Engine().defineFlow([start, ff, end]).run(fakeContext, new MemPage());
-    const outPlain = await new Engine()
-      .defineFlow([start, plain, end])
+    const outFf = await buildFlow([ff], new Engine().config).run(fakeContext, new MemPage());
+    const outPlain = await buildFlow([plain], new Engine().config)
       .run(fakeContext, new MemPage());
     expect(outFf).toEqual(outPlain);
     expect(outFf).toEqual(checkpoint("Done"));
@@ -70,7 +68,7 @@ test.describe("fastForwardComposeBlock", () => {
   test("Flow.blocks lists FF as one opaque entry", () => {
     const { step1, step2, step3 } = threeSteps();
     const ff = fastForwardComposeBlock("ff-three", [step1, step2, step3]);
-    const flow = new Engine().defineFlow([start, ff, end]);
+    const flow = buildFlow([ff], new Engine().config);
     expect(flow.blocks().map((b) => b.name)).toEqual(["ff-three"]);
   });
 
@@ -84,7 +82,7 @@ test.describe("fastForwardComposeBlock", () => {
       },
     };
     const ff = fastForwardComposeBlock("ff-owner-auth", [step1, failingStep2, step3]);
-    const flow = new Engine().defineFlow([start, ff, end]);
+    const flow = buildFlow([ff], new Engine().config);
     await expect(flow.run(fakeContext, new MemPage())).rejects.toThrow(
       /ff-owner-auth > .*step-2/,
     );

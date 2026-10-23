@@ -14,7 +14,7 @@ The package is one published unit today, organized internally along these lines:
 | Module | Where | What it owns |
 |---|---|---|
 | `waygraph-core` | `src/types.ts`, `src/mem-page.ts`, `src/trait.ts` | Checkpoint, Block, MemPage, Trait, `connect()`. Stable. |
-| `waygraph-engine` | `src/engine.ts` | `Engine`, `defineFlow`, `runGraph`, `chainFlow`, `composeBlock`, browser launching (pluggable via `EngineConfig.browsers`). |
+| `waygraph-engine` | `src/core/` | `Engine`, `map()`, `runGraph`, `composeBlock`, browser launching (pluggable via `EngineConfig.browsers`). |
 | `waygraph-cli` | `src/cli.ts` (non-overlay commands) | `list` / `nav` / `validate` / `run` / `check` / `graph` / `init` / `agent-dive` / `traverse`. |
 | `waygraph-demo` | `src/cli.ts` (`demo` / `chain --step` overlay), `src/demo/` (`narration/`, `overlay/`, `step-mode/`), `src/live/overlay-beacon.ts` | The step-through browser overlay: panel, ring, cursor, todo dock, `narrate()`, episode headings, stub/fixture/slide narration. |
 | `waygraph-auto` | `src/graph.ts`, `src/live/auto-explore.ts`, `src/live/auto-explore-run.ts`, `locate()` in `src/engine.ts` | State-machine discovery (`discoverGraph` / `toMermaid`) + page recognition (`locate`) + the interactive `waygraph auto` explore loop. |
@@ -32,7 +32,7 @@ otherwise.
 
 | Theme | Status |
 |---|---|
-| `chainFlow`, `withSessionReset`/`withTitle`, episode-aware step overlay | Shipped |
+| Nested flows (`.flow(sub, { reset })`), episode-aware step overlay | Shipped (`chainFlow` and the `with*` wrappers removed in 0.16.0) |
 | `precondition` + tip polish | Shipped |
 | `waygraph demo` + run flags; NavBlock click demo cursor | Shipped |
 | PageBlock + `methods/` + `Sel` convention; Action -> Method rename | Shipped |
@@ -237,6 +237,8 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 9. Map packages: a map group owns its states and keys (`_states.ts`, `_keys.ts`; `waygraph check` warns on imports that
    leave it), `waygraph map pack <group>` compiles it into a package with `waygraph.map.json`, and installed packages are
    found from the project's dependencies (no config list needed). Scaffold hoppscotch and mailpit converted. **Done.**
+10. `map()` is the only way to build a flow: `defineFlow`, `start`/`end`, `chainFlow` and the `with*` flow wrappers are
+    removed; `waygraph upgrade --codemod flows` (on the TypeScript AST via ts-morph) converts a project. **Done.**
 
 
 

@@ -42,7 +42,7 @@ export interface WaygraphGraph {
   skipped: SkippedBlock[];
 }
 
-/** A Block export that no `.flow.ts` defineFlow array references yet. */
+/** A Block export that no `.flow.ts` uses yet. */
 export interface OrphanBlock {
   /** Export identifier in the `.block.ts` file. */
   exportName: string;
@@ -87,7 +87,7 @@ function exportNameToBlockName(exportName: string): string {
 }
 
 /**
- * Blocks present on disk but never wired into a `.flow.ts` defineFlow array.
+ * Blocks present on disk but never used in a `.flow.ts`.
  * Required before `chain auto` can build a path from the discovered graph -
  * orphan Blocks are intentionally excluded from auto shorthand. Arrival-only
  * Page hubs and Blocks listed on a Page's `methods` are not orphans.

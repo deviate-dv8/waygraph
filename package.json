@@ -69,6 +69,7 @@
   },
   "dependencies": {
     "open-props": "^1.7.23",
+    "ts-morph": "^28.0.0",
     "tsx": "^4.0.0",
     "urlpattern-polyfill": "^10.1.0"
   },

@@ -63,23 +63,19 @@ export const usernameAc = (ctx: StubCtx<any>) => ctx.ring("username", { label: "
 .method(SubmitLoginBlock.stubBefore(usernameAc))
 ```
 
-`withHighlightFixtures(flow, map)` and `HighlightFixtureMap` still work (a static slot map keyed by Block name)
-but the ctx form above is the recommended one.
+The older `withHighlightFixtures(flow, map)` slot map was removed in 0.16.0; chain ctx stubs on the Block as above.
 
 ## TypeScript exports (waygraph@0.11.2)
 
 | Export | Kind | What it does |
 |---|---|---|
-| `withHighlightFixtures(flow, map)` | function | **Deprecated** - chain ctx stubs on the Block instead. Attached a `HighlightFixtureMap` to a Flow |
-| `resolveHighlightSlots(block, phase, opts)` | function | Resolve stubBefore / stubAfter slots with fixture merge |
-| `resolveSlides(block, opts)` | function | Resolve slides (fixture wins over block) |
+| `resolveHighlightSlots(block, phase, opts)` | function | Resolve a Block's stubBefore / stubAfter / stubOnError slots |
+| `resolveSlides(block, opts)` | function | Resolve a Block's slides |
 | `formatHighlightCaption(h)` | function | Format `[TAG] label - detail` string |
-| `hasAuthoredStubAfter(block, out, fixtures)` | function | True when block has non-empty stubAfter (skips verify-trait fallback) |
+| `hasAuthoredStubAfter(block, out)` | function | True when block has non-empty stubAfter (skips verify-trait fallback) |
 | `WaygraphHighlightStub` | type | One named stub slot |
-| `WaygraphHighlightFixture` | type | Flow fixture patch for a slot |
 | `WaygraphSlide` | type | One yap slide (caption, detail, tag, selector) |
-| `HighlightFixtureMap` | type | Per-block fixture map for `withHighlightFixtures` |
-| `ResolvedHighlight` | type | Resolved stub after merge |
+| `ResolvedHighlight` | type | A resolved stub slot |
 
 ## Replaces (shim until 0.12)
 

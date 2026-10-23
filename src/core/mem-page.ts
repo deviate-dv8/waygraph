@@ -84,7 +84,7 @@ export class MemPage {
    * can only have string/symbol property names, not object instances - a `[key,
    * value]` pair is the shape that keeps that identity-based guarantee.
    *
-   * Overloaded per pair count (2-6, same reasoning as `Engine.defineFlow`'s
+   * Overloaded per pair count (2-6, per-arity overloads like the old `defineFlow`'s
    * overloads) rather than one fully-generic variadic signature - each pair binds
    * its own type parameter independently, which TS checks reliably; a single
    * self-referential mapped-tuple-over-a-rest-parameter type was tried first and

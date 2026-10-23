@@ -291,13 +291,12 @@ function miniStepLabel(info: any) {
 
 /**
  * stubOnError rings + amber "expected outcome" / red error panel, then wait
- * for Stop/Retry. Used when a step throws OR when withExpectedFailure's last
+ * for Stop/Retry. Used when a step throws OR when a `map({ expectedFailure })` flow's last
  * block succeeds on the intentional fail branch (e.g. LoginPage + error banner).
  */
 export async function presentFailPanel(page: WgPage, opts: any) {
   const {
     block,
-    fixtures,
     error,
     index,
     total,
@@ -317,7 +316,7 @@ export async function presentFailPanel(page: WgPage, opts: any) {
     gate,
     mem,
   } = opts;
-  if (hasAuthoredStubOnError(block, fixtures)) {
+  if (hasAuthoredStubOnError(block)) {
     await page
       .evaluate(() => {
         if (window.__wgRingTrack) {
@@ -328,7 +327,6 @@ export async function presentFailPanel(page: WgPage, opts: any) {
       })
       .catch(() => {});
     const errPhase = await runStubPhase(block, "stubOnError", {
-      fixtures,
       error,
       out: opts.out,
       mem,

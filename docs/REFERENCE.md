@@ -126,7 +126,7 @@ export default defineConfig({
 `demo.speeds` defines the named paces as multipliers of normal dwell and gate time (defaults `{ blitz: 0.05, fast: 0.33, slow: 2 }`, lower is faster), e.g. `speeds: { fast: 0.5 }`. `demo.typingMs` is the typing animation in ms per character (`0` types instantly). In `demo`, `slowMo` is waygraph's own
 pause after each action, applied once per action and not per keystroke, so a step's pace can remove it; in `run` it is
 Playwright's `slowMo`. A single step takes `{ pace }` in the map: `.method(SetBearerTokenBlock, { pace: "blitz" })`, which
-skips that step's typing animation and its pause. A flow takes `map({ demoPace })`. No `withBlockPace` / `withDemoPace`.
+skips that step's typing animation and its pause. A flow takes `map({ demoPace })`.
 
 Run settings can be defaults in the config, applied only when no flag, shell variable or `.env` value sets them:
 `video: { dir, viewport }`, `slowMo`, `headed`, `demo: { autoNext, fast }`. `extensions`, `video`, `slowMo`, `headed`, `demo`,
@@ -194,9 +194,12 @@ export const showcase = engine
   .end();
 ```
 
-This replaces `defineFlow([start, …, end])`, `chainFlow`, and the `withTitle` / `withMemStub` / `withSessionReset` /
-`withDemoPace` / `withHighlightStyle` / `withExpectedFailure` / `withHighlightFixtures` / `withBlockPace` /
-`withStubBefore|After|OnError` wrappers, which still work but are deprecated (see the Deprecated page).
+Removed in 0.16.0: `defineFlow([start, …, end])`, `chainFlow` and the `with*` flow wrappers (`withTitle`, `withMemStub`,
+`withSessionReset`, `withDemoPace`, `withHighlightStyle`, `withExpectedFailure`, `withHighlightFixtures`, `withBlockPace`,
+`withStubBefore|After|OnError`). `waygraph upgrade --codemod flows` rewrites a project onto
+`map()`: it reads each Block's kind to pick the step, folds wrappers into `map({ … })`, moves a title into
+`ctx.title(…)` on the first step, and lists anything it can't convert (a Block not made by a factory, a
+`withHighlightFixtures` map) with the fix.
 
 ### Browser extensions
 
@@ -443,9 +446,8 @@ folder style, since some real consumers of this package still use the latter.
 
 ### `map()` - a kind-checked, no-teleporting flow builder
 
-The deprecated `Engine.defineFlow([start, ...blocks, end])` also typechecked that each Block's `Out`
-matches the next one's `In`. It does **not** stop an agent (or a careless human) from
-handing it a hand-rolled plain object that merely *looks* like a Block - TypeScript's
+TypeScript can check that each Block's `Out` matches the next one's `In`. It can **not** stop an agent (or a careless
+human) from handing a flow a hand-rolled plain object that merely *looks* like a Block - TypeScript's
 structural typing can't tell a real `defineNavBlock(...)` output from a copy-pasted
 object literal with the right shape. That gap is exactly what broke down in real
 consumer projects: agents editing/hand-composing Blocks into ad hoc shapes, a "locks"
@@ -463,7 +465,7 @@ const flow = engine
   .assert(AssertHelloBlock) // must be defineAssertBlock
   .gotoExternal(NavMailpitBlock) // same kind requirement, plus the INVERSE origin check
   .method(ClearCartBlock) // must be defineMethodBlock / defineActionBlock / defineEffectBlock
-  .end(); // -> a real Flow<Out> - withBlockVerify/withTitle/withHighlightFixtures/etc. all still apply
+  .end(); // -> a real Flow<Out>; withBlockVerify still applies
 ```
 
 Each step method is scoped to exactly the Block kind its name promises, checked against
@@ -472,8 +474,8 @@ already trust - a Block that didn't come from a real `define*Block` factory thro
 immediately, naming the step and the factory it should have used, instead of silently
 entering the chain. Give `homeOrigin` and `.gotoPage()`/`.gotoExternal()` also cross-check
 each Nav/Page Block's own static `url` against it (skipped, honestly, for click-based or
-mem-dependent nav - not statically checkable). The Checkpoint chain itself is still
-typechecked like `defineFlow`'s tuple overloads were - there is no method on this
+mem-dependent nav - not statically checkable). The Checkpoint chain itself is
+typechecked one step at a time, with no limit on length - there is no method on this
 builder that can skip from one Checkpoint to an unrelated one without a real, kind-correct
 Block in between, which is what "no teleporting" means here.
 
@@ -481,15 +483,13 @@ Block in between, which is what "no teleporting" means here.
 `Flow`, so every Flow-level feature (Layouts, `withBlockVerify`, demo narration) works on it unchanged, and flows nest
 with `.flow(sub, { reset })`. `import { map } from "waygraph"` is also available
 standalone (`map(options)` ~= `new Engine(options).map(options)`) for a call site that
-doesn't otherwise need its own `Engine` instance. **The one way to define a flow.** The older
-`defineFlow([start, ...])` array form still works but is deprecated: `map()` is the one that actually stops a
-broken/hacked Block from entering a flow unnoticed.
+doesn't otherwise need its own `Engine` instance. **The one way to define a flow.**
 
 ### Traits beyond the page
 
 A hand-written `Trait`'s `check(page, mem)` receives `mem` too, for the same-Checkpoint
 case: an action that doesn't navigate at all (clicking "+" to bump a cart item's quantity,
-say) has `In === Out`, which `defineBlock`/`defineFlow` already accept with no
+say) has `In === Out`, which `map()` already accepts with no
 special-casing - `act()` updates `mem` alongside the real click, and a bespoke `verify`
 Trait confirms the page's own displayed value actually matches what `mem` now expects, not
 just that *some* number is showing. `resolve()` itself stays exactly as pure as ever - it
@@ -1400,7 +1400,7 @@ filename pattern, never folder depth or naming.
    wave off as "close enough."
 
 Once the folder structure is settled, build Flows over these Blocks with
-[`map()`](#map---a-kind-checked-no-teleporting-flow-builder) (the `defineFlow([start, ...])` array is deprecated) - it can't silently accept a Block that isn't
+[`map()`](#map---a-kind-checked-no-teleporting-flow-builder) - it can't silently accept a Block that isn't
 really a Nav/Page/Assert/Method from this package's own factories.
 
 ## Getting started (pick one)

@@ -12,7 +12,7 @@ Owned by Dan's waygraph camera/stepper seat (2026-09-18).
    Authors: `ctx.todoPos("left"|"right")`; also click dock / `--todo-left|--todo-right` /
    `WAYGRAPH_TODO_POS`.
 6. Banner text: `ctx.title(...)` / `ctx.banner(...)` must update `#wg-banner .wg-banner-text`
-   every step (installOverlay creates once, then updates). Episode tab label = `withTitle(flow, ...)`.
+   every step (installOverlay creates once, then updates). Episode tab label = the flow's export name (a stub's `ctx.title(...)` sets the banner).
 7. Ring/label tone CSS: `transition:opacity` only — never border-color/background morph.
 8. **Blind-agent beacons (anti-blank):** every modal root (`#wg-panel`, `#wg-banner`,
    `#wg-todo-dock`, `#wg-auto-panel`) must stamp `data-wg-ui` / `data-wg-modal` / `data-wg-ready="1"` via

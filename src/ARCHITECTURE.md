@@ -46,7 +46,7 @@ the runtime layer through `core/launch.ts` (`runtime/launch.ts`, loaded by `inde
 
 `core/engine.ts` (the `Engine` class) and `core/map-builder.ts` (`MapBuilder` + the standalone
 `map()`) are two files, not one, despite being mutually referential at the type level:
-`Engine.map()` builds a `MapBuilder`, and `MapBuilder.end()` calls back into `defineFlow`.
+`Engine.map()` builds a `MapBuilder`, and `MapBuilder.end()` calls back into the engine to build the Flow (`buildFlow` + `withSettings`).
 `MapBuilder` only depends on a plain `DefineFlowFn` function type, never on `Engine` the class -
 that's what makes the split legal under the no-cycles rule. Don't reintroduce a direct
 `Engine`/`MapBuilder` type dependency in either direction.
@@ -59,10 +59,10 @@ that's what makes the split legal under the no-cycles rule. Don't reintroduce a 
 | A new CLI flag for run/demo | `cli/flags.ts` (`RunFlags`, `parseRunFlags`, `applyRunFlags`) + `cli/usage.ts` |
 | A session command (`send`, `highlight`, ...) | `commands/session.ts` + `live/auto-session/session.ts` + IPC op in `live/auto-session-ipc.ts` |
 | Demo overlay / step-mode behaviour | `demo/overlay/` (`overlay-install` page UI, `rings`, `cursor`) and `demo/step-mode/` (`step-mode`, `step-panels`, `todo-dock`, `demo-log`); `runner/seed-mem` for `--data`/`--mem-stub`. Read `CLI-STOMP-GUARD.md` first |
-| A `with*(flow, ...)` wrapper | `core/flow.ts`, next to `withTitle`; add the field to `Flow` and its `withBlockVerify`/`modBlockVerify` re-wraps |
+| A flow setting (`map({ … })`) | `MapBuilderOptions` in `core/map-builder.ts`, `FlowSettings`/`withSettings` in `core/flow.ts`, and the field on `Flow` |
 | A `define*Block` helper | `core/blocks/<kind>.ts`; update `MapBuilder` types if it can appear in a map flow |
 | A `MapBuilder` step/routing method | `core/map-builder.ts` next to `.method()`/`.branch()`; `.branch()`'s routes are functions handed a fresh `MapBuilder` seeded at the branch's own Checkpoint, not a ready-made `Flow` (a `Flow` always starts at `S`). Every step method also takes `opts?: MapStepOpts` for the inline `{ ff: true }` flag - see `appendStep`'s own comment for the auto-open/auto-close rules |
-| An `Engine` method (`defineFlow`/`map`) | `core/engine.ts` - keep it depending only on `DefineFlowFn`/`MapBuilderOptions` (types) from `map-builder.ts`, never a value-level import of `MapBuilder` beyond that |
+| An `Engine` method (`map`) | `core/engine.ts` - keep it depending only on `BuildFlowFn`/`MapBuilderOptions` (types) from `map-builder.ts`, never a value-level import of `MapBuilder` beyond that |
 | Regression-running a `.branch()` tree | `core/branch-regression.ts` (`branchRoutes`/`collectBranchFlows`/`runBranchRegression`) - clones the real session (storageState + URL) at each branch point so every route runs from a genuine copy of the live state; `cloneSession: false` opts out to one shared session. `__wgBranch` is an ordinary enumerable field so `with*` spreads carry it. CLI: `waygraph run --blocks <flow> --all-branches[--shared-session]` (wired in `runner/main.ts`'s `runAllBranchesMode`) |
 | A `Trait` | `trait.ts` (+ `Trait` object + `index.ts` export) |
 | Overlay colours / ring, cursor, banner, dock CSS | real `.css` in `src/ui/css/` (see its README) - built on Open Props, bundled into `dist/ui/overlay.css`, injected once into the Shadow DOM by `ui/shadow.ts` |

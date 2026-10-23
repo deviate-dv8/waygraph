@@ -144,7 +144,7 @@ test("assert-email-received fails loud, naming itself, when no email ever arrive
     mem.set(ExpectedRecipient({ email: "nobody-sent-this-one@example.com" }));
     mem.set(ExpectedLinkPattern, "verified=1");
     mem.set(ExpectedEmailContent, VERIFICATION_CONTENT);
-    // A defineFlow chain's verify-failure error names the whole path taken so
+    // A flow's verify-failure error names the whole path taken so
     // far (each composed Block's own name accumulates through connect()),
     // not just the leaf Block - real, useful QA context, not a bug - so this
     // matches the accumulated name ending at assert-email-received, not an

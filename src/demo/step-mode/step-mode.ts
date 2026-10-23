@@ -4,6 +4,7 @@ import type { WgPage } from "../types.js";
 import type { MemPage } from "../../core/mem-page.js";
 import type { BrowserContext } from "@playwright/test";
 import type { DemoPace } from "../../core/narration.js";
+import { buildFlow } from "../../core/flow.js";
 import { instrumentInteractionHighlighting } from "./interaction-patch.js";
 import { applyHighlightStyleDefaults, normalizeDemoPace, demoPaceGateMs, demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, formatHighlightCaption, hasAuthoredStubAfter, resolveSlides, resolveStepDemoPace, runStubPhase } from "../narration/index.js";
 import { markStepRunning, resetPageState, teardownOverlay } from "./teardown.js";
@@ -14,7 +15,7 @@ import { logBannerDom, probeBanner } from "./banner-log.js";
 import { createOverlayStage } from "../overlay/overlay-stage.js";
 import { presentSlides } from "./slides.js";
 
-export async function runStepMode(engine: any, start: any, end: any, context: BrowserContext, page: WgPage, mem: MemPage, resolved: any, slowMo: number, title: any, fastBlockNames: any, clearSession: any, baseURL: string | undefined) {
+export async function runStepMode(engine: any, context: BrowserContext, page: WgPage, mem: MemPage, resolved: any, slowMo: number, title: any, fastBlockNames: any, clearSession: any, baseURL: string | undefined) {
   // A shared, mutable pacing knob the interaction patches read live (per
   // call, not once at setup) - flipped per-block below so one block (e.g.
   // WAYGRAPH_FAST_BLOCKS=login or an FFCompose unit) can run through with
@@ -203,7 +204,7 @@ export async function runStepMode(engine: any, start: any, end: any, context: Br
     // WAYGRAPH_CLEAR_SESSION=1 override is set (a manual, always-on-after-
     // the-first-block stopgap for ad hoc block chains with no real Flow
     // object), OR this specific block is a Flow's own declared entry point
-    // (defineFlow(...) wrapped in withSessionReset) reached via a
+    // (a flow with map({ sessionReset: true })) reached via a
     // multi-flow chain spec - the proper, opt-in-per-Flow mechanism. Never
     // resets before the very first block - there's no prior state yet.
     //
@@ -222,7 +223,7 @@ export async function runStepMode(engine: any, start: any, end: any, context: Br
       await syncAutoplayFromEnv();
     }
     // Episode pace: block > flow > CLI --fast (only when no authored pace).
-    // Authoring wins: withDemoPace("slow"|2|4500) keeps slow dwell even under --fast.
+    // Authoring wins: map({ demoPace: "slow"|2|4500 }) keeps slow dwell even under --fast.
     // `demo.pace` in the config (WAYGRAPH_DEMO_PACE) is the default for flows and steps that set none.
     const defaultPace = process.env.WAYGRAPH_DEMO_PACE ? normalizeDemoPace(process.env.WAYGRAPH_DEMO_PACE) : undefined;
     const stepPace = resolveStepDemoPace({
@@ -253,9 +254,8 @@ export async function runStepMode(engine: any, start: any, end: any, context: Br
       fastBlockNames.has(r.block.name) ||
       !!r.block.fastForward ||
       !!r.wasFastForward;
-    const fixtures = r.highlightFixtures;
     const flowStyle = r.highlightStyle;
-    const stubBeforePhase = await runStubPhase(r.block, "stubBefore", { fixtures, mem });
+    const stubBeforePhase = await runStubPhase(r.block, "stubBefore", { mem });
     if (stubBeforePhase.todoDockUi) {
       await pushTodoDockUi(stubBeforePhase.todoDockUi);
     } else {
@@ -430,7 +430,7 @@ export async function runStepMode(engine: any, start: any, end: any, context: Br
         })
         .catch(() => {});
     }
-    const stepFlow = engine.defineFlow([start, r.block, end]);
+    const stepFlow = buildFlow([r.block], engine.config);
     // { closeOnFinish: false } makes Flow.run return { result, page }, not
     // the plain checkpoint - destructure it, don't treat the wrapper as the
     // checkpoint itself (caught via the standalone verify script: this used
@@ -447,7 +447,6 @@ export async function runStepMode(engine: any, start: any, end: any, context: Br
       // stubOnError + error/expected panel BEFORE acknowledging (PIA RFC).
       const errEdits = await presentFailPanel(page, {
         block: r.block,
-        fixtures: r.highlightFixtures,
         highlightStyle: r.highlightStyle,
         error: err,
         index: i,
@@ -474,7 +473,7 @@ export async function runStepMode(engine: any, start: any, end: any, context: Br
         i = episodeStartIndex - 1;
         continue;
       }
-      // withExpectedFailure episode (e.g. locked_out_user) - throwing here is
+      // map({ expectedFailure }) episode (e.g. locked_out_user) - throwing here is
       // the demo working, not a broken run.
       if (r.expectedFailureReason) {
         if (process.env.WAYGRAPH_JSON !== "1") {
@@ -496,14 +495,13 @@ export async function runStepMode(engine: any, start: any, end: any, context: Br
     // back into stage.state.lastTodoDock before stubAfter / next-block keep, or the
     // next step reverts to the pre-act (blank / index-0) checklist.
     if (todoDockRef.current) stage.state.lastTodoDock = todoDockRef.current;
-    // withExpectedFailure last block that SUCCEEDS on the intentional fail
+    // map({ expectedFailure }) last block that SUCCEEDS on the intentional fail
     // branch (e.g. submit-login -> LoginPage + error banner). Still show
     // stubOnError rings + amber "expected outcome" panel - branching no
     // longer throws, but the demo must not skip the educational overlay.
     if (r.expectedFailureReason) {
       const errEdits = await presentFailPanel(page, {
         block: r.block,
-        fixtures: r.highlightFixtures,
         highlightStyle: r.highlightStyle,
         error: undefined,
         out: result,
@@ -541,8 +539,7 @@ export async function runStepMode(engine: any, start: any, end: any, context: Br
       }
       break;
     }
-    const fixturesAfter = r.highlightFixtures;
-    const slides = resolveSlides(r.block, { out: result, fixtures: fixturesAfter }).map((s) =>
+    const slides = resolveSlides(r.block, { out: result }).map((s) =>
       applyHighlightStyleDefaults(s, r.highlightStyle),
     );
     if (slides.length > 0) {
@@ -565,10 +562,9 @@ export async function runStepMode(engine: any, start: any, end: any, context: Br
     let appliedAfter = { dock: stage.state.lastTodoDock, sync: "keep" };
     let appliedDeviceAfter = { device: stage.state.lastDevice, sync: "keep" };
     let afterTodoParallel = false;
-    if (hasAuthoredStubAfter(r.block, result, fixturesAfter)) {
+    if (hasAuthoredStubAfter(r.block, result)) {
       const afterPhase = await runStubPhase(r.block, "stubAfter", {
         out: result,
-        fixtures: fixturesAfter,
         mem,
       });
       if (afterPhase.todoDockUi) {

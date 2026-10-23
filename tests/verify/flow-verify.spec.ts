@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
-import { Engine, start, end, MemPage, checkpoint } from "../../src/index.js";
+import { Engine, MemPage, checkpoint } from "../../src/index.js";
+import { buildFlow } from "../../src/core/flow.js";
 
 const fakePage = { close: async () => {} } as unknown as import("@playwright/test").Page;
 const fakeContext = { newPage: async () => fakePage } as any;
@@ -22,7 +23,7 @@ function twoBlockFlow() {
     name: "second",
     instruction: { async act() {}, resolve: () => checkpoint("Done") },
   };
-  return new Engine().defineFlow([start, first, second, end]);
+  return buildFlow([first, second], new Engine().config);
 }
 
 test.describe("Flow.withBlockVerify / Flow.modBlockVerify", () => {
@@ -94,7 +95,7 @@ test.describe("Flow.withBlockVerify / Flow.modBlockVerify", () => {
       name: "second",
       instruction: { async act() {}, resolve: () => checkpoint("Done") },
     };
-    const flow = new Engine().defineFlow([start, first, second, end]);
+    const flow = buildFlow([first, second], new Engine().config);
 
     const patched = flow.modBlockVerify(first, "first-check", async () => false);
     await expect(patched.run(fakeContext, new MemPage())).rejects.toThrow(/first-check/);
@@ -113,7 +114,7 @@ test.describe("Flow.withBlockVerify / Flow.modBlockVerify", () => {
       name: "second",
       instruction: { async act() {}, resolve: () => checkpoint("Done") },
     };
-    const flow = new Engine().defineFlow([start, first, second, end]);
+    const flow = buildFlow([first, second], new Engine().config);
 
     // First patch swaps "first" for a brand-new object - `first` (the original
     // reference) is no longer `===` anything inside `oncePatched`.
@@ -142,7 +143,7 @@ test.describe("Flow.withBlockVerify / Flow.modBlockVerify", () => {
         verify: [{ name: "check-2", check: async () => true }],
       },
     };
-    const flow = new Engine().defineFlow([start, first, second, end]);
+    const flow = buildFlow([first, second], new Engine().config);
 
     const doublyPatched = flow
       .modBlockVerify("first", "check-1", async () => false)

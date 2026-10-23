@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
-import { Engine, start, end, MemPage, checkpoint } from "../../src/index.js";
+import { Engine, MemPage, checkpoint } from "../../src/index.js";
+import { buildFlow } from "../../src/core/flow.js";
 
 const FORM_URL = `data:text/html,${encodeURIComponent(`<h1 id="h">Hello</h1>`)}`;
 
@@ -22,7 +23,7 @@ test.describe("Flow.run(mem) - Engine owns its own browser", () => {
     // No Playwright `context` fixture used at all - the Engine launches, runs,
     // and closes its own browser for this call.
     const engine = new Engine({ headless: true });
-    const flow = engine.defineFlow([start, load, end]);
+    const flow = buildFlow([load], engine.config);
 
     const result = await flow.run(new MemPage());
 
@@ -45,7 +46,7 @@ test.describe("Flow.run(mem) - Engine owns its own browser", () => {
     // headless: false here would be ignored, since a real context is provided -
     // Playwright's own config (headless: true) governs that context, not EngineConfig.
     const engine = new Engine({ headless: false });
-    const flow = engine.defineFlow([start, load, end]);
+    const flow = buildFlow([load], engine.config);
 
     const result = await flow.run(context, new MemPage());
 
@@ -66,12 +67,12 @@ test.describe("Flow.run(mem) - Engine owns its own browser", () => {
 
     const slowEngine = new Engine({ headless: true, slowMo: 400 });
     const start1 = Date.now();
-    await slowEngine.defineFlow([start, twoActions, end]).run(new MemPage());
+    await buildFlow([twoActions], slowEngine.config).run(new MemPage());
     const slowElapsed = Date.now() - start1;
 
     const fastEngine = new Engine({ headless: true });
     const start2 = Date.now();
-    await fastEngine.defineFlow([start, twoActions, end]).run(new MemPage());
+    await buildFlow([twoActions], fastEngine.config).run(new MemPage());
     const fastElapsed = Date.now() - start2;
 
     // Two operations, each delayed ~400ms by slowMo, should add at least one
@@ -100,7 +101,7 @@ test.describe("Flow.run(mem) - Engine owns its own browser", () => {
     // actually applied (not just accepted and ignored), this run measurably
     // slows down anyway, the same proof used for the base EngineConfig case.
     const engine = new Engine({ headless: true });
-    const flow = engine.defineFlow([start, twoActions, end]);
+    const flow = buildFlow([twoActions], engine.config);
 
     // A cold browser launch is itself slow and highly variable - warm it up
     // once, untimed, so that cost doesn't swamp the ~150ms signal being measured.

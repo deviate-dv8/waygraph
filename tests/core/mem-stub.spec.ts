@@ -2,16 +2,14 @@ import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
 import {
   Engine,
-  start,
-  end,
   MemPage,
   checkpoint,
   key,
   registerMemStub,
   seedMemStub,
-  withMemStub,
   preflight,
 } from "../../src/index.js";
+import { buildFlow, withSettings } from "../../src/core/flow.js";
 
 const fakePage = { close: async () => {} } as unknown as import("@playwright/test").Page;
 const fakeContext = { newPage: async () => fakePage } as any;
@@ -30,7 +28,7 @@ test.describe("memStub", () => {
       instruction: { async act() {}, resolve: () => checkpoint("A") },
     };
     const engine = new Engine();
-    const flow = withMemStub(engine.defineFlow([start, block, end]));
+    const flow = withSettings(buildFlow([block], engine.config), { memStub: true });
 
     const mem = new MemPage();
     seedMemStub(mem, flow);
@@ -49,7 +47,7 @@ test.describe("memStub", () => {
       requires: [Password],
       instruction: { async act() {}, resolve: () => checkpoint("A") },
     };
-    const flow = withMemStub(new Engine().defineFlow([start, block, end]));
+    const flow = withSettings(buildFlow([block], new Engine().config), { memStub: true });
 
     const mem = new MemPage();
     mem.set(Password, "real-password");
@@ -64,7 +62,7 @@ test.describe("memStub", () => {
       requires: [Unregistered],
       instruction: { async act() {}, resolve: () => checkpoint("A") },
     };
-    const flow = withMemStub(new Engine().defineFlow([start, block, end]));
+    const flow = withSettings(buildFlow([block], new Engine().config), { memStub: true });
 
     const mem = new MemPage();
     seedMemStub(mem, flow);
@@ -83,7 +81,7 @@ test.describe("memStub", () => {
       requires: [KeyB],
       instruction: { async act() {}, resolve: () => checkpoint("A") },
     };
-    const flow = withMemStub(new Engine().defineFlow([start, blockUsingB, end]));
+    const flow = withSettings(buildFlow([blockUsingB], new Engine().config), { memStub: true });
     seedMemStub(mem, flow);
 
     // KeyB has no registration of its own - KeyA's registration (same debug
@@ -100,7 +98,7 @@ test.describe("memStub", () => {
         verify: [{ name: "x", check: async () => true }],
       },
     };
-    const flow = withMemStub(new Engine().defineFlow([start, block, end]));
+    const flow = withSettings(buildFlow([block], new Engine().config), { memStub: true });
     expect(flow.memStub).toBe(true);
 
     const patched = flow.withBlockVerify(block, [{ name: "y", check: async () => true }]);
@@ -115,7 +113,7 @@ test.describe("memStub", () => {
       name: "b",
       instruction: { async act() {}, resolve: () => checkpoint("A") },
     };
-    const flow = new Engine().defineFlow([start, block, end]);
+    const flow = buildFlow([block], new Engine().config);
     expect(flow.memStub).toBeUndefined();
   });
 });

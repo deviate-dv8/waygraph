@@ -1,6 +1,6 @@
-import type { DeviceState, HighlightFixtureMap, HighlightStubPhase, HighlightStubPhaseName, ResolvedHighlight, StubBagState, StubCtx, StubLifecycleFn, StubPhaseResult, WaygraphSlide, WaygraphSlidesOrFn } from "./types.js";
+import type { DeviceState, HighlightStubPhase, HighlightStubPhaseName, ResolvedHighlight, StubBagState, StubCtx, StubLifecycleFn, StubPhaseResult, WaygraphSlide, WaygraphSlidesOrFn } from "./types.js";
 import { createStubCtx, liftLegacySlotTodos } from "./stub-ctx.js";
-import { applyDefaultZoom, applyDefaultZoomOut, applyLegacyHighlightsShim, isStubPhase, mergePhaseMaps, readStubRaw } from "./merge.js";
+import { applyDefaultZoom, applyDefaultZoomOut, applyLegacyHighlightsShim, isStubPhase, readStubRaw, resolvePhaseMap } from "./merge.js";
 import { buildTodoDock, normalizeTodoStyle, normalizeTodos } from "./todo-dock.js";
 import { resolveDeviceState } from "./device.js";
 import type { Block, Checkpoint } from "../../core/types.js";
@@ -11,7 +11,7 @@ import type { MemPage } from "../../core/mem-page.js";
  * Returns rings + episode fixtures (todos / todoIndex / zoom).
  *
  * @example
- * const before = await runStubPhase(block, "stubBefore", { fixtures });
+ * const before = await runStubPhase(block, "stubBefore", { mem });
  * // before.todos, before.highlights
  */
 export async function runStubPhase(
@@ -21,7 +21,6 @@ export async function runStubPhase(
     out?: Checkpoint<string>;
     error?: unknown;
     mem?: MemPage;
-    fixtures?: HighlightFixtureMap;
   },
 ): Promise<StubPhaseResult> {
   const bag: StubBagState = { highlights: {} };
@@ -64,9 +63,7 @@ export async function runStubPhase(
   bag.highlights = applyLegacyHighlightsShim(block, phase, bag.highlights, opts?.out);
   liftLegacySlotTodos(bag);
 
-  const fixturePhase = opts?.fixtures?.[block.name]?.[phase];
-  let highlights = mergePhaseMaps(bag.highlights, fixturePhase);
-  highlights = applyDefaultZoom(highlights, bag.zoom);
+  let highlights = applyDefaultZoom(resolvePhaseMap(bag.highlights), bag.zoom);
   highlights = applyDefaultZoomOut(highlights, bag.zoomOut);
 
   const todoDock = bag.hideTodos
@@ -156,7 +153,6 @@ export function resolveHighlightSlots(
   phase: HighlightStubPhaseName,
   opts?: {
     out?: Checkpoint<string>;
-    fixtures?: HighlightFixtureMap;
   },
 ): ResolvedHighlight[] {
   const bag: StubBagState = { highlights: {} };
@@ -184,26 +180,17 @@ export function resolveHighlightSlots(
   }
   bag.highlights = applyLegacyHighlightsShim(block, phase, bag.highlights, opts?.out);
   liftLegacySlotTodos(bag);
-  const fixturePhase = opts?.fixtures?.[block.name]?.[phase];
-  return applyDefaultZoom(mergePhaseMaps(bag.highlights, fixturePhase), bag.zoom);
+  return applyDefaultZoom(resolvePhaseMap(bag.highlights), bag.zoom);
 }
 
 
-/**
- * Resolve multi-step yap slides: flow fixture `slides` wins when present,
- * else `instruction.slides` (function form allowed).
- */
+/** Resolve multi-step yap slides from `instruction.slides` (function form allowed). */
 export function resolveSlides(
   block: Block<any, any>,
   opts?: {
     out?: Checkpoint<string>;
-    fixtures?: HighlightFixtureMap;
   },
 ): WaygraphSlide[] {
-  const fromFixture = opts?.fixtures?.[block.name]?.slides;
-  if (fromFixture && fromFixture.length > 0) {
-    return [...fromFixture];
-  }
   const instr = block.instruction as { slides?: WaygraphSlidesOrFn<any> };
   let raw = instr.slides;
   if (typeof raw === "function") {
@@ -221,33 +208,25 @@ export function resolveSlides(
 function stubPhaseLooksAuthored(
   block: Block<any, any>,
   phase: HighlightStubPhaseName,
-  fixtures?: HighlightFixtureMap,
 ): boolean {
   const raw = readStubRaw(block, phase);
   if (typeof raw === "function") return true;
-  if (isStubPhase(raw) && Object.keys(raw).length > 0) return true;
-  const fx = fixtures?.[block.name]?.[phase];
-  if (fx && Object.keys(fx).length > 0) return true;
-  return false;
+  return isStubPhase(raw) && Object.keys(raw).length > 0;
 }
 
 
 /**
- * True when the block authored stubAfter (lifecycle fn, slots, fixtures, or legacy highlights).
+ * True when the block authored stubAfter (lifecycle fn, slots, or legacy highlights).
  * When true, demo should not use verify-trait fallback.
  */
 export function hasAuthoredStubAfter(
   block: Block<any, any>,
   out?: Checkpoint<string>,
-  fixtures?: HighlightFixtureMap,
 ): boolean {
-  if (stubPhaseLooksAuthored(block, "stubAfter", fixtures)) return true;
+  if (stubPhaseLooksAuthored(block, "stubAfter")) return true;
   const instr = block.instruction as { highlights?: unknown };
   if (instr.highlights) return true;
-  return resolveHighlightSlots(block, "stubAfter", {
-    ...(out !== undefined ? { out } : {}),
-    ...(fixtures !== undefined ? { fixtures } : {}),
-  }).length > 0;
+  return resolveHighlightSlots(block, "stubAfter", out !== undefined ? { out } : {}).length > 0;
 }
 
 
@@ -255,14 +234,7 @@ export function hasAuthoredStubAfter(
  * True when stubOnError is authored (lifecycle fn and/or rings).
  * Demo fail path only - success never consults this.
  */
-export function hasAuthoredStubOnError(
-  block: Block<any, any>,
-  fixtures?: HighlightFixtureMap,
-): boolean {
-  if (stubPhaseLooksAuthored(block, "stubOnError", fixtures)) return true;
-  return (
-    resolveHighlightSlots(block, "stubOnError", {
-      ...(fixtures !== undefined ? { fixtures } : {}),
-    }).length > 0
-  );
+export function hasAuthoredStubOnError(block: Block<any, any>): boolean {
+  if (stubPhaseLooksAuthored(block, "stubOnError")) return true;
+  return resolveHighlightSlots(block, "stubOnError").length > 0;
 }

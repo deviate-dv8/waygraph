@@ -11,7 +11,7 @@ import type { BrowserContext, Locator, Page } from "@playwright/test";
 /**
  * Checks `block.requires` against `mem` and throws, naming every missing key at
  * once, if any are unset. `connect()` unions each Block's `requires` into the
- * composed Block, so calling this on a `defineFlow`-built Flow's entry - which
+ * composed Block, so calling this on a `map()`-built Flow's entry - which
  * `runGraph` does automatically, before opening a tab - covers every Block in
  * that flow. It does not see Blocks only reachable through `branch()` routing,
  * since those depend on a runtime decision that hasn't happened yet.
@@ -129,7 +129,7 @@ async function runLayouts(
  * `terminals`, if given, is a sanity check: the Checkpoint the run stops on must be
  * one of the tags the caller actually expects, or the run fails loud instead of
  * silently returning an unexpected result. Omit it when there is only ever one
- * reachable outcome by construction (as with a `defineFlow`-built Flow, which has
+ * reachable outcome by construction (as with a `map()`-built Flow, which has
  * no routing at all) - there is nothing to validate against.
  */
 export async function runGraph<TOut extends Checkpoint<string>>(
@@ -351,13 +351,3 @@ export async function narrate<T>(
   }
 }
 
-
-/** Reserved markers bookending a `defineFlow([start, ...blocks, end])` call. */
-export const start = Symbol("waygraph.start");
-
-/** Marks the end of a hand-built chain. Only the deprecated `defineFlow` needs it; `map()` does not. */
-export const end = Symbol("waygraph.end");
-
-export type StartMarker = typeof start;
-
-export type EndMarker = typeof end;

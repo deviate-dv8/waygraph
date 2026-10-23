@@ -2,18 +2,14 @@ import { test, expect } from "@playwright/test";
 import type { Checkpoint, MemKey } from "../../src/index.js";
 import {
   Engine,
-  start,
-  end,
   MemPage,
   checkpoint,
-  chainFlow,
-  withSessionReset,
-  withTitle,
   defineNavBlock,
   defineBlock,
   Trait,
   keyGroup,
 } from "../../src/index.js";
+import { buildFlow, chainFlow, withSettings } from "../../src/core/flow.js";
 
 // THE flagship multi-episode example, living in waygraph's own repo, not a
 // downstream consumer project - real saucedemo.com, not a synthetic fixture.
@@ -119,24 +115,8 @@ const engine = new Engine();
 // ownerLogin's Out already used earlier in this same array, which trips
 // defineFlow's own overload inference; pinning B..F sidesteps it (same
 // fix saucedemo's checkout.flow.ts needed for its own repeated tag).
-const ownerFlow = withTitle(
-  withSessionReset(
-    engine.defineFlow<LoginPage, LoggedIn, ItemInCart, CartPage, LoggedIn>([
-      start,
-      navLogin,
-      ownerLogin,
-      addToCart,
-      navCart,
-      navContinueShopping,
-      end,
-    ]),
-  ),
-  "Owner: Shops, then browses again",
-);
-const viewerBlockedFlow = withTitle(
-  withSessionReset(engine.defineFlow([start, navLogin, viewerLoginAttempt, end])),
-  "Viewer: Blocked Login Attempt",
-);
+const ownerFlow = withSettings(buildFlow([navLogin, ownerLogin, addToCart, navCart, navContinueShopping], engine.config), { sessionReset: true });
+const viewerBlockedFlow = withSettings(buildFlow([navLogin, viewerLoginAttempt], engine.config), { sessionReset: true });
 
 test.describe("chainFlow - a real 2-episode example (saucedemo.com)", () => {
   test("episode 1 alone: the Owner shops, then browses again via click-based navigation", async () => {
@@ -167,10 +147,7 @@ test.describe("chainFlow - a real 2-episode example (saucedemo.com)", () => {
     // proves the chain actually reached episode 2 at all.
   });
 
-  test("episode titles survive chaining, and the flattened chain includes the click-based NavBlocks", () => {
-    expect(ownerFlow.title).toBe("Owner: Shops, then browses again");
-    expect(viewerBlockedFlow.title).toBe("Viewer: Blocked Login Attempt");
-
+  test("the flattened chain includes the click-based NavBlocks", () => {
     const info = chainFlow(ownerFlow, viewerBlockedFlow).blocks();
     expect(info.map((bi) => bi.name)).toEqual([
       "nav-login",

@@ -13,7 +13,7 @@ import type { CheckpointRef } from "../route.js";
  * A Block whose only possible action is navigating to a URL - built via
  * {@link defineNavBlock}, never with a hand-authored `act()`. Extends `Block`
  * (same shape `DefinedBlock`/`ComposedBlock` already use), so it drops into
- * `defineFlow([...])`, `connect()`, `composeBlock()` exactly like any other
+ * `map()`, `connect()`, `composeBlock()` exactly like any other
  * Block - no special-casing needed anywhere that only expects a `Block`.
  * See `openspec/specs/nav-block-and-check/spec.md` for why this exists.
  *

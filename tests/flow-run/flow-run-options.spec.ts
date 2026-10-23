@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/core/types.js";
 import { checkpoint } from "../../src/core/types.js";
-import { Engine, start, end } from "../../src/core.js";
+import { Engine } from "../../src/core.js";
 import { MemPage } from "../../src/core/mem-page.js";
+import { buildFlow } from "../../src/core/flow.js";
 
 // Real gap this proves fixed: before `Flow.run`'s `page`/`closeOnFinish`
 // options existed, a run always opened its own fresh tab via
@@ -29,7 +30,7 @@ const GotoA: Block<Start, Done> = {
 };
 
 const engine = new Engine();
-const AFlow = engine.defineFlow([start, GotoA, end]);
+const AFlow = buildFlow([GotoA], engine.config);
 
 test("Flow.run(context, mem, { page }) drives the given page instead of opening a new one", async ({ context, page }) => {
   await page.goto(URL_B);

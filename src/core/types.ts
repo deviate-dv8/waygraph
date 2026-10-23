@@ -109,7 +109,6 @@ export interface Instruction<
    * Open block lifecycle **before / during** `act` (demo rings + fixtures).
    * Prefer `stubBefore(ctx) { ctx.todos(...); ctx.ring(...) }` — not a closed
    * slot object. Object map `{ email: { selector, label } }` remains a shorthand.
-   * Flow {@link HighlightFixtureMap} still overrides ring labels.
    * @example stubBefore: (ctx) => {
    *   ctx.todos(["Email", "Password", "Submit"]);
    *   ctx.todoIndex(0);
@@ -243,7 +242,7 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   requires?: readonly MemKey<any>[];
   /**
-   * Demo pacing for this Block or compose group (`withBlockPace`).
+   * Demo pacing for this Block (the `{ pace }` step option).
    * Demo/step only - `runGraph` ignores. Prefer `fastForwardComposeBlock` for blitz.
    */
   demoPace?: import("./narration.js").DemoPace;
@@ -341,7 +340,7 @@ export interface ConnectLayout {
  * `layouts`, if given, also runs against the intermediate Checkpoint (A's
  * resolved output, right before B's act) - the same enforcement `runGraph`'s
  * own loop already applies to a chain's FINAL Checkpoint, but a
- * `defineFlow`-built Flow never reaches that loop per-hop: `buildFlow`
+ * `map()`-built Flow never reaches that loop per-hop: `buildFlow`
  * reduces the whole Block array into one `connect()`-composed super-Block, so
  * every intermediate hop's verify (and now layout) has to run HERE, inside
  * this recursive `act`, not in `runGraph`'s loop, which only ever sees the

@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint } from "../../src/index.js";
-import { Engine, start, end, checkpoint, defineBlock, defineNavBlock, Trait, MemPage, key } from "../../src/index.js";
+import { Engine, checkpoint, defineBlock, defineNavBlock, Trait, MemPage, key } from "../../src/index.js";
+import { buildFlow } from "../../src/core/flow.js";
 
 // Proves a real gap-turned-non-gap: a Block whose action doesn't move to a
 // new page state at all (clicking "+" to bump a cart item's quantity, say)
@@ -75,7 +76,7 @@ test.describe("same-checkpoint Blocks verifying against mem", () => {
     // Block's Out," trivially satisfied when they're literally the same
     // tag. This is a compile-time proof as much as a runtime one: if this
     // didn't typecheck, `tsc --noEmit` would already have failed.
-    const flow = engine.defineFlow([start, navProduct, incrementQuantity, incrementQuantity, incrementQuantity, end]);
+    const flow = buildFlow([navProduct, incrementQuantity, incrementQuantity, incrementQuantity], engine.config);
     expect(flow.blocks().map((b) => b.name)).toEqual([
       "nav-product",
       "increment-quantity",
@@ -91,7 +92,7 @@ test.describe("same-checkpoint Blocks verifying against mem", () => {
     mem.set(Quantity, 0);
 
     const engine = new Engine();
-    const flow = engine.defineFlow([start, navProduct, incrementQuantity, incrementQuantity, incrementQuantity, end]);
+    const flow = buildFlow([navProduct, incrementQuantity, incrementQuantity, incrementQuantity], engine.config);
     const fakeContext = { newPage: async () => page } as any;
     const outcome = await flow.run(fakeContext, mem, { page, closeOnFinish: false });
 
@@ -112,7 +113,7 @@ test.describe("same-checkpoint Blocks verifying against mem", () => {
     // against mem catches the real mismatch.
     const brokenIncrement = makeIncrementBlock("increment-quantity-broken", false);
     const engine = new Engine();
-    const flow = engine.defineFlow([start, navProduct, brokenIncrement, end]);
+    const flow = buildFlow([navProduct, brokenIncrement], engine.config);
     const fakeContext = { newPage: async () => page } as any;
 
     await expect(flow.run(fakeContext, mem, { page, closeOnFinish: false })).rejects.toThrow(

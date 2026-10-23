@@ -4,9 +4,9 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 /**
- * Docs, skills and the scaffold must not teach what the source marks `@deprecated`. The deprecated names are read from the
- * source, so tagging a function adds it to this check automatically; a line may still mention one when it says it is
- * deprecated / replaced.
+ * Docs, skills and the scaffold must not teach what the source marks `@deprecated`, nor what was removed. The deprecated
+ * names are read from the source, so tagging a function adds it to this check automatically; a line may still mention one
+ * when it says it is deprecated / replaced / removed.
  */
 const root = join(import.meta.dirname, "../..");
 
@@ -34,10 +34,11 @@ function deprecatedFunctions(): string[] {
       if (!doc.includes("@deprecated")) live.add(m[1]!);
     }
   }
-  // overload-style and method deprecations in Engine
-  names.add("defineFlow");
   return [...names].filter((n) => !live.has(n) && /^[a-z]/.test(n) && n.length > 4);
 }
+
+/** Removed in 0.16.0 (`waygraph upgrade --codemod flows` converts them). */
+const REMOVED = ["defineFlow", "chainFlow", "withTitle", "withMemStub", "withSessionReset", "withExpectedFailure", "withDemoPace", "withHighlightStyle", "withHighlightFixtures", "withBlockPace", "withStubBefore", "withStubAfter", "withStubOnError"];
 
 const TAUGHT = [
   ...walk(join(root, "docs")).filter((f) => f.endsWith(".md") && !f.endsWith("deprecated.md") && !f.includes("/public/")),
@@ -47,12 +48,13 @@ const TAUGHT = [
   ...walk(join(root, "examples")).filter((f) => /\.(md|ts)$/.test(f)),
   join(root, "README.md"),
 ];
-const EXCUSE = /deprecat|replac|instead|no more|never|not |old |legacy|still work|older|was |used to|migrat|\bnot\b|\bno\b/i;
+const EXCUSE = /deprecat|remov|replac|instead|no more|never|not |old |legacy|still work|older|was |used to|migrat|\bnot\b|\bno\b/i;
 
 describe("docs, skills and the scaffold do not teach deprecated API", () => {
-  const names = deprecatedFunctions();
-  it("finds the deprecated functions in the source", () => {
-    for (const n of ["withTitle", "withMemStub", "chainFlow", "defineFlow", "withBlockPace"]) assert.ok(names.includes(n), n);
+  const names = [...deprecatedFunctions(), ...REMOVED];
+  it("the removed API is gone from the source", () => {
+    const exported = readFileSync(join(root, "src/index.ts"), "utf8");
+    for (const n of REMOVED) assert.ok(!new RegExp(`\\b${n}\\b`).test(exported), n);
   });
 
   it("no taught file calls one without saying it is deprecated", () => {

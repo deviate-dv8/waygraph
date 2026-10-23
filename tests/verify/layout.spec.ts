@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block, Trait } from "../../src/index.js";
-import { connect, runGraph, MemPage, checkpoint, Engine, start, end, defineLayout } from "../../src/index.js";
+import { connect, runGraph, MemPage, checkpoint, Engine, defineLayout } from "../../src/index.js";
+import { buildFlow } from "../../src/core/flow.js";
 
 const fakePage = { close: async () => {} } as unknown as import("@playwright/test").Page;
 const fakeContext = { newPage: async () => fakePage } as any;
@@ -89,7 +90,7 @@ test.describe("Layout", () => {
     const engine = new Engine({ layouts: [shell] });
     const a = block<Start_, PageA>("nav-a", "PageA");
     const b = block<PageA, PageB>("nav-b", "PageB");
-    const flow = engine.defineFlow([start, a, b, end]);
+    const flow = buildFlow([a, b], engine.config);
 
     const mem = new MemPage();
     await expect(flow.run(fakeContext, mem)).rejects.toThrow(/sidebar-visible.*nav-a.*AppShell/s);
@@ -106,7 +107,7 @@ test.describe("Layout", () => {
     const engine = new Engine({ layouts: [shell] });
     const a = block<Start_, PageA>("nav-a", "PageA");
     const b = block<PageA, PageB>("nav-b", "PageB");
-    const flow = engine.defineFlow([start, a, b, end]);
+    const flow = buildFlow([a, b], engine.config);
 
     const mem = new MemPage();
     const result = await flow.run(fakeContext, mem);

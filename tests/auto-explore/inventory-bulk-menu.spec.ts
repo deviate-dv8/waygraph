@@ -2,7 +2,7 @@ import { test, expect, chromium } from "@playwright/test";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildExploreContext, buildExploreMenu } from "../../src/live/auto-explore.js";
-import { MemPage, Engine, start, end } from "../../src/index.js";
+import { MemPage, Engine } from "../../src/index.js";
 import { chromiumExecutablePath } from "../../src/runtime/browser.js";
 
 const sauceRoot = join(dirname(fileURLToPath(import.meta.url)), "../../examples/saucedemo");
@@ -67,8 +67,6 @@ test("auto menu on inventory shows per-item + bulk add/remove", async () => {
 
   void mem;
   void Engine;
-  void start;
-  void end;
   void memSet;
   await browser.close();
 });

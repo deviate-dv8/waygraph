@@ -5,9 +5,8 @@ import { seedMemForBlock, seedMemForFlow } from "./seed-mem.js";
 import { mkdirSync } from "node:fs";
 import { isExpectedChainFailure, parseVideoViewport, runChainedFlows, runJsonReportMode } from "./chain-run.js";
 import { runStepMode } from "../demo/step-mode/step-mode.js";
-import { connect } from "../core/types.js";
 import { MemPage } from "../core/mem-page.js";
-import { Engine, start, end, chainFlow, isFastForwardBlock, branchRoutes, runBranchRegression } from "../core.js";
+import { Engine, buildFlow, chainFlow, isFastForwardBlock, branchRoutes, runBranchRegression } from "../core.js";
 import { withWebServer } from "../runtime/webserver.js";
 import { beginRun, endRun, recordArtifact } from "../core/events.js";
 import "../runtime/run-log.js";
@@ -72,7 +71,6 @@ async function runMain() {
         block: bi.block,
         exportName: bi.name,
         seedMem: idx === 0 ? seedMem : undefined,
-        highlightFixtures: flow.highlightFixtures,
         demoPace: flow.demoPace,
         highlightStyle: flow.highlightStyle,
         expectedFailureReason:
@@ -141,9 +139,8 @@ async function runMain() {
         const stubActive = flow.memStub === true || process.env.WAYGRAPH_MEM_STUB === "1";
         flowMeta.push({
           episodeNumber: episodeCounter,
-          episodeTitle: flow.title || seg.ref,
+          episodeTitle: seg.ref,
           expectedFailureReason: flow.expectedFailureReason,
-          highlightFixtures: flow.highlightFixtures,
           demoPace: flow.demoPace,
           highlightStyle: flow.highlightStyle,
           seedMem: () => seedMemForFlow(mem, flow.blocks(), seg.json, seg.ref, stubActive),
@@ -151,14 +148,13 @@ async function runMain() {
       } else {
         const r = await findBlock(projectDir, seg.ref);
         if (!r) throw new Error(`waygraph demo: no Block or Flow named "${seg.ref}"`);
-        flows.push(wrapEngine.defineFlow([start, r.block, end]));
-        // A bare Block segment (no Flow, no withMemStub to opt in) only gets
+        flows.push(buildFlow([r.block], wrapEngine.config));
+        // A bare Block segment (no Flow, so no map({ memStub }) to opt in) only gets
         // memStub via the global --mem-stub/WAYGRAPH_MEM_STUB override.
         const stubActive = process.env.WAYGRAPH_MEM_STUB === "1";
         flowMeta.push({
           episodeNumber: undefined,
           episodeTitle: undefined,
-          highlightFixtures: undefined,
           demoPace: undefined,
           highlightStyle: undefined,
           seedMem: () => seedMemForBlock(mem, r, seg.json, stubActive),
@@ -184,7 +180,6 @@ async function runMain() {
         resetSession: bi.resetSessionBefore === true,
         episodeNumber: meta.episodeNumber,
         episodeTitle: meta.episodeTitle,
-        highlightFixtures: meta.highlightFixtures,
         demoPace: meta.demoPace,
         highlightStyle: meta.highlightStyle,
         expectedFailureReason:
@@ -335,7 +330,7 @@ async function runMain() {
         if (baseURL) {
           await page.goto(baseURL).catch(() => {});
         }
-        result = await runStepMode(engine, start, end, context, page, mem, resolved, slowMo ?? 0, title, fastBlockNames, clearSession, baseURL);
+        result = await runStepMode(engine, context, page, mem, resolved, slowMo ?? 0, title, fastBlockNames, clearSession, baseURL);
       } else if (jsonReport) {
         const page = await context.newPage();
         pageForVideo = page;
@@ -343,7 +338,7 @@ async function runMain() {
         if (baseURL) {
           await page.goto(baseURL).catch(() => {});
         }
-        const report = await runJsonReportMode(engine, start, end, context, page, mem, resolved, baseURL);
+        const report = await runJsonReportMode(engine, context, page, mem, resolved, baseURL);
         console.log(JSON.stringify(report, null, 2));
         if (!report.ok) process.exitCode = 1;
         return;
@@ -357,9 +352,7 @@ async function runMain() {
         if (chainFlows && chainFlows.length > 0) {
           result = await runChainedFlows(chainFlow, chainFlows, context, mem, page);
         } else {
-          const blocks = resolved.map((r: any) => r.block);
-          const chained = blocks.reduce((a: any, b: any) => connect(a, b));
-          const flow = engine.defineFlow([start, chained, end]);
+          const flow = buildFlow(resolved.map((r: any) => r.block), engine.config);
           result = await flow.run(context, mem, { page, closeOnFinish: false });
         }
       }
@@ -394,9 +387,7 @@ async function runMain() {
         }
       }
     } else {
-      const blocks = resolved.map((r: any) => r.block);
-      const chained = blocks.reduce((a: any, b: any) => connect(a, b));
-      const flow = engine.defineFlow([start, chained, end]);
+      const flow = buildFlow(resolved.map((r: any) => r.block), engine.config);
       const recordVideo = videoDir ? { dir: videoDir } : undefined;
       result = await flow.run(mem, recordVideo ? { recordVideo } : undefined);
     }

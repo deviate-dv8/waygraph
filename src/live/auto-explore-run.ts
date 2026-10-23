@@ -3,7 +3,7 @@ import { createInterface } from "node:readline/promises";
 import { ensureShadowRoot } from "../ui/shadow.js";
 import { stdin as input, stdout as output } from "node:process";
 import type { Page, BrowserContext, BrowserContextOptions } from "@playwright/test";
-import { Engine, start, end, locate } from "../core.js";
+import { Engine, buildFlow, locate } from "../core.js";
 import { MemPage } from "../core/mem-page.js";
 import type { MemKey } from "../core/mem-page.js";
 import type { NavBlock } from "../core.js";
@@ -227,7 +227,7 @@ export async function runOneBlock(
       .catch(() => {});
   }
   if (headful) await setAutoPanelRunning(page, entry.block.name);
-  const flow = engine.defineFlow([start, entry.block, end]);
+  const flow = buildFlow([entry.block], engine.config);
   const BLOCK_TIMEOUT_MS = 45_000;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let result: Checkpoint<string>;

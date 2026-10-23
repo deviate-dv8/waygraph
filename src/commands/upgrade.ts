@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import { packageRoot } from "../cli/util.js";
 import { agentSkillFiles } from "./agent-dive-scaffold.js";
 import { codemodCheckpoints } from "./codemod-checkpoints.js";
+import { codemodFlows } from "./codemod-flows.js";
 
 // Filled in per project at init, so they never compare equal to the template.
 const SKIP = new Set(["package.json", join("config", "waygraph.config.ts")]);
@@ -33,11 +34,19 @@ export async function upgradeCase(args: string[]): Promise<void> {
   const positional = args.slice(1).filter((a) => !a.startsWith("--"));
   if (flags.has("--codemod")) {
     const what = args[args.indexOf("--codemod") + 1];
+    const dir = resolve(positional.find((p) => p !== what) ?? process.cwd());
+    if (what === "flows") {
+      const { changed, problems } = await codemodFlows(dir);
+      for (const f of changed) console.log(`  rewrote     ${f}`);
+      for (const p of problems) console.log(`  by hand     ${p}`);
+      console.log(`waygraph upgrade --codemod flows: ${changed.length} file(s) changed, ${problems.length} left for you; run waygraph typecheck .`);
+      if (problems.length) process.exitCode = 1;
+      return;
+    }
     if (what !== "checkpoints") {
-      console.error("waygraph upgrade --codemod: known codemods: checkpoints");
+      console.error("waygraph upgrade --codemod: known codemods: checkpoints, flows");
       process.exit(1);
     }
-    const dir = resolve(positional.find((p) => p !== "checkpoints") ?? process.cwd());
     const { changed, skipped } = codemodCheckpoints(dir);
     for (const f of changed) console.log(`  rewrote     ${f}`);
     for (const s of skipped) console.log(`  left as is  ${s} (not a declared Checkpoint name)`);

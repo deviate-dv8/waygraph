@@ -12,8 +12,7 @@ const homeOrigin = process.env.WAYGRAPH_BASE_URL || "http://127.0.0.1:4277";
 
 /**
  * Same real Blocks, same real Checkpoints, same real fixture server as
- * routed-demo.flow.ts - built with `engine.map()` instead of
- * the deprecated `engine.defineFlow([start, ..., end])` to prove the fluent builder
+ * routed-demo.flow.ts - built with `engine.map()` to prove the fluent builder
  * against a real browser/DOM, not just the in-memory fakes
  * tests/nav/map-builder.spec.ts already covers in the main package.
  *

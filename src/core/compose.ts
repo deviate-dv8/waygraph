@@ -9,7 +9,7 @@ import { findBlockIndex, modVerify, withVerify } from "./block.js";
 /**
  * A Block guaranteed to have `withStepVerify`/`modStepVerify` attached - what
  * {@link composeBlock} returns. Extends plain `Block`, so it drops straight into
- * `defineFlow([start, ..., composed, ..., end])` like any other Block; no special
+ * a flow like any other Block; no special
  * casing needed anywhere that only expects a `Block`.
  */
 export interface ComposedBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>

@@ -1,4 +1,4 @@
-import type { FixtureDurationFields, HighlightStubPhase, HighlightStubPhaseName, HighlightStubPhaseOrFn, ResolvedHighlight, WaygraphHighlight, WaygraphHighlightFixture, WaygraphHighlightStub } from "./types.js";
+import type { HighlightStubPhase, HighlightStubPhaseName, HighlightStubPhaseOrFn, ResolvedHighlight, WaygraphHighlight, WaygraphHighlightStub } from "./types.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "./style.js";
 import type { Block, Checkpoint } from "../../core/types.js";
 
@@ -7,110 +7,34 @@ export function isStubPhase(v: unknown): v is HighlightStubPhase {
 }
 
 
-function pickDurationFields(
-  base: FixtureDurationFields | undefined,
-  patch: FixtureDurationFields | undefined,
-): FixtureDurationFields {
-  const out: FixtureDurationFields = {};
-  const duration = patch?.duration !== undefined ? patch.duration : base?.duration;
-  const fastMode = patch?.fastMode !== undefined ? patch.fastMode : base?.fastMode;
-  if (duration !== undefined) out.duration = duration;
-  if (fastMode !== undefined) out.fastMode = fastMode;
-  return out;
+function zoomOf(slot: WaygraphHighlightStub): Pick<WaygraphHighlightStub, "zoom"> {
+  return slot.zoom !== undefined && Number.isFinite(slot.zoom) && slot.zoom > 0 ? { zoom: slot.zoom } : {};
 }
 
 
-function pickStyleFields(
-  base: Pick<WaygraphHighlightStub, "tone" | "size" | "weight"> | undefined,
-  patch: Pick<WaygraphHighlightFixture, "tone" | "size" | "weight"> | undefined,
-): Pick<WaygraphHighlightStub, "tone" | "size" | "weight"> {
-  const out: Pick<WaygraphHighlightStub, "tone" | "size" | "weight"> = {};
-  const tone = patch?.tone !== undefined ? patch.tone : base?.tone;
-  const size = patch?.size !== undefined ? patch.size : base?.size;
-  const weight = patch?.weight !== undefined ? patch.weight : base?.weight;
-  if (tone !== undefined) out.tone = normalizeHighlightTone(tone);
-  if (size !== undefined) out.size = normalizeHighlightSize(size);
-  if (weight !== undefined) out.weight = normalizeHighlightWeight(weight);
-  return out;
-}
-
-
-function pickZoom(
-  base: Pick<WaygraphHighlightStub, "zoom"> | undefined,
-  patch: Pick<WaygraphHighlightFixture, "zoom"> | undefined,
-): Pick<WaygraphHighlightStub, "zoom"> {
-  const zoom = patch?.zoom !== undefined ? patch.zoom : base?.zoom;
-  if (zoom !== undefined && Number.isFinite(zoom) && zoom > 0) return { zoom };
-  return {};
-}
-
-
-function pickFxFields(
-  base: Pick<WaygraphHighlightStub, "focus" | "color" | "cursor" | "todo" | "gesture"> | undefined,
-  patch: Pick<WaygraphHighlightFixture, "focus" | "color" | "cursor" | "todo" | "gesture"> | undefined,
-): Pick<WaygraphHighlightStub, "focus" | "color" | "cursor" | "todo" | "gesture"> {
+function fxOf(slot: WaygraphHighlightStub): Pick<WaygraphHighlightStub, "focus" | "color" | "cursor" | "todo" | "gesture"> {
   const out: Pick<WaygraphHighlightStub, "focus" | "color" | "cursor" | "todo" | "gesture"> = {};
-  const focus = patch?.focus !== undefined ? patch.focus : base?.focus;
-  const color = patch?.color !== undefined ? patch.color : base?.color;
-  const cursor = patch?.cursor !== undefined ? patch.cursor : base?.cursor;
-  const todo = patch?.todo !== undefined ? patch.todo : base?.todo;
-  const gesture = patch?.gesture !== undefined ? patch.gesture : base?.gesture;
-  if (focus !== undefined) out.focus = !!focus;
-  if (color !== undefined && String(color).trim()) out.color = String(color).trim();
-  if (cursor !== undefined) out.cursor = !!cursor;
-  if (todo !== undefined && String(todo).trim()) out.todo = String(todo).trim();
-  if (gesture === "tap" || gesture === "hold" || gesture === "click" || gesture === "swipe") {
-    out.gesture = gesture;
+  if (slot.focus !== undefined) out.focus = !!slot.focus;
+  if (slot.color !== undefined && String(slot.color).trim()) out.color = String(slot.color).trim();
+  if (slot.cursor !== undefined) out.cursor = !!slot.cursor;
+  if (slot.todo !== undefined && String(slot.todo).trim()) out.todo = String(slot.todo).trim();
+  if (slot.gesture === "tap" || slot.gesture === "hold" || slot.gesture === "click" || slot.gesture === "swipe") {
+    out.gesture = slot.gesture;
   }
   return out;
 }
 
 
-function mergeSlot(
-  base: WaygraphHighlightStub | undefined,
-  patch: WaygraphHighlightFixture | undefined,
-): WaygraphHighlightStub | null {
-  if (!base && !patch) return null;
-  const dwell = pickDurationFields(base, patch);
-  const style = pickStyleFields(base, patch);
-  const zoom = pickZoom(base, patch);
-  const fx = pickFxFields(base, patch);
-  if (!base && patch) {
-    if (!patch.selector) return null;
-    return {
-      selector: patch.selector,
-      label: patch.label,
-      ...(patch.detail ? { detail: patch.detail } : {}),
-      ...(patch.tag ? { tag: patch.tag } : {}),
-      ...style,
-      ...dwell,
-      ...zoom,
-      ...fx,
-    };
-  }
-  if (base && !patch) {
-    return {
-      ...base,
-      ...(base.tone ? { tone: normalizeHighlightTone(base.tone) } : {}),
-      ...(base.size ? { size: normalizeHighlightSize(base.size) } : {}),
-      ...(base.weight ? { weight: normalizeHighlightWeight(base.weight) } : {}),
-      ...pickZoom(base, undefined),
-      ...pickFxFields(base, undefined),
-    };
-  }
+/** A Block's own stub slot with its style fields normalized. */
+function normalizeSlot(slot: WaygraphHighlightStub | undefined): WaygraphHighlightStub | null {
+  if (!slot) return null;
   return {
-    selector: patch!.selector ?? base!.selector,
-    label: patch!.label,
-    ...(patch!.detail !== undefined
-      ? { detail: patch!.detail }
-      : base!.detail
-        ? { detail: base!.detail }
-        : {}),
-    ...(patch!.tag !== undefined ? { tag: patch!.tag } : base!.tag ? { tag: base!.tag } : {}),
-    ...style,
-    ...dwell,
-    ...zoom,
-    ...fx,
+    ...slot,
+    ...(slot.tone ? { tone: normalizeHighlightTone(slot.tone) } : {}),
+    ...(slot.size ? { size: normalizeHighlightSize(slot.size) } : {}),
+    ...(slot.weight ? { weight: normalizeHighlightWeight(slot.weight) } : {}),
+    ...zoomOf(slot),
+    ...fxOf(slot),
   };
 }
 
@@ -132,24 +56,18 @@ export function applyDefaultZoomOut(
 }
 
 
-export function mergePhaseMaps(
-  phaseMap: HighlightStubPhase,
-  fixturePhase: Record<string, WaygraphHighlightFixture> | undefined,
-): ResolvedHighlight[] {
+/** A stub phase's slot map as an ordered list of resolved highlights. */
+export function resolvePhaseMap(phaseMap: HighlightStubPhase): ResolvedHighlight[] {
   const phaseKeys = Object.keys(phaseMap);
-  const fixtureKeys = Object.keys(fixturePhase || {});
-  const allKeys = [...new Set([...phaseKeys, ...fixtureKeys])];
   const allNumeric =
-    allKeys.length > 0 && allKeys.every((k) => Number.isFinite(Number(k)) && String(Number(k)) === k);
+    phaseKeys.length > 0 && phaseKeys.every((k) => Number.isFinite(Number(k)) && String(Number(k)) === k);
   // Numeric stub ids (legacy "0","1") sort by number. Named stubs keep author
   // insertion order - localeCompare used to reorder password/submit/username
   // and advance the wrong todo index on fill.
-  const ordered = allNumeric
-    ? [...allKeys].sort((a, b) => Number(a) - Number(b))
-    : [...phaseKeys, ...fixtureKeys.filter((k) => !phaseKeys.includes(k))];
+  const ordered = allNumeric ? [...phaseKeys].sort((a, b) => Number(a) - Number(b)) : phaseKeys;
   const resolved: ResolvedHighlight[] = [];
   for (const id of ordered) {
-    const merged = mergeSlot(phaseMap[id], fixturePhase?.[id]);
+    const merged = normalizeSlot(phaseMap[id]);
     if (merged) {
       resolved.push({
         ...merged,

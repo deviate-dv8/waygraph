@@ -185,7 +185,7 @@ async function prepareTryQuickstart(label: string): Promise<string | null> {
 
 /**
  * `waygraph try demo` - copy a self-contained saucedemo project into a temp
- * dir (never the caller's cwd), run a chainFlow step demo (Sign In + Shop +
+ * dir (never the caller's cwd), run a chained-flows step demo (Sign In + Shop +
  * blocked Viewer), then run the headless Playwright test, and print where
  * everything lives.
  */
@@ -222,7 +222,7 @@ async function runTryDemo(): Promise<void> {
   await runChain(destDir, TRY_DEMO_CHAIN);
   if (process.exitCode) return;
 
-  console.log("\nwaygraph try demo: running headless chainFlow test ...");
+  console.log("\nwaygraph try demo: running headless chained-flows test ...");
   const testCode = await runInherited("npm", ["test"], destDir);
   if (testCode !== 0) {
     process.exitCode = testCode;
@@ -242,13 +242,13 @@ async function runTryDemo(): Promise<void> {
       `  ${loginFlowFile}\n` +
       `  ${shopFlowFile}\n` +
       `  ${viewerBlockedFlowFile}\n\n` +
-      "Headless chainFlow test (automated - no clicking):\n" +
+      "Headless chained-flows test (automated - no clicking):\n" +
       `  ${testFile}\n\n` +
       "Run again in that temp folder:\n" +
       `  cd ${destDir}\n` +
       "  npm run demo    # step-through, manual Next (--step --no-autoplay)\n" +
       "  npm run auto    # interactive explore (Effect Add/Remove, MemNav Open details)\n" +
-      "  npm test        # playwright chainFlow test\n\n" +
+      "  npm test        # playwright chained-flows test\n\n" +
       "Permanent full example in this package: examples/saucedemo\n" +
       "Keep a permanent scaffold in your tree: waygraph init my-app\n",
   );

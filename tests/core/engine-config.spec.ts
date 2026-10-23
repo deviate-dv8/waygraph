@@ -3,8 +3,9 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Engine, MemPage, checkpoint, defineConfig, defineNavBlock, start, end } from "../../src/index.js";
+import { Engine, MemPage, checkpoint, defineConfig, defineNavBlock } from "../../src/index.js";
 import type { Checkpoint } from "../../src/index.js";
+import { buildFlow } from "../../src/core/flow.js";
 
 type Home = Checkpoint<"Home">;
 
@@ -37,7 +38,7 @@ test("new Engine(config) applies the config's baseUrl and extensions to the brow
         },
       ],
     });
-    const flow = new Engine(config).defineFlow([start, NavHome, end]);
+    const flow = buildFlow([NavHome], new Engine(config).config);
     expect(await flow.run(new MemPage())).toEqual(checkpoint("Home"));
   } finally {
     server.close();

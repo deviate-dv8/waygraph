@@ -69,22 +69,21 @@ against a live site, use `--skill-pilot-blind`.
 ## Flows, stubs and config (the scaffold's shape)
 
 - **Build flows with `map()`** (`engine.map({ memStub }).start().gotoPage(Nav).method(B, { pace }).assert(A).end()`;
-  `.gotoExternal` for another origin), never a raw `defineFlow([start, ...])`. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`) go in `map({ … })` before the chain
-  and `.end()` takes nothing. The flow's title is `ctx.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**,
-  not `chainFlow` / `withSessionReset`. No `withMemStub(withTitle(...))` wrappers.
+  `.gotoExternal` for another origin); it is the only way to build one. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`) go in `map({ … })` before the chain
+  and `.end()` takes nothing. The flow's title is `ctx.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
+  `defineFlow`, `chainFlow` and the `with*` flow wrappers were removed in 0.16.0; `waygraph upgrade --codemod flows` converts them.
 - **`src/flows/` holds use cases and mirrors the front end's endpoints**: a folder per page (`flows/auth/login/`) with one
   file per scenario named for its outcome (`success.flow.ts`, `wrong-password.flow.ts`, `empty-fields.flow.ts`), and
   `(user-stories)/` (any `(group)`) for flows that cross pages. Export names are `<page><Outcome>Flow`. Not one file per
   Block chain, not a flat folder of unrelated flows.
 - **Blocks carry no stubs; the flow does.** Demo highlights are ctx stubs chained on the Block where the flow uses it:
   `AddItemBlock.stubAfter((ctx) => { ctx.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart" }); })`.
-  Not a static `withHighlightFixtures({ "add-item": { stubAfter: {...} } })` map, and not an inline
-  `instruction: { stubAfter() {} }`. A Block used twice gets one `const AddShown = AddItemBlock.stubAfter(...)`.
+  Not an inline `instruction: { stubAfter() {} }`. A Block used twice gets one `const AddShown = AddItemBlock.stubAfter(...)`.
 - **Reading a value into `mem` happens in `act`** (`mem.set(Key, value)`), like Mailpit's `extract-email-link`.
   `observe` is only for a Block that branches (it feeds `resolve`); an empty `act(){}` plus an `observe` that
   writes `mem` is a misuse.
 - **Demo pace is a map option or config, never a wrapper.** `.method(SetBearerTokenBlock, { pace: "blitz" })` speeds one step,
-  `map({ demoPace: "fast" })` a flow, `demo: { pace, typingMs, slowMo }` in the config the whole project. Not `withBlockPace(...)`.
+  `map({ demoPace: "fast" })` a flow, `demo: { pace, typingMs, slowMo }` in the config the whole project.
 - **Per-environment values** (a different `baseUrl` for staging) come from `.env` files read in the config function:
   `defineConfig(({ env }) => ({ baseUrl: env.BASE_URL }))`; `--env staging` loads `.env.staging`. Never edit the config to switch.
 - **More than one config** (staging, another app) is another file, `config/waygraph.<name>.config.ts`, chosen with `--config <name>`.

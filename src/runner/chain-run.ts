@@ -5,6 +5,7 @@ import type { MemPage } from "../core/mem-page.js";
 import type { BrowserContext } from "@playwright/test";
 import { resetPageState } from "../demo/step-mode/teardown.js";
 import { currentRunId, recordArtifact } from "../core/events.js";
+import { buildFlow } from "../core/flow.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -21,11 +22,11 @@ import { tmpdir } from "node:os";
  * chain reporting mode, not a distinct command.)
  */
 /** The JSON report of `run` with WAYGRAPH_JSON=1; `runId` names the matching `.waygraph/runs/<runId>.jsonl`. */
-export async function runJsonReportMode(engine: any, start: any, end: any, context: BrowserContext, page: WgPage, mem: MemPage, resolved: any, baseURL: string | undefined) {
-  return { runId: currentRunId(), ...(await jsonReport(engine, start, end, context, page, mem, resolved, baseURL)) };
+export async function runJsonReportMode(engine: any, context: BrowserContext, page: WgPage, mem: MemPage, resolved: any, baseURL: string | undefined) {
+  return { runId: currentRunId(), ...(await jsonReport(engine, context, page, mem, resolved, baseURL)) };
 }
 
-async function jsonReport(engine: any, start: any, end: any, context: BrowserContext, page: WgPage, mem: MemPage, resolved: any, baseURL: string | undefined) {
+async function jsonReport(engine: any, context: BrowserContext, page: WgPage, mem: MemPage, resolved: any, baseURL: string | undefined) {
   const steps = [];
   for (let i = 0; i < resolved.length; i++) {
     const r = resolved[i];
@@ -34,7 +35,7 @@ async function jsonReport(engine: any, start: any, end: any, context: BrowserCon
       await resetPageState(context, page, baseURL);
     }
     const startedAt = Date.now();
-    const stepFlow = engine.defineFlow([start, r.block, end]);
+    const stepFlow = buildFlow([r.block], engine.config);
     try {
       const outcome = await stepFlow.run(context, mem, { page, closeOnFinish: false });
       steps.push({ name: r.block.name, checkpoint: outcome.result, ms: Date.now() - startedAt });

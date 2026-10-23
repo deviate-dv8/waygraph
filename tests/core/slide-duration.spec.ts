@@ -36,21 +36,13 @@ test.describe("resolveFixtureDwellMs (all fixtures)", () => {
       name: "finish-order",
       instruction: {
         stubAfter: {
-          thanks: { selector: ".complete-header", label: "Thanks" },
+          thanks: { selector: ".complete-header", label: "Thanks", duration: true, fastMode: 700 },
         },
         resolve: () => ({ __state: "OrderComplete" }),
         act: async () => {},
       },
     } as unknown as Block<any, any>;
-    const slots = resolveHighlightSlots(block, "stubAfter", {
-      fixtures: {
-        "finish-order": {
-          stubAfter: {
-            thanks: { label: "Order placed", duration: true, fastMode: 700 },
-          },
-        },
-      },
-    });
+    const slots = resolveHighlightSlots(block, "stubAfter");
     expect(slots).toHaveLength(1);
     expect(slots[0]!.duration).toBe(true);
     expect(slots[0]!.fastMode).toBe(700);

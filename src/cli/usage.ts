@@ -149,7 +149,7 @@ Primary (less is more):
                  --data '{...}'            Mem seed JSON (or inline flow({...}))
                  --mem-stub                Fill any requires key --data didn't cover from
                                            registerMemStub's registry (needs the key
-                                           registered, or the flow's own withMemStub - a
+                                           registered, or the flow's map({ memStub }) - a
                                            key with neither still fails preflight)
                  --auto-next               Auto-advance steps (alias: --autoplay)
                  --fast                    Shorter auto-next / Next gates (keeps smooth cursor)

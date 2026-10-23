@@ -8,10 +8,9 @@ import {
   defineNavBlock,
   defineMethodBlock,
   runBranchRegression,
-  branchRoutes,
-  withSessionReset,
-  withTitle,
+  branchRoutes
 } from "../../src/index.js";
+import { withSettings } from "../../src/core/flow.js";
 
 type Home = Checkpoint<"Home">;
 type Away = Checkpoint<"Away">;
@@ -230,9 +229,8 @@ test.describe("runBranchRegression", () => {
       .gotoPage(NavHome)
       .method(Decide)
       .branch({ Home: (m) => m.method(NearBlock).end(), Away: null });
-    const wrapped = withTitle(withSessionReset(branched), "Sign in");
+    const wrapped = withSettings(branched, { sessionReset: true });
     expect(wrapped.resetSession).toBe(true);
-    expect(wrapped.title).toBe("Sign in");
     expect([...branchRoutes(wrapped)!.keys()].sort()).toEqual(["Away", "Home"]);
 
     const { root } = fakeBrowser();
