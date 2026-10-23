@@ -17,6 +17,7 @@ import {
 } from "./auto-explore.js";
 import type { Checkpoint } from "../engine/checkpoint/checkpoint.js";
 import { installDemoChrome, instrumentAutoInteractions } from "../demo/overlay/auto-chrome.js";
+import { keepOverlayOnNavigation } from "../demo/overlay/reattach.js";
 import { configuredExtensions, resolveBaseUrl } from "../runtime/config.js";
 import { withWebServer } from "../runtime/webserver.js";
 import { chromiumExecutablePath, launchContext } from "../runtime/browser.js";
@@ -693,6 +694,7 @@ async function runAutoExploreCore(projectDir: string, options: AutoExploreOption
     });
     if (!cli) {
       await installDemoChrome(target, "", { banner: false });
+      keepOverlayOnNavigation(target, () => installDemoChrome(target, "", { banner: false }));
       instrumentAutoInteractions(target, mem, 250);
     }
     wiredPage = target;

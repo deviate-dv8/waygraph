@@ -1,4 +1,5 @@
 import { CONSOLE_LOG_MAX_ENTRIES, FULL_MODE_DEFAULT_DEPTH, FULL_MODE_MAX_NODES, FULL_MODE_MAX_TEXT_LENGTH, TRACE_MAX_STEPS, buildSessionSnapshot, parsePick, stubFilePath, stubPhaseHasContent, walkFullDom } from "./helpers.js";
+import { keepOverlayOnNavigation } from "../../demo/overlay/reattach.js";
 import type { ApplyPathResult, ApplyPickResult, AutoSessionInit, ConsoleLogEntry, FullDomCaps, InspectDomOptions, InspectDomResult, SessionSnapshot, StorageSnapshot, StubFileKind, TraceStep } from "./helpers.js";
 import { installPersistentPilotOverlay, showPilotActivity, showPilotVision } from "../../demo/overlay/pilot-shell.js";
 import { showPilotFixtures } from "../../demo/overlay/pilot-fixtures.js";
@@ -134,9 +135,7 @@ export class AutoSession {
       knownInteractionSelectors,
       headless,
     );
-    page.on("load", () => {
-      void session.repaintOverlayAfterNavigation();
-    });
+    keepOverlayOnNavigation(page, () => session.repaintOverlayAfterNavigation());
     if (!headless) {
       await session.bootstrapOverlay().catch(() => {});
       await page.bringToFront().catch(() => {});

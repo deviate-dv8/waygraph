@@ -36,4 +36,6 @@ Each step has a pace: `blitz` (no theater), `fast`, `normal`, `slow`, or a numbe
 `{ pace }`, else the flow's `map({ demoPace })`, else the config's `demo.pace`. `--fast` only speeds up steps nobody
 gave a pace.
 
-The same overlay serves [[Live Sessions]] (auto and pilot paint the same rings).
+The same overlay serves [[Live Sessions]] (auto and pilot paint the same rings). It survives navigation the same way
+everywhere: after any page load - a link, a redirect, a reload - each surface repaints itself (rings, todos, device),
+once the redirects settle (`src/demo/overlay/reattach.ts`).

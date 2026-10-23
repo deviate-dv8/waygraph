@@ -6,7 +6,8 @@ import type { MemPage } from "../../engine/mem/mem.js";
 import type { WgPage } from "../types.js";
 import { createOverlayStage } from "../overlay/overlay-stage.js";
 import { instrumentInteractionHighlighting } from "./interaction-patch.js";
-import { markStepRunning, teardownOverlay } from "./teardown.js";
+import { markStepRunning, restoreTheaterAfterNavigation, teardownOverlay } from "./teardown.js";
+import { keepOverlayOnNavigation } from "../overlay/reattach.js";
 import { presentFailPanel } from "./step-panels.js";
 import { installGate } from "./gate.js";
 import { newPacing, paceStep } from "./pacing.js";
@@ -38,6 +39,8 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
   const pacing = newPacing(demoFast);
   const refs = { stubBefore: { current: [] as any[] }, todoDock: { current: undefined as any }, device: { current: undefined as any } };
   instrumentInteractionHighlighting(page, mem, options.beat, pacing, refs.stubBefore, refs.todoDock, refs.device);
+  // A navigation inside a step (a redirect, a login bounce) repaints the overlay with the step's todos, device and ring.
+  keepOverlayOnNavigation(page, () => restoreTheaterAfterNavigation(page, refs.todoDock, refs.device, refs.stubBefore));
   keepWindowSize(page);
   const gate = await installGate(page, pacing, demoFast);
   await gate.syncAutoplay();

@@ -6,7 +6,7 @@ import { applyHighlightZoom, captionForLocator, dwellMatchedStub, ensureLocatorI
 import { syncTodoDockAdvance } from "./todo-dock.js";
 import { clickPulseAt, moveCursorTo } from "../overlay/cursor.js";
 import { demoHighlight } from "./demo-log.js";
-import { restoreTheaterAfterNavigation } from "./teardown.js";
+import { repaintOverlay } from "../overlay/reattach.js";
 
 export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, slowMo: number, pacing: any, stubBeforeRef: any, todoDockRef: any, deviceRef: any) {
   // Playwright's own slowMo ALREADY pauses after every single low-level
@@ -184,7 +184,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
       // of leaving it lit until the next Block's own before-panel clears
       // it - it was sticking around through the whole rest of the step.
       await hideRing(page);
-      await restoreTheaterAfterNavigation(page, todoDockRef, deviceRef, stubBeforeRef);
+      await repaintOverlay(page);
       await pause(beat());
       return result;
     };
@@ -315,7 +315,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
       await new Promise((res) => setTimeout(res, clickPostPop()));
       await hideRing(page);
       // Full document navigation drops #wg-todo-dock + rings; restore carry.
-      await restoreTheaterAfterNavigation(page, todoDockRef, deviceRef, stubBeforeRef);
+      await repaintOverlay(page);
       await pause(beat());
       return result;
     };
