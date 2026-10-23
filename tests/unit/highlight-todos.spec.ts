@@ -187,8 +187,8 @@ describe("open stubBefore(ctx) lifecycle", () => {
     const block = {
       name: "submit-login",
       instruction: {
-        stubBefore: {
-          plan: { selector: "#login-button", label: "Plan", zoom: 1.4 },
+        stubBefore: (ctx: StubCtx) => {
+          ctx.ring("plan", { selector: "#login-button", label: "Plan", zoom: 1.4 });
         },
       },
     } as unknown as Block<any, any>;

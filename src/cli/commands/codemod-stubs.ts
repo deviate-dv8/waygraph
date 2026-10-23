@@ -2,7 +2,9 @@
 // `ctx.todos([...])` and its setters (`todoId`, `todoTitle`, `todoStyle`, `todoPos`, `todoIndex`) become
 // `ctx.todos(id, items, { title, style, pos, index })`; `todoGroups(groups)` gets the same id and options; the method
 // aliases (`banner`, `bannerPos`, `clearDevice`, `clearTodos`, `landscape`, `portrait`, `todoDockFull`) become the
-// names they stood for. Works on the TypeScript AST (ts-morph).
+// names they stood for. A stub written as a slot map (`{ email: { selector, label } }`) becomes a function of
+// `ctx.ring` calls, and a stub set in a `define*Block({ ... })` (options or instruction) moves out to a chained
+// `.stubBefore(...)` on the Block. Works on the TypeScript AST (ts-morph).
 import { Node, SyntaxKind } from "ts-morph";
 import type { CallExpression, ExpressionStatement, Project, SourceFile } from "ts-morph";
 
@@ -92,13 +94,71 @@ function convertStatements(statements: readonly Node[], problems: { line: number
   return changed;
 }
 
+const PHASES = new Set(["stubBefore", "stubAfter", "stubOnError"]);
+
+/** A slot map as a stub function: `{ a: {...} }` -> `(ctx) => { ctx.ring("a", {...}); }`. */
+function mapToStub(map: Node): string {
+  if (!Node.isObjectLiteralExpression(map)) return map.getText();
+  const rings = map.getProperties().flatMap((p) => (Node.isPropertyAssignment(p) ? [`ctx.ring(${JSON.stringify(p.getName().replace(/^["']|["']$/g, ""))}, ${p.getInitializerOrThrow().getText()});`] : []));
+  return `(ctx) => {\n${rings.map((r) => "  " + r).join("\n")}\n}`;
+}
+
+/** `X.stubAfter({ ... })` -> `X.stubAfter((ctx) => { ctx.ring(...) })`. */
+function convertSlotMaps(sf: SourceFile): boolean {
+  let changed = false;
+  for (const call of sf.getDescendantsOfKind(SyntaxKind.CallExpression).reverse()) {
+    if (call.wasForgotten()) continue;
+    const callee = call.getExpression();
+    const arg = call.getArguments()[0];
+    if (Node.isPropertyAccessExpression(callee) && PHASES.has(callee.getName()) && Node.isObjectLiteralExpression(arg)) {
+      arg.replaceWithText(mapToStub(arg));
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+/** `defineXBlock({ ..., stubBefore: fn })` (or in its instruction) -> `defineXBlock({ ... }).stubBefore(fn)`. */
+function hoistDefinitionStubs(sf: SourceFile): boolean {
+  let changed = false;
+  for (const call of sf.getDescendantsOfKind(SyntaxKind.CallExpression).reverse()) {
+    if (call.wasForgotten() || !/^define\w*Block$/.test(call.getExpression().getText())) continue;
+    const options = call.getArguments()[0];
+    if (!Node.isObjectLiteralExpression(options)) continue;
+    const holders = [options];
+    const instruction = options.getProperty("instruction");
+    if (Node.isPropertyAssignment(instruction) && Node.isObjectLiteralExpression(instruction.getInitializer())) holders.push(instruction.getInitializer() as typeof options);
+    const chained: string[] = [];
+    for (const holder of holders) {
+      for (const prop of holder.getProperties()) {
+        const name = Node.isPropertyAssignment(prop) || Node.isMethodDeclaration(prop) ? prop.getName() : "";
+        if (!PHASES.has(name)) continue;
+        let fn: string;
+        if (Node.isMethodDeclaration(prop)) fn = `(${prop.getParameters().map((p) => p.getText()).join(", ")}) => ${prop.getBodyOrThrow().getText()}`;
+        else {
+          const init = (prop as import("ts-morph").PropertyAssignment).getInitializerOrThrow();
+          fn = Node.isObjectLiteralExpression(init) ? mapToStub(init) : init.getText();
+        }
+        chained.push(`.${name}(${fn})`);
+        prop.remove();
+      }
+    }
+    if (chained.length) {
+      call.replaceWithText(call.getText() + chained.join(""));
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 /** Rewrites the old stub forms in every file; returns the files it changed and the calls left for a person. */
 export function convertStubs(project: Project): { changed: SourceFile[]; problems: { file: string; line: number; reason: string }[] } {
   const changed: SourceFile[] = [];
   const problems: { file: string; line: number; reason: string }[] = [];
   for (const sf of project.getSourceFiles()) {
     const left: { line: number; reason: string }[] = [];
-    let touched = false;
+    let touched = hoistDefinitionStubs(sf);
+    if (convertSlotMaps(sf)) touched = true;
     for (const block of sf.getDescendantsOfKind(SyntaxKind.Block).reverse()) {
       if (block.wasForgotten()) continue;
       if (convertStatements(block.getStatements(), left)) touched = true;

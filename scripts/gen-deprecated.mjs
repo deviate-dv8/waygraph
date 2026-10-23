@@ -58,6 +58,8 @@ ${found.length ? `| Name | Kind | Use instead |\n| --- | --- | --- |\n${rows}` :
 | \`ctx.todoGroups(groups)\` | \`ctx.todoGroups(id, groups, { title, style, pos })\` |
 | \`ctx.banner\`, \`ctx.bannerPos\`, \`ctx.clearDevice\`, \`ctx.clearTodos\` | \`ctx.title\`, \`ctx.titlePos\`, \`ctx.hideDevice\`, \`ctx.hideTodos\` |
 | \`ctx.landscape()\` / \`ctx.portrait()\`, \`ctx.todoDockFull()\` | \`ctx.orientation("landscape" \| "portrait")\`, \`ctx.todoDockUi({ compact: false, collision: false, behindRing: false })\` |
+| A stub in a Block's definition (\`defineXBlock({ stubBefore })\` or its \`instruction\`) | \`Block.stubBefore((ctx) => …)\` where the flow uses it (codemod \`flows\`) |
+| A slot map as a stub (\`.stubAfter({ email: { selector, label } })\`), \`HighlightStubPhaseOrFn\` | \`.stubAfter((ctx) => { ctx.ring("email", { selector, label }) })\` (codemod \`flows\`) |
 | \`ctx.set({...})\`, a todo item's \`name\` | One call per thing (\`ctx.ring\`, \`ctx.todos\`, …); \`id\` |
 | \`WAYGRAPH_STEPPER_MINI\` | \`WAYGRAPH_MINI\` (\`--mini\`) |
 | \`--no-todo-smart\` | \`--todo-full\` |

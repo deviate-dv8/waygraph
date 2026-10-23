@@ -11,7 +11,6 @@ import { CheckoutOverviewSel } from "./checkout-overview.sel.js";
  * Route: saucedemo-web/checkout-step-two/methods/  (= /checkout-step-two.html)
  *
  * Places the order on the overview page - form/finish click, not a NavBlock.
- * Stubs use open ctx lifecycles (preferred) - not static slot maps.
  */
 export const FinishOrderBlock = defineMethodBlock({
   name: "finish-order",

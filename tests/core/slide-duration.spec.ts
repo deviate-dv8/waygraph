@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import type { StubCtx } from "../../src/engine/stub/stub.js";
 import {
   resolveFixtureDwellMs,
   resolveHighlightSlots,
@@ -30,8 +31,8 @@ test.describe("resolveFixtureDwellMs (all fixtures)", () => {
     const block = {
       name: "finish-order",
       instruction: {
-        stubAfter: {
-          thanks: { selector: ".complete-header", label: "Thanks", duration: true, fastMode: 700 },
+        stubAfter: (ctx: StubCtx) => {
+          ctx.ring("thanks", { selector: ".complete-header", label: "Thanks", duration: true, fastMode: 700 });
         },
         resolve: () => ({ __state: "OrderComplete" }),
         act: async () => {},

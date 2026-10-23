@@ -1,5 +1,4 @@
 import { checkpoint, defineApiBlock } from "waygraph";
-import type { StubCtx } from "waygraph";
 import { engine } from "../../config/waygraph.config.js";
 import { loginFlow } from "./login.flow.js";
 
@@ -26,15 +25,16 @@ const CheckBackendHealth = defineApiBlock({
   call: ({ request }) =>
     request.get("https://jsonplaceholder.typicode.com/todos/1"),
   resolve: (result) => (result.ok ? BackendHealthy : BackendDown),
-  stubBefore: (ctx: StubCtx<BackendHealthy | BackendDown>) => {
-    ctx.title("Checking backend health · real HTTP request, no browser");
-  },
 });
 
 export const apiDemoEpisode = engine
   .map()
   .start()
-  .method(CheckBackendHealth)
+  .method(
+    CheckBackendHealth.stubBefore((ctx) => {
+      ctx.title("Checking backend health · real HTTP request, no browser");
+    }),
+  )
   .end();
 
 export const apiDemoFlow = engine

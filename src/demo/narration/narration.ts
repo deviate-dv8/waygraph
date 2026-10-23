@@ -1,10 +1,10 @@
 // Plays a Block's narration for one phase (stubBefore / stubAfter / stubOnError): runs its ctx stub and returns the
 // rings, todos, device, title and caption it set, for the overlay to paint.
 import type { DeviceState } from "../../engine/stub/viewport.js";
-import type { HighlightStubPhaseName, StubBagState, StubCtx, StubLifecycleFn, StubPhaseResult } from "../../engine/stub/stub.js";
+import type { HighlightStubPhaseName, StubBagState, StubCtx, StubPhaseResult } from "../../engine/stub/stub.js";
 import type { ResolvedHighlight, WaygraphSlide, WaygraphSlidesOrFn } from "../../engine/stub/ring.js";
 import { createStubCtx } from "./stub-ctx.js";
-import { applyDefaultZoom, applyDefaultZoomOut, isStubPhase, readStubRaw, resolvePhaseMap } from "./merge.js";
+import { applyDefaultZoom, applyDefaultZoomOut, readStubRaw, resolvePhaseMap } from "./merge.js";
 import { buildTodoDock, normalizeTodoStyle, normalizeTodos } from "./todo-dock.js";
 import { resolveDeviceState } from "./device.js";
 import type { Block } from "../../engine/block/block.js";
@@ -36,15 +36,13 @@ export async function runStubPhase(
   });
   const raw = readStubRaw(block, phase);
 
-  if (typeof raw === "function") {
+  if (raw) {
     try {
-      await (raw as StubLifecycleFn<any>)(ctx as StubCtx<any>);
+      await raw(ctx as StubCtx<any>);
     } catch (err) {
       // A mistake in the author's stub: shown on the step (the demo's failure panel), never dropped.
       throw new Error(`${block.name}: its ${phase} stub threw: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
     }
-  } else if (isStubPhase(raw)) {
-    bag.highlights = { ...raw };
   }
 
 
@@ -142,20 +140,13 @@ export function resolveHighlightSlots(
 ): ResolvedHighlight[] {
   const bag: StubBagState = { highlights: {} };
   const raw = readStubRaw(block, phase);
-  if (typeof raw === "function") {
+  if (raw) {
+    // Synchronous read: the rings a stub paints before its first await.
     try {
-      const ctx = createStubCtx(bag, {
-        ...(opts?.out !== undefined ? { out: opts.out } : {}),
-      });
-      const ret = (raw as StubLifecycleFn<any>)(ctx as StubCtx<any>);
-      if (isStubPhase(ret)) {
-        bag.highlights = { ...bag.highlights, ...ret };
-      }
-    } catch {
-      bag.highlights = {};
+      void raw(createStubCtx(bag, { ...(opts?.out !== undefined ? { out: opts.out } : {}) }) as StubCtx<any>);
+    } catch (err) {
+      throw new Error(`${block.name}: its ${phase} stub threw: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
     }
-  } else if (isStubPhase(raw)) {
-    bag.highlights = { ...raw };
   }
   return applyDefaultZoom(resolvePhaseMap(bag.highlights), bag.zoom);
 }
@@ -186,9 +177,7 @@ function stubPhaseLooksAuthored(
   block: Block<any, any>,
   phase: HighlightStubPhaseName,
 ): boolean {
-  const raw = readStubRaw(block, phase);
-  if (typeof raw === "function") return true;
-  return isStubPhase(raw) && Object.keys(raw).length > 0;
+  return readStubRaw(block, phase) !== undefined;
 }
 
 

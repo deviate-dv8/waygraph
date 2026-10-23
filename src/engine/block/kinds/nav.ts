@@ -35,11 +35,8 @@ export type NavBlock<Out extends Checkpoint<string>> = Omit<
     newCheck: Trait["check"] | Trait,
   ): NavBlock<Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): NavBlock<Out>;
-  stubBefore(stub: import("../../stub/ring.js").HighlightStubPhase): NavBlock<Out>;
   stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): NavBlock<Out>;
-  stubAfter(stub: import("../../stub/ring.js").HighlightStubPhase): NavBlock<Out>;
   stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): NavBlock<Out>;
-  stubOnError(stub: import("../../stub/ring.js").HighlightStubPhase): NavBlock<Out>;
   stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): NavBlock<Out>;
 };
 
@@ -68,9 +65,6 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
   from?: readonly Checkpoint<string>[];
   requires?: readonly MemKey<unknown>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
-  stubBefore?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
   /**
    * Live per-instance menu rows for `waygraph auto` (see {@link Block.instanceOptions}).
    * When set, the explore menu lists one row per option instead of a single
@@ -142,9 +136,6 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
       },
       resolve: () => checkpoint(options.checkpoint.__state) as Out,
       ...(options.verify ? { verify: options.verify } : {}),
-      ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
-      ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
-      ...(options.stubOnError ? { stubOnError: options.stubOnError } : {}),
     },
   });
   markRoute(built, options.from?.length ? tagsOf(options.from) : ["*"], [options.checkpoint.__state]);
@@ -208,9 +199,6 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   from?: readonly Checkpoint<string>[];
   requires?: readonly MemKey<unknown>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
-  stubBefore?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
 };
 
@@ -231,9 +219,6 @@ export function defineNavClickBlock<Out extends Checkpoint<string>>(
     ...(options.description ? { description: options.description } : {}),
     ...(options.requires ? { requires: options.requires } : {}),
     ...(options.verify ? { verify: options.verify } : {}),
-    ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
-    ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
-    ...(options.stubOnError ? { stubOnError: options.stubOnError } : {}),
     ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
   });
 }

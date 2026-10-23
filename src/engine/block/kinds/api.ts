@@ -48,9 +48,6 @@ export interface ApiBlockOptions<In extends Checkpoint<string>, Out extends Chec
   resolve?: (result: ApiCallResult) => Out;
   verify?: Trait[] | ((out: Out) => Trait[]);
   requires?: readonly MemKey<unknown>[];
-  stubBefore?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
 }
 
 // Internal scratch key threading act()'s result to observe()/resolve() - Instruction has no other
@@ -119,9 +116,6 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
       },
       resolve: (observed) => resolve(observed as ApiCallResult),
       ...(options.verify !== undefined ? { verify: options.verify } : {}),
-      ...(options.stubBefore !== undefined ? { stubBefore: options.stubBefore } : {}),
-      ...(options.stubAfter !== undefined ? { stubAfter: options.stubAfter } : {}),
-      ...(options.stubOnError !== undefined ? { stubOnError: options.stubOnError } : {}),
     },
   }) as DefinedBlock<In, Out>;
   markRouteOf(built, options);

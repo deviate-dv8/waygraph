@@ -114,7 +114,6 @@ export type { WebServerConfig } from "./runtime/webserver.js";
 
 // Types the API above refers to (each is part of a public signature).
 export type { MapStart } from "./engine/engine.js";
-export type { HighlightStubPhaseOrFn } from "./engine/stub/stub.js";
 export type { WaygraphSlidesOrFn } from "./engine/stub/ring.js";
 export type { ConnectLayout } from "./engine/run/connect.js";
 export type { EffectExtras } from "./engine/block/kinds/effect.js";

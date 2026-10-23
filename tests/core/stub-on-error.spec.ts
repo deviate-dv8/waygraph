@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import type { StubCtx } from "../../src/engine/stub/stub.js";
 import {
   resolveHighlightSlots,
   hasAuthoredStubOnError,
@@ -20,8 +21,8 @@ function fakeBlock(instruction: Record<string, unknown>): Block<any, any> {
 test.describe("stubOnError", () => {
   test("resolves block stubOnError slots", () => {
     const block = fakeBlock({
-      stubOnError: {
-        error: { selector: '[data-test="error"]', label: "Login error banner" },
+      stubOnError: (ctx: StubCtx) => {
+        ctx.ring("error", { selector: '[data-test="error"]', label: "Login error banner" });
       },
     });
     const slots = resolveHighlightSlots(block, "stubOnError");
@@ -33,11 +34,11 @@ test.describe("stubOnError", () => {
 
   test("success stubAfter is independent of stubOnError", () => {
     const block = fakeBlock({
-      stubAfter: {
-        ok: { selector: ".inventory_list", label: "Inventory" },
+      stubAfter: (ctx: StubCtx) => {
+        ctx.ring("ok", { selector: ".inventory_list", label: "Inventory" });
       },
-      stubOnError: {
-        error: { selector: '[data-test="error"]', label: "Error" },
+      stubOnError: (ctx: StubCtx) => {
+        ctx.ring("error", { selector: '[data-test="error"]', label: "Error" });
       },
     });
     expect(hasAuthoredStubAfter(block, { __state: "LoggedIn" })).toBe(true);
@@ -47,8 +48,8 @@ test.describe("stubOnError", () => {
     expect(resolveHighlightSlots(block, "stubOnError")[0]!.label).toBe("Error");
   });
 
-  test("empty stubOnError + no fixtures -> hasAuthoredStubOnError false", () => {
-    const block = fakeBlock({ stubOnError: {} });
+  test("no stubOnError -> hasAuthoredStubOnError false", () => {
+    const block = fakeBlock({});
     expect(hasAuthoredStubOnError(block)).toBe(false);
     expect(resolveHighlightSlots(block, "stubOnError")).toHaveLength(0);
   });

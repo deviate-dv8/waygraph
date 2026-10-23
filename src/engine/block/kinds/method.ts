@@ -32,11 +32,8 @@ export type MethodBlock<
     newCheck: Trait["check"] | Trait,
   ): MethodBlock<In, Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): MethodBlock<In, Out>;
-  stubBefore(stub: import("../../stub/ring.js").HighlightStubPhase): MethodBlock<In, Out>;
   stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
-  stubAfter(stub: import("../../stub/ring.js").HighlightStubPhase): MethodBlock<In, Out>;
   stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
-  stubOnError(stub: import("../../stub/ring.js").HighlightStubPhase): MethodBlock<In, Out>;
   stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
 };
 
@@ -73,9 +70,6 @@ export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<
   verify: Trait[] | ((out: Out) => Trait[]);
   /** Mem keys this assertion's `verify` reads (e.g. a mem-aware Trait) - checked by preflight before the flow runs. */
   requires?: readonly MemKey<unknown>[];
-  stubBefore?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../../stub/stub.js").HighlightStubPhaseOrFn<Out>;
   /** Multi-step yap slides (demo only) - same field `Instruction.slides` exposes elsewhere. */
   slides?: import("../../stub/ring.js").WaygraphSlidesOrFn<Out>;
 }
@@ -112,9 +106,6 @@ export function defineAssertBlock<Out extends Checkpoint<string>>(options: Asser
         }
       },
       verify: options.verify,
-      ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
-      ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
-      ...(options.stubOnError ? { stubOnError: options.stubOnError } : {}),
       ...(options.slides ? { slides: options.slides } : {}),
     },
   });
@@ -146,10 +137,7 @@ export type AssertBlock<Out extends Checkpoint<string>> = Omit<
     newCheck: Trait["check"] | Trait,
   ): AssertBlock<Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): AssertBlock<Out>;
-  stubBefore(stub: import("../../stub/ring.js").HighlightStubPhase): AssertBlock<Out>;
   stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): AssertBlock<Out>;
-  stubAfter(stub: import("../../stub/ring.js").HighlightStubPhase): AssertBlock<Out>;
   stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): AssertBlock<Out>;
-  stubOnError(stub: import("../../stub/ring.js").HighlightStubPhase): AssertBlock<Out>;
   stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): AssertBlock<Out>;
 };

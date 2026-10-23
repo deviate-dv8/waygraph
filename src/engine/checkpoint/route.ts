@@ -26,7 +26,7 @@ export type BlockBase<In extends Checkpoint<string>, Out extends Checkpoint<stri
 export type RoutedBlockBase<In extends Checkpoint<string>, Out extends Checkpoint<string>> = Omit<BlockBase<In, Out>, "instruction"> & {
   from?: In | readonly In[];
   to: Out | readonly Out[];
-  instruction: Omit<BlockBase<In, Out>["instruction"], "resolve"> & {
+  instruction: Omit<BlockBase<In, Out>["instruction"], "resolve" | "stubBefore" | "stubAfter" | "stubOnError"> & {
     resolve?: BlockBase<In, Out>["instruction"]["resolve"];
   };
 };

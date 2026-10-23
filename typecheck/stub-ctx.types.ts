@@ -2,54 +2,36 @@ import { checkpoint } from "../src/engine/checkpoint/checkpoint.js";
 import { defineMethodBlock, defineAssertBlock } from "../src/engine/block/kinds/method.js";
 import { defineNavBlock } from "../src/engine/block/kinds/nav.js";
 
-
-// Inline stub functions must get a real StubCtx, not implicit any (noImplicitAny would fail).
-// A typo'd ctx method must be a compile error, proving ctx isn't `any`.
-const _method = defineMethodBlock({
+const method = defineMethodBlock({
   name: "m",
   from: checkpoint("A"),
   to: checkpoint("B"),
-  instruction: {
-    async act() { },
-    resolve: () => checkpoint("B"),
-    stubAfter(ctx) {
-      ctx.ring("x", { selector: "h1", label: "x" });
-      // @ts-expect-error - not a StubCtx method
-      ctx.ringg("x", {});
-    },
-  },
+  instruction: { async act() {}, resolve: () => checkpoint("B") },
 });
-void _method;
+const nav = defineNavBlock({ name: "n", checkpoint: checkpoint("B"), url: "/" });
+const assert = defineAssertBlock({ name: "a", checkpoint: checkpoint("B"), verify: [] });
 
-const _nav = defineNavBlock({
-  name: "n",
-  checkpoint: checkpoint("B"),
-  url: "/",
-  stubBefore(ctx) {
-    ctx.caption("hi");
-    // @ts-expect-error - not a StubCtx method
-    ctx.captionn("hi");
-  },
+// A stub gets a real StubCtx, not implicit any: a typo'd ctx method is a compile error.
+void method.stubAfter((ctx) => {
+  ctx.ring("x", { selector: "h1", label: "x" });
+  // @ts-expect-error - not a StubCtx method
+  ctx.ringg("x", {});
 });
-void _nav;
+void nav.stubBefore((ctx) => {
+  ctx.caption("hi");
+  // @ts-expect-error - not a StubCtx method
+  ctx.captionn("hi");
+});
+void assert.stubOnError((ctx) => ctx.title("t")).stubAfter((ctx) => ctx.showNetworkTab());
 
-const _assert = defineAssertBlock({
-  name: "a",
-  checkpoint: checkpoint("B"),
-  verify: [],
-  stubOnError(ctx) {
-    ctx.title("t");
-  },
-}).stubAfter((ctx) => {
-  ctx.showNetworkTab();
+// One form: a stub is a function chained where a flow uses the Block.
+// @ts-expect-error - a slot map is not a stub
+void nav.stubAfter({ title: { selector: "h1", label: "Title" } });
+// @ts-expect-error - Blocks carry no narration: no stub in the options
+defineNavBlock({ name: "s", checkpoint: checkpoint("B"), url: "/", stubAfter: () => {} });
+defineMethodBlock({
+  name: "i",
+  to: checkpoint("B"),
+  // @ts-expect-error - nor in the instruction
+  instruction: { async act() {}, stubBefore: () => {} },
 });
-void _assert;
-
-// The static slot-map shorthand still works.
-const _slots = defineNavBlock({
-  name: "s",
-  checkpoint: checkpoint("B"),
-  url: "/",
-  stubAfter: { title: { selector: "h1", label: "Title" } },
-});
-void _slots;

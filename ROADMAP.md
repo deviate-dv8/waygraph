@@ -247,7 +247,8 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 12. No legacy for 1.0: every old form is removed, not deprecated - tag-string checkpoints and `<In, Out>` (codemod
     `checkpoints`), `defineActionBlock` / `defineMemEffectBlock`, `highlights` arrays and `(out) => map` stubs, slide
     dwell names, a project's own `playwright.config`, the `package.json` `"waygraph"` field, `waygraph chain`,
-    `auto --detach` and the flag aliases; one form for ctx stubs (`ctx.todos(id, items, opts)`, no method aliases, folded by
+    `auto --detach` and the flag aliases; one form for ctx stubs (`ctx.todos(id, items, opts)`, no method aliases, a stub
+    is a function chained where a flow uses the Block - never in a Block's definition, never a slot map; folded by
     codemod `flows`). `docs/deprecated.md` lists each with its replacement. **Done.**
 13. Audit fixes (agent-sins / agent-golf / agent-better-habits): analysis reads the manifest and the AST, never regexes
     over source; overlay built with the DOM (`__wgEl`), never HTML strings; one Locator patch (`locator-theater.ts`);

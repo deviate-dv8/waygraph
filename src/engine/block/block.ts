@@ -2,7 +2,7 @@
 // below build, decorate and route Blocks.
 import type { Page } from "@playwright/test";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
-import type { HighlightStubPhaseOrFn } from "../stub/stub.js";
+import type { StubLifecycleFn } from "../stub/stub.js";
 import type { WaygraphSlidesOrFn } from "../stub/ring.js";
 import { MemPage } from "../mem/mem.js";
 import type { MemKey } from "../mem/mem.js";
@@ -86,33 +86,14 @@ export interface Instruction<
    */
   verify?: Trait[] | ((out: Out) => Trait[]);
   /**
-   * Open block lifecycle **before / during** `act` (demo rings + fixtures).
-   * Prefer `stubBefore(ctx) { ctx.todos(...); ctx.ring(...) }` — not a closed
-   * slot object. Object map `{ email: { selector, label } }` remains a shorthand.
-   * @example stubBefore: (ctx) => {
-   *   ctx.todos("sign-in", ["Email", "Password", "Submit"], { index: 0 });
-   *   ctx.highlights({ email: { selector: "#email", label: "Email" } });
-   * }
+   * The demo's narration before the step, written by `Block.stubBefore((ctx) => ...)` where a flow uses the Block (stubs
+   * chained there add up). Not something to set in a Block's definition: Blocks carry no narration.
    */
-  stubBefore?: HighlightStubPhaseOrFn<Out>;
-  /**
-   * Open block lifecycle **after** resolve (step panel rings + fixtures).
-   * Prefer `stubAfter(ctx) { ... }`. Object map shorthand still works.
-   * @example stubAfter: (ctx) => {
-   *   ctx.todoIndex(2);
-   *   ctx.ring("badge", { selector: ".cart", label: "Cart updated" });
-   * }
-   */
-  stubAfter?: HighlightStubPhaseOrFn<Out>;
-  /**
-   * Open block lifecycle when a **step throws** (failed verify / act error) -
-   * before the error panel. Success-only {@link Instruction.stubAfter} never runs
-   * here. Prefer `stubOnError(ctx) { ... }`.
-   * @example stubOnError: (ctx) => {
-   *   ctx.ring("card", { selector: ".alt-1", label: "Card at failure", tag: "BUG" });
-   * }
-   */
-  stubOnError?: HighlightStubPhaseOrFn<Out>;
+  stubBefore?: StubLifecycleFn<Out>;
+  /** After the step lands; written by `Block.stubAfter((ctx) => ...)`. */
+  stubAfter?: StubLifecycleFn<Out>;
+  /** When the step fails, before the failure panel; written by `Block.stubOnError((ctx) => ...)`. */
+  stubOnError?: StubLifecycleFn<Out>;
   /**
    * Multi-step demo captions ("yap" slides) with Next between each -
    * not block lifecycle. Explains a long process; optional `selector` rings
@@ -276,13 +257,10 @@ export type DefinedBlock<In extends Checkpoint<string>, Out extends Checkpoint<s
    * Overloads keep `ctx` typed when the author passes a lifecycle function
    * (a single union parameter would make the callback param `any`).
    */
-  stubBefore(stub: import("../stub/ring.js").HighlightStubPhase): DefinedBlock<In, Out>;
   stubBefore(stub: import("../stub/stub.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
   /** Demo narration after resolve. Prefer ctx callbacks over slot-map objects. */
-  stubAfter(stub: import("../stub/ring.js").HighlightStubPhase): DefinedBlock<In, Out>;
   stubAfter(stub: import("../stub/stub.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
   /** Demo narration when the step fails / expected-failure path. */
-  stubOnError(stub: import("../stub/ring.js").HighlightStubPhase): DefinedBlock<In, Out>;
   stubOnError(stub: import("../stub/stub.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
 };
 
@@ -494,34 +472,15 @@ export function withVerify<B extends SomeBlock>(
 }
 
 
-type StubPhaseFn<Out extends Checkpoint<string>> = import("../stub/stub.js").HighlightStubPhaseOrFn<Out>;
+type StubPhaseFn<Out extends Checkpoint<string>> = StubLifecycleFn<Out>;
 
 
-function isHighlightStubPhase(v: unknown): v is import("../stub/ring.js").HighlightStubPhase {
-  return !!v && typeof v === "object" && !Array.isArray(v);
-}
-
-
-/** Run a prior stub (fn or slot map) into an open ctx so decorate can chain. */
+/** Runs a prior stub into the same ctx, so stubs chained on one Block add up. */
 async function applyStubIntoCtx<Out extends Checkpoint<string>>(
   raw: StubPhaseFn<Out> | undefined,
   ctx: import("../stub/stub.js").StubCtx<Out>,
 ): Promise<void> {
-  if (raw === undefined) return;
-  if (typeof raw === "function") {
-    const ret = await (raw as import("../stub/stub.js").StubLifecycleFn<Out>)(ctx);
-    if (isHighlightStubPhase(ret)) {
-      for (const [id, stub] of Object.entries(ret)) {
-        if (stub) ctx.ring(id, stub);
-      }
-    }
-    return;
-  }
-  if (isHighlightStubPhase(raw)) {
-    for (const [id, stub] of Object.entries(raw)) {
-      if (stub) ctx.ring(id, stub);
-    }
-  }
+  if (raw !== undefined) await raw(ctx);
 }
 
 

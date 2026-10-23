@@ -31,11 +31,8 @@ export type EffectBlock<
     newCheck: Trait["check"] | Trait,
   ): EffectBlock<In, Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): EffectBlock<In, Out>;
-  stubBefore(stub: import("../../stub/ring.js").HighlightStubPhase): EffectBlock<In, Out>;
   stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
-  stubAfter(stub: import("../../stub/ring.js").HighlightStubPhase): EffectBlock<In, Out>;
   stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
-  stubOnError(stub: import("../../stub/ring.js").HighlightStubPhase): EffectBlock<In, Out>;
   stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
 };
 

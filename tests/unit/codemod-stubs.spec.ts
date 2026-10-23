@@ -56,4 +56,30 @@ describe("codemod flows: ctx stubs", () => {
     const { problems } = run(`B.stubAfter((ctx) => { ctx.todoTitle("Later"); });`);
     assert.equal(problems.length, 1);
   });
+
+  it("turns a slot map into ctx.ring calls", () => {
+    const { text } = run(`B.stubAfter({ title: { selector: "h1", label: "Title" } });`);
+    assert.match(text, /B\.stubAfter\(\(ctx\) => \{\s*ctx\.ring\("title", \{ selector: "h1", label: "Title" \}\);\s*\}\)/);
+  });
+
+  it("moves a stub out of a Block definition onto a chained call", () => {
+    const { text } = run(`export const A = defineApiBlock({
+  name: "a",
+  stubBefore: (ctx) => {
+    ctx.title("Checking");
+  },
+});
+export const M = defineMethodBlock({
+  name: "m",
+  instruction: {
+    async act() {},
+    stubAfter(ctx) {
+      ctx.ring("x", { selector: "#x" });
+    },
+  },
+});`);
+    assert.doesNotMatch(text, /stubBefore:|stubAfter\(ctx\) \{/);
+    assert.match(text, /\}\)\.stubBefore\(\(ctx\) => \{\s*ctx\.title\("Checking"\);\s*\}\);/);
+    assert.match(text, /\}\)\.stubAfter\(\(ctx\) => \{\s*ctx\.ring\("x", \{ selector: "#x" \}\);\s*\}\);/);
+  });
 });

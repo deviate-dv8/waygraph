@@ -1,11 +1,8 @@
 import type { HighlightStubPhase, ResolvedHighlight, WaygraphHighlightStub } from "../../engine/stub/ring.js";
-import type { HighlightStubPhaseName, HighlightStubPhaseOrFn } from "../../engine/stub/stub.js";
+import type { HighlightStubPhaseName, StubLifecycleFn } from "../../engine/stub/stub.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/stub/ring.js";
 import type { Block } from "../../engine/block/block.js";
 
-export function isStubPhase(v: unknown): v is HighlightStubPhase {
-  return !!v && typeof v === "object" && !Array.isArray(v);
-}
 
 
 function zoomOf(slot: WaygraphHighlightStub): Pick<WaygraphHighlightStub, "zoom"> {
@@ -84,11 +81,11 @@ export function resolvePhaseMap(phaseMap: HighlightStubPhase): ResolvedHighlight
 export function readStubRaw(
   block: Block<any, any>,
   phase: HighlightStubPhaseName,
-): HighlightStubPhaseOrFn<any> | undefined {
+): StubLifecycleFn<any> | undefined {
   const instr = block.instruction as {
-    stubBefore?: HighlightStubPhaseOrFn<any>;
-    stubAfter?: HighlightStubPhaseOrFn<any>;
-    stubOnError?: HighlightStubPhaseOrFn<any>;
+    stubBefore?: StubLifecycleFn<any>;
+    stubAfter?: StubLifecycleFn<any>;
+    stubOnError?: StubLifecycleFn<any>;
   };
   if (phase === "stubBefore") return instr.stubBefore;
   if (phase === "stubAfter") return instr.stubAfter;

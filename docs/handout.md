@@ -110,26 +110,20 @@ verify: [Trait.url({ pathname: "/checkout" })],
 }
 ```
 
-## Demo narration (proposal)
+## Demo narration
 
-Catch-all `stubBefore` / `stubAfter` on every block;
-unlimited demo purposes on the issue `.flow.ts` via
-`highlightFixtures`. Not `modHighlight` /
-not a `modBlock*` decorator.
-Full page: [Demo narration](./highlights).
+Blocks stay neutral; a flow narrates them where it uses them, with ctx stubs chained on the Block. Each flow can
+narrate the same Block differently. Full page: [Demo narration](./highlights).
 
-```sh
-// Block — neutral slots
-stubBefore: { email: { selector: "#email", label: "Email" } },
-stubAfter:  { sent: { selector: "text=Check your inbox", label: "Link sent" } },
-
-// .flow.ts — unlimited purposes (AC, BUG/GATE, detail, ticket copy)
-highlightFixtures: {
-"method-…": {
-stubBefore: { email: { label: "pia-pm#276 · Marco", detail: "Magic link." } },
-stubAfter:  { sent: { label: "Inbox banner", tag: "GATE" } },
-},
-};
+```ts
+// .flow.ts
+.method(
+  SendMagicLinkBlock.stubBefore((ctx) => {
+    ctx.ring("email", { selector: "#email", label: "Email", detail: "Magic link." });
+  }).stubAfter((ctx) => {
+    ctx.ring("sent", { selector: "text=Check your inbox", label: "Link sent", tag: "GATE" });
+  }),
+)
 ```
 
 ## Onboarding CLI

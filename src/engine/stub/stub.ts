@@ -88,23 +88,22 @@ export type StubPhaseFixtures = {
 };
 
 /**
- * Open stub lifecycle context. Authors set rings + episode fixtures freely —
- * not restricted to returning a closed slot object.
+ * What a stub is given: chained where a flow uses a Block, it paints rings, todos, the device and the banner.
  *
  * @example
- * stubBefore: (ctx) => {
+ * LoginBlock.stubBefore((ctx) => {
  *   ctx.todos("sign-in", ["Enter email", "Enter password", "Click Sign in"], { index: 0 });
  *   ctx.zoom(1.35);
  *   ctx.highlights({
  *     email: { selector: "#email", label: "Email" },
  *     submit: { selector: "#login-button", label: "Sign in" },
  *   });
- * }
- * // Sequential plan: bump todoIndex in a later phase / later block's stubBefore
- * stubAfter: (ctx) => {
+ * })
+ * // Sequential plan: bump todoIndex in a later phase / a later Block's stubBefore
+ * .stubAfter((ctx) => {
  *   ctx.todoIndex(2);
  *   ctx.ring("inventory", { selector: ".inventory_list", label: "Landed" });
- * }
+ * });
  */
 export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   /**
@@ -204,16 +203,6 @@ export type StubLifecycleFn<Out extends Checkpoint<string>> = (
   ctx: StubCtx<Out>,
 ) => void | Promise<void>;
 
-/**
- * Block stub authoring:
- * - **preferred:** open lifecycle `stubBefore(ctx) { ctx.todos(...); ctx.ring(...) }`
- * - **shorthand:** static slot map `{ email: { selector, label } }`
- *
- * Exactly one function member, so an inline `stubAfter(ctx) {}` gets `ctx` typed.
- */
-export type HighlightStubPhaseOrFn<Out extends Checkpoint<string>> =
-  | HighlightStubPhase
-  | StubLifecycleFn<Out>;
 
 /** Result of running a stub phase (rings + episode fixtures). */
 export type StubPhaseResult = {
