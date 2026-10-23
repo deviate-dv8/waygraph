@@ -5,8 +5,9 @@ import { basename } from "node:path";
 import { importFresh, isBlockLike, walkDir } from "../manifest/scan.js";
 import { collectPracticeWarnings } from "./practices-check.js";
 import type { PracticeWarning } from "./practices-check.js";
-import { mapGroupImportProblems, mapGroups } from "../manifest/maps.js";
-import type { MapImportProblem } from "../manifest/maps.js";
+import { mapGroups } from "../manifest/maps.js";
+import { mapGroupImportProblems } from "../manifest/map-imports.js";
+import type { MapImportProblem } from "../manifest/map-imports.js";
 
 /** Anything runnable counts for `validate` (looser than the manifest, which also wants `.blocks()`). */
 function isFlowLike(val: unknown): boolean {

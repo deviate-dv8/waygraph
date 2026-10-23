@@ -1,16 +1,8 @@
-// Source-text reads for `waygraph list` / `nav`: no import, regex only.
-import { readFileSync } from "node:fs";
+// What `waygraph list` / `nav` print, read from each file's AST without importing it.
+import { exportedNames, namedImportsFrom, objectArgProperty, parseSource, stringArgs } from "../manifest/source.js";
 
 export function extractFlowNames(filePath: string): string[] {
-  const src = readFileSync(filePath, "utf-8");
-  const names: string[] = [];
-  const re = /export\s+const\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*[=:]/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src)) !== null) {
-    const name = m[1];
-    if (name !== undefined) names.push(name);
-  }
-  return names;
+  return exportedNames(parseSource(filePath));
 }
 
 
@@ -26,43 +18,17 @@ export function blockExportToLabel(exportId: string): string {
 
 /** Every `...Block` identifier a `.flow.ts` file imports, in source order. */
 export function parseBlockImports(filePath: string): string[] {
-  const src = readFileSync(filePath, "utf-8");
-  const names: string[] = [];
-  const re = /import\s*\{([^}]*)\}\s*from\s*["'][^"']*\.block(?:\.js)?["']/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src)) !== null) {
-    for (const part of m[1]!.split(",")) {
-      const name = part.trim().split(/\s+as\s+/)[0]?.trim();
-      if (name) names.push(name);
-    }
-  }
-  return names;
+  return namedImportsFrom(parseSource(filePath), (spec) => /\.block(\.js)?$/.test(spec));
 }
 
 
-/** Every `page.goto("...")` string literal in a file, in source order. */
+/** Every `page.goto("...")` URL in a file, in source order. */
 export function extractGotos(filePath: string): string[] {
-  const src = readFileSync(filePath, "utf-8");
-  const results: string[] = [];
-  const re = /\.goto\(\s*["'`]([^"'`]*)["'`]/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src)) !== null) {
-    const url = m[1];
-    if (url !== undefined) results.push(url);
-  }
-  return results;
+  return stringArgs(parseSource(filePath), (callee) => callee.endsWith(".goto"));
 }
 
 
 /** Every `Trait.url({ pathname: "..." })` target in a file, in source order. */
 export function extractUrlTraits(filePath: string): string[] {
-  const src = readFileSync(filePath, "utf-8");
-  const results: string[] = [];
-  const re = /Trait\.url\(\s*\{[^}]*pathname:\s*["'`]([^"'`]*)["'`]/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src)) !== null) {
-    const url = m[1];
-    if (url !== undefined) results.push(url);
-  }
-  return results;
+  return objectArgProperty(parseSource(filePath), (callee) => callee === "Trait.url", "pathname");
 }

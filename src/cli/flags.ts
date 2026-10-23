@@ -1,6 +1,7 @@
 import { basename, relative, resolve } from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { walkDir } from "../manifest/scan.js";
+import { exportedNames, parseSource } from "../manifest/source.js";
 import { loadWaygraphConfig, resolveBaseUrl } from "../runtime/config.js";
 
 // ---------------------------------------------------------------------------
@@ -424,17 +425,9 @@ async function resolveFlowFileToExport(projectDir: string, fileArg: string): Pro
     }
   }
   const expected = flowExportNameFromBasename(abs);
-  const src = readFileSync(abs, "utf-8");
-  if (new RegExp(`\\bexport\\s+(?:const|let|var|async\\s+function|function)\\s+${expected}\\b`).test(src)) {
-    return expected;
-  }
-  if (new RegExp(`\\bexport\\s*\\{[^}]*\\b${expected}\\b`).test(src)) {
-    return expected;
-  }
-  const flowNames = [
-    ...src.matchAll(/\bexport\s+(?:const|let|var|async\s+function|function)\s+(\w*Flow)\b/g),
-  ].map((m) => m[1]!);
-  const unique = [...new Set(flowNames)];
+  const exported = exportedNames(parseSource(abs));
+  if (exported.includes(expected)) return expected;
+  const unique = [...new Set(exported.filter((n) => n.endsWith("Flow")))];
   if (unique.length === 1) return unique[0]!;
   if (unique.includes(expected)) return expected;
   if (unique.length === 0) {

@@ -1,12 +1,11 @@
 // Scans a project (and any injected Block libraries) into its Blocks and Flows, with each Block's route.
-import { readFileSync } from "node:fs";
 import { relative } from "node:path";
 import type { BlocksSelect } from "./select.js";
 import { matchBlocksSelect } from "./select.js";
 import { exploreRoots, injectTaggedFile } from "./roots.js";
 import { blockKind, importFresh, isBlockLike, isFlowLike, walkDir } from "./scan.js";
 import type { AnyBlock } from "./scan.js";
-import { extractDefineBlockGenerics, resolveGenericArg } from "./legacy-generics.js";
+import { legacyRoutes } from "./legacy-generics.js";
 import { installedMapPackages, mapPackageBlockFiles } from "./maps.js";
 
 export type BlockKind = "nav" | "page" | "assert" | "method" | "effect" | "api" | "block";
@@ -93,7 +92,7 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
       onError(rel, err);
       return;
     }
-    let legacyCalls: { in: string; out: string }[] | undefined;
+    let legacyCalls: Awaited<ReturnType<typeof legacyRoutes>> | undefined;
     let legacyIndex = 0;
     for (const [exportName, exported] of Object.entries(mod)) {
       if (!isBlockLike(exported)) continue;
@@ -103,11 +102,11 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
       let to = marked.__waygraphTo ?? [];
       let legacy = false;
       if (to.length === 0) {
-        legacyCalls ??= extractDefineBlockGenerics(readFileSync(absFile, "utf-8"));
+        legacyCalls ??= await legacyRoutes(absFile);
         const call = legacyCalls[legacyIndex++];
         if (call) {
-          from = resolveGenericArg(absFile, call.in);
-          to = resolveGenericArg(absFile, call.out);
+          from = call.from;
+          to = call.to;
           legacy = true;
         }
         if (from.length === 0 || to.length === 0) {

@@ -35,6 +35,13 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
   await page
     .evaluate(
       async ({ sessionId, snapshot, graph }) => {
+        // Block names, labels and descriptions can carry the page's own text (an Effect's instance label is read off
+        // the live DOM), so they go in as text, never as markup.
+        const esc = (s: unknown): string => {
+          const el = document.createElement("span");
+          el.textContent = s == null ? "" : String(s);
+          return el.innerHTML.replace(/"/g, "&quot;");
+        };
         const badge = __wgById("wg-pilot-badge");
         const current = __wgById("wg-pilot-panel-current");
         const graphPanel = __wgById("wg-pilot-panel-graph");
@@ -53,12 +60,12 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
             .map((section) => {
               const rows = section.edges
                 .map((edge) => {
-                  const desc = edge.description ? ` - ${edge.description}` : "";
-                  const label = edge.label ? ` (${edge.label})` : "";
-                  return `<div class="wg-pilot-edge">[${edge.index}] <span class="wg-pilot-kind">${edge.kind}</span> ${edge.block}${label} -&gt; ${edge.to}${desc}</div>`;
+                  const desc = edge.description ? ` - ${esc(edge.description)}` : "";
+                  const label = edge.label ? ` (${esc(edge.label)})` : "";
+                  return `<div class="wg-pilot-edge">[${edge.index}] <span class="wg-pilot-kind">${esc(edge.kind)}</span> ${esc(edge.block)}${label} -&gt; ${esc(edge.to)}${desc}</div>`;
                 })
                 .join("");
-              return `<div class="wg-pilot-section">${section.title}</div>${rows}`;
+              return `<div class="wg-pilot-section">${esc(section.title)}</div>${rows}`;
             })
             .join("");
         }
@@ -79,12 +86,12 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
                 ? outgoing
                     .map(
                       (e) =>
-                        `<div class="wg-pilot-graph-edge"><span class="wg-pilot-kind">${e.kind}</span> ${e.block} -&gt; ${e.to}</div>`,
+                        `<div class="wg-pilot-graph-edge"><span class="wg-pilot-kind">${esc(e.kind)}</span> ${esc(e.block)} -&gt; ${esc(e.to)}</div>`,
                     )
                     .join("")
                 : '<div class="wg-pilot-graph-edge wg-pilot-empty">(no outgoing edges)</div>';
               const here = node.checkpoint === snapshot.here ? " (here)" : "";
-              return `<div class="wg-pilot-graph-node"><div class="wg-pilot-graph-checkpoint">${node.checkpoint}${here}</div>${rows}</div>`;
+              return `<div class="wg-pilot-graph-node"><div class="wg-pilot-graph-checkpoint">${esc(node.checkpoint)}${here}</div>${rows}</div>`;
             })
             .join("");
         };

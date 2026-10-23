@@ -21,8 +21,12 @@ export async function installDemoChrome(
         if (showBanner && title && !__wgById("wg-banner")) {
           const banner = document.createElement("div");
           banner.id = "wg-banner";
-          banner.innerHTML =
-            "<span class='wg-banner-tag'>waygraph auto</span><span>" + title + "</span>";
+          const tag = document.createElement("span");
+          tag.className = "wg-banner-tag";
+          tag.textContent = "waygraph auto";
+          const text = document.createElement("span");
+          text.textContent = title;
+          banner.append(tag, text);
           __wgAdd(banner);
           banner.setAttribute("data-wg-ui", "1");
           banner.setAttribute("data-wg-modal", "banner");

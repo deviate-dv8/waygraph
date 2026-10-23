@@ -5,8 +5,10 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { createRequire } from "node:module";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { findMapGroup, mapGroupImportProblems, mapGroups } from "./maps.js";
-import type { MapGroup, MapImportProblem, MapPackageJson } from "./maps.js";
+import { findMapGroup, mapGroups } from "./maps.js";
+import type { MapGroup, MapPackageJson } from "./maps.js";
+import { mapGroupImportProblems } from "./map-imports.js";
+import type { MapImportProblem } from "./map-imports.js";
 import { MANIFEST_VERSION } from "./manifest.js";
 import { scanProject } from "./project.js";
 import { walkDir } from "./scan.js";

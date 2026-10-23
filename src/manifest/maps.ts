@@ -27,30 +27,6 @@ export function findMapGroup(projectDir: string, name: string): MapGroup | undef
   return groups.find((g) => g.group === name) ?? groups.find((g) => g.group.split("/").pop() === name);
 }
 
-export interface MapImportProblem {
-  file: string;
-  spec: string;
-}
-
-const ALLOWED_BARE = /^(waygraph|@playwright\/test|playwright|playwright-core)(\/.*)?$|^node:/;
-const IMPORT_SPEC = /(?:^\s*(?:import|export)\s[^;]*?from\s+|\bimport\s*\(\s*|^\s*import\s+)["']([^"']+)["']/gm;
-
-/** Imports in a group that reach outside it (anything but waygraph, Playwright, `node:` and the group's own files). */
-export function mapGroupImportProblems(group: MapGroup): MapImportProblem[] {
-  const problems: MapImportProblem[] = [];
-  for (const file of walkDir(group.dir, /\.ts$/)) {
-    for (const m of readFileSync(file, "utf8").matchAll(IMPORT_SPEC)) {
-      const spec = m[1]!;
-      if (spec.startsWith(".")) {
-        const target = resolve(dirname(file), spec);
-        if (target === group.dir || target.startsWith(group.dir + sep)) continue;
-      } else if (ALLOWED_BARE.test(spec)) continue;
-      problems.push({ file, spec });
-    }
-  }
-  return problems;
-}
-
 export interface MapPackageJson {
   version: number;
   name: string;

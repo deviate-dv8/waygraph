@@ -1,0 +1,68 @@
+// Reads a TypeScript file's shape (its exports, imports, string arguments) from the AST (ts-morph), for the places that
+// need it without importing the file: `list`, `nav`, a flow file's export name, a map group's imports.
+import { readFileSync } from "node:fs";
+import { Node, Project, SyntaxKind } from "ts-morph";
+import type { SourceFile } from "ts-morph";
+
+const project = new Project({ useInMemoryFileSystem: true, skipFileDependencyResolution: true });
+
+/** The file as it is on disk now. */
+export function parseSource(file: string): SourceFile {
+  return project.createSourceFile(file.replace(/\\/g, "/").replace(/^[A-Za-z]:/, ""), readFileSync(file, "utf8"), { overwrite: true });
+}
+
+/** Names the file exports: `export const|let|var|function|class X`, and `export { X }`. */
+export function exportedNames(sf: SourceFile): string[] {
+  const names: string[] = [];
+  for (const statement of sf.getStatements()) {
+    if (Node.isVariableStatement(statement) && statement.isExported()) names.push(...statement.getDeclarations().map((d) => d.getName()));
+    else if ((Node.isFunctionDeclaration(statement) || Node.isClassDeclaration(statement)) && statement.isExported() && statement.getName()) names.push(statement.getName()!);
+    else if (Node.isExportDeclaration(statement) && !statement.getModuleSpecifier()) names.push(...statement.getNamedExports().map((e) => e.getAliasNode()?.getText() ?? e.getName()));
+  }
+  return names;
+}
+
+/** Every module the file imports or re-exports from, including dynamic `import("x")`. */
+export function importSpecifiers(sf: SourceFile): string[] {
+  const specs = [
+    ...sf.getImportDeclarations().map((d) => d.getModuleSpecifierValue()),
+    ...sf.getExportDeclarations().flatMap((d) => d.getModuleSpecifierValue() ?? []),
+  ];
+  for (const call of sf.getDescendantsOfKind(SyntaxKind.CallExpression)) {
+    const arg = call.getArguments()[0];
+    if (call.getExpression().getKind() === SyntaxKind.ImportKeyword && Node.isStringLiteral(arg)) specs.push(arg.getLiteralValue());
+  }
+  return specs;
+}
+
+/** Names imported from modules whose specifier passes `from`, in source order (the imported name, not an alias). */
+export function namedImportsFrom(sf: SourceFile, from: (specifier: string) => boolean): string[] {
+  return sf
+    .getImportDeclarations()
+    .filter((d) => from(d.getModuleSpecifierValue()))
+    .flatMap((d) => d.getNamedImports().map((n) => n.getName()));
+}
+
+/** The string literal at `argIndex` of every call whose callee text passes `callee`, in source order. */
+export function stringArgs(sf: SourceFile, callee: (text: string) => boolean, argIndex = 0): string[] {
+  const out: string[] = [];
+  for (const call of sf.getDescendantsOfKind(SyntaxKind.CallExpression)) {
+    if (!callee(call.getExpression().getText())) continue;
+    const arg = call.getArguments()[argIndex];
+    if (Node.isStringLiteral(arg) || Node.isNoSubstitutionTemplateLiteral(arg)) out.push(arg.getLiteralValue());
+  }
+  return out;
+}
+
+/** A string property of the object literal passed to every matching call: `Trait.url({ pathname: "/x" })` -> "/x". */
+export function objectArgProperty(sf: SourceFile, callee: (text: string) => boolean, property: string): string[] {
+  const out: string[] = [];
+  for (const call of sf.getDescendantsOfKind(SyntaxKind.CallExpression)) {
+    if (!callee(call.getExpression().getText())) continue;
+    const arg = call.getArguments()[0];
+    const prop = Node.isObjectLiteralExpression(arg) ? arg.getProperty(property) : undefined;
+    const value = Node.isPropertyAssignment(prop) ? prop.getInitializer() : undefined;
+    if (Node.isStringLiteral(value) || Node.isNoSubstitutionTemplateLiteral(value)) out.push(value.getLiteralValue());
+  }
+  return out;
+}
