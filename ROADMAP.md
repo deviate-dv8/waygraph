@@ -228,7 +228,7 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 3. One manifest replaces the five project scanners and the `<In, Out>` source parse; `waygraph manifest`. **Done.**
 4. Run events: typed emitter in `runGraph` (`onRunEvent`), written to `.waygraph/runs/*.jsonl` by the CLI. **Done.** (Demo log and JSON report still read results directly; they move onto events with the demo layer in phase 5.)
 5. Demo runner from JavaScript to TypeScript, compiled by `tsc` (no copy step), under `demo/` (`narration/`, `overlay/`,
-   `step-mode/`); `runner/` is only the child process entry. **Done** except moving the demo log and JSON report onto run events.
+   `step-mode/`); `runner/` is only the child process entry; the JSON report carries the run's `runId`. **Done.**
 6. One overlay for demo, auto and pilot.
 7. `live/` for sessions, pilot and traverse.
 8. Thin CLI.

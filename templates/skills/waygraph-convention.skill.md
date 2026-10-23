@@ -165,8 +165,12 @@ npx waygraph check --no-practices .   # skip bad-practice scan only
 npx waygraph map .            # exit 1 if src/map/ folder path != real static url
 npx waygraph validate .       # every .flow.ts loads
 npx waygraph graph .          # nodes/edges/skipped/orphans - counts should make sense
+npx waygraph manifest .       # JSON of every Block (kind, from/to, requires), Flow and Checkpoint
 npm run typecheck             # when the consumer has it
 ```
+
+Every `run`/`demo`/`test` also writes `.waygraph/runs/<runId>.jsonl` (step start/end/error, artifacts): read the
+newest one to see which Block failed and with what error, instead of re-running.
 
 `waygraph check` should report zero nav warnings. Orphan Blocks (not in any `.flow.ts`)
 are still runnable in Pilot's live menu - orphan status only blocks

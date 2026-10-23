@@ -4,6 +4,7 @@ import type { WgPage } from "../demo/types.js";
 import type { MemPage } from "../core/mem-page.js";
 import type { BrowserContext } from "@playwright/test";
 import { resetPageState } from "../demo/step-mode/teardown.js";
+import { currentRunId, recordArtifact } from "../core/events.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -19,7 +20,12 @@ import { tmpdir } from "node:os";
  * "auto" came to mean the state-machine discovery tool instead; this is a
  * chain reporting mode, not a distinct command.)
  */
+/** The JSON report of `run` with WAYGRAPH_JSON=1; `runId` names the matching `.waygraph/runs/<runId>.jsonl`. */
 export async function runJsonReportMode(engine: any, start: any, end: any, context: BrowserContext, page: WgPage, mem: MemPage, resolved: any, baseURL: string | undefined) {
+  return { runId: currentRunId(), ...(await jsonReport(engine, start, end, context, page, mem, resolved, baseURL)) };
+}
+
+async function jsonReport(engine: any, start: any, end: any, context: BrowserContext, page: WgPage, mem: MemPage, resolved: any, baseURL: string | undefined) {
   const steps = [];
   for (let i = 0; i < resolved.length; i++) {
     const r = resolved[i];
@@ -52,6 +58,7 @@ export async function runJsonReportMode(engine: any, start: any, end: any, conte
       try {
         screenshot = join(tmpdir(), "waygraph-chain-failure-" + Date.now() + ".png");
         await page.screenshot({ path: screenshot, fullPage: true });
+        recordArtifact("screenshot", screenshot);
       } catch {
         screenshot = null;
       }

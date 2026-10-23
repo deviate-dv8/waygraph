@@ -93,6 +93,11 @@ export function stepFailed(error: unknown): void {
   open.step = undefined;
 }
 
+/** The id of the run open right now, if any. */
+export function currentRunId(): string | undefined {
+  return open?.runId;
+}
+
 export function recordArtifact(kind: "video" | "trace" | "screenshot", path: string, runId = open?.runId): void {
   if (runId) emit({ type: "run:artifact", runId, at: Date.now(), kind, path });
 }

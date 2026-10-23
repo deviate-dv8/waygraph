@@ -320,6 +320,8 @@ Every run emits events: `run:start`, then `step:start` / `step:end` (Block, from
 for each Block, `run:artifact` for a saved video, and `run:end` (ok, result or error). Subscribe in code with
 `onRunEvent((event) => …)`. The CLI (`run`, `demo`, `test`) also writes them to `.waygraph/runs/<runId>.jsonl` in the
 project: the run history Waygraph UI shows. `runLog: false` in the config turns it off, `runLog: "<folder>"` moves it.
+The unattended JSON report (`run` + `WAYGRAPH_JSON=1`) carries the same `runId`, and a failure screenshot is recorded as
+a `run:artifact`.
 
 ## Quick start
 
