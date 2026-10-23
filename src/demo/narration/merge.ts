@@ -1,5 +1,5 @@
 import type { HighlightStubPhase, HighlightStubPhaseName, HighlightStubPhaseOrFn, ResolvedHighlight, WaygraphHighlightStub } from "../../engine/narration.js";
-import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "./style.js";
+import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/narration.js";
 import type { Block } from "../../engine/block/block.js";
 
 export function isStubPhase(v: unknown): v is HighlightStubPhase {

@@ -32,9 +32,6 @@ export interface AutoExploreOptions {
   blocksSelect?: import("../manifest/select.js").BlocksSelect;
 }
 
-/** See `../config.js`'s own `resolveBaseUrl` - re-exported so existing importers of this module
- * don't need to change their import path. */
-export { resolveBaseUrl };
 
 /** URL-first - several Checkpoints share nav verify traits (e.g. LoggedIn = /inventory.html). */
 async function inferCheckpointFromUrl(page: Page): Promise<string | null> {

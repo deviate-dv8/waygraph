@@ -15,6 +15,7 @@ export const ${name} = defineMethodBlock({
 `;
 
 test.describe("source checks read the AST, not the file text", () => {
+  test.describe.configure({ mode: "serial" });
   const dir = join(import.meta.dirname, ".tmp-source-checks");
   test.beforeAll(async () => {
     await mkdir(join(dir, "src/blocks"), { recursive: true });

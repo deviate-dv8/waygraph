@@ -1439,6 +1439,10 @@ part of this package's own tree.
 
 ## CLI reference
 
+Flags are read with Node's `parseArgs` from one table (`RUN_OPTIONS` in `src/cli/flags.ts`), which also prints the
+`demo` / `run` / `browser start` help: an unknown flag or a flag missing its value stops with the reason instead of
+being taken as a project path.
+
 `waygraph auto [project]` is the **interactive explore** loop: `locate()` reads where you
 are, lists runnable Blocks from the graph, you pick one (headful panel or `--cli` terminal
 menu), repeat. Static graph export (old JSON / Mermaid) is `waygraph graph [project]`

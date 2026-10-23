@@ -14,7 +14,7 @@ import type { BlockEntry } from "../../manifest/project.js";
 import { MemPage } from "../../engine/mem/mem.js";
 import { Engine } from "../../engine/engine.js";
 import type { BrowserContext, BrowserContextOptions, Page } from "@playwright/test";
-import { detectHere, ensureLivePage, ensureMem, resolveBaseUrl, runOneBlock, seedDefaultMem } from "../auto-explore-run.js";
+import { detectHere, ensureLivePage, ensureMem, runOneBlock, seedDefaultMem } from "../auto-explore-run.js";
 import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from "../../analysis/coverage-gap.js";
 import type { UnmappedInteractionPayload } from "../../analysis/coverage-gap.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
@@ -22,7 +22,7 @@ import type { WaygraphInstanceOption } from "../../engine/block/block.js";
 import { runStubPhase } from "../../demo/narration/narration.js";
 import { verboseLog } from "../../demo/verbose-log.js";
 import { findBlockPathDetailed } from "../../analysis/graph.js";
-import { configuredExtensions } from "../../runtime/config.js";
+import { configuredExtensions, resolveBaseUrl } from "../../runtime/config.js";
 import { chromiumExecutablePath, launchContext } from "../../runtime/browser.js";
 
 /**

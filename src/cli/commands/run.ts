@@ -1,4 +1,5 @@
-import { applyDemoDefaults, applyRunFlags, parseRunFlags, resolveBaseUrl, resolveProjectDir, resolveSpec } from "../flags.js";
+import { resolveBaseUrl } from "../../runtime/config.js";
+import { applyDemoDefaults, applyRunFlags, parseRunFlags, resolveProjectDir, resolveSpec } from "../flags.js";
 import { runChain } from "../run-chain.js";
 import { resolve } from "node:path";
 import { existsSync } from "node:fs";

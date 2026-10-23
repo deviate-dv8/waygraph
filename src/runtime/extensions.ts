@@ -7,7 +7,6 @@ import { inflateRawSync } from "node:zlib";
 
 /** A known name (`"hoppscotch"`), a Chrome Web Store id, a path to an unpacked extension, or `{ id, sha256 }`. */
 import type { ExtensionSpec } from "../engine/config.js";
-export type { ExtensionSpec };
 
 /** Names accepted in `extensions: [...]` mapped to their Chrome Web Store ids. */
 export const KNOWN_EXTENSIONS: Readonly<Record<string, string>> = {

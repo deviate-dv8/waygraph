@@ -1,5 +1,6 @@
+import { resolveBaseUrl } from "../../runtime/config.js";
 import { printBrowserSessionsList, printBrowserUsage } from "../usage.js";
-import { applyRunFlags, looksLikeFlowFileRef, parseRunFlags, resolveBaseUrl } from "../flags.js";
+import { applyRunFlags, looksLikeFlowFileRef, parseRunFlags } from "../flags.js";
 import { runChain } from "../run-chain.js";
 import { runChainAuto } from "../run-chain.js";
 import { resolve } from "node:path";
@@ -564,8 +565,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
 export async function autoServeCase(args: string[]): Promise<void> {
       const proj = resolve(args[1] ?? process.cwd());
       const flags = parseRunFlags(args.slice(2));
-      const sessionIdIdx = args.indexOf("--session-id");
-      const sessionId = sessionIdIdx >= 0 ? args[sessionIdIdx + 1] : undefined;
+      const sessionId = flags.sessionId;
       if (!sessionId) {
         console.error("waygraph __auto-serve: missing --session-id");
         process.exit(1);

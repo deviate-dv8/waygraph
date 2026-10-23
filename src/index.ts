@@ -105,5 +105,5 @@ export type { WaygraphConfig, ConfigContext, VideoSettings, RunSettings, DemoSet
 export { withWebServer } from "./runtime/webserver.js";
 export { chromiumExecutablePath } from "./runtime/browser.js";
 export { resolveExtension, KNOWN_EXTENSIONS } from "./runtime/extensions.js";
-export type { ExtensionSpec } from "./runtime/extensions.js";
+export type { ExtensionSpec } from "./engine/config.js";
 export type { WebServerConfig } from "./runtime/webserver.js";

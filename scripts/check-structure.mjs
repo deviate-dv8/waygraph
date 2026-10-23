@@ -122,7 +122,12 @@ for (const f of files) {
 const REEXPORT_RE = /^\s*export\s+(?:type\s+)?(?:\*|\{[^}]*\})\s+from\s+["']/m;
 for (const f of files) {
   const rel = relative(srcDir, f).replace(/\\/g, "/");
-  if (rel !== "index.ts" && REEXPORT_RE.test(readFileSync(f, "utf8"))) problems.push(`${rel}: re-exports another module (import from where it is declared; only src/index.ts re-exports)`);
+  if (rel === "index.ts") continue;
+  const text = readFileSync(f, "utf8");
+  // `export { x }` of a name the file imports is a re-export too.
+  const imported = new Set([...text.matchAll(/^import\s+(?:type\s+)?\{([^}]*)\}\s+from/gm)].flatMap((m) => m[1].split(",").map((n) => n.trim().split(/\s+as\s+/).pop()).filter(Boolean)));
+  const passedOn = [...text.matchAll(/^export\s+(?:type\s+)?\{([^}]*)\}\s*;/gm)].flatMap((m) => m[1].split(",").map((n) => n.trim().split(/\s+as\s+/)[0])).filter((n) => imported.has(n));
+  if (REEXPORT_RE.test(text) || passedOn.length) problems.push(`${rel}: re-exports another module (import from where it is declared; only src/index.ts re-exports)`);
 }
 // --- no HTML strings into the page ---
 const HTML_SINK_RE = /\.(?:innerHTML|outerHTML)\s*\+?=|\binsertAdjacentHTML\s*\(|\bdocument\.write\s*\(/;

@@ -1,4 +1,5 @@
 import { basename, relative, resolve } from "node:path";
+import { parseArgs } from "node:util";
 import { existsSync } from "node:fs";
 import { walkDir } from "../manifest/scan.js";
 import { exportedNames, parseSource } from "../manifest/source.js";
@@ -66,20 +67,68 @@ interface RunFlags {
   json?: boolean;
   /** check/typecheck: skip bad-practice warnings. */
   noPractices?: boolean;
+  /** __auto-serve (the detached session child): its session id. */
+  sessionId?: string;
 }
 
 
-function takeFlagValue(argv: string[], i: number, a: string, flag: string): { value: string; nextI: number } {
-  if (a.startsWith(flag + "=")) {
-    return { value: a.slice(flag.length + 1), nextI: i };
-  }
-  const v = argv[i + 1];
-  if (v === undefined || (v.startsWith("-") && !a.includes("="))) {
-    console.error(`waygraph: ${flag} needs a value`);
-    process.exit(1);
-  }
-  return { value: v, nextI: i + 1 };
+/** Which commands document an option in their help (the parser accepts every option for every command that parses run flags). */
+type HelpFor = "demo" | "run" | "session";
+
+/**
+ * Every flag the run-style commands take: `parseArgs` reads them from this table, and `usage.ts` prints the demo / run
+ * help from it, so the two can't drift. A flag not listed here is an error, not a stray positional.
+ */
+export const RUN_OPTIONS = {
+  "blocks": { type: "string", value: "<flow|file|spec>", help: "Flow export, .flow.ts path or \"a then b\" chain; auto: <From> <To> Checkpoints", for: ["demo", "run"] },
+  "data": { type: "string", value: "'{...}'", help: "Mem seed JSON (or inline flow({...}))", for: ["demo", "run"] },
+  "mem-stub": { type: "boolean", help: "Fill any requires key --data didn't cover from registerMemStub's registry", for: ["demo", "run"] },
+  "auto-next": { type: "boolean", help: "Auto-advance steps", for: ["demo"] },
+  "no-auto-next": { type: "boolean", help: "Wait for Next on every step (the default)", for: ["demo"] },
+  "fast": { type: "boolean", help: "Shorter auto-next / Next gates (keeps the smooth cursor)", for: ["demo"] },
+  "full": { type: "boolean", help: "Classic wrap-all block chips (default: carousel)", for: ["demo"] },
+  "mini": { type: "boolean", help: "Force the compact mini panel (Hide pill + Next)", for: ["demo"] },
+  "todo-left": { type: "boolean", help: "Floating checklist dock on the left (also ctx.todos(id, items, { pos }))", for: ["demo"] },
+  "todo-right": { type: "boolean", help: "Floating checklist dock on the right", for: ["demo"] },
+  "todo-full": { type: "boolean", help: "Full checklist: no compact / collision / behind-ring", for: ["demo"] },
+  "todo-smart": { type: "boolean", help: "Compact + collision + behind-ring (the default)", for: ["demo"] },
+  "ff-expand": { type: "boolean", help: "Expand fastForwardComposeBlock inners as separate steps", for: ["demo", "run"] },
+  "ff-disabled": { type: "boolean", help: "Dispute: expand FF; blitz kept on those inners", for: ["demo", "run"] },
+  "auto-play-video": { type: "boolean", help: "Unattended + recorded: --auto-next + --video (+ step); headless", for: ["demo"] },
+  "auto-play-video-head": { type: "boolean", help: "Same, but keep the browser visible (--non-headless)", for: ["demo"] },
+  "video": { type: "string", value: "[dir]", help: "Record .webm (default ~/Downloads/waygraph-videos/<project>, video.dir, WAYGRAPH_VIDEO_DIR)", for: ["demo", "run"] },
+  "video-viewport": { type: "string", value: "WxH", help: "Recording size (demo 1920x1080, run 1280x720)", for: ["demo", "run"] },
+  "step": { type: "boolean", help: "Step through with the overlay", for: ["run"] },
+  "no-step": { type: "boolean", help: "No step overlay (demo: plain run with narration off)", for: ["demo"] },
+  "all-branches": { type: "boolean", help: "Bare Flow ref only: explore every branch() path, cloning the session at each", for: ["run"] },
+  "shared-session": { type: "boolean", help: "With --all-branches: one shared session (follows only the live path)", for: ["run"] },
+  "non-headless": { type: "boolean", help: "Show the browser", for: ["demo", "run"] },
+  "title": { type: "string", value: "<text>", help: "Banner title", for: ["demo", "run"] },
+  "base-url": { type: "string", value: "<url>", help: "Base URL (beats WAYGRAPH_BASE_URL and the config)", for: ["demo", "run", "session"] },
+  "inject": { type: "string", multiple: true, value: "<preset|path>", help: "Merge an external Block library (repeatable)", for: ["session"] },
+  "goto": { type: "string", value: "<url>", help: "Navigate on start (disables the blank page)", for: ["session"] },
+  "blank": { type: "boolean", help: "Force about:blank on start (default)", for: ["session"] },
+  "headless": { type: "boolean", help: "Headless session (default: visible browser)", for: ["session"] },
+  "cli": { type: "boolean", help: "Terminal picker instead of the browser panel", for: ["session"] },
+  "json": { type: "boolean", help: "Machine-readable JSON", for: ["session"] },
+  "mermaid": { type: "boolean", help: "Print the graph as Mermaid" },
+  "map": { type: "boolean", help: "Print the map" },
+  "no-practices": { type: "boolean", help: "check / typecheck: skip bad-practice warnings" },
+  "session-id": { type: "string", help: "Internal: the id a detached session child serves (set by browser start)" },
+} as const satisfies Record<string, { type: "boolean" | "string"; multiple?: boolean; value?: string; help: string; for?: readonly HelpFor[] }>;
+
+/** The help lines for one command's options, from {@link RUN_OPTIONS}. */
+export function optionHelp(command: HelpFor, indent = 17): string {
+  const rows = Object.entries(RUN_OPTIONS)
+    .filter(([, o]) => "for" in o && (o.for as readonly HelpFor[]).includes(command))
+    .map(([name, o]) => [`--${name}${"value" in o ? " " + o.value : ""}`, o.help] as const);
+  const width = Math.max(...rows.map(([f]) => f.length)) + 2;
+  return rows.map(([f, h]) => " ".repeat(indent) + f.padEnd(width) + h).join("\n");
 }
+
+const PARSE_OPTIONS = Object.fromEntries(
+  Object.entries(RUN_OPTIONS).map(([name, o]) => [name, { type: o.type, multiple: "multiple" in o && o.multiple }]),
+) as { [K in keyof typeof RUN_OPTIONS]: { type: (typeof RUN_OPTIONS)[K]["type"]; multiple: (typeof RUN_OPTIONS)[K] extends { multiple: true } ? true : false } };
 
 
 /**
@@ -94,127 +143,60 @@ function looksLikeCheckpointArg(s: string): boolean {
 }
 
 
-/**
- * Pulls run/demo/auto flags out of argv. Unknown bare `--*` that are not
- * recognized stay as positionals only when they are project paths; known
- * explore flags (--cli/--mermaid/--map) are parsed here.
- */
+/** Reads run/demo/auto/session flags with `node:util`'s parseArgs; an unknown flag or a missing value exits with the reason. */
 export function parseRunFlags(argv: string[]): RunFlags {
-  const out: RunFlags = { positionals: [] };
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]!;
-    if (a === "--step") {
-      out.step = true;
-    } else if (a === "--no-step") {
-      out.step = false;
-    } else if (a === "--auto-next") {
-      out.autoplay = true;
-    } else if (a === "--no-auto-next") {
-      out.autoplay = false;
-    } else if (a === "--auto-play-video") {
-      out.autoPlayVideo = true;
-    } else if (a === "--auto-play-video-head") {
-      out.autoPlayVideo = true;
-      out.nonHeadless = true;
-    } else if (a === "--fast") {
-      out.fast = true;
-    } else if (a === "--full") {
-      out.fullStepper = true;
-    } else if (a === "--mini") {
-      out.miniStepper = true;
-    } else if (a === "--todo-left") {
-      out.todoPos = "left";
-    } else if (a === "--todo-right") {
-      out.todoPos = "right";
-    } else if (a === "--todo-full" || a === "--no-todo-smart") {
-      out.todoUiFull = true;
-    } else if (a === "--todo-smart") {
-      out.todoUiSmart = true;
-    } else if (a === "--ff-expand") {
-      out.ffExpand = true;
-    } else if (a === "--ff-disabled") {
-      out.ffDisabled = true;
-      out.ffExpand = true;
-    } else if (a === "--non-headless") {
-      out.nonHeadless = true;
-    } else if (a === "--headless") {
-      out.headlessBrowser = true;
-    } else if (a === "--json") {
-      out.json = true;
-    } else if (a === "--no-practices") {
-      out.noPractices = true;
-    } else if (a === "--blank") {
-      out.blank = true;
-    } else if (a === "--goto" || a.startsWith("--goto=")) {
-      const t = takeFlagValue(argv, i, a, "--goto");
-      out.goto = t.value;
-      i = t.nextI;
-    } else if (a === "--inject" || a.startsWith("--inject=")) {
-      const t = takeFlagValue(argv, i, a, "--inject");
-      out.inject ??= [];
-      out.inject.push(t.value);
-      i = t.nextI;
-    } else if (a === "--cli") {
-      out.cli = true;
-    } else if (a === "--mermaid") {
-      out.mermaid = true;
-    } else if (a === "--map") {
-      out.map = true;
-    } else if (a === "--base-url" || a.startsWith("--base-url=")) {
-      const t = takeFlagValue(argv, i, a, "--base-url");
-      out.baseUrl = t.value;
-      i = t.nextI;
-    } else if (a === "--title" || a.startsWith("--title=")) {
-      const t = takeFlagValue(argv, i, a, "--title");
-      out.title = t.value;
-      i = t.nextI;
-    } else if (a === "--data" || a.startsWith("--data=")) {
-      const t = takeFlagValue(argv, i, a, "--data");
-      out.data = t.value;
-      i = t.nextI;
-    } else if (a === "--mem-stub") {
-      out.memStub = true;
-    } else if (a === "--all-branches") {
-      out.allBranches = true;
-    } else if (a === "--shared-session") {
-      out.sharedSession = true;
-    } else if (a === "--video" || a.startsWith("--video=")) {
-      if (a.startsWith("--video=")) {
-        out.video = a.slice("--video=".length);
-      } else {
-        const v = argv[i + 1];
-        if (v === undefined || v.startsWith("-")) {
-          out.video = "";
-        } else {
-          out.video = v;
-          i++;
-        }
-      }
-    } else if (a === "--video-viewport" || a.startsWith("--video-viewport=")) {
-      const t = takeFlagValue(argv, i, a, "--video-viewport");
-      out.videoViewport = t.value;
-      i = t.nextI;
-    } else if (a === "--blocks" || a.startsWith("--blocks=")) {
-      if (a.startsWith("--blocks=")) {
-        out.blocks = a.slice("--blocks=".length);
-      } else {
-        const v1 = argv[++i];
-        if (!v1 || v1.startsWith("-")) {
-          console.error("waygraph: --blocks needs a flow/spec or <from> <to> checkpoints");
-          process.exit(1);
-        }
-        const v2 = argv[i + 1];
-        if (v2 && looksLikeCheckpointArg(v1) && looksLikeCheckpointArg(v2)) {
-          out.blocksFromTo = [v1, v2];
-          i++;
-        } else {
-          out.blocks = v1;
-        }
-      }
-    } else {
-      out.positionals.push(a);
-    }
+  // `--video` takes an optional folder: bare (end of args, or another flag next) means the default folder.
+  const args = argv.map((a, i) => (a === "--video" && (argv[i + 1] === undefined || argv[i + 1]!.startsWith("-")) ? "--video=" : a));
+  let parsed;
+  try {
+    parsed = parseArgs({ args, options: PARSE_OPTIONS, allowPositionals: true, strict: true, tokens: true });
+  } catch (err) {
+    console.error(`waygraph: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
   }
+  const v = parsed.values;
+  const positionals = [...parsed.positionals];
+  const out: RunFlags = { positionals };
+  // `--blocks <From> <To>`: two Checkpoints in a row are a path to find, not a spec and a project path.
+  const blocksToken = parsed.tokens.find((t) => t.kind === "option" && t.name === "blocks" && !t.inlineValue);
+  const after = blocksToken && parsed.tokens.find((t) => t.kind === "positional" && t.index === blocksToken.index + 2);
+  if (v.blocks !== undefined && after?.kind === "positional" && looksLikeCheckpointArg(v.blocks) && looksLikeCheckpointArg(after.value)) {
+    out.blocksFromTo = [v.blocks, after.value];
+    positionals.splice(positionals.indexOf(after.value), 1);
+  } else if (v.blocks !== undefined) out.blocks = v.blocks;
+  if (v.step) out.step = true;
+  if (v["no-step"]) out.step = false;
+  if (v["auto-next"]) out.autoplay = true;
+  if (v["no-auto-next"]) out.autoplay = false;
+  if (v["auto-play-video"] || v["auto-play-video-head"]) out.autoPlayVideo = true;
+  if (v["non-headless"] || v["auto-play-video-head"]) out.nonHeadless = true;
+  if (v.fast) out.fast = true;
+  if (v.full) out.fullStepper = true;
+  if (v.mini) out.miniStepper = true;
+  if (v["todo-left"]) out.todoPos = "left";
+  if (v["todo-right"]) out.todoPos = "right";
+  if (v["todo-full"]) out.todoUiFull = true;
+  if (v["todo-smart"]) out.todoUiSmart = true;
+  if (v["ff-expand"] || v["ff-disabled"]) out.ffExpand = true;
+  if (v["ff-disabled"]) out.ffDisabled = true;
+  if (v.headless) out.headlessBrowser = true;
+  if (v.json) out.json = true;
+  if (v["no-practices"]) out.noPractices = true;
+  if (v["session-id"] !== undefined) out.sessionId = v["session-id"];
+  if (v.blank) out.blank = true;
+  if (v.goto !== undefined) out.goto = v.goto;
+  if (v.inject !== undefined) out.inject = [...v.inject];
+  if (v.cli) out.cli = true;
+  if (v.mermaid) out.mermaid = true;
+  if (v.map) out.map = true;
+  if (v["base-url"] !== undefined) out.baseUrl = v["base-url"];
+  if (v.title !== undefined) out.title = v.title;
+  if (v.data !== undefined) out.data = v.data;
+  if (v["mem-stub"]) out.memStub = true;
+  if (v["all-branches"]) out.allBranches = true;
+  if (v["shared-session"]) out.sharedSession = true;
+  if (v.video !== undefined) out.video = v.video;
+  if (v["video-viewport"] !== undefined) out.videoViewport = v["video-viewport"];
   return out;
 }
 
@@ -334,13 +316,6 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
 }
 
 
-/**
- * BASE_URL when neither --base-url nor WAYGRAPH_BASE_URL is set - see `../config.js`'s own
- * `resolveBaseUrl` for the full resolution order (env / `.env` / `waygraph.config.*` /
- * package.json / playwright.config). Re-exported here so existing importers of this module
- * don't need to change their import path.
- */
-export { resolveBaseUrl };
 
 /**
  * Friendly demo defaults: STEP on; headed only for live watch (no --video).

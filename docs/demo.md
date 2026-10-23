@@ -59,7 +59,7 @@ Auto-hides the stepper on NavBlocks (compact `N / M` pill). |
 (default for `waygraph demo`). See
 [Todo dock UI](#todo-dock-ui). |
 | `--todo-full` | demo only | Opt out of smart dock UX (full list, no compact/collision/behind).
-Alias `--no-todo-smart`. Env: `WAYGRAPH_TODO_UI=full`. |
+Env: `WAYGRAPH_TODO_UI=full`. |
 | `--todo-left` / `--todo-right` | demo only | Pin the floating todo dock to that side (default remembers last side). |
 | `--auto-play-video` | demo only | `--auto-next` + `--video` (+ step) - unattended and
 recorded, so **headless by default** (no live window needed). |

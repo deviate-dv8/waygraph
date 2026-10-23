@@ -9,7 +9,7 @@ import { extensionPathsFromEnv } from "./browser.js";
 import type { PlaywrightTestConfig } from "@playwright/test";
 import { envMode, loadEnvFiles } from "./env-file.js";
 import { resolveExtensions } from "./extensions.js";
-import type { ExtensionSpec } from "./extensions.js";
+import type { ExtensionSpec } from "../engine/config.js";
 import type { WebServerConfig } from "./webserver.js";
 import type { DemoPace } from "../engine/narration.js";
 

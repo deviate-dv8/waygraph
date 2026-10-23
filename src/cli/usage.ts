@@ -1,3 +1,4 @@
+import { optionHelp } from "./flags.js";
 import type { SessionMeta } from "../live/auto-session-ipc.js";
 
 export function printBrowserUsage(): void {
@@ -126,11 +127,7 @@ Primary (less is more):
                                            form above.
   waygraph browser                         Show browser subcommands
   waygraph browser start                   Open a new session (headful by default, about:blank)
-                 --inject preset|path            Merge an external Block library (e.g. saucedemo)
-                 --goto <url>              Navigate on start (disables blank page)
-                 --blank                   Force about:blank on start (default)
-                 --headless                Headless session (default is visible browser)
-                 --cli                     After start, open the terminal picker (auto attach)
+${optionHelp("session")}
   waygraph browser sessions [project]      List live browser sessions (attach/status/stop by id)
   waygraph browser send|status|attach|…    Same session control as auto (see auto send/status/…)
   waygraph pilot start                     Bootstrap: browser session + whole-project graph +
@@ -142,40 +139,9 @@ Primary (less is more):
   waygraph auto                            Interactive explore (picker) — NOT the persistent browser
                                            layer; use browser/pilot for agent-driven sessions.
   waygraph demo  [--blocks <flow|file|spec>]  Watch with step overlay (QA path)
-                 --data '{...}'            Mem seed JSON (or inline flow({...}))
-                 --mem-stub                Fill any requires key --data didn't cover from
-                                           registerMemStub's registry (needs the key
-                                           registered, or the flow's map({ memStub }) - a
-                                           key with neither still fails preflight)
-                 --auto-next               Auto-advance steps
-                 --fast                    Shorter auto-next / Next gates (keeps smooth cursor)
-                 --full                    Classic wrap-all block chips (default: carousel)
-                 --mini                    Force compact mini panel (Hide pill + Next)
-                 --todo-left|--todo-right  Floating checklist dock side (also ctx.todoPos / WAYGRAPH_TODO_POS)
-                 --todo-full               Opt out: full checklist, no compact/collision/behind-ring
-                 --todo-smart              Opt in: compact + collision + behind-ring (default)
-                 --ff-expand               Expand fastForwardComposeBlock inners as separate steps
-                 --ff-disabled             Dispute: expand FF; blitz kept on those inners
-                 --auto-play-video         Unattended + recorded: --auto-next + --video (+ step); headless
-                 --auto-play-video-head    Same, but keep the browser visible (--non-headless)
-                 --video [dir]             Record .webm (demo: headless unless --non-headless);
-                                           default folder ~/Downloads/waygraph-videos/<project>,
-                                           or video.dir in the config / WAYGRAPH_VIDEO_DIR
-                 --video-viewport WxH       Recording size (default demo: 1920x1080)
-                 --title / --base-url
+${optionHelp("demo")}
   waygraph run   [--blocks <flow|file|spec>]  Execute (no overlay unless --step)
-                 --data '{...}'
-                 --mem-stub                Same as demo's --mem-stub
-                 --all-branches            Bare Flow ref only: explore every MapBuilder.branch()
-                                           path, cloning the session (storageState+URL) at each
-                                           branch point - see runBranchRegression()
-                 --shared-session          With --all-branches: one shared session instead of
-                                           cloning (follows only the live-dispatch path)
-                 --non-headless            Show browser
-                 --video [dir]             Record .webm
-                 --video-viewport WxH       Recording size (default run: 1280x720)
-                 --ff-expand               Same as demo (expand FFCompose inners)
-                 --ff-disabled             Same as demo (dispute: expand FF)
+${optionHelp("run")}
   waygraph test                            Runs the project's @playwright/test suite (cwd) -
                                            thin wrapper: forwards to the local playwright
                                            binary (or npx playwright as a fallback)

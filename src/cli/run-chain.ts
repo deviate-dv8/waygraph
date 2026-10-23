@@ -1,6 +1,7 @@
 import { configuredExtensions } from "../runtime/config.js";
 import { defaultRunLogDir } from "../runtime/run-log.js";
-import { expandSpecFlowFiles, resolveBaseUrl } from "./flags.js";
+import { expandSpecFlowFiles } from "./flags.js";
+import { resolveBaseUrl } from "../runtime/config.js";
 import { discoverGraph, findBlockPath, findOrphanBlocks } from "../analysis/graph.js";
 import { join } from "node:path";
 import { rmSync, writeFileSync } from "node:fs";
