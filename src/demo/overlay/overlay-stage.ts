@@ -5,7 +5,7 @@
 import type { WgPage } from "../types.js";
 import { applyDevicePhase, applyTodoPhase, resolveTodoDockUi } from "../narration/index.js";
 import { applyDeviceToPage } from "./device-stage.js";
-import { bannerUiFromPhase } from "../step-mode/banner-log.js";
+import { bannerUiFromPhase } from "../stepper/banner-log.js";
 
 export function createOverlayStage(page: WgPage, { todoDockRef, deviceRef }: any) {
   /** Carried across steps: omitting a fixture in a later phase = keep (todos, device, banner UX). */

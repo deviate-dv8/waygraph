@@ -26,8 +26,8 @@ The plan and phases: `ROADMAP.md`, "Architecture refactor".
 cli.ts ───────────── ~100-line dispatcher: one `case` per subcommand
 commands/*.ts, cli/*.ts ─ one file per subcommand that only parses argv and prints; cli/ holds flag parsing, usage text,
                       and run-chain (spawning the runner, `chain auto`)
-runner/ ───────────── `waygraph run/demo/chain` child process entry (main, discovery, seed-mem, chain-run), exported as `waygraph/runner`
-demo/ ─────────────── narration/ (stub ctx, pace, device, todo dock, highlight styles), overlay/ (the one overlay for demo, auto and pilot: install, rings, cursor, device stage, network tab, auto-chrome, pilot-shell, pilot-fixtures; overlay/inpage/*.ts = code injected into the page, self-contained), step-mode/ (the step-through runner: gates, panels, slides, teardown, demo log)
+runner/ ───────────── `waygraph run/demo`: runner.ts plays a spec's steps (plan/) through one loop (play-steps.ts) in a mode (modes/: run, demo, report, branches); exported as `waygraph/runner`
+demo/ ─────────────── narration/ (stub ctx, pace, device, todo dock, highlight styles), overlay/ (the one overlay for demo, auto and pilot: install, rings, cursor, device stage, network tab, auto-chrome, pilot-shell, pilot-fixtures; overlay/inpage/*.ts = code injected into the page, self-contained), stepper/ (the demo UI around each step: stepper.ts, before/after panels, Next gate, pacing, slides, demo log)
 live/ ─────────────── driving a running browser: auto-session/ (the session class), auto-session-ipc (spawn/control),
                       browser, pilot, pilot-panel, auto-explore(-run), overlay-beacon, traverse/ (run, coverage, lease)
 core.ts + core/ ── barrel over core/{block,config,run-graph,flow,compose,engine,map-builder,locate,branch-regression,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
@@ -58,7 +58,7 @@ that's what makes the split legal under the no-cycles rule. Don't reintroduce a 
 | A new CLI subcommand | `src/commands/<name>.ts` exporting `<name>Case(args, command)`, plus one `case` line in `cli.ts` and its lines in `cli/usage.ts` |
 | A new CLI flag for run/demo | `cli/flags.ts` (`RunFlags`, `parseRunFlags`, `applyRunFlags`) + `cli/usage.ts` |
 | A session command (`send`, `highlight`, ...) | `commands/session.ts` + `live/auto-session/session.ts` + IPC op in `live/auto-session-ipc.ts` |
-| Demo overlay / step-mode behaviour | `demo/overlay/` (`overlay-install` page UI, `rings`, `cursor`) and `demo/step-mode/` (`step-mode`, `step-panels`, `todo-dock`, `demo-log`); `runner/seed-mem` for `--data`/`--mem-stub`. Read `CLI-STOMP-GUARD.md` first |
+| Demo overlay / stepper behaviour | `demo/overlay/` (`overlay-install` page UI, `rings`, `cursor`) and `demo/stepper/` (`stepper` main, `before`/`after`, `step-panels`, `gate`, `pacing`, `todo-dock`, `demo-log`); `runner/plan/seed-mem` for `--data`/`--mem-stub`. A new way to play steps is a file in `runner/modes/`. Read `CLI-STOMP-GUARD.md` first |
 | A flow setting (`map({ … })`) | `MapBuilderOptions` in `core/map-builder.ts`, `FlowSettings`/`withSettings` in `core/flow.ts`, and the field on `Flow` |
 | A `define*Block` helper | `core/blocks/<kind>.ts`; update `MapBuilder` types if it can appear in a map flow |
 | A `MapBuilder` step/routing method | `core/map-builder.ts` next to `.method()`/`.branch()`; `.branch()`'s routes are functions handed a fresh `MapBuilder` seeded at the branch's own Checkpoint, not a ready-made `Flow` (a `Flow` always starts at `S`). Every step method also takes `opts?: MapStepOpts` for the inline `{ ff: true }` flag - see `appendStep`'s own comment for the auto-open/auto-close rules |

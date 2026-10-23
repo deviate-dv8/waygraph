@@ -12,7 +12,7 @@
       "default": "./dist/index.js"
     },
     "./runner": {
-      "default": "./dist/runner/index.js"
+      "default": "./dist/runner/runner.js"
     }
   },
   "bin": {

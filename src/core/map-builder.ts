@@ -224,6 +224,7 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
   }) as Flow<any>["run"];
   return {
     resetSession: before.resetSession,
+    config: before.config,
     ...(before.expectedFailureReason !== undefined ? { expectedFailureReason: before.expectedFailureReason } : {}),
     ...(before.demoPace !== undefined ? { demoPace: before.demoPace } : {}),
     ...(before.highlightStyle !== undefined ? { highlightStyle: before.highlightStyle } : {}),

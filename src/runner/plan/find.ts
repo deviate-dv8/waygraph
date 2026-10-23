@@ -1,8 +1,7 @@
-// Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
-// Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
+// Finds a Block or Flow in the project (and its installed map packages) by export name or Block name.
 import { pathToFileURL } from "node:url";
-import { isBlockLike, walkDir } from "../manifest/scan.js";
-import { installedMapPackages, mapPackageBlockFiles } from "../manifest/maps.js";
+import { isBlockLike, walkDir } from "../../manifest/scan.js";
+import { installedMapPackages, mapPackageBlockFiles } from "../../manifest/maps.js";
 
 
 export async function findBlock(projectDir: string, ref: any) {
@@ -56,23 +55,4 @@ export async function findFlow(projectDir: string, flowName: any) {
     }
   }
   return null;
-}
-
-
-export function parseChainSpec(spec: any) {
-  return spec
-    .split(/\bthen\b/)
-    .map((s: any) => s.trim())
-    .filter((s: any) => s.length > 0)
-    .map((s: any) => {
-      const m = /^([A-Za-z_$][\w-]*)\s*(?:\(([\s\S]*)\))?$/.exec(s);
-      if (!m) {
-        throw new Error(
-          "waygraph chain: could not parse segment \"" + s + "\" - expected \"blockName\" or \"blockName({...json...})\"",
-        );
-      }
-      const ref = m[1];
-      const json = m[2] ? m[2].trim() : undefined;
-      return json ? { ref, json } : { ref };
-    });
 }

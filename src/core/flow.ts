@@ -83,6 +83,8 @@ export interface Flow<Out extends Checkpoint<string>> {
    * `.flow(sub)` or chained on the CLI). `run()` itself never reads it.
    */
   readonly resetSession: boolean;
+  /** The engine config the Flow was built with (launcher, layouts); running one of its steps on its own uses it too. */
+  readonly config: EngineConfig;
   /**
    * `map({ expectedFailure })` - a display hint for a step-through overlay: this Flow is DESIGNED to throw
    * (e.g. a blocked user's login attempt genuinely failing), not a bug in
@@ -253,6 +255,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
   };
   return {
     resetSession: false,
+    config: engineConfig,
     blocks: () =>
       middle.map((b) => ({
         name: b.name,
@@ -406,6 +409,7 @@ export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
     return result;
   };
   return {
+    config: flows[0]!.config,
     resetSession: false,
     blocks: () =>
       flows.flatMap((flow, idx) =>

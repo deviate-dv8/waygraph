@@ -2,7 +2,7 @@
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
 import type { WgBox, WgPage } from "../types.js";
 import type { Locator } from "@playwright/test";
-import { ANSI, ansiPaint, demoFixture, demoHighlight, demoLog } from "../step-mode/demo-log.js";
+import { ANSI, ansiPaint, demoFixture, demoHighlight, demoLog } from "../stepper/demo-log.js";
 import { playSwipeTrail } from "./cursor.js";
 import { advanceTodoDock, formatHighlightCaption, normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, normalizeTodos, resolveFixtureDwellMs } from "../narration/index.js";
 

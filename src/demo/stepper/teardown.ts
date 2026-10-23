@@ -1,7 +1,6 @@
 // Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
 import type { WgPage } from "../types.js";
-import type { BrowserContext } from "@playwright/test";
 import { installOverlay } from "../overlay/overlay-install.js";
 import { applyDeviceToPage } from "../overlay/device-stage.js";
 import { showRing } from "../overlay/rings.js";
@@ -178,27 +177,4 @@ export async function teardownOverlay(page: WgPage) {
       document.documentElement.classList.remove("wg-video-device-stage");
     })
     .catch(() => {});
-}
-
-
-/**
- * Clears cookies + storage and re-navigates to a known-fresh page. Shared by
- * the per-block session-reset check below and by the error panel's own
- * "Retry Episode" button - a retry needs the exact same clean slate a normal
- * episode boundary gets, not just re-running the failed block against
- * whatever broken/half-navigated state it left the page in.
- */
-export async function resetPageState(context: BrowserContext, page: WgPage, baseURL: string | undefined) {
-  await context.clearCookies().catch(() => {});
-  await page
-    .evaluate(() => {
-      try {
-        localStorage.clear();
-        sessionStorage.clear();
-      } catch {
-        /* storage blocked (e.g. about:blank) - nothing to clear anyway */
-      }
-    })
-    .catch(() => {});
-  await page.goto(baseURL || "about:blank").catch(() => {});
 }

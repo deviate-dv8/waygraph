@@ -4,7 +4,7 @@
     "src/index.ts",
     "src/cli.ts",
     "src/runtime/playwright.config.ts",
-    "src/runner/index.*",
+    "src/runner/runner.*",
     "scripts/*.mjs",
     "tests/**/*.spec.ts",
     "typecheck/*.ts"

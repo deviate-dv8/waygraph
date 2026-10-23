@@ -1718,9 +1718,9 @@ src/                      layers and import rules: src/ARCHITECTURE.md
   analysis/               graph, map check, practices check, coverage gap
   runtime/                config, env, browser launch, extensions, webServer, video dir, playwright config, run log
   demo/                   narration/ (stub ctx, pace, device, todos), overlay/ (the one in-page UI for demo, auto, pilot),
-                          step-mode/ (step-through runner)
+                          stepper/ (the step-through UI around each demo step)
   ui/                     overlay CSS (Open Props) + shadow root
-  runner/                 `waygraph run/demo` child process entry (exported as waygraph/runner)
+  runner/                 `waygraph run/demo`: runner.ts plays steps through one loop; modes/ (run, demo, report, branches)
   live/                   live browser sessions, auto, pilot, traverse
   commands/, cli/, cli.ts the CLI: one file per subcommand
   index.ts                public API
