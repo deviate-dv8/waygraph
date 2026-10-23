@@ -5,8 +5,9 @@ import type { Flow } from "../../engine/flow/flow.js";
 import { branchRoutes, runBranchRegression } from "../../engine/flow/branch-regression.js";
 import { extensionPathsFromEnv } from "../../runtime/browser.js";
 import type { PlayOptions } from "../options.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 
-export async function playBranches(flows: readonly Flow<any>[], mem: MemPage, options: PlayOptions): Promise<void> {
+export async function playBranches(flows: readonly Flow<Checkpoint<string>>[], mem: MemPage, options: PlayOptions): Promise<void> {
   const flow = flows.length === 1 ? flows[0]! : undefined;
   if (!flow) {
     console.error("waygraph run --all-branches: needs a single Flow reference (e.g. --blocks loginFlow), not a multi-segment chain spec - nothing else has one branch tree to explore.");

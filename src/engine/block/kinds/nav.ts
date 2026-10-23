@@ -66,7 +66,7 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
    * defineNavBlock({ ..., from: SIGNED_IN })
    */
   from?: readonly Checkpoint<string>[];
-  requires?: readonly MemKey<any>[];
+  requires?: readonly MemKey<unknown>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
   stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
@@ -206,7 +206,7 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   click: string | ((mem: MemPage) => string);
   /** See {@link NavBlockOptions.from}. */
   from?: readonly Checkpoint<string>[];
-  requires?: readonly MemKey<any>[];
+  requires?: readonly MemKey<unknown>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
   stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
@@ -244,7 +244,7 @@ export function defineNavClickBlock<Out extends Checkpoint<string>>(
  * (which product row / which request id). Still a NavBlock / Block at runtime.
  */
 export type MemNavBlock<Out extends Checkpoint<string>> = NavBlock<Out> & {
-  requires: readonly MemKey<any>[];
+  requires: readonly MemKey<unknown>[];
   instanceOptions: NonNullable<Block<Checkpoint<string>, Out>["instanceOptions"]>;
 };
 
@@ -257,7 +257,7 @@ export type MemNavBlock<Out extends Checkpoint<string>> = NavBlock<Out> & {
  */
 export function defineMemNavBlock<Out extends Checkpoint<string>>(
   options: NavBlockOptions<Out> & {
-    requires: readonly MemKey<any>[];
+    requires: readonly MemKey<unknown>[];
     instanceOptions: NonNullable<Block<Checkpoint<string>, Out>["instanceOptions"]>;
   },
 ): MemNavBlock<Out> {

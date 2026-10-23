@@ -23,20 +23,20 @@ import { ignorePageGone } from "../page-gone.js";
 export interface BranchEntry {
   /** `"Away"`, or `"Away > Far"` for a nested branch - the route tags that lead here, in order. */
   path: string;
-  flow: Flow<any>;
+  flow: Flow<Checkpoint<string>>;
 }
 
 interface BranchInfo {
-  before: Flow<any>;
-  routes: Record<string, Flow<any> | null>;
+  before: Flow<Checkpoint<string>>;
+  routes: Record<string, Flow<Checkpoint<string>> | null>;
 }
 
-function branchInfo(flow: Flow<any>): BranchInfo | undefined {
+function branchInfo(flow: Flow<Checkpoint<string>>): BranchInfo | undefined {
   return (flow as { __wgBranch?: BranchInfo }).__wgBranch;
 }
 
 /** This Flow's own immediate `.branch()` routes, or `undefined` if it wasn't built by `.branch()`. */
-export function branchRoutes(flow: Flow<any>): ReadonlyMap<string, Flow<any> | null> | undefined {
+export function branchRoutes(flow: Flow<Checkpoint<string>>): ReadonlyMap<string, Flow<Checkpoint<string>> | null> | undefined {
   const info = branchInfo(flow);
   return info ? new Map(Object.entries(info.routes)) : undefined;
 }
@@ -46,10 +46,10 @@ export function branchRoutes(flow: Flow<any>): ReadonlyMap<string, Flow<any> | n
  * route Flow reused under two tags is only listed once). Doesn't include `flow` itself - only its
  * `.branch()` continuations. Static - doesn't run anything.
  */
-export function collectBranchFlows(flow: Flow<any>): BranchEntry[] {
+export function collectBranchFlows(flow: Flow<Checkpoint<string>>): BranchEntry[] {
   const out: BranchEntry[] = [];
-  const seen = new Set<Flow<any>>();
-  const walk = (f: Flow<any>, prefix: string): void => {
+  const seen = new Set<Flow<Checkpoint<string>>>();
+  const walk = (f: Flow<Checkpoint<string>>, prefix: string): void => {
     const routes = branchRoutes(f);
     if (!routes) return;
     for (const [tag, route] of routes) {
@@ -94,7 +94,7 @@ export interface RunBranchRegressionOptions extends RunGraphOptions {
  * }
  */
 export async function runBranchRegression(
-  flow: Flow<any>,
+  flow: Flow<Checkpoint<string>>,
   context: BrowserContext,
   mem: MemPage = new MemPage(),
   options?: RunBranchRegressionOptions,
@@ -108,7 +108,7 @@ export async function runBranchRegression(
 
   /** `entryPage`, when given, is already positioned (cloned session + navigated) - reused as-is,
    *  never replaced by a fresh `ctx.newPage()` (that would throw away the whole point of cloning). */
-  async function walk(f: Flow<any>, ctx: BrowserContext, m: MemPage, path: string, entryPage?: Page): Promise<void> {
+  async function walk(f: Flow<Checkpoint<string>>, ctx: BrowserContext, m: MemPage, path: string, entryPage?: Page): Promise<void> {
     const info = branchInfo(f);
     if (!info) {
       // Leaf: whatever Blocks this route itself adds - run them to completion from the (possibly

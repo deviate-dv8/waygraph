@@ -21,7 +21,7 @@ export type EffectBlock<
   "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
 > & {
   readonly __wgFactory?: "effect";
-  requires: readonly MemKey<any>[];
+  requires: readonly MemKey<unknown>[];
   instanceOptions: NonNullable<Block<In, Out>["instanceOptions"]>;
   withVerify(
     verify: Trait[] | ((out: Out) => Trait[]),
@@ -47,7 +47,7 @@ export type EffectBlock<
  * Block - the helper is TypeScript salt only.
  */
 type EffectExtras<In extends Checkpoint<string>, Out extends Checkpoint<string>> = {
-  requires: readonly MemKey<any>[];
+  requires: readonly MemKey<unknown>[];
   instanceOptions: NonNullable<Block<In, Out>["instanceOptions"]>;
 };
 

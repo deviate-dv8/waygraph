@@ -1,6 +1,5 @@
 // What to play: the CLI spec ("cartFlow", or "loginFlow then add-item({...})") turned into the steps to play, each
 // knowing its episode, its flow's settings and when to seed its segment's mem.
-import type { Block } from "../../engine/block/block.js";
 import type { MemPage } from "../../engine/mem/mem.js";
 import { buildFlow, chainFlow } from "../../engine/flow/flow.js";
 import type { BlockInfo, Flow } from "../../engine/flow/flow.js";
@@ -10,10 +9,12 @@ import type { PlayOptions } from "../options.js";
 import { findBlock, findFlow } from "./find.js";
 import { seedMemForBlock, seedMemForFlow } from "./seed-mem.js";
 import { parseChainSpec } from "./spec.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
+import type { SomeBlock } from "../../engine/block/block.js";
 
 /** One part of the spec: a named Flow, or a single Block wrapped as one. */
 interface Segment {
-  flow: Flow<any>;
+  flow: Flow<Checkpoint<string>>;
   ref: string;
   /** A named Flow is an episode in the demo; a bare Block isn't. */
   named: boolean;
@@ -23,7 +24,7 @@ interface Segment {
 export interface Plan {
   steps: PlayStep[];
   /** One Flow per segment (`--all-branches` needs exactly one). */
-  flows: Flow<any>[];
+  flows: Flow<Checkpoint<string>>[];
 }
 
 export async function planSteps(projectDir: string, spec: string, mem: MemPage, options: PlayOptions): Promise<Plan> {
@@ -37,7 +38,7 @@ export async function planSteps(projectDir: string, spec: string, mem: MemPage, 
 }
 
 /** A spec that is just a name might be an existing Flow (`cartFlow`); then no chain spec is needed. */
-async function findBareFlow(projectDir: string, spec: string): Promise<Flow<any> | undefined> {
+async function findBareFlow(projectDir: string, spec: string): Promise<Flow<Checkpoint<string>> | undefined> {
   const ref = spec.trim();
   if (!/^[A-Za-z_$][\w]*$/.test(ref)) return undefined;
   const flow = await findFlow(projectDir, ref);
@@ -56,7 +57,7 @@ async function resolveSegment(projectDir: string, seg: { ref: string; json?: str
   const found = await findBlock(projectDir, seg.ref);
   if (!found) throw new Error(`waygraph: no Block or Flow named "${seg.ref}"`);
   return {
-    flow: buildFlow([found.block as Block<any, any>], {}),
+    flow: buildFlow([found.block as SomeBlock], {}),
     ref: seg.ref,
     named: false,
     // A bare Block has no map({ memStub }) to opt in; only --mem-stub fills its keys.
@@ -64,7 +65,7 @@ async function resolveSegment(projectDir: string, seg: { ref: string; json?: str
   };
 }
 
-function flowSegment(flow: Flow<any>, ref: string, json: string | undefined, mem: MemPage, options: PlayOptions): Segment {
+function flowSegment(flow: Flow<Checkpoint<string>>, ref: string, json: string | undefined, mem: MemPage, options: PlayOptions): Segment {
   // seeded when the segment starts, not now: two segments may give the same key different values
   const seedMem = () => seedMemForFlow(mem, flow.blocks(), json, ref, flow.memStub === true || options.memStub);
   return { flow, ref, named: true, seedMem };
@@ -98,7 +99,7 @@ function stepsOf(segments: readonly Segment[], options: PlayOptions, { episodes 
       config: segment.flow.config,
       episodeNumber,
       episodeTitle: episodeNumber === undefined ? undefined : segment.ref,
-      resetSession: i === 0 && resets.has(segment.flow.blocks()[0]?.block as Block<any, any>),
+      resetSession: i === 0 && resets.has(segment.flow.blocks()[0]?.block as SomeBlock),
       seedMem: i === 0 ? segment.seedMem : undefined,
       expectedFailureReason: i === infos.length - 1 ? segment.flow.expectedFailureReason : undefined,
       demoPace: segment.flow.demoPace,

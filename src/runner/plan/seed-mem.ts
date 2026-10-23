@@ -1,9 +1,13 @@
 // Fills mem for a segment from its --data / inline JSON, or from registerMemStub fakes when --mem-stub is on.
-import type { MemPage } from "../../engine/mem/mem.js";
+import type { MemKey, MemPage } from "../../engine/mem/mem.js";
+import type { BlockInfo } from "../../engine/flow/flow.js";
+import type { FoundBlock } from "./find.js";
 import { getMemStub } from "../../engine/mem/mem-stub.js";
 import { envString } from "../../engine/env.js";
 
-function seedMemFromRequires(mem: MemPage, requires: any, json: any, label: any, stubActive: any) {
+const isRecord = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === "object" && !Array.isArray(v);
+
+function seedMemFromRequires(mem: MemPage, requires: readonly MemKey<unknown>[], json: string | undefined, label: string, stubActive: boolean): void {
   if (requires.length === 0) {
     if (json !== undefined) {
       throw new Error(
@@ -18,7 +22,7 @@ function seedMemFromRequires(mem: MemPage, requires: any, json: any, label: any,
     if (fromEnv && fromEnv.trim()) json = fromEnv;
   }
 
-  let parsed: any;
+  let parsed: unknown;
   let haveParsed = false;
   if (json !== undefined) {
     try {
@@ -35,7 +39,7 @@ function seedMemFromRequires(mem: MemPage, requires: any, json: any, label: any,
     // per-key loop below gets a chance to fill each one from the registry.
     if (!stubActive) {
       throw new Error(
-        "waygraph chain: \"" + label + "\" requires " + requires.map((k: any) => k.name).join(", ") +
+        "waygraph chain: \"" + label + "\" requires " + requires.map((k) => k.name).join(", ") +
           " - give a JSON payload (inline blockName({...}) or --data '{...}'), or enable --mem-stub" +
           " with registerMemStub for these keys",
       );
@@ -45,10 +49,10 @@ function seedMemFromRequires(mem: MemPage, requires: any, json: any, label: any,
 
   // Keyed-by-name when every require name is a top-level key (preferred for
   // --data and for {"saucedemo.credentials":{...}} even with one require).
-  if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
-    const keyed = requires.every((k: any) => k.name in parsed);
-    if (keyed) {
-      for (const k of requires) mem.set(k, parsed[k.name]);
+  if (isRecord(parsed)) {
+    const payload = parsed;
+    if (requires.every((k) => k.name in payload)) {
+      for (const k of requires) mem.set(k, payload[k.name]);
       return;
     }
   }
@@ -56,19 +60,20 @@ function seedMemFromRequires(mem: MemPage, requires: any, json: any, label: any,
   // when a real payload was actually given (the stub-only "{}" fallback
   // above must fall through to per-key stub resolution instead).
   if (haveParsed && requires.length === 1) {
-    mem.set(requires[0], parsed);
+    mem.set(requires[0]!, parsed);
     return;
   }
-  if (haveParsed && (parsed === null || typeof parsed !== "object" || Array.isArray(parsed))) {
+  if (!isRecord(parsed)) {
     throw new Error(
       "waygraph chain: \"" + label + "\" requires " + requires.length + " keys (" +
-        requires.map((k: any) => k.name).join(", ") + ") - payload must be an object keyed by each key's name",
+        requires.map((k) => k.name).join(", ") + ") - payload must be an object keyed by each key's name",
     );
   }
-  const stillMissing = [];
+  const payload = parsed;
+  const stillMissing: MemKey<unknown>[] = [];
   for (const k of requires) {
-    if (k.name in parsed) {
-      mem.set(k, parsed[k.name]);
+    if (k.name in payload) {
+      mem.set(k, payload[k.name]);
       continue;
     }
     const fake = stubActive ? getMemStub(k) : undefined;
@@ -87,7 +92,7 @@ function seedMemFromRequires(mem: MemPage, requires: any, json: any, label: any,
 }
 
 
-export function seedMemForBlock(mem: MemPage, resolved: any, json: any, stubActive: any) {
+export function seedMemForBlock(mem: MemPage, resolved: FoundBlock, json: string | undefined, stubActive: boolean): void {
   seedMemFromRequires(mem, resolved.block.requires ?? [], json, resolved.exportName, stubActive);
 }
 
@@ -99,8 +104,8 @@ export function seedMemForBlock(mem: MemPage, resolved: any, json: any, stubActi
  * name) and seeds them all from one JSON payload, same keyed-by-name shape
  * as a multi-key Block payload already uses.
  */
-export function seedMemForFlow(mem: MemPage, flowBlocks: any, json: any, label: any, stubActive: any) {
-  const seen = new Map();
+export function seedMemForFlow(mem: MemPage, flowBlocks: readonly BlockInfo[], json: string | undefined, label: string, stubActive: boolean): void {
+  const seen = new Map<string, MemKey<unknown>>();
   for (const bi of flowBlocks) {
     for (const k of bi.block.requires ?? []) {
       if (!seen.has(k.name)) seen.set(k.name, k);

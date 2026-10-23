@@ -189,7 +189,7 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
    * Block, meaning "terminal after one step". Returning the Block itself is a
    * self-loop - see `runGraph`'s `maxSteps` for the safety net that needs.
    */
-  next?(checkpoint: Out): Block<any, any> | null | undefined;
+  next?(checkpoint: Out): SomeBlock | null | undefined;
   /**
    * `branch()`'s routing table as plain, readable data - Checkpoint tag ->
    * target Block's `.name` (`null` for a terminal tag) - alongside {@link next}
@@ -209,7 +209,7 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
    * `act`.
    * @example requires: [LoginCreds.key]
    */
-  requires?: readonly MemKey<any>[];
+  requires?: readonly MemKey<unknown>[];
   /**
    * Demo pacing for this Block (the `{ pace }` step option).
    * Demo/step only - `runGraph` ignores. Prefer `fastForwardComposeBlock` for blitz.
@@ -285,7 +285,15 @@ export type DefinedBlock<In extends Checkpoint<string>, Out extends Checkpoint<s
   stubOnError(stub: import("../narration.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
 };
 
-export function findBlockIndex(middle: readonly Block<any, any>[], block: Block<any, any> | string | number): number {
+/**
+ * Any Block, whatever its route. A Block takes its `In` Checkpoint as a callback argument, so it is contravariant in `In`
+ * and no one Checkpoint type covers every Block: `any` is that "some Block", written once here.
+ */
+export type SomeBlock = Block<any, any>;
+/** Any {@link DefinedBlock} (see {@link SomeBlock}). */
+export type SomeDefinedBlock = DefinedBlock<any, any>;
+
+export function findBlockIndex(middle: readonly SomeBlock[], block: SomeBlock | string | number): number {
   if (typeof block === "number") {
     if (block < 0 || block >= middle.length) {
       throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", MSG_FLOW_BLOCK_NOT_FOUND_BY_INDEX(block, middle.length));
@@ -323,13 +331,13 @@ export function branch<In extends Checkpoint<string>, Out extends Checkpoint<str
   const base = stripMethods(block);
   let routed!: DefinedBlock<In, any>;
   const routesAsData: Record<string, string | null> = {};
-  for (const [tag, target] of Object.entries(routes as Record<string, Block<any, any> | null>)) {
+  for (const [tag, target] of Object.entries(routes as Record<string, SomeBlock | null>)) {
     routesAsData[tag] = target === null ? null : target === block ? base.name : target.name;
   }
   routed = defineBlock({
     ...base,
     next: (checkpoint: Out) => {
-      const target = (routes as Record<string, Block<any, any> | null>)[checkpoint.__state];
+      const target = (routes as Record<string, SomeBlock | null>)[checkpoint.__state];
       if (target === undefined || target === null) return undefined;
       // A route naming `block` itself (the only self-reference in scope when
       // `routes` was written) means "loop back with routing intact" - substitute
@@ -474,7 +482,7 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
  * Wrap the one Block you want to change, in place, where a flow uses it:
  * `map().gotoPage(NavLoginBlock).method(withVerify(AddToCartBlock, [...]))`.
  */
-export function withVerify<B extends Block<any, any>>(
+export function withVerify<B extends SomeBlock>(
   block: B,
   verify: Trait[] | ((out: any) => Trait[]),
 ): B {
@@ -547,7 +555,7 @@ function withStubPhase<In extends Checkpoint<string>, Out extends Checkpoint<str
  * this does that without folding it into the Block's own `act`. The dialog's text can be kept in mem.
  * @example withDialog(CancelBlock, { accept: true, into: LeaveWarning })
  */
-export function withDialog<B extends Block<any, any>>(
+export function withDialog<B extends SomeBlock>(
   block: B,
   options: { accept?: boolean; into?: MemKey<string>; promptText?: string } = {},
 ): B {

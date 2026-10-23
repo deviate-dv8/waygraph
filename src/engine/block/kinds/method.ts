@@ -72,7 +72,7 @@ export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<
   waitForHeading?: string;
   verify: Trait[] | ((out: Out) => Trait[]);
   /** Mem keys this assertion's `verify` reads (e.g. a mem-aware Trait) - checked by preflight before the flow runs. */
-  requires?: readonly MemKey<any>[];
+  requires?: readonly MemKey<unknown>[];
   stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   stubOnError?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;

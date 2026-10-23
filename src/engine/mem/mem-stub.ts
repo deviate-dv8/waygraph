@@ -18,8 +18,9 @@
 import type { MemKey } from "./mem.js";
 import type { MemPage } from "./mem.js";
 import type { Flow } from "../flow/flow.js";
+import type { Checkpoint } from "../checkpoint/checkpoint.js";
 
-const registry = new Map<MemKey<any>, () => unknown>();
+const registry = new Map<MemKey<unknown>, () => unknown>();
 
 /**
  * Registers a fake-value generator for one required MemKey.
@@ -47,7 +48,7 @@ export function getMemStub<T>(key: MemKey<T>): (() => T) | undefined {
  * if (flow.memStub) seedMemStub(mem, flow);
  * await flow.run(mem, config);
  */
-export function seedMemStub(mem: MemPage, flow: Flow<any>): void {
+export function seedMemStub(mem: MemPage, flow: Flow<Checkpoint<string>>): void {
   for (const bi of flow.blocks()) {
     for (const k of bi.block.requires ?? []) {
       if (mem.has(k)) continue;

@@ -8,11 +8,12 @@ import type { MemKey } from "../../mem/mem.js";
 import { defineBlock } from "../block.js";
 import type { Page } from "@playwright/test";
 import { markRoute } from "../../checkpoint/route.js";
+import type { SomeDefinedBlock } from "../block.js";
 
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */
 export type PageMethodEntry =
-  | DefinedBlock<any, any>
-  | (() => DefinedBlock<any, any>);
+  | SomeDefinedBlock
+  | (() => SomeDefinedBlock);
 
 
 /** Options for `definePageBlock`: the Checkpoint a page hub confirms and the Methods that hang off it. */
@@ -25,7 +26,7 @@ export type PageBlockOptions<Out extends Checkpoint<string>> = {
   stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   stubOnError?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
-  requires?: readonly MemKey<any>[];
+  requires?: readonly MemKey<unknown>[];
   /**
    * Methods available on this page. Array, or a record of Blocks / `() => Block`
    * factories (lazy so the page object can colocate method definitions).
@@ -56,7 +57,7 @@ export type PageBlock<Out extends Checkpoint<string>> = Omit<
 > & {
   readonly __wgFactory?: "page";
   /** Resolved method Blocks registered at define time. */
-  readonly methods: readonly DefinedBlock<any, any>[];
+  readonly methods: readonly SomeDefinedBlock[];
   withVerify(
     verify: Trait[] | ((out: Out) => Trait[]),
   ): PageBlock<Out>;
@@ -76,7 +77,7 @@ export type PageBlock<Out extends Checkpoint<string>> = Omit<
 
 function resolvePageMethods(
   methods?: readonly PageMethodEntry[] | Record<string, PageMethodEntry>,
-): DefinedBlock<any, any>[] {
+): SomeDefinedBlock[] {
   if (!methods) return [];
   const entries = Array.isArray(methods) ? methods : Object.values(methods);
   return entries.map((entry) => (typeof entry === "function" ? entry() : entry));

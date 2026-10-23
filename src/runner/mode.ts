@@ -1,16 +1,16 @@
 // What every way of playing a flow shares: the steps, the open browser session, and the hooks a mode fills in around
 // each step. `run` fills none, `demo` fills them with the waygraph UI, `report` records each step.
 import type { BrowserContext } from "@playwright/test";
-import type { Block } from "../engine/block/block.js";
 import type { Checkpoint } from "../engine/checkpoint/checkpoint.js";
 import type { EngineConfig } from "../engine/config.js";
 import type { MemPage } from "../engine/mem/mem.js";
 import type { DemoPace, HighlightStyleDefaults } from "../engine/narration.js";
 import type { WgPage } from "../demo/types.js";
+import type { SomeBlock } from "../engine/block/block.js";
 
 /** One Block to play, with what its flow says about it. */
 export interface PlayStep {
-  block: Block<any, any>;
+  block: SomeBlock;
   exportName: string;
   /** The engine config of the flow it came from (its layouts apply when it runs). */
   config: EngineConfig;

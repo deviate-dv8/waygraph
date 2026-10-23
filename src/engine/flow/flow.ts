@@ -19,6 +19,7 @@ import { findBlockIndex, modVerify, withVerify } from "../block/block.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../narration.js";
 import type { DemoPace, HighlightStyleDefaults } from "../narration.js";
 import { ignorePageGone } from "../page-gone.js";
+import type { SomeBlock } from "../block/block.js";
 
 /**
  * A composed, runnable flow. Always begins from Checkpoint<"__start__">, same as
@@ -73,7 +74,7 @@ export interface BlockInfo {
    * The actual Block, re-runnable on its own - e.g. step-through tooling that runs a Flow's Blocks one at a time.
    * Introspection that only wants to read the shape (a visualizer) can ignore this and use `name`/`routes` alone.
    */
-  block: Block<any, any>;
+  block: SomeBlock;
 }
 
 
@@ -148,7 +149,7 @@ export interface Flow<Out extends Checkpoint<string>> {
    * @example checkoutFlow.withBlockVerify(0, [])
    */
   withBlockVerify(
-    block: Block<any, any> | string | number,
+    block: SomeBlock | string | number,
     verify: Trait[] | ((out: any) => Trait[]),
   ): Flow<Out>;
   /**
@@ -158,7 +159,7 @@ export interface Flow<Out extends Checkpoint<string>> {
    * @example checkoutFlow.modBlockVerify(LoginBlock, "url-matches", Trait.url({ pathname: "/inventory.html" }))
    */
   modBlockVerify(
-    block: Block<any, any> | string | number,
+    block: SomeBlock | string | number,
     nameOrIndex: string | number,
     newCheck: Trait["check"] | Trait,
   ): Flow<Out>;
@@ -169,7 +170,7 @@ export interface Flow<Out extends Checkpoint<string>> {
 
 
 export function buildFlow<Out extends Checkpoint<string>>(
-  middle: readonly Block<any, any>[],
+  middle: readonly SomeBlock[],
   engineConfig: EngineConfig,
 ): Flow<Out> {
   // Settings (sessionReset, memStub, ...) are added afterwards by withSettings, which re-applies them after any
@@ -318,8 +319,8 @@ export function withSettings<Out extends Checkpoint<string>>(flow: Flow<Out>, se
 
 
 function locateInChain(
-  flows: readonly Flow<any>[],
-  block: Block<any, any> | string | number,
+  flows: readonly Flow<Checkpoint<string>>[],
+  block: SomeBlock | string | number,
 ): { flowIndex: number; localIndex: number } {
   if (typeof block === "number") {
     let remaining = block;
@@ -359,7 +360,7 @@ export async function clearSessionState(context: BrowserContext, page: Page): Pr
  * (`waygraph run "a then b"`) with each segment still its own episode. A Flow with `resetSession` gets its cookies and
  * storage cleared right before it runs (skipped for the first one). Authors nest flows with `map().flow(sub)` instead.
  */
-export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
+export function chainFlow(...flows: readonly Flow<Checkpoint<string>>[]): Flow<Checkpoint<string>> {
   if (flows.length === 0) {
     throw new WaygraphError("WG_CHAINFLOW_EMPTY", MSG_CHAINFLOW_EMPTY);
   }
@@ -418,7 +419,7 @@ export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
           ...(i === 0 && idx > 0 && flow.resetSession ? { resetSessionBefore: true } : {}),
         })),
       ),
-    run: run as Flow<any>["run"],
+    run: run as Flow<Checkpoint<string>>["run"],
     withBlockVerify(block, verify) {
       const { flowIndex, localIndex } = locateInChain(flows, block);
       const patched = [...flows];

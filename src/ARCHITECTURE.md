@@ -89,7 +89,8 @@ the runtime through `engine/run/launch.ts` (`runtime/launch.ts`, loaded by `inde
 
 Enforced: no file over 800 lines, no import cycles, the layer table above, no re-exports outside `src/index.ts`, no HTML
 strings written into the page, `WAYGRAPH_*` variables only through `engine/env.ts` (its registry generates `docs/env.md`), no `.catch(() => {})` in Node
-code (`engine/page-gone.ts`: `ignorePageGone` when the page went away, `ignoreTimeout` for a probe).
+code (`engine/page-gone.ts`: `ignorePageGone` when the page went away, `ignoreTimeout` for a probe), and `any` only goes
+down (`scripts/any-debt.json`, per file; "any Block" is `SomeBlock` in `engine/block/block.ts`).
 Adding an `index.ts` export changes the public API: update `tests/unit/api-surface.snapshot.json` deliberately.
 
 By convention:

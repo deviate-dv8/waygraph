@@ -6,6 +6,7 @@ import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import type { Trait } from "../trait/trait.js";
 import { WaygraphError, MSG_COMPOSE_EMPTY, MSG_FASTFORWARD_EMPTY } from "../errors.js";
 import { findBlockIndex, modVerify, withVerify } from "./block.js";
+import type { SomeBlock } from "./block.js";
 
 /**
  * A Block guaranteed to have `withStepVerify`/`modStepVerify` attached - what
@@ -27,7 +28,7 @@ export interface ComposedBlock<In extends Checkpoint<string>, Out extends Checkp
    * @example GovFormBlock.withStepVerify("step-2-address", [])
    */
   withStepVerify(
-    step: Block<any, any> | string | number,
+    step: SomeBlock | string | number,
     verify: Trait[] | ((out: any) => Trait[]),
   ): ComposedBlock<In, Out>;
   /**
@@ -37,7 +38,7 @@ export interface ComposedBlock<In extends Checkpoint<string>, Out extends Checkp
    * @example GovFormBlock.modStepVerify("step-2-address", "zip-visible", Trait.visible("#zip-confirmed"))
    */
   modStepVerify(
-    step: Block<any, any> | string | number,
+    step: SomeBlock | string | number,
     nameOrIndex: string | number,
     newCheck: Trait["check"] | Trait,
   ): ComposedBlock<In, Out>;
@@ -117,7 +118,7 @@ export function composeBlock<
 
 export function composeBlock(
   name: string,
-  steps: readonly Block<any, any>[],
+  steps: readonly SomeBlock[],
 ): ComposedBlock<any, any> {
   if (steps.length === 0) {
     throw new WaygraphError("WG_COMPOSE_EMPTY", MSG_COMPOSE_EMPTY(name));
@@ -131,13 +132,13 @@ export function composeBlock(
       const index = findBlockIndex(steps, step);
       const patched = [...steps];
       patched[index] = withVerify(steps[index]!, verify);
-      return composeBlock(name, patched as [Block<any, any>]);
+      return composeBlock(name, patched as [SomeBlock]);
     },
     modStepVerify(step, nameOrIndex, newCheck) {
       const index = findBlockIndex(steps, step);
       const patched = [...steps];
       patched[index] = modVerify(steps[index]!, nameOrIndex, newCheck);
-      return composeBlock(name, patched as [Block<any, any>]);
+      return composeBlock(name, patched as [SomeBlock]);
     },
   };
 }
@@ -162,7 +163,7 @@ export interface FastForwardComposedBlock<In extends Checkpoint<string>, Out ext
 
 /** True when `block` came from {@link fastForwardComposeBlock}. */
 export function isFastForwardBlock(
-  block: Block<any, any>,
+  block: SomeBlock,
 ): block is FastForwardComposedBlock<any, any> {
   return (
     (block as FastForwardComposedBlock<any, any>).fastForward === true &&
@@ -244,12 +245,12 @@ export function fastForwardComposeBlock<
 
 export function fastForwardComposeBlock(
   name: string,
-  steps: readonly Block<any, any>[],
+  steps: readonly SomeBlock[],
 ): FastForwardComposedBlock<any, any> {
   if (steps.length === 0) {
     throw new WaygraphError("WG_FASTFORWARD_EMPTY", MSG_FASTFORWARD_EMPTY(name));
   }
-  const base = composeBlock(name, steps as [Block<any, any>]);
+  const base = composeBlock(name, steps as [SomeBlock]);
   const origAct = base.instruction.act.bind(base.instruction);
   const ff: FastForwardComposedBlock<any, any> = {
     ...base,
@@ -268,13 +269,13 @@ export function fastForwardComposeBlock(
       const index = findBlockIndex(steps, step);
       const patched = [...steps];
       patched[index] = withVerify(steps[index]!, verify);
-      return fastForwardComposeBlock(name, patched as [Block<any, any>]);
+      return fastForwardComposeBlock(name, patched as [SomeBlock]);
     },
     modStepVerify(step, nameOrIndex, newCheck) {
       const index = findBlockIndex(steps, step);
       const patched = [...steps];
       patched[index] = modVerify(steps[index]!, nameOrIndex, newCheck);
-      return fastForwardComposeBlock(name, patched as [Block<any, any>]);
+      return fastForwardComposeBlock(name, patched as [SomeBlock]);
     },
   };
   return ff;

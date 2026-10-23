@@ -47,7 +47,7 @@ export interface ApiBlockOptions<In extends Checkpoint<string>, Out extends Chec
   /** Pure, like every other Block's resolve - picks the Checkpoint from the response. Optional when `to` is one Checkpoint. */
   resolve?: (result: ApiCallResult) => Out;
   verify?: Trait[] | ((out: Out) => Trait[]);
-  requires?: readonly MemKey<any>[];
+  requires?: readonly MemKey<unknown>[];
   stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   stubOnError?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;

@@ -1,5 +1,4 @@
 // map(): builds a Flow one step at a time - gotoPage / method / assert / flow / branch - each checked for its Block kind.
-import type { Block, DefinedBlock } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import {
   WaygraphError,
@@ -29,6 +28,7 @@ import type { NavBlock } from "../block/kinds/nav.js";
 import type { PageBlock } from "../block/kinds/page.js";
 import type { AssertBlock, MethodBlock } from "../block/kinds/method.js";
 import type { EffectBlock } from "../block/kinds/effect.js";
+import type { SomeBlock, SomeDefinedBlock } from "../block/block.js";
 
 type S = Checkpoint<"__start__">;
 
@@ -36,11 +36,11 @@ type S = Checkpoint<"__start__">;
  * The one capability MapBuilder needs from Engine: turn the finished steps into a Flow with the engine's config. A
  * function, not the Engine class, so engine.ts and map-builder.ts don't import each other.
  */
-export type BuildFlowFn = (steps: readonly Block<any, any>[], settings: FlowSettings) => Flow<any>;
+export type BuildFlowFn = (steps: readonly SomeBlock[], settings: FlowSettings) => Flow<Checkpoint<string>>;
 
 /** Per-step options every `MapBuilder` step method (`.gotoPage()`/`.method()`/`.assert()`) takes. */
 /** The same Block, but it clears cookies and storage before it acts. Keeps the runtime markers. */
-function resetBefore(block: Block<any, any>): Block<any, any> {
+function resetBefore(block: SomeBlock): SomeBlock {
   const act = block.instruction.act.bind(block.instruction);
   const next = {
     ...block,
@@ -51,17 +51,17 @@ function resetBefore(block: Block<any, any>): Block<any, any> {
         return (act as (p: unknown, i: unknown, m: MemPage) => unknown)(page, input, mem);
       },
     },
-  } as Block<any, any>;
+  } as SomeBlock;
   copyWaygraphRuntime(block, next);
   Object.defineProperty(next, "__waygraphResetBefore", { value: true, enumerable: false, configurable: true });
   return next;
 }
 
 /** Applies a step's `pace` option, keeping the Block's runtime markers. */
-function paced(block: object, opts: MapStepOpts | undefined): DefinedBlock<any, any> {
-  if (opts?.pace === undefined) return block as DefinedBlock<any, any>;
-  const next = { ...block, demoPace: opts.pace } as DefinedBlock<any, any>;
-  copyWaygraphRuntime(block as DefinedBlock<any, any>, next);
+function paced(block: object, opts: MapStepOpts | undefined): SomeDefinedBlock {
+  if (opts?.pace === undefined) return block as SomeDefinedBlock;
+  const next = { ...block, demoPace: opts.pace } as SomeDefinedBlock;
+  copyWaygraphRuntime(block as SomeDefinedBlock, next);
   return next;
 }
 
@@ -142,7 +142,7 @@ const MAP_SALT_FACTORY_HINT: Record<string, string> = {
 };
 
 
-function assertMapKind(block: Block<any, any>, allowed: readonly string[], method: string): void {
+function assertMapKind(block: SomeBlock, allowed: readonly string[], method: string): void {
   const kind = mapKindOf(block);
   if (kind !== undefined && allowed.includes(kind)) return;
   const wanted = allowed.map((k) => MAP_KIND_FACTORY_HINT[k] ?? k).join(" or ");
@@ -151,7 +151,7 @@ function assertMapKind(block: Block<any, any>, allowed: readonly string[], metho
 }
 
 
-function assertMapSalt(block: Block<any, any>, allowed: readonly string[], method: string): void {
+function assertMapSalt(block: SomeBlock, allowed: readonly string[], method: string): void {
   const salt = mapSaltOf(block);
   if (salt !== undefined && allowed.includes(salt)) return;
   const wanted = allowed.map((s) => MAP_SALT_FACTORY_HINT[s] ?? s).join(" or ");
@@ -161,7 +161,7 @@ function assertMapSalt(block: Block<any, any>, allowed: readonly string[], metho
 
 
 function assertMapOrigin(
-  block: Block<any, any>,
+  block: SomeBlock,
   homeOrigin: string | undefined,
   expect: "internal" | "external",
   method: string,
@@ -195,8 +195,8 @@ function assertMapOrigin(
  */
 function buildBranchedFlow<Out extends Checkpoint<string>>(
   before: Flow<Out>,
-  routes: Record<string, Flow<any> | null>,
-): Flow<any> {
+  routes: Record<string, Flow<Checkpoint<string>> | null>,
+): Flow<Checkpoint<string>> {
   const run = (async (
     contextOrMem: BrowserContext | MemPage,
     memOrConfig?: MemPage | EngineConfig,
@@ -221,7 +221,7 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
       return first.result;
     }
     return branchFlow.run(context, mem, { ...options, page: first.page, closeOnFinish });
-  }) as Flow<any>["run"];
+  }) as Flow<Checkpoint<string>>["run"];
   return {
     resetSession: before.resetSession,
     config: before.config,
@@ -250,7 +250,7 @@ function buildBranchedFlow<Out extends Checkpoint<string>>(
     modBlockVerify(block, nameOrIndex, newCheck) {
       return buildBranchedFlow(before.modBlockVerify(block, nameOrIndex, newCheck), routes);
     },
-  } as Flow<any>;
+  } as Flow<Checkpoint<string>>;
 }
 
 /**
@@ -272,13 +272,13 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     // From Engine.map(): see BuildFlowFn.
     private readonly build: BuildFlowFn,
     private readonly settings: FlowSettings,
-    private readonly steps: readonly DefinedBlock<any, any>[],
+    private readonly steps: readonly SomeDefinedBlock[],
     private readonly homeOrigin: string | undefined,
     // `auto: true` = opened implicitly by a `{ ff: true }` step flag, not an explicit .ffStart() -
     // closes silently at the next non-flagged step (or at .end()/.branch()) instead of demanding a
     // matching .ffEnd(), since the author never opened anything they'd need to remember to close.
     private readonly ff:
-      | { name: string; buffer: readonly DefinedBlock<any, any>[]; auto: boolean }
+      | { name: string; buffer: readonly SomeDefinedBlock[]; auto: boolean }
       | null = null,
   ) {}
 
@@ -337,7 +337,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     return new MapBuilder<Out>(
       this.build,
       this.settings,
-      [...this.steps, composed as unknown as DefinedBlock<any, any>],
+      [...this.steps, composed as unknown as SomeDefinedBlock],
       this.homeOrigin,
       null,
     );
@@ -352,7 +352,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * (stays open until its own `.ffEnd()`, regardless of whether a step passed `{ ff: true }`).
    */
   private appendStep<NextOut extends Checkpoint<string>>(
-    block: DefinedBlock<any, any>,
+    block: SomeDefinedBlock,
     ff?: boolean,
   ): MapBuilder<NextOut> {
     if (ff) {
@@ -451,10 +451,11 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * right before the sub-flow's first step.
    */
   flow<NextOut extends Checkpoint<string>>(sub: Flow<NextOut>, opts?: MapFlowOpts): MapBuilder<NextOut> {
+    // The steps' types live in `sub`; at runtime this is one untyped walk, typed again as the sub-flow's last Checkpoint.
     let next = this as unknown as MapBuilder<any>;
     sub.blocks().forEach((info, i) => {
       const block = i === 0 && (opts?.reset ?? sub.resetSession) ? resetBefore(info.block) : info.block;
-      next = next.appendStep(block as DefinedBlock<any, any>);
+      next = next.appendStep(block as SomeDefinedBlock);
     });
     return next as MapBuilder<NextOut>;
   }
@@ -493,7 +494,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    */
   branch<
     Routes extends {
-      [K in Out["__state"]]: ((m: MapBuilder<Extract<Out, Checkpoint<K>>>) => Flow<any>) | null;
+      [K in Out["__state"]]: ((m: MapBuilder<Extract<Out, Checkpoint<K>>>) => Flow<Checkpoint<string>>) | null;
     },
   >(
     routes: Routes,
@@ -508,11 +509,11 @@ export class MapBuilder<Out extends Checkpoint<string>> {
       throw new WaygraphError("WG_MAP_BRANCH_NO_PRIOR_STEP", MSG_MAP_BRANCH_NO_PRIOR_STEP);
     }
     const before = this.end();
-    const resolvedRoutes: Record<string, Flow<any> | null> = {};
+    const resolvedRoutes: Record<string, Flow<Checkpoint<string>> | null> = {};
     for (const [tag, fn] of Object.entries(
-      routes as Record<string, ((m: MapBuilder<any>) => Flow<any>) | null>,
+      routes as Record<string, ((m: MapBuilder<Checkpoint<string>>) => Flow<Checkpoint<string>>) | null>,
     )) {
-      resolvedRoutes[tag] = fn ? fn(new MapBuilder<any>(this.build, this.settings, [], this.homeOrigin, null)) : null;
+      resolvedRoutes[tag] = fn ? fn(new MapBuilder<Checkpoint<string>>(this.build, this.settings, [], this.homeOrigin, null)) : null;
     }
     return buildBranchedFlow(before, resolvedRoutes) as never;
   }

@@ -10,6 +10,7 @@ import { runPrecondition, runVerify } from "../trait/trait.js";
 import type { Trait } from "../trait/trait.js";
 import type { BrowserContext, Locator, Page } from "@playwright/test";
 import { ignorePageGone } from "../page-gone.js";
+import type { SomeBlock } from "../block/block.js";
 
 /**
  * Checks `block.requires` against `mem` and throws, naming every missing key at
@@ -19,7 +20,7 @@ import { ignorePageGone } from "../page-gone.js";
  * that flow. It does not see Blocks only reachable through `branch()` routing,
  * since those depend on a runtime decision that hasn't happened yet.
  */
-export function preflight(mem: MemPage, block: Block<any, any>): void {
+export function preflight(mem: MemPage, block: SomeBlock): void {
   const missing = (block.requires ?? []).filter((k) => !mem.has(k));
   if (missing.length > 0) {
     throw new WaygraphError(
@@ -150,7 +151,7 @@ export async function runGraph<TOut extends Checkpoint<string>>(
   let result: string | undefined;
   let failure: unknown;
   try {
-    let current: Block<any, any> = entry;
+    let current: SomeBlock = entry;
     let input: Checkpoint<string> = checkpoint("__start__");
     let steps = 0;
 

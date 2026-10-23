@@ -9,12 +9,15 @@
  *   5. No HTML strings into the page: overlay elements are built with __wgEl / __wgSet / __wgSvg (demo/overlay/ui/shadow.ts),
  *      so page and author text is always a text node.
  *   6. WAYGRAPH_* variables are read and written only through engine/env.ts (the registry docs/env.md is generated from).
+ *   8. `any` only shrinks: each file's count of `any` keywords may not exceed scripts/any-debt.json (lower it when you
+ *      type something; a file not listed has none). Counted with TypeScript's own parser.
  *   7. No `.catch(() => {})` in Node code: catch with ignorePageGone / ignoreTimeout (engine/page-gone.ts) or handle it.
  * Run: npm run check:structure
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const srcDir = join(root, "src");
@@ -158,6 +161,27 @@ for (const f of files) {
   if (rel.startsWith("demo/overlay/inpage/") || SWALLOW_ALLOWED.has(rel)) continue;
   const line = readFileSync(f, "utf8").split("\n").findIndex((l) => SWALLOW_RE.test(l));
   if (line >= 0) problems.push(`${rel}:${line + 1}: .catch(() => {}) swallows every error (use ignorePageGone / ignoreTimeout from engine/page-gone.ts)`);
+}
+
+// --- `any` only shrinks ---
+const anyDebtFile = join(root, "scripts", "any-debt.json");
+const anyDebt = JSON.parse(readFileSync(anyDebtFile, "utf8"));
+const anyNow = {};
+for (const f of files) {
+  const rel = relative(srcDir, f).replace(/\\/g, "/");
+  let n = 0;
+  const visit = (node) => {
+    if (node.kind === ts.SyntaxKind.AnyKeyword) n++;
+    ts.forEachChild(node, visit);
+  };
+  visit(ts.createSourceFile(f, readFileSync(f, "utf8"), ts.ScriptTarget.Latest, true));
+  if (n > 0) anyNow[rel] = n;
+  const allowed = anyDebt[rel] ?? 0;
+  if (n > allowed) problems.push(`${rel}: ${n} \`any\` (allowed ${allowed}) - type it; the any-debt only goes down`);
+}
+if (process.argv.includes("--write-any-debt")) writeFileSync(anyDebtFile, JSON.stringify(anyNow, null, 2) + "\n");
+else for (const [rel, allowed] of Object.entries(anyDebt)) {
+  if ((anyNow[rel] ?? 0) < allowed) problems.push(`any-debt: ${rel} is down to ${anyNow[rel] ?? 0} - lower it in scripts/any-debt.json (or run with --write-any-debt)`);
 }
 
 const debtFile = join(root, "scripts", "layer-debt.json");
