@@ -225,7 +225,7 @@ export function findBlockPathDetailed(graph: WaygraphGraph, fromTag: string, toT
 
 /**
  * The project's state graph: Checkpoints are nodes, Blocks are edges. Built from the manifest scan, which reads each Block's
- * route at runtime (or, for the deprecated `<In, Out>` form, from source).
+ * route at runtime.
  */
 export async function discoverGraph(
   projectDir: string,

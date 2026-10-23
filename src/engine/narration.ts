@@ -302,13 +302,6 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
    */
   focus?: boolean;
   /**
-   * Deprecated no-op. Camera auto-centers on the ring target; host mouse is
-   * ignored. Playwright's real mouse is driven to the centered target instead.
-   */
-  followMouse?: boolean;
-  /** Alias for {@link WaygraphHighlightStub.followMouse} (no-op). */
-  follow?: boolean;
-  /**
    * Caption text color (CSS color). Overrides tone label color when set.
    * Aliases accepted at runtime: `color`, `labelColor`, `textColor`.
    */

@@ -19,7 +19,7 @@ export type PageMethodEntry =
 export type PageBlockOptions<Out extends Checkpoint<string>> = {
   name: string;
   description?: string;
-  /** The Checkpoint this page hub confirms: its value (`Home`). A tag string still works but is deprecated. */
+  /** The Checkpoint this page hub confirms: its value (`Home`). */
   checkpoint: Out;
   verify?: Trait[] | ((out: Out) => Trait[]);
   stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;

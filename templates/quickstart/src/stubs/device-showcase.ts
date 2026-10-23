@@ -167,7 +167,6 @@ export const deviceShowcase = {
           tone: "planned",
           focus: true,
           zoomOut: false,
-          followMouse: false,
           weight: "bold",
           gesture: "tap",
         },
@@ -185,7 +184,6 @@ export const deviceShowcase = {
         tone: "success",
         focus: true,
         zoomOut: true,
-        followMouse: false,
         duration: true,
       });
     },

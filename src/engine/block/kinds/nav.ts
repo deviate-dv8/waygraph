@@ -55,7 +55,7 @@ export type NavBlock<Out extends Checkpoint<string>> = Omit<
 export type NavBlockOptions<Out extends Checkpoint<string>> = {
   name: string;
   description?: string;
-  /** The Checkpoint this Nav lands on: its value (`Home`). A tag string (`"Home"`) still works but is deprecated. */
+  /** The Checkpoint this Nav lands on: its value (`Home`). */
   checkpoint: Out;
   /**
    * Checkpoint tags this Nav can run from. Omit (the default) = reachable from anywhere. Set it for
