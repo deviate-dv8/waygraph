@@ -249,6 +249,13 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     dwell names, a project's own `playwright.config`, the `package.json` `"waygraph"` field, `waygraph chain`,
     `auto --detach` and the flag aliases; one form for ctx stubs (`ctx.todos(id, items, opts)`, no method aliases, folded by
     codemod `flows`). `docs/deprecated.md` lists each with its replacement. **Done.**
+13. Audit fixes (agent-sins / agent-golf / agent-better-habits): analysis reads the manifest and the AST, never regexes
+    over source; overlay built with the DOM (`__wgEl`), never HTML strings; one Locator patch (`locator-theater.ts`);
+    every command's flags through `parseArgs` from one table that also prints the help; every `WAYGRAPH_*` through
+    `engine/env.ts` (`docs/env.md` generated from it); no catch-alls (`ignorePageGone` / `ignoreTimeout`); an `any`
+    ratchet; no site-specific code in the package (saucedemo login and URLs, PIA URLs, the veciro preset); `live/` one
+    folder per surface; `engine/stub/`; `AGENTS.md`; the reference split into `docs/reference/`. `check:structure`
+    enforces the new rules. **Done.**
 
 
 

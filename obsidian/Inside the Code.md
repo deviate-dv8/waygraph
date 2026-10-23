@@ -24,6 +24,8 @@ No barrels: things are imported from the file that declares them.
 | `engine/flow/` | `flow.ts` | [[Flows]]; `map-builder.ts` = `map()` | |
 | `engine/run/` | `run.ts` | the per-Block sequence, run events | |
 | `engine/mem/`, `engine/trait/` | `mem.ts`, `trait.ts` | [[Mem]], verify checks | |
+| `engine/stub/` | `stub.ts` | what a ctx stub can paint ([[Demo UI]]): rings, todos, device, pace | |
+| `engine/env.ts`, `engine/page-gone.ts` | | every `WAYGRAPH_*` variable; the only errors a page call may ignore | |
 | `runner/` | `runner.ts` | [[Playing a Flow]]: plan -> session -> one loop with a mode | `modes/` = run, demo, report, branches |
 | `demo/` | `stepper/stepper.ts` | [[Demo UI]]: stepper, overlay, narration | |
 | `live/` | `auto/auto.ts`, `auto-session/auto-session.ts`, `pilot/pilot.ts`, `traverse/traverse.ts` | [[Live Sessions]]: one folder per surface | |
