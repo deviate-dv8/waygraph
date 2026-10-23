@@ -14,6 +14,7 @@ import type { WebServerConfig } from "./webserver.js";
 import type { DemoPace } from "../engine/narration.js";
 import { envString, setEnv } from "../engine/env.js";
 import type { WaygraphEnvName } from "../engine/env.js";
+import { takeGlobalFlag } from "./global-flag.js";
 
 /** Where `--video` recordings are saved and at what size. */
 export interface VideoSettings {
@@ -114,14 +115,9 @@ function configCandidates(): string[] {
 
 /** Removes `--config <file>` / `--config=<file>` from argv and records it as `WAYGRAPH_CONFIG`, so every command reads that config. */
 export function takeConfigFlag(argv: string[]): string[] {
-  const out: string[] = [];
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]!;
-    if (a === "--config" && argv[i + 1] !== undefined) setEnv("WAYGRAPH_CONFIG", argv[++i]!);
-    else if (a.startsWith("--config=")) setEnv("WAYGRAPH_CONFIG", a.slice("--config=".length));
-    else out.push(a);
-  }
-  return out;
+  const { value, rest } = takeGlobalFlag(argv, "config");
+  if (value !== undefined) setEnv("WAYGRAPH_CONFIG", value);
+  return rest;
 }
 
 /**

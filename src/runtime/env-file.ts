@@ -6,6 +6,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { envString, setEnv } from "../engine/env.js";
+import { takeGlobalFlag } from "./global-flag.js";
 
 /** `KEY=value` lines only - no `${VAR}` expansion, no multiline values. Matches the common
  * Vite/Next `.env` shape, not full dotenv-expand parity. */
@@ -35,14 +36,9 @@ export function envMode(): string {
 
 /** Removes `--env <mode>` / `--env=<mode>` from argv and records it as `WAYGRAPH_ENV`, so it never reaches a forwarded command. */
 export function takeEnvFlag(argv: string[]): string[] {
-  const out: string[] = [];
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]!;
-    if (a === "--env" && argv[i + 1] !== undefined) setEnv("WAYGRAPH_ENV", argv[++i]!);
-    else if (a.startsWith("--env=")) setEnv("WAYGRAPH_ENV", a.slice("--env=".length));
-    else out.push(a);
-  }
-  return out;
+  const { value, rest } = takeGlobalFlag(argv, "env");
+  if (value !== undefined) setEnv("WAYGRAPH_ENV", value);
+  return rest;
 }
 
 /**
