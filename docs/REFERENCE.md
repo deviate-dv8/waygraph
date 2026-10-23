@@ -307,7 +307,8 @@ Blocks name them as values, never as tag strings or `<In, Out>` type arguments; 
 
 Because the route is recorded on the Block, `waygraph graph`, `auto`, `traverse` and the manifest read it at runtime
 instead of parsing source text. The older forms (`checkpoint: "Home"`, `defineMethodBlock<Home, ItemInCart>`) still work
-but are deprecated; `waygraph upgrade --codemod checkpoints` rewrites a project's states and Block files.
+but are deprecated; `waygraph upgrade --codemod checkpoints` rewrites a project's states and Block files (on the
+TypeScript AST, so formatting and comments don't trip it).
 
 ## The manifest
 
