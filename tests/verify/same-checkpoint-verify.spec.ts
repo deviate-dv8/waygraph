@@ -5,7 +5,7 @@ import { buildFlow } from "../../src/engine/flow/flow.js";
 
 // Proves a real gap-turned-non-gap: a Block whose action doesn't move to a
 // new page state at all (clicking "+" to bump a cart item's quantity, say)
-// has In === Out, the SAME Checkpoint tag - defineFlow already accepts that
+// has In === Out, the SAME Checkpoint tag - a flow already accepts that
 // with zero special-casing (see "chains the same Checkpoint back into
 // itself" below). The real question this was raised over: how do you VERIFY
 // the increment actually landed correctly, when the only thing that changed
@@ -72,7 +72,7 @@ test.describe("same-checkpoint Blocks verifying against mem", () => {
   test("a Block chains back into its own Checkpoint - no special-casing needed", () => {
     const engine = new Engine();
     // In === Out (both "ProductPage") for every increment slot here -
-    // defineFlow's own type constraint is just "next Block's In === prior
+    // map()'s own type constraint is just "next Block's In === prior
     // Block's Out," trivially satisfied when they're literally the same
     // tag. This is a compile-time proof as much as a runtime one: if this
     // didn't typecheck, `tsc --noEmit` would already have failed.

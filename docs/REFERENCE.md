@@ -616,11 +616,12 @@ A regular `defineBlock` / `defineMethodBlock`'s `act()` receives `page` typed as
 strike-through pointing at Nav/Page helpers). This is a soft, TypeScript-only signal:
 nothing is blocked, nothing fails to build. `waygraph check [project]` is the
 complementary whole-project sweep for contexts with no editor watching (CI, generated
-code, an autonomous agent authoring Blocks) - it warns, never fails the process.
+code, an autonomous agent authoring Blocks) - it warns, never fails the process. It reads each Block file's calls from
+the syntax tree, so a `page.goto` in a comment or a string is not a warning. Orphans are Blocks no flow plays, read at
+runtime from every flow's `blocks()` (Page hubs and the Blocks a Page lists as `methods` are never orphans).
 
 **`waygraph typecheck [project]`** runs `tsc --noEmit` then the same **bad-practice** scan
-(a wildcard `Checkpoint<string>` output, assert blocks missing type args, multi-`.fill()` Methods,
-fill+click in one Method, empty `verify` on a transition Block or `defineAssertBlock`).
+(multi-`.fill()` Methods, fill+click in one Method, empty `verify` on a transition Block or `defineAssertBlock`).
 Practices warn only unless `tsc` fails; use `--no-practices` to skip the scan. Opt out per
 file: `// waygraph-ignore-practices` or `// waygraph-ignore: multi-input, combined-action,
 empty-verify`. Print full agent guidance: `waygraph --skill-convention`.

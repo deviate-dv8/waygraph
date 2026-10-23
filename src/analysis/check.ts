@@ -1,8 +1,8 @@
 // `waygraph validate` and `waygraph check`: does every Flow file load, and do Blocks keep navigation and selectors where
 // they belong. Warnings only.
-import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import { importFresh, isBlockLike, walkDir } from "../manifest/scan.js";
+import { calls, parseSource } from "../manifest/source.js";
 import { collectPracticeWarnings } from "./practices-check.js";
 import type { PracticeWarning } from "./practices-check.js";
 import { mapGroups } from "../manifest/maps.js";
@@ -15,27 +15,19 @@ function isFlowLike(val: unknown): boolean {
 }
 
 /** Set by `defineNavBlock` (non-enumerable) - see engine/block/kinds/nav.ts. */
-function isNavBlockMarked(val: Record<string, unknown>): boolean {
+function isNavBlockMarked(val: object): boolean {
   return (val as { __waygraphKind?: string }).__waygraphKind === "nav";
 }
 
 
-const NAV_METHOD_CALLS = ["page.goto(", "page.reload(", "page.goBack(", "page.goForward("] as const;
+const NAV_METHODS = new Set(["page.goto", "page.reload", "page.goBack", "page.goForward"]);
 
 
 /**
- * Matches a selector-taking Trait factory call whose first argument is a
- * literal string/template, not an identifier or property access - the exact
- * shape found repeatedly in hand-written assertion Blocks
- * (`Trait.visible("#some-id")` instead of `Trait.visible(SomeSel.thing)`).
- * `Trait.url(...)` is deliberately excluded - it takes a URLPatternInit, never
- * a DOM selector. Same file-scoped-regex bluntness the nav-escape sweep above
- * already accepts (see openspec/specs/nav-block-and-check/spec.md) - a known
- * blind spot on string concatenation/template-built selectors, not solved
- * here for the same "recipe before promotion" reason that check accepts its
- * own shared-helper blind spot.
+ * Selector-taking Trait factories. Called with a string literal (`Trait.visible("#some-id")`) instead of a Sel
+ * (`Trait.visible(SomeSel.thing)`) is an inline selector. `Trait.url(...)` takes a URLPatternInit, never a selector.
  */
-const INLINE_SELECTOR_CALL = /\b(?:Trait\.visible|Trait\.text|textEquals|visible)\(\s*["'`]/;
+const SELECTOR_TRAITS = new Set(["Trait.visible", "Trait.text", "textEquals", "visible"]);
 
 
 export interface FlowInfo {
@@ -106,21 +98,16 @@ export async function checkProject(
     } catch {
       continue;
     }
-    let src: string | undefined;
+    // The calls in the Block's own file, read from the AST: a comment or a string that mentions page.goto doesn't count.
+    const fileCalls = calls(parseSource(file));
     for (const [exportName, exported] of Object.entries(mod)) {
       if (!isBlockLike(exported)) continue;
-      src ??= readFileSync(file, "utf-8");
-      // Nav-escape: NavBlocks are exempt (their generated act() is the one
-      // legitimate goto/click call site).
-      if (
-        !isNavBlockMarked(exported as unknown as Record<string, unknown>) &&
-        NAV_METHOD_CALLS.some((needle) => src!.includes(needle))
-      ) {
+      // Nav-escape: NavBlocks are exempt (their generated act() is the one legitimate goto/click call site).
+      if (!isNavBlockMarked(exported) && fileCalls.some((c) => NAV_METHODS.has(c.callee))) {
         navWarnings.push({ file, blockName: exported.name, exportName });
       }
-      // Inline selector: applies to every Block kind, including NavBlocks -
-      // a Nav's own `verify` array is just as likely to inline a selector.
-      if (INLINE_SELECTOR_CALL.test(src)) {
+      // Inline selector: every Block kind, NavBlocks too - a Nav's own `verify` array can inline a selector.
+      if (fileCalls.some((c) => c.literalFirstArg && SELECTOR_TRAITS.has(c.callee))) {
         selWarnings.push({ file, blockName: exported.name, exportName });
       }
     }

@@ -3,32 +3,18 @@
  * selector or NavBlock URL in the loaded library (surfaced via console.warn →
  * `auto console`, same channel as unmapped href detection).
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
 import { exploreRoots } from "../manifest/roots.js";
 import type { BlockEntry } from "../manifest/project.js";
+import { walkDir } from "../manifest/scan.js";
+import { parseSource, stringLiterals } from "../manifest/source.js";
 
-const SELECTOR_LITERAL =
-  /(?:locator|visible|click|fill|press|selector|getByRole)\(\s*['"`]([^'"`]+)['"`]/g;
-const HASH_ID = /#([a-zA-Z][\w-]*)/g;
-const DATA_TEST = /\[data-test(?:-id)?(?:=["'`][^"'`]+["'`])?\]/g;
+/** A colour like `{ color: "#fde68a" }` is not a selector. */
+const STYLE_PROPERTY = /colou?r|background|fill|stroke|border|shadow/i;
 
-function walkBlockAndSelFiles(dir: string, acc: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    try {
-      const st = statSync(p);
-      if (st.isDirectory()) {
-        if (name === "node_modules" || name === "dist" || name.startsWith(".")) continue;
-        walkBlockAndSelFiles(p, acc);
-      } else if (/\.(block|sel)\.ts$/.test(name)) {
-        acc.push(p);
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-  return acc;
+/** A string that reads as a CSS selector for an element waygraph can find: an id, an attribute, or a data-test hook. */
+function isSelectorLiteral(value: string, property: string | undefined): boolean {
+  if (property && STYLE_PROPERTY.test(property)) return false;
+  return value.includes("#") || value.startsWith("[") || value.includes("data-test");
 }
 
 /** Collect selector strings from NavClick blocks and Block/*Sel source files. */
@@ -44,18 +30,8 @@ export function collectKnownInteractionSelectors(
     if (typeof click === "string") out.add(click);
   }
   for (const root of exploreRoots(projectDir, inject)) {
-    for (const file of walkBlockAndSelFiles(root)) {
-      const src = readFileSync(file, "utf-8");
-      for (const re of [SELECTOR_LITERAL, HASH_ID, DATA_TEST]) {
-        re.lastIndex = 0;
-        let m: RegExpExecArray | null;
-        while ((m = re.exec(src))) {
-          const sel = m[0].startsWith("#") || m[0].startsWith("[") ? m[0] : (m[1] ?? m[0]);
-          if (sel.startsWith("#") || sel.includes("data-test") || sel.includes("[")) {
-            out.add(sel.startsWith("#") || sel.startsWith("[") ? sel : `#${sel}`);
-          }
-        }
-      }
+    for (const file of walkDir(root, /\.(block|sel)\.ts$/)) {
+      for (const { value, property } of stringLiterals(parseSource(file))) if (isSelectorLiteral(value, property)) out.add(value);
     }
   }
   return Array.from(out);

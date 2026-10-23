@@ -53,12 +53,7 @@ Session control works as `browser …` or `auto …` with the same `<sessionId>`
   Block you just wrote doesn't show up after `browser reload`, check `waygraph graph`'s own
   `skipped` list and the file's syntax directly, don't assume it just needs more time.
 - **Pass Checkpoint values** (`checkpoint: X`, `from: X, to: Y`) so a freshly-written Block shows up in the graph from its
-  runtime route. Older note: `defineAssertBlock` needs no `<In, Out>` generic to type-check (`checkpoint: X` alone
-  is enough for TypeScript to infer it) - but older/naive static-graph discovery logic may
-  rely on parsing an explicit generic from source text. If a freshly-written
-  `defineAssertBlock` Block is missing from `waygraph graph`'s edges (silently, no error),
-  check whether this package's own `graph.ts` has the matching-marker fix for it, or add an
-  explicit generic type argument as a workaround.
+  runtime route. The graph reads routes at runtime, never from source text.
 - **A `<p>`/text-based selector often needs scoping**, not just a class name - a sibling
   "chat list item" and "message preview" frequently share the exact same CSS classes in real
   apps, distinguished only by DOM position (first vs second child of a specific wrapper).

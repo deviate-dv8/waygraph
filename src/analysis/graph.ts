@@ -1,9 +1,8 @@
-import { readFileSync } from "node:fs";
 import { relative } from "node:path";
 import type { BlocksSelect } from "../manifest/select.js";
 import { scanProject } from "../manifest/project.js";
 import type { ProjectScan } from "../manifest/project.js";
-import { importFresh, isBlockLike, walkDir } from "../manifest/scan.js";
+import type { BlockInfo } from "../engine/flow/flow.js";
 
 /**
  * The state-machine shape `waygraph auto` discovers from a project's own
@@ -68,91 +67,28 @@ export function toMermaid(graph: WaygraphGraph): string {
   return lines.join("\n");
 }
 
-const discoverBlocks = (projectDir: string): string[] => walkDir(projectDir, /\.block\.ts$/);
-const discoverFlows = (projectDir: string): string[] => walkDir(projectDir, /\.flow\.ts$/);
-const importModule = importFresh;
-
-/** Block export ids a flow file uses: every identifier outside its import lines (a Block can sit in the array or in a local like `const AddShown = AddBlock.stubAfter(...)`). */
-function extractFlowBlockRefs(flowSrc: string): string[] {
-  const body = flowSrc.replace(/^\s*import[\s\S]*?;\s*$/gm, "").replace(/\/\/.*$/gm, "");
-  return body.match(/[A-Za-z_$][\w$]*/g) ?? [];
-}
-
-function exportNameToBlockName(exportName: string): string {
-  const base = exportName.replace(/Block$/, "");
-  return base
-    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
-    .toLowerCase();
-}
-
 /**
- * Blocks present on disk but never used in a `.flow.ts`.
- * Required before `chain auto` can build a path from the discovered graph -
- * orphan Blocks are intentionally excluded from auto shorthand. Arrival-only
- * Page hubs and Blocks listed on a Page's `methods` are not orphans.
+ * Blocks the project exports but no flow plays. Read at runtime: every flow's `blocks()` (nested flows flattened, plus
+ * the Blocks a `branch()` routes to) against every scanned Block. Page hubs and the Blocks a Page lists as its
+ * `methods` are not orphans.
  */
 export async function findOrphanBlocks(projectDir: string): Promise<OrphanBlock[]> {
-  const blockFiles = discoverBlocks(projectDir);
-  const flowFiles = discoverFlows(projectDir);
-  const referenced = new Set<string>();
-  for (const flowFile of flowFiles) {
-    for (const ref of extractFlowBlockRefs(readFileSync(flowFile, "utf-8"))) {
-      referenced.add(ref);
+  const scan = await scanProject(projectDir, { maps: false });
+  const used = new Set<string>();
+  for (const { flow } of scan.flows) {
+    for (const info of flow.blocks() as BlockInfo[]) {
+      used.add(info.name);
+      for (const target of Object.values(info.routes ?? {})) if (target) used.add(target);
     }
   }
-
-  const pageMethodNames = new Set<string>();
-  for (const file of blockFiles) {
-    let mod: Record<string, unknown>;
-    try {
-      mod = await importModule(file);
-    } catch {
-      continue;
-    }
-    for (const exported of Object.values(mod)) {
-      if (!exported || typeof exported !== "object") continue;
-      if ((exported as { __waygraphKind?: string }).__waygraphKind !== "page") continue;
-      const names = (exported as { __waygraphMethods?: readonly string[] }).__waygraphMethods;
-      if (Array.isArray(names)) {
-        for (const n of names) pageMethodNames.add(n);
-      }
-    }
+  for (const b of scan.blocks) {
+    if (b.kind !== "page") continue;
+    for (const name of (b.block as { __waygraphMethods?: readonly string[] }).__waygraphMethods ?? []) used.add(name);
   }
-
-  const orphans: OrphanBlock[] = [];
-  for (const file of blockFiles) {
-    const relFile = relative(projectDir, file);
-    const src = readFileSync(file, "utf-8");
-    const exportRe = /export\s+const\s+([A-Za-z_$][\w]*)\s*=/g;
-    let m: RegExpExecArray | null;
-    while ((m = exportRe.exec(src)) !== null) {
-      const exportName = m[1]!;
-      if (referenced.has(exportName)) continue;
-      if (!/defineBlock|defineMethodBlock|defineActionBlock|definePageBlock|defineEffectBlock|defineMemEffectBlock|defineNavBlock|defineNavClickBlock|defineMemNavBlock/.test(src)) continue;
-      // Arrival-only Page hubs are never orphans (even if import fails without tsx).
-      const assignSlice = src.slice(m.index, m.index + exportName.length + 80);
-      if (/=\s*definePageBlock\b/.test(assignSlice)) continue;
-      let block = exportNameToBlockName(exportName);
-      try {
-        const mod = await importModule(file);
-        const exported = mod[exportName];
-        if (isBlockLike(exported)) block = exported.name;
-        if (
-          exported &&
-          typeof exported === "object" &&
-          (exported as { __waygraphKind?: string }).__waygraphKind === "page"
-        ) {
-          continue;
-        }
-        if (pageMethodNames.has(block)) continue;
-      } catch {
-        // import may fail in partial projects - keep derived name
-      }
-      orphans.push({ exportName, block, file: relFile });
-    }
-  }
-  return orphans.sort((a, b) => a.file.localeCompare(b.file) || a.exportName.localeCompare(b.exportName));
+  return scan.blocks
+    .filter((b) => b.kind !== "page" && !used.has(b.name))
+    .map((b) => ({ exportName: b.exportName, block: b.name, file: relative(projectDir, b.absFile) }))
+    .sort((a, b) => a.file.localeCompare(b.file) || a.exportName.localeCompare(b.exportName));
 }
 
 /**

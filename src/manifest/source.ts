@@ -66,3 +66,22 @@ export function objectArgProperty(sf: SourceFile, callee: (text: string) => bool
   }
   return out;
 }
+
+/** Every string literal in the file (comments are not strings), with the property name it initializes, if any. */
+export function stringLiterals(sf: SourceFile): { value: string; property: string | undefined }[] {
+  const out: { value: string; property: string | undefined }[] = [];
+  for (const node of [...sf.getDescendantsOfKind(SyntaxKind.StringLiteral), ...sf.getDescendantsOfKind(SyntaxKind.NoSubstitutionTemplateLiteral)]) {
+    const parent = node.getParent();
+    if (Node.isImportDeclaration(parent) || Node.isExportDeclaration(parent)) continue;
+    out.push({ value: node.getLiteralValue(), property: Node.isPropertyAssignment(parent) && parent.getInitializer() === node ? parent.getName() : undefined });
+  }
+  return out;
+}
+
+/** Every call in the file (comments and strings are not calls): its callee as written and whether its first argument is a string. */
+export function calls(sf: SourceFile): { callee: string; literalFirstArg: boolean }[] {
+  return sf.getDescendantsOfKind(SyntaxKind.CallExpression).map((call) => {
+    const arg = call.getArguments()[0];
+    return { callee: call.getExpression().getText(), literalFirstArg: Node.isStringLiteral(arg) || Node.isTemplateExpression(arg) || Node.isNoSubstitutionTemplateLiteral(arg) };
+  });
+}

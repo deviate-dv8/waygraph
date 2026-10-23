@@ -1,7 +1,8 @@
 import { blockExportToLabel, extractFlowNames, extractGotos, extractUrlTraits, parseBlockImports } from "../../analysis/source.js";
 import { walkDir } from "../../manifest/scan.js";
+import { exportedNames, parseSource } from "../../manifest/source.js";
 import { relative, resolve } from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 
 // ---------------------------------------------------------------------------
 // `list`
@@ -40,15 +41,14 @@ function navCommand(projectDir: string, flowName: string | undefined): void {
     process.exitCode = 1;
     return;
   }
+  let scanned: { file: string; exports: string[] }[] | undefined;
+  const blockFiles = () => (scanned ??= walkDir(projectDir, /\.block\.ts$/).map((f) => ({ file: f, exports: exportedNames(parseSource(f)) })));
   for (const file of targets) {
     for (const name of extractFlowNames(file)) {
       console.log(`${name}  (${relative(projectDir, file)})`);
-      const blockDir = projectDir;
       for (const blockExport of parseBlockImports(file)) {
         console.log(`  -> ${blockExportToLabel(blockExport)}`);
-        const blockFile = walkDir(blockDir, /\.block\.ts$/).find((f) =>
-          readFileSync(f, "utf-8").includes(`export const ${blockExport}`),
-        );
+        const blockFile = blockFiles().find((f) => f.exports.includes(blockExport))?.file;
         if (!blockFile) continue;
         for (const url of extractGotos(blockFile)) console.log(`       goto ${url}`);
         for (const url of extractUrlTraits(blockFile)) console.log(`       verify url ~ ${url}`);

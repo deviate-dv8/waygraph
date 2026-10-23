@@ -62,8 +62,8 @@ any build) to fail on existing code that already calls these methods from a regu
 
 ### Requirement: waygraph check sweeps a whole project as a complementary check
 `waygraph check <project>` SHALL walk every `*.block.ts` file under the target project
-and, for each Block not built via `defineNavBlock`, SHALL scan that file's own source text
-for `page.goto(`, `page.reload(`, `page.goBack(`, or `page.goForward(`. On a match, it SHALL print a warning
+and, for each Block not built via `defineNavBlock`, SHALL read that file's calls from its syntax tree
+(comments and strings are not calls) for `page.goto(`, `page.reload(`, `page.goBack(`, or `page.goForward(`. On a match, it SHALL print a warning
 naming the file and the Block. This SHALL be a warning only - it SHALL NOT fail the
 process or change its exit code. This exists alongside the `ActionPage` deprecation above,
 not instead of it: `check` covers contexts with no editor watching (CI, an autonomous
@@ -89,7 +89,7 @@ authoring.
 - **WHEN** an action Block calls a helper function imported from another file, and that
   helper - not the Block's own file - contains `page.goto(...)`
 - **THEN** `waygraph check` MAY NOT detect this; detection is scoped to the Block's own
-  file's source text, not a transitive import graph. This is a documented limitation, not
+  file's calls, not a transitive import graph. This is a documented limitation, not
   a defect.
 
 ### Requirement: check is opt-in and does not touch existing consumers

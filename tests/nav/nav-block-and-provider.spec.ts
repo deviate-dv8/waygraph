@@ -97,7 +97,7 @@ test.describe("defineNavBlock", () => {
     await expect(page.locator("#label")).toHaveText("row 42");
   });
 
-  test("drops into defineFlow, connect, and composeBlock unmodified", async () => {
+  test("drops into buildFlow, connect, and composeBlock unmodified", async () => {
     const nav = defineNavBlock({ name: "nav-x", checkpoint: checkpoint("Arrived"), url: "about:blank" });
     const after: Block<Arrived, A> = {
       name: "after",

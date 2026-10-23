@@ -255,8 +255,8 @@ test.describe("Engine.map() builder", () => {
     //
     // What this does NOT prove (a real limit, not this test's job): the branch's first Block still
     // sees `input.__state === "__start__"` in act(), not the real resolved tag - runGraph seeds
-    // every Flow's entry Block that way unconditionally (see engine/run/run.ts), same as any standalone
-    // `defineFlow([start, SomeMidChainBlock, end])` already behaves today. Real Blocks read
+    // every Flow's entry Block that way unconditionally (see engine/run/run.ts), same as any flow
+    // that starts mid-chain. Real Blocks read
     // page/mem, never `input`, for exactly this reason - `routeAware` here reads `page`, not input.
     const engine = new Engine();
     let ranOnAway = false;

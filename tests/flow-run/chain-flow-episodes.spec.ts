@@ -110,10 +110,6 @@ const navContinueShopping = defineNavBlock({
 
 const engine = new Engine();
 
-// Explicit type args - navContinueShopping's Out is LoggedIn, the same tag
-// ownerLogin's Out already used earlier in this same array, which trips
-// defineFlow's own overload inference; pinning B..F sidesteps it (same
-// fix saucedemo's checkout.flow.ts needed for its own repeated tag).
 const ownerFlow = withSettings(buildFlow([navLogin, ownerLogin, addToCart, navCart, navContinueShopping], engine.config), { sessionReset: true });
 const viewerBlockedFlow = withSettings(buildFlow([navLogin, viewerLoginAttempt], engine.config), { sessionReset: true });
 

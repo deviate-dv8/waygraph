@@ -5,35 +5,33 @@ import { findOrphanBlocks, findBlockPath } from "../../src/analysis/graph.js";
 import type { WaygraphGraph } from "../../src/analysis/graph.js";
 
 const BLOCK_A = `
-import { defineBlock, checkpoint } from "waygraph";
-import type { Checkpoint } from "waygraph";
-type A = Checkpoint<"A">;
-type B = Checkpoint<"B">;
-export const BlockA = defineBlock<A, B>({
+import { defineMethodBlock, checkpoint } from "waygraph";
+export const BlockA = defineMethodBlock({
   name: "block-a",
+  from: checkpoint("A"),
+  to: checkpoint("B"),
   instruction: { async act() {}, resolve: () => checkpoint("B") },
 });
 `;
 
 const BLOCK_ORPHAN = `
-import { defineBlock, checkpoint } from "waygraph";
-import type { Checkpoint } from "waygraph";
-type X = Checkpoint<"X">;
-type Y = Checkpoint<"Y">;
-export const OrphanBlock = defineBlock<X, Y>({
+import { defineMethodBlock, checkpoint } from "waygraph";
+export const OrphanBlock = defineMethodBlock({
   name: "orphan",
+  from: checkpoint("X"),
+  to: checkpoint("Y"),
   instruction: { async act() {}, resolve: () => checkpoint("Y") },
 });
 `;
 
 const FLOW = `
-import { Engine, start, end } from "waygraph";
+import { Engine } from "waygraph";
 import { BlockA } from "../blocks/a.block.js";
 const engine = new Engine();
-export const demoFlow = engine.defineFlow([start, BlockA, end]);
+export const demoFlow = engine.map().start().method(BlockA).end();
 `;
 
-test("findOrphanBlocks reports exports not wired into defineFlow", async () => {
+test("findOrphanBlocks reports Blocks no flow plays", async () => {
   const tmpDir = join(import.meta.dirname, ".tmp-orphans");
   await mkdir(join(tmpDir, "src/blocks"), { recursive: true });
   await mkdir(join(tmpDir, "src/flows"), { recursive: true });
