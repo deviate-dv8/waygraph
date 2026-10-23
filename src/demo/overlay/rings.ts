@@ -8,6 +8,7 @@ import { formatHighlightCaption } from "../narration/style.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/narration.js";
 import { resolveFixtureDwellMs } from "../narration/demo-pace.js";
 import { envNumber } from "../../engine/env.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 /**
  * Scroll a locator into view for demo theater.
@@ -21,7 +22,7 @@ export async function ensureLocatorInView(locator: Locator, opts: any) {
   const instant = !!(opts && opts.instant);
   try {
     if (instant) {
-      await locator.scrollIntoViewIfNeeded().catch(() => {});
+      await locator.scrollIntoViewIfNeeded().catch(ignorePageGone);
       return;
     }
     // Touch mode: if the target is off-screen, show a swipe trail in the
@@ -123,7 +124,7 @@ export async function ensureLocatorInView(locator: Locator, opts: any) {
           p = p.parentElement;
         }
       })
-      .catch(() => {});
+      .catch(ignorePageGone);
   } catch {
     /* best-effort */
   }
@@ -141,7 +142,7 @@ export async function applyHighlightZoom(page: WgPage, selector: any, zoom: any,
     await page.evaluate(() => {
       window.__wgZoomOutOnHide = true;
       if (window.__wgClearZoom) window.__wgClearZoom();
-    }).catch(() => {});
+    }).catch(ignorePageGone);
     return;
   }
   demoFixture("zoom", "ctx/ring zoom(" + z + ") zoomOut=" + (zoomOut !== false), selector);
@@ -154,7 +155,7 @@ export async function applyHighlightZoom(page: WgPage, selector: any, zoom: any,
       },
       { sel: selector, scale: z, zoomOut: zoomOut !== false },
     )
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 
@@ -175,13 +176,13 @@ export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFa
       .evaluate((d: any) => {
         if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", dock: d });
       }, dock)
-      .catch(() => {});
+      .catch(ignorePageGone);
   } else if (opts && opts.todoSync === "clear") {
     await page
       .evaluate(() => {
         if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "clear" });
       })
-      .catch(() => {});
+      .catch(ignorePageGone);
   }
   let lastRingEndedAt = null;
   for (let i = 0; i < list.length; i++) {
@@ -227,7 +228,7 @@ export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFa
             .evaluate((d: any) => {
               if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", dock: d });
             }, dock)
-            .catch(() => {});
+            .catch(ignorePageGone);
         } else if (!dock && ((opts && opts.todos && opts.todos.length) || (h.todos && h.todos.length))) {
           const rows =
             opts && opts.todos && opts.todos.length
@@ -237,7 +238,7 @@ export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFa
             .evaluate((todos: any) => {
               if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", list: todos });
             }, rows)
-            .catch(() => {});
+            .catch(ignorePageGone);
         }
         const authored = resolveFixtureDwellMs(h, { gatesFast, pace });
         const defaultMs = i === list.length - 1 ? 200 : 900;
@@ -327,7 +328,7 @@ export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFa
         },
         { h: last, el: handle },
       )
-      .catch(() => {});
+      .catch(ignorePageGone);
   } else {
     await hideRing(page);
   }
@@ -361,7 +362,7 @@ export async function showRing(page: WgPage, box: WgBox, label: any, tone: any, 
       },
       { box, label, tone: tone || "planned", size, weight, el: handle, focus },
     )
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 
@@ -446,7 +447,7 @@ export async function hideRing(page: WgPage) {
     .evaluate(() => {
       if (window.__wgHideRing) window.__wgHideRing();
     })
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 

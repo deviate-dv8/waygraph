@@ -9,6 +9,7 @@ import { beginRun, endRun, isConnected, lastLeaf, stepEnded, stepFailed, stepSta
 import { runPrecondition, runVerify } from "../trait/trait.js";
 import type { Trait } from "../trait/trait.js";
 import type { BrowserContext, Locator, Page } from "@playwright/test";
+import { ignorePageGone } from "../page-gone.js";
 
 /**
  * Checks `block.requires` against `mem` and throws, naming every missing key at
@@ -311,7 +312,7 @@ export async function narrate<T>(
           },
           { box, caption },
         )
-        .catch(() => {});
+        .catch(ignorePageGone);
       owning = true;
       // The ring alone is pointless if action() fires on the very next
       // tick - a click that navigates (e.g. a form submit) wipes the ring
@@ -329,7 +330,7 @@ export async function narrate<T>(
         .evaluate(() => {
           (globalThis as unknown as { __wgLastNarrate?: number }).__wgLastNarrate = Date.now();
         })
-        .catch(() => {});
+        .catch(ignorePageGone);
     }
   } catch {
     // best-effort - the real action below still runs either way
@@ -347,7 +348,7 @@ export async function narrate<T>(
           w.__wgNarrateOwnsRing = false;
           if (w.__wgHideRing) w.__wgHideRing();
         })
-        .catch(() => {});
+        .catch(ignorePageGone);
     }
   }
 }

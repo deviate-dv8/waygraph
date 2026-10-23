@@ -12,6 +12,7 @@ import { defineBlock } from "../block.js";
 import { MemPage, key } from "../../mem/mem.js";
 import type { MemKey } from "../../mem/mem.js";
 import type { APIRequestContext, APIResponse } from "@playwright/test";
+import { ignorePageGone } from "../../page-gone.js";
 
 /** What `resolve`/`verify` see: the response's status and parsed body, nothing Playwright-specific. */
 export interface ApiCallResult {
@@ -95,7 +96,7 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
         try {
           body = await response.json();
         } catch {
-          body = await response.text().catch(() => undefined);
+          body = await response.text().catch(ignorePageGone);
         }
         mem.set(API_RESULT_SCRATCH, { status: response.status(), ok: response.ok(), body });
         // Shown in the demo's network panel when a demo layer registered a recorder; never fails the Block.

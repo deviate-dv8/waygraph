@@ -22,6 +22,7 @@ import { configuredExtensions, resolveBaseUrl } from "../runtime/config.js";
 import { withWebServer } from "../runtime/webserver.js";
 import { chromiumExecutablePath, launchContext } from "../runtime/browser.js";
 import { envString } from "../engine/env.js";
+import { ignorePageGone, ignoreTimeout } from "../engine/page-gone.js";
 
 export interface AutoExploreOptions {
   /** Terminal menu (browser still runs for act()). Default false = headful picker panel. */
@@ -34,30 +35,8 @@ export interface AutoExploreOptions {
 }
 
 
-/** URL-first - several Checkpoints share nav verify traits (e.g. LoggedIn = /inventory.html). */
-async function inferCheckpointFromUrl(page: Page): Promise<string | null> {
-  try {
-    const path = new URL(page.url()).pathname;
-    if (path.includes("inventory-item.html")) return "ItemDetailPage";
-    if (path.includes("inventory.html")) return "LoggedIn";
-    if (path.includes("cart.html")) return "CartPage";
-    if (path.includes("checkout-step-one.html")) return "CheckoutInfoPage";
-    if (path.includes("checkout-step-two.html")) return "CheckoutOverviewPage";
-    if (path.includes("checkout-complete.html")) return "OrderComplete";
-    if (path === "/" || path === "") {
-      if (await page.locator("#login-button").isVisible({ timeout: 500 }).catch(() => false)) {
-        return "LoginPage";
-      }
-    }
-  } catch {
-    /* ignore */
-  }
-  return null;
-}
-
+/** Which Checkpoint the page is on, asked of the project's own Nav / Page Blocks (their verify). */
 export async function detectHere(page: Page, navBlocks: BlockEntry[]): Promise<string | null> {
-  const fromUrl = await inferCheckpointFromUrl(page);
-  if (fromUrl) return fromUrl;
   const tags = navBlocks.map((n) => n.block) as NavBlock<Checkpoint<string>>[];
   return locate(page, tags, { timeoutMs: 1500 });
 }
@@ -70,8 +49,8 @@ export async function ensureLivePage(
   if (!page.isClosed()) return page;
   const fresh = await context.newPage();
   if (startUrl) {
-    await fresh.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
-    await fresh.waitForLoadState("load").catch(() => {});
+    await fresh.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(ignorePageGone);
+    await fresh.waitForLoadState("load").catch(ignoreTimeout);
   }
   return fresh;
 }
@@ -181,7 +160,7 @@ async function setAutoPanelRunning(page: Page, label: string): Promise<void> {
       },
       label,
     )
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 export async function runOneBlock(
@@ -201,7 +180,7 @@ export async function runOneBlock(
         },
         `nav: ${entry.block.name}`,
       )
-      .catch(() => {});
+      .catch(ignorePageGone);
   }
   if (headful) await setAutoPanelRunning(page, entry.block.name);
   const flow = buildFlow([entry.block], engine.config);
@@ -228,7 +207,7 @@ export async function runOneBlock(
   } finally {
     if (timer) clearTimeout(timer);
   }
-  await page.evaluate("delete window.__wgPendingNavClickLabel").catch(() => {});
+  await page.evaluate("delete window.__wgPendingNavClickLabel").catch(ignorePageGone);
   return result;
 }
 
@@ -623,8 +602,8 @@ async function runAutoExploreCore(projectDir: string, options: AutoExploreOption
   });
   let page = await context.newPage();
   if (startUrl) {
-    await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
-    await page.waitForLoadState("load").catch(() => {});
+    await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(ignorePageGone);
+    await page.waitForLoadState("load").catch(ignoreTimeout);
   }
   console.error(
     `waygraph auto: ${graph.nodes.length} checkpoint(s), ${graph.edges.length} edge(s) - ` +

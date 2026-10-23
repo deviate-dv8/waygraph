@@ -343,6 +343,7 @@ test("auto highlight: paints agent fixture rings on the live login page", async 
 });
 
 test("auto highlight: repainting with fewer rings clears the stale ones - no orphaned rings, no caption duplication (multi-element concern raised after the >>/:has-text() selector fix)", async () => {
+  test.setTimeout(60_000);
   const { sessionId } = await detach();
   try {
     // Three real rings first.

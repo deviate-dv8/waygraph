@@ -24,6 +24,7 @@ import { verboseLog } from "../../demo/verbose-log.js";
 import { findBlockPathDetailed } from "../../analysis/graph.js";
 import { configuredExtensions, resolveBaseUrl } from "../../runtime/config.js";
 import { chromiumExecutablePath, launchContext } from "../../runtime/browser.js";
+import { ignorePageGone, ignoreTimeout } from "../../engine/page-gone.js";
 
 /**
  * Non-interactive explore session: same graph/library/mem/browser setup
@@ -109,10 +110,10 @@ export class AutoSession {
     const page = await context.newPage();
     instrumentPilotActions(page, headless ? 0 : 450);
     if (startUrl) {
-      await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
-      await page.waitForLoadState("load").catch(() => {});
+      await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(ignorePageGone);
+      await page.waitForLoadState("load").catch(ignoreTimeout);
     } else {
-      await page.goto("about:blank").catch(() => {});
+      await page.goto("about:blank").catch(ignorePageGone);
     }
     const knownInteractionSelectors = collectKnownInteractionSelectors(
       init.projectDir,
@@ -137,8 +138,8 @@ export class AutoSession {
     );
     keepOverlayOnNavigation(page, () => session.repaintOverlayAfterNavigation());
     if (!headless) {
-      await session.bootstrapOverlay().catch(() => {});
-      await page.bringToFront().catch(() => {});
+      await session.bootstrapOverlay().catch(ignorePageGone);
+      await page.bringToFront().catch(ignorePageGone);
     }
     // Attached once, on the page created here - `ensureLivePage` only swaps
     // to a fresh Page if the current one closed (a rare case, e.g. the human
@@ -232,11 +233,11 @@ export class AutoSession {
   /** Re-apply cached overlay state after navigation (init script restores shell only). */
   private async repaintOverlayAfterNavigation(): Promise<void> {
     if (this.lastOverlayInfo) {
-      await updatePilotOverlay(this.page, this.lastOverlayInfo).catch(() => {});
+      await updatePilotOverlay(this.page, this.lastOverlayInfo).catch(ignorePageGone);
       return;
     }
     if (!this.headless) {
-      await this.bootstrapOverlay().catch(() => {});
+      await this.bootstrapOverlay().catch(ignorePageGone);
     }
   }
 
@@ -260,7 +261,7 @@ export class AutoSession {
       knownPathnames,
       knownSelectors: this.knownInteractionSelectors,
     };
-    await this.page.evaluate(unmappedInteractionsPageScript, payload).catch(() => {});
+    await this.page.evaluate(unmappedInteractionsPageScript, payload).catch(ignorePageGone);
   }
 
   /** Pure getter - no Block runs, no mem/page mutation. */
@@ -372,7 +373,7 @@ export class AutoSession {
     if (!this.page || !stubPhaseHasContent(phase)) return;
     const fixtures = phaseToOverlayFixtures(phase, holdMs);
     for (const line of describeOverlayFixtures(tag, fixtures)) verboseLog("pilot", line);
-    await showPilotFixtures(this.page, fixtures).catch(() => {});
+    await showPilotFixtures(this.page, fixtures).catch(ignorePageGone);
   }
 
   private async runNamedBlock(

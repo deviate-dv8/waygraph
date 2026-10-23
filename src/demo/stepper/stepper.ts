@@ -16,6 +16,7 @@ import { showAfter } from "./after.js";
 import { episodesOf, viewOf } from "./view.js";
 import type { StepperContext, StepperStep, StepView } from "./view.js";
 import { envFlag, envString } from "../../engine/env.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 export interface Stepper {
   /** After the page was reset between episodes: storage was wiped, so the auto-advance setting is put back. */
@@ -141,11 +142,11 @@ async function labelNavClick(page: WgPage, step: StepperStep): Promise<void> {
       if (l) window.__wgPendingNavClickLabel = l;
       else delete window.__wgPendingNavClickLabel;
     }, label)
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 /** The step finished: drop its nav label, and keep the todo dock it advanced for the steps after it. */
 async function stepRan(ctx: StepperContext): Promise<void> {
-  await ctx.page.evaluate(() => delete window.__wgPendingNavClickLabel).catch(() => {});
+  await ctx.page.evaluate(() => delete window.__wgPendingNavClickLabel).catch(ignorePageGone);
   if (ctx.refs.todoDock.current) ctx.stage.state.lastTodoDock = ctx.refs.todoDock.current;
 }

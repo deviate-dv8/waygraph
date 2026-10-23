@@ -5,6 +5,7 @@ import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narratio
 import { hasAuthoredStubOnError, runStubPhase } from "../narration/narration.js";
 import { cycleHighlightRings } from "../overlay/rings.js";
 import { envFlag, envString } from "../../engine/env.js";
+import { ignorePageGone, ignoreTimeout } from "../../engine/page-gone.js";
 
 export async function renderBeforeStep(page: WgPage, info: any) {
   await installOverlay(page, info.title, info.bannerUi, info.caption, info.networkTabVisible);
@@ -22,7 +23,7 @@ export async function renderBeforeStep(page: WgPage, info: any) {
       if (window.__wgHideRing) window.__wgHideRing();
       if (window.__wgHideCursor) window.__wgHideCursor();
     })
-    .catch(() => {});
+    .catch(ignorePageGone);
   // miniStepLabel / todosHtmlFromInfo are Node-only — browser evaluate has no closure.
   const payload = { ...info, stepLabel: miniStepLabel(info) };
   await page
@@ -220,16 +221,16 @@ export async function renderBeforeStep(page: WgPage, info: any) {
         });
       }
     }, payload)
-    .catch(() => {});
+    .catch(ignorePageGone);
   if (envString("WAYGRAPH_PROVE_SHOT") || envFlag("WAYGRAPH_PROVE_EXIT")) {
     // Default: prove once on first painted panel. PROVE_EVERY=1 re-checks
     // every step (noisy; useful when hunting a mid-chain blank).
     const proveEvery = envFlag("WAYGRAPH_PROVE_EVERY");
     const already = (globalThis as { __wgProveDone?: boolean }).__wgProveDone;
     if (!already || proveEvery || envFlag("WAYGRAPH_PROVE_EXIT")) {
-      await page.waitForTimeout(500).catch(() => {});
+      await page.waitForTimeout(500).catch(ignoreTimeout);
       const shot = envString("WAYGRAPH_PROVE_SHOT");
-      if (shot) await page.screenshot({ path: shot }).catch(() => {});
+      if (shot) await page.screenshot({ path: shot }).catch(ignorePageGone);
       const ok = await page
         .evaluate(() => {
           const beacons =
@@ -307,7 +308,7 @@ export async function presentFailPanel(page: WgPage, opts: any) {
           window.__wgRingTrack = null;
         }
       })
-      .catch(() => {});
+      .catch(ignorePageGone);
     const errPhase = await runStubPhase(block, "stubOnError", {
       error,
       out: opts.out,
@@ -367,7 +368,7 @@ export async function renderAfterStep(page: WgPage, info: any) {
         window.__wgRingTrack = null;
       }
     })
-    .catch(() => {});
+    .catch(ignorePageGone);
   const highlights = info.highlights || [];
   const gatesFast = !!info.gatesFast;
   // Cycle through EVERY declared/recovered highlight in order, each shown
@@ -535,7 +536,7 @@ export async function renderAfterStep(page: WgPage, info: any) {
         });
       }
     }, afterPayload)
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 
@@ -626,7 +627,7 @@ async function renderStepError(page: WgPage, info: any) {
       const retryBtn = __wgById("wg-error-retry");
       if (retryBtn) retryBtn.addEventListener("click", () => window.__wgNext({ __wgRetry: "1" }));
     }, errorPayload)
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 

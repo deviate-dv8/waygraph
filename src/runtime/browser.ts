@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Browser, BrowserContext, BrowserContextOptions, BrowserType, LaunchOptions } from "@playwright/test";
 import { envString } from "../engine/env.js";
+import { ignoreTimeout } from "../engine/page-gone.js";
 
 let warned = false;
 
@@ -67,7 +68,7 @@ export async function launchContext(opts: {
     (dir) => JSON.parse(readFileSync(join(dir, "manifest.json"), "utf-8")).background?.service_worker !== undefined,
   );
   if (hasWorker && context.serviceWorkers().length === 0) {
-    await context.waitForEvent("serviceworker", { timeout: 10_000 }).catch(() => undefined);
+    await context.waitForEvent("serviceworker", { timeout: 10_000 }).catch(ignoreTimeout);
   }
   return {
     browser: context.browser(),

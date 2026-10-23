@@ -2,8 +2,7 @@
 import type { WgPage } from "../types.js";
 import { advanceTodoDock } from "../narration/todo-dock.js";
 import { demoLog } from "./demo-log.js";
-
-
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 /** Flatten dock items in order (sequential groups). */
 function flattenTodoDockItems(dock: any) {
@@ -85,7 +84,7 @@ export async function syncTodoDockAdvance(page: WgPage, todoDockRef: any, stubIn
         window.__wgSyncTodos({ sync: "set", dock });
       }
     }, advanced)
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 export async function probeTodoDocksOnPage(page: WgPage) {

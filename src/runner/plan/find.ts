@@ -1,7 +1,9 @@
+import { relative } from "node:path";
 // Finds a Block or Flow in the project (and its installed map packages) by export name or Block name.
 import { pathToFileURL } from "node:url";
 import { isBlockLike, walkDir } from "../../manifest/scan.js";
 import { installedMapPackages, mapPackageBlockFiles } from "../../manifest/maps.js";
+import { reportImportError } from "../../manifest/project.js";
 
 
 export async function findBlock(projectDir: string, ref: any) {
@@ -11,7 +13,8 @@ export async function findBlock(projectDir: string, ref: any) {
     let mod;
     try {
       mod = await import(pathToFileURL(file).href);
-    } catch {
+    } catch (err) {
+      reportImportError(relative(projectDir, file), err);
       continue;
     }
     for (const [exportName, exported] of Object.entries(mod)) {
@@ -46,7 +49,8 @@ export async function findFlow(projectDir: string, flowName: any) {
     let mod;
     try {
       mod = await import(pathToFileURL(file).href);
-    } catch {
+    } catch (err) {
+      reportImportError(relative(projectDir, file), err);
       continue;
     }
     const candidate = mod[flowName];

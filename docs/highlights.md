@@ -26,6 +26,9 @@ Block or flow   → slides   (multi-step yap, Next between each - not block life
 | `stubAfter` | After resolve + verify - proof points (AC / GATE / ...) |
 | `stubOnError` | When the step throws - what was on screen at the failure |
 
+A stub that throws fails its step in the demo, named (`add-item: its stubAfter stub threw: ...`), so a typo in a stub
+shows up on the failure panel instead of the narration quietly missing. A stub returns nothing; it paints through `ctx`.
+
 ## Chaining stubs in a flow
 
 Chain a ctx stub on the Block where the flow uses it. No separate fixture map:

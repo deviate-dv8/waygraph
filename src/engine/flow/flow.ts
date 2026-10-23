@@ -18,6 +18,7 @@ import type { Trait } from "../trait/trait.js";
 import { findBlockIndex, modVerify, withVerify } from "../block/block.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../narration.js";
 import type { DemoPace, HighlightStyleDefaults } from "../narration.js";
+import { ignorePageGone } from "../page-gone.js";
 
 /**
  * A composed, runnable flow. Always begins from Checkpoint<"__start__">, same as
@@ -339,7 +340,7 @@ function locateInChain(
 
 
 export async function clearSessionState(context: BrowserContext, page: Page): Promise<void> {
-  await context.clearCookies().catch(() => {});
+  await context.clearCookies().catch(ignorePageGone);
   await page
     .evaluate(() => {
       try {
@@ -349,7 +350,7 @@ export async function clearSessionState(context: BrowserContext, page: Page): Pr
         /* storage blocked (e.g. about:blank) - nothing to clear anyway */
       }
     })
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 

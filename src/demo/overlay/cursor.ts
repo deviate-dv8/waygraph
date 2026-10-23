@@ -1,6 +1,8 @@
 // The demo cursor: travels to what a step clicks, pulses on the click, draws a swipe trail on touch devices.
 
 import type { WgBox, WgPage } from "../types.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
+
 export async function moveCursorTo(page: WgPage, box: WgBox, ms: number) {
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
@@ -9,7 +11,7 @@ export async function moveCursorTo(page: WgPage, box: WgBox, ms: number) {
     .evaluate(({ x, y, ms }: any) => {
       if (window.__wgMoveCursorTo) window.__wgMoveCursorTo(x, y, ms);
     }, { x, y, ms: travel })
-    .catch(() => {});
+    .catch(ignorePageGone);
   // CSS transition is async - wait the full travel so the cursor is ON the
   // target before ring/pulse/real click (NavBlock click nav was skipping
   // this and looked like a teleport).
@@ -25,7 +27,7 @@ export async function clickPulseAt(page: WgPage, x: any, y: any, tone: any) {
     .evaluate(({ x, y, tone }: any) => {
       if (window.__wgClickPulse) window.__wgClickPulse(x, y, tone || "planned");
     }, { x, y, tone: tone || "planned" })
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 

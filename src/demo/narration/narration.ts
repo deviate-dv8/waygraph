@@ -36,12 +36,10 @@ export async function runStubPhase(
 
   if (typeof raw === "function") {
     try {
-      const ret = await (raw as StubLifecycleFn<any>)(ctx as StubCtx<any>);
-      if (isStubPhase(ret)) {
-        bag.highlights = { ...bag.highlights, ...ret };
-      }
-    } catch {
-      /* best-effort */
+      await (raw as StubLifecycleFn<any>)(ctx as StubCtx<any>);
+    } catch (err) {
+      // A mistake in the author's stub: shown on the step (the demo's failure panel), never dropped.
+      throw new Error(`${block.name}: its ${phase} stub threw: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
     }
   } else if (isStubPhase(raw)) {
     bag.highlights = { ...raw };

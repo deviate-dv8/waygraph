@@ -25,7 +25,7 @@ import { stdin as input, stdout as output } from "node:process";
 import { AutoSession } from "./auto-session/auto-session.js";
 import { type AutoSessionInit, type SessionSnapshot, type InspectDomOptions, type DomSnapshot, type TraceStep, type ApplyPathResult, type ConsoleLogEntry, type StorageSnapshot, type StubFileKind } from "./auto-session/helpers.js";
 import type { PilotHighlightFixtures } from "../demo/overlay/pilot-fixtures.js";
-
+import { ignorePageGone } from "../engine/page-gone.js";
 
 export interface SessionMeta {
   sessionId: string;
@@ -442,7 +442,7 @@ export async function serveSession(
     if (shuttingDown) return;
     shuttingDown = true;
     server.close();
-    await session.close().catch(() => {});
+    await session.close().catch(ignorePageGone);
     removeSessionFiles(projectDir, sessionId);
     process.exit(0);
   }

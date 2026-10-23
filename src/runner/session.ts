@@ -7,6 +7,7 @@ import { resolveVideoDir } from "../runtime/video-dir.js";
 import type { WgPage } from "../demo/types.js";
 import type { PlaySession } from "./mode.js";
 import type { PlayOptions } from "./options.js";
+import { ignorePageGone } from "../engine/page-gone.js";
 
 type Size = { width: number; height: number };
 
@@ -56,7 +57,7 @@ export async function openSession(projectDir: string, options: PlayOptions, mem:
   const page = (await context.newPage()) as WgPage;
   if (videoSize) page.__wgVideoViewport = videoSize;
   // The first step's panel shows over the real app, not a blank page.
-  if (options.baseURL) await page.goto(options.baseURL).catch(() => {});
+  if (options.baseURL) await page.goto(options.baseURL).catch(ignorePageGone);
 
   const close = async (): Promise<void> => {
     // A recording's last moment (a ring, the network panel) would be cut off mid-fade without a little room.
@@ -74,7 +75,7 @@ export async function openSession(projectDir: string, options: PlayOptions, mem:
 
 /** A fresh session between episodes: no cookies, no storage, back on the base URL (so the page itself looks fresh too). */
 export async function resetPage(session: PlaySession): Promise<void> {
-  await session.context.clearCookies().catch(() => {});
+  await session.context.clearCookies().catch(ignorePageGone);
   await session.page
     .evaluate(() => {
       try {
@@ -84,6 +85,6 @@ export async function resetPage(session: PlaySession): Promise<void> {
         /* storage blocked (e.g. about:blank) - nothing to clear anyway */
       }
     })
-    .catch(() => {});
-  await session.page.goto(session.baseURL || "about:blank").catch(() => {});
+    .catch(ignorePageGone);
+  await session.page.goto(session.baseURL || "about:blank").catch(ignorePageGone);
 }

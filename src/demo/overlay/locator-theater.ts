@@ -4,6 +4,7 @@
 // runs Playwright's own method untouched. Playwright has no hook for this, so the wrap is the seam; nothing else patches
 // these methods.
 import type { Locator, Page } from "@playwright/test";
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 /** How a click is performed once the theater has shown it. */
 export type ClickGesture = "click" | "tap" | "hold";
@@ -51,7 +52,7 @@ function patchLocator(proto: LocatorProto): void {
   proto.fill = async function (value, options) {
     const theater = theaters.get(this.page());
     if (!theater) return fill.call(this, value, options);
-    await theater.beforeFill(this, options).catch(() => {});
+    await theater.beforeFill(this, options).catch(ignorePageGone);
     try {
       // Not this.clear(): Locator.clear() is fill(""), which would come back into this wrapper.
       await fill.call(this, "", { ...(options?.timeout !== undefined ? { timeout: options.timeout } : {}) });

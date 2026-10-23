@@ -9,6 +9,7 @@
  */
 import type { Page } from "@playwright/test";
 import { getOverlaySheet } from "./stylesheet.js";
+import { ignorePageGone } from "../../../engine/page-gone.js";
 
 /**
  * `overlaySheet` is the ONE real-CSS bundle (`ui/stylesheet.ts` -> `dist/ui/overlay.css`, built on
@@ -79,5 +80,5 @@ export function installShadowRoot(overlaySheet?: string): void {
 
 /** Idempotent; call before any overlay install on a page. Installs the shared stylesheet bundle. */
 export async function ensureShadowRoot(page: Page): Promise<void> {
-  await page.evaluate(installShadowRoot, getOverlaySheet()).catch(() => {});
+  await page.evaluate(installShadowRoot, getOverlaySheet()).catch(ignorePageGone);
 }

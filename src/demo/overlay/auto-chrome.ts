@@ -7,6 +7,7 @@ import { installCore } from "./inpage/core.js";
 import { clickPulseAt, moveCursorTo } from "./cursor.js";
 import { hideRing } from "./rings.js";
 import { setLocatorTheater } from "./locator-theater.js";
+import { ignorePageGone, ignoreTimeout } from "../../engine/page-gone.js";
 
 export async function installDemoChrome(
   page: Page,
@@ -15,7 +16,7 @@ export async function installDemoChrome(
 ): Promise<void> {
   const showBanner = options.banner !== false;
   await ensureShadowRoot(page);
-  await page.evaluate(installCore, {}).catch(() => {});
+  await page.evaluate(installCore, {}).catch(ignorePageGone);
   await page
     .evaluate(
       ({ title, showBanner }) => {
@@ -46,11 +47,11 @@ export async function installDemoChrome(
       },
       { title, showBanner },
     )
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 async function showRing(page: Page, box: { x: number; y: number; width: number; height: number }, label: string) {
-  await page.evaluate(({ box, label }) => window.__wgPositionRing?.(box, label, "auto"), { box, label }).catch(() => {});
+  await page.evaluate(({ box, label }) => window.__wgPositionRing?.(box, label, "auto"), { box, label }).catch(ignorePageGone);
 }
 
 /** Demo cursor + ring on fill/click during auto explore headful runs (automation = gray). */
@@ -88,7 +89,7 @@ export function instrumentAutoInteractions(
     },
     async beforeClick(locator, options) {
       await installDemoChrome(page, "", { banner: false });
-      await locator.waitFor({ state: "visible", timeout: options?.timeout || 30000 }).catch(() => {});
+      await locator.waitFor({ state: "visible", timeout: options?.timeout || 30000 }).catch(ignoreTimeout);
       const box = await locator.boundingBox();
       if (!box) return "click";
       let label = "click";

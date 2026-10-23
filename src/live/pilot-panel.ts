@@ -1,6 +1,7 @@
 import type { SessionSnapshot } from "./auto-session/helpers.js";
 import { ensureInstalled } from "../demo/overlay/pilot-shell.js";
 import type { Page } from "@playwright/test";
+import { ignorePageGone } from "../engine/page-gone.js";
 
 /** Minimal shape needed to render the graph tree - matches WaygraphGraph. */
 interface PilotOverlayGraph {
@@ -197,5 +198,5 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
       },
       { sessionId: info.sessionId, snapshot: info.snapshot, graph: info.graph ?? null },
     )
-    .catch(() => {});
+    .catch(ignorePageGone);
 }

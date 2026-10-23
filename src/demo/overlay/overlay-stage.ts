@@ -7,6 +7,7 @@ import { applyDevicePhase } from "../narration/device.js";
 import { applyTodoPhase, resolveTodoDockUi } from "../narration/todo-dock.js";
 import { applyDeviceToPage } from "./device-stage.js";
 import { bannerUiFromPhase } from "../stepper/banner-log.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 export function createOverlayStage(page: WgPage, { todoDockRef, deviceRef }: any) {
   /** Carried across steps: omitting a fixture in a later phase = keep (todos, device, banner UX). */
@@ -29,7 +30,7 @@ export function createOverlayStage(page: WgPage, { todoDockRef, deviceRef }: any
       .evaluate((u: any) => {
         window.__wgTodoDockUi = u;
       }, ui)
-      .catch(() => {});
+      .catch(ignorePageGone);
   };
   const dockRegistryKey = (dock: any) =>
     dock && dock.id && String(dock.id).trim() ? String(dock.id).trim() : "_default";
@@ -77,7 +78,7 @@ export function createOverlayStage(page: WgPage, { todoDockRef, deviceRef }: any
         },
         { list: docks, parallel },
       )
-      .catch(() => {});
+      .catch(ignorePageGone);
   };
 
   /**

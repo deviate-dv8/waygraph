@@ -11,6 +11,7 @@ import { repaintOverlay } from "../overlay/reattach.js";
 import { setLocatorTheater } from "../overlay/locator-theater.js";
 import type { Locator } from "@playwright/test";
 import { envNumber } from "../../engine/env.js";
+import { ignorePageGone, ignoreTimeout } from "../../engine/page-gone.js";
 
 export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, slowMo: number, pacing: any, stubBeforeRef: any, todoDockRef: any, deviceRef: any) {
   // Playwright's own slowMo ALREADY pauses after every single low-level
@@ -88,7 +89,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
       await locator.waitFor({
         state: "visible",
         timeout: (options && options.timeout) || 30000,
-      }).catch(() => {});
+      }).catch(ignoreTimeout);
       // Smooth scroll before measuring - otherwise off-screen fields
       // teleport when Playwright's fill actionability scrolls.
       await ensureLocatorInView(locator, { instant: skipTheater() });
@@ -158,7 +159,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         .evaluate((label: any) => {
           if (window.__wgSetTypingBadge) window.__wgSetTypingBadge(true, label);
         }, typeLabel)
-        .catch(() => {});
+        .catch(ignorePageGone);
     },
     typingDelay: typeDelay,
     async afterFill() {
@@ -166,7 +167,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         .evaluate(() => {
           if (window.__wgSetTypingBadge) window.__wgSetTypingBadge(false);
         })
-        .catch(() => {});
+        .catch(ignorePageGone);
       // Fade the ring back out once this field is actually done, instead
       // of leaving it lit until the next Block's own before-panel clears
       // it - it was sticking around through the whole rest of the step.
@@ -185,7 +186,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
       await locator.waitFor({
         state: "visible",
         timeout: (options && options.timeout) || 30000,
-      }).catch(() => {});
+      }).catch(ignoreTimeout);
       // Smooth-scroll off-screen targets before cursor/ring. Playwright's
       // own click scroll is instant and reads as a teleport under --fast.
       await ensureLocatorInView(locator, { instant: skipTheater() });

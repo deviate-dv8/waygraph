@@ -444,7 +444,7 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
 /** A stub callback: receives the stub `ctx` and paints rings, titles and todos. */
 export type StubLifecycleFn<Out extends Checkpoint<string>> = (
   ctx: StubCtx<Out>,
-) => void | HighlightStubPhase | Promise<void | HighlightStubPhase>;
+) => void | Promise<void>;
 
 
 /**

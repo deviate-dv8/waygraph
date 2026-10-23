@@ -3,6 +3,7 @@ import { ensureShadowRoot, installShadowRoot } from "./ui/shadow.js";
 import type { HighlightTone } from "../../engine/narration.js";
 import { verboseLog } from "../verbose-log.js";
 import type { BrowserContext, Page } from "@playwright/test";
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 // Real, direct user request: this overlay's own colors were an improvised
 // purple/white scheme (#a78bfa / #1a1033) that didn't match anything else -
@@ -164,16 +165,16 @@ export async function installPersistentPilotOverlay(context: BrowserContext): Pr
 /** Idempotent - safe to call before every update, matching narrate mode's own precedent. */
 export async function ensureInstalled(page: Page): Promise<void> {
   await ensureShadowRoot(page);
-  await page.evaluate(installPilotOverlayShell, OVERLAY_CSS).catch(() => {});
+  await page.evaluate(installPilotOverlayShell, OVERLAY_CSS).catch(ignorePageGone);
   // The shared ring primitive (__wgEnsureRingEl/__wgPaintRingAt) - so Pilot's fixture rings paint
   // through the SAME implementation the demo/auto singleton ring uses (see ui/css/ring.css / this
   // file's own header comment on redundancy), not a separate DOM-building copy.
   const { installCore } = await import("./inpage/core.js");
-  await page.evaluate(installCore, {}).catch(() => {});
+  await page.evaluate(installCore, {}).catch(ignorePageGone);
   // Device toast/chip CSS (demo/overlay/overlay-css.ts's RUNNER_EXTRA_CSS) - same rules the demo runner
   // uses, reused here (not re-authored) so a device fixture looks identical on Pilot.
   const { RUNNER_EXTRA_CSS } = await import("./overlay-css.js");
-  await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as [string, string]).catch(() => {});
+  await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as [string, string]).catch(ignorePageGone);
 }
 
 
@@ -201,7 +202,7 @@ export async function showPilotActivity(page: Page, text: string): Promise<void>
         toast.classList.remove("wg-pilot-toast-show");
       }, 2500);
     }, text)
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 
@@ -298,5 +299,5 @@ export async function showPilotVision(
       },
       { box, label, tone },
     )
-    .catch(() => {});
+    .catch(ignorePageGone);
 }

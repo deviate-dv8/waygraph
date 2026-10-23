@@ -1,11 +1,12 @@
 // `waygraph validate` and `waygraph check`: does every Flow file load, and do Blocks keep navigation and selectors where
 // they belong. Warnings only.
-import { basename } from "node:path";
+import { basename, relative } from "node:path";
 import { importFresh, isBlockLike, walkDir } from "../manifest/scan.js";
 import { calls, parseSource } from "../manifest/source.js";
 import { collectPracticeWarnings } from "./practices-check.js";
 import type { PracticeWarning } from "./practices-check.js";
 import { mapGroups } from "../manifest/maps.js";
+import { reportImportError } from "../manifest/project.js";
 import { mapGroupImportProblems } from "../manifest/map-imports.js";
 import type { MapImportProblem } from "../manifest/map-imports.js";
 
@@ -95,7 +96,8 @@ export async function checkProject(
     let mod: Record<string, unknown>;
     try {
       mod = await importFresh(file);
-    } catch {
+    } catch (err) {
+      reportImportError(relative(projectDir, file), err);
       continue;
     }
     // The calls in the Block's own file, read from the AST: a comment or a string that mentions page.goto doesn't count.

@@ -69,7 +69,7 @@ function kindOf(block: object): BlockKind {
 }
 
 /** A file that fails to import is left out of the scan, and said so: a silent skip reads as "nothing there". */
-function defaultImportError(relFile: string, err: unknown): void {
+export function reportImportError(relFile: string, err: unknown): void {
   const msg = err instanceof Error ? err.message : String(err);
   console.error(`waygraph: skip ${relFile}: ${msg.split("\n")[0]}`);
 }
@@ -77,7 +77,7 @@ function defaultImportError(relFile: string, err: unknown): void {
 /** Imports every `*.block.ts` (and `*.flow.ts`) under the project and its injected roots. */
 export async function scanProject(projectDir: string, opts: ScanOptions = {}): Promise<ProjectScan> {
   const select = opts.blocksSelect;
-  const onError = opts.onImportError ?? defaultImportError;
+  const onError = opts.onImportError ?? reportImportError;
   const blocks: ScannedBlock[] = [];
   const flows: ScannedFlow[] = [];
   const skipped: ProjectScan["skipped"] = [];

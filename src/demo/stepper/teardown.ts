@@ -4,6 +4,7 @@ import { installOverlay } from "../overlay/overlay.js";
 import { applyDeviceToPage } from "../overlay/device-stage.js";
 import { showRing } from "../overlay/rings.js";
 import { formatHighlightCaption } from "../narration/style.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 /**
  * Patches Locator.prototype.fill (via any real locator's own prototype
@@ -71,7 +72,7 @@ export async function markStepRunning(page: WgPage, _opts: any) {
         }
       }
     })
-    .catch(() => {});
+    .catch(ignorePageGone);
 }
 
 
@@ -100,10 +101,10 @@ export async function restoreTheaterAfterNavigation(page: WgPage, todoDockRef: a
       .evaluate((d: any) => {
         if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", dock: d });
       }, dock)
-      .catch(() => {});
+      .catch(ignorePageGone);
   }
   if (deviceRef && deviceRef.current) {
-    await applyDeviceToPage(page, deviceRef.current, "set").catch(() => {});
+    await applyDeviceToPage(page, deviceRef.current, "set").catch(ignorePageGone);
   }
   // Re-show first matching stubBefore ring if selector still exists (sidebar
   // nav targets often survive the route change).
@@ -132,7 +133,7 @@ export async function restoreTheaterAfterNavigation(page: WgPage, todoDockRef: a
         weight: h.weight,
         selector: h.selector,
         focus: !!h.focus,
-      }).catch(() => {});
+      }).catch(ignorePageGone);
       break;
     }
   }
@@ -175,5 +176,5 @@ export async function teardownOverlay(page: WgPage) {
       __wgQA(".wg-todo-dock").forEach((el) => el.remove());
       document.documentElement.classList.remove("wg-video-device-stage");
     })
-    .catch(() => {});
+    .catch(ignorePageGone);
 }

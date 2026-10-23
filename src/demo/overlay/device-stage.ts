@@ -2,6 +2,7 @@
 import type { WgPage } from "../types.js";
 import { resolveDeviceState } from "../narration/device.js";
 import { envNumber } from "../../engine/env.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 /**
  * Fit + center the OS browser window on the device viewport so mobile/tablet
@@ -63,7 +64,7 @@ async function fitWindowToDeviceViewport(page: WgPage, viewport: any, opts: any)
   } catch {
     /* headless / no window - ignore */
   } finally {
-    if (client) await client.detach().catch(() => {});
+    if (client) await client.detach().catch(ignorePageGone);
   }
 }
 
@@ -276,7 +277,7 @@ export async function applyDeviceToPage(page: WgPage, device: any, sync: any) {
         window.__wgZoomOutOnHide = true;
         if (window.__wgClearZoom) window.__wgClearZoom();
       })
-      .catch(() => {});
+      .catch(ignorePageGone);
   } else if (announce) {
     page.__wgDesktopFlat = false;
   }
@@ -299,7 +300,7 @@ export async function applyDeviceToPage(page: WgPage, device: any, sync: any) {
     // comment above) - the real OS window is only ever resized once, right here, to establish the
     // stage itself; every device switch after that paints the animated shell inside it instead.
     if (!videoStage && establishingHeadedStage) {
-      await fitWindowToDeviceViewport(page, stage, { maximize: false }).catch(() => {});
+      await fitWindowToDeviceViewport(page, stage, { maximize: false }).catch(ignorePageGone);
     }
     try {
       await realSet(stage);
@@ -417,5 +418,5 @@ export async function applyDeviceToPage(page: WgPage, device: any, sync: any) {
         announce,
       },
     )
-    .catch(() => {});
+    .catch(ignorePageGone);
 }

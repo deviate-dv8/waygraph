@@ -6,6 +6,7 @@ import type { BannerPos, BannerUiOpts, DevicePreset, DeviceState, HighlightTone,
 import { ensureInstalled } from "./pilot-shell.js";
 import { verboseLog } from "../verbose-log.js";
 import type { Page } from "@playwright/test";
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 /** One ring the Pilot agent wants painted (same fields as demo stub rings). */
 export type PilotFixtureRing = {
@@ -185,7 +186,7 @@ export async function showPilotFixtures(
   // (toast + persistent chip + touch mode), not a separate, simpler Pilot-only chip.
   if (fixtures.clear === true) {
     const { applyDeviceToPage } = await import("./device-stage.js");
-    await applyDeviceToPage(page, undefined, "clear").catch(() => {});
+    await applyDeviceToPage(page, undefined, "clear").catch(ignorePageGone);
   } else if (fixtures.device !== undefined) {
     const d = resolveDeviceState(fixtures.device);
     if (d) {
@@ -193,8 +194,8 @@ export async function showPilotFixtures(
         import("./device-stage.js"),
         import("./inpage/device.js"),
       ]);
-      await page.evaluate(installDevice, {}).catch(() => {});
-      await applyDeviceToPage(page, d, "set").catch(() => {});
+      await page.evaluate(installDevice, {}).catch(ignorePageGone);
+      await applyDeviceToPage(page, d, "set").catch(ignorePageGone);
     }
   }
 
@@ -214,7 +215,7 @@ export async function showPilotFixtures(
         bannerUi: { hidden: bannerHidden, collision: bannerCollision, ...(bannerPos ? { pos: bannerPos } : {}) },
         tag: "waygraph pilot",
       })
-      .catch(() => {});
+      .catch(ignorePageGone);
   }
 
   // Resolve every ring's box (and the zoom target, if any) through Playwright's own locator, not a

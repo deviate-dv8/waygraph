@@ -17,6 +17,7 @@ import type { RunGraphOptions } from "../run/run.js";
 import { MemPage } from "../mem/mem.js";
 import { seedMemStub } from "../mem/mem-stub.js";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
+import { ignorePageGone } from "../page-gone.js";
 
 /** One branch reachable from `flow`, possibly several `.branch()` levels deep. */
 export interface BranchEntry {
@@ -160,7 +161,7 @@ export async function runBranchRegression(
         const branchPage = await branchContext.newPage();
         // Best-effort: land back on the same page the prefix ended on before this route's own
         // Blocks run - restores cookies/localStorage AND which page was loaded, not just auth state.
-        await branchPage.goto(url).catch(() => {});
+        await branchPage.goto(url).catch(ignorePageGone);
         await walk(route, branchContext, m.clone(), branchPath, branchPage);
       } finally {
         await branchContext.close();

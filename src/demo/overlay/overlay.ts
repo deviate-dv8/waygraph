@@ -16,6 +16,7 @@ import { applyVideoDeviceStage } from "./device-stage.js";
 import { installNetworkCapture, restoreNetworkHistory } from "./network-capture.js";
 import { setNetworkTabVisible } from "./inpage/network.js";
 import { envFlag, envString } from "../../engine/env.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 /**
  * `ui` = authored banner UX from the stub phase: { pos, collision, hidden } (all optional).
@@ -37,7 +38,7 @@ export async function installOverlay(page: WgPage, title?: any, ui?: any, captio
   // so "shown" would silently revert to the hidden default on the very next navigated step without
   // this. Default false (hidden) - matches addNetworkEntry's own default-hidden behavior.
   if (networkTabVisible !== undefined) page.__wgNetworkTabVisible = !!networkTabVisible;
-  await page.evaluate((v: any) => { window.__wgNetworkTabVisible = v; }, !!page.__wgNetworkTabVisible).catch(() => {});
+  await page.evaluate((v: any) => { window.__wgNetworkTabVisible = v; }, !!page.__wgNetworkTabVisible).catch(ignorePageGone);
   // Real bug this fixes: a navigation wipes the shadow root (and with it, the network panel's DOM
   // and in-page entry list) - without replaying page.__wgNetworkHistory (Node-side, survives
   // navigation) back in every step, the "network tab" silently reset to empty on any step that
@@ -46,11 +47,11 @@ export async function installOverlay(page: WgPage, title?: any, ui?: any, captio
   // Explicit toggle too, not just the flag write above - covers the case where the panel already
   // existed (no restore ran this step) and this step's `networkTabVisible` differs from before.
   if (networkTabVisible !== undefined) {
-    await page.evaluate(setNetworkTabVisible, networkTabVisible).catch(() => {});
+    await page.evaluate(setNetworkTabVisible, networkTabVisible).catch(ignorePageGone);
   }
   // Runner-only chrome (step panel, zoom/typing/device chips) - separate key, no collision.
-  await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as const).catch(() => {});
-  await page.addStyleTag({ content: HOST_CSS }).catch(() => {});
+  await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as const).catch(ignorePageGone);
+  await page.addStyleTag({ content: HOST_CSS }).catch(ignorePageGone);
   // Default top-left; override with WAYGRAPH_TITLE_POS=left|center|right.
   // Click cycles left -> center -> right (persisted in localStorage so a
   // navigation that rebuilds the banner keeps the human's last pick).
@@ -61,18 +62,18 @@ export async function installOverlay(page: WgPage, title?: any, ui?: any, captio
   const envAutoplay = envFlag("WAYGRAPH_AUTOPLAY");
   const todoDockUi = resolveTodoDockUi();
   const args = { title, favicon: WAYGRAPH_FAVICON, bannerPos, todoPos, envAutoplay, todoDockUi, bannerUi: ui || null };
-  await page.evaluate(installCore, args).catch(() => {});
-  await page.evaluate(installSwipeZoom, args).catch(() => {});
-  await page.evaluate(installBanner, args).catch(() => {});
-  await page.evaluate(installStamp, args).catch(() => {});
-  await page.evaluate(installPanelChrome, args).catch(() => {});
-  await page.evaluate(installTodos, args).catch(() => {});
-  await page.evaluate(installDevice, args).catch(() => {});
+  await page.evaluate(installCore, args).catch(ignorePageGone);
+  await page.evaluate(installSwipeZoom, args).catch(ignorePageGone);
+  await page.evaluate(installBanner, args).catch(ignorePageGone);
+  await page.evaluate(installStamp, args).catch(ignorePageGone);
+  await page.evaluate(installPanelChrome, args).catch(ignorePageGone);
+  await page.evaluate(installTodos, args).catch(ignorePageGone);
+  await page.evaluate(installDevice, args).catch(ignorePageGone);
   if (caption !== undefined) {
     if (caption === "") {
-      await page.evaluate(hideCaption).catch(() => {});
+      await page.evaluate(hideCaption).catch(ignorePageGone);
     } else {
-      await page.evaluate(showCaption, caption).catch(() => {});
+      await page.evaluate(showCaption, caption).catch(ignorePageGone);
     }
   }
   // Navigations wipe #wg-device-shell - rebuild when video stage + device are live.

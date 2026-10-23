@@ -9,6 +9,7 @@
  *   5. No HTML strings into the page: overlay elements are built with __wgEl / __wgSet / __wgSvg (demo/overlay/ui/shadow.ts),
  *      so page and author text is always a text node.
  *   6. WAYGRAPH_* variables are read and written only through engine/env.ts (the registry docs/env.md is generated from).
+ *   7. No `.catch(() => {})` in Node code: catch with ignorePageGone / ignoreTimeout (engine/page-gone.ts) or handle it.
  * Run: npm run check:structure
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -145,6 +146,18 @@ for (const f of files) {
   if (rel === "engine/env.ts") continue;
   const line = readFileSync(f, "utf8").split("\n").findIndex((l) => ENV_RE.test(l));
   if (line >= 0) problems.push(`${rel}:${line + 1}: reads process.env.WAYGRAPH_* directly (use envString / envFlag / envNumber / setEnv from engine/env.ts)`);
+}
+
+// --- no silent catch-alls in Node code ---
+// In-page code (demo/overlay/inpage/) runs in the browser, where page-gone.ts doesn't exist. auto-session-ipc.ts keeps its
+// request queue going after a failed request; the caller still gets that error from the promise it was handed.
+const SWALLOW_RE = /\.catch\(\s*\(\s*\)\s*=>\s*(?:\{\s*\}|undefined)\s*\)/;
+const SWALLOW_ALLOWED = new Set(["live/auto-session-ipc.ts"]);
+for (const f of files) {
+  const rel = relative(srcDir, f).replace(/\\/g, "/");
+  if (rel.startsWith("demo/overlay/inpage/") || SWALLOW_ALLOWED.has(rel)) continue;
+  const line = readFileSync(f, "utf8").split("\n").findIndex((l) => SWALLOW_RE.test(l));
+  if (line >= 0) problems.push(`${rel}:${line + 1}: .catch(() => {}) swallows every error (use ignorePageGone / ignoreTimeout from engine/page-gone.ts)`);
 }
 
 const debtFile = join(root, "scripts", "layer-debt.json");

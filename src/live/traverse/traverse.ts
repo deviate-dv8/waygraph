@@ -6,8 +6,6 @@ import type { BlockEntry } from "../../manifest/project.js";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { Engine } from "../../engine/engine.js";
 import { buildFlow } from "../../engine/flow/flow.js";
-import { locate } from "../../engine/locate.js";
-import type { NavBlock } from "../../engine/block/kinds/nav.js";
 import { MemPage, type MemKey } from "../../engine/mem/mem.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import {
@@ -16,7 +14,7 @@ import {
   type ExploreEdge,
 } from "../auto-explore.js";
 import type { WaygraphGraph } from "../../analysis/graph.js";
-import { memStubValue } from "../auto-explore-run.js";
+import { detectHere, memStubValue } from "../auto-explore-run.js";
 import { resolveBaseUrl } from "../../runtime/config.js";
 import { EdgeLeaseCoordinator } from "./lease.js";
 import {
@@ -28,6 +26,7 @@ import {
 } from "./coverage.js";
 import { chromiumExecutablePath } from "../../runtime/browser.js";
 import { envFlag, envString } from "../../engine/env.js";
+import { ignorePageGone, ignoreTimeout } from "../../engine/page-gone.js";
 
 /** How `traverse` workers share a browser: one session, or a clone per worker. */
 export type TraverseSessionMode = "clone" | "inherit";
@@ -153,19 +152,6 @@ function edgeKey(edge: ExploreEdge): string {
   return id ? `${edge.block}::${id}` : edge.block;
 }
 
-async function detectHere(page: Page, navBlocks: BlockEntry[]): Promise<string | null> {
-  try {
-    const url = page.url();
-    if (url.includes("/login")) return "PiaLogin";
-    if (url.includes("mailpit") || url.includes(":54324") || url.includes("/mailhog")) {
-      return "PiaMailpitGui";
-    }
-  } catch {
-    /* ignore */
-  }
-  const tags = navBlocks.map((n) => n.block) as NavBlock<Checkpoint<string>>[];
-  return locate(page, tags, { timeoutMs: 1500 });
-}
 
 async function runOneBlock(
   engine: Engine,
@@ -266,7 +252,7 @@ async function runTraverseWorker(opts: WorkerOpts): Promise<TraverseWorkerResult
       if (page.isClosed()) {
         page = await context.newPage();
         if (startUrl) {
-          await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
+          await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(ignorePageGone);
         }
       }
 
@@ -494,8 +480,8 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
       const mem = new MemPage();
       seedMem(library.byName, mem, options.data);
       if (startUrl) {
-        await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
-        await page.waitForLoadState("load").catch(() => {});
+        await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(ignorePageGone);
+        await page.waitForLoadState("load").catch(ignoreTimeout);
       }
       const traverseId = options.traverseId ?? "traverse-1";
       const result = await runTraverseWorker({
@@ -518,7 +504,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
         mem,
         leases,
       });
-      await context.close().catch(() => {});
+      await context.close().catch(ignorePageGone);
       const coverageCode = emitCoverage([{ traverseId, result }]);
       if (result.exitCode !== 0) return result.exitCode;
       return coverageCode;
@@ -534,12 +520,12 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
     const bootMem = new MemPage();
     seedMem(library.byName, bootMem, options.data);
     if (startUrl) {
-      await bootPage.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
-      await bootPage.waitForLoadState("load").catch(() => {});
+      await bootPage.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(ignorePageGone);
+      await bootPage.waitForLoadState("load").catch(ignoreTimeout);
     }
     const storageState = await bootContext.storageState();
     const memSnap = snapshotMem(library.byName, bootMem);
-    await bootContext.close().catch(() => {});
+    await bootContext.close().catch(ignorePageGone);
 
     console.error(
       `waygraph traverse: forked ${parallel} clone workers (storageState + mem snapshot)`,
@@ -559,7 +545,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
           const mem = new MemPage();
           restoreMem(library.byName, mem, memSnap, options.data);
           if (startUrl) {
-            await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
+            await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(ignorePageGone);
           }
           try {
             const result = await runTraverseWorker({
@@ -584,7 +570,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
             });
             return { traverseId, result };
           } finally {
-            await context.close().catch(() => {});
+            await context.close().catch(ignorePageGone);
           }
         }),
       );
@@ -600,6 +586,6 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
     if (worst !== 0) return worst;
     return coverageCode;
   } finally {
-    await browser.close().catch(() => {});
+    await browser.close().catch(ignorePageGone);
   }
 }

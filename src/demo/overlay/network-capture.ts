@@ -6,6 +6,7 @@
 import type { WgPage } from "../types.js";
 import { addNetworkEntry, clearNetworkLog } from "./inpage/network.js";
 import { setApiCallRecorder } from "../../engine/run/hooks.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 // Fetch/XHR/navigation only - a real page can fire dozens of image/font/stylesheet requests per
 // second, which would flood a panel meant to answer "what API calls did this page just made".
@@ -30,7 +31,7 @@ export function recordNetworkEntry(page: WgPage, entry: any) {
   page.__wgNetworkHistory = page.__wgNetworkHistory || [];
   page.__wgNetworkHistory.push(entry);
   while (page.__wgNetworkHistory.length > MAX_HISTORY) page.__wgNetworkHistory.shift();
-  return page.evaluate(addNetworkEntry, entry).catch(() => {});
+  return page.evaluate(addNetworkEntry, entry).catch(ignorePageGone);
 }
 
 /**
@@ -54,9 +55,9 @@ export async function restoreNetworkHistory(page: WgPage) {
   // traffic at all, not just ones that navigate.
   if (!page.__wgNetworkNeedsRestore) return;
   page.__wgNetworkNeedsRestore = false;
-  await page.evaluate(clearNetworkLog).catch(() => {});
+  await page.evaluate(clearNetworkLog).catch(ignorePageGone);
   for (const entry of history) {
-    await page.evaluate(addNetworkEntry, entry).catch(() => {});
+    await page.evaluate(addNetworkEntry, entry).catch(ignorePageGone);
   }
 }
 
@@ -94,8 +95,8 @@ export function installNetworkCapture(page: WgPage) {
         /* body already consumed / redirected away / not available - best-effort only */
       }
       const [reqHeaders, resHeaders] = await Promise.all([
-        request.allHeaders().catch(() => undefined),
-        response.allHeaders().catch(() => undefined),
+        request.allHeaders().catch(ignorePageGone),
+        response.allHeaders().catch(ignorePageGone),
       ]);
       await recordNetworkEntry(page, {
         method: request.method(),

@@ -4,6 +4,7 @@ import type { WgPage } from "../types.js";
 import { demoPaceGateMs } from "../narration/demo-pace.js";
 import type { Pacing } from "./pacing.js";
 import { envFlag, envNumber, envString } from "../../engine/env.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
 
 export interface Gate {
   /** Resolves with the mem edits typed into the panel (or `{}` when auto-advance moved on). */
@@ -30,7 +31,7 @@ export async function installGate(page: WgPage, pacing: Pacing, demoFast: boolea
           /* private mode / blocked storage */
         }
       }, on)
-      .catch(() => {});
+      .catch(ignorePageGone);
   };
 
   // A Next click can land before wait() starts listening (there is an await in between on the slides path); keep it
