@@ -1,26 +1,22 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { connect } from "../types.js";
-import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../browser.js";
-import type { LaunchedContext } from "../browser.js";
-import { resolveExtensions } from "../extensions.js";
-import { loadWaygraphConfig } from "../config.js";
+import { connect } from "./types.js";
+import { launchOwnContext } from "./launch.js";
 import {
   WaygraphError,
   MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_INDEX,
   MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_NAME,
   MSG_CHAINFLOW_EMPTY,
-} from "../errors.js";
-import type { Block, Checkpoint } from "../types.js";
+} from "./errors.js";
+import type { Block, Checkpoint } from "./types.js";
 import { preflight, runGraph } from "./run-graph.js";
 import type { RunGraphOptions } from "./run-graph.js";
-import { resolveLauncher } from "./config.js";
 import type { EngineConfig } from "./config.js";
 import type { BrowserContext, Page } from "@playwright/test";
-import { MemPage } from "../mem-page.js";
-import type { Trait } from "../trait.js";
+import { MemPage } from "./mem-page.js";
+import type { Trait } from "./trait.js";
 import { copyWaygraphRuntime, findBlockIndex, modVerify, withVerify } from "./block.js";
-import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../highlights.js";
-import type { DemoPace, HighlightStyleDefaults } from "../highlights.js";
+import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "./narration.js";
+import type { DemoPace, HighlightStyleDefaults } from "./narration.js";
 
 /**
  * A composed, runnable flow. Always begins from Checkpoint<"__start__">, same as
@@ -119,21 +115,21 @@ export interface Flow<Out extends Checkpoint<string>> {
    * demo narration overrides (unlimited purposes on `.flow.ts`) keyed by
    * block.name. `run()` never reads this; step/`demo` merges onto block stubs.
    */
-  readonly highlightFixtures?: import("../highlights.js").HighlightFixtureMap;
+  readonly highlightFixtures?: import("./narration.js").HighlightFixtureMap;
   /**
    * Demo pacing for this Flow's episode (`withDemoPace`).
    * `run()` ignores; step/demo applies per Block in the episode.
    */
-  readonly demoPace?: import("../highlights.js").DemoPace;
+  readonly demoPace?: import("./narration.js").DemoPace;
   /**
    * Default highlight size/weight/tone for this Flow's episode (`withHighlightStyle`).
    * Per-slot stub/fixture values win. `run()` ignores.
    */
-  readonly highlightStyle?: import("../highlights.js").HighlightStyleDefaults;
+  readonly highlightStyle?: import("./narration.js").HighlightStyleDefaults;
   /**
    * Set once this Flow has been wrapped in {@link withMemStub} - opts into
    * auto-filling `requires` keys with registered fake values
-   * (`registerMemStub`, `src/mem-stub.ts`) instead of failing preflight when
+   * (`registerMemStub`, `src/core/mem-stub.ts`) instead of failing preflight when
    * the caller didn't supply them. `run()` never reads this - the CLI's own
    * `--data`/`--mem-stub` seeding, or a bare-library caller's own explicit
    * `seedMemStub(mem, flow)` call, is what actually fills mem before `run()`.
@@ -191,35 +187,6 @@ export interface Flow<Out extends Checkpoint<string>> {
 }
 
 
-/** Launches the browser and context an Engine uses when the caller gave none, from its config. */
-async function openOwnContext(engineConfig: EngineConfig | undefined): Promise<LaunchedContext> {
-  // A config chosen with `--config` / WAYGRAPH_CONFIG wins over the one the Engine was built with, so a flow that imports
-  // an engine from one config file still follows the config the run selected.
-  const chosen = process.env.WAYGRAPH_CONFIG ? await loadWaygraphConfig(process.cwd()) : undefined;
-  const config: EngineConfig | undefined = chosen
-    ? {
-        ...engineConfig,
-        ...(chosen.baseUrl !== undefined ? { baseUrl: chosen.baseUrl } : {}),
-        ...(chosen.extensions !== undefined ? { extensions: chosen.extensions } : {}),
-      }
-    : engineConfig;
-  const browserName = config?.browserName ?? "chromium";
-  const executablePath = browserName === "chromium" ? chromiumExecutablePath() : undefined;
-  const baseURL = config?.baseUrl ?? process.env.WAYGRAPH_BASE_URL;
-  return launchContext({
-    launcher: resolveLauncher(browserName, config),
-    launch: {
-      headless: config?.headless ?? true,
-      ...(config?.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
-      ...(executablePath ? { executablePath } : {}),
-    },
-    context: {
-      ...(baseURL ? { baseURL } : {}),
-      ...(config?.recordVideo ? { recordVideo: config.recordVideo } : {}),
-    },
-    extensions: await resolveExtensions(config?.extensions ?? extensionPathsFromEnv(), process.cwd()),
-  });
-}
 
 
 
@@ -258,7 +225,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
       // before a page opens - the same "fail loud, cheaply" guarantee
       // run(context, mem) already has via an existing context.
       preflight(mem, chain);
-      const { context, close } = await openOwnContext(config);
+      const { context, close } = await launchOwnContext(config);
       try {
         try {
           return await runGraph<Out>(chain, undefined, context, mem, 5000, {
@@ -383,7 +350,7 @@ export function withTitle<Out extends Checkpoint<string>>(flow: Flow<Out>, title
 
 /**
  * Opts this Flow into memStub: `requires` keys the caller didn't supply get
- * filled from `registerMemStub`'s registry (`src/mem-stub.ts`) instead of
+ * filled from `registerMemStub`'s registry (`src/core/mem-stub.ts`) instead of
  * failing preflight, for any key that has a registered fake generator - a
  * required key with no registration still fails exactly as before.
  * Non-destructive, same pattern as {@link withTitle}. `run()` never reads
@@ -507,7 +474,7 @@ export function withExpectedFailure<Out extends Checkpoint<string>>(flow: Flow<O
  */
 export function withHighlightFixtures<Out extends Checkpoint<string>>(
   flow: Flow<Out>,
-  fixtures: import("../highlights.js").HighlightFixtureMap,
+  fixtures: import("./narration.js").HighlightFixtureMap,
 ): Flow<Out> {
   return {
     ...flow,
@@ -620,7 +587,7 @@ export function chainFlow(...flows: readonly Flow<any>[]): Flow<any> {
       // config) would otherwise each launch a separate browser, defeating
       // the point of sequencing them (a fresh browser is itself a full
       // session reset, silently making withSessionReset a no-op).
-      const { context, close } = await openOwnContext(config);
+      const { context, close } = await launchOwnContext(config);
       try {
         try {
           return await run(context, mem, { closeOnFinish: true });

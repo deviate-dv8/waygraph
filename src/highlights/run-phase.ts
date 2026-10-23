@@ -4,8 +4,8 @@ import { createStubCtx, liftLegacySlotTodos } from "./stub-ctx.js";
 import { applyDefaultZoom, applyDefaultZoomOut, applyLegacyHighlightsShim, isStubPhase, mergePhaseMaps, readStubRaw } from "./merge.js";
 import { buildTodoDock, normalizeTodoStyle, normalizeTodos } from "./todo-dock.js";
 import { resolveDeviceState } from "./device.js";
-import type { Block, Checkpoint } from "../types.js";
-import type { MemPage } from "../mem-page.js";
+import type { Block, Checkpoint } from "../core/types.js";
+import type { MemPage } from "../core/mem-page.js";
 
 /**
  * Run an open stub lifecycle (preferred) or resolve a static slot map.

@@ -223,7 +223,7 @@ see `src/ARCHITECTURE.md`), with two files the package writes for Waygraph UI an
 Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/runs/*.jsonl`). Phases:
 
 0. Guardrails: layer rule with a shrinking debt list (`scripts/layer-debt.json`), graph snapshot test. **Done.**
-1. Core stands alone: no imports of demo, runtime or extensions from the engine.
+1. Core stands alone: no imports of demo, runtime or extensions from the engine. **Done.**
 2. Checkpoints as values (`checkpoint: Home`, `from`/`to`), old forms deprecated, codemod in `waygraph upgrade`.
 3. One manifest replaces the five project scanners and the `<In, Out>` source parse; `waygraph manifest --json`.
 4. Run events: typed emitter in `runGraph`; console, JSON report and run-log file are subscribers.

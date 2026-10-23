@@ -127,7 +127,7 @@ export function isFlowLike(val: unknown): val is { run: (...args: unknown[]) => 
 
 // ---------------------------------------------------------------------------
 // `check` - secondary/complementary to the ActionPage @deprecated warning
-// (src/types.ts). That's the primary, always-on signal an editor shows the
+// (src/core/types.ts). That's the primary, always-on signal an editor shows the
 // instant a regular Block's act() calls a navigation method; this command
 // sweeps a whole project in one shot for contexts with no editor watching
 // (CI, an autonomous agent writing Block files without a language server).

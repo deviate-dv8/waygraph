@@ -33,12 +33,13 @@ core.ts + core/ ── barrel over core/{block,config,run-graph,flow,compose,eng
 highlights.ts + highlights/ (types, style, device, demo-pace, todo-dock, merge, stub-ctx, run-phase, css, shorthand) ── demo narration: stubs, todo dock, device presets, pace, ring CSS
 ui/ ────────────── real .css overlay stylesheet built on Open Props, bundled by scripts/copy-ui-css.mjs into dist/ui/overlay.css and injected once by ui/shadow.ts - see src/ui/css/README.md; change a colour in ui/css/tokens.css, never inline
 analysis/ (graph, map-check, practices-check, coverage-gap) ─ static analysis / lint
-types.ts, trait.ts, mem-page.ts, mem-stub.ts, errors.ts ─ core types and small primitives (no upward imports)
+core/{types,trait,mem-page,mem-stub,errors,selector,narration,hooks,launch}.ts ─ core types and primitives; narration.ts is the stub/pace contract Blocks carry, hooks.ts and launch.ts are where the demo and runtime layers plug in
+runtime/ (config, env-file, browser, extensions, webserver, video-dir, playwright-config, launch) ─ config loading and browser launch
 index.ts ─────────── the public API: re-exports only; nothing inside src/ imports it
 ```
 
-`types.ts` sits *below* `core.ts` and `highlights.ts` in the module graph. Never import a
-core/highlights runtime symbol into it.
+`core/` imports nothing outside `core/`. The demo layer plugs in through `core/hooks.ts` (e.g. the network panel) and
+the runtime layer through `core/launch.ts` (`runtime/launch.ts`, loaded by `index.ts`, registers the full launch).
 
 `core/engine.ts` (the `Engine` class) and `core/map-builder.ts` (`MapBuilder` + the standalone
 `map()`) are two files, not one, despite being mutually referential at the type level:

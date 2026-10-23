@@ -1,5 +1,5 @@
 // Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { configuredExtensions } from "../config.js";
+import { configuredExtensions } from "../runtime/config.js";
 import { runInherited } from "../cli/util.js";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
@@ -39,7 +39,7 @@ export async function testCase(args: string[]): Promise<void> {
       } else {
         process.env.WAYGRAPH_PROJECT_DIR = proj;
       }
-      const configArgs = hasOwnConfig ? [] : ["-c", join(packageRoot(), "dist", "playwright.config.js")];
+      const configArgs = hasOwnConfig ? [] : ["-c", join(packageRoot(), "dist", "runtime", "playwright.config.js")];
 
       const wantsUi = rest[0] === "ui" || rest.includes("--ui");
       const forwarded = rest[0] === "ui" ? rest.slice(1) : rest;

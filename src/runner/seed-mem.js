@@ -1,7 +1,7 @@
 // Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
 import { join } from "node:path";
-import { getMemStub } from "../mem-stub.js";
+import { getMemStub } from "../core/mem-stub.js";
 
 function seedMemFromRequires(mem, requires, json, label, stubActive) {
   if (requires.length === 0) {

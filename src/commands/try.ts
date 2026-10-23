@@ -6,7 +6,7 @@ import { packageRoot, runInherited } from "../cli/util.js";
 import { tmpdir } from "node:os";
 import { runChain } from "../cli/run-chain.js";
 import { applyRunFlags, parseRunFlags } from "../cli/flags.js";
-import { resolveVideoDir } from "../video-dir.js";
+import { resolveVideoDir } from "../runtime/video-dir.js";
 
 interface TryPrereqStatus {
   ok: boolean;

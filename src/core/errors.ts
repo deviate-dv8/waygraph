@@ -121,7 +121,7 @@ export const WAYGRAPH_ERRORS = {
  * site (several throw sites can share a `WAYGRAPH_ERRORS` code but always have their own distinct
  * message here, since the same code can legitimately fire from more than one spot with different
  * detail). Plain strings for a message with no runtime values; a function for one that needs them.
- * `grep MSG_ src/errors.ts` finds every fixed string the engine can throw, in one place.
+ * `grep MSG_ src/core/errors.ts` finds every fixed string the engine can throw, in one place.
  */
 export const MSG_PREFLIGHT_MISSING_KEY = (blockName: string, missingKeys: string) =>
   `preflight: MemPage is missing required key(s) before "${blockName}" can run: ${missingKeys}`;

@@ -1,6 +1,6 @@
 // Split out of engine-class.ts (which crammed Engine and MapBuilder into one file despite them
 // being two unrelated concepts - see src/ARCHITECTURE.md). Behavior unchanged.
-import type { Block, Checkpoint, DefinedBlock } from "../types.js";
+import type { Block, Checkpoint, DefinedBlock } from "./types.js";
 import {
   WaygraphError,
   MSG_MAP_WRONG_KIND,
@@ -15,18 +15,18 @@ import {
   MSG_MAP_BRANCH_NO_PRIOR_STEP,
   MSG_MAP_FF_NOT_CLOSED,
   MSG_MAP_EMPTY,
-} from "../errors.js";
+} from "./errors.js";
 import type { EngineConfig } from "./config.js";
 import { end, start } from "./run-graph.js";
 import type { EndMarker, StartMarker } from "./run-graph.js";
 import type { Flow, FlowOptions } from "./flow.js";
 import type { RunGraphOptions } from "./run-graph.js";
-import { MemPage } from "../mem-page.js";
+import { MemPage } from "./mem-page.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import { fastForwardComposeBlock } from "./compose.js";
 import { clearSessionState, withBlockPace } from "./flow.js";
 import { copyWaygraphRuntime } from "./block.js";
-import type { DemoPace, HighlightStyleDefaults } from "../highlights.js";
+import type { DemoPace, HighlightStyleDefaults } from "./narration.js";
 import type { NavBlock } from "./blocks/nav.js";
 import type { PageBlock } from "./blocks/page.js";
 import type { AssertBlock, MethodBlock } from "./blocks/method.js";

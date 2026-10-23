@@ -1,9 +1,9 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { checkpoint } from "../../types.js";
-import type { Block, Checkpoint, DefinedBlock, WaygraphHighlight } from "../../types.js";
-import type { Trait } from "../../trait.js";
-import { MemPage } from "../../mem-page.js";
-import type { MemKey } from "../../mem-page.js";
+import { checkpoint } from "../types.js";
+import type { Block, Checkpoint, DefinedBlock, WaygraphHighlight } from "../types.js";
+import type { Trait } from "../trait.js";
+import { MemPage } from "../mem-page.js";
+import type { MemKey } from "../mem-page.js";
 import { defineBlock } from "../block.js";
 import type { Page } from "@playwright/test";
 
@@ -20,9 +20,9 @@ export type PageBlockOptions<Out extends Checkpoint<string>> = {
   /** Checkpoint tag for this screen (hub). */
   checkpoint: Out["__state"];
   verify?: Trait[] | ((out: Out) => Trait[]);
-  stubBefore?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
+  stubBefore?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
   /** @deprecated Prefer stubAfter. */
   highlights?:
     | readonly WaygraphHighlight[]
@@ -67,12 +67,12 @@ export type PageBlock<Out extends Checkpoint<string>> = Omit<
     newCheck: Trait["check"] | Trait,
   ): PageBlock<Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out>;
-  stubBefore(stub: import("../../highlights.js").HighlightStubPhase): PageBlock<Out>;
-  stubBefore(stub: import("../../highlights.js").StubLifecycleFn<Out>): PageBlock<Out>;
-  stubAfter(stub: import("../../highlights.js").HighlightStubPhase): PageBlock<Out>;
-  stubAfter(stub: import("../../highlights.js").StubLifecycleFn<Out>): PageBlock<Out>;
-  stubOnError(stub: import("../../highlights.js").HighlightStubPhase): PageBlock<Out>;
-  stubOnError(stub: import("../../highlights.js").StubLifecycleFn<Out>): PageBlock<Out>;
+  stubBefore(stub: import("../narration.js").HighlightStubPhase): PageBlock<Out>;
+  stubBefore(stub: import("../narration.js").StubLifecycleFn<Out>): PageBlock<Out>;
+  stubAfter(stub: import("../narration.js").HighlightStubPhase): PageBlock<Out>;
+  stubAfter(stub: import("../narration.js").StubLifecycleFn<Out>): PageBlock<Out>;
+  stubOnError(stub: import("../narration.js").HighlightStubPhase): PageBlock<Out>;
+  stubOnError(stub: import("../narration.js").StubLifecycleFn<Out>): PageBlock<Out>;
 };
 
 

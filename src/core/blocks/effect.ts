@@ -1,7 +1,7 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import type { Block, Checkpoint, DefinedBlock } from "../../types.js";
-import type { MemKey } from "../../mem-page.js";
-import type { Trait } from "../../trait.js";
+import type { Block, Checkpoint, DefinedBlock } from "../types.js";
+import type { MemKey } from "../mem-page.js";
+import type { Trait } from "../trait.js";
 import { defineBlock } from "../block.js";
 
 /**
@@ -28,12 +28,12 @@ export type EffectBlock<
     newCheck: Trait["check"] | Trait,
   ): EffectBlock<In, Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): EffectBlock<In, Out>;
-  stubBefore(stub: import("../../highlights.js").HighlightStubPhase): EffectBlock<In, Out>;
-  stubBefore(stub: import("../../highlights.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
-  stubAfter(stub: import("../../highlights.js").HighlightStubPhase): EffectBlock<In, Out>;
-  stubAfter(stub: import("../../highlights.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
-  stubOnError(stub: import("../../highlights.js").HighlightStubPhase): EffectBlock<In, Out>;
-  stubOnError(stub: import("../../highlights.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
+  stubBefore(stub: import("../narration.js").HighlightStubPhase): EffectBlock<In, Out>;
+  stubBefore(stub: import("../narration.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
+  stubAfter(stub: import("../narration.js").HighlightStubPhase): EffectBlock<In, Out>;
+  stubAfter(stub: import("../narration.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
+  stubOnError(stub: import("../narration.js").HighlightStubPhase): EffectBlock<In, Out>;
+  stubOnError(stub: import("../narration.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
 };
 
 

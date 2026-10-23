@@ -1,7 +1,7 @@
 // Split out of the former 2,100-line highlights.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import type { FixtureDurationFields, HighlightStubPhase, HighlightStubPhaseName, HighlightStubPhaseOrFn, ResolvedHighlight, WaygraphHighlight, WaygraphHighlightFixture, WaygraphHighlightStub } from "./types.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "./style.js";
-import type { Block, Checkpoint } from "../types.js";
+import type { Block, Checkpoint } from "../core/types.js";
 
 export function isStubPhase(v: unknown): v is HighlightStubPhase {
   return !!v && typeof v === "object" && !Array.isArray(v);

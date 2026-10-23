@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, Block } from "../../src/types.js";
-import { connect, checkpoint } from "../../src/types.js";
+import type { Checkpoint, Block } from "../../src/core/types.js";
+import { connect, checkpoint } from "../../src/core/types.js";
 import { runGraph } from "../../src/core.js";
-import { MemPage, key } from "../../src/mem-page.js";
+import { MemPage, key } from "../../src/core/mem-page.js";
 
 // A tiny two-field form, self-contained as a data: URL - no fixture server needed.
 // On submit it swaps in a "Submitted" heading, so a real assertion can confirm the

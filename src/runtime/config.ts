@@ -11,7 +11,7 @@ import { envMode, loadEnvFiles } from "./env-file.js";
 import { resolveExtensions } from "./extensions.js";
 import type { ExtensionSpec } from "./extensions.js";
 import type { WebServerConfig } from "./webserver.js";
-import type { DemoPace } from "./highlights.js";
+import type { DemoPace } from "../core/narration.js";
 
 /** Where `--video` recordings are saved and at what size. */
 export interface VideoSettings {

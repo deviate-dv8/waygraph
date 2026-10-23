@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, Block } from "../../src/types.js";
-import { connect, checkpoint } from "../../src/types.js";
+import type { Checkpoint, Block } from "../../src/core/types.js";
+import { connect, checkpoint } from "../../src/core/types.js";
 import { runGraph, spawnTab } from "../../src/core.js";
-import { MemPage } from "../../src/mem-page.js";
+import { MemPage } from "../../src/core/mem-page.js";
 
 const MAIN_URL = `data:text/html,${encodeURIComponent("<h1>Main</h1>")}`;
 const SUB_URL = `data:text/html,${encodeURIComponent("<h1>Sub</h1>")}`;

@@ -1,8 +1,8 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import type { ActionPage, Block, Checkpoint, DefinedBlock, Instruction } from "../types.js";
-import { MemPage } from "../mem-page.js";
-import type { MemKey } from "../mem-page.js";
-import type { Trait } from "../trait.js";
+import type { ActionPage, Block, Checkpoint, DefinedBlock, Instruction } from "./types.js";
+import { MemPage } from "./mem-page.js";
+import type { MemKey } from "./mem-page.js";
+import type { Trait } from "./trait.js";
 import {
   WaygraphError,
   MSG_FLOW_BLOCK_NOT_FOUND_BY_INDEX,
@@ -10,7 +10,7 @@ import {
   MSG_MODVERIFY_FUNCTION_FORM,
   MSG_MODVERIFY_NOT_FOUND_BY_INDEX,
   MSG_MODVERIFY_NOT_FOUND_BY_NAME,
-} from "../errors.js";
+} from "./errors.js";
 
 export function findBlockIndex(middle: readonly Block<any, any>[], block: Block<any, any> | string | number): number {
   if (typeof block === "number") {
@@ -217,10 +217,10 @@ export function withVerify<B extends Block<any, any>>(
 }
 
 
-type StubPhaseFn<Out extends Checkpoint<string>> = import("../highlights.js").HighlightStubPhaseOrFn<Out>;
+type StubPhaseFn<Out extends Checkpoint<string>> = import("./narration.js").HighlightStubPhaseOrFn<Out>;
 
 
-function isHighlightStubPhase(v: unknown): v is import("../highlights.js").HighlightStubPhase {
+function isHighlightStubPhase(v: unknown): v is import("./narration.js").HighlightStubPhase {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
@@ -228,11 +228,11 @@ function isHighlightStubPhase(v: unknown): v is import("../highlights.js").Highl
 /** Run a prior stub (fn or slot map) into an open ctx so decorate can chain. */
 async function applyStubIntoCtx<Out extends Checkpoint<string>>(
   raw: StubPhaseFn<Out> | undefined,
-  ctx: import("../highlights.js").StubCtx<Out>,
+  ctx: import("./narration.js").StubCtx<Out>,
 ): Promise<void> {
   if (raw === undefined) return;
   if (typeof raw === "function") {
-    const ret = await (raw as import("../highlights.js").StubLifecycleFn<Out>)(ctx);
+    const ret = await (raw as import("./narration.js").StubLifecycleFn<Out>)(ctx);
     if (isHighlightStubPhase(ret)) {
       for (const [id, stub] of Object.entries(ret)) {
         if (stub) ctx.ring(id, stub);
@@ -260,7 +260,7 @@ function withStubPhase<In extends Checkpoint<string>, Out extends Checkpoint<str
     stubOnError?: StubPhaseFn<Out>;
   };
   const prev = instr[phase];
-  const chained: import("../highlights.js").StubLifecycleFn<Out> = async (ctx) => {
+  const chained: import("./narration.js").StubLifecycleFn<Out> = async (ctx) => {
     await applyStubIntoCtx(prev, ctx);
     await applyStubIntoCtx(stub, ctx);
   };

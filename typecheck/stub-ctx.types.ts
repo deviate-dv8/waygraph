@@ -1,5 +1,5 @@
-import type { Checkpoint } from "../src/types.js";
-import { checkpoint } from "../src/types.js";
+import type { Checkpoint } from "../src/core/types.js";
+import { checkpoint } from "../src/core/types.js";
 import { defineMethodBlock, defineNavBlock, defineAssertBlock } from "../src/core.js";
 
 type A = Checkpoint<"A">;

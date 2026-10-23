@@ -6,12 +6,12 @@ import { join } from "node:path";
 import { mkdirSync } from "node:fs";
 import { isExpectedChainFailure, parseVideoViewport, runChainedFlows, runJsonReportMode } from "./chain-run.js";
 import { runStepMode } from "./step-mode.js";
-import { connect } from "../types.js";
-import { MemPage } from "../mem-page.js";
+import { connect } from "../core/types.js";
+import { MemPage } from "../core/mem-page.js";
 import { Engine, start, end, chainFlow, isFastForwardBlock, branchRoutes, runBranchRegression } from "../core.js";
-import { withWebServer } from "../webserver.js";
-import { resolveVideoDir } from "../video-dir.js";
-import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../browser.js";
+import { withWebServer } from "../runtime/webserver.js";
+import { resolveVideoDir } from "../runtime/video-dir.js";
+import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../runtime/browser.js";
 
 async function runMain() {
   const projectDir = process.argv[2];

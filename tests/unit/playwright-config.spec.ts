@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { playwrightConfigFrom } from "../../src/playwright-config.js";
+import { playwrightConfigFrom } from "../../src/runtime/playwright-config.js";
 
 describe("playwrightConfigFrom", () => {
   it("defaults to tests/, the base url and a trace on failure", () => {

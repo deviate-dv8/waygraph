@@ -3,7 +3,7 @@
   "entry": [
     "src/index.ts",
     "src/cli.ts",
-    "src/playwright.config.ts",
+    "src/runtime/playwright.config.ts",
     "src/runner/index.*",
     "scripts/*.mjs",
     "tests/**/*.spec.ts",

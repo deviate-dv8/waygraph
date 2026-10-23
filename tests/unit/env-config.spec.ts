@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadEnvFiles, takeEnvFlag } from "../../src/env-file.js";
-import { applyConfigEnv, defineConfig } from "../../src/config.js";
+import { loadEnvFiles, takeEnvFlag } from "../../src/runtime/env-file.js";
+import { applyConfigEnv, defineConfig } from "../../src/runtime/config.js";
 
 const KEYS = ["WG_T_BASE", "WG_T_ONLY_ENV", "WG_T_SHELL", "WAYGRAPH_ENV", "NODE_ENV"];
 let saved: Record<string, string | undefined>;
@@ -139,7 +139,7 @@ describe("pace speeds", () => {
 
 describe("--config", () => {
   it("takeConfigFlag removes the flag and records it", async () => {
-    const { takeConfigFlag } = await import("../../src/config.js");
+    const { takeConfigFlag } = await import("../../src/runtime/config.js");
     assert.deepEqual(takeConfigFlag(["test", "--config", "staging", "x"]), ["test", "x"]);
     assert.equal(process.env.WAYGRAPH_CONFIG, "staging");
     assert.deepEqual(takeConfigFlag(["run", "--config=config/a.ts"]), ["run"]);
@@ -148,7 +148,7 @@ describe("--config", () => {
   });
 
   it("a short name finds config/waygraph.<name>.config.*; a missing one fails loudly", async () => {
-    const { loadWaygraphConfig } = await import("../../src/config.js");
+    const { loadWaygraphConfig } = await import("../../src/runtime/config.js");
     mkdirSync(join(dir, "config"));
     writeFileSync(join(dir, "config", "waygraph.config.mjs"), 'export default { baseUrl: "https://default.example.com" };\n');
     writeFileSync(join(dir, "config", "waygraph.staging.config.mjs"), 'export default { baseUrl: "https://staging.example.com" };\n');

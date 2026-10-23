@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { deflateRawSync } from "node:zlib";
-import { extensionInfo, resolveExtension, unpackCrx } from "../../src/extensions.js";
+import { extensionInfo, resolveExtension, unpackCrx } from "../../src/runtime/extensions.js";
 
 function zip(files: Record<string, string>, deflate = false): Buffer {
   const locals: Buffer[] = [];

@@ -5,8 +5,8 @@
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { Engine, start, end, locate } from "../core.js";
 import type { NavBlock } from "../core.js";
-import { MemPage, type MemKey } from "../mem-page.js";
-import type { Checkpoint } from "../types.js";
+import { MemPage, type MemKey } from "../core/mem-page.js";
+import type { Checkpoint } from "../core/types.js";
 import {
   buildExploreContext,
   buildExploreMenu,
@@ -15,7 +15,7 @@ import {
 } from "../session/auto-explore.js";
 import type { WaygraphGraph } from "../analysis/graph.js";
 import { defaultMemValueForKey } from "../session/auto-explore-run.js";
-import { resolveBaseUrl } from "../config.js";
+import { resolveBaseUrl } from "../runtime/config.js";
 import { EdgeLeaseCoordinator } from "./lease.js";
 import {
   buildCoverageReport,
@@ -24,7 +24,7 @@ import {
   formatCoverageLine,
   writeCoverageReport,
 } from "./coverage.js";
-import { chromiumExecutablePath } from "../browser.js";
+import { chromiumExecutablePath } from "../runtime/browser.js";
 
 /** How `traverse` workers share a browser: one session, or a clone per worker. */
 export type TraverseSessionMode = "clone" | "inherit";

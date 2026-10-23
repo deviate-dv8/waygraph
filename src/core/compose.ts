@@ -1,9 +1,9 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import type { BlockInfo } from "./flow.js";
-import { connect } from "../types.js";
-import type { Block, Checkpoint } from "../types.js";
-import type { Trait } from "../trait.js";
-import { WaygraphError, MSG_COMPOSE_EMPTY, MSG_FASTFORWARD_EMPTY } from "../errors.js";
+import { connect } from "./types.js";
+import type { Block, Checkpoint } from "./types.js";
+import type { Trait } from "./trait.js";
+import { WaygraphError, MSG_COMPOSE_EMPTY, MSG_FASTFORWARD_EMPTY } from "./errors.js";
 import { findBlockIndex, modVerify, withVerify } from "./block.js";
 
 /**

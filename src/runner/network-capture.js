@@ -4,6 +4,7 @@
 // which go through a separate APIRequestContext entirely and never touch the browser at all (that
 // side is covered by defineApiBlock's own explicit call, in src/core/blocks/api.ts).
 import { addNetworkEntry, clearNetworkLog } from "./inpage/network.js";
+import { setApiCallRecorder } from "../core/hooks.js";
 
 // Fetch/XHR/navigation only - a real page can fire dozens of image/font/stylesheet requests per
 // second, which would flood a panel meant to answer "what API calls did this page just made".
@@ -124,3 +125,6 @@ export function installNetworkCapture(page) {
     });
   });
 }
+
+// defineApiBlock reports its calls through core's hook; show them in the same panel.
+setApiCallRecorder((page, entry) => recordNetworkEntry(page, entry));

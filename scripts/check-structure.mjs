@@ -79,13 +79,10 @@ for (const c of cycles) problems.push("import cycle: " + c.map((p) => relative(s
 // Each file belongs to one layer; a layer may only import the layers listed for it. Existing violations are in
 // scripts/layer-debt.json: that list may only shrink (a fixed violation must be removed from it, a new one fails).
 const LAYER_OF = [
-  ["core/", "core"], ["core.ts", "core"], ["types.ts", "core"], ["trait.ts", "core"], ["mem-page.ts", "core"],
-  ["mem-stub.ts", "core"], ["errors.ts", "core"], ["selector.ts", "core"],
+  ["core/", "core"], ["core.ts", "core"],
   ["manifest/", "manifest"],
   ["analysis/", "analysis"], ["blocks-select.ts", "analysis"],
-  ["runtime/", "runtime"], ["config.ts", "runtime"], ["env-file.ts", "runtime"], ["browser.ts", "runtime"],
-  ["extensions.ts", "runtime"], ["webserver.ts", "runtime"], ["video-dir.ts", "runtime"], ["playwright-config.ts", "runtime"],
-  ["playwright.config.ts", "runtime"],
+  ["runtime/", "runtime"],
   ["demo/", "demo"], ["highlights", "demo"], ["runner/", "demo"], ["ui/", "demo"], ["pilot-overlay", "demo"],
   ["session/step-overlay.ts", "demo"],
   ["live/", "live"], ["session/", "live"], ["auto-session", "live"], ["traverse/", "live"],

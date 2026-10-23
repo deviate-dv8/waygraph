@@ -75,7 +75,7 @@ If none of those are set, a `playwright.config.*`'s own `baseURL` is read as a l
 **Native `.env` support** - `.env`, `.env.local`, `.env.<mode>`, `.env.<mode>.local`
 (`<mode>` = `--env <mode>` / `WAYGRAPH_ENV`, else `NODE_ENV`, else `"development"`) are auto-loaded from the project root before
 `baseUrl` resolution runs, same layering Vite/Next use. No `dotenv` dependency - a small
-built-in parser (`src/env-file.ts`), matching the "bring nothing, read what's already there"
+built-in parser (`src/runtime/env-file.ts`), matching the "bring nothing, read what's already there"
 approach memStub already takes with Faker. A real, already-exported shell env var always wins
 over anything in a `.env` file - loading one only fills a gap, never silently overrides a
 value you actually set. This replaces the hack of manually re-exporting an FE project's own

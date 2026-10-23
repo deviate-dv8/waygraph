@@ -1,10 +1,12 @@
-export type { Checkpoint, Instruction, Block, DefinedBlock, Start, WaygraphInstanceOption } from "./types.js";
-export { connect, checkpoint } from "./types.js";
-export { MemKey, MemPage, key, keyGroup } from "./mem-page.js";
-export { registerMemStub, seedMemStub, getMemStub } from "./mem-stub.js";
-export { css, byText, byRole } from "./selector.js";
-export { WaygraphError, WAYGRAPH_ERRORS } from "./errors.js";
-export type { WaygraphErrorCode } from "./errors.js";
+// The runtime layer supplies how an Engine launches its own browser (config, Chromium path, extensions).
+import "./runtime/launch.js";
+export type { Checkpoint, Instruction, Block, DefinedBlock, Start, WaygraphInstanceOption } from "./core/types.js";
+export { connect, checkpoint } from "./core/types.js";
+export { MemKey, MemPage, key, keyGroup } from "./core/mem-page.js";
+export { registerMemStub, seedMemStub, getMemStub } from "./core/mem-stub.js";
+export { css, byText, byRole } from "./core/selector.js";
+export { WaygraphError, WAYGRAPH_ERRORS } from "./core/errors.js";
+export type { WaygraphErrorCode } from "./core/errors.js";
 export {
   Trait,
   urlMatches,
@@ -15,7 +17,7 @@ export {
   frameVisible,
   frameTextEquals,
   frameContainsText,
-} from "./trait.js";
+} from "./core/trait.js";
 export {
   runGraph,
   spawnTab,
@@ -173,7 +175,7 @@ export type {
   LayoutOptions,
   MapBuilderOptions,
 } from "./core.js";
-export type { ActionPage } from "./types.js";
+export type { ActionPage } from "./core/types.js";
 export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./analysis/graph.js";
 export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock, OrphanBlock } from "./analysis/graph.js";
 export {
@@ -227,10 +229,10 @@ export type {
 } from "./auto-session.js";
 export { pilotStart } from "./session/pilot.js";
 export type { PilotStartResult } from "./session/pilot.js";
-export { defineConfig, resolveBaseUrl } from "./config.js";
-export type { WaygraphConfig, ConfigContext, VideoSettings, RunSettings, DemoSettings } from "./config.js";
-export { withWebServer } from "./webserver.js";
-export { chromiumExecutablePath } from "./browser.js";
-export { resolveExtension, KNOWN_EXTENSIONS } from "./extensions.js";
-export type { ExtensionSpec } from "./extensions.js";
-export type { WebServerConfig } from "./webserver.js";
+export { defineConfig, resolveBaseUrl } from "./runtime/config.js";
+export type { WaygraphConfig, ConfigContext, VideoSettings, RunSettings, DemoSettings } from "./runtime/config.js";
+export { withWebServer } from "./runtime/webserver.js";
+export { chromiumExecutablePath } from "./runtime/browser.js";
+export { resolveExtension, KNOWN_EXTENSIONS } from "./runtime/extensions.js";
+export type { ExtensionSpec } from "./runtime/extensions.js";
+export type { WebServerConfig } from "./runtime/webserver.js";

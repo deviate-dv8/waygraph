@@ -5,18 +5,18 @@ import { instrumentPilotActions, installPersistentPilotOverlay, showPilotActivit
 import type { PilotHighlightFixtures, PilotOverlayInfo } from "../pilot-overlay.js";
 import { buildExploreContext, buildExploreMenu } from "../session/auto-explore.js";
 import type { BlockEntry, ExploreMenu } from "../session/auto-explore.js";
-import { MemPage } from "../mem-page.js";
+import { MemPage } from "../core/mem-page.js";
 import { Engine } from "../core.js";
 import type { BrowserContext, BrowserContextOptions, Page } from "@playwright/test";
 import { detectHere, ensureLivePage, ensureMem, resolveBaseUrl, runOneBlock, seedDefaultMem } from "../session/auto-explore-run.js";
 import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from "../analysis/coverage-gap.js";
 import type { UnmappedInteractionPayload } from "../analysis/coverage-gap.js";
-import type { Checkpoint, WaygraphInstanceOption } from "../types.js";
+import type { Checkpoint, WaygraphInstanceOption } from "../core/types.js";
 import { runStubPhase } from "../highlights.js";
 import { verboseLog } from "./verbose-log.js";
 import { findBlockPathDetailed } from "../analysis/graph.js";
-import { configuredExtensions } from "../config.js";
-import { chromiumExecutablePath, launchContext } from "../browser.js";
+import { configuredExtensions } from "../runtime/config.js";
+import { chromiumExecutablePath, launchContext } from "../runtime/browser.js";
 
 /**
  * Non-interactive explore session: same graph/library/mem/browser setup

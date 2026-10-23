@@ -1,9 +1,9 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { checkpoint } from "../../types.js";
-import type { Block, Checkpoint, DefinedBlock, WaygraphHighlight } from "../../types.js";
-import type { Trait } from "../../trait.js";
-import { MemPage } from "../../mem-page.js";
-import type { MemKey } from "../../mem-page.js";
+import { checkpoint } from "../types.js";
+import type { Block, Checkpoint, DefinedBlock, WaygraphHighlight } from "../types.js";
+import type { Trait } from "../trait.js";
+import { MemPage } from "../mem-page.js";
+import type { MemKey } from "../mem-page.js";
 import { defineBlock } from "../block.js";
 import type { Page } from "@playwright/test";
 
@@ -33,12 +33,12 @@ export type NavBlock<Out extends Checkpoint<string>> = Omit<
     newCheck: Trait["check"] | Trait,
   ): NavBlock<Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): NavBlock<Out>;
-  stubBefore(stub: import("../../highlights.js").HighlightStubPhase): NavBlock<Out>;
-  stubBefore(stub: import("../../highlights.js").StubLifecycleFn<Out>): NavBlock<Out>;
-  stubAfter(stub: import("../../highlights.js").HighlightStubPhase): NavBlock<Out>;
-  stubAfter(stub: import("../../highlights.js").StubLifecycleFn<Out>): NavBlock<Out>;
-  stubOnError(stub: import("../../highlights.js").HighlightStubPhase): NavBlock<Out>;
-  stubOnError(stub: import("../../highlights.js").StubLifecycleFn<Out>): NavBlock<Out>;
+  stubBefore(stub: import("../narration.js").HighlightStubPhase): NavBlock<Out>;
+  stubBefore(stub: import("../narration.js").StubLifecycleFn<Out>): NavBlock<Out>;
+  stubAfter(stub: import("../narration.js").HighlightStubPhase): NavBlock<Out>;
+  stubAfter(stub: import("../narration.js").StubLifecycleFn<Out>): NavBlock<Out>;
+  stubOnError(stub: import("../narration.js").HighlightStubPhase): NavBlock<Out>;
+  stubOnError(stub: import("../narration.js").StubLifecycleFn<Out>): NavBlock<Out>;
 };
 
 
@@ -65,9 +65,9 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
   from?: readonly string[];
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
-  stubBefore?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
+  stubBefore?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
   /** @deprecated Prefer stubAfter. */
   highlights?:
     | readonly WaygraphHighlight[]
@@ -208,9 +208,9 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   from?: readonly string[];
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
-  stubBefore?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
+  stubBefore?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
   /** @deprecated Prefer stubAfter. */
   highlights?:
     | readonly WaygraphHighlight[]

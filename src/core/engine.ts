@@ -1,6 +1,6 @@
 // Split out of engine-class.ts (which crammed Engine and MapBuilder into one file despite them
 // being two unrelated concepts - see src/ARCHITECTURE.md). Behavior unchanged.
-import type { Block, Checkpoint } from "../types.js";
+import type { Block, Checkpoint } from "./types.js";
 import type { EngineConfig } from "./config.js";
 import type { EndMarker, StartMarker } from "./run-graph.js";
 import { applyFlowOptions, buildFlow } from "./flow.js";

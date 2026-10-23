@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { css, byText, byRole } from "../../src/selector.js";
+import { css, byText, byRole } from "../../src/core/selector.js";
 
 test("css() passes a plain selector through unchanged", () => {
   assert.equal(css("#login-button"), "#login-button");

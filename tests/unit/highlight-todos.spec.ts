@@ -2,8 +2,8 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { normalizeTodos, resolveHighlightSlots, runStubPhase } from "../../src/highlights.js";
 import { defineMethodBlock } from "../../src/core.js";
-import { checkpoint } from "../../src/types.js";
-import type { Block, Checkpoint } from "../../src/types.js";
+import { checkpoint } from "../../src/core/types.js";
+import type { Block, Checkpoint } from "../../src/core/types.js";
 import type { StubCtx } from "../../src/highlights.js";
 
 describe("normalizeTodos", () => {

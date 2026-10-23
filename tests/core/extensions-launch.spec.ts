@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { launchContext } from "../../src/browser.js";
+import { launchContext } from "../../src/runtime/browser.js";
 
 function fakeExtension(): string {
   const dir = mkdtempSync(join(tmpdir(), "wg-fake-ext-"));

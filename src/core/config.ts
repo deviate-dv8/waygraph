@@ -2,7 +2,6 @@
 import { chromium, firefox, webkit } from "@playwright/test";
 import type { BrowserType } from "@playwright/test";
 import type { Layout } from "./run-graph.js";
-import type { ExtensionSpec } from "../extensions.js";
 
 const LAUNCHERS = { chromium, firefox, webkit };
 
@@ -18,6 +17,10 @@ const LAUNCHERS = { chromium, firefox, webkit };
  * `webkit` - same `.launch()` shape - so accepting one here costs nothing for
  * a consumer who never sets it.
  */
+/** A browser extension to load: a known name (`"hoppscotch"`), a Chrome Web Store id, a path, or `{ id, sha256 }`. */
+export type ExtensionSpec = string | { id?: string; path?: string; sha256?: string };
+
+
 export function resolveLauncher(
   browserName: "chromium" | "firefox" | "webkit",
   config: EngineConfig | undefined,

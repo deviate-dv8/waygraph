@@ -1,5 +1,7 @@
 // Split out of the former 2,100-line highlights.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import type { HighlightSize, HighlightStyleDefaults, HighlightTone, HighlightWeight } from "./types.js";
+import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../core/narration.js";
+export { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight };
 
 /** Apply Flow defaults under per-slot authored values (slot wins when set). */
 export function applyHighlightStyleDefaults<
@@ -42,38 +44,10 @@ const TONE_ICONS: Record<HighlightTone, string> = {
 };
 
 
-/** Map author aliases (`error` -> danger) to a canonical tone. */
-export function normalizeHighlightTone(raw: unknown): HighlightTone {
-  if (typeof raw !== "string") return "planned";
-  const t = raw.trim().toLowerCase();
-  if (t === "auto" || t === "automation" || t === "engine") return "auto";
-  if (t === "info" || t === "blue") return "info";
-  if (t === "warning" || t === "warn" || t === "yellow") return "warning";
-  if (t === "danger" || t === "error" || t === "red") return "danger";
-  if (t === "success" || t === "ok" || t === "green") return "success";
-  if (t === "orange" || t === "amber" || t === "dom" || t === "inspect") return "orange";
-  if (t === "planned" || t === "purple" || t === "authored") return "planned";
-  return "planned";
-}
 
 
-/** Map size aliases to sm/md/lg. */
-export function normalizeHighlightSize(raw: unknown): HighlightSize {
-  if (typeof raw !== "string") return "md";
-  const t = raw.trim().toLowerCase();
-  if (t === "sm" || t === "s" || t === "small" || t === "tiny") return "sm";
-  if (t === "lg" || t === "l" || t === "large" || t === "big" || t === "xl") return "lg";
-  return "md";
-}
 
 
-/** Map weight aliases to normal/bold. */
-export function normalizeHighlightWeight(raw: unknown): HighlightWeight {
-  if (typeof raw !== "string") return "normal";
-  const t = raw.trim().toLowerCase();
-  if (t === "bold" || t === "strong" || t === "heavy" || t === "b") return "bold";
-  return "normal";
-}
 
 
 /** Prefix label with a short ASCII icon for semantic tones. */

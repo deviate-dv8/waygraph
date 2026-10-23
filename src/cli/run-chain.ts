@@ -1,5 +1,5 @@
 // Split out of the former 8,700-line cli.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { configuredExtensions } from "../config.js";
+import { configuredExtensions } from "../runtime/config.js";
 import { expandSpecFlowFiles, resolveBaseUrl } from "./flags.js";
 import { join } from "node:path";
 import { rmSync, writeFileSync } from "node:fs";

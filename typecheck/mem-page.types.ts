@@ -1,4 +1,4 @@
-import { MemPage, key, keyGroup } from "../src/mem-page.js";
+import { MemPage, key, keyGroup } from "../src/core/mem-page.js";
 
 const EmailKey = key<string>("auth.email");
 const CountKey = key<number>("chat.count");

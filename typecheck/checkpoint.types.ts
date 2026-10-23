@@ -1,4 +1,4 @@
-import type { Checkpoint } from "../src/types.js";
+import type { Checkpoint } from "../src/core/types.js";
 
 // Two Checkpoints with the same literal tag are assignable to each other.
 declare const authedA: Checkpoint<"Authed">;

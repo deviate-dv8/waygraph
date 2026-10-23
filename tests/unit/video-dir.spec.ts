@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { downloadsDir, resolveVideoDir } from "../../src/video-dir.js";
+import { downloadsDir, resolveVideoDir } from "../../src/runtime/video-dir.js";
 
 const KEYS = ["HOME", "XDG_DOWNLOAD_DIR", "XDG_CONFIG_HOME", "WAYGRAPH_VIDEO_DIR", "CI"];
 let saved: Record<string, string | undefined>;

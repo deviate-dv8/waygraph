@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint } from "../../src/index.js";
 import { defineAssertBlock, checkpoint, MemPage, key } from "../../src/index.js";
-import { runVerify } from "../../src/trait.js";
+import { runVerify } from "../../src/core/trait.js";
 
 type Screen = Checkpoint<"Screen">;
 type A = Checkpoint<"A">;

@@ -6,7 +6,7 @@ import {
   resolveDeviceState,
   runStubPhase,
 } from "../../src/highlights.js";
-import type { Block } from "../../src/types.js";
+import type { Block } from "../../src/core/types.js";
 import type { StubCtx } from "../../src/highlights.js";
 
 describe("device presets + resolve", () => {

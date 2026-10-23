@@ -1,11 +1,11 @@
-import { getMemStub } from "../mem-stub.js";
+import { getMemStub } from "../core/mem-stub.js";
 import { createInterface } from "node:readline/promises";
 import { ensureShadowRoot } from "../ui/shadow.js";
 import { stdin as input, stdout as output } from "node:process";
 import type { Page, BrowserContext, BrowserContextOptions } from "@playwright/test";
 import { Engine, start, end, locate } from "../core.js";
-import { MemPage } from "../mem-page.js";
-import type { MemKey } from "../mem-page.js";
+import { MemPage } from "../core/mem-page.js";
+import type { MemKey } from "../core/mem-page.js";
 import type { NavBlock } from "../core.js";
 import {
   buildExploreContext,
@@ -13,11 +13,11 @@ import {
   type BlockEntry,
   type ExploreMenu,
 } from "./auto-explore.js";
-import type { Checkpoint } from "../types.js";
+import type { Checkpoint } from "../core/types.js";
 import { installDemoChrome, instrumentInteractionHighlighting } from "./step-overlay.js";
-import { configuredExtensions, resolveBaseUrl } from "../config.js";
-import { withWebServer } from "../webserver.js";
-import { chromiumExecutablePath, launchContext } from "../browser.js";
+import { configuredExtensions, resolveBaseUrl } from "../runtime/config.js";
+import { withWebServer } from "../runtime/webserver.js";
+import { chromiumExecutablePath, launchContext } from "../runtime/browser.js";
 
 export interface AutoExploreOptions {
   /** Terminal menu (browser still runs for act()). Default false = headful picker panel. */

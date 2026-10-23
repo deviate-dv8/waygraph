@@ -2,7 +2,7 @@
 import { basename, relative, resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { walkDir } from "./discover.js";
-import { loadWaygraphConfig, resolveBaseUrl } from "../config.js";
+import { loadWaygraphConfig, resolveBaseUrl } from "../runtime/config.js";
 
 // ---------------------------------------------------------------------------
 // CLI plumbing - run flags (flags beat WAYGRAPH_* env)

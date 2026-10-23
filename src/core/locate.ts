@@ -1,7 +1,7 @@
 // Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
 import type { NavBlock } from "./blocks/nav.js";
 import type { Page } from "@playwright/test";
-import { MemPage } from "../mem-page.js";
+import { MemPage } from "./mem-page.js";
 
 /**
  * "Where am I" - reverse-matches a live `page` against every NavBlock /

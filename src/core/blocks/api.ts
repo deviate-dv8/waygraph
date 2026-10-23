@@ -2,11 +2,12 @@
 // (defineNavBlock/defineMethodBlock) with a real HTTP request in the SAME state machine, verified
 // by the same Trait system everything else uses. Built on Playwright's own `page.request`
 // (APIRequestContext) - no shell-out to curl, no second HTTP client to depend on.
-import type { Checkpoint, DefinedBlock } from "../../types.js";
-import type { Trait } from "../../trait.js";
+import { recordApiCall } from "../hooks.js";
+import type { Checkpoint, DefinedBlock } from "../types.js";
+import type { Trait } from "../trait.js";
 import { defineBlock } from "../block.js";
-import { MemPage, key } from "../../mem-page.js";
-import type { MemKey } from "../../mem-page.js";
+import { MemPage, key } from "../mem-page.js";
+import type { MemKey } from "../mem-page.js";
 import type { APIRequestContext, APIResponse } from "@playwright/test";
 
 /** What `resolve`/`verify` see: the response's status and parsed body, nothing Playwright-specific. */
@@ -39,9 +40,9 @@ export interface ApiBlockOptions<In extends Checkpoint<string>, Out extends Chec
   resolve: (result: ApiCallResult) => Out;
   verify?: Trait[] | ((out: Out) => Trait[]);
   requires?: readonly MemKey<any>[];
-  stubBefore?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../../highlights.js").HighlightStubPhaseOrFn<Out>;
+  stubBefore?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
 }
 
 // Internal scratch key threading act()'s result to observe()/resolve() - Instruction has no other
@@ -82,17 +83,9 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
           body = await response.text().catch(() => undefined);
         }
         mem.set(API_RESULT_SCRATCH, { status: response.status(), ok: response.ok(), body });
-        // Best-effort, demo-only visibility - an API step has no DOM change and no ring of its own,
-        // so without this it's a silent title flash. No-ops outside a demo/pilot/auto run (see
-        // addNetworkEntry's own guard) and never fails the Block if painting the panel throws.
-        // Same network-tab panel real page traffic feeds too (network-capture.js) - this is the
-        // page.request side of it (a separate APIRequestContext, never seen by page.on('request')).
+        // Shown in the demo's network panel when a demo layer registered a recorder; never fails the Block.
         try {
-          // recordNetworkEntry, not a bare addNetworkEntry evaluate - it also persists this entry
-          // to page.__wgNetworkHistory (Node-side, survives navigation), so it isn't lost the
-          // moment a later step in the same Flow navigates and wipes the panel's DOM.
-          const { recordNetworkEntry } = await import("../../runner/network-capture.js");
-          await recordNetworkEntry(page, {
+          await recordApiCall(page, {
             method: options.method || "GET",
             url: response.url(),
             status: response.status(),

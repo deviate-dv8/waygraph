@@ -3,7 +3,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildExploreContext, buildExploreMenu } from "../../src/session/auto-explore.js";
 import { MemPage, Engine, start, end } from "../../src/index.js";
-import { chromiumExecutablePath } from "../../src/browser.js";
+import { chromiumExecutablePath } from "../../src/runtime/browser.js";
 
 const sauceRoot = join(dirname(fileURLToPath(import.meta.url)), "../../examples/saucedemo");
 
