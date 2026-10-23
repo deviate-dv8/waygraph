@@ -471,6 +471,9 @@ export async function serveSession(
 export async function runAutoServeCommand(init: AutoSessionInit, sessionId: string): Promise<void> {
   const session = await AutoSession.start({ ...init, sessionId });
   await serveSession(session, init.projectDir, sessionId, init.headless ?? true);
+  // Tell the parent that spawned us (spawnDetachedSession) we are serving, then let it go.
+  process.send?.({ ready: true });
+  process.disconnect?.();
   // Keep the event loop alive - the listening server already does this,
   // but await forever here documents the intent for a reader.
   await new Promise(() => {});
@@ -478,8 +481,10 @@ export async function runAutoServeCommand(init: AutoSessionInit, sessionId: stri
 
 /**
  * Parent-side: spawns a detached background process running the same
- * explore session as a socket server, waits for it to signal readiness (its
- * metadata file appearing), and returns its identity. Recurses through the
+ * explore session as a socket server, waits for it to say it is serving (one
+ * message over an IPC channel, then disconnect), and returns its identity. A
+ * child that exits or stays silent past the timeout fails the start, and a silent
+ * one is stopped. Recurses through the
  * existing `bin/waygraph` launcher (same tsx/esm registration every other
  * invocation already gets) with the hidden `__auto-serve` command, rather
  * than re-implementing that resolution here.
@@ -509,22 +514,26 @@ export async function spawnDetachedSession(
   // Spawn cli.js directly — not bin/waygraph (which would fork a second Node).
   const child = spawn(process.execPath, args, {
     detached: true,
-    stdio: ["ignore", logFd, logFd],
+    stdio: ["ignore", logFd, logFd, "ipc"],
     windowsHide: true,
     env: process.env,
   });
+  const log = logPathFor(init.projectDir, sessionId);
+  const outcome = await new Promise<"ready" | "timeout" | { exit: number | null }>((done) => {
+    const timer = setTimeout(() => done("timeout"), readyTimeoutMs);
+    child.once("message", () => (clearTimeout(timer), done("ready")));
+    child.once("exit", (code) => (clearTimeout(timer), done({ exit: code })));
+  });
+  if (child.connected) child.disconnect();
   child.unref();
-
-  const deadline = Date.now() + readyTimeoutMs;
-  while (Date.now() < deadline) {
-    const meta = readSessionMeta(init.projectDir, sessionId);
-    if (meta) return meta;
-    await new Promise((r) => setTimeout(r, 150));
+  if (outcome === "timeout") {
+    child.kill("SIGTERM");
+    throw new Error(`session "${sessionId}" did not become ready within ${readyTimeoutMs}ms (stopped it) - check ${log} for errors`);
   }
-  throw new Error(
-    `session "${sessionId}" did not become ready within ${readyTimeoutMs}ms - ` +
-      `check ${logPathFor(init.projectDir, sessionId)} for errors`,
-  );
+  if (outcome !== "ready") throw new Error(`session "${sessionId}" exited (code ${outcome.exit}) before it was ready - check ${log}`);
+  const meta = readSessionMeta(init.projectDir, sessionId);
+  if (!meta) throw new Error(`session "${sessionId}" said it was ready but wrote no metadata - check ${log}`);
+  return meta;
 }
 
 /** Stop one detached session (SIGTERM + cleanup metadata/socket). */
