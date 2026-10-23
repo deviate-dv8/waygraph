@@ -9,8 +9,8 @@ This page is generated from `src/engine/env.ts` (`npm run docs:api`).
 | Variable | Meaning |
 | --- | --- |
 | `WAYGRAPH_BASE_URL` | Base URL for relative gotos (--base-url, the config's baseUrl) |
-| `WAYGRAPH_CONFIG` | Which config file to load (--config <name\|file>) |
-| `WAYGRAPH_ENV` | Env mode: loads .env.<mode> on top of .env (--env) |
+| `WAYGRAPH_CONFIG` | Which config file to load (--config &lt;name\|file&gt;) |
+| `WAYGRAPH_ENV` | Env mode: loads .env.&lt;mode&gt; on top of .env (--env) |
 | `WAYGRAPH_COMMAND` | The command running (run / demo / test), so the config's per-command section applies |
 | `WAYGRAPH_PROJECT_DIR` | The project waygraph test runs Playwright for |
 | `WAYGRAPH_HEADED` | 1 shows the browser, 0 hides it (--non-headless; demo default 1) |

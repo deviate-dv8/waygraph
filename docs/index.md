@@ -86,5 +86,5 @@ where the tooling is headed.
 ### Reference
 
 - **[Engine handout](/handout)** — The core model in one page.
-- **[Full reference](https://github.com/deviate-dv8/waygraph/blob/main/docs/REFERENCE.md)** — Every feature in detail (long).
+- **[Reference](./reference/)** — Every feature in detail, one topic per page.
 - **[Preview these docs](/deploy)** — Run this site locally or deploy it.

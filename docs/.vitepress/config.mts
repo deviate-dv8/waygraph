@@ -16,7 +16,6 @@ export default defineConfig({
   // Vue's template compiler chokes on those as stray HTML. Never rendered as a site page anyway
   // (the original site always linked it straight to GitHub's own blob viewer); exclude it from the
   // build rather than rewrite the whole file to escape every generic.
-  srcExclude: ["REFERENCE.md"],
   // public/saucedemo/ and public/proposals/ are a separate static site/plain markdown, copied
   // through as-is (not VitePress pages) - their own relative links resolve fine on their own but
   // read as dead links to VitePress's page-based checker.
@@ -39,7 +38,7 @@ export default defineConfig({
       { text: "Quick start", link: "/quickstart" },
       { text: "Guides", link: "/scaffold" },
       { text: "API", link: "/api/" },
-      { text: "Reference", link: "https://github.com/deviate-dv8/waygraph/blob/main/docs/REFERENCE.md" },
+      { text: "Reference", link: "/reference/" },
       { text: "Sauce Demo", link: "/saucedemo/" },
       { text: "npm", link: "https://www.npmjs.com/package/waygraph" },
     ],
@@ -71,7 +70,17 @@ export default defineConfig({
           { text: "Deprecated", link: "/deprecated" },
           { text: "Environment variables", link: "/env" },
           { text: "Engine handout", link: "/handout" },
-          { text: "Full reference", link: "https://github.com/deviate-dv8/waygraph/blob/main/docs/REFERENCE.md" },
+          { text: "Reference", link: "/reference/" },
+          { text: "· Getting started", link: "/reference/getting-started" },
+          { text: "· Project config", link: "/reference/config" },
+          { text: "· Core concepts", link: "/reference/concepts" },
+          { text: "· Engine features", link: "/reference/engine" },
+          { text: "· Block helpers", link: "/reference/block-helpers" },
+          { text: "· Mail adapters", link: "/reference/mail" },
+          { text: "· Pilot", link: "/reference/pilot" },
+          { text: "· The Map", link: "/reference/map" },
+          { text: "· CLI reference", link: "/reference/cli" },
+          { text: "· Developing waygraph", link: "/reference/developing" },
           { text: "Preview / deploy these docs", link: "/deploy" },
         ],
       },

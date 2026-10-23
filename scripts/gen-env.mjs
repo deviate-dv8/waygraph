@@ -8,7 +8,7 @@ import { WAYGRAPH_ENV } from "../src/engine/env.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const rows = Object.entries(WAYGRAPH_ENV)
-  .map(([name, meaning]) => `| \`${name}\` | ${meaning.replace(/\|/g, "\\|")} |`)
+  .map(([name, meaning]) => `| \`${name}\` | ${meaning.replace(/\|/g, "\\|").replace(/</g, "&lt;").replace(/>/g, "&gt;")} |`)
   .join("\n");
 const md = `# Environment variables
 

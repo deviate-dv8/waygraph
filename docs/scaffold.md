@@ -70,11 +70,11 @@ An older project that still has one keeps working and gets a deprecation note.
 skip CORS and can hit `localhost`. Add `extensions: ["hoppscotch"]` to the config, then chain
 `set-method`, `set-url`, `set-headers`, `set-query-params`, `set-bearer-token`, `set-json-body`,
 `send-request`, `assert-status`, `read-response-body`, `assert-response-body` and the response-header
-Blocks. See `src/flows/(external)/hoppscotch/*.flow.ts` and [the reference](./REFERENCE#testing-a-rest-api-through-hoppscotch).
+Blocks. See `src/flows/(external)/hoppscotch/*.flow.ts` and [the reference](./reference/config#testing-a-rest-api-through-hoppscotch).
 
 The hoppscotch and mailpit folders own their Checkpoints and keys (`_states.ts`, `_keys.ts`) and import nothing else from
 the project, so each can be packed and installed elsewhere: `npx waygraph map pack hoppscotch` (see
-[Map packages](./REFERENCE#map-packages)).
+[Map packages](./reference/map#map-packages)).
 
 ## Updating an existing project
 
@@ -119,8 +119,8 @@ agent can dive an existing app into Blocks.
 ## Pointing it at your real app
 
 1. Change each `_nav.block.ts`'s `url` from the local `file://` path to a real one, and set a
-   real `baseUrl` if your Nav Blocks use relative paths (`config/waygraph.config.ts`, a `.env`, or
-   `package.json`'s `"waygraph"` field - see [Project config](./REFERENCE#project-config-waygraph-config-env)).
+   real `baseUrl` if your Nav Blocks use relative paths (`config/waygraph.config.ts` or a `.env` - see
+   [Project config](./reference/config)).
 1. Rename `(app_base)/` to your app's group; make each folder match the real URL.
 1. Run `waygraph map` - it tells you which folders don't match.
 
