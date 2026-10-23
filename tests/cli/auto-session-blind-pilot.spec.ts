@@ -5,6 +5,9 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writ
 import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { stopSessionsAfterEachTest, trackSession } from "../support/sessions.js";
+
+stopSessionsAfterEachTest();
 
 /**
  * Proof for openspec/changes/waygraph-blind-pilot: raw interaction
@@ -88,7 +91,9 @@ async function runCli(args: string[], cwd: string): Promise<string> {
 
 async function detach(projectDir: string): Promise<{ sessionId: string; socketPath: string; headless: boolean }> {
   const stdout = await runCli(["browser", "start", "--headless", "--base-url", origin, "--goto", "/", projectDir], projectDir);
-  return JSON.parse(stdout.trim());
+  const meta = JSON.parse(stdout.trim());
+  trackSession(projectDir, meta.sessionId);
+  return meta;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

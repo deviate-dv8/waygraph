@@ -2,6 +2,9 @@ import { test, expect } from "@playwright/test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join } from "node:path";
+import { stopSessionsAfterEachTest, trackSession } from "../support/sessions.js";
+
+stopSessionsAfterEachTest();
 
 /**
  * Proof for openspec/changes/waygraph-pilot: the real `waygraph pilot start`
@@ -41,6 +44,7 @@ test("waygraph pilot start returns a real session id, socket path, and the whole
   const { stdout, code } = await runCli(["pilot", "start"]);
   expect(code).toBe(0);
   const result = JSON.parse(stdout.trim());
+  trackSession(sauceRoot, result.sessionId);
   expect(result.sessionId).toMatch(/^[0-9a-f]{8}$/);
   expect(result.socketPath).toContain(result.sessionId);
   expect(result.headless).toBe(false);
@@ -56,6 +60,7 @@ test("waygraph pilot start's session is really still running afterward - auto st
   const { stdout, code } = await runCli(["pilot", "start"]);
   expect(code).toBe(0);
   const result = JSON.parse(stdout.trim());
+  trackSession(sauceRoot, result.sessionId);
 
   const { stdout: statusOut } = await exec(node, [CLI, "auto", "status", result.sessionId], { cwd: sauceRoot });
   const status = JSON.parse(statusOut.trim());

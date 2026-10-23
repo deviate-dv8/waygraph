@@ -2,6 +2,9 @@ import { test, expect } from "@playwright/test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join } from "node:path";
+import { stopSessionsAfterEachTest, trackSession } from "../support/sessions.js";
+
+stopSessionsAfterEachTest();
 
 /**
  * Proof: `waygraph browser start --inject saucedemo` merges an external Block library
@@ -37,6 +40,7 @@ test("waygraph browser start --inject saucedemo loads injected Blocks into the s
   ]);
   expect(code).toBe(0);
   const started = JSON.parse(stdout.trim()) as { sessionId: string; headless: boolean; inject: string[] };
+  trackSession(hostRoot, started.sessionId);
   expect(started.sessionId).toMatch(/^[0-9a-f]{8}$/);
   expect(started.headless).toBe(false);
   expect(started.inject.length).toBeGreaterThan(0);
@@ -60,6 +64,7 @@ test("waygraph pilot sessions lists a live browser session after browser start",
   test.setTimeout(45_000);
   const { stdout } = await runCli(["browser", "start", "--inject", "saucedemo", "--goto", SAUCE_URL]);
   const started = JSON.parse(stdout.trim()) as { sessionId: string };
+  trackSession(hostRoot, started.sessionId);
 
   const { stdout: sessionsOut } = await exec(node, [CLI, "pilot", "sessions", "--json"], { cwd: hostRoot });
   const sessions = JSON.parse(sessionsOut.trim()) as Array<{ sessionId: string }>;

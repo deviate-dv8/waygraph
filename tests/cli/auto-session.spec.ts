@@ -4,6 +4,9 @@ import { promisify } from "node:util";
 import { existsSync, readFileSync, readdirSync, rmSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { stopSessionsAfterEachTest, trackSession } from "../support/sessions.js";
+
+stopSessionsAfterEachTest();
 
 /**
  * Proof for openspec/changes/waygraph-auto-cli-session-control: a fully
@@ -95,7 +98,9 @@ async function detach(extraArgs: string[] = []): Promise<{
   // A background session on the project's start page (headless unless --non-headless).
   const headed = extraArgs.includes("--non-headless");
   const stdout = await runCli(["browser", "start", ...(headed ? [] : ["--headless"]), "--goto", "/", sauceRoot]);
-  return JSON.parse(stdout.trim());
+  const meta = JSON.parse(stdout.trim());
+  trackSession(sauceRoot, meta.sessionId);
+  return meta;
 }
 
 async function send(sessionId: string, pick: string): Promise<{ ok: boolean; [k: string]: unknown }> {
@@ -421,6 +426,7 @@ test("a session against a deeply nested project path still starts - session sock
     const stdout = await runCli(["browser", "start", "--headless"], { cwd: deepDir });
     const meta = JSON.parse(stdout.trim()) as { sessionId: string; socketPath: string };
     sessionId = meta.sessionId;
+    trackSession(deepDir, meta.sessionId);
     // The fix: the socket is short and NOT under the (long) project directory.
     expect(meta.socketPath.startsWith(deepDir)).toBe(false);
     expect(meta.socketPath.length).toBeLessThan(108);
