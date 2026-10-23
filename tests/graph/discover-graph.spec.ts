@@ -4,51 +4,52 @@ import { join } from "node:path";
 import { discoverGraph, findBlockPath, findBlockPathDetailed } from "../../src/analysis/graph.js";
 
 const STATES_FILE = `
-import type { Checkpoint } from "waygraph";
+import { checkpoint } from "waygraph";
 
-export type LoginPage = Checkpoint<"LoginPage">;
-export type LoggedIn = Checkpoint<"LoggedIn">;
-export type CartPage = Checkpoint<"CartPage">;
-
-// A branching action Block's real Out - a union of several possible tags.
-export type LoginSuccess = Checkpoint<"LoginSuccess">;
-export type LoginBadCredentials = Checkpoint<"LoginBadCredentials">;
-export type LoginOutcome = LoginSuccess | LoginBadCredentials;
+export const LoginPage = checkpoint("LoginPage");
+export const LoggedIn = checkpoint("LoggedIn");
+export const CartPage = checkpoint("CartPage");
+export const Dashboard = checkpoint("Dashboard");
+export const Settings = checkpoint("Settings");
+// A branching action Block lands on one of several Checkpoints.
+export const LoginSuccess = checkpoint("LoginSuccess");
+export const LoginBadCredentials = checkpoint("LoginBadCredentials");
 `;
 
 const NAV_LOGIN_BLOCK = `
 import { defineNavBlock } from "waygraph";
+import { LoginPage } from "../states.js";
 export const NavLoginBlock = defineNavBlock({
   name: "nav-login",
-  checkpoint: "LoginPage",
+  checkpoint: LoginPage,
   url: "/login",
 });
 `;
 
 const SUBMIT_LOGIN_BLOCK = `
-import { defineBlock, checkpoint } from "waygraph";
-import type { LoginPage, LoginOutcome } from "../states.js";
+import { defineMethodBlock } from "waygraph";
+import { LoginPage, LoginSuccess, LoginBadCredentials } from "../states.js";
 
-export const SubmitLoginBlock = defineBlock<LoginPage, LoginOutcome>({
+export const SubmitLoginBlock = defineMethodBlock({
   name: "submit-login",
+  from: LoginPage,
+  to: [LoginSuccess, LoginBadCredentials],
   instruction: {
     async act() {},
-    resolve: () => checkpoint("LoginSuccess"),
+    resolve: () => LoginSuccess,
   },
 });
 `;
 
 const ADD_TO_CART_BLOCK = `
-import { defineBlock, checkpoint } from "waygraph";
-import type { Checkpoint } from "waygraph";
-import type { CartPage } from "../states.js";
+import { defineMethodBlock } from "waygraph";
+import { CartPage } from "../states.js";
 
-export const AddToCartBlock = defineBlock<Checkpoint<string>, CartPage>({
+// No \`from\`: reachable from anywhere.
+export const AddToCartBlock = defineMethodBlock({
   name: "add-to-cart",
-  instruction: {
-    async act() {},
-    resolve: () => checkpoint("CartPage"),
-  },
+  to: CartPage,
+  instruction: { async act() {} },
 });
 `;
 
@@ -65,31 +66,25 @@ export const MysteryBlock = defineBlock({
 `;
 
 const ADD_TO_CART_EFFECT_BLOCK = `
-import { defineEffectBlock, checkpoint } from "waygraph";
-import type { Checkpoint } from "waygraph";
-import type { CartPage } from "../states.js";
+import { defineEffectBlock } from "waygraph";
+import { CartPage } from "../states.js";
 
-export const AddToCartBlock = defineEffectBlock<Checkpoint<string>, CartPage>({
+export const AddToCartBlock = defineEffectBlock({
   name: "add-to-cart",
+  to: CartPage,
   requires: [],
-  instruction: {
-    async act() {},
-    resolve: () => checkpoint("CartPage"),
-  },
+  instruction: { async act() {} },
   async instanceOptions() { return []; },
 });
 `;
 
 const ASSERT_LOGIN_BLOCK = `
 import { defineAssertBlock, Trait } from "waygraph";
+import { LoginPage } from "../states.js";
 
-// Called exactly as documented - no <In, Out> generic, no hand-written
-// act/resolve. Real bug this guards: this shape was silently invisible to
-// discoverGraph ("Out not resolvable"), confirmed live against a real
-// consumer project's own Pilot session.
 export const AssertLoginBlock = defineAssertBlock({
   name: "assert-login",
-  checkpoint: "LoginPage",
+  checkpoint: LoginPage,
   verify: [Trait.visible("h1")],
 });
 `;
@@ -135,7 +130,7 @@ test("discoverGraph: a branching action Block's union Out becomes one edge per m
   });
 });
 
-test("discoverGraph: an inline Checkpoint<string> wildcard In resolves to '*', same as a NavBlock", async () => {
+test("discoverGraph: a Block with no `from` is reachable from anywhere ('*'), same as a NavBlock", async () => {
   await withFixtureProject("wildcard-in", { "add-to-cart.block.ts": ADD_TO_CART_BLOCK }, async (dir) => {
     const graph = await discoverGraph(dir);
     expect(graph.edges).toEqual([
@@ -146,7 +141,7 @@ test("discoverGraph: an inline Checkpoint<string> wildcard In resolves to '*', s
   });
 });
 
-test("discoverGraph: defineEffectBlock<In, Out> is discovered like defineBlock (TS salt)", async () => {
+test("discoverGraph: an Effect Block is discovered like a Method", async () => {
   await withFixtureProject("effect-salt", { "add-to-cart.effect.block.ts": ADD_TO_CART_EFFECT_BLOCK }, async (dir) => {
     const graph = await discoverGraph(dir);
     expect(graph.skipped).toEqual([]);
@@ -162,17 +157,17 @@ test("discoverGraph: defineEffectBlock<In, Out> is discovered like defineBlock (
   });
 });
 
-test("discoverGraph: a Block with no defineBlock<In, Out> generic is skipped, not crashed", async () => {
+test("discoverGraph: a bare defineBlock (no route) is skipped, not crashed", async () => {
   await withFixtureProject("unresolvable", { "mystery.block.ts": UNRESOLVABLE_BLOCK }, async (dir) => {
     const graph = await discoverGraph(dir);
     expect(graph.edges).toEqual([]);
     expect(graph.skipped).toEqual([
-      { block: "mystery", file: "src/blocks/mystery.block.ts", reason: "no route: declare from/to with Checkpoint values" },
+      { block: "mystery", file: "src/blocks/mystery.block.ts", reason: "no route: build it with a define*Block factory and Checkpoint values" },
     ]);
   });
 });
 
-test("discoverGraph: defineAssertBlock is discovered without an explicit <In, Out> generic", async () => {
+test("discoverGraph: an Assert Block is a self-loop on its Checkpoint", async () => {
   await withFixtureProject("assert-no-generic", { "assert-login.block.ts": ASSERT_LOGIN_BLOCK }, async (dir) => {
     const graph = await discoverGraph(dir);
     expect(graph.skipped).toEqual([]);
@@ -203,32 +198,36 @@ test("discoverGraph: a whole small project's Blocks merge into one graph", async
 
 const NAV_DASHBOARD_SIGNED_IN = `
 import { defineNavBlock } from "waygraph";
+import { Dashboard } from "../states.js";
 
 export const NavDashboardBlock = defineNavBlock({
   name: "nav-dashboard",
-  checkpoint: "Dashboard",
+  checkpoint: Dashboard,
   url: "/dashboard",
 });
 `;
 
 const NAV_SETTINGS_FROM_SIGNED_IN = `
 import { defineNavBlock } from "waygraph";
+import { Dashboard, Settings } from "../states.js";
 
 export const NavSettingsBlock = defineNavBlock({
   name: "nav-settings",
-  checkpoint: "Settings",
+  checkpoint: Settings,
   url: "/settings",
-  from: ["Dashboard", "Settings"],
+  from: [Dashboard, Settings],
 });
 `;
 
 const SUBMIT_LOGIN_TO_DASHBOARD = `
-import { defineBlock, checkpoint } from "waygraph";
-import type { Checkpoint } from "waygraph";
+import { defineMethodBlock } from "waygraph";
+import { LoginPage, Dashboard } from "../states.js";
 
-export const SubmitLoginBlock = defineBlock<Checkpoint<"LoginPage">, Checkpoint<"Dashboard">>({
+export const SubmitLoginBlock = defineMethodBlock({
   name: "submit-login",
-  instruction: { async act() {}, resolve: () => checkpoint("Dashboard") },
+  from: LoginPage,
+  to: Dashboard,
+  instruction: { async act() {} },
 });
 `;
 

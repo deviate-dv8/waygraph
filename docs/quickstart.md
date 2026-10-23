@@ -73,7 +73,6 @@ runs the same walkthrough from a temp folder. What each folder in the example is
 
 Details: [Demo / run](./demo) ·
 [Auto explore](./auto).
-Alias: `--autoplay` -> `--auto-next`.
 
 ## Install into an existing repo
 

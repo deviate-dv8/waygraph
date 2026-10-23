@@ -20,8 +20,6 @@ export interface ManifestBlock {
   file: string;
   /** The `src/map/` group folder the Block lives in (e.g. `(external)/hoppscotch`), or the map package it came from. */
   map?: string;
-  /** Still written in the deprecated `<In, Out>` form. */
-  legacy?: true;
 }
 
 export interface ManifestFlow {
@@ -98,7 +96,6 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
       requires: b.requires,
       file: b.file,
       ...(map ? { map } : {}),
-      ...(b.legacy ? { legacy: true as const } : {}),
     };
   });
   const flows: ManifestFlow[] = scan.flows.map((f) => {

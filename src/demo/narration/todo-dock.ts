@@ -18,7 +18,7 @@ function envFlagInt(env: NodeJS.ProcessEnv, key: string, fallback: number): numb
 
 /**
  * Resolve todo-dock UX from env + optional author patch.
- * `WAYGRAPH_TODO_UI=full|off|legacy` forces compact/collision/behindRing off.
+ * `WAYGRAPH_TODO_UI=full|off` forces compact/collision/behindRing off.
  */
 export function resolveTodoDockUi(
   patch?: TodoDockUiOpts | null,
@@ -27,8 +27,7 @@ export function resolveTodoDockUi(
   const mode = String(env.WAYGRAPH_TODO_UI || "smart")
     .trim()
     .toLowerCase();
-  const full =
-    mode === "full" || mode === "off" || mode === "0" || mode === "legacy" || mode === "classic";
+  const full = mode === "full" || mode === "off" || mode === "0";
   const base: TodoDockUiResolved = {
     compact: full ? false : envFlagBool(env, "WAYGRAPH_TODO_COMPACT", true),
     collision: full ? false : envFlagBool(env, "WAYGRAPH_TODO_COLLISION", true),

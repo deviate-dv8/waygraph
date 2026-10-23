@@ -12,9 +12,8 @@ Runtime is always a `Block`. Helpers are TypeScript salt + clear intent.
 | `defineAssertBlock` | Self-loop assertion, no state change - `verify` only | `*.method.block.ts` under `methods/` |
 | `defineEffectBlock` | Instance mutate + auto menu rows | `*.effect.block.ts` under `methods/` |
 | `defineBlock` | Escape hatch: tests, unsure, probes | any |
-| `defineActionBlock` | **Deprecated** alias of `defineMethodBlock` | - |
 
-`defineNavBlock({ click })` still works (compat) - prefer `defineNavClickBlock` in app code.
+`defineNavBlock({ click })` and `defineNavClickBlock` build the same Block; app code reads better with `defineNavClickBlock`.
 
 **One distinct action per Block.** A Method that fills fields *and* submits is wrong even if
 it "works" - split it (`fill-username` + `fill-password` + `submit-login`, not one Block).

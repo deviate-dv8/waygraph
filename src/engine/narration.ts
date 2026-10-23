@@ -632,14 +632,6 @@ export type WaygraphSlidesOrFn<Out extends Checkpoint<string>> =
 export type HighlightStubPhaseName = "stubBefore" | "stubAfter" | "stubOnError";
 
 
-/** Legacy array highlight (shimmed to stubAfter keys "0", "1", ...). */
-export interface WaygraphHighlight {
-  selector: string;
-  label: string;
-  tone?: HighlightTone;
-}
-
-
 /** A ring or caption after its defaults and overrides are merged, ready to paint. */
 export type ResolvedHighlight = WaygraphHighlightStub;
 

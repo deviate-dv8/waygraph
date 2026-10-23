@@ -28,6 +28,6 @@ test("a Block that lands on several Checkpoints must give its own resolve", () =
 });
 
 test("the deprecated tag-string form still works and records the landing tag", () => {
-  const nav = defineNavBlock<typeof Home>({ name: "nav-home", checkpoint: "Home", url: "/" });
+  const nav = defineNavBlock({ name: "nav-home", checkpoint: checkpoint("Home"), url: "/" });
   expect((nav as Marked).__waygraphTo).toEqual(["Home"]);
 });

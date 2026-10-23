@@ -60,11 +60,11 @@ test("waygraph --help prints usage", async () => {
   expect(stdout).toMatch(/\bgraph\b/);
 });
 
-test("waygraph --help prefers primary verbs over chain-first", async () => {
+test("waygraph --help lists the primary verbs and no removed aliases", async () => {
   const { stdout } = await exec(node, [CLI, "--help"]);
   expect(stdout).toContain("waygraph demo");
   expect(stdout).toContain("waygraph run");
-  expect(stdout.indexOf("Primary")).toBeLessThan(stdout.indexOf("Aliases"));
+  expect(stdout).not.toMatch(/\bwaygraph chain\b|--autoplay|--detach/);
 });
 
 test("waygraph list discovers flow files", async () => {

@@ -17,35 +17,18 @@ walk(api, []);
 found.sort((a, b) => a.name.localeCompare(b.name));
 
 const rows = found.map((f) => `| \`${f.name}\` | ${f.kind} | ${f.note || "Deprecated."} |`).join("\n");
-const md = `# Deprecated
+const md = `# Deprecated and removed
 
-Everything here still works. It is marked deprecated because something replaces it, and it may be removed before 1.0.0.
-The API table below is generated from the \`@deprecated\` tags in the source, so it cannot drift; the rest is maintained by hand.
+0.16.0 removed every old form instead of keeping it alongside the new one, so there is one way to write each thing.
+The two codemods in \`waygraph upgrade\` convert a project; the tables say what replaces what.
 
-## API (generated)
+## Deprecated now (generated)
 
-| Name | Kind | Use instead |
-| --- | --- | --- |
-${rows}
+${found.length ? `| Name | Kind | Use instead |\n| --- | --- | --- |\n${rows}` : "Nothing in the API is deprecated. This list is generated from the `@deprecated` tags in the source."}
 
-## Style and project layout
+## Removed in 0.16.0: flows
 
-| Deprecated | Use instead |
-| --- | --- |
-| \`playwright.config.ts\` in a project | \`config/waygraph.config.ts\` (\`testDir\`, \`webServer\`, \`playwright: { … }\`). \`waygraph test\` still uses an existing one and prints a note. |
-| Stubs written inside Block files | Stubs in the flow. Blocks carry no narration. |
-| \`new Engine()\` in every flow | \`import { engine } from "../../config/waygraph.config.js"\` (built from the loaded config). |
-| \`act(){}\` plus an \`observe\` that writes \`mem\` | Read into \`mem\` inside \`act\`. \`observe\` is only for a Block that branches. |
-| \`NavBlockOptions.highlights\` | Prefer \`stubAfter\`. |
-| \`package.json\` \`"waygraph": { "baseUrl" }\` | \`baseUrl\` in \`config/waygraph.config.ts\` (the field still works). |
-| \`waygraph chain\` | \`waygraph run --blocks\` / \`waygraph demo --blocks\`. |
-| \`--autoplay\` | \`--auto-next\`. |
-| \`auto --cli --detach\` | \`waygraph pilot start\`. |
-| \`create-waygraph\` (npm) | \`npx waygraph init\`. |
-
-## Removed in 0.16.0
-
-\`waygraph upgrade --codemod flows\` rewrites all of these onto \`map()\` and lists anything it can't convert.
+\`waygraph upgrade --codemod flows\` rewrites these onto \`map()\` and lists anything it can't convert.
 
 | Removed | Use instead |
 | --- | --- |
@@ -57,6 +40,43 @@ ${rows}
 | \`withBlockPace(block, pace)\` | The step option \`.method(Block, { pace })\` |
 | \`withStubBefore\` / \`withStubAfter\` / \`withStubOnError\` | \`Block.stubBefore((ctx) => …)\` (and \`stubAfter\`, \`stubOnError\`) |
 | \`withHighlightFixtures(flow, map)\`, \`HighlightFixtureMap\`, \`WaygraphHighlightFixture\` | ctx stubs chained on the Block where the flow uses it: \`AddItemBlock.stubAfter((ctx) => { ctx.ring(…) })\` |
+
+## Removed in 0.16.0: Blocks and Checkpoints
+
+\`waygraph upgrade --codemod checkpoints\` rewrites tag strings and \`<In, Out>\` into Checkpoint values.
+
+| Removed | Use instead |
+| --- | --- |
+| \`checkpoint: "Home"\` (a tag string) on Nav, NavClick, Page and Assert Blocks; \`from: ["Home"]\` on a Nav | \`checkpoint: Home\`, \`from: [Home]\`, with \`export const Home = checkpoint("Home")\` |
+| \`defineMethodBlock<In, Out>({ … })\` / \`defineEffectBlock<In, Out>({ … })\` | \`defineMethodBlock({ from: In, to: Out, … })\` (leave \`from\` out for "from anywhere") |
+| \`defineApiBlock\` without \`to\` | \`defineApiBlock({ to: Out, … })\` |
+| \`defineActionBlock\`, \`ActionBlock\` | \`defineMethodBlock\`, \`MethodBlock\` |
+| \`defineMemEffectBlock\`, \`MemEffectBlock\` | \`defineEffectBlock\`, \`EffectBlock\` |
+| \`highlights: [...]\` on an instruction, a Nav or a Page Block; \`WaygraphHighlight\` | \`.stubAfter((ctx) => { ctx.ring(…) })\` |
+| A stub written as \`(out) => ({ slot: … })\`, and per-slot \`todos\` | \`(ctx) => { ctx.ring(…); ctx.todos(…) }\` |
+| \`resolveSlideDwellMs\`, \`SLIDE_DURATION_MS_DEFAULT\`, \`SLIDE_DURATION_FAST_MS_DEFAULT\` | \`resolveFixtureDwellMs\`, \`FIXTURE_DURATION_MS_DEFAULT\`, \`FIXTURE_DURATION_FAST_MS_DEFAULT\` |
+
+## Removed in 0.16.0: project and CLI
+
+| Removed | Use instead |
+| --- | --- |
+| A project's own \`playwright.config.ts\` | \`config/waygraph.config.ts\` (\`testDir\`, \`webServer\`, \`playwright: { … }\`); \`waygraph upgrade\` points one out |
+| \`package.json\` \`"waygraph": { "baseUrl" }\` | \`baseUrl\` in \`config/waygraph.config.ts\` |
+| \`waygraph chain <spec>\`, \`chain auto A B\` | \`waygraph run --blocks <spec>\` / \`demo --blocks\`, \`auto --blocks A B\` |
+| \`waygraph auto --cli --detach\` | \`waygraph browser start [--headless] [--goto <url>]\`, or \`pilot start\` |
+| \`--autoplay\` / \`--no-autoplay\`, \`--stepper-mini\`, \`--no-ff\`, \`try auto --headed\` | \`--auto-next\` / \`--no-auto-next\`, \`--mini\`, \`--ff-disabled\`, \`try auto\` |
+| \`WAYGRAPH_TODO_UI=legacy\` / \`classic\` | \`WAYGRAPH_TODO_UI=full\` |
+| \`create-waygraph\` (npm) | \`npx waygraph init\` |
+
+## Style
+
+Not API, but the convention the tools and docs assume.
+
+| Instead of | Write |
+| --- | --- |
+| Stubs written inside Block files | Stubs in the flow. Blocks carry no narration. |
+| \`new Engine()\` in every flow | \`import { engine } from "../../config/waygraph.config.js"\` (built from the loaded config). |
+| \`act(){}\` plus an \`observe\` that writes \`mem\` | Read into \`mem\` inside \`act\`. \`observe\` is only for a Block that branches. |
 
 ## Releases
 

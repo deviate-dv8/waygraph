@@ -40,13 +40,6 @@ export type EffectBlock<
 };
 
 
-/** @deprecated Prefer {@link EffectBlock} - same type; Mem* was an early name. */
-export type MemEffectBlock<
-  In extends Checkpoint<string>,
-  Out extends Checkpoint<string>,
-> = EffectBlock<In, Out>;
-
-
 /**
  * {@link defineBlock} constrained for effect-style instance menus: `requires` +
  * `instanceOptions` are mandatory. Prefer this when the Block adds / removes /
@@ -60,13 +53,6 @@ type EffectExtras<In extends Checkpoint<string>, Out extends Checkpoint<string>>
 
 export function defineEffectBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   base: RoutedBlockBase<In, Out> & EffectExtras<In, Out>,
-): EffectBlock<In, Out>;
-/** @deprecated Say where it runs: `from: Home` (or `[Home, CartEmpty]`) and `to: ItemInCart`, instead of `<In, Out>` type arguments. */
-export function defineEffectBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
-  base: Parameters<typeof defineBlock<In, Out>>[0] & EffectExtras<In, Out>,
-): EffectBlock<In, Out>;
-export function defineEffectBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
-  base: (RoutedBlockBase<In, Out> | Parameters<typeof defineBlock<In, Out>>[0]) & EffectExtras<In, Out>,
 ): EffectBlock<In, Out> {
   const built = defineBlock(routed(base) as Parameters<typeof defineBlock<In, Out>>[0]) as EffectBlock<In, Out>;
   markRouteOf(built, base);
@@ -83,6 +69,3 @@ export function defineEffectBlock<In extends Checkpoint<string>, Out extends Che
   return built;
 }
 
-
-/** @deprecated Prefer {@link defineEffectBlock} - identical helper. */
-export const defineMemEffectBlock = defineEffectBlock;

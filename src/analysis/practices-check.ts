@@ -5,10 +5,10 @@
  */
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, relative } from "node:path";
+import { Node, SyntaxKind } from "ts-morph";
+import { parseSource } from "../manifest/source.js";
 
 export type PracticeKind =
-  | "wildcard-checkpoint"
-  | "assert-no-type-arg"
   | "multi-input"
   | "combined-action"
   | "empty-verify"
@@ -27,40 +27,25 @@ export interface PracticeCheckOptions {
   disabled?: boolean;
 }
 
-/** Every define*Block<In, Out> / <Out> generic list - args may themselves be Checkpoint<...>. */
-const BLOCK_GENERICS =
-  /\bdefine(?:Method|Effect|MemEffect|Page|Nav|MemNav|NavClick|Action)Block\s*<\s*((?:Checkpoint\s*<[^>]*>|[^,<>])+?)\s*(?:,\s*((?:Checkpoint\s*<[^>]*>|[^,<>])+?)\s*)?>/g;
-
-/**
- * A wildcard Out (the Block's result is untyped). A wildcard In is fine - it's the documented
- * "reachable from anywhere" form (graph.ts treats it like a NavBlock's "*").
- */
-function hasWildcardOut(src: string): boolean {
-  for (const m of src.matchAll(BLOCK_GENERICS)) {
-    const out = (m[2] ?? m[1])!.trim();
-    if (/^Checkpoint\s*<\s*string\s*>$/.test(out)) return true;
-  }
-  return false;
-}
-
-/** defineAssertBlock({ …, checkpoint: "Tag" }) with no type argument: a tag string gives an untyped Checkpoint. */
-const ASSERT_NO_TYPE_ARG = /\bdefineAssertBlock\s*\(\s*\{[^}]*?\bcheckpoint\s*:\s*["'`]/;
-
 /** defineAssertBlock, any form - used to scope the empty-verify check below. */
 const IS_ASSERT_BLOCK = /\bdefineAssertBlock\s*[<(]/;
 
-/**
- * define(Method|Effect)Block<In, Out> with two BARE identifier type args
- * (never a nested generic like Checkpoint<string> - that's WILDCARD_CHECKPOINT's
- * own warning) - lets a real transition (In !== Out) be told apart from a
- * self-loop (In === Out, e.g. fill-username) using only source text.
- */
-const METHOD_EFFECT_GENERIC =
-  /\bdefine(?:Method|Effect)Block\s*<\s*([A-Za-z_$][\w$]*)\s*,\s*([A-Za-z_$][\w$]*)\s*>/;
-
-/** The same, for a Block that names its Checkpoints as values: `from: LoginPage, to: LoggedIn`. */
-const METHOD_EFFECT_ROUTE =
-  /\bdefine(?:Method|Effect)Block\s*\(\s*\{[\s\S]*?\bfrom\s*:\s*([A-Za-z_$][\w$]*)\s*,[\s\S]*?\bto\s*:\s*([A-Za-z_$][\w$]*)/;
+/** A Method/Effect's route as written (`from: LoginPage, to: LoggedIn`), from the AST - a transition when they differ. */
+function routeAsWritten(file: string): { from: string; to: string } | undefined {
+  const sf = parseSource(file);
+  for (const call of sf.getDescendantsOfKind(SyntaxKind.CallExpression)) {
+    if (!/^define(Method|Effect)Block$/.test(call.getExpression().getText())) continue;
+    const options = call.getArguments()[0];
+    if (!Node.isObjectLiteralExpression(options)) continue;
+    const text = (name: string) => {
+      const prop = options.getProperty(name);
+      return Node.isPropertyAssignment(prop) ? prop.getInitializerOrThrow().getText() : undefined;
+    };
+    const to = text("to");
+    if (to) return { from: text("from") ?? "*", to };
+  }
+  return undefined;
+}
 
 /** `verify: []` - a literal empty array, the codegen-stub shape this check exists for. */
 const EMPTY_VERIFY_ARRAY = /\bverify\s*:\s*\[\s*\]/;
@@ -131,24 +116,6 @@ export function collectPracticeWarnings(
     const src = readFileSync(file, "utf-8");
     const ignore = ignoredKindsForFile(src);
 
-    if (!isIgnored("wildcard-checkpoint", ignore) && hasWildcardOut(src)) {
-      warnings.push({
-        kind: "wildcard-checkpoint",
-        file: rel,
-        detail:
-          "the Block's output is Checkpoint<string>, so its result is untyped — use a typed Checkpoint from " +
-          "src/states/ (e.g. defineMethodBlock({ from: LoginPage, to: LoggedIn, ... })); a wildcard input is fine",
-      });
-    }
-    if (!isIgnored("assert-no-type-arg", ignore) && ASSERT_NO_TYPE_ARG.test(src)) {
-      warnings.push({
-        kind: "assert-no-type-arg",
-        file: rel,
-        detail:
-          "defineAssertBlock({ checkpoint: \"Tag\" }) gives an untyped Checkpoint — pass the Checkpoint value: checkpoint: YourCheckpoint",
-      });
-    }
-
     const isMethodOrEffect = METHOD_OR_EFFECT_FILE.test(rel) || METHOD_OR_EFFECT_DEFINE.test(src);
     if (isMethodOrEffect) {
       const fills = countMatches(src, /\.fill\s*\(/g);
@@ -168,8 +135,8 @@ export function collectPracticeWarnings(
             "Method/Effect act() mixes .fill() and .click() — fill and submit must be separate Blocks (see examples/saucedemo login split)",
         });
       }
-      const genericMatch = METHOD_EFFECT_GENERIC.exec(src) ?? METHOD_EFFECT_ROUTE.exec(src);
-      const isTransition = !!genericMatch && genericMatch[1] !== genericMatch[2];
+      const route = routeAsWritten(file);
+      const isTransition = !!route && route.from !== route.to;
       if (
         isTransition &&
         !isIgnored("empty-verify", ignore) &&
@@ -179,7 +146,7 @@ export function collectPracticeWarnings(
           kind: "empty-verify",
           file: rel,
           detail:
-            `transition Block (${genericMatch![1]} → ${genericMatch![2]}) has no verify checks — resolve() moving ` +
+            `transition Block (${route!.from} → ${route!.to}) has no verify checks — resolve() moving ` +
             "to a new Checkpoint is never confirmed by anything; add a Trait (or defineAssertBlock right after it), " +
             "or opt out explicitly with // waygraph-ignore: empty-verify if that's intentional",
         });
@@ -234,10 +201,6 @@ export function collectPracticeWarnings(
 
 export function practiceKindLabel(kind: PracticeKind): string {
   switch (kind) {
-    case "wildcard-checkpoint":
-      return "wildcard Checkpoint<string>";
-    case "assert-no-type-arg":
-      return "assert block missing type arg";
     case "multi-input":
       return "multiple inputs in one Block";
     case "combined-action":

@@ -8,7 +8,6 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
         //   { sync: "clear" }                         -> remove dock
         //   { sync: "keep" }                          -> leave dock alone (no wipe)
         //   { sync: "set", dock } / { sync:"set", list } -> render / recreate
-        // Compat: bare array = set list (empty array = clear - legacy only).
         window.__wgSyncTodos = (payload: any, pos: any) => {
           const syncPayload = payload;
           let sync = "set";
@@ -16,16 +15,13 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
           let dockState = null;
           let wantPos =
             pos === "left" || pos === "right" ? pos : null;
-          if (Array.isArray(payload)) {
-            list = payload;
-            sync = list.length ? "set" : "clear";
-          } else if (payload && typeof payload === "object") {
+          if (payload && typeof payload === "object") {
             sync = payload.sync === "clear" || payload.sync === "keep" ? payload.sync : "set";
             dockState = payload.dock || null;
             if (payload.pos === "left" || payload.pos === "right") wantPos = payload.pos;
             if (Array.isArray(payload.list)) list = payload.list;
             else if (dockState && Array.isArray(dockState.groups)) {
-              // Flatten for legacy callers; full dock rendered below when present.
+              // The flat list; the full dock is rendered below.
               list = [];
               for (const g of dockState.groups) {
                 if (g && Array.isArray(g.items)) list = list.concat(g.items);

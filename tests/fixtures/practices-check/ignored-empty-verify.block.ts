@@ -1,11 +1,10 @@
 // waygraph-ignore: empty-verify
-import { defineMethodBlock, checkpoint, type Checkpoint } from "../../../dist/index.js";
+import { defineMethodBlock, checkpoint } from "../../../dist/index.js";
 
-type FixtureScreenA = Checkpoint<"FixtureScreenA">;
-type FixtureScreenB = Checkpoint<"FixtureScreenB">;
-
-export const IgnoredEmptyVerifyBlock = defineMethodBlock<FixtureScreenA, FixtureScreenB>({
+export const IgnoredEmptyVerifyBlock = defineMethodBlock({
   name: "ignored-empty-verify-fixture",
+  from: checkpoint("FixtureScreenA"),
+  to: checkpoint("FixtureScreenB"),
   instruction: {
     async act(page) {
       await page.locator("#next").click();

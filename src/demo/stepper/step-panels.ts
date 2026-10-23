@@ -3,7 +3,6 @@ import type { WgPage } from "../types.js";
 import { installOverlay } from "../overlay/overlay.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
 import { hasAuthoredStubOnError, runStubPhase } from "../narration/narration.js";
-import { normalizeHighlightTone } from "../../engine/narration.js";
 import { cycleHighlightRings } from "../overlay/rings.js";
 
 export async function renderBeforeStep(page: WgPage, info: any) {
@@ -665,40 +664,13 @@ async function renderStepError(page: WgPage, info: any) {
 
 
 /**
- * A Block's own explicit instruction.highlights, if it declared any -
- * arbitrary, author-controlled highlight points, independent of verify
- * ("remember this ID" isn't a pass/fail check). Takes priority over
- * anything recovered from verify traits below.
- */
-function resolveDeclaredHighlights(block: any, resultTag: any) {
-  let highlights = block.instruction && block.instruction.highlights;
-  if (typeof highlights === "function") {
-    try {
-      highlights = highlights({ __state: resultTag });
-    } catch {
-      highlights = [];
-    }
-  }
-  if (!Array.isArray(highlights)) return [];
-  return highlights.filter((h) => h && typeof h.selector === "string" && typeof h.label === "string").map((h) => ({
-    ...h,
-    tone: normalizeHighlightTone(h.tone),
-  }));
-}
-
-
-/**
  * Recovers a DOM selector from a built-in Trait's own .name string -
  * visible(sel) / text-equals(sel, "...") - since Trait.check itself is
  * an opaque closure with no selector field of its own. Best-effort only: a
  * hand-written bespoke Trait, or url-matches(...) (no DOM target), yields
  * nothing to highlight, which is fine - the panel still shows the result.
- * Only used as a FALLBACK when the Block declared no explicit
- * instruction.highlights of its own - see resolveDeclaredHighlights.
  */
 export function extractVerifyHighlights(block: any, resultTag: any) {
-  const declared = resolveDeclaredHighlights(block, resultTag);
-  if (declared.length > 0) return declared;
   let verify = block.instruction && block.instruction.verify;
   if (typeof verify === "function") {
     try {

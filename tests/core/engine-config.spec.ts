@@ -4,10 +4,8 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Engine, MemPage, checkpoint, defineConfig, defineNavBlock } from "../../src/index.js";
-import type { Checkpoint } from "../../src/index.js";
 import { buildFlow } from "../../src/engine/flow/flow.js";
 
-type Home = Checkpoint<"Home">;
 
 function fakeExtension(): string {
   const dir = mkdtempSync(join(tmpdir(), "wg-engine-ext-"));
@@ -27,9 +25,9 @@ test("new Engine(config) applies the config's baseUrl and extensions to the brow
       baseUrl: `http://127.0.0.1:${(server.address() as { port: number }).port}`,
       extensions: [fakeExtension()],
     });
-    const NavHome = defineNavBlock<Home>({
+    const NavHome = defineNavBlock({
       name: "nav-home",
-      checkpoint: "Home",
+      checkpoint: checkpoint("Home"),
       url: "/",
       verify: [
         {

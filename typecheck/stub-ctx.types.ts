@@ -1,17 +1,16 @@
-import type { Checkpoint } from "../src/engine/checkpoint/checkpoint.js";
 import { checkpoint } from "../src/engine/checkpoint/checkpoint.js";
 import { defineMethodBlock, defineAssertBlock } from "../src/engine/block/kinds/method.js";
 import { defineNavBlock } from "../src/engine/block/kinds/nav.js";
 
-type A = Checkpoint<"A">;
-type B = Checkpoint<"B">;
 
 // Inline stub functions must get a real StubCtx, not implicit any (noImplicitAny would fail).
 // A typo'd ctx method must be a compile error, proving ctx isn't `any`.
-const _method = defineMethodBlock<A, B>({
+const _method = defineMethodBlock({
   name: "m",
+  from: checkpoint("A"),
+  to: checkpoint("B"),
   instruction: {
-    async act() {},
+    async act() { },
     resolve: () => checkpoint("B"),
     stubAfter(ctx) {
       ctx.ring("x", { selector: "h1", label: "x" });
@@ -22,9 +21,9 @@ const _method = defineMethodBlock<A, B>({
 });
 void _method;
 
-const _nav = defineNavBlock<B>({
+const _nav = defineNavBlock({
   name: "n",
-  checkpoint: "B",
+  checkpoint: checkpoint("B"),
   url: "/",
   stubBefore(ctx) {
     ctx.caption("hi");
@@ -34,9 +33,9 @@ const _nav = defineNavBlock<B>({
 });
 void _nav;
 
-const _assert = defineAssertBlock<B>({
+const _assert = defineAssertBlock({
   name: "a",
-  checkpoint: "B",
+  checkpoint: checkpoint("B"),
   verify: [],
   stubOnError(ctx) {
     ctx.title("t");
@@ -47,9 +46,9 @@ const _assert = defineAssertBlock<B>({
 void _assert;
 
 // The static slot-map shorthand still works.
-const _slots = defineNavBlock<B>({
+const _slots = defineNavBlock({
   name: "s",
-  checkpoint: "B",
+  checkpoint: checkpoint("B"),
   url: "/",
   stubAfter: { title: { selector: "h1", label: "Title" } },
 });

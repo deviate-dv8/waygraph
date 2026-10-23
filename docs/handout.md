@@ -67,8 +67,7 @@ npx waygraph try demo | try auto | try auto:cli
 npx waygraph check | graph --mermaid | init my-app
 ```
 
-Compat: `chain` -> `run --blocks`; `--autoplay` -> `--auto-next`.
-Unattended JSON: `run`/`chain` + `WAYGRAPH_JSON=1`.
+Unattended JSON: `run` + `WAYGRAPH_JSON=1`.
 
 ## Pluggable browsers
 

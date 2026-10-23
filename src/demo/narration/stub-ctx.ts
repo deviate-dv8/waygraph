@@ -1,4 +1,4 @@
-import type { BannerPos, StubBagState, StubCtx, WaygraphHighlightStub, WaygraphTodoInput, WaygraphTodosOpts } from "../../engine/narration.js";
+import type { BannerPos, StubBagState, StubCtx, WaygraphTodoInput, WaygraphTodosOpts } from "../../engine/narration.js";
 import { normalizeTodoPos, normalizeTodoStyle } from "./todo-dock.js";
 import { applyOrientation, normalizeDeviceOrientation, resolveDeviceState } from "./device.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
@@ -286,22 +286,6 @@ export function createStubCtx<Out extends Checkpoint<string>>(
   };
 }
 
-
-/** Lift legacy per-slot todos (0.12.23) onto the phase bag once. */
-export function liftLegacySlotTodos(bag: StubBagState): void {
-  if (bag.todos && bag.todos.length) return;
-  for (const stub of Object.values(bag.highlights)) {
-    const legacy = stub as WaygraphHighlightStub & {
-      todos?: readonly WaygraphTodoInput[];
-      todoIndex?: number;
-    };
-    if (legacy.todos && legacy.todos.length) {
-      bag.todos = legacy.todos;
-      if (legacy.todoIndex !== undefined) bag.todoIndex = legacy.todoIndex;
-      return;
-    }
-  }
-}
 
 function normalizeBannerPos(raw: unknown): BannerPos | undefined {
   const v = String(raw ?? "").toLowerCase();

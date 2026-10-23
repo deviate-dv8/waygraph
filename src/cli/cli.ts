@@ -11,7 +11,6 @@
  *
  * Also: list / nav / validate / check / graph / init / agent-dive / traverse / try
  * Skills: --skill / --skill-pilot / --skill-pilot-blind / --skill-convention
- * Aliases (one release): `chain` -> run/demo --blocks; `--autoplay` -> `--auto-next`
  *
  * "project" defaults to cwd. Flags beat WAYGRAPH_* env.
  */
@@ -23,7 +22,7 @@ import { takeConfigFlag } from "../runtime/config.js";
 import { usage } from "./usage.js";
 import { listCase, navCase } from "./commands/list.js";
 import { checkCase, typecheckCase, validateCase } from "./commands/check.js";
-import { chainCase, demoCase, runCase } from "./commands/run.js";
+import { demoCase, runCase } from "./commands/run.js";
 import { testCase } from "./commands/test.js";
 import { initCase } from "./commands/init.js";
 import { traverseCase } from "./commands/traverse.js";
@@ -70,8 +69,6 @@ async function main(): Promise<void> {
 
     case "agent-dive":
     case "init-agents": await agentDiveCase(args); break;
-
-    case "chain": await chainCase(args); break;
 
     case "demo": await demoCase(args); break;
 

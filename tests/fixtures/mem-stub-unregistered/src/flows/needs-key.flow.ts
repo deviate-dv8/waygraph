@@ -1,14 +1,14 @@
 import { Engine, defineMethodBlock, defineNavBlock, checkpoint, key } from "waygraph";
-import type { Checkpoint } from "waygraph";
 
-type Home = Checkpoint<"Home">;
 const NeedsKey = key<string>("fixture.needs-a-key");
 
-const Open = defineNavBlock<Home>({ name: "open", checkpoint: "Home", url: "about:blank" });
-const Use = defineMethodBlock<Home, Home>({
+const Open = defineNavBlock({ name: "open", checkpoint: checkpoint("Home"), url: "about:blank" });
+const Use = defineMethodBlock({
   name: "use",
+  from: checkpoint("Home"),
+  to: checkpoint("Home"),
   requires: [NeedsKey],
-  instruction: { async act() {}, resolve: () => checkpoint("Home") },
+  instruction: { async act() { }, resolve: () => checkpoint("Home") },
 });
 
 /** Opts into memStub, but nothing registers a generator for its key. */

@@ -1,7 +1,6 @@
-import type { HighlightStubPhase, HighlightStubPhaseName, HighlightStubPhaseOrFn, ResolvedHighlight, WaygraphHighlight, WaygraphHighlightStub } from "../../engine/narration.js";
+import type { HighlightStubPhase, HighlightStubPhaseName, HighlightStubPhaseOrFn, ResolvedHighlight, WaygraphHighlightStub } from "../../engine/narration.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "./style.js";
 import type { Block } from "../../engine/block/block.js";
-import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 
 export function isStubPhase(v: unknown): v is HighlightStubPhase {
   return !!v && typeof v === "object" && !Array.isArray(v);
@@ -81,24 +80,6 @@ export function resolvePhaseMap(phaseMap: HighlightStubPhase): ResolvedHighlight
 }
 
 
-function phaseFromLegacyHighlights(
-  highlights: readonly WaygraphHighlight[] | undefined,
-): HighlightStubPhase {
-  const out: HighlightStubPhase = {};
-  if (!highlights) return out;
-  highlights.forEach((h, i) => {
-    if (h && typeof h.selector === "string" && typeof h.label === "string") {
-      out[String(i)] = {
-        selector: h.selector,
-        label: h.label,
-        ...(h.tone ? { tone: normalizeHighlightTone(h.tone) } : {}),
-      };
-    }
-  });
-  return out;
-}
-
-
 export function readStubRaw(
   block: Block<any, any>,
   phase: HighlightStubPhaseName,
@@ -111,27 +92,4 @@ export function readStubRaw(
   if (phase === "stubBefore") return instr.stubBefore;
   if (phase === "stubAfter") return instr.stubAfter;
   return instr.stubOnError;
-}
-
-
-export function applyLegacyHighlightsShim(
-  block: Block<any, any>,
-  phase: HighlightStubPhaseName,
-  phaseMap: HighlightStubPhase,
-  out?: Checkpoint<string>,
-): HighlightStubPhase {
-  if (phase !== "stubAfter" || Object.keys(phaseMap).length > 0) return phaseMap;
-  const instr = block.instruction as {
-    highlights?: readonly WaygraphHighlight[] | ((o: any) => readonly WaygraphHighlight[]);
-  };
-  if (!instr.highlights) return phaseMap;
-  let legacy = instr.highlights;
-  if (typeof legacy === "function") {
-    try {
-      legacy = legacy(out ?? { __state: "" });
-    } catch {
-      legacy = [];
-    }
-  }
-  return phaseFromLegacyHighlights(Array.isArray(legacy) ? legacy : []);
 }

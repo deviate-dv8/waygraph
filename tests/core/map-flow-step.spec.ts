@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
 import { createServer } from "node:http";
 import { Engine, MemPage, checkpoint, defineNavBlock, defineMethodBlock, defineAssertBlock } from "../../src/index.js";
-import type { Checkpoint } from "../../src/index.js";
 
-type Page1 = Checkpoint<"Page1">;
 
-const Open = defineNavBlock<Page1>({ name: "open", checkpoint: "Page1", url: "/" });
-const Remember = defineMethodBlock<Page1, Page1>({
+const Open = defineNavBlock({ name: "open", checkpoint: checkpoint("Page1"), url: "/" });
+const Remember = defineMethodBlock({
   name: "remember",
+  from: checkpoint("Page1"),
+  to: checkpoint("Page1"),
   instruction: {
     async act(page) {
       await page.evaluate(() => localStorage.setItem("who", "ada"));
@@ -16,9 +16,9 @@ const Remember = defineMethodBlock<Page1, Page1>({
   },
 });
 const Seen = (expected: string | null) =>
-  defineAssertBlock<Page1>({
+  defineAssertBlock({
     name: `seen-${expected}`,
-    checkpoint: "Page1",
+    checkpoint: checkpoint("Page1"),
     verify: [{ name: "who", check: async (page) => (await page.evaluate(() => localStorage.getItem("who"))) === expected }],
   });
 
@@ -28,7 +28,7 @@ test("map().flow() nests a flow inline; { reset: true } clears storage before it
   const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   try {
     const engine = new Engine();
-    const OpenAt = defineNavBlock<Page1>({ name: "open-at", checkpoint: "Page1", url: () => base + "/" });
+    const OpenAt = defineNavBlock({ name: "open-at", checkpoint: checkpoint("Page1"), url: () => base + "/" });
     const first = engine.map().start().gotoPage(OpenAt).method(Remember).assert(Seen("ada")).end();
     const carried = engine.map().start().flow(first).assert(Seen("ada")).end();
     const reset = engine.map().start().flow(first).flow(engine.map().start().gotoPage(OpenAt).end(), { reset: true }).assert(Seen(null)).end();

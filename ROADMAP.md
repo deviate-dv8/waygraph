@@ -224,7 +224,7 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 
 0. Guardrails: layer rule with a shrinking debt list (`scripts/layer-debt.json`), graph snapshot test. **Done.**
 1. Core stands alone: no imports of demo, runtime or extensions from the engine. **Done.**
-2. Checkpoints as values (`checkpoint: Home`, `from`/`to`), old forms deprecated, codemod in `waygraph upgrade`. **Done.**
+2. Checkpoints as values (`checkpoint: Home`, `from`/`to`), old forms deprecated (removed in step 12), codemod in `waygraph upgrade`. **Done.**
 3. One manifest replaces the five project scanners and the `<In, Out>` source parse; `waygraph manifest`. **Done.**
 4. Run events: typed emitter in `runGraph` (`onRunEvent`), written to `.waygraph/runs/*.jsonl` by the CLI. **Done.** (Demo log and JSON report still read results directly; they move onto events with the demo layer in phase 5.)
 5. Demo runner from JavaScript to TypeScript, compiled by `tsc` (no copy step), under `demo/` (`narration/`, `overlay/`,
@@ -244,6 +244,10 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     same pipeline; the demo UI is `demo/stepper/`. `core/` became `engine/` by concept (checkpoint, block, flow, run,
     mem, trait), `cli/` holds `cli.ts` + `commands/`, a main file named after each feature folder, and no barrels
     (check-structure allows re-exports only in `src/index.ts`). **Done.**
+12. No legacy for 1.0: every old form is removed, not deprecated - tag-string checkpoints and `<In, Out>` (codemod
+    `checkpoints`), `defineActionBlock` / `defineMemEffectBlock`, `highlights` arrays and `(out) => map` stubs, slide
+    dwell names, a project's own `playwright.config`, the `package.json` `"waygraph"` field, `waygraph chain`,
+    `auto --detach` and the flag aliases. `docs/deprecated.md` lists each with its replacement. **Done.**
 
 
 

@@ -50,9 +50,9 @@ When there is no app codebase to read - a production target, or a deliberately
 codebase-blind engagement - discover the route/interaction structure live instead, using the
 `waygraph auto` session tools rather than skipping planning:
 
-1. `waygraph auto --cli --detach [--base-url <url>]` against a throwaway project dir (or the
+1. `waygraph browser start --headless [--base-url <url>] --goto /` against a throwaway project dir (or the
    target project once a `src/map/` or `src/blocks/` tree exists) - starts a driveable session, prints
-   `{sessionId, socketPath}`.
+   `{sessionId, socketPath, headless}`.
 2. `waygraph auto status <sessionId>` to read the current menu (what Blocks/edges are already
    discoverable) and `waygraph auto dom <sessionId>` (default `aria` mode) to see the live
    page's actual interactive elements by role/name - this is how you find real routes and

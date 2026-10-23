@@ -1,11 +1,10 @@
 // A Method: a page action that doesn't navigate (fill, submit, toggle), from one Checkpoint to another. Also the Assert Block.
-import { checkpoint } from "../../checkpoint/checkpoint.js";
 import type { Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { DefinedBlock } from "../block.js";
 import type { Trait } from "../../trait/trait.js";
 import { defineBlock } from "../block.js";
 import { markRouteOf, routed } from "../../checkpoint/route.js";
-import type { CheckpointRef, RoutedBlockBase } from "../../checkpoint/route.js";
+import type { RoutedBlockBase } from "../../checkpoint/route.js";
 import type { MemKey } from "../../mem/mem.js";
 import type { Page } from "@playwright/test";
 
@@ -42,23 +41,9 @@ export type MethodBlock<
 };
 
 
-/** @deprecated Prefer {@link MethodBlock} - same type; Action was the 0.7 name. */
-export type ActionBlock<
-  In extends Checkpoint<string>,
-  Out extends Checkpoint<string>,
-> = MethodBlock<In, Out>;
-
-
 /** Builds a Block for one page action (fill, submit, click) that does not navigate. */
 export function defineMethodBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   base: RoutedBlockBase<In, Out>,
-): MethodBlock<In, Out>;
-/** @deprecated Say where it runs: `from: Home` (or `[Home, CartEmpty]`) and `to: ItemInCart`, instead of `<In, Out>` type arguments. */
-export function defineMethodBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
-  base: Parameters<typeof defineBlock<In, Out>>[0],
-): MethodBlock<In, Out>;
-export function defineMethodBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
-  base: RoutedBlockBase<In, Out> | Parameters<typeof defineBlock<In, Out>>[0],
 ): MethodBlock<In, Out> {
   const built = defineBlock(routed(base)) as MethodBlock<In, Out>;
   markRouteOf(built, base);
@@ -71,16 +56,12 @@ export function defineMethodBlock<In extends Checkpoint<string>, Out extends Che
 }
 
 
-/** @deprecated Prefer {@link defineMethodBlock} - identical helper (0.7 name). */
-export const defineActionBlock = defineMethodBlock;
-
-
 /** Options for `defineAssertBlock`: a Checkpoint to stay on and the Traits that must hold. */
 export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<string>> {
   name: string;
   description?: string;
-  /** The Checkpoint this assertion runs on and returns to: its value (`Home`). A tag string still works but is deprecated. */
-  checkpoint: CheckpointRef<Out>;
+  /** The Checkpoint this assertion runs on and returns to: its value (`Home`). */
+  checkpoint: Out;
   /**
    * Shorthand for the wait-then-assert shape found repeatedly in hand-written
    * assertion Blocks: waits for a heading with this accessible name before
@@ -116,28 +97,20 @@ export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<
  *   verify: [Trait.visible(RawMaterialsSel.reorderBadge)],
  * });
  */
-export function defineAssertBlock<Out extends Checkpoint<string>>(
-  options: AssertBlockOptions<Out> & { checkpoint: Out },
-): AssertBlock<Out>;
-/** @deprecated Pass the Checkpoint value: `checkpoint: Home`. */
-export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<string>>(
-  options: AssertBlockOptions<Out>,
-): AssertBlock<Out>;
-export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<string>>(
-  options: AssertBlockOptions<Out>,
-): AssertBlock<Out> {
-  const tag = typeof options.checkpoint === "string" ? options.checkpoint : options.checkpoint.__state;
+export function defineAssertBlock<Out extends Checkpoint<string>>(options: AssertBlockOptions<Out>): AssertBlock<Out> {
   const built = defineMethodBlock<Out, Out>({
     name: options.name,
     ...(options.description ? { description: options.description } : {}),
     ...(options.requires ? { requires: options.requires } : {}),
+    // An assertion stays where it is: from and to are its one Checkpoint, and resolve lands there.
+    from: options.checkpoint,
+    to: options.checkpoint,
     instruction: {
       async act(page) {
         if (options.waitForHeading !== undefined) {
           await (page as unknown as Page).getByRole("heading", { name: options.waitForHeading }).waitFor();
         }
       },
-      resolve: () => checkpoint(tag) as Out,
       verify: options.verify,
       ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
       ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
@@ -145,20 +118,6 @@ export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<st
       ...(options.slides ? { slides: options.slides } : {}),
     },
   });
-  // Real bug this closes: `waygraph graph`'s static discovery only knows
-  // how to read a Block's Checkpoint tags from an EXPLICIT `<In, Out>`
-  // generic written in the source text (or, for Nav/Page Blocks, by calling
-  // their own input-independent `resolve()` directly). `defineAssertBlock`'s
-  // whole point is skipping that generic - called exactly as documented
-  // (`defineAssertBlock({ name, checkpoint, verify })`, no generics), it was
-  // silently invisible to both `waygraph graph` and the live Pilot menu
-  // ("2 Block(s) skipped (Out not resolvable)", confirmed live against a
-  // real veciro-waygraph session). `resolve()` here is ALSO input-
-  // independent (always `checkpoint(options.checkpoint)`), so the same
-  // resolve()-calling path Nav/Page Blocks already use is reused via this
-  // marker instead of requiring authors to write generics just to be found.
-  Object.defineProperty(built, "__waygraphFrom", { value: [tag], enumerable: false, configurable: true });
-  Object.defineProperty(built, "__waygraphTo", { value: [tag], enumerable: false, configurable: true });
   Object.defineProperty(built, "__waygraphKind", {
     value: "assert",
     enumerable: false,

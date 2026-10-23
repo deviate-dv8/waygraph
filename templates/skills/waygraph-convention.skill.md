@@ -92,7 +92,7 @@ against a live site, use `--skill-pilot-blind`.
   Block's `act`; the click Block stays a plain click.
 - **Project settings live in `config/waygraph.config.ts`** (`defineConfig({ baseUrl, testDir, webServer,
   extensions, playwright: {...} })`). The config file also exports `engine = new Engine(config)`; flows `import { engine } from "../../config/waygraph.config.js"`; a project needs no
-  `playwright.config.ts` - `waygraph test` builds one from it. A leftover `playwright.config.*` is deprecated.
+  `playwright.config.ts` - `waygraph test` builds one from it (a project's own `playwright.config.*` is not read).
 - **Another origin the test needs is a Map external** under `src/map/(external)/<tool>/`. For REST API
   tests, `(external)/hoppscotch` (list `extensions: ["hoppscotch"]` in the config) drives hoppscotch.io's client
   with the extension, so requests skip CORS: `set-method`, `set-url`, `set-headers`, `set-json-body`,

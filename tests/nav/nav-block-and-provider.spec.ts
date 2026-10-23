@@ -9,9 +9,9 @@ type Arrived = Checkpoint<"Arrived">;
 
 test.describe("defineNavBlock", () => {
   test("a static-url NavBlock navigates the real page", async ({ page }) => {
-    const nav = defineNavBlock<Arrived>({
+    const nav = defineNavBlock({
       name: "nav-hello",
-      checkpoint: "Arrived",
+      checkpoint: checkpoint("Arrived"),
       url: "data:text/html,<h1>hi</h1>",
     });
 
@@ -27,9 +27,9 @@ test.describe("defineNavBlock", () => {
 
   test("a mem-function url resolves from mem at run time", async ({ page }) => {
     const RequestId = key<string>("test.request-id");
-    const nav = defineNavBlock<Arrived>({
+    const nav = defineNavBlock({
       name: "nav-request-detail",
-      checkpoint: "Arrived",
+      checkpoint: checkpoint("Arrived"),
       url: (mem) => `data:text/html,<h1>request ${mem.get(RequestId)}</h1>`,
       requires: [RequestId],
     });
@@ -56,9 +56,9 @@ test.describe("defineNavBlock", () => {
       '<button id="go">Go</button><h1 id="label">before</h1>' +
         '<script>document.getElementById("go").addEventListener("click", () => { document.getElementById("label").textContent = "arrived"; });</script>',
     );
-    const nav = defineNavBlock<Arrived>({
+    const nav = defineNavBlock({
       name: "nav-click",
-      checkpoint: "Arrived",
+      checkpoint: checkpoint("Arrived"),
       click: "#go",
     });
 
@@ -80,9 +80,9 @@ test.describe("defineNavBlock", () => {
         "</script>",
     );
     const RowId = key<string>("test.row-id");
-    const nav = defineNavBlock<Arrived>({
+    const nav = defineNavBlock({
       name: "nav-row",
-      checkpoint: "Arrived",
+      checkpoint: checkpoint("Arrived"),
       click: (mem) => `#row-${mem.get(RowId)}`,
       requires: [RowId],
     });
@@ -98,7 +98,7 @@ test.describe("defineNavBlock", () => {
   });
 
   test("drops into defineFlow, connect, and composeBlock unmodified", async () => {
-    const nav = defineNavBlock<Arrived>({ name: "nav-x", checkpoint: "Arrived", url: "about:blank" });
+    const nav = defineNavBlock({ name: "nav-x", checkpoint: checkpoint("Arrived"), url: "about:blank" });
     const after: Block<Arrived, A> = {
       name: "after",
       instruction: { async act() {}, resolve: () => checkpoint("A") },
@@ -111,7 +111,7 @@ test.describe("defineNavBlock", () => {
   });
 
   test("carries a non-enumerable runtime marker distinguishing it from a regular Block", () => {
-    const nav = defineNavBlock<Arrived>({ name: "nav-y", checkpoint: "Arrived", url: "about:blank" });
+    const nav = defineNavBlock({ name: "nav-y", checkpoint: checkpoint("Arrived"), url: "about:blank" });
     const regular = defineBlock<Start, A>({
       name: "regular",
       instruction: { async act() {}, resolve: () => checkpoint("A") },

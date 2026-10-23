@@ -37,8 +37,8 @@ function deprecatedFunctions(): string[] {
   return [...names].filter((n) => !live.has(n) && /^[a-z]/.test(n) && n.length > 4);
 }
 
-/** Removed in 0.16.0 (`waygraph upgrade --codemod flows` converts them). */
-const REMOVED = ["defineFlow", "chainFlow", "withTitle", "withMemStub", "withSessionReset", "withExpectedFailure", "withDemoPace", "withHighlightStyle", "withHighlightFixtures", "withBlockPace", "withStubBefore", "withStubAfter", "withStubOnError"];
+/** Removed in 0.16.0 (`waygraph upgrade --codemod flows` / `--codemod checkpoints` convert most of them). */
+const REMOVED = ["defineFlow", "chainFlow", "withTitle", "withMemStub", "withSessionReset", "withExpectedFailure", "withDemoPace", "withHighlightStyle", "withHighlightFixtures", "withBlockPace", "withStubBefore", "withStubAfter", "withStubOnError", "defineActionBlock", "defineMemEffectBlock", "resolveSlideDwellMs", "exploreChoices"];
 
 const TAUGHT = [
   ...walk(join(root, "docs")).filter((f) => f.endsWith(".md") && !f.endsWith("deprecated.md") && !f.includes("/public/")),

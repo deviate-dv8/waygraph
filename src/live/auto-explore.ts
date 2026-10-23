@@ -120,25 +120,6 @@ export async function loadBlockLibrary(
 }
 
 /**
- * @deprecated Use {@link buildExploreMenu} — kept for unit tests.
- */
-export function exploreChoices(graph: WaygraphGraph, here: string | null): WaygraphEdge[] {
-  const seen = new Set<string>();
-  const out: WaygraphEdge[] = [];
-  for (const edge of graph.edges) {
-    if (here === null) {
-      if (edge.kind !== "nav" || edge.from !== "*") continue;
-    } else if (edge.from !== here && edge.from !== "*") {
-      continue;
-    }
-    if (seen.has(edge.block)) continue;
-    seen.add(edge.block);
-    out.push(edge);
-  }
-  return out.sort((a, b) => a.block.localeCompare(b.block));
-}
-
-/**
  * Runtime-filtered menu: only Blocks that can run on the live page, grouped forward/back.
  */
 export async function buildExploreMenu(

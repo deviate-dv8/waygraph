@@ -1,5 +1,4 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint } from "../../src/index.js";
 import {
   Engine,
   MemPage,
@@ -12,19 +11,19 @@ import {
 } from "../../src/index.js";
 import { withSettings } from "../../src/engine/flow/flow.js";
 
-type Home = Checkpoint<"Home">;
-type Away = Checkpoint<"Away">;
 
-const NavHome = defineNavBlock<Home>({
+const NavHome = defineNavBlock({
   name: "nav-home",
-  checkpoint: "Home",
+  checkpoint: checkpoint("Home"),
   url: "https://app.example.com/home",
 });
 const WhichWay = key<"home" | "away">("which-way");
-const Decide = defineMethodBlock<Home, Home | Away>({
+const Decide = defineMethodBlock({
   name: "decide",
+  from: checkpoint("Home"),
+  to: [checkpoint("Home"), checkpoint("Away")],
   instruction: {
-    async act() {},
+    async act() { },
     observe: async (_page, mem) => mem.get(WhichWay),
     resolve: (which) => (which === "away" ? checkpoint("Away") : checkpoint("Home")),
   },
@@ -78,13 +77,17 @@ function fakeBrowser() {
 test.describe("runBranchRegression", () => {
   test("default cloneSession: explores BOTH branches (not just whichever the live dispatch would take), each from a real storageState clone of the prefix's own session", async () => {
     const engine = new Engine();
-    const NearBlock = defineMethodBlock<Home, Home>({
+    const NearBlock = defineMethodBlock({
       name: "near-block",
-      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+        from: checkpoint("Home"),
+        to: checkpoint("Home"),
+        instruction: { async act() {}, resolve: () => checkpoint("Home") },
     });
-    const AwayBlock = defineMethodBlock<Away, Home>({
+    const AwayBlock = defineMethodBlock({
       name: "away-block",
-      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+        from: checkpoint("Away"),
+        to: checkpoint("Home"),
+        instruction: { async act() {}, resolve: () => checkpoint("Home") },
     });
     const flow = engine
       .map()
@@ -112,13 +115,17 @@ test.describe("runBranchRegression", () => {
 
   test("cloneSession: false runs the single live path only (no newContext calls) - can't explore the sibling once the one real page has moved past it", async () => {
     const engine = new Engine();
-    const NearBlock = defineMethodBlock<Home, Home>({
+    const NearBlock = defineMethodBlock({
       name: "near-block",
-      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+        from: checkpoint("Home"),
+        to: checkpoint("Home"),
+        instruction: { async act() {}, resolve: () => checkpoint("Home") },
     });
-    const AwayBlock = defineMethodBlock<Away, Home>({
+    const AwayBlock = defineMethodBlock({
       name: "away-block",
-      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+        from: checkpoint("Away"),
+        to: checkpoint("Home"),
+        instruction: { async act() {}, resolve: () => checkpoint("Home") },
     });
     const flow = engine
       .map()
@@ -141,18 +148,22 @@ test.describe("runBranchRegression", () => {
   test("each cloned branch gets an ISOLATED MemPage clone - a write inside one branch never leaks into a sibling or the caller's own mem", async () => {
     const engine = new Engine();
     const Marker = key<string>("marker");
-    const NearBlock = defineMethodBlock<Home, Home>({
+    const NearBlock = defineMethodBlock({
       name: "near-block",
-      instruction: {
+        from: checkpoint("Home"),
+        to: checkpoint("Home"),
+        instruction: {
         async act(_page, _input, mem) {
           mem.set(Marker, "near");
         },
         resolve: () => checkpoint("Home"),
       },
     });
-    const AwayBlock = defineMethodBlock<Away, Home>({
+    const AwayBlock = defineMethodBlock({
       name: "away-block",
-      instruction: {
+        from: checkpoint("Away"),
+        to: checkpoint("Home"),
+        instruction: {
         async act(_page, _input, mem) {
           mem.set(Marker, "away");
         },
@@ -180,21 +191,27 @@ test.describe("runBranchRegression", () => {
   test("a nested branch is reachable too - runBranchRegression walks the whole tree, not just one level", async () => {
     const engine = new Engine();
     const SubWhichWay = key<"near" | "far">("sub-which-way");
-    const SubDecide = defineMethodBlock<Away, Home | Away>({
+    const SubDecide = defineMethodBlock({
       name: "sub-decide",
-      instruction: {
+        from: checkpoint("Away"),
+        to: [checkpoint("Home"), checkpoint("Away")],
+        instruction: {
         async act() {},
         observe: async (_page, mem) => mem.get(SubWhichWay),
         resolve: (which) => (which === "far" ? checkpoint("Away") : checkpoint("Home")),
       },
     });
-    const NearBlock = defineMethodBlock<Home, Home>({
+    const NearBlock = defineMethodBlock({
       name: "near-block",
-      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+        from: checkpoint("Home"),
+        to: checkpoint("Home"),
+        instruction: { async act() {}, resolve: () => checkpoint("Home") },
     });
-    const FarBlock = defineMethodBlock<Away, Home>({
+    const FarBlock = defineMethodBlock({
       name: "far-block",
-      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+        from: checkpoint("Away"),
+        to: checkpoint("Home"),
+        instruction: { async act() {}, resolve: () => checkpoint("Home") },
     });
     const flow = engine
       .map()
@@ -220,9 +237,11 @@ test.describe("runBranchRegression", () => {
 
   test("with* wrappers (withSessionReset/withTitle) on a Map-built branched Flow keep it branchable - map already supports session reset, and the branch tree survives the wrapper's spread", async () => {
     const engine = new Engine();
-    const NearBlock = defineMethodBlock<Home, Home>({
+    const NearBlock = defineMethodBlock({
       name: "near-block",
-      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+        from: checkpoint("Home"),
+        to: checkpoint("Home"),
+        instruction: { async act() {}, resolve: () => checkpoint("Home") },
     });
     const branched = engine
       .map()

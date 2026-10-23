@@ -1,10 +1,10 @@
 // Fixture — regex text-match pseudo-class where a plain selector would do (bad practice).
-import { defineMethodBlock, checkpoint, type Checkpoint } from "../../../dist/index.js";
+import { defineMethodBlock, checkpoint } from "../../../dist/index.js";
 
-type FixtureScreen = Checkpoint<"FixtureScreen">;
-
-export const OvercomplexSelectorFixtureBlock = defineMethodBlock<FixtureScreen, FixtureScreen>({
+export const OvercomplexSelectorFixtureBlock = defineMethodBlock({
   name: "overcomplex-selector-fixture",
+  from: checkpoint("FixtureScreen"),
+  to: checkpoint("FixtureScreen"),
   instruction: {
     async act(page) {
       await page.locator(':has-text(/^Submit$/)').click();

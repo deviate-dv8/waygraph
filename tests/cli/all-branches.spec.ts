@@ -14,17 +14,25 @@ const WAYGRAPH_ROOT = join(import.meta.dirname, "..", "..");
 // not hand-rolled markers - the actual __waygraphKind/__waygraphSalt stamping is factory-internal.
 const BRANCH_FLOW = `
 import { map, defineNavBlock, defineMethodBlock, checkpoint } from "waygraph";
-const NavStart = defineNavBlock({ name: "nav-start", checkpoint: "Start", url: "about:blank" });
+const Start = checkpoint("Start");
+const Home = checkpoint("Home");
+const Away = checkpoint("Away");
+const Done = checkpoint("Done");
+const NavStart = defineNavBlock({ name: "nav-start", checkpoint: Start, url: "about:blank" });
 const Decide = defineMethodBlock({
   name: "decide",
+  from: Start,
+  to: [Home, Away],
   instruction: {
     async act() {},
-    resolve: () => checkpoint(process.env.WHICH_WAY === "away" ? "Away" : "Home"),
+    resolve: () => (process.env.WHICH_WAY === "away" ? Away : Home),
   },
 });
 const AwayLeaf = defineMethodBlock({
   name: "away-leaf",
-  instruction: { async act() {}, resolve: () => checkpoint("Done") },
+  from: Away,
+  to: Done,
+  instruction: { async act() {} },
 });
 export const branchFlow = map()
   .gotoPage(NavStart)
@@ -36,8 +44,8 @@ export const branchFlow = map()
 `;
 
 const PLAIN_FLOW = `
-import { map, defineNavBlock } from "waygraph";
-const NavStart = defineNavBlock({ name: "nav-start", checkpoint: "Start", url: "about:blank" });
+import { map, defineNavBlock, checkpoint } from "waygraph";
+const NavStart = defineNavBlock({ name: "nav-start", checkpoint: checkpoint("Start"), url: "about:blank" });
 export const plainFlow = map().gotoPage(NavStart).end();
 `;
 

@@ -58,8 +58,6 @@ Use `--no-practices` on either command to skip the practice scan.
 
 Patterns warned (does not fail `check`; fails `typecheck` only when `tsc` fails):
 
-- **`Checkpoint<string>` as a Block's output** — give `to:` a Checkpoint value from `src/states/` (leaving `from:` out means "reachable from anywhere" and is allowed).
-- **`defineAssertBlock({ checkpoint: "Tag" })`** — pass the Checkpoint value, `checkpoint: YourCheckpoint`, so the flow's typing stays honest.
 - **Multiple `.fill()` in one Method** — split into one Block per input (fill-username, fill-password, …).
 - **`.fill()` + `.click()` in one Method** — split fill and submit into separate Blocks.
 
@@ -105,7 +103,7 @@ thing that differs from demo is *who* triggers the paint:
 | Mode | Who paints | How |
 |------|------------|-----|
 | `waygraph demo` | Engine, automatically | ctx stubs chained in the flow run each step |
-| Pilot / `auto --detach` | **You (the agent)** | `waygraph auto highlight <sessionId> '<json>'` before (or between) sends |
+| Pilot / `browser start` session | **You (the agent)** | `waygraph auto highlight <sessionId> '<json>'` before (or between) sends |
 
 The ctx stubs a flow chains onto Blocks show up in Pilot's `auto trace` as metadata, but they do **not**
 auto-draw. You re-express the same intent with `auto highlight` (copy selectors/labels from the flow's stubs or

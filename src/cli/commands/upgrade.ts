@@ -95,7 +95,7 @@ export async function upgradeCase(args: string[]): Promise<void> {
 
   const legacy = ["ts", "mts", "js", "mjs", "cjs"].find((e) => existsSync(join(proj, `playwright.config.${e}`)));
   if (legacy) {
-    console.log(`  deprecated  playwright.config.${legacy} - move its settings into config/waygraph.config.ts (testDir, webServer, playwright: { ... })`);
+    console.log(`  not used    playwright.config.${legacy} - waygraph no longer reads it; move its settings into config/waygraph.config.ts (testDir, webServer, playwright: { ... })`);
   }
 
   if (flags.has("--diff")) {

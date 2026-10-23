@@ -1,10 +1,10 @@
 // Fixture — self-loop Block (In === Out) with no verify (fine - not a transition).
-import { defineMethodBlock, checkpoint, type Checkpoint } from "../../../dist/index.js";
+import { defineMethodBlock, checkpoint } from "../../../dist/index.js";
 
-type FixtureScreenA = Checkpoint<"FixtureScreenA">;
-
-export const SelfLoopNoVerifyBlock = defineMethodBlock<FixtureScreenA, FixtureScreenA>({
+export const SelfLoopNoVerifyBlock = defineMethodBlock({
   name: "selfloop-no-verify-fixture",
+  from: checkpoint("FixtureScreenA"),
+  to: checkpoint("FixtureScreenA"),
   instruction: {
     async act(page) {
       await page.locator("#field").fill("value");

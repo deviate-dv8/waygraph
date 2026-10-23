@@ -42,26 +42,22 @@ export function usage(): void {
 Primary (less is more):
   waygraph auto  [project|.flow.ts]        Interactive explore (picker)
                  --cli                     Terminal menu instead of browser panel
-                 --cli --detach            Run the --cli session as a background socket
-                                           server; prints {sessionId, socketPath} and exits
                  --blocks <From> <To>      Graph path-find From->To, then run
                  --data '{...}'            Mem seed (same as demo/run)
                  (pass a .flow.ts to run that flow - same as run)
-                 --cli --detach --non-headless  Detached session with a real visible browser
-                                           (same --non-headless flag run/demo already use)
-  waygraph auto send <sessionId> "<pick>"  Send one pick to a --detach session, print
+  waygraph auto send <sessionId> "<pick>"  Send one pick to a session (browser start / pilot start), print
                                            the resulting state as JSON (no TTY needed).
                                            <pick> is a 1-based menu index, a Block name
                                            (exact match; ambiguous names refuse rather than
                                            guess), or "q"/"quit". Same command as
                                            browser send <sessionId> "<pick>" (prefer that
-                                           prefix for a --detach/persistent session).
+                                           prefix for a persistent session).
                  --timeout <ms>            Override the 15s default wait for this one call -
                                            a single Block can legitimately run a slow real
                                            interaction (e.g. a multi-step mouse drag)
-  waygraph auto status <sessionId>         Read a --detach session's state (no side effects)
+  waygraph auto status <sessionId>         Read a session's state (no side effects)
   waygraph auto attach <sessionId>         Reopen an interactive terminal against a
-                                           running --detach session
+                                           running session
   waygraph auto dom <sessionId>            Read the live page's structure (no side effects)
                  --mode aria|full          Default aria (Playwright ariaSnapshotJSON, AI mode);
                                            full = bounded raw DOM walk (tag/attrs/text/children)
@@ -120,8 +116,8 @@ Primary (less is more):
                                            todoTitle?, holdMs? (0=until next), clear:true.
                                            Missing selectors listed in response, not fatal.
                                            Same command as browser highlight <sessionId>
-                                           '<json>' (prefer that prefix for a --detach/
-                                           persistent session).
+                                           '<json>' (prefer that prefix for a persistent
+                                           session).
                  <selector>|<label>[|<tone>]   Shorthand for 1-3 rings, no JSON braces/quotes
                                            to escape - rings separated by ";", e.g.
                                            "#x|Login button|warning; .err|Error banner|danger".
@@ -151,15 +147,15 @@ Primary (less is more):
                                            registerMemStub's registry (needs the key
                                            registered, or the flow's map({ memStub }) - a
                                            key with neither still fails preflight)
-                 --auto-next               Auto-advance steps (alias: --autoplay)
+                 --auto-next               Auto-advance steps
                  --fast                    Shorter auto-next / Next gates (keeps smooth cursor)
                  --full                    Classic wrap-all block chips (default: carousel)
-                 --mini                    Force compact mini panel (Hide pill + Next); alias --stepper-mini
+                 --mini                    Force compact mini panel (Hide pill + Next)
                  --todo-left|--todo-right  Floating checklist dock side (also ctx.todoPos / WAYGRAPH_TODO_POS)
                  --todo-full               Opt out: full checklist, no compact/collision/behind-ring
                  --todo-smart              Opt in: compact + collision + behind-ring (default)
                  --ff-expand               Expand fastForwardComposeBlock inners as separate steps
-                 --ff-disabled             Dispute: expand FF (alias --no-ff); blitz kept on those inners
+                 --ff-disabled             Dispute: expand FF; blitz kept on those inners
                  --auto-play-video         Unattended + recorded: --auto-next + --video (+ step); headless
                  --auto-play-video-head    Same, but keep the browser visible (--non-headless)
                  --video [dir]             Record .webm (demo: headless unless --non-headless);
@@ -238,7 +234,6 @@ Also:
   waygraph try [demo|auto|auto:cli]        One-shot saucedemo in a temp dir
                  try auto                  Headed browser panel (default)
                  try auto:cli / --cli      Terminal menu instead
-                 try auto --headed         Same as try auto (compat)
 
 Skills (print packaged skill markdown to stdout - for agents / paste):
   waygraph --skill                         List available skills
@@ -261,9 +256,6 @@ Examples:
   waygraph traverse --blocks '**/mailpit/**/*.block.ts'  # Phase C filtered crawl
   waygraph traverse --parallel 2 --session clone         # Phase D clone workers
   waygraph run  --blocks "loginFlow then add-all-to-cart" --data '{...}' --video
-
-Aliases (compat): \`chain <spec>\` -> run --blocks; \`chain auto A B\` -> auto --blocks A B;
-  --autoplay -> --auto-next. Prefer the primary verbs above.
 
 Project path optional (defaults to cwd). Flags beat WAYGRAPH_* env.
 \`run\`/\`demo\`/\`auto\`: Flow export, .flow.ts path, or "a then b" chain (auto also explores).

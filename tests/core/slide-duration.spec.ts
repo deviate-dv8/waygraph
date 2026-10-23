@@ -1,7 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
   resolveFixtureDwellMs,
-  resolveSlideDwellMs,
   resolveHighlightSlots,
   FIXTURE_DURATION_MS_DEFAULT,
   FIXTURE_DURATION_FAST_MS_DEFAULT,
@@ -9,7 +8,7 @@ import {
 import type { Block } from "../../src/index.js";
 
 test.describe("resolveFixtureDwellMs (all fixtures)", () => {
-  test("unset duration -> null (legacy timing)", () => {
+  test("unset duration -> null (default timing)", () => {
     expect(resolveFixtureDwellMs({})).toBeNull();
     expect(resolveFixtureDwellMs({ duration: false })).toBeNull();
   });
@@ -25,10 +24,6 @@ test.describe("resolveFixtureDwellMs (all fixtures)", () => {
     expect(resolveFixtureDwellMs({ duration: 3500 })).toBe(3500);
     expect(resolveFixtureDwellMs({ duration: 3500, fastMode: 800 }, { gatesFast: true })).toBe(800);
     expect(resolveFixtureDwellMs({ duration: true, fastMode: 400 }, { gatesFast: true })).toBe(400);
-  });
-
-  test("resolveSlideDwellMs aliases resolveFixtureDwellMs", () => {
-    expect(resolveSlideDwellMs({ duration: true })).toBe(resolveFixtureDwellMs({ duration: true }));
   });
 
   test("flow fixture duration merges onto stubAfter slots", () => {

@@ -3,17 +3,9 @@ import type { Checkpoint } from "./checkpoint.js";
 import { checkpoint } from "./checkpoint.js";
 import type { defineBlock } from "../block/block.js";
 
-/** A Checkpoint given as its value (`Home`), or, deprecated, as its tag string (`"Home"`). */
-export type CheckpointRef<C extends Checkpoint<string>> = C | C["__state"];
-
-/** The tag of a Checkpoint value or tag string. */
-export function tagOf(ref: Checkpoint<string> | string): string {
-  return typeof ref === "string" ? ref : ref.__state;
-}
-
-/** Tags of one Checkpoint or a list of them (values or tag strings). */
-export function tagsOf(refs: Checkpoint<string> | string | readonly (Checkpoint<string> | string)[]): string[] {
-  return (Array.isArray(refs) ? refs : [refs]).map((r) => tagOf(r as Checkpoint<string> | string));
+/** Tags of one Checkpoint or a list of them. */
+export function tagsOf(refs: Checkpoint<string> | readonly Checkpoint<string>[]): string[] {
+  return (Array.isArray(refs) ? refs : [refs as Checkpoint<string>]).map((r) => r.__state);
 }
 
 /**
@@ -40,10 +32,7 @@ export type RoutedBlockBase<In extends Checkpoint<string>, Out extends Checkpoin
 };
 
 /** Turns a `from`/`to` Block base into the plain one `defineBlock` takes (filling `resolve` for a single `to`). */
-export function routed<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
-  base: RoutedBlockBase<In, Out> | BlockBase<In, Out>,
-): BlockBase<In, Out> {
-  if (!("to" in base)) return base as BlockBase<In, Out>;
+export function routed<In extends Checkpoint<string>, Out extends Checkpoint<string>>(base: RoutedBlockBase<In, Out>): BlockBase<In, Out> {
   const { from: _from, to, ...rest } = base;
   if (rest.instruction.resolve) return rest as BlockBase<In, Out>;
   const targets = tagsOf(to);
@@ -53,14 +42,7 @@ export function routed<In extends Checkpoint<string>, Out extends Checkpoint<str
   return { ...rest, instruction: { ...rest.instruction, resolve: () => checkpoint(targets[0]!) as Out } } as BlockBase<In, Out>;
 }
 
-/** Records `from`/`to` on a built Block when the base declared them. */
-export function markRouteOf(block: object, base: object): void {
-  if ("to" in base) {
-    const from = (base as { from?: Checkpoint<string> | readonly Checkpoint<string>[] }).from;
-    markRoute(
-      block,
-      from === undefined ? ["*"] : tagsOf(from),
-      tagsOf((base as { to: Checkpoint<string> | readonly Checkpoint<string>[] }).to),
-    );
-  }
+/** Records a routed Block's `from`/`to` on the built Block. */
+export function markRouteOf(block: object, base: { from?: Checkpoint<string> | readonly Checkpoint<string>[]; to: Checkpoint<string> | readonly Checkpoint<string>[] }): void {
+  markRoute(block, base.from === undefined ? ["*"] : tagsOf(base.from), tagsOf(base.to));
 }

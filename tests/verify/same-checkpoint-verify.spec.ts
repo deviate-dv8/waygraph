@@ -61,9 +61,9 @@ const incrementQuantity = makeIncrementBlock("increment-quantity", true);
 // real Block still needs to accept __start__; the increment Blocks
 // themselves only ever move ProductPage -> ProductPage, same Checkpoint in
 // and out.
-const navProduct = defineNavBlock<ProductPage>({
+const navProduct = defineNavBlock({
   name: "nav-product",
-  checkpoint: "ProductPage",
+  checkpoint: checkpoint("ProductPage"),
   url: PRODUCT_PAGE_URL,
   verify: [Trait.visible("#inc")],
 });

@@ -41,10 +41,10 @@ test("a real detached session navigates the convention-organized site for real, 
   test.setTimeout(30_000);
   const { stdout } = await exec(node, [
     CLI,
-    "auto",
-    "--cli",
-    "--detach",
-    "--base-url",
+    "browser",
+    "start",
+    "--headless",
+    "--goto",
     process.env.WAYGRAPH_BASE_URL || "http://127.0.0.1:4277",
     root,
   ]).then((r) => r);

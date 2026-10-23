@@ -2,14 +2,12 @@
 import { checkpoint } from "../../checkpoint/checkpoint.js";
 import type { Block, DefinedBlock } from "../block.js";
 import type { Checkpoint } from "../../checkpoint/checkpoint.js";
-import type { WaygraphHighlight } from "../../narration.js";
 import type { Trait } from "../../trait/trait.js";
 import { MemPage } from "../../mem/mem.js";
 import type { MemKey } from "../../mem/mem.js";
 import { defineBlock } from "../block.js";
 import type { Page } from "@playwright/test";
-import { markRoute, tagOf, tagsOf } from "../../checkpoint/route.js";
-import type { CheckpointRef } from "../../checkpoint/route.js";
+import { markRoute, tagsOf } from "../../checkpoint/route.js";
 
 /**
  * A Block whose only possible action is navigating to a URL - built via
@@ -58,7 +56,7 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
   name: string;
   description?: string;
   /** The Checkpoint this Nav lands on: its value (`Home`). A tag string (`"Home"`) still works but is deprecated. */
-  checkpoint: CheckpointRef<Out>;
+  checkpoint: Out;
   /**
    * Checkpoint tags this Nav can run from. Omit (the default) = reachable from anywhere. Set it for
    * a page that only exists after something else - e.g. every in-app page after sign-in - so route
@@ -67,16 +65,12 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
    * @example const SIGNED_IN = [Dashboard, CommandCenter] as const; // src/states/
    * defineNavBlock({ ..., from: SIGNED_IN })
    */
-  from?: readonly (Checkpoint<string> | string)[];
+  from?: readonly Checkpoint<string>[];
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
   stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   stubOnError?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
-  /** @deprecated Prefer stubAfter. */
-  highlights?:
-    | readonly WaygraphHighlight[]
-    | ((out: Out) => readonly WaygraphHighlight[]);
   /**
    * Live per-instance menu rows for `waygraph auto` (see {@link Block.instanceOptions}).
    * When set, the explore menu lists one row per option instead of a single
@@ -127,9 +121,6 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
  * @example defineNavClickBlock({ name: "nav-web-documents", checkpoint: "DocumentsList", click: "nav >> text=Documents" })
  * For click-nav in app code prefer {@link defineNavClickBlock} (url stays here).
  */
-export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlockOptions<Out> & { checkpoint: Out }): NavBlock<Out>;
-/** @deprecated Pass the Checkpoint value: `checkpoint: Home` (declared as `export const Home = checkpoint("Home")`). */
-export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlockOptions<Out>): NavBlock<Out>;
 export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlockOptions<Out>): NavBlock<Out> {
   const built = defineBlock<Checkpoint<string>, Out>({
     name: options.name,
@@ -149,15 +140,14 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
           await (page as unknown as Page).locator(selector).click();
         }
       },
-      resolve: () => checkpoint(tagOf(options.checkpoint)) as Out,
+      resolve: () => checkpoint(options.checkpoint.__state) as Out,
       ...(options.verify ? { verify: options.verify } : {}),
       ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
       ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
       ...(options.stubOnError ? { stubOnError: options.stubOnError } : {}),
-      ...(options.highlights ? { highlights: options.highlights } : {}),
     },
   });
-  markRoute(built, options.from?.length ? tagsOf(options.from) : ["*"], [tagOf(options.checkpoint)]);
+  markRoute(built, options.from?.length ? tagsOf(options.from) : ["*"], [options.checkpoint.__state]);
   // Non-enumerable so it never shows up in Object.keys/JSON/autocomplete -
   // purely a runtime marker `waygraph check` (or anything else walking a
   // project's Blocks) can test for to tell a NavBlock apart from a regular
@@ -212,19 +202,15 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   name: string;
   description?: string;
   /** See {@link NavBlockOptions.checkpoint}. */
-  checkpoint: CheckpointRef<Out>;
+  checkpoint: Out;
   click: string | ((mem: MemPage) => string);
   /** See {@link NavBlockOptions.from}. */
-  from?: readonly (Checkpoint<string> | string)[];
+  from?: readonly Checkpoint<string>[];
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
   stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   stubOnError?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
-  /** @deprecated Prefer stubAfter. */
-  highlights?:
-    | readonly WaygraphHighlight[]
-    | ((out: Out) => readonly WaygraphHighlight[]);
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
 };
 
@@ -234,11 +220,6 @@ export type NavClickBlock<Out extends Checkpoint<string>> = NavBlock<Out>;
 
 
 /** @see {@link NavClickBlockOptions} */
-export function defineNavClickBlock<Out extends Checkpoint<string>>(
-  options: NavClickBlockOptions<Out> & { checkpoint: Out },
-): NavClickBlock<Out>;
-/** @deprecated Pass the Checkpoint value: `checkpoint: Home`. */
-export function defineNavClickBlock<Out extends Checkpoint<string>>(options: NavClickBlockOptions<Out>): NavClickBlock<Out>;
 export function defineNavClickBlock<Out extends Checkpoint<string>>(
   options: NavClickBlockOptions<Out>,
 ): NavClickBlock<Out> {
@@ -253,7 +234,6 @@ export function defineNavClickBlock<Out extends Checkpoint<string>>(
     ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
     ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
     ...(options.stubOnError ? { stubOnError: options.stubOnError } : {}),
-    ...(options.highlights ? { highlights: options.highlights } : {}),
     ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
   });
 }

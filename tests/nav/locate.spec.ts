@@ -1,9 +1,7 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, Trait as TraitType } from "../../src/index.js";
-import { defineNavBlock, locate } from "../../src/index.js";
+import type { Trait as TraitType } from "../../src/index.js";
+import { defineNavBlock, locate, checkpoint } from "../../src/index.js";
 
-type LoginPage = Checkpoint<"LoginPage">;
-type DashboardPage = Checkpoint<"DashboardPage">;
 
 const LOGIN_URL = `data:text/html,${encodeURIComponent("<h1 id='marker'>Login</h1><button id='login-button'>Log in</button>")}`;
 const DASHBOARD_URL = `data:text/html,${encodeURIComponent("<h1 id='marker'>Dashboard</h1><div id='welcome'>Welcome back</div>")}`;
@@ -27,16 +25,16 @@ function visibleFast(selector: string): TraitType {
   };
 }
 
-const NavLoginBlock = defineNavBlock<LoginPage>({
+const NavLoginBlock = defineNavBlock({
   name: "nav-login",
-  checkpoint: "LoginPage",
+  checkpoint: checkpoint("LoginPage"),
   url: LOGIN_URL,
   verify: [visibleFast("#login-button")],
 });
 
-const NavDashboardBlock = defineNavBlock<DashboardPage>({
+const NavDashboardBlock = defineNavBlock({
   name: "nav-dashboard",
-  checkpoint: "DashboardPage",
+  checkpoint: checkpoint("DashboardPage"),
   url: DASHBOARD_URL,
   verify: [visibleFast("#welcome")],
 });
@@ -65,9 +63,9 @@ test("locate: a NavBlock whose verify throws (e.g. a timed-out wait) is treated 
   page,
 }) => {
   await page.goto(NEITHER_URL);
-  const flaky = defineNavBlock<Checkpoint<"Flaky">>({
+  const flaky = defineNavBlock({
     name: "nav-flaky",
-    checkpoint: "Flaky",
+    checkpoint: checkpoint("Flaky"),
     url: NEITHER_URL,
     verify: [
       {

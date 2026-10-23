@@ -2,7 +2,7 @@
 // below build, decorate and route Blocks.
 import type { Page } from "@playwright/test";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
-import type { HighlightStubPhaseOrFn, WaygraphHighlight, WaygraphSlidesOrFn } from "../narration.js";
+import type { HighlightStubPhaseOrFn, WaygraphSlidesOrFn } from "../narration.js";
 import { MemPage } from "../mem/mem.js";
 import type { MemKey } from "../mem/mem.js";
 import type { Trait } from "../trait/trait.js";
@@ -98,7 +98,6 @@ export interface Instruction<
   /**
    * Open block lifecycle **after** resolve (step panel rings + fixtures).
    * Prefer `stubAfter(ctx) { ... }`. Object map shorthand still works.
-   * Prefer this over legacy {@link Instruction.highlights}.
    * @example stubAfter: (ctx) => {
    *   ctx.todoIndex(2);
    *   ctx.ring("badge", { selector: ".cart", label: "Cart updated" });
@@ -124,11 +123,6 @@ export interface Instruction<
    * ]
    */
   slides?: WaygraphSlidesOrFn<Out>;
-  /**
-   * @deprecated Prefer {@link Instruction.stubAfter}. Shimmed to stubAfter keys
-   * `"0"`, `"1"`, … when stubAfter is empty.
-   */
-  highlights?: readonly WaygraphHighlight[] | ((out: Out) => readonly WaygraphHighlight[]);
 }
 
 /**

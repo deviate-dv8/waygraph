@@ -58,20 +58,20 @@ async function withTmpProject(name: string, files: Record<string, string>, run: 
   }
 }
 
-test("waygraph chain runs a single Block by its runtime name, no payload", async () => {
+test("waygraph run --blocks runs a single Block by its runtime name, no payload", async () => {
   await withTmpProject("chain-single", { "echo.block.ts": ECHO_BLOCK }, async (dir) => {
-    const { stdout } = await exec(node, [CLI, "chain", "echo", dir]);
+    const { stdout } = await exec(node, [CLI, "run", "--blocks", "echo", dir]);
     expect(stdout).toContain("chaining echo");
     expect(stdout).toContain('"__state":"Echoed"');
   });
 });
 
-test('waygraph chain runs two Blocks in order via "then"', async () => {
+test('waygraph run --blocks runs two Blocks in order via "then"', async () => {
   await withTmpProject(
     "chain-two",
     { "greet.block.ts": GREET_BLOCK, "echo.block.ts": ECHO_BLOCK },
     async (dir) => {
-      const { stdout } = await exec(node, [CLI, "chain", 'greet({"name":"Dan"}) then echo', dir]);
+      const { stdout } = await exec(node, [CLI, "run", "--blocks", 'greet({"name":"Dan"}) then echo', dir]);
       expect(stdout).toContain("chaining greet -> echo");
       // The chain's final result is echo's own terminal checkpoint - proves
       // the whole connect() reduction actually ran through both steps, not
@@ -81,25 +81,25 @@ test('waygraph chain runs two Blocks in order via "then"', async () => {
   );
 });
 
-test("waygraph chain errors loudly on a missing required payload", async () => {
+test("waygraph run --blocks errors loudly on a missing required payload", async () => {
   await withTmpProject("chain-missing-payload", { "greet.block.ts": GREET_BLOCK }, async (dir) => {
-    await expect(exec(node, [CLI, "chain", "greet", dir])).rejects.toMatchObject({
+    await expect(exec(node, [CLI, "run", "--blocks", "greet", dir])).rejects.toMatchObject({
       stderr: expect.stringContaining("requires chain.greet.input"),
     });
   });
 });
 
-test("waygraph chain errors loudly on invalid JSON payload", async () => {
+test("waygraph run --blocks errors loudly on invalid JSON payload", async () => {
   await withTmpProject("chain-bad-json", { "greet.block.ts": GREET_BLOCK }, async (dir) => {
-    await expect(exec(node, [CLI, "chain", "greet({not valid json})", dir])).rejects.toMatchObject({
+    await expect(exec(node, [CLI, "run", "--blocks", "greet({not valid json})", dir])).rejects.toMatchObject({
       stderr: expect.stringContaining("not valid JSON"),
     });
   });
 });
 
-test("waygraph chain errors loudly on an unknown block name", async () => {
+test("waygraph run --blocks errors loudly on an unknown block name", async () => {
   await withTmpProject("chain-unknown", { "echo.block.ts": ECHO_BLOCK }, async (dir) => {
-    await expect(exec(node, [CLI, "chain", "nonexistent-block", dir])).rejects.toMatchObject({
+    await expect(exec(node, [CLI, "run", "--blocks", "nonexistent-block", dir])).rejects.toMatchObject({
       stderr: expect.stringContaining('no Block named "nonexistent-block"'),
     });
   });

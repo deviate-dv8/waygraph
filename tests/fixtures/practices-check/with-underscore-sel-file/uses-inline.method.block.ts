@@ -1,10 +1,10 @@
 // Fixture — inline selector literal in a directory using the Map layout's own _sel.ts convention.
-import { defineMethodBlock, checkpoint, type Checkpoint } from "../../../../dist/index.js";
+import { defineMethodBlock, checkpoint } from "../../../../dist/index.js";
 
-type FixtureScreen = Checkpoint<"FixtureScreen">;
-
-export const UsesInlineUnderscoreFixtureBlock = defineMethodBlock<FixtureScreen, FixtureScreen>({
+export const UsesInlineUnderscoreFixtureBlock = defineMethodBlock({
   name: "uses-inline-underscore-fixture",
+  from: checkpoint("FixtureScreen"),
+  to: checkpoint("FixtureScreen"),
   instruction: {
     async act(page) {
       await page.locator("#submit").click();

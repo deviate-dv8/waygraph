@@ -42,9 +42,7 @@ Pass `--data '{"saucedemo.credentials":{…}}'`.
 | Explore (CLI first) | `npx waygraph auto --cli --data '{…}'` |
 | Onboarding (temp dir) | `npx waygraph try demo` / `try auto` |
 
-Prefer `--blocks` or a `.flow.ts` path. Compat:
-`chain` -> `run --blocks`;
-`--autoplay` -> `--auto-next`.
+Pass `--blocks` or a `.flow.ts` path.
 
 ## Flags
 
@@ -53,7 +51,7 @@ Prefer `--blocks` or a `.flow.ts` path. Compat:
 | `--blocks` | demo / run / auto | Flow export, `.flow.ts` path, or `"a then b"` spec.
 On `auto` only: `--blocks From To` = Checkpoint path-find. |
 | `--data '{…}'` | demo / run / auto | Mem seed JSON (keyed by MemKey name, e.g. `saucedemo.credentials`). |
-| `--auto-next` | demo | Step overlay Auto-advance starts ON (alias `--autoplay`).
+| `--auto-next` | demo | Step overlay Auto-advance starts ON.
 Auto-hides the stepper on NavBlocks (compact `N / M` pill). |
 | `--fast` | demo only | Faster cursor/type dwells and shorter auto-next gates. |
 | `--full` | demo only | Classic wrap-all block chips. Default is a horizontal **carousel**. |

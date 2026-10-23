@@ -59,16 +59,16 @@ npm run auto:cli
 npm run prove:auto-cli
 ```
 
-## `--cli` session control (detach / send / status / attach)
+## Session control (browser start / send / status / attach)
 
 Bare `auto --cli` blocks in a terminal `readline` loop - fine
 for a person, awkward for an agent that needs to inspect state between picks or send
-one command without guessing a whole input sequence upfront. `--detach`
+one command without guessing a whole input sequence upfront. `browser start`
 runs the same session as a background socket server instead.
 
 | Want | Command |
 |---|---|
-| Start a detached session | `npx waygraph auto --cli --detach` -> `{"sessionId":"...","socketPath":"..."}` |
+| Start a background session | `npx waygraph browser start --headless --goto /` -> `{"sessionId":"...","socketPath":"...","headless":true}` |
 | Send one pick, get JSON state back (no TTY) | `npx waygraph auto send <sessionId> "3"` |
 | Read state without side effects | `npx waygraph auto status <sessionId>` |
 | Reopen an interactive terminal on it | `npx waygraph auto attach <sessionId>` |
@@ -104,7 +104,7 @@ human. `--selector` is a modifier on either mode, not a third mode. See
 
 | Want | Command |
 |---|---|
-| Detached session with a real visible browser | `npx waygraph auto --cli --detach --non-headless` |
+| Background session with a real visible browser | `npx waygraph browser start --goto /` |
 | Read the session's Checkpoint/Block history | `npx waygraph auto trace <sessionId>` |
 
 `--non-headless` is the same flag `run`/`demo`
@@ -132,6 +132,5 @@ about, capped at the last 500 steps. See
 | `run --blocks …` | Execute (`--non-headless`, `--video`) |
 | `auto` | Explore / path-find (`--cli`, `--blocks From To`) |
 
-Details: [Demo / run](./demo). Compat aliases:
-`chain` -> `run --blocks`; `--autoplay` -> `--auto-next`.
+Details: [Demo / run](./demo).
 

@@ -23,9 +23,6 @@
     "record": "waygraph run --blocks \"loginFlow then shopFlow\" --video --no-step",
     "traverse": "waygraph traverse --max-steps 40"
   },
-  "waygraph": {
-    "baseUrl": "https://www.saucedemo.com"
-  },
   "dependencies": {
     "waygraph": "latest"
   },

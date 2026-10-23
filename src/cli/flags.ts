@@ -34,10 +34,6 @@ interface RunFlags {
   /** auto path-find: --blocks <fromCheckpoint> <toCheckpoint>. */
   blocksFromTo?: [string, string];
   cli?: boolean;
-  /** auto --cli --detach: run the explore session as a background socket server. */
-  detach?: boolean;
-  /** Force headed panel (compat; bare try auto / auto already headed). */
-  headed?: boolean;
   mermaid?: boolean;
   map?: boolean;
   /** demo: faster transitions / shorter auto-next gates. */
@@ -111,9 +107,9 @@ export function parseRunFlags(argv: string[]): RunFlags {
       out.step = true;
     } else if (a === "--no-step") {
       out.step = false;
-    } else if (a === "--auto-next" || a === "--autoplay") {
+    } else if (a === "--auto-next") {
       out.autoplay = true;
-    } else if (a === "--no-auto-next" || a === "--no-autoplay") {
+    } else if (a === "--no-auto-next") {
       out.autoplay = false;
     } else if (a === "--auto-play-video") {
       out.autoPlayVideo = true;
@@ -124,7 +120,7 @@ export function parseRunFlags(argv: string[]): RunFlags {
       out.fast = true;
     } else if (a === "--full") {
       out.fullStepper = true;
-    } else if (a === "--mini" || a === "--stepper-mini") {
+    } else if (a === "--mini") {
       out.miniStepper = true;
     } else if (a === "--todo-left") {
       out.todoPos = "left";
@@ -136,7 +132,7 @@ export function parseRunFlags(argv: string[]): RunFlags {
       out.todoUiSmart = true;
     } else if (a === "--ff-expand") {
       out.ffExpand = true;
-    } else if (a === "--ff-disabled" || a === "--no-ff") {
+    } else if (a === "--ff-disabled") {
       out.ffDisabled = true;
       out.ffExpand = true;
     } else if (a === "--non-headless") {
@@ -160,10 +156,6 @@ export function parseRunFlags(argv: string[]): RunFlags {
       i = t.nextI;
     } else if (a === "--cli") {
       out.cli = true;
-    } else if (a === "--detach") {
-      out.detach = true;
-    } else if (a === "--headed") {
-      out.headed = true;
     } else if (a === "--mermaid") {
       out.mermaid = true;
     } else if (a === "--map") {

@@ -7,7 +7,7 @@ import { browserStart } from "../../live/browser.js";
 import { listBrowserSessions, stopAllBrowserSessions, stopBrowserSession } from "../../live/auto-session-ipc.js";
 import { existsSync, statSync } from "node:fs";
 import { resolveInjectRoots } from "../../manifest/roots.js";
-import { requestSession, resolveSessionMeta, runAttachLoop, runAutoServeCommand, spawnDetachedSession } from "../../live/auto-session-ipc.js";
+import { requestSession, resolveSessionMeta, runAttachLoop, runAutoServeCommand } from "../../live/auto-session-ipc.js";
 import { pilotAttach, pilotStart } from "../../live/pilot.js";
 import { parseHighlightShorthand } from "../../demo/narration/shorthand.js";
 import { isFileSelectToken, parseBlocksSelect } from "../../manifest/select.js";
@@ -505,31 +505,6 @@ export async function sessionCase(args: string[], command: string | undefined): 
             "  or path-find: waygraph auto --blocks LoginPage OrderComplete",
         );
         process.exit(1);
-      }
-
-      // auto --cli --detach: start the explore session as a background socket
-      // server instead of blocking in the interactive loop. Session control
-      // only applies to --cli (spec: "Headful mode is unaffected").
-      if (command === "auto" && flags.detach) {
-        if (!cliPicker) {
-          console.error("waygraph auto --detach requires --cli (headful has no session control)");
-          process.exit(1);
-        }
-        const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? (await resolveBaseUrl(proj));
-        try {
-          const meta = await spawnDetachedSession({
-            projectDir: proj,
-            ...(baseURL ? { baseURL } : {}),
-            ...(flags.nonHeadless ? { headless: false } : {}),
-          });
-          console.log(
-            JSON.stringify({ sessionId: meta.sessionId, socketPath: meta.socketPath, headless: meta.headless }),
-          );
-        } catch (err) {
-          console.error(`waygraph auto --detach: ${err instanceof Error ? err.message : String(err)}`);
-          process.exit(1);
-        }
-        return;
       }
 
       // auto --blocks From To  (graph path-find + run)

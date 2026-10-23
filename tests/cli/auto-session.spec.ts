@@ -92,7 +92,9 @@ async function detach(extraArgs: string[] = []): Promise<{
   socketPath: string;
   headless: boolean;
 }> {
-  const stdout = await runCli(["auto", "--cli", "--detach", ...extraArgs, sauceRoot]);
+  // A background session on the project's start page (headless unless --non-headless).
+  const headed = extraArgs.includes("--non-headless");
+  const stdout = await runCli(["browser", "start", ...(headed ? [] : ["--headless"]), "--goto", "/", sauceRoot]);
   return JSON.parse(stdout.trim());
 }
 
@@ -141,19 +143,13 @@ async function highlight(
   return JSON.parse(stdout.trim());
 }
 
-test("--detach requires --cli", async () => {
-  await expect(exec(node, [CLI, "auto", "--detach", sauceRoot])).rejects.toMatchObject({
-    stderr: expect.stringContaining("--detach requires --cli"),
-  });
-});
-
 test("status/send report a clear error for an unknown session, not a hang", async () => {
   const res = await status("no-such-session");
   expect(res.ok).toBe(false);
   expect(String(res.error)).toMatch(/no such session/);
 });
 
-test("--detach defaults to headless; --non-headless launches a real visible browser", async () => {
+test("browser start --headless runs headless; without it a real visible browser launches (--non-headless)", async () => {
   test.setTimeout(60_000);
 
   const headlessSession = await detach();
@@ -422,7 +418,7 @@ test("a session against a deeply nested project path still starts - session sock
 
   let sessionId: string | undefined;
   try {
-    const stdout = await runCli(["auto", "--cli", "--detach"], { cwd: deepDir });
+    const stdout = await runCli(["browser", "start", "--headless"], { cwd: deepDir });
     const meta = JSON.parse(stdout.trim()) as { sessionId: string; socketPath: string };
     sessionId = meta.sessionId;
     // The fix: the socket is short and NOT under the (long) project directory.

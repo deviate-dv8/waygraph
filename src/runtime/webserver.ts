@@ -1,8 +1,6 @@
-// Starts/stops a project's `webServer` (waygraph.config, or a legacy playwright.config) around `waygraph run`/`demo`/`auto`,
+// Starts/stops a project's `webServer` (from config/waygraph.config.ts) around `waygraph run`/`demo`/`auto`,
 // the same block `waygraph test` already honors.
-import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
 import { spawn, type ChildProcess } from "node:child_process";
 import { loadWaygraphConfig } from "./config.js";
 
@@ -19,31 +17,10 @@ export interface WebServerConfig {
   stderr?: "pipe" | "ignore";
 }
 
-const CONFIG_FILES = [
-  "playwright.config.ts",
-  "playwright.config.mts",
-  "playwright.config.mjs",
-  "playwright.config.js",
-  "playwright.config.cjs",
-];
-
 async function loadWebServerConfigs(projectDir: string): Promise<WebServerConfig[]> {
   const fromWaygraph = (await loadWaygraphConfig(projectDir))?.webServer;
-  if (fromWaygraph) return Array.isArray(fromWaygraph) ? fromWaygraph : [fromWaygraph];
-  for (const name of CONFIG_FILES) {
-    const p = join(projectDir, name);
-    if (!existsSync(p)) continue;
-    let mod: { default?: { webServer?: WebServerConfig | WebServerConfig[] } };
-    try {
-      mod = (await import(pathToFileURL(p).href)) as typeof mod;
-    } catch (err) {
-      throw new Error(`waygraph: failed to load ${name}: ${err instanceof Error ? err.message : String(err)}`);
-    }
-    const webServer = mod.default?.webServer;
-    if (!webServer) return [];
-    return Array.isArray(webServer) ? webServer : [webServer];
-  }
-  return [];
+  if (!fromWaygraph) return [];
+  return Array.isArray(fromWaygraph) ? fromWaygraph : [fromWaygraph];
 }
 
 async function isUp(target: string): Promise<boolean> {

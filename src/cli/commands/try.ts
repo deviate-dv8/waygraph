@@ -246,7 +246,7 @@ async function runTryDemo(): Promise<void> {
       `  ${testFile}\n\n` +
       "Run again in that temp folder:\n" +
       `  cd ${destDir}\n` +
-      "  npm run demo    # step-through, manual Next (--step --no-autoplay)\n" +
+      "  npm run demo    # step-through, manual Next (--step --no-auto-next)\n" +
       "  npm run auto    # interactive explore (Effect Add/Remove, MemNav Open details)\n" +
       "  npm test        # playwright chained-flows test\n\n" +
       "Permanent full example in this package: examples/saucedemo\n" +
@@ -316,12 +316,8 @@ export async function tryCase(args: string[]): Promise<void> {
             ? "auto"
             : modeRaw;
       if (mode === "auto" || mode === "auto:cli") {
-        const cli =
-          mode === "auto:cli" || flags.cli === true
-            ? true
-            : flags.headed === true || flags.nonHeadless === true
-              ? false
-              : false; // try auto default = headed
+        // try auto opens the headed browser panel; auto:cli / --cli is the terminal menu.
+        const cli = mode === "auto:cli" || flags.cli === true;
         await runTryAuto({ cli });
       } else if (mode === "demo" || mode === "") {
         await runTryDemo();

@@ -74,12 +74,12 @@ edges (including cycles via logout / continue-shopping / back-to-products).
 Prefer flags (or npm scripts) over a pile of `WAYGRAPH_*` env vars:
 
 ```bash
-npm run demo                 # waygraph demo shopFlow  (STEP+headed; BASE_URL from package.json / playwright)
-npm run demo:autoplay        # --autoplay --title "Shop demo"
+npm run demo                 # waygraph demo --blocks "loginFlow then shopFlow" (headed; baseUrl from config/waygraph.config.ts)
+npm run demo:auto-next       # the same, advancing on its own
 waygraph demo shopFlow --base-url https://www.saucedemo.com --title "Shop"
-waygraph chain "loginFlow" --step --no-autoplay
+waygraph demo loginFlow --no-auto-next
 ```
 
-Flags beat env: `--step` / `--no-step`, `--autoplay` / `--no-autoplay`,
+Flags beat env: `--auto-next` / `--no-auto-next`,
 `--base-url <url>`, `--title <text>`. Default BASE_URL resolution order for
 `demo`: `--base-url` > `WAYGRAPH_BASE_URL` > `baseUrl` in `config/waygraph.config.ts`.

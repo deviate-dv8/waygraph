@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
 import { defineNavBlock, Engine, checkpoint, defineMethodBlock } from "../../src/index.js";
-import type { Checkpoint } from "../../src/index.js";
 
-type Home = Checkpoint<"Home">;
 
 test("map() step pace sets the Block's demoPace and keeps its runtime markers, Nav from included", () => {
-  const nav = defineNavBlock<Home>({ name: "nav-home", checkpoint: "Home", url: "/", from: ["Login"] });
-  const act = defineMethodBlock<Home, Home>({
+  const nav = defineNavBlock({ name: "nav-home", checkpoint: checkpoint("Home"), url: "/", from: [checkpoint("Login")] });
+  const act = defineMethodBlock({
     name: "act",
+      from: checkpoint("Home"),
+      to: checkpoint("Home"),
     instruction: { async act() {}, resolve: () => checkpoint("Home") },
   });
   const flow = new Engine()
@@ -26,6 +26,6 @@ test("map() step pace sets the Block's demoPace and keeps its runtime markers, N
 });
 
 test("chaining a stub on a Nav keeps its `from`", () => {
-  const nav = defineNavBlock<Home>({ name: "nav-home", checkpoint: "Home", url: "/", from: ["Login"] }).stubAfter(() => {});
+  const nav = defineNavBlock({ name: "nav-home", checkpoint: checkpoint("Home"), url: "/", from: [checkpoint("Login")] }).stubAfter(() => {});
   expect((nav as unknown as { __waygraphNavFrom?: string[] }).__waygraphNavFrom).toEqual(["Login"]);
 });

@@ -28,16 +28,15 @@ import { buildFlow, chainFlow, withSettings } from "../../src/engine/flow/flow.j
 type LoginPage = Checkpoint<"LoginPage">;
 type LoggedIn = Checkpoint<"LoggedIn">;
 type ItemInCart = Checkpoint<"ItemInCart">;
-type CartPage = Checkpoint<"CartPage">;
 
 const OwnerCreds = keyGroup<{ username: string; password: string }>("example.owner-creds");
 const ViewerCreds = keyGroup<{ username: string; password: string }>("example.viewer-creds");
 
 // The app's own entry point - no click path exists to get here from
 // nowhere, so url is the right call, not an escape hatch.
-const navLogin = defineNavBlock<LoginPage>({
+const navLogin = defineNavBlock({
   name: "nav-login",
-  checkpoint: "LoginPage",
+  checkpoint: checkpoint("LoginPage"),
   // Absolute, not "/" - these Flows run via the no-context Engine.run(mem)
   // overload (this file's own tests, no Playwright baseURL config involved),
   // so a relative URL has nothing to resolve against.
@@ -94,17 +93,17 @@ const addToCart = defineBlock<LoggedIn, ItemInCart>({
 });
 
 // Click-based, not url - a real click on the app's own "Cart" link.
-const navCart = defineNavBlock<CartPage>({
+const navCart = defineNavBlock({
   name: "nav-cart",
-  checkpoint: "CartPage",
+  checkpoint: checkpoint("CartPage"),
   click: ".shopping_cart_link",
   verify: [Trait.url({ pathname: "/cart.html" })],
 });
 
 // Click-based, not url - the cart page's own real "Continue Shopping" button.
-const navContinueShopping = defineNavBlock<LoggedIn>({
+const navContinueShopping = defineNavBlock({
   name: "nav-continue-shopping",
-  checkpoint: "LoggedIn",
+  checkpoint: checkpoint("LoggedIn"),
   click: "#continue-shopping",
   verify: [Trait.url({ pathname: "/inventory.html" })],
 });

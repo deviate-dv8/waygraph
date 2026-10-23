@@ -2,7 +2,7 @@
 // keeps working untouched; this is a second, richer place to put the same kind of project-level
 // setting, for consumers who'd rather have a real typed file than a JSON field. Real ask: "I
 // think its time to add waygraph config now."
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { extensionPathsFromEnv } from "./browser.js";
@@ -166,11 +166,6 @@ export async function loadWaygraphConfig(projectDir: string): Promise<WaygraphCo
  *    `loadEnvFiles`, called here so every caller gets native `.env` support for free, not just
  *    whichever command remembered to call it).
  * 2. A `waygraph.config.*` file's `baseUrl`.
- * 3. `package.json`'s `waygraph.baseUrl`/`baseURL` (`config.waygraph.*` also checked - a common
- *    nested-config convention some tooling uses).
- * 4. `playwright.config.*`'s own `baseURL` (regex-read as text, never imported - importing a
- *    consumer's real playwright.config risks pulling in `@playwright/test`'s own global setup
- *    as a side effect, which resolving a URL string has no business doing).
  */
 export async function resolveBaseUrl(projectDir: string): Promise<string | undefined> {
   loadEnvFiles(projectDir);
@@ -179,31 +174,6 @@ export async function resolveBaseUrl(projectDir: string): Promise<string | undef
   const config = await loadWaygraphConfig(projectDir);
   if (config?.baseUrl && config.baseUrl.trim()) return config.baseUrl.trim();
 
-  const pkgPath = join(projectDir, "package.json");
-  if (existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(readFileSync(pkgPath, "utf-8")) as {
-        waygraph?: { baseUrl?: string; baseURL?: string };
-        config?: { waygraph?: { baseUrl?: string; baseURL?: string } };
-      };
-      const fromPkg =
-        pkg.waygraph?.baseUrl ??
-        pkg.waygraph?.baseURL ??
-        pkg.config?.waygraph?.baseUrl ??
-        pkg.config?.waygraph?.baseURL;
-      if (typeof fromPkg === "string" && fromPkg.trim()) return fromPkg.trim();
-    } catch {
-      // ignore malformed package.json - fall through to playwright.config
-    }
-  }
-
-  for (const name of ["playwright.config.ts", "playwright.config.mts", "playwright.config.js", "playwright.config.mjs"]) {
-    const p = join(projectDir, name);
-    if (!existsSync(p)) continue;
-    const src = readFileSync(p, "utf-8");
-    const m = src.match(/baseURL\s*:\s*["']([^"']+)["']/);
-    if (m?.[1]) return m[1];
-  }
   return undefined;
 }
 

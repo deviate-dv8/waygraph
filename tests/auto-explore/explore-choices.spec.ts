@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { exploreChoices, buildExploreMenu } from "../../src/live/auto-explore.js";
+import { buildExploreMenu } from "../../src/live/auto-explore.js";
 import type { WaygraphGraph } from "../../src/analysis/graph.js";
 
 const sample: WaygraphGraph = {
@@ -11,21 +11,6 @@ const sample: WaygraphGraph = {
   ],
   skipped: [],
 };
-
-test("exploreChoices at LoginPage lists nav * plus actions from that checkpoint", () => {
-  const choices = exploreChoices(sample, "LoginPage");
-  expect(choices.map((c) => c.block)).toEqual(["nav-login", "submit-login"]);
-});
-
-test("exploreChoices when unknown lists nav Blocks only", () => {
-  const choices = exploreChoices(sample, null);
-  expect(choices.map((c) => c.block)).toEqual(["nav-login"]);
-});
-
-test("exploreChoices at LoggedIn excludes login-only actions", () => {
-  const choices = exploreChoices(sample, "LoggedIn");
-  expect(choices.map((c) => c.block)).toEqual(["add-to-cart", "nav-login"]);
-});
 
 test("buildExploreMenu at LoginPage groups forward actions", async ({ page }) => {
   await page.setContent('<button id="login-button">Login</button>');
@@ -162,7 +147,6 @@ const SIGNED_IN_NAV_LIBRARY = {
 
 test("a url Nav with `from` is not a 'start here' row on an unknown page", async ({ page }) => {
   await page.setContent("<p>unknown</p>");
-  expect(exploreChoices(SIGNED_IN_NAV_GRAPH, null).map((c) => c.block)).toEqual(["nav-login"]);
   const menu = await buildExploreMenu(page, SIGNED_IN_NAV_GRAPH, SIGNED_IN_NAV_LIBRARY, null);
   expect(menu.flat.map((e) => e.block)).toEqual(["nav-login"]);
 });

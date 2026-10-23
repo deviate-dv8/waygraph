@@ -10,11 +10,6 @@ export const FIXTURE_DURATION_FAST_MS_DEFAULT = 600;
 export const FIXTURE_DURATION_SLOW_MS_DEFAULT = 4000;
 
 
-/** @deprecated Prefer FIXTURE_DURATION_MS_DEFAULT */
-export const SLIDE_DURATION_MS_DEFAULT = FIXTURE_DURATION_MS_DEFAULT;
-
-/** @deprecated Prefer FIXTURE_DURATION_FAST_MS_DEFAULT */
-export const SLIDE_DURATION_FAST_MS_DEFAULT = FIXTURE_DURATION_FAST_MS_DEFAULT;
 
 
 /** Turns any accepted pace spelling into a `DemoPace`; unknown values mean normal. */
@@ -190,15 +185,6 @@ export function resolveFixtureDwellMs(
   if (opts?.gatesFast && pace === "normal") return fastMs;
   if (pace === "slow") return Math.max(normalMs, FIXTURE_DURATION_SLOW_MS_DEFAULT);
   return normalMs;
-}
-
-
-/** @deprecated Prefer {@link resolveFixtureDwellMs} */
-export function resolveSlideDwellMs(
-  slide: FixtureDurationFields,
-  opts?: { gatesFast?: boolean; pace?: DemoPace },
-): number | null {
-  return resolveFixtureDwellMs(slide, opts);
 }
 
 

@@ -11,9 +11,8 @@ Runtime is always a `Block`. Helpers are TypeScript salt + clear intent.
 | `defineMethodBlock` | One-shot non-nav app step | `*.method.block.ts` under `methods/` |
 | `defineEffectBlock` | Instance mutate + auto menu rows | `*.effect.block.ts` under `methods/` |
 | `defineBlock` | Escape hatch: tests, unsure, probes | any |
-| `defineActionBlock` | **Deprecated** alias of `defineMethodBlock` | — |
 
-`defineNavBlock({ click })` still works (compat) - prefer `defineNavClickBlock` in app code.
+`defineNavBlock({ click })` and `defineNavClickBlock` build the same Block; app code reads better with `defineNavClickBlock`.
 
 ---
 
@@ -30,7 +29,7 @@ export const InventorySel = {
 
 export const InventoryPageBlock = definePageBlock({
   name: "page-inventory",
-  checkpoint: "LoggedIn",
+  checkpoint: LoggedIn,
   verify: [Trait.url({ pathname: "/inventory.html" }), Trait.visible(InventorySel.list)],
   methods: {
     addToCart: () => AddToCartBlock,
@@ -95,7 +94,7 @@ defineMethodBlock({
 Optional routing for `runGraph`:
 
 ```ts
-branch(SubmitLoginActionBlock, {
+branch(SubmitLoginBlock, {
   LoggedIn: AddToCartBlock,
   LoginPage: null, // stop
 });

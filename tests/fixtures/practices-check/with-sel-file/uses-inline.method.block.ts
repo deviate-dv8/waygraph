@@ -1,10 +1,10 @@
 // Fixture — inline selector literal in a directory that already has a *.sel.ts file (bad practice).
-import { defineMethodBlock, checkpoint, type Checkpoint } from "../../../../dist/index.js";
+import { defineMethodBlock, checkpoint } from "../../../../dist/index.js";
 
-type FixtureScreen = Checkpoint<"FixtureScreen">;
-
-export const UsesInlineFixtureBlock = defineMethodBlock<FixtureScreen, FixtureScreen>({
+export const UsesInlineFixtureBlock = defineMethodBlock({
   name: "uses-inline-fixture",
+  from: checkpoint("FixtureScreen"),
+  to: checkpoint("FixtureScreen"),
   instruction: {
     async act(page) {
       await page.locator("#submit").click();

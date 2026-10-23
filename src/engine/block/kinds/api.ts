@@ -42,7 +42,7 @@ export interface ApiBlockOptions<In extends Checkpoint<string>, Out extends Chec
   /** Where it runs: one Checkpoint value or a list; leave it out for "from anywhere". */
   from?: In | readonly In[];
   /** Where it lands: one Checkpoint value (then `resolve` may be left out) or a list. */
-  to?: Out | readonly Out[];
+  to: Out | readonly Out[];
   /** Pure, like every other Block's resolve - picks the Checkpoint from the response. Optional when `to` is one Checkpoint. */
   resolve?: (result: ApiCallResult) => Out;
   verify?: Trait[] | ((out: Out) => Trait[]);
@@ -76,10 +76,10 @@ const API_RESULT_SCRATCH = key<ApiCallResult>("__wgApiBlockResult");
 export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   options: ApiBlockOptions<In, Out>,
 ): DefinedBlock<In, Out> {
-  const targets = options.to === undefined ? [] : tagsOf(options.to);
+  const targets = tagsOf(options.to);
   const pick = options.resolve;
   if (!pick && targets.length !== 1) {
-    throw new Error(`waygraph: API Block "${options.name}" needs a resolve() (or a single \`to\` Checkpoint)`);
+    throw new Error(`waygraph: API Block "${options.name}" lands on several Checkpoints; give it a resolve() that picks one`);
   }
   const resolve = pick ?? ((): Out => checkpoint(targets[0]!) as Out);
   const built = defineBlock<In, Out>({

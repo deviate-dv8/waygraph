@@ -2,7 +2,6 @@ import { applyDemoDefaults, applyRunFlags, parseRunFlags, resolveBaseUrl, resolv
 import { runChain } from "../run-chain.js";
 import { resolve } from "node:path";
 import { existsSync } from "node:fs";
-import { runChainAuto } from "../run-chain.js";
 
 export async function runCase(args: string[]): Promise<void> {
       const flags = parseRunFlags(args.slice(1));
@@ -28,50 +27,6 @@ export async function runCase(args: string[]): Promise<void> {
       if (!process.env.WAYGRAPH_BASE_URL) {
         const resolved = await resolveBaseUrl(proj);
         if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
-      }
-      await runChain(proj, spec);
-      return;
-}
-
-export async function chainCase(args: string[]): Promise<void> {
-      // Compat alias: chain auto A B -> auto --blocks A B; else -> run --blocks.
-      const flags = parseRunFlags(args.slice(1));
-      applyRunFlags(flags);
-      const first = flags.positionals[0];
-      if (first === "auto") {
-        const fromTag = flags.positionals[1];
-        const toTag = flags.positionals[2];
-        if (!fromTag || !toTag) {
-          console.error("waygraph chain auto: missing <fromCheckpoint> <toCheckpoint> [project]");
-          console.error("  prefer: waygraph auto --blocks LoggedIn OrderComplete");
-          process.exit(1);
-        }
-        const proj = resolve(flags.positionals[3] ?? process.cwd());
-        if (!existsSync(proj)) {
-          console.error(`waygraph: no such directory: ${proj}`);
-          process.exit(1);
-        }
-        await runChainAuto(proj, fromTag, toTag);
-        return;
-      }
-      const spec = flags.blocks ?? first;
-      if (!spec) {
-        console.error(
-          'waygraph chain: missing <spec> — prefer: waygraph run --blocks "a then b"\n' +
-            "  or: waygraph auto --blocks <fromCheckpoint> <toCheckpoint>",
-        );
-        process.exit(1);
-      }
-      const proj = resolve(
-        flags.blocks ? (flags.positionals[0] ?? process.cwd()) : (flags.positionals[1] ?? process.cwd()),
-      );
-      if (!process.env.WAYGRAPH_BASE_URL) {
-        const resolved = await resolveBaseUrl(proj);
-        if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
-      }
-      // If caller asked for step overlay, behave like demo; else like run.
-      if (flags.step === true || process.env.WAYGRAPH_STEP === "1") {
-        await applyDemoDefaults(proj);
       }
       await runChain(proj, spec);
       return;

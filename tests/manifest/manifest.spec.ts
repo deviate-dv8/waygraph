@@ -9,7 +9,6 @@ test("the manifest lists every Block with its route, every flow with its steps",
   expect(m.version).toBe(1);
   const submit = m.blocks.find((b) => b.name === "submit-login")!;
   expect(submit).toMatchObject({ kind: "method", from: ["LoginPage"], to: ["LoggedIn", "LoginPage"] });
-  expect(submit.legacy).toBeUndefined();
   expect(m.blocks.find((b) => b.name === "nav-cart")).toMatchObject({ kind: "nav", from: ["*"], to: ["CartPage"] });
   expect(m.checkpoints).toContain("OrderComplete");
   const shop = m.flows.find((f) => f.exportName === "shopFlow")!;

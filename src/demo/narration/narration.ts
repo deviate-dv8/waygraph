@@ -1,8 +1,8 @@
 // Plays a Block's narration for one phase (stubBefore / stubAfter / stubOnError): runs its ctx stub and returns the
 // rings, todos, device, title and caption it set, for the overlay to paint.
-import type { DeviceState, HighlightStubPhase, HighlightStubPhaseName, ResolvedHighlight, StubBagState, StubCtx, StubLifecycleFn, StubPhaseResult, WaygraphSlide, WaygraphSlidesOrFn } from "../../engine/narration.js";
-import { createStubCtx, liftLegacySlotTodos } from "./stub-ctx.js";
-import { applyDefaultZoom, applyDefaultZoomOut, applyLegacyHighlightsShim, isStubPhase, readStubRaw, resolvePhaseMap } from "./merge.js";
+import type { DeviceState, HighlightStubPhaseName, ResolvedHighlight, StubBagState, StubCtx, StubLifecycleFn, StubPhaseResult, WaygraphSlide, WaygraphSlidesOrFn } from "../../engine/narration.js";
+import { createStubCtx } from "./stub-ctx.js";
+import { applyDefaultZoom, applyDefaultZoomOut, isStubPhase, readStubRaw, resolvePhaseMap } from "./merge.js";
 import { buildTodoDock, normalizeTodoStyle, normalizeTodos } from "./todo-dock.js";
 import { resolveDeviceState } from "./device.js";
 import type { Block } from "../../engine/block/block.js";
@@ -43,28 +43,10 @@ export async function runStubPhase(
     } catch {
       /* best-effort */
     }
-    // Compat: legacy `(out) => map` that expected Checkpoint (__state on arg). Only worth trying
-    // when the real ctx call genuinely did nothing - checked against the WHOLE bag, not just
-    // highlights/todos, so a stubBefore that only calls e.g. ctx.caption()/ctx.title()/ctx.zoom()
-    // (no highlights, no todos) isn't mistaken for "didn't run" and re-invoked with a bare
-    // Checkpoint that has none of StubCtx's methods - a real, previously-triggered bug (caught via
-    // examples/saucedemo/src/flows/checkout.flow.ts's own stubBefore(ctx) { ctx.caption(...) }).
-    const bagUntouched = Object.keys(bag).length === 1 && Object.keys(bag.highlights).length === 0;
-    if (bagUntouched) {
-      try {
-        const legacyOut = (opts?.out ?? { __state: "" }) as Checkpoint<string>;
-        const ret2 = (raw as unknown as (o: Checkpoint<string>) => HighlightStubPhase)(legacyOut);
-        if (isStubPhase(ret2)) bag.highlights = { ...ret2 };
-      } catch {
-        /* ignore */
-      }
-    }
   } else if (isStubPhase(raw)) {
     bag.highlights = { ...raw };
   }
 
-  bag.highlights = applyLegacyHighlightsShim(block, phase, bag.highlights, opts?.out);
-  liftLegacySlotTodos(bag);
 
   let highlights = applyDefaultZoom(resolvePhaseMap(bag.highlights), bag.zoom);
   highlights = applyDefaultZoomOut(highlights, bag.zoomOut);
@@ -170,19 +152,11 @@ export function resolveHighlightSlots(
         bag.highlights = { ...bag.highlights, ...ret };
       }
     } catch {
-      try {
-        const legacyOut = (opts?.out ?? { __state: "" }) as Checkpoint<string>;
-        const ret2 = (raw as unknown as (o: Checkpoint<string>) => HighlightStubPhase)(legacyOut);
-        if (isStubPhase(ret2)) bag.highlights = { ...ret2 };
-      } catch {
-        bag.highlights = {};
-      }
+      bag.highlights = {};
     }
   } else if (isStubPhase(raw)) {
     bag.highlights = { ...raw };
   }
-  bag.highlights = applyLegacyHighlightsShim(block, phase, bag.highlights, opts?.out);
-  liftLegacySlotTodos(bag);
   return applyDefaultZoom(resolvePhaseMap(bag.highlights), bag.zoom);
 }
 
@@ -219,7 +193,7 @@ function stubPhaseLooksAuthored(
 
 
 /**
- * True when the block authored stubAfter (lifecycle fn, slots, or legacy highlights).
+ * True when the block authored stubAfter (lifecycle fn or slots).
  * When true, demo should not use verify-trait fallback.
  */
 export function hasAuthoredStubAfter(
@@ -227,8 +201,6 @@ export function hasAuthoredStubAfter(
   out?: Checkpoint<string>,
 ): boolean {
   if (stubPhaseLooksAuthored(block, "stubAfter")) return true;
-  const instr = block.instruction as { highlights?: unknown };
-  if (instr.highlights) return true;
   return resolveHighlightSlots(block, "stubAfter", out !== undefined ? { out } : {}).length > 0;
 }
 

@@ -1,10 +1,10 @@
 // Fixture — fill + click in one Method block (bad practice).
-import { defineMethodBlock, checkpoint, type Checkpoint } from "../../../dist/index.js";
+import { defineMethodBlock, checkpoint } from "../../../dist/index.js";
 
-type FixtureScreen = Checkpoint<"FixtureScreen">;
-
-export const CombinedActionFixtureBlock = defineMethodBlock<FixtureScreen, FixtureScreen>({
+export const CombinedActionFixtureBlock = defineMethodBlock({
   name: "combined-action-fixture",
+  from: checkpoint("FixtureScreen"),
+  to: checkpoint("FixtureScreen"),
   instruction: {
     async act(page) {
       await page.locator("#user-name").fill("user");

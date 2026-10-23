@@ -5,7 +5,6 @@ import { resolveHighlightSlots, runStubPhase } from "../../src/demo/narration/na
 import { defineMethodBlock } from "../../src/engine/block/kinds/method.js";
 import { checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
 import type { Block } from "../../src/engine/block/block.js";
-import type { Checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
 import type { StubCtx } from "../../src/engine/narration.js";
 
 describe("normalizeTodos", () => {
@@ -114,10 +113,11 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
   });
 
   it("a caption-only stubBefore through .stubBefore(fn) (block-decorator chaining, not a raw instruction) does not crash - real regression: this exact shape (examples/saucedemo checkout.flow.ts) hit run-phase.ts's legacy-compat fallback, which only checked bag.highlights/bag.todos for 'did the real ctx call do nothing', so a caption-only call (touches neither) was wrongly re-invoked with a bare Checkpoint instead of a real StubCtx - 'ctx.caption is not a function'", async () => {
-    type S = Checkpoint<"S">;
-    const base = defineMethodBlock<S, S>({
+    const base = defineMethodBlock({
       name: "fill-something",
-      instruction: {
+        from: checkpoint("S"),
+        to: checkpoint("S"),
+        instruction: {
         async act() {},
         resolve: () => checkpoint("S"),
       },
@@ -205,24 +205,6 @@ describe("open stubBefore(ctx) lifecycle", () => {
     assert.equal(slots[0]!.selector, "#login-button");
   });
 
-  it("lifts legacy per-slot todos onto phase (0.12.23 compat)", async () => {
-    const block = {
-      name: "submit-login",
-      instruction: {
-        stubBefore: {
-          plan: {
-            selector: "#login-button",
-            label: "Plan",
-            todos: ["Email", "Password", "Submit"],
-            todoIndex: 0,
-          },
-        },
-      },
-    } as unknown as Block<any, any>;
-    const phase = await runStubPhase(block, "stubBefore");
-    assert.equal(phase.todos.length, 3);
-    assert.equal(phase.todos[0]!.current, true);
-  });
 });
 
 describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {

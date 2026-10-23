@@ -33,14 +33,9 @@ export async function testCase(args: string[]): Promise<void> {
       process.env.WAYGRAPH_RUN_LOG ??= defaultRunLogDir(proj);
       if (extensions.length > 0) process.env.WAYGRAPH_EXTENSIONS = extensions.join(",");
 
-      // No playwright.config in the project: waygraph builds one from config/waygraph.config.ts.
-      const hasOwnConfig = ["ts", "mts", "js", "mjs", "cjs"].some((e) => existsSync(join(proj, `playwright.config.${e}`)));
-      if (hasOwnConfig) {
-        console.error("waygraph: playwright.config is deprecated - move its settings into config/waygraph.config.ts");
-      } else {
-        process.env.WAYGRAPH_PROJECT_DIR = proj;
-      }
-      const configArgs = hasOwnConfig ? [] : ["-c", join(packageRoot(), "dist", "runtime", "playwright.config.js")];
+      // The Playwright config is built from config/waygraph.config.ts; a project has none of its own.
+      process.env.WAYGRAPH_PROJECT_DIR = proj;
+      const configArgs = ["-c", join(packageRoot(), "dist", "runtime", "playwright.config.js")];
 
       const wantsUi = rest[0] === "ui" || rest.includes("--ui");
       const forwarded = rest[0] === "ui" ? rest.slice(1) : rest;

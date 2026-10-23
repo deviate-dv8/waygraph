@@ -1,31 +1,31 @@
-import type { Checkpoint } from "../src/engine/checkpoint/checkpoint.js";
 import { defineNavBlock } from "../src/engine/block/kinds/nav.js";
+import { checkpoint } from "../src/engine/checkpoint/checkpoint.js";
 import { definePageBlock } from "../src/engine/block/kinds/page.js";
 import { defineAssertBlock, defineMethodBlock } from "../src/engine/block/kinds/method.js";
 import { map } from "../src/engine/engine.js";
 
-type Home = Checkpoint<"Home">;
-type Cleared = Checkpoint<"Cleared">;
 
-const NavHome = defineNavBlock<Home>({
+const NavHome = defineNavBlock({
   name: "nav-home",
-  checkpoint: "Home",
+  checkpoint: checkpoint("Home"),
   url: "https://app.example.com/home",
 });
-const PageHome = definePageBlock<Home>({
+const PageHome = definePageBlock({
   name: "page-home",
-  checkpoint: "Home",
+  checkpoint: checkpoint("Home"),
   url: "https://app.example.com/home",
 });
-const AssertHome = defineAssertBlock<Home>({
+const AssertHome = defineAssertBlock({
   name: "assert-home",
-  checkpoint: "Home",
+  checkpoint: checkpoint("Home"),
   verify: [],
 });
-const ClearThing = defineMethodBlock<Home, Cleared>({
+const ClearThing = defineMethodBlock({
   name: "clear-thing",
+  from: checkpoint("Home"),
+  to: checkpoint("Cleared"),
   instruction: {
-    async act() {},
+    async act() { },
     resolve: () => ({ __state: "Cleared" }),
   },
 });

@@ -6,14 +6,11 @@
   "description": "Waygraph Map folder convention proof - (group)/<page>/page.block.ts + nav.block.ts + methods/*.block.ts, offline fixture, zero new engine code.",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "playwright test",
+    "test": "waygraph test",
     "fixture": "node scripts/fixture-server.mjs",
     "graph": "waygraph graph",
     "map": "waygraph map",
     "auto:cli": "waygraph auto --cli"
-  },
-  "waygraph": {
-    "baseUrl": "http://127.0.0.1:4277"
   },
   "dependencies": {
     "waygraph": "file:../.."

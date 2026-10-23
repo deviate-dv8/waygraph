@@ -87,7 +87,7 @@ async function runCli(args: string[], cwd: string): Promise<string> {
 }
 
 async function detach(projectDir: string): Promise<{ sessionId: string; socketPath: string; headless: boolean }> {
-  const stdout = await runCli(["auto", "--cli", "--detach", "--base-url", origin, projectDir], projectDir);
+  const stdout = await runCli(["browser", "start", "--headless", "--base-url", origin, "--goto", "/", projectDir], projectDir);
   return JSON.parse(stdout.trim());
 }
 
@@ -206,12 +206,12 @@ test("cold-start end to end: explore with zero Blocks, author one to disk, reloa
     writeFileSync(
       join(blocksDir, "nav-second-page.block.ts"),
       [
-        'import { defineNavBlock, Trait } from "waygraph";',
+        'import { checkpoint, defineNavBlock, Trait } from "waygraph";',
         "",
         "export const NavSecondPageBlock = defineNavBlock({",
         '  name: "nav-second-page",',
         '  description: "Goes to the fixture\'s second page.",',
-        '  checkpoint: "SecondPage",',
+        '  checkpoint: checkpoint("SecondPage"),',
         '  url: "/second.html",',
         '  verify: [Trait.url({ pathname: "/second.html" })],',
         "});",
@@ -265,12 +265,12 @@ test("a SECOND reload of an already-imported file picks up its new content, not 
     writeFileSync(
       blockFile,
       [
-        'import { defineNavBlock, Trait } from "waygraph";',
+        'import { checkpoint, defineNavBlock, Trait } from "waygraph";',
         "",
         "export const NavSecondPageBlock = defineNavBlock({",
         '  name: "nav-second-page",',
         '  description: "v1",',
-        '  checkpoint: "SecondPage",',
+        '  checkpoint: checkpoint("SecondPage"),',
         '  url: "/second.html",',
         '  verify: [Trait.url({ pathname: "/second.html" })],',
         "});",
@@ -294,12 +294,12 @@ test("a SECOND reload of an already-imported file picks up its new content, not 
     writeFileSync(
       blockFile,
       [
-        'import { defineNavBlock, Trait } from "waygraph";',
+        'import { checkpoint, defineNavBlock, Trait } from "waygraph";',
         "",
         "export const NavSecondPageBlock = defineNavBlock({",
         '  name: "nav-second-page",',
         '  description: "v2 - edited after the first reload",',
-        '  checkpoint: "SecondPage",',
+        '  checkpoint: checkpoint("SecondPage"),',
         '  url: "/second.html",',
         '  verify: [Trait.url({ pathname: "/second.html" })],',
         "});",

@@ -64,13 +64,8 @@ Three places can supply a project's `baseUrl`, checked in this order (first one 
      baseUrl: "http://127.0.0.1:4177",
    });
    ```
-   `defineConfig` is purely a type-checking identity helper (same role it plays in
-   `playwright.config.ts`/`vite.config.ts`) - `export default { baseUrl: "..." }` works
-   identically without it. `.ts` works unmodified; no separate build/transpile step.
-3. `package.json`'s own `"waygraph": { "baseUrl": "..." }` field (still works exactly as
-   before - `waygraph.config.*` is additive, not a replacement).
-
-If none of those are set, a `playwright.config.*`'s own `baseURL` is read as a last resort.
+   `defineConfig` is a type-checking identity helper - `export default { baseUrl: "..." }` works identically without
+   it. `.ts` works unmodified; no separate build/transpile step.
 
 **Native `.env` support** - `.env`, `.env.local`, `.env.<mode>`, `.env.<mode>.local`
 (`<mode>` = `--env <mode>` / `WAYGRAPH_ENV`, else `NODE_ENV`, else `"development"`) are auto-loaded from the project root before
@@ -151,8 +146,8 @@ Flows pass the same object to the Engine, so it is imported rather than read out
 the config file exports `export const engine = new Engine(config)`, and flows `import { engine } from "../../config/waygraph.config.js"`. The Engine uses
 `baseUrl` and `extensions` for the browser it launches itself (`flow.run(mem)`); `waygraph test`, `run`, `demo`
 and `auto` read the file too, for everything else.
-A project that still has a `playwright.config.*` keeps working: `waygraph test` uses it and prints a deprecation
-note, and `waygraph upgrade` lists it as deprecated.
+A project's own `playwright.config.*` is not read (removed in 0.16.0); `waygraph upgrade` points one out so its settings
+can move into `config/waygraph.config.ts`.
 Editor integrations that look for a `playwright.config.ts` (the VS Code Playwright extension) won't find one; use `waygraph test` or `npm test`.
 
 ### Browser dialogs
@@ -306,8 +301,8 @@ Blocks name them as values, never as tag strings or `<In, Out>` type arguments; 
 | `defineMethodBlock` / `defineEffectBlock` | `from: CanAddItem, to: ItemInCart` - leave `from` out for "from anywhere"; `resolve` is implied when `to` is one Checkpoint, and needed when it is a list |
 
 Because the route is recorded on the Block, `waygraph graph`, `auto`, `traverse` and the manifest read it at runtime
-instead of parsing source text. The older forms (`checkpoint: "Home"`, `defineMethodBlock<Home, ItemInCart>`) still work
-but are deprecated; `waygraph upgrade --codemod checkpoints` rewrites a project's states and Block files (on the
+instead of parsing source text. The older forms (`checkpoint: "Home"`, `defineMethodBlock<Home, ItemInCart>`) were
+removed in 0.16.0; `waygraph upgrade --codemod checkpoints` rewrites a project's states and Block files (on the
 TypeScript AST, so formatting and comments don't trip it).
 
 ## The manifest
@@ -408,8 +403,7 @@ structurally incapable of touching the browser or shared memory. `verify` runs o
   **fast-forward**: one opaque demo step that blitzes (no per-inner gate, no smooth cursor
   theater, Playwright `slowMo` off for that flow unless `WAYGRAPH_SLOWMO` is set) unless
   expanded. Put several FF units in one Flow to race past auth, then a heavy dashboard
-  settle, then watch the interesting middle. `waygraph demo --ff-disabled` (alias
-  `--no-ff`) expands every FFCompose into its inner Blocks so a broken step is visible as
+  settle, then watch the interesting middle. `waygraph demo --ff-disabled` expands every FFCompose into its inner Blocks so a broken step is visible as
   its own panel row; former FF inners keep blitz pacing so wall-clock stays comparable.
   `--ff-expand` is the older expand-only flag (same flatten).
 
@@ -465,7 +459,7 @@ const flow = engine
   .gotoPage(NavHomeBlock) // must be defineNavBlock / defineMemNavBlock / definePageBlock
   .assert(AssertHelloBlock) // must be defineAssertBlock
   .gotoExternal(NavMailpitBlock) // same kind requirement, plus the INVERSE origin check
-  .method(ClearCartBlock) // must be defineMethodBlock / defineActionBlock / defineEffectBlock
+  .method(ClearCartBlock) // must be defineMethodBlock / defineEffectBlock / defineApiBlock
   .end(); // -> a real Flow<Out>; withBlockVerify still applies
 ```
 
@@ -691,7 +685,6 @@ Runtime is still one type: `Block`. Helpers are TypeScript salt.
 | `defineNavBlock` / `defineNavClickBlock` | `goto` / click-nav | `nav-*.block.ts` |
 | `defineMemNavBlock` | Nav + per-row `instanceOptions` | `nav-*.block.ts` |
 | `defineApiBlock` | Backend/API check via `page.request`, not a page action | `methods/*.api.block.ts` |
-| `defineActionBlock` | Deprecated alias of `defineMethodBlock` | - |
 
 **Page hub:** one Checkpoint = this screen. Methods hang off the page for readability /
 auto grouping. Arrival-only hubs omit `url`/`click` (previous Block already landed here).
@@ -1092,7 +1085,7 @@ deterministic.
 
 Session control (`send`, `status`, `highlight`, `dom`, …) works on **`auto`**, **`browser`**, and
 **`pilot`** — same socket, same session id. Prefer the `browser`/`pilot` prefix when driving a
-detached session; `auto` remains for the interactive picker and legacy `--cli --detach`.
+detached session; `auto` is the interactive picker.
 
 **Session lifecycle is explicit** — list what's live before opening another:
 
@@ -1112,8 +1105,8 @@ waygraph pilot start
 ```
 
 `pilot start` is one round trip for agents that need the whole graph immediately. For browser-only
-work (no graph payload), use `browser start`. `auto --cli --detach` still works but is the older
-explore entry point — prefer `browser start` for agent-driven sessions.
+work (no graph payload), use `browser start` (`--headless` for no window, `--goto <url>` to open somewhere other than
+about:blank).
 
 From a live session, drive one pick at a time:
 
@@ -1208,8 +1201,7 @@ saucedemo.com.
 ## Blind Pilot (cold start, zero Blocks)
 
 Waygraph Pilot above assumes a Block library already exists. Blind Pilot is the opposite
-case: a session on a site nobody has described to this package yet. `AutoSession`/`auto --cli
---detach` already tolerate a project directory with **zero** `.block.ts` files (no crash,
+case: a session on a site nobody has described to this package yet. `AutoSession`/`browser start` already tolerate a project directory with **zero** `.block.ts` files (no crash,
 `here` just stays `null`), so an agent can open a real session and start exploring cold with
 no new code at all - `auto dom <sessionId>` already gives real DOM/ARIA visibility
 independent of any Block library.
@@ -1308,13 +1300,13 @@ understandable: `waygraph graph node_modules/<loaded-package>` correctly discove
 Checkpoint/edge structure, with nothing generated or maintained separately. Proven end to end
 in `examples/routed-demo-consumer/` against `examples/routed-demo/`.
 
-**A real bug this proof surfaced, fixed, not left as a caveat:** a *live* `--detach` session
+**A real bug this proof surfaced, fixed, not left as a caveat:** a *live* background session
 against a package loaded through a consumer project's own deeply nested `node_modules/<pkg>`
 path used to fail with `listen EINVAL` - the session's Unix socket lived under the project
 directory, and that absolute path could exceed the OS's AF_UNIX limit (~108 bytes on Linux).
 Fixed: session sockets now live in a short, fixed location (`os.tmpdir()/waygraph-auto/`),
 independent of how deeply the project itself is nested - confirmed against the exact
-previously-failing path (`auto --cli --detach`, `auto reach`, and quit all working normally).
+previously-failing path (a background session, `auto reach`, and quit all working normally).
 Session metadata (`.waygraph-auto/<id>.json`, discoverable per-project) is unaffected - only
 the socket moved.
 
@@ -1456,15 +1448,14 @@ menu), repeat. Static graph export (old JSON / Mermaid) is `waygraph graph [proj
 
 **`--cli` session control:** `waygraph auto --cli` on its own is a blocking terminal loop -
 fine for a person, awkward for an agent that needs to inspect state between picks or send
-one command at a time without guessing a whole input sequence upfront. `--detach` runs that
-same session as a background socket server instead (session identity under
+one command at a time without guessing a whole input sequence upfront. `waygraph browser start` runs
+the same session as a background socket server instead (session identity under
 `.waygraph-auto/` in the target project, mirroring `.waygraph-traverse/`'s convention);
 `auto send <sessionId> "<pick>"` and `auto status <sessionId>` are non-interactive
 request/response calls against it (no TTY needed), and `auto attach <sessionId>` reopens an
 interactive terminal against an already-running session. `send q`/`send quit` ends the
-session and cleans up its socket/metadata. `--detach` defaults to headless;
-`--non-headless` (the same flag `run`/`demo` already use) launches a real visible browser
-window while the session stays driven entirely through `send`/`status`/`attach`/`dom` - not
+session and cleans up its socket/metadata. `browser start` opens a real visible browser
+window (`--headless` for none) while the session stays driven entirely through `send`/`status`/`attach`/`dom` - not
 a new picker UI, and the existing page-embedded headful panel (bare `waygraph auto`, no
 `--cli`) is untouched either way.
 
@@ -1487,7 +1478,7 @@ whenever a cap is hit, since this is read by an LLM, not a human. `--selector <s
 either mode to one element's subtree instead of the whole page - a modifier on the mode, not
 a third mode.
 
-**Agent bootstrap:** `waygraph pilot start` starts a `--detach` session and reads back the
+**Agent bootstrap:** `waygraph pilot start` starts a background session and reads back the
 whole project graph in one call, so an agent can begin planning a multi-step request
 immediately - see "Waygraph Pilot" above for the full picture.
 
@@ -1531,7 +1522,7 @@ Flows are files (0.10.5+):
 | Pilot bootstrap (browser + graph + snapshot) | `waygraph pilot start` |
 | Attach to existing session (graph only) | `waygraph pilot attach <sessionId>` |
 | Path-find | `waygraph auto --blocks LoginPage OrderComplete` |
-| Run `--cli` as a background session (legacy) | `waygraph auto --cli --detach` -> `{sessionId, socketPath}` |
+| Start a background session | `waygraph browser start [--headless] [--goto <url>]` -> `{sessionId, socketPath, headless}` |
 | Drive a detached session (no TTY) | `waygraph browser send <sessionId> "<pick>"` -> JSON state (`<pick>` is a menu index or a Block name) |
 | Paint highlight rings (shorthand) | `waygraph browser highlight <sessionId> "#x\|Label\|tone; .y\|Label2"` |
 | Paint highlight rings (full JSON) | `waygraph browser highlight <sessionId> '{"rings":[{"selector":"#x","label":"X"}]}'` |
@@ -1540,7 +1531,6 @@ Flows are files (0.10.5+):
 | Read the live page (aria, small/default) | `waygraph auto dom <sessionId>` |
 | Read the live page (raw DOM, bounded) | `waygraph auto dom <sessionId> --mode full` |
 | Scope either to one element | `waygraph auto dom <sessionId> --selector ".inventory_list"` |
-| Detached session with a real visible browser | `waygraph auto --cli --detach --non-headless` |
 | Read the session's Checkpoint/Block history | `waygraph auto trace <sessionId>` |
 | Read real console/network errors + coverage-gap warnings | `waygraph auto console <sessionId>` |
 | Read localStorage/sessionStorage + service workers | `waygraph auto storage <sessionId>` |
@@ -1558,8 +1548,7 @@ Flows are files (0.10.5+):
 
 `--blocks` / positional accepts a Flow export, a `.flow.ts` path, or `"a then b"`.
 `auto <file.flow.ts>` **runs** that flow (same as `run`); bare `auto` still explores.
-`--auto-next` (alias `--autoplay`) = panel Auto-advance. `--auto-play-video` is **demo
-only**. `chain` remains a compat alias for `run --blocks` / `auto --blocks`.
+`--auto-next` = panel Auto-advance. `--auto-play-video` is **demo only**.
 
 ### Todo dock UI (demo, 0.15.8+)
 

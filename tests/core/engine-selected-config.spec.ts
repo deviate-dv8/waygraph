@@ -4,10 +4,8 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Engine, MemPage, checkpoint, defineNavBlock } from "../../src/index.js";
-import type { Checkpoint } from "../../src/index.js";
 import { buildFlow } from "../../src/engine/flow/flow.js";
 
-type Home = Checkpoint<"Home">;
 
 test("an Engine built from one config follows the config the run selected with --config", async () => {
   const hits: string[] = [];
@@ -24,7 +22,7 @@ test("an Engine built from one config follows the config the run selected with -
   process.chdir(project);
   process.env.WAYGRAPH_CONFIG = "staging";
   try {
-    const NavHome = defineNavBlock<Home>({ name: "nav-home", checkpoint: "Home", url: "/" });
+    const NavHome = defineNavBlock({ name: "nav-home", checkpoint: checkpoint("Home"), url: "/" });
     // built from a config with no baseUrl at all
     const flow = buildFlow([NavHome], new Engine({}).config);
     expect(await flow.run(new MemPage())).toEqual(checkpoint("Home"));

@@ -1,10 +1,8 @@
 // Fixture — defineAssertBlock with an empty verify array (bad practice: a no-op assertion).
-import { defineAssertBlock, type Checkpoint } from "../../../dist/index.js";
+import { defineAssertBlock, checkpoint } from "../../../dist/index.js";
 
-type FixtureScreen = Checkpoint<"FixtureScreen">;
-
-export const EmptyVerifyAssertBlock = defineAssertBlock<FixtureScreen>({
+export const EmptyVerifyAssertBlock = defineAssertBlock({
   name: "empty-verify-assert-fixture",
-  checkpoint: "FixtureScreen",
+  checkpoint: checkpoint("FixtureScreen"),
   verify: [],
 });

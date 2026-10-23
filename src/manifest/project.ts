@@ -5,7 +5,6 @@ import { matchBlocksSelect } from "./select.js";
 import { exploreRoots, injectTaggedFile } from "./roots.js";
 import { blockKind, importFresh, isBlockLike, isFlowLike, walkDir } from "./scan.js";
 import type { AnyBlock } from "./scan.js";
-import { legacyRoutes } from "./legacy-generics.js";
 import { installedMapPackages, mapPackageBlockFiles } from "./maps.js";
 
 export type BlockKind = "nav" | "page" | "assert" | "method" | "effect" | "api" | "block";
@@ -23,8 +22,6 @@ export interface ScannedBlock {
   /** Project-relative path; Blocks from an injected library are tagged `@label/...`. */
   file: string;
   absFile: string;
-  /** Route read from `<In, Out>` source text: the Block still uses the deprecated form. */
-  legacy: boolean;
   /** The installed map package it came from (its `file` is then `<package>/<path>`). */
   map?: string;
 }
@@ -92,33 +89,14 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
       onError(rel, err);
       return;
     }
-    let legacyCalls: Awaited<ReturnType<typeof legacyRoutes>> | undefined;
-    let legacyIndex = 0;
     for (const [exportName, exported] of Object.entries(mod)) {
       if (!isBlockLike(exported)) continue;
       if (select && !matchBlocksSelect(select, { relFile: file, blockName: exported.name })) continue;
       const marked = exported as { __waygraphFrom?: string[]; __waygraphTo?: string[] };
-      let from = marked.__waygraphFrom ?? [];
-      let to = marked.__waygraphTo ?? [];
-      let legacy = false;
-      if (to.length === 0) {
-        legacyCalls ??= await legacyRoutes(absFile);
-        const call = legacyCalls[legacyIndex++];
-        if (call) {
-          from = call.from;
-          to = call.to;
-          legacy = true;
-        }
-        if (from.length === 0 || to.length === 0) {
-          skipped.push({
-            block: exported.name,
-            file,
-            reason: call ? `couldn't resolve "${from.length === 0 ? call.in : call.out}" to a Checkpoint tag` : "no route: declare from/to with Checkpoint values",
-          });
-          from = [];
-          to = [];
-        }
-      }
+      const from = marked.__waygraphFrom ?? [];
+      const to = marked.__waygraphTo ?? [];
+      // Every factory records a route; only a bare defineBlock has none.
+      if (to.length === 0) skipped.push({ block: exported.name, file, reason: "no route: build it with a define*Block factory and Checkpoint values" });
       blocks.push({
         block: exported,
         name: exported.name,
@@ -130,7 +108,6 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
         requires: (exported.requires ?? []).map((k) => (k as { name: string }).name),
         file,
         absFile,
-        legacy,
         ...(map ? { map } : {}),
       });
     }

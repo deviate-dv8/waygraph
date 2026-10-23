@@ -77,17 +77,6 @@ The older `withHighlightFixtures(flow, map)` slot map was removed in 0.16.0; cha
 | `WaygraphSlide` | type | One yap slide (caption, detail, tag, selector) |
 | `ResolvedHighlight` | type | A resolved stub slot |
 
-## Replaces (shim until 0.12)
-
-| Old | New |
-|---|---|
-| `instruction.highlights` | `stubAfter` |
-| Fill ring `"writing"` / `"from mem: ..."` | `stubBefore` |
-| Verify-trait fallback `visible(#...)` | `stubAfter` with human labels |
-
-Shim: empty `stubAfter` + legacy `highlights`
-automatically shimmed to ephemeral `stubAfter` keys `"0"`, `"1"`, ...
-
 ## Todo dock UI (demo, 0.15.8+)
 
 `ctx.todos(...)` / `ctx.todoDock(...)` paint a floating

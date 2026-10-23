@@ -15,30 +15,30 @@ import {
 } from "../../src/index.js";
 
 type Home = Checkpoint<"Home">;
-type Cleared = Checkpoint<"Home">;
-type Away = Checkpoint<"Away">;
 
 // Real Blocks, built through the real factories - what a compliant chain looks like.
-const NavHome = defineNavBlock<Home>({
+const NavHome = defineNavBlock({
   name: "nav-home",
-  checkpoint: "Home",
+  checkpoint: checkpoint("Home"),
   url: "https://app.example.com/home",
 });
-const AssertHome = defineAssertBlock<Home>({
+const AssertHome = defineAssertBlock({
   name: "assert-home",
-  checkpoint: "Home",
+  checkpoint: checkpoint("Home"),
   verify: [],
 });
-const ClearThing = defineMethodBlock<Home, Cleared>({
+const ClearThing = defineMethodBlock({
   name: "clear-thing",
+  from: checkpoint("Home"),
+  to: checkpoint("Home"),
   instruction: {
-    async act() {},
+    async act() { },
     resolve: () => checkpoint("Home"),
   },
 });
-const NavExternal = defineNavBlock<Checkpoint<"Mailpit">>({
+const NavExternal = defineNavBlock({
   name: "nav-mailpit",
-  checkpoint: "Mailpit",
+  checkpoint: checkpoint("Mailpit"),
   url: "https://mail.example.net/inbox",
 });
 
@@ -61,17 +61,21 @@ const fakeContext = {
 // A real two-outcome Block (Decision = Home | Away): observe() reads what act() wrote, resolve()
 // picks the tag from it - the actual shape .branch() has to dispatch on, not a hand-fixed Out.
 const WhichWay = key<"home" | "away">("which-way");
-const Decide = defineMethodBlock<Home, Home | Away>({
+const Decide = defineMethodBlock({
   name: "decide",
+  from: checkpoint("Home"),
+  to: [checkpoint("Home"), checkpoint("Away")],
   instruction: {
-    async act() {},
+    async act() { },
     observe: async (_page, mem) => mem.get(WhichWay),
     resolve: (which) => (which === "away" ? checkpoint("Away") : checkpoint("Home")),
   },
 });
-const AwayBlock = defineMethodBlock<Away, Home>({
+const AwayBlock = defineMethodBlock({
   name: "away-block",
-  instruction: { async act() {}, resolve: () => checkpoint("Home") },
+  from: checkpoint("Away"),
+  to: checkpoint("Home"),
+  instruction: { async act() { }, resolve: () => checkpoint("Home") },
 });
 
 test.describe("Engine.map() builder", () => {
@@ -256,9 +260,11 @@ test.describe("Engine.map() builder", () => {
     // page/mem, never `input`, for exactly this reason - `routeAware` here reads `page`, not input.
     const engine = new Engine();
     let ranOnAway = false;
-    const routeAware = defineMethodBlock<Away, Home>({
+    const routeAware = defineMethodBlock({
       name: "route-aware",
-      instruction: {
+        from: checkpoint("Away"),
+        to: checkpoint("Home"),
+        instruction: {
         async act() {
           ranOnAway = true;
         },
@@ -280,9 +286,11 @@ test.describe("Engine.map() builder", () => {
   test("branch() takes the null (terminal) route without running the other branch's Flow at all", async () => {
     const engine = new Engine();
     let awayRan = false;
-    const spiedAway = defineMethodBlock<Away, Home>({
+    const spiedAway = defineMethodBlock({
       name: "away-block",
-      instruction: {
+        from: checkpoint("Away"),
+        to: checkpoint("Home"),
+        instruction: {
         async act() {
           awayRan = true;
         },
@@ -304,9 +312,11 @@ test.describe("Engine.map() builder", () => {
   test("branch() with the same page across the branch: the SAME Page object is handed to the branch's Flow, not a fresh one", async () => {
     const engine = new Engine();
     const seenPages: unknown[] = [];
-    const spiedAway = defineMethodBlock<Away, Home>({
+    const spiedAway = defineMethodBlock({
       name: "away-block",
-      instruction: {
+        from: checkpoint("Away"),
+        to: checkpoint("Home"),
+        instruction: {
         async act(page) {
           seenPages.push(page);
         },
@@ -357,26 +367,32 @@ test.describe("Engine.map() builder", () => {
     const SubWhichWay = key<"near" | "far">("sub-which-way");
     let ranAwayHome = false;
     let ranFar = false;
-    const SubDecide = defineMethodBlock<Away, Home | Away>({
+    const SubDecide = defineMethodBlock({
       name: "sub-decide",
-      instruction: {
+        from: checkpoint("Away"),
+        to: [checkpoint("Home"), checkpoint("Away")],
+        instruction: {
         async act() {},
         observe: async (_page, mem) => mem.get(SubWhichWay),
         resolve: (which) => (which === "far" ? checkpoint("Away") : checkpoint("Home")),
       },
     });
-    const FarBlock = defineMethodBlock<Away, Home>({
+    const FarBlock = defineMethodBlock({
       name: "far-block",
-      instruction: {
+        from: checkpoint("Away"),
+        to: checkpoint("Home"),
+        instruction: {
         async act() {
           ranFar = true;
         },
         resolve: () => checkpoint("Home"),
       },
     });
-    const NearBlock = defineMethodBlock<Home, Home>({
+    const NearBlock = defineMethodBlock({
       name: "near-block",
-      instruction: {
+        from: checkpoint("Home"),
+        to: checkpoint("Home"),
+        instruction: {
         async act() {
           ranAwayHome = true;
         },
@@ -409,17 +425,23 @@ test.describe("Engine.map() builder", () => {
 
   test(".blocks() static introspection recurses into nested branches too - every block across every level is listed, tag-prefixed", () => {
     const engine = new Engine();
-    const SubDecide = defineMethodBlock<Away, Home | Away>({
+    const SubDecide = defineMethodBlock({
       name: "sub-decide",
-      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+        from: checkpoint("Away"),
+        to: [checkpoint("Home"), checkpoint("Away")],
+        instruction: { async act() {}, resolve: () => checkpoint("Home") },
     });
-    const FarBlock = defineMethodBlock<Away, Home>({
+    const FarBlock = defineMethodBlock({
       name: "far-block",
-      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+        from: checkpoint("Away"),
+        to: checkpoint("Home"),
+        instruction: { async act() {}, resolve: () => checkpoint("Home") },
     });
-    const NearBlock = defineMethodBlock<Home, Home>({
+    const NearBlock = defineMethodBlock({
       name: "near-block",
-      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+        from: checkpoint("Home"),
+        to: checkpoint("Home"),
+        instruction: { async act() {}, resolve: () => checkpoint("Home") },
     });
     const flow = engine
       .map()
@@ -446,9 +468,11 @@ test.describe("Engine.map() builder", () => {
   test("seedMemStub() fills requires for EVERY block across EVERY branch (and nested branch), not only whichever path a live run would take - regression coverage: a required key missing on an unreached branch still fails preflight", () => {
     const engine = new Engine();
     const WantsSecret = key<string>("wants-secret");
-    const NeedsSecret = defineMethodBlock<Away, Home>({
+    const NeedsSecret = defineMethodBlock({
       name: "needs-secret",
-      requires: [WantsSecret],
+        from: checkpoint("Away"),
+        to: checkpoint("Home"),
+        requires: [WantsSecret],
       instruction: { async act() {}, resolve: () => checkpoint("Home") },
     });
     const flow = engine
@@ -475,9 +499,11 @@ test.describe("Engine.map() builder", () => {
 
   test("branchRoutes()/collectBranchFlows() expose the branch tree statically, without running anything - see branch-regression.spec.ts for runBranchRegression() itself", () => {
     const engine = new Engine();
-    const NearBlock = defineMethodBlock<Home, Home>({
+    const NearBlock = defineMethodBlock({
       name: "near-block",
-      instruction: { async act() {}, resolve: () => checkpoint("Home") },
+        from: checkpoint("Home"),
+        to: checkpoint("Home"),
+        instruction: { async act() {}, resolve: () => checkpoint("Home") },
     });
     const flow = engine
       .map()

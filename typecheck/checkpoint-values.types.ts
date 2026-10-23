@@ -57,10 +57,10 @@ export const flow = new Engine().map().start().gotoPage(NavHome).method(AddItem)
 // @ts-expect-error Clear runs from ItemInCart, not Home
 new Engine().map().start().gotoPage(NavHome).method(Clear).end();
 
-// @ts-expect-error resolve must return the declared `to`
 defineMethodBlock({
   name: "bad",
   from: Home,
   to: ItemInCart,
+  // @ts-expect-error resolve must return the declared `to`
   instruction: { async act() {}, resolve: () => CartEmpty },
 });
