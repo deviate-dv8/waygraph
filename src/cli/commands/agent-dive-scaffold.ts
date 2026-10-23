@@ -11,6 +11,7 @@ import {
 } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 export type AgentDiveLoop = "claude" | "opencode" | "cursor" | "vscode";
 
@@ -36,46 +37,33 @@ function skillsTemplateDir(): string {
   return join(packageRoot(), "templates", "skills");
 }
 
-/** Minimal YAML-ish frontmatter parser for `*.agent.md` templates. */
-function parseAgentSpec(filePath: string): AgentSpec {
+/** A markdown file's YAML frontmatter (between the leading `---` lines) and its body. */
+function readFrontmatter(filePath: string): { data: Record<string, unknown>; body: string } {
   const raw = readFileSync(filePath, "utf-8");
-  if (!raw.startsWith("---\n")) {
-    throw new Error(`agent-dive: missing frontmatter in ${filePath}`);
-  }
-  const end = raw.indexOf("\n---\n", 4);
-  if (end < 0) throw new Error(`agent-dive: unclosed frontmatter in ${filePath}`);
-  const fm = raw.slice(4, end);
-  const body = raw.slice(end + 5).trim();
+  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(raw);
+  if (!m) throw new Error(`agent-dive: missing or unclosed frontmatter in ${filePath}`);
+  const data: unknown = parseYaml(m[1]!);
+  if (data === null || typeof data !== "object" || Array.isArray(data)) throw new Error(`agent-dive: frontmatter in ${filePath} is not a mapping`);
+  return { data: data as Record<string, unknown>, body: m[2]!.trim() };
+}
 
-  const meta: Record<string, string> = {};
-  let listKey: string | null = null;
-  const lists: Record<string, string[]> = {};
+/** Markdown with `data` as YAML frontmatter. */
+function withFrontmatter(data: Record<string, unknown>, body: string): string {
+  return `---\n${stringifyYaml(data, { lineWidth: 0 })}---\n\n${body}\n`;
+}
 
-  for (const line of fm.split("\n")) {
-    if (/^\s+-\s+/.test(line) && listKey) {
-      lists[listKey]!.push(line.replace(/^\s+-\s+/, "").trim());
-      continue;
-    }
-    listKey = null;
-    const m = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(line);
-    if (!m) continue;
-    const key = m[1]!;
-    const val = m[2]!.trim();
-    if (val === "") {
-      listKey = key;
-      lists[key] = [];
-    } else {
-      meta[key] = val;
-    }
-  }
-
-  const name = meta.name || basename(filePath).replace(/\.agent\.md$/, "");
+function parseAgentSpec(filePath: string): AgentSpec {
+  const { data, body } = readFrontmatter(filePath);
+  const text = (k: string): string | undefined => (typeof data[k] === "string" && data[k] !== "" ? (data[k] as string) : undefined);
+  const name = text("name") ?? basename(filePath).replace(/\.(agent|skill)\.md$/, "");
+  const model = text("model");
+  const color = text("color");
   return {
     name,
-    description: meta.description || name,
-    ...(meta.model ? { model: meta.model } : {}),
-    ...(meta.color ? { color: meta.color } : {}),
-    tools: lists.tools ?? [],
+    description: text("description") ?? name,
+    ...(model ? { model } : {}),
+    ...(color ? { color } : {}),
+    tools: Array.isArray(data.tools) ? data.tools.map(String) : [],
     instructions: body,
   };
 }
@@ -156,20 +144,16 @@ function writeFileLogged(path: string, content: string, kind: string): void {
 }
 
 function claudeAgentMd(agent: AgentSpec): string {
-  const tools = agent.tools.join(", ");
-  const lines = [
-    "---",
-    `name: ${agent.name}`,
-    `description: ${agent.description}`,
-    ...(agent.model ? [`model: ${agent.model}`] : []),
-    ...(agent.color ? [`color: ${agent.color}`] : []),
-    ...(tools ? [`tools: ${tools}`] : []),
-    "---",
-    "",
+  return withFrontmatter(
+    {
+      name: agent.name,
+      description: agent.description,
+      ...(agent.model ? { model: agent.model } : {}),
+      ...(agent.color ? { color: agent.color } : {}),
+      ...(agent.tools.length ? { tools: agent.tools.join(", ") } : {}),
+    },
     agent.instructions,
-    "",
-  ];
-  return lines.join("\n");
+  );
 }
 
 function opencodePromptMd(agent: AgentSpec): string {
@@ -177,16 +161,7 @@ function opencodePromptMd(agent: AgentSpec): string {
 }
 
 function cursorRuleMdc(agent: AgentSpec): string {
-  return `---
-description: ${agent.description}
-globs:
-alwaysApply: false
----
-
-# ${agent.name}
-
-${agent.instructions}
-`;
+  return withFrontmatter({ description: agent.description, globs: null, alwaysApply: false }, `# ${agent.name}\n\n${agent.instructions}`);
 }
 
 function vscodeAgentMd(agent: AgentSpec): string {
@@ -194,8 +169,7 @@ function vscodeAgentMd(agent: AgentSpec): string {
 }
 
 function claudeSkillMd(skill: AgentSpec): string {
-  const lines = ["---", `name: ${skill.name}`, `description: ${skill.description}`, "---", "", skill.instructions, ""];
-  return lines.join("\n");
+  return withFrontmatter({ name: skill.name, description: skill.description }, skill.instructions);
 }
 
 export interface AgentDiveOptions {
