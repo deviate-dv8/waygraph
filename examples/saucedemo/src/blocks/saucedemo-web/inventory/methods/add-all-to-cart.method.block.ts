@@ -1,5 +1,5 @@
-import { defineMethodBlock, checkpoint, type Checkpoint } from "waygraph";
-import type { RemoveFromCartOutcome } from "../../../../states/checkout.states.js";
+import { defineMethodBlock, checkpoint } from "waygraph";
+import { RemoveFromCartOutcome } from "../../../../states/checkout.states.js";
 import { collectAddableItems, InventorySel } from "./inventory-items.js";
 
 type BulkObserve = "added" | "nothing";
@@ -14,12 +14,10 @@ type BulkObserve = "added" | "nothing";
  * leave inventory and return, collectors re-read Add buttons from the DOM.
  * Out: ItemInCart if the cart has items after; LoggedIn if still empty.
  */
-export const AddAllToCartBlock = defineMethodBlock<
-  Checkpoint<string>,
-  RemoveFromCartOutcome
->({
+export const AddAllToCartBlock = defineMethodBlock({
   name: "add-all-to-cart",
   description: "Adds every product still showing Add to cart on this page.",
+  to: RemoveFromCartOutcome,
   instruction: {
     async act(page) {
       const items = await collectAddableItems(page);

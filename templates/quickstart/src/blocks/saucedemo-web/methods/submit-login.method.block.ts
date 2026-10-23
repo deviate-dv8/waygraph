@@ -1,5 +1,5 @@
 import { defineMethodBlock, checkpoint, Trait } from "waygraph";
-import type {
+import {
   LoginPage,
   LoginSubmitOutcome,
 } from "../../../states/checkout.states.js";
@@ -17,12 +17,11 @@ type LoginObserve = "success" | "failure";
  * already did that). One Block, one action: submit.
  * Branches: good creds -> LoggedIn; bad/locked -> LoginPage with error banner.
  */
-export const SubmitLoginBlock = defineMethodBlock<
-  LoginPage,
-  LoginSubmitOutcome
->({
+export const SubmitLoginBlock = defineMethodBlock({
   name: "submit-login",
   description: "Submits the login form; stays on LoginPage when auth fails.",
+  from: LoginPage,
+  to: LoginSubmitOutcome,
   instruction: {
     async act(page) {
       // noWaitAfter: observe owns the inventory URL wait. Default click

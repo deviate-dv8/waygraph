@@ -3,6 +3,8 @@ import type { Block, Checkpoint, DefinedBlock } from "../types.js";
 import type { MemKey } from "../mem-page.js";
 import type { Trait } from "../trait.js";
 import { defineBlock } from "../block.js";
+import { markRouteOf, routed } from "../route.js";
+import type { RoutedBlockBase } from "../route.js";
 
 /**
  * TypeScript salt over {@link defineBlock}: same runtime Block, but the type
@@ -50,16 +52,23 @@ export type MemEffectBlock<
  * toggles a live instance rather than navigating. Runtime result is an ordinary
  * Block - the helper is TypeScript salt only.
  */
-export function defineEffectBlock<
-  In extends Checkpoint<string>,
-  Out extends Checkpoint<string>,
->(
-  base: Parameters<typeof defineBlock<In, Out>>[0] & {
-    requires: readonly MemKey<any>[];
-    instanceOptions: NonNullable<Block<In, Out>["instanceOptions"]>;
-  },
+type EffectExtras<In extends Checkpoint<string>, Out extends Checkpoint<string>> = {
+  requires: readonly MemKey<any>[];
+  instanceOptions: NonNullable<Block<In, Out>["instanceOptions"]>;
+};
+
+export function defineEffectBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
+  base: RoutedBlockBase<In, Out> & EffectExtras<In, Out>,
+): EffectBlock<In, Out>;
+/** @deprecated Say where it runs: `from: Home` (or `[Home, CartEmpty]`) and `to: ItemInCart`, instead of `<In, Out>` type arguments. */
+export function defineEffectBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
+  base: Parameters<typeof defineBlock<In, Out>>[0] & EffectExtras<In, Out>,
+): EffectBlock<In, Out>;
+export function defineEffectBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
+  base: (RoutedBlockBase<In, Out> | Parameters<typeof defineBlock<In, Out>>[0]) & EffectExtras<In, Out>,
 ): EffectBlock<In, Out> {
-  const built = defineBlock(base) as EffectBlock<In, Out>;
+  const built = defineBlock(routed(base) as Parameters<typeof defineBlock<In, Out>>[0]) as EffectBlock<In, Out>;
+  markRouteOf(built, base);
   Object.defineProperty(built, "__waygraphMemKind", {
     value: "effect",
     enumerable: false,

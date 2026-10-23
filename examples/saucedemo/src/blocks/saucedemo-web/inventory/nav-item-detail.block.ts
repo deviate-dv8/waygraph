@@ -1,5 +1,5 @@
 import { defineMemNavBlock, Trait, type WaygraphInstanceOption } from "waygraph";
-import type { ItemDetailPage } from "../../../states/checkout.states.js";
+import { ItemDetailPage } from "../../../states/checkout.states.js";
 import { SelectedItem } from "../../../states/checkout.mem-keys.js";
 import {
   collectInventoryItems,
@@ -14,10 +14,10 @@ import {
  * Opens the mem-picked product detail page. waygraph auto lists one
  * "Open ... details" row per inventory card via instanceOptions.
  */
-export const NavItemDetailBlock = defineMemNavBlock<ItemDetailPage>({
+export const NavItemDetailBlock = defineMemNavBlock({
   name: "nav-item-detail",
   description: "Opens the product named by mem (saucedemo.selectedItem) on its detail page.",
-  checkpoint: "ItemDetailPage",
+  checkpoint: ItemDetailPage,
   requires: [SelectedItem.key],
   click: (mem) => InventorySel.title(mem.get(SelectedItem.key).id),
   verify: [Trait.url({ pathname: "/inventory-item.html" })],

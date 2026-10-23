@@ -1,5 +1,5 @@
-import { defineMethodBlock, checkpoint, Trait } from "waygraph";
-import type { LoggedIn, LoginPage } from "../../../states/checkout.states.js";
+import { defineMethodBlock, Trait } from "waygraph";
+import { LoggedIn, LoginPage } from "../../../states/checkout.states.js";
 import { LoginSel } from "./login.sel.js";
 
 /**
@@ -9,15 +9,16 @@ import { LoginSel } from "./login.sel.js";
  *
  * Burger menu Logout - real cycle back to LoginPage (same Checkpoint nav-login lands on).
  */
-export const SubmitLogoutBlock = defineMethodBlock<LoggedIn, LoginPage>({
+export const SubmitLogoutBlock = defineMethodBlock({
   name: "submit-logout",
   description: "Opens the burger menu and logs out.",
+  from: LoggedIn,
+  to: LoginPage,
   instruction: {
     async act(page) {
       await page.locator(LoginSel.burgerMenuButton).click();
       await page.locator(LoginSel.logoutLink).click();
     },
-    resolve: () => checkpoint("LoginPage"),
     verify: [Trait.visible(LoginSel.loginButton)],
   },
 });

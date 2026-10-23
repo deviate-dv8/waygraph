@@ -1,12 +1,14 @@
-import { defineMethodBlock, checkpoint } from "waygraph";
-import type { MailpitMessageOpen } from "../../../../states/demo.states.js";
+import { defineMethodBlock } from "waygraph";
+import { MailpitMessageOpen } from "../../../../states/demo.states.js";
 import { EmailLink, ExpectedLinkPattern } from "../../../../states/demo.mem-keys.js";
 import { MailpitSel } from "../_sel.js";
 
 /** Reads the link matching `ExpectedLinkPattern` out of the preview into mem; going there is a separate Nav. */
-export const ExtractEmailLinkBlock = defineMethodBlock<MailpitMessageOpen, MailpitMessageOpen>({
+export const ExtractEmailLinkBlock = defineMethodBlock({
   name: "extract-email-link",
   description: "Reads the link matching the mem-supplied pattern out of the open message's preview.",
+  from: MailpitMessageOpen,
+  to: MailpitMessageOpen,
   requires: [ExpectedLinkPattern],
   instruction: {
     async act(page, _in, mem) {
@@ -18,6 +20,5 @@ export const ExtractEmailLinkBlock = defineMethodBlock<MailpitMessageOpen, Mailp
       if (!href) throw new Error(`extract-email-link: no link matching "${pattern}" in message preview`);
       mem.set(EmailLink({ url: href }));
     },
-    resolve: () => checkpoint("MailpitMessageOpen"),
   },
 });

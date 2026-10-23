@@ -1,22 +1,22 @@
 import {
   defineEffectBlock,
-  checkpoint,
   type WaygraphInstanceOption,
 } from "waygraph";
-import type { CartEmpty, ItemInCart } from "../../../../states/demo.states.js";
+import { CartEmpty, ItemInCart } from "../../../../states/demo.states.js";
 import { SelectedItem } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
-export const RemoveItemBlock = defineEffectBlock<ItemInCart, CartEmpty>({
+export const RemoveItemBlock = defineEffectBlock({
   name: "remove-item",
   description: "Removes the mem-selected catalog item from the cart.",
+  from: ItemInCart,
+  to: CartEmpty,
   requires: [SelectedItem.key],
   instruction: {
     async act(page, _input, mem) {
       const { id } = mem.get(SelectedItem.key);
       await page.locator(DemoSel.removeBtn(id)).click();
     },
-    resolve: () => checkpoint("CartEmpty"),
     verify: [
       {
         name: "item-removed",

@@ -1,11 +1,13 @@
-import { defineMethodBlock, checkpoint } from "waygraph";
-import type { HoppscotchRest } from "../../../../states/demo.states.js";
+import { defineMethodBlock } from "waygraph";
+import { HoppscotchRest } from "../../../../states/demo.states.js";
 import { ResponseBody } from "../../../../states/demo.mem-keys.js";
 import { HoppscotchSel } from "../_sel.js";
 
-export const ReadResponseBodyBlock = defineMethodBlock<HoppscotchRest, HoppscotchRest>({
+export const ReadResponseBodyBlock = defineMethodBlock({
   name: "read-response-body",
   description: "Reads the raw response body into mem.",
+  from: HoppscotchRest,
+  to: HoppscotchRest,
   instruction: {
     async act(page, _in, mem) {
       await page.locator(HoppscotchSel.rawTab).click();
@@ -16,6 +18,5 @@ export const ReadResponseBodyBlock = defineMethodBlock<HoppscotchRest, Hoppscotc
       const json = page.locator(HoppscotchSel.responseJsonTab);
       if (await json.count()) await json.click();
     },
-    resolve: () => checkpoint("HoppscotchRest"),
   },
 });

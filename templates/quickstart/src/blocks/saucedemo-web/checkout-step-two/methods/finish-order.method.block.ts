@@ -1,5 +1,5 @@
-import { defineMethodBlock, checkpoint, Trait, narrate } from "waygraph";
-import type {
+import { defineMethodBlock, Trait, narrate } from "waygraph";
+import {
   CheckoutOverviewPage,
   OrderComplete,
 } from "../../../../states/checkout.states.js";
@@ -13,13 +13,12 @@ import { CheckoutOverviewSel } from "./checkout-overview.sel.js";
  * Places the order on the overview page - form/finish click, not a NavBlock.
  * Stubs use open ctx lifecycles (preferred) - not static slot maps.
  */
-export const FinishOrderBlock = defineMethodBlock<
-  CheckoutOverviewPage,
-  OrderComplete
->({
+export const FinishOrderBlock = defineMethodBlock({
   name: "finish-order",
   description:
     "Places the order and confirms the 'Thank you for your order!' completion page.",
+  from: CheckoutOverviewPage,
+  to: OrderComplete,
   instruction: {
     async act(page) {
       const finishButton = page.locator(CheckoutOverviewSel.finishBtn);
@@ -27,7 +26,6 @@ export const FinishOrderBlock = defineMethodBlock<
         finishButton.click(),
       );
     },
-    resolve: () => checkpoint("OrderComplete"),
     verify: [
       Trait.text(
         CheckoutOverviewSel.completeHeader,

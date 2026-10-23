@@ -1,11 +1,13 @@
-import { defineMethodBlock, checkpoint } from "waygraph";
-import type { HoppscotchRest } from "../../../../states/demo.states.js";
+import { defineMethodBlock } from "waygraph";
+import { HoppscotchRest } from "../../../../states/demo.states.js";
 import { RequestParams } from "../../../../states/demo.mem-keys.js";
 import { HoppscotchSel } from "../_sel.js";
 
-export const SetQueryParamsBlock = defineMethodBlock<HoppscotchRest, HoppscotchRest>({
+export const SetQueryParamsBlock = defineMethodBlock({
   name: "set-query-params",
   description: "Adds each mem-supplied query parameter (name -> value) on the Parameters tab.",
+  from: HoppscotchRest,
+  to: HoppscotchRest,
   requires: [RequestParams],
   instruction: {
     async act(page, _in, mem) {
@@ -17,6 +19,5 @@ export const SetQueryParamsBlock = defineMethodBlock<HoppscotchRest, HoppscotchR
         await page.keyboard.type(value);
       }
     },
-    resolve: () => checkpoint("HoppscotchRest"),
   },
 });

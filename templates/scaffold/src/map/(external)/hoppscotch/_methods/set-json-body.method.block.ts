@@ -1,5 +1,5 @@
-import { defineMethodBlock, checkpoint } from "waygraph";
-import type { HoppscotchRest } from "../../../../states/demo.states.js";
+import { defineMethodBlock } from "waygraph";
+import { HoppscotchRest } from "../../../../states/demo.states.js";
 import { RequestBody } from "../../../../states/demo.mem-keys.js";
 import { HoppscotchSel } from "../_sel.js";
 
@@ -11,9 +11,11 @@ const spansLines = (text: string): boolean => {
   }
 };
 
-export const SetJsonBodyBlock = defineMethodBlock<HoppscotchRest, HoppscotchRest>({
+export const SetJsonBodyBlock = defineMethodBlock({
   name: "set-json-body",
   description: "Sets the content type to application/json and types the mem-supplied body, prettified.",
+  from: HoppscotchRest,
+  to: HoppscotchRest,
   requires: [RequestBody],
   instruction: {
     async act(page, _in, mem) {
@@ -31,6 +33,5 @@ export const SetJsonBodyBlock = defineMethodBlock<HoppscotchRest, HoppscotchRest
         throw new Error("set-json-body: Hoppscotch's Prettify button was not found, so the body stayed on one line");
       }
     },
-    resolve: () => checkpoint("HoppscotchRest"),
   },
 });

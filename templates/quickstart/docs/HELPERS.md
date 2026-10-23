@@ -73,8 +73,10 @@ Checkpoint = place on the map. `branch()` = which road to take from that place.
 Conditional Out (no `branch()` needed for auto/graph):
 
 ```ts
-defineMethodBlock<LoginPage, LoggedIn | LoginPage>({
+defineMethodBlock({
   name: "submit-login",
+  from: LoginPage,
+  to: [LoggedIn, LoginPage],
   instruction: {
     async act(page, _in, mem) { /* fill + click */ },
     async observe(page) {
@@ -112,8 +114,9 @@ then run the Block (act reads mem as usual).
 ### Effect - spawn Method-like rows (Add / Remove)
 
 ```ts
-defineEffectBlock<Checkpoint<string>, ItemInCart>({
+defineEffectBlock({
   name: "add-to-cart",
+  to: ItemInCart, // no `from`: runs from anywhere
   requires: [SelectedItem.key],
   instruction: {
     async act(page, _in, mem) {
@@ -140,9 +143,9 @@ Auto shows: `Add "Sauce Labs Backpack" to cart`, `Add "Bike Light"…`, …
 ### MemNav - spawn Nav rows (Open details)
 
 ```ts
-defineMemNavBlock<ItemDetailPage>({
+defineMemNavBlock({
   name: "nav-item-detail",
-  checkpoint: "ItemDetailPage",
+  checkpoint: ItemDetailPage,
   requires: [SelectedItem.key],
   click: (mem) => InventorySel.title(mem.get(SelectedItem.key).id),
   verify: [Trait.url({ pathname: "/inventory-item.html" })],

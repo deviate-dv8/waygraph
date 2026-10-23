@@ -1,5 +1,5 @@
 import { definePageBlock, Trait } from "waygraph";
-import type { LoggedIn } from "../../../states/checkout.states.js";
+import { LoggedIn } from "../../../states/checkout.states.js";
 import { AddToCartBlock } from "./methods/add-to-cart.effect.block.js";
 import { RemoveFromCartBlock } from "./methods/remove-from-cart.effect.block.js";
 import { AddAllToCartBlock } from "./methods/add-all-to-cart.method.block.js";
@@ -18,11 +18,11 @@ import { InventorySel } from "./methods/inventory-items.js";
  * to LoggedIn. Cart Effects/Methods use In Checkpoint<string> (from: "*") so
  * auto still offers them after leave/return - menu follows live DOM buttons.
  */
-export const InventoryPageBlock = definePageBlock<LoggedIn>({
+export const InventoryPageBlock = definePageBlock({
   name: "page-inventory",
   description:
     "Inventory catalog hub - per-item and bulk add/remove, open item detail.",
-  checkpoint: "LoggedIn",
+  checkpoint: LoggedIn,
   verify: [
     Trait.url({ pathname: "/inventory.html" }),
     Trait.visible(InventorySel.list),

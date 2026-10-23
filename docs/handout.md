@@ -14,7 +14,7 @@ shape. At runtime the engine only sees `Block`.
 
 | Concept | Role |
 |---|---|
-| `Checkpoint<"Name">` | Typed state marker between Blocks |
+| `checkpoint("Name")` | A state value (and type) Blocks move between |
 | `Block` / `defineBlock` | One act (+ optional observe/verify) + resolve |
 | `NavBlock` / `defineNavBlock` | Navigation-only salt (`url` XOR `click`) |
 | `EffectBlock` / `defineEffectBlock` | Instance-menu salt (add/remove/toggle via mem + `instanceOptions`) |
@@ -30,14 +30,14 @@ import { defineNavBlock, Trait } from "waygraph";
 
 const NavDocuments = defineNavBlock({
 name: "nav-documents",
-checkpoint: "DocumentsList",
+checkpoint: DocumentsList,
 click: "nav >> text=Documents",
 verify: [Trait.url({ pathname: "/dashboard/documents" })],
 });
 
 const NavDeepLink = defineNavBlock({
 name: "nav-share",
-checkpoint: "ShareView",
+checkpoint: ShareView,
 url: (mem) => `/share/${mem.get(ShareToken)}`,
 });
 ```

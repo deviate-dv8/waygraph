@@ -1,23 +1,23 @@
 import {
   defineEffectBlock,
-  checkpoint,
   type WaygraphInstanceOption,
 } from "waygraph";
-import type { CanAddItem, ItemInCart } from "../../../../states/demo.states.js";
+import { CanAddItem, ItemInCart } from "../../../../states/demo.states.js";
 import { SelectedItem } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
 /** `waygraph auto` lists one "Add …" row per live Add button via `instanceOptions`. */
-export const AddItemBlock = defineEffectBlock<CanAddItem, ItemInCart>({
+export const AddItemBlock = defineEffectBlock({
   name: "add-item",
   description: "Adds the mem-selected catalog item to the cart.",
+  from: CanAddItem,
+  to: ItemInCart,
   requires: [SelectedItem.key],
   instruction: {
     async act(page, _input, mem) {
       const { id } = mem.get(SelectedItem.key);
       await page.locator(DemoSel.addBtn(id)).click();
     },
-    resolve: () => checkpoint("ItemInCart"),
     verify: [
       {
         name: "item-added",

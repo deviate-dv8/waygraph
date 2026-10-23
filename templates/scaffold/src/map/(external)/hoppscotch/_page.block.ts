@@ -1,5 +1,5 @@
 import { definePageBlock, Trait } from "waygraph";
-import type { HoppscotchRest } from "../../../states/demo.states.js";
+import { HoppscotchRest } from "../../../states/demo.states.js";
 import { SetMethodBlock } from "./_methods/set-method.method.block.js";
 import { SetUrlBlock } from "./_methods/set-url.method.block.js";
 import { SetHeadersBlock } from "./_methods/set-headers.method.block.js";
@@ -14,10 +14,10 @@ import { ReadResponseHeadersBlock } from "./_methods/read-response-headers.metho
 import { AssertResponseHeaderBlock } from "./_methods/assert-response-header.method.block.js";
 import { HoppscotchSel } from "./_sel.js";
 
-export const HoppscotchRestPageBlock = definePageBlock<HoppscotchRest>({
+export const HoppscotchRestPageBlock = definePageBlock({
   name: "page-hoppscotch-rest",
   description: "Hoppscotch REST client - build a request, send it, check the response.",
-  checkpoint: "HoppscotchRest",
+  checkpoint: HoppscotchRest,
   verify: [Trait.visible(HoppscotchSel.send)],
   methods: {
     setMethod: () => SetMethodBlock,

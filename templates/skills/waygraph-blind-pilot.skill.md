@@ -52,7 +52,8 @@ Session control works as `browser …` or `auto …` with the same `<sessionId>`
   Block file can simply vanish from the graph with no error printed anywhere obvious - if a
   Block you just wrote doesn't show up after `browser reload`, check `waygraph graph`'s own
   `skipped` list and the file's syntax directly, don't assume it just needs more time.
-- **`defineAssertBlock` needs no `<In, Out>` generic to type-check** (`checkpoint: "X"` alone
+- **Pass Checkpoint values** (`checkpoint: X`, `from: X, to: Y`) so a freshly-written Block shows up in the graph from its
+  runtime route. Older note: `defineAssertBlock` needs no `<In, Out>` generic to type-check (`checkpoint: X` alone
   is enough for TypeScript to infer it) - but older/naive static-graph discovery logic may
   rely on parsing an explicit generic from source text. If a freshly-written
   `defineAssertBlock` Block is missing from `waygraph graph`'s edges (silently, no error),

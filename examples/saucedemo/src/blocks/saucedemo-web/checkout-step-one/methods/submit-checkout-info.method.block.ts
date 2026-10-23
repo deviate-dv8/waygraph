@@ -1,5 +1,5 @@
-import { defineMethodBlock, checkpoint, Trait } from "waygraph";
-import type { CheckoutInfoPage, CheckoutOverviewPage } from "../../../../states/checkout.states.js";
+import { defineMethodBlock, Trait } from "waygraph";
+import { CheckoutInfoPage, CheckoutOverviewPage } from "../../../../states/checkout.states.js";
 import { CheckoutInfoSel } from "./checkout-info.sel.js";
 
 /**
@@ -11,14 +11,15 @@ import { CheckoutInfoSel } from "./checkout-info.sel.js";
  * fill-last-name / fill-postal-code (each its own Block). One Block, one
  * action: submit.
  */
-export const SubmitCheckoutInfoBlock = defineMethodBlock<CheckoutInfoPage, CheckoutOverviewPage>({
+export const SubmitCheckoutInfoBlock = defineMethodBlock({
   name: "submit-checkout-info",
   description: "Continues from the shipping info form to the order overview.",
+  from: CheckoutInfoPage,
+  to: CheckoutOverviewPage,
   instruction: {
     async act(page) {
       await page.locator(CheckoutInfoSel.continueBtn).click();
     },
-    resolve: () => checkpoint("CheckoutOverviewPage"),
     verify: [Trait.url({ pathname: "/checkout-step-two.html" })],
   },
 });

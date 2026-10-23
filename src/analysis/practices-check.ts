@@ -43,8 +43,8 @@ function hasWildcardOut(src: string): boolean {
   return false;
 }
 
-/** defineAssertBlock({ … }) with no explicit Out type — defaults to wildcard. */
-const ASSERT_NO_TYPE_ARG = /\bdefineAssertBlock\s*\(\s*\{/;
+/** defineAssertBlock({ …, checkpoint: "Tag" }) with no type argument: a tag string gives an untyped Checkpoint. */
+const ASSERT_NO_TYPE_ARG = /\bdefineAssertBlock\s*\(\s*\{[^}]*?\bcheckpoint\s*:\s*["'`]/;
 
 /** defineAssertBlock, any form - used to scope the empty-verify check below. */
 const IS_ASSERT_BLOCK = /\bdefineAssertBlock\s*[<(]/;
@@ -57,6 +57,10 @@ const IS_ASSERT_BLOCK = /\bdefineAssertBlock\s*[<(]/;
  */
 const METHOD_EFFECT_GENERIC =
   /\bdefine(?:Method|Effect)Block\s*<\s*([A-Za-z_$][\w$]*)\s*,\s*([A-Za-z_$][\w$]*)\s*>/;
+
+/** The same, for a Block that names its Checkpoints as values: `from: LoginPage, to: LoggedIn`. */
+const METHOD_EFFECT_ROUTE =
+  /\bdefine(?:Method|Effect)Block\s*\(\s*\{[\s\S]*?\bfrom\s*:\s*([A-Za-z_$][\w$]*)\s*,[\s\S]*?\bto\s*:\s*([A-Za-z_$][\w$]*)/;
 
 /** `verify: []` - a literal empty array, the codegen-stub shape this check exists for. */
 const EMPTY_VERIFY_ARRAY = /\bverify\s*:\s*\[\s*\]/;
@@ -133,7 +137,7 @@ export function collectPracticeWarnings(
         file: rel,
         detail:
           "the Block's output is Checkpoint<string>, so its result is untyped — use a typed Checkpoint from " +
-          "src/states/ (e.g. defineMethodBlock<LoginPage, LoggedIn>); a wildcard input is fine",
+          "src/states/ (e.g. defineMethodBlock({ from: LoginPage, to: LoggedIn, ... })); a wildcard input is fine",
       });
     }
     if (!isIgnored("assert-no-type-arg", ignore) && ASSERT_NO_TYPE_ARG.test(src)) {
@@ -141,7 +145,7 @@ export function collectPracticeWarnings(
         kind: "assert-no-type-arg",
         file: rel,
         detail:
-          "defineAssertBlock({…}) without an explicit type argument — add defineAssertBlock<YourCheckpoint>({…}) so defineFlow typing stays honest",
+          "defineAssertBlock({ checkpoint: \"Tag\" }) gives an untyped Checkpoint — pass the Checkpoint value: checkpoint: YourCheckpoint",
       });
     }
 
@@ -164,7 +168,7 @@ export function collectPracticeWarnings(
             "Method/Effect act() mixes .fill() and .click() — fill and submit must be separate Blocks (see examples/saucedemo login split)",
         });
       }
-      const genericMatch = METHOD_EFFECT_GENERIC.exec(src);
+      const genericMatch = METHOD_EFFECT_GENERIC.exec(src) ?? METHOD_EFFECT_ROUTE.exec(src);
       const isTransition = !!genericMatch && genericMatch[1] !== genericMatch[2];
       if (
         isTransition &&

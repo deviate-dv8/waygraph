@@ -3,6 +3,8 @@ import { checkpoint } from "../types.js";
 import type { Checkpoint, DefinedBlock } from "../types.js";
 import type { Trait } from "../trait.js";
 import { defineBlock } from "../block.js";
+import { markRouteOf, routed } from "../route.js";
+import type { CheckpointRef, RoutedBlockBase } from "../route.js";
 import type { MemKey } from "../mem-page.js";
 import type { Page } from "@playwright/test";
 
@@ -47,11 +49,18 @@ export type ActionBlock<
 
 
 /** Builds a Block for one page action (fill, submit, click) that does not navigate. */
-export function defineMethodBlock<
-  In extends Checkpoint<string>,
-  Out extends Checkpoint<string>,
->(base: Parameters<typeof defineBlock<In, Out>>[0]): MethodBlock<In, Out> {
-  const built = defineBlock(base) as MethodBlock<In, Out>;
+export function defineMethodBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
+  base: RoutedBlockBase<In, Out>,
+): MethodBlock<In, Out>;
+/** @deprecated Say where it runs: `from: Home` (or `[Home, CartEmpty]`) and `to: ItemInCart`, instead of `<In, Out>` type arguments. */
+export function defineMethodBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
+  base: Parameters<typeof defineBlock<In, Out>>[0],
+): MethodBlock<In, Out>;
+export function defineMethodBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
+  base: RoutedBlockBase<In, Out> | Parameters<typeof defineBlock<In, Out>>[0],
+): MethodBlock<In, Out> {
+  const built = defineBlock(routed(base)) as MethodBlock<In, Out>;
+  markRouteOf(built, base);
   Object.defineProperty(built, "__waygraphSalt", {
     value: "method",
     enumerable: false,
@@ -69,8 +78,8 @@ export const defineActionBlock = defineMethodBlock;
 export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<string>> {
   name: string;
   description?: string;
-  /** Self-loop target - the Checkpoint this assertion runs on and returns to. */
-  checkpoint: Out["__state"];
+  /** The Checkpoint this assertion runs on and returns to: its value (`Home`). A tag string still works but is deprecated. */
+  checkpoint: CheckpointRef<Out>;
   /**
    * Shorthand for the wait-then-assert shape found repeatedly in hand-written
    * assertion Blocks: waits for a heading with this accessible name before
@@ -106,9 +115,17 @@ export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<
  *   verify: [Trait.visible(RawMaterialsSel.reorderBadge)],
  * });
  */
+export function defineAssertBlock<Out extends Checkpoint<string>>(
+  options: AssertBlockOptions<Out> & { checkpoint: Out },
+): AssertBlock<Out>;
+/** @deprecated Pass the Checkpoint value: `checkpoint: Home`. */
+export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<string>>(
+  options: AssertBlockOptions<Out>,
+): AssertBlock<Out>;
 export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<string>>(
   options: AssertBlockOptions<Out>,
 ): AssertBlock<Out> {
+  const tag = typeof options.checkpoint === "string" ? options.checkpoint : options.checkpoint.__state;
   const built = defineMethodBlock<Out, Out>({
     name: options.name,
     ...(options.description ? { description: options.description } : {}),
@@ -119,7 +136,7 @@ export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<st
           await (page as unknown as Page).getByRole("heading", { name: options.waitForHeading }).waitFor();
         }
       },
-      resolve: () => checkpoint(options.checkpoint) as Out,
+      resolve: () => checkpoint(tag) as Out,
       verify: options.verify,
       ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
       ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
@@ -139,6 +156,8 @@ export function defineAssertBlock<Out extends Checkpoint<string> = Checkpoint<st
   // independent (always `checkpoint(options.checkpoint)`), so the same
   // resolve()-calling path Nav/Page Blocks already use is reused via this
   // marker instead of requiring authors to write generics just to be found.
+  Object.defineProperty(built, "__waygraphFrom", { value: [tag], enumerable: false, configurable: true });
+  Object.defineProperty(built, "__waygraphTo", { value: [tag], enumerable: false, configurable: true });
   Object.defineProperty(built, "__waygraphKind", {
     value: "assert",
     enumerable: false,

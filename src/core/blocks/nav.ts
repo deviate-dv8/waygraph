@@ -6,6 +6,8 @@ import { MemPage } from "../mem-page.js";
 import type { MemKey } from "../mem-page.js";
 import { defineBlock } from "../block.js";
 import type { Page } from "@playwright/test";
+import { markRoute, tagOf, tagsOf } from "../route.js";
+import type { CheckpointRef } from "../route.js";
 
 /**
  * A Block whose only possible action is navigating to a URL - built via
@@ -53,16 +55,17 @@ export type NavBlock<Out extends Checkpoint<string>> = Omit<
 export type NavBlockOptions<Out extends Checkpoint<string>> = {
   name: string;
   description?: string;
-  checkpoint: Out["__state"];
+  /** The Checkpoint this Nav lands on: its value (`Home`). A tag string (`"Home"`) still works but is deprecated. */
+  checkpoint: CheckpointRef<Out>;
   /**
    * Checkpoint tags this Nav can run from. Omit (the default) = reachable from anywhere. Set it for
    * a page that only exists after something else - e.g. every in-app page after sign-in - so route
    * finding (`auto --blocks`, `pilot reach`, `traverse`) goes through the sign-in steps instead of
    * jumping straight there from the login page.
-   * @example const SIGNED_IN = ["Dashboard", "CommandCenter"] as const; // src/states/
+   * @example const SIGNED_IN = [Dashboard, CommandCenter] as const; // src/states/
    * defineNavBlock({ ..., from: SIGNED_IN })
    */
-  from?: readonly string[];
+  from?: readonly (Checkpoint<string> | string)[];
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
   stubBefore?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
@@ -122,6 +125,9 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
  * @example defineNavClickBlock({ name: "nav-web-documents", checkpoint: "DocumentsList", click: "nav >> text=Documents" })
  * For click-nav in app code prefer {@link defineNavClickBlock} (url stays here).
  */
+export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlockOptions<Out> & { checkpoint: Out }): NavBlock<Out>;
+/** @deprecated Pass the Checkpoint value: `checkpoint: Home` (declared as `export const Home = checkpoint("Home")`). */
+export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlockOptions<Out>): NavBlock<Out>;
 export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlockOptions<Out>): NavBlock<Out> {
   const built = defineBlock<Checkpoint<string>, Out>({
     name: options.name,
@@ -141,7 +147,7 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
           await (page as unknown as Page).locator(selector).click();
         }
       },
-      resolve: () => checkpoint(options.checkpoint) as Out,
+      resolve: () => checkpoint(tagOf(options.checkpoint)) as Out,
       ...(options.verify ? { verify: options.verify } : {}),
       ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
       ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
@@ -149,6 +155,7 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
       ...(options.highlights ? { highlights: options.highlights } : {}),
     },
   });
+  markRoute(built, options.from?.length ? tagsOf(options.from) : ["*"], [tagOf(options.checkpoint)]);
   // Non-enumerable so it never shows up in Object.keys/JSON/autocomplete -
   // purely a runtime marker `waygraph check` (or anything else walking a
   // project's Blocks) can test for to tell a NavBlock apart from a regular
@@ -163,7 +170,7 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
   // overlays can label "nav click" without re-parsing source.
   if (options.from && options.from.length > 0) {
     Object.defineProperty(built, "__waygraphNavFrom", {
-      value: [...options.from],
+      value: tagsOf(options.from),
       enumerable: false,
       configurable: false,
     });
@@ -202,10 +209,11 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
 export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   name: string;
   description?: string;
-  checkpoint: Out["__state"];
+  /** See {@link NavBlockOptions.checkpoint}. */
+  checkpoint: CheckpointRef<Out>;
   click: string | ((mem: MemPage) => string);
   /** See {@link NavBlockOptions.from}. */
-  from?: readonly string[];
+  from?: readonly (Checkpoint<string> | string)[];
   requires?: readonly MemKey<any>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
   stubBefore?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
@@ -225,9 +233,14 @@ export type NavClickBlock<Out extends Checkpoint<string>> = NavBlock<Out>;
 
 /** @see {@link NavClickBlockOptions} */
 export function defineNavClickBlock<Out extends Checkpoint<string>>(
+  options: NavClickBlockOptions<Out> & { checkpoint: Out },
+): NavClickBlock<Out>;
+/** @deprecated Pass the Checkpoint value: `checkpoint: Home`. */
+export function defineNavClickBlock<Out extends Checkpoint<string>>(options: NavClickBlockOptions<Out>): NavClickBlock<Out>;
+export function defineNavClickBlock<Out extends Checkpoint<string>>(
   options: NavClickBlockOptions<Out>,
 ): NavClickBlock<Out> {
-  return defineNavBlock({
+  return defineNavBlock<Out>({
     name: options.name,
     checkpoint: options.checkpoint,
     click: options.click,
@@ -266,7 +279,7 @@ export function defineMemNavBlock<Out extends Checkpoint<string>>(
     instanceOptions: NonNullable<Block<Checkpoint<string>, Out>["instanceOptions"]>;
   },
 ): MemNavBlock<Out> {
-  const built = defineNavBlock(options) as MemNavBlock<Out>;
+  const built = defineNavBlock<Out>(options) as MemNavBlock<Out>;
   Object.defineProperty(built, "__waygraphMemKind", {
     value: "nav",
     enumerable: false,

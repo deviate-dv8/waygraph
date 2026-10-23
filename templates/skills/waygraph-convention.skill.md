@@ -45,13 +45,13 @@ against a live site, use `--skill-pilot-blind`.
    hand-supplied every time, `registerMemStub(key, fake)` + `memStub: true` on the flow (or
    `--mem-stub`) fills it from a registry instead - a key with no registration still fails
    preflight exactly as before, so this narrows what needs real input, never removes the guard.
-6. **Keep Checkpoints typed.** Block helpers take concrete Checkpoint types from `src/states/`
-   (e.g. `defineMethodBlock<LoginPage, LoggedIn>`). A Block's **output** must never be
-   `Checkpoint<string>` — `waygraph check` / `waygraph typecheck` warn. When a Block runs from a
-   few known states, name them as a union in `src/states/` (`type CanAddItem = Home | CartEmpty`);
-   a `Checkpoint<string>` **input** is only for a Block that's genuinely reachable from anywhere.
-   Same for `defineAssertBlock({…})` without an explicit type arg — use
-   `defineAssertBlock<YourCheckpoint>({…})`.
+6. **Checkpoints are values.** Declare each once in `src/states/`: `export const Home = checkpoint("Home");
+   export type Home = typeof Home;` (a union: `export const CanAddItem = [Home, CartEmpty] as const`). Blocks take
+   the values, never tag strings or `<In, Out>` type arguments: `defineNavBlock({ checkpoint: Home, … })`,
+   `defineAssertBlock({ checkpoint: ItemInCart, … })`, `defineMethodBlock({ from: CanAddItem, to: ItemInCart, … })`
+   (leave `from` out for "from anywhere"; `resolve` is implied when `to` is one Checkpoint). The Block then carries its
+   route at runtime, so `waygraph graph`, `auto` and the manifest read it exactly. Older projects:
+   `waygraph upgrade --codemod checkpoints`.
 7. **One input/action per Method Block.** No block that `.fill()`s two fields or `.fill()` + `.click()` in one
    `act()` — split like saucedemo login (`fill-username`, `fill-password`, `submit-login`). Opt out per file:
    `// waygraph-ignore: multi-input` or `// waygraph-ignore-practices`.

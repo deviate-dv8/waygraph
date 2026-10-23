@@ -1,10 +1,12 @@
-import { defineMethodBlock, checkpoint } from "waygraph";
-import type { HoppscotchSettings } from "../../../../states/demo.states.js";
+import { defineMethodBlock } from "waygraph";
+import { HoppscotchSettings } from "../../../../states/demo.states.js";
 import { HoppscotchSel } from "../_sel.js";
 
-export const PickExtensionInterceptorBlock = defineMethodBlock<HoppscotchSettings, HoppscotchSettings>({
+export const PickExtensionInterceptorBlock = defineMethodBlock({
   name: "pick-extension-interceptor",
   description: "Routes Hoppscotch's requests through the browser extension, which skips CORS.",
+  from: HoppscotchSettings,
+  to: HoppscotchSettings,
   instruction: {
     async act(page) {
       const radio = page.locator(HoppscotchSel.extensionInterceptor);
@@ -13,6 +15,5 @@ export const PickExtensionInterceptorBlock = defineMethodBlock<HoppscotchSetting
       });
       await radio.click();
     },
-    resolve: () => checkpoint("HoppscotchSettings"),
   },
 });

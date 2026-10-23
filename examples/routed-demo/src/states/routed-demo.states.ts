@@ -1,4 +1,4 @@
-import type { Checkpoint } from "waygraph";
+import { checkpoint } from "waygraph";
 
 /**
  * Checkpoint names match their own folder's page-slug (PascalCase) under the
@@ -6,5 +6,7 @@ import type { Checkpoint } from "waygraph";
  * See openspec/changes/waygraph-map for why this is a naming convention, not
  * something any tool enforces.
  */
-export type Dashboard = Checkpoint<"Dashboard">;
-export type Docs = Checkpoint<"Docs">;
+export const Dashboard = checkpoint("Dashboard");
+export type Dashboard = typeof Dashboard;
+export const Docs = checkpoint("Docs");
+export type Docs = typeof Docs;

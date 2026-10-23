@@ -224,7 +224,7 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 
 0. Guardrails: layer rule with a shrinking debt list (`scripts/layer-debt.json`), graph snapshot test. **Done.**
 1. Core stands alone: no imports of demo, runtime or extensions from the engine. **Done.**
-2. Checkpoints as values (`checkpoint: Home`, `from`/`to`), old forms deprecated, codemod in `waygraph upgrade`.
+2. Checkpoints as values (`checkpoint: Home`, `from`/`to`), old forms deprecated, codemod in `waygraph upgrade`. **Done.**
 3. One manifest replaces the five project scanners and the `<In, Out>` source parse; `waygraph manifest --json`.
 4. Run events: typed emitter in `runGraph`; console, JSON report and run-log file are subscribers.
 5. Demo runner from JavaScript to TypeScript under `demo/`.
@@ -249,7 +249,7 @@ project through what the CLI already emits, so the package grows no server code:
 
 First slice to build: read-only (graph + flow catalogue + run results), because it needs nothing new from the package.
 
-### Checkpoints as values (backlogged - a breaking change, decide before 1.0.0)
+### Checkpoints as values (shipped in the architecture refactor, phase 2)
 
 Today a Checkpoint is written twice: a type (`type Home = Checkpoint<"Home">`) and, in each Block, the tag
 string (`checkpoint: "Home"`). Types are erased at runtime, so the string can't be derived from the type

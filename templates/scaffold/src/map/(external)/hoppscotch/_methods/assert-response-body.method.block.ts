@@ -1,5 +1,5 @@
 import { defineAssertBlock, type Trait } from "waygraph";
-import type { HoppscotchRest } from "../../../../states/demo.states.js";
+import { HoppscotchRest } from "../../../../states/demo.states.js";
 import { ExpectedResponseText, ResponseBody } from "../../../../states/demo.mem-keys.js";
 
 // Hoppscotch pretty-prints JSON, so compare with whitespace removed from both sides.
@@ -12,10 +12,10 @@ const bodyContainsExpected: Trait = {
   },
 };
 
-export const AssertResponseBodyBlock = defineAssertBlock<HoppscotchRest>({
+export const AssertResponseBodyBlock = defineAssertBlock({
   name: "assert-response-body",
   description: "Confirms the response body read earlier contains the mem-supplied text (whitespace ignored).",
-  checkpoint: "HoppscotchRest",
+  checkpoint: HoppscotchRest,
   requires: [ExpectedResponseText],
   verify: [bodyContainsExpected],
 });

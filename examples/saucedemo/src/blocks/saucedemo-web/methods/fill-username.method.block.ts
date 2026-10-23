@@ -1,5 +1,5 @@
-import { defineMethodBlock, checkpoint } from "waygraph";
-import type { LoginPage } from "../../../states/checkout.states.js";
+import { defineMethodBlock } from "waygraph";
+import { LoginPage } from "../../../states/checkout.states.js";
 import { LoginCreds } from "../../../states/checkout.mem-keys.js";
 import { LoginSel } from "./login.sel.js";
 
@@ -13,15 +13,16 @@ import { LoginSel } from "./login.sel.js";
  * graph/demo show fill vs submit as real, distinct steps instead of one
  * Block doing "input username and password and login at the same time".
  */
-export const FillUsernameBlock = defineMethodBlock<LoginPage, LoginPage>({
+export const FillUsernameBlock = defineMethodBlock({
   name: "fill-username",
   description: "Fills the username field on the login form.",
+  from: LoginPage,
+  to: LoginPage,
   requires: [LoginCreds.key],
   instruction: {
     async act(page, _input, mem) {
       const { username } = mem.get(LoginCreds.key);
       await page.locator(LoginSel.username).fill(username);
     },
-    resolve: () => checkpoint("LoginPage"),
   },
 });

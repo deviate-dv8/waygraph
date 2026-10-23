@@ -6,6 +6,8 @@ import { MemPage } from "../mem-page.js";
 import type { MemKey } from "../mem-page.js";
 import { defineBlock } from "../block.js";
 import type { Page } from "@playwright/test";
+import { markRoute, tagOf } from "../route.js";
+import type { CheckpointRef } from "../route.js";
 
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */
 export type PageMethodEntry =
@@ -17,8 +19,8 @@ export type PageMethodEntry =
 export type PageBlockOptions<Out extends Checkpoint<string>> = {
   name: string;
   description?: string;
-  /** Checkpoint tag for this screen (hub). */
-  checkpoint: Out["__state"];
+  /** The Checkpoint this page hub confirms: its value (`Home`). A tag string still works but is deprecated. */
+  checkpoint: CheckpointRef<Out>;
   verify?: Trait[] | ((out: Out) => Trait[]);
   stubBefore?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
   stubAfter?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
@@ -87,6 +89,11 @@ function resolvePageMethods(
 
 /** @see {@link PageBlockOptions} */
 export function definePageBlock<Out extends Checkpoint<string>>(
+  options: PageBlockOptions<Out> & { checkpoint: Out },
+): PageBlock<Out>;
+/** @deprecated Pass the Checkpoint value: `checkpoint: Home`. */
+export function definePageBlock<Out extends Checkpoint<string>>(options: PageBlockOptions<Out>): PageBlock<Out>;
+export function definePageBlock<Out extends Checkpoint<string>>(
   options: PageBlockOptions<Out>,
 ): PageBlock<Out> {
   if (options.url !== undefined && options.click !== undefined) {
@@ -112,7 +119,7 @@ export function definePageBlock<Out extends Checkpoint<string>>(
         }
         // else: arrival-only hub — previous Block already landed here
       },
-      resolve: () => checkpoint(options.checkpoint) as Out,
+      resolve: () => checkpoint(tagOf(options.checkpoint)) as Out,
       ...(options.verify ? { verify: options.verify } : {}),
       ...(options.stubBefore ? { stubBefore: options.stubBefore } : {}),
       ...(options.stubAfter ? { stubAfter: options.stubAfter } : {}),
@@ -121,6 +128,7 @@ export function definePageBlock<Out extends Checkpoint<string>>(
     },
   }) as PageBlock<Out>;
 
+  markRoute(built, ["*"], [tagOf(options.checkpoint)]);
   Object.defineProperty(built, "__waygraphKind", {
     value: "page",
     enumerable: false,

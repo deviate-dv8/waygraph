@@ -1,5 +1,5 @@
 import { definePageBlock, Trait } from "waygraph";
-import type { LoginPage } from "../../states/checkout.states.js";
+import { LoginPage } from "../../states/checkout.states.js";
 import { FillUsernameBlock } from "./methods/fill-username.method.block.js";
 import { FillPasswordBlock } from "./methods/fill-password.method.block.js";
 import { SubmitLoginBlock } from "./methods/submit-login.method.block.js";
@@ -17,10 +17,10 @@ import { LoginSel } from "./methods/login.sel.js";
  * and submits. Name stays `nav-login` so existing flows / chain specs keep
  * working.
  */
-export const NavLoginBlock = definePageBlock<LoginPage>({
+export const NavLoginBlock = definePageBlock({
   name: "nav-login",
   description: "Goes to the Swag Labs login page.",
-  checkpoint: "LoginPage",
+  checkpoint: LoginPage,
   url: "/",
   verify: [Trait.visible(LoginSel.loginButton)],
   methods: {

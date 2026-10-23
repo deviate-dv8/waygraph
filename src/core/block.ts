@@ -116,6 +116,8 @@ export function copyWaygraphRuntime(from: object, to: object): void {
     "__waygraphNavUrl",
     "__waygraphNavClick",
     "__waygraphNavFrom",
+    "__waygraphFrom",
+    "__waygraphTo",
   ] as const) {
     const desc = Object.getOwnPropertyDescriptor(from, key);
     if (!desc) continue;

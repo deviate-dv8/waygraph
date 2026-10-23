@@ -203,6 +203,8 @@ Also:
                                            dependency. Dry run unless --apply; only the paths you
                                            name are copied, differing files only with --overwrite.
                                            --skills refreshes .agents/skills to this waygraph's.
+                                           --codemod checkpoints rewrites tag strings and <In, Out>
+                                           to Checkpoint values (checkpoint: Home, from/to).
   waygraph extensions install [project] [--update]
                                            Download the browser extensions listed in
                                            waygraph.config.* (extensions: ["hoppscotch"]) into

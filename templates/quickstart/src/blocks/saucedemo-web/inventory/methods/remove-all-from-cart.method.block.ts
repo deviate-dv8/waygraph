@@ -1,5 +1,5 @@
-import { defineMethodBlock, checkpoint, type Checkpoint } from "waygraph";
-import type { RemoveFromCartOutcome } from "../../../../states/checkout.states.js";
+import { defineMethodBlock, checkpoint } from "waygraph";
+import { RemoveFromCartOutcome } from "../../../../states/checkout.states.js";
 import { collectRemovableItems, InventorySel } from "./inventory-items.js";
 
 type BulkObserve = "still-has-items" | "cart-empty";
@@ -14,12 +14,10 @@ type BulkObserve = "still-has-items" | "cart-empty";
  * single-item remove. Out: LoggedIn when cart empty; ItemInCart if anything
  * remains (partial failure / race).
  */
-export const RemoveAllFromCartBlock = defineMethodBlock<
-  Checkpoint<string>,
-  RemoveFromCartOutcome
->({
+export const RemoveAllFromCartBlock = defineMethodBlock({
   name: "remove-all-from-cart",
   description: "Removes every product still showing Remove on this page.",
+  to: RemoveFromCartOutcome,
   instruction: {
     async act(page) {
       const items = await collectRemovableItems(page);

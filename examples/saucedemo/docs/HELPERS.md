@@ -22,7 +22,7 @@ it "works" - split it (`fill-username` + `fill-password` + `submit-login`, not o
 self-loop-only shape for "assert something on the current page, no state change" - no
 hand-written `act`/`resolve` to accidentally make do two things. `waygraph check` warns when
 a `verify` array inlines a literal selector string instead of a `*Sel` reference. Give it an
-explicit type argument (`defineAssertBlock<LoggedIn>({...})`) whenever it is not the last
+explicit type argument (`defineAssertBlock({...})`) whenever it is not the last
 Block before `end` - otherwise `Out` defaults to wildcard `Checkpoint<string>`, which breaks
 `defineFlow`'s tuple typing mid-chain.
 
@@ -41,7 +41,7 @@ export const InventorySel = {
 
 export const InventoryPageBlock = definePageBlock({
   name: "page-inventory",
-  checkpoint: "LoggedIn",
+  checkpoint: LoggedIn,
   verify: [Trait.url({ pathname: "/inventory.html" }), Trait.visible(InventorySel.list)],
   methods: {
     addToCart: () => AddToCartBlock,
@@ -84,8 +84,10 @@ Checkpoint = place on the map. `branch()` = which road to take from that place.
 Conditional Out (no `branch()` needed for auto/graph):
 
 ```ts
-defineMethodBlock<LoginPage, LoggedIn | LoginPage>({
+defineMethodBlock({
   name: "submit-login",
+  from: LoginPage,
+  to: [LoggedIn, LoginPage],
   instruction: {
     async act(page) { /* click only - fields were filled by earlier Blocks */ },
     async observe(page) {
@@ -123,8 +125,9 @@ then run the Block (act reads mem as usual).
 ### Effect - spawn Method-like rows (Add / Remove)
 
 ```ts
-defineEffectBlock<Checkpoint<string>, ItemInCart>({
+defineEffectBlock({
   name: "add-to-cart",
+  to: ItemInCart, // no `from`: runs from anywhere
   requires: [SelectedItem.key],
   instruction: {
     async act(page, _in, mem) {
@@ -151,9 +154,9 @@ Auto shows: `Add "Sauce Labs Backpack" to cart`, `Add "Bike Light"…`, …
 ### MemNav - spawn Nav rows (Open details)
 
 ```ts
-defineMemNavBlock<ItemDetailPage>({
+defineMemNavBlock({
   name: "nav-item-detail",
-  checkpoint: "ItemDetailPage",
+  checkpoint: ItemDetailPage,
   requires: [SelectedItem.key],
   click: (mem) => InventorySel.title(mem.get(SelectedItem.key).id),
   verify: [Trait.url({ pathname: "/inventory-item.html" })],

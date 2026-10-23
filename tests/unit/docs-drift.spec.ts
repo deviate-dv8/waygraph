@@ -22,14 +22,21 @@ function walk(dir: string, out: string[] = []): string[] {
 
 function deprecatedFunctions(): string[] {
   const names = new Set<string>();
+  const live = new Set<string>();
   for (const file of walk(join(root, "src")).filter((f) => f.endsWith(".ts"))) {
     const text = readFileSync(file, "utf8");
     const re = /\/\*\*(?:(?!\*\/)[\s\S])*?@deprecated(?:(?!\*\/)[\s\S])*?\*\/\s*\nexport (?:async )?(?:function|const) ([A-Za-z_$][\w$]*)/g;
     for (const m of text.matchAll(re)) names.add(m[1]!);
+    // An overloaded function with one deprecated signature (e.g. the old tag-string form) is not deprecated itself.
+    for (const m of text.matchAll(/export (?:async )?function ([A-Za-z_$][\w$]*)/g)) {
+      const before = text.slice(0, m.index).trimEnd();
+      const doc = before.endsWith("*/") ? before.slice(before.lastIndexOf("/**")) : "";
+      if (!doc.includes("@deprecated")) live.add(m[1]!);
+    }
   }
   // overload-style and method deprecations in Engine
   names.add("defineFlow");
-  return [...names].filter((n) => /^[a-z]/.test(n) && n.length > 4);
+  return [...names].filter((n) => !live.has(n) && /^[a-z]/.test(n) && n.length > 4);
 }
 
 const TAUGHT = [

@@ -1,5 +1,5 @@
-import { defineMethodBlock, checkpoint, Trait } from "waygraph";
-import type { Dashboard } from "../../../../states/routed-demo.states.js";
+import { defineMethodBlock, Trait } from "waygraph";
+import { Dashboard } from "../../../../states/routed-demo.states.js";
 import { DashboardSel } from "../_sel.js";
 
 /**
@@ -10,14 +10,15 @@ import { DashboardSel } from "../_sel.js";
  * folder's own actions live under methods/, same as today's freeform
  * convention's own methods/ subfolder.
  */
-export const ClickWidgetBlock = defineMethodBlock<Dashboard, Dashboard>({
+export const ClickWidgetBlock = defineMethodBlock({
   name: "click-widget",
   description: "Clicks the dashboard's demo widget button.",
+  from: Dashboard,
+  to: Dashboard,
   instruction: {
     async act(page) {
       await page.locator(DashboardSel.widgetBtn).click();
     },
-    resolve: () => checkpoint("Dashboard"),
     verify: [Trait.text(DashboardSel.widgetOut, "clicked")],
   },
 });

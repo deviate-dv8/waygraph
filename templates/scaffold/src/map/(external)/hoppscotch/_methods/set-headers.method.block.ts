@@ -1,11 +1,13 @@
-import { defineMethodBlock, checkpoint } from "waygraph";
-import type { HoppscotchRest } from "../../../../states/demo.states.js";
+import { defineMethodBlock } from "waygraph";
+import { HoppscotchRest } from "../../../../states/demo.states.js";
 import { RequestHeaders } from "../../../../states/demo.mem-keys.js";
 import { HoppscotchSel } from "../_sel.js";
 
-export const SetHeadersBlock = defineMethodBlock<HoppscotchRest, HoppscotchRest>({
+export const SetHeadersBlock = defineMethodBlock({
   name: "set-headers",
   description: "Adds each mem-supplied header (name -> value) on the Headers tab.",
+  from: HoppscotchRest,
+  to: HoppscotchRest,
   requires: [RequestHeaders],
   instruction: {
     async act(page, _in, mem) {
@@ -18,6 +20,5 @@ export const SetHeadersBlock = defineMethodBlock<HoppscotchRest, HoppscotchRest>
         await page.keyboard.type(value);
       }
     },
-    resolve: () => checkpoint("HoppscotchRest"),
   },
 });

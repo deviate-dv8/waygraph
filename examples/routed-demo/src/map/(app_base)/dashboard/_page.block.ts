@@ -1,5 +1,5 @@
 import { definePageBlock, Trait } from "waygraph";
-import type { Dashboard } from "../../../states/routed-demo.states.js";
+import { Dashboard } from "../../../states/routed-demo.states.js";
 import { DashboardSel } from "./_sel.js";
 import { ClickWidgetBlock } from "./_methods/click-widget.block.js";
 
@@ -11,10 +11,10 @@ import { ClickWidgetBlock } from "./_methods/click-widget.block.js";
  * folder's own arrival hub is always page.block.ts. Arrival-only
  * (nav.block.ts already landed on Dashboard).
  */
-export const DashboardPageBlock = definePageBlock<Dashboard>({
+export const DashboardPageBlock = definePageBlock({
   name: "page-dashboard",
   description: "Dashboard hub - the routed-demo example's (app_base) group.",
-  checkpoint: "Dashboard",
+  checkpoint: Dashboard,
   verify: [Trait.visible(DashboardSel.heading)],
   methods: {
     clickWidget: () => ClickWidgetBlock,

@@ -1,5 +1,5 @@
 import { defineNavBlock, Trait } from "waygraph";
-import type { Docs } from "../../../states/routed-demo.states.js";
+import { Docs } from "../../../states/routed-demo.states.js";
 import { DocsSel, DOCS_URL } from "./_sel.js";
 
 /**
@@ -12,10 +12,10 @@ import { DocsSel, DOCS_URL } from "./_sel.js";
  * already-established `*-external/` namespacing precedent from
  * waygraph-mail-adapters.
  */
-export const NavDocsBlock = defineNavBlock<Docs>({
+export const NavDocsBlock = defineNavBlock({
   name: "nav-docs",
   description: "Opens the docs page.",
-  checkpoint: "Docs",
+  checkpoint: Docs,
   url: DOCS_URL,
   verify: [Trait.visible(DocsSel.heading)],
 });

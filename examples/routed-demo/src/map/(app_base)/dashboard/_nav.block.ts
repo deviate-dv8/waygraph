@@ -1,5 +1,5 @@
 import { defineNavBlock, Trait } from "waygraph";
-import type { Dashboard } from "../../../states/routed-demo.states.js";
+import { Dashboard } from "../../../states/routed-demo.states.js";
 import { DashboardSel, DASHBOARD_URL } from "./_sel.js";
 
 /**
@@ -9,10 +9,10 @@ import { DashboardSel, DASHBOARD_URL } from "./_sel.js";
  * Fixed file name under the Waygraph Map convention - every page-slug
  * folder's own navigation Block is always nav.block.ts.
  */
-export const NavDashboardBlock = defineNavBlock<Dashboard>({
+export const NavDashboardBlock = defineNavBlock({
   name: "nav-dashboard",
   description: "Opens the dashboard page.",
-  checkpoint: "Dashboard",
+  checkpoint: Dashboard,
   url: DASHBOARD_URL,
   verify: [Trait.visible(DashboardSel.heading)],
 });

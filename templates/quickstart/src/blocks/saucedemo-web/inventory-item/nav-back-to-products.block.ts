@@ -1,5 +1,5 @@
 import { defineNavClickBlock, Trait } from "waygraph";
-import type { LoggedIn } from "../../../states/checkout.states.js";
+import { LoggedIn } from "../../../states/checkout.states.js";
 import { ItemDetailSel } from "./item-detail.sel.js";
 
 /**
@@ -10,10 +10,10 @@ import { ItemDetailSel } from "./item-detail.sel.js";
  * click, not url - order-complete "Back Home" proves the button path
  * (a url NavBlock would teleport without exercising the control).
  */
-export const NavBackToProductsBlock = defineNavClickBlock<LoggedIn>({
+export const NavBackToProductsBlock = defineNavClickBlock({
   name: "nav-back-to-products",
   description: "Clicks 'Back Home' on the order confirmation page.",
-  checkpoint: "LoggedIn",
+  checkpoint: LoggedIn,
   click: ItemDetailSel.backToProductsBtn,
   verify: [Trait.url({ pathname: "/inventory.html" })],
 });

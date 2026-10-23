@@ -90,26 +90,29 @@ Full handout examples live on the [engine handout](./handout) page.
 import { Engine, MemPage, key, checkpoint, defineNavBlock, defineMethodBlock, Trait } from "waygraph";
 import type { Checkpoint } from "waygraph";
 
-type LoginForm = Checkpoint<"LoginForm">;
-type LoggedIn = Checkpoint<"LoggedIn">;
+const LoginForm = checkpoint("LoginForm");
+type LoginForm = typeof LoginForm;
+const LoggedIn = checkpoint("LoggedIn");
+type LoggedIn = typeof LoggedIn;
 
 const Username = key<string>("username");
 
-const NavLogin = defineNavBlock<LoginForm>({
+const NavLogin = defineNavBlock({
   name: "nav-login",
-  checkpoint: "LoginForm",
+  checkpoint: LoginForm,
   url: "https://example.com/login",
 });
 
-const SubmitLogin = defineMethodBlock<LoginForm, LoggedIn>({
+const SubmitLogin = defineMethodBlock({
   name: "submit-login",
+  from: LoginForm,
+  to: LoggedIn,
   requires: [Username],
   instruction: {
     async act(page, _input, mem) {
       await page.getByLabel("Username").fill(mem.get(Username));
       await page.getByRole("button", { name: "Sign in" }).click();
     },
-    resolve: () => checkpoint("LoggedIn"),
     verify: [Trait.url({ pathname: "/dashboard" })],
   },
 });

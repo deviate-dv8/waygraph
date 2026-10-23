@@ -262,7 +262,9 @@ waygraph upgrade "src/map/(external)/hoppscotch" src/flows --apply
 
 ## Core concepts
 
-- **`Checkpoint<Tag>`** - a state identified solely by its string tag. Carries no data.
+- **Checkpoints** - a state identified by its tag, declared once as a value and a type:
+  `export const Home = checkpoint("Home"); export type Home = typeof Home;`. Blocks take the values
+  (`checkpoint: Home`, `from: Home, to: ItemInCart`), so each Block carries its route at runtime.
 - **`MemPage`** / **`MemKey<T>`** - typed shared memory across a run, keyed by object
   identity (`key<T>("debug-name")`), not by name string.
 - **`Block<In, Out>`** - one step: `act(page, input, mem)` does the work,
@@ -275,33 +277,65 @@ waygraph upgrade "src/map/(external)/hoppscotch" src/flows --apply
   run with `flow.run(mem)` (Engine launches its own browser) or `flow.run(context, mem)`
   (reuse an existing `@playwright/test` `context` fixture).
 
+## Checkpoints as values
+
+Each Checkpoint is declared once, in `src/states/`, as a value with a type of the same name:
+
+```typescript
+import { checkpoint } from "waygraph";
+
+export const Home = checkpoint("Home");
+export type Home = typeof Home;
+export const CartEmpty = checkpoint("CartEmpty");
+export type CartEmpty = typeof CartEmpty;
+export const ItemInCart = checkpoint("ItemInCart");
+export type ItemInCart = typeof ItemInCart;
+export const CanAddItem = [Home, CartEmpty] as const;      // several states a Block can run from
+export type CanAddItem = (typeof CanAddItem)[number];
+```
+
+Blocks name them as values, never as tag strings or `<In, Out>` type arguments; the types are inferred:
+
+| Helper | Says |
+|---|---|
+| `defineNavBlock` / `defineNavClickBlock` / `definePageBlock` | `checkpoint: Home` (and optionally `from: [SignedIn, …]`) |
+| `defineAssertBlock` | `checkpoint: ItemInCart` |
+| `defineMethodBlock` / `defineEffectBlock` | `from: CanAddItem, to: ItemInCart` - leave `from` out for "from anywhere"; `resolve` is implied when `to` is one Checkpoint, and needed when it is a list |
+
+Because the route is recorded on the Block, `waygraph graph`, `auto`, `traverse` and the manifest read it at runtime
+instead of parsing source text. The older forms (`checkpoint: "Home"`, `defineMethodBlock<Home, ItemInCart>`) still work
+but are deprecated; `waygraph upgrade --codemod checkpoints` rewrites a project's states and Block files.
+
 ## Quick start
 
 ```typescript
 import { Engine, MemPage, key, defineNavBlock, defineMethodBlock, checkpoint, Trait } from "waygraph";
 import type { Checkpoint } from "waygraph";
 
-type LoginForm = Checkpoint<"LoginForm">;
-type LoggedIn = Checkpoint<"LoggedIn">;
+const LoginForm = checkpoint("LoginForm");
+type LoginForm = typeof LoginForm;
+const LoggedIn = checkpoint("LoggedIn");
+type LoggedIn = typeof LoggedIn;
 
 const Username = key<string>("username");
 
-const NavLogin = defineNavBlock<LoginForm>({
+const NavLogin = defineNavBlock({
   name: "nav-login",
-  checkpoint: "LoginForm",
+  checkpoint: LoginForm,
   url: "https://example.com/login",
   verify: [Trait.visible("button:text-is('Sign in')")],
 });
 
-const SignIn = defineMethodBlock<LoginForm, LoggedIn>({
+const SignIn = defineMethodBlock({
   name: "sign-in",
+  from: LoginForm,
+  to: LoggedIn,
   requires: [Username],
   instruction: {
     async act(page, _input, mem) {
       await page.getByLabel("Username").fill(mem.get(Username));
       await page.getByRole("button", { name: "Sign in" }).click();
     },
-    resolve: () => checkpoint("LoggedIn"),
     verify: [Trait.url({ pathname: "/dashboard" })],
   },
 });
@@ -547,12 +581,12 @@ the Checkpoints it is valid from and the route goes through the steps that get y
 
 ```typescript
 // src/states/auth.states.ts
-export const SIGNED_IN = ["Dashboard", "CommandCenter", "ProductionPlan"] as const;
+export const SIGNED_IN = [Dashboard, CommandCenter, ProductionPlan] as const;
 
 // any in-app nav
-export const NavEquipmentNewBlock = defineNavBlock<EquipmentNew>({
+export const NavEquipmentNewBlock = defineNavBlock({
   name: "nav-equipment-new",
-  checkpoint: "EquipmentNew",
+  checkpoint: EquipmentNew,
   url: "/equipment/new",
   from: SIGNED_IN,
 });
@@ -661,7 +695,7 @@ before the flow ever runs, the same as every other Block helper:
 ```typescript
 export const AssertInventoryHeaderBlock = defineAssertBlock({
   name: "assert-inventory-header",
-  checkpoint: "LoggedIn",
+  checkpoint: LoggedIn,
   waitForHeading: "Products",
   verify: [Trait.visible(InventorySel.list)],
 });
@@ -675,7 +709,7 @@ export const AssertInventoryHeaderBlock = defineAssertBlock({
 `Out` defaults to wildcard `Checkpoint<string>` on both sides - harmless when the assert is
 the last real Block before `end` (nothing downstream needs it narrower), but the flow's
 chain typing breaks once a wildcard Block is sandwiched between two
-specifically-typed ones. Write `defineAssertBlock<LoggedIn>({ ..., checkpoint: "LoggedIn",
+specifically-typed ones. Write `defineAssertBlock({ ..., checkpoint: LoggedIn,
 ... })` any time the assert has a real Block after it, not just before.
 
 **An assert Block can check the *result* of an action, not just static page state.** Since
@@ -692,9 +726,9 @@ const removeButtonVisibleForSelectedItem: Trait = {
   },
 };
 
-export const AssertItemAddedBlock = defineAssertBlock<ItemInCart>({
+export const AssertItemAddedBlock = defineAssertBlock({
   name: "assert-item-added",
-  checkpoint: "ItemInCart",
+  checkpoint: ItemInCart,
   verify: [removeButtonVisibleForSelectedItem, Trait.text(CartCountSel, "1")],
 });
 
@@ -722,9 +756,9 @@ const submitGatedUntilFieldsComplete: Trait = {
   },
 };
 
-export const AssertSubmitGatedBlock = defineAssertBlock<CheckoutInfoPage>({
+export const AssertSubmitGatedBlock = defineAssertBlock({
   name: "assert-submit-gated",
-  checkpoint: "CheckoutInfoPage",
+  checkpoint: CheckoutInfoPage,
   verify: [submitGatedUntilFieldsComplete],
 });
 
@@ -752,7 +786,7 @@ export const InventorySel = {
 
 export const InventoryPage = definePageBlock({
   name: "page-inventory",
-  checkpoint: "LoggedIn",
+  checkpoint: LoggedIn,
   verify: [
     Trait.url({ pathname: "/inventory.html" }),
     Trait.visible(InventorySel.list),
@@ -812,16 +846,18 @@ it's a different origin, driving a different site:
 
 ```typescript
 // demo-external/mailpit/nav-mailpit-inbox.block.ts
-export const NavMailpitInboxBlock = defineNavBlock<MailpitInbox>({
+export const NavMailpitInboxBlock = defineNavBlock({
   name: "nav-mailpit-inbox",
-  checkpoint: "MailpitInbox",
+  checkpoint: MailpitInbox,
   url: () => process.env.WAYGRAPH_MAIL_URL ?? "http://127.0.0.1:8025",
   verify: [Trait.url({ pathname: "/" })],
 });
 
 // demo-external/mailpit/methods/open-message.method.block.ts
-export const OpenMessageBlock = defineMethodBlock<MailpitInbox, MailpitMessageOpen>({
+export const OpenMessageBlock = defineMethodBlock({
   name: "open-message",
+  from: MailpitInbox,
+  to: MailpitMessageOpen,
   requires: [ExpectedRecipient.key], // externally supplied - avoids picking the wrong inbox row
   instruction: {
     async act(page, _in, mem) {
@@ -829,15 +865,16 @@ export const OpenMessageBlock = defineMethodBlock<MailpitInbox, MailpitMessageOp
       await page.locator(MailpitSel.messageRow, { hasText: email }).first().click();
       await page.waitForURL(/\/view\//);
     },
-    resolve: () => checkpoint("MailpitMessageOpen"),
   },
 });
 
 // demo-external/mailpit/methods/extract-email-link.method.block.ts
 // Named for what it does, not for one scenario - see "reusable across
 // scenarios" below for why.
-export const ExtractEmailLinkBlock = defineMethodBlock<MailpitMessageOpen, MailpitMessageOpen>({
+export const ExtractEmailLinkBlock = defineMethodBlock({
   name: "extract-email-link",
+  from: MailpitMessageOpen,
+  to: MailpitMessageOpen,
   requires: [ExpectedLinkPattern], // which link in the body to follow - externally supplied
   instruction: {
     async act(page, _in, mem) {
@@ -847,14 +884,13 @@ export const ExtractEmailLinkBlock = defineMethodBlock<MailpitMessageOpen, Mailp
       if (!href) throw new Error(`no link matching "${pattern}" found`);
       mem.set(EmailLink({ url: href }));
     },
-    resolve: () => checkpoint("MailpitMessageOpen"),
   },
 });
 
 // demo-web/nav-verification-link.block.ts - back into the app, no `requires` (see below)
-export const NavVerificationLinkBlock = defineNavBlock<HomeVerified>({
+export const NavVerificationLinkBlock = defineNavBlock({
   name: "nav-verification-link",
-  checkpoint: "HomeVerified",
+  checkpoint: HomeVerified,
   url: (mem) => mem.get(EmailLink.key).url,
   verify: [Trait.visible(DemoSel.verifiedBanner)],
 });
@@ -914,9 +950,9 @@ A **mail-provider page hub** ties it together, the same `definePageBlock` patter
 everywhere else - one page, several reusable methods, each pulling its specifics from mem:
 
 ```typescript
-export const MailpitInboxPageBlock = definePageBlock<MailpitInbox>({
+export const MailpitInboxPageBlock = definePageBlock({
   name: "page-mailpit-inbox",
-  checkpoint: "MailpitInbox",
+  checkpoint: MailpitInbox,
   verify: [Trait.url({ pathname: "/" })],
   methods: {
     assertEmailReceived: () => AssertEmailReceivedBlock,
@@ -952,9 +988,9 @@ const emailReceived: Trait = {
     }
   },
 };
-export const AssertEmailReceivedBlock = defineAssertBlock<MailpitInbox>({
+export const AssertEmailReceivedBlock = defineAssertBlock({
   name: "assert-email-received",
-  checkpoint: "MailpitInbox",
+  checkpoint: MailpitInbox,
   requires: [ExpectedRecipient.key],
   verify: [emailReceived],
 });
@@ -972,9 +1008,9 @@ const bodyContainsExpectedText: Trait = {
     return (text ?? "").includes(expected);
   },
 };
-export const AssertEmailContentBlock = defineAssertBlock<MailpitMessageOpen>({
+export const AssertEmailContentBlock = defineAssertBlock({
   name: "assert-email-content",
-  checkpoint: "MailpitMessageOpen",
+  checkpoint: MailpitMessageOpen,
   requires: [ExpectedEmailContent],
   verify: [bodyContainsExpectedText],
 });
@@ -1501,20 +1537,24 @@ real page:
 import { Engine, MemPage, key, checkpoint, defineNavBlock, defineMethodBlock } from "waygraph";
 import type { Checkpoint } from "waygraph";
 
-type FormLoaded = Checkpoint<"FormLoaded">;
-type Submitted = Checkpoint<"Submitted">;
+const FormLoaded = checkpoint("FormLoaded");
+type FormLoaded = typeof FormLoaded;
+const Submitted = checkpoint("Submitted");
+type Submitted = typeof Submitted;
 
 const EmailKey = key<string>("form.email");
 const PasswordKey = key<string>("form.password");
 
-const GotoForm = defineNavBlock<FormLoaded>({
+const GotoForm = defineNavBlock({
   name: "goto-form",
-  checkpoint: "FormLoaded",
+  checkpoint: FormLoaded,
   url: "https://example.com/login",
 });
 
-const FillAndSubmit = defineMethodBlock<FormLoaded, Submitted>({
+const FillAndSubmit = defineMethodBlock({
   name: "fill-and-submit",
+  from: FormLoaded,
+  to: Submitted,
   requires: [EmailKey, PasswordKey],
   instruction: {
     async act(page, _input, mem) {
@@ -1522,7 +1562,6 @@ const FillAndSubmit = defineMethodBlock<FormLoaded, Submitted>({
       await page.getByPlaceholder("Password").fill(mem.get(PasswordKey));
       await page.getByRole("button", { name: "Submit" }).click();
     },
-    resolve: () => checkpoint("Submitted"),
     verify: [
       {
         name: "submitted-heading-shown",

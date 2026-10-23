@@ -1,5 +1,5 @@
 import { defineAssertBlock, type Trait } from "waygraph";
-import type { HoppscotchRest } from "../../../../states/demo.states.js";
+import { HoppscotchRest } from "../../../../states/demo.states.js";
 import { ExpectedStatus } from "../../../../states/demo.mem-keys.js";
 import { HoppscotchSel } from "../_sel.js";
 
@@ -11,10 +11,10 @@ const statusMatches: Trait = {
   },
 };
 
-export const AssertStatusBlock = defineAssertBlock<HoppscotchRest>({
+export const AssertStatusBlock = defineAssertBlock({
   name: "assert-status",
   description: "Confirms the response status code equals the mem-supplied one.",
-  checkpoint: "HoppscotchRest",
+  checkpoint: HoppscotchRest,
   requires: [ExpectedStatus],
   verify: [statusMatches],
 });

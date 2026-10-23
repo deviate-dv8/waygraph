@@ -1,5 +1,5 @@
 import { defineAssertBlock, Trait, type Trait as TraitType } from "waygraph";
-import type { ItemInCart } from "../../../../states/demo.states.js";
+import { ItemInCart } from "../../../../states/demo.states.js";
 import { SelectedItem } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
@@ -13,9 +13,9 @@ const removeButtonVisibleForSelectedItem: TraitType = {
 };
 
 /** The mem-selected item's own Remove button appeared and the cart count reflects it. */
-export const AssertItemAddedBlock = defineAssertBlock<ItemInCart>({
+export const AssertItemAddedBlock = defineAssertBlock({
   name: "assert-item-added",
   description: "Confirms the mem-selected item's own Remove button appeared and the cart count reflects it.",
-  checkpoint: "ItemInCart",
+  checkpoint: ItemInCart,
   verify: [removeButtonVisibleForSelectedItem, Trait.text(DemoSel.cartCount, "1")],
 });

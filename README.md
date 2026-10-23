@@ -6,11 +6,12 @@ worked - so a whole app becomes something you (or an AI agent) can walk, check, 
 
 ```typescript
 // One Block = one action.  It says: start on LoginPage, end on LoggedIn, and prove it.
-export const SubmitLoginBlock = defineMethodBlock<LoginPage, LoggedIn>({
+export const SubmitLoginBlock = defineMethodBlock({
   name: "submit-login",
+  from: LoginPage,
+  to: LoggedIn,
   instruction: {
     async act(page) { await page.locator(LoginSel.button).click(); },
-    resolve: () => checkpoint("LoggedIn"),
     verify: [Trait.url({ pathname: "/inventory.html" })],
   },
 });

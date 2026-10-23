@@ -1,5 +1,5 @@
 import { defineAssertBlock, type Trait } from "waygraph";
-import type { MailpitInbox } from "../../../../states/demo.states.js";
+import { MailpitInbox } from "../../../../states/demo.states.js";
 import { ExpectedRecipient } from "../../../../states/demo.mem-keys.js";
 import { MailpitSel } from "../_sel.js";
 
@@ -21,10 +21,10 @@ const emailReceived: Trait = {
 };
 
 /** A message for the expected recipient has arrived; nothing is opened or consumed. */
-export const AssertEmailReceivedBlock = defineAssertBlock<MailpitInbox>({
+export const AssertEmailReceivedBlock = defineAssertBlock({
   name: "assert-email-received",
   description: "Confirms a message addressed to the expected recipient has arrived.",
-  checkpoint: "MailpitInbox",
+  checkpoint: MailpitInbox,
   requires: [ExpectedRecipient.key],
   verify: [emailReceived],
 });

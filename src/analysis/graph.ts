@@ -493,6 +493,22 @@ export async function discoverGraph(
         continue;
       }
 
+      // A Block declared with Checkpoint values (`from`/`to`) carries its route at runtime.
+      const marked = exported as { __waygraphFrom?: readonly string[]; __waygraphTo?: readonly string[] };
+      if (marked.__waygraphTo) {
+        for (const from of marked.__waygraphFrom ?? ["*"]) {
+          for (const to of marked.__waygraphTo) {
+            if (from !== "*") nodeTags.add(from);
+            nodeTags.add(to);
+            const key = `${blockName}\0${from}\0${to}`;
+            if (edgeSeen.has(key)) continue;
+            edgeSeen.add(key);
+            edges.push({ block: blockName, file: relFile, from, to, kind: "action" });
+          }
+        }
+        continue;
+      }
+
       const call = calls[callIndex++];
       if (!call) {
         skipped.push({

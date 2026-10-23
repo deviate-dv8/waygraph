@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, wri
 import { spawnSync } from "node:child_process";
 import { packageRoot } from "../cli/util.js";
 import { agentSkillFiles } from "./agent-dive-scaffold.js";
+import { codemodCheckpoints } from "./codemod-checkpoints.js";
 
 // Filled in per project at init, so they never compare equal to the template.
 const SKIP = new Set(["package.json", join("config", "waygraph.config.ts")]);
@@ -30,6 +31,19 @@ const isOlder = (a: number[], b: number[]): boolean => {
 export async function upgradeCase(args: string[]): Promise<void> {
   const flags = new Set(args.filter((a) => a.startsWith("--")));
   const positional = args.slice(1).filter((a) => !a.startsWith("--"));
+  if (flags.has("--codemod")) {
+    const what = args[args.indexOf("--codemod") + 1];
+    if (what !== "checkpoints") {
+      console.error("waygraph upgrade --codemod: known codemods: checkpoints");
+      process.exit(1);
+    }
+    const dir = resolve(positional.find((p) => p !== "checkpoints") ?? process.cwd());
+    const { changed, skipped } = codemodCheckpoints(dir);
+    for (const f of changed) console.log(`  rewrote     ${f}`);
+    for (const s of skipped) console.log(`  left as is  ${s} (not a declared Checkpoint name)`);
+    console.log(`waygraph upgrade --codemod checkpoints: ${changed.length} file(s) changed; run waygraph typecheck .`);
+    return;
+  }
   // --skills: the agent skills are waygraph's own text, never edited by a project, so refresh them in place.
   if (flags.has("--skills")) {
     flags.add("--apply");

@@ -1,5 +1,5 @@
-import { defineEffectBlock, checkpoint, type Checkpoint, type WaygraphInstanceOption } from "waygraph";
-import type { RemoveFromCartOutcome } from "../../../../states/checkout.states.js";
+import { defineEffectBlock, checkpoint, type WaygraphInstanceOption } from "waygraph";
+import { RemoveFromCartOutcome } from "../../../../states/checkout.states.js";
 import { SelectedItem } from "../../../../states/checkout.mem-keys.js";
 import { collectRemovableItems, InventorySel } from "./inventory-items.js";
 
@@ -13,9 +13,10 @@ type RemoveObserve = "still-has-items" | "cart-empty";
  * Removes the mem-picked product. After Add, waygraph auto shows matching
  * "Remove ..." rows from live Remove buttons.
  */
-export const RemoveFromCartBlock = defineEffectBlock<Checkpoint<string>, RemoveFromCartOutcome>({
+export const RemoveFromCartBlock = defineEffectBlock({
   name: "remove-from-cart",
   description: "Removes the item named by mem (saucedemo.selectedItem) from the cart.",
+  to: RemoveFromCartOutcome,
   requires: [SelectedItem.key],
   instruction: {
     async act(page, _input, mem) {

@@ -1,5 +1,5 @@
-import { defineMethodBlock, checkpoint } from "waygraph";
-import type { CheckoutInfoPage } from "../../../../states/checkout.states.js";
+import { defineMethodBlock } from "waygraph";
+import { CheckoutInfoPage } from "../../../../states/checkout.states.js";
 import { CheckoutInfoSel } from "./checkout-info.sel.js";
 
 /**
@@ -9,13 +9,14 @@ import { CheckoutInfoSel } from "./checkout-info.sel.js";
  *
  * Fills the last name field only - self-loop on CheckoutInfoPage.
  */
-export const FillLastNameBlock = defineMethodBlock<CheckoutInfoPage, CheckoutInfoPage>({
+export const FillLastNameBlock = defineMethodBlock({
   name: "fill-last-name",
   description: "Fills the last name field on the shipping info form.",
+  from: CheckoutInfoPage,
+  to: CheckoutInfoPage,
   instruction: {
     async act(page) {
       await page.locator(CheckoutInfoSel.lastName).fill("Lovelace");
     },
-    resolve: () => checkpoint("CheckoutInfoPage"),
   },
 });
