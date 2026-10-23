@@ -1,8 +1,8 @@
-import type { BannerPos, StubBagState, StubCtx, WaygraphHighlightStub, WaygraphTodoInput, WaygraphTodosOpts } from "./types.js";
+import type { BannerPos, StubBagState, StubCtx, WaygraphHighlightStub, WaygraphTodoInput, WaygraphTodosOpts } from "../../engine/narration.js";
 import { normalizeTodoPos, normalizeTodoStyle } from "./todo-dock.js";
 import { applyOrientation, normalizeDeviceOrientation, resolveDeviceState } from "./device.js";
-import type { Checkpoint } from "../../core/types.js";
-import type { MemPage } from "../../core/mem-page.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
+import type { MemPage } from "../../engine/mem/mem.js";
 
 export function createStubCtx<Out extends Checkpoint<string>>(
   bag: StubBagState,

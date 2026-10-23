@@ -1,4 +1,4 @@
-import type { SessionSnapshot } from "./auto-session/index.js";
+import type { SessionSnapshot } from "./auto-session/helpers.js";
 import { ensureInstalled } from "../demo/overlay/pilot-shell.js";
 import type { Page } from "@playwright/test";
 

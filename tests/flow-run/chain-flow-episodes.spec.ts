@@ -9,7 +9,7 @@ import {
   Trait,
   keyGroup,
 } from "../../src/index.js";
-import { buildFlow, chainFlow, withSettings } from "../../src/core/flow.js";
+import { buildFlow, chainFlow, withSettings } from "../../src/engine/flow/flow.js";
 
 // THE flagship multi-episode example, living in waygraph's own repo, not a
 // downstream consumer project - real saucedemo.com, not a synthetic fixture.

@@ -1,10 +1,11 @@
-// Split out of engine-class.ts (which crammed Engine and MapBuilder into one file despite them
-// being two unrelated concepts - see src/ARCHITECTURE.md). Behavior unchanged.
-import type { Checkpoint } from "./types.js";
+// Where authoring starts. Blocks (block/) are steps between Checkpoints (checkpoint/); `engine.map()` chains them into a
+// Flow (flow/), checking each step's kind; `flow.run()` plays it Block by Block through runGraph (run/), with Playwright.
+// An Engine carries the config every flow it builds shares: how to launch a browser, and the layouts to verify.
+import type { Checkpoint } from "./checkpoint/checkpoint.js";
 import type { EngineConfig } from "./config.js";
-import { buildFlow, withSettings } from "./flow.js";
-import { MapBuilder } from "./map-builder.js";
-import type { MapBuilderOptions } from "./map-builder.js";
+import { buildFlow, withSettings } from "./flow/flow.js";
+import { MapBuilder } from "./flow/map-builder.js";
+import type { MapBuilderOptions } from "./flow/map-builder.js";
 
 type S = Checkpoint<"__start__">;
 

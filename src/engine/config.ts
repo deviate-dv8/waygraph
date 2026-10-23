@@ -1,7 +1,7 @@
-// Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
+// EngineConfig: which browser a flow launches when it opens its own, how, and the layouts every step is checked against.
 import { chromium, firefox, webkit } from "@playwright/test";
 import type { BrowserType } from "@playwright/test";
-import type { Layout } from "./run-graph.js";
+import type { Layout } from "./run/run.js";
 
 const LAUNCHERS = { chromium, firefox, webkit };
 

@@ -1,9 +1,10 @@
 import { test, expect } from "@playwright/test";
 import type { BrowserContext, Page } from "@playwright/test";
-import type { Block, Checkpoint } from "../../src/core/types.js";
-import { runGraph } from "../../src/core.js";
-import { checkpoint } from "../../src/core/types.js";
-import { MemPage } from "../../src/core/mem-page.js";
+import type { Block } from "../../src/engine/block/block.js";
+import type { Checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
+import { runGraph } from "../../src/engine/run/run.js";
+import { checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
+import { MemPage } from "../../src/engine/mem/mem.js";
 
 type Start = Checkpoint<"__start__">;
 type Done = Checkpoint<"Done">;

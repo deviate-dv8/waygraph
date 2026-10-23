@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
 import { Engine, MemPage, checkpoint } from "../../src/index.js";
-import { buildFlow } from "../../src/core/flow.js";
+import { buildFlow } from "../../src/engine/flow/flow.js";
 
 const fakePage = { close: async () => {} } as unknown as import("@playwright/test").Page;
 const fakeContext = { newPage: async () => fakePage } as any;

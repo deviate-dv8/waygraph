@@ -2,15 +2,17 @@
  * Phase B+D: graph traverse (serial or --parallel with --session clone).
  * Walk unused legal edges until leaf / budget / break.
  */
+import type { BlockEntry } from "../../manifest/project.js";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
-import { Engine, buildFlow, locate } from "../../core.js";
-import type { NavBlock } from "../../core.js";
-import { MemPage, type MemKey } from "../../core/mem-page.js";
-import type { Checkpoint } from "../../core/types.js";
+import { Engine } from "../../engine/engine.js";
+import { buildFlow } from "../../engine/flow/flow.js";
+import { locate } from "../../engine/locate.js";
+import type { NavBlock } from "../../engine/block/kinds/nav.js";
+import { MemPage, type MemKey } from "../../engine/mem/mem.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import {
   buildExploreContext,
   buildExploreMenu,
-  type BlockEntry,
   type ExploreEdge,
 } from "../auto-explore.js";
 import type { WaygraphGraph } from "../../analysis/graph.js";

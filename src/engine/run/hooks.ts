@@ -1,3 +1,4 @@
+// Where the demo plugs into the engine without the engine importing it: an API Block reports its call here.
 import type { Page } from "@playwright/test";
 
 /** One HTTP call a Block made on its own (`defineApiBlock`), for whatever is showing network activity. */

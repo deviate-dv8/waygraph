@@ -3,7 +3,8 @@ import { applyRunFlags, looksLikeFlowFileRef, parseRunFlags, resolveBaseUrl } fr
 import { runChain } from "../cli/run-chain.js";
 import { runChainAuto } from "../cli/run-chain.js";
 import { resolve } from "node:path";
-import { browserStart, listBrowserSessions, stopAllBrowserSessions, stopBrowserSession } from "../live/browser.js";
+import { browserStart } from "../live/browser.js";
+import { listBrowserSessions, stopAllBrowserSessions, stopBrowserSession } from "../live/auto-session-ipc.js";
 import { existsSync, statSync } from "node:fs";
 import { resolveInjectRoots } from "../manifest/roots.js";
 import { requestSession, resolveSessionMeta, runAttachLoop, runAutoServeCommand, spawnDetachedSession } from "../live/auto-session-ipc.js";

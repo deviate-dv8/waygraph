@@ -1,13 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import {
-  applyDevicePhase,
-  normalizeDevicePreset,
-  resolveDeviceState,
-  runStubPhase,
-} from "../../src/demo/narration/index.js";
-import type { Block } from "../../src/core/types.js";
-import type { StubCtx } from "../../src/demo/narration/index.js";
+import { applyDevicePhase, normalizeDevicePreset, resolveDeviceState } from "../../src/demo/narration/device.js";
+import { runStubPhase } from "../../src/demo/narration/run-phase.js";
+import type { Block } from "../../src/engine/block/block.js";
+import type { StubCtx } from "../../src/engine/narration.js";
 
 describe("device presets + resolve", () => {
   it("normalizes aliases", () => {
@@ -113,7 +109,7 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
 
   it("landscape swaps mobile width/height", async () => {
     const { applyOrientation, resolveDeviceState, normalizeDeviceOrientation } =
-      await import("../../src/demo/narration/index.js");
+      await import("../../src/demo/narration/device.js");
     assert.equal(normalizeDeviceOrientation("land"), "landscape");
     assert.equal(normalizeDeviceOrientation("port"), "portrait");
     const mobile = resolveDeviceState("mobile")!;

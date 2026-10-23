@@ -1,4 +1,4 @@
-import type { DemoPace, FixtureDurationFields } from "./types.js";
+import type { DemoPace, FixtureDurationFields } from "../../engine/narration.js";
 
 /** Default fixture dwell when `duration: true`. */
 export const FIXTURE_DURATION_MS_DEFAULT = 2000;

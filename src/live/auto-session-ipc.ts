@@ -22,21 +22,10 @@ import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
-import {
-  AutoSession,
-  type AutoSessionInit,
-  type SessionSnapshot,
-  type InspectDomOptions,
-  type DomSnapshot,
-  type TraceStep,
-  type ApplyPathResult,
-  type ConsoleLogEntry,
-  type StorageSnapshot,
-  type StubFileKind,
-} from "./auto-session/index.js";
+import { AutoSession } from "./auto-session/session.js";
+import { type AutoSessionInit, type SessionSnapshot, type InspectDomOptions, type DomSnapshot, type TraceStep, type ApplyPathResult, type ConsoleLogEntry, type StorageSnapshot, type StubFileKind } from "./auto-session/helpers.js";
 import type { PilotHighlightFixtures } from "../demo/overlay/pilot-fixtures.js";
 
-export type { PilotHighlightFixtures } from "../demo/overlay/pilot-fixtures.js";
 
 export interface SessionMeta {
   sessionId: string;

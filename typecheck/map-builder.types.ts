@@ -1,11 +1,8 @@
-import type { Checkpoint } from "../src/core/types.js";
-import {
-  defineNavBlock,
-  definePageBlock,
-  defineAssertBlock,
-  defineMethodBlock,
-  map,
-} from "../src/core.js";
+import type { Checkpoint } from "../src/engine/checkpoint/checkpoint.js";
+import { defineNavBlock } from "../src/engine/block/kinds/nav.js";
+import { definePageBlock } from "../src/engine/block/kinds/page.js";
+import { defineAssertBlock, defineMethodBlock } from "../src/engine/block/kinds/method.js";
+import { map } from "../src/engine/engine.js";
 
 type Home = Checkpoint<"Home">;
 type Cleared = Checkpoint<"Cleared">;

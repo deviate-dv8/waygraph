@@ -1,9 +1,10 @@
-// Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import type { BlockInfo } from "./flow.js";
-import { connect } from "./types.js";
-import type { Block, Checkpoint } from "./types.js";
-import type { Trait } from "./trait.js";
-import { WaygraphError, MSG_COMPOSE_EMPTY, MSG_FASTFORWARD_EMPTY } from "./errors.js";
+// Several Blocks as one: composeBlock groups steps; fastForwardComposeBlock plays a group at blitz speed in a demo.
+import type { BlockInfo } from "../flow/flow.js";
+import { connect } from "../run/connect.js";
+import type { Block } from "./block.js";
+import type { Checkpoint } from "../checkpoint/checkpoint.js";
+import type { Trait } from "../trait/trait.js";
+import { WaygraphError, MSG_COMPOSE_EMPTY, MSG_FASTFORWARD_EMPTY } from "../errors.js";
 import { findBlockIndex, modVerify, withVerify } from "./block.js";
 
 /**

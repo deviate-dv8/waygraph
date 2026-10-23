@@ -1,8 +1,8 @@
 // How `waygraph run` and `waygraph demo` play a flow. The CLI spawns this inside the project (so the project's own
 // Playwright is used) with the project dir and the spec ("cartFlow", "loginFlow then add-item"). Every mode plays the
 // same steps through the same engine; the mode decides what happens around each step.
-import { MemPage } from "../core/mem-page.js";
-import { beginRun, endRun } from "../core/events.js";
+import { MemPage } from "../engine/mem/mem.js";
+import { beginRun, endRun } from "../engine/run/events.js";
 import { withWebServer } from "../runtime/webserver.js";
 import "../runtime/run-log.js";
 import { planSteps } from "./plan/plan.js";

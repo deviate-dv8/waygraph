@@ -1,7 +1,7 @@
 // Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
 import type { WgPage } from "../types.js";
-import type { MemPage } from "../../core/mem-page.js";
+import type { MemPage } from "../../engine/mem/mem.js";
 import { installOverlay } from "../overlay/overlay-install.js";
 import { applyHighlightZoom, captionForLocator, dwellMatchedStub, ensureLocatorInView, hideRing, matchStubIndexForLocator, showRing, wasJustNarrated } from "../overlay/rings.js";
 import { syncTodoDockAdvance } from "./todo-dock.js";

@@ -4,7 +4,7 @@ import type { WgPage } from "../types.js";
 import { installOverlay } from "../overlay/overlay-install.js";
 import { applyDeviceToPage } from "../overlay/device-stage.js";
 import { showRing } from "../overlay/rings.js";
-import { formatHighlightCaption } from "../narration/index.js";
+import { formatHighlightCaption } from "../narration/style.js";
 
 /**
  * Patches Locator.prototype.fill (via any real locator's own prototype

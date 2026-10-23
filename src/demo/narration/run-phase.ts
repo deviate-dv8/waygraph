@@ -1,10 +1,11 @@
-import type { DeviceState, HighlightStubPhase, HighlightStubPhaseName, ResolvedHighlight, StubBagState, StubCtx, StubLifecycleFn, StubPhaseResult, WaygraphSlide, WaygraphSlidesOrFn } from "./types.js";
+import type { DeviceState, HighlightStubPhase, HighlightStubPhaseName, ResolvedHighlight, StubBagState, StubCtx, StubLifecycleFn, StubPhaseResult, WaygraphSlide, WaygraphSlidesOrFn } from "../../engine/narration.js";
 import { createStubCtx, liftLegacySlotTodos } from "./stub-ctx.js";
 import { applyDefaultZoom, applyDefaultZoomOut, applyLegacyHighlightsShim, isStubPhase, readStubRaw, resolvePhaseMap } from "./merge.js";
 import { buildTodoDock, normalizeTodoStyle, normalizeTodos } from "./todo-dock.js";
 import { resolveDeviceState } from "./device.js";
-import type { Block, Checkpoint } from "../../core/types.js";
-import type { MemPage } from "../../core/mem-page.js";
+import type { Block } from "../../engine/block/block.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
+import type { MemPage } from "../../engine/mem/mem.js";
 
 /**
  * Run an open stub lifecycle (preferred) or resolve a static slot map.

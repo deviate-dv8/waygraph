@@ -1,7 +1,7 @@
 // The browser a run plays in: launched with the project's extensions, sized for the mode and an optional video.
 import { mkdirSync } from "node:fs";
-import { recordArtifact } from "../core/events.js";
-import type { MemPage } from "../core/mem-page.js";
+import { recordArtifact } from "../engine/run/events.js";
+import type { MemPage } from "../engine/mem/mem.js";
 import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../runtime/browser.js";
 import { resolveVideoDir } from "../runtime/video-dir.js";
 import type { WgPage } from "../demo/types.js";

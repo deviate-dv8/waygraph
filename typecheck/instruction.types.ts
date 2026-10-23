@@ -1,5 +1,7 @@
-import type { Checkpoint, Instruction, Block } from "../src/core/types.js";
-import { connect, checkpoint } from "../src/core/types.js";
+import type { Checkpoint } from "../src/engine/checkpoint/checkpoint.js";
+import type { Instruction, Block } from "../src/engine/block/block.js";
+import { connect } from "../src/engine/run/connect.js";
+import { checkpoint } from "../src/engine/checkpoint/checkpoint.js";
 
 type LoggedOut = Checkpoint<"LoggedOut">;
 type Authed = Checkpoint<"Authed">;

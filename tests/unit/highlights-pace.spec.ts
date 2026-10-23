@@ -1,11 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { normalizeHighlightTone, normalizeHighlightSize, normalizeHighlightWeight } from "../../src/engine/narration.js";
+import { formatHighlightCaption } from "../../src/demo/narration/style.js";
 import {
-  normalizeHighlightTone,
   normalizeDemoPace,
-  normalizeHighlightSize,
-  normalizeHighlightWeight,
-  formatHighlightCaption,
   resolveFixtureDwellMs,
   resolveStepDemoPace,
   demoPaceScale,
@@ -17,7 +15,7 @@ import {
   FIXTURE_DURATION_MS_DEFAULT,
   FIXTURE_DURATION_FAST_MS_DEFAULT,
   FIXTURE_DURATION_SLOW_MS_DEFAULT,
-} from "../../dist/demo/narration/index.js";
+} from "../../src/demo/narration/demo-pace.js";
 
 describe("normalizeHighlightTone", () => {
   it("maps aliases to canonical tones", () => {

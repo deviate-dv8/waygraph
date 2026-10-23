@@ -1,11 +1,13 @@
-// Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { MemPage } from "./mem-page.js";
-import { WaygraphError, MSG_PREFLIGHT_MISSING_KEY, MSG_RUNGRAPH_MAX_STEPS, MSG_RUNGRAPH_NOT_TERMINAL } from "./errors.js";
-import { checkpoint } from "./types.js";
-import type { Block, Checkpoint } from "./types.js";
+// runGraph: plays Blocks on a page. For each Block: precondition -> act -> observe -> resolve (which Checkpoint did we
+// reach?) -> verify (is the page really there?) -> layouts, then follows `next` for a branched Block. Emits run events.
+import { MemPage } from "../mem/mem.js";
+import { WaygraphError, MSG_PREFLIGHT_MISSING_KEY, MSG_RUNGRAPH_MAX_STEPS, MSG_RUNGRAPH_NOT_TERMINAL } from "../errors.js";
+import { checkpoint } from "../checkpoint/checkpoint.js";
+import type { Block } from "../block/block.js";
+import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { beginRun, endRun, isConnected, lastLeaf, stepEnded, stepFailed, stepStarted } from "./events.js";
-import { runPrecondition, runVerify } from "./trait.js";
-import type { Trait } from "./trait.js";
+import { runPrecondition, runVerify } from "../trait/trait.js";
+import type { Trait } from "../trait/trait.js";
 import type { BrowserContext, Locator, Page } from "@playwright/test";
 
 /**

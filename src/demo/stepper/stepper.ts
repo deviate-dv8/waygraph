@@ -1,8 +1,8 @@
 // The demo's step-through UI: before each step a panel (what's about to happen, its mem, the Next gate), after it the
 // result (rings, slides, todos), and on a failure a panel with Retry / Stop. The runner's demo mode calls these
 // around each step it plays.
-import type { Checkpoint } from "../../core/types.js";
-import type { MemPage } from "../../core/mem-page.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
+import type { MemPage } from "../../engine/mem/mem.js";
 import type { WgPage } from "../types.js";
 import { createOverlayStage } from "../overlay/overlay-stage.js";
 import { instrumentInteractionHighlighting } from "./interaction-patch.js";

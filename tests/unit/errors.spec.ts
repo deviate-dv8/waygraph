@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { WaygraphError, WAYGRAPH_ERRORS } from "../../src/core/errors.js";
+import { WaygraphError, WAYGRAPH_ERRORS } from "../../src/engine/errors.js";
 
 test("every WaygraphError code has a where/means/fix entry", () => {
   for (const [code, info] of Object.entries(WAYGRAPH_ERRORS)) {
@@ -19,8 +19,8 @@ test("WaygraphError.message is prefixed with [code], and .code is readable separ
 });
 
 test("a real preflight failure throws a WaygraphError with .code, not a plain Error", async () => {
-  const { preflight } = await import("../../src/core/run-graph.js");
-  const { MemPage, key } = await import("../../src/core/mem-page.js");
+  const { preflight } = await import("../../src/engine/run/run.js");
+  const { MemPage, key } = await import("../../src/engine/mem/mem.js");
   const mem = new MemPage();
   const need = key<string>("needed");
   try {
@@ -34,7 +34,7 @@ test("a real preflight failure throws a WaygraphError with .code, not a plain Er
 });
 
 test("mem.get() on an unset key throws WG_MEM_READ_BEFORE_SET", async () => {
-  const { MemPage, key } = await import("../../src/core/mem-page.js");
+  const { MemPage, key } = await import("../../src/engine/mem/mem.js");
   const mem = new MemPage();
   const k = key<string>("unset");
   try {

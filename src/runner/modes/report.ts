@@ -2,8 +2,8 @@
 // a screenshot on failure). `runId` names the matching `.waygraph/runs/<runId>.jsonl`.
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { Checkpoint } from "../../core/types.js";
-import { currentRunId, recordArtifact } from "../../core/events.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
+import { currentRunId, recordArtifact } from "../../engine/run/events.js";
 import type { Mode, PlaySession, PlayStep } from "../mode.js";
 
 interface StepReport {

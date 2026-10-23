@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
 import { Engine, MemPage, checkpoint, defineNavBlock, defineBlock, key } from "../../src/index.js";
-import { buildFlow } from "../../src/core/flow.js";
+import { buildFlow } from "../../src/engine/flow/flow.js";
 
 type Start = Checkpoint<"__start__">;
 type A = Checkpoint<"A">;

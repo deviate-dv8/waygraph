@@ -1,5 +1,8 @@
-import { buildTodoDock, formatHighlightCaption, normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, resolveDeviceState, resolveTodoDockUi } from "../narration/index.js";
-import type { BannerPos, BannerUiOpts, DevicePreset, DeviceState, HighlightTone, TodoDockUiOpts, TodoListStyle, WaygraphTodoGroupInput } from "../narration/index.js";
+import { buildTodoDock, resolveTodoDockUi } from "../narration/todo-dock.js";
+import { formatHighlightCaption } from "../narration/style.js";
+import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/narration.js";
+import { resolveDeviceState } from "../narration/device.js";
+import type { BannerPos, BannerUiOpts, DevicePreset, DeviceState, HighlightTone, TodoDockUiOpts, TodoListStyle, WaygraphTodoGroupInput } from "../../engine/narration.js";
 import { ensureInstalled } from "./pilot-shell.js";
 import { verboseLog } from "../verbose-log.js";
 import type { Page } from "@playwright/test";

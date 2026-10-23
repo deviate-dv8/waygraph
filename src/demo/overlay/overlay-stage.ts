@@ -3,7 +3,8 @@
 // fixture" (ctx.todos / ctx.device / ctx.title / ...) means the same thing on every surface.
 // NOT Playwright test fixtures - these paint the waygraph overlay on the page under test.
 import type { WgPage } from "../types.js";
-import { applyDevicePhase, applyTodoPhase, resolveTodoDockUi } from "../narration/index.js";
+import { applyDevicePhase } from "../narration/device.js";
+import { applyTodoPhase, resolveTodoDockUi } from "../narration/todo-dock.js";
 import { applyDeviceToPage } from "./device-stage.js";
 import { bannerUiFromPhase } from "../stepper/banner-log.js";
 

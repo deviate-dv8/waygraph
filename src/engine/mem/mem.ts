@@ -1,4 +1,5 @@
-import { WaygraphError, MSG_MEM_READ_BEFORE_SET } from "./errors.js";
+// Mem: the values a run carries between Blocks (credentials, the row just added), typed by MemKey.
+import { WaygraphError, MSG_MEM_READ_BEFORE_SET } from "../errors.js";
 /**
  * A typed key into MemPage. The phantom `_phantom` field is never assigned - it
  * exists only so TypeScript can infer `T` at each call site. The store is keyed by

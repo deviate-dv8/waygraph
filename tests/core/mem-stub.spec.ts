@@ -9,7 +9,7 @@ import {
   seedMemStub,
   preflight,
 } from "../../src/index.js";
-import { buildFlow, withSettings } from "../../src/core/flow.js";
+import { buildFlow, withSettings } from "../../src/engine/flow/flow.js";
 
 const fakePage = { close: async () => {} } as unknown as import("@playwright/test").Page;
 const fakeContext = { newPage: async () => fakePage } as any;

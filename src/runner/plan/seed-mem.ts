@@ -1,6 +1,6 @@
 // Fills mem for a segment from its --data / inline JSON, or from registerMemStub fakes when --mem-stub is on.
-import type { MemPage } from "../../core/mem-page.js";
-import { getMemStub } from "../../core/mem-stub.js";
+import type { MemPage } from "../../engine/mem/mem.js";
+import { getMemStub } from "../../engine/mem/mem-stub.js";
 
 function seedMemFromRequires(mem: MemPage, requires: any, json: any, label: any, stubActive: any) {
   if (requires.length === 0) {

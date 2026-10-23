@@ -1,6 +1,6 @@
-// Split out of engine-class.ts (which crammed Engine and MapBuilder into one file despite them
-// being two unrelated concepts - see src/ARCHITECTURE.md). Behavior unchanged.
-import type { Block, Checkpoint, DefinedBlock } from "./types.js";
+// map(): builds a Flow one step at a time - gotoPage / method / assert / flow / branch - each checked for its Block kind.
+import type { Block, DefinedBlock } from "../block/block.js";
+import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import {
   WaygraphError,
   MSG_MAP_WRONG_KIND,
@@ -15,20 +15,20 @@ import {
   MSG_MAP_BRANCH_NO_PRIOR_STEP,
   MSG_MAP_FF_NOT_CLOSED,
   MSG_MAP_EMPTY,
-} from "./errors.js";
-import type { EngineConfig } from "./config.js";
+} from "../errors.js";
+import type { EngineConfig } from "../config.js";
 import type { Flow, FlowSettings } from "./flow.js";
-import type { RunGraphOptions } from "./run-graph.js";
-import { MemPage } from "./mem-page.js";
+import type { RunGraphOptions } from "../run/run.js";
+import { MemPage } from "../mem/mem.js";
 import type { BrowserContext, Page } from "@playwright/test";
-import { fastForwardComposeBlock } from "./compose.js";
+import { fastForwardComposeBlock } from "../block/compose.js";
 import { clearSessionState } from "./flow.js";
-import { copyWaygraphRuntime } from "./block.js";
-import type { DemoPace, HighlightStyleDefaults } from "./narration.js";
-import type { NavBlock } from "./blocks/nav.js";
-import type { PageBlock } from "./blocks/page.js";
-import type { AssertBlock, MethodBlock } from "./blocks/method.js";
-import type { EffectBlock } from "./blocks/effect.js";
+import { copyWaygraphRuntime } from "../block/block.js";
+import type { DemoPace, HighlightStyleDefaults } from "../narration.js";
+import type { NavBlock } from "../block/kinds/nav.js";
+import type { PageBlock } from "../block/kinds/page.js";
+import type { AssertBlock, MethodBlock } from "../block/kinds/method.js";
+import type { EffectBlock } from "../block/kinds/effect.js";
 
 type S = Checkpoint<"__start__">;
 

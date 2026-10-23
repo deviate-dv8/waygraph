@@ -10,12 +10,12 @@
 // `cloneSession: false` opts out to a single shared session instead - the ordinary `flow.run()`
 // behavior, one real dispatch down whichever path the live state actually takes. Useful as a
 // baseline, but it cannot explore siblings: once a branch's Blocks run, the page has moved on.
-import type { Checkpoint } from "./types.js";
-import { WaygraphError, MSG_BRANCH_REGRESSION_NO_BROWSER } from "./errors.js";
+import type { Checkpoint } from "../checkpoint/checkpoint.js";
+import { WaygraphError, MSG_BRANCH_REGRESSION_NO_BROWSER } from "../errors.js";
 import type { Flow } from "./flow.js";
-import type { RunGraphOptions } from "./run-graph.js";
-import { MemPage } from "./mem-page.js";
-import { seedMemStub } from "./mem-stub.js";
+import type { RunGraphOptions } from "../run/run.js";
+import { MemPage } from "../mem/mem.js";
+import { seedMemStub } from "../mem/mem-stub.js";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 
 /** One branch reachable from `flow`, possibly several `.branch()` levels deep. */

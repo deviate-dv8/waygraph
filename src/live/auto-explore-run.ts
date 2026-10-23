@@ -1,19 +1,21 @@
-import { getMemStub } from "../core/mem-stub.js";
+import type { BlockEntry } from "../manifest/project.js";
+import { getMemStub } from "../engine/mem/mem-stub.js";
 import { createInterface } from "node:readline/promises";
 import { ensureShadowRoot } from "../ui/shadow.js";
 import { stdin as input, stdout as output } from "node:process";
 import type { Page, BrowserContext, BrowserContextOptions } from "@playwright/test";
-import { Engine, buildFlow, locate } from "../core.js";
-import { MemPage } from "../core/mem-page.js";
-import type { MemKey } from "../core/mem-page.js";
-import type { NavBlock } from "../core.js";
+import { Engine } from "../engine/engine.js";
+import { buildFlow } from "../engine/flow/flow.js";
+import { locate } from "../engine/locate.js";
+import { MemPage } from "../engine/mem/mem.js";
+import type { MemKey } from "../engine/mem/mem.js";
+import type { NavBlock } from "../engine/block/kinds/nav.js";
 import {
   buildExploreContext,
   buildExploreMenu,
-  type BlockEntry,
   type ExploreMenu,
 } from "./auto-explore.js";
-import type { Checkpoint } from "../core/types.js";
+import type { Checkpoint } from "../engine/checkpoint/checkpoint.js";
 import { installDemoChrome, instrumentAutoInteractions } from "../demo/overlay/auto-chrome.js";
 import { configuredExtensions, resolveBaseUrl } from "../runtime/config.js";
 import { withWebServer } from "../runtime/webserver.js";

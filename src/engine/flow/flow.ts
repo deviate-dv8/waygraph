@@ -1,22 +1,23 @@
-// Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { connect } from "./types.js";
-import { launchOwnContext } from "./launch.js";
+// A Flow: Blocks joined in order (connect), run as one with `run()`; map() builds them, with its settings (withSettings).
+import { connect } from "../run/connect.js";
+import { launchOwnContext } from "../run/launch.js";
 import {
   WaygraphError,
   MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_INDEX,
   MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_NAME,
   MSG_CHAINFLOW_EMPTY,
-} from "./errors.js";
-import type { Block, Checkpoint } from "./types.js";
-import { preflight, runGraph } from "./run-graph.js";
-import type { RunGraphOptions } from "./run-graph.js";
-import type { EngineConfig } from "./config.js";
+} from "../errors.js";
+import type { Block } from "../block/block.js";
+import type { Checkpoint } from "../checkpoint/checkpoint.js";
+import { preflight, runGraph } from "../run/run.js";
+import type { RunGraphOptions } from "../run/run.js";
+import type { EngineConfig } from "../config.js";
 import type { BrowserContext, Page } from "@playwright/test";
-import { MemPage } from "./mem-page.js";
-import type { Trait } from "./trait.js";
-import { findBlockIndex, modVerify, withVerify } from "./block.js";
-import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "./narration.js";
-import type { DemoPace, HighlightStyleDefaults } from "./narration.js";
+import { MemPage } from "../mem/mem.js";
+import type { Trait } from "../trait/trait.js";
+import { findBlockIndex, modVerify, withVerify } from "../block/block.js";
+import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../narration.js";
+import type { DemoPace, HighlightStyleDefaults } from "../narration.js";
 
 /**
  * A composed, runnable flow. Always begins from Checkpoint<"__start__">, same as
@@ -98,12 +99,12 @@ export interface Flow<Out extends Checkpoint<string>> {
    * Demo pacing for this Flow's episode (`map({ demoPace })`).
    * `run()` ignores; step/demo applies per Block in the episode.
    */
-  readonly demoPace?: import("./narration.js").DemoPace;
+  readonly demoPace?: import("../narration.js").DemoPace;
   /**
    * Default highlight size/weight/tone for this Flow's episode (`map({ highlightStyle })`).
    * Per-slot stub/fixture values win. `run()` ignores.
    */
-  readonly highlightStyle?: import("./narration.js").HighlightStyleDefaults;
+  readonly highlightStyle?: import("../narration.js").HighlightStyleDefaults;
   /**
    * `map({ memStub: true })` - opts into
    * auto-filling `requires` keys with registered fake values

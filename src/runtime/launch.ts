@@ -1,6 +1,6 @@
-import { setOwnContextLauncher } from "../core/launch.js";
-import type { EngineConfig } from "../core/config.js";
-import { resolveLauncher } from "../core/config.js";
+import { setOwnContextLauncher } from "../engine/run/launch.js";
+import type { EngineConfig } from "../engine/config.js";
+import { resolveLauncher } from "../engine/config.js";
 import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "./browser.js";
 import { resolveExtensions } from "./extensions.js";
 import { loadWaygraphConfig } from "./config.js";

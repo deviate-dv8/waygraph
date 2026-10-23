@@ -2,7 +2,9 @@
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
 import type { WgPage } from "../types.js";
 import { installOverlay } from "../overlay/overlay-install.js";
-import { applyHighlightStyleDefaults, formatHighlightCaption, hasAuthoredStubOnError, normalizeHighlightTone, runStubPhase } from "../narration/index.js";
+import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
+import { hasAuthoredStubOnError, runStubPhase } from "../narration/run-phase.js";
+import { normalizeHighlightTone } from "../../engine/narration.js";
 import { cycleHighlightRings } from "../overlay/rings.js";
 
 export async function renderBeforeStep(page: WgPage, info: any) {

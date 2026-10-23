@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint } from "../../src/index.js";
 import { Engine, checkpoint, defineBlock, defineNavBlock, Trait, MemPage, key } from "../../src/index.js";
-import { buildFlow } from "../../src/core/flow.js";
+import { buildFlow } from "../../src/engine/flow/flow.js";
 
 // Proves a real gap-turned-non-gap: a Block whose action doesn't move to a
 // new page state at all (clicking "+" to bump a cart item's quantity, say)

@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import type { WaygraphInstanceOption } from "../core/types.js";
+import type { WaygraphInstanceOption } from "../engine/block/block.js";
 import { discoverGraph, type WaygraphGraph, type WaygraphEdge } from "../analysis/graph.js";
 import { scanProject } from "../manifest/project.js";
 
@@ -9,7 +9,6 @@ export interface ExploreContextOpts {
   inject?: string[];
 }
 
-export type { BlockEntry } from "../manifest/project.js";
 import type { BlockEntry } from "../manifest/project.js";
 
 /**

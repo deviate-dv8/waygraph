@@ -1,5 +1,5 @@
-import type { Checkpoint } from "../src/core/types.js";
-import { defineNavBlock } from "../src/core.js";
+import type { Checkpoint } from "../src/engine/checkpoint/checkpoint.js";
+import { defineNavBlock } from "../src/engine/block/kinds/nav.js";
 
 type LoginForm = Checkpoint<"LoginForm">;
 

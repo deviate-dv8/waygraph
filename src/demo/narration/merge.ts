@@ -1,6 +1,7 @@
-import type { HighlightStubPhase, HighlightStubPhaseName, HighlightStubPhaseOrFn, ResolvedHighlight, WaygraphHighlight, WaygraphHighlightStub } from "./types.js";
+import type { HighlightStubPhase, HighlightStubPhaseName, HighlightStubPhaseOrFn, ResolvedHighlight, WaygraphHighlight, WaygraphHighlightStub } from "../../engine/narration.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "./style.js";
-import type { Block, Checkpoint } from "../../core/types.js";
+import type { Block } from "../../engine/block/block.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 
 export function isStubPhase(v: unknown): v is HighlightStubPhase {
   return !!v && typeof v === "object" && !Array.isArray(v);

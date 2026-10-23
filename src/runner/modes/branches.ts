@@ -1,8 +1,8 @@
 // `waygraph run <flow> --all-branches`: instead of the one path the live state picks, play every route through the
 // flow's `.branch()` tree, each from a copy of the session at its branch point (or one shared session).
-import type { MemPage } from "../../core/mem-page.js";
-import type { Flow } from "../../core/flow.js";
-import { branchRoutes, runBranchRegression } from "../../core/branch-regression.js";
+import type { MemPage } from "../../engine/mem/mem.js";
+import type { Flow } from "../../engine/flow/flow.js";
+import { branchRoutes, runBranchRegression } from "../../engine/flow/branch-regression.js";
 import { extensionPathsFromEnv } from "../../runtime/browser.js";
 import type { PlayOptions } from "../options.js";
 

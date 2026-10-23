@@ -5,6 +5,7 @@
  *      that may only go DOWN (lower the number when you shrink a file; never raise it).
  *   2. No circular value imports between src modules (type-only imports are ignored).
  *   3. Layers: each file's layer may only import the layers allowed for it; scripts/layer-debt.json may only shrink.
+ *   4. No barrels: only src/index.ts (the package API) re-exports; everything else is imported from where it is declared.
  * Run: npm run check:structure
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -79,7 +80,7 @@ for (const c of cycles) problems.push("import cycle: " + c.map((p) => relative(s
 // Each file belongs to one layer; a layer may only import the layers listed for it. Existing violations are in
 // scripts/layer-debt.json: that list may only shrink (a fixed violation must be removed from it, a new one fails).
 const LAYER_OF = [
-  ["core/", "core"], ["core.ts", "core"],
+  ["engine/", "engine"],
   ["manifest/", "manifest"],
   ["analysis/", "analysis"],
   ["runtime/", "runtime"],
@@ -91,12 +92,12 @@ const LAYER_OF = [
   ["index.ts", "public"],
 ];
 const MAY_IMPORT = {
-  core: ["core"],
-  manifest: ["core", "manifest"],
-  analysis: ["core", "manifest", "analysis"],
-  runtime: ["core", "runtime"],
-  demo: ["core", "runtime", "demo"],
-  live: ["core", "manifest", "analysis", "runtime", "demo", "live"],
+  engine: ["engine"],
+  manifest: ["engine", "manifest"],
+  analysis: ["engine", "manifest", "analysis"],
+  runtime: ["engine", "runtime"],
+  demo: ["engine", "runtime", "demo"],
+  live: ["engine", "manifest", "analysis", "runtime", "demo", "live"],
   cli: null,
   public: null,
 };
@@ -115,6 +116,13 @@ for (const f of files) {
     if (to !== "unassigned" && !allowed.includes(to)) violations.push(`${rel} -> ${target}`);
   }
 }
+// --- no barrels ---
+const REEXPORT_RE = /^\s*export\s+(?:type\s+)?(?:\*|\{[^}]*\})\s+from\s+["']/m;
+for (const f of files) {
+  const rel = relative(srcDir, f).replace(/\\/g, "/");
+  if (rel !== "index.ts" && REEXPORT_RE.test(readFileSync(f, "utf8"))) problems.push(`${rel}: re-exports another module (import from where it is declared; only src/index.ts re-exports)`);
+}
+
 const debtFile = join(root, "scripts", "layer-debt.json");
 const debt = new Set(JSON.parse(readFileSync(debtFile, "utf8")));
 for (const v of violations) if (!debt.has(v)) problems.push(`layer: ${v} (a ${v.split(" -> ").map((x) => layerOf(x)).join(" layer may not import the ")} layer)`);

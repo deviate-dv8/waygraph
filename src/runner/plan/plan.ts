@@ -1,10 +1,10 @@
 // What to play: the CLI spec ("cartFlow", or "loginFlow then add-item({...})") turned into the steps to play, each
 // knowing its episode, its flow's settings and when to seed its segment's mem.
-import type { Block } from "../../core/types.js";
-import type { MemPage } from "../../core/mem-page.js";
-import { buildFlow, chainFlow } from "../../core/flow.js";
-import type { BlockInfo, Flow } from "../../core/flow.js";
-import { isFastForwardBlock } from "../../core/compose.js";
+import type { Block } from "../../engine/block/block.js";
+import type { MemPage } from "../../engine/mem/mem.js";
+import { buildFlow, chainFlow } from "../../engine/flow/flow.js";
+import type { BlockInfo, Flow } from "../../engine/flow/flow.js";
+import { isFastForwardBlock } from "../../engine/block/compose.js";
 import type { PlayStep } from "../mode.js";
 import type { PlayOptions } from "../options.js";
 import { findBlock, findFlow } from "./find.js";

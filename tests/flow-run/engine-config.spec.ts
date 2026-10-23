@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
 import { Engine, MemPage, checkpoint } from "../../src/index.js";
-import { buildFlow } from "../../src/core/flow.js";
+import { buildFlow } from "../../src/engine/flow/flow.js";
 
 const FORM_URL = `data:text/html,${encodeURIComponent(`<h1 id="h">Hello</h1>`)}`;
 

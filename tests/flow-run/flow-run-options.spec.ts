@@ -1,9 +1,10 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, Block } from "../../src/core/types.js";
-import { checkpoint } from "../../src/core/types.js";
-import { Engine } from "../../src/core.js";
-import { MemPage } from "../../src/core/mem-page.js";
-import { buildFlow } from "../../src/core/flow.js";
+import type { Checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
+import type { Block } from "../../src/engine/block/block.js";
+import { checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
+import { Engine } from "../../src/engine/engine.js";
+import { MemPage } from "../../src/engine/mem/mem.js";
+import { buildFlow } from "../../src/engine/flow/flow.js";
 
 // Real gap this proves fixed: before `Flow.run`'s `page`/`closeOnFinish`
 // options existed, a run always opened its own fresh tab via

@@ -3,7 +3,8 @@
 import { readdirSync, statSync, type Dirent } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { Block, Checkpoint } from "../core/types.js";
+import type { Block } from "../engine/block/block.js";
+import type { Checkpoint } from "../engine/checkpoint/checkpoint.js";
 
 /** Every file under `dir` whose name matches, skipping `node_modules`, `dist` and `.git`. */
 export function walkDir(dir: string, pattern: RegExp): string[] {

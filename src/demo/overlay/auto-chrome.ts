@@ -1,7 +1,7 @@
 // The auto session's overlay: the same ring, cursor and click pulse the demo runner installs (inpage/core.ts), plus a
 // small "waygraph auto" banner, and fill/click patches that point at what the automation touches.
 import type { Page } from "@playwright/test";
-import type { MemPage } from "../../core/mem-page.js";
+import type { MemPage } from "../../engine/mem/mem.js";
 import { ensureShadowRoot } from "../../ui/shadow.js";
 import { installCore } from "./inpage/core.js";
 import { clickPulseAt, moveCursorTo } from "./cursor.js";

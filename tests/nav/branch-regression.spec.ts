@@ -10,7 +10,7 @@ import {
   runBranchRegression,
   branchRoutes
 } from "../../src/index.js";
-import { withSettings } from "../../src/core/flow.js";
+import { withSettings } from "../../src/engine/flow/flow.js";
 
 type Home = Checkpoint<"Home">;
 type Away = Checkpoint<"Away">;

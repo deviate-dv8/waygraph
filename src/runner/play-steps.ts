@@ -1,6 +1,6 @@
 // The one loop every mode plays: each step goes through the engine, with the mode's hooks around it.
-import type { Checkpoint } from "../core/types.js";
-import { buildFlow } from "../core/flow.js";
+import type { Checkpoint } from "../engine/checkpoint/checkpoint.js";
+import { buildFlow } from "../engine/flow/flow.js";
 import { resetPage } from "./session.js";
 import type { Mode, PlayOutcome, PlaySession, PlayStep } from "./mode.js";
 

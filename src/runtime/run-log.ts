@@ -2,7 +2,7 @@
 // `.waygraph/runs`; `runLog: false` in the config turns it off). This is the run history Waygraph UI reads.
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { onRunEvent } from "../core/events.js";
+import { onRunEvent } from "../engine/run/events.js";
 
 onRunEvent((event) => {
   const dir = process.env.WAYGRAPH_RUN_LOG;

@@ -7,7 +7,7 @@
  * `browser start` always opens another; `browser attach` / `browser stop` pick one up or shut it down.
  */
 import { spawnDetachedSession } from "./auto-session-ipc.js";
-import type { AutoSessionInit } from "./auto-session/index.js";
+import type { AutoSessionInit } from "./auto-session/helpers.js";
 import { resolveInjectRoots } from "../manifest/roots.js";
 
 export interface BrowserStartInit extends AutoSessionInit {
@@ -43,9 +43,3 @@ export async function browserStart(init: BrowserStartInit): Promise<BrowserStart
   };
 }
 
-export {
-  listBrowserSessions,
-  stopBrowserSession,
-  stopAllBrowserSessions,
-  type SessionMeta,
-} from "./auto-session-ipc.js";

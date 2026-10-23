@@ -1,11 +1,12 @@
-// Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { checkpoint } from "../types.js";
-import type { Checkpoint, DefinedBlock } from "../types.js";
-import type { Trait } from "../trait.js";
+// A Method: a page action that doesn't navigate (fill, submit, toggle), from one Checkpoint to another. Also the Assert Block.
+import { checkpoint } from "../../checkpoint/checkpoint.js";
+import type { Checkpoint } from "../../checkpoint/checkpoint.js";
+import type { DefinedBlock } from "../block.js";
+import type { Trait } from "../../trait/trait.js";
 import { defineBlock } from "../block.js";
-import { markRouteOf, routed } from "../route.js";
-import type { CheckpointRef, RoutedBlockBase } from "../route.js";
-import type { MemKey } from "../mem-page.js";
+import { markRouteOf, routed } from "../../checkpoint/route.js";
+import type { CheckpointRef, RoutedBlockBase } from "../../checkpoint/route.js";
+import type { MemKey } from "../../mem/mem.js";
 import type { Page } from "@playwright/test";
 
 /**
@@ -32,12 +33,12 @@ export type MethodBlock<
     newCheck: Trait["check"] | Trait,
   ): MethodBlock<In, Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): MethodBlock<In, Out>;
-  stubBefore(stub: import("../narration.js").HighlightStubPhase): MethodBlock<In, Out>;
-  stubBefore(stub: import("../narration.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
-  stubAfter(stub: import("../narration.js").HighlightStubPhase): MethodBlock<In, Out>;
-  stubAfter(stub: import("../narration.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
-  stubOnError(stub: import("../narration.js").HighlightStubPhase): MethodBlock<In, Out>;
-  stubOnError(stub: import("../narration.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
+  stubBefore(stub: import("../../narration.js").HighlightStubPhase): MethodBlock<In, Out>;
+  stubBefore(stub: import("../../narration.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
+  stubAfter(stub: import("../../narration.js").HighlightStubPhase): MethodBlock<In, Out>;
+  stubAfter(stub: import("../../narration.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
+  stubOnError(stub: import("../../narration.js").HighlightStubPhase): MethodBlock<In, Out>;
+  stubOnError(stub: import("../../narration.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
 };
 
 
@@ -91,11 +92,11 @@ export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<
   verify: Trait[] | ((out: Out) => Trait[]);
   /** Mem keys this assertion's `verify` reads (e.g. a mem-aware Trait) - checked by preflight before the flow runs. */
   requires?: readonly MemKey<any>[];
-  stubBefore?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   /** Multi-step yap slides (demo only) - same field `Instruction.slides` exposes elsewhere. */
-  slides?: import("../narration.js").WaygraphSlidesOrFn<Out>;
+  slides?: import("../../narration.js").WaygraphSlidesOrFn<Out>;
 }
 
 
@@ -186,10 +187,10 @@ export type AssertBlock<Out extends Checkpoint<string>> = Omit<
     newCheck: Trait["check"] | Trait,
   ): AssertBlock<Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): AssertBlock<Out>;
-  stubBefore(stub: import("../narration.js").HighlightStubPhase): AssertBlock<Out>;
-  stubBefore(stub: import("../narration.js").StubLifecycleFn<Out>): AssertBlock<Out>;
-  stubAfter(stub: import("../narration.js").HighlightStubPhase): AssertBlock<Out>;
-  stubAfter(stub: import("../narration.js").StubLifecycleFn<Out>): AssertBlock<Out>;
-  stubOnError(stub: import("../narration.js").HighlightStubPhase): AssertBlock<Out>;
-  stubOnError(stub: import("../narration.js").StubLifecycleFn<Out>): AssertBlock<Out>;
+  stubBefore(stub: import("../../narration.js").HighlightStubPhase): AssertBlock<Out>;
+  stubBefore(stub: import("../../narration.js").StubLifecycleFn<Out>): AssertBlock<Out>;
+  stubAfter(stub: import("../../narration.js").HighlightStubPhase): AssertBlock<Out>;
+  stubAfter(stub: import("../../narration.js").StubLifecycleFn<Out>): AssertBlock<Out>;
+  stubOnError(stub: import("../../narration.js").HighlightStubPhase): AssertBlock<Out>;
+  stubOnError(stub: import("../../narration.js").StubLifecycleFn<Out>): AssertBlock<Out>;
 };

@@ -1,5 +1,6 @@
-import type { Checkpoint } from "./types.js";
-import type { MemPage } from "./mem-page.js";
+// The narration contract a Block can carry (stubBefore / stubAfter / stubOnError, pace, rings): types only; demo/ plays it.
+import type { Checkpoint } from "./checkpoint/checkpoint.js";
+import type { MemPage } from "./mem/mem.js";
 
 /** Shared dwell fields on stubs, fixtures, and yap slides. */
 export type FixtureDurationFields = {

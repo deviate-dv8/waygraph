@@ -1,6 +1,7 @@
-import type { Checkpoint } from "./types.js";
-import { checkpoint } from "./types.js";
-import type { defineBlock } from "./block.js";
+// A routed Block says where it runs: `from` (one Checkpoint, a list, or anywhere) and `to`; the route is kept on the Block for the manifest.
+import type { Checkpoint } from "./checkpoint.js";
+import { checkpoint } from "./checkpoint.js";
+import type { defineBlock } from "../block/block.js";
 
 /** A Checkpoint given as its value (`Home`), or, deprecated, as its tag string (`"Home"`). */
 export type CheckpointRef<C extends Checkpoint<string>> = C | C["__state"];

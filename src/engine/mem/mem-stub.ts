@@ -15,9 +15,9 @@
  * (identity, not `.name`), matching MemPage's own store - two keys sharing a
  * debug name must never cross-contaminate here either.
  */
-import type { MemKey } from "./mem-page.js";
-import type { MemPage } from "./mem-page.js";
-import type { Flow } from "../core.js";
+import type { MemKey } from "./mem.js";
+import type { MemPage } from "./mem.js";
+import type { Flow } from "../flow/flow.js";
 
 const registry = new Map<MemKey<any>, () => unknown>();
 

@@ -2,7 +2,7 @@
 // step's panel, then log what was painted so an agent without eyes can check it.
 import { runStubPhase } from "../narration/run-phase.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
-import type { StubPhaseResult } from "../../core/narration.js";
+import type { StubPhaseResult } from "../../engine/narration.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
 import { renderBeforeStep } from "./step-panels.js";
 import { probeTodoDocksOnPage } from "./todo-dock.js";

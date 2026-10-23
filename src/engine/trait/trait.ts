@@ -1,5 +1,6 @@
+// Traits: the checks a Block's verify runs against the page (url, text, visible, ...), and the runner for them.
 import type { Page } from "@playwright/test";
-import type { MemPage } from "./mem-page.js";
+import type { MemPage } from "../mem/mem.js";
 // URLPattern is only a Node global from v23.8+ (and even then, Node's own, not a browser's) -
 // CI's Node 20/22 matrix has no global at all. Side-effect import only: the polyfill package sets
 // globalThis.URLPattern itself, but only when one doesn't already exist - so below Node 23.8 this

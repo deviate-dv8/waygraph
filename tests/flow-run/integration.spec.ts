@@ -1,8 +1,10 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, Block } from "../../src/core/types.js";
-import { connect, checkpoint } from "../../src/core/types.js";
-import { runGraph } from "../../src/core.js";
-import { MemPage, key } from "../../src/core/mem-page.js";
+import type { Checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
+import type { Block } from "../../src/engine/block/block.js";
+import { connect } from "../../src/engine/run/connect.js";
+import { checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
+import { runGraph } from "../../src/engine/run/run.js";
+import { MemPage, key } from "../../src/engine/mem/mem.js";
 
 // A tiny two-field form, self-contained as a data: URL - no fixture server needed.
 // On submit it swaps in a "Submitted" heading, so a real assertion can confirm the

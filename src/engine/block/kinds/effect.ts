@@ -1,10 +1,11 @@
-// Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import type { Block, Checkpoint, DefinedBlock } from "../types.js";
-import type { MemKey } from "../mem-page.js";
-import type { Trait } from "../trait.js";
+// An Effect: a page action on one of several live instances (add this item, remove that row); `waygraph auto` offers one menu row per instance.
+import type { Block, DefinedBlock } from "../block.js";
+import type { Checkpoint } from "../../checkpoint/checkpoint.js";
+import type { MemKey } from "../../mem/mem.js";
+import type { Trait } from "../../trait/trait.js";
 import { defineBlock } from "../block.js";
-import { markRouteOf, routed } from "../route.js";
-import type { RoutedBlockBase } from "../route.js";
+import { markRouteOf, routed } from "../../checkpoint/route.js";
+import type { RoutedBlockBase } from "../../checkpoint/route.js";
 
 /**
  * TypeScript salt over {@link defineBlock}: same runtime Block, but the type
@@ -30,12 +31,12 @@ export type EffectBlock<
     newCheck: Trait["check"] | Trait,
   ): EffectBlock<In, Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): EffectBlock<In, Out>;
-  stubBefore(stub: import("../narration.js").HighlightStubPhase): EffectBlock<In, Out>;
-  stubBefore(stub: import("../narration.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
-  stubAfter(stub: import("../narration.js").HighlightStubPhase): EffectBlock<In, Out>;
-  stubAfter(stub: import("../narration.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
-  stubOnError(stub: import("../narration.js").HighlightStubPhase): EffectBlock<In, Out>;
-  stubOnError(stub: import("../narration.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
+  stubBefore(stub: import("../../narration.js").HighlightStubPhase): EffectBlock<In, Out>;
+  stubBefore(stub: import("../../narration.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
+  stubAfter(stub: import("../../narration.js").HighlightStubPhase): EffectBlock<In, Out>;
+  stubAfter(stub: import("../../narration.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
+  stubOnError(stub: import("../../narration.js").HighlightStubPhase): EffectBlock<In, Out>;
+  stubOnError(stub: import("../../narration.js").StubLifecycleFn<Out>): EffectBlock<In, Out>;
 };
 
 

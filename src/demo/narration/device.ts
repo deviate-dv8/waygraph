@@ -1,4 +1,4 @@
-import type { DeviceOrientation, DevicePreset, DeviceState, DeviceViewport } from "./types.js";
+import type { DeviceOrientation, DevicePreset, DeviceState, DeviceViewport } from "../../engine/narration.js";
 
 /** Built-in preset sizes (CSS pixels) — stored in portrait for mobile/tablet. */
 export const DEVICE_PRESETS: Record<DevicePreset, Omit<DeviceState, "touchMode"> & { touchMode?: boolean }> = {

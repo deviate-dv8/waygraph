@@ -1,6 +1,7 @@
 // Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
-import { demoPaceIsFast, demoPaceIsSlow, formatDemoPaceBadge, formatDemoPaceLabel, normalizeDemoPace, normalizeHighlightTone } from "../narration/index.js";
+import { demoPaceIsFast, demoPaceIsSlow, formatDemoPaceBadge, formatDemoPaceLabel, normalizeDemoPace } from "../narration/demo-pace.js";
+import { normalizeHighlightTone } from "../../engine/narration.js";
 
 export function demoPaceKind(pace: any) {
   const p = normalizeDemoPace(pace);

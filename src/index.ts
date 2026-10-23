@@ -2,13 +2,15 @@
 import "./runtime/launch.js";
 // Run events are written to the project's run log (.waygraph/runs) when the CLI turns it on.
 import "./runtime/run-log.js";
-export type { Checkpoint, Instruction, Block, DefinedBlock, Start, WaygraphInstanceOption } from "./core/types.js";
-export { connect, checkpoint } from "./core/types.js";
-export { MemKey, MemPage, key, keyGroup } from "./core/mem-page.js";
-export { registerMemStub, seedMemStub, getMemStub } from "./core/mem-stub.js";
-export { css, byText, byRole } from "./core/selector.js";
-export { WaygraphError, WAYGRAPH_ERRORS } from "./core/errors.js";
-export type { WaygraphErrorCode } from "./core/errors.js";
+export type { Checkpoint, Start } from "./engine/checkpoint/checkpoint.js";
+export type { Instruction, Block, DefinedBlock, WaygraphInstanceOption } from "./engine/block/block.js";
+export { connect } from "./engine/run/connect.js";
+export { checkpoint } from "./engine/checkpoint/checkpoint.js";
+export { MemKey, MemPage, key, keyGroup } from "./engine/mem/mem.js";
+export { registerMemStub, seedMemStub, getMemStub } from "./engine/mem/mem-stub.js";
+export { css, byText, byRole } from "./engine/trait/selector.js";
+export { WaygraphError, WAYGRAPH_ERRORS } from "./engine/errors.js";
+export type { WaygraphErrorCode } from "./engine/errors.js";
 export {
   Trait,
   urlMatches,
@@ -19,152 +21,44 @@ export {
   frameVisible,
   frameTextEquals,
   frameContainsText,
-} from "./core/trait.js";
-export {
-  runGraph,
-  spawnTab,
-  narrate,
-  Engine,
-  branch,
-  withVerify,
-  modVerify,
-  modVerifyAll,
-  defineBlock,
-  defineNavBlock,
-  defineNavClickBlock,
-  defineMethodBlock,
-  defineActionBlock,
-  defineAssertBlock,
-  definePageBlock,
-  defineEffectBlock,
-  defineMemEffectBlock,
-  defineMemNavBlock,
-  defineApiBlock,
-  locate,
-  composeBlock,
-  fastForwardComposeBlock,
-  isFastForwardBlock,
-  preflight,
-  withDialog,
-  defineLayout,
-  map,
-  MapBuilder,
-  branchRoutes,
-  collectBranchFlows,
-  runBranchRegression,
-} from "./core.js";
-export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./core/branch-regression.js";
-export type { ApiBlockOptions, ApiCallResult } from "./core/blocks/api.js";
-export type { MapStepOpts, MapFlowOpts } from "./core/map-builder.js";
-export {
-  resolveHighlightSlots,
-  resolveSlides,
-  runStubPhase,
-  resolveFixtureDwellMs,
-  resolveSlideDwellMs,
-  formatHighlightCaption,
-  hasAuthoredStubAfter,
-  hasAuthoredStubOnError,
-  normalizeHighlightTone,
-  normalizeDemoPace,
-  normalizeHighlightSize,
-  normalizeHighlightWeight,
-  applyHighlightStyleDefaults,
-  toneIconPrefix,
-  resolveStepDemoPace,
-  demoPaceScale,
-  demoPaceIsBlitz,
-  demoPaceIsFast,
-  demoPaceIsSlow,
-  demoPaceGateMs,
-  formatDemoPaceBadge,
-  formatDemoPaceLabel,
-  normalizeTodos,
-  normalizeTodoPos,
-  normalizeTodoStyle,
-  buildTodoDock,
-  applyTodoPhase,
-  advanceTodoDock,
-  completeSequentialTodoDock,
-  applyDevicePhase,
-  resolveDeviceState,
-  normalizeDevicePreset,
-  normalizeDeviceOrientation,
-  applyOrientation,
-  orientationFromViewport,
-  DEVICE_PRESETS,
-  resolveTodoDockUi,
-  FIXTURE_DURATION_MS_DEFAULT,
-  FIXTURE_DURATION_FAST_MS_DEFAULT,
-  FIXTURE_DURATION_SLOW_MS_DEFAULT,
-  SLIDE_DURATION_MS_DEFAULT,
-  SLIDE_DURATION_FAST_MS_DEFAULT,
-  WAYGRAPH_RING_CSS,
-} from "./demo/narration/index.js";
-export type {
-  WaygraphHighlightStub,
-  WaygraphSlide,
-  WaygraphTodoItem,
-  WaygraphTodoInput,
-  WaygraphTodoGroup,
-  WaygraphTodoGroupInput,
-  WaygraphTodosOpts,
-  TodoDockUiOpts,
-  BannerPos,
-  BannerUiOpts,
-  TodoDockUiResolved,
-  TodoDockState,
-  TodoListStyle,
-  FixtureDurationFields,
-  HighlightStubPhase,
-  HighlightStubPhaseName,
-  ResolvedHighlight,
-  WaygraphHighlight,
-  HighlightTone,
-  HighlightSize,
-  HighlightWeight,
-  HighlightStyleDefaults,
-  DemoPace,
-  DemoPaceName,
-  StubCtx,
-  StubLifecycleFn,
-  StubPhaseResult,
-  StubPhaseFixtures,
-  DevicePreset,
-  DeviceViewport,
-  DeviceState,
-  DeviceOrientation,
-} from "./demo/narration/index.js";
-export type {
-  Flow,
-  EngineConfig,
-  ComposedBlock,
-  FastForwardComposedBlock,
-  RunGraphOptions,
-  BlockInfo,
-  NavBlock,
-  NavBlockOptions,
-  NavClickBlock,
-  NavClickBlockOptions,
-  MethodBlock,
-  ActionBlock,
-  AssertBlock,
-  AssertBlockOptions,
-  PageBlock,
-  PageBlockOptions,
-  PageMethodEntry,
-  EffectBlock,
-  MemEffectBlock,
-  MemNavBlock,
-  Layout,
-  LayoutOptions,
-  MapBuilderOptions,
-} from "./core.js";
-export type { ActionPage } from "./core/types.js";
+} from "./engine/trait/trait.js";
+export { runGraph, spawnTab, narrate, preflight, defineLayout } from "./engine/run/run.js";
+export { Engine, map } from "./engine/engine.js";
+export { branch, withVerify, modVerify, modVerifyAll, defineBlock, withDialog } from "./engine/block/block.js";
+export { defineNavBlock, defineNavClickBlock, defineMemNavBlock } from "./engine/block/kinds/nav.js";
+export { defineMethodBlock, defineActionBlock, defineAssertBlock } from "./engine/block/kinds/method.js";
+export { definePageBlock } from "./engine/block/kinds/page.js";
+export { defineEffectBlock, defineMemEffectBlock } from "./engine/block/kinds/effect.js";
+export { defineApiBlock } from "./engine/block/kinds/api.js";
+export { locate } from "./engine/locate.js";
+export { composeBlock, fastForwardComposeBlock, isFastForwardBlock } from "./engine/block/compose.js";
+export { MapBuilder } from "./engine/flow/map-builder.js";
+export { branchRoutes, collectBranchFlows, runBranchRegression } from "./engine/flow/branch-regression.js";
+export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./engine/flow/branch-regression.js";
+export type { ApiBlockOptions, ApiCallResult } from "./engine/block/kinds/api.js";
+export type { MapStepOpts, MapFlowOpts } from "./engine/flow/map-builder.js";
+export { resolveHighlightSlots, resolveSlides, runStubPhase, hasAuthoredStubAfter, hasAuthoredStubOnError } from "./demo/narration/run-phase.js";
+export { resolveFixtureDwellMs, resolveSlideDwellMs, normalizeDemoPace, resolveStepDemoPace, demoPaceScale, demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, demoPaceGateMs, formatDemoPaceBadge, formatDemoPaceLabel, FIXTURE_DURATION_MS_DEFAULT, FIXTURE_DURATION_FAST_MS_DEFAULT, FIXTURE_DURATION_SLOW_MS_DEFAULT, SLIDE_DURATION_MS_DEFAULT, SLIDE_DURATION_FAST_MS_DEFAULT } from "./demo/narration/demo-pace.js";
+export { formatHighlightCaption, applyHighlightStyleDefaults, toneIconPrefix } from "./demo/narration/style.js";
+export { normalizeHighlightTone, normalizeHighlightSize, normalizeHighlightWeight } from "./engine/narration.js";
+export { normalizeTodos, normalizeTodoPos, normalizeTodoStyle, buildTodoDock, applyTodoPhase, advanceTodoDock, completeSequentialTodoDock, resolveTodoDockUi } from "./demo/narration/todo-dock.js";
+export { applyDevicePhase, resolveDeviceState, normalizeDevicePreset, normalizeDeviceOrientation, applyOrientation, orientationFromViewport, DEVICE_PRESETS } from "./demo/narration/device.js";
+export { WAYGRAPH_RING_CSS } from "./demo/narration/css.js";
+export type { WaygraphHighlightStub, WaygraphSlide, WaygraphTodoItem, WaygraphTodoInput, WaygraphTodoGroup, WaygraphTodoGroupInput, WaygraphTodosOpts, TodoDockUiOpts, BannerPos, BannerUiOpts, TodoDockUiResolved, TodoDockState, TodoListStyle, FixtureDurationFields, HighlightStubPhase, HighlightStubPhaseName, ResolvedHighlight, WaygraphHighlight, HighlightTone, HighlightSize, HighlightWeight, HighlightStyleDefaults, DemoPace, DemoPaceName, StubCtx, StubLifecycleFn, StubPhaseResult, StubPhaseFixtures, DevicePreset, DeviceViewport, DeviceState, DeviceOrientation } from "./engine/narration.js";
+export type { Flow, BlockInfo } from "./engine/flow/flow.js";
+export type { EngineConfig } from "./engine/config.js";
+export type { ComposedBlock, FastForwardComposedBlock } from "./engine/block/compose.js";
+export type { RunGraphOptions, Layout, LayoutOptions } from "./engine/run/run.js";
+export type { NavBlock, NavBlockOptions, NavClickBlock, NavClickBlockOptions, MemNavBlock } from "./engine/block/kinds/nav.js";
+export type { MethodBlock, ActionBlock, AssertBlock, AssertBlockOptions } from "./engine/block/kinds/method.js";
+export type { PageBlock, PageBlockOptions, PageMethodEntry } from "./engine/block/kinds/page.js";
+export type { EffectBlock, MemEffectBlock } from "./engine/block/kinds/effect.js";
+export type { MapBuilderOptions } from "./engine/flow/map-builder.js";
+export type { ActionPage } from "./engine/block/block.js";
 export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./analysis/graph.js";
 export { buildManifest } from "./manifest/manifest.js";
-export { onRunEvent } from "./core/events.js";
-export type { RunEvent } from "./core/events.js";
+export { onRunEvent } from "./engine/run/events.js";
+export type { RunEvent } from "./engine/run/events.js";
 export type { Manifest, ManifestBlock, ManifestFlow } from "./manifest/manifest.js";
 export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock, OrphanBlock } from "./analysis/graph.js";
 export {
@@ -201,21 +95,9 @@ export {
   assertWgOverlayReady,
 } from "./live/overlay-beacon.js";
 export type { WgModalKind, WgBeaconRow } from "./live/overlay-beacon.js";
-export { AutoSession, stubFilePath } from "./live/auto-session/index.js";
-export type {
-  AutoSessionInit,
-  SessionSnapshot,
-  SessionSnapshotEdge,
-  SessionSnapshotSection,
-  ApplyPickResult,
-  ApplyPathResult,
-  TraceStep,
-  ConsoleLogEntry,
-  StorageSnapshot,
-  ServiceWorkerRegistrationInfo,
-  CookieInfo,
-  StubFileKind,
-} from "./live/auto-session/index.js";
+export { AutoSession } from "./live/auto-session/session.js";
+export { stubFilePath } from "./live/auto-session/helpers.js";
+export type { AutoSessionInit, SessionSnapshot, SessionSnapshotEdge, SessionSnapshotSection, ApplyPickResult, ApplyPathResult, TraceStep, ConsoleLogEntry, StorageSnapshot, ServiceWorkerRegistrationInfo, CookieInfo, StubFileKind } from "./live/auto-session/helpers.js";
 export { pilotStart } from "./live/pilot.js";
 export type { PilotStartResult } from "./live/pilot.js";
 export { defineConfig, resolveBaseUrl } from "./runtime/config.js";

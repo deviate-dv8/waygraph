@@ -1,10 +1,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { normalizeTodos, resolveHighlightSlots, runStubPhase } from "../../src/demo/narration/index.js";
-import { defineMethodBlock } from "../../src/core.js";
-import { checkpoint } from "../../src/core/types.js";
-import type { Block, Checkpoint } from "../../src/core/types.js";
-import type { StubCtx } from "../../src/demo/narration/index.js";
+import { normalizeTodos } from "../../src/demo/narration/todo-dock.js";
+import { resolveHighlightSlots, runStubPhase } from "../../src/demo/narration/run-phase.js";
+import { defineMethodBlock } from "../../src/engine/block/kinds/method.js";
+import { checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
+import type { Block } from "../../src/engine/block/block.js";
+import type { Checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
+import type { StubCtx } from "../../src/engine/narration.js";
 
 describe("normalizeTodos", () => {
   it("applies todoIndex for sequential done/current", () => {
@@ -33,7 +35,7 @@ describe("normalizeTodos", () => {
 
 describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
   it("normalizes left/right aliases", async () => {
-    const { normalizeTodoPos } = await import("../../src/demo/narration/index.js");
+    const { normalizeTodoPos } = await import("../../src/demo/narration/todo-dock.js");
     assert.equal(normalizeTodoPos("left"), "left");
     assert.equal(normalizeTodoPos("RIGHT"), "right");
     assert.equal(normalizeTodoPos("r"), "right");
@@ -41,7 +43,7 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
   });
 
   it("normalizes bullets style aliases", async () => {
-    const { normalizeTodoStyle } = await import("../../src/demo/narration/index.js");
+    const { normalizeTodoStyle } = await import("../../src/demo/narration/todo-dock.js");
     assert.equal(normalizeTodoStyle("bullets"), "bullets");
     assert.equal(normalizeTodoStyle("bullet"), "bullets");
     assert.equal(normalizeTodoStyle("list"), "bullets");
@@ -56,7 +58,7 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
   });
 
   it("exposes title + todoPos from stubBefore lifecycle", async () => {
-    const { normalizeTodoPos } = await import("../../src/demo/narration/index.js");
+    const { normalizeTodoPos } = await import("../../src/demo/narration/todo-dock.js");
     assert.equal(normalizeTodoPos("left"), "left");
     const block = {
       name: "submit-login",
@@ -281,7 +283,7 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
   });
 
   it("applyTodoPhase keeps previous dock when sync is keep", async () => {
-    const { applyTodoPhase, buildTodoDock } = await import("../../src/demo/narration/index.js");
+    const { applyTodoPhase, buildTodoDock } = await import("../../src/demo/narration/todo-dock.js");
     const prev = buildTodoDock({
       todoId: "ep10-coverage",
       todos: [
@@ -302,7 +304,7 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
   });
 
   it("applyTodoPhase keep preserves advanced current after mid-act style set", async () => {
-    const { applyTodoPhase, buildTodoDock, advanceTodoDock } = await import("../../src/demo/narration/index.js");
+    const { applyTodoPhase, buildTodoDock, advanceTodoDock } = await import("../../src/demo/narration/todo-dock.js");
     const base = buildTodoDock({
       todoId: "ep10",
       todos: ["A", "B", "C"],

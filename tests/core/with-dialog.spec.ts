@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { Engine, checkpoint, key, MemPage, withDialog } from "../../src/index.js";
 import type { Block, Checkpoint } from "../../src/index.js";
-import { buildFlow } from "../../src/core/flow.js";
+import { buildFlow } from "../../src/engine/flow/flow.js";
 
 type Done = Checkpoint<"Done">;
 const Warning = key<string>("test.warning");

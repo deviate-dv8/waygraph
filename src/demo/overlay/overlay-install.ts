@@ -3,7 +3,7 @@
 import type { WgPage } from "../types.js";
 import { HOST_CSS, RUNNER_EXTRA_CSS, WAYGRAPH_FAVICON } from "./overlay-css.js";
 import { ensureShadowRoot } from "../../ui/shadow.js";
-import { resolveTodoDockUi } from "../narration/index.js";
+import { resolveTodoDockUi } from "../narration/todo-dock.js";
 import { installCore } from "./inpage/core.js";
 import { installSwipeZoom } from "./inpage/swipe-zoom.js";
 import { installBanner } from "./inpage/banner.js";

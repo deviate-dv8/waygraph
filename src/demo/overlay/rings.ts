@@ -4,7 +4,10 @@ import type { WgBox, WgPage } from "../types.js";
 import type { Locator } from "@playwright/test";
 import { ANSI, ansiPaint, demoFixture, demoHighlight, demoLog } from "../stepper/demo-log.js";
 import { playSwipeTrail } from "./cursor.js";
-import { advanceTodoDock, formatHighlightCaption, normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, normalizeTodos, resolveFixtureDwellMs } from "../narration/index.js";
+import { advanceTodoDock, normalizeTodos } from "../narration/todo-dock.js";
+import { formatHighlightCaption } from "../narration/style.js";
+import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/narration.js";
+import { resolveFixtureDwellMs } from "../narration/demo-pace.js";
 
 /**
  * Scroll a locator into view for demo theater.

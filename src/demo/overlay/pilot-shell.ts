@@ -1,6 +1,6 @@
 import { SURFACE } from "../../ui/tokens.js";
 import { ensureShadowRoot, installShadowRoot } from "../../ui/shadow.js";
-import type { HighlightTone } from "../narration/index.js";
+import type { HighlightTone } from "../../engine/narration.js";
 import { verboseLog } from "../verbose-log.js";
 import type { BrowserContext, Page } from "@playwright/test";
 

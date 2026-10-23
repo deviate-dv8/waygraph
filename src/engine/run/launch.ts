@@ -1,6 +1,7 @@
+// How a Flow opens its own browser when run(mem) gets none; runtime/ registers the full launcher (extensions, CHROME_PATH).
 import type { BrowserContext } from "@playwright/test";
-import { resolveLauncher } from "./config.js";
-import type { EngineConfig } from "./config.js";
+import { resolveLauncher } from "../config.js";
+import type { EngineConfig } from "../config.js";
 
 /** A browser context an Engine opened for itself, and how to close it again. */
 export interface OwnContext {

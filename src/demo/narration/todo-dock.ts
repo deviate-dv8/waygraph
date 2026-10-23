@@ -1,4 +1,4 @@
-import type { TodoDockState, TodoDockUiOpts, TodoDockUiResolved, TodoListStyle, WaygraphTodoGroup, WaygraphTodoGroupInput, WaygraphTodoInput, WaygraphTodoItem } from "./types.js";
+import type { TodoDockState, TodoDockUiOpts, TodoDockUiResolved, TodoListStyle, WaygraphTodoGroup, WaygraphTodoGroupInput, WaygraphTodoInput, WaygraphTodoItem } from "../../engine/narration.js";
 
 function envFlagBool(env: NodeJS.ProcessEnv, key: string, fallback: boolean): boolean {
   const v = env[key];

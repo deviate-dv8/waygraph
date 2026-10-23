@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Engine, MemPage, checkpoint, defineConfig, defineNavBlock } from "../../src/index.js";
 import type { Checkpoint } from "../../src/index.js";
-import { buildFlow } from "../../src/core/flow.js";
+import { buildFlow } from "../../src/engine/flow/flow.js";
 
 type Home = Checkpoint<"Home">;
 

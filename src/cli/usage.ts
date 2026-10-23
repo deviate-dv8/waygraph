@@ -1,4 +1,4 @@
-import type { SessionMeta } from "../live/browser.js";
+import type { SessionMeta } from "../live/auto-session-ipc.js";
 
 export function printBrowserUsage(): void {
   console.log(`waygraph browser — persistent Playwright sessions (headful by default)

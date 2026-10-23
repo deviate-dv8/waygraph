@@ -1,13 +1,15 @@
-// Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import { checkpoint } from "../types.js";
-import type { Block, Checkpoint, DefinedBlock, WaygraphHighlight } from "../types.js";
-import type { Trait } from "../trait.js";
-import { MemPage } from "../mem-page.js";
-import type { MemKey } from "../mem-page.js";
+// A Page Block: "you have arrived" - the hub other pages navigate to, verified by what the page shows.
+import { checkpoint } from "../../checkpoint/checkpoint.js";
+import type { Block, DefinedBlock } from "../block.js";
+import type { Checkpoint } from "../../checkpoint/checkpoint.js";
+import type { WaygraphHighlight } from "../../narration.js";
+import type { Trait } from "../../trait/trait.js";
+import { MemPage } from "../../mem/mem.js";
+import type { MemKey } from "../../mem/mem.js";
 import { defineBlock } from "../block.js";
 import type { Page } from "@playwright/test";
-import { markRoute, tagOf } from "../route.js";
-import type { CheckpointRef } from "../route.js";
+import { markRoute, tagOf } from "../../checkpoint/route.js";
+import type { CheckpointRef } from "../../checkpoint/route.js";
 
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */
 export type PageMethodEntry =
@@ -22,9 +24,9 @@ export type PageBlockOptions<Out extends Checkpoint<string>> = {
   /** The Checkpoint this page hub confirms: its value (`Home`). A tag string still works but is deprecated. */
   checkpoint: CheckpointRef<Out>;
   verify?: Trait[] | ((out: Out) => Trait[]);
-  stubBefore?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
-  stubAfter?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
-  stubOnError?: import("../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubBefore?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubAfter?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
+  stubOnError?: import("../../narration.js").HighlightStubPhaseOrFn<Out>;
   /** @deprecated Prefer stubAfter. */
   highlights?:
     | readonly WaygraphHighlight[]
@@ -69,12 +71,12 @@ export type PageBlock<Out extends Checkpoint<string>> = Omit<
     newCheck: Trait["check"] | Trait,
   ): PageBlock<Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out>;
-  stubBefore(stub: import("../narration.js").HighlightStubPhase): PageBlock<Out>;
-  stubBefore(stub: import("../narration.js").StubLifecycleFn<Out>): PageBlock<Out>;
-  stubAfter(stub: import("../narration.js").HighlightStubPhase): PageBlock<Out>;
-  stubAfter(stub: import("../narration.js").StubLifecycleFn<Out>): PageBlock<Out>;
-  stubOnError(stub: import("../narration.js").HighlightStubPhase): PageBlock<Out>;
-  stubOnError(stub: import("../narration.js").StubLifecycleFn<Out>): PageBlock<Out>;
+  stubBefore(stub: import("../../narration.js").HighlightStubPhase): PageBlock<Out>;
+  stubBefore(stub: import("../../narration.js").StubLifecycleFn<Out>): PageBlock<Out>;
+  stubAfter(stub: import("../../narration.js").HighlightStubPhase): PageBlock<Out>;
+  stubAfter(stub: import("../../narration.js").StubLifecycleFn<Out>): PageBlock<Out>;
+  stubOnError(stub: import("../../narration.js").HighlightStubPhase): PageBlock<Out>;
+  stubOnError(stub: import("../../narration.js").StubLifecycleFn<Out>): PageBlock<Out>;
 };
 
 

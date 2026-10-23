@@ -5,7 +5,7 @@
 // side is covered by defineApiBlock's own explicit call, in src/core/blocks/api.ts).
 import type { WgPage } from "../types.js";
 import { addNetworkEntry, clearNetworkLog } from "./inpage/network.js";
-import { setApiCallRecorder } from "../../core/hooks.js";
+import { setApiCallRecorder } from "../../engine/run/hooks.js";
 
 // Fetch/XHR/navigation only - a real page can fire dozens of image/font/stylesheet requests per
 // second, which would flood a panel meant to answer "what API calls did this page just made".

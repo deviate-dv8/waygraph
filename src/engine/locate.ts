@@ -1,7 +1,7 @@
-// Split out of the former 2,900-line engine.ts (see src/ARCHITECTURE.md). Behavior unchanged.
-import type { NavBlock } from "./blocks/nav.js";
+// locate(): which Checkpoint is the page on right now, asked of the Nav Blocks' verifies.
+import type { NavBlock } from "./block/kinds/nav.js";
 import type { Page } from "@playwright/test";
-import { MemPage } from "./mem-page.js";
+import { MemPage } from "./mem/mem.js";
 
 /**
  * "Where am I" - reverse-matches a live `page` against every NavBlock /

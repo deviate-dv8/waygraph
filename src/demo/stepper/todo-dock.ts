@@ -1,7 +1,7 @@
 // Moved verbatim from the former CHAIN_RUNNER_SCRIPT template string in cli.ts (see src/ARCHITECTURE.md).
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
 import type { WgPage } from "../types.js";
-import { advanceTodoDock } from "../narration/index.js";
+import { advanceTodoDock } from "../narration/todo-dock.js";
 import { demoLog } from "./demo-log.js";
 
 
