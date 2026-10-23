@@ -4,6 +4,7 @@ import { runInherited } from "../util.js";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { packageRoot } from "../util.js";
+import { envString, setEnv } from "../../engine/env.js";
 
 export async function testCase(args: string[]): Promise<void> {
       const rest = args.slice(1);
@@ -30,11 +31,11 @@ export async function testCase(args: string[]): Promise<void> {
       }
 
       const extensions = await configuredExtensions(proj);
-      process.env.WAYGRAPH_RUN_LOG ??= defaultRunLogDir(proj);
-      if (extensions.length > 0) process.env.WAYGRAPH_EXTENSIONS = extensions.join(",");
+      if (envString("WAYGRAPH_RUN_LOG") === undefined) setEnv("WAYGRAPH_RUN_LOG", defaultRunLogDir(proj));
+      if (extensions.length > 0) setEnv("WAYGRAPH_EXTENSIONS", extensions.join(","));
 
       // The Playwright config is built from config/waygraph.config.ts; a project has none of its own.
-      process.env.WAYGRAPH_PROJECT_DIR = proj;
+      setEnv("WAYGRAPH_PROJECT_DIR", proj);
       const configArgs = ["-c", join(packageRoot(), "dist", "runtime", "playwright.config.js")];
 
       const wantsUi = rest[0] === "ui" || rest.includes("--ui");

@@ -5,7 +5,6 @@
 import { existsSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { homedir } from "node:os";
 
 /**
  * This package's own installed root (contains `templates/`/`examples/`, sibling to `dist/`) -
@@ -33,19 +32,6 @@ export function injectTaggedFile(hostDir: string, root: string, relFile: string)
 
 const PRESETS: Record<string, () => string | null> = {
   saucedemo: () => join(packageRoot(), "examples", "saucedemo"),
-  demosauce: () => join(packageRoot(), "examples", "saucedemo"),
-  veciro: () => {
-    if (process.env.WAYGRAPH_INJECT_VECIRO) {
-      return resolve(process.env.WAYGRAPH_INJECT_VECIRO);
-    }
-    for (const c of [
-      join(homedir(), "Desktop", "Work", "veciro-waygraph"),
-      join(homedir(), "Desktop", "Projects", "veciro-waygraph"),
-    ]) {
-      if (existsSync(c)) return c;
-    }
-    return null;
-  },
 };
 
 /**

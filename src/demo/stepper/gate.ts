@@ -3,6 +3,7 @@
 import type { WgPage } from "../types.js";
 import { demoPaceGateMs } from "../narration/demo-pace.js";
 import type { Pacing } from "./pacing.js";
+import { envFlag, envNumber, envString } from "../../engine/env.js";
 
 export interface Gate {
   /** Resolves with the mem edits typed into the panel (or `{}` when auto-advance moved on). */
@@ -14,13 +15,13 @@ export interface Gate {
 }
 
 export async function installGate(page: WgPage, pacing: Pacing, demoFast: boolean): Promise<Gate> {
-  const autoplayMs = process.env.WAYGRAPH_AUTOPLAY_MS ? Number(process.env.WAYGRAPH_AUTOPLAY_MS) : demoFast ? 450 : 1800;
+  const autoplayMs = envNumber("WAYGRAPH_AUTOPLAY_MS") ?? (demoFast ? 450 : 1800);
 
   // installOverlay only seeds the checkbox when unset (so a mid-run click survives navigation); the CLI flag must
   // still win at start. localStorage is per origin, so this runs on the demo's page, not about:blank.
   const syncAutoplay = async (): Promise<void> => {
-    if (process.env.WAYGRAPH_AUTOPLAY === undefined) return;
-    const on = process.env.WAYGRAPH_AUTOPLAY === "1";
+    if (envString("WAYGRAPH_AUTOPLAY") === undefined) return;
+    const on = envFlag("WAYGRAPH_AUTOPLAY");
     await page
       .evaluate((want: boolean) => {
         try {

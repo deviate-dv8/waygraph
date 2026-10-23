@@ -6,6 +6,7 @@ import type { WgPage } from "../types.js";
 import type { createOverlayStage } from "../overlay/overlay-stage.js";
 import type { Gate } from "./gate.js";
 import type { Pacing } from "./pacing.js";
+import { envFlag, envString } from "../../engine/env.js";
 
 /** A step as the stepper sees it (the runner's PlayStep). */
 export interface StepperStep {
@@ -77,7 +78,6 @@ export function viewOf(ctx: StepperContext, index: number): StepView {
 
 /** Video and --mini get the compact pill; never false, so the person's Hide/Show choice wins otherwise. */
 export function forceCollapsed(): true | undefined {
-  const env = process.env;
-  return env.WAYGRAPH_VIDEO || env.WAYGRAPH_MINI === "1" ? true : undefined;
+  return envString("WAYGRAPH_VIDEO") || envFlag("WAYGRAPH_MINI") ? true : undefined;
 }
 

@@ -6,6 +6,7 @@ import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeigh
 import { installOverlay } from "../overlay/overlay.js";
 import { applyHighlightZoom, ensureSelectorInView, hideRing, showRing } from "../overlay/rings.js";
 import { demoPaceKind } from "./demo-log.js";
+import { envFlag, envNumber, envString } from "../../engine/env.js";
 
 /**
  * Multi-step yap captions - not block lifecycle. Each slide waits for Next
@@ -26,9 +27,7 @@ export async function presentSlides(page: WgPage, slides: any, _gate: any, opts:
   const baseAutoplay =
     opts && opts.autoplayMs
       ? Number(opts.autoplayMs)
-      : process.env.WAYGRAPH_AUTOPLAY_MS
-        ? Number(process.env.WAYGRAPH_AUTOPLAY_MS)
-        : 1800;
+      : (envNumber("WAYGRAPH_AUTOPLAY_MS") ?? 1800);
   const autoplayMs = demoPaceGateMs(demoPace, baseAutoplay);
   for (let i = 0; i < slides.length; i++) {
     const s = slides[i];
@@ -221,8 +220,8 @@ export async function presentSlides(page: WgPage, slides: any, _gate: any, opts:
         paceLabel: formatDemoPaceLabel(demoPace, baseAutoplay),
         paceKind: demoPaceKind(demoPace),
         forceCollapsed:
-          !!process.env.WAYGRAPH_VIDEO ||
-          process.env.WAYGRAPH_MINI === "1"
+          !!envString("WAYGRAPH_VIDEO") ||
+          envFlag("WAYGRAPH_MINI")
             ? true
             : undefined,
       },

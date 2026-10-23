@@ -1,6 +1,7 @@
 // The demo's console log ([hh:mm:ss] waygraph demo: ...): what each step painted, so an agent without eyes can follow.
 import { demoPaceIsFast, demoPaceIsSlow, formatDemoPaceBadge, formatDemoPaceLabel, normalizeDemoPace } from "../narration/demo-pace.js";
 import { normalizeHighlightTone } from "../../engine/narration.js";
+import { envFlag } from "../../engine/env.js";
 
 export function demoPaceKind(pace: any) {
   const p = normalizeDemoPace(pace);
@@ -25,7 +26,7 @@ export function paceSpeakFields(pace: any, baseAutoplayMs: any) {
 
 /** Demo CLI chatter (agents use this to ballpark timing / todo layout). Off for WAYGRAPH_JSON. */
 function demoQuiet() {
-  return process.env.WAYGRAPH_JSON === "1";
+  return envFlag("WAYGRAPH_JSON");
 }
 
 /** Node's own colour rule (FORCE_COLOR, NO_COLOR, NODE_DISABLE_COLORS, TERM=dumb); off a terminal, only FORCE_COLOR turns it on. */

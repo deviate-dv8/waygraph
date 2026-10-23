@@ -3,6 +3,7 @@ import { applyDemoDefaults, applyRunFlags, parseRunFlags, resolveProjectDir, res
 import { runChain } from "../run-chain.js";
 import { resolve } from "node:path";
 import { existsSync } from "node:fs";
+import { envFlag, envString, setEnv } from "../../engine/env.js";
 
 export async function runCase(args: string[]): Promise<void> {
       const flags = parseRunFlags(args.slice(1));
@@ -25,9 +26,9 @@ export async function runCase(args: string[]): Promise<void> {
         console.error(`waygraph: no such directory: ${proj}`);
         process.exit(1);
       }
-      if (!process.env.WAYGRAPH_BASE_URL) {
+      if (!envString("WAYGRAPH_BASE_URL")) {
         const resolved = await resolveBaseUrl(proj);
-        if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
+        if (resolved) setEnv("WAYGRAPH_BASE_URL", resolved);
       }
       await runChain(proj, spec);
       return;
@@ -53,17 +54,17 @@ export async function demoCase(args: string[]): Promise<void> {
         console.error(`waygraph: no such directory: ${proj}`);
         process.exit(1);
       }
-      if (flags.step === undefined && process.env.WAYGRAPH_STEP === undefined) {
-        process.env.WAYGRAPH_STEP = "1";
+      if (flags.step === undefined && envString("WAYGRAPH_STEP") === undefined) {
+        setEnv("WAYGRAPH_STEP", "1");
       }
       await applyDemoDefaults(proj);
       console.error(
-        `waygraph demo: STEP=${process.env.WAYGRAPH_STEP === "1" ? "on" : "off"}` +
-          ` AUTO_NEXT=${process.env.WAYGRAPH_AUTOPLAY === "1" ? "on" : "off"}` +
-          ` HEADED=${process.env.WAYGRAPH_HEADED === "0" ? "off" : "on"}` +
-          ` BASE_URL=${process.env.WAYGRAPH_BASE_URL ?? "(unset)"}` +
-          (process.env.WAYGRAPH_VIDEO ? ` VIDEO=${process.env.WAYGRAPH_VIDEO}` : "") +
-          (process.env.WAYGRAPH_TITLE ? ` TITLE=${JSON.stringify(process.env.WAYGRAPH_TITLE)}` : ""),
+        `waygraph demo: STEP=${envFlag("WAYGRAPH_STEP") ? "on" : "off"}` +
+          ` AUTO_NEXT=${envFlag("WAYGRAPH_AUTOPLAY") ? "on" : "off"}` +
+          ` HEADED=${envString("WAYGRAPH_HEADED") === "0" ? "off" : "on"}` +
+          ` BASE_URL=${envString("WAYGRAPH_BASE_URL") ?? "(unset)"}` +
+          (envString("WAYGRAPH_VIDEO") ? ` VIDEO=${envString("WAYGRAPH_VIDEO")}` : "") +
+          (envString("WAYGRAPH_TITLE") ? ` TITLE=${JSON.stringify(envString("WAYGRAPH_TITLE"))}` : ""),
       );
       await runChain(proj, spec);
       return;

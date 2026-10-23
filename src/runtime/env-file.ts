@@ -5,6 +5,7 @@
 // field) to get waygraph to see the same config their actual app already uses.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { envString, setEnv } from "../engine/env.js";
 
 /** `KEY=value` lines only - no `${VAR}` expansion, no multiline values. Matches the common
  * Vite/Next `.env` shape, not full dotenv-expand parity. */
@@ -29,7 +30,7 @@ function parseEnvFile(content: string): Record<string, string> {
 
 /** The env mode: `--env <mode>` / `WAYGRAPH_ENV`, else `NODE_ENV`, else "development". */
 export function envMode(): string {
-  return process.env.WAYGRAPH_ENV || process.env.NODE_ENV || "development";
+  return envString("WAYGRAPH_ENV") || process.env.NODE_ENV || "development";
 }
 
 /** Removes `--env <mode>` / `--env=<mode>` from argv and records it as `WAYGRAPH_ENV`, so it never reaches a forwarded command. */
@@ -37,8 +38,8 @@ export function takeEnvFlag(argv: string[]): string[] {
   const out: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
-    if (a === "--env" && argv[i + 1] !== undefined) process.env.WAYGRAPH_ENV = argv[++i]!;
-    else if (a.startsWith("--env=")) process.env.WAYGRAPH_ENV = a.slice("--env=".length);
+    if (a === "--env" && argv[i + 1] !== undefined) setEnv("WAYGRAPH_ENV", argv[++i]!);
+    else if (a.startsWith("--env=")) setEnv("WAYGRAPH_ENV", a.slice("--env=".length));
     else out.push(a);
   }
   return out;

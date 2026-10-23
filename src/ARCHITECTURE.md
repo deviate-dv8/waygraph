@@ -73,7 +73,7 @@ the runtime through `engine/run/launch.ts` (`runtime/launch.ts`, loaded by `inde
 | A new way to play steps (another mode) | a file in `runner/modes/` returning a `Mode`, picked in `runner/runner.ts` |
 | Something the demo shows before / after a step | `demo/stepper/before.ts` / `after.ts`, called from `stepper.ts` |
 | A CLI subcommand | `cli/commands/<name>.ts` exporting `<name>Case(args)`, one `case` in `cli/cli.ts`, its lines in `cli/usage.ts` |
-| A CLI flag for run / demo | `cli/flags.ts` (sets a WAYGRAPH_* variable) and `runner/options.ts` (reads it) + `cli/usage.ts` |
+| A CLI flag for run / demo | a row in `RUN_OPTIONS` (`cli/flags.ts`: parsed and printed in the help from there), the variable it sets in `engine/env.ts`'s registry, and `runner/options.ts` reads it |
 | A flow setting (`map({ … })`) | `MapBuilderOptions` in `engine/flow/map-builder.ts`, `FlowSettings` / `withSettings` in `engine/flow/flow.ts`, the field on `Flow` |
 | A `define*Block` helper | `engine/block/kinds/<kind>.ts`; its step method in `map-builder.ts` if it can appear in a flow |
 | A `Trait` | `engine/trait/trait.ts` (+ the `Trait` object + an `index.ts` export) |
@@ -88,7 +88,7 @@ the runtime through `engine/run/launch.ts` (`runtime/launch.ts`, loaded by `inde
 ## Rules
 
 Enforced: no file over 800 lines, no import cycles, the layer table above, no re-exports outside `src/index.ts`, no HTML
-strings written into the page.
+strings written into the page, `WAYGRAPH_*` variables only through `engine/env.ts` (its registry generates `docs/env.md`).
 Adding an `index.ts` export changes the public API: update `tests/unit/api-surface.snapshot.json` deliberately.
 
 By convention:

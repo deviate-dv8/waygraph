@@ -1,4 +1,5 @@
 // How to play, read once from the environment the CLI set (flags beat the config file, which beats these defaults).
+import { envFlag, envNumber, envString, envSwitch } from "../engine/env.js";
 import type { PlayStep } from "./mode.js";
 
 export type ModeName = "run" | "demo" | "report" | "branches";
@@ -24,12 +25,11 @@ export interface PlayOptions {
   sharedSession: boolean;
 }
 
-const env = process.env;
 
 function readMode(): ModeName {
-  if (env.WAYGRAPH_ALL_BRANCHES === "1") return "branches";
-  if (env.WAYGRAPH_JSON === "1") return "report";
-  return env.WAYGRAPH_STEP === "1" ? "demo" : "run";
+  if (envFlag("WAYGRAPH_ALL_BRANCHES")) return "branches";
+  if (envFlag("WAYGRAPH_JSON")) return "report";
+  return envFlag("WAYGRAPH_STEP") ? "demo" : "run";
 }
 
 export function readOptions(): PlayOptions {
@@ -37,17 +37,17 @@ export function readOptions(): PlayOptions {
   return {
     mode,
     // A manual demo is watched, so it is headed by default; WAYGRAPH_HEADED=0 (e.g. --auto-play-video) still wins.
-    headed: env.WAYGRAPH_HEADED === "0" ? false : env.WAYGRAPH_HEADED === "1" || mode === "demo",
-    baseURL: env.WAYGRAPH_BASE_URL,
-    title: env.WAYGRAPH_TITLE,
-    fastBlocks: new Set((env.WAYGRAPH_FAST_BLOCKS || "").split(",").map((s) => s.trim()).filter(Boolean)),
-    clearSession: env.WAYGRAPH_CLEAR_SESSION === "1",
-    video: env.WAYGRAPH_VIDEO,
-    videoViewport: env.WAYGRAPH_VIDEO_VIEWPORT,
-    ffExpand: env.WAYGRAPH_FF_EXPAND === "1" || env.WAYGRAPH_FF_DISABLED === "1",
-    ffDisabled: env.WAYGRAPH_FF_DISABLED === "1",
-    memStub: env.WAYGRAPH_MEM_STUB === "1",
-    sharedSession: env.WAYGRAPH_SHARED_SESSION === "1",
+    headed: envSwitch("WAYGRAPH_HEADED", mode === "demo"),
+    baseURL: envString("WAYGRAPH_BASE_URL"),
+    title: envString("WAYGRAPH_TITLE"),
+    fastBlocks: new Set((envString("WAYGRAPH_FAST_BLOCKS") || "").split(",").map((s) => s.trim()).filter(Boolean)),
+    clearSession: envFlag("WAYGRAPH_CLEAR_SESSION"),
+    video: envString("WAYGRAPH_VIDEO"),
+    videoViewport: envString("WAYGRAPH_VIDEO_VIEWPORT"),
+    ffExpand: envFlag("WAYGRAPH_FF_EXPAND") || envFlag("WAYGRAPH_FF_DISABLED"),
+    ffDisabled: envFlag("WAYGRAPH_FF_DISABLED"),
+    memStub: envFlag("WAYGRAPH_MEM_STUB"),
+    sharedSession: envFlag("WAYGRAPH_SHARED_SESSION"),
   };
 }
 
@@ -58,8 +58,8 @@ export function readOptions(): PlayOptions {
 export function slowMoFor(options: PlayOptions, steps: readonly PlayStep[]): { launch: number | undefined; demoBeat: number } {
   const demo = options.mode === "demo";
   const hasFastForward = steps.some((s) => (s.block as { fastForward?: boolean }).fastForward === true || s.wasFastForward === true);
-  const slowMo = env.WAYGRAPH_SLOWMO !== undefined ? Number(env.WAYGRAPH_SLOWMO) : demo ? (hasFastForward ? 0 : 350) : undefined;
-  if (demo && hasFastForward && env.WAYGRAPH_SLOWMO === undefined) {
+  const slowMo = envNumber("WAYGRAPH_SLOWMO") ?? (demo ? (hasFastForward ? 0 : 350) : undefined);
+  if (demo && hasFastForward && envNumber("WAYGRAPH_SLOWMO") === undefined) {
     console.error(
       options.ffDisabled
         ? "waygraph demo: --ff-disabled (expanded) -> Playwright slowMo=0 on former FF steps (blitz; same acts as opaque FF)"

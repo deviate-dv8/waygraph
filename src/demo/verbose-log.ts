@@ -1,3 +1,4 @@
+import { envFlag } from "../engine/env.js";
 /**
  * One log format for the live overlay surfaces (auto / browser / pilot): `[HH:MM:SS.mmm] waygraph <surface>: ...`, the
  * same shape as the demo runner's `step-mode/demo-log.ts`. Silenced by WAYGRAPH_JSON=1.
@@ -9,6 +10,6 @@ function ts(): string {
 }
 
 export function verboseLog(surface: string, msg: string): void {
-  if (process.env.WAYGRAPH_JSON === "1") return;
+  if (envFlag("WAYGRAPH_JSON")) return;
   console.log(`[${ts()}] waygraph ${surface}: ${msg}`);
 }

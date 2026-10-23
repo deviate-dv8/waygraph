@@ -33,10 +33,11 @@ import { upgradeCase } from "./commands/upgrade.js";
 import { manifestCase } from "./commands/manifest.js";
 import { extensionsCase } from "./commands/extensions.js";
 import { mapCase } from "./commands/map.js";
+import { setEnv } from "../engine/env.js";
 
 const args = takeConfigFlag(takeEnvFlag(process.argv.slice(2)));
 const command = args[0];
-if (command) process.env.WAYGRAPH_COMMAND = command;
+if (command) setEnv("WAYGRAPH_COMMAND", command);
 async function main(): Promise<void> {
   if (!command || command === "--help" || command === "-h") {
     usage();

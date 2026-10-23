@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { runChain } from "../run-chain.js";
 import { applyRunFlags, parseRunFlags } from "../flags.js";
 import { resolveVideoDir } from "../../runtime/video-dir.js";
+import { envString, setEnv } from "../../engine/env.js";
 
 interface TryPrereqStatus {
   ok: boolean;
@@ -193,26 +194,26 @@ async function runTryDemo(): Promise<void> {
   const destDir = await prepareTryQuickstart("waygraph-try-demo");
   if (!destDir) return;
 
-  process.env.WAYGRAPH_BASE_URL ??= "https://www.saucedemo.com";
-  process.env.WAYGRAPH_STEP ??= "1";
-  process.env.WAYGRAPH_AUTOPLAY ??= "0";
+  if (envString("WAYGRAPH_BASE_URL") === undefined) setEnv("WAYGRAPH_BASE_URL", "https://www.saucedemo.com");
+  if (envString("WAYGRAPH_STEP") === undefined) setEnv("WAYGRAPH_STEP", "1");
+  if (envString("WAYGRAPH_AUTOPLAY") === undefined) setEnv("WAYGRAPH_AUTOPLAY", "0");
   // Explicit --no-step --video = unattended headless .webm only (the
   // documented cloud/CI recipe above) - nobody needs to watch a live
   // window for Playwright's own recordVideo to capture the right thing.
   // This must be decided BEFORE the headed default below, or the
   // unconditional "??=" there always wins and the documented recipe never
   // actually runs headless.
-  const unattendedVideo = Boolean(process.env.WAYGRAPH_VIDEO) && process.env.WAYGRAPH_STEP === "0";
+  const unattendedVideo = Boolean(envString("WAYGRAPH_VIDEO")) && envString("WAYGRAPH_STEP") === "0";
   if (unattendedVideo) {
-    process.env.WAYGRAPH_AUTOPLAY ??= "1";
-    process.env.WAYGRAPH_HEADED ??= "0";
+    if (envString("WAYGRAPH_AUTOPLAY") === undefined) setEnv("WAYGRAPH_AUTOPLAY", "1");
+    if (envString("WAYGRAPH_HEADED") === undefined) setEnv("WAYGRAPH_HEADED", "0");
   } else {
     // Default: headed stepper, manual Next. --video records that session
     // too (not a headless rush) as long as --step is still on.
-    process.env.WAYGRAPH_HEADED ??= "1";
+    if (envString("WAYGRAPH_HEADED") === undefined) setEnv("WAYGRAPH_HEADED", "1");
   }
 
-  const videoTo = process.env.WAYGRAPH_VIDEO;
+  const videoTo = envString("WAYGRAPH_VIDEO");
   console.log(
     videoTo
       ? "waygraph try demo: step-through + record (Sign In -> Shop & Checkout -> blocked Viewer login) - click Next; video -> " +
@@ -273,7 +274,7 @@ async function runTryAuto(opts: { cli: boolean } = { cli: false }): Promise<void
   const destDir = await prepareTryQuickstart("waygraph-try-auto");
   if (!destDir) return;
 
-  process.env.WAYGRAPH_BASE_URL ??= "https://www.saucedemo.com";
+  if (envString("WAYGRAPH_BASE_URL") === undefined) setEnv("WAYGRAPH_BASE_URL", "https://www.saucedemo.com");
   const cli = opts.cli === true;
   console.log(
     cli

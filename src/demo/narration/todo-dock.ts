@@ -1,39 +1,23 @@
 import type { TodoDockState, TodoDockUiOpts, TodoDockUiResolved, TodoListStyle, WaygraphTodoGroup, WaygraphTodoGroupInput, WaygraphTodoInput, WaygraphTodoItem } from "../../engine/narration.js";
+import { envNumber, envString, envSwitch } from "../../engine/env.js";
 
-function envFlagBool(env: NodeJS.ProcessEnv, key: string, fallback: boolean): boolean {
-  const v = env[key];
-  if (v === undefined || v === "") return fallback;
-  const s = String(v).trim().toLowerCase();
-  if (s === "0" || s === "false" || s === "off" || s === "no") return false;
-  if (s === "1" || s === "true" || s === "on" || s === "yes") return true;
-  return fallback;
-}
-
-
-function envFlagInt(env: NodeJS.ProcessEnv, key: string, fallback: number): number {
-  const n = Number(env[key]);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
-}
-
+const positiveInt = (n: number | undefined, fallback: number): number => (n !== undefined && n > 0 ? Math.floor(n) : fallback);
 
 /**
  * Resolve todo-dock UX from env + optional author patch.
  * `WAYGRAPH_TODO_UI=full|off` forces compact/collision/behindRing off.
  */
-export function resolveTodoDockUi(
-  patch?: TodoDockUiOpts | null,
-  env: NodeJS.ProcessEnv = process.env,
-): TodoDockUiResolved {
-  const mode = String(env.WAYGRAPH_TODO_UI || "smart")
+export function resolveTodoDockUi(patch?: TodoDockUiOpts | null): TodoDockUiResolved {
+  const mode = String(envString("WAYGRAPH_TODO_UI") || "smart")
     .trim()
     .toLowerCase();
   const full = mode === "full" || mode === "off" || mode === "0";
   const base: TodoDockUiResolved = {
-    compact: full ? false : envFlagBool(env, "WAYGRAPH_TODO_COMPACT", true),
-    collision: full ? false : envFlagBool(env, "WAYGRAPH_TODO_COLLISION", true),
-    behindRing: full ? false : envFlagBool(env, "WAYGRAPH_TODO_BEHIND", true),
-    cap: envFlagInt(env, "WAYGRAPH_TODO_CAP", 5),
-    expandCap: envFlagInt(env, "WAYGRAPH_TODO_EXPAND_CAP", 14),
+    compact: full ? false : envSwitch("WAYGRAPH_TODO_COMPACT", true),
+    collision: full ? false : envSwitch("WAYGRAPH_TODO_COLLISION", true),
+    behindRing: full ? false : envSwitch("WAYGRAPH_TODO_BEHIND", true),
+    cap: positiveInt(envNumber("WAYGRAPH_TODO_CAP"), 5),
+    expandCap: positiveInt(envNumber("WAYGRAPH_TODO_EXPAND_CAP"), 14),
   };
   if (base.expandCap < base.cap) base.expandCap = base.cap;
   if (!patch) return base;

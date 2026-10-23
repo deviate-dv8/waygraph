@@ -1,4 +1,5 @@
 import type { DemoPace, FixtureDurationFields } from "../../engine/narration.js";
+import { envString } from "../../engine/env.js";
 
 /** Default fixture dwell when `duration: true`. */
 export const FIXTURE_DURATION_MS_DEFAULT = 2000;
@@ -41,7 +42,8 @@ export function normalizeDemoPace(raw: unknown): DemoPace {
 function paceSpeeds(): { blitz: number; fast: number; slow: number } {
   const out = { blitz: 0.05, fast: 0.33, slow: 2 };
   try {
-    const raw = process.env.WAYGRAPH_PACE_SPEEDS ? JSON.parse(process.env.WAYGRAPH_PACE_SPEEDS) : {};
+    const speeds = envString("WAYGRAPH_PACE_SPEEDS");
+    const raw = speeds ? JSON.parse(speeds) : {};
     for (const k of ["blitz", "fast", "slow"] as const) {
       if (typeof raw[k] === "number" && raw[k] > 0) out[k] = Math.min(10, raw[k]);
     }
@@ -93,7 +95,7 @@ export function demoPaceIsSlow(pace: DemoPace): boolean {
 
 /** Autoplay / Next-gate ms for this pace (base is WAYGRAPH_AUTOPLAY_MS or 1800). */
 export function demoPaceGateMs(pace: DemoPace, baseAutoplayMs: number): number {
-  if (pace === "blitz" && process.env.WAYGRAPH_PACE_SPEEDS) {
+  if (pace === "blitz" && envString("WAYGRAPH_PACE_SPEEDS")) {
     return Math.min(30000, Math.max(20, Math.round(baseAutoplayMs * paceSpeeds().blitz)));
   }
   if (demoPaceIsBlitz(pace)) return Math.min(80, baseAutoplayMs);

@@ -7,6 +7,7 @@ import { inflateRawSync } from "node:zlib";
 
 /** A known name (`"hoppscotch"`), a Chrome Web Store id, a path to an unpacked extension, or `{ id, sha256 }`. */
 import type { ExtensionSpec } from "../engine/config.js";
+import { envString } from "../engine/env.js";
 
 /** Names accepted in `extensions: [...]` mapped to their Chrome Web Store ids. */
 export const KNOWN_EXTENSIONS: Readonly<Record<string, string>> = {
@@ -16,7 +17,7 @@ export const KNOWN_EXTENSIONS: Readonly<Record<string, string>> = {
 const STORE_ID = /^[a-p]{32}$/;
 
 function cacheDir(): string {
-  const base = process.env.WAYGRAPH_CACHE_DIR ?? join(process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache"), "waygraph");
+  const base = envString("WAYGRAPH_CACHE_DIR") ?? join(process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache"), "waygraph");
   return join(base, "extensions");
 }
 

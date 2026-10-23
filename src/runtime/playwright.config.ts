@@ -2,7 +2,8 @@
 import { defineConfig } from "@playwright/test";
 import { loadWaygraphConfig, resolveBaseUrl } from "./config.js";
 import { playwrightConfigFrom } from "./playwright-config.js";
+import { envString } from "../engine/env.js";
 
-const projectDir = process.env.WAYGRAPH_PROJECT_DIR ?? process.cwd();
+const projectDir = envString("WAYGRAPH_PROJECT_DIR") ?? process.cwd();
 
 export default defineConfig(playwrightConfigFrom((await loadWaygraphConfig(projectDir)) ?? {}, projectDir, await resolveBaseUrl(projectDir)));

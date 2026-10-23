@@ -6,6 +6,7 @@ import { discoverGraph, findBlockPath, findOrphanBlocks } from "../analysis/grap
 import { join } from "node:path";
 import { rmSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
+import { envString, setEnv } from "../engine/env.js";
 
 // ---------------------------------------------------------------------------
 // `chain`
@@ -47,13 +48,13 @@ mod.startRunner();
  */
 export async function runChain(projectDir: string, spec: string): Promise<void> {
   const expanded = await expandSpecFlowFiles(projectDir, spec);
-  if (process.env.WAYGRAPH_VIDEO && !process.env.WAYGRAPH_BASE_URL) {
+  if (envString("WAYGRAPH_VIDEO") && !envString("WAYGRAPH_BASE_URL")) {
     const resolved = await resolveBaseUrl(projectDir);
-    if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
+    if (resolved) setEnv("WAYGRAPH_BASE_URL", resolved);
   }
   const extensions = await configuredExtensions(projectDir);
-  process.env.WAYGRAPH_RUN_LOG ??= defaultRunLogDir(projectDir);
-  if (extensions.length > 0) process.env.WAYGRAPH_EXTENSIONS = extensions.join(",");
+  if (envString("WAYGRAPH_RUN_LOG") === undefined) setEnv("WAYGRAPH_RUN_LOG", defaultRunLogDir(projectDir));
+  if (extensions.length > 0) setEnv("WAYGRAPH_EXTENSIONS", extensions.join(","));
   const tsxEsm = import.meta.resolve("tsx/esm");
   const scriptPath = join(projectDir, `.waygraph-chain-${process.pid}.mjs`);
   writeFileSync(scriptPath, CHAIN_RUNNER_BOOTSTRAP);
@@ -101,9 +102,9 @@ export async function runChainAuto(projectDir: string, fromTag: string, toTag: s
   }
   const spec = path.join(" then ");
   console.error(`waygraph chain auto: ${fromTag} -> ${toTag} via ${spec}`);
-  if (!process.env.WAYGRAPH_BASE_URL) {
+  if (!envString("WAYGRAPH_BASE_URL")) {
     const resolved = await resolveBaseUrl(projectDir);
-    if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
+    if (resolved) setEnv("WAYGRAPH_BASE_URL", resolved);
   }
   await runChain(projectDir, spec);
 }

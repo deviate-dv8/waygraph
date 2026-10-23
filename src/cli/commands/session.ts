@@ -14,6 +14,7 @@ import { parseHighlightShorthand } from "../../demo/narration/shorthand.js";
 import { isFileSelectToken, parseBlocksSelect } from "../../manifest/select.js";
 import { runAutoExplore } from "../../live/auto-explore-run.js";
 import { discoverGraph, findOrphanBlocks, toMermaid } from "../../analysis/graph.js";
+import { envString, setEnv } from "../../engine/env.js";
 
 export async function sessionCase(args: string[], command: string | undefined): Promise<void> {
       if (command === "browser") {
@@ -63,7 +64,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
             console.error(`waygraph browser: no such directory: ${proj}`);
             process.exit(1);
           }
-          const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? (await resolveBaseUrl(proj));
+          const baseURL = flags.baseUrl ?? envString("WAYGRAPH_BASE_URL") ?? (await resolveBaseUrl(proj));
           try {
             const inject = flags.inject?.length ? resolveInjectRoots(flags.inject, proj) : undefined;
             const result = await browserStart({
@@ -149,7 +150,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
           const flags = parseRunFlags(flagArgs);
           applyRunFlags(flags);
           const proj = resolve(flags.positionals[0] ?? process.cwd());
-          const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? (await resolveBaseUrl(proj));
+          const baseURL = flags.baseUrl ?? envString("WAYGRAPH_BASE_URL") ?? (await resolveBaseUrl(proj));
           try {
             const result = await pilotStart({
               projectDir: proj,
@@ -485,9 +486,9 @@ export async function sessionCase(args: string[], command: string | undefined): 
           console.error(`waygraph: no such directory: ${proj}`);
           process.exit(1);
         }
-        if (!process.env.WAYGRAPH_BASE_URL) {
+        if (!envString("WAYGRAPH_BASE_URL")) {
           const resolved = await resolveBaseUrl(proj);
-          if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
+          if (resolved) setEnv("WAYGRAPH_BASE_URL", resolved);
         }
         await runChain(proj, firstPos);
         return;
@@ -518,7 +519,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
         }
         if (flags.blocks && isFileSelectToken(flags.blocks)) {
           const blocksSelect = parseBlocksSelect(flags.blocks);
-          const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? (await resolveBaseUrl(proj));
+          const baseURL = flags.baseUrl ?? envString("WAYGRAPH_BASE_URL") ?? (await resolveBaseUrl(proj));
           await runAutoExplore(
             proj,
             baseURL
@@ -557,7 +558,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
         }
         return;
       }
-      const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? (await resolveBaseUrl(proj));
+      const baseURL = flags.baseUrl ?? envString("WAYGRAPH_BASE_URL") ?? (await resolveBaseUrl(proj));
       await runAutoExplore(proj, baseURL ? { cli: cliPicker, baseURL } : { cli: cliPicker });
       return;
 }
@@ -570,7 +571,7 @@ export async function autoServeCase(args: string[]): Promise<void> {
         console.error("waygraph __auto-serve: missing --session-id");
         process.exit(1);
       }
-      const baseURL = flags.baseUrl ?? process.env.WAYGRAPH_BASE_URL ?? (await resolveBaseUrl(proj));
+      const baseURL = flags.baseUrl ?? envString("WAYGRAPH_BASE_URL") ?? (await resolveBaseUrl(proj));
       const inject = flags.inject?.length ? resolveInjectRoots(flags.inject, proj) : undefined;
       let headless: boolean | undefined;
       if (flags.headlessBrowser) headless = true;

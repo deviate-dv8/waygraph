@@ -69,6 +69,7 @@ export default defineConfig({
         items: [
           { text: "API reference", link: "/api/" },
           { text: "Deprecated", link: "/deprecated" },
+          { text: "Environment variables", link: "/env" },
           { text: "Engine handout", link: "/handout" },
           { text: "Full reference", link: "https://github.com/deviate-dv8/waygraph/blob/main/docs/REFERENCE.md" },
           { text: "Preview / deploy these docs", link: "/deploy" },

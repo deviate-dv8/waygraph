@@ -10,6 +10,7 @@ import { demoHighlight } from "./demo-log.js";
 import { repaintOverlay } from "../overlay/reattach.js";
 import { setLocatorTheater } from "../overlay/locator-theater.js";
 import type { Locator } from "@playwright/test";
+import { envNumber } from "../../engine/env.js";
 
 export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, slowMo: number, pacing: any, stubBeforeRef: any, todoDockRef: any, deviceRef: any) {
   // Playwright's own slowMo ALREADY pauses after every single low-level
@@ -32,8 +33,8 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
   // Per-character typing delay (WAYGRAPH_TYPING_MS, default 30). 0 for blitz steps.
   const typingMs = () => {
     if (skipTheater()) return 0;
-    const n = Number(process.env.WAYGRAPH_TYPING_MS);
-    return process.env.WAYGRAPH_TYPING_MS !== undefined && Number.isFinite(n) && n >= 0 ? n : 30;
+    const n = envNumber("WAYGRAPH_TYPING_MS");
+    return n !== undefined && n >= 0 ? n : 30;
   };
   const typeDelay = typingMs;
   const keyboard = page.keyboard;

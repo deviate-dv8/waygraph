@@ -2,6 +2,7 @@
 // speed up steps nobody gave a pace. The interaction patches read this object live while the step runs.
 import type { DemoPace } from "../../engine/narration.js";
 import { demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, normalizeDemoPace, resolveStepDemoPace } from "../narration/demo-pace.js";
+import { envString } from "../../engine/env.js";
 
 export interface Pacing {
   /** Shorter Next gates (keeps the smooth cursor). */
@@ -25,7 +26,7 @@ interface PacedStep {
 const isSet = (pace: unknown): boolean => pace != null && pace !== "";
 
 export function paceStep(pacing: Pacing, step: PacedStep, demoFast: boolean, fastBlocks: Set<string>): void {
-  const defaultPace = process.env.WAYGRAPH_DEMO_PACE ? normalizeDemoPace(process.env.WAYGRAPH_DEMO_PACE) : undefined;
+  const defaultPace = envString("WAYGRAPH_DEMO_PACE") ? normalizeDemoPace(envString("WAYGRAPH_DEMO_PACE")) : undefined;
   const fastForward = !!step.block.fastForward || !!step.wasFastForward;
   const flowPace = step.demoPace ?? defaultPace;
   const stepPace = resolveStepDemoPace({

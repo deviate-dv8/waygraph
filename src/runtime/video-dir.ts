@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { homedir } from "node:os";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { loadWaygraphConfig } from "./config.js";
+import { envString } from "../engine/env.js";
 
 /** The user's Downloads folder, or undefined when there is none (a server, a container). */
 export function downloadsDir(): string | undefined {
@@ -43,7 +44,7 @@ function writable(dir: string): boolean {
  */
 export async function resolveVideoDir(projectDir: string): Promise<string> {
   const fallback = join(projectDir, ".waygraph-videos");
-  const configured = process.env.WAYGRAPH_VIDEO_DIR || (await loadWaygraphConfig(projectDir))?.video?.dir;
+  const configured = envString("WAYGRAPH_VIDEO_DIR") || (await loadWaygraphConfig(projectDir))?.video?.dir;
   if (configured) {
     const dir = isAbsolute(expandHome(configured)) ? expandHome(configured) : resolve(projectDir, configured);
     if (writable(dir)) return dir;

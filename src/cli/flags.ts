@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { walkDir } from "../manifest/scan.js";
 import { exportedNames, parseSource } from "../manifest/source.js";
 import { loadWaygraphConfig, resolveBaseUrl } from "../runtime/config.js";
+import { envFlag, envString, setEnv } from "../engine/env.js";
 
 // ---------------------------------------------------------------------------
 // CLI plumbing - run flags (flags beat WAYGRAPH_* env)
@@ -229,9 +230,9 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
     // capture the right thing. Headless by default; --non-headless (or the
     // --auto-play-video-head alias, parsed above) opts back into a
     // visible browser for someone who wants to watch it live too.
-    process.env.WAYGRAPH_STEP = "1";
-    if (!flags.nonHeadless && process.env.WAYGRAPH_HEADED === undefined) {
-      process.env.WAYGRAPH_HEADED = "0";
+    setEnv("WAYGRAPH_STEP", "1");
+    if (!flags.nonHeadless && envString("WAYGRAPH_HEADED") === undefined) {
+      setEnv("WAYGRAPH_HEADED", "0");
     }
   }
   if (
@@ -244,74 +245,74 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
     process.exit(1);
   }
   if (flags.step === true) {
-    process.env.WAYGRAPH_STEP = "1";
-    process.env.WAYGRAPH_HEADED = "1";
+    setEnv("WAYGRAPH_STEP", "1");
+    setEnv("WAYGRAPH_HEADED", "1");
   } else if (flags.step === false) {
-    process.env.WAYGRAPH_STEP = "0";
+    setEnv("WAYGRAPH_STEP", "0");
   }
   if (flags.autoplay === true) {
-    process.env.WAYGRAPH_AUTOPLAY = "1";
+    setEnv("WAYGRAPH_AUTOPLAY", "1");
   } else if (flags.autoplay === false) {
-    process.env.WAYGRAPH_AUTOPLAY = "0";
+    setEnv("WAYGRAPH_AUTOPLAY", "0");
   }
   if (flags.nonHeadless) {
-    process.env.WAYGRAPH_HEADED = "1";
+    setEnv("WAYGRAPH_HEADED", "1");
   }
   // Any --video on demo/run: headless unless --non-headless already won.
-  if (flags.video !== undefined && !flags.nonHeadless && process.env.WAYGRAPH_HEADED === undefined) {
-    process.env.WAYGRAPH_HEADED = "0";
+  if (flags.video !== undefined && !flags.nonHeadless && envString("WAYGRAPH_HEADED") === undefined) {
+    setEnv("WAYGRAPH_HEADED", "0");
   }
   if (flags.baseUrl !== undefined) {
-    process.env.WAYGRAPH_BASE_URL = flags.baseUrl;
+    setEnv("WAYGRAPH_BASE_URL", flags.baseUrl);
   }
   if (flags.title !== undefined) {
-    process.env.WAYGRAPH_TITLE = flags.title;
+    setEnv("WAYGRAPH_TITLE", flags.title);
   }
   if (flags.video !== undefined) {
-    process.env.WAYGRAPH_VIDEO = flags.video || "1";
+    setEnv("WAYGRAPH_VIDEO", flags.video || "1");
   }
   if (flags.videoViewport !== undefined) {
     if (!parseVideoViewportFlag(flags.videoViewport)) {
       console.error('waygraph: --video-viewport must look like "1920x1080"');
       process.exit(1);
     }
-    process.env.WAYGRAPH_VIDEO_VIEWPORT = flags.videoViewport;
+    setEnv("WAYGRAPH_VIDEO_VIEWPORT", flags.videoViewport);
   }
   if (flags.data !== undefined) {
-    process.env.WAYGRAPH_DATA = flags.data;
+    setEnv("WAYGRAPH_DATA", flags.data);
   }
   if (flags.memStub) {
-    process.env.WAYGRAPH_MEM_STUB = "1";
+    setEnv("WAYGRAPH_MEM_STUB", "1");
   }
   if (flags.allBranches) {
-    process.env.WAYGRAPH_ALL_BRANCHES = "1";
+    setEnv("WAYGRAPH_ALL_BRANCHES", "1");
   }
   if (flags.sharedSession) {
-    process.env.WAYGRAPH_SHARED_SESSION = "1";
+    setEnv("WAYGRAPH_SHARED_SESSION", "1");
   }
   if (flags.fast) {
-    process.env.WAYGRAPH_DEMO_FAST = "1";
+    setEnv("WAYGRAPH_DEMO_FAST", "1");
   }
   if (flags.fullStepper) {
-    process.env.WAYGRAPH_STEPPER = "full";
+    setEnv("WAYGRAPH_STEPPER", "full");
   }
   if (flags.miniStepper) {
-    process.env.WAYGRAPH_MINI = "1";
+    setEnv("WAYGRAPH_MINI", "1");
   }
   if (flags.todoPos === "left" || flags.todoPos === "right") {
-    process.env.WAYGRAPH_TODO_POS = flags.todoPos;
+    setEnv("WAYGRAPH_TODO_POS", flags.todoPos);
   }
   if (flags.todoUiFull) {
-    process.env.WAYGRAPH_TODO_UI = "full";
+    setEnv("WAYGRAPH_TODO_UI", "full");
   } else if (flags.todoUiSmart) {
-    process.env.WAYGRAPH_TODO_UI = "smart";
+    setEnv("WAYGRAPH_TODO_UI", "smart");
   }
   if (flags.ffExpand) {
-    process.env.WAYGRAPH_FF_EXPAND = "1";
+    setEnv("WAYGRAPH_FF_EXPAND", "1");
   }
   if (flags.ffDisabled) {
-    process.env.WAYGRAPH_FF_DISABLED = "1";
-    process.env.WAYGRAPH_FF_EXPAND = "1";
+    setEnv("WAYGRAPH_FF_DISABLED", "1");
+    setEnv("WAYGRAPH_FF_EXPAND", "1");
   }
 }
 
@@ -325,23 +326,23 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
 export async function applyDemoDefaults(projectDir: string): Promise<void> {
   // Config first: its defaults (headed, autoNext, pace...) must land before the demo defaults below fill the same variables.
   await loadWaygraphConfig(projectDir);
-  if (process.env.WAYGRAPH_STEP === undefined) process.env.WAYGRAPH_STEP = "1";
-  if (process.env.WAYGRAPH_STEP === "1" && process.env.WAYGRAPH_HEADED === undefined) {
+  if (envString("WAYGRAPH_STEP") === undefined) setEnv("WAYGRAPH_STEP", "1");
+  if (envFlag("WAYGRAPH_STEP") && envString("WAYGRAPH_HEADED") === undefined) {
     // Recording locks headless - a live window fights fixed video viewport /
     // device shell centering. Watch live only with --non-headless.
-    process.env.WAYGRAPH_HEADED = process.env.WAYGRAPH_VIDEO ? "0" : "1";
+    setEnv("WAYGRAPH_HEADED", envString("WAYGRAPH_VIDEO") ? "0" : "1");
   }
   // Manual Next by default. --auto-next / --auto-play-video flip this.
-  if (process.env.WAYGRAPH_AUTOPLAY === undefined) {
-    if (process.env.WAYGRAPH_VIDEO && process.env.WAYGRAPH_STEP === "0") {
-      process.env.WAYGRAPH_AUTOPLAY = "1";
+  if (envString("WAYGRAPH_AUTOPLAY") === undefined) {
+    if (envString("WAYGRAPH_VIDEO") && envString("WAYGRAPH_STEP") === "0") {
+      setEnv("WAYGRAPH_AUTOPLAY", "1");
     } else {
-      process.env.WAYGRAPH_AUTOPLAY = "0";
+      setEnv("WAYGRAPH_AUTOPLAY", "0");
     }
   }
-  if (!process.env.WAYGRAPH_BASE_URL) {
+  if (!envString("WAYGRAPH_BASE_URL")) {
     const resolved = await resolveBaseUrl(projectDir);
-    if (resolved) process.env.WAYGRAPH_BASE_URL = resolved;
+    if (resolved) setEnv("WAYGRAPH_BASE_URL", resolved);
   }
 }
 

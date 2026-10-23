@@ -11,8 +11,9 @@ import { logBannerDom, probeBanner } from "./banner-log.js";
 import { logDocks } from "./before.js";
 import { forceCollapsed } from "./view.js";
 import type { StepperContext, StepView } from "./view.js";
+import { envFlag } from "../../engine/env.js";
 
-const quiet = () => process.env.WAYGRAPH_JSON === "1";
+const quiet = () => envFlag("WAYGRAPH_JSON");
 
 export async function showAfter(ctx: StepperContext, view: StepView, result: Checkpoint<string>): Promise<void> {
   const { stage, refs } = ctx;

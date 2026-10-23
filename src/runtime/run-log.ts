@@ -3,9 +3,10 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { onRunEvent } from "../engine/run/events.js";
+import { envString } from "../engine/env.js";
 
 onRunEvent((event) => {
-  const dir = process.env.WAYGRAPH_RUN_LOG;
+  const dir = envString("WAYGRAPH_RUN_LOG");
   if (!dir || dir === "0") return;
   mkdirSync(dir, { recursive: true });
   appendFileSync(join(dir, `${event.runId}.jsonl`), JSON.stringify(event) + "\n");

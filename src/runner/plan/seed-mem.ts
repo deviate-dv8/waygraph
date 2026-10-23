@@ -1,6 +1,7 @@
 // Fills mem for a segment from its --data / inline JSON, or from registerMemStub fakes when --mem-stub is on.
 import type { MemPage } from "../../engine/mem/mem.js";
 import { getMemStub } from "../../engine/mem/mem-stub.js";
+import { envString } from "../../engine/env.js";
 
 function seedMemFromRequires(mem: MemPage, requires: any, json: any, label: any, stubActive: any) {
   if (requires.length === 0) {
@@ -13,7 +14,7 @@ function seedMemFromRequires(mem: MemPage, requires: any, json: any, label: any,
   }
   if (json === undefined) {
     // --data / WAYGRAPH_DATA supplies the same payload shape as blockName({...}).
-    const fromEnv = process.env.WAYGRAPH_DATA;
+    const fromEnv = envString("WAYGRAPH_DATA");
     if (fromEnv && fromEnv.trim()) json = fromEnv;
   }
 

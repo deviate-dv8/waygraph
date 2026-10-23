@@ -2,6 +2,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Browser, BrowserContext, BrowserContextOptions, BrowserType, LaunchOptions } from "@playwright/test";
+import { envString } from "../engine/env.js";
 
 let warned = false;
 
@@ -22,7 +23,7 @@ export function chromiumExecutablePath(): string | undefined {
 
 /** Unpacked extension directories, as resolved by `resolveExtensions` - also what `WAYGRAPH_EXTENSIONS` carries to child processes. */
 export function extensionPathsFromEnv(): string[] {
-  return (process.env.WAYGRAPH_EXTENSIONS ?? "").split(",").filter(Boolean);
+  return (envString("WAYGRAPH_EXTENSIONS") ?? "").split(",").filter(Boolean);
 }
 
 export interface LaunchedContext {

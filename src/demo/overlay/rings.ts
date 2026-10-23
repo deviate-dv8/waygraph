@@ -7,6 +7,7 @@ import { advanceTodoDock, normalizeTodos } from "../narration/todo-dock.js";
 import { formatHighlightCaption } from "../narration/style.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/narration.js";
 import { resolveFixtureDwellMs } from "../narration/demo-pace.js";
+import { envNumber } from "../../engine/env.js";
 
 /**
  * Scroll a locator into view for demo theater.
@@ -58,7 +59,7 @@ export async function ensureLocatorInView(locator: Locator, opts: any) {
         dir: scrollPlan.dir,
         label: "swipe \u00b7 scroll",
         hint: "scroll",
-        ms: Number(process.env.WAYGRAPH_SWIPE_MS || 650),
+        ms: envNumber("WAYGRAPH_SWIPE_MS") ?? 650,
       });
     }
     await locator

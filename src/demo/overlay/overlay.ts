@@ -15,6 +15,7 @@ import { installDevice } from "./inpage/device.js";
 import { applyVideoDeviceStage } from "./device-stage.js";
 import { installNetworkCapture, restoreNetworkHistory } from "./network-capture.js";
 import { setNetworkTabVisible } from "./inpage/network.js";
+import { envFlag, envString } from "../../engine/env.js";
 
 /**
  * `ui` = authored banner UX from the stub phase: { pos, collision, hidden } (all optional).
@@ -53,11 +54,11 @@ export async function installOverlay(page: WgPage, title?: any, ui?: any, captio
   // Default top-left; override with WAYGRAPH_TITLE_POS=left|center|right.
   // Click cycles left -> center -> right (persisted in localStorage so a
   // navigation that rebuilds the banner keeps the human's last pick).
-  const envPos = (process.env.WAYGRAPH_TITLE_POS || "left").toLowerCase();
+  const envPos = (envString("WAYGRAPH_TITLE_POS") || "left").toLowerCase();
   const bannerPos = envPos === "center" || envPos === "right" ? envPos : "left";
-  const envTodoPos = (process.env.WAYGRAPH_TODO_POS || "left").toLowerCase();
+  const envTodoPos = (envString("WAYGRAPH_TODO_POS") || "left").toLowerCase();
   const todoPos = envTodoPos === "right" ? "right" : "left";
-  const envAutoplay = process.env.WAYGRAPH_AUTOPLAY === "1";
+  const envAutoplay = envFlag("WAYGRAPH_AUTOPLAY");
   const todoDockUi = resolveTodoDockUi();
   const args = { title, favicon: WAYGRAPH_FAVICON, bannerPos, todoPos, envAutoplay, todoDockUi, bannerUi: ui || null };
   await page.evaluate(installCore, args).catch(() => {});

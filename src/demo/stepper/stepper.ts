@@ -15,6 +15,7 @@ import { showBefore } from "./before.js";
 import { showAfter } from "./after.js";
 import { episodesOf, viewOf } from "./view.js";
 import type { StepperContext, StepperStep, StepView } from "./view.js";
+import { envFlag, envString } from "../../engine/env.js";
 
 export interface Stepper {
   /** After the page was reset between episodes: storage was wiped, so the auto-advance setting is put back. */
@@ -35,7 +36,7 @@ export interface StepperOptions {
 }
 
 export async function createStepper(page: WgPage, mem: MemPage, steps: readonly StepperStep[], options: StepperOptions): Promise<Stepper> {
-  const demoFast = process.env.WAYGRAPH_DEMO_FAST === "1";
+  const demoFast = envFlag("WAYGRAPH_DEMO_FAST");
   const pacing = newPacing(demoFast);
   const refs = { stubBefore: { current: [] as any[] }, todoDock: { current: undefined as any }, device: { current: undefined as any } };
   instrumentInteractionHighlighting(page, mem, options.beat, pacing, refs.stubBefore, refs.todoDock, refs.device);
@@ -53,7 +54,7 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
     pacing,
     refs,
     title: options.title,
-    stepperMode: process.env.WAYGRAPH_STEPPER === "full" ? "full" : "carousel",
+    stepperMode: envString("WAYGRAPH_STEPPER") === "full" ? "full" : "carousel",
     stickyTitle: undefined,
     allEpisodes: episodesOf(steps),
   };

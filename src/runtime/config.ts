@@ -12,6 +12,8 @@ import { resolveExtensions } from "./extensions.js";
 import type { ExtensionSpec } from "../engine/config.js";
 import type { WebServerConfig } from "./webserver.js";
 import type { DemoPace } from "../engine/narration.js";
+import { envString, setEnv } from "../engine/env.js";
+import type { WaygraphEnvName } from "../engine/env.js";
 
 /** Where `--video` recordings are saved and at what size. */
 export interface VideoSettings {
@@ -103,7 +105,7 @@ const CONFIG_FILENAMES = [...CONFIG_NAMES.map((n) => join("config", n)), ...CONF
  * (`staging` -> `config/waygraph.staging.config.ts`, also tried in the project root). Without it, `waygraph.config.*`.
  */
 function configCandidates(): string[] {
-  const chosen = process.env.WAYGRAPH_CONFIG;
+  const chosen = envString("WAYGRAPH_CONFIG");
   if (!chosen) return CONFIG_FILENAMES;
   if (/[\\/]/.test(chosen) || /\.[cm]?[jt]s$/.test(chosen)) return [chosen];
   const names = ["ts", "mts", "mjs", "js", "cjs"].map((e) => `waygraph.${chosen}.config.${e}`);
@@ -115,8 +117,8 @@ export function takeConfigFlag(argv: string[]): string[] {
   const out: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
-    if (a === "--config" && argv[i + 1] !== undefined) process.env.WAYGRAPH_CONFIG = argv[++i]!;
-    else if (a.startsWith("--config=")) process.env.WAYGRAPH_CONFIG = a.slice("--config=".length);
+    if (a === "--config" && argv[i + 1] !== undefined) setEnv("WAYGRAPH_CONFIG", argv[++i]!);
+    else if (a.startsWith("--config=")) setEnv("WAYGRAPH_CONFIG", a.slice("--config=".length));
     else out.push(a);
   }
   return out;
@@ -135,8 +137,8 @@ export async function loadWaygraphConfig(projectDir: string): Promise<WaygraphCo
   for (const name of configCandidates()) {
     const p = isAbsolute(name) ? name : join(projectDir, name);
     if (!existsSync(p)) {
-      if (process.env.WAYGRAPH_CONFIG && name === process.env.WAYGRAPH_CONFIG) {
-        throw new Error(`waygraph: config "${process.env.WAYGRAPH_CONFIG}" not found (looked for ${p})`);
+      if (envString("WAYGRAPH_CONFIG") && name === envString("WAYGRAPH_CONFIG")) {
+        throw new Error(`waygraph: config "${envString("WAYGRAPH_CONFIG")}" not found (looked for ${p})`);
       }
       continue;
     }
@@ -169,7 +171,7 @@ export async function loadWaygraphConfig(projectDir: string): Promise<WaygraphCo
  */
 export async function resolveBaseUrl(projectDir: string): Promise<string | undefined> {
   loadEnvFiles(projectDir);
-  if (process.env.WAYGRAPH_BASE_URL) return process.env.WAYGRAPH_BASE_URL;
+  if (envString("WAYGRAPH_BASE_URL")) return envString("WAYGRAPH_BASE_URL");
 
   const config = await loadWaygraphConfig(projectDir);
   if (config?.baseUrl && config.baseUrl.trim()) return config.baseUrl.trim();
@@ -190,12 +192,12 @@ export async function configuredExtensions(projectDir: string): Promise<string[]
  * (`WAYGRAPH_COMMAND`, set by the CLI). The `run` / `demo` section overrides the shared top-level values. A flag, a shell
  * variable or a `.env` value that is already set always wins, so the config only supplies defaults.
  */
-export function applyConfigEnv(config: WaygraphConfig | undefined, command: string | undefined = process.env.WAYGRAPH_COMMAND): void {
+export function applyConfigEnv(config: WaygraphConfig | undefined, command: string | undefined = envString("WAYGRAPH_COMMAND")): void {
   if (!config) return;
   const isDemo = command === "demo" || command === "try";
   const section: DemoSettings | undefined = isDemo ? config.demo : command === "run" ? config.run : undefined;
-  const set = (name: string, value: string | undefined): void => {
-    if (value !== undefined && process.env[name] === undefined) process.env[name] = value;
+  const set = (name: WaygraphEnvName, value: string | undefined): void => {
+    if (value !== undefined && envString(name) === undefined) setEnv(name, value);
   };
   const flag = (b: boolean | undefined): string | undefined => (b === undefined ? undefined : b ? "1" : "0");
   const video = { ...config.video, ...section?.video };

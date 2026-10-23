@@ -4,6 +4,7 @@ import { installOverlay } from "../overlay/overlay.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
 import { hasAuthoredStubOnError, runStubPhase } from "../narration/narration.js";
 import { cycleHighlightRings } from "../overlay/rings.js";
+import { envFlag, envString } from "../../engine/env.js";
 
 export async function renderBeforeStep(page: WgPage, info: any) {
   await installOverlay(page, info.title, info.bannerUi, info.caption, info.networkTabVisible);
@@ -220,16 +221,15 @@ export async function renderBeforeStep(page: WgPage, info: any) {
       }
     }, payload)
     .catch(() => {});
-  if (process.env.WAYGRAPH_PROVE_SHOT || process.env.WAYGRAPH_PROVE_EXIT === "1") {
+  if (envString("WAYGRAPH_PROVE_SHOT") || envFlag("WAYGRAPH_PROVE_EXIT")) {
     // Default: prove once on first painted panel. PROVE_EVERY=1 re-checks
     // every step (noisy; useful when hunting a mid-chain blank).
-    const proveEvery = process.env.WAYGRAPH_PROVE_EVERY === "1";
+    const proveEvery = envFlag("WAYGRAPH_PROVE_EVERY");
     const already = (globalThis as { __wgProveDone?: boolean }).__wgProveDone;
-    if (!already || proveEvery || process.env.WAYGRAPH_PROVE_EXIT === "1") {
+    if (!already || proveEvery || envFlag("WAYGRAPH_PROVE_EXIT")) {
       await page.waitForTimeout(500).catch(() => {});
-      if (process.env.WAYGRAPH_PROVE_SHOT) {
-        await page.screenshot({ path: process.env.WAYGRAPH_PROVE_SHOT }).catch(() => {});
-      }
+      const shot = envString("WAYGRAPH_PROVE_SHOT");
+      if (shot) await page.screenshot({ path: shot }).catch(() => {});
       const ok = await page
         .evaluate(() => {
           const beacons =
@@ -247,7 +247,7 @@ export async function renderBeforeStep(page: WgPage, info: any) {
         .catch((e: any) => ({ ok: false, reason: String(e instanceof Error ? e.message : e) }));
       console.error("WAYGRAPH_PROVE " + JSON.stringify(ok));
       (globalThis as { __wgProveDone?: boolean }).__wgProveDone = true;
-      if (process.env.WAYGRAPH_PROVE_EXIT === "1") {
+      if (envFlag("WAYGRAPH_PROVE_EXIT")) {
         process.exit(ok && ok.ok ? 0 : 2);
       }
     }

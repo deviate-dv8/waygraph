@@ -9,8 +9,9 @@ import { probeTodoDocksOnPage } from "./todo-dock.js";
 import { logBannerDom, probeBanner } from "./banner-log.js";
 import { forceCollapsed } from "./view.js";
 import type { StepperContext, StepView } from "./view.js";
+import { envFlag } from "../../engine/env.js";
 
-const quiet = () => process.env.WAYGRAPH_JSON === "1";
+const quiet = () => envFlag("WAYGRAPH_JSON");
 
 export async function showBefore(ctx: StepperContext, view: StepView): Promise<void> {
   const { stage } = ctx;

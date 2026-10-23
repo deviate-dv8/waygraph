@@ -27,6 +27,7 @@ import {
   writeCoverageReport,
 } from "./coverage.js";
 import { chromiumExecutablePath } from "../../runtime/browser.js";
+import { envFlag, envString } from "../../engine/env.js";
 
 /** How `traverse` workers share a browser: one session, or a clone per worker. */
 export type TraverseSessionMode = "clone" | "inherit";
@@ -77,7 +78,7 @@ export interface TraverseOptions {
 }
 
 function seedMem(library: Map<string, BlockEntry>, mem: MemPage, dataJson?: string): void {
-  const raw = dataJson ?? process.env.WAYGRAPH_DATA ?? process.env.WAYGRAPH_AUTO_MEM;
+  const raw = dataJson ?? envString("WAYGRAPH_DATA") ?? envString("WAYGRAPH_AUTO_MEM");
   let envParsed: Record<string, unknown> = {};
   if (raw) {
     try {
@@ -398,8 +399,8 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
   const maxVisitsPerNode = options.maxVisitsPerNode ?? 2;
   const maxVisitsPerEdge = options.maxVisitsPerEdge ?? 1;
   const timeoutMs = options.timeoutMs ?? 15 * 60_000;
-  const headed = options.headed === true || process.env.WAYGRAPH_HEADED === "1";
-  const baseURL = options.baseURL ?? (await resolveBaseUrl(projectDir)) ?? process.env.WAYGRAPH_BASE_URL;
+  const headed = options.headed === true || envFlag("WAYGRAPH_HEADED");
+  const baseURL = options.baseURL ?? (await resolveBaseUrl(projectDir)) ?? envString("WAYGRAPH_BASE_URL");
   const startUrl = options.startUrl ?? baseURL;
   const minEdgeCoverage =
     options.minEdgeCoverage != null && Number.isFinite(options.minEdgeCoverage)
@@ -421,7 +422,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
   const allEdgeKeys = collectGraphEdgeKeys(graph.edges);
   const leases = new EdgeLeaseCoordinator({ projectDir, persist: parallel > 1 });
   const engine = new Engine({ headless: !headed, slowMo: headed ? 100 : 0 });
-  if (process.env.WAYGRAPH_EXTENSIONS) console.error("waygraph traverse: extensions are not loaded (workers use plain contexts)");
+  if (envString("WAYGRAPH_EXTENSIONS")) console.error("waygraph traverse: extensions are not loaded (workers use plain contexts)");
   const { chromium } = await import("@playwright/test");
   const executablePath = chromiumExecutablePath();
   const launchOpts: Parameters<typeof chromium.launch>[0] = {

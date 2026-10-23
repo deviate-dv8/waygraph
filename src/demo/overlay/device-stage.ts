@@ -1,6 +1,7 @@
 // Device emulation for a step (ctx.device): resizes the page, switches touch, and frames it on a video.
 import type { WgPage } from "../types.js";
 import { resolveDeviceState } from "../narration/device.js";
+import { envNumber } from "../../engine/env.js";
 
 /**
  * Fit + center the OS browser window on the device viewport so mobile/tablet
@@ -333,7 +334,7 @@ export async function applyDeviceToPage(page: WgPage, device: any, sync: any) {
         (shellFrom.width !== target.width || shellFrom.height !== target.height)
       ) {
         const steps = 14;
-        const ms = Number(process.env.WAYGRAPH_DEVICE_TRANSITION_MS || 520);
+        const ms = envNumber("WAYGRAPH_DEVICE_TRANSITION_MS") ?? 520;
         const stepMs = Math.max(12, Math.floor(ms / steps));
         for (let i = 1; i <= steps; i++) {
           const t = i / steps;
@@ -374,7 +375,7 @@ export async function applyDeviceToPage(page: WgPage, device: any, sync: any) {
     try {
       if (shouldAnimate) {
         const steps = 14;
-        const ms = Number(process.env.WAYGRAPH_DEVICE_TRANSITION_MS || 520);
+        const ms = envNumber("WAYGRAPH_DEVICE_TRANSITION_MS") ?? 520;
         const stepMs = Math.max(12, Math.floor(ms / steps));
         for (let i = 1; i <= steps; i++) {
           const t = i / steps;

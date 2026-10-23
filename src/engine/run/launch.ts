@@ -2,6 +2,7 @@
 import type { BrowserContext } from "@playwright/test";
 import { resolveLauncher } from "../config.js";
 import type { EngineConfig } from "../config.js";
+import { envString } from "../env.js";
 
 /** A browser context an Engine opened for itself, and how to close it again. */
 export interface OwnContext {
@@ -20,7 +21,7 @@ async function plainLaunch(config: EngineConfig | undefined): Promise<OwnContext
     headless: config?.headless ?? true,
     ...(config?.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
   });
-  const baseURL = config?.baseUrl ?? process.env.WAYGRAPH_BASE_URL;
+  const baseURL = config?.baseUrl ?? envString("WAYGRAPH_BASE_URL");
   const context = await browser.newContext({
     ...(baseURL ? { baseURL } : {}),
     ...(config?.recordVideo ? { recordVideo: config.recordVideo } : {}),

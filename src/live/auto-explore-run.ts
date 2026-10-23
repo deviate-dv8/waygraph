@@ -21,6 +21,7 @@ import { keepOverlayOnNavigation } from "../demo/overlay/reattach.js";
 import { configuredExtensions, resolveBaseUrl } from "../runtime/config.js";
 import { withWebServer } from "../runtime/webserver.js";
 import { chromiumExecutablePath, launchContext } from "../runtime/browser.js";
+import { envString } from "../engine/env.js";
 
 export interface AutoExploreOptions {
   /** Terminal menu (browser still runs for act()). Default false = headful picker panel. */
@@ -91,7 +92,7 @@ function defaultMemJsonPrompt(key: MemKey<unknown>): string {
 }
 
 function seedMemFromEnv(mem: MemPage, entry: BlockEntry): boolean {
-  const raw = process.env.WAYGRAPH_DATA ?? process.env.WAYGRAPH_AUTO_MEM;
+  const raw = envString("WAYGRAPH_DATA") ?? envString("WAYGRAPH_AUTO_MEM");
   if (!raw) return false;
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -106,7 +107,7 @@ function seedMemFromEnv(mem: MemPage, entry: BlockEntry): boolean {
 
 /** Pre-seeds required keys from WAYGRAPH_DATA and the project's mem stubs, so a session does not stop for mem forms. */
 export function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage): void {
-  const raw = process.env.WAYGRAPH_DATA ?? process.env.WAYGRAPH_AUTO_MEM;
+  const raw = envString("WAYGRAPH_DATA") ?? envString("WAYGRAPH_AUTO_MEM");
   let envParsed: Record<string, unknown> = {};
   if (raw) {
     try {
@@ -587,7 +588,7 @@ export async function runAutoExplore(projectDir: string, options: AutoExploreOpt
 async function runAutoExploreCore(projectDir: string, options: AutoExploreOptions = {}): Promise<void> {
   lastRunNote = null;
   const cli = options.cli === true;
-  const baseURL = options.baseURL ?? (await resolveBaseUrl(projectDir)) ?? process.env.WAYGRAPH_BASE_URL;
+  const baseURL = options.baseURL ?? (await resolveBaseUrl(projectDir)) ?? envString("WAYGRAPH_BASE_URL");
   const startUrl = options.startUrl ?? baseURL;
   const { graph, library } = await buildExploreContext(
     projectDir,
