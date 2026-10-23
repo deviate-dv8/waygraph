@@ -1,10 +1,11 @@
 import { resolve } from "node:path";
 import { loadWaygraphConfig } from "../../runtime/config.js";
 import { extensionInfo, resolveExtension } from "../../runtime/extensions.js";
+import { parseCommand } from "../args.js";
 
 export async function extensionsCase(args: string[]): Promise<void> {
-  const update = args.includes("--update");
-  const rest = args.slice(2).filter((a) => a !== "--update");
+  const { values, positionals: rest } = parseCommand("extensions", { update: { type: "boolean", help: "Download again" } }, args.slice(2));
+  const update = values.update === true;
   if (args[1] !== "install") {
     console.error("usage: waygraph extensions install [project] [--update]");
     process.exit(1);

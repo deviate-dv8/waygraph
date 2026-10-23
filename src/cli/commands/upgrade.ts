@@ -6,6 +6,8 @@ import { packageRoot } from "../util.js";
 import { agentSkillFiles } from "./agent-dive-scaffold.js";
 import { codemodCheckpoints } from "./codemod-checkpoints.js";
 import { codemodFlows } from "./codemod-flows.js";
+import { parseCommand } from "../args.js";
+import type { OptionTable } from "../args.js";
 
 // Filled in per project at init, so they never compare equal to the template.
 const SKIP = new Set(["package.json", join("config", "waygraph.config.ts")]);
@@ -24,17 +26,25 @@ const isOlder = (a: number[], b: number[]): boolean => {
   return false;
 };
 
+const OPTIONS = {
+  apply: { type: "boolean", help: "Copy the files (default: a dry run that lists them)" },
+  overwrite: { type: "boolean", help: "Also replace files that differ from the scaffold" },
+  diff: { type: "boolean", help: "Show what differs" },
+  skills: { type: "boolean", help: "Refresh .agents/skills to this waygraph's" },
+  codemod: { type: "string", value: "flows|checkpoints", help: "Rewrite the project's source onto the current API" },
+} as const satisfies OptionTable;
+
 /**
  * `waygraph upgrade [project] [paths...] [--apply] [--overwrite] [--diff] [--skills]`
  * Compares the project with the scaffold shipped in this waygraph. Dry run by default.
  * Only the paths you name are copied, because a real project deliberately drops parts of the demo.
  */
 export async function upgradeCase(args: string[]): Promise<void> {
-  const flags = new Set(args.filter((a) => a.startsWith("--")));
-  const positional = args.slice(1).filter((a) => !a.startsWith("--"));
-  if (flags.has("--codemod")) {
-    const what = args[args.indexOf("--codemod") + 1];
-    const dir = resolve(positional.find((p) => p !== what) ?? process.cwd());
+  const { values, positionals: positional } = parseCommand("upgrade", OPTIONS, args.slice(1));
+  const flags = new Set(Object.entries(values).filter(([, v]) => v === true).map(([k]) => "--" + k));
+  if (values.codemod !== undefined) {
+    const what = values.codemod;
+    const dir = resolve(positional[0] ?? process.cwd());
     if (what === "flows") {
       const { changed, problems } = await codemodFlows(dir);
       for (const f of changed) console.log(`  rewrote     ${f}`);

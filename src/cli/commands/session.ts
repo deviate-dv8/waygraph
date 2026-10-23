@@ -15,14 +15,25 @@ import { isFileSelectToken, parseBlocksSelect } from "../../manifest/select.js";
 import { runAutoExplore } from "../../live/auto-explore-run.js";
 import { discoverGraph, findOrphanBlocks, toMermaid } from "../../analysis/graph.js";
 import { envString, setEnv } from "../../engine/env.js";
+import { parseCommand } from "../args.js";
+import type { OptionTable } from "../args.js";
+
+const SEND_OPTIONS = {
+  timeout: { type: "string", value: "<ms>", help: "How long one Block may run (default 15000)" },
+} as const satisfies OptionTable;
+
+const DOM_OPTIONS = {
+  mode: { type: "string", value: "aria|full", help: "Accessibility tree (default) or the full DOM" },
+  selector: { type: "string", value: "<css>", help: "Only this element's subtree" },
+  depth: { type: "string", value: "N", help: "Levels to read" },
+} as const satisfies OptionTable;
 
 export async function sessionCase(args: string[], command: string | undefined): Promise<void> {
       if (command === "browser") {
         const sub = args[1];
         if (sub === "sessions") {
-          const rest = args.slice(2);
-          const json = rest.includes("--json");
-          const positional = rest.filter((a) => a !== "--json");
+          const { values, positionals: positional } = parseCommand("sessions", { json: { type: "boolean", help: "Machine-readable JSON" } }, args.slice(2));
+          const json = values.json === true;
           const proj = resolve(positional[0] ?? process.cwd());
           const sessions = listBrowserSessions(proj);
           if (json) {
@@ -115,9 +126,8 @@ export async function sessionCase(args: string[], command: string | undefined): 
 
       if (command === "pilot") {
         if (args[1] === "sessions") {
-          const rest = args.slice(2);
-          const json = rest.includes("--json");
-          const positional = rest.filter((a) => a !== "--json");
+          const { values, positionals: positional } = parseCommand("sessions", { json: { type: "boolean", help: "Machine-readable JSON" } }, args.slice(2));
+          const json = values.json === true;
           const proj = resolve(positional[0] ?? process.cwd());
           const sessions = listBrowserSessions(proj);
           if (json) {
@@ -264,16 +274,14 @@ export async function sessionCase(args: string[], command: string | undefined): 
           // whether the ONE Block it's running is fast or slow, so this is
           // opt-in via a flag rather than a raised default.
           let timeoutMs: number | undefined;
-          for (let i = 4; i < args.length; i++) {
-            if (args[i] === "--timeout") {
-              const raw = args[++i];
-              const n = Number(raw);
-              if (!Number.isFinite(n) || n <= 0) {
-                console.error(`waygraph auto send: --timeout must be a positive number of ms, got "${raw}"`);
-                process.exit(1);
-              }
-              timeoutMs = n;
+          const raw = parseCommand("auto send", SEND_OPTIONS, args.slice(4)).values.timeout;
+          if (raw !== undefined) {
+            const n = Number(raw);
+            if (!Number.isFinite(n) || n <= 0) {
+              console.error(`waygraph auto send: --timeout must be a positive number of ms, got "${raw}"`);
+              process.exit(1);
             }
+            timeoutMs = n;
           }
           const res = await requestSession(proj, sessionId, { op: "send", pick }, timeoutMs);
           console.log(JSON.stringify(res));
@@ -285,29 +293,22 @@ export async function sessionCase(args: string[], command: string | undefined): 
           let mode: "aria" | "full" | undefined;
           let selector: string | undefined;
           let depth: number | undefined;
-          for (let i = 0; i < domArgs.length; i++) {
-            const a = domArgs[i]!;
-            if (a === "--mode" || a.startsWith("--mode=")) {
-              const v = a.startsWith("--mode=") ? a.slice("--mode=".length) : domArgs[++i];
-              if (v !== "aria" && v !== "full") {
-                console.error(`waygraph auto dom: --mode must be "aria" or "full", got "${v}"`);
-                process.exit(1);
-              }
-              mode = v;
-            } else if (a === "--selector" || a.startsWith("--selector=")) {
-              selector = a.startsWith("--selector=") ? a.slice("--selector=".length) : domArgs[++i];
-            } else if (a === "--depth" || a.startsWith("--depth=")) {
-              const raw = a.startsWith("--depth=") ? a.slice("--depth=".length) : domArgs[++i];
-              const n = Number(raw);
-              if (!Number.isInteger(n) || n < 1) {
-                console.error(`waygraph auto dom: --depth must be a positive integer, got "${raw}"`);
-                process.exit(1);
-              }
-              depth = n;
-            } else {
-              console.error(`waygraph auto dom: unrecognized argument "${a}"`);
+          const dom = parseCommand("auto dom", DOM_OPTIONS, domArgs).values;
+          if (dom.mode !== undefined) {
+            if (dom.mode !== "aria" && dom.mode !== "full") {
+              console.error(`waygraph auto dom: --mode must be "aria" or "full", got "${dom.mode}"`);
               process.exit(1);
             }
+            mode = dom.mode;
+          }
+          selector = dom.selector;
+          if (dom.depth !== undefined) {
+            const n = Number(dom.depth);
+            if (!Number.isInteger(n) || n < 1) {
+              console.error(`waygraph auto dom: --depth must be a positive integer, got "${dom.depth}"`);
+              process.exit(1);
+            }
+            depth = n;
           }
           const res = await requestSession(proj, sessionId, {
             op: "dom",

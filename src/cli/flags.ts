@@ -1,5 +1,6 @@
 import { basename, relative, resolve } from "node:path";
-import { parseArgs } from "node:util";
+import { helpLines, parseCommand } from "./args.js";
+import type { OptionSpec } from "./args.js";
 import { existsSync } from "node:fs";
 import { walkDir } from "../manifest/scan.js";
 import { exportedNames, parseSource } from "../manifest/source.js";
@@ -116,20 +117,15 @@ export const RUN_OPTIONS = {
   "map": { type: "boolean", help: "Print the map" },
   "no-practices": { type: "boolean", help: "check / typecheck: skip bad-practice warnings" },
   "session-id": { type: "string", help: "Internal: the id a detached session child serves (set by browser start)" },
-} as const satisfies Record<string, { type: "boolean" | "string"; multiple?: boolean; value?: string; help: string; for?: readonly HelpFor[] }>;
+} as const satisfies Record<string, OptionSpec & { for?: readonly HelpFor[] }>;
 
 /** The help lines for one command's options, from {@link RUN_OPTIONS}. */
 export function optionHelp(command: HelpFor, indent = 17): string {
-  const rows = Object.entries(RUN_OPTIONS)
-    .filter(([, o]) => "for" in o && (o.for as readonly HelpFor[]).includes(command))
-    .map(([name, o]) => [`--${name}${"value" in o ? " " + o.value : ""}`, o.help] as const);
-  const width = Math.max(...rows.map(([f]) => f.length)) + 2;
-  return rows.map(([f, h]) => " ".repeat(indent) + f.padEnd(width) + h).join("\n");
+  return helpLines(
+    Object.fromEntries(Object.entries(RUN_OPTIONS).filter(([, o]) => "for" in o && (o.for as readonly HelpFor[]).includes(command))),
+    indent,
+  );
 }
-
-const PARSE_OPTIONS = Object.fromEntries(
-  Object.entries(RUN_OPTIONS).map(([name, o]) => [name, { type: o.type, multiple: "multiple" in o && o.multiple }]),
-) as { [K in keyof typeof RUN_OPTIONS]: { type: (typeof RUN_OPTIONS)[K]["type"]; multiple: (typeof RUN_OPTIONS)[K] extends { multiple: true } ? true : false } };
 
 
 /**
@@ -145,16 +141,10 @@ function looksLikeCheckpointArg(s: string): boolean {
 
 
 /** Reads run/demo/auto/session flags with `node:util`'s parseArgs; an unknown flag or a missing value exits with the reason. */
-export function parseRunFlags(argv: string[]): RunFlags {
+export function parseRunFlags(argv: string[], command = "run"): RunFlags {
   // `--video` takes an optional folder: bare (end of args, or another flag next) means the default folder.
   const args = argv.map((a, i) => (a === "--video" && (argv[i + 1] === undefined || argv[i + 1]!.startsWith("-")) ? "--video=" : a));
-  let parsed;
-  try {
-    parsed = parseArgs({ args, options: PARSE_OPTIONS, allowPositionals: true, strict: true, tokens: true });
-  } catch (err) {
-    console.error(`waygraph: ${err instanceof Error ? err.message : String(err)}`);
-    process.exit(1);
-  }
+  const parsed = parseCommand(command, RUN_OPTIONS, args);
   const v = parsed.values;
   const positionals = [...parsed.positionals];
   const out: RunFlags = { positionals };

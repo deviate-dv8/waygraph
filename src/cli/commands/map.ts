@@ -1,14 +1,17 @@
 import { relative, resolve } from "node:path";
 import { checkMap } from "../../analysis/map-check.js";
 import { packMapGroup } from "../../manifest/pack.js";
+import { parseCommand } from "../args.js";
+import type { OptionTable } from "../args.js";
 
-function option(args: string[], name: string): string | undefined {
-  const i = args.indexOf(name);
-  return i >= 0 ? args[i + 1] : undefined;
-}
+const PACK_OPTIONS = {
+  out: { type: "string", value: "<dir>", help: "Output folder (default .waygraph/packages/<group>)" },
+  name: { type: "string", value: "<package>", help: "Package name (default waygraph-map-<group>)" },
+  version: { type: "string", value: "<x.y.z>", help: "Package version (default 0.1.0)" },
+} as const satisfies OptionTable;
 
 async function packCase(args: string[]): Promise<void> {
-  const positionals = args.filter((a, i) => !a.startsWith("--") && !(i > 0 && args[i - 1]!.startsWith("--")));
+  const { values, positionals } = parseCommand("map pack", PACK_OPTIONS, args);
   const group = positionals[0];
   if (!group) {
     console.error("usage: waygraph map pack <group> [project] [--out <dir>] [--name <package>] [--version <x.y.z>]");
@@ -16,7 +19,7 @@ async function packCase(args: string[]): Promise<void> {
     return;
   }
   const proj = resolve(positionals[1] ?? process.cwd());
-  const result = await packMapGroup(proj, group, { out: option(args, "--out"), name: option(args, "--name"), version: option(args, "--version") });
+  const result = await packMapGroup(proj, group, { out: values.out, name: values.name, version: values.version });
   if (!result.ok) {
     console.error(`waygraph map pack: ${result.reason}`);
     for (const p of result.problems ?? []) console.error(`  ${relative(proj, p.file)} imports "${p.spec}"`);

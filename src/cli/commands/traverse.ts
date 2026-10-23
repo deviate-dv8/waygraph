@@ -3,126 +3,46 @@ import { existsSync, statSync } from "node:fs";
 import { parseBlocksSelect } from "../../manifest/select.js";
 import { parseMinEdgeCoverage } from "../../live/traverse/coverage.js";
 import { runTraverse } from "../../live/traverse/traverse.js";
+import { helpLines, parseCommand } from "../args.js";
+import type { OptionTable } from "../args.js";
+
+const OPTIONS = {
+  "blocks": { type: "string", value: "<glob|/regex/|substr>", help: "Phase C: filter *.block.ts discovery" },
+  "parallel": { type: "string", value: "N", help: "Phase D: N clone workers (default 1, max 4)" },
+  "session": { type: "string", value: "clone|inherit", help: "Phase D: default clone; inherit refused if parallel>1" },
+  "min-edge-coverage": { type: "string", value: "X", help: "Phase E: suite gate 0.8 | 80% | 80 (exit 2 if below)" },
+  "coverage-out": { type: "string", value: "PATH", help: "Phase E: write JSON (default .waygraph-traverse/coverage.json)" },
+  "no-coverage-report": { type: "boolean", help: "Phase E: print the Coverage line only (no JSON file)" },
+  "from": { type: "string", value: "<Checkpoint>", help: "Start checkpoint (optional)" },
+  "data": { type: "string", value: "'{...}'", help: "Mem seed JSON" },
+  "max-steps": { type: "string", value: "N", help: "Default 50 (per worker)" },
+  "max-visits": { type: "string", value: "N", help: "Per-node visit cap (default 2)" },
+  "max-visits-per-edge": { type: "string", value: "N", help: "Default 1" },
+  "non-headless": { type: "boolean", help: "Show the browser" },
+  "base-url": { type: "string", value: "<url>", help: "Base URL" },
+  "help": { type: "boolean", help: "This help" },
+} as const satisfies OptionTable;
+
+/** A number flag, or exit naming it. */
+function numberFlag(name: string, raw: string | undefined): number | undefined {
+  if (raw === undefined) return undefined;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) {
+    console.error(`waygraph traverse: --${name} needs a number (got ${JSON.stringify(raw)})`);
+    process.exit(1);
+  }
+  return n;
+}
 
 export async function traverseCase(args: string[]): Promise<void> {
-      if (args.includes("--step") || args.includes("--auto-next") || args.includes("--autoplay")) {
-        console.error("waygraph traverse: --step / --auto-next not supported (not a demo)");
-        process.exit(1);
-      }
-      const rest = args.slice(1);
-      let from: string | undefined;
-      let data: string | undefined;
-      let maxSteps: number | undefined;
-      let maxVisits: number | undefined;
-      let maxEdge: number | undefined;
-      let headed = false;
-      let baseUrl: string | undefined;
-      let blocksFilter: string | undefined;
-      let parallel: number | undefined;
-      let session: "clone" | "inherit" | undefined;
-      let minEdgeCoverageRaw: string | undefined;
-      let coverageOut: string | undefined;
-      let noCoverageReport = false;
-      let projectDir = process.cwd();
-      for (let i = 0; i < rest.length; i++) {
-        const a = rest[i]!;
-        if (a === "--from" || a.startsWith("--from=")) {
-          from = a.startsWith("--from=") ? a.slice(7) : rest[++i];
-          continue;
-        }
-        if (a === "--data" || a.startsWith("--data=")) {
-          data = a.startsWith("--data=") ? a.slice(7) : rest[++i];
-          continue;
-        }
-        if (a === "--blocks" || a.startsWith("--blocks=")) {
-          if (a.startsWith("--blocks=")) {
-            blocksFilter = a.slice("--blocks=".length);
-          } else {
-            const v = rest[++i];
-            if (!v || v.startsWith("-")) {
-              console.error(
-                "waygraph traverse: --blocks needs a glob, /regex/, or path substring",
-              );
-              process.exit(1);
-            }
-            blocksFilter = v;
-          }
-          continue;
-        }
-        if (a === "--parallel" || a.startsWith("--parallel=")) {
-          const v = a.startsWith("--parallel=") ? a.slice("--parallel=".length) : rest[++i];
-          parallel = Number(v);
-          continue;
-        }
-        if (a === "--session" || a.startsWith("--session=")) {
-          const v = a.startsWith("--session=") ? a.slice("--session=".length) : rest[++i];
-          if (v !== "clone" && v !== "inherit") {
-            console.error('waygraph traverse: --session must be "clone" or "inherit"');
-            process.exit(1);
-          }
-          session = v;
-          continue;
-        }
-        if (a === "--min-edge-coverage" || a.startsWith("--min-edge-coverage=")) {
-          minEdgeCoverageRaw = a.startsWith("--min-edge-coverage=")
-            ? a.slice("--min-edge-coverage=".length)
-            : rest[++i];
-          continue;
-        }
-        if (a === "--coverage-out" || a.startsWith("--coverage-out=")) {
-          coverageOut = a.startsWith("--coverage-out=")
-            ? a.slice("--coverage-out=".length)
-            : rest[++i];
-          continue;
-        }
-        if (a === "--no-coverage-report") {
-          noCoverageReport = true;
-          continue;
-        }
-        if (a === "--max-steps" || a.startsWith("--max-steps=")) {
-          const v = a.startsWith("--max-steps=") ? a.slice(12) : rest[++i];
-          maxSteps = Number(v);
-          continue;
-        }
-        if (a === "--max-visits" || a.startsWith("--max-visits=")) {
-          const v = a.startsWith("--max-visits=") ? a.slice(13) : rest[++i];
-          maxVisits = Number(v);
-          continue;
-        }
-        if (a === "--max-visits-per-edge" || a.startsWith("--max-visits-per-edge=")) {
-          const v = a.startsWith("--max-visits-per-edge=")
-            ? a.slice("--max-visits-per-edge=".length)
-            : rest[++i];
-          maxEdge = Number(v);
-          continue;
-        }
-        if (a === "--non-headless" || a === "--headed") {
-          headed = true;
-          continue;
-        }
-        if (a === "--base-url" || a.startsWith("--base-url=")) {
-          baseUrl = a.startsWith("--base-url=") ? a.slice(11) : rest[++i];
-          continue;
-        }
-        if (a === "--help" || a === "-h") {
-          console.log(`waygraph traverse [project] [flags]
+      const { values: v, positionals } = parseCommand("traverse", OPTIONS, args.slice(1));
+      if (v.help) {
+        console.log(`waygraph traverse [project] [flags]
 
 Graph crawl (RFC Phase B-E). Walks unused legal edges until a leaf,
 budget kill, or first broken edge. --parallel N uses session clone + edge leases.
 
-  --blocks <glob|/regex/|substr>  Phase C: filter *.block.ts discovery
-  --parallel N            Phase D: N clone workers (default 1, max 4)
-  --session clone|inherit Phase D: default clone; inherit refused if parallel>1
-  --min-edge-coverage X   Phase E: suite gate 0.8 | 80% | 80 (exit 2 if below)
-  --coverage-out PATH     Phase E: write JSON (default .waygraph-traverse/coverage.json)
-  --no-coverage-report    Phase E: print Coverage line only (no JSON file)
-  --from <Checkpoint>     start checkpoint (optional)
-  --data '{...}'          Mem seed JSON
-  --max-steps N           default 50 (per worker)
-  --max-visits N          per-node visit cap (default 2)
-  --max-visits-per-edge N default 1
-  --non-headless          show browser
-  --base-url URL
+${helpLines(OPTIONS)}
 
 Examples:
   waygraph traverse --blocks '**/mailpit/**/*.block.ts'
@@ -133,12 +53,26 @@ PASS:  [Reached Leaf Node[traverse-1] at=... steps=N]
 FAIL:  [Broke at edge[traverse-1] block=... from=... to=...]
 COVER: [Coverage edges=H/T ratio=R% min=M% PASS|FAIL]
 `);
-          process.exit(0);
-        }
-        if (!a.startsWith("-")) {
-          projectDir = resolve(a);
-        }
+        process.exit(0);
       }
+      if (v.session !== undefined && v.session !== "clone" && v.session !== "inherit") {
+        console.error('waygraph traverse: --session must be "clone" or "inherit"');
+        process.exit(1);
+      }
+      const session = v.session as "clone" | "inherit" | undefined;
+      const projectDir = resolve(positionals[0] ?? process.cwd());
+      const from = v.from;
+      const data = v.data;
+      const maxSteps = numberFlag("max-steps", v["max-steps"]);
+      const maxVisits = numberFlag("max-visits", v["max-visits"]);
+      const maxEdge = numberFlag("max-visits-per-edge", v["max-visits-per-edge"]);
+      const parallel = numberFlag("parallel", v.parallel);
+      const headed = v["non-headless"] === true;
+      const baseUrl = v["base-url"];
+      const blocksFilter = v.blocks;
+      const minEdgeCoverageRaw = v["min-edge-coverage"];
+      const coverageOut = v["coverage-out"];
+      const noCoverageReport = v["no-coverage-report"] === true;
       if (!existsSync(projectDir) || !statSync(projectDir).isDirectory()) {
         console.error(`waygraph traverse: no such directory: ${projectDir}`);
         process.exit(1);
@@ -160,17 +94,13 @@ COVER: [Coverage edges=H/T ratio=R% min=M% PASS|FAIL]
       const code = await runTraverse(projectDir, {
         ...(from ? { from } : {}),
         ...(data ? { data } : {}),
-        ...(maxSteps !== undefined && Number.isFinite(maxSteps) ? { maxSteps } : {}),
-        ...(maxVisits !== undefined && Number.isFinite(maxVisits)
-          ? { maxVisitsPerNode: maxVisits }
-          : {}),
-        ...(maxEdge !== undefined && Number.isFinite(maxEdge)
-          ? { maxVisitsPerEdge: maxEdge }
-          : {}),
+        ...(maxSteps !== undefined ? { maxSteps } : {}),
+        ...(maxVisits !== undefined ? { maxVisitsPerNode: maxVisits } : {}),
+        ...(maxEdge !== undefined ? { maxVisitsPerEdge: maxEdge } : {}),
         headed,
         ...(baseUrl ? { baseURL: baseUrl } : {}),
         ...(blocksSelect ? { blocksSelect } : {}),
-        ...(parallel !== undefined && Number.isFinite(parallel) ? { parallel } : {}),
+        ...(parallel !== undefined ? { parallel } : {}),
         ...(session ? { session } : {}),
         ...(minEdgeCoverage !== undefined ? { minEdgeCoverage } : {}),
         ...(coverageOut ? { coverageOut: resolve(coverageOut) } : {}),
