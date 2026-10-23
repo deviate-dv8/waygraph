@@ -234,7 +234,9 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 7. `live/` for sessions, pilot and traverse (`session/`, `auto-session/`, `traverse/` moved in). **Done.**
 8. Thin CLI: `cli/discover.ts` gone (scanning in `manifest/`, `validate`/`check` scans in `analysis/check.ts`, `list`/`nav`
    source reads in `analysis/source.ts`), `chain auto` in `cli/run-chain.ts`. **Done.**
-9. Map packages: a map group owns its states and keys, `waygraph map pack`, `maps: [...]` in the config.
+9. Map packages: a map group owns its states and keys (`_states.ts`, `_keys.ts`; `waygraph check` warns on imports that
+   leave it), `waygraph map pack <group>` compiles it into a package with `waygraph.map.json`, and installed packages are
+   found from the project's dependencies (no config list needed). Scaffold hoppscotch and mailpit converted. **Done.**
 
 
 

@@ -24,9 +24,9 @@ Next.js route groups) and never appear in a URL or Checkpoint name.
 │   │   │   │       ├── assert-hello.method.block.ts   # + stubs + YAP slide
 │   │   │   │       └── assert-item-added.method.block.ts
 │   │   │   └── docs/                  # a second page, same shape
-│   │   ├── (external)/mailpit/        # a different origin (mail catcher)
-│   │   └── (external)/hoppscotch/     # API client, REST client, needs the hoppscotch extension
-│   ├── states/                        # Checkpoint types + mem keys
+│   │   ├── (external)/mailpit/        # a different origin (mail catcher); owns _states.ts + _keys.ts
+│   │   └── (external)/hoppscotch/     # API client, needs the hoppscotch extension; owns _states.ts + _keys.ts
+│   ├── states/                        # the app's Checkpoints + mem keys
 │   └── flows/                         # use cases, one file per scenario (see flows/README.md)
 │       ├── home/                      #   a page: hello, cart
 │       ├── (user-stories)/            #   flows that cross pages
@@ -48,6 +48,7 @@ page folder uses, so any agent or teammate knows where to look without asking.
 | Give a flow fake data | `registerMemStub(key, fake)` + `memStub: true` in the flow's options (docs: docs/REFERENCE.md, "memStub") |
 | Explore by hand | `npm run auto` (headed) or `npm run auto:cli` |
 | Check your work | `npm run check`, `npm run graph`, `waygraph map` |
+| Share a tool's map with another project | `waygraph map pack hoppscotch`, then publish `.waygraph/packages/hoppscotch` |
 
 `waygraph map` fails if a folder path stops matching the real URL it claims to represent.
 Full convention: https://deviate-dv8.github.io/waygraph/consumer.html

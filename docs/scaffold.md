@@ -22,9 +22,9 @@ organizational only and never appear in a URL.
 │   │   │   │   ├── index.html         # offline fixture page
 │   │   │   │   └── _methods/          # one action per Block
 │   │   │   └── docs/                  # a second page, same shape
-│   │   ├── (external)/mailpit/        # a different origin (mail catcher)
-│   │   └── (external)/hoppscotch/     # REST client, needs the hoppscotch extension
-│   ├── states/                        # Checkpoint types + mem keys
+│   │   ├── (external)/mailpit/        # a different origin (mail catcher); owns _states.ts + _keys.ts
+│   │   └── (external)/hoppscotch/     # REST client, needs the hoppscotch extension; owns _states.ts + _keys.ts
+│   ├── states/                        # the app's Checkpoints + mem keys
 │   └── flows/                         # use cases: <page>/, (user-stories)/, (external)/<tool>/
 └── tests/                             # example, mail-verify, hoppscotch specs
 ```
@@ -70,7 +70,11 @@ An older project that still has one keeps working and gets a deprecation note.
 skip CORS and can hit `localhost`. Add `extensions: ["hoppscotch"]` to the config, then chain
 `set-method`, `set-url`, `set-headers`, `set-query-params`, `set-bearer-token`, `set-json-body`,
 `send-request`, `assert-status`, `read-response-body`, `assert-response-body` and the response-header
-Blocks. See `src/flows/hoppscotch-*.flow.ts` and [the reference](./REFERENCE#testing-a-rest-api-through-hoppscotch).
+Blocks. See `src/flows/(external)/hoppscotch/*.flow.ts` and [the reference](./REFERENCE#testing-a-rest-api-through-hoppscotch).
+
+The hoppscotch and mailpit folders own their Checkpoints and keys (`_states.ts`, `_keys.ts`) and import nothing else from
+the project, so each can be packed and installed elsewhere: `npx waygraph map pack hoppscotch` (see
+[Map packages](./REFERENCE#map-packages)).
 
 ## Updating an existing project
 
@@ -100,6 +104,7 @@ checkout end to end, onboarding. A file is named for its outcome, and its export
 | Confirm a state (button disabled, error shown) | `defineAssertBlock` with `Trait.disabled` / `Trait.enabled` |
 | Wire steps together | `src/flows/*.flow.ts`, built with `map({ memStub, … })`; nest one with `.flow(sub, { reset })` |
 | Keep folders honest | `waygraph map` fails if a folder stops matching its URL |
+| Reuse a tool's map in another project | `waygraph map pack <group>`, then publish the package |
 
 ## Coding agents
 

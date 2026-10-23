@@ -313,6 +313,7 @@ but are deprecated; `waygraph upgrade --codemod checkpoints` rewrites a project'
 from the `src/flows/<page>/<outcome>.flow.ts` path, its `steps` in run order and its settings) and every Checkpoint.
 `buildManifest(projectDir)` returns the same object in code. It is read at runtime from the Blocks themselves, the same
 scan `graph`, `check`, `map`, `auto`, `traverse` and the runner use, and is what Waygraph UI and map packages read.
+Blocks from installed [map packages](#map-packages) are included, with the package name as their `map`.
 
 ## Run events and the run log
 
@@ -1319,6 +1320,37 @@ the socket moved.
 Full design history (why "Router" isn't a separate thing to build, two prior wrong readings
 of this before landing here, and everything above stated as requirements) in
 `openspec/changes/waygraph-map/`.
+
+## Map packages
+
+A group under `src/map/` that owns its Checkpoints and keys is a map you can publish: `_states.ts` and `_keys.ts` live in
+the group's folder (not in `src/states/`), and its files import only `waygraph`, Playwright, `node:` modules and each
+other. `waygraph check` warns on any import that leaves the group.
+
+```text
+src/map/(external)/hoppscotch/
+  _states.ts          HoppscotchRest, HoppscotchSettings
+  _keys.ts            hoppscotch.requestUrl, hoppscotch.expectedStatus, ...
+  _nav.block.ts  _page.block.ts  _sel.ts  _methods/  settings/
+```
+
+```bash
+waygraph map pack hoppscotch [project] [--out <dir>] [--name <package>] [--version <x.y.z>]
+# -> .waygraph/packages/hoppscotch: compiled .js + .d.ts, index re-exporting every module, package.json,
+#    and waygraph.map.json (its Blocks with routes, its Checkpoints)
+cd .waygraph/packages/hoppscotch && npm publish
+```
+
+The pack uses the project's own `tsconfig.json` and TypeScript and refuses a group that imports outside itself. In
+another project, `npm i waygraph-map-hoppscotch` is all it takes: the scanner finds every dependency with a
+`waygraph.map.json`, so its Blocks appear in `graph`, `auto`, `manifest` and `waygraph run <block>`, and flows import
+them like any module:
+
+```typescript
+import { NavHoppscotchRestBlock, SetUrlBlock, SendRequestBlock, AssertStatusBlock } from "waygraph-map-hoppscotch";
+```
+
+The scaffold's `(external)/hoppscotch` and `(external)/mailpit` are written this way.
 
 ## Migrating from freeform ("router") to Waygraph Map
 

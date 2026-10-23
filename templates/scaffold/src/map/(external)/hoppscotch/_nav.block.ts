@@ -1,5 +1,5 @@
 import { defineNavBlock, Trait } from "waygraph";
-import { HoppscotchRest } from "../../../states/demo.states.js";
+import { HoppscotchRest } from "./_states.js";
 import { HoppscotchSel } from "./_sel.js";
 
 export const NavHoppscotchRestBlock = defineNavBlock({

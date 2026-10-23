@@ -18,7 +18,7 @@ export interface ManifestBlock {
   to: string[];
   requires: string[];
   file: string;
-  /** The `src/map/` group folder the Block lives in, e.g. `(external)/hoppscotch`, when it uses the Map layout. */
+  /** The `src/map/` group folder the Block lives in (e.g. `(external)/hoppscotch`), or the map package it came from. */
   map?: string;
   /** Still written in the deprecated `<In, Out>` form. */
   legacy?: true;
@@ -85,7 +85,7 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
   const maps = new Set<string>();
   const blocks: ManifestBlock[] = scan.blocks.map((b) => {
     for (const t of [...b.from, ...b.to]) if (t !== "*") checkpoints.add(t);
-    const map = mapGroupOf(b.file);
+    const map = b.map ?? mapGroupOf(b.file);
     if (map) maps.add(map);
     return {
       id: `${b.file}#${b.exportName}`,

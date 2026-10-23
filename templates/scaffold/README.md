@@ -29,6 +29,7 @@ Change each `_nav.block.ts`'s `url` from the local `file://` path to a real one,
 `package.json`'s `"waygraph"` field - see the main docs' "Project config" section). That file also
 holds the test settings (`testDir`, `webServer`, `playwright: { workers, timeout, ... }`), so the
 project needs no `playwright.config.ts`. Keep each
-`src/map/` folder matching the URL it represents (`waygraph map` enforces this).
+`src/map/` folder matching the URL it represents (`waygraph map` enforces this). `(external)/hoppscotch` and
+`(external)/mailpit` keep their own `_states.ts` / `_keys.ts`, so `waygraph map pack <group>` can turn either into a package.
 
 Docs: https://deviate-dv8.github.io/waygraph/

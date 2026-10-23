@@ -1,6 +1,6 @@
 import { defineAssertBlock, type Trait } from "waygraph";
-import { MailpitMessageOpen } from "../../../../states/demo.states.js";
-import { ExpectedEmailContent } from "../../../../states/demo.mem-keys.js";
+import { MailpitMessageOpen } from "../_states.js";
+import { ExpectedEmailContent } from "../_keys.js";
 import { MailpitSel } from "../_sel.js";
 
 // Reads the expected copy from mem, so one Block serves any email template.

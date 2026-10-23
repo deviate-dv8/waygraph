@@ -1,6 +1,6 @@
 import { defineAssertBlock, type Trait } from "waygraph";
-import { HoppscotchRest } from "../../../../states/demo.states.js";
-import { ExpectedResponseText, ResponseBody } from "../../../../states/demo.mem-keys.js";
+import { HoppscotchRest } from "../_states.js";
+import { ExpectedResponseText, ResponseBody } from "../_keys.js";
 
 // Hoppscotch pretty-prints JSON, so compare with whitespace removed from both sides.
 const squash = (text: string): string => text.replace(/\s+/g, "");

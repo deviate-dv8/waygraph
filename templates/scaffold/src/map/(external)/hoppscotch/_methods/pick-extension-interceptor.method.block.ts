@@ -1,5 +1,5 @@
 import { defineMethodBlock } from "waygraph";
-import { HoppscotchSettings } from "../../../../states/demo.states.js";
+import { HoppscotchSettings } from "../_states.js";
 import { HoppscotchSel } from "../_sel.js";
 
 export const PickExtensionInterceptorBlock = defineMethodBlock({

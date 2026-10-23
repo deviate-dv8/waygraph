@@ -1,6 +1,6 @@
 import { defineMethodBlock } from "waygraph";
-import { MailpitMessageOpen } from "../../../../states/demo.states.js";
-import { EmailLink, ExpectedLinkPattern } from "../../../../states/demo.mem-keys.js";
+import { MailpitMessageOpen } from "../_states.js";
+import { EmailLink, ExpectedLinkPattern } from "../_keys.js";
 import { MailpitSel } from "../_sel.js";
 
 /** Reads the link matching `ExpectedLinkPattern` out of the preview into mem; going there is a separate Nav. */

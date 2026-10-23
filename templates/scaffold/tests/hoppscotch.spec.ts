@@ -5,17 +5,7 @@ import config from "../config/waygraph.config.js";
 import { hoppscotchGetFlow } from "../src/flows/(external)/hoppscotch/get.flow.js";
 import { hoppscotchAuthFlow } from "../src/flows/(external)/hoppscotch/auth.flow.js";
 import { hoppscotchPostFlow } from "../src/flows/(external)/hoppscotch/post.flow.js";
-import {
-  ExpectedResponseHeader,
-  ExpectedResponseText,
-  ExpectedStatus,
-  RequestBearerToken,
-  RequestBody,
-  RequestHeaders,
-  RequestMethod,
-  RequestParams,
-  RequestUrl,
-} from "../src/states/demo.mem-keys.js";
+import { ExpectedResponseHeader, ExpectedResponseText, ExpectedStatus, RequestBearerToken, RequestBody, RequestHeaders, RequestMethod, RequestParams, RequestUrl } from "../src/map/(external)/hoppscotch/_keys.js";
 
 // The API under test: no CORS headers, so only the extension can reach it from hoppscotch.io.
 let server: Server;

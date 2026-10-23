@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import net from "node:net";
 import { MemPage, checkpoint } from "waygraph";
 import { emailVerificationFlow } from "../src/flows/(user-stories)/email-verification.flow.js";
-import { ExpectedRecipient, ExpectedLinkPattern, ExpectedEmailContent } from "../src/states/demo.mem-keys.js";
+import { ExpectedRecipient, ExpectedLinkPattern, ExpectedEmailContent } from "../src/map/(external)/mailpit/_keys.js";
 import { HOME_URL } from "../src/map/(app_base)/home/_sel.js";
 
 // Plays "the app sent a verification email": starts a throwaway Mailpit container, sends a real SMTP message,

@@ -2,10 +2,11 @@
 // Runs inside the target project's own waygraph copy - keep it dependency-light and self-contained.
 import { pathToFileURL } from "node:url";
 import { isBlockLike, walkDir } from "../manifest/scan.js";
+import { installedMapPackages, mapPackageBlockFiles } from "../manifest/maps.js";
 
 
 export async function findBlock(projectDir: string, ref: any) {
-  const files = walkDir(projectDir, /\.block\.ts$/);
+  const files = [...walkDir(projectDir, /\.block\.ts$/), ...installedMapPackages(projectDir).flatMap(mapPackageBlockFiles)];
   const byRuntimeName = [];
   for (const file of files) {
     let mod;

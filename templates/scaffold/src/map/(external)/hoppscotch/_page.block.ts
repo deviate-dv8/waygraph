@@ -1,5 +1,5 @@
 import { definePageBlock, Trait } from "waygraph";
-import { HoppscotchRest } from "../../../states/demo.states.js";
+import { HoppscotchRest } from "./_states.js";
 import { SetMethodBlock } from "./_methods/set-method.method.block.js";
 import { SetUrlBlock } from "./_methods/set-url.method.block.js";
 import { SetHeadersBlock } from "./_methods/set-headers.method.block.js";

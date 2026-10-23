@@ -1,6 +1,6 @@
 import { relative, resolve } from "node:path";
 import { findOrphanBlocks } from "../analysis/graph.js";
-import { checkProject, validateFlows } from "../analysis/check.js";
+import { checkMapGroups, checkProject, validateFlows } from "../analysis/check.js";
 import { parseRunFlags } from "../cli/flags.js";
 import { walkDir } from "../manifest/scan.js";
 import { collectPracticeWarnings, practiceKindLabel } from "../analysis/practices-check.js";
@@ -104,6 +104,11 @@ export async function checkCase(args: string[]): Promise<void> {
       if (!flags.noPractices) {
         printPracticeReport(proj, practiceWarnings);
       }
+      const groupProblems = checkMapGroups(proj);
+      for (const p of groupProblems) {
+        console.warn(`waygraph check: ${relative(proj, p.file)} imports "${p.spec}" from outside map group ${p.group} - a group imports only waygraph and its own files, so it can be packed`);
+      }
+      if (groupProblems.length > 0) console.log(`waygraph check: ${groupProblems.length} map group import warning${groupProblems.length === 1 ? "" : "s"}`);
       const orphans = await findOrphanBlocks(proj);
       printOrphanReport(proj, orphans);
       // Warnings only - never fail exit code. Orphans are reported for

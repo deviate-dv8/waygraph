@@ -1,6 +1,6 @@
 import { defineAssertBlock, type Trait } from "waygraph";
-import { HoppscotchRest } from "../../../../states/demo.states.js";
-import { ExpectedStatus } from "../../../../states/demo.mem-keys.js";
+import { HoppscotchRest } from "../_states.js";
+import { ExpectedStatus } from "../_keys.js";
 import { HoppscotchSel } from "../_sel.js";
 
 const statusMatches: Trait = {

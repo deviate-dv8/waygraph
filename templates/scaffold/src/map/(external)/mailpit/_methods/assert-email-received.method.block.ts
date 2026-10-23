@@ -1,6 +1,6 @@
 import { defineAssertBlock, type Trait } from "waygraph";
-import { MailpitInbox } from "../../../../states/demo.states.js";
-import { ExpectedRecipient } from "../../../../states/demo.mem-keys.js";
+import { MailpitInbox } from "../_states.js";
+import { ExpectedRecipient } from "../_keys.js";
 import { MailpitSel } from "../_sel.js";
 
 // Mem-aware: which recipient to look for is only known at run time.

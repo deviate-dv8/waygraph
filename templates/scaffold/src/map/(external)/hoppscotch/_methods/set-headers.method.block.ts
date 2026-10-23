@@ -1,6 +1,6 @@
 import { defineMethodBlock } from "waygraph";
-import { HoppscotchRest } from "../../../../states/demo.states.js";
-import { RequestHeaders } from "../../../../states/demo.mem-keys.js";
+import { HoppscotchRest } from "../_states.js";
+import { RequestHeaders } from "../_keys.js";
 import { HoppscotchSel } from "../_sel.js";
 
 export const SetHeadersBlock = defineMethodBlock({

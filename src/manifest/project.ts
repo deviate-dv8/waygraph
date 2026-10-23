@@ -7,6 +7,7 @@ import { exploreRoots, injectTaggedFile } from "./roots.js";
 import { blockKind, importFresh, isBlockLike, isFlowLike, walkDir } from "./scan.js";
 import type { AnyBlock } from "./scan.js";
 import { extractDefineBlockGenerics, resolveGenericArg } from "./legacy-generics.js";
+import { installedMapPackages, mapPackageBlockFiles } from "./maps.js";
 
 export type BlockKind = "nav" | "page" | "assert" | "method" | "effect" | "api" | "block";
 
@@ -25,6 +26,8 @@ export interface ScannedBlock {
   absFile: string;
   /** Route read from `<In, Out>` source text: the Block still uses the deprecated form. */
   legacy: boolean;
+  /** The installed map package it came from (its `file` is then `<package>/<path>`). */
+  map?: string;
 }
 
 export interface ScannedFlow {
@@ -55,6 +58,8 @@ export interface ScanOptions {
   inject?: string[] | undefined;
   /** Also import `*.flow.ts` files. Default true. */
   flows?: boolean;
+  /** Also scan installed map packages (dependencies with a `waygraph.map.json`). Default true. */
+  maps?: boolean;
   /** Called when a file fails to import (default: a one-line warning for Playwright double-install errors). */
   onImportError?: (relFile: string, err: unknown) => void;
 }
@@ -80,6 +85,58 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
   const flows: ScannedFlow[] = [];
   const skipped: ProjectScan["skipped"] = [];
 
+  const scanBlockFile = async (absFile: string, rel: string, file: string, map?: string): Promise<void> => {
+    let mod: Record<string, unknown>;
+    try {
+      mod = await importFresh(absFile);
+    } catch (err) {
+      onError(rel, err);
+      return;
+    }
+    let legacyCalls: { in: string; out: string }[] | undefined;
+    let legacyIndex = 0;
+    for (const [exportName, exported] of Object.entries(mod)) {
+      if (!isBlockLike(exported)) continue;
+      if (select && !matchBlocksSelect(select, { relFile: file, blockName: exported.name })) continue;
+      const marked = exported as { __waygraphFrom?: string[]; __waygraphTo?: string[] };
+      let from = marked.__waygraphFrom ?? [];
+      let to = marked.__waygraphTo ?? [];
+      let legacy = false;
+      if (to.length === 0) {
+        legacyCalls ??= extractDefineBlockGenerics(readFileSync(absFile, "utf-8"));
+        const call = legacyCalls[legacyIndex++];
+        if (call) {
+          from = resolveGenericArg(absFile, call.in);
+          to = resolveGenericArg(absFile, call.out);
+          legacy = true;
+        }
+        if (from.length === 0 || to.length === 0) {
+          skipped.push({
+            block: exported.name,
+            file,
+            reason: call ? `couldn't resolve "${from.length === 0 ? call.in : call.out}" to a Checkpoint tag` : "no route: declare from/to with Checkpoint values",
+          });
+          from = [];
+          to = [];
+        }
+      }
+      blocks.push({
+        block: exported,
+        name: exported.name,
+        exportName,
+        kind: kindOf(exported),
+        description: typeof exported.description === "string" ? exported.description : "",
+        from: [...from],
+        to: [...to],
+        requires: (exported.requires ?? []).map((k) => (k as { name: string }).name),
+        file,
+        absFile,
+        legacy,
+        ...(map ? { map } : {}),
+      });
+    }
+  };
+
   for (const root of exploreRoots(projectDir, opts.inject)) {
     let files = walkDir(root, /\.block\.ts$/);
     if (select && select.kind !== "regex") {
@@ -87,55 +144,7 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
     }
     for (const absFile of files) {
       const rel = relative(root, absFile).replace(/\\/g, "/");
-      const file = injectTaggedFile(projectDir, root, rel);
-      let mod: Record<string, unknown>;
-      try {
-        mod = await importFresh(absFile);
-      } catch (err) {
-        onError(rel, err);
-        continue;
-      }
-      let legacyCalls: { in: string; out: string }[] | undefined;
-      let legacyIndex = 0;
-      for (const [exportName, exported] of Object.entries(mod)) {
-        if (!isBlockLike(exported)) continue;
-        if (select && !matchBlocksSelect(select, { relFile: file, blockName: exported.name })) continue;
-        const marked = exported as { __waygraphFrom?: string[]; __waygraphTo?: string[] };
-        let from = marked.__waygraphFrom ?? [];
-        let to = marked.__waygraphTo ?? [];
-        let legacy = false;
-        if (to.length === 0) {
-          legacyCalls ??= extractDefineBlockGenerics(readFileSync(absFile, "utf-8"));
-          const call = legacyCalls[legacyIndex++];
-          if (call) {
-            from = resolveGenericArg(absFile, call.in);
-            to = resolveGenericArg(absFile, call.out);
-            legacy = true;
-          }
-          if (from.length === 0 || to.length === 0) {
-            skipped.push({
-              block: exported.name,
-              file,
-              reason: call ? `couldn't resolve "${from.length === 0 ? call.in : call.out}" to a Checkpoint tag` : "no route: declare from/to with Checkpoint values",
-            });
-            from = [];
-            to = [];
-          }
-        }
-        blocks.push({
-          block: exported,
-          name: exported.name,
-          exportName,
-          kind: kindOf(exported),
-          description: typeof exported.description === "string" ? exported.description : "",
-          from: [...from],
-          to: [...to],
-          requires: (exported.requires ?? []).map((k) => (k as { name: string }).name),
-          file,
-          absFile,
-          legacy,
-        });
-      }
+      await scanBlockFile(absFile, rel, injectTaggedFile(projectDir, root, rel));
     }
     if (opts.flows === false) continue;
     for (const absFile of walkDir(root, /\.flow\.ts$/)) {
@@ -149,6 +158,15 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
       }
       for (const [exportName, exported] of Object.entries(mod)) {
         if (isFlowLike(exported)) flows.push({ flow: exported, exportName, file: injectTaggedFile(projectDir, root, rel), absFile });
+      }
+    }
+  }
+  if (opts.maps !== false) {
+    for (const pkg of installedMapPackages(projectDir)) {
+      for (const absFile of mapPackageBlockFiles(pkg)) {
+        const rel = relative(pkg.dir, absFile).replace(/\\/g, "/");
+        if (select && select.kind !== "regex" && !matchBlocksSelect(select, { relFile: `${pkg.name}/${rel}` })) continue;
+        await scanBlockFile(absFile, rel, `${pkg.name}/${rel}`, pkg.name);
       }
     }
   }

@@ -5,6 +5,8 @@ import { basename } from "node:path";
 import { importFresh, isBlockLike, walkDir } from "../manifest/scan.js";
 import { collectPracticeWarnings } from "./practices-check.js";
 import type { PracticeWarning } from "./practices-check.js";
+import { mapGroupImportProblems, mapGroups } from "../manifest/maps.js";
+import type { MapImportProblem } from "../manifest/maps.js";
 
 /** Anything runnable counts for `validate` (looser than the manifest, which also wants `.blocks()`). */
 function isFlowLike(val: unknown): boolean {
@@ -126,4 +128,10 @@ export async function checkProject(
     disabled: opts?.noPractices === true,
   });
   return { navWarnings, selWarnings, practiceWarnings };
+}
+
+
+/** Imports in each packable map group that reach outside it (see `manifest/maps.ts`). */
+export function checkMapGroups(projectDir: string): (MapImportProblem & { group: string })[] {
+  return mapGroups(projectDir).flatMap((g) => mapGroupImportProblems(g).map((p) => ({ ...p, group: g.group })));
 }

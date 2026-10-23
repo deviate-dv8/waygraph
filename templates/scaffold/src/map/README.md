@@ -24,6 +24,13 @@ real URL. `waygraph map`/`waygraph check` fail loudly if a page folder's real UR
 matching its own name - that's the point of this layout: drift becomes a build failure, not a
 silent surprise months later.
 
+## A group that owns its states: a map package
+
+A folder with its own `_states.ts` (and `_keys.ts`), like `(external)/hoppscotch/`, is a self-contained map: its files
+import only `waygraph` and each other (`waygraph check` warns otherwise). `waygraph map pack hoppscotch` compiles it into
+`.waygraph/packages/hoppscotch` - publish that, `npm i` it in another project, and its Blocks show up there in `graph`,
+`auto`, the manifest and flows (`import { SetUrlBlock } from "waygraph-map-hoppscotch"`).
+
 ## Adding a page
 
 Copy an existing page folder, keep the four fixed names, update `_nav`/`_page`/`_sel` for the

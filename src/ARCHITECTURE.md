@@ -32,7 +32,8 @@ live/ ─────────────── driving a running browser: a
                       browser, pilot, pilot-panel, auto-explore(-run), overlay-beacon, traverse/ (run, coverage, lease)
 core.ts + core/ ── barrel over core/{block,config,run-graph,flow,compose,engine,map-builder,locate,branch-regression,blocks/*}: Blocks, Flows, Engine, MapBuilder, with* wrappers, runGraph, preflight
 ui/ ────────────── real .css overlay stylesheet built on Open Props, bundled by scripts/copy-ui-css.mjs into dist/ui/overlay.css and injected once by ui/shadow.ts - see src/ui/css/README.md; change a colour in ui/css/tokens.css, never inline
-manifest/ (scan, project, roots, select, manifest, legacy-generics) ─ the one project scanner: walks and imports Blocks/Flows, reads routes, builds the JSON manifest
+manifest/ (scan, project, roots, select, manifest, maps, pack, legacy-generics) ─ the one project scanner: walks and imports Blocks/Flows
+                      (and installed map packages), reads routes, builds the JSON manifest; maps/pack = map groups as packages
 analysis/ (graph, map-check, practices-check, check, source, coverage-gap) ─ static analysis / lint over the scan;
                       check = validate + nav-escape + inline-selector, source = the regex reads `list`/`nav` print
 core/{types,trait,mem-page,mem-stub,errors,selector,narration,hooks,launch}.ts ─ core types and primitives; narration.ts is the stub/pace contract Blocks carry, hooks.ts and launch.ts are where the demo and runtime layers plug in

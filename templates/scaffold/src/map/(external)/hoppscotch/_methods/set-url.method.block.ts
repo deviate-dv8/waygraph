@@ -1,6 +1,6 @@
 import { defineMethodBlock } from "waygraph";
-import { HoppscotchRest } from "../../../../states/demo.states.js";
-import { RequestUrl } from "../../../../states/demo.mem-keys.js";
+import { HoppscotchRest } from "../_states.js";
+import { RequestUrl } from "../_keys.js";
 import { HoppscotchSel } from "../_sel.js";
 
 export const SetUrlBlock = defineMethodBlock({

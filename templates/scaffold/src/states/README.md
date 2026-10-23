@@ -13,3 +13,6 @@ against. Nothing here drives the browser; this is pure data shape.
 
 Add a new Checkpoint or Mem key here before writing the Block that needs it - Blocks import
 from this directory, this directory never imports from `src/map/`.
+
+A tool on another origin (`src/map/(external)/mailpit/`, `.../hoppscotch/`) keeps its own Checkpoints and keys in its
+folder (`_states.ts`, `_keys.ts`) instead, so the folder can be packed and reused: `waygraph map pack mailpit`.

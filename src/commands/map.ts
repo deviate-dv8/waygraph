@@ -1,7 +1,34 @@
 import { relative, resolve } from "node:path";
 import { checkMap } from "../analysis/map-check.js";
+import { packMapGroup } from "../manifest/pack.js";
+
+function option(args: string[], name: string): string | undefined {
+  const i = args.indexOf(name);
+  return i >= 0 ? args[i + 1] : undefined;
+}
+
+async function packCase(args: string[]): Promise<void> {
+  const positionals = args.filter((a, i) => !a.startsWith("--") && !(i > 0 && args[i - 1]!.startsWith("--")));
+  const group = positionals[0];
+  if (!group) {
+    console.error("usage: waygraph map pack <group> [project] [--out <dir>] [--name <package>] [--version <x.y.z>]");
+    process.exitCode = 1;
+    return;
+  }
+  const proj = resolve(positionals[1] ?? process.cwd());
+  const result = await packMapGroup(proj, group, { out: option(args, "--out"), name: option(args, "--name"), version: option(args, "--version") });
+  if (!result.ok) {
+    console.error(`waygraph map pack: ${result.reason}`);
+    for (const p of result.problems ?? []) console.error(`  ${relative(proj, p.file)} imports "${p.spec}"`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(`waygraph map pack: ${result.group} -> ${relative(proj, result.dir) || "."} (${result.name}, ${result.blocks} Blocks)`);
+  console.log(`  publish: cd ${relative(process.cwd(), result.dir) || "."} && npm publish   install elsewhere: npm i ${result.name}`);
+}
 
 export async function mapCase(args: string[]): Promise<void> {
+      if (args[1] === "pack") return packCase(args.slice(2));
       const proj = resolve(args[1] ?? process.cwd());
       const result = await checkMap(proj);
       if (!result.hasMapDir) {

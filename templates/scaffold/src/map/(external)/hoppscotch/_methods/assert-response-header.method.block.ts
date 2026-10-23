@@ -1,6 +1,6 @@
 import { defineAssertBlock, type Trait } from "waygraph";
-import { HoppscotchRest } from "../../../../states/demo.states.js";
-import { ExpectedResponseHeader, ResponseHeaders } from "../../../../states/demo.mem-keys.js";
+import { HoppscotchRest } from "../_states.js";
+import { ExpectedResponseHeader, ResponseHeaders } from "../_keys.js";
 
 const headerMatches: Trait = {
   name: "response-header-matches",

@@ -1,7 +1,7 @@
 // waygraph-ignore: empty-verify (confirmed by AssertEmailContentBlock right after it in mail-verify.flow.ts)
 import { defineMethodBlock } from "waygraph";
-import { MailpitInbox, MailpitMessageOpen } from "../../../../states/demo.states.js";
-import { ExpectedRecipient } from "../../../../states/demo.mem-keys.js";
+import { MailpitInbox, MailpitMessageOpen } from "../_states.js";
+import { ExpectedRecipient } from "../_keys.js";
 import { MailpitSel } from "../_sel.js";
 
 /** Opens the newest message for the expected recipient (matched by email, not position). */

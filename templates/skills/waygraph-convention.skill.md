@@ -167,6 +167,7 @@ npx waygraph map .            # exit 1 if src/map/ folder path != real static ur
 npx waygraph validate .       # every .flow.ts loads
 npx waygraph graph .          # nodes/edges/skipped/orphans - counts should make sense
 npx waygraph manifest .       # JSON of every Block (kind, from/to, requires), Flow and Checkpoint
+npx waygraph map pack <group> # a src/map/ group with its own _states.ts/_keys.ts -> installable package
 npm run typecheck             # when the consumer has it
 ```
 

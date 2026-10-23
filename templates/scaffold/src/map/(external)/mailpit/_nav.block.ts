@@ -1,5 +1,5 @@
 import { defineNavBlock, Trait } from "waygraph";
-import { MailpitInbox } from "../../../states/demo.states.js";
+import { MailpitInbox } from "./_states.js";
 
 // Cross-origin, so it lives under (external)/ and the URL is a function.
 const mailpitUrl = (): string => process.env.WAYGRAPH_MAIL_URL ?? "http://127.0.0.1:8025";
