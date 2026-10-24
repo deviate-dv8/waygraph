@@ -50,13 +50,13 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      # Headless only - never spawn a visible browser in CI. Excludes the small set of specs that
-      # deliberately open a real --non-headless window (see src/ARCHITECTURE.md / CLI-STOMP-GUARD.md)
-      # and are meant for a human to watch locally, not a headless runner.
+      # Headless runs, minus the specs tagged non-headless (meant for a human to watch locally). A few
+      # specs check that `browser start` / `pilot start` open a visible browser by default; xvfb gives
+      # them a virtual screen (installed by playwright install --with-deps).
       - name: Playwright specs (headless)
         env:
           WAYGRAPH_HEADED: "0"
-        run: npx playwright test --grep-invert "non-headless"
+        run: xvfb-run -a npx playwright test --grep-invert "non-headless"
 
       - name: Upload Playwright report on failure
         if: failure()

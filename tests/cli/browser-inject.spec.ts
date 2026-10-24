@@ -17,20 +17,21 @@ const CLI = join(import.meta.dirname, "..", "..", "bin", "waygraph");
 const hostRoot = join(import.meta.dirname, "../fixtures/blind-pilot-site");
 const SAUCE_URL = "https://www.saucedemo.com/";
 
-async function runCli(args: string[]): Promise<{ stdout: string; code: number }> {
+/** Runs the CLI; on failure `stderr` carries why, so a failed assertion on `code` can show it. */
+async function runCli(args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
   try {
-    const { stdout } = (await exec(node, [CLI, ...args], { cwd: hostRoot })) as { stdout: string };
-    return { stdout, code: 0 };
+    const { stdout, stderr } = (await exec(node, [CLI, ...args], { cwd: hostRoot })) as { stdout: string; stderr: string };
+    return { stdout, stderr, code: 0 };
   } catch (err) {
-    const e = err as { stdout?: string; code?: number };
-    if (e.stdout !== undefined) return { stdout: e.stdout, code: e.code ?? 1 };
+    const e = err as { stdout?: string; stderr?: string; code?: number };
+    if (e.stdout !== undefined) return { stdout: e.stdout, stderr: e.stderr ?? "", code: e.code ?? 1 };
     throw err;
   }
 }
 
 test("waygraph browser start --inject saucedemo loads injected Blocks into the session", async () => {
   test.setTimeout(45_000);
-  const { stdout, code } = await runCli([
+  const { stdout, stderr, code } = await runCli([
     "browser",
     "start",
     "--inject",
@@ -38,7 +39,7 @@ test("waygraph browser start --inject saucedemo loads injected Blocks into the s
     "--goto",
     SAUCE_URL,
   ]);
-  expect(code).toBe(0);
+  expect(code, stderr).toBe(0);
   const started = JSON.parse(stdout.trim()) as { sessionId: string; headless: boolean; inject: string[] };
   trackSession(hostRoot, started.sessionId);
   expect(started.sessionId).toMatch(/^[0-9a-f]{8}$/);
@@ -62,7 +63,8 @@ test("waygraph browser start --inject saucedemo loads injected Blocks into the s
 
 test("waygraph pilot sessions lists a live browser session after browser start", async () => {
   test.setTimeout(45_000);
-  const { stdout } = await runCli(["browser", "start", "--inject", "saucedemo", "--goto", SAUCE_URL]);
+  const { stdout, stderr, code: startCode } = await runCli(["browser", "start", "--inject", "saucedemo", "--goto", SAUCE_URL]);
+  expect(startCode, stderr).toBe(0);
   const started = JSON.parse(stdout.trim()) as { sessionId: string };
   trackSession(hostRoot, started.sessionId);
 
@@ -70,14 +72,14 @@ test("waygraph pilot sessions lists a live browser session after browser start",
   const sessions = JSON.parse(sessionsOut.trim()) as Array<{ sessionId: string }>;
   expect(sessions.some((s) => s.sessionId === started.sessionId)).toBe(true);
 
-  const { stdout: attachOut, code } = await runCli([
+  const { stdout: attachOut, stderr: attachErr, code } = await runCli([
     "pilot",
     "attach",
     started.sessionId,
     "--inject",
     "saucedemo",
   ]);
-  expect(code).toBe(0);
+  expect(code, attachErr).toBe(0);
   const attached = JSON.parse(attachOut.trim()) as { sessionId: string; graph: { nodes: Array<{ checkpoint: string }> } };
   expect(attached.sessionId).toBe(started.sessionId);
   const checkpoints = attached.graph.nodes.map((n) => n.checkpoint);

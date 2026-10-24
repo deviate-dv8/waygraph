@@ -23,13 +23,14 @@ const node = process.execPath;
 const CLI = join(import.meta.dirname, "..", "..", "bin", "waygraph");
 const sauceRoot = join(import.meta.dirname, "../../examples/saucedemo");
 
-async function runCli(args: string[]): Promise<{ stdout: string; code: number }> {
+/** Runs the CLI; on failure `stderr` carries why, so a failed assertion on `code` can show it. */
+async function runCli(args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
   try {
-    const { stdout } = (await exec(node, [CLI, ...args], { cwd: sauceRoot })) as { stdout: string };
-    return { stdout, code: 0 };
+    const { stdout, stderr } = (await exec(node, [CLI, ...args], { cwd: sauceRoot })) as { stdout: string; stderr: string };
+    return { stdout, stderr, code: 0 };
   } catch (err) {
-    const e = err as { stdout?: string; code?: number };
-    if (e.stdout !== undefined) return { stdout: e.stdout, code: e.code ?? 1 };
+    const e = err as { stdout?: string; stderr?: string; code?: number };
+    if (e.stdout !== undefined) return { stdout: e.stdout, stderr: e.stderr ?? "", code: e.code ?? 1 };
     throw err;
   }
 }
@@ -41,8 +42,8 @@ async function runCli(args: string[]): Promise<{ stdout: string; code: number }>
 
 test("waygraph pilot start returns a real session id, socket path, and the whole project graph", async () => {
   test.setTimeout(30_000);
-  const { stdout, code } = await runCli(["pilot", "start"]);
-  expect(code).toBe(0);
+  const { stdout, stderr, code } = await runCli(["pilot", "start"]);
+  expect(code, stderr).toBe(0);
   const result = JSON.parse(stdout.trim());
   trackSession(sauceRoot, result.sessionId);
   expect(result.sessionId).toMatch(/^[0-9a-f]{8}$/);
@@ -57,8 +58,8 @@ test("waygraph pilot start returns a real session id, socket path, and the whole
 
 test("waygraph pilot start's session is really still running afterward - auto status against it succeeds", async () => {
   test.setTimeout(30_000);
-  const { stdout, code } = await runCli(["pilot", "start"]);
-  expect(code).toBe(0);
+  const { stdout, stderr, code } = await runCli(["pilot", "start"]);
+  expect(code, stderr).toBe(0);
   const result = JSON.parse(stdout.trim());
   trackSession(sauceRoot, result.sessionId);
 
