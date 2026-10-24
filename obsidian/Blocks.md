@@ -34,7 +34,7 @@ You never build a Block by hand; a factory makes it and marks its kind, so [[Flo
 | Assert | `defineAssertBlock` | checks a state without changing it |
 | API | `defineApiBlock` | a real HTTP request inside the same flow |
 
-A Block can carry **narration** for the demo (`.stubBefore((ctx) => ctx.ring(...))`), but the convention is to add it
-where a flow uses the Block, not in the Block file. See [[Demo UI]].
+A Block carries no narration. A flow adds it where it uses the Block, by chaining a stub:
+`AddItemBlock.stubAfter((ctx) => ctx.ring(...))`. That is the only form; a Block's definition takes no stub. See [[Demo UI]].
 
 Code: `src/engine/block/` (`kinds/` has one file per kind).

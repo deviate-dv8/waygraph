@@ -306,7 +306,7 @@ async function runTryAuto(opts: { cli: boolean } = { cli: false }): Promise<void
 }
 
 export async function tryCase(args: string[]): Promise<void> {
-      const flags = parseRunFlags(args.slice(1));
+      const flags = parseRunFlags(args.slice(1), "try");
       applyRunFlags(flags);
       const modeRaw = (flags.positionals[0] ?? "demo").toLowerCase();
       // auto:cli / --cli = CLI; bare try auto = headed panel

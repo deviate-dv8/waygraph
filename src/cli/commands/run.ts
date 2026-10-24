@@ -6,7 +6,7 @@ import { existsSync } from "node:fs";
 import { envFlag, envString, setEnv } from "../../engine/env.js";
 
 export async function runCase(args: string[]): Promise<void> {
-      const flags = parseRunFlags(args.slice(1));
+      const flags = parseRunFlags(args.slice(1), "run");
       applyRunFlags(flags);
       const spec = resolveSpec(flags);
       if (!spec) {
@@ -35,7 +35,7 @@ export async function runCase(args: string[]): Promise<void> {
 }
 
 export async function demoCase(args: string[]): Promise<void> {
-      const flags = parseRunFlags(args.slice(1));
+      const flags = parseRunFlags(args.slice(1), "demo");
       applyRunFlags(flags, { allowAutoPlayVideo: true, allowDemoUi: true });
       const spec = resolveSpec(flags);
       if (!spec) {

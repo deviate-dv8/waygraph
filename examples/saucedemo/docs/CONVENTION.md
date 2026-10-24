@@ -48,7 +48,6 @@ src/blocks/
   saucedemo-web/                 # THIS FOLDER IS URL "/"
     NAV.md
     nav-login.block.ts             # Page hub
-    ff-owner-auth.block.ts         # FFCompose wrapping the 4 Blocks below
     methods/
       fill-username.method.block.ts   # self-loop, fills only
       fill-password.method.block.ts   # self-loop, fills only

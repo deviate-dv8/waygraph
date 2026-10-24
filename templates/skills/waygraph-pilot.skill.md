@@ -50,6 +50,11 @@ waygraph auto highlight <sessionId> '<json>'  # paint rings/todos on the live pa
 just what's reachable from here - use it to plan several steps ahead before you start
 sending picks.
 
+A Block's `requires` are filled from `--data '{...}'` first, then from the project's mem stubs: the session loads
+every `*.mem-stubs.ts` and uses each `registerMemStub` fake as that key's default. A start URL that can't be opened
+(server down, DNS) fails `browser start` / `pilot start` with the reason; it never starts a blank session silently.
+An unknown flag is an error, not a project path.
+
 ## Bad practices (`waygraph check` / `waygraph typecheck`)
 
 Run `waygraph typecheck .` (or `npm run typecheck`) — runs `tsc --noEmit` then bad-practice warnings.

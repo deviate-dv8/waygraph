@@ -223,7 +223,7 @@ Examples:
   waygraph traverse --parallel 2 --session clone         # Phase D clone workers
   waygraph run  --blocks "loginFlow then add-all-to-cart" --data '{...}' --video
 
-Project path optional (defaults to cwd). Flags beat WAYGRAPH_* env.
+Project path optional (defaults to cwd). Flags beat WAYGRAPH_* env. \`waygraph <command> --help\`: that command's flags.
 \`run\`/\`demo\`/\`auto\`: Flow export, .flow.ts path, or "a then b" chain (auto also explores).
 Hide stepper = compact "N / M · block" pill. Collapses while a step runs (clicks hit the page). Video mode stays compact.
 `);

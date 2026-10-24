@@ -3,8 +3,9 @@
 ## CLI reference
 
 Flags are read with Node's `parseArgs` from one table (`RUN_OPTIONS` in `src/cli/flags.ts`), which also prints the
-`demo` / `run` / `browser start` help: an unknown flag or a flag missing its value stops with the reason instead of
-being taken as a project path.
+`demo` / `run` / `browser start` help (`waygraph demo --help` prints just that command's flags; `waygraph traverse --help`,
+`agent-dive --help` likewise): an unknown flag or a flag missing its value stops with the reason, naming the command,
+instead of being taken as a project path.
 
 `waygraph auto [project]` is the **interactive explore** loop: `locate()` reads where you
 are, lists runnable Blocks from the graph, you pick one (headful panel or `--cli` terminal

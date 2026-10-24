@@ -68,7 +68,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
         }
         if (sub === "start" || sub.startsWith("-")) {
           const flagArgs = sub === "start" ? args.slice(2) : args.slice(1);
-          const flags = parseRunFlags(flagArgs);
+          const flags = parseRunFlags(flagArgs, "browser");
           applyRunFlags(flags);
           const proj = resolve(flags.positionals[0] ?? process.cwd());
           if (!existsSync(proj)) {
@@ -143,7 +143,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
             console.error("waygraph pilot attach: usage: waygraph pilot attach <sessionId> [--inject …] [project]");
             process.exit(1);
           }
-          const flags = parseRunFlags(args.slice(3));
+          const flags = parseRunFlags(args.slice(3), "pilot");
           const proj = resolve(flags.positionals[0] ?? process.cwd());
           try {
             const inject = flags.inject?.length ? resolveInjectRoots(flags.inject, proj) : undefined;
@@ -157,7 +157,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
         }
         if (args[1] === "start" || !args[1] || args[1].startsWith("-")) {
           const flagArgs = args[1] === "start" ? args.slice(2) : args.slice(1);
-          const flags = parseRunFlags(flagArgs);
+          const flags = parseRunFlags(flagArgs, "pilot");
           applyRunFlags(flags);
           const proj = resolve(flags.positionals[0] ?? process.cwd());
           const baseURL = flags.baseUrl ?? envString("WAYGRAPH_BASE_URL") ?? (await resolveBaseUrl(proj));
@@ -472,7 +472,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
         return;
       }
 
-      const flags = parseRunFlags(args.slice(1));
+      const flags = parseRunFlags(args.slice(1), command ?? "auto");
       applyRunFlags(flags);
       const mermaid = flags.mermaid === true;
       const mapOnly = command === "graph" || flags.map === true;
@@ -566,7 +566,7 @@ export async function sessionCase(args: string[], command: string | undefined): 
 
 export async function autoServeCase(args: string[]): Promise<void> {
       const proj = resolve(args[1] ?? process.cwd());
-      const flags = parseRunFlags(args.slice(2));
+      const flags = parseRunFlags(args.slice(2), "__auto-serve");
       const sessionId = flags.sessionId;
       if (!sessionId) {
         console.error("waygraph __auto-serve: missing --session-id");

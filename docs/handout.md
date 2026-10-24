@@ -131,7 +131,7 @@ narrate the same Block differently. Full page: [Demo narration](./highlights).
 | Command | What you get |
 |---|---|
 | `npx waygraph try demo` | Temp Sauce Demo stepper + headless test |
-| `npx waygraph try auto` | Temp Sauce Demo headed explore (creds pre-seeded) |
+| `npx waygraph try auto` | Temp Sauce Demo headed explore (credentials from its `*.mem-stubs.ts`) |
 | `npx waygraph try auto:cli` | Same explorer, terminal menu |
 | `cd examples/saucedemo && npm run auto` | In-repo headed explore |
 | `npx waygraph init my-app` | Offline scaffold, built into waygraph CLI |

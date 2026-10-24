@@ -20,10 +20,8 @@ it "works" - split it (`fill-username` + `fill-password` + `submit-login`, not o
 `defineAssertBlock({ name, checkpoint, verify, waitForHeading?, requires? })` is the
 self-loop-only shape for "assert something on the current page, no state change" - no
 hand-written `act`/`resolve` to accidentally make do two things. `waygraph check` warns when
-a `verify` array inlines a literal selector string instead of a `*Sel` reference. Give it an
-explicit type argument (`defineAssertBlock({...})`) whenever it is not the last
-Block before `end` - otherwise `Out` defaults to wildcard `Checkpoint<string>`, which breaks
-`defineFlow`'s tuple typing mid-chain.
+a `verify` array inlines a literal selector string instead of a `*Sel` reference. Its `checkpoint` is a Checkpoint
+value, which types it on both sides, so it sits anywhere in a `map()` chain.
 
 ---
 

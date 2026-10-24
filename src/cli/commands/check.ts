@@ -70,14 +70,14 @@ export async function validateCase(args: string[]): Promise<void> {
 }
 
 export async function typecheckCase(args: string[]): Promise<void> {
-      const flags = parseRunFlags(args.slice(1));
+      const flags = parseRunFlags(args.slice(1), args[0] ?? "check");
       const proj = resolve(flags.positionals[0] ?? process.cwd());
       await runTypecheckCommand(proj, flags.noPractices === true);
       return;
 }
 
 export async function checkCase(args: string[]): Promise<void> {
-      const flags = parseRunFlags(args.slice(1));
+      const flags = parseRunFlags(args.slice(1), args[0] ?? "check");
       const proj = resolve(flags.positionals[0] ?? process.cwd());
       const { navWarnings, selWarnings, practiceWarnings } = await checkProject(
         proj,

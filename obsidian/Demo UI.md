@@ -29,6 +29,8 @@ AddItemBlock.stubAfter((ctx) => {
 
 `stubBefore` plays before the step runs, `stubAfter` after it lands, `stubOnError` when it fails. A stub can ring
 elements, set the title and caption, show todos, switch to a phone-sized device, zoom, and open the network tab.
+A stub is always that chained function; a stub that throws fails its step, with the Block's name, instead of the
+narration quietly going missing. Every `ctx` method is in `src/engine/stub/stub.ts`.
 
 ## Pace
 

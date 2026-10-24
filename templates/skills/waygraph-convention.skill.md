@@ -45,6 +45,8 @@ against a live site, use `--skill-pilot-blind`.
    hand-supplied every time, `registerMemStub(key, fake)` + `memStub: true` on the flow (or
    `--mem-stub`) fills it from a registry instead - a key with no registration still fails
    preflight exactly as before, so this narrows what needs real input, never removes the guard.
+   Put those `registerMemStub` calls in a `*.mem-stubs.ts` file (`src/states/demo.mem-stubs.ts`): live sessions (`auto`,
+   `pilot`, `traverse`) load every one and use them as the default for a Block's `requires`.
 6. **Checkpoints are values.** Declare each once in `src/states/`: `export const Home = checkpoint("Home");
    export type Home = typeof Home;` (a union: `export const CanAddItem = [Home, CartEmpty] as const`). Blocks take
    the values, never tag strings or `<In, Out>` type arguments: `defineNavBlock({ checkpoint: Home, … })`,
@@ -78,7 +80,9 @@ against a live site, use `--skill-pilot-blind`.
   Block chain, not a flat folder of unrelated flows.
 - **Blocks carry no stubs; the flow does.** Demo highlights are ctx stubs chained on the Block where the flow uses it:
   `AddItemBlock.stubAfter((ctx) => { ctx.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart" }); })`.
-  Not an inline `instruction: { stubAfter() {} }`. A Block used twice gets one `const AddShown = AddItemBlock.stubAfter(...)`.
+  That chained function is the only form: a Block's definition (its options or `instruction`) takes no stub, and a stub
+  is never a slot map. A Block used twice gets one `const AddShown = AddItemBlock.stubAfter(...)`. A stub that throws
+  fails its step in the demo, named.
 - **Reading a value into `mem` happens in `act`** (`mem.set(Key, value)`), like Mailpit's `extract-email-link`.
   `observe` is only for a Block that branches (it feeds `resolve`); an empty `act(){}` plus an `observe` that
   writes `mem` is a misuse.

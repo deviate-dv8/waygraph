@@ -79,13 +79,18 @@ the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by 
 |---|---|
 | A new way to play steps (another mode) | a file in `runner/modes/` returning a `Mode`, picked in `runner/runner.ts` |
 | Something the demo shows before / after a step | `demo/stepper/before.ts` / `after.ts`, called from `stepper.ts` |
-| A CLI subcommand | `cli/commands/<name>.ts` exporting `<name>Case(args)`, one `case` in `cli/cli.ts`, its lines in `cli/usage.ts` |
+| A CLI subcommand | `cli/commands/<name>.ts` exporting `<name>Case(args)` with its flags in an option table read by `parseCommand` (`cli/args.ts`), one `case` in `cli/cli.ts`, its lines in `cli/usage.ts` |
 | A CLI flag for run / demo | a row in `RUN_OPTIONS` (`cli/flags.ts`: parsed and printed in the help from there), the variable it sets in `engine/env.ts`'s registry, and `runner/options.ts` reads it |
 | A flow setting (`map({ … })`) | `MapBuilderOptions` in `engine/flow/map-builder.ts`, `FlowSettings` / `withSettings` in `engine/flow/flow.ts`, the field on `Flow` |
 | A `define*Block` helper | `engine/block/kinds/<kind>.ts`; its step method in `map-builder.ts` if it can appear in a flow |
 | A `Trait` | `engine/trait/trait.ts` (+ the `Trait` object + an `index.ts` export) |
 | A session command (`send`, `highlight`, ...) | `cli/commands/session.ts` + `live/auto-session/auto-session.ts` + an IPC op in `live/auto-session/ipc.ts` |
+| Something a ctx stub can do (`ctx.<method>`) | its type in `engine/stub/stub.ts` (and `ring.ts` / `todos.ts` / `viewport.ts` / `pace.ts` for its data), its body in `demo/narration/stub-ctx.ts`; a `--codemod flows` rule in `cli/commands/codemod-stubs.ts` if it replaces an old form |
 | Highlight / todo / device / pace behaviour | `demo/narration/<topic>.ts` |
+| A `WAYGRAPH_*` variable | a row in `engine/env.ts` (its meaning; `docs/env.md` is generated from it), read with `envString` / `envFlag` / `envNumber` |
+| Overlay markup (a panel, a badge) | in-page code that builds it with `__wgEl` / `__wgSet` / `__wgSvg` (`demo/overlay/ui/shadow.ts`); never an HTML string |
+| Showing what a fill / click touches on a new surface | a `LocatorTheater` registered with `setLocatorTheater(page, theater)` (`demo/overlay/locator-theater.ts`); the demo's is `demo/stepper/interaction-patch.ts`, auto's is `demo/overlay/auto-chrome.ts` |
+| A page call whose failure is expected | `.catch(ignorePageGone)` (the page went away) or `.catch(ignoreTimeout)` (a probe) from `engine/page-gone.ts` |
 | Overlay colours, ring, cursor, banner, dock CSS | real `.css` in `demo/overlay/ui/css/` (see its README), bundled into `dist/demo/overlay/ui/overlay.css` |
 | Keeping an overlay through navigation (redirects, reloads) | `demo/overlay/reattach.ts`: register the surface's repaint with `keepOverlayOnNavigation(page, repaint)`; demo, auto and pilot all do |
 | A ring on any surface | `demo/overlay/inpage/core.ts`'s `__wgPaintRingAt` - the one ring painter for demo, auto and pilot |

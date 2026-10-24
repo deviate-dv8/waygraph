@@ -87,4 +87,6 @@ where the tooling is headed.
 
 - **[Engine handout](/handout)** — The core model in one page.
 - **[Reference](./reference/)** — Every feature in detail, one topic per page.
+- **[Environment variables](/env)** — Every `WAYGRAPH_*` variable waygraph reads.
+- **[Removed in 0.16.0](/deprecated)** — Each old form and what replaces it.
 - **[Preview these docs](/deploy)** — Run this site locally or deploy it.

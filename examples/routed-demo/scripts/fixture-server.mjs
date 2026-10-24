@@ -1,5 +1,5 @@
 // Stands in for this example's real app: serves src/pages/<name>.html at clean URLs (/dashboard, /docs).
-// Started and stopped by playwright.config.ts's webServer - waygraph run/demo/auto/test all honor it.
+// Started and stopped by config/waygraph.config.ts's webServer - waygraph run/demo/auto/test all honor it.
 import { createServer } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";

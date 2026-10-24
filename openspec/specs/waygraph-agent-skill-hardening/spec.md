@@ -9,20 +9,17 @@ authoring new Blocks is structurally steered away from repeating them.
 ## Requirements
 
 ### Requirement: `defineAssertBlock` provides self-loop-only assertion sugar
-`defineAssertBlock(options)` SHALL accept a `name`, a `checkpoint` tag, an optional
-`waitForHeading` string, a `verify` array/function, and optional `stubBefore`/`stubAfter`/
-`stubOnError`/`slides` narration fields (the same fields every other Block helper accepts),
-and SHALL produce a `MethodBlock<Checkpoint<string>, Checkpoint<string>>` whose generated
-`act()` waits for that heading when given (otherwise a no-op) and whose `resolve()` always
-returns the given `checkpoint` tag - the caller SHALL NOT be required to hand-write
-`act`/`resolve` for this shape, and SHALL NOT lose demo/highlight narration data when
-converting an existing hand-written assertion Method to this helper.
+`defineAssertBlock(options)` SHALL accept a `name`, a `checkpoint` (a Checkpoint value), an optional
+`waitForHeading` string, a `verify` array/function and optional `slides`, and SHALL produce an assert Block whose
+generated `act()` waits for that heading when given (otherwise a no-op) and whose `resolve()` always returns the given
+`checkpoint` - the caller SHALL NOT be required to hand-write `act`/`resolve` for this shape. Its demo narration is
+chained where a flow uses it (`AssertBlock.stubAfter((ctx) => ...)`), like every other Block's.
 
 #### Scenario: A minimal assert Block requires no act/resolve
-- **WHEN** `defineAssertBlock({ name, checkpoint: "SomeScreen", verify: [...] })` is called
+- **WHEN** `defineAssertBlock({ name, checkpoint: SomeScreen, verify: [...] })` is called
   with no `waitForHeading`
 - **THEN** the resulting Block's `act()` SHALL be a no-op
-- **THEN** running it SHALL resolve to `checkpoint("SomeScreen")`
+- **THEN** running it SHALL resolve to `SomeScreen`
 
 #### Scenario: waitForHeading waits before verify runs
 - **WHEN** `defineAssertBlock` is given a `waitForHeading` string
@@ -87,7 +84,7 @@ typecheck/build, before the agent reports its work as done.
 ### Requirement: The planner skill documents a blind-mode discovery workflow
 `templates/agents/waygraph-planner.agent.md` SHALL document a workflow for planning Block
 coverage when there is no frontend source available to read, using the already-shipped
-`waygraph auto --cli --detach`/`send`/`status`/`dom`/`trace` tools to discover the
+`waygraph browser start`/`auto send`/`status`/`dom`/`trace` tools to discover the
 application's real structure instead.
 
 #### Scenario: A blind-mode path exists

@@ -1,5 +1,7 @@
 # RFC: Traverse + FFComposeBlock (graph regression, parallel, session fork)
 
+> **Archived.** Written before 0.16.0; the API names in it (`defineFlow`, `chainFlow`, `ctx.banner`, `ctx.todoPos`, list-only `ctx.todos([...])`, `withHighlightFixtures`, ...) were removed. Current API: the [reference](https://deviate-dv8.github.io/waygraph/reference/) and [what was removed](https://deviate-dv8.github.io/waygraph/deprecated).
+
 **Status:** Phases A-E all shipped (A 0.12.13, B 0.12.8+, C 0.12.10+, D 0.12.14, E 0.12.20 -
 coverage JSON + `--min-edge-coverage` suite gate). Current status: `docs/proposals/OBJECTIVES.md`.
 The open checklist below is follow-up polish, not a blocking phase.

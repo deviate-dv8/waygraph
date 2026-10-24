@@ -16,8 +16,8 @@ The package is one published unit today, organized internally along these lines:
 | `waygraph-core` | `src/engine/checkpoint/`, `block/`, `mem/`, `trait/`, `run/connect.ts` | Checkpoint, Block, MemPage, Trait, `connect()`. Stable. |
 | `waygraph-engine` | `src/engine/` (start at `engine.ts`) | `Engine`, `map()`, `runGraph`, `composeBlock`, browser launching (pluggable via `EngineConfig.browsers`). |
 | `waygraph-cli` | `src/cli/` (`cli.ts`, `commands/`) | `list` / `nav` / `validate` / `run` / `check` / `graph` / `init` / `agent-dive` / `traverse`. |
-| `waygraph-demo` | `src/runner/` (`runner.ts`, `modes/demo.ts`), `src/demo/` (`stepper/`, `overlay/`, `narration/`), `src/live/overlay-beacon.ts` | The step-through browser overlay: panel, ring, cursor, todo dock, `narrate()`, episode headings, stub/fixture/slide narration. |
-| `waygraph-auto` | `src/analysis/graph.ts`, `src/live/auto-explore.ts`, `src/live/auto-explore-run.ts`, `src/engine/locate.ts` | State-machine discovery (`discoverGraph` / `toMermaid`) + page recognition (`locate`) + the interactive `waygraph auto` explore loop. |
+| `waygraph-demo` | `src/runner/` (`runner.ts`, `modes/demo.ts`), `src/demo/` (`stepper/`, `overlay/`, `narration/`), `src/engine/stub/` (the ctx stub API), `src/demo/overlay/beacon.ts` | The step-through browser overlay: panel, ring, cursor, todo dock, `narrate()`, episode headings, stub/fixture/slide narration. |
+| `waygraph-auto` | `src/analysis/graph.ts`, `src/live/auto/` (`auto.ts`, `explore.ts`), `src/live/auto-session/`, `src/engine/locate.ts` | State-machine discovery (`discoverGraph` / `toMermaid`) + page recognition (`locate`) + the interactive `waygraph auto` explore loop. |
 | `waygraph-traverse` | `src/live/traverse/traverse.ts`, `src/live/traverse/coverage.ts`, `src/live/traverse/lease.ts` | `waygraph traverse` graph crawl: serial/parallel workers, edge leases, coverage report + CI gate. |
 
 Whether these become physically separate npm packages, or stay one package with clearer
@@ -166,7 +166,7 @@ Two distinct modes, both real, direct user requests from the same session:
 
 ### Pilot overlay (shipped, still evolving)
 
-`src/demo/overlay/pilot-shell.ts` + `src/live/pilot-panel.ts` - badge + expandable panel + activity toast + vision ring, all sharing
+`src/demo/overlay/pilot/shell.ts` + `src/live/pilot/panel.ts` - badge + expandable panel + activity toast + vision ring, all sharing
 `cli.ts`'s own demo-panel color language (`#7C3AED` purple, `rgba(20,10,40,.94)` dark panel,
 `#c9a6ff` accent - not a separate palette). Panel now has two tabs: "Here" (current live menu,
 original behavior) and "All nodes" (the whole project graph as a tree, one entry per Checkpoint
@@ -191,7 +191,7 @@ waygraph to make it work" - no native `.env` support existed before this.
   matching memStub's own "bring nothing, read what's already there" philosophy). A real
   shell-exported env var always wins over a `.env` file.
 - **Consolidated `resolveBaseUrl`** - was three independently drifted copies
-  (`src/cli/flags.ts`, `src/live/traverse/run.ts`, `src/live/auto-explore-run.ts`), each
+  (`src/cli/flags.ts`, `src/live/traverse/traverse.ts`, `src/live/auto/auto.ts`), each
   checking a different subset of sources in a different order; real duplication, found while
   investigating "some parts are not easy to understand" feedback from other devs, not just a
   style nit. Now one implementation in `src/config.ts`, re-exported from the other two files

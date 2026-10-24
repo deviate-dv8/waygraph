@@ -9,21 +9,18 @@ real Blocks by convention rather than by replaying a click-for-click transcript.
 
 ## Requirements
 
-### Requirement: A detached session can launch with a visible browser
-`waygraph auto --cli --detach --non-headless` SHALL launch the session with `headless: false`
-instead of the default `headless: true`, reusing the existing `--non-headless` flag semantics
-`run`/`demo` already establish for "show the browser." The session SHALL remain fully
-drivable through `send`/`status`/`attach`/`dom` exactly as when headless.
+### Requirement: A detached session launches a visible browser unless asked not to
+`waygraph browser start` (and `pilot start`) SHALL launch the session with a visible browser, and with `--headless`
+SHALL launch it headless. The session SHALL be equally drivable through `send`/`status`/`attach`/`dom` either way.
 
-#### Scenario: --non-headless reaches the real browser launch
-- **WHEN** a session is detached with `--non-headless`
-- **THEN** the browser it launches SHALL be non-headless
-- **THEN** every existing session op (`send`, `status`, `attach`, `dom`) SHALL work against it
-  identically to a headless session
+#### Scenario: A visible session is the default
+- **WHEN** a session is started with `browser start`
+- **THEN** the browser it launches SHALL be visible
+- **THEN** every session op (`send`, `status`, `attach`, `dom`) SHALL work against it identically to a headless one
 
-#### Scenario: Default detach behavior is unchanged
-- **WHEN** a session is detached without `--non-headless`
-- **THEN** it SHALL launch headless, exactly as before this change
+#### Scenario: --headless runs it headless
+- **WHEN** a session is started with `browser start --headless`
+- **THEN** it SHALL launch headless
 
 ### Requirement: This is additive to the session RPC surface, not a new picker
 This capability SHALL NOT introduce a new picker UI and SHALL NOT change the existing

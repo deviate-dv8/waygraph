@@ -8,20 +8,25 @@ between picks and recover from an unexpected prompt instead of failing blind.
 
 ## Requirements
 
-### Requirement: `--detach` starts a session as a background process and returns immediately
-`waygraph auto --cli --detach` SHALL start the same explore session `runAutoExplore` already
-runs in the foreground (graph/library build, mem seeding, browser/context/page launch) as a
-detached background process, SHALL NOT block the invoking process waiting for any pick, and
-SHALL print the new session's identity (at minimum a session id and a socket path) as JSON to
-stdout before exiting.
+### Requirement: `browser start` starts a session as a background process and returns once it is ready
+`waygraph browser start` SHALL start the same explore session `waygraph auto` runs in the foreground (graph/library
+build, mem seeding from `--data` and the project's `*.mem-stubs.ts`, browser/context/page launch) as a detached
+background process, SHALL NOT block the invoking process waiting for any pick, and SHALL print the new session's
+identity (at minimum a session id and a socket path) as JSON to stdout once the session reports it is serving (one IPC
+message). A session that exits first SHALL fail the start with its log path; one that never becomes ready within the
+timeout SHALL be stopped and fail the start.
 
-#### Scenario: Detaching returns before any pick is made
-- **WHEN** `waygraph auto --cli --detach` is invoked against a project
+#### Scenario: Starting returns before any pick is made
+- **WHEN** `waygraph browser start` is invoked against a project
 - **THEN** the invoking process SHALL print a JSON object containing a session id and exit
   with status 0 without waiting for a menu pick
 
+#### Scenario: A start that cannot get ready leaves nothing running
+- **WHEN** the session's start URL cannot be opened, or it never reports ready in time
+- **THEN** `browser start` SHALL exit non-zero with the reason, and no session process SHALL remain
+
 #### Scenario: The detached process keeps the browser session alive
-- **WHEN** a session has been started with `--detach`
+- **WHEN** a session has been started with `browser start`
 - **THEN** its browser context and page SHALL remain open and usable by later `send`/`status`
   calls after the invoking CLI process that started it has already exited
 
@@ -66,15 +71,13 @@ session to expose any behavior beyond what `send`/`status` already provide.
   (without sending `q`)
 - **THEN** the session SHALL remain running and reachable by a later `send`/`status`/`attach`
 
-### Requirement: Foreground `--cli` behavior is unchanged
-`waygraph auto --cli` invoked without `--detach` SHALL behave identically to its current
-behavior - the same prompts, the same blocking interactive loop, no session id or socket
-created.
+### Requirement: Foreground `--cli` stays a foreground loop
+`waygraph auto --cli` SHALL be the blocking interactive terminal loop - the same prompts, no session id or socket
+created. A background session is only ever `browser start` / `pilot start`.
 
-#### Scenario: Existing non-detached usage is unaffected
-- **WHEN** `waygraph auto --cli` is invoked without `--detach`, as in any existing script or
-  doc example
-- **THEN** it SHALL run exactly as before this capability existed
+#### Scenario: Foreground usage creates no session
+- **WHEN** `waygraph auto --cli` is invoked
+- **THEN** it SHALL run in the foreground and create no session metadata or socket
 
 ### Requirement: Headful mode is unaffected
 This capability SHALL apply only to the `--cli` picker. `waygraph auto` invoked without
@@ -86,13 +89,14 @@ This capability SHALL apply only to the `--cli` picker. `waygraph auto` invoked 
   id, socket, or new commands involved
 
 ### Requirement: Session identity is scoped and cleaned up on quit
-A detached session's on-disk identity (metadata and socket) SHALL live under a per-project
-`.waygraph-auto/` directory, and SHALL be removed when the session ends via the `q`/`quit`
+A detached session's on-disk identity SHALL be its metadata under a per-project `.waygraph-auto/` directory and a
+short socket path under the OS temp folder (`waygraph-auto/`, so a deep project path never exceeds the socket length
+limit), and both SHALL be removed when the session ends via the `q`/`quit`
 operation, so a session that has quit SHALL NOT be mistaken for one still running.
 
 #### Scenario: A quit session's identity is gone
 - **WHEN** a session has been sent `q`/`quit` and has finished shutting down
-- **THEN** its metadata file and socket SHALL no longer exist under `.waygraph-auto/`
+- **THEN** its metadata file and socket SHALL no longer exist
 
 #### Scenario: A stale or unreachable session is reported, not hung
 - **WHEN** `send`, `status`, or `attach` is called with a session id whose socket is missing

@@ -46,6 +46,9 @@ Pass `--blocks` or a `.flow.ts` path.
 
 ## Flags
 
+`waygraph demo --help` prints these from the same table the CLI parses, so they always match; an unknown flag is
+an error. Each flag sets a `WAYGRAPH_*` variable for the run: [every variable](./env).
+
 | Flag | Where | What it does |
 |---|---|---|
 | `--blocks` | demo / run / auto | Flow export, `.flow.ts` path, or `"a then b"` spec.

@@ -1,4 +1,6 @@
-# waygraph objectives (living)
+# waygraph objectives (archived)
+
+> **Archived.** Written before 0.16.0; the API names in it (`defineFlow`, `chainFlow`, `ctx.banner`, `ctx.todoPos`, list-only `ctx.todos([...])`, `withHighlightFixtures`, ...) were removed. Current API: the [reference](https://deviate-dv8.github.io/waygraph/reference/) and [what was removed](https://deviate-dv8.github.io/waygraph/deprecated).
 
 ASCII only. Last updated: 2026-09-17.
 

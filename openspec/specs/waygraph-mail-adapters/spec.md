@@ -107,19 +107,15 @@ separately-nameable check from confirming its content.
 - **THEN** the run SHALL fail with an error naming the check, not hang indefinitely or
   silently proceed as if a message existed
 
-### Requirement: `defineAssertBlock` needs an explicit type argument once it is not the last Block
-`defineAssertBlock` without an explicit type argument defaults `Out` to wildcard
-`Checkpoint<string>` on both sides. This is documented as a real trap: it type-checks fine
-when the assert is the last real Block before `end` (nothing downstream constrains it) but
-breaks a `defineFlow` array's tuple typing once the assert sits between two
-specifically-typed Blocks - each assert Block added in this change (which all sit mid-chain)
-SHALL be given its real checkpoint type explicitly (e.g. `defineAssertBlock<MailpitInbox>`).
+### Requirement: `defineAssertBlock` names its Checkpoint as a value
+`defineAssertBlock({ name, checkpoint, verify })` SHALL take its `checkpoint` as a Checkpoint value (`MailpitInbox`, from
+`checkpoint("MailpitInbox")`), which types the Block on both sides; there is no type argument to give and no wildcard
+`Checkpoint<string>` to fall back to.
 
-#### Scenario: A mid-chain assert without an explicit type argument fails to typecheck
-- **WHEN** `defineAssertBlock({...})` (no type argument) is placed between two
-  specifically-typed Blocks in a `defineFlow` array
-- **THEN** the project SHALL fail to typecheck, not silently accept a wildcard-typed Block
-  in the middle of an otherwise strictly-typed chain
+#### Scenario: A mid-chain assert keeps the chain typed
+- **WHEN** an assert Block sits between two other steps of a `map()` flow
+- **THEN** the flow SHALL typecheck with the assert's own Checkpoint on both sides, the step before it SHALL have to
+  land on that Checkpoint, and the step after it SHALL start from it
 
 ### Requirement: `defineAssertBlock` accepts `requires`, like every other Block helper
 `defineAssertBlock`'s options SHALL accept an optional `requires: readonly MemKey<any>[]`,

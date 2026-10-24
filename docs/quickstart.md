@@ -7,7 +7,7 @@ Three entry paths, then your first Block + Flow.
 | Path | When | Command |
 |---|---|---|
 | **Try demo** | Onboarding - watch nested flows on saucedemo.com; nothing written to your cwd | `npx waygraph try demo` |
-| **Try auto** | Temp Sauce Demo headed explorer (creds pre-seeded) | `npx waygraph try auto` |
+| **Try auto** | Temp Sauce Demo headed explorer (credentials from its `*.mem-stubs.ts`) | `npx waygraph try auto` |
 | **Try auto:cli** | Same explorer, terminal menu | `npx waygraph try auto:cli` |
 | **In-repo example** | Permanent Sauce Demo - headed `auto` | [Clone and run it](#saucedemo) (needs one root install + build first) |
 | **waygraph init** | New repo - offline scaffold, built into waygraph since 0.7.5 | `npx waygraph init my-app` |

@@ -141,7 +141,12 @@ function looksLikeCheckpointArg(s: string): boolean {
 
 
 /** Reads run/demo/auto/session flags with `node:util`'s parseArgs; an unknown flag or a missing value exits with the reason. */
-export function parseRunFlags(argv: string[], command = "run"): RunFlags {
+export function parseRunFlags(argv: string[], command: string): RunFlags {
+  if (argv.includes("--help") || argv.includes("-h")) {
+    const forHelp: HelpFor | undefined = command === "demo" || command === "run" ? command : ["browser", "pilot", "auto"].includes(command) ? "session" : undefined;
+    console.log(`waygraph ${command} flags:\n${forHelp ? optionHelp(forHelp, 2) : helpLines(RUN_OPTIONS)}\n\nwaygraph --help lists every command.`);
+    process.exit(0);
+  }
   // `--video` takes an optional folder: bare (end of args, or another flag next) means the default folder.
   const args = argv.map((a, i) => (a === "--video" && (argv[i + 1] === undefined || argv[i + 1]!.startsWith("-")) ? "--video=" : a));
   const parsed = parseCommand(command, RUN_OPTIONS, args);
