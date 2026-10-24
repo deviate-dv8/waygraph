@@ -1,15 +1,15 @@
 // Before a demo step runs: play the Block's stubBefore narration (rings, todos, device, title, caption) and show the
 // step's panel, then log what was painted so an agent without eyes can check it.
+import { envFlag } from "../../engine/env.js";
+import type { StubPhaseResult } from "../../engine/stub/stub.js";
 import { runStubPhase } from "../narration/narration.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
-import type { StubPhaseResult } from "../../engine/stub/stub.js";
-import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
-import { renderBeforeStep } from "./step-panels.js";
-import { probeTodoDocksOnPage } from "./todo-advance.js";
 import { logBannerDom, probeBanner } from "./banner-log.js";
-import { forceCollapsed } from "./view.js";
+import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
+import { renderBeforeStep } from "./panel-before.js";
+import { probeTodoDocksOnPage } from "./todo-advance.js";
 import type { StepperContext, StepView } from "./view.js";
-import { envFlag } from "../../engine/env.js";
+import { forceCollapsed } from "./view.js";
 
 const quiet = () => envFlag("WAYGRAPH_JSON");
 

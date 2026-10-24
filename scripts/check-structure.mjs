@@ -25,14 +25,6 @@ const MAX_LINES = 500;
 
 /** Known-oversized files: current ceiling. Decompose, then lower or delete the entry. */
 const RATCHET = {
-  "live/auto-session/auto-session.ts": 769,
-  "live/auto/auto.ts": 706,
-  "demo/stepper/step-panels.ts": 668,
-  "live/auto-session/ipc.ts": 634,
-  "engine/block/block.ts": 612,
-  "cli/commands/session.ts": 596,
-  "live/traverse/traverse.ts": 588,
-  "engine/flow/map-builder.ts": 542,
 };
 
 function walk(dir, out = []) {

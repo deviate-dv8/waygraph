@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { memStubValue } from "../../src/live/auto/auto.js";
+import { memStubValue } from "../../src/live/auto/mem.js";
 import { key } from "../../src/engine/mem/mem.js";
 import { registerMemStub } from "../../src/engine/mem/mem-stub.js";
 

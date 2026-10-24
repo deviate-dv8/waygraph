@@ -1,38 +1,45 @@
-import { CONSOLE_LOG_MAX_ENTRIES, FULL_MODE_DEFAULT_DEPTH, FULL_MODE_MAX_NODES, FULL_MODE_MAX_TEXT_LENGTH, TRACE_MAX_STEPS, buildSessionSnapshot, parsePick, stubFilePath, stubPhaseHasContent, walkFullDom } from "./helpers.js";
-import { keepOverlayOnNavigation } from "../../demo/overlay/reattach.js";
-import type { ApplyPathResult, ApplyPickResult, AutoSessionInit, ConsoleLogEntry, FullDomCaps, InspectDomOptions, InspectDomResult, SessionSnapshot, StorageSnapshot, StubFileKind, TraceStep } from "./helpers.js";
-import { installPersistentPilotOverlay, showPilotActivity, showPilotVision } from "../../demo/overlay/pilot/shell.js";
-import { showPilotFixtures } from "../../demo/overlay/pilot/fixtures.js";
-import type { PilotHighlightFixtures } from "../../demo/overlay/pilot/fixtures.js";
-import { instrumentPilotActions } from "../../demo/overlay/pilot/actions.js";
-import { phaseToOverlayFixtures, describeOverlayFixtures } from "../../demo/overlay/phase-fixtures.js";
-import { updatePilotOverlay } from "../pilot/panel.js";
-import type { PilotOverlayInfo } from "../pilot/panel.js";
-import { buildExploreContext, buildExploreMenu } from "../auto/explore.js";
-import type { ExploreMenu } from "../auto/explore.js";
-import type { BlockEntry } from "../../manifest/project.js";
-import { MemPage } from "../../engine/mem/mem.js";
-import { Engine } from "../../engine/engine.js";
-import type { BrowserContext, BrowserContextOptions, Page } from "@playwright/test";
-import { detectHere, ensureLivePage, ensureMem, runOneBlock, seedDefaultMem } from "../auto/auto.js";
-import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from "../../analysis/coverage-gap.js";
+// AutoSession: one live browser session driven over IPC - its menu, picks, routes, raw actions and highlights.
+import type { BrowserContext, Locator, Page } from "@playwright/test";
 import type { UnmappedInteractionPayload } from "../../analysis/coverage-gap.js";
-import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
-import type { WaygraphInstanceOption } from "../../engine/block/block.js";
-import { runStubPhase } from "../../demo/narration/narration.js";
-import { verboseLog } from "../../demo/verbose-log.js";
+import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from "../../analysis/coverage-gap.js";
 import { findBlockPathDetailed } from "../../analysis/graph.js";
-import { configuredExtensions, resolveBaseUrl } from "../../runtime/waygraph-config.js";
-import { chromiumExecutablePath, launchContext } from "../../runtime/browser.js";
-import { ignorePageGone, ignoreTimeout } from "../../engine/page-gone.js";
+import { runStubPhase } from "../../demo/narration/narration.js";
+import { describeOverlayFixtures, phaseToOverlayFixtures } from "../../demo/overlay/phase-fixtures.js";
+import type { PilotHighlightFixtures } from "../../demo/overlay/pilot/fixtures.js";
+import { showPilotFixtures } from "../../demo/overlay/pilot/fixtures.js";
+import { showPilotActivity, showPilotVision } from "../../demo/overlay/pilot/shell.js";
+import { keepOverlayOnNavigation } from "../../demo/overlay/reattach.js";
+import { verboseLog } from "../../demo/verbose-log.js";
+import type { WaygraphInstanceOption } from "../../engine/block/action-page.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
+import { Engine } from "../../engine/engine.js";
+import { MemPage } from "../../engine/mem/mem.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
+import type { BlockEntry } from "../../manifest/project.js";
+import { resolveBaseUrl } from "../../runtime/waygraph-config.js";
+import { detectHere, ensureLivePage, runOneBlock } from "../auto/auto.js";
+import type { ExploreMenu } from "../auto/explore.js";
+import { buildExploreContext, buildExploreMenu } from "../auto/explore.js";
+import { ensureMem, seedDefaultMem } from "../auto/mem.js";
+import type { PilotOverlayInfo } from "../pilot/panel.js";
+import { updatePilotOverlay } from "../pilot/panel.js";
+import { recordPageConsole } from "./console.js";
+import type { ApplyPathResult, ApplyPickResult, AutoSessionInit, ConsoleLogEntry, InspectDomOptions, InspectDomResult, SessionSnapshot, StorageSnapshot, StubFileKind, TraceStep } from "./helpers.js";
+import { CONSOLE_LOG_MAX_ENTRIES, TRACE_MAX_STEPS, buildSessionSnapshot, describeHighlight, parsePick, stubFilePath, stubPhaseHasContent } from "./helpers.js";
+import { inspectDom, inspectStorage } from "./inspect.js";
+import { openSessionBrowser } from "./open-browser.js";
+
+/** The first element `selector` matches, ringed with the pilot's vision ring; or why there is none. */
+async function rawTarget(page: Page, selector: string, label: string): Promise<Locator | string> {
+  const locator = page.locator(selector).first();
+  if ((await locator.count()) === 0) return `no element matches selector "${selector}"`;
+  await showPilotVision(page, selector, label);
+  return locator;
+}
 
 /**
- * Non-interactive explore session: same graph/library/mem/browser setup
- * `runAutoExplore` runs in `--cli` mode, driven by `applyPick` instead of a
- * blocking `readline` loop. Headless by default (matching
- * `runAutoExplore`'s own `cli` branch), optionally visible via
- * `AutoSessionInit.headless: false` - this type only ever backs the `--cli`
- * picker, never the headful page-embedded panel, headless or not.
+ * A live session driven over IPC (`browser start`, `pilot start`): the same graph, library, mem and browser as
+ * `waygraph auto`, moved one call at a time (`applyPick`, `applyPath`, the raw actions) instead of a menu loop.
  */
 export class AutoSession {
   private here: string | null = null;
@@ -79,42 +86,7 @@ export class AutoSession {
     seedDefaultMem(library.byName, mem);
     const headless = init.headless ?? true;
     const engine = new Engine({ headless });
-    const { chromium } = await import("@playwright/test");
-    const executablePath = chromiumExecutablePath();
-    // Real gap found live: a headed (--non-headless) session kept a fixed
-    // 1280x720 content area even when the user maximized/fullscreened the
-    // actual window - `viewport: null` alone only makes the PAGE track the
-    // window; the window itself still launches at Chromium's own small
-    // default size unless told to start maximized. Same fix cli.ts's own
-    // --step/headed launch already uses (see its own comment there) -
-    // headless keeps the fixed viewport since there's no real window to size.
-    const launchOpts: Parameters<typeof chromium.launch>[0] = {
-      headless,
-      // Keep Playwright's default --no-startup-window for headful: without it
-      // Chromium opens its own "New Tab" window AND our context.newPage() opens
-      // a second about:blank window. bringToFront() below surfaces the real page.
-      args: headless ? [] : ["--start-maximized"],
-    };
-    if (executablePath) launchOpts.executablePath = executablePath;
-    const contextOpts: BrowserContextOptions = {
-      viewport: headless ? { width: 1280, height: 720 } : null,
-    };
-    if (baseURL) contextOpts.baseURL = baseURL;
-    const { close: closeBrowser, context } = await launchContext({
-      launcher: chromium,
-      launch: launchOpts,
-      context: contextOpts,
-      extensions: await configuredExtensions(init.projectDir),
-    });
-    await installPersistentPilotOverlay(context);
-    const page = await context.newPage();
-    instrumentPilotActions(page, headless ? 0 : 450);
-    if (startUrl) {
-      await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(ignorePageGone);
-      await page.waitForLoadState("load").catch(ignoreTimeout);
-    } else {
-      await page.goto("about:blank").catch(ignorePageGone);
-    }
+    const { closeBrowser, context, page } = await openSessionBrowser(init.projectDir, headless, baseURL, startUrl);
     const knownInteractionSelectors = collectKnownInteractionSelectors(
       init.projectDir,
       library,
@@ -141,43 +113,7 @@ export class AutoSession {
       await session.bootstrapOverlay().catch(ignorePageGone);
       await page.bringToFront().catch(ignorePageGone);
     }
-    // Attached once, on the page created here - `ensureLivePage` only swaps
-    // to a fresh Page if the current one closed (a rare case, e.g. the human
-    // closing the tab), not on ordinary same-page SPA navigation, which is
-    // all this target (and most real sites) actually do.
-    page.on("console", (msg) => {
-      session.pushConsoleLog({
-        type: "console",
-        level: msg.type(),
-        text: msg.text(),
-        timestamp: new Date().toISOString(),
-      });
-    });
-    page.on("pageerror", (err) => {
-      session.pushConsoleLog({
-        type: "pageerror",
-        text: err instanceof Error ? err.message : String(err),
-        timestamp: new Date().toISOString(),
-      });
-    });
-    page.on("response", (res) => {
-      // Every failed response (the original case), PLUS every mutation
-      // (non-GET) response regardless of status - a real gap found live:
-      // "auto console" only logging failures made a SUCCESSFUL POST that
-      // simply didn't navigate anywhere look identical to "nothing
-      // happened at all," undiagnosable the same way a real failure was.
-      // A mutation's outcome (2xx or not) is always diagnostically
-      // relevant; a GET's usually isn't (assets, trackers) unless it failed.
-      const method = res.request().method();
-      if (res.status() < 400 && method === "GET") return;
-      session.pushConsoleLog({
-        type: "response",
-        text: `${method} ${res.statusText()}`,
-        url: res.url(),
-        status: res.status(),
-        timestamp: new Date().toISOString(),
-      });
-    });
+    recordPageConsole(page, (entry) => session.pushConsoleLog(entry));
     return session;
   }
 
@@ -207,14 +143,8 @@ export class AutoSession {
       this.here = await detectHere(this.page, this.library.navBlocks);
     }
     const menu = await buildExploreMenu(this.page, this.graph, this.library, this.here);
-    // Every caller of currentMenu() (status reads, applyPick/applyPath,
-    // the raw click/type/goto primitives, resync) already routes through
-    // here, so hooking the overlay refresh at this one point covers every
-    // real state-changing (and reading) path without needing a separate
-    // call at each site. Awaited deliberately, not fire-and-forget - the
-    // whole point is a human watching the screen sees the SAME state a
-    // concurrent API caller just got back, not a stale frame that catches
-    // up moments later.
+    // Every read and every action goes through currentMenu(), so the overlay is refreshed here, awaited: someone
+    // watching sees the state an API caller just got back, not a frame behind.
     this.lastOverlayInfo = {
       sessionId: this.sessionId,
       snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
@@ -277,97 +207,15 @@ export class AutoSession {
    */
   async inspectDom(opts: InspectDomOptions): Promise<InspectDomResult> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    const mode = opts.mode ?? "aria";
-    const ariaOptions = opts.depth !== undefined ? { mode: "ai" as const, depth: opts.depth } : { mode: "ai" as const };
-
-    if (opts.selector) {
-      const locator = this.page.locator(opts.selector).first();
-      if ((await locator.count()) === 0) {
-        return { ok: false, error: `no element matches selector "${opts.selector}"` };
-      }
-      await showPilotVision(this.page, opts.selector, `dom (${mode}): ${opts.selector}`, "orange");
-      if (mode === "full") {
-        const caps: FullDomCaps = {
-          depth: opts.depth ?? FULL_MODE_DEFAULT_DEPTH,
-          maxNodes: FULL_MODE_MAX_NODES,
-          maxTextLength: FULL_MODE_MAX_TEXT_LENGTH,
-        };
-        const { tree, truncated } = await locator.evaluate(walkFullDom, caps);
-        return { ok: true, snapshot: { mode: "full", selector: opts.selector, truncated, tree } };
-      }
-      const tree = await locator.ariaSnapshotJSON(ariaOptions);
-      return { ok: true, snapshot: { mode: "aria", selector: opts.selector, truncated: false, tree } };
-    }
-
-    await showPilotActivity(this.page, `Running (Dom): ${mode}, whole page`);
-    if (mode === "full") {
-      // page.evaluate only ships the one function passed to it - it can't
-      // reach another named function by closure. Routing the whole-page case
-      // through the same `html` Locator lets both cases share one
-      // self-contained walkFullDom instead of two near-duplicate callbacks.
-      const caps: FullDomCaps = {
-        depth: opts.depth ?? FULL_MODE_DEFAULT_DEPTH,
-        maxNodes: FULL_MODE_MAX_NODES,
-        maxTextLength: FULL_MODE_MAX_TEXT_LENGTH,
-      };
-      const { tree, truncated } = await this.page.locator("html").first().evaluate(walkFullDom, caps);
-      return { ok: true, snapshot: { mode: "full", truncated, tree } };
-    }
-    const tree = await this.page.ariaSnapshotJSON(ariaOptions);
-    return { ok: true, snapshot: { mode: "aria", truncated: false, tree } };
+    return inspectDom(this.page, opts);
   }
 
-  /**
-   * Pure getter - reads the live page's client-side state: localStorage,
-   * sessionStorage, and registered service workers (scope/active URL/state).
-   * Real, direct follow-up to `auto console`'s own gap: a site doing web
-   * push (this target has a real `NOTIFICATION_VAPID` config, confirmed via
-   * `auto dom` earlier) keeps push-subscription/auth state in these places,
-   * not in the rendered DOM `inspectDom` reads.
-   */
+  /** Reads the live page's client state: storage, cookies, service workers (where web-push state lives). */
   async inspectStorage(): Promise<StorageSnapshot> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    const [localStorageEntries, sessionStorageEntries] = await this.page.evaluate(() => [
-      Object.entries(window.localStorage),
-      Object.entries(window.sessionStorage),
-    ]);
-    const cookies = await this.context.cookies();
-    const workers = this.context.serviceWorkers();
-    const registrations = await this.page
-      .evaluate(async () => {
-        if (!("serviceWorker" in navigator)) return [];
-        const regs = await navigator.serviceWorker.getRegistrations();
-        return regs.map((r) => ({
-          scope: r.scope,
-          ...(r.active?.scriptURL ? { activeUrl: r.active.scriptURL } : {}),
-          ...(r.active?.state ? { state: r.active.state } : {}),
-        }));
-      })
-      .catch(() => []);
-    return {
-      localStorage: Object.fromEntries(localStorageEntries),
-      sessionStorage: Object.fromEntries(sessionStorageEntries),
-      cookies: cookies.map((c) => ({
-        name: c.name,
-        value: c.value,
-        domain: c.domain,
-        path: c.path,
-        httpOnly: c.httpOnly,
-        secure: c.secure,
-      })),
-      serviceWorkers: workers.map((w) => w.url()),
-      serviceWorkerRegistrations: registrations,
-    };
+    return inspectStorage(this.page, this.context);
   }
 
-  /**
-   * Runs one already-resolved Block entry for real - the shared core both
-   * `applyPick` (resolved via a live-menu index) and `applyPath` (resolved
-   * directly by name, bypassing live-menu-visibility entirely - see
-   * `applyPath`'s own comment for why) call. `expectedTo` is only used as a
-   * fallback when a Block's own `resolve()` doesn't set `__state` - same
-   * behavior `applyPick` always had, just factored out, not changed.
-   */
   /** Paint + log a Block's authored waygraph overlay fixtures (same as demo does), best-effort. */
   private async paintStubPhase(tag: string, phase: Awaited<ReturnType<typeof runStubPhase>>, holdMs: number): Promise<void> {
     if (!this.page || !stubPhaseHasContent(phase)) return;
@@ -376,6 +224,10 @@ export class AutoSession {
     await showPilotFixtures(this.page, fixtures).catch(ignorePageGone);
   }
 
+  /**
+   * Runs one Block for real: the core of `applyPick` (picked from the live menu) and `applyPath` (named by the route).
+   * `expectedTo` is used when the Block's resolve doesn't set `__state`.
+   */
   private async runNamedBlock(
     entry: BlockEntry,
     expectedTo: string,
@@ -451,13 +303,8 @@ export class AutoSession {
   }
 
   /**
-   * Re-discovers the project's Block library and graph from disk, using the
-   * exact same call `start()` itself makes - not a duplicated read - and
-   * replaces `this.library`/`this.graph` in place. Leaves the live page,
-   * mem, browser/context, and current Checkpoint (`here`) untouched, so a
-   * Block written to disk mid-session becomes pickable via a later
-   * `applyPick` without restarting the session. See
-   * openspec/changes/waygraph-blind-pilot/design.md.
+   * Re-reads the project's Blocks and graph from disk (the same call `start()` makes) and swaps them in, keeping the
+   * page, mem, browser and `here`: a Block written mid-session becomes pickable without a restart.
    */
   async reloadLibrary(): Promise<void> {
     if (this.page) await showPilotActivity(this.page, "Running: reload");
@@ -475,22 +322,8 @@ export class AutoSession {
   }
 
   /**
-   * Forces `here` to be re-detected from the real live page, discarding
-   * whatever was cached - the fix for a real, confirmed gap: `here` is only
-   * ever updated by an action this class itself ran (`applyPick`/`applyPath`
-   * set it to a Block's own resolved Checkpoint; `rawClick`/`rawType`/
-   * `rawGoto` reset it to `null` because *they* just changed the page). If a
-   * human co-driving the same visible session clicks/types/navigates
-   * directly - a real scenario for a headful Pilot session someone is
-   * watching, not hypothetical - none of that goes through this class at
-   * all, so `here` silently goes stale: `currentMenu()`'s own lazy check
-   * (`if (this.here === null)`, just above) only re-detects when `here` is
-   * already unknown, never to confirm a *known* value is still correct.
-   * This does not crash the session (the process/socket/page all stay
-   * alive) but subsequent `send`/`reach` calls would act on a menu built
-   * from the wrong Checkpoint until something forces re-detection - this
-   * method is that: unconditionally re-run the same `detectHere` logic the
-   * lazy path already uses, regardless of what `here` currently holds.
+   * Re-detects `here` from the live page, whatever is cached. `here` only changes when this session acts; a person
+   * clicking in a visible session moves the page without it, and later `send` / `reach` calls would use a stale menu.
    */
   async resync(): Promise<ApplyPickResult> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
@@ -506,121 +339,68 @@ export class AutoSession {
   }
 
   /**
-   * Raw interaction primitives for a page no Block covers yet (Blind Pilot -
-   * see openspec/changes/waygraph-blind-pilot). Unlike `applyPick`, the
-   * resulting Checkpoint isn't known ahead of time from a Block's own
-   * `resolve()`, so each of these invalidates the cached `here` (forcing
-   * `currentMenu()`'s existing lazy `detectHere` call to run again) rather
-   * than assuming the page didn't move anywhere a Block now recognizes.
-   * A selector matching nothing is a reported failure, not a silent no-op.
+   * Raw actions for a page no Block covers yet (Blind Pilot). The Checkpoint they land on isn't known ahead, so each
+   * one forgets `here` and the next menu re-detects it. A selector that matches nothing is a reported failure.
    */
   async rawClick(selector: string): Promise<ApplyPickResult> {
-    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    await showPilotActivity(this.page, `Running (no Block): click "${selector}"`);
-    const locator = this.page.locator(selector).first();
-    if ((await locator.count()) === 0) {
-      return { ok: false, error: `no element matches selector "${selector}"` };
-    }
-    await showPilotVision(this.page, selector, `click: ${selector}`);
-    await locator.click();
-    this.here = null;
-    const menu = await this.currentMenu();
-    this.lastRunNote = `click "${selector}" -> ${this.here ?? "Unknown"}`;
-    return {
-      ok: true,
-      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
-      quit: false,
-    };
+    return this.rawStep(`click "${selector}"`, async (page) => {
+      const target = await rawTarget(page, selector, `click: ${selector}`);
+      if (typeof target === "string") return target;
+      await target.click();
+    });
   }
 
   async rawType(selector: string, text: string): Promise<ApplyPickResult> {
-    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    await showPilotActivity(this.page, `Running (no Block): type into "${selector}"`);
-    const locator = this.page.locator(selector).first();
-    if ((await locator.count()) === 0) {
-      return { ok: false, error: `no element matches selector "${selector}"` };
-    }
-    await showPilotVision(this.page, selector, `type: ${selector}`);
-    await locator.fill(text);
-    this.here = null;
-    const menu = await this.currentMenu();
-    this.lastRunNote = `type into "${selector}" -> ${this.here ?? "Unknown"}`;
-    return {
-      ok: true,
-      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
-      quit: false,
-    };
+    return this.rawStep(`type into "${selector}"`, async (page) => {
+      const target = await rawTarget(page, selector, `type: ${selector}`);
+      if (typeof target === "string") return target;
+      await target.fill(text);
+    });
   }
 
-  /**
-   * Presses a real key on a real focused element - a real gap found live:
-   * many real inline-edit inputs (no visible Save button at all) commit on
-   * Enter, not on blur/click-elsewhere. `key` is a Playwright key name
-   * (e.g. "Enter", "Escape", "Tab") - same vocabulary as
-   * `page.keyboard.press`, which this wraps.
-   */
+  /** Presses a key on an element (`Enter`, `Escape`, ...): inline-edit inputs often commit on Enter, with no Save button. */
   async rawPress(selector: string, key: string): Promise<ApplyPickResult> {
-    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    await showPilotActivity(this.page, `Running (no Block): press "${key}" on "${selector}"`);
-    const locator = this.page.locator(selector).first();
-    if ((await locator.count()) === 0) {
-      return { ok: false, error: `no element matches selector "${selector}"` };
-    }
-    await showPilotVision(this.page, selector, `press ${key}: ${selector}`);
-    await locator.press(key);
-    this.here = null;
-    const menu = await this.currentMenu();
-    this.lastRunNote = `press "${key}" on "${selector}" -> ${this.here ?? "Unknown"}`;
-    return {
-      ok: true,
-      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
-      quit: false,
-    };
+    return this.rawStep(`press "${key}" on "${selector}"`, async (page) => {
+      const target = await rawTarget(page, selector, `press ${key}: ${selector}`);
+      if (typeof target === "string") return target;
+      await target.press(key);
+    });
   }
 
   async rawGoto(url: string): Promise<ApplyPickResult> {
-    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    await showPilotActivity(this.page, `Running (no Block): goto "${url}"`);
-    try {
-      await this.page.goto(url, { waitUntil: "domcontentloaded" });
-    } catch (err) {
-      return { ok: false, error: `goto "${url}" failed - ${err instanceof Error ? err.message : String(err)}` };
-    }
-    this.here = null;
-    const menu = await this.currentMenu();
-    this.lastRunNote = `goto "${url}" -> ${this.here ?? "Unknown"}`;
-    return {
-      ok: true,
-      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
-      quit: false,
-    };
+    return this.rawStep(`goto "${url}"`, async (page) => {
+      try {
+        await page.goto(url, { waitUntil: "domcontentloaded" });
+      } catch (err) {
+        return `goto "${url}" failed - ${err instanceof Error ? err.message : String(err)}`;
+      }
+    });
   }
 
-  /**
-   * Fills a real `<input type="file">` - a built-in stub kind
-   * ("image"/"pdf"/"video", see `stubFilePath`) or a caller-supplied
-   * `filePath` for anything else ("whatever", per the real request this
-   * responds to). Same raw-primitive shape as click/type/goto: works with
-   * zero Blocks, invalidates `here` since the app may react to the upload.
-   */
+  /** Fills an `<input type="file">` with a built-in stub file ("image", "pdf", "video") or a `filePath` of your own. */
   async rawUpload(selector: string, stub: StubFileKind | { filePath: string }): Promise<ApplyPickResult> {
-    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
     const filePath = typeof stub === "string" ? stubFilePath(stub) : stub.filePath;
     const label = typeof stub === "string" ? stub : filePath;
-    await showPilotActivity(this.page, `Running (no Block): upload ${label} into "${selector}"`);
-    const locator = this.page.locator(selector).first();
-    if ((await locator.count()) === 0) {
-      return { ok: false, error: `no element matches selector "${selector}"` };
-    }
-    await showPilotVision(this.page, selector, `upload ${label}: ${selector}`);
-    try {
-      await locator.setInputFiles(filePath);
-    } catch (err) {
-      return { ok: false, error: `upload into "${selector}" failed - ${err instanceof Error ? err.message : String(err)}` };
-    }
+    return this.rawStep(`upload ${label} into "${selector}"`, async (page) => {
+      const target = await rawTarget(page, selector, `upload ${label}: ${selector}`);
+      if (typeof target === "string") return target;
+      try {
+        await target.setInputFiles(filePath);
+      } catch (err) {
+        return `upload into "${selector}" failed - ${err instanceof Error ? err.message : String(err)}`;
+      }
+    });
+  }
+
+  /** One raw primitive (no Block): announce it, run it, then forget `here` so the next menu re-detects it. */
+  private async rawStep(what: string, run: (page: Page) => Promise<string | undefined>): Promise<ApplyPickResult> {
+    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    await showPilotActivity(this.page, `Running (no Block): ${what}`);
+    const failed = await run(this.page);
+    if (failed !== undefined) return { ok: false, error: failed };
     this.here = null;
     const menu = await this.currentMenu();
-    this.lastRunNote = `upload ${label} into "${selector}" -> ${this.here ?? "Unknown"}`;
+    this.lastRunNote = `${what} -> ${this.here ?? "Unknown"}`;
     return {
       ok: true,
       snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
@@ -640,20 +420,7 @@ export class AutoSession {
     | { ok: false; error: string }
   > {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    const detail =
-      fixtures.clear === true
-        ? "clear"
-        : [
-            fixtures.rings?.length ? `${fixtures.rings.length} ring(s)` : null,
-            fixtures.todos?.length ? `${fixtures.todos.length} todo(s)` : null,
-            fixtures.zoom && fixtures.zoom > 1.001 ? `zoom ${fixtures.zoom}` : null,
-            fixtures.device
-              ? `device ${typeof fixtures.device === "string" ? fixtures.device : fixtures.device.preset || "custom"}`
-              : null,
-            fixtures.rings?.some((r) => r.focus) ? "focus" : null,
-          ]
-            .filter(Boolean)
-            .join(", ") || "fixtures";
+    const detail = describeHighlight(fixtures);
     // Same bottom-left activity toast as Running (Dom)/(Block) - agent narration.
     await showPilotActivity(this.page, `Highlighting: ${detail}`);
     try {
@@ -679,42 +446,11 @@ export class AutoSession {
   }
 
   /**
-   * Runs a whole multi-step route to `targetCheckpoint` in one call, instead
-   * of an agent hand-picking one index at a time across many separate
-   * `applyPick` round trips - real, reported pain for any non-trivial task
-   * on a rich graph ("the entire prompts of the day" driving one step per
-   * call).
-   *
-   * Two other designs were tried and rejected by direct reproduction against
-   * live saucedemo.com before this one, both undone by the same root cause:
-   * a `from: "*"` edge (e.g. "Checkout", only clickable once you're actually
-   * on the cart page with items) looks globally reachable to
-   * `findBlockPath`'s static-graph BFS, which has no live-page access and
-   * can't know the edge's real precondition isn't showing yet. Computing the
-   * whole route once upfront names a premature wildcard step immediately;
-   * scoring each live menu option by its static-graph distance to the
-   * target (greedy best-first) doesn't fix it either - a harmless self-loop
-   * Method can score just as well as real progress once wildcard "shortcuts"
-   * are baked into every distance calculation, and the session gets stuck
-   * repeating it.
-   *
-   * The fix that actually works: stop trying to be clever about live-menu
-   * visibility per step, and reuse `auto --blocks <From> <To>`'s own already
-   * -proven approach instead - compute the path ONCE (via
-   * `findBlockPathDetailed`, the same BFS `findBlockPath`/`runChainAuto`
-   * already use, extended to also return each hop's specific edge - see its
-   * own doc comment for why that extra detail is load-bearing, not cosmetic),
-   * then run each Block in it directly via `runNamedBlock`, trusting the
-   * graph the same way `runChain`'s own flow execution already does, not
-   * gated on live-menu visibility at all. The one real difference from
-   * `runChainAuto`: this runs against the session's own already-live
-   * page/context/mem, not a freshly spawned browser - the whole point of
-   * staying in one session. A step whose real precondition genuinely isn't
-   * met still fails loud, naming that step, exactly the way a mis-ordered
-   * `runChain` spec would - and a step that runs without throwing but lands
-   * somewhere other than what its own edge promised (a real, observed case,
-   * not hypothetical - see this method's own test suite) fails loud too,
-   * rather than reporting false success.
+   * Runs a whole route to `targetCheckpoint` in one call, instead of one `applyPick` per step. The path is computed
+   * once with `findBlockPathDetailed` (the BFS `auto --blocks <From> <To>` uses) and each hop's Block runs directly on
+   * the session's live page and mem, trusting the graph rather than live-menu visibility. Per-step choosing was tried
+   * and fails: a `from: "*"` edge looks reachable from anywhere to a static BFS. A step whose precondition isn't met
+   * fails loud, naming it; so does a step that runs but lands somewhere other than its edge promised.
    */
   async applyPath(targetCheckpoint: string): Promise<ApplyPathResult> {
     await this.currentMenu();
@@ -742,15 +478,8 @@ export class AutoSession {
       if (!result.ok) {
         return { ok: false, error: `step "${step.block}" failed - ${result.error}` };
       }
-      // A Block can resolve to a DIFFERENT real Checkpoint than this exact
-      // hop's own edge expected, without throwing at all - e.g.
-      // submit-login's own resolve() legitimately "stays on LoginPage" on
-      // bad auth instead of erroring. Trusting `result.ok` alone would
-      // silently report success while sitting on the wrong page - a real
-      // bug caught by this method's own test suite, not theoretical.
-      // `step.to` (not a name-based re-lookup - a union-Out Block can have
-      // several edges sharing one name with different `to` tags) is exactly
-      // the Checkpoint THIS hop's own edge in the computed route promised.
+      // A Block can land somewhere else without throwing (submit-login stays on LoginPage on bad auth): compare with
+      // what this hop's own edge promised (`step.to`; one name can have several edges).
       if (this.here !== step.to) {
         return {
           ok: false,

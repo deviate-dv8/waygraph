@@ -1,9 +1,11 @@
-import type { StubPhaseResult } from "../../engine/stub/stub.js";
-import type { ExploreMenu } from "../auto/explore.js";
-import type { BlockEntry } from "../../manifest/project.js";
-import type { PickResult } from "../auto/auto.js";
+// The session's shared shapes and pure helpers: snapshots, picks, trace / console entries, DOM walking, stub files.
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { PilotHighlightFixtures } from "../../demo/overlay/pilot/fixtures.js";
+import type { StubPhaseResult } from "../../engine/stub/stub.js";
+import type { BlockEntry } from "../../manifest/project.js";
+import type { ExploreMenu } from "../auto/explore.js";
+import type { PickResult } from "../auto/menu.js";
 
 /** True when a stub-phase result actually carries authored content worth keeping. */
 export function stubPhaseHasContent(r: StubPhaseResult): boolean {
@@ -346,4 +348,23 @@ export interface StorageSnapshot {
   cookies: CookieInfo[];
   serviceWorkers: string[];
   serviceWorkerRegistrations: ServiceWorkerRegistrationInfo[];
+}
+
+
+/** What a highlight call paints, in a few words, for the session's activity line. */
+export function describeHighlight(fixtures: PilotHighlightFixtures): string {
+  if (fixtures.clear === true) return "clear";
+  return (
+    [
+      fixtures.rings?.length ? `${fixtures.rings.length} ring(s)` : null,
+      fixtures.todos?.length ? `${fixtures.todos.length} todo(s)` : null,
+      fixtures.zoom && fixtures.zoom > 1.001 ? `zoom ${fixtures.zoom}` : null,
+      fixtures.device
+        ? `device ${typeof fixtures.device === "string" ? fixtures.device : fixtures.device.preset || "custom"}`
+        : null,
+      fixtures.rings?.some((r) => r.focus) ? "focus" : null,
+    ]
+      .filter(Boolean)
+      .join(", ") || "fixtures"
+  );
 }

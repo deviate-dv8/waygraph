@@ -1,17 +1,18 @@
 // After a demo step ran: show its slides, play its stubAfter narration (or, without one, ring what its verify checked),
 // show the result panel, then wait at the Next gate.
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
+import { envFlag } from "../../engine/env.js";
+import type { StubPhaseResult } from "../../engine/stub/stub.js";
 import { hasAuthoredStubAfter, resolveSlides, runStubPhase } from "../narration/narration.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
-import type { StubPhaseResult } from "../../engine/stub/stub.js";
-import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
-import { extractVerifyHighlights, renderAfterStep } from "./step-panels.js";
-import { presentSlides } from "./slides.js";
 import { logBannerDom, probeBanner } from "./banner-log.js";
 import { logDocks } from "./before.js";
-import { forceCollapsed } from "./view.js";
+import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
+import { renderAfterStep } from "./panel-after.js";
+import { presentSlides } from "./slides.js";
+import { extractVerifyHighlights } from "./step-panels.js";
 import type { StepperContext, StepView } from "./view.js";
-import { envFlag } from "../../engine/env.js";
+import { forceCollapsed } from "./view.js";
 
 const quiet = () => envFlag("WAYGRAPH_JSON");
 

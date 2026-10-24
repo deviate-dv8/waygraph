@@ -1,5 +1,6 @@
+// `waygraph --help` and the `browser` usage text; the run / demo / session flag lines come from the option tables.
+import type { SessionMeta } from "../live/auto-session/files.js";
 import { optionHelp } from "./flags.js";
-import type { SessionMeta } from "../live/auto-session/ipc.js";
 
 export function printBrowserUsage(): void {
   console.log(`waygraph browser — persistent Playwright sessions (headful by default)

@@ -2,43 +2,20 @@
 // below build, decorate and route Blocks.
 import type { Page } from "@playwright/test";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
-import type { StubLifecycleFn } from "../stub/stub.js";
-import type { WaygraphSlidesOrFn } from "../stub/ring.js";
-import { MemPage } from "../mem/mem.js";
-import type { MemKey } from "../mem/mem.js";
-import type { Trait } from "../trait/trait.js";
 import {
-  WaygraphError,
-  MSG_FLOW_BLOCK_NOT_FOUND_BY_INDEX,
-  MSG_FLOW_BLOCK_NOT_FOUND_BY_NAME,
-  MSG_MODVERIFY_FUNCTION_FORM,
-  MSG_MODVERIFY_NOT_FOUND_BY_INDEX,
-  MSG_MODVERIFY_NOT_FOUND_BY_NAME,
+    MSG_FLOW_BLOCK_NOT_FOUND_BY_INDEX,
+    MSG_FLOW_BLOCK_NOT_FOUND_BY_NAME,
+    MSG_MODVERIFY_FUNCTION_FORM,
+    MSG_MODVERIFY_NOT_FOUND_BY_INDEX,
+    MSG_MODVERIFY_NOT_FOUND_BY_NAME,
+    WaygraphError,
 } from "../errors.js";
-
-/**
- * The `page` a regular Block's `act()` is typed against via `defineBlock` -
- * structurally identical to Playwright's own `Page` (the same real object is
- * passed at runtime; this is a type-only narrowing), except `goto`, `reload`,
- * `goBack`, and `goForward` are re-declared under `@deprecated`. Nothing is
- * blocked - every method is still fully present and callable, and this never
- * causes a build to fail - but a TypeScript-aware editor shows the call
- * struck through with a hover warning the instant it's typed, pointing at
- * `defineNavBlock` instead. `NavBlock`'s own generated `act()` (the one place
- * navigation actually belongs) uses the real `Page`, not this type - that
- * distinction lives entirely inside `defineNavBlock` and never reaches a
- * NavBlock's own author, who never writes its `act()` by hand.
- */
-export type ActionPage = Omit<Page, "goto" | "reload" | "goBack" | "goForward"> & {
-  /** @deprecated Navigation doesn't belong in a regular Block's act() - use defineNavBlock instead. */
-  goto: Page["goto"];
-  /** @deprecated Navigation doesn't belong in a regular Block's act() - use defineNavBlock instead. */
-  reload: Page["reload"];
-  /** @deprecated Navigation doesn't belong in a regular Block's act() - use defineNavBlock instead. */
-  goBack: Page["goBack"];
-  /** @deprecated Navigation doesn't belong in a regular Block's act() - use defineNavBlock instead. */
-  goForward: Page["goForward"];
-};
+import type { MemKey } from "../mem/mem.js";
+import { MemPage } from "../mem/mem.js";
+import type { WaygraphSlidesOrFn } from "../stub/ring.js";
+import type { StubLifecycleFn } from "../stub/stub.js";
+import type { Trait } from "../trait/trait.js";
+import type { ActionPage, WaygraphInstanceOption } from "./action-page.js";
 
 /**
  * The four-phase pipeline every Block runs. Most Blocks only need `act` + a
@@ -104,35 +81,6 @@ export interface Instruction<
    * ]
    */
   slides?: WaygraphSlidesOrFn<Out>;
-}
-
-/**
- * One selectable option for a Block whose real choices depend on the live
- * page - "which of these items to add to cart" is only knowable by looking
- * at the DOM, not from static analysis. `waygraph auto` calls
- * {@link Block.instanceOptions} while building its menu and lists one row
- * per option (via `label`) instead of a single generic "block -> checkpoint"
- * row; picking a row does `mem.set(key, value)` before that Block's own
- * `act()` runs, so `act()` just reads mem exactly like any other required
- * key - it never needs to know whether it was driven by a human-authored
- * Flow or a dynamic auto-explore menu.
- * @example { id: "sauce-labs-backpack", label: 'Add "Sauce Labs Backpack" to cart', key: SelectedItem.key, value: { id: "sauce-labs-backpack", name: "Sauce Labs Backpack" } }
- */
-export interface WaygraphInstanceOption<T = unknown> {
-  /** Stable id for this option - used to dedupe menu rows across rebuilds. */
-  id: string;
-  /** Shown in the menu instead of a generic "block -> checkpoint" line. */
-  label: string;
-  /** Must be one of this Block's own `requires` keys. */
-  key: MemKey<T>;
-  /** `mem.set(key, value)` right before this Block's `act()` runs. */
-  value: T;
-  /**
-   * Optional CSS selector for the element this option will act on.
-   * `waygraph auto` (headful) rings that element while the menu row is hovered
-   * so you can see what a pick would click before committing.
-   */
-  highlight?: string;
 }
 
 /**
@@ -292,49 +240,6 @@ export function findBlockIndex(middle: readonly SomeBlock[], block: SomeBlock | 
 
 
 /**
- * Attaches routing to `block` without touching its act/observe/resolve/verify -
- * `routes` must cover every tag of `block`'s output (a missing route is a compile
- * error), and the returned Block runs exactly as `block` always did, just followed
- * by whichever next Block the resolved tag routes to. `null` for a tag means that
- * tag is terminal - the run stops there, same as a Block with no routing at all.
- * A route pointing back at `block` itself is a self-loop; see `runGraph`'s
- * `maxSteps` for its safety net. The return type is deliberately `Block<In, any>` -
- * a route can lead anywhere, including back through itself, so there is no fixed
- * Out type to express; state the expected outcomes to `runGraph` via `terminals`
- * instead.
- */
-export function branch<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
-  block: Block<In, Out>,
-  routes: { [K in Out["__state"]]: Block<Extract<Out, Checkpoint<K>>, any> | null },
-): DefinedBlock<In, any> {
-  const base = stripMethods(block);
-  let routed!: DefinedBlock<In, any>;
-  const routesAsData: Record<string, string | null> = {};
-  for (const [tag, target] of Object.entries(routes as Record<string, SomeBlock | null>)) {
-    routesAsData[tag] = target === null ? null : target === block ? base.name : target.name;
-  }
-  routed = defineBlock({
-    ...base,
-    next: (checkpoint: Out) => {
-      const target = (routes as Record<string, SomeBlock | null>)[checkpoint.__state];
-      if (target === undefined || target === null) return undefined;
-      // A route naming `block` itself (the only self-reference in scope when
-      // `routes` was written) means "loop back with routing intact" - substitute
-      // the routed Block, not the original with no `next` of its own.
-      return target === block ? routed : target;
-    },
-    routes: routesAsData,
-  });
-  // Without this, branch()'s output carried no __waygraphKind/__waygraphSalt at all (defineBlock
-  // never stamps them - factories do, after defineBlock returns), so a branched Block could never
-  // pass MapBuilder's assertMapKind/assertMapSalt checks. Real bug: branching was unusable from the
-  // Waygraph Map, only from a raw runGraph() call.
-  copyWaygraphRuntime(block, routed);
-  return routed;
-}
-
-
-/**
  * Strips `withVerify`/`modVerify`/`modVerifyAll` off a Block, keeping everything
  * else - `name`, `instruction`, `next`, `requires`. Every function below that
  * returns a new Block calls this on its input first, then rebuilds through
@@ -343,7 +248,7 @@ export function branch<In extends Checkpoint<string>, Out extends Checkpoint<str
  * `branch()` added routing to afterward, and without this step the result would
  * silently drop that routing, since the stale closure never knew about it.
  */
-function stripMethods<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
+export function stripMethods<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   block: Block<In, Out>,
 ): {
   name: string;
@@ -506,43 +411,6 @@ function withStubPhase<In extends Checkpoint<string>, Out extends Checkpoint<str
   });
   copyWaygraphRuntime(block, next);
   return next;
-}
-
-
-/**
- * Answers the browser's own dialog (`confirm`, `alert`, `prompt`, `beforeunload`) that this Block's action
- * triggers. A dialog freezes the page until it is answered, so the answer has to be armed before the click -
- * this does that without folding it into the Block's own `act`. The dialog's text can be kept in mem.
- * @example withDialog(CancelBlock, { accept: true, into: LeaveWarning })
- */
-export function withDialog<B extends SomeBlock>(
-  block: B,
-  options: { accept?: boolean; into?: MemKey<string>; promptText?: string } = {},
-): B {
-  const base = stripMethods(block);
-  const act = base.instruction.act.bind(base.instruction);
-  const next = defineBlock({
-    ...base,
-    instruction: {
-      ...base.instruction,
-      async act(page, input, mem) {
-        const answer = async (dialog: import("@playwright/test").Dialog): Promise<void> => {
-          if (options.into) mem.set(options.into, dialog.message());
-          if (options.accept === false) await dialog.dismiss();
-          else await dialog.accept(options.promptText);
-        };
-        const raw = page as unknown as import("@playwright/test").Page;
-        raw.once("dialog", answer);
-        try {
-          await act(page, input, mem);
-        } finally {
-          raw.off("dialog", answer);
-        }
-      },
-    },
-  });
-  copyWaygraphRuntime(block, next);
-  return next as unknown as B;
 }
 
 

@@ -29,12 +29,12 @@
  * new execution primitive.
  */
 import { discoverGraph, type WaygraphGraph } from "../../analysis/graph.js";
+import { resolveSessionMeta } from "../auto-session/files.js";
+import type { SessionSnapshot } from "../auto-session/helpers.js";
 import {
-  requestSession,
-  resolveSessionMeta,
+    requestSession,
 } from "../auto-session/ipc.js";
 import { browserStart, type BrowserStartInit } from "../auto-session/start.js";
-import type { SessionSnapshot } from "../auto-session/helpers.js";
 
 /** What `pilotStart` returns: the session id, socket path and first snapshot. */
 export interface PilotStartResult {

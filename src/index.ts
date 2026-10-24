@@ -3,7 +3,8 @@ import "./runtime/full-launch.js";
 // Run events are written to the project's run log (.waygraph/runs) when the CLI turns it on.
 import "./runtime/run-log.js";
 export type { Checkpoint, Start } from "./engine/checkpoint/checkpoint.js";
-export type { Instruction, Block, DefinedBlock, SomeBlock, SomeDefinedBlock, WaygraphInstanceOption } from "./engine/block/block.js";
+export type { Instruction, Block, DefinedBlock, SomeBlock, SomeDefinedBlock } from "./engine/block/block.js";
+export type { WaygraphInstanceOption } from "./engine/block/action-page.js";
 export { connect } from "./engine/run/connect.js";
 export { checkpoint } from "./engine/checkpoint/checkpoint.js";
 export { MemKey, MemPage, key, keyGroup } from "./engine/mem/mem.js";
@@ -11,20 +12,12 @@ export { registerMemStub, seedMemStub, getMemStub } from "./engine/mem/mem-stub.
 export { css, byText, byRole } from "./engine/trait/selector.js";
 export { WaygraphError, WAYGRAPH_ERRORS } from "./engine/errors.js";
 export type { WaygraphErrorCode } from "./engine/errors.js";
-export {
-  Trait,
-  urlMatches,
-  textEquals,
-  visible,
-  disabled,
-  enabled,
-  frameVisible,
-  frameTextEquals,
-  frameContainsText,
-} from "./engine/trait/trait.js";
+export { Trait, urlMatches, textEquals, visible, disabled, enabled, frameVisible, frameTextEquals, frameContainsText } from "./engine/trait/trait.js";
 export { runGraph, spawnTab, narrate, preflight, defineLayout } from "./engine/run/run.js";
 export { Engine, map } from "./engine/engine.js";
-export { branch, withVerify, modVerify, modVerifyAll, defineBlock, withDialog } from "./engine/block/block.js";
+export { branch } from "./engine/block/branch.js";
+export { withVerify, modVerify, modVerifyAll, defineBlock } from "./engine/block/block.js";
+export { withDialog } from "./engine/block/dialog.js";
 export { defineNavBlock, defineNavClickBlock, defineMemNavBlock } from "./engine/block/kinds/nav.js";
 export { defineMethodBlock, defineAssertBlock } from "./engine/block/kinds/method.js";
 export { definePageBlock } from "./engine/block/kinds/page.js";
@@ -36,7 +29,8 @@ export { MapBuilder } from "./engine/flow/map-builder.js";
 export { branchRoutes, collectBranchFlows, runBranchRegression } from "./engine/flow/branch-regression.js";
 export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./engine/flow/branch-regression.js";
 export type { ApiBlockOptions, ApiCallResult } from "./engine/block/kinds/api.js";
-export type { MapStepOpts, MapFlowOpts } from "./engine/flow/map-builder.js";
+export type { MapStepOpts } from "./engine/flow/map-steps.js";
+export type { MapFlowOpts } from "./engine/flow/map-builder.js";
 export { resolveHighlightSlots, resolveSlides, runStubPhase, hasAuthoredStubAfter, hasAuthoredStubOnError } from "./demo/narration/narration.js";
 export { resolveFixtureDwellMs, normalizeDemoPace, resolveStepDemoPace, demoPaceScale, demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, demoPaceGateMs, formatDemoPaceBadge, formatDemoPaceLabel, FIXTURE_DURATION_MS_DEFAULT, FIXTURE_DURATION_FAST_MS_DEFAULT, FIXTURE_DURATION_SLOW_MS_DEFAULT } from "./demo/narration/demo-pace.js";
 export { formatHighlightCaption, applyHighlightStyleDefaults, toneIconPrefix } from "./demo/narration/style.js";
@@ -58,46 +52,21 @@ export type { MethodBlock, AssertBlock, AssertBlockOptions } from "./engine/bloc
 export type { PageBlock, PageBlockOptions, PageMethodEntry } from "./engine/block/kinds/page.js";
 export type { EffectBlock } from "./engine/block/kinds/effect.js";
 export type { MapBuilderOptions } from "./engine/flow/map-builder.js";
-export type { ActionPage } from "./engine/block/block.js";
+export type { ActionPage } from "./engine/block/action-page.js";
 export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./analysis/graph.js";
 export { buildManifest } from "./manifest/manifest.js";
 export { onRunEvent } from "./engine/run/events.js";
 export type { RunEvent } from "./engine/run/events.js";
 export type { Manifest, ManifestBlock, ManifestFlow } from "./manifest/manifest.js";
 export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock, OrphanBlock } from "./analysis/graph.js";
-export {
-  isFileSelectToken,
-  parseBlocksSelect,
-  matchBlocksSelect,
-  globToRegExp,
-} from "./manifest/select.js";
+export { isFileSelectToken, parseBlocksSelect, matchBlocksSelect, globToRegExp } from "./manifest/select.js";
 export type { BlocksSelect, BlocksSelectKind } from "./manifest/select.js";
 export { EdgeLeaseCoordinator } from "./live/traverse/lease.js";
 export { runTraverse } from "./live/traverse/traverse.js";
-export type {
-  TraverseOptions,
-  TraverseSessionMode,
-  TraverseWorkerResult,
-} from "./live/traverse/traverse.js";
-export {
-  buildCoverageReport,
-  collectGraphEdgeKeys,
-  defaultCoverageOutPath,
-  formatCoverageLine,
-  normalizeHitKey,
-  parseMinEdgeCoverage,
-  writeCoverageReport,
-} from "./live/traverse/coverage.js";
+export type { TraverseOptions, TraverseSessionMode, TraverseWorkerResult } from "./live/traverse/traverse.js";
+export { buildCoverageReport, collectGraphEdgeKeys, defaultCoverageOutPath, formatCoverageLine, normalizeHitKey, parseMinEdgeCoverage, writeCoverageReport } from "./live/traverse/coverage.js";
 export type { TraverseCoverageReport } from "./live/traverse/coverage.js";
-export {
-  WG_UI_SEL,
-  WG_READY_PANEL_SEL,
-  WG_READY_AUTO_SEL,
-  WG_READY_BANNER_SEL,
-  readWgOverlayBeacon,
-  readWgOverlayBeaconInPage,
-  assertWgOverlayReady,
-} from "./demo/overlay/beacon.js";
+export { WG_UI_SEL, WG_READY_PANEL_SEL, WG_READY_AUTO_SEL, WG_READY_BANNER_SEL, readWgOverlayBeacon, readWgOverlayBeaconInPage, assertWgOverlayReady } from "./demo/overlay/beacon.js";
 export type { WgModalKind, WgBeaconRow } from "./demo/overlay/beacon.js";
 export { AutoSession } from "./live/auto-session/auto-session.js";
 export { stubFilePath } from "./live/auto-session/helpers.js";

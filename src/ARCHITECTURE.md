@@ -23,8 +23,10 @@ package API, is the only file that re-exports).
 engine/           the engine (layer: engine - imports nothing outside engine/)
   engine.ts         Engine + map(): the authoring story
   checkpoint/       checkpoint.ts (the Checkpoint value), route.ts (a Block's from/to)
-  block/            block.ts (Block, Instruction, defineBlock, withVerify, stubs), compose.ts, kinds/ (nav, page, method, effect, api)
-  flow/             flow.ts (Flow, buildFlow, settings), map-builder.ts (map()), branch-regression.ts
+  block/            block.ts (Block, Instruction, defineBlock, withVerify, stubs), branch.ts, dialog.ts, action-page.ts,
+                    compose.ts, kinds/ (nav, page, method, effect, api)
+  flow/             flow.ts (Flow, buildFlow, settings), map-builder.ts (map()) + map-steps.ts (per-step checks) +
+                    map-branch.ts, branch-regression.ts
   run/              run.ts (runGraph), connect.ts (joins Blocks), events.ts (run events), launch.ts, hooks.ts
   mem/              mem.ts (MemPage, keys), mem-stub.ts
   trait/            trait.ts (verify checks), selector.ts
@@ -38,21 +40,25 @@ runner/           waygraph run / demo, spawned inside the project (exported as w
   plan/             plan.ts (spec -> steps), find.ts, spec.ts, seed-mem.ts
   options.ts, session.ts
 demo/             everything the demo shows (layer: demo)
-  stepper/          stepper.ts: the panels before / after each step, the Next gate, pacing, slides, demo log
+  stepper/          stepper.ts: around each step - panel-before.ts / panel-after.ts, step-panels.ts (failure panel), the Next
+                    gate, pacing, slides, demo log
   overlay/          overlay.ts: rings, cursor, banner, caption, todos, device stage, network tab; inpage/ (code that runs
                     in the page, self-contained); ui/ (shadow root + the real .css bundle); locator-theater (the one fill/click
                     patch), reattach, beacon (overlay readiness); auto-chrome and pilot/ for the live sessions' overlay
   narration/        narration.ts: plays a Block's ctx stubs into rings, todos, device, title; stub-ctx, pace, style, todo dock
 live/             driving a running browser, one folder per surface:
-  auto/             auto.ts: `waygraph auto`, the explore loop (picker or terminal menu); explore.ts (library, menu)
-  auto-session/     auto-session.ts: a detached session (`browser start`); ipc.ts (socket + spawn), start.ts, helpers
+  auto/             auto.ts: `waygraph auto`, the explore loop; explore.ts (library, live menu), menu.ts (panel / terminal
+                    picker), mem.ts (--data, mem stubs)
+  auto-session/     auto-session.ts: a detached session (`browser start`); ipc.ts (socket server/client, spawn), files.ts
+                    (metadata, sockets, stop), start.ts, open-browser.ts, inspect.ts (dom, storage), console.ts, helpers
   pilot/            pilot.ts: `pilot start` (session + graph + snapshot in one call); panel.ts (its overlay panel)
-  traverse/         traverse.ts: `waygraph traverse`, the graph crawl; coverage, lease
+  traverse/         traverse.ts: `waygraph traverse`, the graph crawl; worker.ts (one worker's walk), coverage, lease
 manifest/         manifest.ts: every Block, Flow and Checkpoint as JSON, from one scan (scan.ts, project.ts); maps.ts + pack.ts (map packages)
 analysis/         graph, map-check, practices-check, check (validate, nav-escape, inline selectors), flow-source (list / nav), coverage-gap
 runtime/          waygraph-config.ts (config/waygraph.config.ts), .env, full-launch + browser, extensions, web server, video folder,
                   run log, playwright config, global-flag (--config / --env)
-cli/              cli.ts (the `waygraph <command>` dispatcher), commands/ (one file per command), flags, usage, run-chain (spawns the runner)
+cli/              cli.ts (the `waygraph <command>` dispatcher), commands/ (one file per command; session.ts hands browser.ts,
+                  pilot.ts and session-ops.ts their parts), args (parseArgs tables), flags, usage, run-chain (spawns the runner)
 index.ts          the public API
 ```
 
@@ -84,7 +90,7 @@ the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by 
 | A flow setting (`map({ … })`) | `MapBuilderOptions` in `engine/flow/map-builder.ts`, `FlowSettings` / `withSettings` in `engine/flow/flow.ts`, the field on `Flow` |
 | A `define*Block` helper | `engine/block/kinds/<kind>.ts`; its step method in `map-builder.ts` if it can appear in a flow |
 | A `Trait` | `engine/trait/trait.ts` (+ the `Trait` object + an `index.ts` export) |
-| A session command (`send`, `highlight`, ...) | `cli/commands/session.ts` + `live/auto-session/auto-session.ts` + an IPC op in `live/auto-session/ipc.ts` |
+| A session command (`send`, `highlight`, ...) | `cli/commands/session-ops.ts` + `live/auto-session/auto-session.ts` + an IPC op in `live/auto-session/ipc.ts` |
 | Something a ctx stub can do (`ctx.<method>`) | its type in `engine/stub/stub.ts` (and `ring.ts` / `todos.ts` / `viewport.ts` / `pace.ts` for its data), its body in `demo/narration/stub-ctx.ts`; a `--codemod flows` rule in `cli/commands/codemod-stubs.ts` if it replaces an old form |
 | Highlight / todo / device / pace behaviour | `demo/narration/<topic>.ts` |
 | A `WAYGRAPH_*` variable | a row in `engine/env.ts` (its meaning; `docs/env.md` is generated from it), read with `envString` / `envFlag` / `envNumber` |
@@ -99,7 +105,7 @@ the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by 
 
 ## Rules
 
-Enforced: no file over 500 lines (the few above it are ratcheted in `scripts/check-structure.mjs` and may only shrink), no import cycles, the layer table above, no re-exports outside `src/index.ts`, no HTML
+Enforced: no file over 500 lines, no import cycles, the layer table above, no re-exports outside `src/index.ts`, no HTML
 strings written into the page, `WAYGRAPH_*` variables only through `engine/env.ts` (its registry generates `docs/env.md`), no `.catch(() => {})` in Node
 code (`engine/page-gone.ts`: `ignorePageGone` when the page went away, `ignoreTimeout` for a probe), and `any` only goes
 down (`scripts/any-debt.json`, per file; "any Block" is `SomeBlock` in `engine/block/block.ts`).

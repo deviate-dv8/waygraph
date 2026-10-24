@@ -14,7 +14,7 @@ engine plays it (`waygraph run`, or `waygraph demo` with the overlay around each
 
 Layers; no re-exports outside `src/index.ts`; no HTML strings into the page (`__wgEl` / `__wgSet` / `__wgSvg`);
 `WAYGRAPH_*` only through `src/engine/env.ts`; no `.catch(() => {})` (`ignorePageGone` / `ignoreTimeout`); `any` only
-shrinks (`scripts/any-debt.json`); files under 500 lines (a ratchet for the few above); no import cycles. `npm run knip` finds unused code.
+shrinks (`scripts/any-debt.json`); files under 500 lines; no import cycles. `npm run knip` finds unused code.
 
 ## Rules by convention
 

@@ -1,7 +1,8 @@
-import { join } from "node:path";
+// What auto can do from here: the project's Block library and graph, and the live menu of Blocks that can run now.
 import type { Page } from "@playwright/test";
-import type { WaygraphInstanceOption } from "../../engine/block/block.js";
-import { discoverGraph, type WaygraphGraph, type WaygraphEdge } from "../../analysis/graph.js";
+import { join } from "node:path";
+import { discoverGraph, type WaygraphEdge, type WaygraphGraph } from "../../analysis/graph.js";
+import type { WaygraphInstanceOption } from "../../engine/block/action-page.js";
 import { scanProject } from "../../manifest/project.js";
 import { importFresh, walkDir } from "../../manifest/scan.js";
 

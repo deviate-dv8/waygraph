@@ -1,7 +1,7 @@
 // Detached browser sessions a test started, stopped after each test even when it fails (a failing test never reaches
 // its own "q"). Per worker: parallel workers share project folders, so nothing here touches another worker's sessions.
 import { test } from "@playwright/test";
-import { stopBrowserSession } from "../../src/live/auto-session/ipc.js";
+import { stopBrowserSession } from "../../src/live/auto-session/files.js";
 
 const started: { projectDir: string; sessionId: string }[] = [];
 
