@@ -54,6 +54,7 @@
     "test:ui": "playwright test --ui",
     "test:unit": "node --import tsx/esm --test tests/unit/*.spec.ts",
     "example:saucedemo:install": "npm --prefix examples/saucedemo install",
+    "examples:link": "node scripts/link-examples.mjs",
     "example:saucedemo:test": "npm --prefix examples/saucedemo test",
     "example:saucedemo:auto": "npm --prefix examples/saucedemo run auto",
     "check:structure": "node scripts/check-structure.mjs",

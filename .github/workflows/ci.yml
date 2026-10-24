@@ -31,10 +31,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      # The specs scan examples/saucedemo and examples/routed-demo, which import "waygraph": link this build in.
+      - name: Link the examples to this build
+        run: npm run examples:link
+
       - name: Typecheck
         run: npm run typecheck
 
-      - name: check:structure (no file over 800 lines, no import cycles)
+      - name: check:structure (layers, no cycles, file sizes, HTML sinks, env registry, catch-alls, any ratchet)
         run: npm run check:structure
 
       - name: knip (unused files, exports and dependencies)

@@ -4,7 +4,7 @@ import { promisify } from "node:util";
 import { join } from "node:path";
 
 /**
- * `--mem-stub` / withMemStub against the real CLI (spawned process, real
+ * `--mem-stub` / map({ memStub: true }) against the real CLI (spawned process, real
  * generated chain-runner script) - tests/core/mem-stub.spec.ts already
  * covers the in-process engine mechanics (registerMemStub/seedMemStub/
  * preflight); this proves the CLI's seedMemFromRequires wiring end to end.
@@ -18,7 +18,7 @@ const unregistered = join(import.meta.dirname, "..", "fixtures", "mem-stub-unreg
 // Assertions below expect an empty stderr - keep the machine's Chromium override out of it.
 const { CHROME_PATH: _c, CHROMIUM_PATH: _cc, ...cleanEnv } = process.env;
 
-test("a flow wrapped in withMemStub, with its key registered, runs with zero --data", async () => {
+test("a flow built with map({ memStub: true }), with its key registered, runs with zero --data", async () => {
   const { stdout, stderr } = await exec(
     node,
     [CLI, "run", "src/flows/mem-stub-demo.flow.ts", "--mem-stub"],
@@ -28,7 +28,7 @@ test("a flow wrapped in withMemStub, with its key registered, runs with zero --d
   expect(stdout).toMatch(/chain finished/);
 });
 
-test("withMemStub alone (no --mem-stub flag) is enough - the flow's own opt-in doesn't need the CLI override", async () => {
+test("map({ memStub: true }) alone (no --mem-stub flag) is enough - the flow's own opt-in doesn't need the CLI override", async () => {
   const { stdout, stderr } = await exec(
     node,
     [CLI, "run", "src/flows/mem-stub-demo.flow.ts"],

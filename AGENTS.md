@@ -27,6 +27,7 @@ shrinks (`scripts/any-debt.json`); files under 500 lines (a ratchet for the few 
 ## Verify
 
 ```bash
+npm run examples:link   # once per checkout: examples/*/node_modules/waygraph -> this repo (CI does the same)
 npx tsc --noEmit && npm run build && npm run check:structure && npm run knip && npm run test:unit
 WAYGRAPH_HEADED=0 npx playwright test --grep-invert non-headless
 (cd examples/saucedemo && WAYGRAPH_HEADED=0 node ../../bin/waygraph test)

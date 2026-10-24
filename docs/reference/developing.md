@@ -6,6 +6,7 @@
 git clone git@github.com:deviate-dv8/waygraph.git
 cd waygraph
 npm install
+npm run build && npm run examples:link   # the specs scan examples/; this links the build in as their `waygraph`
 npm run typecheck   # waygraph typecheck . (tsc --noEmit + practice warnings)
 npm run test        # node --test tests/unit + playwright test
 npm run test:ui     # playwright test --ui
