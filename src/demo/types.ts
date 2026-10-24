@@ -11,7 +11,22 @@ export type WgPage = Page;
 // The overlay's Node-side state lives on the Page object (`page.__wgVideoViewport`, `page.__wgNetworkHistory`, ...).
 declare module "playwright-core" {
   interface Page {
-    [key: `__wg${string}`]: any;
+    /** The recordVideo canvas size, when recording: the stage a device shell is centered in. */
+    __wgVideoViewport?: { width: number; height: number } | undefined;
+    /** Without a video, the window size at the first device switch (the stage from then on). */
+    __wgHeadedStage?: { width: number; height: number } | undefined;
+    /** The device shell's size, rebuilt after a navigation wipes it. */
+    __wgDeviceShell?: { width: number; height: number } | undefined;
+    __wgDesktopFlat?: boolean | undefined;
+    __wgDevicePreset?: string | undefined;
+    __wgDeviceOrient?: string | undefined;
+    /** The real setViewportSize, kept while the demo makes the page's own one do nothing. */
+    __wgRealSetViewportSize?: Page["setViewportSize"] | undefined;
+    /** The network panel's rows; the panel's DOM does not survive a navigation, this does. */
+    __wgNetworkHistory?: NetworkEntry[] | undefined;
+    __wgNetworkNeedsRestore?: boolean | undefined;
+    __wgNetworkCaptureInstalled?: boolean | undefined;
+    __wgNetworkTabVisible?: boolean | undefined;
   }
   interface Keyboard {
     __wgBeatPatched?: boolean;

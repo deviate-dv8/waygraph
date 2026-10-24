@@ -140,7 +140,8 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     }
     const composed = fastForwardComposeBlock(
       ff.name,
-      ff.buffer as any,
+      // The window's steps were typechecked as they were added; the one-step overload takes them as one Block.
+      ff.buffer as readonly [SomeDefinedBlock],
     );
     return new MapBuilder<Out>(
       this.build,

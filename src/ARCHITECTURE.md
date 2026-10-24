@@ -108,7 +108,10 @@ the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by 
 Enforced: no file over 500 lines, no import cycles, the layer table above, no re-exports outside `src/index.ts`, no HTML
 strings written into the page, `WAYGRAPH_*` variables only through `engine/env.ts` (its registry generates `docs/env.md`), no `.catch(() => {})` in Node
 code (`engine/page-gone.ts`: `ignorePageGone` when the page went away, `ignoreTimeout` for a probe), and `any` only goes
-down (`scripts/any-debt.json`, per file; "any Block" is `SomeBlock` in `engine/block/block.ts`).
+down (`scripts/any-debt.json`, per file). What is left is the engine's "any Block" (`SomeBlock` in
+`engine/block/block.ts`, and the same escape in `compose.ts` / `branch.ts`): Block types are invariant in their
+Checkpoints, so no one Checkpoint type covers every Block. The overlay's in-page bridge (`window.__wg*` and its
+payloads) is typed in `demo/overlay/ui/shadow-globals.d.ts`; the Node-side `page.__wg*` state in `demo/types.ts`.
 Adding an `index.ts` export changes the public API: update `tests/unit/api-surface.snapshot.json` deliberately.
 
 By convention:

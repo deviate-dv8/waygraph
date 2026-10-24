@@ -217,6 +217,8 @@ export type DefinedBlock<In extends Checkpoint<string>, Out extends Checkpoint<s
  * and no one Checkpoint type covers every Block: `any` is that "some Block", written once here.
  */
 export type SomeBlock = Block<any, any>;
+/** The Checkpoint a Block resolves to. */
+type BlockOut<B> = B extends Block<infer _In, infer Out> ? Out : never;
 /** Any {@link DefinedBlock} (see {@link SomeBlock}). */
 export type SomeDefinedBlock = DefinedBlock<any, any>;
 
@@ -368,7 +370,7 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
  */
 export function withVerify<B extends SomeBlock>(
   block: B,
-  verify: Trait[] | ((out: any) => Trait[]),
+  verify: Trait[] | ((out: BlockOut<B>) => Trait[]),
 ): B {
   const base = stripMethods(block);
   const next = defineBlock({ ...base, instruction: { ...base.instruction, verify } });
