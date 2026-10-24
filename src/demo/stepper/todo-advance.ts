@@ -99,7 +99,7 @@ export async function probeTodoDocksOnPage(page: WgPage) {
         let current = "";
         items.forEach((li) => {
           if (li.classList.contains("wg-todo-current")) {
-            current = (li.textContent || "").replace(/s+/g, " ").trim().slice(0, 48);
+            current = (li.textContent || "").replace(/\s+/g, " ").trim().slice(0, 48);
           }
         });
         return {

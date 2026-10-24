@@ -9,12 +9,13 @@
 // data is - this renders that, on-page: method, url, status, and (click a row) request/response
 // headers + bodies + a "copy as cURL" command, a Postman-style inspector for both real page
 // traffic (installNetworkCapture, network-capture.js) and defineApiBlock's own page.request calls.
-export function addNetworkEntry(entry: any) {
+import type { NetworkEntry } from "../../types.js";
+export function addNetworkEntry(entry: NetworkEntry) {
   // No-op outside a demo/pilot/auto run - ensureShadowRoot() (and its __wgById/__wgAdd globals)
   // is never installed for a plain `waygraph run`/Playwright test, and this must not throw there.
   if (typeof __wgById !== "function" || typeof __wgAdd !== "function" || typeof __wgEl !== "function") return;
 
-  function methodClass(method: any) {
+  function methodClass(method: string | undefined) {
     const m = (method || "GET").toUpperCase();
     if (m === "GET") return "get";
     if (m === "POST") return "post";
@@ -23,7 +24,7 @@ export function addNetworkEntry(entry: any) {
     return "other";
   }
 
-  function toCurl(e: any) {
+  function toCurl(e: NetworkEntry) {
     let cmd = "curl -X " + (e.method || "GET") + " '" + String(e.url || "").replace(/'/g, "'\\''") + "'";
     const headers = e.reqHeaders || {};
     for (const k of Object.keys(headers)) {
@@ -34,14 +35,14 @@ export function addNetworkEntry(entry: any) {
     return cmd;
   }
 
-  function renderHeaders(headers: any) {
+  function renderHeaders(headers: Record<string, string> | undefined) {
     const h = headers || {};
     const keys = Object.keys(h);
     if (keys.length === 0) return __wgEl("div", { class: "wg-net-empty" }, "(none)");
     return __wgEl("table", { class: "wg-net-headers" }, keys.map((k) => __wgEl("tr", null, __wgEl("td", null, k), __wgEl("td", null, String(h[k])))));
   }
 
-  function renderBody(body: any) {
+  function renderBody(body: string | undefined) {
     if (body === undefined || body === null || body === "") return __wgEl("div", { class: "wg-net-empty" }, "(empty)");
     let text = body;
     try {
@@ -56,7 +57,7 @@ export function addNetworkEntry(entry: any) {
     return __wgEl("div", { class: "wg-net-detail-section" }, __wgEl("h4", null, heading), ...content);
   }
 
-  function renderDetail(e: any): WgChild[] {
+  function renderDetail(e: NetworkEntry): WgChild[] {
     return [
       section("Request headers", renderHeaders(e.reqHeaders)),
       e.reqBody ? section("Request body", renderBody(e.reqBody)) : null,
@@ -114,7 +115,7 @@ export function addNetworkEntry(entry: any) {
   row.dataset.ok = entry.ok ? "1" : "0";
   let path = entry.url;
   try {
-    const u = new URL(entry.url);
+    const u = new URL(String(entry.url));
     path = u.pathname + u.search;
   } catch {
     /* not an absolute URL - show as given */
@@ -175,7 +176,7 @@ export function addNetworkEntry(entry: any) {
  * always builds the DOM row; this only toggles whether the panel itself is visible). Safe to call
  * before any entry exists yet - it just remembers the flag for addNetworkEntry to check later.
  */
-export function setNetworkTabVisible(visible: any) {
+export function setNetworkTabVisible(visible: boolean) {
   if (typeof __wgById !== "function") return;
   window.__wgNetworkTabVisible = !!visible;
   const panel = __wgById("wg-network-log");

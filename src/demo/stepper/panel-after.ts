@@ -2,11 +2,26 @@
 import { ignorePageGone } from "../../engine/page-gone.js";
 import { installOverlay } from "../overlay/overlay.js";
 import { cycleHighlightRings } from "../overlay/rings.js";
-import type { WgPage } from "../types.js";
-import { miniStepLabel } from "./step-panels.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
+import type { DemoPace } from "../../engine/stub/pace.js";
+import type { ResolvedHighlight } from "../../engine/stub/ring.js";
+import type { TodoDockState } from "../../engine/stub/todos.js";
+import type { Ref, WgPage } from "../types.js";
+import { miniStepLabel, type PanelTodos, type StepPanelInfo } from "./step-panels.js";
+
+/** The panel after a step: the Checkpoint it resolved to, the rings to cycle, and whether it was the last step. */
+export interface AfterPanelInfo extends StepPanelInfo, PanelTodos {
+  result: Checkpoint<string>;
+  resultTag: string;
+  highlights: readonly ResolvedHighlight[];
+  gatesFast?: boolean | undefined;
+  isLast: boolean;
+  pace?: DemoPace | undefined;
+  todoDockRef?: Ref<TodoDockState | undefined> | undefined;
+}
 
 
-export async function renderAfterStep(page: WgPage, info: any) {
+export async function renderAfterStep(page: WgPage, info: AfterPanelInfo) {
   await installOverlay(page, info.title, info.bannerUi, info.caption, info.networkTabVisible);
   // Clear any tracker from a previous highlight before cycling through this
   // step's own.
@@ -42,7 +57,7 @@ export async function renderAfterStep(page: WgPage, info: any) {
   }
   const afterPayload = { ...info, stepLabel: miniStepLabel(info) };
   await page
-    .evaluate((info: any) => {
+    .evaluate((info) => {
       // Reused in place - see renderBeforeStep's own comment on this.
       let panel = __wgById("wg-panel");
       const isNewPanel = !panel;
@@ -56,7 +71,7 @@ export async function renderAfterStep(page: WgPage, info: any) {
         : "Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + " done";
       const buttonLabel = info.isLast ? "Finish" : "Next \u25B6";
       const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
-      const modules = info.allNames.map((name: any, idx: number) => {
+      const modules = info.allNames.map((name, idx) => {
         const cls = idx <= info.moduleIndex ? "wg-mod-done" : "wg-mod-upcoming";
         const desc = info.allDescriptions && info.allDescriptions[idx];
         return __wgEl("span", { class: "wg-mod " + cls, title: desc || undefined }, String(name));
@@ -80,8 +95,8 @@ export async function renderAfterStep(page: WgPage, info: any) {
         ? __wgEl(
           "div",
           { id: "wg-episodes" },
-          info.allEpisodes.map((e: any) => {
-            const cls = e.episodeNumber < info.episodeNumber ? "wg-ep-done"
+          info.allEpisodes.map((e) => {
+            const cls = e.episodeNumber < (info.episodeNumber ?? 0) ? "wg-ep-done"
               : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
                 : "wg-ep-upcoming";
             return __wgEl("span", { class: "wg-ep-tab " + cls }, "Episode " + e.episodeNumber + ": " + (e.episodeTitle || ""));
@@ -137,7 +152,7 @@ export async function renderAfterStep(page: WgPage, info: any) {
         if (sync === "keep" && !info.todoDock) {
           /* leave floating dock alone */
         } else {
-          const payload: Record<string, any> = {
+          const payload: WgTodoSyncPayload = {
             sync: sync,
             dock: info.todoDock || null,
             pos: info.todoPos || null,

@@ -69,7 +69,7 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
       paceStep(pacing, view.step, demoFast, options.fastBlocks);
       await showBefore(ctx, view);
       applyMemEdits(ctx, view, await gate.wait());
-      await markStepRunning(page, {});
+      await markStepRunning(page);
       await labelNavClick(page, view.step);
     },
 

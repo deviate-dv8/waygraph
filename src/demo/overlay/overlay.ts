@@ -1,6 +1,7 @@
 // The demo overlay on a page: installs the shadow root, styles and every in-page piece (rings, banner, caption, panel,
 // todos, device, network tab). Idempotent; called before every step since a navigation wipes the page.
-import type { WgPage } from "../types.js";
+import type { BannerPos } from "../../engine/stub/stub.js";
+import type { BannerUiState, OverlayInstallArgs, WgPage } from "../types.js";
 import { HOST_CSS, RUNNER_EXTRA_CSS, WAYGRAPH_FAVICON } from "./overlay-css.js";
 import { ensureShadowRoot } from "./ui/shadow.js";
 import { resolveTodoDockUi } from "../narration/todo-dock.js";
@@ -26,7 +27,7 @@ import { ignorePageGone } from "../../engine/page-gone.js";
  * `undefined` leaves it alone (default state is hidden, set the very first time restoreNetworkHistory
  * builds a panel); capture itself is unconditional and unaffected by this either way.
  */
-export async function installOverlay(page: WgPage, title?: any, ui?: any, caption?: any, networkTabVisible?: any) {
+export async function installOverlay(page: WgPage, title?: string, ui?: BannerUiState | null, caption?: string, networkTabVisible?: boolean) {
   // ring/cursor/banner/dock come from the ONE shared bundle every surface installs (ui/css/*.css).
   await ensureShadowRoot(page);
   // Idempotent (guarded on page.__wgNetworkCaptureInstalled) - safe to call every step even though
@@ -38,7 +39,7 @@ export async function installOverlay(page: WgPage, title?: any, ui?: any, captio
   // so "shown" would silently revert to the hidden default on the very next navigated step without
   // this. Default false (hidden) - matches addNetworkEntry's own default-hidden behavior.
   if (networkTabVisible !== undefined) page.__wgNetworkTabVisible = !!networkTabVisible;
-  await page.evaluate((v: any) => { window.__wgNetworkTabVisible = v; }, !!page.__wgNetworkTabVisible).catch(ignorePageGone);
+  await page.evaluate((v: boolean) => { window.__wgNetworkTabVisible = v; }, !!page.__wgNetworkTabVisible).catch(ignorePageGone);
   // Real bug this fixes: a navigation wipes the shadow root (and with it, the network panel's DOM
   // and in-page entry list) - without replaying page.__wgNetworkHistory (Node-side, survives
   // navigation) back in every step, the "network tab" silently reset to empty on any step that
@@ -56,12 +57,12 @@ export async function installOverlay(page: WgPage, title?: any, ui?: any, captio
   // Click cycles left -> center -> right (persisted in localStorage so a
   // navigation that rebuilds the banner keeps the human's last pick).
   const envPos = (envString("WAYGRAPH_TITLE_POS") || "left").toLowerCase();
-  const bannerPos = envPos === "center" || envPos === "right" ? envPos : "left";
+  const bannerPos: BannerPos = envPos === "center" || envPos === "right" ? envPos : "left";
   const envTodoPos = (envString("WAYGRAPH_TODO_POS") || "left").toLowerCase();
-  const todoPos = envTodoPos === "right" ? "right" : "left";
+  const todoPos: "left" | "right" = envTodoPos === "right" ? "right" : "left";
   const envAutoplay = envFlag("WAYGRAPH_AUTOPLAY");
   const todoDockUi = resolveTodoDockUi();
-  const args = { title, favicon: WAYGRAPH_FAVICON, bannerPos, todoPos, envAutoplay, todoDockUi, bannerUi: ui || null };
+  const args: OverlayInstallArgs = { title, favicon: WAYGRAPH_FAVICON, bannerPos, todoPos, envAutoplay, todoDockUi, bannerUi: ui || null };
   await page.evaluate(installCore, args).catch(ignorePageGone);
   await page.evaluate(installSwipeZoom, args).catch(ignorePageGone);
   await page.evaluate(installBanner, args).catch(ignorePageGone);

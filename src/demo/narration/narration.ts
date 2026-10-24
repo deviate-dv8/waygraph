@@ -23,9 +23,9 @@ export async function runStubPhase(
   block: SomeBlock,
   phase: HighlightStubPhaseName,
   opts?: {
-    out?: Checkpoint<string>;
+    out?: Checkpoint<string> | undefined;
     error?: unknown;
-    mem?: MemPage;
+    mem?: MemPage | undefined;
   },
 ): Promise<StubPhaseResult> {
   const bag: StubBagState = { highlights: {} };

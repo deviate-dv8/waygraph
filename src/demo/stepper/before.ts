@@ -109,7 +109,7 @@ export async function logDocks(ctx: StepperContext, tag: string, expectDock: boo
     demoLog(
       `  ${tag}dock-dom ` +
         docks
-          .map((d: any) => `${d.key}@${d.pos} ${d.left},${d.top} ${d.w}x${d.h}` + (d.onScreen ? "" : " OFFSCREEN") + ` n=${d.n}` + (d.current ? ` cur="${d.current}"` : ""))
+          .map((d) => `${d.key}@${d.pos} ${d.left},${d.top} ${d.w}x${d.h}` + (d.onScreen ? "" : " OFFSCREEN") + ` n=${d.n}` + (d.current ? ` cur="${d.current}"` : ""))
           .join(" | "),
     );
   } else if (cleared) {

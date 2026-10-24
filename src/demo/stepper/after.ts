@@ -2,6 +2,7 @@
 // show the result panel, then wait at the Next gate.
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import { envFlag } from "../../engine/env.js";
+import type { ResolvedHighlight } from "../../engine/stub/ring.js";
 import type { StubPhaseResult } from "../../engine/stub/stub.js";
 import { hasAuthoredStubAfter, resolveSlides, runStubPhase } from "../narration/narration.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
@@ -20,7 +21,7 @@ export async function showAfter(ctx: StepperContext, view: StepView, result: Che
   const { stage, refs } = ctx;
   await showSlides(ctx, view, result);
   const after = hasAuthoredStubAfter(view.step.block, result) ? await narrateAfter(ctx, view, result) : undefined;
-  const applied = after ? await stage.applyPhase(after.phase) : { appliedTodo: { sync: "keep" }, appliedDevice: { sync: "keep" } };
+  const applied = after ? await stage.applyPhase(after.phase) : { appliedTodo: { sync: "keep" as const }, appliedDevice: { sync: "keep" as const } };
 
   await renderAfterStep(ctx.page, {
     index: view.index,
@@ -74,7 +75,7 @@ export async function showAfter(ctx: StepperContext, view: StepView, result: Che
 async function showSlides(ctx: StepperContext, view: StepView, result: Checkpoint<string>): Promise<void> {
   const slides = resolveSlides(view.step.block, { out: result }).map((s) => applyHighlightStyleDefaults(s, view.step.highlightStyle));
   if (slides.length === 0) return;
-  await presentSlides(ctx.page, slides, ctx.gate.wait, {
+  await presentSlides(ctx.page, slides, {
     title: ctx.title,
     blockName: view.step.block.name,
     fast: ctx.pacing.gatesFast,
@@ -86,7 +87,7 @@ async function showSlides(ctx: StepperContext, view: StepView, result: Checkpoin
 }
 
 /** Runs the Block's stubAfter; its rings carry the flow's highlight style and a caption. */
-async function narrateAfter(ctx: StepperContext, view: StepView, result: Checkpoint<string>): Promise<{ phase: StubPhaseResult; highlights: unknown[] }> {
+async function narrateAfter(ctx: StepperContext, view: StepView, result: Checkpoint<string>): Promise<{ phase: StubPhaseResult; highlights: ResolvedHighlight[] }> {
   const style = view.step.highlightStyle;
   const phase = await runStubPhase(view.step.block, "stubAfter", { out: result, mem: ctx.mem });
   if (phase.todoDockUi) await ctx.stage.pushTodoDockUi(phase.todoDockUi);
@@ -98,26 +99,15 @@ async function narrateAfter(ctx: StepperContext, view: StepView, result: Checkpo
     }),
   });
   const highlights = phase.highlights.map((h) => {
+    // The ring's look and timing only; its todo, gesture and cursor belong to stubBefore.
     const styled = applyHighlightStyleDefaults(h, style);
-    return {
-      selector: styled.selector,
-      label: formatHighlightCaption(styled),
-      duration: styled.duration,
-      fastMode: styled.fastMode,
-      tone: styled.tone,
-      size: styled.size,
-      weight: styled.weight,
-      zoom: styled.zoom,
-      zoomOut: styled.zoomOut,
-      focus: !!styled.focus,
-      color: styled.color,
-      detail: styled.detail,
-    };
+    const { tag: _tag, cursor: _cursor, todo: _todo, slotId: _slotId, gesture: _gesture, ...ring } = styled;
+    return { ...ring, label: formatHighlightCaption(styled), focus: !!styled.focus };
   });
   return { phase, highlights };
 }
 
 /** No stubAfter: ring what the Block's verify checked. */
-function verifyRings(view: StepView, result: Checkpoint<string>): unknown[] {
-  return extractVerifyHighlights(view.step.block, result.__state).map((h: any) => applyHighlightStyleDefaults(h, view.step.highlightStyle));
+function verifyRings(view: StepView, result: Checkpoint<string>): ResolvedHighlight[] {
+  return extractVerifyHighlights(view.step.block, result.__state).map((h) => applyHighlightStyleDefaults(h, view.step.highlightStyle));
 }

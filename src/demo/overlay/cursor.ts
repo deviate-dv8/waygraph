@@ -3,12 +3,20 @@
 import type { WgBox, WgPage } from "../types.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 
+/** A touch swipe: which way, its caption (plus an optional hint) and how long it takes. */
+export interface SwipeTrailOptions {
+  dir?: "left" | "right" | "up" | "down";
+  label?: string;
+  hint?: string;
+  ms?: number;
+}
+
 export async function moveCursorTo(page: WgPage, box: WgBox, ms: number) {
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
   const travel = Math.max(0, Number(ms) || 0);
   await page
-    .evaluate(({ x, y, ms }: any) => {
+    .evaluate(({ x, y, ms }) => {
       if (window.__wgMoveCursorTo) window.__wgMoveCursorTo(x, y, ms);
     }, { x, y, ms: travel })
     .catch(ignorePageGone);
@@ -22,9 +30,9 @@ export async function moveCursorTo(page: WgPage, box: WgBox, ms: number) {
 }
 
 
-export async function clickPulseAt(page: WgPage, x: any, y: any, tone: any) {
+export async function clickPulseAt(page: WgPage, x: number, y: number, tone?: string) {
   await page
-    .evaluate(({ x, y, tone }: any) => {
+    .evaluate(({ x, y, tone }) => {
       if (window.__wgClickPulse) window.__wgClickPulse(x, y, tone || "planned");
     }, { x, y, tone: tone || "planned" })
     .catch(ignorePageGone);
@@ -36,10 +44,10 @@ export async function clickPulseAt(page: WgPage, x: any, y: any, tone: any) {
  * Returns after the trail animation completes.
  * Self-contained when overlay helper is not installed yet (device runs before panel).
  */
-export async function playSwipeTrail(page: WgPage, opts: any) {
+export async function playSwipeTrail(page: WgPage, opts?: SwipeTrailOptions) {
   const o = opts || {};
   const waitMs = await page
-    .evaluate((payload: any) => {
+    .evaluate((payload: Required<SwipeTrailOptions>) => {
       if (typeof window.__wgSwipeTrail === "function") {
         return window.__wgSwipeTrail(payload);
       }
@@ -136,7 +144,7 @@ export async function playSwipeTrail(page: WgPage, opts: any) {
       hint: o.hint || "",
       ms: o.ms || 720,
     })
-    .catch(() => 0);
+    .catch(ignorePageGone);
   const n = Number(waitMs) || 0;
   if (n > 0) await new Promise((r) => setTimeout(r, n));
 }

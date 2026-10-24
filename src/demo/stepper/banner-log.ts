@@ -1,17 +1,9 @@
 // Banner (title card) authoring + verbose log helpers. Mirrors the todo dock's probe/log path
 // so an agent without eyes can read banner state from the demo log.
-import type { WgPage } from "../types.js";
+import type { BannerUiState, WgPage } from "../types.js";
 import { demoLog } from "./demo-log.js";
-import type { BannerPos, StubPhaseResult } from "../../engine/stub/stub.js";
+import type { StubPhaseResult } from "../../engine/stub/stub.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
-
-/** The banner UX installOverlay takes: where it sits and how it behaves. */
-export interface BannerUiState {
-  pos?: BannerPos;
-  collision?: boolean;
-  hidden?: boolean;
-  captionFadeMs?: number;
-}
 
 /** Authored banner UX from a stub phase -> the { pos, collision, hidden } shape installOverlay takes. */
 export function bannerUiFromPhase(phase: Pick<StubPhaseResult, "titlePos" | "bannerUi"> | null | undefined): BannerUiState {

@@ -1,7 +1,7 @@
 // In-page installer (page.evaluate target) - must stay self-contained, no module-scope closure.
 // Bottom narration caption - a white rounded card, not the dark zsign-ported scrim this started as
 // (see ui/css/caption.css's own header); narration-timeline/TTS sync not ported yet.
-export function showCaption(text: any) {
+export function showCaption(text: string) {
   let bar = __wgById("wg-caption-bar");
   if (!bar) {
     bar = document.createElement("div");

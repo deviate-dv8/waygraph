@@ -1,11 +1,11 @@
 // In-page (runs inside the browser via page.evaluate, must stay self-contained): swipe trails and ring zoom.
-export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
+export function installSwipeZoom() {
         /**
          * Finger swipe trail for touch theater (orientation rotate / device change).
          * opts: { dir: 'left'|'right'|'up'|'down', label?, ms? }
          * Returns duration waited (ms) via Promise when called from page.evaluate async.
          */
-        window.__wgSwipeTrail = (opts: any) => {
+        window.__wgSwipeTrail = (opts?: { dir?: string; label?: string; hint?: string; ms?: number }) => {
           const o = opts || {};
           const dir = o.dir === "right" || o.dir === "up" || o.dir === "down" ? o.dir : "left";
           const ms = Math.max(280, Math.min(1400, Number(o.ms) || 720));
@@ -125,7 +125,7 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
         const ZOOM_ICO =
           '<svg viewBox="0 0 24 24" fill="none" stroke="#c9a6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
           '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
-        window.__wgSetZoomBadge = (scale: any, sel: any) => {
+        window.__wgSetZoomBadge = (scale: number, sel?: string) => {
           const n = Number(scale);
           const level = Number.isFinite(n) && n > 0 ? n : 1;
           let badge = __wgById("wg-zoom-badge");
@@ -148,7 +148,7 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
             window.__wgSetZoomBadge(window.__wgZoomLevel || 1, window.__wgZoomSel || "");
           }
         };
-        window.__wgSetTypingBadge = (on: any, label: any) => {
+        window.__wgSetTypingBadge = (on: boolean, label?: string) => {
           let badge = __wgById("wg-typing-badge");
           if (!on) {
             if (badge) {
@@ -177,7 +177,7 @@ export function installSwipeZoom({ title, favicon, bannerPos, todoPos, envAutopl
          * + uneven border-radius). Element scale mangled cart rows. Emphasis
          * is ring + focus veil; badge still shows authored zoom level.
          */
-        window.__wgApplyZoom = (sel: any, scale: any) => {
+        window.__wgApplyZoom = (sel: string | undefined, scale: number) => {
           document.querySelectorAll<HTMLElement>("[data-wg-zoomed=\"1\"]").forEach((el) => {
             el.style.removeProperty("transform");
             el.style.removeProperty("transform-origin");

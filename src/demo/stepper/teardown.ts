@@ -33,10 +33,9 @@ import { ignorePageGone } from "../../engine/page-gone.js";
  * ("subtree intercepts pointer events"). Empty/partial fills + a lucky
  * edge click on Login then produced Sauce Demo's Epic sadface, verify
  * still passed on the error banner, and the next block blew up. Collapse
- * also matches the user's "step is running / can't interrupt" ask. (_opts kept
- * for call-site compat; autoCollapsePanel is now unconditional.)
+ * also matches the user's "step is running / can't interrupt" ask.
  */
-export async function markStepRunning(page: WgPage, _opts: any) {
+export async function markStepRunning(page: WgPage) {
   await page
     .evaluate(() => {
       const runBtn = __wgById<HTMLButtonElement>("wg-run");

@@ -3,10 +3,17 @@ import { envFlag, envString } from "../../engine/env.js";
 import { ignorePageGone, ignoreTimeout } from "../../engine/page-gone.js";
 import { installOverlay } from "../overlay/overlay.js";
 import type { WgPage } from "../types.js";
-import { miniStepLabel } from "./step-panels.js";
+import { miniStepLabel, type PanelTodos, type StepPanelInfo } from "./step-panels.js";
+
+/** The panel before a step: its description, the mem it reads (editable), and whether its episode just began. */
+export interface BeforePanelInfo extends StepPanelInfo, PanelTodos {
+  description: string;
+  keys: readonly { name: string; value: string }[];
+  justEnteredEpisode: boolean;
+}
 
 
-export async function renderBeforeStep(page: WgPage, info: any) {
+export async function renderBeforeStep(page: WgPage, info: BeforePanelInfo) {
   await installOverlay(page, info.title, info.bannerUi, info.caption, info.networkTabVisible);
   // A ring left highlighting the PREVIOUS step's element (and its live
   // resize/scroll tracker) shouldn't linger once a new step's own panel is
@@ -26,7 +33,7 @@ export async function renderBeforeStep(page: WgPage, info: any) {
   // miniStepLabel / todosHtmlFromInfo are Node-only — browser evaluate has no closure.
   const payload = { ...info, stepLabel: miniStepLabel(info) };
   await page
-    .evaluate((info: any) => {
+    .evaluate((info) => {
       // Reused in place, not removed + recreated, every step - the old
       // remove()-then-fade-back-in cycle was a real flash on every single
       // transition (the user: "the appear and disappear... hurts eyes and
@@ -49,8 +56,8 @@ export async function renderBeforeStep(page: WgPage, info: any) {
         ? __wgEl(
           "div",
           { id: "wg-episodes" },
-          info.allEpisodes.map((e: any) => {
-            const cls = e.episodeNumber < info.episodeNumber ? "wg-ep-done"
+          info.allEpisodes.map((e) => {
+            const cls = e.episodeNumber < (info.episodeNumber ?? 0) ? "wg-ep-done"
               : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
                 : "wg-ep-upcoming";
             // The gentle one-time glow only plays on the tab actually
@@ -68,7 +75,7 @@ export async function renderBeforeStep(page: WgPage, info: any) {
       // "in episode 2 it shows 2nd to the last... it should start from the
       // first block" (the user).
       const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
-      const modules = info.allNames.map((name: any, idx: number) => {
+      const modules = info.allNames.map((name, idx) => {
         const cls = idx < info.moduleIndex ? "wg-mod-done" : idx === info.moduleIndex ? "wg-mod-current" : "wg-mod-upcoming";
         const desc = info.allDescriptions && info.allDescriptions[idx];
         return __wgEl("span", { class: "wg-mod " + cls, title: desc || undefined }, String(name));
@@ -83,7 +90,7 @@ export async function renderBeforeStep(page: WgPage, info: any) {
         : null;
       const keys = info.keys.length === 0
         ? [__wgEl("div", { class: "wg-key" }, "(no MemKeys required)")]
-        : info.keys.map((k: any) => {
+        : info.keys.map((k) => {
           const field = __wgEl("textarea", { data: { key: k.name }, attrs: { rows: 2 } });
           field.value = k.value;
           return __wgEl("div", { class: "wg-key" }, __wgEl("label", null, k.name), field, __wgEl("div", { class: "wg-key-pretty", data: { prettyFor: k.name } }));
@@ -132,7 +139,7 @@ export async function renderBeforeStep(page: WgPage, info: any) {
         if (sync === "keep" && !info.todoDock) {
           /* leave floating dock alone */
         } else {
-          const payload: Record<string, any> = {
+          const payload: WgTodoSyncPayload = {
             sync: sync,
             dock: info.todoDock || null,
             pos: info.todoPos || null,
@@ -160,8 +167,8 @@ export async function renderBeforeStep(page: WgPage, info: any) {
       // Hidden entirely in JSON mode - shares the SAME global toggle the
       // result display's own Pretty/JSON buttons already set, not a
       // second, separate preference.
-      const prettyMemValue = (raw: any): WgChild[] => {
-        let parsed;
+      const prettyMemValue = (raw: string): WgChild[] => {
+        let parsed: unknown;
         try {
           parsed = JSON.parse(raw);
         } catch {
@@ -191,7 +198,7 @@ export async function renderBeforeStep(page: WgPage, info: any) {
       const runBtn = __wgById<HTMLButtonElement>("wg-run");
       if (runBtn) {
         runBtn.addEventListener("click", () => {
-          const edits: Record<string, any> = {};
+          const edits: Record<string, string> = {};
           panel.querySelectorAll<HTMLTextAreaElement>("textarea[data-key]").forEach((el) => {
             edits[el.getAttribute("data-key") ?? ""] = el.value;
           });
@@ -242,7 +249,7 @@ export async function renderBeforeStep(page: WgPage, info: any) {
             readyAttr: __wgById("wg-panel")?.getAttribute("data-wg-ready") || null,
           };
         })
-        .catch((e: any) => ({ ok: false, reason: String(e instanceof Error ? e.message : e) }));
+        .catch((e: unknown) => ({ ok: false, reason: String(e instanceof Error ? e.message : e) }));
       console.error("WAYGRAPH_PROVE " + JSON.stringify(ok));
       (globalThis as { __wgProveDone?: boolean; }).__wgProveDone = true;
       if (envFlag("WAYGRAPH_PROVE_EXIT")) {

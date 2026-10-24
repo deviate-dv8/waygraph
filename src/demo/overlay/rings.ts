@@ -49,7 +49,7 @@ export async function ensureLocatorInView(locator: Locator, opts?: { instant?: b
       const left = r.right < margin;
       if (!below && !above && !left && !right) return null;
       // Finger direction to reveal the target (swipe up => content moves up).
-      let dir = "up";
+      let dir: "left" | "right" | "up" | "down" = "up";
       if (below) dir = "up";
       else if (above) dir = "down";
       else if (right) dir = "left";

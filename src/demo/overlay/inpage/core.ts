@@ -1,6 +1,6 @@
 // In-page (runs inside the browser via page.evaluate, must stay self-contained): the ring, cursor and click pulse every surface paints with.
-import type { WgBox } from "../../types.js";
-export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
+import type { OverlayInstallArgs, WgBox } from "../../types.js";
+export function installCore({ envAutoplay, todoDockUi }: OverlayInstallArgs) {
         window.__wgTodoDockUi = todoDockUi || {
           compact: true,
           cap: 5,
@@ -20,7 +20,7 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
         }
         // The one shared ring primitive (ui/css/ring.css) - #wg-ring/#wg-ring-label is just this
         // surface's OWN ring instance, found by id like any other (see __wgEnsureRingEl below).
-        window.__wgEnsureRingEl = (ringId: any, labelId: any) => {
+        window.__wgEnsureRingEl = (ringId: string, labelId: string) => {
           let ring = __wgById(ringId);
           if (!ring) {
             ring = document.createElement("div");
@@ -93,7 +93,7 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
             // has no idea that's there and the label just sits on top of it. Sample a few points
             // under the would-be label and flip above if any land on real page content (not our
             // own ring/label elements, which are the only things expected there otherwise).
-            const probe = (x: any, y: any) => {
+            const probe = (x: number, y: number) => {
               const el = document.elementFromPoint(x, y);
               return el && el.id !== ringId && el.id !== labelId && !(el.closest && el.closest("#wg-root"));
             };
@@ -131,7 +131,7 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
           pulse.id = "wg-click-pulse";
           __wgAdd(pulse);
         }
-        window.__wgMoveCursorTo = (x: any, y: any, ms?: number, instant?: boolean) => {
+        window.__wgMoveCursorTo = (x, y, ms, instant) => {
           const cursor = __wgById("wg-cursor");
           if (!cursor) return;
           cursor.style.setProperty("--wg-cursor-ms", (ms || 600) + "ms");
@@ -153,7 +153,7 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
         // #wg-ring's own extras on top of the shared __wgPaintRingAt primitive: todo/banner
         // collision avoidance only makes sense for the ONE "current action" ring, not Pilot's
         // several independent fixture rings - kept here, not pushed down into the shared painter.
-        window.__wgPositionRing = (box: WgBox, label: any, tone: any, style: any) => {
+        window.__wgPositionRing = (box, label, tone, style) => {
           if (!box) return;
           window.__wgPaintRingAt!("wg-ring", "wg-ring-label", box, label, tone, style);
           if (window.__wgTodosSetBehind) window.__wgTodosSetBehind(true);
@@ -162,7 +162,7 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
           if (window.__wgBannerAvoidRing) window.__wgBannerAvoidRing(box);
         };
         /** Dim/lower floating todo docks while a ring caption is the focus. */
-        window.__wgTodosSetBehind = (on: any) => {
+        window.__wgTodosSetBehind = (on: boolean) => {
           const ui = window.__wgTodoDockUi || {};
           if (ui.behindRing === false) {
             __wgQA(".wg-todo-dock, #wg-todo-dock").forEach((el) => {
@@ -222,7 +222,7 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
         // rings.js's showRing), not a selector string - >> piercing / :has-text() are Playwright's
         // own selector-engine syntax, which document.querySelector has no way to understand, so
         // resolution happens once on the Node side via page.locator(), before this ever runs.
-        window.__wgFollowRing = (el: HTMLElement, label: any, tone: any, style: any, focus: any) => {
+        window.__wgFollowRing = (el: HTMLElement, label: string, tone?: string, style?: WgRingStyle, focus?: boolean) => {
           window.__wgStopRingFollow();
           if (!el) return;
           window.__wgRingFollowEl = el;
@@ -256,7 +256,7 @@ export function installCore({ title, favicon, bannerPos, todoPos, envAutoplay, t
           void pulse.offsetWidth;
           pulse.classList.add("wg-pulse");
         };
-        window.__wgHideRing = (opts: any) => {
+        window.__wgHideRing = (opts) => {
           // While a narrate() call owns the ring (mid multi-step action),
           // the auto-highlight click/fill patches' own end-of-step hide is
           // a no-op - narrate() itself clears it once the WHOLE wrapped

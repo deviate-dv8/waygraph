@@ -1,9 +1,9 @@
 // In-page (runs inside the browser via page.evaluate, must stay self-contained): the step panel's Hide/Show chrome and mini Next.
-export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
+export function installPanelChrome() {
         // Hide/Show for #wg-panel - call after every panel content refresh.
         // Collapsed = "N / M · block" + Next (when not auto). Never pass
         // forceCollapsed:false - omit so Hide/localStorage wins.
-        window.__wgWirePanelChrome = (panel: any, storageKey: any, chromeTitle: any, opts: any) => {
+        window.__wgWirePanelChrome = (panel, storageKey, chromeTitle, opts) => {
           if (!panel) return;
           opts = opts || {};
           const ensureChrome = () => {
@@ -98,8 +98,8 @@ export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAuto
             );
             return span;
           };
-          const syncMiniNext = (hidden: any) => {
-            const miniNext = panel.querySelector("[data-wg-mini-next]");
+          const syncMiniNext = (hidden: boolean) => {
+            const miniNext = panel.querySelector<HTMLButtonElement>("[data-wg-mini-next]");
             if (!miniNext) return;
             let auto = false;
             try {
@@ -117,7 +117,7 @@ export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAuto
               miniNext.disabled = true;
             }
           };
-          const apply = (hidden: any, persist: any) => {
+          const apply = (hidden: boolean, persist: boolean) => {
             panel.classList.toggle("wg-collapsed", hidden);
             panel.setAttribute("data-wg-collapsed", hidden ? "1" : "0");
             const t = panel.querySelector("[data-wg-toggle]");
@@ -156,18 +156,18 @@ export function installPanelChrome({ title, favicon, bannerPos, todoPos, envAuto
           }
           // force mini does not overwrite Hide preference in storage.
           apply(hidden, opts.forceCollapsed === true ? false : true);
-          const toggle = panel.querySelector("[data-wg-toggle]");
+          const toggle = panel.querySelector<HTMLElement>("[data-wg-toggle]");
           if (toggle && !toggle.dataset.wgWired) {
             toggle.dataset.wgWired = "1";
-            toggle.addEventListener("click", (e: any) => {
+            toggle.addEventListener("click", (e) => {
               e.stopPropagation();
               apply(!panel.classList.contains("wg-collapsed"), true);
             });
           }
-          const miniNext = panel.querySelector("[data-wg-mini-next]");
+          const miniNext = panel.querySelector<HTMLElement>("[data-wg-mini-next]");
           if (miniNext && !miniNext.dataset.wgWired) {
             miniNext.dataset.wgWired = "1";
-            miniNext.addEventListener("click", (e: any) => {
+            miniNext.addEventListener("click", (e) => {
               e.stopPropagation();
               const runBtn = __wgById<HTMLButtonElement>("wg-run");
               if (runBtn && !runBtn.disabled) {

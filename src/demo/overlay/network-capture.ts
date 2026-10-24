@@ -3,7 +3,8 @@
 // every real request the PAGE makes (XHR/fetch/navigation) - not page.request.get()-style calls,
 // which go through a separate APIRequestContext entirely and never touch the browser at all (that
 // side is covered by defineApiBlock's own explicit call, in src/engine/block/kinds/api.ts).
-import type { WgPage } from "../types.js";
+import type { Request } from "@playwright/test";
+import type { NetworkEntry, WgPage } from "../types.js";
 import { addNetworkEntry, clearNetworkLog } from "./inpage/network.js";
 import { setApiCallRecorder } from "../../engine/run/hooks.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
@@ -27,7 +28,7 @@ const MAX_HISTORY = 30;
  * this, the "network tab" reset to empty on every step that navigated - not what a persistent
  * Network tab is supposed to do.
  */
-export function recordNetworkEntry(page: WgPage, entry: any) {
+export function recordNetworkEntry(page: WgPage, entry: NetworkEntry) {
   page.__wgNetworkHistory = page.__wgNetworkHistory || [];
   page.__wgNetworkHistory.push(entry);
   while (page.__wgNetworkHistory.length > MAX_HISTORY) page.__wgNetworkHistory.shift();
@@ -67,24 +68,24 @@ export function installNetworkCapture(page: WgPage) {
 
   // Marks history as needing a replay - see restoreNetworkHistory's own comment. Main frame only;
   // an iframe navigating doesn't wipe the top-level shadow root the panel lives in.
-  page.on("framenavigated", (frame: any) => {
+  page.on("framenavigated", (frame) => {
     if (frame === page.mainFrame()) page.__wgNetworkNeedsRestore = true;
   });
 
-  const startedAt = new Map();
+  const startedAt = new Map<Request, number>();
 
-  page.on("request", (request: any) => {
+  page.on("request", (request) => {
     startedAt.set(request, Date.now());
   });
 
-  page.on("requestfinished", async (request: any) => {
+  page.on("requestfinished", async (request) => {
     try {
       if (!RELEVANT_TYPES.has(request.resourceType())) return;
       const response = await request.response();
       if (!response) return;
       const start = startedAt.get(request);
       startedAt.delete(request);
-      let resBody;
+      let resBody: string | undefined;
       try {
         const contentType = (await response.headerValue("content-type")) || "";
         if (/json|text|xml|html|javascript/.test(contentType)) {
@@ -114,7 +115,7 @@ export function installNetworkCapture(page: WgPage) {
     }
   });
 
-  page.on("requestfailed", (request: any) => {
+  page.on("requestfailed", (request) => {
     startedAt.delete(request);
     if (!RELEVANT_TYPES.has(request.resourceType())) return;
     recordNetworkEntry(page, {
@@ -123,7 +124,7 @@ export function installNetworkCapture(page: WgPage) {
       status: 0,
       ok: false,
       reqBody: request.postData() || undefined,
-      resBody: request.failure() ? request.failure().errorText : undefined,
+      resBody: request.failure()?.errorText,
     });
   });
 }

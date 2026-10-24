@@ -1,15 +1,29 @@
 // Device emulation for a step (ctx.device): resizes the page, switches touch, and frames it on a video.
+import type { DeviceState } from "../../engine/stub/viewport.js";
 import type { WgPage } from "../types.js";
 import { resolveDeviceState } from "../narration/device.js";
 import { envNumber } from "../../engine/env.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
+
+interface Size {
+  width: number;
+  height: number;
+}
+
+/** How a device-shell change animates: clear it, shutter out to desktop, enter in, or stay flat. */
+interface DeviceStageOptions {
+  clear?: boolean;
+  shutterOut?: boolean;
+  enterIn?: boolean;
+  desktopFlat?: boolean;
+}
 
 /**
  * Fit + center the OS browser window on the device viewport so mobile/tablet
  * is not stuck top-left inside a maximized frame (0.13.4).
  * Desktop clear restores maximized.
  */
-async function fitWindowToDeviceViewport(page: WgPage, viewport: any, opts: any) {
+async function fitWindowToDeviceViewport(page: WgPage, viewport: Size | null | undefined, opts?: { maximize?: boolean }) {
   const maximize = !!(opts && opts.maximize);
   let client;
   try {
@@ -74,14 +88,14 @@ async function fitWindowToDeviceViewport(page: WgPage, viewport: any, opts: any)
  * setViewportSize to mobile/tablet letterboxes the .webm top-left. Instead keep
  * the stage size and center a device-sized #wg-device-shell inside the frame.
  */
-export async function applyVideoDeviceStage(page: WgPage, target: any, stage: any, opts: any) {
+export async function applyVideoDeviceStage(page: WgPage, target: Size, stage: Size, opts?: DeviceStageOptions) {
   const clear = !!(opts && opts.clear);
   const shutterOut = !!(opts && opts.shutterOut);
   const enterIn = !!(opts && opts.enterIn);
   const desktopFlat = !!(opts && (opts.desktopFlat || opts.shutterOut));
   const result = await page
     .evaluate(
-      ({ tw, th, sw, sh, clear, shutterOut, enterIn, desktopFlat }: any) => {
+      ({ tw, th, sw, sh, clear, shutterOut, enterIn, desktopFlat }) => {
         const MATTE = "#0b1220";
         const unwrap = () => {
           const shell = document.getElementById("wg-device-shell");
@@ -209,7 +223,7 @@ export async function applyVideoDeviceStage(page: WgPage, target: any, stage: an
  * Seamless viewport lerp + centered window + toast on set/clear.
  * With --video: keep recordVideo stage size and center a device shell in-frame.
  */
-export async function applyDeviceToPage(page: WgPage, device: any, sync: any) {
+export async function applyDeviceToPage(page: WgPage, device: DeviceState | null | undefined, sync?: string) {
   const mode = sync || (device ? "set" : "keep");
   if (mode === "keep" && !device) return;
   const d =
@@ -396,7 +410,7 @@ export async function applyDeviceToPage(page: WgPage, device: any, sync: any) {
   // Fire toast near the end of the lerp so it reads as one seamless beat.
   await page
     .evaluate(
-      (payload: any) => {
+      (payload: WgDevicePayload) => {
         if (window.__wgSyncDevice) window.__wgSyncDevice(payload);
       },
       {

@@ -2,11 +2,10 @@
 // stub phase is applied to the page. demo / auto / browser / pilot all go through this, so a "waygraph overlay
 // fixture" (ctx.todos / ctx.device / ctx.title / ...) means the same thing on every surface.
 // NOT Playwright test fixtures - these paint the waygraph overlay on the page under test.
-import type { StepperRefs, WgPage } from "../types.js";
+import type { BannerUiState, StepperRefs, WgPage } from "../types.js";
 import type { StubPhaseResult } from "../../engine/stub/stub.js";
 import type { TodoDockState, TodoDockUiOpts } from "../../engine/stub/todos.js";
 import type { DeviceState } from "../../engine/stub/viewport.js";
-import type { BannerUiState } from "../stepper/banner-log.js";
 import { applyDevicePhase } from "../narration/device.js";
 import { applyTodoPhase, resolveTodoDockUi } from "../narration/todo-dock.js";
 import { applyDeviceToPage } from "./device-stage.js";

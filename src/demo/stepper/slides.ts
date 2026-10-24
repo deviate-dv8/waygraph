@@ -2,11 +2,23 @@
 import type { WgPage } from "../types.js";
 import { demoPaceGateMs, formatDemoPaceBadge, formatDemoPaceLabel, normalizeDemoPace, resolveFixtureDwellMs } from "../narration/demo-pace.js";
 import { formatHighlightCaption } from "../narration/style.js";
-import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/stub/ring.js";
+import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, type WaygraphSlide } from "../../engine/stub/ring.js";
+import type { DemoPace } from "../../engine/stub/pace.js";
 import { installOverlay } from "../overlay/overlay.js";
 import { applyHighlightZoom, ensureSelectorInView, hideRing, showRing } from "../overlay/rings.js";
 import { demoPaceKind } from "./demo-log.js";
 import { envFlag, envNumber, envString } from "../../engine/env.js";
+
+/** Where the slides sit (title, Block, episode) and how fast they advance. */
+export interface SlidesOptions {
+  title?: string | undefined;
+  blockName?: string | undefined;
+  episodeNumber?: number | undefined;
+  episodeTitle?: string | undefined;
+  fast?: boolean | undefined;
+  pace?: DemoPace | undefined;
+  autoplayMs?: number | undefined;
+}
 
 /**
  * Multi-step yap captions - not block lifecycle. Each slide waits for Next
@@ -17,7 +29,7 @@ import { envFlag, envNumber, envString } from "../../engine/env.js";
  * __wgNext is momentarily wedged, which left "Next slide" looking live but
  * doing nothing. In-page data-wg-acked + autoplay poll is the source of truth.
  */
-export async function presentSlides(page: WgPage, slides: any, _gate: any, opts: any) {
+export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide[], opts?: SlidesOptions) {
   const title = (opts && opts.title) || "waygraph demo";
   const blockName = (opts && opts.blockName) || "";
   const episodeNumber = opts && opts.episodeNumber;
@@ -30,7 +42,7 @@ export async function presentSlides(page: WgPage, slides: any, _gate: any, opts:
       : (envNumber("WAYGRAPH_AUTOPLAY_MS") ?? 1800);
   const autoplayMs = demoPaceGateMs(demoPace, baseAutoplay);
   for (let i = 0; i < slides.length; i++) {
-    const s = slides[i];
+    const s = slides[i]!;
     const caption = formatHighlightCaption(s);
     const slideTone = normalizeHighlightTone(s.tone);
     const slideStyle = {
@@ -43,7 +55,7 @@ export async function presentSlides(page: WgPage, slides: any, _gate: any, opts:
     if (s.selector) {
       try {
         await ensureSelectorInView(page, s.selector);
-        await applyHighlightZoom(page, s.selector, s.zoom, s.zoomOut);
+        await applyHighlightZoom(page, s.selector, s.zoom, undefined);
         // Playwright's own locator (>> piercing / :has-text() / :visible support), not a raw
         // querySelector string - see rings.js's showRing for the same fix, same reason. count()
         // gate: Locator.evaluate() has no timeout option and auto-waits ~30s for a match to
@@ -62,7 +74,7 @@ export async function presentSlides(page: WgPage, slides: any, _gate: any, opts:
           await showRing(page, box, caption, slideTone, {
             ...slideStyle,
             selector: s.selector,
-            focus: !!s.focus,
+            focus: false,
           });
         }
       } catch {
@@ -72,7 +84,7 @@ export async function presentSlides(page: WgPage, slides: any, _gate: any, opts:
       await hideRing(page);
     }
     await page.evaluate(
-      (info: any) => {
+      (info) => {
         let panel = __wgById("wg-panel");
         const isNew = !panel;
         if (!panel) {

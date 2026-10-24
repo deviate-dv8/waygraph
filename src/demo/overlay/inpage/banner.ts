@@ -1,8 +1,8 @@
 // In-page (runs inside the browser via page.evaluate, must stay self-contained): the title banner card.
-import type { WgBox } from "../../types.js";
-export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi, bannerUi, tag: bannerTag }: any) {
+import type { OverlayInstallArgs, WgBox } from "../../types.js";
+export function installBanner({ title, favicon, bannerPos, bannerUi, tag: bannerTag }: OverlayInstallArgs) {
         const POSITIONS = ["left", "center", "right"];
-        const applyPos = (el: HTMLElement, pos: any) => {
+        const applyPos = (el: HTMLElement, pos: string) => {
           el.dataset.pos = pos;
           el.dataset.home = pos;
           try {
@@ -23,13 +23,13 @@ export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay,
               /* ignore */
             }
             const startPos =
-              saved && POSITIONS.includes(saved) ? saved : bannerPos;
+              saved && POSITIONS.includes(saved) ? saved : bannerPos || "left";
             applyPos(banner, startPos);
             banner.title = "Click to move: top left / center / right";
             banner.addEventListener("click", (e) => {
               e.stopPropagation();
               const i = POSITIONS.indexOf(banner!.dataset.pos || "left");
-              applyPos(banner!, POSITIONS[(i + 1) % POSITIONS.length]);
+              applyPos(banner!, POSITIONS[(i + 1) % POSITIONS.length]!);
             });
             const tag = document.createElement("span");
             tag.className = "wg-banner-tag";
@@ -101,7 +101,7 @@ export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay,
           };
           const home = b.dataset.home || b.dataset.pos || "left";
           // Called every animation frame while a ring is followed - only log when the outcome changes.
-          const log = (state: any, line?: any) => {
+          const log = (state: string, line?: string) => {
             if (b.dataset.lastLog === state) return;
             b.dataset.lastLog = state;
             if (line) (window.__wgBannerLog = window.__wgBannerLog || []).push(line);
@@ -134,7 +134,7 @@ export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay,
         // Dim the banner while a ring caption is the focus - same "auto opacity" effect the todo
         // dock already has via __wgTodosSetBehind, extended to the banner so both floating chrome
         // pieces step back the same way instead of only one of them fading.
-        window.__wgBannerSetBehind = (on: any) => {
+        window.__wgBannerSetBehind = (on: boolean) => {
           const b = __wgById("wg-banner");
           if (!b) return;
           b.classList.toggle("wg-banner-behind", !!on);
@@ -151,5 +151,5 @@ export function installBanner({ title, favicon, bannerPos, todoPos, envAutoplay,
           iconLink.rel = "icon";
           document.head.appendChild(iconLink);
         }
-        if (iconLink.href !== favicon) iconLink.href = favicon;
+        if (favicon && iconLink.href !== favicon) iconLink.href = favicon;
 }

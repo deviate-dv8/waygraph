@@ -1,8 +1,8 @@
 // In-page (runs inside the browser via page.evaluate, must stay self-contained): the device toast and chip.
-export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
+export function installDevice() {
         // Device toast + chip (0.13.2+) - announce on set/clear; quiet chip on keep.
         // Payload: { sync, device?, remain?, announce? }
-        window.__wgSyncDevice = (payload: any) => {
+        window.__wgSyncDevice = (payload) => {
           const sync =
             payload && (payload.sync === "clear" || payload.sync === "keep" || payload.sync === "set")
               ? payload.sync
@@ -33,7 +33,7 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
               '<circle cx="12" cy="17.2" r="1" fill="#fff" stroke="none"/></svg>',
             desktop: DESKTOP_ICON,
           };
-          const setCursor = (touch: any) => {
+          const setCursor = (touch: boolean) => {
             if (!cursor) return;
             if (touch) {
               cursor.setAttribute("data-touch", "1");
@@ -43,7 +43,7 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
               __wgSet(cursor, __wgSvg(MOUSE_SVG));
             }
           };
-          const ensureChip = (preset: any, touch: any, remain: any, orientation: any) => {
+          const ensureChip = (preset: string, touch: boolean, remain: boolean, orientation: string) => {
             let badge = __wgById("wg-device-badge");
             if (preset === "desktop" && !touch) {
               if (badge) {
@@ -82,7 +82,7 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
             void badge.offsetWidth;
             badge.classList.add("wg-in");
           };
-          const showToast = (preset: any, touch: any, title: any, sub: any, orientation: any) => {
+          const showToast = (preset: string, touch: boolean, title: string, sub: string, orientation: string) => {
             let toast = __wgById("wg-device-toast");
             if (toast && toast._wgTimer) {
               clearTimeout(toast._wgTimer);
@@ -126,7 +126,7 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
             (device && device.preset === "desktop" && !device.touchMode);
           if (isDesktopClear) {
             setCursor(false);
-            const announce = payload.announce !== false && sync !== "keep";
+            const announce = payload?.announce !== false && sync !== "keep";
             if (announce) {
               const vp = device && device.viewport ? device.viewport : { width: 1280, height: 720 };
               showToast(
@@ -157,8 +157,8 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
           if (!device) return;
           const preset = device.preset || "desktop";
           const touch = !!device.touchMode;
-          const remain = payload.remain !== false && sync !== "clear";
-          const vp = device.viewport || {};
+          const remain = payload?.remain !== false;
+          const vp = device.viewport || { width: 0, height: 0 };
           const orient =
             device.orientation === "landscape" || device.orientation === "portrait"
               ? device.orientation
@@ -178,8 +178,8 @@ export function installDevice({ title, favicon, bannerPos, todoPos, envAutoplay,
           if (window.__wgEnsureZoomBadge) window.__wgEnsureZoomBadge();
 
           const announce =
-            payload.announce === true ||
-            (payload.announce !== false && (sync === "set" || sync === "clear") && changed);
+            payload?.announce === true ||
+            (payload?.announce !== false && sync === "set" && changed);
 
           const size =
             (vp.width || "?") +

@@ -1,5 +1,6 @@
 // In-page (runs inside the browser via page.evaluate, must stay self-contained): the todo dock(s).
-export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, todoDockUi }: any) {
+import type { OverlayInstallArgs } from "../../types.js";
+export function installTodos({ todoPos }: OverlayInstallArgs) {
         // Floating todo dock - lives outside #wg-panel so --mini / Hide never
         // hide the checklist. Click cycles left <-> right with CSS transform.
         // Authors set side via ctx.todos(id, items, { pos }); env / --todo-* fallback.
@@ -7,11 +8,11 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
         //   { sync: "clear" }                         -> remove dock
         //   { sync: "keep" }                          -> leave dock alone (no wipe)
         //   { sync: "set", dock } / { sync:"set", list } -> render / recreate
-        window.__wgSyncTodos = (payload: any, pos: any) => {
+        window.__wgSyncTodos = (payload, pos) => {
           const syncPayload = payload;
           let sync = "set";
-          let list: any = [];
-          let dockState = null;
+          let list: readonly WgTodoRow[] = [];
+          let dockState: WgTodoDockRow | null = null;
           let wantPos =
             pos === "left" || pos === "right" ? pos : null;
           if (payload && typeof payload === "object") {
@@ -56,7 +57,7 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
               top += Math.max(48, el.getBoundingClientRect().height) + 10;
             }
           };
-          const findDock = (key: any) => {
+          const findDock = (key: string) => {
             if (key === "_default") {
               return (
                 __wgQ('.wg-todo-dock[data-wg-todo-key="_default"]') ||
@@ -150,7 +151,7 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
             }
           }
 
-          const trimmedId = (raw: any) => (raw != null && String(raw).trim() ? String(raw).trim() : undefined);
+          const trimmedId = (raw: string | undefined) => (raw != null && String(raw).trim() ? String(raw).trim() : undefined);
           // Compact + cap: >cap rows folds overflow; hover shows up to expandCap; "+N more" pins expand.
           const ui = (payload && !Array.isArray(payload) && payload.ui) || window.__wgTodoDockUi || {};
           const COMPACT_AT = Number(ui.cap) > 0 ? Number(ui.cap) : 5;
@@ -159,26 +160,26 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
           const compactEnabled = ui.compact !== false;
           const flattenItems = () => {
             if (dockState && Array.isArray(dockState.groups) && dockState.groups.length) {
-              const out = [];
+              const out: Array<WgTodoRow & { __style?: string | undefined }> = [];
               for (const g of dockState.groups) {
                 for (const t of g.items || []) out.push({ ...t, __style: g.style || dockState.style });
               }
               return out;
             }
-            return (list || []).map((t: any) => ({ ...t, __style: "sequential" }));
+            return (list || []).map((t) => ({ ...t, __style: "sequential" }));
           };
-          const windowBounds = (items: any, cap: any) => {
+          const windowBounds = (items: readonly WgTodoRow[], cap: number) => {
             const n = items.length;
             if (n <= cap) return { start: 0, end: n };
-            let cur = items.findIndex((t: any) => t.current);
-            if (cur < 0) cur = items.findIndex((t: any) => !t.done);
+            let cur = items.findIndex((t) => t.current);
+            if (cur < 0) cur = items.findIndex((t) => !t.done);
             if (cur < 0) cur = 0;
             let start = Math.max(0, cur - Math.floor((cap - 1) / 2));
             let end = Math.min(n, start + cap);
             start = Math.max(0, end - cap);
             return { start, end };
           };
-          const renderItems = (items: any, style: any, foldMeta: any, indexOffset: any) => {
+          const renderItems = (items: readonly WgTodoRow[], style: string | undefined, foldMeta: { foldStart: number; foldEnd: number; deepStart: number; deepEnd: number } | null, indexOffset: number) => {
             const offset = indexOffset || 0;
             const rawStyle = String(style || "sequential").toLowerCase();
             const st =
@@ -199,7 +200,7 @@ export function installTodos({ title, favicon, bannerPos, todoPos, envAutoplay, 
             return __wgEl(
               "ul",
               { class: "wg-todos-list", data: { wgTodoStyle: st } },
-              (items || []).map((t: any, idx: number) => {
+              (items || []).map((t, idx) => {
                 const gi = offset + idx;
                 const clsBase =
                   st === "bullets"

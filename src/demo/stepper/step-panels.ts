@@ -4,9 +4,64 @@ import { hasAuthoredStubOnError, runStubPhase } from "../narration/narration.js"
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
 import { installOverlay } from "../overlay/overlay.js";
 import { cycleHighlightRings } from "../overlay/rings.js";
-import type { WgPage } from "../types.js";
+import type { SomeBlock } from "../../engine/block/block.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
+import type { MemPage } from "../../engine/mem/mem.js";
+import type { HighlightStyleDefaults, ResolvedHighlight } from "../../engine/stub/ring.js";
+import type { TodoDockState, WaygraphTodoItem } from "../../engine/stub/todos.js";
+import type { DemoPace } from "../../engine/stub/pace.js";
+import type { BannerUiState, WgPage } from "../types.js";
 
-export function miniStepLabel(info: any) {
+/** What every step panel shows: where the step sits in the run and its episode, its pace, and how the panel looks. */
+export interface StepPanelInfo {
+  index: number;
+  total: number;
+  blockName: string;
+  allNames: readonly string[];
+  allDescriptions?: readonly string[] | undefined;
+  moduleIndex: number;
+  allEpisodes?: readonly { episodeNumber: number; episodeTitle: string }[] | undefined;
+  episodeNumber?: number | undefined;
+  episodeTitle?: string | undefined;
+  title?: string | undefined;
+  bannerUi?: BannerUiState | null | undefined;
+  caption?: string | undefined;
+  networkTabVisible?: boolean | undefined;
+  stepperMode?: "full" | "carousel" | undefined;
+  forceCollapsed?: boolean | undefined;
+  fastForward?: boolean | undefined;
+  isApi?: boolean | undefined;
+  paceBadge?: string | undefined;
+  paceLabel?: string | undefined;
+  paceKind?: string | undefined;
+}
+
+/** The todo dock a panel syncs when it paints. */
+export interface PanelTodos {
+  todos?: readonly WaygraphTodoItem[] | undefined;
+  todoDock?: TodoDockState | undefined;
+  todoSync?: "set" | "clear" | "keep" | undefined;
+  todoId?: string | undefined;
+  todoPos?: string | undefined;
+}
+
+/** A failed step: what threw (or the expected-failure result), its stubOnError narration, and the Retry/Stop gate. */
+export interface FailPanelOptions extends StepPanelInfo {
+  block: SomeBlock;
+  highlightStyle?: HighlightStyleDefaults | undefined;
+  error: unknown;
+  out?: Checkpoint<string>;
+  message: string;
+  expectedFailureReason?: string | undefined;
+  gatesFast?: boolean | undefined;
+  demoPace?: DemoPace | undefined;
+  gate: () => Promise<Record<string, string>>;
+  mem: MemPage;
+}
+
+type ErrorPanelInfo = Omit<FailPanelOptions, "block" | "highlightStyle" | "error" | "out" | "gatesFast" | "demoPace" | "gate" | "mem">;
+
+export function miniStepLabel(info: Pick<StepPanelInfo, "episodeNumber" | "index" | "total" | "blockName" | "paceBadge">) {
   const ep =
     info.episodeNumber !== undefined && info.episodeNumber !== null
       ? "Ep " + info.episodeNumber + " \u00b7 "
@@ -27,7 +82,7 @@ export function miniStepLabel(info: any) {
  * for Stop/Retry. Used when a step throws OR when a `map({ expectedFailure })` flow's last
  * block succeeds on the intentional fail branch (e.g. LoginPage + error banner).
  */
-export async function presentFailPanel(page: WgPage, opts: any) {
+export async function presentFailPanel(page: WgPage, opts: FailPanelOptions) {
   const {
     block,
     error,
@@ -99,11 +154,11 @@ export async function presentFailPanel(page: WgPage, opts: any) {
  * silently from a human's point of view (the browser closes right after
  * regardless - main()'s own try/finally - but not before this is visible).
  */
-async function renderStepError(page: WgPage, info: any) {
+async function renderStepError(page: WgPage, info: ErrorPanelInfo) {
   await installOverlay(page, info.title, info.bannerUi, info.caption, info.networkTabVisible);
   const errorPayload = { ...info, stepLabel: miniStepLabel(info) };
   await page
-    .evaluate((info: any) => {
+    .evaluate((info) => {
       // Reused in place - see renderBeforeStep's own comment on this.
       let panel = __wgById("wg-panel");
       const isNewPanel = !panel;
@@ -120,8 +175,8 @@ async function renderStepError(page: WgPage, info: any) {
         ? __wgEl(
             "div",
             { id: "wg-episodes" },
-            info.allEpisodes.map((e: any) => {
-              const cls = e.episodeNumber < info.episodeNumber ? "wg-ep-done"
+            info.allEpisodes.map((e) => {
+              const cls = e.episodeNumber < (info.episodeNumber ?? 0) ? "wg-ep-done"
                 : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
                 : "wg-ep-upcoming";
               return __wgEl("span", { class: "wg-ep-tab " + cls }, "Episode " + e.episodeNumber + ": " + (e.episodeTitle || ""));
@@ -129,7 +184,7 @@ async function renderStepError(page: WgPage, info: any) {
           )
         : null;
       const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
-      const modules = info.allNames.map((name: any, idx: number) => {
+      const modules = info.allNames.map((name, idx) => {
         const cls = idx === info.moduleIndex ? "wg-mod-current" : idx < info.moduleIndex ? "wg-mod-done" : "wg-mod-upcoming";
         const desc = info.allDescriptions && info.allDescriptions[idx];
         return __wgEl("span", { class: "wg-mod " + cls, title: desc || undefined }, String(name));
@@ -191,7 +246,7 @@ async function renderStepError(page: WgPage, info: any) {
  * hand-written bespoke Trait, or url-matches(...) (no DOM target), yields
  * nothing to highlight, which is fine - the panel still shows the result.
  */
-export function extractVerifyHighlights(block: any, resultTag: any) {
+export function extractVerifyHighlights(block: SomeBlock, resultTag: string) {
   let verify = block.instruction && block.instruction.verify;
   if (typeof verify === "function") {
     try {
@@ -201,20 +256,12 @@ export function extractVerifyHighlights(block: any, resultTag: any) {
     }
   }
   if (!Array.isArray(verify)) return [];
-  const highlights = [];
+  const highlights: ResolvedHighlight[] = [];
   for (const t of verify) {
     const name = t && t.name;
     if (typeof name !== "string") continue;
-    let m = /^visible\((.+)\)$/.exec(name);
-    if (m) {
-      highlights.push({ selector: m[1], label: name, tone: "auto" });
-      continue;
-    }
-    m = /^text-equals\((.+?),\s*"/.exec(name);
-    if (m) {
-      highlights.push({ selector: m[1], label: name, tone: "auto" });
-      continue;
-    }
+    const selector = /^visible\((.+)\)$/.exec(name)?.[1] ?? /^text-equals\((.+?),\s*"/.exec(name)?.[1];
+    if (selector) highlights.push({ selector, label: name, tone: "auto" });
   }
   return highlights;
 }
