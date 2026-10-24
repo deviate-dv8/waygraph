@@ -6,7 +6,7 @@ import { join } from "node:path";
 
 const exec = promisify(execFile);
 const node = process.execPath;
-const CLI = join(import.meta.dirname, "..", "..", "dist", "cli", "cli.js");
+const CLI = join(import.meta.dirname, "..", "..", "bin", "waygraph");
 const WAYGRAPH_ROOT = join(import.meta.dirname, "..", "..");
 
 // about:blank needs no real network - keeps this deterministic and fast, same reasoning

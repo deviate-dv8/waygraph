@@ -15,13 +15,8 @@ stopSessionsAfterEachTest();
  * detached session on a project that starts with ZERO .block.ts files - the
  * cold-start case non-blind Pilot (waygraph-pilot) doesn't cover.
  *
- * dist/cli/cli.js directly, not bin/waygraph: none of the ops this file drives
- * (send/status/click/type/goto/reload) import .block.ts files in the OUTER
- * CLI process - they only write to the session's own socket. All real Block
- * loading/reloading happens in the already-spawned CHILD process, which
- * `spawnDetachedSession` always routes through bin/waygraph internally
- * regardless of how the outer command was invoked (the same reason
- * tests/cli/auto-session.spec.ts already uses dist/cli/cli.js directly).
+ * Through bin/waygraph, like a user: it registers tsx, which the outer command needs to load the project's
+ * config/waygraph.config.ts on a Node without native .ts imports (Node 20).
  *
  * Each test gets its own throwaway project directory (a fresh
  * mkdtempSync copy of the tracked pages/ + package.json), not the shared
@@ -37,7 +32,7 @@ stopSessionsAfterEachTest();
 
 const exec = promisify(execFile);
 const node = process.execPath;
-const CLI = join(import.meta.dirname, "..", "..", "dist", "cli", "cli.js");
+const CLI = join(import.meta.dirname, "..", "..", "bin", "waygraph");
 const staticFixtureRoot = join(import.meta.dirname, "../fixtures/blind-pilot-site");
 const pagesDir = join(staticFixtureRoot, "pages");
 const repoRoot = join(import.meta.dirname, "../..");

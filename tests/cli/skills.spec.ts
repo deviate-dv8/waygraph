@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 const exec = promisify(execFile);
 const node = process.execPath;
-const CLI = join(import.meta.dirname, "..", "..", "dist", "cli", "cli.js");
+const CLI = join(import.meta.dirname, "..", "..", "bin", "waygraph");
 
 test("waygraph --skill lists the three packaged skill flags", async () => {
   const { stdout } = await exec(node, [CLI, "--skill"]);
