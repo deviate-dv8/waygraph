@@ -2,7 +2,7 @@
 import type { Page } from "@playwright/test";
 import type { MemPage } from "../mem/mem.js";
 // URLPattern is only a Node global from v23.8+ (and even then, Node's own, not a browser's) -
-// CI's Node 20/22 matrix has no global at all. Side-effect import only: the polyfill package sets
+// Node 22 (the oldest supported) has no global at all. Side-effect import only: the polyfill package sets
 // globalThis.URLPattern itself, but only when one doesn't already exist - so below Node 23.8 this
 // becomes THE global, and from 23.8 up it's a no-op and the native one stays. Playwright's own
 // waitForURL(pattern) checks `pattern instanceof globalThis.URLPattern` internally, so the instance

@@ -2,6 +2,9 @@
   "name": "waygraph",
   "version": "0.16.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "description": "A typed graph of reusable Blocks for driving a browser through E2E flows.",
   "license": "MIT",
   "main": "./dist/index.js",
