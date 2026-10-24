@@ -1,12 +1,14 @@
 // Advances the todo dock as a step fills and clicks the items its narration listed.
-import type { WgPage } from "../types.js";
+import type { StepperRefs, WgPage } from "../types.js";
+import type { ResolvedHighlight } from "../../engine/stub/ring.js";
+import type { TodoDockState, WaygraphTodoItem } from "../../engine/stub/todos.js";
 import { advanceTodoDock } from "../narration/todo-dock.js";
 import { demoLog } from "./demo-log.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 
 /** Flatten dock items in order (sequential groups). */
-function flattenTodoDockItems(dock: any) {
-  const items: any[] = [];
+function flattenTodoDockItems(dock: TodoDockState | undefined): WaygraphTodoItem[] {
+  const items: WaygraphTodoItem[] = [];
   if (!dock || !dock.groups) return items;
   for (const g of dock.groups) {
     for (const t of g.items || []) items.push(t);
@@ -19,12 +21,12 @@ function flattenTodoDockItems(dock: any) {
  * Resolve which todo index a matched stub should advance to.
  * Prefer stub.todo / stub.slotId / stub.id against item.id; never jump backward.
  */
-function resolveTodoAdvanceIndex(dock: any, stub: any, stubIndex: number) {
+function resolveTodoAdvanceIndex(dock: TodoDockState, stub: ResolvedHighlight | null, stubIndex: number) {
   const items = flattenTodoDockItems(dock);
   if (!items.length) return stubIndex;
   const curIdx = items.findIndex((t) => t.current);
   let idx = stubIndex;
-  const key = stub && (stub.todo || stub.slotId || stub.id);
+  const key = stub && (stub.todo || stub.slotId);
   if (key) {
     const k = String(key).trim().toLowerCase();
     let found = items.findIndex((t) => t.id && String(t.id).toLowerCase() === k);
@@ -59,7 +61,7 @@ function resolveTodoAdvanceIndex(dock: any, stub: any, stubIndex: number) {
 
 
 /** Advance sequential todo dock to stubIndex and push to the page (Method act). */
-export async function syncTodoDockAdvance(page: WgPage, todoDockRef: any, stubIndex: number, stub: any) {
+export async function syncTodoDockAdvance(page: WgPage, todoDockRef: StepperRefs["todoDock"] | undefined, stubIndex: number, stub: ResolvedHighlight | null | undefined) {
   if (!todoDockRef || stubIndex < 0) return;
   const prev = todoDockRef.current;
   if (!prev) return;
@@ -79,7 +81,7 @@ export async function syncTodoDockAdvance(page: WgPage, todoDockRef: any, stubIn
       '"',
   );
   await page
-    .evaluate((dock: any) => {
+    .evaluate((dock) => {
       if (window.__wgSyncTodos) {
         window.__wgSyncTodos({ sync: "set", dock });
       }

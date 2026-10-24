@@ -2,39 +2,43 @@
 // stub phase is applied to the page. demo / auto / browser / pilot all go through this, so a "waygraph overlay
 // fixture" (ctx.todos / ctx.device / ctx.title / ...) means the same thing on every surface.
 // NOT Playwright test fixtures - these paint the waygraph overlay on the page under test.
-import type { WgPage } from "../types.js";
+import type { StepperRefs, WgPage } from "../types.js";
+import type { StubPhaseResult } from "../../engine/stub/stub.js";
+import type { TodoDockState, TodoDockUiOpts } from "../../engine/stub/todos.js";
+import type { DeviceState } from "../../engine/stub/viewport.js";
+import type { BannerUiState } from "../stepper/banner-log.js";
 import { applyDevicePhase } from "../narration/device.js";
 import { applyTodoPhase, resolveTodoDockUi } from "../narration/todo-dock.js";
 import { applyDeviceToPage } from "./device-stage.js";
 import { bannerUiFromPhase } from "../stepper/banner-log.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 
-export function createOverlayStage(page: WgPage, { todoDockRef, deviceRef }: any) {
+export function createOverlayStage(page: WgPage, { todoDockRef, deviceRef }: Pick<StepperRefs, never> & { todoDockRef: StepperRefs["todoDock"]; deviceRef: StepperRefs["device"] }) {
   /** Carried across steps: omitting a fixture in a later phase = keep (todos, device, banner UX). */
-  const state: { lastTodoDock: any; lastDevice: any; lastBannerUi: Record<string, any> } = {
+  const state: { lastTodoDock: TodoDockState | undefined; lastDevice: DeviceState | undefined; lastBannerUi: BannerUiState } = {
     lastTodoDock: undefined,
     lastDevice: undefined,
     lastBannerUi: {},
   };
   /** Author todoDockUi patches (merged); resolved against env each step. */
-  let lastTodoDockUiPatch: any = undefined;
+  let lastTodoDockUiPatch: TodoDockUiOpts | undefined = undefined;
   /** Multi-todo: every dock keyed by todoId (or "_default"), survives navigation. */
-  const todoDockById = new Map();
+  const todoDockById = new Map<string, TodoDockState>();
 
-  const pushTodoDockUi = async (patch: any) => {
+  const pushTodoDockUi = async (patch: TodoDockUiOpts | undefined) => {
     if (patch && typeof patch === "object") {
       lastTodoDockUiPatch = { ...(lastTodoDockUiPatch || {}), ...patch };
     }
     const ui = resolveTodoDockUi(lastTodoDockUiPatch);
     await page
-      .evaluate((u: any) => {
+      .evaluate((u) => {
         window.__wgTodoDockUi = u;
       }, ui)
       .catch(ignorePageGone);
   };
-  const dockRegistryKey = (dock: any) =>
+  const dockRegistryKey = (dock: TodoDockState) =>
     dock && dock.id && String(dock.id).trim() ? String(dock.id).trim() : "_default";
-  const rememberTodoDock = (dock: any, sync: any, parallel: any) => {
+  const rememberTodoDock = (dock: TodoDockState | undefined, sync: "set" | "clear" | "keep", parallel: boolean) => {
     if (sync === "clear") {
       todoDockById.clear();
       return;
@@ -50,7 +54,7 @@ export function createOverlayStage(page: WgPage, { todoDockRef, deviceRef }: any
       todoDockById.set(dockRegistryKey(dock), dock);
     }
   };
-  const syncAllTodoDocks = async (opts: any) => {
+  const syncAllTodoDocks = async (opts?: { parallel?: boolean }) => {
     const docks = [...todoDockById.values()];
     const parallel = !!(opts && opts.parallel);
     if (!docks.length) {
@@ -61,7 +65,7 @@ export function createOverlayStage(page: WgPage, { todoDockRef, deviceRef }: any
     }
     await page
       .evaluate(
-        ({ list, parallel }: any) => {
+        ({ list, parallel }) => {
           if (!window.__wgSyncTodos) return;
           for (let i = 0; i < list.length; i++) {
             const d = list[i];
@@ -85,7 +89,7 @@ export function createOverlayStage(page: WgPage, { todoDockRef, deviceRef }: any
    * Merge one resolved stub phase (banner UX, todo dock, device) into the carried state and push it to the page.
    * `reapplyDeviceOnKeep`: also re-apply the carried device when the phase says keep (after a navigation wipe).
    */
-  const applyPhase = async (phase: any, { reapplyDeviceOnKeep = false } = {}) => {
+  const applyPhase = async (phase: StubPhaseResult, { reapplyDeviceOnKeep = false } = {}) => {
     state.lastBannerUi = { ...state.lastBannerUi, ...bannerUiFromPhase(phase) };
     const appliedTodo = applyTodoPhase(state.lastTodoDock, {
       todoSync: phase.todoSync,

@@ -1,13 +1,13 @@
 // Plays a Block's narration for one phase (stubBefore / stubAfter / stubOnError): runs its ctx stub and returns the
 // rings, todos, device, title and caption it set, for the overlay to paint.
 import type { DeviceState } from "../../engine/stub/viewport.js";
-import type { HighlightStubPhaseName, StubBagState, StubCtx, StubPhaseResult } from "../../engine/stub/stub.js";
+import type { HighlightStubPhaseName, StubBagState, StubPhaseResult } from "../../engine/stub/stub.js";
 import type { ResolvedHighlight, WaygraphSlide, WaygraphSlidesOrFn } from "../../engine/stub/ring.js";
 import { createStubCtx } from "./stub-ctx.js";
 import { applyDefaultZoom, applyDefaultZoomOut, readStubRaw, resolvePhaseMap } from "./merge.js";
 import { buildTodoDock, normalizeTodoStyle, normalizeTodos } from "./todo-dock.js";
 import { resolveDeviceState } from "./device.js";
-import type { Block } from "../../engine/block/block.js";
+import type { SomeBlock } from "../../engine/block/block.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import type { MemPage } from "../../engine/mem/mem.js";
 
@@ -20,7 +20,7 @@ import type { MemPage } from "../../engine/mem/mem.js";
  * // before.todos, before.highlights
  */
 export async function runStubPhase(
-  block: Block<any, any>,
+  block: SomeBlock,
   phase: HighlightStubPhaseName,
   opts?: {
     out?: Checkpoint<string>;
@@ -38,7 +38,7 @@ export async function runStubPhase(
 
   if (raw) {
     try {
-      await raw(ctx as StubCtx<any>);
+      await raw(ctx);
     } catch (err) {
       // A mistake in the author's stub: shown on the step (the demo's failure panel), never dropped.
       throw new Error(`${block.name}: its ${phase} stub threw: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
@@ -132,7 +132,7 @@ export async function runStubPhase(
  * async lifecycles + episode fixtures (todos/zoom).
  */
 export function resolveHighlightSlots(
-  block: Block<any, any>,
+  block: SomeBlock,
   phase: HighlightStubPhaseName,
   opts?: {
     out?: Checkpoint<string>;
@@ -143,7 +143,7 @@ export function resolveHighlightSlots(
   if (raw) {
     // Synchronous read: the rings a stub paints before its first await.
     try {
-      void raw(createStubCtx(bag, { ...(opts?.out !== undefined ? { out: opts.out } : {}) }) as StubCtx<any>);
+      void raw(createStubCtx<Checkpoint<string>>(bag, { ...(opts?.out !== undefined ? { out: opts.out } : {}) }));
     } catch (err) {
       throw new Error(`${block.name}: its ${phase} stub threw: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
     }
@@ -154,12 +154,12 @@ export function resolveHighlightSlots(
 
 /** Resolve multi-step yap slides from `instruction.slides` (function form allowed). */
 export function resolveSlides(
-  block: Block<any, any>,
+  block: SomeBlock,
   opts?: {
     out?: Checkpoint<string>;
   },
 ): WaygraphSlide[] {
-  const instr = block.instruction as { slides?: WaygraphSlidesOrFn<any> };
+  const instr: { slides?: WaygraphSlidesOrFn<Checkpoint<string>> | undefined } = block.instruction;
   let raw = instr.slides;
   if (typeof raw === "function") {
     try {
@@ -174,7 +174,7 @@ export function resolveSlides(
 
 
 function stubPhaseLooksAuthored(
-  block: Block<any, any>,
+  block: SomeBlock,
   phase: HighlightStubPhaseName,
 ): boolean {
   return readStubRaw(block, phase) !== undefined;
@@ -186,7 +186,7 @@ function stubPhaseLooksAuthored(
  * When true, demo should not use verify-trait fallback.
  */
 export function hasAuthoredStubAfter(
-  block: Block<any, any>,
+  block: SomeBlock,
   out?: Checkpoint<string>,
 ): boolean {
   if (stubPhaseLooksAuthored(block, "stubAfter")) return true;
@@ -198,7 +198,7 @@ export function hasAuthoredStubAfter(
  * True when stubOnError is authored (lifecycle fn and/or rings).
  * Demo fail path only - success never consults this.
  */
-export function hasAuthoredStubOnError(block: Block<any, any>): boolean {
+export function hasAuthoredStubOnError(block: SomeBlock): boolean {
   if (stubPhaseLooksAuthored(block, "stubOnError")) return true;
   return resolveHighlightSlots(block, "stubOnError").length > 0;
 }

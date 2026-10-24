@@ -169,11 +169,11 @@ export function buildTodoDock(opts: {
 export function applyTodoPhase(
   prev: TodoDockState | undefined,
   phase: {
-    todoSync?: "set" | "clear" | "keep";
-    todoDock?: TodoDockState;
-    todos?: WaygraphTodoItem[];
-    todoPos?: "left" | "right";
-    todoId?: string;
+    todoSync?: "set" | "clear" | "keep" | undefined;
+    todoDock?: TodoDockState | undefined;
+    todos?: WaygraphTodoItem[] | undefined;
+    todoPos?: "left" | "right" | undefined;
+    todoId?: string | undefined;
   },
 ): { dock: TodoDockState | undefined; sync: "set" | "clear" | "keep" } {
   const sync =

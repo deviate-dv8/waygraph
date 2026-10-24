@@ -159,7 +159,7 @@ export function formatDemoPaceLabel(pace: DemoPace, baseAutoplayMs = 1800): stri
  */
 export function resolveFixtureDwellMs(
   fixture: FixtureDurationFields,
-  opts?: { gatesFast?: boolean; pace?: DemoPace },
+  opts?: { gatesFast?: boolean; pace?: DemoPace | undefined },
 ): number | null {
   if (fixture.duration === undefined || fixture.duration === false) return null;
   const pace =

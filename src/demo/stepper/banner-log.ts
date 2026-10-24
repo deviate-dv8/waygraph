@@ -2,10 +2,20 @@
 // so an agent without eyes can read banner state from the demo log.
 import type { WgPage } from "../types.js";
 import { demoLog } from "./demo-log.js";
+import type { BannerPos, StubPhaseResult } from "../../engine/stub/stub.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
+
+/** The banner UX installOverlay takes: where it sits and how it behaves. */
+export interface BannerUiState {
+  pos?: BannerPos;
+  collision?: boolean;
+  hidden?: boolean;
+  captionFadeMs?: number;
+}
 
 /** Authored banner UX from a stub phase -> the { pos, collision, hidden } shape installOverlay takes. */
-export function bannerUiFromPhase(phase: any) {
-  const ui: Record<string, any> = {};
+export function bannerUiFromPhase(phase: Pick<StubPhaseResult, "titlePos" | "bannerUi"> | null | undefined): BannerUiState {
+  const ui: BannerUiState = {};
   if (phase && phase.titlePos) ui.pos = phase.titlePos;
   if (phase && phase.bannerUi) {
     if (phase.bannerUi.collision !== undefined) ui.collision = !!phase.bannerUi.collision;
@@ -41,10 +51,11 @@ export async function probeBanner(page: WgPage) {
         log,
       };
     })
-    .catch(() => ({ present: false, log: [] }));
+    .catch(ignorePageGone)
+    .then((probe) => probe ?? { present: false as const, log: [] as string[] });
 }
 
-export function logBannerDom(tag: any, p: any) {
+export function logBannerDom(tag: string, p: Awaited<ReturnType<typeof probeBanner>> | null | undefined) {
   if (!p) return;
   if (!p.present) {
     demoLog("  " + tag + " banner-dom absent");

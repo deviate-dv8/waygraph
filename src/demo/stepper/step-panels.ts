@@ -66,20 +66,7 @@ export async function presentFailPanel(page: WgPage, opts: any) {
     });
     const errHighlights = errPhase.highlights.map((h) => {
       const styled = applyHighlightStyleDefaults(h, opts.highlightStyle);
-      return {
-        selector: styled.selector,
-        label: formatHighlightCaption(styled),
-        duration: styled.duration,
-        fastMode: styled.fastMode,
-        tone: styled.tone,
-        size: styled.size,
-        weight: styled.weight,
-        zoom: styled.zoom,
-        zoomOut: styled.zoomOut,
-        focus: !!styled.focus,
-        color: styled.color,
-        detail: styled.detail,
-      };
+      return { ...styled, label: formatHighlightCaption(styled), focus: !!styled.focus };
     });
     await cycleHighlightRings(page, errHighlights, !!gatesFast, {
       defaultHoldMs: 2000,

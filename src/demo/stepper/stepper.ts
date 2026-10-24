@@ -3,7 +3,7 @@
 // around each step it plays.
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import type { MemPage } from "../../engine/mem/mem.js";
-import type { WgPage } from "../types.js";
+import type { StepperRefs, WgPage } from "../types.js";
 import { createOverlayStage } from "../overlay/overlay-stage.js";
 import { instrumentInteractionHighlighting } from "./interaction-patch.js";
 import { markStepRunning, restoreTheaterAfterNavigation, teardownOverlay } from "./teardown.js";
@@ -39,7 +39,7 @@ export interface StepperOptions {
 export async function createStepper(page: WgPage, mem: MemPage, steps: readonly StepperStep[], options: StepperOptions): Promise<Stepper> {
   const demoFast = envFlag("WAYGRAPH_DEMO_FAST");
   const pacing = newPacing(demoFast);
-  const refs = { stubBefore: { current: [] as any[] }, todoDock: { current: undefined as any }, device: { current: undefined as any } };
+  const refs: StepperRefs = { stubBefore: { current: [] }, todoDock: { current: undefined }, device: { current: undefined } };
   instrumentInteractionHighlighting(page, mem, options.beat, pacing, refs.stubBefore, refs.todoDock, refs.device);
   // A navigation inside a step (a redirect, a login bounce) repaints the overlay with the step's todos, device and ring.
   keepOverlayOnNavigation(page, () => restoreTheaterAfterNavigation(page, refs.todoDock, refs.device, refs.stubBefore));

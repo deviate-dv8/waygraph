@@ -1,7 +1,8 @@
 // During a demo, every fill and click moves the cursor there, rings the target and types visibly: the demo's locator
 // theater (overlay/locator-theater.ts).
-import type { WgPage } from "../types.js";
-import type { MemPage } from "../../engine/mem/mem.js";
+import type { StepperRefs, WgPage } from "../types.js";
+import type { Pacing } from "./pacing.js";
+import type { MemKey, MemPage } from "../../engine/mem/mem.js";
 import { installOverlay } from "../overlay/overlay.js";
 import { applyHighlightZoom, captionForLocator, dwellMatchedStub, ensureLocatorInView, hideRing, matchStubIndexForLocator, showRing, wasJustNarrated } from "../overlay/rings.js";
 import { syncTodoDockAdvance } from "./todo-advance.js";
@@ -13,7 +14,7 @@ import type { Locator } from "@playwright/test";
 import { envNumber } from "../../engine/env.js";
 import { ignorePageGone, ignoreTimeout } from "../../engine/page-gone.js";
 
-export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, slowMo: number, pacing: any, stubBeforeRef: any, todoDockRef: any, deviceRef: any) {
+export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, slowMo: number, pacing: Pacing, stubBeforeRef: StepperRefs["stubBefore"], todoDockRef: StepperRefs["todoDock"], deviceRef: StepperRefs["device"]) {
   // Playwright's own slowMo ALREADY pauses after every single low-level
   // action it dispatches - and pressSequentially() fires one such action
   // PER CHARACTER. Also giving pressSequentially its own fixed delay
@@ -42,17 +43,17 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
   if (!keyboard.__wgBeatPatched) {
     keyboard.__wgBeatPatched = true;
     const originalType = keyboard.type.bind(keyboard);
-    keyboard.type = async (text: any, options: any) => {
+    keyboard.type = async (text: string, options?: { delay?: number }) => {
       await originalType(text, { delay: typingMs(), ...(options || {}) });
       await pause(beat());
     };
     const originalPress = keyboard.press.bind(keyboard);
-    keyboard.press = async (key: any, options: any) => {
+    keyboard.press = async (key: string, options?: { delay?: number }) => {
       await originalPress(key, options);
       await pause(beat());
     };
     const originalInsertText = keyboard.insertText.bind(keyboard);
-    keyboard.insertText = async (text: any) => {
+    keyboard.insertText = async (text: string) => {
       await originalInsertText(text);
       await pause(beat());
     };
@@ -64,7 +65,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
   const clickPrePop = () => (skipTheater() ? 0 : slowMo ? 300 : 700);
   const clickPostPop = () => (skipTheater() ? 0 : slowMo ? 200 : 500);
   // FF / FAST_BLOCKS: no cursor travel animation (0). Plain theater keeps full.
-  const cursorMs = (full: any) => (skipTheater() ? 0 : full);
+  const cursorMs = (full: number) => (skipTheater() ? 0 : full);
   // Locator.fill()/click() only ever see a raw call, no context of where
   // the value came from. Patching mem.get() to remember the most recently
   // read key's name (Blocks read-then-immediately-fill, e.g. const { email
@@ -72,10 +73,10 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
   // label the ring with the real key, not a generic "writing from mem".
   // Patches this ONE mem instance only, not MemPage's shared prototype -
   // there's exactly one mem per chain run.
-  const memTrack = { lastKeyName: null, at: 0 };
+  const memTrack: { lastKeyName: string | null; at: number } = { lastKeyName: null, at: 0 };
   const originalGet = mem.get.bind(mem);
-  mem.get = (key: any) => {
-    memTrack.lastKeyName = key && key.name;
+  mem.get = <T>(key: MemKey<T>): T => {
+    memTrack.lastKeyName = key.name;
     memTrack.at = Date.now();
     return originalGet(key);
   };
@@ -128,14 +129,14 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         }
         demoHighlight(
           {
-            selector: stub && stub.selector,
+            selector: stub?.selector,
             label: cap.label,
-            tone: cap.tone || (stub && stub.tone) || "planned",
-            color: stub && stub.color,
-            focus: !!(stub && stub.focus),
-            zoom: stub && stub.zoom,
-            zoomOut: stub && stub.zoomOut,
-            gesture: stub && stub.gesture,
+            tone: cap.tone || (stub?.tone) || "planned",
+            color: stub?.color,
+            focus: !!(stub?.focus),
+            zoom: stub?.zoom,
+            zoomOut: stub?.zoomOut,
+            gesture: stub?.gesture,
             weight: cap.weight,
             size: cap.size,
           },
@@ -144,8 +145,8 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         await showRing(page, box, cap.label, cap.tone, {
           size: cap.size,
           weight: cap.weight,
-          selector: stub && stub.selector ? stub.selector : undefined,
-          focus: !!(stub && stub.focus),
+          selector: stub?.selector,
+          focus: !!(stub?.focus),
         });
         await dwellMatchedStub(page, locator, stubs, pacing);
         await new Promise((res) => setTimeout(res, skipTheater() ? 0 : 200));
@@ -156,7 +157,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         await moveCursorTo(page, box, cursorMs(200));
       }
       await page
-        .evaluate((label: any) => {
+        .evaluate((label: string) => {
           if (window.__wgSetTypingBadge) window.__wgSetTypingBadge(true, label);
         }, typeLabel)
         .catch(ignorePageGone);
@@ -216,14 +217,14 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         }
         demoHighlight(
           {
-            selector: stub && stub.selector,
+            selector: stub?.selector,
             label: cap.label,
-            tone: cap.tone || (stub && stub.tone) || "planned",
-            color: stub && stub.color,
-            focus: !!(stub && stub.focus),
-            zoom: stub && stub.zoom,
-            zoomOut: stub && stub.zoomOut,
-            gesture: stub && stub.gesture,
+            tone: cap.tone || (stub?.tone) || "planned",
+            color: stub?.color,
+            focus: !!(stub?.focus),
+            zoom: stub?.zoom,
+            zoomOut: stub?.zoomOut,
+            gesture: stub?.gesture,
             weight: cap.weight,
             size: cap.size,
           },
@@ -232,8 +233,8 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         await showRing(page, box, cap.label, cap.tone, {
           size: cap.size,
           weight: cap.weight,
-          selector: stub && stub.selector ? stub.selector : undefined,
-          focus: !!(stub && stub.focus),
+          selector: stub?.selector,
+          focus: !!(stub?.focus),
         });
         await dwellMatchedStub(page, locator, stubs, pacing);
         // "pop for a few seconds" - the user's own phrase, matching the

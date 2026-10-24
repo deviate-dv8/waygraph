@@ -1,5 +1,5 @@
 // Marking a step as running, restoring the overlay after a navigation, and removing it all when the demo ends.
-import type { WgPage } from "../types.js";
+import type { StepperRefs, WgPage } from "../types.js";
 import { installOverlay } from "../overlay/overlay.js";
 import { applyDeviceToPage } from "../overlay/device-stage.js";
 import { showRing } from "../overlay/rings.js";
@@ -81,24 +81,24 @@ export async function markStepRunning(page: WgPage, _opts: any) {
  * carried todos / device / optional stubBefore ring so keep-dock and nav
  * highlights do not vanish until the next ctx.todos() / stubAfter (PIA #15).
  */
-export async function restoreTheaterAfterNavigation(page: WgPage, todoDockRef: any, deviceRef: any, stubBeforeRef: any) {
+export async function restoreTheaterAfterNavigation(page: WgPage, todoDockRef: StepperRefs["todoDock"], deviceRef: StepperRefs["device"], stubBeforeRef: StepperRefs["stubBefore"]) {
   const needs =
     (await page
       .evaluate(() => !window.__wgSyncTodos || !__wgById("wg-ring"))
-      .catch(() => true)) || false;
+      .catch(ignorePageGone)) ?? true;
   if (!needs) {
     // Overlay survived (SPA / no full document wipe) - still refresh dock
     // if Node has a carry and the DOM lost .wg-todo-dock.
     const hasDock = await page
       .evaluate(() => !!__wgQ(".wg-todo-dock, #wg-todo-dock"))
-      .catch(() => false);
+      .catch(ignorePageGone);
     if (hasDock || !todoDockRef || !todoDockRef.current) return;
   }
   await installOverlay(page);
   const dock = todoDockRef && todoDockRef.current;
   if (dock) {
     await page
-      .evaluate((d: any) => {
+      .evaluate((d) => {
         if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", dock: d });
       }, dock)
       .catch(ignorePageGone);

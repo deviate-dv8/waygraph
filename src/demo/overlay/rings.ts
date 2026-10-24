@@ -3,12 +3,16 @@ import type { WgBox, WgPage } from "../types.js";
 import type { Locator } from "@playwright/test";
 import { ANSI, ansiPaint, demoFixture, demoHighlight, demoLog } from "../stepper/demo-log.js";
 import { playSwipeTrail } from "./cursor.js";
-import { advanceTodoDock, normalizeTodos } from "../narration/todo-dock.js";
+import { advanceTodoDock } from "../narration/todo-dock.js";
 import { formatHighlightCaption } from "../narration/style.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/stub/ring.js";
 import { resolveFixtureDwellMs } from "../narration/demo-pace.js";
 import { envNumber } from "../../engine/env.js";
-import { ignorePageGone } from "../../engine/page-gone.js";
+import { ignorePageGone, ignoreTimeout } from "../../engine/page-gone.js";
+import type { ResolvedHighlight } from "../../engine/stub/ring.js";
+import type { DemoPace } from "../../engine/stub/pace.js";
+import type { TodoDockState, WaygraphTodoItem } from "../../engine/stub/todos.js";
+import type { Pacing } from "../stepper/pacing.js";
 
 /**
  * Scroll a locator into view for demo theater.
@@ -18,7 +22,7 @@ import { ignorePageGone } from "../../engine/page-gone.js";
  * noticeable under --fast when dwell is shorter.
  * Pass opts.instant=true only for skipTheater / blitz.
  */
-export async function ensureLocatorInView(locator: Locator, opts: any) {
+export async function ensureLocatorInView(locator: Locator, opts?: { instant?: boolean }) {
   const instant = !!(opts && opts.instant);
   if (instant) {
     await locator.scrollIntoViewIfNeeded().catch(ignorePageGone);
@@ -65,7 +69,7 @@ export async function ensureLocatorInView(locator: Locator, opts: any) {
   await locator
     .evaluate(async (el: HTMLElement) => {
       if (!el || typeof el.scrollIntoView !== "function") return;
-      const waitScroll = (node: any, ms: number) =>
+      const waitScroll = (node: Element, ms: number) =>
         new Promise<void>((resolve) => {
           let done = false;
           const finish = () => {
@@ -127,12 +131,12 @@ export async function ensureLocatorInView(locator: Locator, opts: any) {
 }
 
 
-export async function ensureSelectorInView(page: WgPage, selector: any, opts?: any) {
+export async function ensureSelectorInView(page: WgPage, selector: string, opts?: { instant?: boolean }) {
   await ensureLocatorInView(page.locator(selector).first(), opts);
 }
 
 
-export async function applyHighlightZoom(page: WgPage, selector: any, zoom: any, zoomOut: any) {
+export async function applyHighlightZoom(page: WgPage, selector: string | undefined, zoom: number | undefined, zoomOut: boolean | undefined) {
   const z = Number(zoom);
   if (!Number.isFinite(z) || z <= 1.001) {
     await page.evaluate(() => {
@@ -144,7 +148,7 @@ export async function applyHighlightZoom(page: WgPage, selector: any, zoom: any,
   demoFixture("zoom", "ctx/ring zoom(" + z + ") zoomOut=" + (zoomOut !== false), selector);
   await page
     .evaluate(
-      ({ sel, scale, zoomOut }: any) => {
+      ({ sel, scale, zoomOut }: { sel: string | undefined; scale: number; zoomOut: boolean }) => {
         // false = keep camera after ring hide (ctx.zoomOut(false) / ring.zoomOut).
         window.__wgZoomOutOnHide = zoomOut !== false;
         if (window.__wgApplyZoom) window.__wgApplyZoom(sel, scale);
@@ -157,7 +161,21 @@ export async function applyHighlightZoom(page: WgPage, selector: any, zoom: any,
 
 
 
-export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFast: any, opts: any) {
+/** How `cycleHighlightRings` plays a step's rings: hold times, pace, and the todo dock it moves along. */
+export interface CycleRingsOptions {
+  /** Hold for each ring when it sets none (the failure path holds longer). */
+  defaultHoldMs?: number;
+  pace?: DemoPace | undefined;
+  todoDock?: TodoDockState | undefined;
+  todos?: readonly WaygraphTodoItem[] | undefined;
+  todoSync?: "set" | "clear" | "keep" | undefined;
+  todoDockRef?: { current: TodoDockState | undefined } | undefined;
+  /** False when the stub already set the dock's progress. */
+  advanceTodos?: boolean;
+  stepLabel?: string;
+}
+
+export async function cycleHighlightRings(page: WgPage, highlights: readonly ResolvedHighlight[] | undefined, gatesFast: boolean, opts?: CycleRingsOptions) {
   const list = highlights || [];
   // defaultHoldMs: when set (fail path), use instead of the default 900/200 so BUG
   // rings stay visible ~2s before the error panel (PIA stubOnError RFC).
@@ -169,7 +187,7 @@ export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFa
   // show the updated checklist immediately (not only after the ring cycle).
   if (dock) {
     await page
-      .evaluate((d: any) => {
+      .evaluate((d) => {
         if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", dock: d });
       }, dock)
       .catch(ignorePageGone);
@@ -181,8 +199,7 @@ export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFa
       .catch(ignorePageGone);
   }
   let lastRingEndedAt = null;
-  for (let i = 0; i < list.length; i++) {
-    const h = list[i];
+  for (const [i, h] of list.entries()) {
     const ringStarted = Date.now();
     try {
       await ensureSelectorInView(page, h.selector);
@@ -198,13 +215,13 @@ export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFa
       // moment to settle.
       const hLoc = page.locator(h.selector).first();
       const box =
-        (await hLoc.count().catch(() => 0)) > 0
+        ((await hLoc.count().catch(ignorePageGone)) ?? 0) > 0
           ? await hLoc
               .evaluate((el: HTMLElement) => {
                 const r = el.getBoundingClientRect();
                 return { x: r.x, y: r.y, width: r.width, height: r.height };
               })
-              .catch(() => null)
+              .catch(ignorePageGone)
           : null;
       if (box && box.width > 0 && box.height > 0) {
         await showRing(page, box, h.label, h.tone || "planned", {
@@ -221,17 +238,14 @@ export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFa
           dock = advanceTodoDock(dock, i);
           if (opts && opts.todoDockRef) opts.todoDockRef.current = dock;
           await page
-            .evaluate((d: any) => {
+            .evaluate((d) => {
               if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", dock: d });
             }, dock)
             .catch(ignorePageGone);
-        } else if (!dock && ((opts && opts.todos && opts.todos.length) || (h.todos && h.todos.length))) {
-          const rows =
-            opts && opts.todos && opts.todos.length
-              ? opts.todos
-              : normalizeTodos(h.todos, h.todoIndex);
+        } else if (!dock && opts?.todos?.length) {
+          const rows = opts.todos;
           await page
-            .evaluate((todos: any) => {
+            .evaluate((todos) => {
               if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", list: todos });
             }, rows)
             .catch(ignorePageGone);
@@ -270,23 +284,20 @@ export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFa
         demoHighlight(h, "SKIP no boundingBox");
       }
     } catch (err) {
-      demoHighlight(
-        h || { selector: h && h.selector, label: "(error)" },
-        "SKIP " + String(err instanceof Error ? err.message : err).slice(0, 80),
-      );
+      demoHighlight(h, "SKIP " + String(err instanceof Error ? err.message : err).slice(0, 80));
     }
   }
-  if (list.length > 0) {
-    const last = list[list.length - 1];
+  const last = list.at(-1);
+  if (last) {
     // Resolved through Playwright's own locator (>> piercing / :has-text() / :visible support),
     // not handed to the page as a string for a raw DOM querySelector to fail silently on - see
     // showRing's own comment (same fix, same reason) and __wgFollowRing's in core.js.
     const handle = last.selector
-      ? await page.locator(last.selector).first().elementHandle({ timeout: 100 }).catch(() => null)
+      ? await page.locator(last.selector).first().elementHandle({ timeout: 100 }).catch(ignoreTimeout)
       : null;
     await page
       .evaluate(
-        ({ h, el }: any) => {
+        ({ h, el }: { h: ResolvedHighlight; el: Element | null | undefined }) => {
           if (el && window.__wgFollowRing) {
             window.__wgFollowRing(
               el,
@@ -331,7 +342,7 @@ export async function cycleHighlightRings(page: WgPage, highlights: any, gatesFa
 }
 
 
-export async function showRing(page: WgPage, box: WgBox, label: any, tone: any, style: any) {
+export async function showRing(page: WgPage, box: WgBox, label: string, tone: string | undefined, style?: { size?: string | undefined; weight?: string | undefined; selector?: string | undefined; focus?: boolean }) {
   const size = normalizeHighlightSize(style && style.size);
   const weight = normalizeHighlightWeight(style && style.weight);
   const selector = style && style.selector ? String(style.selector) : "";
@@ -341,10 +352,10 @@ export async function showRing(page: WgPage, box: WgBox, label: any, tone: any, 
   // syntax, invisible to document.querySelector. The resolved element handle is passed straight
   // into evaluate (Playwright unwraps it to the real DOM node inside the page), so __wgFollowRing's
   // per-frame RAF loop tracks that exact element directly - no repeated selector re-resolution.
-  const handle = selector ? await page.locator(selector).first().elementHandle({ timeout: 100 }).catch(() => null) : null;
+  const handle = selector ? await page.locator(selector).first().elementHandle({ timeout: 100 }).catch(ignoreTimeout) : null;
   await page
     .evaluate(
-      ({ box, label, tone, size, weight, el, focus }: any) => {
+      ({ box, label, tone, size, weight, el, focus }: { box: WgBox; label: string; tone: string; size: string; weight: string; el: Element | null | undefined; focus: boolean }) => {
         if (el && window.__wgFollowRing) {
           window.__wgFollowRing(el, label, tone || "planned", { size, weight }, focus);
           return;
@@ -362,47 +373,15 @@ export async function showRing(page: WgPage, box: WgBox, label: any, tone: any, 
 }
 
 
-/** Match a locator to a stubBefore slot by overlapping bounding boxes. */
-async function matchStubForLocator(page: WgPage, locator: Locator, stubs: any) {
-  if (!stubs || stubs.length === 0) return null;
-  const box = await locator.boundingBox().catch(() => null);
-  if (!box) return null;
-  for (const s of stubs) {
-    try {
-      const b = await page.locator(s.selector).first().boundingBox();
-      if (
-        b &&
-        Math.abs(b.x - box.x) < 4 &&
-        Math.abs(b.y - box.y) < 4 &&
-        Math.abs(b.width - box.width) < 8
-      ) {
-        return s;
-      }
-    } catch {
-      // A stub selector Playwright can't parse can't be this element either.
-    }
-  }
-  return null;
-}
-
-
-/** 0-based stub index for Method fill/click todo advance; -1 if none. */
-export async function matchStubIndexForLocator(page: WgPage, locator: Locator, stubs: any) {
+/** The stubBefore ring a locator is, by overlapping bounding boxes: its index, or -1. For a Method's todo advance. */
+export async function matchStubIndexForLocator(page: WgPage, locator: Locator, stubs: readonly ResolvedHighlight[] | undefined): Promise<number> {
   if (!stubs || stubs.length === 0) return -1;
-  const box = await locator.boundingBox().catch(() => null);
+  const box = await locator.boundingBox().catch(ignorePageGone);
   if (!box) return -1;
   for (let i = 0; i < stubs.length; i++) {
-    const s = stubs[i];
     try {
-      const b = await page.locator(s.selector).first().boundingBox();
-      if (
-        b &&
-        Math.abs(b.x - box.x) < 4 &&
-        Math.abs(b.y - box.y) < 4 &&
-        Math.abs(b.width - box.width) < 8
-      ) {
-        return i;
-      }
+      const b = await page.locator(stubs[i]!.selector).first().boundingBox();
+      if (b && Math.abs(b.x - box.x) < 4 && Math.abs(b.y - box.y) < 4 && Math.abs(b.width - box.width) < 8) return i;
     } catch {
       // A stub selector Playwright can't parse can't be this element either.
     }
@@ -410,8 +389,14 @@ export async function matchStubIndexForLocator(page: WgPage, locator: Locator, s
   return -1;
 }
 
+/** The stubBefore ring a locator is, or null. */
+async function matchStubForLocator(page: WgPage, locator: Locator, stubs: readonly ResolvedHighlight[] | undefined): Promise<ResolvedHighlight | null> {
+  const i = await matchStubIndexForLocator(page, locator, stubs);
+  return i >= 0 && stubs ? stubs[i]! : null;
+}
 
-export async function captionForLocator(page: WgPage, locator: Locator, stubs: any, fallback: any) {
+
+export async function captionForLocator(page: WgPage, locator: Locator, stubs: readonly ResolvedHighlight[] | undefined, fallback: string) {
   const matched = await matchStubForLocator(page, locator, stubs);
   if (matched) {
     return {
@@ -425,7 +410,7 @@ export async function captionForLocator(page: WgPage, locator: Locator, stubs: a
 }
 
 
-export async function dwellMatchedStub(page: WgPage, locator: Locator, stubs: any, pacing: any) {
+export async function dwellMatchedStub(page: WgPage, locator: Locator, stubs: readonly ResolvedHighlight[] | undefined, pacing: Pick<Pacing, "gatesFast" | "demoPace"> | undefined) {
   const matched = await matchStubForLocator(page, locator, stubs);
   if (!matched) return;
   const ms = resolveFixtureDwellMs(matched, {

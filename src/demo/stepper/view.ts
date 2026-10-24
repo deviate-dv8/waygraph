@@ -1,9 +1,9 @@
 // What the stepper's panels show about the run as a whole and about the current step.
 import type { MemPage } from "../../engine/mem/mem.js";
-import type { Block } from "../../engine/block/block.js";
+import type { SomeBlock } from "../../engine/block/block.js";
 import type { DemoPace } from "../../engine/stub/pace.js";
 import type { HighlightStyleDefaults } from "../../engine/stub/ring.js";
-import type { WgPage } from "../types.js";
+import type { StepperRefs, WgPage } from "../types.js";
 import type { createOverlayStage } from "../overlay/overlay-stage.js";
 import type { Gate } from "./gate.js";
 import type { Pacing } from "./pacing.js";
@@ -11,7 +11,7 @@ import { envFlag, envString } from "../../engine/env.js";
 
 /** A step as the stepper sees it (the runner's PlayStep). */
 export interface StepperStep {
-  block: Block<any, any> & { description?: string; fastForward?: boolean; demoPace?: DemoPace; __waygraphKind?: string; __waygraphNavClick?: unknown };
+  block: SomeBlock & { description?: string; fastForward?: boolean; demoPace?: DemoPace; __waygraphKind?: string; __waygraphNavClick?: unknown };
   episodeNumber?: number | undefined;
   episodeTitle?: string | undefined;
   expectedFailureReason?: string | undefined;
@@ -28,7 +28,7 @@ export interface StepperContext {
   stage: ReturnType<typeof createOverlayStage>;
   gate: Gate;
   pacing: Pacing;
-  refs: { stubBefore: { current: any[] }; todoDock: { current: any }; device: { current: any } };
+  refs: StepperRefs;
   title: string | undefined;
   stepperMode: "full" | "carousel";
   /** A title set by a stub (`ctx.title`) names the flow from that step on, until another stub sets a new one. */

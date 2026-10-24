@@ -174,8 +174,8 @@ export function resolveDeviceState(
 export function applyDevicePhase(
   prev: DeviceState | undefined,
   phase: {
-    deviceSync?: "set" | "clear" | "keep";
-    device?: DeviceState;
+    deviceSync?: "set" | "clear" | "keep" | undefined;
+    device?: DeviceState | undefined;
   },
 ): { device: DeviceState | undefined; sync: "set" | "clear" | "keep" } {
   const sync =

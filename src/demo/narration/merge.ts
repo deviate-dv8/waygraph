@@ -1,7 +1,8 @@
 import type { HighlightStubPhase, ResolvedHighlight, WaygraphHighlightStub } from "../../engine/stub/ring.js";
 import type { HighlightStubPhaseName, StubLifecycleFn } from "../../engine/stub/stub.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/stub/ring.js";
-import type { Block } from "../../engine/block/block.js";
+import type { SomeBlock } from "../../engine/block/block.js";
+import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 
 
 
@@ -78,16 +79,7 @@ export function resolvePhaseMap(phaseMap: HighlightStubPhase): ResolvedHighlight
 }
 
 
-export function readStubRaw(
-  block: Block<any, any>,
-  phase: HighlightStubPhaseName,
-): StubLifecycleFn<any> | undefined {
-  const instr = block.instruction as {
-    stubBefore?: StubLifecycleFn<any>;
-    stubAfter?: StubLifecycleFn<any>;
-    stubOnError?: StubLifecycleFn<any>;
-  };
-  if (phase === "stubBefore") return instr.stubBefore;
-  if (phase === "stubAfter") return instr.stubAfter;
-  return instr.stubOnError;
+/** The stub a Block's flow chained for this phase, if any. */
+export function readStubRaw(block: SomeBlock, phase: HighlightStubPhaseName): StubLifecycleFn<Checkpoint<string>> | undefined {
+  return block.instruction[phase];
 }

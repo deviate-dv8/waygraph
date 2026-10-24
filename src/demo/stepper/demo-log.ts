@@ -2,8 +2,25 @@
 import { demoPaceIsFast, demoPaceIsSlow, formatDemoPaceBadge, formatDemoPaceLabel, normalizeDemoPace } from "../narration/demo-pace.js";
 import { normalizeHighlightTone } from "../../engine/stub/ring.js";
 import { envFlag } from "../../engine/env.js";
+import type { StubPhaseResult } from "../../engine/stub/stub.js";
+import type { TodoDockState } from "../../engine/stub/todos.js";
+import type { DeviceState } from "../../engine/stub/viewport.js";
 
-export function demoPaceKind(pace: any) {
+/** What a HIGHLIGHT log line shows: a ring as painted (no selector for a narrated caption). Logged, not checked. */
+type LoggedHighlight = {
+  selector?: string | null | undefined;
+  label?: string | undefined;
+  tone?: string | undefined;
+  color?: string | undefined;
+  focus?: boolean | undefined;
+  zoom?: number | undefined;
+  zoomOut?: boolean | undefined;
+  gesture?: string | undefined;
+  weight?: string | undefined;
+  size?: string | undefined;
+};
+
+export function demoPaceKind(pace: unknown): string {
   const p = normalizeDemoPace(pace);
   if (typeof p === "number" && p > 20) return "ms";
   if (typeof p === "number") return demoPaceIsSlow(p) ? "num-slow" : demoPaceIsFast(p) ? "fast" : "normal";
@@ -12,9 +29,9 @@ export function demoPaceKind(pace: any) {
 }
 
 
-export function paceSpeakFields(pace: any, baseAutoplayMs: any) {
+export function paceSpeakFields(pace: unknown, baseAutoplayMs: number | undefined) {
   const p = normalizeDemoPace(pace);
-  const base = Number.isFinite(baseAutoplayMs) && baseAutoplayMs > 0 ? baseAutoplayMs : 1800;
+  const base = baseAutoplayMs !== undefined && Number.isFinite(baseAutoplayMs) && baseAutoplayMs > 0 ? baseAutoplayMs : 1800;
   return {
     pace: p,
     paceBadge: formatDemoPaceBadge(p, base),
@@ -54,12 +71,12 @@ export const ANSI = {
   white: ESC + "[37m",
 };
 
-export function ansiPaint(code: any, text: any) {
+export function ansiPaint(code: string, text: unknown): string {
   if (!demoColorEnabled() || text == null || text === "") return String(text ?? "");
   return code + String(text) + ANSI.reset;
 }
 
-function toneAnsi(tone: any) {
+function toneAnsi(tone: unknown): string {
   const t = normalizeHighlightTone(tone);
   if (t === "info") return ANSI.blue;
   if (t === "warning") return ANSI.yellow;
@@ -69,7 +86,7 @@ function toneAnsi(tone: any) {
   return ANSI.purple;
 }
 
-function toneName(tone: any) {
+function toneName(tone: unknown): string {
   const t = normalizeHighlightTone(tone);
   if (t === "info") return "BLUE";
   if (t === "warning") return "YELLOW";
@@ -80,7 +97,7 @@ function toneName(tone: any) {
 }
 
 /** Optional authored CSS color (#rrggbb) -> truecolor ANSI when TTY. */
-function hexAnsi(hex: any) {
+function hexAnsi(hex: unknown): string | null {
   if (!hex || typeof hex !== "string") return null;
   const m = String(hex).trim().match(/^#?([0-9a-fA-F]{6})$/);
   if (!m) return null;
@@ -93,7 +110,7 @@ function hexAnsi(hex: any) {
 
 function demoTs() {
   const d = new Date();
-  const p = (n: any) => String(n).padStart(2, "0");
+  const p = (n: number) => String(n).padStart(2, "0");
   const ms = String(d.getMilliseconds()).padStart(3, "0");
   return (
     p(d.getHours()) +
@@ -110,13 +127,13 @@ function demoPrefix() {
   return ansiPaint(ANSI.dim, "[" + demoTs() + "]") + " waygraph demo: ";
 }
 
-export function demoLog(msg: any) {
+export function demoLog(msg: string): void {
   if (demoQuiet()) return;
   console.log(demoPrefix() + msg);
 }
 
 /** Fixture catch-all: how it was called + value. */
-export function demoFixture(kind: any, call: any, value: any) {
+export function demoFixture(kind: string, call: string, value?: unknown): void {
   if (demoQuiet()) return;
   const head = ansiPaint(ANSI.cyan, "FIXTURE") + " " + ansiPaint(ANSI.bold, kind);
   const callPart = call ? " " + ansiPaint(ANSI.dim, call) : "";
@@ -137,7 +154,7 @@ export function demoFixture(kind: any, call: any, value: any) {
 }
 
 /** Highlight trigger line: PURPLE · Cart items - Product landed in cart */
-export function demoHighlight(h: any, extra: any) {
+export function demoHighlight(h: LoggedHighlight | null | undefined, extra?: string): void {
   if (demoQuiet()) return;
   const tone = h && h.tone != null ? h.tone : "planned";
   const paint = hexAnsi(h && h.color) || toneAnsi(tone);
@@ -162,7 +179,7 @@ export function demoHighlight(h: any, extra: any) {
   console.log(demoPrefix() + ansiPaint(ANSI.magenta, "HIGHLIGHT") + " " + line);
 }
 
-export function logStubPhaseFixtures(phaseName: any, phase: any) {
+export function logStubPhaseFixtures(phaseName: string, phase: StubPhaseResult | null | undefined): void {
   if (demoQuiet() || !phase) return;
   const tag = "stub." + phaseName;
   if (phase.title) demoFixture(tag, "ctx.title(...)", JSON.stringify(phase.title));
@@ -199,15 +216,13 @@ export function logStubPhaseFixtures(phaseName: any, phase: any) {
         : phase.todoSync,
     );
   }
-  const rings = phase.highlights || [];
-  for (let i = 0; i < rings.length; i++) {
-    const h = rings[i];
+  phase.highlights.forEach((h, i) => {
     demoFixture(
       tag,
       "ctx.ring/highlights[" + i + "]",
       {
         selector: h.selector,
-        label: h.label || h.caption,
+        label: h.label,
         detail: h.detail,
         tone: h.tone || "planned",
         color: h.color,
@@ -218,13 +233,10 @@ export function logStubPhaseFixtures(phaseName: any, phase: any) {
         duration: h.duration,
       },
     );
-  }
-  if (phase.slides && phase.slides.length) {
-    demoFixture(tag, "ctx.slides(...)", { n: phase.slides.length });
-  }
+  });
 }
 
-function summarizeTodoDock(dock: any) {
+function summarizeTodoDock(dock: TodoDockState | null | undefined): string {
   if (!dock) return "todos=none";
   const id = dock.id || "_default";
   const pos = dock.pos || "left";
@@ -253,7 +265,7 @@ function summarizeTodoDock(dock: any) {
 }
 
 /** Full todo dump for agents (every group/item id + flags). */
-export function logTodoDockFull(dock: any, tag: any) {
+export function logTodoDockFull(dock: TodoDockState | null | undefined, tag?: string): void {
   const prefix = tag ? tag + " " : "";
   if (!dock) {
     demoLog(prefix + "todos=none");
@@ -265,8 +277,7 @@ export function logTodoDockFull(dock: any, tag: any) {
     demoLog(prefix + "  (no groups)");
     return;
   }
-  for (let gi = 0; gi < groups.length; gi++) {
-    const g = groups[gi];
+  groups.forEach((g, gi) => {
     const gLabel =
       "group[" +
       gi +
@@ -275,27 +286,14 @@ export function logTodoDockFull(dock: any, tag: any) {
       (g.title ? ' title="' + String(g.title).slice(0, 40) + '"' : "") +
       (g.style ? " style=" + g.style : "");
     demoLog(prefix + "  " + gLabel);
-    const items = g.items || [];
-    for (let ti = 0; ti < items.length; ti++) {
-      const t = items[ti];
+    (g.items || []).forEach((t, ti) => {
       const mark = t.done ? "done" : t.current ? "CURRENT" : "pending";
-      demoLog(
-        prefix +
-          "    [" +
-          ti +
-          "] " +
-          mark +
-          (t.id ? " id=" + t.id : "") +
-          ' text="' +
-          String(t.text || "").slice(0, 80) +
-          '"' +
-          (t.detail ? ' detail="' + String(t.detail).slice(0, 40) + '"' : ""),
-      );
-    }
-  }
+      demoLog(prefix + "    [" + ti + "] " + mark + (t.id ? " id=" + t.id : "") + ' text="' + String(t.text || "").slice(0, 80) + '"');
+    });
+  });
 }
 
-export function summarizeDevice(d: any) {
+export function summarizeDevice(d: DeviceState | null | undefined): string {
   if (!d) return "device=none";
   const vp = d.viewport || {};
   return (
