@@ -216,7 +216,7 @@ network panel rows, the step banner and panel text. Real fix: a closed shadow ro
 Pilot's `auto dom` and the overlay-beacon tests would need to read through `page.evaluate` instead of locators.
 Until then, prefer structural selectors (roles, aria-labels, ids) over bare text in demo-mode flows.
 
-### Architecture refactor (in progress, ships as 0.16.0)
+### Architecture refactor (shipped in 0.16.0; follow-ups in 0.16.1)
 
 Goal: a short layout where each folder is one concept (`engine`, `manifest`, `analysis`, `runtime`, `demo`, `live`, `runner`, `cli`;
 see `src/ARCHITECTURE.md`), with two files the package writes for Waygraph UI and map packages: a **manifest** (every
@@ -257,6 +257,9 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     ratchet; no site-specific code in the package (saucedemo login and URLs, PIA URLs, the veciro preset); `live/` one
     folder per surface; `engine/stub/`; `AGENTS.md`; the reference split into `docs/reference/`. `check:structure`
     enforces the new rules. **Done.**
+14. Follow-ups (0.16.1): Node 22+ (CI on 22 and 24); every file under 500 lines (split by job, the size ratchet empty);
+    the `any` ratchet from 277 to 27 - the demo layer has none, the in-page bridge is typed in
+    `demo/overlay/ui/shadow-globals.d.ts`, and what is left is the engine's invariant "any Block". **Done.**
 
 
 
