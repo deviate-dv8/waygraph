@@ -101,8 +101,8 @@ export default defineConfig({
 
     footer: {
       message:
-        `waygraph ${pkg.version} · Node ${node}+ · peer <code>@playwright/test</code> ${pkg.peerDependencies["@playwright/test"]} · ` +
-        `before 1.0, a release can remove API: see <a href="/waygraph/deprecated">what was removed</a>`,
+        `waygraph ${pkg.version} (alpha) · Node ${node}+ · peer <code>@playwright/test</code> ${pkg.peerDependencies["@playwright/test"]} · ` +
+        `syntax may change before 1.0: see <a href="/waygraph/deprecated">what was removed</a>`,
       copyright: `${pkg.license} Licensed · © 2026 Deviate-DV8`,
     },
 

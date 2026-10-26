@@ -124,4 +124,15 @@ npm run typecheck && npm test        # unit + Playwright suites
 Working on waygraph: [`AGENTS.md`](./AGENTS.md) (the rules, how to verify) and
 [`src/ARCHITECTURE.md`](./src/ARCHITECTURE.md) (where the code starts).
 
+## Status: alpha
+
+> [!WARNING]
+> Waygraph is an alpha build. Its syntax may still change in major ways between releases, and a release can remove
+> API (each removal is listed in [what was removed](./docs/deprecated.md); `waygraph upgrade --codemod` converts most
+> of it). For now we recommend staying on 0.16.0:
+>
+> ```bash
+> npm install --save-exact waygraph@0.16.0
+> ```
+
 MIT
