@@ -6,6 +6,15 @@ const apiSidebar = existsSync("docs/api/typedoc-sidebar.json")
   ? JSON.parse(readFileSync("docs/api/typedoc-sidebar.json", "utf8"))
   : [];
 
+// The footer reads the release it documents, so it can't go stale.
+const pkg = JSON.parse(readFileSync("package.json", "utf8")) as {
+  version: string;
+  license: string;
+  engines: { node: string };
+  peerDependencies: Record<string, string>;
+};
+const node = pkg.engines.node.replace(/^>=\s*/, "");
+
 export default defineConfig({
   title: "Waygraph",
   description: "Write browser tests as a graph of small, reusable steps. Built on Playwright.",
@@ -16,10 +25,6 @@ export default defineConfig({
   // Vue's template compiler chokes on those as stray HTML. Never rendered as a site page anyway
   // (the original site always linked it straight to GitHub's own blob viewer); exclude it from the
   // build rather than rewrite the whole file to escape every generic.
-  // public/saucedemo/ and public/proposals/ are a separate static site/plain markdown, copied
-  // through as-is (not VitePress pages) - their own relative links resolve fine on their own but
-  // read as dead links to VitePress's page-based checker.
-  ignoreDeadLinks: [/^\.\.?\//],
   head: [
     ["link", { rel: "icon", href: "/waygraph/favicon.svg" }],
     [
@@ -95,8 +100,10 @@ export default defineConfig({
     search: { provider: "local" },
 
     footer: {
-      message: "Requires Node 22+ · @playwright/test is a peer dependency (^1.40) · not v1.0 yet",
-      copyright: "MIT Licensed",
+      message:
+        `waygraph ${pkg.version} · Node ${node}+ · peer <code>@playwright/test</code> ${pkg.peerDependencies["@playwright/test"]} · ` +
+        `before 1.0, a release can remove API: see <a href="/waygraph/deprecated">what was removed</a>`,
+      copyright: `${pkg.license} Licensed · © 2026 Deviate-DV8`,
     },
 
     editLink: {

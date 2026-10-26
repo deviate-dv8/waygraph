@@ -59,7 +59,7 @@ tsconfig.json                base config
 tsconfig.build.json          emits to dist/
 ```
 
-In-package Sauce Demo: [`examples/saucedemo`](../../examples/saucedemo). Other consumer
+In-package Sauce Demo: [`examples/saucedemo`](https://github.com/deviate-dv8/waygraph/tree/main/examples/saucedemo). Other consumer
 experiments may still live in a sibling workspace folder and depend on this package via
 `"waygraph": "file:../waygraph"` during local dev (see that
 project's own `.npmrc` - `install-links=true` is required there, or npm will symlink

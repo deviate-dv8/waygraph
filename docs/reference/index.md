@@ -6,14 +6,14 @@ A typed graph of reusable Blocks for driving a browser through E2E flows, in pla
 flat pile of ad hoc helper functions.
 
 Not yet `1.0.0` - breaking changes between minor versions are expected. See
-[ROADMAP.md](../../ROADMAP.md) for what's shipped, spec'd, and planned, and
+[ROADMAP.md](https://github.com/deviate-dv8/waygraph/blob/main/ROADMAP.md) for what's shipped, spec'd, and planned, and
 `openspec/specs/` for the current merged spec behind each capability
 (`openspec/changes/archive/` holds the historical planning artifacts once a change ships).
 
 This repo is the `waygraph` npm package itself. The full live **Sauce Demo** example
 (Page inventory hub, Effect Add/Remove, MemNav Open details, `waygraph auto`) ships
-in-tree at [`examples/saucedemo`](../../examples/saucedemo). `waygraph try demo` copies
-[`templates/quickstart`](../../templates/quickstart) (same Sauce Demo Blocks) into an OS
+in-tree at [`examples/saucedemo`](https://github.com/deviate-dv8/waygraph/tree/main/examples/saucedemo). `waygraph try demo` copies
+[`templates/quickstart`](https://github.com/deviate-dv8/waygraph/tree/main/templates/quickstart) (same Sauce Demo Blocks) into an OS
 temp dir.
 
 ## Pages
@@ -38,20 +38,17 @@ layout, deploy):
 
 - **Published:** https://deviate-dv8.github.io/waygraph/ (workflow auto-enables Pages via
   `enablement: true`; manual Settings only if org policy blocks it)
-- **Source:** [`docs/`](..) - static HTML, no build step
-- **Local preview:** `npm run docs:preview` -> http://127.0.0.1:4173/
+- **Source:** [`docs/`](https://github.com/deviate-dv8/waygraph/tree/main/docs) - a VitePress site; `npm run docs:dev` serves it locally,
+  `npm run docs:build` builds it (and fails on a dead link)
 - **Deploy:** push to `main` touching `docs/**` runs
-  [`.github/workflows/pages.yml`](../../.github/workflows/pages.yml) (`workflow_dispatch` also
+  [`.github/workflows/pages.yml`](https://github.com/deviate-dv8/waygraph/blob/main/.github/workflows/pages.yml) (`workflow_dispatch` also
   works)
-- **Demo / run contract:** [`docs/demo.html`](../demo.md) - `list` / `.flow.ts` path
-  / export / flags
-- **Auto explore:** [`docs/auto.html`](../auto.md) - prefer `auto --cli` /
-  `npm run auto:cli` (same menus as headed)
-- **In-repo example:** [`examples/saucedemo`](../../examples/saucedemo) - full Sauce Demo
+- **Demo / run contract:** [Demo / run](../demo.md) - `list` / `.flow.ts` path / export / flags
+- **Auto explore:** [Auto explore](../auto.md) - prefer `auto --cli` / `npm run auto:cli` (same menus as headed)
+- **In-repo example:** [`examples/saucedemo`](https://github.com/deviate-dv8/waygraph/tree/main/examples/saucedemo) - full Sauce Demo
   project
-- **Convention showcase (Pages):** [`docs/saucedemo/`](https://deviate-dv8.github.io/waygraph/saucedemo/) -
-  https://deviate-dv8.github.io/waygraph/saucedemo/
-- **Helpers (consumer copy):** [`examples/saucedemo/docs/HELPERS.md`](../../examples/saucedemo/docs/HELPERS.md)
+- **Walkthrough:** [Sauce Demo example](../saucedemo/index.md) - its layout, Blocks, flows and narration
+- **Helpers (consumer copy):** [`examples/saucedemo/docs/HELPERS.md`](https://github.com/deviate-dv8/waygraph/blob/main/examples/saucedemo/docs/HELPERS.md)
 
 This README stays the in-repo API narrative; Pages is the same material for eyeballing and
 cross-mesh handoff.

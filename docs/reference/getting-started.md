@@ -79,7 +79,7 @@ cd my-app && npm install && npx playwright install chromium && npm test
 
 `try demo` is different: live saucedemo.com, step-through **Sign In -> Shop & Checkout ->
 blocked Viewer login**, then headless tests. Permanent full example:
-[`examples/saucedemo`](../../examples/saucedemo). Offline empty scaffold: `init`.
+[`examples/saucedemo`](https://github.com/deviate-dv8/waygraph/tree/main/examples/saucedemo). Offline empty scaffold: `init`.
 
 **`create-waygraph` (npm) is deprecated** - it was the identical `init` template shipped as
 a second package for no real benefit. Use `npx waygraph init my-app` instead.

@@ -28,6 +28,5 @@ Pages path.
 ## What is not on Pages
 
 OpenSpec change folders, Playwright fixtures, and `dist/` stay in the git repo only. Runnable
-Sauce Demo source stays at `examples/saucedemo`; the convention walkthrough is on Pages at
-[`docs/public/saucedemo/`](/saucedemo/) (a static passthrough - VitePress copies `docs/public/`
-straight to the site root, unbuilt).
+Sauce Demo source stays at `examples/saucedemo`; its walkthrough is the [Sauce Demo example](./saucedemo/index.md)
+page. `docs/public/` (the favicon, archived proposals) is copied to the site root as-is.
