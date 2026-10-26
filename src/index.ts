@@ -31,7 +31,7 @@ export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from ".
 export type { ApiBlockOptions, ApiCallResult } from "./engine/block/kinds/api.js";
 export type { MapStepOpts } from "./engine/flow/map-steps.js";
 export type { MapFlowOpts } from "./engine/flow/map-builder.js";
-export { resolveHighlightSlots, resolveSlides, runStubPhase, hasAuthoredStubAfter, hasAuthoredStubOnError } from "./demo/narration/narration.js";
+export { resolveHighlightSlots, runStubPhase, hasAuthoredStubAfter, hasAuthoredStubOnError } from "./demo/narration/narration.js";
 export { resolveFixtureDwellMs, normalizeDemoPace, resolveStepDemoPace, demoPaceScale, demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, demoPaceGateMs, formatDemoPaceBadge, formatDemoPaceLabel, FIXTURE_DURATION_MS_DEFAULT, FIXTURE_DURATION_FAST_MS_DEFAULT, FIXTURE_DURATION_SLOW_MS_DEFAULT } from "./demo/narration/demo-pace.js";
 export { formatHighlightCaption, applyHighlightStyleDefaults, toneIconPrefix } from "./demo/narration/style.js";
 export { normalizeHighlightTone, normalizeHighlightSize, normalizeHighlightWeight } from "./engine/stub/ring.js";
@@ -83,7 +83,6 @@ export type { WebServerConfig } from "./runtime/webserver.js";
 
 // Types the API above refers to (each is part of a public signature).
 export type { MapStart } from "./engine/engine.js";
-export type { WaygraphSlidesOrFn } from "./engine/stub/ring.js";
 export type { ConnectLayout } from "./engine/run/connect.js";
 export type { EffectExtras } from "./engine/block/kinds/effect.js";
 export type { BlockBase, RoutedBlockBase } from "./engine/checkpoint/route.js";

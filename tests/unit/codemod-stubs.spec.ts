@@ -82,4 +82,31 @@ export const M = defineMethodBlock({
     assert.match(text, /\}\)\.stubBefore\(\(ctx\) => \{\s*ctx\.title\("Checking"\);\s*\}\);/);
     assert.match(text, /\}\)\.stubAfter\(\(ctx\) => \{\s*ctx\.ring\("x", \{ selector: "#x" \}\);\s*\}\);/);
   });
+
+  it("moves a Block's slides into ctx.slides in its stubAfter", () => {
+    const { text } = run(`export const F = defineMethodBlock({
+  name: "f",
+  instruction: {
+    async act() {},
+    slides: [{ caption: "One", tag: "YAP" }],
+  },
+});
+export const H = defineAssertBlock({
+  name: "h",
+  checkpoint: Home,
+  slides: (out) => [{ caption: out.__state }],
+});
+export const R = defineMethodBlock({
+  name: "r",
+  instruction: {
+    async act() {},
+    stubAfter: (ctx) => ctx.ring("x", { selector: "#x" }),
+    slides: [{ caption: "Two" }],
+  },
+});`);
+    assert.doesNotMatch(text, /slides:/);
+    assert.match(text, /\}\)\.stubAfter\(\(ctx\) => ctx\.slides\(\[\{ caption: "One", tag: "YAP" \}\]\)\);/);
+    assert.match(text, /\.stubAfter\(\(ctx\) => ctx\.slides\(\(\(out\) => \[\{ caption: out\.__state \}\]\)\(ctx\.out!\)\)\);/);
+    assert.match(text, /\.stubAfter\(async \(ctx\) => \{\s*await \(\(ctx\) => ctx\.ring\("x", \{ selector: "#x" \}\)\)\(ctx\);\s*ctx\.slides\(\[\{ caption: "Two" \}\]\);\s*\}\);/);
+  });
 });

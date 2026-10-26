@@ -70,8 +70,6 @@ export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<
   verify: Trait[] | ((out: Out) => Trait[]);
   /** Mem keys this assertion's `verify` reads (e.g. a mem-aware Trait) - checked by preflight before the flow runs. */
   requires?: readonly MemKey<unknown>[];
-  /** Multi-step yap slides (demo only) - same field `Instruction.slides` exposes elsewhere. */
-  slides?: import("../../stub/ring.js").WaygraphSlidesOrFn<Out>;
 }
 
 
@@ -106,7 +104,6 @@ export function defineAssertBlock<Out extends Checkpoint<string>>(options: Asser
         }
       },
       verify: options.verify,
-      ...(options.slides ? { slides: options.slides } : {}),
     },
   });
   Object.defineProperty(built, "__waygraphKind", {

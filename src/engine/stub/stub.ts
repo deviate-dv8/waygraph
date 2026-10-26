@@ -5,7 +5,7 @@ import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import type { MemPage } from "../mem/mem.js";
 import type { TodoDockState, TodoDockUiOpts, TodoListStyle, WaygraphTodoGroupInput, WaygraphTodoInput, WaygraphTodoItem, WaygraphTodosOpts } from "./todos.js";
 import type { DeviceOrientation, DevicePreset, DeviceState, DeviceViewport } from "./viewport.js";
-import type { HighlightStubPhase, ResolvedHighlight, WaygraphHighlightStub } from "./ring.js";
+import type { HighlightStubPhase, ResolvedHighlight, WaygraphHighlightStub, WaygraphSlide } from "./ring.js";
 
 /** Where the top banner sits. */
 export type BannerPos = "left" | "center" | "right";
@@ -179,6 +179,15 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   caption(text: string): void;
   /** Clears the caption (fades it out). */
   hideCaption(): void;
+  /**
+   * Multi-step "yap" captions with Next between each, for explaining a longer process. In `stubBefore` they play
+   * before the step runs, in `stubAfter` after it lands; a slide with a `selector` rings it while it is up.
+   * @example ctx.slides([
+   *   { caption: "Checkout is three screens", tag: "YAP" },
+   *   { caption: "Overview confirms totals", selector: ".summary_info", duration: true },
+   * ]);
+   */
+  slides(slides: readonly WaygraphSlide[]): void;
   /** Shorthand for `bannerUi({ hidden: true })`. */
   hideBanner(): void;
   /**
@@ -236,6 +245,8 @@ export type StubPhaseResult = {
   bannerUi?: BannerUiOpts;
   caption?: string;
   networkTabVisible?: boolean;
+  /** Slides to play in this phase ({@link StubCtx.slides}); empty when the stub set none. */
+  slides: WaygraphSlide[];
   todoPos?: "left" | "right";
   /** When true, keep other docks (multi-todo). Default false = replace. */
   todoParallel?: boolean;
@@ -272,6 +283,7 @@ export type StubBagState = {
   bannerUi?: BannerUiOpts | undefined;
   caption?: string | undefined;
   networkTabVisible?: boolean | undefined;
+  slides?: readonly WaygraphSlide[] | undefined;
   todoPos?: "left" | "right" | undefined;
   /** Author patched todo-dock UX this phase. */
   todoDockUi?: TodoDockUiOpts | undefined;

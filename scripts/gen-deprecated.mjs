@@ -66,6 +66,16 @@ ${found.length ? `| Name | Kind | Use instead |\n| --- | --- | --- |\n${rows}` :
 | \`traverse --headed\`, \`inject veciro\` / \`demosauce\` | \`traverse --non-headless\`, \`--inject <path>\` / \`--inject saucedemo\` |
 | \`resolveSlideDwellMs\`, \`SLIDE_DURATION_MS_DEFAULT\`, \`SLIDE_DURATION_FAST_MS_DEFAULT\` | \`resolveFixtureDwellMs\`, \`FIXTURE_DURATION_MS_DEFAULT\`, \`FIXTURE_DURATION_FAST_MS_DEFAULT\` |
 
+## Removed in 0.16.2: slides on a Block
+
+\`waygraph upgrade --codemod flows\` moves a Block's \`slides\` into \`ctx.slides\` in its chained \`stubAfter\`.
+
+| Removed | Use instead |
+| --- | --- |
+| \`slides: [...]\` on an instruction or \`defineAssertBlock\`, \`WaygraphSlidesOrFn\` | \`Block.stubAfter((ctx) => ctx.slides([...]))\` where the flow uses it (or \`stubBefore\` to play them before the step) |
+| \`slides: (out) => [...]\` | \`.stubAfter((ctx) => ctx.slides(…ctx.out…))\` |
+| \`resolveSlides(block)\` | \`(await runStubPhase(block, "stubAfter", { out })).slides\` |
+
 ## Removed in 0.16.0: project and CLI
 
 | Removed | Use instead |

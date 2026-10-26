@@ -12,7 +12,6 @@ import {
 } from "../errors.js";
 import type { MemKey } from "../mem/mem.js";
 import { MemPage } from "../mem/mem.js";
-import type { WaygraphSlidesOrFn } from "../stub/ring.js";
 import type { StubLifecycleFn } from "../stub/stub.js";
 import type { Trait } from "../trait/trait.js";
 import type { ActionPage, WaygraphInstanceOption } from "./action-page.js";
@@ -71,16 +70,6 @@ export interface Instruction<
   stubAfter?: StubLifecycleFn<Out>;
   /** When the step fails, before the failure panel; written by `Block.stubOnError((ctx) => ...)`. */
   stubOnError?: StubLifecycleFn<Out>;
-  /**
-   * Multi-step demo captions ("yap" slides) with Next between each -
-   * not block lifecycle. Explains a long process; optional `selector` rings
-   * while that slide is up. Flow fixtures may override via `slides`.
-   * @example slides: [
-   *   { caption: "Checkout is three screens", tag: "YAP" },
-   *   { caption: "Overview confirms totals", selector: ".summary_info" },
-   * ]
-   */
-  slides?: WaygraphSlidesOrFn<Out>;
 }
 
 /**

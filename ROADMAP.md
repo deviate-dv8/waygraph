@@ -260,6 +260,9 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
 14. Follow-ups (0.16.1): Node 22+ (CI on 22 and 24); every file under 500 lines (split by job, the size ratchet empty);
     the `any` ratchet from 277 to 27 - the demo layer has none, the in-page bridge is typed in
     `demo/overlay/ui/shadow-globals.d.ts`, and what is left is the engine's invariant "any Block". **Done.**
+15. Slides are a stub call (0.16.2): `ctx.slides([...])` in `stubBefore` / `stubAfter` where the flow uses the Block;
+    a Block's own `slides` field, `WaygraphSlidesOrFn` and `resolveSlides` are removed (codemod `flows` moves them).
+    **Done.**
 
 
 

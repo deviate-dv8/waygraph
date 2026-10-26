@@ -1,4 +1,4 @@
-// Before a demo step runs: play the Block's stubBefore narration (rings, todos, device, title, caption) and show the
+// Before a demo step runs: play the Block's stubBefore narration (slides, rings, todos, device, title, caption) and show the
 // step's panel, then log what was painted so an agent without eyes can check it.
 import { envFlag } from "../../engine/env.js";
 import type { StubPhaseResult } from "../../engine/stub/stub.js";
@@ -7,6 +7,7 @@ import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narratio
 import { logBannerDom, probeBanner } from "./banner-log.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
 import { renderBeforeStep } from "./panel-before.js";
+import { showSlides } from "./slides.js";
 import { probeTodoDocksOnPage } from "./todo-advance.js";
 import type { StepperContext, StepView } from "./view.js";
 import { forceCollapsed } from "./view.js";
@@ -17,6 +18,7 @@ export async function showBefore(ctx: StepperContext, view: StepView): Promise<v
   const { stage } = ctx;
   const phase = await narrateBefore(ctx, view);
   const { appliedTodo } = await stage.applyPhase(phase, { reapplyDeviceOnKeep: true });
+  await showSlides(ctx, view, phase.slides);
   if (phase.title && String(phase.title).trim()) ctx.stickyTitle = String(phase.title).trim();
   view.overlayTitle = ctx.stickyTitle || (view.step.episodeTitle && String(view.step.episodeTitle).trim()) || ctx.title || "waygraph demo";
   view.overlayTodoPos = stage.state.lastTodoDock?.pos || phase.todoPos || undefined;

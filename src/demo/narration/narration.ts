@@ -2,7 +2,7 @@
 // rings, todos, device, title and caption it set, for the overlay to paint.
 import type { DeviceState } from "../../engine/stub/viewport.js";
 import type { HighlightStubPhaseName, StubBagState, StubPhaseResult } from "../../engine/stub/stub.js";
-import type { ResolvedHighlight, WaygraphSlide, WaygraphSlidesOrFn } from "../../engine/stub/ring.js";
+import type { ResolvedHighlight } from "../../engine/stub/ring.js";
 import { createStubCtx } from "./stub-ctx.js";
 import { applyDefaultZoom, applyDefaultZoomOut, readStubRaw, resolvePhaseMap } from "./merge.js";
 import { buildTodoDock, normalizeTodoStyle, normalizeTodos } from "./todo-dock.js";
@@ -44,7 +44,9 @@ export async function runStubPhase(
       throw new Error(`${block.name}: its ${phase} stub threw: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
     }
   }
-
+  if (phase === "stubOnError" && bag.slides?.length) {
+    throw new Error(`${block.name}: its stubOnError stub set slides; slides play before or after a step (stubBefore / stubAfter), not on its failure`);
+  }
 
   let highlights = applyDefaultZoom(resolvePhaseMap(bag.highlights), bag.zoom);
   highlights = applyDefaultZoomOut(highlights, bag.zoomOut);
@@ -120,6 +122,7 @@ export async function runStubPhase(
     // Boolean, not string - "" isn't a state here, so a plain undefined-check (like zoom/title)
     // is enough; false is real ("author called hideNetworkTab()") and must still be forwarded.
     ...(bag.networkTabVisible !== undefined ? { networkTabVisible: bag.networkTabVisible } : {}),
+    slides: [...(bag.slides ?? [])],
     ...(bag.todoPos !== undefined ? { todoPos: bag.todoPos } : {}),
     ...(bag.todoDockUi !== undefined ? { todoDockUi: bag.todoDockUi } : {}),
     ...(bag.todoParallel === true ? { todoParallel: true } : {}),
@@ -149,27 +152,6 @@ export function resolveHighlightSlots(
     }
   }
   return applyDefaultZoom(resolvePhaseMap(bag.highlights), bag.zoom);
-}
-
-
-/** Resolve multi-step yap slides from `instruction.slides` (function form allowed). */
-export function resolveSlides(
-  block: SomeBlock,
-  opts?: {
-    out?: Checkpoint<string>;
-  },
-): WaygraphSlide[] {
-  const instr: { slides?: WaygraphSlidesOrFn<Checkpoint<string>> | undefined } = block.instruction;
-  let raw = instr.slides;
-  if (typeof raw === "function") {
-    try {
-      raw = raw(opts?.out ?? { __state: "" });
-    } catch {
-      raw = [];
-    }
-  }
-  if (!Array.isArray(raw)) return [];
-  return raw.filter((s) => s && typeof s.caption === "string" && s.caption.length > 0);
 }
 
 

@@ -33,6 +33,9 @@ export const homeHelloFlow = engine
           duration: true,
         });
         ctx.ring("sub", { selector: DemoSel.sub, label: "Subcopy", duration: 1500 });
+        ctx.slides([
+          { caption: "Scaffold covers auto + narration", detail: "Page hub, Effect instanceOptions, stubs, YAP.", tag: "YAP", duration: true },
+        ]);
       })
       .stubOnError((ctx) => {
         ctx.ring("title", { selector: DemoSel.title, label: "Heading at failure", tag: "FAIL" });

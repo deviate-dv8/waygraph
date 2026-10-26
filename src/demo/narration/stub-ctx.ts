@@ -125,6 +125,9 @@ export function createStubCtx<Out extends Checkpoint<string>>(
     caption(text) {
       bag.caption = String(text ?? "");
     },
+    slides(slides) {
+      bag.slides = slides;
+    },
     hideCaption() {
       bag.caption = "";
     },

@@ -1,13 +1,14 @@
 // Slides: a step's multi-page explanation shown after it runs, each page gated by Next.
 import type { WgPage } from "../types.js";
 import { demoPaceGateMs, formatDemoPaceBadge, formatDemoPaceLabel, normalizeDemoPace, resolveFixtureDwellMs } from "../narration/demo-pace.js";
-import { formatHighlightCaption } from "../narration/style.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, type WaygraphSlide } from "../../engine/stub/ring.js";
 import type { DemoPace } from "../../engine/stub/pace.js";
 import { installOverlay } from "../overlay/overlay.js";
 import { applyHighlightZoom, ensureSelectorInView, hideRing, showRing } from "../overlay/rings.js";
-import { demoPaceKind } from "./demo-log.js";
+import { demoLog, demoPaceKind } from "./demo-log.js";
 import { envFlag, envNumber, envString } from "../../engine/env.js";
+import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
+import type { StepperContext, StepView } from "./view.js";
 
 /** Where the slides sit (title, Block, episode) and how fast they advance. */
 export interface SlidesOptions {
@@ -266,4 +267,23 @@ export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide
     }
   }
   await hideRing(page);
+}
+
+/** Plays a stub phase's `ctx.slides(...)` for the step on screen, in the flow's highlight style. */
+export async function showSlides(ctx: StepperContext, view: StepView, slides: readonly WaygraphSlide[]): Promise<void> {
+  if (slides.length === 0) return;
+  if (!envFlag("WAYGRAPH_JSON")) demoLog(`  slides ${slides.length}: ` + slides.map((s) => JSON.stringify(s.caption)).join(" | "));
+  await presentSlides(
+    ctx.page,
+    slides.map((s) => applyHighlightStyleDefaults(s, view.step.highlightStyle)),
+    {
+      title: ctx.title,
+      blockName: view.step.block.name,
+      fast: ctx.pacing.gatesFast,
+      pace: ctx.pacing.demoPace,
+      episodeNumber: view.step.episodeNumber,
+      episodeTitle: view.step.episodeTitle,
+      autoplayMs: ctx.gate.autoplayMs,
+    },
+  );
 }

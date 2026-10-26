@@ -9,14 +9,14 @@ Narration is written in the **flow**, as ctx stubs chained on the Blocks it uses
 ```sh
 Block           → what it does (act / resolve / verify), no narration
 Flow            → the story: ctx stubs chained on each Block, in the order the flow runs them
-Block or flow   → slides   (multi-step yap, Next between each - not block lifecycle)
+                  (rings, todos, captions, and ctx.slides for a multi-step yap)
 ```
 
 | Feature | Where | Role |
 |---|---|---|
 | **Stubs** | Chained on a Block inside a flow | `ctx.ring(...)`, `ctx.todos(...)`, `ctx.title(...)` before, after or on error. |
 | **Captions** | Every ring / slide | `label` (or `caption` on slides), optional `detail` and `tag`. Rendered as: `[TAG] primary - detail`. |
-| **Slides** | Block `slides` or a flow fixture | Multi-step yap sequence. Demo pauses on each slide; user clicks **Next slide** (or auto-next). Runs after the step resolves. |
+| **Slides** | `ctx.slides([...])` in a stub | Multi-step yap sequence. Demo pauses on each slide; user clicks **Next slide** (or auto-next). In `stubBefore` they play before the step runs, in `stubAfter` after it lands. |
 
 ## Phases
 
@@ -66,18 +66,27 @@ export const usernameAc = (ctx: StubCtx<any>) => ctx.ring("username", { label: "
 .method(SubmitLoginBlock.stubBefore(usernameAc))
 ```
 
-The older `withHighlightFixtures(flow, map)` slot map was removed in 0.16.0; chain ctx stubs on the Block as above.
+Slides are a stub call like the rest:
 
-## TypeScript exports (waygraph@0.11.2)
+```ts
+.method(FinishOrderBlock.stubAfter((ctx) => ctx.slides([
+  { caption: "Checkout is a short pipeline", tag: "YAP", duration: true },
+  { caption: "Completion page is the proof", selector: ".complete-header", tone: "success" },
+])))
+```
+
+The older `withHighlightFixtures(flow, map)` slot map was removed in 0.16.0, and a Block's own `slides` field in 0.16.2;
+chain ctx stubs on the Block as above (`waygraph upgrade --codemod flows` moves old `slides` into `ctx.slides`).
+
+## TypeScript exports
 
 | Export | Kind | What it does |
 |---|---|---|
 | `resolveHighlightSlots(block, phase, opts)` | function | Resolve a Block's stubBefore / stubAfter / stubOnError slots |
-| `resolveSlides(block, opts)` | function | Resolve a Block's slides |
 | `formatHighlightCaption(h)` | function | Format `[TAG] label - detail` string |
 | `hasAuthoredStubAfter(block, out)` | function | True when block has non-empty stubAfter (skips verify-trait fallback) |
 | `WaygraphHighlightStub` | type | One named stub slot |
-| `WaygraphSlide` | type | One yap slide (caption, detail, tag, selector) |
+| `WaygraphSlide` | type | One yap slide for `ctx.slides` (caption, detail, tag, selector) |
 | `ResolvedHighlight` | type | A resolved stub slot |
 
 ## Todo dock UI (demo, 0.15.8+)
@@ -143,7 +152,7 @@ The [Sauce Demo](./saucedemo/index) shows all features in a real block/flow:
 
 - **submit-login** - `stubBefore` (fill rings on username/password/submit)
 - **add-to-cart** - `stubAfter` (cart badge ring after action)
-- **finish-order** - `stubBefore` + `stubAfter` + `slides` (3-slide yap sequence)
+- **finish-order** - `ctx.slides(...)` in its `stubAfter` (3-slide yap sequence, `src/stubs/checkout-yap.ts`)
 - Flow fixtures on `checkoutFlow` - AC/GATE captions, tag badges, detail lines
 - **login / cart blocks** - `ctx.todos(...)` so the floating dock (smart UX) shows in `waygraph demo`
 

@@ -31,35 +31,5 @@ export const FinishOrderBlock = defineMethodBlock({
         "Thank you for your order!",
       ),
     ],
-    // Shown AFTER act (order already placed) - selectors must match the
-    // completion page, not #finish on the overview.
-    slides: [
-      {
-        caption: "Checkout is a short pipeline",
-        detail: "Cart -> info -> overview -> done. You just placed the order.",
-        tag: "YAP",
-        tone: "info",
-        duration: true,
-      },
-      {
-        caption: "Completion page is the durable proof",
-        detail:
-          "tone: success - the thank-you header is what verify asserts on.",
-        tag: "YAP",
-        tone: "success",
-        selector: CheckoutOverviewSel.completeHeader,
-        duration: 2500,
-        fastMode: 700,
-      },
-      {
-        caption: "Episode continues after this yap",
-        detail: "Next step rings the same banner, then you move on.",
-        tag: "YAP",
-        tone: "planned",
-        selector: CheckoutOverviewSel.completeHeader,
-        duration: true,
-        fastMode: 500,
-      },
-    ],
   },
 });

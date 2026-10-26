@@ -25,10 +25,8 @@ split it into atomic Blocks (a login form is `fill-username` + `fill-password` +
 `saucedemo-web/methods/` for the real split). A Block that only asserts something on the
 current page, with no state change, is `defineAssertBlock({ name, checkpoint, verify,
 waitForHeading?, requires? })` - self-loop and `resolve` are generated for you, so there's no
-hand-written `act`/`resolve` to accidentally make do two things. It also accepts
-`stubBefore`/`stubAfter`/`stubOnError`/`slides`, the same narration fields every other
-Block helper takes, so converting a hand-written assertion Method loses no demo/highlight
-fixture data. `requires` (declare it whenever a mem-aware Trait reads a mem key the caller
+hand-written `act`/`resolve` to accidentally make do two things. Narration (rings, todos,
+`ctx.slides`) is chained where a flow uses it, as on every other Block. `requires` (declare it whenever a mem-aware Trait reads a mem key the caller
 must supply externally - see the mail example below) lets preflight catch a missing input
 before the flow ever runs, the same as every other Block helper:
 

@@ -1,5 +1,4 @@
 // A ring: one highlighted element with its caption, and its tone, size and weight; slides between steps.
-import type { Checkpoint } from "../checkpoint/checkpoint.js";
 
 /** Shared dwell fields on stubs, fixtures, and yap slides. */
 export type FixtureDurationFields = {
@@ -88,8 +87,8 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
 export type HighlightStubPhase = Record<string, WaygraphHighlightStub>;
 
 /**
- * One yap/slide in a multi-step demo caption sequence.
- * Not block lifecycle - demo pauses (Next / auto-next) between slides.
+ * One yap/slide in a multi-step demo caption sequence, painted with {@link StubCtx.slides}.
+ * The demo pauses on each (Next, or auto-next) before moving on.
  */
 export interface WaygraphSlide extends FixtureDurationFields {
   /** Primary caption (required). */
@@ -135,10 +134,6 @@ export type HighlightStyleDefaults = {
   size?: HighlightSize;
   weight?: HighlightWeight;
 };
-
-export type WaygraphSlidesOrFn<Out extends Checkpoint<string>> =
-  | readonly WaygraphSlide[]
-  | ((out: Out) => readonly WaygraphSlide[]);
 
 /** A ring or caption after its defaults and overrides are merged, ready to paint. */
 export type ResolvedHighlight = WaygraphHighlightStub;

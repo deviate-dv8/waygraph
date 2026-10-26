@@ -1,16 +1,16 @@
-// After a demo step ran: show its slides, play its stubAfter narration (or, without one, ring what its verify checked),
+// After a demo step ran: play its stubAfter narration (its slides, then its rings; without one, ring what verify checked),
 // show the result panel, then wait at the Next gate.
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import { envFlag } from "../../engine/env.js";
 import type { ResolvedHighlight } from "../../engine/stub/ring.js";
 import type { StubPhaseResult } from "../../engine/stub/stub.js";
-import { hasAuthoredStubAfter, resolveSlides, runStubPhase } from "../narration/narration.js";
+import { hasAuthoredStubAfter, runStubPhase } from "../narration/narration.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
 import { logBannerDom, probeBanner } from "./banner-log.js";
 import { logDocks } from "./before.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
 import { renderAfterStep } from "./panel-after.js";
-import { presentSlides } from "./slides.js";
+import { showSlides } from "./slides.js";
 import { extractVerifyHighlights } from "./step-panels.js";
 import type { StepperContext, StepView } from "./view.js";
 import { forceCollapsed } from "./view.js";
@@ -19,8 +19,8 @@ const quiet = () => envFlag("WAYGRAPH_JSON");
 
 export async function showAfter(ctx: StepperContext, view: StepView, result: Checkpoint<string>): Promise<void> {
   const { stage, refs } = ctx;
-  await showSlides(ctx, view, result);
   const after = hasAuthoredStubAfter(view.step.block, result) ? await narrateAfter(ctx, view, result) : undefined;
+  if (after) await showSlides(ctx, view, after.phase.slides);
   const applied = after ? await stage.applyPhase(after.phase) : { appliedTodo: { sync: "keep" as const }, appliedDevice: { sync: "keep" as const } };
 
   await renderAfterStep(ctx.page, {
@@ -70,20 +70,6 @@ export async function showAfter(ctx: StepperContext, view: StepView, result: Che
     logBannerDom("after", await probeBanner(ctx.page));
   }
   await ctx.gate.wait();
-}
-
-async function showSlides(ctx: StepperContext, view: StepView, result: Checkpoint<string>): Promise<void> {
-  const slides = resolveSlides(view.step.block, { out: result }).map((s) => applyHighlightStyleDefaults(s, view.step.highlightStyle));
-  if (slides.length === 0) return;
-  await presentSlides(ctx.page, slides, {
-    title: ctx.title,
-    blockName: view.step.block.name,
-    fast: ctx.pacing.gatesFast,
-    pace: ctx.pacing.demoPace,
-    episodeNumber: view.step.episodeNumber,
-    episodeTitle: view.step.episodeTitle,
-    autoplayMs: ctx.gate.autoplayMs,
-  });
 }
 
 /** Runs the Block's stubAfter; its rings carry the flow's highlight style and a caption. */

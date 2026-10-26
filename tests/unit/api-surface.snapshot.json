@@ -107,7 +107,6 @@
   "resolveExtension",
   "resolveFixtureDwellMs",
   "resolveHighlightSlots",
-  "resolveSlides",
   "resolveStepDemoPace",
   "resolveTodoDockUi",
   "runBranchRegression",

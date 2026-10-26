@@ -4,7 +4,8 @@
 // aliases (`banner`, `bannerPos`, `clearDevice`, `clearTodos`, `landscape`, `portrait`, `todoDockFull`) become the
 // names they stood for. A stub written as a slot map (`{ email: { selector, label } }`) becomes a function of
 // `ctx.ring` calls, and a stub set in a `define*Block({ ... })` (options or instruction) moves out to a chained
-// `.stubBefore(...)` on the Block. Works on the TypeScript AST (ts-morph).
+// `.stubBefore(...)` on the Block; a Block's `slides` become `ctx.slides(...)` in its chained `.stubAfter(...)`.
+// Works on the TypeScript AST (ts-morph).
 import { Node, SyntaxKind } from "ts-morph";
 import type { CallExpression, ExpressionStatement, Project, SourceFile } from "ts-morph";
 
@@ -118,7 +119,7 @@ function convertSlotMaps(sf: SourceFile): boolean {
   return changed;
 }
 
-/** `defineXBlock({ ..., stubBefore: fn })` (or in its instruction) -> `defineXBlock({ ... }).stubBefore(fn)`. */
+/** `defineXBlock({ ..., stubBefore: fn, slides })` (or in its instruction) -> `defineXBlock({ ... }).stubBefore(fn).stubAfter(slides)`. */
 function hoistDefinitionStubs(sf: SourceFile): boolean {
   let changed = false;
   for (const call of sf.getDescendantsOfKind(SyntaxKind.CallExpression).reverse()) {
@@ -129,9 +130,17 @@ function hoistDefinitionStubs(sf: SourceFile): boolean {
     const instruction = options.getProperty("instruction");
     if (Node.isPropertyAssignment(instruction) && Node.isObjectLiteralExpression(instruction.getInitializer())) holders.push(instruction.getInitializer() as typeof options);
     const chained: string[] = [];
+    let slides: string | undefined;
     for (const holder of holders) {
       for (const prop of holder.getProperties()) {
         const name = Node.isPropertyAssignment(prop) || Node.isMethodDeclaration(prop) ? prop.getName() : "";
+        if (name === "slides" && Node.isPropertyAssignment(prop)) {
+          const init = prop.getInitializerOrThrow();
+          // `slides: (out) => [...]` read the Checkpoint the step reached; in stubAfter that is ctx.out.
+          slides = Node.isArrowFunction(init) || Node.isFunctionExpression(init) ? `(${init.getText()})(ctx.out!)` : init.getText();
+          prop.remove();
+          continue;
+        }
         if (!PHASES.has(name)) continue;
         let fn: string;
         if (Node.isMethodDeclaration(prop)) fn = `(${prop.getParameters().map((p) => p.getText()).join(", ")}) => ${prop.getBodyOrThrow().getText()}`;
@@ -141,6 +150,14 @@ function hoistDefinitionStubs(sf: SourceFile): boolean {
         }
         chained.push(`.${name}(${fn})`);
         prop.remove();
+      }
+    }
+    if (slides !== undefined) {
+      const after = chained.findIndex((c) => c.startsWith(".stubAfter("));
+      if (after < 0) chained.push(`.stubAfter((ctx) => ctx.slides(${slides}))`);
+      else {
+        const fn = chained[after]!.slice(".stubAfter(".length, -1);
+        chained[after] = `.stubAfter(async (ctx) => {\n  await (${fn})(ctx);\n  ctx.slides(${slides});\n})`;
       }
     }
     if (chained.length) {
