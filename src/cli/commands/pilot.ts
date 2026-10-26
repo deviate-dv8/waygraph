@@ -9,6 +9,7 @@ import { resolveBaseUrl } from "../../runtime/waygraph-config.js";
 import { parseCommand } from "../args.js";
 import { applyRunFlags, parseRunFlags } from "../flags.js";
 import { printBrowserSessionsList } from "../usage.js";
+import { isSessionOp } from "./session-ops.js";
 
 /** Runs a `pilot` subcommand; false when it is a session op for session-ops.ts. */
 export async function pilotCase(args: string[]): Promise<boolean> {
@@ -76,29 +77,13 @@ export async function pilotCase(args: string[]): Promise<boolean> {
       }
       return true;
     }
-    if (
-      args[1] !== "send" &&
-      args[1] !== "status" &&
-      args[1] !== "dom" &&
-      args[1] !== "trace" &&
-      args[1] !== "console" &&
-      args[1] !== "storage" &&
-      args[1] !== "upload" &&
-      args[1] !== "click" &&
-      args[1] !== "type" &&
-      args[1] !== "press" &&
-      args[1] !== "goto" &&
-      args[1] !== "reload" &&
-      args[1] !== "reach" &&
-      args[1] !== "resync" &&
-      args[1] !== "highlight"
-    ) {
+    if (!isSessionOp("pilot", args[1])) {
       console.error(
         "waygraph pilot: usage:\n" +
           "  waygraph pilot start [--inject …] [--goto <url>] [--headless] [--cli] [--base-url <url>] [project]\n" +
           "  waygraph pilot sessions [project]   # list live browser sessions\n" +
           "  waygraph pilot attach <sessionId>   # graph + snapshot for an existing session\n" +
-          "  waygraph pilot send|status|attach|highlight|… <sessionId> …  (controls browser — same as browser/auto)",
+          "  waygraph pilot send|status|read|attach|highlight|… <sessionId> …  (controls browser — same as browser/auto)",
       );
       process.exit(1);
     }

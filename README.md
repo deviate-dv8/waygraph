@@ -100,6 +100,7 @@ names) still works and is fine for small projects, but the Map is where the tool
 | See the whole graph | `waygraph graph` |
 | Lint your Blocks and folders | `waygraph check` / `waygraph typecheck` / `waygraph map` |
 | Open a persistent browser for an agent | `waygraph browser start` |
+| Read what the page shows, as JSON (beta: Read Blocks) | `waygraph pilot read <id> [path]` |
 | Highlight things on the live page | `waygraph browser highlight <id> "#login\|Login button\|warning"` |
 | Set up coding-agent skills | `waygraph agent-dive --loop claude` |
 

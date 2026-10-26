@@ -109,6 +109,16 @@ export const WAYGRAPH_ERRORS = {
     means: "The Trait name/index given doesn't exist in this Block's verify list.",
     fix: "Check the Block's actual verify list for the right name/index.",
   },
+  WG_READ_MISSING: {
+    where: "engine/read/read-page.ts - ReadPage.get()",
+    means: "read.get(key) asked for a value the page did not show, or that no Read Block for this page reads.",
+    fix: "Check read.has(key) first, or read.missing / read.notes for why; add the field to the page's Read Block.",
+  },
+  WG_READ_DUPLICATE: {
+    where: "engine/read/read-block.ts - readCheckpoint()",
+    means: "Two Read Blocks for the same page both read one key, so it has two answers.",
+    fix: "Read each key in one Read Block per Checkpoint (an every-page Read Block counts for every Checkpoint).",
+  },
   WG_MEM_READ_BEFORE_SET: {
     where: "engine/mem/mem.ts - MemPage.get()",
     means: "mem.get(key) was called for a key that was never mem.set() on this MemPage.",
@@ -199,6 +209,12 @@ export const MSG_BRANCH_REGRESSION_NO_BROWSER =
   "has none) - pass { cloneSession: false } to run the single live path in this context instead.";
 
 export const MSG_MEM_READ_BEFORE_SET = (keyName: string) => `MemPage: "${keyName}" read before it was set`;
+
+export const MSG_READ_MISSING = (path: string, note?: string) =>
+  `ReadPage: "${path}" was not shown on this page${note ? ` (${note})` : ""}`;
+
+export const MSG_READ_DUPLICATE = (path: string, first: string, second: string) =>
+  `Read Blocks "${first}" and "${second}" both read "${path}" on the same page`;
 
 export const MSG_COMPOSE_EMPTY = (name: string) => `composeBlock: "${name}" needs at least one step`;
 

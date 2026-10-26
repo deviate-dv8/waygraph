@@ -1,3 +1,11 @@
+> **Status (2026-10-26): reads are in as a beta** (`waygraph/beta`), in the shape agreed after this was written. Reads
+> are a **Read Block** in its own file (`*.read.block.ts`), shaped like a Method:
+> `defineReadBlock({ name, description, from, requires, instruction: { read: (ctx) => Ns({ ... }) } })`, not a `read:`
+> field on `definePageBlock`. Readers come from `ctx` (`ctx.text`, `ctx.list(rowSel, (row) => ...)`, `ctx.table`), not
+> a `Read` import. `read` runs after `verify`, never as a flow step. Done: namespaces, Read Blocks, `ReadPage`,
+> `readCheckpoint`, the session `read` op, `read` / `missing` in snapshots. Not yet: `Trait.read`, the manifest,
+> run log and demo panel, and `keys()` for Mem. Where this file says otherwise, the status wins.
+
 ## 1. Key namespaces
 
 - [ ] 1.1 Add `keys(namespace)<T>()` to `engine/mem/mem.ts`: Proxy with a per-namespace cache, `then` / `toJSON` /
@@ -16,14 +24,14 @@
 
 ## 2. Reads in the engine
 
-- [ ] 2.1 `engine/read/read-key.ts`: `ReadKey<T>`, `reads(namespace)<T>()` (callable Proxy, same cache rules), the
+- [x] 2.1 `engine/read/read-key.ts`: `ReadKey<T>`, `reads(namespace)<T>()` (callable Proxy, same cache rules), the
       `ReadSpec<T>` type
-- [ ] 2.2 `engine/read/readers.ts`: `Read.text`, `texts`, `number`, `attr`, `value`, `visible`, `count`, `list`, and
+- [x] 2.2 `engine/read/readers.ts`: `Read.text`, `texts`, `number`, `attr`, `value`, `visible`, `count`, `list`, and
       function fields; no waiting; `null` for missing
-- [ ] 2.3 `engine/read/read-page.ts`: `ReadPage` (`get` / `has` / `missing` / `toJSON`), `WG_READ_MISSING`,
+- [x] 2.3 `engine/read/read-page.ts`: `ReadPage` (`get` / `has` / `missing` / `toJSON`), `WG_READ_MISSING`,
       `WG_READ_DUPLICATE`, `WG_READ_UNBOUND` in `engine/errors.ts` with where / means / fix
-- [ ] 2.4 `engine/read/registry.ts`: Checkpoint -> specs; `readCheckpoint(page, mem, checkpoint, path?)`
-- [ ] 2.5 `definePageBlock({ read })`: register under its Checkpoint, `PageBlock.read(page, mem?)`
+- [x] 2.4 `engine/read/registry.ts`: Checkpoint -> specs; `readCheckpoint(page, mem, checkpoint, path?)`
+- [x] 2.5 `defineReadBlock` (instead of `definePageBlock({ read })`): registers under its `from` Checkpoints; `readCheckpoint(page, mem, checkpoint)`
 - [ ] 2.6 `Trait.read(key, predicate)`; the verify runner passes `{ checkpoint }` as Trait's third argument
 - [ ] 2.7 Unit and Playwright tests on a fixture page: each helper, lists, nested specs, missing fields, duplicate keys,
       `Trait.read` pass / fail / unbound, a partial namespace on two pages of one Checkpoint
@@ -31,10 +39,10 @@
 
 ## 3. Sessions and the manifest
 
-- [ ] 3.1 `AutoSession.read(path?)`; `SessionSnapshot` gains `read` and `missing`, filled after `send` / `reach`
-- [ ] 3.2 `read` session op in `cli/commands/session-ops.ts` and the IPC request types; usage and `--help` text; pilot
+- [x] 3.1 `AutoSession.read(path?)`; `SessionSnapshot` gains `read` and `missing`, filled after `send` / `reach`
+- [x] 3.2 `read` session op in `cli/commands/session-ops.ts` and the IPC request types; usage and `--help` text; pilot
       activity line
-- [ ] 3.3 Session spec tests: `pilot read`, `read <path>`, no Checkpoint detected, `send` reply carries the changed read
+- [x] 3.3 Session spec tests: `pilot read`, `read <path>`, no Checkpoint detected, `send` reply carries the changed read
 - [ ] 3.4 Manifest: key and read namespaces with field types via ts-morph; page Blocks list read paths; manifest test
 
 ## 4. Examples and templates

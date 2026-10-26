@@ -441,3 +441,30 @@ test("a session against a deeply nested project path still starts - session sock
     rmSync(baseDir, { recursive: true, force: true });
   }
 });
+
+test("Read Blocks (beta): send replies carry the page's read; `read <path>` narrows it", async () => {
+  test.setTimeout(90_000);
+  const { sessionId } = await detach();
+  for (const pick of ["fill-username", "fill-password", "submit-login"]) await send(sessionId, pick);
+
+  // add-to-cart has one row per product; take the first (the Backpack).
+  const menu = (await status(sessionId)).snapshot as { sections: { edges: { block: string; index: number }[] }[] };
+  const addRow = menu.sections.flatMap((s) => s.edges).find((e) => e.block === "add-to-cart")!;
+  const added = await send(sessionId, String(addRow.index));
+  expect(added.ok).toBe(true);
+  const snap = added.snapshot as { here: string; read: { header: { cartCount: number }; catalog: { items: { name: string; inCart: boolean; price: number }[] } }; missing: string[] };
+  expect(snap.read.header.cartCount).toBe(1);
+  expect(snap.read.catalog.items.find((i) => i.inCart)).toMatchObject({ name: "Sauce Labs Backpack", price: 29.99 });
+  expect(snap.missing).toEqual([]);
+
+  const narrowed = JSON.parse((await runCli(["pilot", "read", sessionId, "header.cartCount"], { cwd: sauceRoot })).trim());
+  expect(narrowed).toMatchObject({ ok: true, page: "ItemInCart", read: { header: { cartCount: 1 } } });
+  expect(narrowed.read.catalog).toBeUndefined();
+
+  const atCart = await reach(sessionId, "CartPage");
+  expect((atCart.snapshot as { read: unknown }).read).toEqual({
+    cart: { lines: [{ name: "Sauce Labs Backpack", qty: 1, price: 29.99 }] },
+    header: { title: "Your Cart", cartCount: 1 },
+  });
+  await send(sessionId, "q");
+});

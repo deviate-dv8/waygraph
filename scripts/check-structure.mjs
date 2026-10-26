@@ -5,7 +5,7 @@
  *      that may only go DOWN (lower the number when you shrink a file; never raise it).
  *   2. No circular value imports between src modules (type-only imports are ignored).
  *   3. Layers: each file's layer may only import the layers allowed for it; scripts/layer-debt.json may only shrink.
- *   4. No barrels: only src/index.ts (the package API) re-exports; everything else is imported from where it is declared.
+ *   4. No barrels: only the package entries (src/index.ts, src/beta.ts) re-export; everything else is imported from where it is declared.
  *   5. No HTML strings into the page: overlay elements are built with __wgEl / __wgSet / __wgSvg (demo/overlay/ui/shadow.ts),
  *      so page and author text is always a text node.
  *   6. WAYGRAPH_* variables are read and written only through engine/env.ts (the registry docs/env.md is generated from).
@@ -97,6 +97,7 @@ const LAYER_OF = [
   ["live/", "live"],
   ["cli/", "cli"],
   ["index.ts", "public"],
+  ["beta.ts", "public"],
 ];
 const MAY_IMPORT = {
   engine: ["engine"],
@@ -127,12 +128,12 @@ for (const f of files) {
 const REEXPORT_RE = /^\s*export\s+(?:type\s+)?(?:\*|\{[^}]*\})\s+from\s+["']/m;
 for (const f of files) {
   const rel = relative(srcDir, f).replace(/\\/g, "/");
-  if (rel === "index.ts") continue;
+  if (rel === "index.ts" || rel === "beta.ts") continue;
   const text = readFileSync(f, "utf8");
   // `export { x }` of a name the file imports is a re-export too.
   const imported = new Set([...text.matchAll(/^import\s+(?:type\s+)?\{([^}]*)\}\s+from/gm)].flatMap((m) => m[1].split(",").map((n) => n.trim().split(/\s+as\s+/).pop()).filter(Boolean)));
   const passedOn = [...text.matchAll(/^export\s+(?:type\s+)?\{([^}]*)\}\s*;/gm)].flatMap((m) => m[1].split(",").map((n) => n.trim().split(/\s+as\s+/)[0])).filter((n) => imported.has(n));
-  if (REEXPORT_RE.test(text) || passedOn.length) problems.push(`${rel}: re-exports another module (import from where it is declared; only src/index.ts re-exports)`);
+  if (REEXPORT_RE.test(text) || passedOn.length) problems.push(`${rel}: re-exports another module (import from where it is declared; only src/index.ts and src/beta.ts re-export)`);
 }
 // --- no HTML strings into the page ---
 const HTML_SINK_RE = /\.(?:innerHTML|outerHTML)\s*\+?=|\binsertAdjacentHTML\s*\(|\bdocument\.write\s*\(/;

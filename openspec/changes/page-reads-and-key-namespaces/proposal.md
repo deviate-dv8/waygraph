@@ -1,3 +1,11 @@
+> **Status (2026-10-26): reads are in as a beta** (`waygraph/beta`), in the shape agreed after this was written. Reads
+> are a **Read Block** in its own file (`*.read.block.ts`), shaped like a Method:
+> `defineReadBlock({ name, description, from, requires, instruction: { read: (ctx) => Ns({ ... }) } })`, not a `read:`
+> field on `definePageBlock`. Readers come from `ctx` (`ctx.text`, `ctx.list(rowSel, (row) => ...)`, `ctx.table`), not
+> a `Read` import. `read` runs after `verify`, never as a flow step. Done: namespaces, Read Blocks, `ReadPage`,
+> `readCheckpoint`, the session `read` op, `read` / `missing` in snapshots. Not yet: `Trait.read`, the manifest,
+> run log and demo panel, and `keys()` for Mem. Where this file says otherwise, the status wins.
+
 ## Why
 
 An agent driving a waygraph session can act on a page (its Methods) but cannot ask what the page shows. Today it calls

@@ -73,6 +73,9 @@ Primary (less is more):
                                            does nothing observable in the DOM) that inspectDom
                                            alone can't explain, since it only reads what actually
                                            rendered, not what the page/network actually said
+  waygraph auto read <sessionId> [path]    (beta) What the page shows, as JSON, from the project's
+                                           Read Blocks (*.read.block.ts); [path] narrows it, e.g.
+                                           post.comments. Read it before reaching for dom
   waygraph auto storage <sessionId>        Read localStorage/sessionStorage plus registered
                                            service workers (scope/active URL/state) - client-
                                            side state (push-subscription/auth tokens etc.) that

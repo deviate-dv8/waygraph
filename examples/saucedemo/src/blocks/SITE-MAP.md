@@ -9,6 +9,7 @@ src/blocks/
   saucedemo-web/                      # URL /
     NAV.md
     nav-login.block.ts                # Page  definePageBlock url:/
+    header.read.block.ts              # Read  defineReadBlock (beta, every page: title, cart count)
     methods/
       fill-username.method.block.ts   # Method defineMethodBlock (self-loop on LoginPage)
       fill-password.method.block.ts   # Method defineMethodBlock (self-loop on LoginPage)
@@ -18,6 +19,7 @@ src/blocks/
       login.sel.ts                    # LoginSel (not a Block)
     inventory/                        # URL /inventory.html
       inventory.page.block.ts       # Page definePageBlock
+      inventory.read.block.ts       # Read defineReadBlock (beta: products, prices, in cart, sort)
       NAV.md
       nav-item-detail.block.ts        # Nav  defineMemNavBlock (instance row)
       methods/
@@ -36,6 +38,7 @@ src/blocks/
       NAV.md
       cart.sel.ts                     # CartSel (not a Block)
       nav-cart.block.ts               # Nav click header cart
+      cart.read.block.ts              # Read defineReadBlock (beta: the cart's lines)
       nav-checkout-info.block.ts
     checkout-step-one/                # URL /checkout-step-one.html
       NAV.md

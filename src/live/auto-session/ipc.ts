@@ -18,6 +18,7 @@ import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import type { PilotHighlightFixtures } from "../../demo/overlay/pilot/fixtures.js";
+import type { SessionRead } from "./read.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 import { AutoSession } from "./auto-session.js";
 import { generateSessionId, isPidAlive, logPathFor, metaPath, readSessionMeta, removeSessionFiles, resolveSessionMeta, sessionDir, SessionMeta, socketDir, socketPathFor, writeGlobalSessionMeta } from "./files.js";
@@ -37,6 +38,7 @@ type ServerRequest =
   | { op: "resync" }
   | { op: "console" }
   | { op: "storage" }
+  | { op: "read"; path?: string }
   | { op: "upload"; selector: string; stub: StubFileKind | { filePath: string } }
   | ({ op: "highlight" } & PilotHighlightFixtures);
 
@@ -54,6 +56,8 @@ export type StorageResponse = ({ ok: true } & StorageSnapshot) | { ok: false; er
 
 export type ReachResponse = ApplyPathResult;
 
+export type ReadResponse = ({ ok: true } & SessionRead) | { ok: false; error: string };
+
 export type HighlightResponse =
   | { ok: true; painted: number; missing: string[]; snapshot: SessionSnapshot }
   | { ok: false; error: string };
@@ -65,6 +69,7 @@ type ServerResponse =
   | ConsoleResponse
   | StorageResponse
   | ReachResponse
+  | ReadResponse
   | HighlightResponse;
 
 /** Reads newline-delimited JSON off a socket, one message at a time. */
@@ -151,6 +156,12 @@ export async function requestSession(
   request: { op: "storage" },
   timeoutMs?: number,
 ): Promise<StorageResponse>;
+export async function requestSession(
+  projectDir: string,
+  sessionId: string,
+  request: { op: "read"; path?: string },
+  timeoutMs?: number,
+): Promise<ReadResponse>;
 export async function requestSession(
   projectDir: string,
   sessionId: string,
@@ -281,6 +292,8 @@ export async function serveSession(
           response = { ok: true, trace: session.getTrace() };
         } else if (request.op === "console") {
           response = { ok: true, consoleLog: session.getConsoleLog() };
+        } else if (request.op === "read") {
+          response = { ok: true, ...(await session.read(request.path)) };
         } else if (request.op === "storage") {
           response = { ok: true, ...(await session.inspectStorage()) };
         } else if (request.op === "upload") {

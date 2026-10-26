@@ -99,6 +99,7 @@ Flows are files (0.10.5+):
 | Scope either to one element | `waygraph auto dom <sessionId> --selector ".inventory_list"` |
 | Read the session's Checkpoint/Block history | `waygraph auto trace <sessionId>` |
 | Read real console/network errors + coverage-gap warnings | `waygraph auto console <sessionId>` |
+| What the page shows, as JSON from its Read Blocks (beta) | `waygraph auto read <sessionId> [path]` |
 | Read localStorage/sessionStorage + service workers | `waygraph auto storage <sessionId>` |
 | Whole-project nav-escape + inline-selector + orphan sweep | `waygraph check [project]` |
 | `tsc --noEmit` + bad-practice warnings | `waygraph typecheck [project]` (`--no-practices` to skip scan) |

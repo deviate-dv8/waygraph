@@ -17,7 +17,7 @@ const DOM_OPTIONS = {
   depth: { type: "string", value: "N", help: "Levels to read" },
 } as const satisfies OptionTable;
 
-const OPS = new Set(["send", "status", "attach", "dom", "trace", "console", "storage", "upload", "click", "type", "press", "goto", "reload", "reach", "resync", "highlight"]);
+const OPS = new Set(["send", "status", "attach", "dom", "trace", "console", "storage", "read", "upload", "click", "type", "press", "goto", "reload", "reach", "resync", "highlight"]);
 
 /** Whether `sub` is a session op (`attach` is pilot's own subcommand, not an op, under `pilot`). */
 export function isSessionOp(command: string, sub: string | undefined): boolean {
@@ -113,6 +113,13 @@ export async function sessionOpCase(args: string[], command: string): Promise<vo
     }
     if (sub === "console") {
       const res = await requestSession(proj, sessionId, { op: "console" });
+      console.log(JSON.stringify(res));
+      if (!res.ok) process.exitCode = 1;
+      return;
+    }
+    if (sub === "read") {
+      const path = args[3];
+      const res = await requestSession(proj, sessionId, path ? { op: "read", path } : { op: "read" });
       console.log(JSON.stringify(res));
       if (!res.ok) process.exitCode = 1;
       return;

@@ -1,5 +1,5 @@
 // AutoSession: one live browser session driven over IPC - its menu, picks, routes, raw actions and highlights.
-import type { BrowserContext, Locator, Page } from "@playwright/test";
+import type { BrowserContext, Page } from "@playwright/test";
 import type { UnmappedInteractionPayload } from "../../analysis/coverage-gap.js";
 import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from "../../analysis/coverage-gap.js";
 import { findBlockPathDetailed } from "../../analysis/graph.js";
@@ -7,7 +7,7 @@ import { runStubPhase } from "../../demo/narration/narration.js";
 import { describeOverlayFixtures, phaseToOverlayFixtures } from "../../demo/overlay/phase-fixtures.js";
 import type { PilotHighlightFixtures } from "../../demo/overlay/pilot/fixtures.js";
 import { showPilotFixtures } from "../../demo/overlay/pilot/fixtures.js";
-import { showPilotActivity, showPilotVision } from "../../demo/overlay/pilot/shell.js";
+import { showPilotActivity } from "../../demo/overlay/pilot/shell.js";
 import { keepOverlayOnNavigation } from "../../demo/overlay/reattach.js";
 import { verboseLog } from "../../demo/verbose-log.js";
 import type { WaygraphInstanceOption } from "../../engine/block/action-page.js";
@@ -25,17 +25,10 @@ import type { PilotOverlayInfo } from "../pilot/panel.js";
 import { updatePilotOverlay } from "../pilot/panel.js";
 import { recordPageConsole } from "./console.js";
 import type { ApplyPathResult, ApplyPickResult, AutoSessionInit, ConsoleLogEntry, InspectDomOptions, InspectDomResult, SessionSnapshot, StorageSnapshot, StubFileKind, TraceStep } from "./helpers.js";
-import { CONSOLE_LOG_MAX_ENTRIES, TRACE_MAX_STEPS, buildSessionSnapshot, describeHighlight, parsePick, stubFilePath, stubPhaseHasContent } from "./helpers.js";
+import { CONSOLE_LOG_MAX_ENTRIES, TRACE_MAX_STEPS, buildSessionSnapshot, describeHighlight, parsePick, rawTarget, stubFilePath, stubPhaseHasContent } from "./helpers.js";
 import { inspectDom, inspectStorage } from "./inspect.js";
 import { openSessionBrowser } from "./open-browser.js";
-
-/** The first element `selector` matches, ringed with the pilot's vision ring; or why there is none. */
-async function rawTarget(page: Page, selector: string, label: string): Promise<Locator | string> {
-  const locator = page.locator(selector).first();
-  if ((await locator.count()) === 0) return `no element matches selector "${selector}"`;
-  await showPilotVision(page, selector, label);
-  return locator;
-}
+import { readSession, snapshotRead, type SessionRead } from "./read.js";
 
 /**
  * A live session driven over IPC (`browser start`, `pilot start`): the same graph, library, mem and browser as
@@ -46,8 +39,6 @@ export class AutoSession {
   private lastRunNote: string | null = null;
   private readonly trace: TraceStep[] = [];
   private readonly consoleLog: ConsoleLogEntry[] = [];
-  private readonly knownInteractionSelectors: string[];
-  private readonly headless: boolean;
   private lastOverlayInfo: PilotOverlayInfo | null = null;
 
   private constructor(
@@ -63,12 +54,9 @@ export class AutoSession {
     private page: Page,
     private readonly startUrl: string | undefined,
     private readonly sessionId: string | undefined,
-    knownInteractionSelectors: string[],
-    headless: boolean,
-  ) {
-    this.knownInteractionSelectors = knownInteractionSelectors;
-    this.headless = headless;
-  }
+    private readonly knownInteractionSelectors: string[],
+    private readonly headless: boolean,
+  ) {}
 
   static async start(init: AutoSessionInit): Promise<AutoSession> {
     const baseURL = init.baseURL ?? (await resolveBaseUrl(init.projectDir));
@@ -147,7 +135,7 @@ export class AutoSession {
     // watching sees the state an API caller just got back, not a frame behind.
     this.lastOverlayInfo = {
       sessionId: this.sessionId,
-      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+      snapshot: await this.snapshotOf(menu),
       graph: this.graph,
     };
     await updatePilotOverlay(this.page, this.lastOverlayInfo);
@@ -196,8 +184,18 @@ export class AutoSession {
 
   /** Pure getter - no Block runs, no mem/page mutation. */
   async currentSnapshot(): Promise<SessionSnapshot> {
-    const menu = await this.currentMenu();
-    return buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote);
+    return this.snapshotOf(await this.currentMenu());
+  }
+
+  /** The menu as a snapshot, with what the page shows (Read Blocks) when any covers it. */
+  private async snapshotOf(menu: ExploreMenu): Promise<SessionSnapshot> {
+    return { ...buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote), ...(await snapshotRead(this.page, this.mem, this.here)) };
+  }
+
+  /** Pure getter - what the page shows, from the project's Read Blocks (beta). */
+  async read(path?: string): Promise<SessionRead> {
+    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    return readSession(this.page, this.mem, this.here, path);
   }
 
   /**
@@ -275,7 +273,7 @@ export class AutoSession {
     const nextMenu = await this.currentMenu();
     return {
       ok: true,
-      snapshot: buildSessionSnapshot(nextMenu, this.library.byName, this.here, this.lastRunNote),
+      snapshot: await this.snapshotOf(nextMenu),
       quit: false,
     };
   }
@@ -288,7 +286,7 @@ export class AutoSession {
     if (pick.type === "quit") {
       return {
         ok: true,
-        snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+        snapshot: await this.snapshotOf(menu),
         quit: true,
       };
     }
@@ -333,7 +331,7 @@ export class AutoSession {
     this.lastRunNote = `resync -> ${this.here ?? "Unknown"}`;
     return {
       ok: true,
-      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+      snapshot: await this.snapshotOf(menu),
       quit: false,
     };
   }
@@ -403,7 +401,7 @@ export class AutoSession {
     this.lastRunNote = `${what} -> ${this.here ?? "Unknown"}`;
     return {
       ok: true,
-      snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+      snapshot: await this.snapshotOf(menu),
       quit: false,
     };
   }
@@ -435,7 +433,7 @@ export class AutoSession {
         ok: true,
         painted,
         missing,
-        snapshot: buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote),
+        snapshot: await this.snapshotOf(menu),
       };
     } catch (err) {
       return {

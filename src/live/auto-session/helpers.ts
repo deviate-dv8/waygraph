@@ -1,7 +1,9 @@
 // The session's shared shapes and pure helpers: snapshots, picks, trace / console entries, DOM walking, stub files.
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { Locator, Page } from "@playwright/test";
 import type { PilotHighlightFixtures } from "../../demo/overlay/pilot/fixtures.js";
+import { showPilotVision } from "../../demo/overlay/pilot/shell.js";
 import type { StubPhaseResult } from "../../engine/stub/stub.js";
 import type { BlockEntry } from "../../manifest/project.js";
 import type { ExploreMenu } from "../auto/explore.js";
@@ -44,6 +46,10 @@ export interface SessionSnapshot {
   /** True when there are no runnable moves from `here` right now. */
   done: boolean;
   lastRunNote: string | null;
+  /** What the page shows, from the project's Read Blocks (beta); absent when none covers this page. */
+  read?: Record<string, unknown>;
+  missing?: string[];
+  readNotes?: Record<string, string>;
 }
 
 
@@ -367,4 +373,12 @@ export function describeHighlight(fixtures: PilotHighlightFixtures): string {
       .filter(Boolean)
       .join(", ") || "fixtures"
   );
+}
+
+/** The first element `selector` matches, ringed with the pilot's vision ring; or why there is none. */
+export async function rawTarget(page: Page, selector: string, label: string): Promise<Locator | string> {
+  const locator = page.locator(selector).first();
+  if ((await locator.count()) === 0) return `no element matches selector "${selector}"`;
+  await showPilotVision(page, selector, label);
+  return locator;
 }

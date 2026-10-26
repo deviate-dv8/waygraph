@@ -14,6 +14,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./beta": {
+      "types": "./dist/beta.d.ts",
+      "default": "./dist/beta.js"
+    },
     "./runner": {
       "default": "./dist/runner/runner.js"
     }

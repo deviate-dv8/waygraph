@@ -157,6 +157,12 @@ the entire reason this package exists. If a needed action truly has no Block, wr
 properly (mirroring a sibling Block's shape) and `auto reload` it in rather than raw-clicking
 past the gap.
 
+To know what the page shows, read the `read` field every `status`/`send`/`reach` reply
+carries (or `pilot read <id> [path]` for one part, uncut): it comes from the project's Read
+Blocks (`*.read.block.ts`, beta) as typed JSON. Reach for `auto dom` only when `read` is empty
+(no Read Block covers the page) or misses what you need - and then consider writing the Read
+Block.
+
 The one legitimate exception: `auto dom` to resolve a real ambiguity the menu's own labels
 can't (e.g. two products tied at the same displayed price) - and say so explicitly when you
 do it.
