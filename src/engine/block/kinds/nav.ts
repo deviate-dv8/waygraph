@@ -127,7 +127,7 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
           const url = typeof options.url === "function" ? options.url(mem) : options.url;
           await (page as unknown as Page).goto(url);
         } else {
-          // Always Locator.click() so step-mode's demo cursor/pulse patch
+          // Always Locator.click() so the demo stepper's cursor/pulse patch
           // (instrumentInteractionHighlighting) sees NavBlock click-nav -
           // never page.click() / goto teleport.
           const selector = typeof options.click === "function" ? options.click(mem) : options.click;

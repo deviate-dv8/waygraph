@@ -94,10 +94,8 @@ export type StubPhaseFixtures = {
  * LoginBlock.stubBefore((ctx) => {
  *   ctx.todos("sign-in", ["Enter email", "Enter password", "Click Sign in"], { index: 0 });
  *   ctx.zoom(1.35);
- *   ctx.highlights({
- *     email: { selector: "#email", label: "Email" },
- *     submit: { selector: "#login-button", label: "Sign in" },
- *   });
+ *   ctx.ring("email", { selector: "#email", label: "Email" });
+ *   ctx.ring("submit", { selector: "#login-button", label: "Sign in" });
  * })
  * // Sequential plan: bump todoIndex in a later phase / a later Block's stubBefore
  * .stubAfter((ctx) => {
@@ -116,9 +114,7 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   readonly out: Out | undefined;
   /** Present on stubOnError when the step threw. */
   readonly error: unknown | undefined;
-  /** Replace named highlight rings for this phase. */
-  highlights(slots: HighlightStubPhase): void;
-  /** Set / overwrite one named ring. */
+  /** Paints one named ring this phase; the same id again replaces it. */
   ring(id: string, stub: WaygraphHighlightStub): void;
   /**
    * Floating checklist: `ctx.todos("login", ["Enter email", "Enter password"], { title: "Sign in", index: 0 })`.

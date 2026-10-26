@@ -13,7 +13,7 @@ export { css, byText, byRole } from "./engine/trait/selector.js";
 export { WaygraphError, WAYGRAPH_ERRORS } from "./engine/errors.js";
 export type { WaygraphErrorCode } from "./engine/errors.js";
 export { Trait, urlMatches, textEquals, visible, disabled, enabled, frameVisible, frameTextEquals, frameContainsText } from "./engine/trait/trait.js";
-export { runGraph, spawnTab, narrate, preflight, defineLayout } from "./engine/run/run.js";
+export { runGraph, spawnTab, preflight, defineLayout } from "./engine/run/run.js";
 export { Engine, map } from "./engine/engine.js";
 export { branch } from "./engine/block/branch.js";
 export { withVerify, modVerify, modVerifyAll, defineBlock } from "./engine/block/block.js";

@@ -1,6 +1,11 @@
 import type { StubCtx } from "waygraph";
 import { CheckoutOverviewSel } from "../blocks/saucedemo-web/checkout-step-two/methods/checkout-overview.sel.js";
 
+/** Rings Finish while the order is placed. */
+export function placingOrder(ctx: StubCtx): void {
+  ctx.ring("finish", { selector: CheckoutOverviewSel.finishBtn, label: "Placing the order" });
+}
+
 /** Yap slides after the order is placed. They play on the completion page, so they ring its header, not #finish. */
 export function orderPlacedYap(ctx: StubCtx): void {
   ctx.slides([

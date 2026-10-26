@@ -10,7 +10,7 @@ export function parseChainSpec(spec: string): { ref: string; json?: string }[] {
       const m = /^([A-Za-z_$][\w-]*)\s*(?:\(([\s\S]*)\))?$/.exec(s);
       if (!m) {
         throw new Error(
-          "waygraph chain: could not parse segment \"" + s + "\" - expected \"blockName\" or \"blockName({...json...})\"",
+          "waygraph run --blocks: could not parse segment \"" + s + "\" - expected \"blockName\" or \"blockName({...json...})\"",
         );
       }
       const ref = m[1]!;

@@ -12,7 +12,7 @@ import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import type { MemPage } from "../../engine/mem/mem.js";
 
 /**
- * Run an open stub lifecycle (preferred) or resolve a static slot map.
+ * Runs a Block's stub for one phase and returns what it painted.
  * Returns rings + episode fixtures (todos / todoIndex / zoom).
  *
  * @example

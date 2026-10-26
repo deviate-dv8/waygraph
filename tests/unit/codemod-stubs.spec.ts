@@ -109,4 +109,34 @@ export const R = defineMethodBlock({
     assert.match(text, /\.stubAfter\(\(ctx\) => ctx\.slides\(\(\(out\) => \[\{ caption: out\.__state \}\]\)\(ctx\.out!\)\)\);/);
     assert.match(text, /\.stubAfter\(async \(ctx\) => \{\s*await \(\(ctx\) => ctx\.ring\("x", \{ selector: "#x" \}\)\)\(ctx\);\s*ctx\.slides\(\[\{ caption: "Two" \}\]\);\s*\}\);/);
   });
+
+  it("turns ctx.highlights({...}) into one ctx.ring per ring", () => {
+    const { text, problems } = run(`B.stubBefore((ctx) => {
+  ctx.title("Hi");
+  ctx.highlights({ email: { selector: "#e", label: "Email" }, "sign-in": { selector: "#s", label: "Sign in" } });
+  ctx.todos(["A", "B"]);
+});`);
+    assert.deepEqual(problems, []);
+    assert.doesNotMatch(text, /highlights\(/);
+    assert.match(text, /ctx\.todos\("todos", \["A", "B"\]\);/);
+    assert.match(text, /ctx\.title\("Hi"\);\s*ctx\.ring\("email", \{ selector: "#e", label: "Email" \}\);\s*ctx\.ring\("sign-in", \{ selector: "#s", label: "Sign in" \}\);/);
+  });
+
+  it("unwraps narrate() to its action, reports the caption and drops the import", () => {
+    const { text, problems } = run(`import { defineMethodBlock, narrate } from "waygraph";
+export const F = defineMethodBlock({
+  name: "f",
+  instruction: {
+    async act(page) {
+      const b = page.locator("#finish");
+      await narrate(b, "Placing the order", () => b.click());
+    },
+  },
+});`);
+    assert.match(text, /import \{ defineMethodBlock \} from "waygraph";/);
+    assert.match(text, /await b\.click\(\);/);
+    assert.doesNotMatch(text, /narrate/);
+    assert.equal(problems.length, 1);
+    assert.match(problems[0]!, /"Placing the order"/);
+  });
 });

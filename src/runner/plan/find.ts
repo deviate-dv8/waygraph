@@ -40,12 +40,12 @@ export async function findBlock(projectDir: string, ref: string): Promise<FoundB
   if (byRuntimeName.length === 1) return byRuntimeName[0]!;
   if (byRuntimeName.length > 1) {
     throw new Error(
-      "waygraph chain: \"" + ref + "\" matches " + byRuntimeName.length + " Blocks by name - " +
+      "waygraph run --blocks: \"" + ref + "\" matches " + byRuntimeName.length + " Blocks by name - " +
         byRuntimeName.map((b) => b.exportName + " (" + b.file + ")").join(", ") +
         ". Use the export name to disambiguate.",
     );
   }
-  throw new Error("waygraph chain: no Block named \"" + ref + "\" found under " + projectDir);
+  throw new Error("waygraph run --blocks: no Block named \"" + ref + "\" found under " + projectDir);
 }
 
 

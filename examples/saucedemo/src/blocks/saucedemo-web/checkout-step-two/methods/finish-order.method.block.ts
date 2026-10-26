@@ -1,4 +1,4 @@
-import { defineMethodBlock, Trait, narrate } from "waygraph";
+import { defineMethodBlock, Trait } from "waygraph";
 import {
   CheckoutOverviewPage,
   OrderComplete,
@@ -21,9 +21,7 @@ export const FinishOrderBlock = defineMethodBlock({
   instruction: {
     async act(page) {
       const finishButton = page.locator(CheckoutOverviewSel.finishBtn);
-      await narrate(finishButton, "Placing the order", () =>
-        finishButton.click(),
-      );
+      await finishButton.click();
     },
     verify: [
       Trait.text(

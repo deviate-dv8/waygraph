@@ -12,7 +12,7 @@ import { FillLastNameBlock } from "../blocks/saucedemo-web/checkout-step-one/met
 import { FillPostalCodeBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/fill-postal-code.method.block.js";
 import { SubmitCheckoutInfoBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/submit-checkout-info.method.block.js";
 import { FinishOrderBlock } from "../blocks/saucedemo-web/checkout-step-two/methods/finish-order.method.block.js";
-import { orderPlacedYap } from "../stubs/checkout-yap.js";
+import { orderPlacedYap, placingOrder } from "../stubs/finish-order.js";
 import { NavBackToProductsBlock } from "../blocks/saucedemo-web/inventory-item/nav-back-to-products.block.js";
 
 /** Full checkout, then the "Back Home" click-based Nav Block returns to the catalogue. */
@@ -36,6 +36,6 @@ export const checkoutThenBrowseAgainFlow = engine
   .method(FillLastNameBlock)
   .method(FillPostalCodeBlock)
   .method(SubmitCheckoutInfoBlock)
-  .method(FinishOrderBlock.stubAfter(orderPlacedYap))
+  .method(FinishOrderBlock.stubBefore(placingOrder).stubAfter(orderPlacedYap))
   .gotoPage(NavBackToProductsBlock)
   .end();

@@ -12,7 +12,7 @@ const opDir = join(root, "node_modules", "open-props");
 // Not colors/fonts/animations/aspects - our tones are our own brand, not Open Props' palette.
 const OPEN_PROPS_FILES = ["zindex.shadow.min.css", "easings.shadow.min.css", "shadows.shadow.min.css"];
 const cssDir = join(root, "src", "demo", "overlay", "ui", "css");
-const ORDER = ["tokens.css", "ring.css", "cursor.css", "banner.css", "dock.css", "panel.css", "caption.css"];
+const ORDER = ["tokens.css", "ring.css", "cursor.css", "banner.css", "dock.css", "panel.css", "caption.css", "network.css"];
 
 const parts = [
   "/* Bundled at build time by scripts/copy-ui-css.mjs - do not hand-edit. Edit src/demo/overlay/ui/css/*.css. */",

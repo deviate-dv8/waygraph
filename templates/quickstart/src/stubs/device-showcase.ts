@@ -78,18 +78,16 @@ export const deviceShowcase = {
   },
   submit: {
     before: (ctx: StubCtx) => {
-      ctx.highlights({
-        submit: {
-          selector: LoginSel.loginButton,
-          label: "Login",
-          detail: "tone: warning (yellow)",
-          todo: "login-submit",
-          tone: "warning",
-          focus: true,
-          zoom: 1.55,
-          weight: "bold",
-          gesture: "tap",
-        },
+      ctx.ring("submit", {
+        selector: LoginSel.loginButton,
+        label: "Login",
+        detail: "tone: warning (yellow)",
+        todo: "login-submit",
+        tone: "warning",
+        focus: true,
+        zoom: 1.55,
+        weight: "bold",
+        gesture: "tap",
       });
     },
     after: (ctx: StubCtx) => {
@@ -115,26 +113,24 @@ export const deviceShowcase = {
       ctx.todos("saucedemo", ...checklist(3, 3));
       ctx.zoom(1.35);
       ctx.zoomOut(false);
-      ctx.highlights({
-        product: {
-          selector: InventorySel.title(PRODUCT_ID),
-          label: "Sauce Labs Backpack",
-          detail: "tone: info (blue)",
-          tone: "info",
-          focus: true,
-          zoom: 1.45,
-          zoomOut: false,
-        },
-        add: {
-          selector: InventorySel.addBtn(PRODUCT_ID),
-          label: "Add to cart",
-          detail: "tone: success (green)",
-          tone: "success",
-          focus: true,
-          zoom: 1.5,
-          zoomOut: false,
-          weight: "bold",
-        },
+      ctx.ring("product", {
+        selector: InventorySel.title(PRODUCT_ID),
+        label: "Sauce Labs Backpack",
+        detail: "tone: info (blue)",
+        tone: "info",
+        focus: true,
+        zoom: 1.45,
+        zoomOut: false,
+      });
+      ctx.ring("add", {
+        selector: InventorySel.addBtn(PRODUCT_ID),
+        label: "Add to cart",
+        detail: "tone: success (green)",
+        tone: "success",
+        focus: true,
+        zoom: 1.5,
+        zoomOut: false,
+        weight: "bold",
       });
     },
     after: (ctx: StubCtx) => {
@@ -159,17 +155,15 @@ export const deviceShowcase = {
       ctx.todos("saucedemo", ...checklist(5, 5));
       ctx.zoom(1.4);
       ctx.zoomOut(false);
-      ctx.highlights({
-        cart: {
-          selector: CartSel.cartLink,
-          label: "Cart",
-          detail: "tone: planned (purple) - open cart",
-          tone: "planned",
-          focus: true,
-          zoomOut: false,
-          weight: "bold",
-          gesture: "tap",
-        },
+      ctx.ring("cart", {
+        selector: CartSel.cartLink,
+        label: "Cart",
+        detail: "tone: planned (purple) - open cart",
+        tone: "planned",
+        focus: true,
+        zoomOut: false,
+        weight: "bold",
+        gesture: "tap",
       });
     },
     after: (ctx: StubCtx) => {

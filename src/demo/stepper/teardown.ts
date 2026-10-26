@@ -156,7 +156,6 @@ export async function teardownOverlay(page: WgPage) {
         window.removeEventListener("scroll", window.__wgRingTrack, true);
         window.__wgRingTrack = null;
       }
-      window.__wgNarrateOwnsRing = false;
       for (const id of [
         "wg-panel",
         "wg-ring",

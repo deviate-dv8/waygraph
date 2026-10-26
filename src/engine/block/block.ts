@@ -95,7 +95,7 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
    * A human-readable sentence describing what this Block actually tests or
    * does - "the outsider case: a user outside a request's audience is
    * denied its detail page," not a restatement of the code. Purely
-   * additive, optional narration for a human watching a run (step-mode
+   * additive, optional narration for a human watching a run (demo
    * tooling shows it before the Block runs) - never read by
    * `runGraph`/`connect`/anything that decides behavior. A Block with none
    * just shows its `name` instead.

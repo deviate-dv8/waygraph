@@ -30,6 +30,9 @@ import { ignorePageGone } from "../../engine/page-gone.js";
 export async function installOverlay(page: WgPage, title?: string, ui?: BannerUiState | null, caption?: string, networkTabVisible?: boolean) {
   // ring/cursor/banner/dock come from the ONE shared bundle every surface installs (ui/css/*.css).
   await ensureShadowRoot(page);
+  // Runner-only chrome (step panel, zoom/typing/device chips) - separate key, no collision. First, so nothing below
+  // builds chrome ahead of its CSS (an element painted unstyled for a moment, then restyled).
+  await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as const).catch(ignorePageGone);
   // Idempotent (guarded on page.__wgNetworkCaptureInstalled) - safe to call every step even though
   // installOverlay itself runs every step; the page.on() listeners this installs are attached to
   // the Page object, not any one document, so they already survive navigations on their own.
@@ -50,8 +53,6 @@ export async function installOverlay(page: WgPage, title?: string, ui?: BannerUi
   if (networkTabVisible !== undefined) {
     await page.evaluate(setNetworkTabVisible, networkTabVisible).catch(ignorePageGone);
   }
-  // Runner-only chrome (step panel, zoom/typing/device chips) - separate key, no collision.
-  await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as const).catch(ignorePageGone);
   await page.addStyleTag({ content: HOST_CSS }).catch(ignorePageGone);
   // Default top-left; override with WAYGRAPH_TITLE_POS=left|center|right.
   // Click cycles left -> center -> right (persisted in localStorage so a

@@ -430,20 +430,3 @@ export async function hideRing(page: WgPage) {
     })
     .catch(ignorePageGone);
 }
-
-
-/**
- * True if the engine's own narrate() (waygraph's public export, for a Block
- * author explicitly captioning one action) JUST positioned the ring for
- * THIS action, moments ago - the automatic per-fill/per-click narration
- * below should not immediately overwrite an author's own explicit caption
- * with its generic guess.
- */
-export async function wasJustNarrated(page: WgPage) {
-  return page
-    .evaluate(() => {
-      const w = window;
-      return typeof w.__wgLastNarrate === "number" && Date.now() - w.__wgLastNarrate < 500;
-    })
-    .catch(() => false);
-}

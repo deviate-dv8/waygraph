@@ -257,11 +257,6 @@ export function installCore({ envAutoplay, todoDockUi }: OverlayInstallArgs) {
           pulse.classList.add("wg-pulse");
         };
         window.__wgHideRing = (opts) => {
-          // While a narrate() call owns the ring (mid multi-step action),
-          // the auto-highlight click/fill patches' own end-of-step hide is
-          // a no-op - narrate() itself clears it once the WHOLE wrapped
-          // action finishes, not just its first sub-step.
-          if (window.__wgNarrateOwnsRing) return;
           if (window.__wgStopRingFollow) window.__wgStopRingFollow();
           const ring = __wgById("wg-ring");
           const ringLabel = __wgById("wg-ring-label");

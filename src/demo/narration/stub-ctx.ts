@@ -28,9 +28,6 @@ export function createStubCtx<Out extends Checkpoint<string>>(
     mem: opts.mem,
     out: opts.out,
     error: opts.error,
-    highlights(slots) {
-      bag.highlights = { ...(slots || {}) };
-    },
     ring(id, stub) {
       bag.highlights = { ...bag.highlights, [id]: stub };
     },

@@ -135,9 +135,7 @@ describe("open stubBefore(ctx) lifecycle", () => {
         stubBefore: (ctx: StubCtx) => {
           ctx.todos("sign-in", ["Email", "Password", "Submit"], { index: 1 });
           ctx.zoom(1.35);
-          ctx.highlights({
-            plan: { selector: "#login-button", label: "Plan" },
-          });
+          ctx.ring("plan", { selector: "#login-button", label: "Plan" });
         },
       },
     } as unknown as Block<any, any>;

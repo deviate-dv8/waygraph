@@ -4,7 +4,7 @@ import type { StepperRefs, WgPage } from "../types.js";
 import type { Pacing } from "./pacing.js";
 import type { MemKey, MemPage } from "../../engine/mem/mem.js";
 import { installOverlay } from "../overlay/overlay.js";
-import { applyHighlightZoom, captionForLocator, dwellMatchedStub, ensureLocatorInView, hideRing, matchStubIndexForLocator, showRing, wasJustNarrated } from "../overlay/rings.js";
+import { applyHighlightZoom, captionForLocator, dwellMatchedStub, ensureLocatorInView, hideRing, matchStubIndexForLocator, showRing } from "../overlay/rings.js";
 import { syncTodoDockAdvance } from "./todo-advance.js";
 import { clickPulseAt, moveCursorTo } from "../overlay/cursor.js";
 import { demoHighlight } from "./demo-log.js";
@@ -111,7 +111,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
       } catch {
         /* ignore */
       }
-      if (box && !(await wasJustNarrated(page))) {
+      if (box) {
         // Only trust the "last mem.get()" as THIS fill's source if it
         // happened recently - a stale read from several actions ago is
         // more likely unrelated than actually describing this field.
@@ -151,10 +151,6 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         await dwellMatchedStub(page, locator, stubs, pacing);
         await new Promise((res) => setTimeout(res, skipTheater() ? 0 : 200));
         if (cap && cap.label) typeLabel = String(cap.label).slice(0, 40);
-      } else if (box) {
-        // Ring/caption already handled by narrate() - still move the
-        // cursor there, just skip re-showing the ring with a generic label.
-        await moveCursorTo(page, box, cursorMs(200));
       }
       await page
         .evaluate((label: string) => {
@@ -192,8 +188,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
       // own click scroll is instant and reads as a teleport under --fast.
       await ensureLocatorInView(locator, { instant: skipTheater() });
       const box = await locator.boundingBox();
-      const narrated = box ? await wasJustNarrated(page) : false;
-      if (box && !narrated) {
+      if (box) {
         let fallback = "click";
         try {
           const text = (await locator.textContent())?.trim();
@@ -241,11 +236,6 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         // zsign demo-engine's ring-before-click pattern in
         // services/help-center-clip-engine's video-pipeline.
         await new Promise((res) => setTimeout(res, clickPrePop()));
-      } else if (box) {
-        // Ring/caption already handled by narrate() - still move the
-        // cursor + pulse the click point, just skip re-showing the ring.
-        clickPoint = await moveCursorTo(page, box, cursorMs(200));
-        clickTone = "planned";
       }
       if (clickPoint) {
         await clickPulseAt(page, clickPoint.x, clickPoint.y, clickTone);

@@ -12,7 +12,7 @@ import { FillLastNameBlock } from "../blocks/saucedemo-web/checkout-step-one/met
 import { FillPostalCodeBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/fill-postal-code.method.block.js";
 import { SubmitCheckoutInfoBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/submit-checkout-info.method.block.js";
 import { FinishOrderBlock } from "../blocks/saucedemo-web/checkout-step-two/methods/finish-order.method.block.js";
-import { orderPlacedYap } from "../stubs/checkout-yap.js";
+import { orderPlacedYap, placingOrder } from "../stubs/finish-order.js";
 import { LoginSel } from "../blocks/saucedemo-web/methods/login.sel.js";
 
 export const checkoutFlow = engine
@@ -81,5 +81,5 @@ export const checkoutFlow = engine
     }),
   )
   .method(SubmitCheckoutInfoBlock.stubBefore((ctx) => ctx.hideCaption()))
-  .method(FinishOrderBlock.stubAfter(orderPlacedYap))
+  .method(FinishOrderBlock.stubBefore(placingOrder).stubAfter(orderPlacedYap))
   .end();

@@ -8,8 +8,7 @@ import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { beginRun, endRun, isConnected, lastLeaf, stepEnded, stepFailed, stepStarted } from "./events.js";
 import { runPrecondition, runVerify } from "../trait/trait.js";
 import type { Trait } from "../trait/trait.js";
-import type { BrowserContext, Locator, Page } from "@playwright/test";
-import { ignorePageGone } from "../page-gone.js";
+import type { BrowserContext, Page } from "@playwright/test";
 import type { SomeBlock } from "../block/block.js";
 
 /**
@@ -256,101 +255,4 @@ export async function spawnTab<TOut extends Checkpoint<string>>(
   return runGraph<TOut>(entry, undefined, page.context(), mem, maxSteps);
 }
 
-
-/**
- * Wraps one `act()` interaction with a caption and highlight, for a Block
- * author who wants to explicitly narrate a specific step rather than rely
- * on the generic per-fill/per-click narration `waygraph chain
- * WAYGRAPH_STEP=1` already does automatically -
- * `await narrate(submitButton, "confirms the order", () => submitButton.click())`
- * reads at the call site instead of being inferred.
- *
- * A true no-op everywhere except inside a `WAYGRAPH_STEP=1` run: it checks
- * for a `window.__wgPositionRing` hook the step-mode overlay installs on
- * the page before doing anything, so a headless/CI/automated run (nobody
- * watching, per-character delays and highlight pauses would just be wasted
- * time) pays zero extra cost - not even the boundingBox() lookup runs. The
- * `action` itself always runs regardless; only the narration is
- * conditional.
- * @example await narrate(submitButton, "confirms the order", () => submitButton.click())
- */
-export async function narrate<T>(
-  locator: Locator,
-  caption: string,
-  action: () => Promise<T>,
-): Promise<T> {
-  const page = locator.page();
-  const active = await page
-    .evaluate(() => typeof (globalThis as unknown as { __wgPositionRing?: unknown }).__wgPositionRing === "function")
-    .catch(() => false);
-  if (!active) return action();
-  let owning = false;
-  try {
-    const box = await locator.boundingBox();
-    if (box) {
-      await page
-        .evaluate(
-          ({ box, caption }) => {
-            const w = globalThis as unknown as {
-              __wgPositionRing?: (box: unknown, label: string, tone?: string) => void;
-              __wgLastNarrate?: number;
-              __wgNarrateOwnsRing?: boolean;
-            };
-            if (w.__wgPositionRing) w.__wgPositionRing(box, caption, "planned");
-            // The CLI's own automatic per-fill/per-click narration checks
-            // this before showing (and overwriting) its own guess - an
-            // explicitly authored caption should win, not get immediately
-            // replaced a moment later by the generic one.
-            w.__wgLastNarrate = Date.now();
-            // Also claim the ring itself: the auto-highlight click/fill
-            // patches each hide the ring right after THEIR own step
-            // finishes, which - if action() below does more than one thing
-            // (e.g. a click then a wait for a toast) - would wipe this
-            // caption after just the first sub-step instead of the whole
-            // narrated action. Their hideRing() calls no-op while this is
-            // true; narrate() below is the one that actually clears it.
-            w.__wgNarrateOwnsRing = true;
-          },
-          { box, caption },
-        )
-        .catch(ignorePageGone);
-      owning = true;
-      // The ring alone is pointless if action() fires on the very next
-      // tick - a click that navigates (e.g. a form submit) wipes the ring
-      // before a human can read the caption at all. Give it the same
-      // "pop for a few seconds" dwell as the CLI's own auto-highlight
-      // clicks before the real action runs.
-      await new Promise((resolve) => setTimeout(resolve, 650));
-      // Re-stamp __wgLastNarrate right before handing off to action() - the
-      // CLI's auto-highlight patches only treat a narrate() as "just
-      // handled" within a short window (500ms), which the dwell above
-      // already burned through. Without this, action()'s own click/fill
-      // (same patched Locator prototype) would stomp this caption with its
-      // own generic one a moment after it finally became visible.
-      await page
-        .evaluate(() => {
-          (globalThis as unknown as { __wgLastNarrate?: number }).__wgLastNarrate = Date.now();
-        })
-        .catch(ignorePageGone);
-    }
-  } catch {
-    // best-effort - the real action below still runs either way
-  }
-  try {
-    return await action();
-  } finally {
-    if (owning) {
-      await page
-        .evaluate(() => {
-          const w = globalThis as unknown as {
-            __wgNarrateOwnsRing?: boolean;
-            __wgHideRing?: () => void;
-          };
-          w.__wgNarrateOwnsRing = false;
-          if (w.__wgHideRing) w.__wgHideRing();
-        })
-        .catch(ignorePageGone);
-    }
-  }
-}
 

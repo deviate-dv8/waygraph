@@ -9,7 +9,7 @@ Built on [Open Props](https://open-props.style) (`node_modules/open-props`) for 
 scoped to a shadow root's `:host` instead of `:root`. Brand tones (`--wg-tone-*`) are ours.
 
 - `tokens.css` - the one place a color/size/z-index changes. Every other file reads it via `var()`.
-- `ring.css`, `cursor.css`, `banner.css`, `dock.css`, `panel.css` - one component per file.
+- `ring.css`, `cursor.css`, `banner.css`, `dock.css`, `panel.css`, `caption.css`, `network.css` - one component per file.
 
 `scripts/copy-ui-css.mjs` concatenates Open Props' subset + these files, in a fixed order, into
 `dist/demo/overlay/ui/overlay.css` after `tsc` (see `npm run build`). Add a new `.css` file here and you MUST

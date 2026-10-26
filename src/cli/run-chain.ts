@@ -96,12 +96,12 @@ export async function runChainAuto(projectDir: string, fromTag: string, toTag: s
   const graph = await discoverGraph(projectDir);
   const path = findBlockPath(graph, fromTag, toTag);
   if (!path) {
-    console.error(`waygraph chain auto: no Block path from "${fromTag}" to "${toTag}" in the discovered graph`);
+    console.error(`waygraph auto --blocks: no Block path from "${fromTag}" to "${toTag}" in the discovered graph`);
     process.exitCode = 1;
     return;
   }
   const spec = path.join(" then ");
-  console.error(`waygraph chain auto: ${fromTag} -> ${toTag} via ${spec}`);
+  console.error(`waygraph auto --blocks: ${fromTag} -> ${toTag} via ${spec}`);
   if (!envString("WAYGRAPH_BASE_URL")) {
     const resolved = await resolveBaseUrl(projectDir);
     if (resolved) setEnv("WAYGRAPH_BASE_URL", resolved);

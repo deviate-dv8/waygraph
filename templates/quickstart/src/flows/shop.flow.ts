@@ -8,7 +8,7 @@ import { FillLastNameBlock } from "../blocks/saucedemo-web/checkout-step-one/met
 import { FillPostalCodeBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/fill-postal-code.method.block.js";
 import { SubmitCheckoutInfoBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/submit-checkout-info.method.block.js";
 import { FinishOrderBlock } from "../blocks/saucedemo-web/checkout-step-two/methods/finish-order.method.block.js";
-import { orderPlacedYap } from "../stubs/checkout-yap.js";
+import { orderPlacedYap, placingOrder } from "../stubs/finish-order.js";
 
 /** Add the selected item, check out and place the order. Starts signed in (run it after loginFlow). */
 export const shopFlow = engine
@@ -21,5 +21,5 @@ export const shopFlow = engine
   .method(FillLastNameBlock)
   .method(FillPostalCodeBlock)
   .method(SubmitCheckoutInfoBlock)
-  .method(FinishOrderBlock.stubAfter(orderPlacedYap))
+  .method(FinishOrderBlock.stubBefore(placingOrder).stubAfter(orderPlacedYap))
   .end();

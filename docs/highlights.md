@@ -152,8 +152,8 @@ The [Sauce Demo](./saucedemo/index) shows all features in a real block/flow:
 
 - **submit-login** - `stubBefore` (fill rings on username/password/submit)
 - **add-to-cart** - `stubAfter` (cart badge ring after action)
-- **finish-order** - `ctx.slides(...)` in its `stubAfter` (3-slide yap sequence, `src/stubs/checkout-yap.ts`)
-- Flow fixtures on `checkoutFlow` - AC/GATE captions, tag badges, detail lines
+- **finish-order** - a `stubBefore` ring on Finish and `ctx.slides(...)` in its `stubAfter` (3-slide yap sequence), both in `src/stubs/finish-order.ts`
+- Stubs chained in `checkoutFlow` - AC/GATE captions, tag badges, detail lines
 - **login / cart blocks** - `ctx.todos(...)` so the floating dock (smart UX) shows in `waygraph demo`
 
 ## Related

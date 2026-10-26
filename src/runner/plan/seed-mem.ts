@@ -11,7 +11,7 @@ function seedMemFromRequires(mem: MemPage, requires: readonly MemKey<unknown>[],
   if (requires.length === 0) {
     if (json !== undefined) {
       throw new Error(
-        "waygraph chain: \"" + label + "\" takes no input (empty requires) but got a payload: " + json,
+        "waygraph run --blocks: \"" + label + "\" takes no input (empty requires) but got a payload: " + json,
       );
     }
     return;
@@ -29,7 +29,7 @@ function seedMemFromRequires(mem: MemPage, requires: readonly MemKey<unknown>[],
       parsed = JSON.parse(json);
       haveParsed = true;
     } catch (err) {
-      throw new Error("waygraph chain: \"" + label + "\" payload is not valid JSON - " + String(err));
+      throw new Error("waygraph run --blocks: \"" + label + "\" payload is not valid JSON - " + String(err));
     }
   }
 
@@ -39,7 +39,7 @@ function seedMemFromRequires(mem: MemPage, requires: readonly MemKey<unknown>[],
     // per-key loop below gets a chance to fill each one from the registry.
     if (!stubActive) {
       throw new Error(
-        "waygraph chain: \"" + label + "\" requires " + requires.map((k) => k.name).join(", ") +
+        "waygraph run --blocks: \"" + label + "\" requires " + requires.map((k) => k.name).join(", ") +
           " - give a JSON payload (inline blockName({...}) or --data '{...}'), or enable --mem-stub" +
           " with registerMemStub for these keys",
       );
@@ -65,7 +65,7 @@ function seedMemFromRequires(mem: MemPage, requires: readonly MemKey<unknown>[],
   }
   if (!isRecord(parsed)) {
     throw new Error(
-      "waygraph chain: \"" + label + "\" requires " + requires.length + " keys (" +
+      "waygraph run --blocks: \"" + label + "\" requires " + requires.length + " keys (" +
         requires.map((k) => k.name).join(", ") + ") - payload must be an object keyed by each key's name",
     );
   }
@@ -85,7 +85,7 @@ function seedMemFromRequires(mem: MemPage, requires: readonly MemKey<unknown>[],
   }
   if (stillMissing.length > 0) {
     throw new Error(
-      "waygraph chain: \"" + label + "\" payload is missing required key(s): " +
+      "waygraph run --blocks: \"" + label + "\" payload is missing required key(s): " +
         stillMissing.map((k) => "\"" + k.name + "\"").join(", "),
     );
   }

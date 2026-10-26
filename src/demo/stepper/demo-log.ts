@@ -219,7 +219,7 @@ export function logStubPhaseFixtures(phaseName: string, phase: StubPhaseResult |
   phase.highlights.forEach((h, i) => {
     demoFixture(
       tag,
-      "ctx.ring/highlights[" + i + "]",
+      "ctx.ring[" + i + "]",
       {
         selector: h.selector,
         label: h.label,

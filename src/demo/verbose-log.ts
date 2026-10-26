@@ -1,7 +1,7 @@
 import { envFlag } from "../engine/env.js";
 /**
  * One log format for the live overlay surfaces (auto / browser / pilot): `[HH:MM:SS.mmm] waygraph <surface>: ...`, the
- * same shape as the demo runner's `step-mode/demo-log.ts`. Silenced by WAYGRAPH_JSON=1.
+ * same shape as the demo stepper's `stepper/demo-log.ts`. Silenced by WAYGRAPH_JSON=1.
  */
 function ts(): string {
   const d = new Date();

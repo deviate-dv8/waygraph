@@ -47,7 +47,7 @@ async function findBareFlow(projectDir: string, spec: string): Promise<Flow<Chec
 
 function parseSegments(spec: string): { ref: string; json?: string }[] {
   const segments = parseChainSpec(spec);
-  if (segments.length === 0) throw new Error("waygraph chain: empty spec - give at least one block name");
+  if (segments.length === 0) throw new Error("waygraph run --blocks: empty spec - give at least one block name");
   return segments;
 }
 

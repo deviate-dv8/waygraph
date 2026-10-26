@@ -55,7 +55,7 @@ export function applyDefaultZoomOut(
 }
 
 
-/** A stub phase's slot map as an ordered list of resolved highlights. */
+/** A stub phase's rings (by id, as ctx.ring set them) as an ordered list of resolved highlights. */
 export function resolvePhaseMap(phaseMap: HighlightStubPhase): ResolvedHighlight[] {
   const phaseKeys = Object.keys(phaseMap);
   const allNumeric =

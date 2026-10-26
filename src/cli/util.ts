@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 // ---------------------------------------------------------------------------
 // `try` - a bundled, self-contained showcase. No .flow.ts to write, no
 // scenario to design - copies a small real Flow (nav/action Blocks, Trait
-// verify, narrate()) into the target project and runs it in step mode
+// verify, ctx stubs) into the target project and runs it in step mode
 // against a public demo site, so a curious dev sees the real overlay/panel
 // experience in under a minute, then gets pointed at the plain waygraph
 // source that produced it.

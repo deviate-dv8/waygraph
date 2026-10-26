@@ -66,15 +66,17 @@ ${found.length ? `| Name | Kind | Use instead |\n| --- | --- | --- |\n${rows}` :
 | \`traverse --headed\`, \`inject veciro\` / \`demosauce\` | \`traverse --non-headless\`, \`--inject <path>\` / \`--inject saucedemo\` |
 | \`resolveSlideDwellMs\`, \`SLIDE_DURATION_MS_DEFAULT\`, \`SLIDE_DURATION_FAST_MS_DEFAULT\` | \`resolveFixtureDwellMs\`, \`FIXTURE_DURATION_MS_DEFAULT\`, \`FIXTURE_DURATION_FAST_MS_DEFAULT\` |
 
-## Removed in 0.16.2: slides on a Block
+## Removed in 0.16.2: narration in a Block
 
-\`waygraph upgrade --codemod flows\` moves a Block's \`slides\` into \`ctx.slides\` in its chained \`stubAfter\`.
+\`waygraph upgrade --codemod flows\` moves a Block's \`slides\` into \`ctx.slides\` in its chained \`stubAfter\`, turns \`ctx.highlights\` into \`ctx.ring\` calls, and unwraps \`narrate\` (it lists each caption to move).
 
 | Removed | Use instead |
 | --- | --- |
 | \`slides: [...]\` on an instruction or \`defineAssertBlock\`, \`WaygraphSlidesOrFn\` | \`Block.stubAfter((ctx) => ctx.slides([...]))\` where the flow uses it (or \`stubBefore\` to play them before the step) |
 | \`slides: (out) => [...]\` | \`.stubAfter((ctx) => ctx.slides(…ctx.out…))\` |
 | \`resolveSlides(block)\` | \`(await runStubPhase(block, "stubAfter", { out })).slides\` |
+| \`narrate(locator, caption, () => action)\` in an \`act\` | The action alone in \`act\`, and \`Block.stubBefore((ctx) => ctx.ring("id", { selector, label: caption }))\` where the flow uses it (a click or fill on that element shows the ring) |
+| \`ctx.highlights({ a: ring, b: ring })\` | \`ctx.ring("a", ring); ctx.ring("b", ring);\` |
 
 ## Removed in 0.16.0: project and CLI
 

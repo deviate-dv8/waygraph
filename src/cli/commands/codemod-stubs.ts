@@ -4,8 +4,9 @@
 // aliases (`banner`, `bannerPos`, `clearDevice`, `clearTodos`, `landscape`, `portrait`, `todoDockFull`) become the
 // names they stood for. A stub written as a slot map (`{ email: { selector, label } }`) becomes a function of
 // `ctx.ring` calls, and a stub set in a `define*Block({ ... })` (options or instruction) moves out to a chained
-// `.stubBefore(...)` on the Block; a Block's `slides` become `ctx.slides(...)` in its chained `.stubAfter(...)`.
-// Works on the TypeScript AST (ts-morph).
+// `.stubBefore(...)` on the Block; a Block's `slides` become `ctx.slides(...)` in its chained `.stubAfter(...)`;
+// `ctx.highlights({ a: ring })` becomes one `ctx.ring("a", ring)` per ring; `narrate(locator, caption, action)` in an
+// `act` becomes the action, reported so the caption can move to a stubBefore ring. Works on the TypeScript AST (ts-morph).
 import { Node, SyntaxKind } from "ts-morph";
 import type { CallExpression, ExpressionStatement, Project, SourceFile } from "ts-morph";
 
@@ -168,6 +169,67 @@ function hoistDefinitionStubs(sf: SourceFile): boolean {
   return changed;
 }
 
+/** `ctx.highlights({ a: ring, b: ring })` -> `ctx.ring("a", ring); ctx.ring("b", ring);`, one call at a time. */
+function convertHighlights(sf: SourceFile, problems: { line: number; reason: string }[]): boolean {
+  let changed = false;
+  const skipped = new Set<number>();
+  for (;;) {
+    // Raw text replacement forgets the file's nodes, so look the next call up again each time.
+    const statement = sf.getDescendantsOfKind(SyntaxKind.ExpressionStatement).find((st) => {
+      const c = ctxCall(st);
+      return c && c.method === "highlights" && !skipped.has(st.getStart()) && isStubCtx(c.call, c.receiver);
+    });
+    if (!statement) return changed;
+    const c = ctxCall(statement)!;
+    const map = c.call.getArguments()[0];
+    if (!Node.isObjectLiteralExpression(map)) {
+      problems.push({ line: c.call.getStartLineNumber(), reason: "ctx.highlights(...) was removed and its argument is not an object literal: call ctx.ring(id, ring) for each ring" });
+      skipped.add(statement.getStart());
+      continue;
+    }
+    // Each ring keeps its own lines, moved to the statement's indent (replaceWithText would re-indent them).
+    const column = (n: Node): number => n.getStart() - n.getStartLinePos();
+    const indent = " ".repeat(column(statement));
+    const rings = map.getProperties().flatMap((p) => {
+      if (!Node.isPropertyAssignment(p)) return [];
+      const from = column(p);
+      const value = p.getInitializerOrThrow().getText().split("\n").map((l, n) => (n === 0 ? l : indent + l.slice(Math.min(from, l.search(/\S|$/))))).join("\n");
+      return [`${c.receiver}.ring(${JSON.stringify(p.getName().replace(/^["']|["']$/g, ""))}, ${value});`];
+    });
+    sf.replaceText([statement.getStart(), statement.getEnd()], rings.join("\n" + indent));
+    changed = true;
+  }
+}
+
+/**
+ * `narrate(locator, caption, () => action)` in an `act` -> just the action. The caption was narration inside the
+ * Block; it belongs in a `stubBefore` ring where the flow uses the Block, which the codemod can't place, so it is
+ * reported.
+ */
+function unwrapNarrate(sf: SourceFile, problems: { line: number; reason: string }[]): boolean {
+  let changed = false;
+  for (const call of sf.getDescendantsOfKind(SyntaxKind.CallExpression).reverse()) {
+    if (call.wasForgotten() || call.getExpression().getText() !== "narrate" || call.getArguments().length !== 3) continue;
+    const [, captionNode, action] = call.getArguments();
+    const caption = captionNode!.getText();
+    const line = call.getStartLineNumber();
+    let body = `(${action!.getText()})()`;
+    if (Node.isArrowFunction(action) && !Node.isBlock(action.getBody())) body = action.getBody().getText();
+    call.replaceWithText(body);
+    problems.push({ line, reason: `narrate(...) was removed; its caption ${caption} is gone: ring the element in a stubBefore where the flow uses this Block` });
+    changed = true;
+  }
+  if (changed) {
+    for (const decl of sf.getImportDeclarations()) {
+      const spec = decl.getNamedImports().find((n) => n.getName() === "narrate");
+      if (!spec) continue;
+      spec.remove();
+      if (decl.getNamedImports().length === 0 && !decl.getDefaultImport() && !decl.getNamespaceImport()) decl.remove();
+    }
+  }
+  return changed;
+}
+
 /** Rewrites the old stub forms in every file; returns the files it changed and the calls left for a person. */
 export function convertStubs(project: Project): { changed: SourceFile[]; problems: { file: string; line: number; reason: string }[] } {
   const changed: SourceFile[] = [];
@@ -175,6 +237,8 @@ export function convertStubs(project: Project): { changed: SourceFile[]; problem
   for (const sf of project.getSourceFiles()) {
     const left: { line: number; reason: string }[] = [];
     let touched = hoistDefinitionStubs(sf);
+    if (unwrapNarrate(sf, left)) touched = true;
+    if (convertHighlights(sf, left)) touched = true;
     if (convertSlotMaps(sf)) touched = true;
     for (const block of sf.getDescendantsOfKind(SyntaxKind.Block).reverse()) {
       if (block.wasForgotten()) continue;
