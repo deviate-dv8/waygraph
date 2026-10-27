@@ -25,7 +25,8 @@ flowchart LR
 6. **layouts** - checks that apply to many Checkpoints at once (a sidebar that must always be there).
 
 Then it moves to the next Block, handing it the Checkpoint just reached. Each step emits **run events**
-(`step:start`, `step:end`, `step:error`), which become the run log ([[What Waygraph Writes]]).
+(`step:start`, `step:end`, `step:error`), which become the run log ([[What Waygraph Writes]]). A fast-forward step
+is a parent: the Blocks it plays are steps inside it (`parent` on their `step:start`).
 
 > [!info] The engine doesn't know about modes
 > It plays Blocks; it has no idea whether this is a plain run or a demo. Modes live in the runner:

@@ -6,7 +6,7 @@ import type { TraitCheckReport } from "../trait/verify.js";
 
 export type RunEvent =
   | { type: "run:start"; runId: string; at: number; label?: string }
-  | { type: "step:start"; runId: string; at: number; index: number; block: string; kind: BlockKind; from: string }
+  | { type: "step:start"; runId: string; at: number; index: number; block: string; kind: BlockKind; from: string; parent?: number }
   | { type: "step:end"; runId: string; at: number; index: number; block: string; kind: BlockKind; to: string; ms: number }
   | { type: "step:error"; runId: string; at: number; index: number; block: string; kind: BlockKind; error: string; ms: number; check?: TraitCheckReport }
   | ({ type: "step:read"; runId: string; at: number; index: number; block: string; kind: BlockKind; checkpoint: string } & StepRead)
@@ -47,7 +47,15 @@ interface OpenRun {
   runId: string;
   startedAt: number;
   index: number;
-  step?: { index: number; block: string; kind: BlockKind; startedAt: number } | undefined;
+  /** Steps started and not yet ended, innermost last: a fast-forward step holds the inner steps it plays. */
+  open: OpenStep[];
+}
+
+interface OpenStep {
+  index: number;
+  block: string;
+  kind: BlockKind;
+  startedAt: number;
 }
 
 /**
@@ -63,7 +71,7 @@ const scope = new AsyncLocalStorage<OpenRun>();
 export async function inRun<T>(label: string | undefined, body: () => Promise<T>, resultOf?: (value: T) => string | undefined): Promise<T> {
   if (scope.getStore()) return body();
   const at = Date.now();
-  const run: OpenRun = { runId: `${new Date(at).toISOString().replace(/[:.]/g, "-")}-${crypto.randomUUID().slice(0, 8)}`, startedAt: at, index: 0 };
+  const run: OpenRun = { runId: `${new Date(at).toISOString().replace(/[:.]/g, "-")}-${crypto.randomUUID().slice(0, 8)}`, startedAt: at, index: 0, open: [] };
   emit({ type: "run:start", runId: run.runId, at, ...(label ? { label } : {}) });
   const end = (outcome: { result?: string | undefined; error?: unknown }): void => {
     const done = Date.now();
@@ -91,35 +99,46 @@ export function stepStarted(block: string, kind: BlockKind, from: string): void 
   const open = scope.getStore();
   if (!open) return;
   const at = Date.now();
-  open.step = { index: open.index++, block, kind, startedAt: at };
-  emit({ type: "step:start", runId: open.runId, at, index: open.step.index, block, kind, from });
+  const parent = open.open.at(-1)?.index;
+  const step = { index: open.index++, block, kind, startedAt: at };
+  open.open.push(step);
+  emit({ type: "step:start", runId: open.runId, at, index: step.index, block, kind, from, ...(parent !== undefined ? { parent } : {}) });
 }
 
+/**
+ * The step named `block` ended at `to`. Steps still open inside it end with it: a fast-forward step's last inner step
+ * lands where the fast-forward step lands.
+ */
 export function stepEnded(block: string, to: string): void {
   const open = scope.getStore();
-  if (!open?.step) return;
+  if (!open?.open.length) return;
+  let found = open.open.length - 1;
+  while (found > 0 && open.open[found]!.block !== block) found--;
+  if (open.open[found]!.block !== block) found = open.open.length - 1;
   const at = Date.now();
-  emit({ type: "step:end", runId: open.runId, at, index: open.step.index, block, kind: open.step.kind, to, ms: at - open.step.startedAt });
-  open.step = undefined;
+  for (const step of open.open.splice(found).reverse()) {
+    emit({ type: "step:end", runId: open.runId, at, index: step.index, block: step.block, kind: step.kind, to, ms: at - step.startedAt });
+  }
 }
 
 /** What the page showed after the current step (emitted between its verify and its `step:end`). */
 export function stepRead(checkpoint: string, read: StepRead): void {
-  const open = scope.getStore();
-  if (!open?.step) return;
-  emit({ type: "step:read", runId: open.runId, at: Date.now(), index: open.step.index, block: open.step.block, kind: open.step.kind, checkpoint, ...read });
+  const step = scope.getStore()?.open.at(-1);
+  if (!step) return;
+  emit({ type: "step:read", runId: scope.getStore()!.runId, at: Date.now(), index: step.index, block: step.block, kind: step.kind, checkpoint, ...read });
 }
 
-/** The step that started last failed. */
+/** The step that started last failed, and every step still open around it (a fast-forward step with its inner step). */
 export function stepFailed(error: unknown): void {
   const open = scope.getStore();
-  if (!open?.step) return;
+  if (!open?.open.length) return;
   const at = Date.now();
-  const { index, block, kind, startedAt } = open.step;
   // A failed check also says, as data, what it wanted, what the page showed and where (TraitFailure).
   const check = (error as { check?: TraitCheckReport } | null)?.check;
-  emit({ type: "step:error", runId: open.runId, at, index, block, kind, error: error instanceof Error ? error.message : String(error), ms: at - startedAt, ...(check ? { check } : {}) });
-  open.step = undefined;
+  const message = error instanceof Error ? error.message : String(error);
+  for (const { index, block, kind, startedAt } of open.open.splice(0).reverse()) {
+    emit({ type: "step:error", runId: open.runId, at, index, block, kind, error: message, ms: at - startedAt, ...(check ? { check } : {}) });
+  }
 }
 
 /** The id of the run open right now, if any. */

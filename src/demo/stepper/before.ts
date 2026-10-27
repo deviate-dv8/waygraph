@@ -18,12 +18,12 @@ export async function showBefore(ctx: StepperContext, view: StepView): Promise<v
   const { stage } = ctx;
   const phase = await narrateBefore(ctx, view);
   const { appliedTodo } = await stage.applyPhase(phase, { reapplyDeviceOnKeep: true });
+  const paceSpeak = paceSpeakFields(ctx.pacing.demoPace, ctx.gate.autoplayMs);
+  if (!quiet()) logBefore(ctx, view, phase, appliedTodo.sync, paceSpeak.paceLabel);
   await showSlides(ctx, view, phase.slides);
   if (phase.title && String(phase.title).trim()) ctx.stickyTitle = String(phase.title).trim();
   view.overlayTitle = ctx.stickyTitle || (view.step.episodeTitle && String(view.step.episodeTitle).trim()) || ctx.title || "waygraph demo";
   view.overlayTodoPos = stage.state.lastTodoDock?.pos || phase.todoPos || undefined;
-  const paceSpeak = paceSpeakFields(ctx.pacing.demoPace, ctx.gate.autoplayMs);
-  if (!quiet()) logBefore(ctx, view, phase, appliedTodo.sync, paceSpeak.paceLabel);
 
   const step = view.step;
   await renderBeforeStep(ctx.page, {
@@ -67,10 +67,6 @@ async function narrateBefore(ctx: StepperContext, view: StepView): Promise<StubP
   const phase = await runStubPhase(view.step.block, "stubBefore", { mem: ctx.mem });
   await ctx.stage.pushTodoDockUi(phase.todoDockUi);
   ctx.refs.stubBefore.current = phase.highlights.map((h) => applyHighlightStyleDefaults(h, view.step.highlightStyle));
-  logStubPhaseFixtures("before", {
-    ...phase,
-    highlights: ctx.refs.stubBefore.current.map((h) => ({ ...h, label: formatHighlightCaption(h) })),
-  });
   return phase;
 }
 
@@ -90,6 +86,11 @@ function memKeysOf(ctx: StepperContext, view: StepView): { name: string; value: 
 function logBefore(ctx: StepperContext, view: StepView, phase: StubPhaseResult, todoSync: string, paceLabel: string): void {
   const { step } = view;
   demoLog(`step ${view.index + 1}/${ctx.steps.length} ${step.block.name} · ${paceLabel}` + (step.episodeNumber ? " · episode " + step.episodeNumber : ""));
+  // Under its step's heading: what the stub painted.
+  logStubPhaseFixtures("before", {
+    ...phase,
+    highlights: ctx.refs.stubBefore.current.map((h) => ({ ...h, label: formatHighlightCaption(h) })),
+  });
   demoLog(`  gate~${ctx.gate.autoplayMs}ms skipTheater=${!!ctx.pacing.skipTheater} gatesFast=${!!ctx.pacing.gatesFast}`);
   demoLog("  " + summarizeDevice(ctx.stage.state.lastDevice));
   const zoom = phase.zoom != null && Number(phase.zoom) > 0 ? Number(phase.zoom) : null;

@@ -283,7 +283,9 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     filled at once, a field whose mask rewrote the typed keys refilled); the overlay never takes a click meant for the
     page; `waygraph check` reads a fast-forward step's inner Blocks; Traits retry until the page settles, say what they
     wanted and saw (`TraitFailure`, `check` on `step:error`), and gain `contains` / `matches` / `value` / `attribute` /
-    `absent` with mem-derived expected values; the CLI prints the run log path. **Done.** Next: branch outcomes
+    `absent` with mem-derived expected values; the CLI prints the run log path; a fast-forward step's inner steps nest
+    in the run log (`parent`), each ending once (the last one used to be logged as the fast-forward step, which never
+    ended); the demo's text log prints a step's stub and slides under that step's heading. **Done.** Next: branch outcomes
     (`lands`), accounts, repeatable runs (issue #5), flow input, one browser across a chain.
 
 
