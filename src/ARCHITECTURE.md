@@ -103,9 +103,24 @@ the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by 
 | A practice warning | `analysis/practices-check.ts` + a fixture in `tests/fixtures/practices-check/` |
 | An engine error | `engine/errors.ts`: a `WG_<AREA>_<WHAT>` code with its where / means / fix; never reuse a shipped code |
 
+## What a viewer (Waygraph UI) reads
+
+Three sources, all public and typed; a viewer never reaches into internals:
+
+| Source | What it gives | Where |
+|---|---|---|
+| The manifest (version 2) | the graph: Checkpoints (nodes), Blocks (edges, with kind, route, Mem keys), Flows (paths), Read Blocks (what each node can show, field shapes) | `buildManifest(projectDir)` / `waygraph manifest`, `manifest/manifest.ts` |
+| Run events / run logs | what happened: each run's steps, their timing and errors, `step:read` (what each node showed), artifacts; one run id per call chain, so concurrent runs never mix | `onRunEvent`, `.waygraph/runs/*.jsonl`, `engine/run/events.ts` |
+| The session protocol | live sessions: `hello`, `status`, `send`, `reach`, `read`, and `subscribe` (the live feed of events and snapshots) | `SessionRequest` / `SessionStreamMessage`, `requestSession`, `subscribeSession`, `live/auto-session/protocol.ts` |
+
+One worker process per project: a project's Mem stubs and Read Blocks register in module-level registries, and runs read
+their settings from `WAYGRAPH_*` env (per process). So a viewer that runs flows itself starts one worker process per
+project (as the CLI's runner does), and never loads two projects into one process.
+
 ## Rules
 
-Enforced: no file over 500 lines, no import cycles, the layer table above, no re-exports outside `src/index.ts`, no HTML
+Enforced: no file over 500 lines, no import cycles, the layer table above, no re-exports outside the package entries
+(`src/index.ts`, `src/beta.ts`), no module that runs a call at import time (entries call `install…()` explicitly), no HTML
 strings written into the page, `WAYGRAPH_*` variables only through `engine/env.ts` (its registry generates `docs/env.md`), no `.catch(() => {})` in Node
 code (`engine/page-gone.ts`: `ignorePageGone` when the page went away, `ignoreTimeout` for a probe), and `any` only goes
 down (`scripts/any-debt.json`, per file). What is left is the engine's "any Block" (`SomeBlock` in

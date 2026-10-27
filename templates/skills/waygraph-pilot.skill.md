@@ -161,7 +161,8 @@ To know what the page shows, read the `read` field every `status`/`send`/`reach`
 carries (or `pilot read <id> [path]` for one part, uncut): it comes from the project's Read
 Blocks (`*.read.block.ts`, beta) as typed JSON. Reach for `auto dom` only when `read` is empty
 (no Read Block covers the page) or misses what you need - and then consider writing the Read
-Block.
+Block. `pilot watch <id>` streams every step, read and snapshot as JSON lines if you need to
+follow changes you did not cause (another user, a server push).
 
 The one legitimate exception: `auto dom` to resolve a real ambiguity the menu's own labels
 can't (e.g. two products tied at the same displayed price) - and say so explicitly when you

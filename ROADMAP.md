@@ -274,6 +274,11 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     / `out` / `error` stay on ctx), a Read Block reads through `ctx.page.*`, and future Event Blocks move the world
     through `ctx.world.*`. Codemod `flows` moves stub calls; the docs drift test rejects the old form. **Done** (`world`
     comes with Event Blocks).
+18. Ready for Waygraph UI (0.16.4): one run per async call chain (fixes `traverse --parallel` workers sharing a run id
+    and step counter); every step emits `step:read` (the page after it settled; the runner loads Read Blocks, so headless
+    runs log reads); the manifest (version 2) lists Read Blocks with their field shapes; a public session protocol
+    (`SessionRequest`, `SESSION_OPS`, `SESSION_PROTOCOL_VERSION`, `hello`, `subscribe` / `pilot watch`); explicit
+    `install…()` instead of import side effects. Waygraph UI runs one worker process per project. **Done.**
 
 
 
