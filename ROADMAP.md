@@ -38,6 +38,7 @@ otherwise.
 | PageBlock + `methods/` + `Sel` convention; Action -> Method rename | Shipped |
 | `NavBlock` + `ActionPage` deprecation + `waygraph check` + pluggable browser provider | Shipped - see "NavBlock + ActionPage" below |
 | `locate()` page recognition (`waygraph auto` graph discovery) | Shipped - split `requires` still open, see below |
+| Repeatable runs: unique test data, replay, cleanup steps | Planned - see "Repeatable runs" below |
 | Traverse (Phase B-E: serial/parallel graph crawl, coverage gate) | Shipped - `docs/proposals/traverse-ffcompose-rfc.md` |
 | `Flow.run` / `runGraph` tab options (drive an existing page, `closeOnFinish`) | Shipped - see "Flow.run tab options" below |
 | Split `requires` (externally-supplied vs producedBy-another-Block) | Roadmap only |
@@ -307,6 +308,26 @@ pass the value everywhere:
 It is a shift in how Blocks are written, closer to React's class-to-function move than a patch: every existing
 Block file changes. If done, keep the string and `<In, Out>` forms working for a deprecation period and add a
 `waygraph upgrade` codemod. Not started.
+
+### Repeatable runs: unique test data, replay, cleanup (planned, next)
+
+The common flaky case: a flow that creates something (a signup, an order) passes the first time and fails the second,
+because its test data is constant or the first run's data is still there. Mem stubs are already functions, called fresh
+every run (`registerMemStub(Signup.email, () => ...)`), so fresh data is possible today, but every project hand-rolls it
+(`Date.now()`, which collides across parallel workers), a failure can't be rerun with the data that failed, and nothing
+cleans up. Planned:
+
+1. **`unique` in mem stubs:** `registerMemStub(Signup.email, ({ unique }) => \`qa+${unique}@example.com\`)`. Different
+   every run, stable within one, safe across parallel workers (built from the run's `runId` and the worker index).
+2. **Record and replay:** the run log records the Mem values a run seeded; `waygraph run <flow> --replay <runId>` reruns
+   with exactly that data, so a flaky failure becomes a reproducible one.
+3. **Cleanup steps:** `map().….finally(DeleteTestUserApiBlock).end()` runs on pass or fail and reports separately;
+   API Blocks are the usual cleanup.
+4. **"Already exists" as a branch (convention, docs):** a create Block resolves to `Created` or `AlreadyExists`, each
+   with its own `verify`, so a second run takes a real, verified edge instead of failing. Branches and
+   `expectedFailure` already support it; the convention skill and reference say how.
+5. **`waygraph check` warns** when a create-style Block (Effect / API) requires a key whose mem stub returns the same
+   value twice: "constant test data: a second run may collide".
 
 ### Network tab mocking (backlogged, not yet researched)
 
