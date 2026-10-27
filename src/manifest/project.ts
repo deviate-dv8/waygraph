@@ -3,12 +3,12 @@ import { relative } from "node:path";
 import type { BlocksSelect } from "./select.js";
 import { matchBlocksSelect } from "./select.js";
 import { exploreRoots, injectTaggedFile } from "./roots.js";
-import { blockKind, importFresh, isBlockLike, isFlowLike, isReadBlockLike, walkDir } from "./scan.js";
+import { importFresh, isBlockLike, isFlowLike, isReadBlockLike, walkDir } from "./scan.js";
 import type { ReadBlock } from "../engine/read/read-block.js";
 import type { AnyBlock } from "./scan.js";
 import { installedMapPackages, mapPackageBlockFiles } from "./maps.js";
+import { blockKindOf, type BlockKind } from "../engine/block/kind.js";
 
-export type BlockKind = "nav" | "page" | "assert" | "method" | "effect" | "api" | "block";
 
 export interface ScannedBlock {
   block: AnyBlock;
@@ -70,14 +70,6 @@ export interface ScanOptions {
   onImportError?: (relFile: string, err: unknown) => void;
 }
 
-function kindOf(block: object): BlockKind {
-  const kind = blockKind(block);
-  if (kind === "nav" || kind === "page" || kind === "assert" || kind === "api") return kind;
-  const salt = (block as { __waygraphSalt?: string }).__waygraphSalt;
-  if (salt === "effect" || salt === "method" || salt === "api") return salt;
-  return "block";
-}
-
 /** A file that fails to import is left out of the scan, and said so: a silent skip reads as "nothing there". */
 export function reportImportError(relFile: string, err: unknown): void {
   const msg = err instanceof Error ? err.message : String(err);
@@ -117,7 +109,7 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
         block: exported,
         name: exported.name,
         exportName,
-        kind: kindOf(exported),
+        kind: blockKindOf(exported),
         description: typeof exported.description === "string" ? exported.description : "",
         from: [...from],
         to: [...to],

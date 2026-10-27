@@ -21,7 +21,7 @@ and the runner use. This is what Waygraph UI draws the graph from.
 ## Run logs
 
 Every `run`, `demo` and `test` writes `.waygraph/runs/<runId>.jsonl`: one line per event - the run starting, each step
-starting and ending (with the Checkpoint and time) or failing (with the error), what the page showed after each step
+starting and ending (with its kind - nav, page, method, effect, assert, api - the Checkpoint and time) or failing (with the error), what the page showed after each step
 (`step:read`, when Read Blocks cover it), videos and screenshots, the run ending.
 Read the newest one to see what failed without re-running.
 

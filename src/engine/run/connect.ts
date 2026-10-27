@@ -5,6 +5,7 @@ import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import type { Trait } from "../trait/trait.js";
 import { runVerify, runPrecondition } from "../trait/trait.js";
 import { isConnected, lastLeaf, stepEnded, stepStarted } from "./events.js";
+import { blockKindOf } from "../block/kind.js";
 
 /**
  * Structural twin of `run.ts`'s `Layout`, so this file needs no import from it. Any real `Layout` satisfies it with no
@@ -44,7 +45,7 @@ export function connect<
     ...(requires.length > 0 ? { requires } : {}),
     instruction: {
       async act(page, input, mem) {
-        if (!isConnected(a)) stepStarted(a.name, input.__state);
+        if (!isConnected(a)) stepStarted(a.name, blockKindOf(a), input.__state);
         await runPrecondition(a.instruction.precondition, input, page, mem, a.name);
         await a.instruction.act(page, input, mem);
         const aObserved = a.instruction.observe
@@ -59,7 +60,7 @@ export function connect<
           }
         }
         stepEnded(lastLeaf(a), mid.__state);
-        if (!isConnected(b)) stepStarted(b.name, mid.__state);
+        if (!isConnected(b)) stepStarted(b.name, blockKindOf(b), mid.__state);
         await runPrecondition(b.instruction.precondition, mid, page, mem, b.name);
         await b.instruction.act(page, mid, mem);
       },

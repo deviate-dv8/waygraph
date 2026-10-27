@@ -66,7 +66,4 @@ export function isFlowLike(val: unknown): val is { run: (...args: unknown[]) => 
   );
 }
 
-/** The factory kind a Block was built with (`nav`, `page`, `assert`), or undefined for Methods and Effects. */
-export function blockKind(block: object): string | undefined {
-  return (block as { __waygraphKind?: string }).__waygraphKind;
-}
+

@@ -1,13 +1,14 @@
 // Run events: what happened, step by step, during a run. Core emits them; subscribers (the run log, the demo overlay,
 // reports, Waygraph UI) listen. Emitting never throws into the run.
 import { AsyncLocalStorage } from "node:async_hooks";
+import type { BlockKind } from "../block/kind.js";
 
 export type RunEvent =
   | { type: "run:start"; runId: string; at: number; label?: string }
-  | { type: "step:start"; runId: string; at: number; index: number; block: string; from: string }
-  | { type: "step:end"; runId: string; at: number; index: number; block: string; to: string; ms: number }
-  | { type: "step:error"; runId: string; at: number; index: number; block: string; error: string; ms: number }
-  | ({ type: "step:read"; runId: string; at: number; index: number; block: string; checkpoint: string } & StepRead)
+  | { type: "step:start"; runId: string; at: number; index: number; block: string; kind: BlockKind; from: string }
+  | { type: "step:end"; runId: string; at: number; index: number; block: string; kind: BlockKind; to: string; ms: number }
+  | { type: "step:error"; runId: string; at: number; index: number; block: string; kind: BlockKind; error: string; ms: number }
+  | ({ type: "step:read"; runId: string; at: number; index: number; block: string; kind: BlockKind; checkpoint: string } & StepRead)
   | { type: "run:end"; runId: string; at: number; ok: boolean; result?: string; error?: string; ms: number }
   | { type: "run:artifact"; runId: string; at: number; kind: "video" | "trace" | "screenshot"; path: string };
 
@@ -45,7 +46,7 @@ interface OpenRun {
   runId: string;
   startedAt: number;
   index: number;
-  step?: { index: number; block: string; startedAt: number } | undefined;
+  step?: { index: number; block: string; kind: BlockKind; startedAt: number } | undefined;
 }
 
 /**
@@ -85,19 +86,19 @@ export async function inRun<T>(label: string | undefined, body: () => Promise<T>
   }
 }
 
-export function stepStarted(block: string, from: string): void {
+export function stepStarted(block: string, kind: BlockKind, from: string): void {
   const open = scope.getStore();
   if (!open) return;
   const at = Date.now();
-  open.step = { index: open.index++, block, startedAt: at };
-  emit({ type: "step:start", runId: open.runId, at, index: open.step.index, block, from });
+  open.step = { index: open.index++, block, kind, startedAt: at };
+  emit({ type: "step:start", runId: open.runId, at, index: open.step.index, block, kind, from });
 }
 
 export function stepEnded(block: string, to: string): void {
   const open = scope.getStore();
   if (!open?.step) return;
   const at = Date.now();
-  emit({ type: "step:end", runId: open.runId, at, index: open.step.index, block, to, ms: at - open.step.startedAt });
+  emit({ type: "step:end", runId: open.runId, at, index: open.step.index, block, kind: open.step.kind, to, ms: at - open.step.startedAt });
   open.step = undefined;
 }
 
@@ -105,7 +106,7 @@ export function stepEnded(block: string, to: string): void {
 export function stepRead(checkpoint: string, read: StepRead): void {
   const open = scope.getStore();
   if (!open?.step) return;
-  emit({ type: "step:read", runId: open.runId, at: Date.now(), index: open.step.index, block: open.step.block, checkpoint, ...read });
+  emit({ type: "step:read", runId: open.runId, at: Date.now(), index: open.step.index, block: open.step.block, kind: open.step.kind, checkpoint, ...read });
 }
 
 /** The step that started last failed. */
@@ -113,8 +114,8 @@ export function stepFailed(error: unknown): void {
   const open = scope.getStore();
   if (!open?.step) return;
   const at = Date.now();
-  const { index, block, startedAt } = open.step;
-  emit({ type: "step:error", runId: open.runId, at, index, block, error: error instanceof Error ? error.message : String(error), ms: at - startedAt });
+  const { index, block, kind, startedAt } = open.step;
+  emit({ type: "step:error", runId: open.runId, at, index, block, kind, error: error instanceof Error ? error.message : String(error), ms: at - startedAt });
   open.step = undefined;
 }
 

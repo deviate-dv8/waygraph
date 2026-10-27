@@ -3,7 +3,8 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { scanProject } from "./project.js";
-import type { BlockKind, ProjectScan, ScanOptions } from "./project.js";
+import type { BlockKind } from "../engine/block/kind.js";
+import type { ProjectScan, ScanOptions } from "./project.js";
 import { MemPage } from "../engine/mem/mem.js";
 import { readBlockShape, type ReadShape } from "../engine/read/read-block.js";
 

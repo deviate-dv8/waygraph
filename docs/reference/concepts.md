@@ -60,7 +60,7 @@ Blocks from installed [map packages](./map.md#map-packages) are included, with t
 
 ## Run events and the run log
 
-Every run emits events: `run:start`, then `step:start` / `step:end` (Block, from/to Checkpoint, duration) or `step:error`
+Every run emits events: `run:start`, then `step:start` / `step:end` (Block, its kind - `nav`, `page`, `method`, `effect`, `assert`, `api` or `block`, as in the manifest - from/to Checkpoint, duration) or `step:error`
 for each Block, `step:read` between a step's verify and its end when [Read Blocks](./beta.md) cover the page it landed
 on (what the page showed, after it settled), `run:artifact` for a saved video, and `run:end` (ok, result or error). Each
 run has its own id even when several run at once in one process (parallel traverse workers each are one run). Subscribe in code with

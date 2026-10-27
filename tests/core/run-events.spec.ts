@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { checkpoint, defineMethodBlock, Engine, MemPage, onRunEvent } from "../../src/index.js";
+import { checkpoint, defineMethodBlock, definePageBlock, Engine, MemPage, onRunEvent } from "../../src/index.js";
 import type { RunEvent } from "../../src/index.js";
 
 const A = checkpoint("A");
@@ -41,6 +41,19 @@ test("a run reports each Block it ran, in order, with where it went", async () =
   const end = events.at(-1) as Extract<RunEvent, { type: "run:end" }>;
   expect(end).toMatchObject({ ok: true, result: "C" });
   expect(new Set(events.map((e) => e.runId)).size).toBe(1);
+});
+
+test("every step event says what kind of Block ran (page, method, ...), as the manifest does", async () => {
+  const home = definePageBlock({ name: "page-a", checkpoint: A });
+  const flow = new Engine().map().start().gotoPage(home as never).method(ab as never).end();
+  const events = await collect(() => flow.run(fakeContext, new MemPage()));
+  const steps = events.filter((e): e is Extract<RunEvent, { type: `step:${string}` }> => e.type.startsWith("step:"));
+  expect(steps.map((e) => [e.type, e.block, e.kind])).toEqual([
+    ["step:start", "page-a", "page"],
+    ["step:end", "page-a", "page"],
+    ["step:start", "a-to-b", "method"],
+    ["step:end", "a-to-b", "method"],
+  ]);
 });
 
 test("a failing Block is reported as the step that failed", async () => {

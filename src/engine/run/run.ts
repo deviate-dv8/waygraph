@@ -7,6 +7,7 @@ import type { Block } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepRead, stepStarted } from "./events.js";
 import { readBlocksFor, readCheckpoint } from "../read/read-block.js";
+import { blockKindOf } from "../block/kind.js";
 import { runPrecondition, runVerify } from "../trait/trait.js";
 import type { Trait } from "../trait/trait.js";
 import type { BrowserContext, Page } from "@playwright/test";
@@ -171,7 +172,7 @@ async function playGraph<TOut extends Checkpoint<string>>(
         throw new WaygraphError("WG_RUNGRAPH_MAX_STEPS", MSG_RUNGRAPH_MAX_STEPS(maxSteps));
       }
 
-      if (!isConnected(current)) stepStarted(current.name, input.__state);
+      if (!isConnected(current)) stepStarted(current.name, blockKindOf(current), input.__state);
       await runPrecondition(current.instruction.precondition, input, page, mem, current.name);
       await current.instruction.act(page, input, mem);
       const observed = current.instruction.observe

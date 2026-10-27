@@ -11,7 +11,7 @@ describe("run events: one run per async call chain", () => {
     const worker = (name: string) =>
       inRun(name, async () => {
         for (const block of ["a", "b"]) {
-          stepStarted(`${name}-${block}`, "Start");
+          stepStarted(`${name}-${block}`, "method", "Start");
           await tick();
           stepEnded(`${name}-${block}`, "End");
         }
@@ -37,7 +37,7 @@ describe("run events: one run per async call chain", () => {
     const off = onRunEvent((e) => events.push(e));
     await assert.rejects(
       inRun("outer", async () => {
-        await inRun("inner", async () => stepStarted("x", "Start"));
+        await inRun("inner", async () => stepStarted("x", "method", "Start"));
         throw new Error("boom");
       }),
     );
