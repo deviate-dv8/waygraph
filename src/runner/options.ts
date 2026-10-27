@@ -25,6 +25,8 @@ export interface PlayOptions {
   sharedSession: boolean;
   /** A run id whose recorded mem each segment is seeded with instead (--replay). */
   replay: string | undefined;
+  /** The flow's input, JSON or @file (--input). */
+  input: string | undefined;
 }
 
 
@@ -51,6 +53,7 @@ export function readOptions(): PlayOptions {
     memStub: envFlag("WAYGRAPH_MEM_STUB"),
     sharedSession: envFlag("WAYGRAPH_SHARED_SESSION"),
     replay: envString("WAYGRAPH_REPLAY"),
+    input: envString("WAYGRAPH_INPUT"),
   };
 }
 

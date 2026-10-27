@@ -33,6 +33,8 @@ export const homeCartFlow = engine
 - `.branch({ LoggedIn: (m) => ..., LoginPage: (m) => ... })` - split by where the last step landed.
 - `.method(Block, { ff: true })` / `.ffStart()...ffEnd()` - fast-forward steps in a demo.
 - `.method(Block, { pace: "slow" })` - slow one step down in a demo.
+- `.method(Block, { when: (mem) => … })` - play a step only for the cases that need it (it stays on its Checkpoint).
+- `.flow(sub, { input })` - drop in a flow that takes input, with this case's value.
 - `.finally(DeleteUserApiBlock)` - a cleanup step: runs after the flow's steps, pass or fail (delete what it created).
 - `.method(SubmitLoginBlock, { lands: LoggedIn })` - continue from one outcome of a Block that can land in several
   places (a run that lands elsewhere fails there).
@@ -43,6 +45,7 @@ export const homeCartFlow = engine
 |---|---|
 | `memStub` | fill missing [[Mem]] values with registered fakes |
 | `sessionReset` | start with a fresh browser session when run after another flow |
+| `input` | the flow takes a value (a MemKey): one flow for many cases; `--input` gives it, a list plays it once per item |
 | `as` | start signed in as an account (`account("planner", { signIn: plannerSignInFlow })`): it signs in once per run, later flows reuse its session |
 | `expectedFailure` | this flow is *meant* to fail (a blocked user); the demo explains instead of alarming |
 | `demoPace`, `highlightStyle` | how the demo plays this flow |

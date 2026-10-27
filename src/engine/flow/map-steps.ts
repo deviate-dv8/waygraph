@@ -1,6 +1,9 @@
 // What `map()` checks and wraps on each step: the Block's kind and origin, `{ ff, pace }`, a session reset.
 import type { Page } from "@playwright/test";
-import type { Checkpoint } from "../checkpoint/checkpoint.js";
+import { checkpoint, type Checkpoint } from "../checkpoint/checkpoint.js";
+import type { MemKey } from "../mem/mem.js";
+import type { Trait } from "../trait/trait.js";
+import { defineMethodBlock } from "../block/kinds/method.js";
 import { type SomeBlock, type SomeDefinedBlock, copyWaygraphRuntime } from "../block/block.js";
 import { MSG_MAP_LANDED_ELSEWHERE, MSG_MAP_LANDS_NOT_AN_OUTCOME, MSG_MAP_WRONG_KIND, MSG_MAP_WRONG_ORIGIN_EXTERNAL, MSG_MAP_WRONG_ORIGIN_INTERNAL, MSG_MAP_WRONG_SALT, WaygraphError } from "../errors.js";
 import { MemPage } from "../mem/mem.js";
@@ -52,6 +55,85 @@ export function landsOn(block: SomeDefinedBlock, lands: Checkpoint<string> | und
   copyWaygraphRuntime(block, next);
   return next;
 }
+/** The same Block, also requiring `key` (a flow's input is required by its first step, so preflight asks for it). */
+export function requiring(block: SomeDefinedBlock, key: MemKey<unknown>): SomeDefinedBlock {
+  const next = { ...block, requires: [...(block.requires ?? []).filter((k) => k !== key), key] } as SomeDefinedBlock;
+  copyWaygraphRuntime(block, next);
+  return next;
+}
+
+/** The same Block, no longer requiring `key` (a step before it supplies it). */
+export function withoutRequire(block: SomeDefinedBlock, key: MemKey<unknown>): SomeDefinedBlock {
+  const next = { ...block, requires: (block.requires ?? []).filter((k) => k !== key) } as SomeDefinedBlock;
+  copyWaygraphRuntime(block, next);
+  return next;
+}
+
+/** Marks what a step that ends where it started saw, for its resolve (observe -> resolve is the only channel). */
+interface Stayed {
+  readonly __wgStayedAt: Checkpoint<string>;
+}
+const stayedAt = (observed: unknown): Checkpoint<string> | undefined =>
+  (observed as Stayed | null | undefined)?.__wgStayedAt;
+
+/**
+ * The same Block, played only when `when(mem)` is true; otherwise it ends at once where it started, without acting,
+ * observing or verifying. For a step that stays on its Checkpoint (`map()` only offers `when` there). The decision is
+ * kept per run (by its mem): Blocks are shared, runs may be parallel.
+ */
+export function skippable(block: SomeDefinedBlock, when: ((mem: MemPage) => boolean) | undefined): SomeDefinedBlock {
+  if (!when) return block;
+  const skipped = new WeakMap<MemPage, Checkpoint<string>>();
+  const ins = block.instruction;
+  const keepTrait = (t: Trait): Trait => ({ ...t, check: async (page, mem) => (skipped.has(mem) ? true : t.check(page, mem)) });
+  const verify = ins.verify;
+  const next = {
+    ...block,
+    instruction: {
+      ...ins,
+      async act(page: Page, input: Checkpoint<string>, mem: MemPage) {
+        if (!when(mem)) {
+          skipped.set(mem, input);
+          return;
+        }
+        skipped.delete(mem);
+        return (ins.act as (p: Page, i: Checkpoint<string>, m: MemPage) => unknown)(page, input, mem);
+      },
+      async observe(page: Page, mem: MemPage) {
+        const at = skipped.get(mem);
+        if (at) return { __wgStayedAt: at } satisfies Stayed;
+        return ins.observe ? (ins.observe as (p: Page, m: MemPage) => unknown)(page, mem) : undefined;
+      },
+      resolve(observed: unknown) {
+        return stayedAt(observed) ?? (ins.resolve as (o: unknown) => unknown)(observed);
+      },
+      ...(verify
+        ? { verify: typeof verify === "function" ? (out: Checkpoint<string>) => (verify as (o: Checkpoint<string>) => Trait[])(out).map(keepTrait) : (verify as Trait[]).map(keepTrait) }
+        : {}),
+    },
+  } as SomeDefinedBlock;
+  copyWaygraphRuntime(block, next);
+  return next;
+}
+
+/** A step that sets a flow's input and ends where it started: what `.flow(sub, { input })` puts before the sub-flow. */
+export function settingInput(key: MemKey<unknown>, value: unknown, flowName: string): SomeDefinedBlock {
+  const at = new WeakMap<MemPage, Checkpoint<string>>();
+  return defineMethodBlock<Checkpoint<string>, Checkpoint<string>>({
+    name: `input-${flowName}`,
+    description: `Gives the next flow its input (${key.name}).`,
+    to: checkpoint("*"),
+    instruction: {
+      async act(_page, input, mem) {
+        mem.set(key, value);
+        at.set(mem, input);
+      },
+      observe: async (_page, mem) => ({ __wgStayedAt: at.get(mem)! }) satisfies Stayed,
+      resolve: (observed) => stayedAt(observed)!,
+    },
+  }) as unknown as SomeDefinedBlock;
+}
+
 /** The same Block, marked as a cleanup step: its run events say so (`cleanup: true` on step:start). */
 export function asCleanup(block: SomeDefinedBlock): SomeDefinedBlock {
   const next = { ...block } as SomeDefinedBlock;
@@ -146,4 +228,10 @@ export interface MapStepOpts<Lands extends Checkpoint<string> = Checkpoint<strin
    * @example map().method(SetBearerTokenBlock, { pace: "blitz" })
    */
   pace?: DemoPace;
+  /**
+   * Play this step only when `when(mem)` is true; otherwise it ends at once where it started. For a step that stays on
+   * its Checkpoint (filling an optional field): one flow covers the cases that differ by it.
+   * @example .method(SetJsonBodyBlock, { when: (mem) => mem.has(RequestBody) })
+   */
+  when?: (mem: MemPage) => boolean;
 }

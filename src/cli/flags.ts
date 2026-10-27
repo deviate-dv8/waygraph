@@ -30,6 +30,8 @@ interface RunFlags {
   memStub?: boolean;
   /** Seed mem with what a recorded run seeded (--replay <runId>). */
   replay?: string;
+  /** The flow's input: JSON or @file (--input). */
+  input?: string;
   /** run only: explore every .branch() path (runBranchRegression), cloning the session at each branch point. */
   allBranches?: boolean;
   /** --all-branches only: one shared session (no cloning) - follows the single live-dispatch path instead. */
@@ -87,6 +89,7 @@ export const RUN_OPTIONS = {
   "blocks": { type: "string", value: "<flow|file|spec>", help: "Flow export, .flow.ts path or \"a then b\" chain; auto: <From> <To> Checkpoints", for: ["demo", "run"] },
   "data": { type: "string", value: "'{...}'", help: "Mem seed JSON (or inline flow({...}))", for: ["demo", "run"] },
   "mem-stub": { type: "boolean", help: "Fill any requires key --data didn't cover from registerMemStub's registry", for: ["demo", "run"] },
+  "input": { type: "string", value: "<json|@file>", help: "The flow's input (map({ input })): JSON or @file.json; an array plays the flow once per item", for: ["demo", "run"] },
   "replay": { type: "string", value: "<runId>", help: "Seed mem with exactly what that run seeded (its run log), to rerun a failure with its data", for: ["demo", "run"] },
   "auto-next": { type: "boolean", help: "Auto-advance steps", for: ["demo"] },
   "no-auto-next": { type: "boolean", help: "Wait for Next on every step (the default)", for: ["demo"] },
@@ -193,6 +196,7 @@ export function parseRunFlags(argv: string[], command: string): RunFlags {
   if (v.data !== undefined) out.data = v.data;
   if (v["mem-stub"]) out.memStub = true;
   if (v.replay !== undefined) out.replay = v.replay;
+  if (v.input !== undefined) out.input = v.input;
   if (v["all-branches"]) out.allBranches = true;
   if (v["shared-session"]) out.sharedSession = true;
   if (v.video !== undefined) out.video = v.video;
@@ -285,6 +289,9 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
   }
   if (flags.replay !== undefined) {
     setEnv("WAYGRAPH_REPLAY", flags.replay);
+  }
+  if (flags.input !== undefined) {
+    setEnv("WAYGRAPH_INPUT", flags.input);
   }
   if (flags.allBranches) {
     setEnv("WAYGRAPH_ALL_BRANCHES", "1");

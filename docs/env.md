@@ -24,6 +24,7 @@ This page is generated from `src/engine/env.ts` (`npm run docs:api`).
 | `WAYGRAPH_AUTO_MEM` | Mem seed JSON for auto sessions (same as WAYGRAPH_DATA) |
 | `WAYGRAPH_MEM_STUB` | 1 fills missing requires from registerMemStub (--mem-stub) |
 | `WAYGRAPH_REPLAY` | A run id: seed mem with what that run recorded (--replay) |
+| `WAYGRAPH_INPUT` | A flow's input: JSON or @file; an array plays the flow once per item (--input) |
 | `WAYGRAPH_AUTOPLAY` | 1 advances demo steps on their own (--auto-next) |
 | `WAYGRAPH_AUTOPLAY_MS` | Auto-next wait per step, ms (default 1800) |
 | `WAYGRAPH_DEMO_FAST` | 1 shortens the demo's gates (--fast) |

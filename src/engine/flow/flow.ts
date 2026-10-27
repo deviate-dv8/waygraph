@@ -13,7 +13,7 @@ import { preflight, runGraph } from "../run/run.js";
 import type { RunGraphOptions } from "../run/run.js";
 import type { EngineConfig } from "../config.js";
 import type { BrowserContext, Page } from "@playwright/test";
-import { MemPage } from "../mem/mem.js";
+import { MemPage, type MemKey } from "../mem/mem.js";
 import type { Trait } from "../trait/trait.js";
 import { findBlockIndex, modVerify, withVerify } from "../block/block.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../stub/ring.js";
@@ -118,6 +118,12 @@ export interface Flow<Out extends Checkpoint<string>> {
    * `seedMemStub(mem, flow)` call, is what actually fills mem before `run()`.
    */
   readonly memStub?: boolean;
+  /**
+   * `map({ input: CaseKey })`: the MemKey this flow takes as its input - one flow for many cases instead of one export
+   * per case. Required like any `requires` key; given by `--input` (an array runs the flow once per item), `--data`,
+   * a mem stub, or `.flow(sub, { input })`.
+   */
+  readonly input?: MemKey<unknown>;
   /**
    * This Flow's constituent Blocks, in order between `start`/`end`, as plain
    * data - for introspection/visualization tools, without running anything.
@@ -293,6 +299,8 @@ export function buildFlow<Out extends Checkpoint<string>>(
 
 /** The settings `map({ ... })` gives a Flow. */
 export interface FlowSettings {
+  /** The flow's input key (`map({ input })`). */
+  input?: MemKey<unknown>;
   /** Cleanup steps from `.finally(Block)`, in order. */
   finally?: readonly SomeBlock[];
   /** Read by map() when it begins (the sign-in step); the Flow itself keeps nothing of it. */
@@ -310,6 +318,7 @@ export function withSettings<Out extends Checkpoint<string>>(flow: Flow<Out>, se
   const fields = {
     ...(settings.sessionReset ? { resetSession: true } : {}),
     ...(settings.memStub ? { memStub: true } : {}),
+    ...(settings.input ? { input: settings.input } : {}),
     ...(settings.expectedFailure !== undefined ? { expectedFailureReason: settings.expectedFailure } : {}),
     ...(settings.demoPace ? { demoPace: settings.demoPace } : {}),
     ...(style

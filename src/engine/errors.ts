@@ -34,6 +34,11 @@ export const WAYGRAPH_ERRORS = {
     means: "A Block passed to .method() isn't a real Method/Effect Block (missing __waygraphSalt).",
     fix: "Build it with defineMethodBlock/defineEffectBlock, or use .assert() if it's actually a defineAssertBlock.",
   },
+  WG_MAP_NO_INPUT: {
+    where: "engine/flow/map-builder.ts - .flow(sub, { input })",
+    means: "`.flow()` was given an input for a sub-flow that takes none (it has no `map({ input })`).",
+    fix: "Declare the sub-flow's input with `map({ input: SomeKey })`, or drop `input` from the `.flow()` call.",
+  },
   WG_MAP_LANDS: {
     where: "engine/flow/map-builder.ts - .method/.gotoPage/.gotoExternal(Block, { lands })",
     means: "A step said which of its Block's outcomes the flow continues from (`lands`), and the Block resolved to another one - or `lands` names a Checkpoint the Block never resolves to.",
@@ -197,6 +202,9 @@ export const MSG_MAP_FF_EMPTY = (ffName: string) =>
 export const MSG_MAP_METHOD_GOT_ASSERT = (blockName: string) =>
   `Waygraph map: .method("${blockName}") got a defineAssertBlock - use .assert() for ` +
   "self-loop verify steps (Assert Blocks share method salt internally but are not methods).";
+
+export const MSG_MAP_NO_INPUT = (firstStep: string) =>
+  `Waygraph map: .flow(sub, { input }) - the sub-flow starting at "${firstStep}" takes no input (give it map({ input }))`;
 
 export const MSG_MAP_LANDED_ELSEWHERE = (blockName: string, landed: string, lands: string) =>
   `Waygraph map: "${blockName}" landed on ${landed}, but this flow continues from ${lands} (lands: ${lands})`;

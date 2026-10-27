@@ -111,7 +111,7 @@ armed around the Block's action rather than written into it: `withDialog(CancelB
 ### Flows: `map()` is the one way to define them
 
 A flow is built with `engine.map()`. Its run settings go in `map({ … })`, before the chain (`memStub`, `expectedFailure`,
-`demoPace`, `highlightStyle`, `sessionReset`, `as`, `homeOrigin`); `.end()` takes nothing. `sessionReset: true` says the flow wants a fresh
+`demoPace`, `highlightStyle`, `sessionReset`, `as`, `input`, `homeOrigin`); `.end()` takes nothing. `sessionReset: true` says the flow wants a fresh
 browser session when it runs after another one, in a CLI chain (`waygraph run "a then b"`) or nested with `.flow()`. The flow's title and narration are ctx stubs chained on
 the Block where they apply (`ctx.ui.title(…)` names the flow from that step on), and a step's pace is its `{ pace }` option:
 
@@ -150,6 +150,31 @@ now and keeps what it leaves. So a chain or a test run signs each account in onc
 steps of its own. The sign-in flow's steps run inside that step (the run log nests them under it; the demo plays them).
 The step `requires` whatever the sign-in flow reads from mem, so preflight and `memStub` cover its credentials.
 `forgetSessions()` drops every kept session. Sessions are kept per process, not on disk.
+
+**Input: one flow for many cases.** A flow that runs the same steps over different data declares its input, a MemKey,
+instead of one export per case:
+
+```typescript
+export const addItemFlow = engine
+  .map({ as: StandardUser, input: SelectedItem.key, memStub: true })
+  .gotoPage(NavInventoryBlock)
+  .method(AddToCartBlock)
+  .gotoPage(NavCartBlock)
+  .end();
+```
+
+```bash
+waygraph run addItemFlow --input '{"id":"sauce-labs-onesie","name":"Sauce Labs Onesie"}'
+waygraph run addItemFlow --input @cases/items.json     # an array: the flow once per item, one episode each
+```
+
+The input is required by the flow's first step, so preflight asks for it, and `--data`, a mem stub and `--replay`
+cover it like any key. In code, `.flow(addItemFlow, { input: item })` plays it with that input, once per call.
+
+**A step that only some cases need** takes `when`: `.method(SetJsonBodyBlock, { when: (mem) => mem.get(Case).body !==
+undefined })` plays only when it returns true; otherwise the step ends at once where it started, without acting or
+verifying. `when` is offered only on a step that stays on its Checkpoint (filling an optional field), so a skipped
+step can't leave the flow somewhere its next step doesn't start.
 
 **Nesting flows** is a step too: `.flow(sub, { reset })` runs another flow's steps inline, in the same page, browser and `mem`.
 `{ reset: true }` (default: the sub-flow's own `sessionReset`) clears cookies and storage right before the sub-flow, for a second user that must start fresh:

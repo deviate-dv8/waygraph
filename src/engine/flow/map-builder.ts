@@ -15,13 +15,15 @@ import {
     MSG_MAP_FF_NOT_OPEN,
     MSG_MAP_METHOD_GOT_ASSERT,
     WaygraphError,
+  MSG_MAP_NO_INPUT,
 } from "../errors.js";
+import type { MemKey, MemPage } from "../mem/mem.js";
 import type { DemoPace } from "../stub/pace.js";
 import type { HighlightStyleDefaults } from "../stub/ring.js";
 import type { Flow, FlowSettings } from "./flow.js";
 import { buildBranchedFlow } from "./map-branch.js";
 import { signInStep, type Account } from "./account.js";
-import { asCleanup, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
+import { asCleanup, requiring, withoutRequire, settingInput, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
 
 type S = Checkpoint<"__start__">;
 
@@ -59,13 +61,25 @@ export interface MapBuilderOptions {
    * @example engine.map({ as: Planner }).gotoPage(NavEquipmentBlock)
    */
   as?: Account;
+  /**
+   * The MemKey this flow takes as its input: one flow for many cases. Its first step requires it; `waygraph run
+   * <flow> --input <json | @file>` gives it (an array plays the flow once per item), as do `--data`, a mem stub and
+   * `.flow(sub, { input })`.
+   * @example engine.map({ input: ApiCase }).gotoExternal(NavHoppscotchRestBlock).method(LoadCaseBlock)…
+   */
+  input?: MemKey<unknown>;
 }
 
 /** What `.flow()` takes for the sub-flow it runs inline. */
 export interface MapFlowOpts {
   /** Clear cookies and storage right before the sub-flow, e.g. to start a second user fresh. Defaults to the sub-flow's own `sessionReset`. */
   reset?: boolean;
+  /** The sub-flow's input (it declares `map({ input })`): set right before its first step. */
+  input?: unknown;
 }
+
+/** `when` only on a step that stays on its Checkpoint: a skipped step ends where it started. */
+type WhenOpt<Out, NextOut> = [NextOut] extends [Out] ? { when?: (mem: MemPage) => boolean } : { when?: never };
 
 
 /**
@@ -239,7 +253,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    */
   assert(block: AssertBlock<Out> & { name: string }, opts?: Omit<MapStepOpts, "lands">): MapBuilder<Out> {
     assertMapKind(block, ["assert"], "assert");
-    return this.appendStep(paced(block, opts), opts?.ff);
+    return this.appendStep(skippable(paced(block, opts), opts?.when), opts?.ff);
   }
 
   /**
@@ -253,13 +267,13 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    */
   method<NextOut extends Checkpoint<string>, Lands extends NextOut = NextOut>(
     block: (MethodBlock<Out, NextOut> | EffectBlock<Out, NextOut>) & { name: string },
-    opts?: MapStepOpts<Lands>,
+    opts?: Omit<MapStepOpts<Lands>, "when"> & WhenOpt<Out, NextOut>,
   ): MapBuilder<Lands> {
     if (mapKindOf(block) === "assert") {
       throw new WaygraphError("WG_MAP_WRONG_KIND", MSG_MAP_METHOD_GOT_ASSERT(block.name));
     }
     assertMapSalt(block, ["method", "effect", "api"], "method");
-    return this.appendStep(landsOn(paced(block, opts), opts?.lands), opts?.ff);
+    return this.appendStep(skippable(landsOn(paced(block, opts), opts?.lands), opts?.when), opts?.ff);
   }
 
   /**
@@ -270,9 +284,15 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   flow<NextOut extends Checkpoint<string>>(sub: Flow<NextOut>, opts?: MapFlowOpts): MapBuilder<NextOut> {
     // The steps' types live in `sub`; at runtime this is one untyped walk, typed again as the sub-flow's last Checkpoint.
     let next = this as unknown as MapBuilder<any>;
+    if (opts && "input" in opts) {
+      if (!sub.input) throw new WaygraphError("WG_MAP_NO_INPUT", MSG_MAP_NO_INPUT(sub.blocks()[0]?.name ?? "?"));
+      next = next.appendStep(settingInput(sub.input, opts.input, sub.blocks()[0]?.name ?? "flow"));
+    }
     const infos = sub.blocks();
     infos.filter((info) => !info.cleanup).forEach((info, i) => {
-      const block = i === 0 && (opts?.reset ?? sub.resetSession) ? resetBefore(info.block) : info.block;
+      let block = i === 0 && (opts?.reset ?? sub.resetSession) ? resetBefore(info.block) : info.block;
+      // Given here, the input is no longer something the run must supply.
+      if (i === 0 && sub.input && opts && "input" in opts) block = withoutRequire(block as SomeDefinedBlock, sub.input);
       next = next.appendStep(block as SomeDefinedBlock);
     });
     // The sub-flow's cleanup runs with this flow's, at the end.
@@ -369,6 +389,8 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     if (this.steps.length === 0) {
       throw new WaygraphError("WG_MAP_EMPTY", MSG_MAP_EMPTY);
     }
-    return this.build(this.steps, this.settings) as Flow<Out>;
+    // The input is required by the first step, so preflight, --data, mem stubs and replay all cover it.
+    const steps = this.settings.input ? [requiring(this.steps[0]!, this.settings.input), ...this.steps.slice(1)] : this.steps;
+    return this.build(steps, this.settings) as Flow<Out>;
   }
 }

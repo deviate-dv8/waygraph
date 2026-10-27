@@ -90,6 +90,10 @@ against a live site, use `--skill-pilot-blind`.
   `.gotoExternal` for another origin); it is the only way to build one. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`, `as`) go in `map({ … })` before the chain
   and `.end()` takes nothing. The flow's title is `ctx.ui.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
   `defineFlow`, `chainFlow` and the `with*` flow wrappers were removed in 0.16.0; `waygraph upgrade --codemod flows` converts them.
+- **One flow per scenario, not per data case.** A flow that runs the same steps over different data declares
+  `map({ input: CaseKey })` and is given `--input <json | @file>` (an array plays it once per item) or
+  `.flow(sub, { input })`; a step only some cases need takes `{ when: (mem) => … }`. Exports like `r0`, `r0b`,
+  `r1` … that differ by data, or data read from an env variable at load time, are a smell.
 - **A flow that starts signed in runs `as` an account, never re-implementing the login or injecting cookies.**
   `export const Planner = account("planner", { signIn: plannerSignInFlow })` in `src/accounts/`, then
   `engine.map({ as: Planner })`: the account signs in once per run and later flows reuse its session. A hand-made

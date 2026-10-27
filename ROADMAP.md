@@ -289,8 +289,11 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     from one outcome of a branching Block, typed and checked (the quickstart's `submit-login-for-flow.ts` cast is
     gone); accounts - `account(name, { signIn })` and `map({ as })`: a flow starts signed in, the account signs in once
     per process and later flows restore its kept session (cookies and localStorage). **Done.** Repeatable runs (issue #5): `unique` in mem stubs, `run:mem` + `--replay <runId>`, `.finally(Block)`
-    cleanup steps (and the runner never skipping them), the constant-test-data check. **Done.** Next: flow input, one
-    browser across a chain.
+    cleanup steps (and the runner never skipping them), the constant-test-data check. **Done.** Flow input: `map({ input })`, `--input <json | @file>` (a list
+    plays the flow once per item), `.flow(sub, { input })`, and `{ when }` on a step that stays on its Checkpoint - one
+    flow instead of an export per data case. **Done.** One browser and one video across a case needs nothing new: a
+    chain already plays in one session (one recording), and an input list makes a whole case one run instead of one
+    `waygraph run` per request. Next: settle as a step option, batch runner.
 20. The overlay looks like macOS (0.16.6): one stylesheet built by Tailwind (theme tokens after macOS - system colours,
     label / fill / separator, translucent materials, the system font, hairlines, layered shadows - in light and dark,
     `demo.appearance` pins one), an element's look as utilities where it is built, states in small component files;

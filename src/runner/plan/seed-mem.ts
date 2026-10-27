@@ -104,11 +104,12 @@ export function seedMemForBlock(mem: MemPage, resolved: FoundBlock, json: string
  * name) and seeds them all from one JSON payload, same keyed-by-name shape
  * as a multi-key Block payload already uses.
  */
-export function seedMemForFlow(mem: MemPage, flowBlocks: readonly BlockInfo[], json: string | undefined, label: string, stubActive: boolean): void {
+export function seedMemForFlow(mem: MemPage, flowBlocks: readonly BlockInfo[], json: string | undefined, label: string, stubActive: boolean, given?: MemKey<unknown>): void {
   const seen = new Map<string, MemKey<unknown>>();
   for (const bi of flowBlocks) {
     for (const k of bi.block.requires ?? []) {
-      if (!seen.has(k.name)) seen.set(k.name, k);
+      // `given` is already set (a flow's --input): not this payload's to fill.
+      if (k !== given && !seen.has(k.name)) seen.set(k.name, k);
     }
   }
   seedMemFromRequires(mem, Array.from(seen.values()), json, label, stubActive);

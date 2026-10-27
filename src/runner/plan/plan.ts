@@ -9,6 +9,8 @@ import type { PlayOptions } from "../options.js";
 import { findBlock, findFlow } from "./find.js";
 import { seedMemForBlock, seedMemForFlow } from "./seed-mem.js";
 import { parseChainSpec } from "./spec.js";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { recordMem } from "../../engine/run/events.js";
 import { readRunLog } from "../../runtime/run-log.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
@@ -31,16 +33,32 @@ export interface Plan {
 
 export async function planSteps(projectDir: string, spec: string, mem: MemPage, options: PlayOptions): Promise<Plan> {
   const bareFlow = await findBareFlow(projectDir, spec);
+  const inputs = options.input === undefined ? undefined : readInputs(projectDir, options.input, bareFlow, spec);
   const segments = bareFlow
-    ? [flowSegment(bareFlow, spec.trim(), undefined, mem, options)]
+    ? inputs
+      ? inputs.map((value, i) => flowSegment(bareFlow, inputs.length > 1 ? `${spec.trim()} #${i + 1}` : spec.trim(), undefined, mem, options, value))
+      : [flowSegment(bareFlow, spec.trim(), undefined, mem, options)]
     : await Promise.all(parseSegments(spec).map((seg) => resolveSegment(projectDir, seg, mem, options)));
   const recorded = options.replay ? recordedMem(projectDir, options.replay) : undefined;
   segments.forEach((segment, index) => {
     segment.seedMem = seeding(segment, index, mem, recorded);
   });
-  const steps = stepsOf(segments, options, { episodes: !bareFlow });
+  const steps = stepsOf(segments, options, { episodes: !bareFlow || segments.length > 1 });
   if (options.mode !== "report") announce(spec, steps, !!bareFlow, options);
   return { steps, flows: segments.map((s) => s.flow) };
+}
+
+/** `--input`: JSON or `@file.json`, for one flow that takes input; an array is one value per run of the flow. */
+function readInputs(projectDir: string, raw: string, flow: Flow<Checkpoint<string>> | undefined, spec: string): unknown[] {
+  if (!flow?.input) throw new Error(`waygraph: --input needs one flow that takes input (map({ input })) - "${spec.trim()}" ${flow ? "takes none" : "is not one flow"}`);
+  const text = raw.startsWith("@") ? readFileSync(resolve(projectDir, raw.slice(1)), "utf8") : raw;
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch (err) {
+    throw new Error(`waygraph: --input is not valid JSON - ${String(err)}`);
+  }
+  return Array.isArray(value) ? value : [value];
 }
 
 /** The mem each segment of a recorded run was seeded with (its run log's run:mem events), by segment index. */
@@ -97,9 +115,13 @@ async function resolveSegment(projectDir: string, seg: { ref: string; json?: str
   };
 }
 
-function flowSegment(flow: Flow<Checkpoint<string>>, ref: string, json: string | undefined, mem: MemPage, options: PlayOptions): Segment {
+function flowSegment(flow: Flow<Checkpoint<string>>, ref: string, json: string | undefined, mem: MemPage, options: PlayOptions, input?: unknown): Segment {
   // seeded when the segment starts, not now: two segments may give the same key different values
-  const seedMem = () => seedMemForFlow(mem, flow.blocks(), json, ref, flow.memStub === true || options.memStub);
+  const seedMem = () => {
+    // The flow's input (--input) is set first; the rest of its requires seed as usual.
+    if (flow.input && input !== undefined) mem.set(flow.input, input);
+    seedMemForFlow(mem, flow.blocks(), json, ref, flow.memStub === true || options.memStub, input !== undefined ? flow.input : undefined);
+  };
   return { flow, ref, named: true, seedMem };
 }
 
