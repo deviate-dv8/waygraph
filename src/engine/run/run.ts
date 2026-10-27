@@ -5,7 +5,7 @@ import { WaygraphError, MSG_PREFLIGHT_MISSING_KEY, MSG_RUNGRAPH_MAX_STEPS, MSG_R
 import { checkpoint } from "../checkpoint/checkpoint.js";
 import type { Block } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
-import { beginRun, endRun, isConnected, lastLeaf, stepEnded, stepFailed, stepStarted } from "./events.js";
+import { inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepStarted } from "./events.js";
 import { runPrecondition, runVerify } from "../trait/trait.js";
 import type { Trait } from "../trait/trait.js";
 import type { BrowserContext, Page } from "@playwright/test";
@@ -146,9 +146,20 @@ export async function runGraph<TOut extends Checkpoint<string>>(
   preflight(mem, entry);
   const page = options?.page ?? (await context.newPage());
   const closeOnFinish = options?.closeOnFinish ?? true;
-  const opened = beginRun();
-  let result: string | undefined;
-  let failure: unknown;
+  return inRun(undefined, () => playGraph(entry, terminals, page, mem, maxSteps, options), (out) => out.__state).finally(async () => {
+    if (closeOnFinish) await page.close();
+  });
+}
+
+/** The step loop of {@link runGraph}, inside its run: act, observe, resolve, verify, then the next Block. */
+async function playGraph<TOut extends Checkpoint<string>>(
+  entry: Block<Checkpoint<"__start__">, TOut>,
+  terminals: ReadonlySet<string> | undefined,
+  page: Page,
+  mem: MemPage,
+  maxSteps: number,
+  options: RunGraphOptions | undefined,
+): Promise<TOut> {
   try {
     let current: SomeBlock = entry;
     let input: Checkpoint<string> = checkpoint("__start__");
@@ -179,7 +190,6 @@ export async function runGraph<TOut extends Checkpoint<string>>(
             MSG_RUNGRAPH_NOT_TERMINAL(current.name, checkpoint.__state, [...terminals].join(", ")),
           );
         }
-        result = checkpoint.__state;
         return checkpoint as TOut;
       }
 
@@ -187,14 +197,8 @@ export async function runGraph<TOut extends Checkpoint<string>>(
       input = checkpoint;
     }
   } catch (err) {
-    failure = err;
     stepFailed(err);
     throw err;
-  } finally {
-    endRun(opened, failure === undefined ? { ...(result !== undefined ? { result } : {}) } : { error: failure });
-    if (closeOnFinish) {
-      await page.close();
-    }
   }
 }
 

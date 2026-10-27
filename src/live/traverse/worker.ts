@@ -8,6 +8,7 @@ import { envString } from "../../engine/env.js";
 import { buildFlow } from "../../engine/flow/flow.js";
 import { MemPage, type MemKey } from "../../engine/mem/mem.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
+import { inRun } from "../../engine/run/events.js";
 import type { BlockEntry } from "../../manifest/project.js";
 import { detectHere } from "../auto/auto.js";
 import { buildExploreContext, buildExploreMenu, type ExploreEdge } from "../auto/explore.js";
@@ -128,7 +129,12 @@ export interface WorkerOpts {
   mem: MemPage;
   leases: EdgeLeaseCoordinator;
 }
-export async function runTraverseWorker(opts: WorkerOpts): Promise<TraverseWorkerResult> {
+/** One worker's walk, as one run of its own (parallel workers never share a run id or step counter). */
+export function runTraverseWorker(opts: WorkerOpts): Promise<TraverseWorkerResult> {
+  return inRun(`traverse ${opts.traverseId} worker ${opts.workerIndex}`, () => walk(opts), (r) => r.leaf);
+}
+
+async function walk(opts: WorkerOpts): Promise<TraverseWorkerResult> {
   const {
     traverseId, workerIndex, parallel, maxSteps, maxVisitsPerNode, maxVisitsPerEdge, timeoutMs, graph, library, engine, context, mem, leases,
   } = opts;

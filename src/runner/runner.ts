@@ -2,7 +2,7 @@
 // Playwright is used) with the project dir and the spec ("cartFlow", "loginFlow then add-item"). Every mode plays the
 // same steps through the same engine; the mode decides what happens around each step.
 import { MemPage } from "../engine/mem/mem.js";
-import { beginRun, endRun } from "../engine/run/events.js";
+import { inRun } from "../engine/run/events.js";
 import { withWebServer } from "../runtime/webserver.js";
 import "../runtime/run-log.js";
 import { planSteps } from "./plan/plan.js";
@@ -54,14 +54,8 @@ function finish(outcome: PlayOutcome): void {
 export function startRunner(): void {
   const projectDir = process.argv[2] ?? process.cwd();
   const spec = process.argv[3] ?? "";
-  const opened = beginRun(spec);
-  withWebServer(projectDir, () => play(projectDir, spec))
-    .then(
-      () => endRun(opened, {}),
-      (err) => {
-        endRun(opened, { error: err });
-        console.error(err && err.stack ? err.stack : String(err));
-        process.exitCode = 1;
-      },
-    );
+  inRun(spec, () => withWebServer(projectDir, () => play(projectDir, spec))).catch((err) => {
+    console.error(err && err.stack ? err.stack : String(err));
+    process.exitCode = 1;
+  });
 }

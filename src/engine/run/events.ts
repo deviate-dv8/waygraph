@@ -1,5 +1,6 @@
 // Run events: what happened, step by step, during a run. Core emits them; subscribers (the run log, the demo overlay,
 // reports, Waygraph UI) listen. Emitting never throws into the run.
+import { AsyncLocalStorage } from "node:async_hooks";
 
 export type RunEvent =
   | { type: "run:start"; runId: string; at: number; label?: string }
@@ -32,46 +33,49 @@ function emit(event: RunEvent): void {
 interface OpenRun {
   runId: string;
   startedAt: number;
-  depth: number;
   index: number;
   step?: { index: number; block: string; startedAt: number } | undefined;
 }
-let open: OpenRun | undefined;
 
 /**
- * Opens a run, or joins the one already open (a flow nested in another, or a runner driving a chain step by step). Returns
- * whether this call opened it, so only the opener closes it.
+ * The run each async call chain is in. Per chain, not per process: two runs at once (parallel traverse workers, a UI
+ * hosting several) each get their own id and step counter; a flow nested in another joins its parent's run.
  */
-export function beginRun(label?: string): boolean {
-  if (open) {
-    open.depth += 1;
-    return false;
-  }
-  const at = Date.now();
-  open = { runId: `${new Date(at).toISOString().replace(/[:.]/g, "-")}-${crypto.randomUUID().slice(0, 8)}`, startedAt: at, depth: 1, index: 0 };
-  emit({ type: "run:start", runId: open.runId, at, ...(label ? { label } : {}) });
-  return true;
-}
+const scope = new AsyncLocalStorage<OpenRun>();
 
-/** Closes the run when the matching `beginRun` opened it. */
-export function endRun(opened: boolean, outcome: { result?: string; error?: unknown }): void {
-  if (!open) return;
-  open.depth -= 1;
-  if (!opened) return;
+/**
+ * Runs `body` as a run: opens one (`run:start` ... `run:end`), or joins the run its caller is already in (a flow nested in
+ * another, a runner driving a chain step by step). `resultOf` names the outcome for `run:end`.
+ */
+export async function inRun<T>(label: string | undefined, body: () => Promise<T>, resultOf?: (value: T) => string | undefined): Promise<T> {
+  if (scope.getStore()) return body();
   const at = Date.now();
-  emit({
-    type: "run:end",
-    runId: open.runId,
-    at,
-    ok: outcome.error === undefined,
-    ...(outcome.result !== undefined ? { result: outcome.result } : {}),
-    ...(outcome.error !== undefined ? { error: outcome.error instanceof Error ? outcome.error.message : String(outcome.error) } : {}),
-    ms: at - open.startedAt,
-  });
-  open = undefined;
+  const run: OpenRun = { runId: `${new Date(at).toISOString().replace(/[:.]/g, "-")}-${crypto.randomUUID().slice(0, 8)}`, startedAt: at, index: 0 };
+  emit({ type: "run:start", runId: run.runId, at, ...(label ? { label } : {}) });
+  const end = (outcome: { result?: string | undefined; error?: unknown }): void => {
+    const done = Date.now();
+    emit({
+      type: "run:end",
+      runId: run.runId,
+      at: done,
+      ok: !("error" in outcome),
+      ...(outcome.result !== undefined ? { result: outcome.result } : {}),
+      ...("error" in outcome ? { error: outcome.error instanceof Error ? outcome.error.message : String(outcome.error) } : {}),
+      ms: done - run.startedAt,
+    });
+  };
+  try {
+    const value = await scope.run(run, body);
+    end({ result: resultOf?.(value) });
+    return value;
+  } catch (err) {
+    end({ error: err });
+    throw err;
+  }
 }
 
 export function stepStarted(block: string, from: string): void {
+  const open = scope.getStore();
   if (!open) return;
   const at = Date.now();
   open.step = { index: open.index++, block, startedAt: at };
@@ -79,6 +83,7 @@ export function stepStarted(block: string, from: string): void {
 }
 
 export function stepEnded(block: string, to: string): void {
+  const open = scope.getStore();
   if (!open?.step) return;
   const at = Date.now();
   emit({ type: "step:end", runId: open.runId, at, index: open.step.index, block, to, ms: at - open.step.startedAt });
@@ -87,6 +92,7 @@ export function stepEnded(block: string, to: string): void {
 
 /** The step that started last failed. */
 export function stepFailed(error: unknown): void {
+  const open = scope.getStore();
   if (!open?.step) return;
   const at = Date.now();
   const { index, block, startedAt } = open.step;
@@ -96,10 +102,10 @@ export function stepFailed(error: unknown): void {
 
 /** The id of the run open right now, if any. */
 export function currentRunId(): string | undefined {
-  return open?.runId;
+  return scope.getStore()?.runId;
 }
 
-export function recordArtifact(kind: "video" | "trace" | "screenshot", path: string, runId = open?.runId): void {
+export function recordArtifact(kind: "video" | "trace" | "screenshot", path: string, runId = scope.getStore()?.runId): void {
   if (runId) emit({ type: "run:artifact", runId, at: Date.now(), kind, path });
 }
 
