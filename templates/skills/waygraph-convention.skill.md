@@ -83,9 +83,13 @@ against a live site, use `--skill-pilot-blind`.
 ## Flows, stubs and config (the scaffold's shape)
 
 - **Build flows with `map()`** (`engine.map({ memStub }).start().gotoPage(Nav).method(B, { pace }).assert(A).end()`;
-  `.gotoExternal` for another origin); it is the only way to build one. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`) go in `map({ … })` before the chain
+  `.gotoExternal` for another origin); it is the only way to build one. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`, `as`) go in `map({ … })` before the chain
   and `.end()` takes nothing. The flow's title is `ctx.ui.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
   `defineFlow`, `chainFlow` and the `with*` flow wrappers were removed in 0.16.0; `waygraph upgrade --codemod flows` converts them.
+- **A flow that starts signed in runs `as` an account, never re-implementing the login or injecting cookies.**
+  `export const Planner = account("planner", { signIn: plannerSignInFlow })` in `src/accounts/`, then
+  `engine.map({ as: Planner })`: the account signs in once per run and later flows reuse its session. A hand-made
+  "saved session" Block, tokens passed through env variables, or a login repeated at the top of every flow is a smell.
 - **`src/flows/` holds use cases and mirrors the front end's endpoints**: a folder per page (`flows/auth/login/`) with one
   file per scenario named for its outcome (`success.flow.ts`, `wrong-password.flow.ts`, `empty-fields.flow.ts`), and
   `(user-stories)/` (any `(group)`) for flows that cross pages. Export names are `<page><Outcome>Flow`. Not one file per

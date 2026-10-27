@@ -18,6 +18,7 @@ src/blocks/
     inventory/                        # URL /inventory.html
       inventory.page.block.ts       # Page definePageBlock
       NAV.md
+      nav-inventory.block.ts          # Nav  defineNavBlock url:/inventory.html (needs a session: map({ as }))
       nav-item-detail.block.ts        # Nav  defineMemNavBlock (instance row)
       methods/
         inventory-items.ts            # DOM helpers for Effects (not a Block)

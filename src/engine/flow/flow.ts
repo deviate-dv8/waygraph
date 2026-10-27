@@ -284,6 +284,8 @@ export function buildFlow<Out extends Checkpoint<string>>(
 
 /** The settings `map({ ... })` gives a Flow. */
 export interface FlowSettings {
+  /** Read by map() when it begins (the sign-in step); the Flow itself keeps nothing of it. */
+  as?: import("./account.js").Account;
   memStub?: boolean;
   sessionReset?: boolean;
   expectedFailure?: string;

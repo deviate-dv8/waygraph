@@ -27,6 +27,7 @@ Next.js route groups) and never appear in a URL or Checkpoint name.
 │   │   ├── (external)/mailpit/        # a different origin (mail catcher); owns _states.ts + _keys.ts
 │   │   └── (external)/hoppscotch/     # API client, needs the hoppscotch extension; owns _states.ts + _keys.ts
 │   ├── states/                        # the app's Checkpoints + mem keys
+│   ├── accounts/                      # who signs in: account(name, { signIn: flow }); flows run map({ as })
 │   └── flows/                         # use cases, one file per scenario (see flows/README.md)
 │       ├── home/                      #   a page: hello, cart
 │       ├── (user-stories)/            #   flows that cross pages

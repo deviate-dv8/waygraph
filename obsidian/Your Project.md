@@ -18,6 +18,7 @@ src/
     (app_base)/home/          _nav.block.ts  _page.block.ts  _sel.ts  _methods/*.block.ts
     (external)/mailpit/       another origin; owns _states.ts + _keys.ts (packable)
   states/                   the app's Checkpoints and mem keys
+  accounts/                 who signs in: account(name, { signIn }) - a flow runs map({ as }) and starts signed in
   flows/                    use cases: <page>/<outcome>.flow.ts, (user-stories)/ for flows that cross pages
 tests/                      Playwright tests that run flows
 ```

@@ -20,10 +20,11 @@ test("waygraph auto discovers the decomposed saucedemo graph, with no Block skip
       "OrderComplete",
     ].sort(),
   );
-  // 24 vs the earlier 15: checkout-info split into fill-first-name/
-  // fill-last-name/fill-postal-code (+2 net) plus the atomic login Blocks
-  // (fill-username/fill-password/submit-login's 2 branches).
-  expect(graph.edges.length).toBe(24);
+  // 25 vs the earlier 15: checkout-info split into fill-first-name/
+  // fill-last-name/fill-postal-code (+2 net), the atomic login Blocks
+  // (fill-username/fill-password/submit-login's 2 branches), and nav-inventory
+  // (straight to the catalogue for a flow that starts signed in).
+  expect(graph.edges.length).toBe(25);
   const removeEdges = graph.edges.filter((e) => e.block === "remove-from-cart");
   expect(removeEdges).toEqual(
     expect.arrayContaining([

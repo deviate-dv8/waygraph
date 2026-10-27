@@ -287,7 +287,8 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     in the run log (`parent`), each ending once (the last one used to be logged as the fast-forward step, which never
     ended); the demo's text log prints a step's stub and slides under that step's heading; `lands` on a step continues a flow
     from one outcome of a branching Block, typed and checked (the quickstart's `submit-login-for-flow.ts` cast is
-    gone). **Done.** Next: accounts, repeatable runs (issue #5), flow input, one browser across a chain.
+    gone); accounts - `account(name, { signIn })` and `map({ as })`: a flow starts signed in, the account signs in once
+    per process and later flows restore its kept session (cookies and localStorage). **Done.** Next: repeatable runs (issue #5), flow input, one browser across a chain.
 20. The overlay looks like macOS (0.16.6): one stylesheet built by Tailwind (theme tokens after macOS - system colours,
     label / fill / separator, translucent materials, the system font, hairlines, layered shadows - in light and dark,
     `demo.appearance` pins one), an element's look as utilities where it is built, states in small component files;

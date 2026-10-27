@@ -42,6 +42,7 @@ export const homeCartFlow = engine
 |---|---|
 | `memStub` | fill missing [[Mem]] values with registered fakes |
 | `sessionReset` | start with a fresh browser session when run after another flow |
+| `as` | start signed in as an account (`account("planner", { signIn: plannerSignInFlow })`): it signs in once per run, later flows reuse its session |
 | `expectedFailure` | this flow is *meant* to fail (a blocked user); the demo explains instead of alarming |
 | `demoPace`, `highlightStyle` | how the demo plays this flow |
 

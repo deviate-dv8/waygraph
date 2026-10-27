@@ -20,6 +20,7 @@ import type { DemoPace } from "../stub/pace.js";
 import type { HighlightStyleDefaults } from "../stub/ring.js";
 import type { Flow, FlowSettings } from "./flow.js";
 import { buildBranchedFlow } from "./map-branch.js";
+import { signInStep, type Account } from "./account.js";
 import { assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
 
 type S = Checkpoint<"__start__">;
@@ -52,6 +53,12 @@ export interface MapBuilderOptions {
   demoPace?: DemoPace;
   /** Default ring tone, size and weight for the whole flow. */
   highlightStyle?: HighlightStyleDefaults;
+  /**
+   * Run as this account (`account(name, { signIn })`): the flow starts signed in, from the session kept since the
+   * account's first sign-in in this process, or by signing in now.
+   * @example engine.map({ as: Planner }).gotoPage(NavEquipmentBlock)
+   */
+  as?: Account;
 }
 
 /** What `.flow()` takes for the sub-flow it runs inline. */
@@ -92,7 +99,8 @@ export class MapBuilder<Out extends Checkpoint<string>> {
 
   /** @internal - use `engine.map()` or the standalone `map()` export. */
   static begin(build: BuildFlowFn, settings: FlowSettings, homeOrigin: string | undefined): MapBuilder<S> {
-    return new MapBuilder<S>(build, settings, [], homeOrigin, null);
+    // A flow as an account starts signed in: its first step restores (or makes) that account's session.
+    return new MapBuilder<S>(build, settings, settings.as ? [signInStep(settings.as)] : [], homeOrigin, null);
   }
 
   /** Readable chain-opener. Returns `this` unchanged; entirely optional. */

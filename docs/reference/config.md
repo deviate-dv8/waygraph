@@ -111,7 +111,7 @@ armed around the Block's action rather than written into it: `withDialog(CancelB
 ### Flows: `map()` is the one way to define them
 
 A flow is built with `engine.map()`. Its run settings go in `map({ … })`, before the chain (`memStub`, `expectedFailure`,
-`demoPace`, `highlightStyle`, `sessionReset`, `homeOrigin`); `.end()` takes nothing. `sessionReset: true` says the flow wants a fresh
+`demoPace`, `highlightStyle`, `sessionReset`, `as`, `homeOrigin`); `.end()` takes nothing. `sessionReset: true` says the flow wants a fresh
 browser session when it runs after another one, in a CLI chain (`waygraph run "a then b"`) or nested with `.flow()`. The flow's title and narration are ctx stubs chained on
 the Block where they apply (`ctx.ui.title(…)` names the flow from that step on), and a step's pace is its `{ pace }` option:
 
@@ -128,6 +128,28 @@ export const shopFlow = engine
   .method(ClearCartBlock, { pace: "blitz" })
   .end();
 ```
+
+**Accounts.** A flow that starts as someone signed in says who with `as`. An account is a name and the flow that signs
+it in:
+
+```typescript
+// src/accounts/accounts.ts
+export const StandardUser = account("standard-user", { signIn: loginFlow });
+
+// src/flows/cart-as-account.flow.ts
+export const cartAsAccountFlow = engine
+  .map({ as: StandardUser, memStub: true })
+  .gotoPage(NavInventoryBlock)
+  .method(AddToCartBlock)
+  .end();
+```
+
+The flow's first step is `sign-in-as-standard-user`: it clears the session, then restores the one kept since that
+account's first sign-in in this process (cookies, and each origin's localStorage), or runs the account's sign-in flow
+now and keeps what it leaves. So a chain or a test run signs each account in once, and a flow as an account has no login
+steps of its own. The sign-in flow's steps run inside that step (the run log nests them under it; the demo plays them).
+The step `requires` whatever the sign-in flow reads from mem, so preflight and `memStub` cover its credentials.
+`forgetSessions()` drops every kept session. Sessions are kept per process, not on disk.
 
 **Nesting flows** is a step too: `.flow(sub, { reset })` runs another flow's steps inline, in the same page, browser and `mem`.
 `{ reset: true }` (default: the sub-flow's own `sessionReset`) clears cookies and storage right before the sub-flow, for a second user that must start fresh:

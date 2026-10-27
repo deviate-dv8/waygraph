@@ -32,6 +32,7 @@
     "nav nav-cart: * -> CartPage (src/blocks/saucedemo-web/cart/nav-cart.block.ts)",
     "nav nav-checkout-info: * -> CheckoutInfoPage (src/blocks/saucedemo-web/cart/nav-checkout-info.block.ts)",
     "nav nav-continue-shopping: * -> LoggedIn (src/blocks/saucedemo-web/inventory-item/nav-continue-shopping.block.ts)",
+    "nav nav-inventory: * -> LoggedIn (src/blocks/saucedemo-web/inventory/nav-inventory.block.ts)",
     "nav nav-item-detail: * -> ItemDetailPage (src/blocks/saucedemo-web/inventory/nav-item-detail.block.ts)",
     "nav nav-login: * -> LoginPage (src/blocks/saucedemo-web/nav-login.block.ts)"
   ],

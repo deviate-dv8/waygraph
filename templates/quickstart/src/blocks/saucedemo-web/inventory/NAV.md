@@ -16,6 +16,7 @@ Product catalog after a successful login.
 
 | File | Helper | Notes |
 |------|--------|-------|
+| `nav-inventory.block.ts` | `defineNavBlock` | Opens `/inventory.html` straight; for a flow that starts signed in (`map({ as: StandardUser })`) |
 | `nav-item-detail.block.ts` | `defineMemNavBlock` | Opens mem-picked product detail; instance rows per card |
 
 ## Methods

@@ -32,6 +32,8 @@ export { defineApiBlock } from "./engine/block/kinds/api.js";
 export { locate } from "./engine/locate.js";
 export { composeBlock, fastForwardComposeBlock, isFastForwardBlock } from "./engine/block/compose.js";
 export { MapBuilder } from "./engine/flow/map-builder.js";
+export { account, forgetSessions } from "./engine/flow/account.js";
+export type { Account } from "./engine/flow/account.js";
 export { branchRoutes, collectBranchFlows, runBranchRegression } from "./engine/flow/branch-regression.js";
 export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./engine/flow/branch-regression.js";
 export type { ApiBlockOptions, ApiCallResult } from "./engine/block/kinds/api.js";
