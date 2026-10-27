@@ -41,3 +41,8 @@ gave a pace.
 The same overlay serves [[Live Sessions]] (auto and pilot paint the same rings). It survives navigation the same way
 everywhere: after any page load - a link, a redirect, a reload - each surface repaints itself (rings, todos, device),
 once the redirects settle (`src/demo/overlay/reattach.ts`).
+
+**Don't hand-write UI.** Everything the demo shows comes from `ctx.ui` in a flow's stubs. A project that builds its own
+banner or caption in the page, or restyles waygraph's overlay (`#wg-*`, `window.__wg*`), changes the page it is testing
+and breaks when the overlay changes. `waygraph check` warns on it (`hand-written UI`).
+

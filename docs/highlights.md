@@ -18,6 +18,22 @@ Flow            → the story: ctx stubs chained on each Block, in the order the
 | **Captions** | Every ring / slide | `label` (or `caption` on slides), optional `detail` and `tag`. Rendered as: `[TAG] primary - detail`. |
 | **Slides** | `ctx.ui.slides([...])` in a stub | Multi-step yap sequence. Demo pauses on each slide; user clicks **Next slide** (or auto-next). In `stubBefore` they play before the step runs, in `stubAfter` after it lands. |
 
+## Don't hand-write UI
+
+Everything the demo shows goes through `ctx.ui`. Don't build your own caption, highlight box or banner in the page
+(`page.evaluate` with `document.createElement`, `innerHTML`, `.style`, `page.addStyleTag`), and don't restyle or call
+into waygraph's own overlay (`#wg-*`, `.wg-*`, `window.__wg*`):
+
+- **It changes the page under test.** A test that injects elements or styles is no longer testing the app as users see
+  it: a hand-written banner can cover a button, and an injected style can hide the bug you meant to catch.
+- **It breaks silently.** Overlay ids, classes and in-page functions are internal; the next waygraph release can rename
+  them, and a hand-written override stops working (or starts hiding something) with no error.
+- **It duplicates what exists.** `ctx.ui.ring`, `caption`, `title`, `todos`, `slides`, `device`, `zoom` and
+  `showNetworkTab` cover what these overrides are usually reaching for, and they keep working across navigations.
+
+`waygraph check` warns on it (`hand-written UI`) in Blocks, flows and `src/stubs/`. If `ctx.ui` really lacks what you
+need, that's a missing waygraph feature: ask for it rather than overriding.
+
 ## Phases
 
 | Phase | When demo runs it |

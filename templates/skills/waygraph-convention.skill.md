@@ -68,6 +68,14 @@ against a live site, use `--skill-pilot-blind`.
    when a *different* Block right after it in the `.flow.ts` is what actually confirms the
    transition (e.g. an `AssertXBlock`) - `// waygraph-ignore: empty-verify`.
 
+9. **Never hand-write UI.** All demo UI goes through `ctx.ui` (`ring`, `caption`, `title`, `todos`, `slides`,
+   `device`, `zoom`, `showNetworkTab`), chained where the flow uses the Block. Never build your own caption, highlight
+   or banner in the page (`page.evaluate` + `document.createElement` / `innerHTML` / `.style`, `page.addStyleTag`),
+   and never restyle or call waygraph's overlay (`#wg-*`, `.wg-*`, `window.__wg*`). It changes the page under test (an
+   injected banner can cover a button, an injected style can hide a bug) and breaks silently when the overlay changes.
+   If `ctx.ui` lacks something, say so and ask for it in waygraph - don't override. `waygraph check` flags it
+   (`hand-written-ui`).
+
 ## Flows, stubs and config (the scaffold's shape)
 
 - **Build flows with `map()`** (`engine.map({ memStub }).start().gotoPage(Nav).method(B, { pace }).assert(A).end()`;

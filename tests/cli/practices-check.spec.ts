@@ -67,3 +67,13 @@ test("waygraph check flags an inline selector literal in a directory using the M
     /uses-inline\.method\.block\.ts \(inline selector — a _sel\.ts\/\*\.sel\.ts file already exists here\)/,
   );
 });
+
+test("waygraph check flags hand-written UI: DOM built in the page, or waygraph's overlay restyled", async () => {
+  const { stdout, stderr } = await exec(node, [CLI, "check", fixtureDir]);
+  const output = stdout + stderr;
+
+  expect(output).toMatch(/hand-written-ui\.flow\.ts \(hand-written UI — use ctx\.ui, don't build or override the overlay\)/);
+  expect(output).toMatch(/stubs\/overlay-override\.ts \(hand-written UI — use ctx\.ui, don't build or override the overlay\)/);
+  expect(output).not.toMatch(/ignored-hand-written-ui\.flow\.ts \(hand-written UI/);
+  expect(output).not.toMatch(/typed\.block\.ts \(hand-written UI/);
+});

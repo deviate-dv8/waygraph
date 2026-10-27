@@ -13,7 +13,8 @@ export type PracticeKind =
   | "combined-action"
   | "empty-verify"
   | "overcomplex-selector"
-  | "inline-selector-should-use-sel-file";
+  | "inline-selector-should-use-sel-file"
+  | "hand-written-ui";
 
 export interface PracticeWarning {
   kind: PracticeKind;
@@ -70,6 +71,17 @@ const XPATH_LOCATOR = /\.locator\(\s*["'`](?:xpath=)?\/\//;
  *  legitimate multi-part selectors `.sel.ts` files themselves are made of. */
 const INLINE_SIMPLE_SELECTOR = /(?:\.locator|\bclick|\burl)\s*[:(]\s*["'`](#|\.)[\w-]+["'`]/;
 
+/**
+ * Hand-written UI in a test project - real, recurring pattern: an LLM wanting a caption, a highlight or a banner builds
+ * its own DOM in the page or restyles / reaches into waygraph's overlay, instead of using `ctx.ui`. It changes the page
+ * under test and breaks whenever the overlay changes.
+ */
+const OVERLAY_INTERNALS = /\b__wg[A-Za-z]|["'`][^"'`\n]*(?:#wg-|\.wg-|wg-root)/;
+const DOM_BUILD = /\bdocument\.createElement\(|\.innerHTML\s*=|\binsertAdjacentHTML\(|\baddStyleTag\(|\.style\.cssText|\.style\.[a-zA-Z]+\s*=(?!=)/;
+
+/** Shared narration (`src/stubs/*.ts`) is checked for hand-written UI too, next to Block and flow files. */
+const STUB_FILE = /[\\/]stubs[\\/][^\\/]+\.ts$/;
+
 const METHOD_OR_EFFECT_FILE = /\.(method|effect)\.block\.ts$/;
 const METHOD_OR_EFFECT_DEFINE = /\bdefine(?:Method|Effect)Block\b/;
 
@@ -81,6 +93,12 @@ const IGNORE_KINDS = /waygraph-ignore:\s*([^\n*]+)/;
 
 function walkBlockAndFlowFiles(projectDir: string, walkDir: (dir: string, re: RegExp) => string[]): string[] {
   return walkDir(projectDir, SCAN_GLOB);
+}
+
+function handWrittenUi(src: string): string | undefined {
+  if (OVERLAY_INTERNALS.test(src)) return "reaches into waygraph's overlay (#wg-*, .wg-*, window.__wg*)";
+  if (DOM_BUILD.test(src)) return "builds or restyles page DOM (createElement / innerHTML / addStyleTag / .style)";
+  return undefined;
 }
 
 function ignoredKindsForFile(src: string): Set<PracticeKind> | "all" {
@@ -186,6 +204,9 @@ export function collectPracticeWarnings(
       }
     }
 
+    const ui = isIgnored("hand-written-ui", ignore) ? undefined : handWrittenUi(src);
+    if (ui) warnings.push(handWrittenUiWarning(rel, ui));
+
     if (!isIgnored("empty-verify", ignore) && IS_ASSERT_BLOCK.test(src) && EMPTY_VERIFY_ARRAY.test(src)) {
       warnings.push({
         kind: "empty-verify",
@@ -196,7 +217,23 @@ export function collectPracticeWarnings(
       });
     }
   }
+  for (const file of walkDir(projectDir, /\.ts$/).filter((f) => STUB_FILE.test(f) && !SCAN_GLOB.test(f))) {
+    const src = readFileSync(file, "utf-8");
+    const ui = isIgnored("hand-written-ui", ignoredKindsForFile(src)) ? undefined : handWrittenUi(src);
+    if (ui) warnings.push(handWrittenUiWarning(relative(projectDir, file).replace(/\\/g, "/"), ui));
+  }
   return warnings;
+}
+
+function handWrittenUiWarning(file: string, what: string): PracticeWarning {
+  return {
+    kind: "hand-written-ui",
+    file,
+    detail:
+      `${what} - narration goes through ctx.ui (ring, caption, title, todos, slides, device, zoom, network tab), ` +
+      "and a test never changes the page it tests. Missing something in ctx.ui? Ask for it in waygraph instead of " +
+      "overriding; opt out with // waygraph-ignore: hand-written-ui",
+  };
 }
 
 export function practiceKindLabel(kind: PracticeKind): string {
@@ -211,6 +248,8 @@ export function practiceKindLabel(kind: PracticeKind): string {
       return "regex/XPath selector where a plain one would do";
     case "inline-selector-should-use-sel-file":
       return "inline selector — a _sel.ts/*.sel.ts file already exists here";
+    case "hand-written-ui":
+      return "hand-written UI — use ctx.ui, don't build or override the overlay";
     default: {
       const _exhaustive: never = kind;
       return _exhaustive;

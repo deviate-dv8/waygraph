@@ -247,10 +247,12 @@ the syntax tree, so a `page.goto` in a comment or a string is not a warning. Orp
 runtime from every flow's `blocks()` (Page hubs and the Blocks a Page lists as `methods` are never orphans).
 
 **`waygraph typecheck [project]`** runs `tsc --noEmit` then the same **bad-practice** scan
-(multi-`.fill()` Methods, fill+click in one Method, empty `verify` on a transition Block or `defineAssertBlock`).
+(multi-`.fill()` Methods, fill+click in one Method, empty `verify` on a transition Block or `defineAssertBlock`,
+regex/XPath selectors, inline selectors next to a `*.sel.ts`, and hand-written UI: a Block, flow or shared stub that
+builds or restyles page DOM or reaches into waygraph's overlay instead of using `ctx.ui`).
 Practices warn only unless `tsc` fails; use `--no-practices` to skip the scan. Opt out per
 file: `// waygraph-ignore-practices` or `// waygraph-ignore: multi-input, combined-action,
-empty-verify`. Print full agent guidance: `waygraph --skill-convention`.
+empty-verify, hand-written-ui`. Print full agent guidance: `waygraph --skill-convention`.
 
 **Empty verify is the one that matters most for codegen'd Blocks.** A framework can enforce
 that a check *exists* and stays structurally honest (typed, wired, right file) - it cannot
