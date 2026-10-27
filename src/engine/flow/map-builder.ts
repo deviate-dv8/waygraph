@@ -23,7 +23,7 @@ import type { HighlightStyleDefaults } from "../stub/ring.js";
 import type { Flow, FlowSettings } from "./flow.js";
 import { buildBranchedFlow } from "./map-branch.js";
 import { signInStep, type Account } from "./account.js";
-import { asCleanup, requiring, withoutRequire, settingInput, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
+import { asCleanup, settling, requiring, withoutRequire, settingInput, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
 
 type S = Checkpoint<"__start__">;
 
@@ -227,7 +227,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   ): MapBuilder<Lands> {
     assertMapKind(block, ["nav", "page"], "gotoPage");
     assertMapOrigin(block, this.homeOrigin, "internal", "gotoPage");
-    return this.appendStep(landsOn(paced(block, opts), opts?.lands), opts?.ff);
+    return this.appendStep(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.ff);
   }
 
   /**
@@ -243,7 +243,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   ): MapBuilder<Lands> {
     assertMapKind(block, ["nav", "page"], "gotoExternal");
     assertMapOrigin(block, this.homeOrigin, "external", "gotoExternal");
-    return this.appendStep(landsOn(paced(block, opts), opts?.lands), opts?.ff);
+    return this.appendStep(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.ff);
   }
 
   /**
@@ -253,7 +253,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    */
   assert(block: AssertBlock<Out> & { name: string }, opts?: Omit<MapStepOpts, "lands">): MapBuilder<Out> {
     assertMapKind(block, ["assert"], "assert");
-    return this.appendStep(skippable(paced(block, opts), opts?.when), opts?.ff);
+    return this.appendStep(skippable(settling(paced(block, opts), opts?.settle), opts?.when), opts?.ff);
   }
 
   /**
@@ -273,7 +273,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
       throw new WaygraphError("WG_MAP_WRONG_KIND", MSG_MAP_METHOD_GOT_ASSERT(block.name));
     }
     assertMapSalt(block, ["method", "effect", "api"], "method");
-    return this.appendStep(skippable(landsOn(paced(block, opts), opts?.lands), opts?.when), opts?.ff);
+    return this.appendStep(skippable(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.when), opts?.ff);
   }
 
   /**

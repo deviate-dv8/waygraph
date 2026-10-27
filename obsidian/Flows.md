@@ -33,6 +33,7 @@ export const homeCartFlow = engine
 - `.branch({ LoggedIn: (m) => ..., LoginPage: (m) => ... })` - split by where the last step landed.
 - `.method(Block, { ff: true })` / `.ffStart()...ffEnd()` - fast-forward steps in a demo.
 - `.method(Block, { pace: "slow" })` - slow one step down in a demo.
+- `.method(Block, { settle: true })` - wait for the page to stop changing after this step (a debounced search), not a fixed sleep.
 - `.method(Block, { when: (mem) => … })` - play a step only for the cases that need it (it stays on its Checkpoint).
 - `.flow(sub, { input })` - drop in a flow that takes input, with this case's value.
 - `.finally(DeleteUserApiBlock)` - a cleanup step: runs after the flow's steps, pass or fail (delete what it created).

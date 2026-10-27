@@ -171,6 +171,11 @@ waygraph run addItemFlow --input @cases/items.json     # an array: the flow once
 The input is required by the flow's first step, so preflight asks for it, and `--data`, a mem stub and `--replay`
 cover it like any key. In code, `.flow(addItemFlow, { input: item })` plays it with that input, once per call.
 
+**A step whose page keeps changing after it acts** (a debounced search, a list rendered in bursts) takes `settle`:
+`.method(TypeSearchBlock, { settle: true })` waits, after the step acts and before it is checked, for the page to load
+and then not change for 300 ms (at most 5 s); `{ settle: { quietMs: 600, maxMs: 8000 } }` tunes it. It replaces a
+fixed `page.waitForTimeout(...)`, which is either too short on a slow run or wasted time on a fast one.
+
 **A step that only some cases need** takes `when`: `.method(SetJsonBodyBlock, { when: (mem) => mem.get(Case).body !==
 undefined })` plays only when it returns true; otherwise the step ends at once where it started, without acting or
 verifying. `when` is offered only on a step that stays on its Checkpoint (filling an optional field), so a skipped

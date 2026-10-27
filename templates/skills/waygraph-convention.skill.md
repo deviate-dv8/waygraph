@@ -90,6 +90,9 @@ against a live site, use `--skill-pilot-blind`.
   `.gotoExternal` for another origin); it is the only way to build one. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`, `as`) go in `map({ … })` before the chain
   and `.end()` takes nothing. The flow's title is `ctx.ui.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
   `defineFlow`, `chainFlow` and the `with*` flow wrappers were removed in 0.16.0; `waygraph upgrade --codemod flows` converts them.
+- **No fixed waits.** A step whose page keeps changing after it acts takes `{ settle: true }` in the flow
+  (`.method(TypeSearchBlock, { settle: true })`); a check that needs the page to catch up is already retried by verify.
+  `page.waitForTimeout(...)` in a Block, or a hand-written "wait until the rows stop changing" loop, is a smell.
 - **One flow per scenario, not per data case.** A flow that runs the same steps over different data declares
   `map({ input: CaseKey })` and is given `--input <json | @file>` (an array plays it once per item) or
   `.flow(sub, { input })`; a step only some cases need takes `{ when: (mem) => … }`. Exports like `r0`, `r0b`,

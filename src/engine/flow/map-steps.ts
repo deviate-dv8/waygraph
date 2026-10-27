@@ -4,6 +4,7 @@ import { checkpoint, type Checkpoint } from "../checkpoint/checkpoint.js";
 import type { MemKey } from "../mem/mem.js";
 import type { Trait } from "../trait/trait.js";
 import { defineMethodBlock } from "../block/kinds/method.js";
+import { settlePage } from "../read/run-read.js";
 import { type SomeBlock, type SomeDefinedBlock, copyWaygraphRuntime } from "../block/block.js";
 import { MSG_MAP_LANDED_ELSEWHERE, MSG_MAP_LANDS_NOT_AN_OUTCOME, MSG_MAP_WRONG_KIND, MSG_MAP_WRONG_ORIGIN_EXTERNAL, MSG_MAP_WRONG_ORIGIN_INTERNAL, MSG_MAP_WRONG_SALT, WaygraphError } from "../errors.js";
 import { MemPage } from "../mem/mem.js";
@@ -141,6 +142,25 @@ export function asCleanup(block: SomeDefinedBlock): SomeDefinedBlock {
   Object.defineProperty(next, "__waygraphCleanup", { value: true, enumerable: false, configurable: true });
   return next;
 }
+/** The same Block, waiting for the page to settle after it acts (the `settle` step option). */
+export function settling(block: SomeDefinedBlock, settle: MapStepOpts["settle"]): SomeDefinedBlock {
+  if (!settle) return block;
+  const { quietMs = 300, maxMs = 5000 } = settle === true ? {} : settle;
+  const act = block.instruction.act as (p: Page, i: Checkpoint<string>, m: MemPage) => unknown;
+  const next = {
+    ...block,
+    instruction: {
+      ...block.instruction,
+      async act(page: Page, input: Checkpoint<string>, mem: MemPage) {
+        await act.call(block.instruction, page, input, mem);
+        await settlePage(page, quietMs, maxMs);
+      },
+    },
+  } as SomeDefinedBlock;
+  copyWaygraphRuntime(block, next);
+  return next;
+}
+
 /** Applies a step's `pace` option, keeping the Block's runtime markers. */
 export function paced(block: object, opts: MapStepOpts | undefined): SomeDefinedBlock {
   if (opts?.pace === undefined) return block as SomeDefinedBlock;
@@ -234,4 +254,11 @@ export interface MapStepOpts<Lands extends Checkpoint<string> = Checkpoint<strin
    * @example .method(SetJsonBodyBlock, { when: (mem) => mem.has(RequestBody) })
    */
   when?: (mem: MemPage) => boolean;
+  /**
+   * Wait for the page to settle after this step acts, before it is checked: loaded, then no DOM change for `quietMs`
+   * (default 300), at most `maxMs` (default 5000). For a debounced search or a list that renders in bursts, instead of a
+   * fixed `waitForTimeout`.
+   * @example .method(TypeSearchBlock, { settle: true }) · { settle: { quietMs: 600 } }
+   */
+  settle?: true | { quietMs?: number; maxMs?: number };
 }
