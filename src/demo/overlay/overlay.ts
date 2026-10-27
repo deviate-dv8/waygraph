@@ -4,6 +4,7 @@ import type { BannerPos } from "../../engine/stub/stub.js";
 import type { BannerUiState, OverlayInstallArgs, WgPage } from "../types.js";
 import { HOST_CSS, RUNNER_EXTRA_CSS, WAYGRAPH_FAVICON } from "./overlay-css.js";
 import { ensureShadowRoot } from "./ui/shadow.js";
+import { applyActing } from "./acting.js";
 import { resolveTodoDockUi } from "../narration/todo-dock.js";
 import { installCore } from "./inpage/core.js";
 import { installSwipeZoom } from "./inpage/swipe-zoom.js";
@@ -30,6 +31,8 @@ import { ignorePageGone } from "../../engine/page-gone.js";
 export async function installOverlay(page: WgPage, title?: string, ui?: BannerUiState | null, caption?: string, networkTabVisible?: boolean) {
   // ring/cursor/banner/dock come from the ONE shared bundle every surface installs (ui/css/*.css).
   await ensureShadowRoot(page);
+  // A step acting across a navigation: the rebuilt overlay lets its clicks through too.
+  await applyActing(page);
   // Runner-only chrome (step panel, zoom/typing/device chips) - separate key, no collision. First, so nothing below
   // builds chrome ahead of its CSS (an element painted unstyled for a moment, then restyled).
   await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as const).catch(ignorePageGone);

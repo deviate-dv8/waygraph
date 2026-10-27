@@ -4,7 +4,7 @@
 // runs Playwright's own method untouched. Playwright has no hook for this, so the wrap is the seam; nothing else patches
 // these methods.
 import type { Locator, Page } from "@playwright/test";
-import { isPageGone } from "../../engine/page-gone.js";
+import { ignorePageGone, isPageGone } from "../../engine/page-gone.js";
 
 /** How a click is performed once the theater has shown it. */
 export type ClickGesture = "click" | "tap" | "hold";
@@ -51,6 +51,28 @@ export function setLocatorTheater(page: Page, theater: LocatorTheater): void {
 function theaterFailed(err: unknown): undefined {
   if (!isPageGone(err)) console.error(`waygraph: overlay: ${err instanceof Error ? err.message.split("\n")[0] : String(err)}`);
   return undefined;
+}
+
+/**
+ * Lets the click through the overlay's chrome to the page (a dock over the button must never take it), unless the target
+ * is part of the overlay itself (the panel's Next). Returns whether it switched it on.
+ */
+async function clickThroughChrome(locator: Locator): Promise<boolean> {
+  return locator
+    .evaluate((el) => {
+      const root = document.getElementById("wg-root")?.shadowRoot;
+      if (!root || el.getRootNode() === root) return false;
+      root.getElementById("wg-ui")?.setAttribute("data-clicking", "");
+      return true;
+    }, undefined, { timeout: 2000 })
+    .catch(() => false);
+}
+
+/** Ends {@link clickThroughChrome}, through the page: the clicked element may be gone by now. */
+async function endClickThrough(page: Page): Promise<void> {
+  await page
+    .evaluate(() => document.getElementById("wg-root")?.shadowRoot?.getElementById("wg-ui")?.removeAttribute("data-clicking"))
+    .catch(ignorePageGone);
 }
 
 /** Input types made of segments or pickers (a date, a colour, a slider): keys typed one by one don't build their value. */
@@ -100,15 +122,20 @@ function patchLocator(proto: LocatorProto): void {
     const theater = theaters.get(this.page());
     if (!theater) return click.call(this, options);
     const gesture = (await theater.beforeClick(this, options).catch(theaterFailed)) ?? "click";
-    if (gesture === "hold") await click.call(this, { ...(options ?? {}), delay: theater.holdMs() });
-    else if (gesture === "tap") {
-      try {
-        await this.tap(options);
-      } catch {
-        // A context without touch: a real click.
-        await click.call(this, options);
-      }
-    } else await click.call(this, options);
+    const through = await clickThroughChrome(this);
+    try {
+      if (gesture === "hold") await click.call(this, { ...(options ?? {}), delay: theater.holdMs() });
+      else if (gesture === "tap") {
+        try {
+          await this.tap(options);
+        } catch {
+          // A context without touch: a real click.
+          await click.call(this, options);
+        }
+      } else await click.call(this, options);
+    } finally {
+      if (through) await endClickThrough(this.page());
+    }
     await theater.afterClick(this);
   };
 

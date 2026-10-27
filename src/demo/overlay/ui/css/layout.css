@@ -38,6 +38,10 @@
 /* The slot's limits win over an element's own sizing (an #id rule's min-width / max-height), hence the id here. */
 #wg-chrome .wg-slot > * { min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; }
 
+/* While a step acts (or a click is being made), the chrome lets pointer events through to the page beneath it: a dock or
+   the banner over a button must never take the click (demo/overlay/acting.ts, locator-theater.ts). */
+#wg-ui:is([data-acting], [data-clicking]) #wg-chrome .wg-slot * { pointer-events: none; }
+
 /* Order inside a shared slot: what is being typed, what the narration says, then the controls. */
 #wg-typing-badge { order: 1; }
 #wg-caption-bar { order: 2; }

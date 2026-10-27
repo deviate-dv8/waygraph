@@ -78,3 +78,36 @@ test("a dock or banner a ring lands on moves to the other side's slot", async ({
   await expect.poll(() => slotOf("wg-todo-dock")).toBe("right");
   expect(await slotOf("wg-banner")).not.toBe("top-left");
 });
+
+test("the overlay never takes a click meant for the page: a button under the todo dock is clicked through it", async ({ page }) => {
+  const { setLocatorTheater } = await import("../../dist/demo/overlay/locator-theater.js");
+  const { setActing } = await import("../../dist/demo/overlay/acting.js");
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await showAllChrome(page);
+  // A page button exactly where the dock sits.
+  const dock = await page.evaluate(() => (globalThis as { __wgById?: (id: string) => HTMLElement | null }).__wgById!("wg-todo-dock")!.getBoundingClientRect().toJSON());
+  await page.evaluate((d) => {
+    const b = document.createElement("button");
+    b.id = "under";
+    b.textContent = "Save";
+    b.style.cssText = `position:fixed;left:${d.x + 20}px;top:${d.y + 20}px;width:120px;height:32px`;
+    b.onclick = () => (b.textContent = "clicked");
+    document.body.appendChild(b);
+  }, dock);
+  const hit = (x: number, y: number) => page.evaluate(([x, y]) => {
+    const top = document.elementFromPoint(x, y);
+    return top?.id === "wg-root" ? "overlay" : (top as HTMLElement | null)?.id ?? "";
+  }, [x, y] as const);
+  const at = [dock.x + 60, dock.y + 36] as const;
+  expect(await hit(...at)).toBe("overlay"); // the dock covers it
+
+  setLocatorTheater(page, { beforeFill: async () => {}, typingDelay: () => 0, afterFill: async () => {}, beforeClick: async () => "click", holdMs: () => 0, afterClick: async () => {} });
+  await page.locator("#under").click({ timeout: 5000 });
+  await expect(page.locator("#under")).toHaveText("clicked");
+  expect(await hit(...at)).toBe("overlay"); // the dock takes clicks again once the click is done
+
+  await setActing(page, true); // a step acting: the whole chrome lets clicks through
+  expect(await hit(...at)).toBe("under");
+  await setActing(page, false);
+  expect(await hit(...at)).toBe("overlay");
+});

@@ -5,6 +5,7 @@ import { applyDeviceToPage } from "../overlay/device-stage.js";
 import { showRing } from "../overlay/rings.js";
 import { formatHighlightCaption } from "../narration/style.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
+import { setActing } from "../overlay/acting.js";
 
 /**
  * Patches Locator.prototype.fill (via any real locator's own prototype
@@ -36,6 +37,7 @@ import { ignorePageGone } from "../../engine/page-gone.js";
  * also matches the user's "step is running / can't interrupt" ask.
  */
 export async function markStepRunning(page: WgPage) {
+  await setActing(page, true);
   await page
     .evaluate(() => {
       const runBtn = __wgById<HTMLButtonElement>("wg-run");

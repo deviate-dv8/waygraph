@@ -27,6 +27,8 @@ declare module "playwright-core" {
     __wgNetworkNeedsRestore?: boolean | undefined;
     __wgNetworkCaptureInstalled?: boolean | undefined;
     __wgNetworkTabVisible?: boolean | undefined;
+    /** A step is acting: the overlay's chrome lets pointer events through (demo/overlay/acting.ts). */
+    __wgActing?: boolean | undefined;
   }
   interface Keyboard {
     __wgBeatPatched?: boolean;
