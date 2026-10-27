@@ -41,82 +41,40 @@ export async function renderBeforeStep(page: WgPage, info: BeforePanelInfo) {
       // flash - it only ever fades in ONCE, the first time this page
       // genuinely has no panel yet (a real navigation wiped the whole
       // document, or this is the very first step).
-      let panel = __wgById("wg-panel");
-      const isNewPanel = !panel;
-      if (!panel) {
-        panel = document.createElement("div");
-        panel.id = "wg-panel";
-      }
-      const pct = Math.round((info.index / info.total) * 100);
-      // A real tab bar, not a single text line - every episode this chain
-      // touches, the current one reading as active (the user: "if episode 1 is
-      // active, the episode 2 tab is inactive"). Absent entirely for an ad
-      // hoc block chain with no named Flows.
-      const episodes = info.allEpisodes && info.allEpisodes.length > 0
-        ? __wgEl(
-          "div",
-          { id: "wg-episodes" },
-          info.allEpisodes.map((e) => {
-            const cls = e.episodeNumber < (info.episodeNumber ?? 0) ? "wg-ep-done"
-              : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
-                : "wg-ep-upcoming";
-            // The gentle one-time glow only plays on the tab actually
-            // being entered right now, not on every render of it.
-            const enteredCls = info.justEnteredEpisode && e.episodeNumber === info.episodeNumber
-              ? " wg-ep-entered"
-              : "";
-            return __wgEl("span", { class: "wg-ep-tab " + cls + enteredCls }, "Episode " + e.episodeNumber + ": " + (e.episodeTitle || ""));
-          })
-        )
-        : null;
-      // Scoped to THIS episode's own blocks (info.allNames is already the
-      // episode-local subset the caller computed) - moduleIndex is this
-      // step's position WITHIN that subset, not the whole chain's index -
-      // "in episode 2 it shows 2nd to the last... it should start from the
-      // first block" (the user).
-      const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
-      const modules = info.allNames.map((name, idx) => {
-        const cls = idx < info.moduleIndex ? "wg-mod-done" : idx === info.moduleIndex ? "wg-mod-current" : "wg-mod-upcoming";
-        const desc = info.allDescriptions && info.allDescriptions[idx];
-        return __wgEl("span", { class: "wg-mod " + cls, title: desc || undefined }, String(name));
-      });
-      const pace = info.paceBadge || info.paceLabel
-        ? __wgEl(
-          "div",
-          { class: "wg-pace", data: { paceKind: info.paceKind || "normal" } },
-          __wgEl("span", { class: "wg-pace-badge" }, info.paceBadge || "1x"),
-          __wgEl("span", null, info.paceLabel || "")
-        )
-        : null;
-      const keys = info.keys.length === 0
-        ? [__wgEl("div", { class: "wg-key" }, "(no MemKeys required)")]
-        : info.keys.map((k) => {
-          const field = __wgEl("textarea", { data: { key: k.name }, attrs: { rows: 2 } });
-          field.value = k.value;
-          return __wgEl("div", { class: "wg-key" }, __wgEl("label", null, k.name), field, __wgEl("div", { class: "wg-key-pretty", data: { prettyFor: k.name } }));
-        });
+      const { panel, isNew: isNewPanel } = window.__wgPanel!();
+      const keys =
+        info.keys.length === 0
+          ? [__wgEl("div", { class: "wg-key text-sm text-label-3" }, "No MemKeys needed")]
+          : info.keys.map((k) => {
+              const field = __wgEl("textarea", { class: "field font-mono text-sm resize-y", data: { key: k.name }, attrs: { rows: 2 } });
+              field.value = k.value;
+              return __wgEl(
+                "div",
+                { class: "wg-key flex flex-col gap-1 mb-2.5" },
+                __wgEl("label", { class: "font-mono text-xs font-medium text-label-2" }, k.name),
+                field,
+                __wgEl("div", { class: "wg-key-pretty rounded-control bg-fill px-2 py-1.5 text-sm", data: { prettyFor: k.name } }),
+              );
+            });
       let autoNow = false;
       try {
         autoNow = localStorage.getItem("wg-autoplay") === "1";
       } catch {
         /* private mode / blocked storage - defaults to manual */
       }
-      const autoplay = __wgEl("input", { id: "wg-autoplay-cb", attrs: { type: "checkbox" } });
-      autoplay.checked = autoNow;
-      // Todos render into floating #wg-todo-dock via __wgSyncTodos - never
-      // inside .wg-body (would vanish under --mini / Hide collapse).
+      // Todos render into the floating dock (__wgSyncTodos), never inside .wg-body: Hide would hide them.
       __wgSet(
         panel,
-        __wgEl("div", { id: "wg-progress" }, __wgEl("div", { id: "wg-progress-bar", style: "width:" + pct + "%" })),
-        episodes,
-        pace,
-        __wgEl("div", { id: "wg-modules", class: modulesClass }, modules),
-        __wgEl("h3", null, "Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName),
-        info.description ? __wgEl("div", { class: "wg-narration" }, info.description) : null,
+        window.__wgPanelFrame!(info, {
+          current: info.moduleIndex,
+          doneBefore: info.moduleIndex,
+          progress: Math.round((info.index / info.total) * 100),
+          entered: info.justEnteredEpisode,
+        }),
+        window.__wgPanelHeading!("Step " + (info.index + 1) + " of " + info.total, info.blockName),
+        info.description ? __wgEl("p", { class: "wg-narration text-base text-label-2 mb-3" }, info.description) : null,
         keys,
-        __wgEl("div", { class: "wg-autoplay-row" }, __wgEl("label", null, autoplay, " Auto-advance")),
-        __wgEl("div", { id: "wg-gate-manual", style: autoNow ? "display:none" : "" }, __wgEl("button", { id: "wg-run" }, "Run this step \u25B6")),
-        __wgEl("div", { id: "wg-gate-auto", class: "wg-auto", style: autoNow ? "" : "display:none" }, "Auto-advancing...")
+        window.__wgPanelFooter!("Run Step", autoNow, "play"),
       );
       if (isNewPanel) {
         __wgAdd(panel);
@@ -172,14 +130,14 @@ export async function renderBeforeStep(page: WgPage, info: BeforePanelInfo) {
         try {
           parsed = JSON.parse(raw);
         } catch {
-          return [__wgEl("em", null, "(invalid JSON)")];
+          return [__wgEl("span", { class: "text-red" }, "Not valid JSON")];
         }
         if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
           return [JSON.stringify(parsed)];
         }
         return Object.entries(parsed).map(([field, value]) => {
           const label = field.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
-          return __wgEl("div", { class: "wg-key-pretty-row" }, __wgEl("span", { class: "wg-key-pretty-label" }, label + ":"), " " + String(value));
+          return __wgEl("div", { class: "wg-key-pretty-row" }, __wgEl("span", { class: "wg-key-pretty-label font-medium text-label-2" }, label + ":"), " " + String(value));
         });
       };
       const applyKeyPretty = () => {
@@ -205,26 +163,7 @@ export async function renderBeforeStep(page: WgPage, info: BeforePanelInfo) {
           window.__wgNext(edits);
         });
       }
-      // Live toggle - flips localStorage immediately so an in-flight gate()
-      // poll (on the Node side) picks it up within its next poll slice,
-      // without needing this whole panel to re-render. A manual click
-      // still always wins over an active autoplay wait, whichever the
-      // checkbox says - this is the "hybrid" control: autoplay is a
-      // default, not a lockout.
-      const cb = __wgById<HTMLInputElement>("wg-autoplay-cb");
-      if (cb) {
-        cb.addEventListener("change", () => {
-          try {
-            localStorage.setItem("wg-autoplay", cb.checked ? "1" : "0");
-          } catch {
-            /* private mode / blocked storage - toggle still works this page */
-          }
-          const manual = __wgById("wg-gate-manual");
-          const auto = __wgById("wg-gate-auto");
-          if (manual) manual.style.display = cb.checked ? "none" : "";
-          if (auto) auto.style.display = cb.checked ? "" : "none";
-        });
-      }
+      window.__wgWireAutoplay!();
     }, payload)
     .catch(ignorePageGone);
   if (envString("WAYGRAPH_PROVE_SHOT") || envFlag("WAYGRAPH_PROVE_EXIT")) {

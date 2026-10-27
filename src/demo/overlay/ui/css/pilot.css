@@ -1,0 +1,27 @@
+/*
+ * Waygraph Pilot's own chrome (demo/overlay/pilot/shell.ts; its look is utilities there): the badge and its panel
+ * (bottom-right slot), the activity toast (bottom-left). Here, states and the panel's generated content
+ * (live/pilot/panel.ts). Pilot's fixture rings, todos, zoom and device chips use the demo's own (ring.css, todos.css,
+ * chips.css).
+ */
+#wg-pilot-overlay { z-index: var(--wg-z-top); pointer-events: auto; }
+#wg-pilot-panel { display: none; }
+#wg-pilot-panel.wg-pilot-open { display: block; }
+/* The graph tab (a Mermaid flowchart) needs more room than the list. */
+#wg-pilot-panel:has(#wg-pilot-panel-graph:not([style*="display: none"])) { width: min(92vw, 640px); max-height: 460px; }
+#wg-pilot-panel-graph svg { max-width: none; }
+#wg-pilot-panel .wg-pilot-tab { color: var(--wg-label-2); }
+#wg-pilot-panel .wg-pilot-tab.wg-pilot-tab-active { background: var(--wg-control); box-shadow: var(--shadow-control); color: var(--wg-label); }
+#wg-pilot-panel .wg-pilot-section { margin: 8px 0 2px; font: var(--font-weight-semibold) 11px/14px var(--font-sans); color: var(--wg-label-2); }
+#wg-pilot-panel .wg-pilot-edge { padding: 3px 0; border-bottom: 0.5px solid var(--wg-separator); }
+#wg-pilot-panel .wg-pilot-kind { color: var(--wg-blue); font-weight: var(--font-weight-semibold); }
+#wg-pilot-panel .wg-pilot-desc { color: var(--wg-label-2); }
+#wg-pilot-panel .wg-pilot-empty, #wg-pilot-panel-graph .wg-pilot-graph-note { color: var(--wg-label-3); font-size: 11px; padding: 4px 2px 0; }
+#wg-pilot-panel-graph .wg-pilot-graph-node { margin: 6px 0; }
+#wg-pilot-panel-graph .wg-pilot-graph-checkpoint { color: var(--wg-label); font-weight: var(--font-weight-semibold); }
+#wg-pilot-panel-graph .wg-pilot-graph-edge { padding: 2px 0 2px 12px; border-left: 1.5px solid var(--wg-separator); font-size: 11px; }
+
+#wg-pilot-activity { z-index: var(--wg-z-chrome); opacity: 0; transform: translateY(4px); transition: opacity .15s, transform .15s; }
+#wg-pilot-activity.wg-pilot-toast-show { opacity: 1; transform: translateY(0); }
+
+#wg-pilot-fx-zoom, #wg-pilot-fx-device { z-index: var(--wg-z-chrome); pointer-events: none; }

@@ -96,7 +96,7 @@ export async function applyVideoDeviceStage(page: WgPage, target: Size, stage: S
   const result = await page
     .evaluate(
       ({ tw, th, sw, sh, clear, shutterOut, enterIn, desktopFlat }) => {
-        const MATTE = "#0b1220";
+        const MATTE = "#1f1f21";
         const unwrap = () => {
           const shell = document.getElementById("wg-device-shell");
           if (shell) {

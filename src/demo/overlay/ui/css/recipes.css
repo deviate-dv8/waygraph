@@ -1,0 +1,137 @@
+/*
+ * The overlay's few recurring looks, as utilities a builder names in its class list (`class: "material rounded-panel
+ * px-3 py-2"`). Each is a macOS surface or control; anything else a builder writes with plain utilities.
+ */
+
+/* A translucent HUD / popover: the page shows through, blurred. Text on it is `label`. */
+@utility material {
+  background-color: var(--wg-material);
+  -webkit-backdrop-filter: blur(var(--blur-material)) saturate(1.8);
+  backdrop-filter: blur(var(--blur-material)) saturate(1.8);
+  box-shadow: inset 0 0 0 0.5px var(--wg-rim), var(--shadow-popover);
+  color: var(--wg-label);
+}
+
+/* The same, nearly opaque: a panel with controls and text to read (the step panel, the network tab). */
+@utility material-thick {
+  background-color: var(--wg-material-thick);
+  -webkit-backdrop-filter: blur(var(--blur-material)) saturate(1.8);
+  backdrop-filter: blur(var(--blur-material)) saturate(1.8);
+  box-shadow: inset 0 0 0 0.5px var(--wg-rim), var(--shadow-window);
+  color: var(--wg-label);
+}
+
+/* A small rounded pill: status chips, counts. */
+@utility capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* A push button. `button-primary` is the default action (filled with the accent), `button-destructive` stops. */
+@utility button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-control);
+  background-color: var(--wg-control);
+  box-shadow: var(--shadow-control);
+  color: var(--wg-label);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  transition: filter 120ms var(--ease-mac), opacity 120ms var(--ease-mac);
+  &:hover { filter: brightness(0.97); }
+  &:active { filter: brightness(0.92); }
+  &:disabled { opacity: 0.45; filter: none; }
+  &:focus-visible { outline: 3px solid color-mix(in srgb, var(--wg-blue) 45%, transparent); outline-offset: 1px; }
+}
+@utility button-primary {
+  background-color: var(--wg-blue);
+  background-image: linear-gradient(rgb(255 255 255 / 0.12), rgb(255 255 255 / 0));
+  color: var(--wg-on-accent);
+  box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.12), 0 0.5px 1.5px rgb(0 0 0 / 0.2);
+}
+@utility button-destructive {
+  color: var(--wg-red);
+}
+/* A borderless button: only its icon / text, a fill on hover (title-bar style). */
+@utility button-plain {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 22px;
+  min-width: 22px;
+  padding: 0 5px;
+  border-radius: var(--radius-control);
+  color: var(--wg-label-2);
+  cursor: default;
+  &:hover { background-color: var(--wg-fill); color: var(--wg-label); }
+  &:active { background-color: var(--wg-fill-2); }
+}
+
+/* A text field / text area. */
+@utility field {
+  width: 100%;
+  border-radius: var(--radius-control);
+  background-color: var(--wg-field);
+  box-shadow: inset 0 0 0 0.5px var(--wg-separator), 0 0.5px 1px rgb(0 0 0 / 0.06);
+  color: var(--wg-label);
+  padding: 5px 8px;
+  &:focus { outline: 3px solid color-mix(in srgb, var(--wg-blue) 40%, transparent); outline-offset: 0; }
+  &:disabled { opacity: 0.55; }
+}
+
+/* A segmented control (the episode tabs): a recessed track, the selected segment raised. */
+@utility segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-chip);
+  background-color: var(--wg-fill);
+}
+
+/* A macOS switch, on a checkbox. */
+@utility switch {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 26px;
+  height: 15px;
+  border-radius: 999px;
+  background-color: var(--wg-fill-2);
+  box-shadow: inset 0 0 0 0.5px var(--wg-separator);
+  transition: background-color 160ms var(--ease-mac);
+  &::before {
+    content: "";
+    position: absolute;
+    top: 1.5px;
+    left: 1.5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: var(--wg-on-accent);
+    box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.25);
+    transition: transform 180ms var(--ease-spring);
+  }
+  &:checked { background-color: var(--wg-blue); box-shadow: none; }
+  &:checked::before { transform: translateX(11px); }
+  &:focus-visible { outline: 3px solid color-mix(in srgb, var(--wg-blue) 45%, transparent); outline-offset: 1px; }
+}
+
+/* An icon from ui/icons.ts at text size. */
+@utility icon {
+  display: inline-block;
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+}

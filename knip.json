@@ -17,10 +17,13 @@
     "typecheck/**/*.ts"
   ],
   "ignore": [
-    "tests/fixtures/**"
+    "tests/fixtures/**",
+    "scripts/build-ui-css.d.mts"
   ],
   "ignoreDependencies": [
-    "open-props"
+    "tailwindcss",
+    "@tailwindcss/cli",
+    "@phosphor-icons/core"
   ],
   "ignoreBinaries": [
     "diff"

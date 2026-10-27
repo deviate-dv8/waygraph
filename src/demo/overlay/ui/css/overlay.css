@@ -1,0 +1,27 @@
+/*
+ * The overlay stylesheet, built by Tailwind (scripts/build-ui-css.mjs) into one file and injected into the overlay's
+ * shadow root. Order: Tailwind's theme and reset, our tokens (theme.css), the utilities the builders use (an element's
+ * look), then the component files (what utilities can't say: states, keyframes, the slot layout) - last, so a state
+ * (hidden, collapsed, faded) wins over the look it changes.
+ */
+@layer theme, base, utilities, components;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "./theme.css";
+@import "./recipes.css";
+@import "./layout.css" layer(components);
+@import "./ring.css" layer(components);
+@import "./cursor.css" layer(components);
+@import "./fx.css" layer(components);
+@import "./banner.css" layer(components);
+@import "./caption.css" layer(components);
+@import "./chips.css" layer(components);
+@import "./todos.css" layer(components);
+@import "./panel.css" layer(components);
+@import "./network.css" layer(components);
+@import "./pilot.css" layer(components);
+
+/* Utilities are generated for the classes the overlay's builders use (in-page code, pilot, the auto menu). */
+@source "../../..";
+@source "../../../../live";

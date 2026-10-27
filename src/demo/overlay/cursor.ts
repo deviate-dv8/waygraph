@@ -60,23 +60,9 @@ export async function playSwipeTrail(page: WgPage, opts?: SwipeTrailOptions) {
       const label = payload.label || "swipe";
       let layer = __wgById("wg-swipe-layer");
       if (layer) layer.remove();
-      layer = document.createElement("div");
-      layer.id = "wg-swipe-layer";
-      layer.setAttribute("data-wg-ui", "1");
-      layer.style.cssText =
-        "position:fixed;inset:0;z-index:var(--wg-z-cursor,2147483646);pointer-events:none;overflow:hidden;";
-      const finger = document.createElement("div");
-      finger.style.cssText =
-        "position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;" +
-        "background:rgba(15,23,42,.92);border:2px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,.4);";
-      const lab = document.createElement("div");
-      lab.textContent = label;
-      lab.style.cssText =
-        "position:absolute;left:50%;top:18%;transform:translateX(-50%);padding:6px 12px;" +
-        "border-radius:999px;background:rgba(15,23,42,.88);color:#e0f2fe;" +
-        "border:1px solid rgba(56,189,248,.55);font:700 12px/1.2 system-ui,sans-serif;";
-      layer.appendChild(lab);
-      layer.appendChild(finger);
+      // The swipe trail's look is fx.css (#wg-swipe-layer and its parts); only positions are set here.
+      const finger = __wgEl("div", { class: "wg-swipe-finger", style: "opacity:1" });
+      layer = __wgEl("div", { id: "wg-swipe-layer", class: "wg-in", attrs: { "data-wg-ui": "1" } }, __wgEl("div", { class: "wg-swipe-label" }, label), finger);
       __wgAdd(layer);
       const vw = window.innerWidth || 390;
       const vh = window.innerHeight || 844;
@@ -114,16 +100,10 @@ export async function playSwipeTrail(page: WgPage, opts?: SwipeTrailOptions) {
         setTimeout(() => {
           finger.style.left = x + "px";
           finger.style.top = y + "px";
-          const dot = document.createElement("div");
-          dot.style.cssText =
-            "position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;" +
-            "background:rgba(147,197,253,.55);border:2px solid rgba(255,255,255,.85);left:" +
-            x +
-            "px;top:" +
-            y +
-            "px;opacity:" +
-            (0.85 - t * 0.55) +
-            ";transition:opacity .45s ease,transform .45s ease;";
+          const dot = __wgEl("div", {
+            class: "wg-swipe-dot",
+            style: `left:${x}px;top:${y}px;opacity:${0.85 - t * 0.55};transition:opacity .45s ease,transform .45s ease`,
+          });
           layer.appendChild(dot);
           requestAnimationFrame(() => {
             dot.style.opacity = "0";

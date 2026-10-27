@@ -9,14 +9,16 @@
  */
 import type { Page } from "@playwright/test";
 import { getOverlaySheet } from "./stylesheet.js";
+import { ICONS, type IconName } from "./icons.js";
+import { envString } from "../../../engine/env.js";
 import { ignorePageGone } from "../../../engine/page-gone.js";
 
 /**
- * `overlaySheet` is the ONE real-CSS bundle (`ui/stylesheet.ts` -> `dist/ui/overlay.css`, built on
- * Open Props - see `src/demo/overlay/ui/css/README.md`) every surface shares; passed in from Node since in-page
- * code can't read a file. Installed once per shadow root, before anything else runs.
+ * `overlaySheet` is the overlay's one stylesheet (ui/css/ through Tailwind, see `src/demo/overlay/ui/css/README.md`), the
+ * same on every surface; `icons` the overlay's icons (ui/icons.ts); `appearance` light / dark when the project pins
+ * one. Passed in from Node, since in-page code can't read a file. Installed once per shadow root, before anything else.
  */
-export function installShadowRoot(overlaySheet?: string): void {
+export function installShadowRoot([overlaySheet, icons, appearance]: [string?, Record<string, string>?, string?] = []): void {
   const w = window as unknown as Record<string, unknown> & { __wgCss?: (css: string, key: string) => void };
   if (w.__wgById) return;
   const root = (): ShadowRoot => {
@@ -62,6 +64,8 @@ export function installShadowRoot(overlaySheet?: string): void {
     if (layer) return layer;
     layer = document.createElement("div");
     layer.id = "wg-ui";
+    // light / dark pinned by the project (demo.appearance); otherwise theme.css follows the system.
+    if (appearance === "light" || appearance === "dark") layer.dataset.appearance = appearance;
     const stage = document.createElement("div");
     stage.id = "wg-stage";
     const chrome = document.createElement("div");
@@ -135,10 +139,24 @@ export function installShadowRoot(overlaySheet?: string): void {
     const xml = markup.includes("xmlns=") ? markup : markup.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
     return document.importNode(new DOMParser().parseFromString(xml, "image/svg+xml").documentElement, true);
   };
+  // An icon from ui/icons.ts (Phosphor), sized by the `icon` utility and coloured by its text: `__wgIcon("check", "text-green")`.
+  if (icons) w.__wgIcons = icons;
+  w.__wgIcon = (name: IconName, cls?: string) => {
+    const markup = (w.__wgIcons as Record<string, string> | undefined)?.[name];
+    const svg = markup ? (w.__wgSvg as (m: string) => Element)(markup) : document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "icon" + (cls ? " " + cls : ""));
+    svg.setAttribute("aria-hidden", "true");
+    return svg;
+  };
   if (overlaySheet) w.__wgCss(overlaySheet, "wg-overlay-css");
+}
+
+/** What installShadowRoot needs from Node: the stylesheet, the icons and the pinned appearance. */
+export function shadowRootArgs(): [string, Record<string, string>, string] {
+  return [getOverlaySheet(), ICONS, envString("WAYGRAPH_APPEARANCE") ?? ""];
 }
 
 /** Idempotent; call before any overlay install on a page. Installs the shared stylesheet bundle. */
 export async function ensureShadowRoot(page: Page): Promise<void> {
-  await page.evaluate(installShadowRoot, getOverlaySheet()).catch(ignorePageGone);
+  await page.evaluate(installShadowRoot, shadowRootArgs()).catch(ignorePageGone);
 }

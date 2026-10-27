@@ -66,6 +66,14 @@ ${found.length ? `| Name | Kind | Use instead |\n| --- | --- | --- |\n${rows}` :
 | \`traverse --headed\`, \`inject veciro\` / \`demosauce\` | \`traverse --non-headless\`, \`--inject <path>\` / \`--inject saucedemo\` |
 | \`resolveSlideDwellMs\`, \`SLIDE_DURATION_MS_DEFAULT\`, \`SLIDE_DURATION_FAST_MS_DEFAULT\` | \`resolveFixtureDwellMs\`, \`FIXTURE_DURATION_MS_DEFAULT\`, \`FIXTURE_DURATION_FAST_MS_DEFAULT\` |
 
+## Removed in 0.16.6: the overlay's CSS in code
+
+The overlay's look is one stylesheet now (Tailwind, macOS tokens), not CSS strings exported from code.
+
+| Removed | Use instead |
+| --- | --- |
+| \`WAYGRAPH_RING_CSS\` | Nothing: every surface that paints a ring installs the overlay's stylesheet, ring included. A tone is \`ctx.ui.ring(…, { tone })\`. |
+
 ## Removed in 0.16.3: painting straight on a stub's ctx
 
 A stub paints through \`ctx.ui\`; \`ctx\` itself holds only what a stub reads (\`mem\`, \`out\`, \`error\`). \`waygraph upgrade --codemod flows\` moves every call.

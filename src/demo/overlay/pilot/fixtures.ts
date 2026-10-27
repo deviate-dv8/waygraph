@@ -283,9 +283,7 @@ export async function showPilotFixtures(
         const applyFocus = (box: { x: number; y: number; width: number; height: number }) => {
           let veil = __wgById("wg-pilot-fx-focus");
           if (!veil) {
-            veil = document.createElement("div");
-            veil.id = "wg-pilot-fx-focus";
-            __wgAdd(veil);
+            veil = __wgAdd(__wgEl("div", { id: "wg-pilot-fx-focus" }));
           }
           const pad = 10;
           veil.style.left = `${Math.max(0, box.x - pad)}px`;
@@ -299,20 +297,15 @@ export async function showPilotFixtures(
           const level = Number.isFinite(scale) && scale > 0 ? scale : 1;
           let badge = __wgById("wg-pilot-fx-zoom");
           if (!badge) {
-            badge = document.createElement("div");
-            badge.id = "wg-pilot-fx-zoom";
+            badge = __wgEl("div", { id: "wg-pilot-fx-zoom", class: "capsule material h-7 px-2.5 text-sm font-medium" });
             __wgAdd(badge);
           }
           const zoomed = level > 1.001 || level < 0.999;
           badge.dataset.zoomed = zoomed ? "1" : "0";
           __wgSet(
             badge,
-            __wgEl(
-              "span",
-              { class: "wg-pilot-fx-zoom-ico" },
-              __wgSvg('<svg viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'),
-            ),
-            __wgEl("span", { class: "wg-pilot-fx-zoom-val" }, level.toFixed(2) + "\u00d7"),
+            __wgIcon("zoom", zoomed ? "text-accent" : "text-label-2"),
+            __wgEl("span", { class: "tabular-nums min-w-[3.2em]" }, level.toFixed(2) + "\u00d7"),
           );
         };
         const clearZoom = () => {
@@ -370,8 +363,10 @@ export async function showPilotFixtures(
         // not a re-derived index over a flattened string list.
         const flat = todoGroups.flatMap((g) => g.items);
         if (flat.length > 0) {
-          const dock = document.createElement("div");
-          dock.id = "wg-pilot-fx-todos";
+          const dock = __wgEl("div", {
+            id: "wg-pilot-fx-todos",
+            class: "material rounded-panel w-[min(264px,42vw)] overflow-auto p-2 flex flex-col gap-1 select-none",
+          });
           dock.dataset.pos = todoPos;
           const WINDOW = todoUi.cap > 0 ? todoUi.cap : 5;
           const compact = todoUi.compact !== false && flat.length > WINDOW;
@@ -389,30 +384,39 @@ export async function showPilotFixtures(
           for (const group of todoGroups) {
             if (group.items.length === 0) continue;
             if (group.title) {
-              const title = document.createElement("div");
-              title.className = "wg-pilot-fx-todo-title";
-              title.textContent = group.title;
-              dock.appendChild(title);
+              dock.appendChild(__wgEl("div", { class: "px-1.5 pt-0.5 pb-1 text-xs font-semibold text-label-2" }, group.title));
             }
-            const ol = document.createElement("ol");
-            const marker = group.style === "checklist" ? (done: boolean) => (done ? "\u2611 " : "\u2610 ") : group.style === "bullets" ? () => "\u2022 " : () => "";
+            const ol = __wgEl("ol", { class: "flex flex-col" });
             for (const item of group.items) {
               const i = flatIdx++;
-              const li = document.createElement("li");
-              li.textContent = marker(!!item.done) + item.text;
-              if (item.done) li.className = "wg-pilot-fx-todo-done";
-              else if (item.current) li.className = "wg-pilot-fx-todo-now";
-              if (compact && (i < start || i >= end)) li.classList.add("wg-todo-fold");
-              else shown++;
-              ol.appendChild(li);
+              const mark =
+                group.style === "bullets"
+                  ? __wgEl("span", { class: "size-1.5 rounded-full bg-label-3 mx-[5px] mt-[6px] flex-none" })
+                  : group.style === "checklist"
+                    ? __wgIcon(item.done ? "boxChecked" : "box", item.done ? "text-accent" : "text-label-3")
+                    : __wgIcon(item.done ? "done" : item.current ? "current" : "pending", item.done || item.current ? "text-accent" : "text-label-3");
+              const look = item.done
+                ? "wg-pilot-fx-todo-done text-label-3 line-through decoration-label-4"
+                : item.current
+                  ? "wg-pilot-fx-todo-now bg-fill font-semibold text-label"
+                  : "text-label-2";
+              const folded = compact && (i < start || i >= end);
+              if (!folded) shown++;
+              ol.appendChild(
+                __wgEl(
+                  "li",
+                  { class: `${look}${folded ? " wg-todo-fold" : ""} flex items-start gap-2 px-1.5 py-[3px] rounded-control text-sm` },
+                  __wgEl("span", { class: "flex h-4 items-center text-[15px]" }, mark),
+                  __wgEl("span", { class: "min-w-0" }, item.text),
+                ),
+              );
             }
             dock.appendChild(ol);
           }
           if (compact && flat.length - shown > 0) {
-            const more = document.createElement("div");
-            more.className = "wg-todo-more";
-            more.textContent = "+" + (flat.length - shown) + " more";
-            dock.appendChild(more);
+            dock.appendChild(
+              __wgEl("div", { class: "wg-todo-more button-plain self-start text-xs" }, __wgIcon("chevronDown"), flat.length - shown + " more"),
+            );
           }
           __wgAdd(dock);
         }

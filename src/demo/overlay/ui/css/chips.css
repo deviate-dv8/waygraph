@@ -1,0 +1,23 @@
+/* The small chips (typing, zoom, device) and the device toast: their look is utilities in the builders
+   (inpage/swipe-zoom.ts, inpage/device-chip.ts); here, how they come and go. */
+#wg-typing-badge, #wg-zoom-badge, #wg-device-badge { z-index: var(--wg-z-chrome); }
+
+#wg-typing-badge { opacity: 0; transition-duration: .2s; }
+#wg-typing-badge.wg-in { opacity: 1; }
+/* A text caret after the value being typed. */
+#wg-typing-badge .wg-ty-caret {
+  width: 1.5px; height: 13px; border-radius: 1px; background: var(--wg-blue);
+  animation: wg-caret 1s steps(1) infinite;
+}
+@keyframes wg-caret { 50% { opacity: 0; } }
+
+#wg-device-badge { opacity: 0; transform: translateY(-4px); transition-duration: .35s; transition-timing-function: var(--ease-mac); }
+#wg-device-badge.wg-in { opacity: 1; transform: translateY(0); }
+
+/* A notification sliding in from the right edge, as macOS shows one. */
+#wg-device-toast {
+  z-index: var(--wg-z-toast); opacity: 0; transform: translateX(24px);
+  transition: opacity .3s var(--ease-mac), transform .45s var(--ease-spring);
+}
+#wg-device-toast.wg-in { opacity: 1; transform: translateX(0); }
+#wg-device-toast.wg-out { opacity: 0; transform: translateX(16px); }

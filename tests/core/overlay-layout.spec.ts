@@ -102,7 +102,7 @@ test("the overlay never takes a click meant for the page: a button under the tod
   await expect.poll(() => hit(...at)).toBe("overlay"); // the dock covers it
 
   setLocatorTheater(page, { beforeFill: async () => {}, typingDelay: () => 0, afterFill: async () => {}, beforeClick: async () => "click", holdMs: () => 0, afterClick: async () => {} });
-  await page.locator("#under").click({ timeout: 5000 });
+  await page.locator("#under").click();
   await expect(page.locator("#under")).toHaveText("clicked");
   await expect.poll(() => hit(...at)).toBe("overlay"); // the dock takes clicks again once the click is done
 

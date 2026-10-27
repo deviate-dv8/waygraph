@@ -1,0 +1,11 @@
+/*
+ * The todo docks (inpage/todos.ts; their look is utilities in the builder): what is state across rows lives here.
+ * A dock steps back under a ring that is the focus; a long list folds to a window around the current item, and
+ * hovering or "N more" opens it further.
+ */
+.wg-todo-dock, #wg-pilot-fx-todos { z-index: var(--wg-z-chrome); transition: opacity .25s var(--ease-mac); }
+:is(.wg-todo-dock, #wg-pilot-fx-todos).wg-todo-behind { z-index: var(--wg-z-focus); opacity: .4; }
+.wg-todo-dock[data-tucked="1"] { max-height: min(28vh, 220px); }
+.wg-todo-dock[data-compact="1"]:not(:hover):not([data-expanded="1"]) li.wg-todo-fold { display: none; }
+.wg-todo-dock[data-compact="1"]:is(:hover, [data-expanded="1"]) li.wg-todo-fold-deep { display: none; }
+#wg-pilot-fx-todos[data-compact="1"]:not(:hover) li.wg-todo-fold { display: none; }

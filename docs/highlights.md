@@ -2,7 +2,8 @@
 
 Narration is written in the **flow**, as ctx stubs chained on the Blocks it uses (`stubBefore` / `stubAfter` /
 `stubOnError`). Blocks stay neutral and carry no stubs, so one Block can be narrated differently by every flow.
-**Purple** = authored narration; **yellow** = automation checks (verify / unmatched fill-click) - watch the purple.
+**Blue** (`planned`) = authored narration; **gray** (`auto`) = what Playwright does on its own (verify, an unmatched fill or
+click) - watch the blue.
 
 ## Mental model
 

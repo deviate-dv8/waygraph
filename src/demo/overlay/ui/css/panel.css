@@ -1,6 +1,48 @@
-/* Shared dark panel surface token (pilot panel, auto panel, step chrome). Consumers set their own
- * layout (position/size); this file only supplies the shared look. */
-.wg-panel-surface {
-  background: var(--wg-surface); color: #fff; border-radius: var(--wg-radius-sm);
-  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+/*
+ * The step panel (#wg-panel): its look is utilities in the builders (inpage/panel-chrome.ts builds the shared parts;
+ * demo/stepper/ fills them). Here, its states: fading in once, collapsed to its title bar, a failure, the
+ * fast-forward glyph's motion, an episode just entered, the auto-advance spinner.
+ */
+#wg-panel { z-index: var(--wg-z-top); opacity: 0; transition: opacity .35s var(--ease-mac); }
+/* The auto picker's menu (live/auto/menu.ts) is the same kind of panel. */
+#wg-auto-panel { z-index: var(--wg-z-top); }
+#wg-panel.wg-in { opacity: 1; }
+
+/* Collapsed: the title bar alone - "3 / 9 · fill-password" and, when manual, Next. */
+#wg-auto-panel.wg-collapsed { width: auto; padding-top: 4px; padding-bottom: 4px; border-radius: 999px; overflow: hidden; }
+#wg-auto-panel.wg-collapsed .wg-body { display: none; }
+#wg-panel.wg-collapsed { width: auto; padding-top: 4px; padding-bottom: 4px; overflow: hidden; border-radius: 999px; }
+#wg-panel.wg-collapsed .wg-body { display: none; }
+#wg-panel.wg-collapsed .wg-chrome-title { font-size: var(--text-base); color: var(--wg-label); }
+#wg-panel button.wg-mini-next { display: none; }
+#wg-panel.wg-collapsed button.wg-mini-next.wg-mini-next-show { display: inline-flex; }
+
+/* A failure tints the panel's edge: red when the step threw, orange when it failed as the flow expected. */
+#wg-panel.wg-error { box-shadow: 0 0 0 1.5px var(--wg-red), var(--shadow-window); }
+#wg-panel.wg-expected { box-shadow: 0 0 0 1.5px var(--wg-orange), var(--shadow-window); }
+
+/* The fast-forward glyph on the collapsed title nudges forward. */
+#wg-panel .wg-ff-icon { animation: wg-ff-nudge 900ms var(--ease-mac) infinite; }
+@keyframes wg-ff-nudge { 0%, 100% { transform: translateX(-1px); opacity: .55; } 50% { transform: translateX(1.5px); opacity: 1; } }
+
+/* The episode tab just entered glows once. */
+#wg-episodes .wg-ep-entered { animation: wg-ep-enter 1.1s var(--ease-mac); }
+@keyframes wg-ep-enter {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--wg-blue) 55%, transparent); }
+  100% { box-shadow: 0 0 0 8px transparent; }
+}
+
+/* The macOS activity indicator, small. */
+#wg-ui .wg-spinner {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 1.5px solid var(--wg-label-4); border-top-color: var(--wg-label-2);
+  animation: wg-spin .8s linear infinite;
+}
+@keyframes wg-spin { to { transform: rotate(360deg); } }
+
+#wg-modules { scrollbar-width: none; }
+
+@media (max-width: 640px) {
+  #wg-panel { width: auto; padding-left: 12px; padding-right: 12px; }
+  #wg-panel .wg-footer { flex-wrap: wrap; }
 }

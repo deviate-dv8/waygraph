@@ -23,6 +23,7 @@ export function addNetworkEntry(entry: NetworkEntry) {
     if (m === "DELETE") return "delete";
     return "other";
   }
+  const METHOD_COLOR: Record<string, string> = { get: "text-blue", post: "text-green", put: "text-orange", delete: "text-red", other: "text-gray" };
 
   function toCurl(e: NetworkEntry) {
     let cmd = "curl -X " + (e.method || "GET") + " '" + String(e.url || "").replace(/'/g, "'\\''") + "'";
@@ -38,23 +39,34 @@ export function addNetworkEntry(entry: NetworkEntry) {
   function renderHeaders(headers: Record<string, string> | undefined) {
     const h = headers || {};
     const keys = Object.keys(h);
-    if (keys.length === 0) return __wgEl("div", { class: "wg-net-empty" }, "(none)");
-    return __wgEl("table", { class: "wg-net-headers" }, keys.map((k) => __wgEl("tr", null, __wgEl("td", null, k), __wgEl("td", null, String(h[k])))));
+    if (keys.length === 0) return __wgEl("div", { class: "wg-net-empty text-label-3" }, "None");
+    return __wgEl(
+      "table",
+      { class: "wg-net-headers w-full text-2xs" },
+      keys.map((k) =>
+        __wgEl("tr", null, __wgEl("td", { class: "pr-2 align-top whitespace-nowrap text-label-2" }, k), __wgEl("td", { class: "align-top break-all" }, String(h[k]))),
+      ),
+    );
   }
 
   function renderBody(body: string | undefined) {
-    if (body === undefined || body === null || body === "") return __wgEl("div", { class: "wg-net-empty" }, "(empty)");
+    if (body === undefined || body === null || body === "") return __wgEl("div", { class: "wg-net-empty text-label-3" }, "Empty");
     let text = body;
     try {
       text = JSON.stringify(JSON.parse(body), null, 2);
     } catch {
       /* not JSON - show raw */
     }
-    return __wgEl("pre", { class: "wg-net-body" }, String(text).slice(0, 4000));
+    return __wgEl("pre", { class: "wg-net-body max-h-40 overflow-y-auto whitespace-pre-wrap break-all text-2xs" }, String(text).slice(0, 4000));
   }
 
   function section(heading: string, ...content: WgChild[]) {
-    return __wgEl("div", { class: "wg-net-detail-section" }, __wgEl("h4", null, heading), ...content);
+    return __wgEl(
+      "div",
+      { class: "wg-net-detail-section flex flex-col gap-1" },
+      __wgEl("h4", { class: "font-sans text-2xs font-semibold text-label-2" }, heading),
+      ...content,
+    );
   }
 
   function renderDetail(e: NetworkEntry): WgChild[] {
@@ -65,41 +77,42 @@ export function addNetworkEntry(entry: NetworkEntry) {
       section("Response body", renderBody(e.resBody)),
       section(
         "cURL",
-        __wgEl("pre", { class: "wg-net-body wg-net-curl" }, toCurl(e)),
-        __wgEl("button", { class: "wg-net-copy", data: { copy: "1" }, attrs: { type: "button" } }, "Copy as cURL"),
+        __wgEl("pre", { class: "wg-net-body wg-net-curl max-h-40 overflow-y-auto whitespace-pre-wrap break-all text-2xs" }, toCurl(e)),
+        __wgEl(
+          "button",
+          { class: "wg-net-copy button self-start h-[22px] font-sans text-xs", data: { copy: "1" }, attrs: { type: "button" } },
+          __wgIcon("copy"),
+          __wgEl("span", { class: "wg-net-copy-label" }, "Copy as cURL"),
+        ),
       ),
     ];
   }
 
   let panel = __wgById("wg-network-log");
   if (!panel) {
-    panel = document.createElement("div");
-    panel.id = "wg-network-log";
-    panel.setAttribute("data-wg-ui", "1");
-    const header = document.createElement("div");
-    header.className = "wg-net-header";
-    const title = document.createElement("span");
-    title.className = "wg-net-title";
-    title.textContent = "Network";
-    const count = document.createElement("span");
-    count.className = "wg-net-count";
-    count.textContent = "0";
-    const toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.className = "wg-net-collapse";
-    toggle.textContent = "−"; // minus
+    const toggle = __wgEl("button", { class: "wg-net-collapse button-plain", attrs: { type: "button", "aria-label": "Collapse" } }, __wgIcon("chevronDown"));
     toggle.addEventListener("click", (ev) => {
       ev.stopPropagation();
       panel!.classList.toggle("wg-net-collapsed");
-      toggle.textContent = panel!.classList.contains("wg-net-collapsed") ? "+" : "−";
+      __wgSet(toggle, __wgIcon(panel!.classList.contains("wg-net-collapsed") ? "chevronUp" : "chevronDown"));
     });
-    header.appendChild(title);
-    header.appendChild(count);
-    header.appendChild(toggle);
-    const list = document.createElement("ol");
-    list.className = "wg-net-list";
-    panel.appendChild(header);
-    panel.appendChild(list);
+    panel = __wgEl(
+      "div",
+      {
+        id: "wg-network-log",
+        class: "material-thick rounded-panel flex flex-col w-[min(92vw,400px)] max-h-[min(60vh,420px)] overflow-hidden text-xs",
+        attrs: { "data-wg-ui": "1" },
+      },
+      __wgEl(
+        "div",
+        { class: "wg-net-header flex flex-none items-center gap-2 h-8 pl-3 pr-1.5 border-b-[0.5px] border-separator" },
+        __wgIcon("network", "text-label-2"),
+        __wgEl("span", { class: "wg-net-title flex-1 text-sm font-semibold" }, "Network"),
+        __wgEl("span", { class: "wg-net-count capsule h-[18px] px-1.5 bg-fill text-2xs font-semibold text-label-2 tabular-nums" }, "0"),
+        toggle,
+      ),
+      __wgEl("ol", { class: "wg-net-list flex flex-col p-1 overflow-y-auto font-mono" }),
+    );
     __wgAdd(panel);
   }
 
@@ -110,8 +123,7 @@ export function addNetworkEntry(entry: NetworkEntry) {
 
   const list = panel.querySelector<HTMLElement>(".wg-net-list");
   if (!list) return;
-  const row = document.createElement("li");
-  row.className = "wg-net-row";
+  const row = __wgEl("li", { class: "wg-net-row flex items-baseline gap-2 px-2 py-[3px] rounded-control cursor-default hover:bg-fill" });
   row.dataset.ok = entry.ok ? "1" : "0";
   let path = entry.url;
   try {
@@ -122,10 +134,14 @@ export function addNetworkEntry(entry: NetworkEntry) {
   }
   __wgSet(
     row,
-    __wgEl("span", { class: "wg-net-method wg-net-method-" + methodClass(entry.method) }, (entry.method || "GET").toUpperCase()),
-    __wgEl("span", { class: "wg-net-path", title: String(entry.url) }, path),
-    __wgEl("span", { class: "wg-net-status" }, String(entry.status ?? "")),
-    entry.ms !== undefined ? __wgEl("span", { class: "wg-net-ms" }, entry.ms + "ms") : null,
+    __wgEl(
+      "span",
+      { class: "wg-net-method wg-net-method-" + methodClass(entry.method) + " w-11 flex-none text-2xs font-semibold " + METHOD_COLOR[methodClass(entry.method)] },
+      (entry.method || "GET").toUpperCase(),
+    ),
+    __wgEl("span", { class: "wg-net-path flex-1 min-w-0 truncate", title: String(entry.url) }, path),
+    __wgEl("span", { class: "wg-net-status flex-none font-semibold " + (entry.ok ? "text-green" : "text-red") }, String(entry.status ?? "")),
+    entry.ms !== undefined ? __wgEl("span", { class: "wg-net-ms flex-none text-2xs text-label-3 tabular-nums" }, entry.ms + "ms") : null,
   );
   row.addEventListener("click", () => {
     const open = row.classList.contains("wg-net-open");
@@ -136,8 +152,7 @@ export function addNetworkEntry(entry: NetworkEntry) {
     });
     if (open) return;
     row.classList.add("wg-net-open");
-    const detail = document.createElement("li");
-    detail.className = "wg-net-detail";
+    const detail = __wgEl("li", { class: "wg-net-detail flex flex-col gap-2 m-1 p-2 rounded-card bg-fill" });
     __wgSet(detail, renderDetail(entry));
     const copyBtn = detail.querySelector<HTMLElement>("[data-copy]");
     if (copyBtn) {
@@ -147,9 +162,10 @@ export function addNetworkEntry(entry: NetworkEntry) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).catch(() => {});
         }
-        copyBtn.textContent = "Copied!";
+        const label = copyBtn.querySelector(".wg-net-copy-label");
+        if (label) label.textContent = "Copied";
         setTimeout(() => {
-          copyBtn.textContent = "Copy as cURL";
+          if (label) label.textContent = "Copy as cURL";
         }, 1200);
       });
     }

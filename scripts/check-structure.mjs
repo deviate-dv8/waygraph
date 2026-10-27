@@ -14,6 +14,8 @@
  *   9. `any` only shrinks: each file's count of `any` keywords may not exceed scripts/any-debt.json (lower it when you
  *      type something; a file not listed has none). Counted with TypeScript's own parser.
  *   10. No `.catch(() => {})` in Node code: catch with ignorePageGone / ignoreTimeout (engine/page-gone.ts) or handle it.
+ *   11. The overlay's look comes from its tokens (demo/overlay/ui/css/theme.css): no colour written into overlay code or a
+ *       component stylesheet, no stock Tailwind palette class, and icons from ui/icons.ts, not Unicode glyphs.
  * Run: npm run check:structure
  */
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -150,6 +152,41 @@ for (const f of overlayFiles) {
   for (const m of readFileSync(f, "utf8").matchAll(/([^{}]*)\{[^{}]*?position:\s*fixed/g)) {
     const selector = m[1].split(/["`]/).pop().replace(/\/\*[\s\S]*?\*\//g, "").trim();
     if (!ANCHORED.test(selector)) problems.push(`${rel}: "${selector.slice(0, 60)}" is position:fixed - put chrome in a slot of the overlay layout (ui/css/layout.css, ui/shadow.ts), not a hand-placed fixed box`);
+  }
+}
+// --- the overlay's look comes from its tokens ---
+// Colours live in ui/css/theme.css (and host.css, which styles the page itself). A few SVG constants keep their own
+// fills: the pointer and fingertip, the favicon, the device stage's matte, the pilot graph's "here" stroke.
+const COLOR_RE = /#[0-9a-fA-F]{3,8}\b|\brgba?\(\s*\d/;
+const COLOR_ALLOWED = new Set([
+  "demo/overlay/inpage/core.ts",
+  "demo/overlay/inpage/device-chip.ts",
+  "demo/overlay/overlay.ts",
+  "demo/overlay/device-stage.ts",
+  "live/pilot/panel.ts",
+  "demo/overlay/ui/css/theme.css",
+  "demo/overlay/ui/css/host.css",
+  "demo/overlay/ui/icons.ts",
+]);
+// A stock palette class (bg-purple-500) builds nothing: theme.css removes the palette. Use the semantic tokens.
+const PALETTE_RE = /\b(?:bg|text|border|ring|outline|fill|stroke|from|to|via|shadow|decoration)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/;
+// Glyphs drawn as icons (▶ ✓ ☐ ○ → •) in what the page shows; icons come from ui/icons.ts (__wgIcon).
+const GLYPH_RE = /["'`][^"'`\n]*[\u2190-\u21FF\u2022\u25A0-\u25FF\u2600-\u27BF][^"'`\n]*["'`]/;
+const IN_PAGE = /^(?:demo\/overlay\/|demo\/stepper\/(?:panel-|slides|step-panels)|live\/auto\/menu|live\/pilot\/panel)/;
+for (const f of overlayFiles) {
+  const rel = relative(srcDir, f).replace(/\\/g, "/");
+  const lines = readFileSync(f, "utf8").split("\n");
+  const code = (l) => !/^\s*(?:\/\/|\*|\/\*)/.test(l);
+  if (!COLOR_ALLOWED.has(rel)) {
+    const css = rel.endsWith(".css");
+    const line = lines.findIndex((l) => code(l) && (css ? /#[0-9a-fA-F]{3,8}\b/.test(l) : COLOR_RE.test(l)));
+    if (line >= 0) problems.push(`${rel}:${line + 1}: writes a colour - use a token from demo/overlay/ui/css/theme.css (a utility like text-label / bg-fill, or var(--wg-...))`);
+  }
+  const palette = lines.findIndex((l) => PALETTE_RE.test(l));
+  if (palette >= 0) problems.push(`${rel}:${palette + 1}: uses a stock Tailwind palette class - use the theme's (text-label, bg-fill, text-accent, text-red, ...)`);
+  if (IN_PAGE.test(rel)) {
+    const glyph = lines.findIndex((l) => code(l) && GLYPH_RE.test(l));
+    if (glyph >= 0) problems.push(`${rel}:${glyph + 1}: draws an icon with a Unicode glyph - use __wgIcon (demo/overlay/ui/icons.ts)`);
   }
 }
 // --- no barrels ---

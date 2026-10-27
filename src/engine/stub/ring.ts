@@ -27,9 +27,9 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
   tag?: string;
   /**
    * Demo ring color + icon:
-   * - `planned` purple (authored narration, default)
+   * - `planned` blue (authored narration, default)
    * - `auto` gray (engine automation / verify fallback)
-   * - `info` blue · `warning` yellow · `danger` red · `success` green
+   * - `info` teal · `warning` yellow · `danger` red · `success` green · `orange` orange
    */
   tone?: HighlightTone;
   /**

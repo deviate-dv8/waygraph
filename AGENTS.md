@@ -13,7 +13,8 @@ engine plays it (`waygraph run`, or `waygraph demo` with the overlay around each
 ## Rules the tooling enforces (`npm run check:structure`)
 
 Layers; no re-exports outside `src/index.ts`; no HTML strings into the page (`__wgEl` / `__wgSet` / `__wgSvg`);
-`WAYGRAPH_*` only through `src/engine/env.ts`; no `.catch(() => {})` (`ignorePageGone` / `ignoreTimeout`); `any` only
+`WAYGRAPH_*` only through `src/engine/env.ts`; overlay colours are tokens (`src/demo/overlay/ui/css/theme.css`), icons
+are `__wgIcon`, never glyphs; no `.catch(() => {})` (`ignorePageGone` / `ignoreTimeout`); `any` only
 shrinks (`scripts/any-debt.json`); files under 500 lines; no import cycles. `npm run knip` finds unused code.
 
 ## Rules by convention
@@ -30,5 +31,6 @@ shrinks (`scripts/any-debt.json`); files under 500 lines; no import cycles. `npm
 npm run examples:link   # once per checkout: examples/*/node_modules/waygraph -> this repo (CI does the same)
 npx tsc --noEmit && npm run build && npm run check:structure && npm run knip && npm run test:unit
 WAYGRAPH_HEADED=0 npx playwright test --grep-invert non-headless
+npm run storybook:build   # overlay changes: also look at the piece in `npm run storybook`, light and dark
 (cd examples/saucedemo && WAYGRAPH_HEADED=0 node ../../bin/waygraph test)
 ```

@@ -43,7 +43,6 @@ export { formatHighlightCaption, applyHighlightStyleDefaults, toneIconPrefix } f
 export { normalizeHighlightTone, normalizeHighlightSize, normalizeHighlightWeight } from "./engine/stub/ring.js";
 export { normalizeTodos, normalizeTodoPos, normalizeTodoStyle, buildTodoDock, applyTodoPhase, advanceTodoDock, completeSequentialTodoDock, resolveTodoDockUi } from "./demo/narration/todo-dock.js";
 export { applyDevicePhase, resolveDeviceState, normalizeDevicePreset, normalizeDeviceOrientation, applyOrientation, orientationFromViewport, DEVICE_PRESETS } from "./demo/narration/device.js";
-export { WAYGRAPH_RING_CSS } from "./demo/narration/css.js";
 export type { WaygraphHighlightStub, WaygraphSlide, FixtureDurationFields, HighlightStubPhase, ResolvedHighlight, HighlightTone, HighlightSize, HighlightWeight, HighlightStyleDefaults } from "./engine/stub/ring.js";
 export type { WaygraphTodoItem, WaygraphTodoInput, WaygraphTodoGroup, WaygraphTodoGroupInput, WaygraphTodosOpts, TodoDockUiOpts, TodoDockUiResolved, TodoDockState, TodoListStyle } from "./engine/stub/todos.js";
 export type { BannerPos, BannerUiOpts, HighlightStubPhaseName, StubCtx, StubLifecycleFn, StubPhaseResult, StubPhaseFixtures } from "./engine/stub/stub.js";

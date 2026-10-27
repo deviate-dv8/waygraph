@@ -26,6 +26,7 @@ export const WAYGRAPH_ENV = {
   WAYGRAPH_FAST_BLOCKS: "Comma-separated Block names that skip the demo's added dwell",
   WAYGRAPH_SLOWMO: "Playwright slowMo / the demo's beat after each action, ms",
   WAYGRAPH_TYPING_MS: "Demo typing delay per character, ms (default 30)",
+  WAYGRAPH_APPEARANCE: "The overlay's appearance: light | dark (default: the system's)",
   WAYGRAPH_SWIPE_MS: "Demo swipe gesture duration, ms (default 650)",
   WAYGRAPH_DEVICE_TRANSITION_MS: "Demo device resize animation, ms (default 520)",
   WAYGRAPH_STEPPER: "full shows every step chip (--full); default carousel",

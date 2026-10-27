@@ -46,6 +46,11 @@ once the redirects settle (`src/demo/overlay/reattach.ts`).
 banner or caption in the page, or restyles waygraph's overlay (`#wg-*`, `window.__wg*`), changes the page it is testing
 and breaks when the overlay changes. `waygraph check` warns on it (`hand-written UI`).
 
+**The look.** The overlay looks like macOS: frosted panels the page shows through, the system font, blue for what the
+flow narrates, gray for what Playwright does on its own, real icons. It follows the computer's light or dark setting;
+a project can pin one (`demo: { appearance: "dark" }`). Every piece can be seen on its own, in both, with
+`npm run storybook` in the waygraph repo.
+
 **One layout.** Everything the demo draws sits in one layer over the page. What follows the page - the ring, its
 caption, the cursor - is drawn where the target is. Everything else has a fixed place: the title top-left (or centre,
 or right), todo checklists down the sides, the device chip top-right, and at the bottom centre, stacked top to bottom,

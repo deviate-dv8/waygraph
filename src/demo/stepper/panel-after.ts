@@ -59,29 +59,10 @@ export async function renderAfterStep(page: WgPage, info: AfterPanelInfo) {
   await page
     .evaluate((info) => {
       // Reused in place - see renderBeforeStep's own comment on this.
-      let panel = __wgById("wg-panel");
-      const isNewPanel = !panel;
-      if (!panel) {
-        panel = document.createElement("div");
-        panel.id = "wg-panel";
-      }
-      const pct = Math.round(((info.index + 1) / info.total) * 100);
-      const heading = info.isLast
-        ? "End of chain - " + info.total + " / " + info.total + " blocks covered - " + info.blockName + " done"
-        : "Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + " done";
-      const buttonLabel = info.isLast ? "Finish" : "Next \u25B6";
-      const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
-      const modules = info.allNames.map((name, idx) => {
-        const cls = idx <= info.moduleIndex ? "wg-mod-done" : "wg-mod-upcoming";
-        const desc = info.allDescriptions && info.allDescriptions[idx];
-        return __wgEl("span", { class: "wg-mod " + cls, title: desc || undefined }, String(name));
-      });
-      // QA-friendly by default ("LoginSuccess" -> "Login Success") - raw
-      // JSON is one click away for whoever actually wants __state.
+      const { panel, isNew: isNewPanel } = window.__wgPanel!();
       const stateTag = info.result && info.result.__state ? info.result.__state : "";
-      const prettyText = stateTag
-        .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-        .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2") || info.resultTag;
+      const prettyText =
+        stateTag.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2") || info.resultTag;
       const pretty = window.__wgPretty !== false;
       let autoNow = false;
       try {
@@ -89,47 +70,45 @@ export async function renderAfterStep(page: WgPage, info: AfterPanelInfo) {
       } catch {
         /* private mode / blocked storage - defaults to manual */
       }
-      const autoplay = __wgEl("input", { id: "wg-autoplay-cb", attrs: { type: "checkbox" } });
-      autoplay.checked = autoNow;
-      const episodes = info.allEpisodes && info.allEpisodes.length > 0
-        ? __wgEl(
-          "div",
-          { id: "wg-episodes" },
-          info.allEpisodes.map((e) => {
-            const cls = e.episodeNumber < (info.episodeNumber ?? 0) ? "wg-ep-done"
-              : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
-                : "wg-ep-upcoming";
-            return __wgEl("span", { class: "wg-ep-tab " + cls }, "Episode " + e.episodeNumber + ": " + (e.episodeTitle || ""));
-          })
-        )
-        : null;
-      const pace = info.paceBadge || info.paceLabel
-        ? __wgEl(
-          "div",
-          { class: "wg-pace", data: { paceKind: info.paceKind || "normal" } },
-          __wgEl("span", { class: "wg-pace-badge" }, info.paceBadge || "1x"),
-          __wgEl("span", null, info.paceLabel || "")
-        )
-        : null;
-      // Todos float in #wg-todo-dock via __wgSyncTodos, never in the panel.
+      const segment = (mode: string, label: string, on: boolean) =>
+        __wgEl(
+          "button",
+          {
+            class: "wg-toggle-btn h-[18px] px-2 rounded-[5px] text-2xs font-medium " + (on ? "wg-active bg-control shadow-control text-label" : "text-label-2"),
+            data: { mode },
+            attrs: { type: "button" },
+          },
+          label,
+        );
       __wgSet(
         panel,
-        __wgEl("div", { id: "wg-progress" }, __wgEl("div", { id: "wg-progress-bar", style: "width:" + pct + "%" })),
-        episodes,
-        pace,
-        __wgEl("div", { id: "wg-modules", class: modulesClass }, modules),
-        __wgEl("h3", null, heading),
+        window.__wgPanelFrame!(info, {
+          current: null,
+          doneBefore: info.moduleIndex + 1,
+          progress: Math.round(((info.index + 1) / info.total) * 100),
+        }),
+        window.__wgPanelHeading!(
+          info.isLast ? "Finished · " + info.total + " of " + info.total : "Step " + (info.index + 1) + " of " + info.total + " · done",
+          info.blockName,
+        ),
         __wgEl(
           "div",
-          { class: "wg-toggle" },
-          __wgEl("button", { class: "wg-toggle-btn" + (pretty ? " wg-active" : ""), data: { mode: "pretty" } }, "Pretty"),
-          __wgEl("button", { class: "wg-toggle-btn" + (pretty ? "" : " wg-active"), data: { mode: "json" } }, "JSON")
+          { class: "flex items-center justify-between gap-2 mb-1.5" },
+          __wgEl("span", { class: "text-xs font-medium text-label-2" }, "Landed on"),
+          __wgEl("div", { class: "wg-toggle segmented" }, segment("pretty", "Pretty", pretty), segment("json", "JSON", !pretty)),
         ),
-        __wgEl("div", { class: "wg-result wg-result-pretty", style: "display:" + (pretty ? "block" : "none") }, String(prettyText)),
-        __wgEl("div", { class: "wg-result wg-result-json", style: "display:" + (pretty ? "none" : "block") }, String(info.resultTag)),
-        __wgEl("div", { class: "wg-autoplay-row" }, __wgEl("label", null, autoplay, " Auto-advance")),
-        __wgEl("div", { id: "wg-gate-manual", style: autoNow ? "display:none" : "" }, __wgEl("button", { id: "wg-run" }, buttonLabel)),
-        __wgEl("div", { id: "wg-gate-auto", class: "wg-auto", style: autoNow ? "" : "display:none" }, "Auto-advancing...")
+        __wgEl(
+          "div",
+          { class: "wg-result wg-result-pretty flex items-center gap-2 rounded-card bg-fill px-3 py-2 text-lg font-semibold", style: "display:" + (pretty ? "flex" : "none") },
+          __wgIcon("done", "text-green"),
+          String(prettyText),
+        ),
+        __wgEl(
+          "div",
+          { class: "wg-result wg-result-json rounded-card bg-fill px-3 py-2 font-mono text-sm whitespace-pre-wrap", style: "display:" + (pretty ? "none" : "block") },
+          String(info.resultTag),
+        ),
+        window.__wgPanelFooter!(info.isLast ? "Finish" : "Next", autoNow, info.isLast ? undefined : "next"),
       );
       if (isNewPanel) {
         __wgAdd(panel);
@@ -177,28 +156,20 @@ export async function renderAfterStep(page: WgPage, info: AfterPanelInfo) {
         btn.addEventListener("click", () => {
           const wantPretty = btn.getAttribute("data-mode") === "pretty";
           window.__wgPretty = wantPretty;
-          panel.querySelectorAll<HTMLElement>(".wg-toggle-btn").forEach((b) => b.classList.remove("wg-active"));
-          btn.classList.add("wg-active");
-          panel.querySelector<HTMLElement>(".wg-result-pretty")!.style.display = wantPretty ? "block" : "none";
+          const on = ["wg-active", "bg-control", "shadow-control", "text-label"];
+          panel.querySelectorAll<HTMLElement>(".wg-toggle-btn").forEach((b) => {
+            b.classList.remove(...on);
+            b.classList.add("text-label-2");
+          });
+          btn.classList.remove("text-label-2");
+          btn.classList.add(...on);
+          panel.querySelector<HTMLElement>(".wg-result-pretty")!.style.display = wantPretty ? "flex" : "none";
           panel.querySelector<HTMLElement>(".wg-result-json")!.style.display = wantPretty ? "none" : "block";
         });
       });
       const runBtn = __wgById<HTMLButtonElement>("wg-run");
       if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
-      const cb = __wgById<HTMLInputElement>("wg-autoplay-cb");
-      if (cb) {
-        cb.addEventListener("change", () => {
-          try {
-            localStorage.setItem("wg-autoplay", cb.checked ? "1" : "0");
-          } catch {
-            /* private mode / blocked storage - toggle still works this page */
-          }
-          const manual = __wgById("wg-gate-manual");
-          const auto = __wgById("wg-gate-auto");
-          if (manual) manual.style.display = cb.checked ? "none" : "";
-          if (auto) auto.style.display = cb.checked ? "" : "none";
-        });
-      }
+      window.__wgWireAutoplay!();
     }, afterPayload)
     .catch(ignorePageGone);
 }

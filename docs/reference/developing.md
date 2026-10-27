@@ -10,8 +10,18 @@ npm run build && npm run examples:link   # the specs scan examples/; this links 
 npm run typecheck   # waygraph typecheck . (tsc --noEmit + practice warnings)
 npm run test        # node --test tests/unit + playwright test
 npm run test:ui     # playwright test --ui
-npm run build       # tsc -p tsconfig.build.json, emits dist/
+npm run build       # tsc -p tsconfig.build.json, emits dist/ (+ the overlay's stylesheet, scripts/build-ui-css.mjs)
+npm run storybook   # every overlay piece in light and dark, painted by the real builders (stories/), on :6006
+npm run icons       # regenerate src/demo/overlay/ui/icons.ts after adding a Phosphor icon to scripts/gen-icons.mjs
 ```
+
+### The overlay's look
+
+The overlay follows macOS: translucent materials, system colours, the system font, hairline edges, light and dark (a
+project pins one with `demo.appearance`). Its stylesheet is `src/demo/overlay/ui/css/` through Tailwind; an element's
+look is utilities where it is built, its states are the component CSS there, and colours are tokens only
+(`src/demo/overlay/ui/css/README.md`). Icons are Phosphor (`__wgIcon`). Change a piece, then look at it in Storybook in
+both appearances; `check:structure` rejects written colours, stock palette classes and glyphs used as icons.
 
 ### Blind-agent overlay gate (anti-blank)
 

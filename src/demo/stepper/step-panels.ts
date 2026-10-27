@@ -159,52 +159,35 @@ async function renderStepError(page: WgPage, info: ErrorPanelInfo) {
   const errorPayload = { ...info, stepLabel: miniStepLabel(info) };
   await page
     .evaluate((info) => {
-      // Reused in place - see renderBeforeStep's own comment on this.
-      let panel = __wgById("wg-panel");
-      const isNewPanel = !panel;
-      if (!panel) {
-        panel = document.createElement("div");
-        panel.id = "wg-panel";
-      }
+      const { panel, isNew: isNewPanel } = window.__wgPanel!();
       const isExpected = !!info.expectedFailureReason;
-      const errClass = isExpected ? "wg-expected" : "wg-error";
       panel.classList.remove("wg-error", "wg-expected");
-      panel.classList.add(errClass);
+      panel.classList.add(isExpected ? "wg-expected" : "wg-error");
       if (!isNewPanel) panel.classList.add("wg-in");
-      const episodes = info.allEpisodes && info.allEpisodes.length > 0
-        ? __wgEl(
-            "div",
-            { id: "wg-episodes" },
-            info.allEpisodes.map((e) => {
-              const cls = e.episodeNumber < (info.episodeNumber ?? 0) ? "wg-ep-done"
-                : e.episodeNumber === info.episodeNumber ? "wg-ep-current"
-                : "wg-ep-upcoming";
-              return __wgEl("span", { class: "wg-ep-tab " + cls }, "Episode " + e.episodeNumber + ": " + (e.episodeTitle || ""));
-            }),
-          )
-        : null;
-      const modulesClass = info.stepperMode === "full" ? "wg-modules-full" : "wg-modules-carousel";
-      const modules = info.allNames.map((name, idx) => {
-        const cls = idx === info.moduleIndex ? "wg-mod-current" : idx < info.moduleIndex ? "wg-mod-done" : "wg-mod-upcoming";
-        const desc = info.allDescriptions && info.allDescriptions[idx];
-        return __wgEl("span", { class: "wg-mod " + cls, title: desc || undefined }, String(name));
-      });
       const retryLabel = info.episodeNumber !== undefined ? "Retry Episode " + info.episodeNumber : "Retry";
-      const headingText = isExpected
-        ? "Expected outcome - Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + " failed as intended"
-        : "Step " + (info.index + 1) + " / " + info.total + " - " + info.blockName + " threw";
       __wgSet(
         panel,
-        episodes,
-        __wgEl("div", { id: "wg-modules", class: modulesClass }, modules),
-        __wgEl("h3", { class: isExpected ? "wg-expected-heading" : "wg-error-heading" }, headingText),
-        isExpected ? __wgEl("div", { class: "wg-expected-reason" }, String(info.expectedFailureReason)) : null,
-        __wgEl("div", { class: "wg-error-msg" }, String(info.message)),
+        window.__wgPanelFrame!(info, { current: info.moduleIndex, doneBefore: info.moduleIndex, progress: null }),
+        window.__wgPanelHeading!(
+          isExpected
+            ? "Step " + (info.index + 1) + " of " + info.total + " · failed as expected"
+            : "Step " + (info.index + 1) + " of " + info.total + " · failed",
+          info.blockName,
+          isExpected ? "expected" : "error",
+        ),
+        isExpected
+          ? __wgEl("div", { class: "wg-expected-reason rounded-card bg-orange/12 px-3 py-2 mb-2 text-sm font-medium" }, String(info.expectedFailureReason))
+          : null,
         __wgEl(
           "div",
-          { class: "wg-error-actions" },
-          __wgEl("button", { id: "wg-error-retry", class: "wg-error-retry" }, retryLabel),
-          __wgEl("button", { id: "wg-run", class: "wg-error-stop" }, "Stop"),
+          { class: "wg-error-msg rounded-card bg-fill px-3 py-2.5 font-mono text-sm whitespace-pre-wrap break-words max-h-[200px] overflow-y-auto" },
+          String(info.message),
+        ),
+        __wgEl(
+          "div",
+          { class: "wg-error-actions flex justify-end gap-2 mt-3 pt-3 border-t-[0.5px] border-separator" },
+          __wgEl("button", { id: "wg-run", class: "wg-error-stop button button-destructive h-7 px-3.5", attrs: { type: "button" } }, __wgIcon("stop"), "Stop"),
+          __wgEl("button", { id: "wg-error-retry", class: "wg-error-retry button button-primary h-7 px-3.5", attrs: { type: "button" } }, __wgIcon("retry"), retryLabel),
         ),
       );
       if (isNewPanel) {

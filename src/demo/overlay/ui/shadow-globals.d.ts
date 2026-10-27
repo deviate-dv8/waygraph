@@ -21,6 +21,8 @@ declare function __wgEl<K extends keyof HTMLElementTagNameMap>(tag: K, props?: W
 declare function __wgSet(el: Element, ...children: WgChild[]): void;
 /** One of waygraph's static SVG icon constants as an element. */
 declare function __wgSvg(markup: string): Element;
+/** An overlay icon (ui/icons.ts) as an element with the `icon` utility plus `cls`: `__wgIcon("check", "text-green")`. */
+declare function __wgIcon(name: import("./icons.js").IconName, cls?: string): Element;
 
 /** A ring label's look: font size, weight and color. */
 interface WgRingStyle {
@@ -49,6 +51,30 @@ interface Window {
     tone?: string,
     style?: WgRingStyle,
   ) => void;
+}
+
+/** What the shared panel frame shows: where the step sits, its episode and its pace (demo/stepper/step-panels.ts). */
+interface WgPanelFrameInfo {
+  allNames: readonly string[];
+  allDescriptions?: readonly string[] | undefined;
+  allEpisodes?: readonly { episodeNumber: number; episodeTitle: string }[] | undefined;
+  episodeNumber?: number | undefined;
+  stepperMode?: "full" | "carousel" | undefined;
+  paceBadge?: string | undefined;
+  paceLabel?: string | undefined;
+  paceKind?: string | undefined;
+}
+
+// The step panel's shared parts (inpage/panel-chrome.ts).
+interface Window {
+  __wgPanel?: () => { panel: HTMLElement; isNew: boolean };
+  __wgPanelFrame?: (
+    info: WgPanelFrameInfo,
+    opts: { current: number | null; doneBefore: number; progress?: number | null; entered?: boolean | undefined },
+  ) => WgChild[];
+  __wgPanelHeading?: (kicker: string, title: string, tone?: "error" | "expected") => HTMLElement;
+  __wgPanelFooter?: (label: string, autoNow: boolean, icon?: import("./icons.js").IconName) => HTMLElement;
+  __wgWireAutoplay?: () => void;
 }
 
 // Ring, cursor, panel and beacon calls the overlay installs (inpage/core.ts, stamp.ts, panel-chrome.ts).

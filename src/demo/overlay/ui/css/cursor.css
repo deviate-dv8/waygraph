@@ -1,20 +1,17 @@
-/* Travelling mouse cursor + click ripple (#wg-cursor, #wg-click-pulse). */
+/* The travelling pointer and its click pulse (#wg-cursor, #wg-click-pulse), on the stage. */
 #wg-cursor {
   position: fixed; z-index: var(--wg-z-cursor); width: 24px; height: 24px; pointer-events: none;
   left: 0; top: 0; opacity: 0; margin: 0;
-  /* Travel time is JS-driven via --wg-cursor-ms (a hardcoded duration would make speed a no-op). */
-  transition: transform var(--wg-cursor-ms, 600ms) var(--wg-ease), opacity .2s ease;
-  filter: drop-shadow(0 2px 4px rgba(12,12,26,.4));
+  /* Travel time is set from code (--wg-cursor-ms): the pace decides it. */
+  transition: transform var(--wg-cursor-ms, 600ms) var(--ease-mac), opacity .2s ease;
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.35)) drop-shadow(0 3px 6px rgb(0 0 0 / 0.18));
 }
+#wg-cursor[data-touch="1"] { width: 28px; height: 28px; }
+/* A click: a ring of the tone colour that opens and fades, like a trackpad click on a recording. */
 #wg-click-pulse {
-  position: fixed; z-index: var(--wg-z-cursor); width: 14px; height: 14px;
-  margin-left: -7px; margin-top: -7px; border-radius: 50%; pointer-events: none; opacity: 0;
-  border: 2px solid var(--wg-tone-ring, var(--wg-tone-planned-ring)); background: var(--wg-tone-pulse, var(--wg-tone-planned-glow));
+  position: fixed; z-index: var(--wg-z-cursor); width: 18px; height: 18px; margin: -9px 0 0 -9px;
+  border-radius: 50%; pointer-events: none; opacity: 0;
+  border: 2px solid var(--wg-tone, var(--wg-blue)); background: color-mix(in srgb, var(--wg-tone, var(--wg-blue)) 22%, transparent);
 }
-#wg-click-pulse[data-tone=auto]    { --wg-tone-ring: var(--wg-tone-auto-ring);    --wg-tone-pulse: var(--wg-tone-auto-glow); }
-#wg-click-pulse[data-tone=info]    { --wg-tone-ring: var(--wg-tone-info-ring);    --wg-tone-pulse: var(--wg-tone-info-glow); }
-#wg-click-pulse[data-tone=warning] { --wg-tone-ring: var(--wg-tone-warning-ring); --wg-tone-pulse: var(--wg-tone-warning-glow); }
-#wg-click-pulse[data-tone=danger]  { --wg-tone-ring: var(--wg-tone-danger-ring);  --wg-tone-pulse: var(--wg-tone-danger-glow); }
-#wg-click-pulse[data-tone=success] { --wg-tone-ring: var(--wg-tone-success-ring); --wg-tone-pulse: var(--wg-tone-success-glow); }
-#wg-click-pulse.wg-pulse { animation: wg-pulse .5s ease-out; }
-@keyframes wg-pulse { 0% { opacity: .9; transform: scale(.4); } 100% { opacity: 0; transform: scale(2.4); } }
+#wg-click-pulse.wg-pulse { animation: wg-pulse .45s var(--ease-mac); }
+@keyframes wg-pulse { 0% { opacity: .9; transform: scale(.35); } 100% { opacity: 0; transform: scale(2.2); } }

@@ -46,7 +46,7 @@ export type StubPhaseFixtures = {
   zoom?: number;
   /** Default zoomOut for rings (false = keep camera between rings). */
   zoomOut?: boolean;
-  /** Top demo banner title (the purple "waygraph demo" card). */
+  /** Top demo banner title (the "waygraph demo" card, top left by default). */
   title?: string;
   /** Banner side/position (`left` | `center` | `right`). Authored control, like the todo dock's `pos`. */
   titlePos?: BannerPos;

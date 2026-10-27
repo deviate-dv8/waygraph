@@ -2,18 +2,24 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-let cached: string | undefined;
+const sheets = new Map<string, string>();
 
-/**
- * The whole overlay stylesheet (Open Props subset + ring/cursor/banner/dock/panel), bundled by
- * `scripts/copy-ui-css.mjs` into `dist/ui/overlay.css`. One real CSS file, read once, injected by
- * `ui/shadow.ts` into the overlay's shadow root - every surface (demo/auto/browser/pilot) gets the
- * exact same rules, not a per-surface regenerated copy.
- */
+/** A built stylesheet next to this file in dist (scripts/build-ui-css.mjs), read once. */
+function sheet(name: "overlay.css" | "host.css"): string {
+  let css = sheets.get(name);
+  if (css === undefined) {
+    css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), name), "utf8");
+    sheets.set(name, css);
+  }
+  return css;
+}
+
+/** The overlay's one stylesheet (ui/css/overlay.css through Tailwind), injected into its shadow root. */
 export function getOverlaySheet(): string {
-  if (cached !== undefined) return cached;
-  const here = dirname(fileURLToPath(import.meta.url));
-  // Compiled to dist/ui/stylesheet.js; the bundle sits right next to it.
-  cached = readFileSync(join(here, "overlay.css"), "utf8");
-  return cached;
+  return sheet("overlay.css");
+}
+
+/** Rules for the page itself (the device stage), injected into the page outside the shadow root. */
+export function getHostSheet(): string {
+  return sheet("host.css");
 }

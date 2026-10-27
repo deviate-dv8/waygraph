@@ -137,9 +137,16 @@ By convention:
   (`ui/css/layout.css`): its stage holds what follows a target (ring, label, cursor, veil, swipe), and its chrome is
   eight slots (top / middle / bottom row, left / center / right) where everything else stacks with a gap instead of
   overlapping. `__wgAdd(el)` puts an element in its slot (by id and `data-pos`); after changing `data-pos`, call
-  `__wgAdd(el)` again before measuring it. One z-index scale, inside `#wg-ui` (`ui/css/tokens.css`). In-page code uses
-  `__wgById / __wgQ / __wgQA / __wgAdd / __wgCss`, and builds elements with `__wgEl / __wgSet / __wgSvg`: text is always a
-  text node, never parsed as HTML (`check:structure` rejects `innerHTML` and the other HTML sinks). CSS for the host page (the device stage) is `HOST_CSS` in `demo/overlay/overlay-css.ts`.
+  `__wgAdd(el)` again before measuring it. One z-index scale, inside `#wg-ui` (`ui/css/theme.css`). In-page code uses
+  `__wgById / __wgQ / __wgQA / __wgAdd`, and builds elements with `__wgEl / __wgSet / __wgIcon`: text is always a
+  text node, never parsed as HTML (`check:structure` rejects `innerHTML` and the other HTML sinks).
+- The overlay's look: one stylesheet, `demo/overlay/ui/css/` through Tailwind (`scripts/build-ui-css.mjs`). An element's
+  look is Tailwind utilities where the builder makes it (`class: "material rounded-panel px-3"`); its states, keyframes
+  and the slot layout are the component files there. Colours, type, radii and shadows are macOS tokens in `theme.css`
+  (light and dark; `demo.appearance` pins one); icons are Phosphor, generated into `ui/icons.ts` (`npm run icons`).
+  `check:structure` rejects a written colour, a stock palette class and a glyph used as an icon. `npm run storybook`
+  shows every piece (`stories/`), painted by the real builders. CSS for the page itself (the device stage) is
+  `ui/css/host.css`.
 - The runner is spawned inside the target project, so `waygraph/runner` and Playwright resolve from the project's own
   install (two Playwright copies in one process is a hard error). Read `CLI-STOMP-GUARD.md` before changing the stepper.
 - Never mix a move with an edit in one commit.

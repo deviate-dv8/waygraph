@@ -122,23 +122,26 @@ export function installSwipeZoom() {
           window.__wgZoomSel = "";
           if (window.__wgSetZoomBadge) window.__wgSetZoomBadge(1, "");
         };
-        const ZOOM_ICO =
-          '<svg viewBox="0 0 24 24" fill="none" stroke="#c9a6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-          '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
         window.__wgSetZoomBadge = (scale: number, sel?: string) => {
           const n = Number(scale);
           const level = Number.isFinite(n) && n > 0 ? n : 1;
           let badge = __wgById("wg-zoom-badge");
           if (!badge) {
-            badge = document.createElement("div");
-            badge.id = "wg-zoom-badge";
-            badge.setAttribute("data-wg-ui", "1");
+            badge = __wgEl("div", {
+              id: "wg-zoom-badge",
+              class: "capsule material h-7 px-2.5 text-sm font-medium pointer-events-none",
+              attrs: { "data-wg-ui": "1" },
+            });
             __wgAdd(badge);
           }
           const zoomed = level > 1.001 || level < 0.999;
           badge.dataset.zoomed = zoomed ? "1" : "0";
           const txt = level.toFixed(2) + "\u00d7";
-          __wgSet(badge, __wgEl("span", { class: "wg-zoom-ico" }, __wgSvg(ZOOM_ICO)), __wgEl("span", { class: "wg-zoom-val" }, txt));
+          __wgSet(
+            badge,
+            __wgIcon("zoom", zoomed ? "text-accent" : "text-label-2"),
+            __wgEl("span", { class: "wg-zoom-val tabular-nums min-w-[3.2em]" }, txt),
+          );
           badge.classList.add("wg-in");
           window.__wgZoomLevel = level;
           window.__wgZoomSel = sel || "";
@@ -161,13 +164,21 @@ export function installSwipeZoom() {
             return;
           }
           if (!badge) {
-            badge = document.createElement("div");
-            badge.id = "wg-typing-badge";
-            badge.setAttribute("data-wg-ui", "1");
+            badge = __wgEl("div", {
+              id: "wg-typing-badge",
+              class: "capsule material h-7 px-3 text-sm font-medium pointer-events-none",
+              attrs: { "data-wg-ui": "1" },
+            });
             __wgAdd(badge);
           }
           const text = label ? String(label).slice(0, 40) : "typing";
-          __wgSet(badge, __wgEl("span", { class: "wg-ty-dots" }, "\u25cf\u25cf\u25cf"), __wgEl("span", null, "typing \u00b7 " + text));
+          __wgSet(
+            badge,
+            __wgIcon("keyboard", "text-label-2"),
+            __wgEl("span", { class: "text-label-2" }, "Typing"),
+            __wgEl("span", { class: "max-w-[24em] truncate" }, text),
+            __wgEl("span", { class: "wg-ty-caret" }),
+          );
           void badge.offsetWidth;
           badge.classList.add("wg-in");
         };

@@ -13,26 +13,12 @@ export function installDevice() {
             "<svg viewBox='0 0 32 32' width='24' height='24'>" +
             "<path fill='#0C0C1A' stroke='#fff' stroke-width='1.4' stroke-linejoin='round' " +
             "d='M6 3.5l1.4 22.5 5.8-5.4 4.2 9.4 3.6-1.6-4.2-9.2H26z'/></svg>";
+          // A touch: the Simulator's translucent fingertip.
           const FINGER_SVG =
             "<svg viewBox='0 0 32 32' width='28' height='28'>" +
-            "<ellipse cx='16' cy='22' rx='7' ry='8' fill='#0C0C1A' stroke='#fff' stroke-width='1.4'/>" +
-            "<rect x='12' y='6' width='8' height='16' rx='4' fill='#0C0C1A' stroke='#fff' stroke-width='1.4'/>" +
-            "</svg>";
-          const DESKTOP_ICON =
-            '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
-              '<rect x="2.5" y="3.5" width="19" height="12.5" rx="1.5"/>' +
-              '<path d="M8 20h8M12 16v4"/></svg>';
-          const ICONS: Record<string, string> = {
-            mobile:
-              '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
-              '<rect x="7" y="2.5" width="10" height="19" rx="2.2"/>' +
-              '<circle cx="12" cy="18.2" r="1.1" fill="#fff" stroke="none"/></svg>',
-            tablet:
-              '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
-              '<rect x="3.5" y="4" width="17" height="16" rx="2"/>' +
-              '<circle cx="12" cy="17.2" r="1" fill="#fff" stroke="none"/></svg>',
-            desktop: DESKTOP_ICON,
-          };
+            "<circle cx='16' cy='16' r='11' fill='rgba(255,255,255,.6)' stroke='rgba(0,0,0,.35)' stroke-width='1'/></svg>";
+          const iconOf = (preset: string) => (preset === "mobile" ? "mobile" : preset === "tablet" ? "tablet" : "desktop");
+          const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
           const setCursor = (touch: boolean) => {
             if (!cursor) return;
             if (touch) {
@@ -56,9 +42,11 @@ export function installDevice() {
               return;
             }
             if (!badge) {
-              badge = document.createElement("div");
-              badge.id = "wg-device-badge";
-              badge.setAttribute("data-wg-ui", "1");
+              badge = __wgEl("div", {
+                id: "wg-device-badge",
+                class: "capsule material h-7 px-2.5 text-sm font-medium pointer-events-none overflow-hidden",
+                attrs: { "data-wg-ui": "1" },
+              });
               __wgAdd(badge);
             }
             badge.dataset.preset = preset;
@@ -70,14 +58,12 @@ export function installDevice() {
             if (orient) badge.dataset.orientation = orient;
             const chipLabel =
               preset === "desktop" && !touch
-                ? "desktop"
-                : preset +
-                  (orient ? " · " + (orient === "landscape" ? "land" : "port") : "") +
-                  (remain ? " · remain" : "");
+                ? "Desktop"
+                : cap(preset) + (orient ? " · " + cap(orient) : "") + (remain ? " · stays" : "");
             __wgSet(
               badge,
-              __wgEl("span", { class: "wg-dev-icon" }, __wgSvg(ICONS[preset] ?? DESKTOP_ICON)),
-              __wgEl("span", { class: "wg-dev-label" }, chipLabel),
+              __wgIcon(iconOf(preset), "text-label-2"),
+              __wgEl("span", { class: "wg-dev-label truncate min-w-0" }, chipLabel),
             );
             void badge.offsetWidth;
             badge.classList.add("wg-in");
@@ -89,9 +75,11 @@ export function installDevice() {
               toast._wgTimer = undefined;
             }
             if (!toast) {
-              toast = document.createElement("div");
-              toast.id = "wg-device-toast";
-              toast.setAttribute("data-wg-ui", "1");
+              toast = __wgEl("div", {
+                id: "wg-device-toast",
+                class: "material rounded-panel flex items-center gap-3 p-2.5 pr-4 w-[min(92vw,300px)] pointer-events-none",
+                attrs: { "data-wg-ui": "1" },
+              });
               __wgAdd(toast);
             }
             // Hide chip while toast is up (same corner).
@@ -100,8 +88,13 @@ export function installDevice() {
             toast.dataset.preset = preset;
             __wgSet(
               toast,
-              __wgEl("span", { class: "wg-dev-icon" }, __wgSvg(ICONS[preset] ?? DESKTOP_ICON)),
-              __wgEl("span", { class: "wg-dev-copy" }, __wgEl("div", { class: "wg-dev-title" }, title), __wgEl("div", { class: "wg-dev-sub" }, sub)),
+              __wgEl("span", { class: "grid place-items-center size-9 flex-none rounded-card bg-fill text-[20px] text-accent" }, __wgIcon(iconOf(preset))),
+              __wgEl(
+                "span",
+                { class: "flex flex-col min-w-0" },
+                __wgEl("span", { class: "text-base font-semibold" }, title),
+                __wgEl("span", { class: "text-sm text-label-2 truncate" }, sub),
+              ),
             );
             toast.classList.remove("wg-out");
             void toast.offsetWidth;

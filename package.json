@@ -1,6 +1,6 @@
 {
   "name": "waygraph",
-  "version": "0.16.5",
+  "version": "0.16.6",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -55,7 +55,7 @@
   },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
-    "build": "npm run clean && tsc -p tsconfig.build.json && node scripts/copy-ui-css.mjs",
+    "build": "npm run clean && tsc -p tsconfig.build.json && node scripts/build-ui-css.mjs",
     "typecheck": "node bin/waygraph typecheck .",
     "test": "npm run check:structure && npm run knip && npm run test:unit && playwright test",
     "test:ui": "playwright test --ui",
@@ -70,26 +70,34 @@
     "docs:preview": "vitepress preview docs",
     "docs:api": "typedoc && node scripts/gen-deprecated.mjs && node --import tsx scripts/gen-env.mjs",
     "knip": "knip",
-    "sync:quickstart": "node scripts/sync-quickstart.mjs"
+    "sync:quickstart": "node scripts/sync-quickstart.mjs",
+    "icons": "node scripts/gen-icons.mjs",
+    "storybook": "storybook dev -p 6006 --no-open",
+    "storybook:build": "storybook build -o storybook-static"
   },
   "peerDependencies": {
     "@playwright/test": "^1.40.0"
   },
   "dependencies": {
-    "open-props": "^1.7.23",
     "ts-morph": "^28.0.0",
     "tsx": "^4.0.0",
     "urlpattern-polyfill": "^10.1.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
+    "@phosphor-icons/core": "^2.1.1",
     "@playwright/test": "^1.63.0",
+    "@storybook/html-vite": "^10.6.5",
+    "@tailwindcss/cli": "^4.3.3",
     "@types/node": "^26.0.0",
     "knip": "^6.42.1",
+    "storybook": "^10.6.5",
+    "tailwindcss": "^4.3.3",
     "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.14.1",
     "typedoc-vitepress-theme": "^1.1.4",
     "typescript": "^5.6.0",
+    "vite": "^5.4.21",
     "vitepress": "^1.6.4"
   }
 }

@@ -52,6 +52,8 @@ export interface DemoSettings extends RunSettings {
   autoNext?: boolean;
   /** Shorter Next / auto-next gates; keeps the cursor and typing animation. */
   fast?: boolean;
+  /** The overlay in light or dark; by default it follows the system's setting. Pin one so every recording matches. */
+  appearance?: "light" | "dark";
 }
 
 /** The project config in `config/waygraph.config.ts`: base URL, extensions, run and demo settings, web server and the Playwright block. */
@@ -210,5 +212,6 @@ export function applyConfigEnv(config: WaygraphConfig | undefined, command: stri
     set("WAYGRAPH_DEMO_PACE", config.demo?.pace === undefined ? undefined : String(config.demo.pace));
     set("WAYGRAPH_PACE_SPEEDS", config.demo?.speeds ? JSON.stringify(config.demo.speeds) : undefined);
     set("WAYGRAPH_TYPING_MS", config.demo?.typingMs === undefined ? undefined : String(config.demo.typingMs));
+    set("WAYGRAPH_APPEARANCE", config.demo?.appearance);
   }
 }

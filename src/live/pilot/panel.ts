@@ -168,7 +168,7 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
             const nav = navReachable.has(node.checkpoint) ? " [nav]" : "";
             const suffix = `${here ? " (here)" : ""}${loops ? ` (+${loops})` : ""}${nav}`;
             lines.push(`  ${id}["${node.checkpoint}${suffix}"]`);
-            if (here) lines.push(`  style ${id} stroke:#7C3AED,stroke-width:3px`);
+            if (here) lines.push(`  style ${id} stroke:#007aff,stroke-width:2.5px`);
           }
           for (const e of specific) {
             lines.push(`  ${sanitize(e.from)} -->|${e.block}| ${sanitize(e.to)}`);

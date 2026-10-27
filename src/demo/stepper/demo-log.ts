@@ -60,8 +60,8 @@ export const ANSI = {
   reset: ESC + "[0m",
   bold: ESC + "[1m",
   dim: ESC + "[2m",
-  purple: ESC + "[38;5;141m",
-  blue: ESC + "[38;5;75m",
+  blue: ESC + "[38;5;33m",
+  orange: ESC + "[38;5;208m",
   yellow: ESC + "[38;5;220m",
   red: ESC + "[38;5;203m",
   green: ESC + "[38;5;114m",
@@ -76,24 +76,27 @@ export function ansiPaint(code: string, text: unknown): string {
   return code + String(text) + ANSI.reset;
 }
 
+/** A tone's colour in the terminal, matching the overlay's (demo/overlay/ui/css/theme.css). */
 function toneAnsi(tone: unknown): string {
   const t = normalizeHighlightTone(tone);
-  if (t === "info") return ANSI.blue;
+  if (t === "info") return ANSI.cyan;
   if (t === "warning") return ANSI.yellow;
   if (t === "danger") return ANSI.red;
   if (t === "success") return ANSI.green;
+  if (t === "orange") return ANSI.orange;
   if (t === "auto") return ANSI.gray;
-  return ANSI.purple;
+  return ANSI.blue;
 }
 
 function toneName(tone: unknown): string {
   const t = normalizeHighlightTone(tone);
-  if (t === "info") return "BLUE";
+  if (t === "info") return "TEAL";
   if (t === "warning") return "YELLOW";
   if (t === "danger") return "RED";
   if (t === "success") return "GREEN";
+  if (t === "orange") return "ORANGE";
   if (t === "auto") return "GRAY";
-  return "PURPLE";
+  return "BLUE";
 }
 
 /** Optional authored CSS color (#rrggbb) -> truecolor ANSI when TTY. */
@@ -153,7 +156,7 @@ export function demoFixture(kind: string, call: string, value?: unknown): void {
   console.log(demoPrefix() + head + callPart + val);
 }
 
-/** Highlight trigger line: PURPLE · Cart items - Product landed in cart */
+/** Highlight trigger line: BLUE · Cart items - Product landed in cart */
 export function demoHighlight(h: LoggedHighlight | null | undefined, extra?: string): void {
   if (demoQuiet()) return;
   const tone = h && h.tone != null ? h.tone : "planned";

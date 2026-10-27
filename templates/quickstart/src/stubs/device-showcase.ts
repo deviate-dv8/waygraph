@@ -65,7 +65,7 @@ export const deviceShowcase = {
       ctx.ui.ring("password", {
         selector: LoginSel.password,
         label: "Password",
-        detail: "tone: planned (purple)",
+        detail: "tone: planned (blue)",
         todo: "login-pass",
         tone: "planned",
         focus: true,
@@ -158,7 +158,7 @@ export const deviceShowcase = {
       ctx.ui.ring("cart", {
         selector: CartSel.cartLink,
         label: "Cart",
-        detail: "tone: planned (purple) - open cart",
+        detail: "tone: planned (blue) - open cart",
         tone: "planned",
         focus: true,
         zoomOut: false,

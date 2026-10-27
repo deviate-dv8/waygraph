@@ -97,8 +97,9 @@ export function installTodos({ todoPos }: OverlayInstallArgs) {
           const POS = ["left", "right"];
           let dock = findDock(dockKey);
           if (!dock) {
-            dock = document.createElement("div");
-            dock.className = "wg-todo-dock";
+            dock = __wgEl("div", {
+              class: "wg-todo-dock material rounded-panel w-[min(264px,42vw)] overflow-auto p-2 flex flex-col gap-1 cursor-default select-none",
+            });
             dock.setAttribute("data-wg-todo-key", dockKey);
             if (dockKey === "_default") dock.id = "wg-todo-dock";
             else dock.id = "wg-todo-dock--" + dockKey.replace(/[^a-zA-Z0-9_-]/g, "-");
@@ -185,7 +186,7 @@ export function installTodos({ todoPos }: OverlayInstallArgs) {
             const deepEnd = foldMeta ? foldMeta.deepEnd : -1;
             return __wgEl(
               "ul",
-              { class: "wg-todos-list", data: { wgTodoStyle: st } },
+              { class: "wg-todos-list flex flex-col", data: { wgTodoStyle: st } },
               (items || []).map((t, idx) => {
                 const gi = offset + idx;
                 const clsBase =
@@ -201,19 +202,28 @@ export function installTodos({ todoPos }: OverlayInstallArgs) {
                 let foldCls = "";
                 if (foldStart >= 0 && (gi < foldStart || gi >= foldEnd)) foldCls += " wg-todo-fold";
                 if (deepStart >= 0 && (gi < deepStart || gi >= deepEnd)) foldCls += " wg-todo-fold-deep";
-                let mark;
-                if (st === "checklist") {
-                  mark = t.done ? "☑" : "☐";
-                } else if (st === "bullets") {
-                  mark = "•";
-                } else {
-                  mark = t.done ? "✓" : t.current ? "→" : "○";
-                }
+                // Reminders-style marks: a filled check when done, a dashed ring for the current item, a hollow ring
+                // pending; a dot for bullets, boxes for a checklist.
+                const mark =
+                  st === "bullets"
+                    ? __wgEl("span", { class: "size-1.5 rounded-full bg-label-3 mx-[5px] mt-[6px] flex-none" })
+                    : st === "checklist"
+                      ? __wgIcon(t.done ? "boxChecked" : "box", t.done ? "text-accent" : "text-label-3")
+                      : __wgIcon(t.done ? "done" : t.current ? "current" : "pending", t.done || t.current ? "text-accent" : "text-label-3");
+                const look =
+                  clsBase === "wg-todo-current"
+                    ? "bg-fill font-semibold text-label"
+                    : clsBase === "wg-todo-done"
+                      ? "text-label-3 line-through decoration-label-4"
+                      : "text-label-2";
                 return __wgEl(
                   "li",
-                  { class: clsBase + foldCls, data: { wgTodoItem: trimmedId(t.id) } },
-                  __wgEl("span", { class: "wg-todo-mark" }, mark),
-                  __wgEl("span", null, t.text || ""),
+                  {
+                    class: `${clsBase}${foldCls} flex items-start gap-2 px-1.5 py-[3px] rounded-control text-sm ${look}`,
+                    data: { wgTodoItem: trimmedId(t.id) },
+                  },
+                  __wgEl("span", { class: "wg-todo-mark flex h-4 items-center text-[15px]" }, mark),
+                  __wgEl("span", { class: "min-w-0" }, t.text || ""),
                 );
               }),
             );
@@ -240,7 +250,7 @@ export function installTodos({ todoPos }: OverlayInstallArgs) {
           const children: WgChild[] = [];
           if (dockState && Array.isArray(dockState.groups) && dockState.groups.length) {
             const dockTitle = dockState.title && String(dockState.title).trim();
-            if (dockTitle) children.push(__wgEl("div", { class: "wg-todo-dock-title" }, dockTitle));
+            if (dockTitle) children.push(__wgEl("div", { class: "wg-todo-dock-title flex items-center gap-1.5 px-1.5 pt-0.5 pb-1 text-xs font-semibold text-label-2" }, __wgIcon("checklist"), dockTitle));
             let globalIdx = 0;
             for (const g of dockState.groups) {
               const gTitle = g.title && String(g.title).trim();
@@ -249,7 +259,7 @@ export function installTodos({ todoPos }: OverlayInstallArgs) {
                 __wgEl(
                   "div",
                   { class: "wg-todo-group", data: { wgTodoGroup: trimmedId(g.id) } },
-                  gTitle ? __wgEl("div", { class: "wg-todo-group-title" }, gTitle) : null,
+                  gTitle ? __wgEl("div", { class: "wg-todo-group-title px-1.5 pt-1 text-2xs font-semibold text-label-3" }, gTitle) : null,
                   renderItems(gItems, g.style || dockState.style, foldMeta, globalIdx),
                 ),
               );
@@ -261,7 +271,7 @@ export function installTodos({ todoPos }: OverlayInstallArgs) {
           if (compact && hiddenCompact > 0) {
             const n = dock.dataset.expanded === "1" ? hiddenExpand : hiddenCompact;
             if (n > 0) {
-              children.push(__wgEl("div", { class: "wg-todo-more", data: { wgTodoMore: "1" }, title: "Click to expand / collapse" }, "+" + n + " more"));
+              children.push(__wgEl("div", { class: "wg-todo-more button-plain self-start text-xs", data: { wgTodoMore: "1" }, title: "Click to expand / collapse" }, __wgIcon(dock.dataset.expanded === "1" ? "chevronUp" : "chevronDown"), n + " more"));
             }
           }
           if (compact) dock.dataset.compact = "1";

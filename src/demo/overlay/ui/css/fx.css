@@ -1,0 +1,31 @@
+/* Stage effects that follow the page: the spotlight veil (a ring with focus) and the touch swipe trail. */
+
+/* Spotlight: everything but the target dims, the way Quick Look dims a desktop. */
+#wg-focus-veil, #wg-pilot-fx-focus {
+  position: fixed; z-index: var(--wg-z-focus); pointer-events: none; border-radius: var(--radius-panel);
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.45); opacity: 0;
+  transition: opacity .3s var(--ease-mac), left .3s var(--ease-mac), top .3s var(--ease-mac), width .3s var(--ease-mac), height .3s var(--ease-mac);
+}
+:is(#wg-focus-veil, #wg-pilot-fx-focus).wg-in { opacity: 1; }
+
+/* Touch swipe (mobile / tablet devices): a fingertip and the trail it leaves. */
+#wg-swipe-layer { position: fixed; inset: 0; z-index: var(--wg-z-cursor); pointer-events: none; overflow: hidden; }
+#wg-swipe-layer .wg-swipe-dot {
+  position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; opacity: 0;
+  background: color-mix(in srgb, var(--wg-blue) 45%, transparent);
+}
+#wg-swipe-layer .wg-swipe-finger {
+  position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; opacity: 0;
+  background: rgb(255 255 255 / 0.7); box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.2), 0 4px 14px rgb(0 0 0 / 0.3);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  transition: left .05s linear, top .05s linear, opacity .15s ease;
+}
+#wg-swipe-layer .wg-swipe-label {
+  position: absolute; left: 50%; top: 18%; transform: translateX(-50%); opacity: 0;
+  padding: 5px 12px; border-radius: 999px;
+  background: var(--wg-material); color: var(--wg-label); box-shadow: var(--shadow-popover);
+  -webkit-backdrop-filter: blur(var(--blur-material)) saturate(1.8); backdrop-filter: blur(var(--blur-material)) saturate(1.8);
+  font: var(--font-weight-semibold) 12px/16px var(--font-sans);
+  transition: opacity .25s ease;
+}
+#wg-swipe-layer.wg-in .wg-swipe-label { opacity: 1; }

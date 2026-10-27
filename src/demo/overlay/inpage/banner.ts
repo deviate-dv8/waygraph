@@ -15,8 +15,10 @@ export function installBanner({ title, favicon, bannerPos, bannerUi, tag: banner
         if (title) {
           let banner = __wgById("wg-banner");
           if (!banner) {
-            banner = document.createElement("div");
-            banner.id = "wg-banner";
+            banner = __wgEl("div", {
+              id: "wg-banner",
+              class: "material rounded-panel px-3.5 py-2 max-w-[min(92vw,420px)] flex flex-col cursor-default select-none",
+            });
             let saved = null;
             try {
               saved = localStorage.getItem("wg-banner-pos");
@@ -32,14 +34,10 @@ export function installBanner({ title, favicon, bannerPos, bannerUi, tag: banner
               const i = POSITIONS.indexOf(banner!.dataset.pos || "left");
               applyPos(banner!, POSITIONS[(i + 1) % POSITIONS.length]!);
             });
-            const tag = document.createElement("span");
-            tag.className = "wg-banner-tag";
-            tag.textContent = bannerTag || "waygraph demo";
-            const text = document.createElement("span");
-            text.className = "wg-banner-text";
-            text.textContent = title;
-            banner.appendChild(tag);
-            banner.appendChild(text);
+            banner.append(
+              __wgEl("span", { class: "wg-banner-tag text-xs font-medium text-label-2" }, bannerTag || "waygraph demo"),
+              __wgEl("span", { class: "wg-banner-text text-base font-semibold tracking-tight" }, title),
+            );
             __wgAdd(banner);
           } else {
             // Fixture / episode title changes every step - update in place
@@ -48,8 +46,7 @@ export function installBanner({ title, favicon, bannerPos, bannerUi, tag: banner
             // flicker - opt-out (or re-tune) via bannerUi.captionFadeMs, 0 = instant.
             let text = banner.querySelector<HTMLElement>(".wg-banner-text");
             if (!text) {
-              text = document.createElement("span");
-              text.className = "wg-banner-text";
+              text = __wgEl("span", { class: "wg-banner-text text-base font-semibold tracking-tight" });
               banner.appendChild(text);
             }
             if (text.textContent !== title) {

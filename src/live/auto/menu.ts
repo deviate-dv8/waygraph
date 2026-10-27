@@ -15,7 +15,16 @@ export async function setAutoPanelRunning(page: Page, label: string): Promise<vo
       (label) => {
         const panel = __wgById("wg-auto-panel");
         if (!panel) return;
-        __wgSet(panel, __wgEl("h3", null, "waygraph auto"), __wgEl("div", { style: "padding:12px 0;color:#c9a6ff" }, "Running: ", __wgEl("strong", null, label)));
+        __wgSet(
+          panel,
+          __wgEl(
+            "div",
+            { class: "flex items-center gap-2 py-2 text-base text-label-2" },
+            __wgEl("span", { class: "wg-spinner" }),
+            "Running",
+            __wgEl("strong", { class: "font-semibold text-label" }, label),
+          ),
+        );
         if (typeof window.__wgWirePanelChrome === "function") {
           window.__wgWirePanelChrome(panel, "wg-auto-panel-hidden", "waygraph auto");
         }
@@ -36,40 +45,6 @@ export async function setAutoPanelRunning(page: Page, label: string): Promise<vo
     )
     .catch(ignorePageGone);
 }
-// In the bottom-center slot of the overlay layout (demo/overlay/ui/css/layout.css), like the demo's step panel.
-export const PANEL_CSS = "#wg-auto-panel{z-index:var(--wg-z-top);" +
-  "width:min(92vw,720px);overflow-y:auto;box-sizing:border-box;" +
-  "background:rgba(20,10,40,.94);color:#fff;border-radius:14px;padding:16px 20px;" +
-  "font:14px/1.4 system-ui,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,.35);}" +
-  "#wg-auto-panel h3{margin:0 0 10px;font-size:16px;}" +
-  "#wg-auto-panel .wg-here{color:#c9a6ff;margin-bottom:12px;}" +
-  "#wg-auto-panel .wg-actions{display:flex;flex-direction:column;gap:8px;}" +
-  "#wg-auto-panel button.wg-act{text-align:left;padding:10px 12px;border-radius:10px;border:1px solid #5b3aa8;" +
-  "background:#2a1450;color:#fff;font:13px/1.3 system-ui,sans-serif;cursor:pointer;}" +
-  "#wg-auto-panel button.wg-act:hover{background:#3a1d70;}" +
-  "#wg-auto-panel button.wg-act .wg-kind{color:#a78bfa;font-size:11px;text-transform:uppercase;}" +
-  "#wg-auto-panel button.wg-quit{margin-top:12px;background:#3a1a1a;border-color:#7f1d1d;}" +
-  "#wg-auto-panel textarea{width:100%;box-sizing:border-box;margin:6px 0 10px;background:#1a1030;color:#fff;" +
-  "border:1px solid #5b3aa8;border-radius:8px;padding:8px;font:12px/1.3 monospace;}" +
-  "#wg-auto-panel label.wg-mem{display:block;margin-top:8px;font-size:12px;color:#ddd;}" +
-  "#wg-auto-panel .wg-section{margin:12px 0 6px;font-size:11px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.04em;}" +
-  "#wg-auto-panel .wg-map{margin:8px 0 12px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,.25);font-size:11px;line-height:1.5;}" +
-  "#wg-auto-panel .wg-map .wg-cp{opacity:.55;}#wg-auto-panel .wg-map .wg-cp-here{color:#fff;opacity:1;font-weight:700;}" +
-  "#wg-auto-panel .wg-chrome{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;}" +
-  "#wg-auto-panel .wg-chrome-title{font:700 11px/1.2 system-ui,sans-serif;color:#c9a6ff;" +
-  "letter-spacing:.04em;text-transform:uppercase;}" +
-  "#wg-auto-panel button.wg-hide-btn{margin:0;padding:4px 10px;font:600 11px system-ui,sans-serif;" +
-  "background:#3a2a60;color:#e8dcff;border:1px solid #5b3aa8;border-radius:6px;cursor:pointer;}" +
-  "#wg-auto-panel button.wg-hide-btn:hover{background:#4b2a80;}" +
-  "#wg-auto-panel.wg-collapsed{width:auto;max-width:90vw;padding:8px 12px;max-height:none;overflow:hidden;}" +
-  "#wg-auto-panel.wg-collapsed .wg-body{display:none;}" +
-  "#wg-auto-panel.wg-collapsed .wg-chrome{margin:0;}" +
-  "@media (max-width:640px){" +
-  "#wg-auto-panel{left:8px;right:8px;bottom:8px;transform:none;max-width:none;width:auto;" +
-  "max-height:min(55vh,calc(100vh - 16px));padding:12px 14px;border-radius:12px;}" +
-  "#wg-auto-panel.wg-collapsed{left:50%;right:auto;transform:translateX(-50%);width:auto;}" +
-  "#wg-auto-panel button.wg-act{padding:12px;font-size:14px;}" +
-  "}";
 export type PickResult = { type: "pick"; index: number; } | { type: "quit"; };
 /**
  * Mem keys any Block on the current menu might read this turn - minus keys a
@@ -196,44 +171,66 @@ export async function headfulPick(
 
   await ensureShadowRoot(page);
   await page.evaluate(
-    ({ css, note, hereLabel, memFields, sections }) => {
-      __wgCss(css, "wg-auto-style");
+    ({ note, hereLabel, memFields, sections }) => {
       __wgById("wg-auto-panel")?.remove();
+      const section = (title: string) => __wgEl("div", { class: "wg-section px-2 pt-3 pb-1 text-xs font-semibold text-label-2" }, title);
       const root = __wgEl(
         "div",
-        { id: "wg-auto-panel" },
-        __wgEl("h3", null, "waygraph auto"),
-        note ? __wgEl("div", { style: "margin-bottom:8px;font-size:12px;color:#a7f3d0" }, note) : null,
-        __wgEl("div", { class: "wg-here" }, "You are here: ", __wgEl("strong", null, hereLabel)),
-        memFields.length ? __wgEl("div", { class: "wg-section" }, "Mem - edit credentials, then click a block below") : null,
+        { id: "wg-auto-panel", class: "material-thick rounded-panel w-[min(92vw,640px)] overflow-y-auto px-3 pt-2 pb-3 text-base" },
+        note ? __wgEl("div", { class: "flex items-center gap-1.5 px-2 pb-1 text-sm text-green" }, __wgIcon("info"), note) : null,
+        __wgEl(
+          "div",
+          { class: "wg-here flex items-center gap-1.5 px-2 pb-1 text-sm text-label-2" },
+          "You are on",
+          __wgEl("strong", { class: "font-semibold text-label" }, hereLabel),
+        ),
+        memFields.length ? section("Mem: edit the values, then pick a move") : null,
         memFields.map((f, i) => {
-          const field = __wgEl("textarea", { class: "wg-mem-input", id: "wg-mem-" + i, data: { memKey: f.name }, attrs: { rows: 4 } });
+          const field = __wgEl("textarea", {
+            class: "wg-mem-input field font-mono text-sm mb-2",
+            id: "wg-mem-" + i,
+            data: { memKey: f.name },
+            attrs: { rows: 4 },
+          });
           field.value = f.value;
-          return [__wgEl("label", { class: "wg-mem" }, f.name), field];
+          return [__wgEl("label", { class: "wg-mem block px-2 pb-1 font-mono text-xs font-medium text-label-2" }, f.name), field];
         }),
         __wgEl(
           "div",
-          { class: "wg-actions" },
-          sections.length === 0 ? __wgEl("div", { style: "opacity:.85;padding:8px 0" }, "No moves from this screen right now.") : null,
-          sections.map((section) => [
-            __wgEl("div", { class: "wg-section" }, section.title),
-            section.buttons.map((b) => __wgEl(
-              "button",
-              { class: "wg-act", data: { idx: b.idx, hlBox: b.hlBox } },
-              b.label !== undefined
-                ? b.label
-                : [
-                  __wgEl("span", { class: "wg-kind" }, b.kind ?? ""),
-                  " ",
-                  __wgEl("strong", null, b.block ?? ""),
-                  " -> " + (b.to ?? ""),
-                  b.description ? [__wgEl("br"), __wgEl("span", { style: "opacity:.85" }, b.description)] : null,
-                ]
-            )
+          { class: "wg-actions flex flex-col" },
+          sections.length === 0 ? __wgEl("div", { class: "px-2 py-2 text-sm text-label-3" }, "No moves from this screen.") : null,
+          sections.map((s) => [
+            section(s.title),
+            s.buttons.map((b) =>
+              __wgEl(
+                "button",
+                {
+                  class: "wg-act flex flex-col items-start gap-0.5 px-2 py-1.5 rounded-control text-left hover:bg-accent hover:text-on-accent group",
+                  data: { idx: b.idx, hlBox: b.hlBox },
+                  attrs: { type: "button" },
+                },
+                b.label !== undefined
+                  ? b.label
+                  : [
+                      __wgEl(
+                        "span",
+                        { class: "flex items-center gap-1.5" },
+                        __wgEl("span", { class: "wg-kind text-2xs font-semibold text-label-3 group-hover:text-on-accent/70" }, b.kind ?? ""),
+                        __wgEl("strong", { class: "font-semibold" }, b.block ?? ""),
+                        __wgIcon("chevronRight", "text-label-3 group-hover:text-on-accent/70"),
+                        b.to ?? "",
+                      ),
+                      b.description ? __wgEl("span", { class: "text-sm text-label-2 group-hover:text-on-accent/80" }, b.description) : null,
+                    ],
+              ),
             ),
-          ])
+          ]),
         ),
-        __wgEl("button", { class: "wg-act wg-quit", data: { quit: "1" } }, "Quit")
+        __wgEl(
+          "div",
+          { class: "flex justify-end mt-3 pt-3 border-t-[0.5px] border-separator" },
+          __wgEl("button", { class: "wg-quit button button-destructive h-7 px-3.5", data: { quit: "1" }, attrs: { type: "button" } }, "Quit"),
+        ),
       );
       __wgAdd(root);
       // Chrome + Hide/Show, shared with setAutoPanelRunning.
@@ -243,9 +240,9 @@ export async function headfulPick(
           const body = __wgEl("div", { class: "wg-body" }, Array.from(el.childNodes));
           const chrome = __wgEl(
             "div",
-            { class: "wg-chrome" },
-            __wgEl("span", { class: "wg-chrome-title" }, chromeTitle || "waygraph auto"),
-            __wgEl("button", { class: "wg-hide-btn", data: { wgToggle: "1" }, attrs: { type: "button" } }, "Hide")
+            { class: "wg-chrome flex items-center justify-between gap-2 h-7" },
+            __wgEl("span", { class: "wg-chrome-title flex-1 min-w-0 truncate text-xs font-semibold text-label-2" }, chromeTitle || "waygraph auto"),
+            __wgEl("button", { class: "wg-hide-btn button-plain text-xs", data: { wgToggle: "1" }, attrs: { type: "button" } }, "Hide"),
           );
           el.append(chrome, body);
         }
@@ -320,7 +317,7 @@ export async function headfulPick(
       });
       root.querySelector("[data-quit]")?.addEventListener("click", () => window.__wgAutoQuit?.());
     },
-    { css: PANEL_CSS, note, hereLabel, memFields, sections }
+    { note, hereLabel, memFields, sections }
   );
 
   return waitPick();

@@ -288,6 +288,13 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     ended); the demo's text log prints a step's stub and slides under that step's heading; `lands` on a step continues a flow
     from one outcome of a branching Block, typed and checked (the quickstart's `submit-login-for-flow.ts` cast is
     gone). **Done.** Next: accounts, repeatable runs (issue #5), flow input, one browser across a chain.
+20. The overlay looks like macOS (0.16.6): one stylesheet built by Tailwind (theme tokens after macOS - system colours,
+    label / fill / separator, translucent materials, the system font, hairlines, layered shadows - in light and dark,
+    `demo.appearance` pins one), an element's look as utilities where it is built, states in small component files;
+    Phosphor icons instead of Unicode glyphs; the step panel, todo dock, chips, network tab, auto menu and pilot shell
+    redrawn on it, the panels sharing one frame / heading / footer; Storybook (`npm run storybook`) shows every piece
+    painted by the real builders. CSS strings in code, Open Props and `WAYGRAPH_RING_CSS` are gone; `check:structure`
+    rejects written colours, stock palette classes and glyph icons. **Done.**
 
 
 

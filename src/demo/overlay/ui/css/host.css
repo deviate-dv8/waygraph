@@ -1,0 +1,26 @@
+/*
+ * Rules for the page itself, outside the overlay's shadow root: the device stage, which centres a phone- or tablet-sized
+ * page in a fixed-size video. Plain CSS (not Tailwind): it styles the host document, and must not reset it.
+ */
+html.wg-video-device-stage { background: #1f1f21 !important; }
+html.wg-video-device-stage body {
+  margin: 0 !important; min-height: 100vh !important; overflow: hidden !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  background: radial-gradient(120% 90% at 50% 0%, #3a3a3e 0%, #1f1f21 70%) !important;
+}
+#wg-device-shell {
+  flex-shrink: 0; overflow: auto; background: #fff; border-radius: 18px; transform-origin: center center;
+  box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.14), 0 0 0 9px #0d0d0e, 0 0 0 9.5px rgb(255 255 255 / 0.1), 0 30px 80px rgb(0 0 0 / 0.55);
+  /* Clip every corner, also while scaled. */
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  isolation: isolate;
+  transition:
+    border-radius .55s cubic-bezier(.2,.8,.2,1), box-shadow .55s ease, transform .55s cubic-bezier(.2,.8,.2,1),
+    width .5s ease, height .5s ease, max-width .5s ease, max-height .5s ease;
+}
+#wg-device-shell.wg-shell-enter { border-radius: 0; box-shadow: none; }
+#wg-device-shell.wg-shell-shutter-out { border-radius: 0 !important; box-shadow: none !important; outline: none !important; border: none !important; }
+#wg-device-shell.wg-shell-desktop-flat {
+  border-radius: 0 !important; box-shadow: none !important; outline: none !important; border: none !important;
+  -webkit-mask-image: none;
+}

@@ -2,8 +2,8 @@
 // todos, device, network tab). Idempotent; called before every step since a navigation wipes the page.
 import type { BannerPos } from "../../engine/stub/stub.js";
 import type { BannerUiState, OverlayInstallArgs, WgPage } from "../types.js";
-import { HOST_CSS, RUNNER_EXTRA_CSS, WAYGRAPH_FAVICON } from "./overlay-css.js";
 import { ensureShadowRoot } from "./ui/shadow.js";
+import { getHostSheet } from "./ui/stylesheet.js";
 import { applyActing } from "./acting.js";
 import { resolveTodoDockUi } from "../narration/todo-dock.js";
 import { installCore } from "./inpage/core.js";
@@ -20,6 +20,10 @@ import { setNetworkTabVisible } from "./inpage/network.js";
 import { envFlag, envString } from "../../engine/env.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 
+/** The tab's icon while waygraph drives it: a dot in the accent colour, so a run's window is easy to pick out. */
+const FAVICON =
+  "data:image/svg+xml," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='#007aff'/></svg>");
+
 /**
  * `ui` = authored banner UX from the stub phase: { pos, collision, hidden } (all optional).
  * `caption` = bottom subtitle-bar text (ctx.caption()/ctx.hideCaption()) - `undefined` leaves it
@@ -33,9 +37,6 @@ export async function installOverlay(page: WgPage, title?: string, ui?: BannerUi
   await ensureShadowRoot(page);
   // A step acting across a navigation: the rebuilt overlay lets its clicks through too.
   await applyActing(page);
-  // Runner-only chrome (step panel, zoom/typing/device chips) - separate key, no collision. First, so nothing below
-  // builds chrome ahead of its CSS (an element painted unstyled for a moment, then restyled).
-  await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as const).catch(ignorePageGone);
   // Idempotent (guarded on page.__wgNetworkCaptureInstalled) - safe to call every step even though
   // installOverlay itself runs every step; the page.on() listeners this installs are attached to
   // the Page object, not any one document, so they already survive navigations on their own.
@@ -56,7 +57,7 @@ export async function installOverlay(page: WgPage, title?: string, ui?: BannerUi
   if (networkTabVisible !== undefined) {
     await page.evaluate(setNetworkTabVisible, networkTabVisible).catch(ignorePageGone);
   }
-  await page.addStyleTag({ content: HOST_CSS }).catch(ignorePageGone);
+  await page.addStyleTag({ content: getHostSheet() }).catch(ignorePageGone);
   // Default top-left; override with WAYGRAPH_TITLE_POS=left|center|right.
   // Click cycles left -> center -> right (persisted in localStorage so a
   // navigation that rebuilds the banner keeps the human's last pick).
@@ -66,7 +67,7 @@ export async function installOverlay(page: WgPage, title?: string, ui?: BannerUi
   const todoPos: "left" | "right" = envTodoPos === "right" ? "right" : "left";
   const envAutoplay = envFlag("WAYGRAPH_AUTOPLAY");
   const todoDockUi = resolveTodoDockUi();
-  const args: OverlayInstallArgs = { title, favicon: WAYGRAPH_FAVICON, bannerPos, todoPos, envAutoplay, todoDockUi, bannerUi: ui || null };
+  const args: OverlayInstallArgs = { title, favicon: FAVICON, bannerPos, todoPos, envAutoplay, todoDockUi, bannerUi: ui || null };
   await page.evaluate(installCore, args).catch(ignorePageGone);
   await page.evaluate(installSwipeZoom, args).catch(ignorePageGone);
   await page.evaluate(installBanner, args).catch(ignorePageGone);

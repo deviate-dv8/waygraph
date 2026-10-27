@@ -86,57 +86,36 @@ export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide
     }
     await page.evaluate(
       (info) => {
-        let panel = __wgById("wg-panel");
-        const isNew = !panel;
-        if (!panel) {
-          panel = document.createElement("div");
-          panel.id = "wg-panel";
-        }
+        const { panel, isNew } = window.__wgPanel!();
         panel.classList.remove("wg-error", "wg-expected");
         // Do not clear wg-collapsed - WirePanelChrome honors Hide (localStorage)
         // unless forceCollapsed:true (--mini / --video).
-        const episodeLine =
-          info.episodeNumber !== undefined && info.episodeNumber !== null
-            ? __wgEl("div", { class: "wg-episode" }, "Episode " + info.episodeNumber + (info.episodeTitle ? ": " + info.episodeTitle : "") + " · yap slides")
-            : null;
-        const pace =
-          info.paceBadge || info.paceLabel
-            ? __wgEl(
-                "div",
-                { class: "wg-pace", data: { paceKind: info.paceKind || "normal" } },
-                __wgEl("span", { class: "wg-pace-badge" }, info.paceBadge || "1x"),
-                __wgEl("span", null, info.paceLabel || ""),
-              )
-            : null;
-        const autoplay = __wgEl("input", { id: "wg-autoplay-cb", attrs: { type: "checkbox" } });
-        autoplay.checked = !!info.autoNow;
-        const run = __wgEl("button", { id: "wg-run", attrs: { type: "button" } }, info.isLast ? "Continue \u25B6" : "Next slide \u25B6");
-        run.disabled = info.dwellMs != null;
+        const where =
+          (info.episodeNumber !== undefined && info.episodeNumber !== null
+            ? "Episode " + info.episodeNumber + (info.episodeTitle ? " · " + info.episodeTitle : "") + " · "
+            : "") +
+          "Slide " + (info.index + 1) + " of " + info.total +
+          (info.blockName ? " · " + info.blockName : "");
         __wgSet(
           panel,
-          __wgEl(
-            "div",
-            { class: "wg-chrome" },
-            __wgEl("span", { class: "wg-chrome-title" }, "waygraph demo"),
-            __wgEl("button", { class: "wg-hide-btn", data: { wgToggle: "1" }, attrs: { type: "button" } }, "Hide"),
+          window.__wgPanelFrame!(
+            { allNames: [], paceBadge: info.paceBadge, paceLabel: info.paceLabel, paceKind: info.paceKind },
+            { current: null, doneBefore: 0, progress: null },
           ),
-          __wgEl(
-            "div",
-            { class: "wg-body" },
-            episodeLine,
-            pace,
-            __wgEl("h3", null, "Slide " + (info.index + 1) + " / " + info.total + (info.blockName ? " · " + info.blockName : "")),
-            info.tag ? __wgEl("div", { style: "border:none;padding:0;margin:0 0 6px;font-size:11px;color:#c9a6ff" }, info.tag) : null,
-            __wgEl("div", { class: "wg-narration" }, String(info.caption)),
-            info.detail ? __wgEl("div", { class: "wg-result-pretty", style: "margin:0 0 12px;color:#f0e8ff" }, info.detail) : null,
-            info.dwellMs != null
-              ? __wgEl("div", { class: "wg-auto", id: "wg-dwell-hint", style: "margin:0 0 8px" }, "Hold " + (info.dwellMs / 1000).toFixed(1) + "s before next...")
-              : null,
-            __wgEl("div", { class: "wg-autoplay-row" }, __wgEl("label", null, autoplay, " Auto-advance")),
-            __wgEl("div", { id: "wg-gate-manual", style: info.autoNow ? "display:none" : "" }, run),
-            __wgEl("div", { id: "wg-gate-auto", class: "wg-auto", style: info.autoNow ? "" : "display:none" }, "Auto-advancing..."),
-          ),
+          info.tag ? __wgEl("span", { class: "capsule h-5 px-2 mb-2 bg-fill text-2xs font-semibold text-label-2" }, info.tag) : null,
+          window.__wgPanelHeading!(where, String(info.caption)),
+          info.detail ? __wgEl("p", { class: "wg-result-pretty text-base text-label-2 mb-2" }, info.detail) : null,
+          info.dwellMs != null
+            ? __wgEl(
+                "div",
+                { class: "wg-auto flex items-center gap-1.5 text-sm text-label-2", id: "wg-dwell-hint" },
+                __wgIcon("clock"),
+                "Holding " + (info.dwellMs / 1000).toFixed(1) + "s",
+              )
+            : null,
+          window.__wgPanelFooter!(info.isLast ? "Continue" : "Next Slide", !!info.autoNow, "next"),
         );
+        panel.querySelector<HTMLButtonElement>("#wg-run")!.disabled = info.dwellMs != null;
         if (isNew) {
           __wgAdd(panel);
           requestAnimationFrame(() => panel.classList.add("wg-in"));
@@ -172,20 +151,8 @@ export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide
           /* ignore */
         }
         const cb = __wgById<HTMLInputElement>("wg-autoplay-cb");
-        if (cb) {
-          cb.checked = autoNow;
-          cb.addEventListener("change", () => {
-            try {
-              localStorage.setItem("wg-autoplay", cb.checked ? "1" : "0");
-            } catch {
-              /* ignore */
-            }
-            const manual = __wgById("wg-gate-manual");
-            const auto = __wgById("wg-gate-auto");
-            if (manual) manual.style.display = cb.checked ? "none" : "";
-            if (auto) auto.style.display = cb.checked ? "" : "none";
-          });
-        }
+        if (cb) cb.checked = autoNow;
+        window.__wgWireAutoplay!();
         const manual = __wgById("wg-gate-manual");
         const auto = __wgById("wg-gate-auto");
         if (manual) manual.style.display = autoNow ? "none" : "";
@@ -211,7 +178,7 @@ export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide
               if (btn) btn.disabled = false;
               return;
             }
-            if (hint) hint.textContent = "Hold " + (left / 1000).toFixed(1) + "s before next...";
+            if (hint) __wgSet(hint, __wgIcon("clock"), "Holding " + (left / 1000).toFixed(1) + "s");
             setTimeout(tick, 100);
           };
           setTimeout(tick, 100);

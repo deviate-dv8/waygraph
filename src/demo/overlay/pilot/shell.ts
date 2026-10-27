@@ -1,122 +1,42 @@
-import { SURFACE } from "../ui/tokens.js";
-import { ensureShadowRoot, installShadowRoot } from "../ui/shadow.js";
+import { ensureShadowRoot, installShadowRoot, shadowRootArgs } from "../ui/shadow.js";
 import type { HighlightTone } from "../../../engine/stub/ring.js";
 import { verboseLog } from "../../verbose-log.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import { ignorePageGone } from "../../../engine/page-gone.js";
 
-// Real, direct user request: this overlay's own colors were an improvised
-// purple/white scheme (#a78bfa / #1a1033) that didn't match anything else -
-// "our design here seems like barely shares with the ui on the stepper
-// design... looks a bit different and out of sync". These are the SAME
-// colors `cli.ts`'s own demo panel/ring already use (#7C3AED primary
-// purple, the dark rgba(20,10,40,.94) panel background + white text,
-// #c9a6ff for a secondary purple accent on that dark background - all
-// copied verbatim from cli.ts's own `#wg-panel`/`RING_CSS`, not
-// re-invented) - genuinely the same visual language, not just the ring CSS
-// this file already shared via WAYGRAPH_RING_CSS.
-const OVERLAY_CSS = `
-/* Every element here sits in a slot of the overlay layout (ui/css/layout.css) - bottom-right, bottom-left, top-right -
-   or on its stage (the spotlight); none is positioned by hand. */
-#wg-pilot-overlay {
-  z-index: var(--wg-z-top); display: flex; flex-direction: column; align-items: flex-end;
-  font: 12px/1.4 ui-monospace, "SF Mono", Consolas, monospace;
-  color: #fff; pointer-events: auto;
-}
-#wg-pilot-badge {
-  background: #7C3AED; color: #fff; padding: 6px 10px; border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25); cursor: pointer; white-space: nowrap;
-  font-weight: 600; user-select: none;
-}
-#wg-pilot-panel {
-  display: none; margin-top: 6px; max-width: 420px; max-height: 320px;
-  overflow-y: auto; background: ${SURFACE}; color: #fff; border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25); padding: 8px 10px;
-}
-/* The graph tab renders a real Mermaid flowchart, which needs more room than
-   the flat-list "Here" tab and its own scroll - real, direct user request:
-   "a 2d version. left to right stuff. maybe mermaid?" replacing the original
-   flat indented-text tree. Widened+its own scrollbox rather than growing
-   the shared panel unconditionally, so "Here" stays compact. */
-#wg-pilot-panel:has(#wg-pilot-panel-graph:not([style*="display: none"])) {
-  max-width: 640px; max-height: 460px;
-}
-#wg-pilot-panel-graph { overflow: auto; }
-#wg-pilot-panel-graph svg { max-width: none; }
-#wg-pilot-panel-graph .wg-pilot-graph-note { color: #999; font-style: italic; font-size: 11px; padding: 4px 2px 0; }
-#wg-pilot-panel.wg-pilot-open { display: block; }
-#wg-pilot-panel-toggle { display: flex; gap: 6px; margin-bottom: 8px; }
-#wg-pilot-panel-toggle button {
-  background: transparent; color: #bbb; border: 1px solid rgba(255,255,255,.2);
-  border-radius: 6px; padding: 3px 8px; font: inherit; cursor: pointer;
-}
-#wg-pilot-panel-toggle button.wg-pilot-tab-active { background: #7C3AED; color: #fff; border-color: #7C3AED; }
-#wg-pilot-panel .wg-pilot-section { font-weight: 700; margin: 6px 0 2px; color: #c9a6ff; }
-#wg-pilot-panel .wg-pilot-edge { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,.12); }
-#wg-pilot-panel .wg-pilot-kind { color: #c9a6ff; font-weight: 600; }
-#wg-pilot-panel .wg-pilot-desc { color: #bbb; }
-#wg-pilot-panel .wg-pilot-empty { color: #999; font-style: italic; }
-#wg-pilot-panel-graph .wg-pilot-graph-node { margin: 6px 0; }
-#wg-pilot-panel-graph .wg-pilot-graph-checkpoint { color: #c9a6ff; font-weight: 700; }
-#wg-pilot-panel-graph .wg-pilot-graph-edge { padding: 2px 0 2px 14px; border-left: 2px solid rgba(255,255,255,.15); font-size: 11px; }
-#wg-pilot-panel-graph .wg-pilot-graph-edge .wg-pilot-kind { color: #c9a6ff; }
-#wg-pilot-activity {
-  z-index: var(--wg-z-chrome);
-  font: 12px/1.4 ui-monospace, "SF Mono", Consolas, monospace;
-  background: ${SURFACE}; color: #fff; padding: 6px 10px; border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25); white-space: nowrap; pointer-events: none;
-  opacity: 0; transform: translateY(4px); transition: opacity 0.15s, transform 0.15s;
-}
-#wg-pilot-activity.wg-pilot-toast-show { opacity: 1; transform: translateY(0); }
-/* Agent fixture rings (painted via the shared .wg-ring-el primitive, see ui/css/ring.css and
-   demo/overlay/inpage/core.ts's __wgPaintRingAt), #wg-pilot-fx-todos, #wg-ring/#wg-ring-label and
-   #wg-banner all come from the ONE shared bundle ensureShadowRoot installs (ui/css/*.css) - not
-   redefined here. */
-/* Spotlight (demo focus:true) - dim page, cutout around target. */
-#wg-pilot-fx-focus{position:fixed;z-index:var(--wg-z-focus);pointer-events:none;
-  border-radius:12px;box-shadow:0 0 0 9999px rgba(8,4,20,.62);
-  opacity:0;transition:opacity .3s ease,left .3s ease,top .3s ease,width .3s ease,height .3s ease;}
-#wg-pilot-fx-focus.wg-in{opacity:1;}
-/* Zoom HUD (demo parity - badge only; no CSS scale of the page). */
-#wg-pilot-fx-zoom{z-index:var(--wg-z-chrome);
-  display:flex;align-items:center;gap:7px;padding:6px 11px 6px 8px;
-  border-radius:999px;background:${SURFACE};color:#f0e8ff;
-  border:1px solid rgba(250,204,21,.6);box-shadow:0 6px 18px rgba(0,0,0,.4);
-  font:700 12px/1.2 system-ui,sans-serif;pointer-events:none;}
-#wg-pilot-fx-zoom .wg-pilot-fx-zoom-ico{width:18px;height:18px;display:flex;align-items:center;justify-content:center;
-  border-radius:6px;background:rgba(250,204,21,.22);}
-#wg-pilot-fx-zoom .wg-pilot-fx-zoom-ico svg{width:14px;height:14px;display:block;}
-#wg-pilot-fx-zoom .wg-pilot-fx-zoom-val{color:#fde68a;font-variant-numeric:tabular-nums;font-weight:800;min-width:3.2em;}
-#wg-pilot-fx-zoom[data-zoomed="1"]{border-color:#fbbf24;}
-#wg-pilot-fx-device{z-index:var(--wg-z-chrome);
-  padding:8px 12px;border-radius:10px;background:${SURFACE};color:#f0e8ff;
-  border:1px solid rgba(124,58,237,.55);font:700 12px/1.2 system-ui,sans-serif;
-  pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.35);}
-#wg-pilot-fx-device[data-preset=mobile]{border-color:#3B82F6;}
-#wg-pilot-fx-device[data-preset=tablet]{border-color:#22C55E;}
-#wg-pilot-fx-device[data-preset=desktop]{border-color:#9CA3AF;}
-`;
-
-
 /** Browser-side shell install — runs on every document via context.addInitScript. */
-function installPilotOverlayShell(css: string): void {
+function installPilotOverlayShell(): void {
   if (__wgById("wg-pilot-overlay")) return;
-  __wgCss(css, "wg-pilot-overlay-css");
+  const tab = (id: string, label: string, on: boolean) =>
+    __wgEl(
+      "button",
+      {
+        id,
+        class: "wg-pilot-tab h-5 px-2.5 rounded-[5px] text-xs font-medium" + (on ? " wg-pilot-tab-active" : ""),
+        attrs: { type: "button" },
+      },
+      label,
+    );
   const root = __wgEl(
     "div",
-    { id: "wg-pilot-overlay" },
-    __wgEl("div", { id: "wg-pilot-badge" }, "Waygraph Pilot"),
+    { id: "wg-pilot-overlay", class: "flex flex-col items-end gap-1.5 text-sm" },
     __wgEl(
       "div",
-      { id: "wg-pilot-panel" },
+      { id: "wg-pilot-badge", class: "capsule material h-7 px-3 font-semibold cursor-default select-none" },
+      __wgIcon("sparkle", "text-accent"),
+      "Waygraph Pilot",
+    ),
+    __wgEl(
+      "div",
+      { id: "wg-pilot-panel", class: "material-thick rounded-panel w-[min(92vw,420px)] max-h-[320px] overflow-y-auto p-2.5 font-mono text-xs" },
       __wgEl(
         "div",
-        { id: "wg-pilot-panel-toggle" },
-        __wgEl("button", { id: "wg-pilot-view-current", class: "wg-pilot-tab-active" }, "Here"),
-        __wgEl("button", { id: "wg-pilot-view-graph" }, "All nodes"),
+        { id: "wg-pilot-panel-toggle", class: "segmented mb-2 font-sans" },
+        tab("wg-pilot-view-current", "Here", true),
+        tab("wg-pilot-view-graph", "All nodes", false),
       ),
       __wgEl("div", { id: "wg-pilot-panel-current" }),
-      __wgEl("div", { id: "wg-pilot-panel-graph", style: "display:none" }),
+      __wgEl("div", { id: "wg-pilot-panel-graph", class: "overflow-auto", style: "display:none" }),
     ),
   );
   __wgAdd(root);
@@ -136,19 +56,13 @@ function installPilotOverlayShell(css: string): void {
     __wgById("wg-pilot-panel-current")!.style.display = "none";
   });
   if (!__wgById("wg-pilot-activity")) {
-    const toast = document.createElement("div");
-    toast.id = "wg-pilot-activity";
-    __wgAdd(toast);
+    __wgAdd(__wgEl("div", { id: "wg-pilot-activity", class: "capsule material h-7 px-3 font-mono text-xs pointer-events-none" }));
   }
   if (!__wgById("wg-ring")) {
-    const ring = document.createElement("div");
-    ring.id = "wg-ring";
-    __wgAdd(ring);
+    __wgAdd(__wgEl("div", { id: "wg-ring", class: "wg-ring-el" }));
   }
   if (!__wgById("wg-ring-label")) {
-    const ringLabel = document.createElement("div");
-    ringLabel.id = "wg-ring-label";
-    __wgAdd(ringLabel);
+    __wgAdd(__wgEl("div", { id: "wg-ring-label", class: "wg-ring-el-label" }));
   }
 }
 
@@ -159,24 +73,20 @@ function installPilotOverlayShell(css: string): void {
  * page is blank or replaced.
  */
 export async function installPersistentPilotOverlay(context: BrowserContext): Promise<void> {
-  await context.addInitScript(installShadowRoot);
-  await context.addInitScript(installPilotOverlayShell, OVERLAY_CSS);
+  await context.addInitScript(installShadowRoot, shadowRootArgs());
+  await context.addInitScript(installPilotOverlayShell);
 }
 
 
 /** Idempotent - safe to call before every update, matching narrate mode's own precedent. */
 export async function ensureInstalled(page: Page): Promise<void> {
   await ensureShadowRoot(page);
-  await page.evaluate(installPilotOverlayShell, OVERLAY_CSS).catch(ignorePageGone);
+  await page.evaluate(installPilotOverlayShell).catch(ignorePageGone);
   // The shared ring primitive (__wgEnsureRingEl/__wgPaintRingAt) - so Pilot's fixture rings paint
   // through the SAME implementation the demo/auto singleton ring uses (see ui/css/ring.css / this
   // file's own header comment on redundancy), not a separate DOM-building copy.
   const { installCore } = await import("../inpage/core.js");
   await page.evaluate(installCore, {}).catch(ignorePageGone);
-  // Device toast/chip CSS (demo/overlay/overlay-css.ts's RUNNER_EXTRA_CSS) - same rules the demo runner
-  // uses, reused here (not re-authored) so a device fixture looks identical on Pilot.
-  const { RUNNER_EXTRA_CSS } = await import("../overlay-css.js");
-  await page.evaluate(([css, key]) => __wgCss(css, key), [RUNNER_EXTRA_CSS, "wg-runner-css"] as [string, string]).catch(ignorePageGone);
 }
 
 
