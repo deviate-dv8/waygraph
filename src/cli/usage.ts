@@ -73,6 +73,9 @@ Primary (less is more):
                                            does nothing observable in the DOM) that inspectDom
                                            alone can't explain, since it only reads what actually
                                            rendered, not what the page/network actually said
+  waygraph auto watch <sessionId>          Live feed, one JSON line each: every run event (steps,
+                                           step:read) and the snapshot after each change. Ctrl-C ends
+  waygraph auto hello <sessionId>          The session protocol version, waygraph version, where it is
   waygraph auto read <sessionId> [path]    (beta) What the page shows, as JSON, from the project's
                                            Read Blocks (*.read.block.ts); [path] narrows it, e.g.
                                            post.comments. Read it before reaching for dom

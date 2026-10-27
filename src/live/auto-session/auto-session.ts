@@ -182,6 +182,9 @@ export class AutoSession {
     await this.page.evaluate(unmappedInteractionsPageScript, payload).catch(ignorePageGone);
   }
 
+  /** The Checkpoint the session is at, if known. */
+  get where(): string | null { return this.here; }
+
   /** Pure getter - no Block runs, no mem/page mutation. */
   async currentSnapshot(): Promise<SessionSnapshot> {
     return this.snapshotOf(await this.currentMenu());

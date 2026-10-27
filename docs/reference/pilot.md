@@ -134,6 +134,26 @@ which remains separate, later, unmet work. Live reference: `tests/pilot/pilot.sp
 library function) and `tests/cli/pilot.spec.ts` (the real CLI), both proven against live
 saucedemo.com.
 
+## The session protocol (for clients such as Waygraph UI)
+
+A live session (`browser start`, `pilot start`) is a process listening on a Unix socket. Requests and replies are
+newline-delimited JSON; the types are exported: `SessionRequest`, `SessionResponse`, `SessionStreamMessage`,
+`SESSION_OPS` (every op, once) and `SESSION_PROTOCOL_VERSION` (bumped when a shape changes; a new op or optional field
+does not bump it).
+
+| Op | Answers |
+|---|---|
+| `hello` | `{ protocol, waygraph, sessionId, here }`. Cheap, never waits behind a running step |
+| `status`, `send`, `reach`, `resync`, raw actions | the snapshot: `here`, the menu, and `read` / `missing` where Read Blocks cover the page |
+| `read`, `dom`, `trace`, `console`, `storage` | what the page / session shows, without changing anything |
+| `subscribe` | keeps the socket open: one line per run event (`step:start`, `step:read`, `step:end`, ...) and one `{ type: "snapshot" }` after each change |
+
+In code: `requestSession(projectDir, sessionId, { op: "status" })` for one request, and
+`subscribeSession(projectDir, sessionId, (message) => ...)` for the feed (returns `close()`). From a terminal:
+`waygraph pilot hello <id>` and `waygraph pilot watch <id>` (the feed, until Ctrl-C).
+
+Requests run one at a time per session (a second waits for the first), except `hello` and `subscribe`.
+
 ## Blind Pilot (cold start, zero Blocks)
 
 Waygraph Pilot above assumes a Block library already exists. Blind Pilot is the opposite

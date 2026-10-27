@@ -468,3 +468,24 @@ test("Read Blocks (beta): send replies carry the page's read; `read <path>` narr
   });
   await send(sessionId, "q");
 });
+
+test("session protocol: hello names the version; subscribe streams each step's events, its read and the new snapshot", async () => {
+  test.setTimeout(90_000);
+  const { subscribeSession, SESSION_PROTOCOL_VERSION } = await import("../../dist/index.js");
+  const { sessionId } = await detach();
+  const hello = JSON.parse((await runCli(["pilot", "hello", sessionId], { cwd: sauceRoot })).trim());
+  expect(hello).toMatchObject({ ok: true, protocol: SESSION_PROTOCOL_VERSION, sessionId });
+  expect(hello).toHaveProperty("here");   // null until something (status, send) has located the session
+
+  const messages: { type: string; event?: { type: string; block?: string; checkpoint?: string }; snapshot?: { here: string } }[] = [];
+  const feed = await subscribeSession(sauceRoot, sessionId, (m) => messages.push(m as (typeof messages)[number]));
+  await send(sessionId, "fill-username");
+  await expect.poll(() => messages.some((m) => m.type === "snapshot")).toBe(true);
+  feed.close();
+
+  const types = messages.map((m) => (m.type === "event" ? m.event!.type : "snapshot"));
+  expect(types).toEqual(expect.arrayContaining(["run:start", "step:start", "step:read", "step:end", "run:end", "snapshot"]));
+  expect(messages.find((m) => m.event?.type === "step:read")?.event).toMatchObject({ block: "fill-username", checkpoint: "LoginPage" });
+  expect(messages.find((m) => m.type === "snapshot")?.snapshot).toMatchObject({ here: "LoginPage" });
+  await send(sessionId, "q");
+});

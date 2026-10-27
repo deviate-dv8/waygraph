@@ -8,6 +8,7 @@ import { spawn } from "node:child_process";
 import {
     mkdirSync,
     openSync,
+    readFileSync,
     rmSync,
     writeFileSync,
 } from "node:fs";
@@ -18,59 +19,13 @@ import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import type { PilotHighlightFixtures } from "../../demo/overlay/pilot/fixtures.js";
-import type { SessionRead } from "./read.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 import { AutoSession } from "./auto-session.js";
 import { generateSessionId, isPidAlive, logPathFor, metaPath, readSessionMeta, removeSessionFiles, resolveSessionMeta, sessionDir, SessionMeta, socketDir, socketPathFor, writeGlobalSessionMeta } from "./files.js";
-import { type ApplyPathResult, type AutoSessionInit, type ConsoleLogEntry, type DomSnapshot, type InspectDomOptions, type SessionSnapshot, type StorageSnapshot, type StubFileKind, type TraceStep } from "./helpers.js";
-
-type ServerRequest =
-  | { op: "status" }
-  | { op: "send"; pick: string }
-  | ({ op: "dom" } & InspectDomOptions)
-  | { op: "trace" }
-  | { op: "click"; selector: string }
-  | { op: "type"; selector: string; text: string }
-  | { op: "press"; selector: string; key: string }
-  | { op: "goto"; url: string }
-  | { op: "reload" }
-  | { op: "reach"; checkpoint: string }
-  | { op: "resync" }
-  | { op: "console" }
-  | { op: "storage" }
-  | { op: "read"; path?: string }
-  | { op: "upload"; selector: string; stub: StubFileKind | { filePath: string } }
-  | ({ op: "highlight" } & PilotHighlightFixtures);
-
-export type StatusOrSendResponse =
-  | { ok: true; snapshot: SessionSnapshot; quit: boolean }
-  | { ok: false; error: string };
-
-export type DomResponse = { ok: true; snapshot: DomSnapshot } | { ok: false; error: string };
-
-export type TraceResponse = { ok: true; trace: TraceStep[] } | { ok: false; error: string };
-
-export type ConsoleResponse = { ok: true; consoleLog: ConsoleLogEntry[] } | { ok: false; error: string };
-
-export type StorageResponse = ({ ok: true } & StorageSnapshot) | { ok: false; error: string };
-
-export type ReachResponse = ApplyPathResult;
-
-export type ReadResponse = ({ ok: true } & SessionRead) | { ok: false; error: string };
-
-export type HighlightResponse =
-  | { ok: true; painted: number; missing: string[]; snapshot: SessionSnapshot }
-  | { ok: false; error: string };
-
-type ServerResponse =
-  | StatusOrSendResponse
-  | DomResponse
-  | TraceResponse
-  | ConsoleResponse
-  | StorageResponse
-  | ReachResponse
-  | ReadResponse
-  | HighlightResponse;
+import { type AutoSessionInit, type InspectDomOptions, type SessionSnapshot, type StubFileKind } from "./helpers.js";
+import { createFeed } from "./feed.js";
+import { SESSION_PROTOCOL_VERSION } from "./protocol.js";
+import type { HelloResponse, ConsoleResponse, DomResponse, HighlightResponse, ReachResponse, ReadResponse, SessionRequest, SessionResponse, StatusOrSendResponse, StorageResponse, TraceResponse } from "./protocol.js";
 
 /** Reads newline-delimited JSON off a socket, one message at a time. */
 function readOneMessage<T>(sock: Socket, timeoutMs: number): Promise<T> {
@@ -159,6 +114,12 @@ export async function requestSession(
 export async function requestSession(
   projectDir: string,
   sessionId: string,
+  request: { op: "hello" },
+  timeoutMs?: number,
+): Promise<HelloResponse | { ok: false; error: string }>;
+export async function requestSession(
+  projectDir: string,
+  sessionId: string,
   request: { op: "read"; path?: string },
   timeoutMs?: number,
 ): Promise<ReadResponse>;
@@ -177,9 +138,9 @@ export async function requestSession(
 export async function requestSession(
   projectDir: string,
   sessionId: string,
-  request: ServerRequest,
+  request: SessionRequest,
   timeoutMs = 15_000,
-): Promise<ServerResponse> {
+): Promise<SessionResponse> {
   const meta = resolveSessionMeta(sessionId, projectDir);
   if (!meta) {
     return {
@@ -212,7 +173,7 @@ export async function requestSession(
         error: `session "${sessionId}" is unreachable (stale socket - the process may have crashed)`,
       });
     });
-    readOneMessage<ServerResponse>(sock, timeoutMs)
+    readOneMessage<SessionResponse>(sock, timeoutMs)
       .then((res) => {
         clearTimeout(connectTimer);
         resolvePromise(res);
@@ -254,6 +215,7 @@ export async function serveSession(
     return next;
   };
 
+  const feed = createFeed();
   const server = createServer((sock) => {
     let buf = "";
     sock.on("data", (chunk: Buffer) => {
@@ -268,15 +230,24 @@ export async function serveSession(
   });
 
   async function handleLine(line: string, sock: Socket): Promise<void> {
-    let request: ServerRequest;
+    let request: SessionRequest;
     try {
-      request = JSON.parse(line) as ServerRequest;
+      request = JSON.parse(line) as SessionRequest;
     } catch {
       sock.write(JSON.stringify({ ok: false, error: "malformed request (invalid JSON)" }) + "\n");
       return;
     }
+    // Neither waits behind a running request: hello names the protocol, subscribe turns this socket into a live feed.
+    if (request.op === "hello") {
+      sock.write(JSON.stringify({ ok: true, protocol: SESSION_PROTOCOL_VERSION, waygraph: waygraphVersion(), sessionId, here: session.where }) + "\n");
+      return;
+    }
+    if (request.op === "subscribe") {
+      feed.add(sock);
+      return;
+    }
     await enqueue(async () => {
-      let response: ServerResponse;
+      let response: SessionResponse;
       let shouldQuit = false;
       try {
         if (request.op === "status") {
@@ -333,6 +304,8 @@ export async function serveSession(
         response = { ok: false, error: err instanceof Error ? err.message : String(err) };
       }
       sock.write(JSON.stringify(response) + "\n");
+      // Whatever changed (a step ran, a reload, a raw action): subscribers get the new snapshot.
+      if (response.ok && "snapshot" in response && "sections" in response.snapshot) feed.send({ type: "snapshot", snapshot: response.snapshot });
       if (shouldQuit) {
         setImmediate(() => void shutdown());
       }
@@ -344,6 +317,7 @@ export async function serveSession(
     if (shuttingDown) return;
     shuttingDown = true;
     server.close();
+    feed.close();
     await session.close().catch(ignorePageGone);
     removeSessionFiles(projectDir, sessionId);
     onShutdown();
@@ -489,5 +463,14 @@ export async function runAttachLoop(projectDir: string, sessionId: string): Prom
     }
   } finally {
     rl.close();
+  }
+}
+
+/** This package's version, for `hello` (the file sits three levels below the package root in src/ and dist/). */
+function waygraphVersion(): string {
+  try {
+    return (JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "package.json"), "utf8")) as { version: string }).version;
+  } catch {
+    return "unknown";
   }
 }

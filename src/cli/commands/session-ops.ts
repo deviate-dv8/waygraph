@@ -6,6 +6,8 @@ import { resolveSessionMeta } from "../../live/auto-session/files.js";
 import { requestSession, runAttachLoop } from "../../live/auto-session/ipc.js";
 import type { OptionTable } from "../args.js";
 import { parseCommand } from "../args.js";
+import { subscribeSession } from "../../live/auto-session/feed.js";
+import { SESSION_OPS } from "../../live/auto-session/protocol.js";
 
 const SEND_OPTIONS = {
   timeout: { type: "string", value: "<ms>", help: "How long one Block may run (default 15000)" },
@@ -17,7 +19,8 @@ const DOM_OPTIONS = {
   depth: { type: "string", value: "N", help: "Levels to read" },
 } as const satisfies OptionTable;
 
-const OPS = new Set(["send", "status", "attach", "dom", "trace", "console", "storage", "read", "upload", "click", "type", "press", "goto", "reload", "reach", "resync", "highlight"]);
+/** The protocol's ops, as CLI subcommands: `subscribe` is `watch`; `attach` is the CLI's own interactive loop. */
+const OPS = new Set<string>([...SESSION_OPS.filter((op) => op !== "subscribe"), "watch", "attach"]);
 
 /** Whether `sub` is a session op (`attach` is pilot's own subcommand, not an op, under `pilot`). */
 export function isSessionOp(command: string, sub: string | undefined): boolean {
@@ -115,6 +118,19 @@ export async function sessionOpCase(args: string[], command: string): Promise<vo
       const res = await requestSession(proj, sessionId, { op: "console" });
       console.log(JSON.stringify(res));
       if (!res.ok) process.exitCode = 1;
+      return;
+    }
+    if (sub === "hello") {
+      const res = await requestSession(proj, sessionId, { op: "hello" });
+      console.log(JSON.stringify(res));
+      if (!res.ok) process.exitCode = 1;
+      return;
+    }
+    if (sub === "watch") {
+      // One JSON line per run event (steps, reads) and per new snapshot, until Ctrl-C or the session ends.
+      const feed = await subscribeSession(proj, sessionId, (message) => console.log(JSON.stringify(message)));
+      process.once("SIGINT", () => feed.close());
+      await feed.closed;
       return;
     }
     if (sub === "read") {
