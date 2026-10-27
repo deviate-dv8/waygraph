@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Block } from "../engine/block/block.js";
 import type { Checkpoint } from "../engine/checkpoint/checkpoint.js";
+import type { ReadBlock } from "../engine/read/read-block.js";
 
 /** Every file under `dir` whose name matches, skipping `node_modules`, `dist` and `.git`. */
 export function walkDir(dir: string, pattern: RegExp): string[] {
@@ -46,6 +47,14 @@ export function isBlockLike(val: unknown): val is AnyBlock {
   if (typeof obj.name !== "string") return false;
   const instruction = obj.instruction as Record<string, unknown> | undefined;
   return instruction !== null && typeof instruction === "object" && typeof instruction?.act === "function";
+}
+
+/** A Read Block (`defineReadBlock`): a name, the Checkpoints it reads, and an instruction with only `read`. */
+export function isReadBlockLike(val: unknown): val is ReadBlock {
+  if (val === null || typeof val !== "object") return false;
+  const obj = val as Record<string, unknown>;
+  const instruction = obj.instruction as Record<string, unknown> | undefined;
+  return typeof obj.name === "string" && Array.isArray(obj.from) && typeof instruction?.read === "function" && instruction.act === undefined;
 }
 
 export function isFlowLike(val: unknown): val is { run: (...args: unknown[]) => Promise<unknown>; blocks: () => unknown[] } {

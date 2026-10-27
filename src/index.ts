@@ -60,7 +60,7 @@ export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./ana
 export { buildManifest } from "./manifest/manifest.js";
 export { onRunEvent } from "./engine/run/events.js";
 export type { RunEvent } from "./engine/run/events.js";
-export type { Manifest, ManifestBlock, ManifestFlow } from "./manifest/manifest.js";
+export type { Manifest, ManifestBlock, ManifestFlow, ManifestReadBlock } from "./manifest/manifest.js";
 export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock, OrphanBlock } from "./analysis/graph.js";
 export { isFileSelectToken, parseBlocksSelect, matchBlocksSelect, globToRegExp } from "./manifest/select.js";
 export type { BlocksSelect, BlocksSelectKind } from "./manifest/select.js";

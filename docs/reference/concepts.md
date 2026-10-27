@@ -51,7 +51,9 @@ TypeScript AST, so formatting and comments don't trip it).
 
 `waygraph manifest [project] [--out <file>]` prints everything the project defines as JSON: every Block (`kind`,
 `description`, route `from` -> `to`, `requires`, `file`, and its `map` group under `src/map/`), every Flow (its `useCase`
-from the `src/flows/<page>/<outcome>.flow.ts` path, its `steps` in run order and its settings) and every Checkpoint.
+from the `src/flows/<page>/<outcome>.flow.ts` path, its `steps` in run order and its settings), every Checkpoint, and
+(manifest version 2+) every [Read Block](./beta.md): the Checkpoints it reads and the shape of its fields
+(`"catalog.items": [{ "name": "string", "price": "number" }]`), so a viewer knows what each node can show before it runs.
 `buildManifest(projectDir)` returns the same object in code. It is read at runtime from the Blocks themselves, the same
 scan `graph`, `check`, `map`, `auto`, `traverse` and the runner use, and is what Waygraph UI and map packages read.
 Blocks from installed [map packages](./map.md#map-packages) are included, with the package name as their `map`.
@@ -59,7 +61,9 @@ Blocks from installed [map packages](./map.md#map-packages) are included, with t
 ## Run events and the run log
 
 Every run emits events: `run:start`, then `step:start` / `step:end` (Block, from/to Checkpoint, duration) or `step:error`
-for each Block, `run:artifact` for a saved video, and `run:end` (ok, result or error). Subscribe in code with
+for each Block, `step:read` between a step's verify and its end when [Read Blocks](./beta.md) cover the page it landed
+on (what the page showed, after it settled), `run:artifact` for a saved video, and `run:end` (ok, result or error). Each
+run has its own id even when several run at once in one process (parallel traverse workers each are one run). Subscribe in code with
 `onRunEvent((event) => …)`. The CLI (`run`, `demo`, `test`) also writes them to `.waygraph/runs/<runId>.jsonl` in the
 project: the run history Waygraph UI shows. `runLog: false` in the config turns it off, `runLog: "<folder>"` moves it.
 The unattended JSON report (`run` + `WAYGRAPH_JSON=1`) carries the same `runId`, and a failure screenshot is recorded as

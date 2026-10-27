@@ -3,7 +3,8 @@ import { relative } from "node:path";
 import type { BlocksSelect } from "./select.js";
 import { matchBlocksSelect } from "./select.js";
 import { exploreRoots, injectTaggedFile } from "./roots.js";
-import { blockKind, importFresh, isBlockLike, isFlowLike, walkDir } from "./scan.js";
+import { blockKind, importFresh, isBlockLike, isFlowLike, isReadBlockLike, walkDir } from "./scan.js";
+import type { ReadBlock } from "../engine/read/read-block.js";
 import type { AnyBlock } from "./scan.js";
 import { installedMapPackages, mapPackageBlockFiles } from "./maps.js";
 
@@ -42,9 +43,18 @@ export interface BlockEntry {
   description: string;
 }
 
+/** A Read Block found in a scanned file (beta). */
+export interface ScannedReadBlock {
+  block: ReadBlock;
+  exportName: string;
+  file: string;
+  map?: string;
+}
+
 export interface ProjectScan {
   projectDir: string;
   blocks: ScannedBlock[];
+  readBlocks: ScannedReadBlock[];
   flows: ScannedFlow[];
   skipped: { block: string; file: string; reason: string }[];
 }
@@ -79,6 +89,7 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
   const select = opts.blocksSelect;
   const onError = opts.onImportError ?? reportImportError;
   const blocks: ScannedBlock[] = [];
+  const readBlocks: ScannedReadBlock[] = [];
   const flows: ScannedFlow[] = [];
   const skipped: ProjectScan["skipped"] = [];
 
@@ -91,6 +102,10 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
       return;
     }
     for (const [exportName, exported] of Object.entries(mod)) {
+      if (isReadBlockLike(exported)) {
+        readBlocks.push({ block: exported, exportName, file, ...(map ? { map } : {}) });
+        continue;
+      }
       if (!isBlockLike(exported)) continue;
       if (select && !matchBlocksSelect(select, { relFile: file, blockName: exported.name })) continue;
       const marked = exported as { __waygraphFrom?: string[]; __waygraphTo?: string[] };
@@ -147,5 +162,5 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
       }
     }
   }
-  return { projectDir, blocks, flows, skipped };
+  return { projectDir, blocks, readBlocks, flows, skipped };
 }

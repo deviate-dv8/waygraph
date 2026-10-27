@@ -4,8 +4,10 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { scanProject } from "./project.js";
 import type { BlockKind, ProjectScan, ScanOptions } from "./project.js";
+import { MemPage } from "../engine/mem/mem.js";
+import { readBlockShape, type ReadShape } from "../engine/read/read-block.js";
 
-export const MANIFEST_VERSION = 1;
+export const MANIFEST_VERSION = 2;
 
 export interface ManifestBlock {
   /** `file#exportName`, unique across the project. */
@@ -34,12 +36,31 @@ export interface ManifestFlow {
   settings: { memStub?: true; expectedFailure?: string; sessionReset?: true; demoPace?: unknown };
 }
 
+/** A Read Block (beta): which Checkpoints it reads and the shape of what it returns. */
+export interface ManifestReadBlock {
+  id: string;
+  name: string;
+  exportName: string;
+  description: string;
+  /** Checkpoint tags it reads on (`"*"` = every page). */
+  from: string[];
+  requires: string[];
+  /** Field path -> shape (`"catalog.items": [{ name: "string", price: "number" }]`); absent when `read` needs Mem to build. */
+  fields?: Record<string, ReadShape>;
+  /** Why `fields` is absent. */
+  fieldsError?: string;
+  file: string;
+  map?: string;
+}
+
 export interface Manifest {
   version: number;
   project: { name: string; dir: string; waygraph: string };
   checkpoints: string[];
   maps: string[];
   blocks: ManifestBlock[];
+  /** What each Checkpoint's page shows, from its Read Blocks (version 2+). */
+  readBlocks: ManifestReadBlock[];
   flows: ManifestFlow[];
   skipped: ProjectScan["skipped"];
 }
@@ -120,12 +141,33 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
       },
     };
   });
+  const readBlocks: ManifestReadBlock[] = scan.readBlocks.map((r) => {
+    let shape: Pick<ManifestReadBlock, "fields" | "fieldsError">;
+    try {
+      shape = { fields: readBlockShape(r.block, new MemPage()) };
+    } catch (err) {
+      shape = { fieldsError: err instanceof Error ? err.message : String(err) };
+    }
+    for (const t of r.block.from) if (t !== "*") checkpoints.add(t);
+    return {
+      id: `${r.file}#${r.exportName}`,
+      name: r.block.name,
+      exportName: r.exportName,
+      description: r.block.description,
+      from: [...r.block.from],
+      requires: r.block.requires.map((k) => k.name),
+      ...shape,
+      file: r.file,
+      ...(r.map ? { map: r.map } : {}),
+    };
+  });
   return {
     version: MANIFEST_VERSION,
     project: { name: projectName(scan.projectDir), dir: scan.projectDir, waygraph: packageVersion() },
     checkpoints: [...checkpoints].sort(),
     maps: [...maps].sort(),
     blocks,
+    readBlocks,
     flows,
     skipped: scan.skipped,
   };

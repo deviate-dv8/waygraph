@@ -118,9 +118,23 @@ the effect of what it just did (`cartCount: 1`, `inCart: true`) without another 
 to 20 items (`readNotes` says so); `read <path>` returns them all. On a page no Read Block covers, `read` is empty and
 says to use `dom`.
 
+## In every run, and in the manifest
+
+After each step's verify, the run reads the page it landed on (once the page has stopped changing: a verify on the URL
+can pass before a client-side route renders) and emits a `step:read` run event: `{ checkpoint, read, missing, notes,
+readBlocks }`. So `waygraph run`, `traverse` and sessions all log what each node showed to `.waygraph/runs/*.jsonl`. A
+Read Block that fails (two reading one key) is reported on the event and never fails the run.
+
+`waygraph manifest` lists every Read Block with the Checkpoints it reads and the shape of its fields, without running
+anything:
+
+```json
+{ "name": "read-inventory", "from": ["LoggedIn", "ItemInCart"],
+  "fields": { "catalog.items": [{ "name": "string", "price": "number", "inCart": "boolean" }], "catalog.sort": "string" } }
+```
+
 ## Not yet
 
-- Reads in the run log and the demo panel.
+- Reads in the demo panel.
 - `Trait.read(key, predicate)` in verify lists.
-- Read paths and types in `waygraph manifest`.
 - `keys("ns")<T>()` for Mem (the same one-declaration form, for `key` / `keyGroup`).

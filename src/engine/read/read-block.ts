@@ -6,7 +6,7 @@ import { WaygraphError, MSG_READ_DUPLICATE } from "../errors.js";
 import type { MemKey, MemPage } from "../mem/mem.js";
 import type { ReadSpec } from "./read-key.js";
 import { ReadPage } from "./read-page.js";
-import { createReadCtx, type ReadCtx } from "./readers.js";
+import { createReadCtx, Reader, type ReadCtx, type ReadFields } from "./readers.js";
 import { runReadSpecs, settlePage } from "./run-read.js";
 
 /** Options for {@link defineReadBlock}: shaped like a Method's, with one instruction phase. */
@@ -101,4 +101,34 @@ export async function readCheckpoint(page: Page, mem: MemPage, checkpoint: strin
   if (specs.length) await settlePage(page);
   const { values, notes } = await runReadSpecs(page, mem, specs);
   return { read: new ReadPage(values, notes), blocks, skipped };
+}
+
+/** What a field reads, as a type a viewer can show: `"string"`, `"number"`, `"boolean"`, `"string[]"`, a row shape. */
+export type ReadShape = string | readonly [Record<string, string>];
+
+const SHAPE: Record<string, string> = { text: "string", attr: "string", value: "string", number: "number", count: "number", visible: "boolean", texts: "string[]", fn: "unknown" };
+
+/**
+ * The fields a Read Block reads and their shapes, by path (`"catalog.items": [{ name: "string", price: "number" }]`),
+ * without a page: `read` only builds plans. Throws when `read` needs a Mem value that `mem` does not have.
+ */
+export function readBlockShape(block: ReadBlock, mem: MemPage): Record<string, ReadShape> {
+  const out: Record<string, ReadShape> = {};
+  const walk = (fields: ReadFields, prefix: string): void => {
+    for (const [name, value] of Object.entries(fields)) {
+      if (value === undefined) continue;
+      const path = `${prefix}.${name}`;
+      if (!(value instanceof Reader)) {
+        walk(value as ReadFields, path);
+        continue;
+      }
+      const plan = value.plan;
+      if (plan.kind === "list") out[path] = [Object.fromEntries(Object.entries(plan.fields).map(([k, f]) => [k, SHAPE[f.kind] ?? "unknown"]))];
+      else if (plan.kind === "table") out[path] = [Object.fromEntries(Object.keys(plan.columns).map((k) => [k, "string"]))];
+      else out[path] = SHAPE[plan.kind] ?? "unknown";
+    }
+  };
+  const got = block.instruction.read(createReadCtx(mem));
+  for (const spec of Array.isArray(got) ? got : [got as ReadSpec]) walk(spec.fields, spec.namespace);
+  return out;
 }
