@@ -23,6 +23,8 @@ export interface PlayOptions {
   memStub: boolean;
   /** --all-branches without cloning the session per branch. */
   sharedSession: boolean;
+  /** A run id whose recorded mem each segment is seeded with instead (--replay). */
+  replay: string | undefined;
 }
 
 
@@ -48,6 +50,7 @@ export function readOptions(): PlayOptions {
     ffDisabled: envFlag("WAYGRAPH_FF_DISABLED"),
     memStub: envFlag("WAYGRAPH_MEM_STUB"),
     sharedSession: envFlag("WAYGRAPH_SHARED_SESSION"),
+    replay: envString("WAYGRAPH_REPLAY"),
   };
 }
 

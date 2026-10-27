@@ -49,6 +49,10 @@ against a live site, use `--skill-pilot-blind`.
    hand-supplied every time, `registerMemStub(key, fake)` + `memStub: true` on the flow (or
    `--mem-stub`) fills it from a registry instead - a key with no registration still fails
    preflight exactly as before, so this narrows what needs real input, never removes the guard.
+   Data a run creates is made from `unique` (`registerMemStub(Signup.email, ({ unique }) => \`qa+${unique}@x.test\`)`),
+   never a constant or `Date.now()`; what a flow creates is deleted in `.finally(DeleteApiBlock)`; a create that can
+   meet an earlier run's data resolves to `Created` / `AlreadyExists` instead of failing. A failure that depended on its
+   data reruns with `waygraph run <flow> --replay <runId>`.
    Put those `registerMemStub` calls in a `*.mem-stubs.ts` file (`src/states/demo.mem-stubs.ts`): live sessions (`auto`,
    `pilot`, `traverse`) load every one and use them as the default for a Block's `requires`.
 6. **Checkpoints are values.** Declare each once in `src/states/`: `export const Home = checkpoint("Home");

@@ -42,7 +42,7 @@ export class Engine {
    */
   map(options?: MapBuilderOptions): MapBuilder<MapStart> {
     const { homeOrigin, ...settings } = options ?? {};
-    return MapBuilder.begin((steps, flowSettings) => withSettings(buildFlow(steps, this.config), flowSettings), settings, homeOrigin);
+    return MapBuilder.begin((steps, flowSettings) => withSettings(buildFlow(steps, this.config, flowSettings.finally ?? []), flowSettings), settings, homeOrigin);
   }
 }
 

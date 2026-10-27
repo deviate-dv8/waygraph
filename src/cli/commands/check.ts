@@ -79,7 +79,7 @@ export async function typecheckCase(args: string[]): Promise<void> {
 export async function checkCase(args: string[]): Promise<void> {
       const flags = parseRunFlags(args.slice(1), args[0] ?? "check");
       const proj = resolve(flags.positionals[0] ?? process.cwd());
-      const { navWarnings, selWarnings, practiceWarnings } = await checkProject(
+      const { navWarnings, selWarnings, practiceWarnings, constantDataWarnings } = await checkProject(
         proj,
         flags.noPractices ? { noPractices: true } : undefined,
       );
@@ -104,6 +104,10 @@ export async function checkCase(args: string[]): Promise<void> {
       if (!flags.noPractices) {
         printPracticeReport(proj, practiceWarnings);
       }
+      for (const w of constantDataWarnings) {
+        console.warn(`waygraph check: ${relative(proj, w.file)} (${w.blockName}) requires ${w.key}, whose mem stub gives the same value every run - a second run may collide with the first; build it from ctx.unique: registerMemStub(key, ({ unique }) => ...)`);
+      }
+      if (constantDataWarnings.length > 0) console.log(`waygraph check: ${constantDataWarnings.length} constant test data warning${constantDataWarnings.length === 1 ? "" : "s"}`);
       const groupProblems = checkMapGroups(proj);
       for (const p of groupProblems) {
         console.warn(`waygraph check: ${relative(proj, p.file)} imports "${p.spec}" from outside map group ${p.group} - a group imports only waygraph and its own files, so it can be packed`);

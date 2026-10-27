@@ -20,22 +20,59 @@ import type { MemPage } from "./mem.js";
 import type { Flow } from "../flow/flow.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 
-const registry = new Map<MemKey<unknown>, () => unknown>();
+/** What a mem stub is given. */
+export interface MemStubContext {
+  /**
+   * A token for test data that must not collide: different every run, the same for every stub within one run (so an
+   * email and a username made from it match), and different across parallel workers.
+   * @example registerMemStub(Signup.email, ({ unique }) => `qa+${unique}@example.com`)
+   */
+  unique: string;
+}
 
 /**
- * Registers a fake-value generator for one required MemKey.
- * @example registerMemStub(LoginCreds.key, () => ({
- *   username: faker.internet.userName(),
- *   password: faker.internet.password(),
- * }));
+ * The registered stubs. On globalThis: a project registers through the waygraph it imports, which can be another copy
+ * of this module than the one the CLI reads with (src and dist, two installs).
  */
-export function registerMemStub<T>(key: MemKey<T>, fake: () => T): void {
+const registry: Map<MemKey<unknown>, (ctx: MemStubContext) => unknown> = ((globalThis as { [k: symbol]: Map<MemKey<unknown>, (ctx: MemStubContext) => unknown> | undefined })[
+  Symbol.for("waygraph.memStubs")
+] ??= new Map());
+
+let token: string | undefined;
+
+/** This run's {@link MemStubContext.unique}: time, randomness and the Playwright worker index, made once per process. */
+function uniqueToken(): string {
+  token ??=
+    Date.now().toString(36).slice(-6) +
+    Math.random().toString(36).slice(2, 6) +
+    (process.env["TEST_WORKER_INDEX"] ? `w${process.env["TEST_WORKER_INDEX"]}` : "");
+  return token;
+}
+
+/**
+ * Registers a fake-value generator for one required MemKey. It is called fresh each run; `unique` keeps data that
+ * a run creates (a signup, an order) from colliding with an earlier run's or a parallel worker's.
+ * @example registerMemStub(LoginCreds.key, () => ({ username: "standard_user", password: "secret_sauce" }));
+ * @example registerMemStub(Signup.email, ({ unique }) => `qa+${unique}@example.com`);
+ */
+export function registerMemStub<T>(key: MemKey<T>, fake: (ctx: MemStubContext) => T): void {
   registry.set(key, fake);
 }
 
 /** Used by waygraph's own `--mem-stub`-aware CLI seeding and by {@link seedMemStub} - flow authors normally use {@link registerMemStub} and `map({ memStub: true })` instead. */
 export function getMemStub<T>(key: MemKey<T>): (() => T) | undefined {
-  return registry.get(key) as (() => T) | undefined;
+  const fake = registry.get(key) as ((ctx: MemStubContext) => T) | undefined;
+  return fake && (() => fake({ unique: uniqueToken() }));
+}
+
+/**
+ * Whether a key's stub gives the same value every run: called with two different `unique` tokens, it returned equal
+ * values (`waygraph check` warns when a Block that creates something requires such a key). Undefined when no stub.
+ */
+export function memStubIsConstant(key: MemKey<unknown>): boolean | undefined {
+  const fake = registry.get(key);
+  if (!fake) return undefined;
+  return JSON.stringify(fake({ unique: "check-a" })) === JSON.stringify(fake({ unique: "check-b" }));
 }
 
 /**
@@ -52,7 +89,7 @@ export function seedMemStub(mem: MemPage, flow: Flow<Checkpoint<string>>): void 
   for (const bi of flow.blocks()) {
     for (const k of bi.block.requires ?? []) {
       if (mem.has(k)) continue;
-      const fake = registry.get(k);
+      const fake = getMemStub(k);
       if (fake) mem.set(k, fake());
     }
   }

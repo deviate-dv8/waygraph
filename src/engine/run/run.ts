@@ -172,7 +172,7 @@ async function playGraph<TOut extends Checkpoint<string>>(
         throw new WaygraphError("WG_RUNGRAPH_MAX_STEPS", MSG_RUNGRAPH_MAX_STEPS(maxSteps));
       }
 
-      if (!isConnected(current)) stepStarted(current.name, blockKindOf(current), input.__state);
+      if (!isConnected(current)) stepStarted(current.name, blockKindOf(current), input.__state, (current as { __waygraphCleanup?: boolean }).__waygraphCleanup);
       await runPrecondition(current.instruction.precondition, input, page, mem, current.name);
       await current.instruction.act(page, input, mem);
       const observed = current.instruction.observe

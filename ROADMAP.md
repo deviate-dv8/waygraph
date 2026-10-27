@@ -38,7 +38,7 @@ otherwise.
 | PageBlock + `methods/` + `Sel` convention; Action -> Method rename | Shipped |
 | `NavBlock` + `ActionPage` deprecation + `waygraph check` + pluggable browser provider | Shipped - see "NavBlock + ActionPage" below |
 | `locate()` page recognition (`waygraph auto` graph discovery) | Shipped - split `requires` still open, see below |
-| Repeatable runs: unique test data, replay, cleanup steps | Planned - see "Repeatable runs" below |
+| Repeatable runs: unique test data, replay, cleanup steps | Done (0.16.6) - see "Repeatable runs" below |
 | Traverse (Phase B-E: serial/parallel graph crawl, coverage gate) | Shipped - `docs/proposals/traverse-ffcompose-rfc.md` |
 | `Flow.run` / `runGraph` tab options (drive an existing page, `closeOnFinish`) | Shipped - see "Flow.run tab options" below |
 | Split `requires` (externally-supplied vs producedBy-another-Block) | Roadmap only |
@@ -288,7 +288,9 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     ended); the demo's text log prints a step's stub and slides under that step's heading; `lands` on a step continues a flow
     from one outcome of a branching Block, typed and checked (the quickstart's `submit-login-for-flow.ts` cast is
     gone); accounts - `account(name, { signIn })` and `map({ as })`: a flow starts signed in, the account signs in once
-    per process and later flows restore its kept session (cookies and localStorage). **Done.** Next: repeatable runs (issue #5), flow input, one browser across a chain.
+    per process and later flows restore its kept session (cookies and localStorage). **Done.** Repeatable runs (issue #5): `unique` in mem stubs, `run:mem` + `--replay <runId>`, `.finally(Block)`
+    cleanup steps (and the runner never skipping them), the constant-test-data check. **Done.** Next: flow input, one
+    browser across a chain.
 20. The overlay looks like macOS (0.16.6): one stylesheet built by Tailwind (theme tokens after macOS - system colours,
     label / fill / separator, translucent materials, the system font, hairlines, layered shadows - in light and dark,
     `demo.appearance` pins one), an element's look as utilities where it is built, states in small component files;
@@ -331,16 +333,17 @@ It is a shift in how Blocks are written, closer to React's class-to-function mov
 Block file changes. If done, keep the string and `<In, Out>` forms working for a deprecation period and add a
 `waygraph upgrade` codemod. Not started.
 
-### Repeatable runs: unique test data, replay, cleanup (planned, next)
+### Repeatable runs: unique test data, replay, cleanup (done, 0.16.6)
 
 The common flaky case: a flow that creates something (a signup, an order) passes the first time and fails the second,
 because its test data is constant or the first run's data is still there. Mem stubs are already functions, called fresh
-every run (`registerMemStub(Signup.email, () => ...)`), so fresh data is possible today, but every project hand-rolls it
-(`Date.now()`, which collides across parallel workers), a failure can't be rerun with the data that failed, and nothing
-cleans up. Planned:
+every run (`registerMemStub(Signup.email, () => ...)`), so fresh data was possible, but every project hand-rolled it
+(`Date.now()`, which collides across parallel workers), a failure couldn't be rerun with the data that failed, and
+nothing cleaned up. Built (issue #5; the reference is docs/reference/engine.md, "Repeatable runs"):
 
 1. **`unique` in mem stubs:** `registerMemStub(Signup.email, ({ unique }) => \`qa+${unique}@example.com\`)`. Different
-   every run, stable within one, safe across parallel workers (built from the run's `runId` and the worker index).
+   every run, stable within one, safe across parallel workers (time, randomness and the worker index, made once per
+   process).
 2. **Record and replay:** the run log records the Mem values a run seeded; `waygraph run <flow> --replay <runId>` reruns
    with exactly that data, so a flaky failure becomes a reproducible one.
 3. **Cleanup steps:** `map().….finally(DeleteTestUserApiBlock).end()` runs on pass or fail and reports separately;
@@ -348,8 +351,9 @@ cleans up. Planned:
 4. **"Already exists" as a branch (convention, docs):** a create Block resolves to `Created` or `AlreadyExists`, each
    with its own `verify`, so a second run takes a real, verified edge instead of failing. Branches and
    `expectedFailure` already support it; the convention skill and reference say how.
-5. **`waygraph check` warns** when a create-style Block (Effect / API) requires a key whose mem stub returns the same
-   value twice: "constant test data: a second run may collide".
+5. **`waygraph check` warns** when an API Block, or one named like a create (`create-`, `register-`, `signup-`, ...),
+   requires a key whose mem stub returns the same value for two `unique` tokens. (Effects in general are not flagged:
+   adding a fixed catalogue item to a cart is constant on purpose.)
 
 ### Network tab mocking (backlogged, not yet researched)
 

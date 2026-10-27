@@ -9,6 +9,8 @@ import type { PlayOptions } from "../options.js";
 import { findBlock, findFlow } from "./find.js";
 import { seedMemForBlock, seedMemForFlow } from "./seed-mem.js";
 import { parseChainSpec } from "./spec.js";
+import { recordMem } from "../../engine/run/events.js";
+import { readRunLog } from "../../runtime/run-log.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import type { SomeBlock } from "../../engine/block/block.js";
 
@@ -32,9 +34,39 @@ export async function planSteps(projectDir: string, spec: string, mem: MemPage, 
   const segments = bareFlow
     ? [flowSegment(bareFlow, spec.trim(), undefined, mem, options)]
     : await Promise.all(parseSegments(spec).map((seg) => resolveSegment(projectDir, seg, mem, options)));
+  const recorded = options.replay ? recordedMem(projectDir, options.replay) : undefined;
+  segments.forEach((segment, index) => {
+    segment.seedMem = seeding(segment, index, mem, recorded);
+  });
   const steps = stepsOf(segments, options, { episodes: !bareFlow });
   if (options.mode !== "report") announce(spec, steps, !!bareFlow, options);
   return { steps, flows: segments.map((s) => s.flow) };
+}
+
+/** The mem each segment of a recorded run was seeded with (its run log's run:mem events), by segment index. */
+function recordedMem(projectDir: string, runId: string): Map<number, Record<string, unknown>> {
+  const recorded = new Map<number, Record<string, unknown>>();
+  for (const event of readRunLog(projectDir, runId)) if (event.type === "run:mem") recorded.set(event.segment, event.values);
+  return recorded;
+}
+
+/**
+ * A segment's seeding, recorded: the values its Blocks' required keys end up with go into the run log (run:mem), so
+ * `--replay <runId>` can set exactly them again - which it does here instead of seeding.
+ */
+function seeding(segment: Segment, index: number, mem: MemPage, recorded: Map<number, Record<string, unknown>> | undefined): () => void {
+  const keys = [...new Map(segment.flow.blocks().flatMap((info) => info.block.requires ?? []).map((k) => [k.name, k])).values()];
+  const seed = segment.seedMem;
+  return () => {
+    if (recorded) {
+      const values = recorded.get(index);
+      if (!values) throw new Error(`waygraph: --replay: that run recorded no mem for part ${index + 1} ("${segment.ref}") - is it the same spec?`);
+      for (const k of keys) if (k.name in values) mem.set(k, values[k.name]);
+    } else {
+      seed();
+    }
+    recordMem(index, segment.ref, Object.fromEntries(keys.filter((k) => mem.has(k)).map((k) => [k.name, mem.get(k)])));
+  };
 }
 
 /** A spec that is just a name might be an existing Flow (`cartFlow`); then no chain spec is needed. */
@@ -90,9 +122,10 @@ function stepsOf(segments: readonly Segment[], options: PlayOptions, { episodes 
   // chainFlow marks each segment's first Block when that segment wants a fresh session.
   const resets = new Set(chainFlow(...segments.map((s) => s.flow)).blocks().filter((b) => b.resetSessionBefore).map((b) => b.block));
   let episode = 0;
-  return segments.flatMap((segment) => {
+  return segments.flatMap((segment, segmentIndex) => {
     const episodeNumber = episodes && segment.named ? ++episode : undefined;
     const infos = expand(segment.flow.blocks(), options);
+    const last = infos.length - 1 - [...infos].reverse().findIndex((info) => !info.cleanup);
     return infos.map((info, i): PlayStep => ({
       block: info.block,
       exportName: info.name,
@@ -101,7 +134,9 @@ function stepsOf(segments: readonly Segment[], options: PlayOptions, { episodes 
       episodeTitle: episodeNumber === undefined ? undefined : segment.ref,
       resetSession: i === 0 && resets.has(segment.flow.blocks()[0]?.block as SomeBlock),
       seedMem: i === 0 ? segment.seedMem : undefined,
-      expectedFailureReason: i === infos.length - 1 ? segment.flow.expectedFailureReason : undefined,
+      expectedFailureReason: i === last ? segment.flow.expectedFailureReason : undefined,
+      segment: segmentIndex,
+      ...(info.cleanup ? { cleanup: true } : {}),
       demoPace: segment.flow.demoPace,
       highlightStyle: segment.flow.highlightStyle,
       ...(info.wasFastForward ? { wasFastForward: true, ffSource: info.ffSource } : {}),

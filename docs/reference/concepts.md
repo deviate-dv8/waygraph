@@ -69,7 +69,9 @@ Blocks from installed [map packages](./map.md#map-packages) are included, with t
 Every run emits events: `run:start`, then `step:start` / `step:end` (Block, its kind - `nav`, `page`, `method`, `effect`, `assert`, `api` or `block`, as in the manifest - from/to Checkpoint, duration) or `step:error`
 for each Block, `step:read` between a step's verify and its end when [Read Blocks](./beta.md) cover the page it landed
 on (what the page showed, after it settled). A fast-forward step's inner Blocks are steps of their own whose `step:start`
-carries `parent` (the fast-forward step's index); the last one ends with it, at the same Checkpoint. Then `run:artifact` for a saved video, and `run:end` (ok, result or error). Each
+carries `parent` (the fast-forward step's index); the last one ends with it, at the same Checkpoint. A cleanup step
+(`.finally`) carries `cleanup: true`. `run:mem` records the mem each part of the run was seeded with (what
+`--replay <runId>` seeds again). Then `run:artifact` for a saved video, and `run:end` (ok, result or error). Each
 run has its own id even when several run at once in one process (parallel traverse workers each are one run). Subscribe in code with
 `onRunEvent((event) => …)`. The CLI (`run`, `demo`, `test`) also writes them to `.waygraph/runs/<runId>.jsonl` in the
 project, and prints `waygraph: run log <file>` on stdout when a run ends (not in JSON mode, whose stdout is the report): the run history Waygraph UI shows, and where a script

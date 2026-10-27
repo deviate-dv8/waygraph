@@ -79,6 +79,7 @@ Flows are files (0.10.5+):
 | Todo dock UX | `waygraph demo ... --todo-smart` (default) · `--todo-full` (no compact/collision/behind) |
 | QA watch + record | `waygraph demo --blocks shopFlow --auto-play-video` |
 | Ad-hoc Blocks | `waygraph run --blocks "login then nav-cart" --data '{...}'` |
+| Rerun with a run's data | `waygraph run signupFlow --replay <runId>` (the mem that run was seeded with, from its run log) |
 | Headed execute | `waygraph run --blocks shopFlow --non-headless --video` |
 | Explore | `waygraph auto` / `waygraph auto --cli` |
 | Browser command reference | `waygraph browser` |

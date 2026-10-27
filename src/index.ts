@@ -12,6 +12,7 @@ export { connect } from "./engine/run/connect.js";
 export { checkpoint } from "./engine/checkpoint/checkpoint.js";
 export { MemKey, MemPage, key, keyGroup } from "./engine/mem/mem.js";
 export { registerMemStub, seedMemStub, getMemStub } from "./engine/mem/mem-stub.js";
+export type { MemStubContext } from "./engine/mem/mem-stub.js";
 export { css, byText, byRole } from "./engine/trait/selector.js";
 export { WaygraphError, WAYGRAPH_ERRORS } from "./engine/errors.js";
 export type { WaygraphErrorCode } from "./engine/errors.js";

@@ -1,8 +1,8 @@
 // Writes every run event to `<dir>/<runId>.jsonl` when WAYGRAPH_RUN_LOG names a folder (the CLI sets it to the project's
 // `.waygraph/runs`; `runLog: false` in the config turns it off). This is the run history Waygraph UI reads.
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { onRunEvent } from "../engine/run/events.js";
+import { onRunEvent, type RunEvent } from "../engine/run/events.js";
 import { envFlag, envString } from "../engine/env.js";
 
 let installed = false;
@@ -26,4 +26,12 @@ export function installRunLog(): void {
 /** The folder run logs go to for a project unless the config or the environment says otherwise. */
 export function defaultRunLogDir(projectDir: string): string {
   return join(projectDir, ".waygraph", "runs");
+}
+
+/** A recorded run's events, from the project's run log (where WAYGRAPH_RUN_LOG points, else the default folder). */
+export function readRunLog(projectDir: string, runId: string): RunEvent[] {
+  const dir = envString("WAYGRAPH_RUN_LOG");
+  const file = join(dir && dir !== "0" ? dir : defaultRunLogDir(projectDir), `${runId.replace(/\.jsonl$/, "")}.jsonl`);
+  if (!existsSync(file)) throw new Error(`waygraph: no run log for "${runId}" (looked for ${file})`);
+  return readFileSync(file, "utf8").split("\n").filter(Boolean).map((line) => JSON.parse(line) as RunEvent);
 }

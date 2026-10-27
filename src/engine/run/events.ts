@@ -6,7 +6,9 @@ import type { TraitCheckReport } from "../trait/verify.js";
 
 export type RunEvent =
   | { type: "run:start"; runId: string; at: number; label?: string }
-  | { type: "step:start"; runId: string; at: number; index: number; block: string; kind: BlockKind; from: string; parent?: number }
+  /** The mem a segment of the run was seeded with (`--data`, mem stubs): what `--replay <runId>` sets again. */
+  | { type: "run:mem"; runId: string; at: number; segment: number; flow: string; values: Record<string, unknown> }
+  | { type: "step:start"; runId: string; at: number; index: number; block: string; kind: BlockKind; from: string; parent?: number; cleanup?: true }
   | { type: "step:end"; runId: string; at: number; index: number; block: string; kind: BlockKind; to: string; ms: number }
   | { type: "step:error"; runId: string; at: number; index: number; block: string; kind: BlockKind; error: string; ms: number; check?: TraitCheckReport }
   | ({ type: "step:read"; runId: string; at: number; index: number; block: string; kind: BlockKind; checkpoint: string } & StepRead)
@@ -95,14 +97,14 @@ export async function inRun<T>(label: string | undefined, body: () => Promise<T>
   }
 }
 
-export function stepStarted(block: string, kind: BlockKind, from: string): void {
+export function stepStarted(block: string, kind: BlockKind, from: string, cleanup?: boolean): void {
   const open = scope.getStore();
   if (!open) return;
   const at = Date.now();
   const parent = open.open.at(-1)?.index;
   const step = { index: open.index++, block, kind, startedAt: at };
   open.open.push(step);
-  emit({ type: "step:start", runId: open.runId, at, index: step.index, block, kind, from, ...(parent !== undefined ? { parent } : {}) });
+  emit({ type: "step:start", runId: open.runId, at, index: step.index, block, kind, from, ...(parent !== undefined ? { parent } : {}), ...(cleanup ? { cleanup: true as const } : {}) });
 }
 
 /**
@@ -139,6 +141,13 @@ export function stepFailed(error: unknown): void {
   for (const { index, block, kind, startedAt } of open.open.splice(0).reverse()) {
     emit({ type: "step:error", runId: open.runId, at, index, block, kind, error: message, ms: at - startedAt, ...(check ? { check } : {}) });
   }
+}
+
+/** Records the mem a segment of this run was seeded with, keyed by MemKey name. */
+export function recordMem(segment: number, flow: string, values: Record<string, unknown>): void {
+  const open = scope.getStore();
+  if (!open) return;
+  emit({ type: "run:mem", runId: open.runId, at: Date.now(), segment, flow, values });
 }
 
 /** The id of the run open right now, if any. */

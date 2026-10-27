@@ -21,7 +21,7 @@ import type { HighlightStyleDefaults } from "../stub/ring.js";
 import type { Flow, FlowSettings } from "./flow.js";
 import { buildBranchedFlow } from "./map-branch.js";
 import { signInStep, type Account } from "./account.js";
-import { assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
+import { asCleanup, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
 
 type S = Checkpoint<"__start__">;
 
@@ -270,11 +270,26 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   flow<NextOut extends Checkpoint<string>>(sub: Flow<NextOut>, opts?: MapFlowOpts): MapBuilder<NextOut> {
     // The steps' types live in `sub`; at runtime this is one untyped walk, typed again as the sub-flow's last Checkpoint.
     let next = this as unknown as MapBuilder<any>;
-    sub.blocks().forEach((info, i) => {
+    const infos = sub.blocks();
+    infos.filter((info) => !info.cleanup).forEach((info, i) => {
       const block = i === 0 && (opts?.reset ?? sub.resetSession) ? resetBefore(info.block) : info.block;
       next = next.appendStep(block as SomeDefinedBlock);
     });
+    // The sub-flow's cleanup runs with this flow's, at the end.
+    const cleanup = infos.filter((info) => info.cleanup).map((info) => info.block);
+    if (cleanup.length) next = new MapBuilder(next.build, { ...next.settings, finally: [...(next.settings.finally ?? []), ...cleanup] }, next.steps, next.homeOrigin, next.ff);
     return next as MapBuilder<NextOut>;
+  }
+
+  /**
+   * A cleanup step: it runs after the flow's steps, whether they passed or failed, and its own failure is reported
+   * without failing the flow - deleting what the flow created, usually with an API Block. Several run in the order
+   * given. Doesn't move the flow: the next step still starts where the last one landed.
+   * @example engine.map().gotoPage(NavSignupBlock).method(SubmitSignupBlock).finally(DeleteTestUserApiBlock).end()
+   */
+  finally(block: SomeDefinedBlock): MapBuilder<Out> {
+    assertMapSalt(block, ["method", "effect", "api"], "finally");
+    return new MapBuilder<Out>(this.build, { ...this.settings, finally: [...(this.settings.finally ?? []), asCleanup(block)] }, this.steps, this.homeOrigin, this.ff);
   }
 
   /**
@@ -330,7 +345,9 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     for (const [tag, fn] of Object.entries(
       routes as Record<string, ((m: MapBuilder<Checkpoint<string>>) => Flow<Checkpoint<string>>) | null>,
     )) {
-      resolvedRoutes[tag] = fn ? fn(new MapBuilder<Checkpoint<string>>(this.build, this.settings, [], this.homeOrigin, null)) : null;
+      // A branch is its own flow: the cleanup stays with the steps before it, not with every branch.
+      const { finally: _cleanup, ...settings } = this.settings;
+      resolvedRoutes[tag] = fn ? fn(new MapBuilder<Checkpoint<string>>(this.build, settings, [], this.homeOrigin, null)) : null;
     }
     return buildBranchedFlow(before, resolvedRoutes) as never;
   }

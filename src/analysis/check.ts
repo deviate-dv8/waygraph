@@ -8,6 +8,9 @@ import type { PracticeWarning } from "./practices-check.js";
 import { mapGroups } from "../manifest/maps.js";
 import { reportImportError } from "../manifest/project.js";
 import { mapGroupImportProblems } from "../manifest/map-imports.js";
+import { blockKindOf } from "../engine/block/kind.js";
+import { memStubIsConstant } from "../engine/mem/mem-stub.js";
+import type { MemKey } from "../engine/mem/mem.js";
 import type { MapImportProblem } from "../manifest/map-imports.js";
 
 /** Anything runnable counts for `validate` (looser than the manifest, which also wants `.blocks()`). */
@@ -81,6 +84,16 @@ export interface SelWarning {
  * file that fails to import for unrelated reasons is silently skipped here;
  * `validate` is the command that reports import failures).
  */
+/** A Block that creates something a second run would collide with: an API call, or one named like a create. */
+const CREATES = /^(?:create|register|sign-?up|new|insert)-/;
+
+/** A Block that creates something, requiring a key whose mem stub returns the same value every run. */
+export interface ConstantDataWarning {
+  file: string;
+  blockName: string;
+  key: string;
+}
+
 export async function checkProject(
   projectDir: string,
   opts?: { noPractices?: boolean },
@@ -88,10 +101,14 @@ export async function checkProject(
   navWarnings: CheckWarning[];
   selWarnings: SelWarning[];
   practiceWarnings: PracticeWarning[];
+  constantDataWarnings: ConstantDataWarning[];
 }> {
   const files = walkDir(projectDir, /\.block\.ts$/);
   const navWarnings: CheckWarning[] = [];
   const selWarnings: SelWarning[] = [];
+  const constantDataWarnings: ConstantDataWarning[] = [];
+  // Mem stubs are registered where a project keeps them; load those before asking them.
+  for (const file of walkDir(projectDir, /\.mem-stubs?\.ts$/)) await importFresh(file).catch((err: unknown) => reportImportError(relative(projectDir, file), err));
   for (const file of files) {
     let mod: Record<string, unknown>;
     try {
@@ -112,12 +129,17 @@ export async function checkProject(
       if (fileCalls.some((c) => c.literalFirstArg && SELECTOR_TRAITS.has(c.callee))) {
         selWarnings.push({ file, blockName: exported.name, exportName });
       }
+      if (blockKindOf(exported) === "api" || CREATES.test(exported.name)) {
+        for (const key of (exported as { requires?: readonly MemKey<unknown>[] }).requires ?? []) {
+          if (memStubIsConstant(key)) constantDataWarnings.push({ file, blockName: exported.name, key: key.name });
+        }
+      }
     }
   }
   const practiceWarnings = collectPracticeWarnings(projectDir, walkDir, {
     disabled: opts?.noPractices === true,
   });
-  return { navWarnings, selWarnings, practiceWarnings };
+  return { navWarnings, selWarnings, practiceWarnings, constantDataWarnings };
 }
 
 

@@ -22,7 +22,8 @@ and the runner use. This is what Waygraph UI draws the graph from.
 
 Every `run`, `demo` and `test` writes `.waygraph/runs/<runId>.jsonl`: one line per event - the run starting, each step
 starting and ending (with its kind - nav, page, method, effect, assert, api - the Checkpoint and time) or failing (with the error), what the page showed after each step
-(`step:read`, when Read Blocks cover it), videos and screenshots, the run ending.
+(`step:read`, when Read Blocks cover it), the mem each part was seeded with (`run:mem`, what `--replay <runId>` uses),
+videos and screenshots, the run ending.
 Read the newest one to see what failed without re-running.
 
 ## Live sessions

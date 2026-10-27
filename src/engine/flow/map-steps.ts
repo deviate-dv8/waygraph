@@ -52,6 +52,13 @@ export function landsOn(block: SomeDefinedBlock, lands: Checkpoint<string> | und
   copyWaygraphRuntime(block, next);
   return next;
 }
+/** The same Block, marked as a cleanup step: its run events say so (`cleanup: true` on step:start). */
+export function asCleanup(block: SomeDefinedBlock): SomeDefinedBlock {
+  const next = { ...block } as SomeDefinedBlock;
+  copyWaygraphRuntime(block, next);
+  Object.defineProperty(next, "__waygraphCleanup", { value: true, enumerable: false, configurable: true });
+  return next;
+}
 /** Applies a step's `pace` option, keeping the Block's runtime markers. */
 export function paced(block: object, opts: MapStepOpts | undefined): SomeDefinedBlock {
   if (opts?.pace === undefined) return block as SomeDefinedBlock;

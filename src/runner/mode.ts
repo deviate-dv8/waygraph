@@ -26,6 +26,10 @@ export interface PlayStep {
   expectedFailureReason?: string | undefined;
   demoPace?: DemoPace | undefined;
   highlightStyle?: HighlightStyleDefaults | undefined;
+  /** Which flow of the chain this step belongs to (its cleanup runs when that flow ends). */
+  segment: number;
+  /** A cleanup step (`.finally(Block)`): played when its flow ends, pass or fail; a failure is reported, not fatal. */
+  cleanup?: boolean | undefined;
   /** An inner step of an expanded fast-forward unit (`--ff-expand`). */
   wasFastForward?: boolean | undefined;
   ffSource?: string | undefined;
@@ -47,6 +51,8 @@ export interface PlayOutcome {
   result?: Checkpoint<string> | undefined;
   /** The step that failed, when one did. */
   failedAt?: { index: number; step: PlayStep; error: unknown } | undefined;
+  /** Cleanup steps that failed (reported; they don't change `ok`). */
+  cleanupFailures?: { step: PlayStep; error: unknown }[] | undefined;
   /** Set when the run stopped where its flow expects to fail. */
   expectedFailure?: { step: PlayStep; reason: string } | undefined;
 }

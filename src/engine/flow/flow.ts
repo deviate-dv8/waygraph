@@ -71,6 +71,8 @@ export interface BlockInfo {
    * `.flow(sub, { reset: true })` (or a CLI chain segment whose flow has `sessionReset`). Absent on an ordinary Flow.
    */
   resetSessionBefore?: boolean;
+  /** A cleanup step (`.finally(Block)`): it runs after the flow's steps, whether they passed or failed. */
+  cleanup?: true;
   /**
    * The actual Block, re-runnable on its own - e.g. step-through tooling that runs a Flow's Blocks one at a time.
    * Introspection that only wants to read the shape (a visualizer) can ignore this and use `name`/`routes` alone.
@@ -173,6 +175,7 @@ export interface Flow<Out extends Checkpoint<string>> {
 export function buildFlow<Out extends Checkpoint<string>>(
   middle: readonly SomeBlock[],
   engineConfig: EngineConfig,
+  cleanup: readonly SomeBlock[] = [],
 ): Flow<Out> {
   // Settings (sessionReset, memStub, ...) are added afterwards by withSettings, which re-applies them after any
   // withBlockVerify/modBlockVerify patch so they survive.
@@ -205,9 +208,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
       const { context, close } = await launchOwnContext(config);
       try {
         try {
-          return await runGraph<Out>(chain, undefined, context, mem, 5000, {
-            ...(config.layouts !== undefined ? { layouts: config.layouts } : {}),
-          });
+          return await run(context, mem, config.layouts !== undefined ? { layouts: config.layouts } : undefined);
         } finally {
           // Playwright finalizes recordVideo on context.close(); skip when
           // not recording so mem-only runs with stub contexts stay unchanged.
@@ -235,11 +236,17 @@ export function buildFlow<Out extends Checkpoint<string>>(
     // always wins either way.
     const closeOnFinish = options?.closeOnFinish ?? gotOwnPage;
     const resolvedLayouts = options?.layouts ?? engineConfig.layouts;
-    const result = await runGraph<Out>(chain, undefined, context, mem, 5000, {
-      page,
-      closeOnFinish: false,
-      ...(resolvedLayouts !== undefined ? { layouts: resolvedLayouts } : {}),
-    });
+    let result: Out;
+    try {
+      result = await runGraph<Out>(chain, undefined, context, mem, 5000, {
+        page,
+        closeOnFinish: false,
+        ...(resolvedLayouts !== undefined ? { layouts: resolvedLayouts } : {}),
+      });
+    } finally {
+      // Cleanup runs whether the steps passed or failed; its own failures don't replace theirs.
+      await runCleanup(cleanup, context, mem, page, engineConfig);
+    }
     if (closeOnFinish) {
       await page.close();
     }
@@ -258,25 +265,27 @@ export function buildFlow<Out extends Checkpoint<string>>(
   return {
     resetSession: false,
     config: engineConfig,
-    blocks: () =>
-      middle.map((b) => ({
+    blocks: () => [
+      ...middle.map((b) => ({
         name: b.name,
         block: b,
         ...(b.routes ? { routes: b.routes } : {}),
         ...((b as { __waygraphResetBefore?: boolean }).__waygraphResetBefore ? { resetSessionBefore: true } : {}),
       })),
+      ...cleanup.map((b) => ({ name: b.name, block: b, cleanup: true as const })),
+    ],
     run: run as Flow<Out>["run"],
     withBlockVerify(block, verify) {
       const index = findBlockIndex(middle, block);
       const patched = [...middle];
       patched[index] = withVerify(middle[index]!, verify);
-      return buildFlow<Out>(patched, engineConfig);
+      return buildFlow<Out>(patched, engineConfig, cleanup);
     },
     modBlockVerify(block, nameOrIndex, newCheck) {
       const index = findBlockIndex(middle, block);
       const patched = [...middle];
       patched[index] = modVerify(middle[index]!, nameOrIndex, newCheck);
-      return buildFlow<Out>(patched, engineConfig);
+      return buildFlow<Out>(patched, engineConfig, cleanup);
     },
   };
 }
@@ -284,6 +293,8 @@ export function buildFlow<Out extends Checkpoint<string>>(
 
 /** The settings `map({ ... })` gives a Flow. */
 export interface FlowSettings {
+  /** Cleanup steps from `.finally(Block)`, in order. */
+  finally?: readonly SomeBlock[];
   /** Read by map() when it begins (the sign-in step); the Flow itself keeps nothing of it. */
   as?: import("./account.js").Account;
   memStub?: boolean;
@@ -342,6 +353,20 @@ function locateInChain(
   throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_NAME(blockName));
 }
 
+
+/**
+ * Runs a flow's cleanup steps (`.finally(Block)`) one by one on its page. A cleanup step that fails is reported (on
+ * stderr, and as its step:error) and the rest still run: cleanup never decides whether the flow passed.
+ */
+async function runCleanup(cleanup: readonly SomeBlock[], context: BrowserContext, mem: MemPage, page: Page, config: EngineConfig): Promise<void> {
+  for (const block of cleanup) {
+    try {
+      await buildFlow([block], config).run(context, mem, { page, closeOnFinish: false });
+    } catch (error) {
+      console.error(`waygraph: cleanup "${block.name}" failed: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
+    }
+  }
+}
 
 export async function clearSessionState(context: BrowserContext, page: Page): Promise<void> {
   await context.clearCookies().catch(ignorePageGone);

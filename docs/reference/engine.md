@@ -230,6 +230,44 @@ outside the CLI, call `seedMemStub(mem, flow)` yourself before `run()` when
 `flow.memStub` is true - `run()` never reads Flow flags itself, same as
 `resetSession`/`title`/every other `with*` wrapper.
 
+### Repeatable runs: unique data, replay, cleanup
+
+A flow that creates something (a signup, an order) must pass the second time too. Four tools:
+
+**`unique` in a mem stub.** A stub is given `{ unique }`: different every run, the same for every stub within one run
+(so an email and a username made from it match), and different across parallel workers.
+
+```typescript
+registerMemStub(Signup.email, ({ unique }) => `qa+${unique}@example.com`);
+registerMemStub(Signup.username, ({ unique }) => `qa-${unique}`);
+```
+
+**Replay a run's data.** Every run records the mem each part of it was seeded with (a `run:mem` event in its run log,
+keyed by MemKey name), however it got there: `--data`, a mem stub, `unique`. `waygraph run <flow> --replay <runId>`
+(and `demo`) seeds exactly that again, so a failure that depended on its data reruns with it.
+
+**Cleanup steps.** `.finally(Block)` runs after the flow's steps, whether they passed or failed; several run in order.
+A cleanup step that fails is reported (stderr and its `step:error`) and the rest still run; it never decides whether
+the flow passed. An API Block is the usual cleanup. A nested flow's cleanup runs at the end of the outer flow; the
+run log marks cleanup steps (`cleanup: true` on `step:start`).
+
+```typescript
+export const signupFlow = engine
+  .map({ memStub: true })
+  .gotoPage(NavSignupBlock)
+  .method(SubmitSignupBlock, { lands: SignedUp })
+  .finally(DeleteTestUserApiBlock)
+  .end();
+```
+
+**"Already exists" is a branch, not a failure.** When a second run can legitimately meet what the first created, the
+create Block resolves to `Created` or `AlreadyExists`, each with its own `verify`, and the flow follows the one it is
+about (`{ lands }`) or both (`.branch()`). Then a rerun takes a real, checked edge instead of failing on a duplicate.
+
+`waygraph check` warns about constant test data: an API Block, or one named like a create (`create-`, `register-`,
+`signup-`, `new-`, `insert-`), that requires a key whose mem stub returns the same value for two different `unique`
+tokens.
+
 ### Engine config and pluggable browsers
 
 `new Engine({ headless, browserName, slowMo })` configures a browser the Engine launches
