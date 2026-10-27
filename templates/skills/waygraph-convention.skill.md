@@ -36,7 +36,11 @@ against a live site, use `--skill-pilot-blind`.
    an explicit type argument when it sits between two specifically-typed Blocks in a Flow.
    Not just static content or an action's result - it also names a *feature state* worth a
    Checkpoint of its own (a submit button greyed out until required fields are filled, a
-   field error under one input, a stale "Save" re-enabling). `Trait.disabled(selector)` /
+   field error under one input, a stale "Save" re-enabling). Reach for a built-in Trait first: `Trait.text`,
+   `contains`, `matches`, `value`, `attribute`, `absent`, `visible`, `disabled` / `enabled` (`text`, `contains` and `value`
+   take a mem function for the expected value). A custom Trait returns `{ ok, saw }`, not a bare boolean, so its failure
+   says what the page showed; never wrap a check in your own retry loop - verify already retries until `timeoutMs`.
+   `Trait.disabled(selector)` /
    `Trait.enabled(selector)` cover that directly; write a custom Trait only for a state
    condition neither one expresses.
 5. **`requires` = externally supplied.** A key an earlier Block in the same chain produces

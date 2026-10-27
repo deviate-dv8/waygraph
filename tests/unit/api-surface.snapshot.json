@@ -13,6 +13,7 @@
   "SESSION_OPS",
   "SESSION_PROTOCOL_VERSION",
   "Trait",
+  "TraitFailure",
   "WAYGRAPH_ERRORS",
   "WAYGRAPH_RING_CSS",
   "WG_READY_AUTO_SEL",

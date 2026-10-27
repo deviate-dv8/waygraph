@@ -20,8 +20,8 @@ flowchart LR
 2. **act** - Playwright does the work (fill, click, request).
 3. **observe** - read the outcome, if the Block can land in more than one place.
 4. **resolve** - name the [[Checkpoints|Checkpoint]] reached.
-5. **verify** - Traits prove the page matches (right URL, right text visible). A failing Trait stops the run with
-   the Block's name and the check that failed.
+5. **verify** - Traits prove the page matches (right URL, right text visible). A check that doesn't pass yet is
+   retried for up to 5 s; one that never passes stops the run with what it wanted, what the page showed and where.
 6. **layouts** - checks that apply to many Checkpoints at once (a sidebar that must always be there).
 
 Then it moves to the next Block, handing it the Checkpoint just reached. Each step emits **run events**

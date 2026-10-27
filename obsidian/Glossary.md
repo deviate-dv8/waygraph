@@ -13,7 +13,7 @@ tags:
 | **Flow** | Blocks in order, built with `map()` - the timeline. See [[Flows]] |
 | **map()** | The flow builder; checks each step's kind and that steps connect |
 | **Mem** / **MemKey** | Values carried between steps, and their typed names. See [[Mem]] |
-| **Trait** | One check `verify` runs against the page (url, text, visible) |
+| **Trait** | One check `verify` runs against the page (url, text, contains, value, absent, ...); on failure it says what it wanted and saw |
 | **Layout** | Checks that apply to many Checkpoints (a sidebar always present) |
 | **Stub** (`stubBefore` / `stubAfter` / `stubOnError`) | A step's narration for the demo. See [[Demo UI]] |
 | **Mode** | How the runner plays steps: run, demo, report, branches. See [[Playing a Flow]] |

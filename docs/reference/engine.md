@@ -106,6 +106,45 @@ with `.flow(sub, { reset })`. `import { map } from "waygraph"` is also available
 standalone (`map(options)` ~= `new Engine(options).map(options)`) for a call site that
 doesn't otherwise need its own `Engine` instance. **The one way to define a flow.**
 
+### Built-in Traits, retries, and what a failure says
+
+| Trait | Passes when |
+|---|---|
+| `Trait.url({ pathname, ... })` | the page URL matches (waits for it) |
+| `Trait.visible(sel)` | `sel` is visible |
+| `Trait.text(sel, text)` | the first `sel`'s text, whitespace collapsed, equals `text` |
+| `Trait.contains(sel, text)` | that text contains `text` |
+| `Trait.matches(sel, /re/)` | that text matches the pattern |
+| `Trait.value(sel, value)` | the field's value equals `value` |
+| `Trait.attribute(sel, name, value)` | the attribute equals `value` |
+| `Trait.absent(sel)` | nothing matches `sel` |
+| `Trait.disabled(sel)` / `Trait.enabled(sel)` | the control is disabled / enabled |
+
+An expected value may be a function of mem: `Trait.value("#name", (mem) => mem.get(MachineName))`.
+
+A check that doesn't pass is retried every 200 ms until it does or 5 s pass (`timeoutMs` on the Trait changes that), so
+a page still settling after `act` doesn't fail it. A failure is a `TraitFailure` that says what the check wanted, what
+the page showed and where:
+
+```
+trait "text-equals(.toast, "Saved")" failed after "save-machine": wanted "Saved" in .toast; saw "Draft" (on /equipment "Equipment Registry")
+```
+
+The same is data: `error.check` (`{ trait, block, when, wants, saw, url, heading }`), and the run's `step:error` event
+carries it as `check`, so the run log has it. A hand-written Trait says what it saw by returning `{ ok, saw }` instead
+of a boolean, and what it wants with `wants`:
+
+```ts
+const fiveRows: Trait = {
+  name: "five-rows",
+  wants: "5 rows",
+  async check(page) {
+    const n = await page.locator("tr").count();
+    return { ok: n === 5, saw: `${n} rows` };
+  },
+};
+```
+
 ### Traits beyond the page
 
 A hand-written `Trait`'s `check(page, mem)` receives `mem` too, for the same-Checkpoint

@@ -279,6 +279,12 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     runs log reads); the manifest (version 2) lists Read Blocks with their field shapes; a public session protocol
     (`SessionRequest`, `SESSION_OPS`, `SESSION_PROTOCOL_VERSION`, `hello`, `subscribe` / `pilot watch`); explicit
     `install…()` instead of import side effects. Waygraph UI runs one worker process per project. **Done.**
+19. Found in a project's own helpers (0.16.5): a demo enters exactly what a run enters (date / time / colour fields
+    filled at once, a field whose mask rewrote the typed keys refilled); the overlay never takes a click meant for the
+    page; `waygraph check` reads a fast-forward step's inner Blocks; Traits retry until the page settles, say what they
+    wanted and saw (`TraitFailure`, `check` on `step:error`), and gain `contains` / `matches` / `value` / `attribute` /
+    `absent` with mem-derived expected values; the CLI prints the run log path. **Done.** Next: branch outcomes
+    (`lands`), accounts, repeatable runs (issue #5), flow input, one browser across a chain.
 
 
 

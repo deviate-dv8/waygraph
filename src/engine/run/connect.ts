@@ -3,7 +3,7 @@
 import type { Block } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import type { Trait } from "../trait/trait.js";
-import { runVerify, runPrecondition } from "../trait/trait.js";
+import { runVerify, runPrecondition } from "../trait/verify.js";
 import { isConnected, lastLeaf, stepEnded, stepStarted } from "./events.js";
 import { blockKindOf } from "../block/kind.js";
 

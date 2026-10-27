@@ -2,6 +2,7 @@
 import type { NavBlock } from "./block/kinds/nav.js";
 import type { Page } from "@playwright/test";
 import { MemPage } from "./mem/mem.js";
+import { asResult } from "./trait/verify.js";
 
 /**
  * "Where am I" - reverse-matches a live `page` against every NavBlock /
@@ -46,7 +47,8 @@ export async function locate(
         const traits = typeof verify === "function" ? verify(resolved) : (verify ?? []);
         let allPass = true;
         for (const trait of traits) {
-          if (!(await trait.check(page, mem))) {
+          // A probe: one look, no retries (verify's retries are for a page that is settling, not for guessing).
+          if (!asResult(await trait.check(page, mem)).ok) {
             allPass = false;
             break;
           }

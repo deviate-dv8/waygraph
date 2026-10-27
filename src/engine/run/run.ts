@@ -8,7 +8,7 @@ import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepRead, stepStarted } from "./events.js";
 import { readBlocksFor, readCheckpoint } from "../read/read-block.js";
 import { blockKindOf } from "../block/kind.js";
-import { runPrecondition, runVerify } from "../trait/trait.js";
+import { runPrecondition, runVerify } from "../trait/verify.js";
 import type { Trait } from "../trait/trait.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { SomeBlock } from "../block/block.js";

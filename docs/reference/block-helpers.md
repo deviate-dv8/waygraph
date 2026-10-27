@@ -74,9 +74,9 @@ wired into `shop.flow.ts`.
 submit button greyed out until required fields are filled, a "Save" button re-enabling
 after a successful edit, a field-level validation error appearing under one specific input
 - these are conditions the UI is *in*, worth a nameable Checkpoint of their own the same way
-`AssertItemAddedBlock` names "did add-item work." There's no built-in `Trait.disabled` -
-write the state check as a custom Trait against the real DOM condition (`isDisabled()`, a
-class, an `aria-disabled` attribute - whatever the app actually uses), the same pattern as
+`AssertItemAddedBlock` names "did add-item work." `Trait.disabled` / `Trait.enabled` cover a disabled control; for any
+other state condition (a class, an `aria-disabled` attribute - whatever the app actually uses), write a custom Trait
+against the real DOM condition, returning `{ ok, saw }` so a failure says what it found, the same pattern as
 `removeButtonVisibleForSelectedItem` above:
 
 ```typescript

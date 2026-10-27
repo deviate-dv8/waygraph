@@ -2,12 +2,13 @@
 // reports, Waygraph UI) listen. Emitting never throws into the run.
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { BlockKind } from "../block/kind.js";
+import type { TraitCheckReport } from "../trait/verify.js";
 
 export type RunEvent =
   | { type: "run:start"; runId: string; at: number; label?: string }
   | { type: "step:start"; runId: string; at: number; index: number; block: string; kind: BlockKind; from: string }
   | { type: "step:end"; runId: string; at: number; index: number; block: string; kind: BlockKind; to: string; ms: number }
-  | { type: "step:error"; runId: string; at: number; index: number; block: string; kind: BlockKind; error: string; ms: number }
+  | { type: "step:error"; runId: string; at: number; index: number; block: string; kind: BlockKind; error: string; ms: number; check?: TraitCheckReport }
   | ({ type: "step:read"; runId: string; at: number; index: number; block: string; kind: BlockKind; checkpoint: string } & StepRead)
   | { type: "run:end"; runId: string; at: number; ok: boolean; result?: string; error?: string; ms: number }
   | { type: "run:artifact"; runId: string; at: number; kind: "video" | "trace" | "screenshot"; path: string };
@@ -115,7 +116,9 @@ export function stepFailed(error: unknown): void {
   if (!open?.step) return;
   const at = Date.now();
   const { index, block, kind, startedAt } = open.step;
-  emit({ type: "step:error", runId: open.runId, at, index, block, kind, error: error instanceof Error ? error.message : String(error), ms: at - startedAt });
+  // A failed check also says, as data, what it wanted, what the page showed and where (TraitFailure).
+  const check = (error as { check?: TraitCheckReport } | null)?.check;
+  emit({ type: "step:error", runId: open.runId, at, index, block, kind, error: error instanceof Error ? error.message : String(error), ms: at - startedAt, ...(check ? { check } : {}) });
   open.step = undefined;
 }
 

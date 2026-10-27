@@ -3,7 +3,7 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { onRunEvent } from "../engine/run/events.js";
-import { envString } from "../engine/env.js";
+import { envFlag, envString } from "../engine/env.js";
 
 let installed = false;
 
@@ -15,7 +15,11 @@ export function installRunLog(): void {
     const dir = envString("WAYGRAPH_RUN_LOG");
     if (!dir || dir === "0") return;
     mkdirSync(dir, { recursive: true });
-    appendFileSync(join(dir, `${event.runId}.jsonl`), JSON.stringify(event) + "\n");
+    const file = join(dir, `${event.runId}.jsonl`);
+    appendFileSync(file, JSON.stringify(event) + "\n");
+    // Where a tool finds the run's result as data (each step, a failed check's wanted / saw), instead of reading output.
+    // On stdout, next to "chain finished" (a clean run keeps stderr empty); JSON mode's stdout is the report alone.
+    if (event.type === "run:end" && !envFlag("WAYGRAPH_JSON")) console.log(`waygraph: run log ${file}`);
   });
 }
 

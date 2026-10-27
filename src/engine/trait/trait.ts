@@ -19,9 +19,38 @@ import "urlpattern-polyfill";
 export interface Trait {
   /** Shows up in the error a failed check throws: `trait "${name}" failed after "${blockName}"`. */
   name: string;
-  /** Returns `true` if the check passes. May wait (e.g. `page.waitForURL`) - just don't redirect the run. */
-  check(page: Page, mem: MemPage): Promise<boolean>;
+  /** What the check is looking for, in words (`"Saved" in .toast`): the failure says it. */
+  wants?: string;
+  /**
+   * Passes or not. Return `{ ok, saw }` to say what the page showed when it doesn't pass: the failure says it. May wait
+   * (e.g. `page.waitForURL`) - just don't redirect the run. A check that doesn't wait is retried until it passes or
+   * `timeoutMs` runs out, so a page still settling doesn't fail it.
+   */
+  check(page: Page, mem: MemPage): Promise<boolean | TraitResult>;
+  /** How long verify keeps retrying this check, ms (default 5000). */
+  timeoutMs?: number;
 }
+
+/** A check's answer with what it saw: `{ ok: false, saw: '"Draft"' }`. */
+export interface TraitResult {
+  ok: boolean;
+  saw?: string;
+}
+
+/** A value a Trait compares against: fixed, or read from mem when the check runs. */
+export type Expected<T> = T | ((mem: MemPage) => T);
+
+const expectedValue = <T>(expected: Expected<T>, mem: MemPage): T =>
+  typeof expected === "function" ? (expected as (mem: MemPage) => T)(mem) : expected;
+
+/** What a selector's first match reads (text collapsed), or that nothing matched. */
+async function textAt(page: Page, selector: string): Promise<string | undefined> {
+  const loc = page.locator(selector).first();
+  if ((await loc.count()) === 0) return undefined;
+  return ((await loc.textContent()) ?? "").replace(/\s+/g, " ").trim();
+}
+
+const shown = (text: string | undefined): string => (text === undefined ? "nothing matched" : JSON.stringify(text));
 
 /**
  * Common, generic Trait factories - reusable across any Block, not one-off
@@ -74,12 +103,86 @@ export function urlMatches(pattern: URLPatternInit): Trait {
   };
 }
 
-/** Passes when `selector`'s text content is exactly `expected`. */
-export function textEquals(selector: string, expected: string): Trait {
+/**
+ * Passes when `selector`'s text (whitespace collapsed) is exactly `expected` - a fixed string, or one read from mem.
+ * @example Trait.text(".toast", "Saved")
+ * @example Trait.text("[data-testid=code]", (mem) => mem.get(Machine.code))
+ */
+export function textEquals(selector: string, expected: Expected<string>): Trait {
   return {
-    name: `text-equals(${selector}, ${JSON.stringify(expected)})`,
+    name: `text-equals(${selector}, ${typeof expected === "string" ? JSON.stringify(expected) : "from mem"})`,
+    wants: typeof expected === "string" ? `${JSON.stringify(expected)} in ${selector}` : `the mem value in ${selector}`,
+    async check(page, mem) {
+      const want = expectedValue(expected, mem);
+      const text = await textAt(page, selector);
+      return { ok: text === want.replace(/\s+/g, " ").trim(), saw: shown(text) };
+    },
+  };
+}
+
+/**
+ * Passes when `selector`'s text contains `expected` (fixed, or from mem).
+ * @example Trait.contains("main", (mem) => mem.get(User.email))
+ */
+export function containsText(selector: string, expected: Expected<string>): Trait {
+  return {
+    name: `contains(${selector}, ${typeof expected === "string" ? JSON.stringify(expected) : "from mem"})`,
+    wants: typeof expected === "string" ? `${JSON.stringify(expected)} inside ${selector}` : `the mem value inside ${selector}`,
+    async check(page, mem) {
+      const text = await textAt(page, selector);
+      return { ok: text !== undefined && text.includes(expectedValue(expected, mem)), saw: shown(text === undefined ? text : text.slice(0, 160)) };
+    },
+  };
+}
+
+/** Passes when `selector`'s text matches `pattern`. @example Trait.matches("[data-testid=code]", /^MCH-\d{4}$/) */
+export function matchesText(selector: string, pattern: RegExp): Trait {
+  return {
+    name: `matches(${selector}, ${pattern})`,
+    wants: `text matching ${pattern} in ${selector}`,
     async check(page) {
-      return (await page.locator(selector).textContent()) === expected;
+      const text = await textAt(page, selector);
+      return { ok: text !== undefined && pattern.test(text), saw: shown(text === undefined ? text : text.slice(0, 160)) };
+    },
+  };
+}
+
+/** Passes when a form field holds `expected` (fixed, or from mem). @example Trait.value("#name", "Mixer") */
+export function valueEquals(selector: string, expected: Expected<string>): Trait {
+  return {
+    name: `value(${selector}, ${typeof expected === "string" ? JSON.stringify(expected) : "from mem"})`,
+    wants: typeof expected === "string" ? `${JSON.stringify(expected)} in the field ${selector}` : `the mem value in the field ${selector}`,
+    async check(page, mem) {
+      const loc = page.locator(selector).first();
+      if ((await loc.count()) === 0) return { ok: false, saw: "no such field" };
+      const value = await loc.inputValue();
+      return { ok: value === expectedValue(expected, mem), saw: JSON.stringify(value) };
+    },
+  };
+}
+
+/** Passes when `selector`'s attribute `name` is exactly `value`. @example Trait.attribute("#code", "readonly", "") */
+export function attributeEquals(selector: string, name: string, value: string): Trait {
+  return {
+    name: `attribute(${selector}, ${name}, ${JSON.stringify(value)})`,
+    wants: `${name}=${JSON.stringify(value)} on ${selector}`,
+    async check(page) {
+      const loc = page.locator(selector).first();
+      if ((await loc.count()) === 0) return { ok: false, saw: "nothing matched" };
+      const actual = await loc.getAttribute(name);
+      return { ok: actual === value, saw: actual === null ? `no ${name}` : JSON.stringify(actual) };
+    },
+  };
+}
+
+/** Passes when nothing matches `selector`: the control is not offered at all. @example Trait.absent("[data-testid=archive]") */
+export function absent(selector: string): Trait {
+  return {
+    name: `absent(${selector})`,
+    wants: `no ${selector} on the page`,
+    async check(page) {
+      const n = await page.locator(selector).count();
+      return { ok: n === 0, saw: `${n} of them` };
     },
   };
 }
@@ -114,8 +217,12 @@ export function visible(selector: string): Trait {
 export function disabled(selector: string): Trait {
   return {
     name: `disabled(${selector})`,
+    wants: `${selector} disabled`,
     async check(page) {
-      return page.locator(selector).first().isDisabled();
+      const loc = page.locator(selector).first();
+      if ((await loc.count()) === 0) return { ok: false, saw: "nothing matched" };
+      const off = await loc.isDisabled();
+      return { ok: off, saw: off ? "disabled" : "enabled" };
     },
   };
 }
@@ -124,8 +231,12 @@ export function disabled(selector: string): Trait {
 export function enabled(selector: string): Trait {
   return {
     name: `enabled(${selector})`,
+    wants: `${selector} enabled`,
     async check(page) {
-      return page.locator(selector).first().isEnabled();
+      const loc = page.locator(selector).first();
+      if ((await loc.count()) === 0) return { ok: false, saw: "nothing matched" };
+      const on = await loc.isEnabled();
+      return { ok: on, saw: on ? "enabled" : "disabled" };
     },
   };
 }
@@ -188,6 +299,11 @@ export function frameContainsText(frameSelector: string, innerSelector: string, 
 export const Trait = {
   url: urlMatches,
   text: textEquals,
+  contains: containsText,
+  matches: matchesText,
+  value: valueEquals,
+  attribute: attributeEquals,
+  absent,
   visible,
   disabled,
   enabled,
@@ -195,51 +311,3 @@ export const Trait = {
   frameText: frameTextEquals,
   frameContains: frameContainsText,
 };
-
-/**
- * Runs every Trait for a Block that just resolved, throwing on the first failure
- * with the failing Trait's own name and the Block's name - never called before
- * resolve, never able to change what resolve already decided. `verify` may be a
- * flat list or a function of the resolved Checkpoint (for a branching Block whose
- * different outcomes need different checks). Called automatically by `runGraph`
- * and `connect()` after every `resolve` - not something a Block normally calls
- * directly.
- */
-export async function runVerify<Out>(
-  verify: Trait[] | ((out: Out) => Trait[]) | undefined,
-  out: Out,
-  page: Page,
-  mem: MemPage,
-  blockName: string,
-): Promise<void> {
-  const traits = typeof verify === "function" ? verify(out) : (verify ?? []);
-  for (const trait of traits) {
-    if (!(await trait.check(page, mem))) {
-      throw new Error(`trait "${trait.name}" failed after "${blockName}"`);
-    }
-  }
-}
-
-/**
- * Runs every Trait for a Block that's ABOUT to run, throwing on the first
- * failure with the failing Trait's own name and the Block's name - before
- * `act` ever touches the page, not after. `precondition` may be a flat list
- * or a function of the incoming Checkpoint (same shape `verify` already
- * takes of the resolved one). Called automatically by `connect()`/`runGraph`
- * right before a Block's own `act` - not something a Block normally calls
- * directly.
- */
-export async function runPrecondition<In>(
-  precondition: Trait[] | ((input: In) => Trait[]) | undefined,
-  input: In,
-  page: Page,
-  mem: MemPage,
-  blockName: string,
-): Promise<void> {
-  const traits = typeof precondition === "function" ? precondition(input) : (precondition ?? []);
-  for (const trait of traits) {
-    if (!(await trait.check(page, mem))) {
-      throw new Error(`trait "${trait.name}" failed before "${blockName}"`);
-    }
-  }
-}

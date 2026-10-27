@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { defineAssertBlock, checkpoint, MemPage, key } from "../../src/index.js";
-import { runVerify } from "../../src/engine/trait/trait.js";
+import { runVerify } from "../../src/engine/trait/verify.js";
 
 
 function fakePage(waitForCalls: { name?: string }[]) {
