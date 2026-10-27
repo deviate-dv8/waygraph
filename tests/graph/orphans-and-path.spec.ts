@@ -48,6 +48,33 @@ test("findOrphanBlocks reports Blocks no flow plays", async () => {
   }
 });
 
+test("a Block played only inside a fast-forward step is not an orphan", async () => {
+  const tmpDir = join(import.meta.dirname, ".tmp-orphans-ff");
+  const block = (name: string, exportName: string, from: string, to: string) => `
+import { defineMethodBlock, checkpoint } from "waygraph";
+export const ${exportName} = defineMethodBlock({ name: "${name}", from: checkpoint("${from}"), to: checkpoint("${to}"), instruction: { async act() {} } });
+`;
+  await mkdir(join(tmpDir, "src/blocks"), { recursive: true });
+  await mkdir(join(tmpDir, "src/flows"), { recursive: true });
+  await writeFile(join(tmpDir, "src/blocks/a.block.ts"), block("block-a", "BlockA", "A", "B"));
+  await writeFile(join(tmpDir, "src/blocks/b.block.ts"), block("block-b", "BlockB", "B", "C"));
+  await writeFile(join(tmpDir, "src/blocks/c.block.ts"), block("block-c", "BlockC", "C", "D"));
+  await writeFile(join(tmpDir, "src/blocks/orphan.block.ts"), BLOCK_ORPHAN);
+  await writeFile(join(tmpDir, "src/flows/ff.flow.ts"), `
+import { Engine } from "waygraph";
+import { BlockA } from "../blocks/a.block.js";
+import { BlockB } from "../blocks/b.block.js";
+import { BlockC } from "../blocks/c.block.js";
+export const ffFlow = new Engine().map().start().method(BlockA).method(BlockB, { ff: true }).method(BlockC, { ff: true }).end();
+`);
+  try {
+    const orphans = await findOrphanBlocks(tmpDir);
+    expect(orphans.map((o) => o.block)).toEqual(["orphan"]);
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test("findBlockPath walks discovered edges including nav from *", () => {
   const graph: WaygraphGraph = {
     nodes: [{ checkpoint: "LoggedIn" }, { checkpoint: "Cart" }, { checkpoint: "Done" }],

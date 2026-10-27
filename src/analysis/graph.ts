@@ -68,19 +68,23 @@ export function toMermaid(graph: WaygraphGraph): string {
 }
 
 /**
- * Blocks the project exports but no flow plays. Read at runtime: every flow's `blocks()` (nested flows flattened, plus
- * the Blocks a `branch()` routes to) against every scanned Block. Page hubs and the Blocks a Page lists as its
+ * Blocks the project exports but no flow plays. Read at runtime: every flow's `blocks()` (nested flows flattened, the
+ * Blocks inside a fast-forward or composed step, and the Blocks a `branch()` routes to) against every scanned Block. Page hubs and the Blocks a Page lists as its
  * `methods` are not orphans.
  */
 export async function findOrphanBlocks(projectDir: string): Promise<OrphanBlock[]> {
   const scan = await scanProject(projectDir, { maps: false });
   const used = new Set<string>();
-  for (const { flow } of scan.flows) {
-    for (const info of flow.blocks() as BlockInfo[]) {
+  // A fast-forward or composed step is one Block made of others: those are played too.
+  const note = (infos: readonly BlockInfo[]): void => {
+    for (const info of infos) {
       used.add(info.name);
       for (const target of Object.values(info.routes ?? {})) if (target) used.add(target);
+      const inner = (info.block as { steps?: () => readonly BlockInfo[] } | undefined)?.steps;
+      if (typeof inner === "function") note(inner.call(info.block));
     }
-  }
+  };
+  for (const { flow } of scan.flows) note(flow.blocks() as BlockInfo[]);
   for (const b of scan.blocks) {
     if (b.kind !== "page") continue;
     for (const name of (b.block as { __waygraphMethods?: readonly string[] }).__waygraphMethods ?? []) used.add(name);
