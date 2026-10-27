@@ -41,19 +41,19 @@ defineReadBlock({
   instruction: {
     read: (ctx) =>
       Post({
-        title: ctx.text("h1"),
-        likes: ctx.number(".likes"),
-        liked: ctx.visible(".like.active"),
-        tags: ctx.texts(".tag"),
-        error: ctx.text(".error"),
-        author: { name: ctx.text(".author"), url: ctx.attr(".author", "href") },
-        comments: ctx.list(".comment", (row) => ({ author: row.text(".a"), body: row.text(".b"), likes: row.number(".l") })),
-        draft: ctx.value("#draft"),
-        words: ctx.fn(async (page) => (await page.locator("h1").innerText()).trim().split(/\s+/).length),
+        title: ctx.page.text("h1"),
+        likes: ctx.page.number(".likes"),
+        liked: ctx.page.visible(".like.active"),
+        tags: ctx.page.texts(".tag"),
+        error: ctx.page.text(".error"),
+        author: { name: ctx.page.text(".author"), url: ctx.page.attr(".author", "href") },
+        comments: ctx.page.list(".comment", (row) => ({ author: row.text(".a"), body: row.text(".b"), likes: row.number(".l") })),
+        draft: ctx.page.value("#draft"),
+        words: ctx.page.fn(async (page) => (await page.locator("h1").innerText()).trim().split(/\s+/).length),
       }),
   },
 });
-defineReadBlock({ name: "read-session", instruction: { read: (ctx) => Session({ user: ctx.text(".user") }) } });
+defineReadBlock({ name: "read-session", instruction: { read: (ctx) => Session({ user: ctx.page.text(".user") }) } });
 
 test.describe("Read Blocks (beta)", () => {
   test("reads a page into a typed ReadPage, nested by key path", async ({ page }) => {
@@ -97,9 +97,9 @@ test.describe("Read Blocks (beta)", () => {
       instruction: {
         read: (ctx) =>
           Shop({
-            orders: ctx.table("#orders", { id: "Order #", total: "Total" }),
-            grid: ctx.table("[role=grid]", { name: "Name", qty: "Qty" }),
-            missingCol: ctx.table("#orders", { id: "Order #", nope: "Refund" }),
+            orders: ctx.page.table("#orders", { id: "Order #", total: "Total" }),
+            grid: ctx.page.table("[role=grid]", { name: "Name", qty: "Qty" }),
+            missingCol: ctx.page.table("#orders", { id: "Order #", nope: "Refund" }),
           }),
       },
     });
@@ -120,7 +120,7 @@ test.describe("Read Blocks (beta)", () => {
   test("a Read Block that needs an unset Mem key is skipped, and says why", async ({ page }) => {
     const Pick = key<string>("read-test.pick");
     const Picked = reads("picked")<{ title: string }>();
-    defineReadBlock({ name: "read-picked", from: checkpoint("PickPage"), requires: [Pick], instruction: { read: (ctx) => Picked({ title: ctx.text(`#${ctx.mem.get(Pick)}`) }) } });
+    defineReadBlock({ name: "read-picked", from: checkpoint("PickPage"), requires: [Pick], instruction: { read: (ctx) => Picked({ title: ctx.page.text(`#${ctx.mem.get(Pick)}`) }) } });
     await page.setContent(`<h2 id="x">X marks</h2>`);
     const unset = await readCheckpoint(page, new MemPage(), "PickPage");
     expect(unset.skipped).toEqual([{ block: "read-picked", reason: "needs mem read-test.pick" }]);
@@ -131,15 +131,15 @@ test.describe("Read Blocks (beta)", () => {
 
   test("two Read Blocks reading one key on one page fail, naming both", async ({ page }) => {
     const Dup = reads("dup")<{ a: string }>();
-    defineReadBlock({ name: "dup-one", from: checkpoint("DupPage"), instruction: { read: (ctx) => Dup({ a: ctx.text("h1") }) } });
-    defineReadBlock({ name: "dup-two", from: checkpoint("DupPage"), instruction: { read: (ctx) => Dup({ a: ctx.text("h2") }) } });
+    defineReadBlock({ name: "dup-one", from: checkpoint("DupPage"), instruction: { read: (ctx) => Dup({ a: ctx.page.text("h1") }) } });
+    defineReadBlock({ name: "dup-two", from: checkpoint("DupPage"), instruction: { read: (ctx) => Dup({ a: ctx.page.text("h2") }) } });
     await page.setContent("<h1>a</h1>");
     await expect(readCheckpoint(page, new MemPage(), "DupPage")).rejects.toThrow(/"dup-one" and "dup-two" both read "dup.a"/);
   });
 
   test("a session read narrows to a path; a snapshot cuts long lists", async ({ page }) => {
     const Feed = reads("feed")<{ items: { t: string }[] }>();
-    defineReadBlock({ name: "read-feed", from: checkpoint("FeedPage"), instruction: { read: (ctx) => Feed({ items: ctx.list("li", (row) => ({ t: row.text() })) }) } });
+    defineReadBlock({ name: "read-feed", from: checkpoint("FeedPage"), instruction: { read: (ctx) => Feed({ items: ctx.page.list("li", (row) => ({ t: row.text() })) }) } });
     await page.setContent(`<ul>${Array.from({ length: 30 }, (_, i) => `<li>item ${i}</li>`).join("")}</ul><span class="user">dan</span>`);
     const narrowed = await readSession(page, new MemPage(), "FeedPage", "feed.items");
     expect(narrowed.read).toEqual({ feed: { items: Array.from({ length: 30 }, (_, i) => ({ t: `item ${i}` })) } });
@@ -152,7 +152,7 @@ test.describe("Read Blocks (beta)", () => {
   test("a 1,000 x 8 table reads in one round trip", async ({ page }) => {
     const Big = reads("big")<{ rows: Record<"c0" | "c1" | "c2" | "c3" | "c4" | "c5" | "c6" | "c7", string>[] }>();
     const cols = { c0: "H0", c1: "H1", c2: "H2", c3: "H3", c4: "H4", c5: "H5", c6: "H6", c7: "H7" } as const;
-    defineReadBlock({ name: "read-big", from: checkpoint("BigPage"), instruction: { read: (ctx) => Big({ rows: ctx.table("table", cols) }) } });
+    defineReadBlock({ name: "read-big", from: checkpoint("BigPage"), instruction: { read: (ctx) => Big({ rows: ctx.page.table("table", cols) }) } });
     await page.setContent("<table id=t></table>");
     await page.evaluate(() => {
       const t = document.getElementById("t")!;
@@ -164,16 +164,17 @@ test.describe("Read Blocks (beta)", () => {
     const ms = Date.now() - started;
     expect(read.get(Big.rows)).toHaveLength(1000);
     expect(read.get(Big.rows)[999]!.c7).toBe("999-7");
-    expect(ms).toBeLessThan(1000);
+    // ~70-150ms alone; one call per cell would be ~8,000 round trips and many seconds. Generous for a loaded CI box.
+    expect(ms).toBeLessThan(2500);
   });
 });
 
 // Compile-time checks (never run): a reader must match its field's type; unknown fields are rejected.
 export function typeChecks(ctx: import("../../dist/beta.js").ReadCtx): void {
   // @ts-expect-error likes is a number, ctx.text reads a string
-  Post({ likes: ctx.text(".likes") });
+  Post({ likes: ctx.page.text(".likes") });
   // @ts-expect-error no such field on Post
-  Post({ nope: ctx.text("h1") });
-  Post({ title: ctx.text("h1") }); // a page may read part of a namespace
+  Post({ nope: ctx.page.text("h1") });
+  Post({ title: ctx.page.text("h1") }); // a page may read part of a namespace
   const n: number = Post.likes as unknown as number; void n;
 }

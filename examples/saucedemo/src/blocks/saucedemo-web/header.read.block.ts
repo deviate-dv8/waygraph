@@ -15,8 +15,8 @@ export const HeaderReadBlock = defineReadBlock({
   instruction: {
     read: (ctx) =>
       Header({
-        title: ctx.text(".title"),
-        cartCount: ctx.fn(async (page) => {
+        title: ctx.page.text(".title"),
+        cartCount: ctx.page.fn(async (page) => {
           const badge = page.locator(InventorySel.cartBadge);
           return (await badge.count()) ? Number(await badge.first().innerText()) : 0;
         }),

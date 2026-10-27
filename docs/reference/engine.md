@@ -270,7 +270,7 @@ any other practice warning, with `// waygraph-ignore: empty-verify` - e.g. when 
 
 ### Demo narration
 
-Automation rings are gray; authored stubs and `ctx.slides` can use
+Automation rings are gray; authored stubs and `ctx.ui.slides` can use
 `tone: "info" | "warning" | "danger" | "success"` (iconified captions), plus
 `size: "sm" | "md" | "lg"` and `weight: "normal" | "bold"`. Flow episode defaults:
 `map({ highlightStyle: { size, weight, tone? } })` (slot/fixture wins). Episode pacing:

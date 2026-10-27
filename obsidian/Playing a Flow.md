@@ -26,7 +26,7 @@ flowchart TD
 | Mode | How you get it | Around each step |
 |---|---|---|
 | **run** | `waygraph run` | nothing - plays like a Playwright test |
-| **demo** | `waygraph demo` | a panel before (what's next, its [[Mem]], a Next button), rings after, `ctx.slides` before or after (from the flow's stubs), Retry/Stop on failure. See [[Demo UI]] |
+| **demo** | `waygraph demo` | a panel before (what's next, its [[Mem]], a Next button), rings after, `ctx.ui.slides` before or after (from the flow's stubs), Retry/Stop on failure. See [[Demo UI]] |
 | **report** | `waygraph run` with `WAYGRAPH_JSON=1` | records each step's Checkpoint and time, prints one JSON report |
 | **branches** | `waygraph run <flow> --all-branches` | instead of one path, plays every route of a `.branch()` tree |
 

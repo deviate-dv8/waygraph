@@ -3,8 +3,8 @@ import { LoginSel } from "../blocks/saucedemo-web/methods/login.sel.js";
 
 /** What a refused login looks like on screen: the title, a finished checklist and the error banner. */
 export function loginRefused(ctx: StubCtx): void {
-  ctx.title("Login blocked");
-  ctx.todos(
+  ctx.ui.title("Login blocked");
+  ctx.ui.todos(
     "saucedemo",
     [
       { id: "login-user", text: "Enter username", done: true },
@@ -13,7 +13,7 @@ export function loginRefused(ctx: StubCtx): void {
     ],
     { title: "Sign in", style: "checklist" },
   );
-  ctx.ring("error", {
+  ctx.ui.ring("error", {
     selector: LoginSel.errorBanner,
     label: "Login error banner",
     detail: "tone: danger (red)",
@@ -25,8 +25,8 @@ export function loginRefused(ctx: StubCtx): void {
 
 /** Rings the error banner when the login step itself throws. */
 export function loginFailed(ctx: StubCtx): void {
-  ctx.title("Login failed");
-  ctx.ring("error", {
+  ctx.ui.title("Login failed");
+  ctx.ui.ring("error", {
     selector: LoginSel.errorBanner,
     label: "Login error banner",
     detail: "tone: danger (red)",

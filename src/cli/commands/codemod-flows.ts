@@ -103,7 +103,7 @@ function indentOf(node: Node): string {
 }
 
 function titleStub(block: string, title: string, indent: string): string {
-  return `${block}.stubBefore((ctx) => {\n${indent}    ctx.title(${title});\n${indent}  })`;
+  return `${block}.stubBefore((ctx) => {\n${indent}    ctx.ui.title(${title});\n${indent}  })`;
 }
 
 function chain(head: string, steps: string[], indent: string): string {
@@ -170,7 +170,7 @@ function rewrite(call: CallExpression, kindOf: KindOf, needsMap: Set<SourceFile>
     const mapCall = mapCallOf(flow);
     if (name === "withTitle") {
       const first = mapCall && firstStepOf(mapCall);
-      if (!first) return `withTitle(${flow.getText().split("\n")[0]}, …): name the flow with ctx.title(…) in a stub on its first step`;
+      if (!first) return `withTitle(${flow.getText().split("\n")[0]}, …): name the flow with ctx.ui.title(…) in a stub on its first step`;
       addTitle(first, args[1]!.getText());
     } else if (mapCall) {
       addSetting(mapCall, SETTINGS[name]!(args[1]?.getText()));

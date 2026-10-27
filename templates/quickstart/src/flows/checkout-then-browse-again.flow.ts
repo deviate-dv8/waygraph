@@ -21,7 +21,7 @@ export const checkoutThenBrowseAgainFlow = engine
   .start()
   .gotoPage(
     NavLoginBlock.stubBefore((ctx) =>
-      ctx.title(
+      ctx.ui.title(
         "Owner: Checkout, then click Back Home (click-based NavBlock demo)",
       ),
     ),

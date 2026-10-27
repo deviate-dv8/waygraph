@@ -28,7 +28,7 @@ export type StubPhaseFixtures = {
   todos?: readonly WaygraphTodoInput[];
   /** Which todo is current (0-based). Rows before = done, after = pending. */
   todoIndex?: number;
-  /** Heading above a single {@link StubCtx.todos} list. */
+  /** Heading above a single {@link StubUi.todos} list. */
   todoTitle?: string;
   /**
    * Stable dock id (`data-wg-todo-id`) for external redirect asserts
@@ -92,15 +92,15 @@ export type StubPhaseFixtures = {
  *
  * @example
  * LoginBlock.stubBefore((ctx) => {
- *   ctx.todos("sign-in", ["Enter email", "Enter password", "Click Sign in"], { index: 0 });
- *   ctx.zoom(1.35);
- *   ctx.ring("email", { selector: "#email", label: "Email" });
- *   ctx.ring("submit", { selector: "#login-button", label: "Sign in" });
+ *   ctx.ui.todos("sign-in", ["Enter email", "Enter password", "Click Sign in"], { index: 0 });
+ *   ctx.ui.zoom(1.35);
+ *   ctx.ui.ring("email", { selector: "#email", label: "Email" });
+ *   ctx.ui.ring("submit", { selector: "#login-button", label: "Sign in" });
  * })
  * // Sequential plan: bump todoIndex in a later phase / a later Block's stubBefore
  * .stubAfter((ctx) => {
- *   ctx.todoIndex(2);
- *   ctx.ring("inventory", { selector: ".inventory_list", label: "Landed" });
+ *   ctx.ui.todoIndex(2);
+ *   ctx.ui.ring("inventory", { selector: ".inventory_list", label: "Landed" });
  * });
  */
 export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
@@ -114,17 +114,23 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   readonly out: Out | undefined;
   /** Present on stubOnError when the step threw. */
   readonly error: unknown | undefined;
+  /** Everything a stub paints in the demo: rings, todos, title, caption, device, zoom, network tab, slides. */
+  readonly ui: StubUi;
+};
+
+/** The demo UI a stub paints through: `ctx.ui.ring(...)`, `ctx.ui.todos(...)`, ... */
+export type StubUi = {
   /** Paints one named ring this phase; the same id again replaces it. */
   ring(id: string, stub: WaygraphHighlightStub): void;
   /**
-   * Floating checklist: `ctx.todos("login", ["Enter email", "Enter password"], { title: "Sign in", index: 0 })`.
+   * Floating checklist: `ctx.ui.todos("login", ["Enter email", "Enter password"], { title: "Sign in", index: 0 })`.
    * The id is the dock's `data-wg-todo-id` (stable through redirects). One dock at a time (setting todos replaces it);
    * pass `{ parallel: true }` to keep docks with other ids. An empty list hides the dock.
    */
   todos(id: string, items: readonly WaygraphTodoInput[], opts?: WaygraphTodosOpts): void;
   /** Moves the current dock's current item (sequential plans: a later step bumps it). */
   todoIndex(n: number): void;
-  /** Several titled lists in one dock (e.g. Functional Requirements / Scenarios / ACs), with the same id and options as {@link StubCtx.todos}. */
+  /** Several titled lists in one dock (e.g. Functional Requirements / Scenarios / ACs), with the same id and options as {@link StubUi.todos}. */
   todoGroups(id: string, groups: readonly WaygraphTodoGroupInput[], opts?: Omit<WaygraphTodosOpts, "index">): void;
   /**
    * Hide the floating todo dock. Omit todos on a later block = **keep** the
@@ -134,7 +140,7 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   /**
    * Viewport / device fixture (0.13+). `mobile` | `tablet` | `desktop`.
    * Omit on later blocks = **keep** (same persist as todos). Use
-   * {@link StubCtx.hideDevice} or `device("desktop")` to return to desktop.
+   * {@link StubUi.hideDevice} or `device("desktop")` to return to desktop.
    */
   device(preset: DevicePreset | DeviceState): void;
   /** Explicit CSS-pixel viewport (implies mobile-ish unless desktop-sized). */
@@ -163,14 +169,14 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   titlePos(side: BannerPos): void;
   /**
    * Banner UX: `{ collision: false }` keeps it put even over a ring; `{ hidden: true }` hides it.
-   * @example ctx.bannerUi({ collision: false });
+   * @example ctx.ui.bannerUi({ collision: false });
    */
   bannerUi(opts: BannerUiOpts): void;
   /**
    * Bottom narration caption - a white rounded card (black text, shadow), bottom-centered above
-   * the step pill; distinct from {@link StubCtx.title}, which is the top banner card. Fades in/out
-   * on change. Pass `""` (or call {@link StubCtx.hideCaption}) to clear.
-   * @example ctx.caption("Click Add to cart to continue");
+   * the step pill; distinct from {@link StubUi.title}, which is the top banner card. Fades in/out
+   * on change. Pass `""` (or call {@link StubUi.hideCaption}) to clear.
+   * @example ctx.ui.caption("Click Add to cart to continue");
    */
   caption(text: string): void;
   /** Clears the caption (fades it out). */
@@ -178,7 +184,7 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   /**
    * Multi-step "yap" captions with Next between each, for explaining a longer process. In `stubBefore` they play
    * before the step runs, in `stubAfter` after it lands; a slide with a `selector` rings it while it is up.
-   * @example ctx.slides([
+   * @example ctx.ui.slides([
    *   { caption: "Checkout is three screens", tag: "YAP" },
    *   { caption: "Overview confirms totals", selector: ".summary_info", duration: true },
    * ]);
@@ -189,7 +195,7 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
   /**
    * Shows the network-tab overlay (Postman-style inspector of real page traffic + defineApiBlock
    * calls) - capture always runs in the background; this just reveals the panel. Hidden by default.
-   * @example ctx.showNetworkTab();
+   * @example ctx.ui.showNetworkTab();
    */
   showNetworkTab(): void;
   /** Hides the network-tab overlay (capture keeps running - only the panel disappears). */
@@ -198,7 +204,7 @@ export type StubCtx<Out extends Checkpoint<string> = Checkpoint<string>> = {
    * Todo-dock UX: compact fold, collision flip, dim-behind-ring.
    * Defaults are smart-on; pass false fields to opt out for this phase.
    * @example
-   * ctx.todoDockUi({ compact: false }); // always show the full list
+   * ctx.ui.todoDockUi({ compact: false }); // always show the full list
    */
   todoDockUi(opts: TodoDockUiOpts): void;
 };
@@ -223,7 +229,7 @@ export type StubPhaseResult = {
    * - `keep` - author omitted todos; demo must leave previous dock alone
    */
   todoSync?: "set" | "clear" | "keep";
-  /** Todo-dock UX for this phase (when author called {@link StubCtx.todoDockUi}). */
+  /** Todo-dock UX for this phase (when author called {@link StubUi.todoDockUi}). */
   todoDockUi?: TodoDockUiOpts;
   /** Resolved device after this phase (undefined when keep with no prior). */
   device?: DeviceState;
@@ -241,7 +247,7 @@ export type StubPhaseResult = {
   bannerUi?: BannerUiOpts;
   caption?: string;
   networkTabVisible?: boolean;
-  /** Slides to play in this phase ({@link StubCtx.slides}); empty when the stub set none. */
+  /** Slides to play in this phase ({@link StubUi.slides}); empty when the stub set none. */
   slides: WaygraphSlide[];
   todoPos?: "left" | "right";
   /** When true, keep other docks (multi-todo). Default false = replace. */
@@ -268,9 +274,9 @@ export type StubBagState = {
   /** Author asked to reset to desktop. */
   hideDevice?: boolean | undefined;
   device?: DeviceState | undefined;
-  /** Touch override when set via ctx.touch() alone or with device. */
+  /** Touch override when set via ctx.ui.touch() alone or with device. */
   touchOverride?: boolean | undefined;
-  /** Orientation override when set via ctx.orientation / landscape / portrait. */
+  /** Orientation override when set via ctx.ui.orientation / landscape / portrait. */
   orientationOverride?: DeviceOrientation | undefined;
   zoom?: number | undefined;
   zoomOut?: boolean | undefined;

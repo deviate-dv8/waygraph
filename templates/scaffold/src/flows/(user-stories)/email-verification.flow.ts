@@ -14,12 +14,12 @@ export const emailVerificationFlow = engine
   .start()
   .gotoExternal(
     NavMailpitInboxBlock.stubBefore((ctx) => {
-      ctx.title("Scaffold: Cross-origin mail verification (QA-rich)");
+      ctx.ui.title("Scaffold: Cross-origin mail verification (QA-rich)");
     }),
   )
   .assert(
     AssertEmailReceivedBlock.stubAfter((ctx) => {
-      ctx.ring("note", {
+      ctx.ui.ring("note", {
         selector: MailpitSel.messageRow,
         label: "AC · email arrived",
         detail: "Confirmed before opening anything.",
@@ -30,12 +30,12 @@ export const emailVerificationFlow = engine
   .method(OpenMessageBlock)
   .assert(
     AssertEmailContentBlock.stubAfter((ctx) => {
-      ctx.ring("note", { selector: MailpitSel.previewIframe, label: "AC · email body matches expected copy", tag: "AC" });
+      ctx.ui.ring("note", { selector: MailpitSel.previewIframe, label: "AC · email body matches expected copy", tag: "AC" });
     }),
   )
   .method(
     ExtractEmailLinkBlock.stubAfter((ctx) => {
-      ctx.ring("note", {
+      ctx.ui.ring("note", {
         selector: MailpitSel.previewIframe,
         label: "AC · link found",
         detail: "Read from the message preview iframe.",

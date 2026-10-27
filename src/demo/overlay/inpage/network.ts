@@ -159,7 +159,7 @@ export function addNetworkEntry(entry: NetworkEntry) {
   while (list.children.length > 30 && list.firstChild) list.removeChild(list.firstChild);
   const countEl = panel.querySelector<HTMLElement>(".wg-net-count");
   if (countEl) countEl.textContent = String(w.__wgNetworkEntries.length);
-  // Always captured, only shown when explicitly turned on (ctx.showNetworkTab(); default hidden -
+  // Always captured, only shown when explicitly turned on (ctx.ui.showNetworkTab(); default hidden -
   // see StubCtx's own doc comment) - the DOM/row still gets built either way, so toggling visible
   // later shows the full history immediately, not just entries captured after that point.
   if (w.__wgNetworkTabVisible) {

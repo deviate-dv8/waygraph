@@ -110,17 +110,17 @@ armed around the Block's action rather than written into it: `withDialog(CancelB
 A flow is built with `engine.map()`. Its run settings go in `map({ … })`, before the chain (`memStub`, `expectedFailure`,
 `demoPace`, `highlightStyle`, `sessionReset`, `homeOrigin`); `.end()` takes nothing. `sessionReset: true` says the flow wants a fresh
 browser session when it runs after another one, in a CLI chain (`waygraph run "a then b"`) or nested with `.flow()`. The flow's title and narration are ctx stubs chained on
-the Block where they apply (`ctx.title(…)` names the flow from that step on), and a step's pace is its `{ pace }` option:
+the Block where they apply (`ctx.ui.title(…)` names the flow from that step on), and a step's pace is its `{ pace }` option:
 
 ```typescript
 const AddShown = AddItemBlock.stubAfter((ctx) => {
-  ctx.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart", tag: "AC", duration: true });
+  ctx.ui.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart", tag: "AC", duration: true });
 });
 
 export const shopFlow = engine
   .map({ memStub: true })
   .start()
-  .gotoPage(NavHomeBlock.stubBefore((ctx) => ctx.title("Shop")))
+  .gotoPage(NavHomeBlock.stubBefore((ctx) => ctx.ui.title("Shop")))
   .method(AddShown)
   .method(ClearCartBlock, { pace: "blitz" })
   .end();
@@ -142,9 +142,9 @@ Removed in 0.16.0: `defineFlow([start, …, end])`, `chainFlow` and the `with*` 
 `withSessionReset`, `withDemoPace`, `withHighlightStyle`, `withExpectedFailure`, `withHighlightFixtures`, `withBlockPace`,
 `withStubBefore|After|OnError`). `waygraph upgrade --codemod flows` rewrites a project onto
 `map()`: it reads each Block's kind to pick the step, folds wrappers into `map({ … })`, moves a title into
-`ctx.title(…)` on the first step, and lists anything it can't convert (a Block not made by a factory, a
-`withHighlightFixtures` map) with the fix. The same pass moves ctx stubs onto their one form: `ctx.todos([...])` with
-`todoId` / `todoTitle` / `todoStyle` / `todoPos` / `todoIndex` becomes `ctx.todos(id, items, { title, style, pos, index })`,
+`ctx.ui.title(…)` on the first step, and lists anything it can't convert (a Block not made by a factory, a
+`withHighlightFixtures` map) with the fix. The same pass moves ctx stubs onto their one form: `ctx.ui.todos([...])` with
+`todoId` / `todoTitle` / `todoStyle` / `todoPos` / `todoIndex` becomes `ctx.ui.todos(id, items, { title, style, pos, index })`,
 and the method aliases become the names they stood for (`banner` -> `title`, `clearDevice` -> `hideDevice`, ...).
 
 ### Browser extensions

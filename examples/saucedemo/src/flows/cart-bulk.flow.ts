@@ -10,7 +10,7 @@ export const cartBulkEpisode = engine
   .start()
   .method(
     AddAllToCartBlock.stubBefore((ctx) =>
-      ctx.title("Cart bulk add/remove all"),
+      ctx.ui.title("Cart bulk add/remove all"),
     ),
   )
   .method(RemoveAllFromCartBlock)

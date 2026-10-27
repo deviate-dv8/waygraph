@@ -20,14 +20,14 @@ describe("codemod flows: ctx stubs", () => {
   ctx.ring("cart", { selector: "#cart" });
 });`);
     assert.deepEqual(problems, []);
-    assert.match(text, /ctx\.todos\("cart", \[\{ id: "add", text: "Add an item" \}, "Check the cart"\], \{ title: "Cart", index: 1 \}\);/);
+    assert.match(text, /ctx\.ui\.todos\("cart", \[\{ id: "add", text: "Add an item" \}, "Check the cart"\], \{ title: "Cart", index: 1 \}\);/);
     assert.doesNotMatch(text, /todoId|todoTitle|todoIndex/);
-    assert.match(text, /ctx\.ring\("cart"/);
+    assert.match(text, /ctx\.ui\.ring\("cart"/);
   });
 
   it("gives a list with no id the default dock id", () => {
     const { text } = run(`B.stubAfter((ctx) => { ctx.todos(["A", "B"]); });`);
-    assert.match(text, /ctx\.todos\("todos", \["A", "B"\]\);/);
+    assert.match(text, /ctx\.ui\.todos\("todos", \["A", "B"\]\);/);
   });
 
   it("renames the method aliases", () => {
@@ -39,12 +39,12 @@ describe("codemod flows: ctx stubs", () => {
   ctx.clearTodos();
   ctx.todoDockFull();
 });`);
-    assert.match(text, /ctx\.title\("Hi"\);/);
-    assert.match(text, /ctx\.orientation\("landscape"\);/);
-    assert.match(text, /ctx\.orientation\("portrait"\);/);
-    assert.match(text, /ctx\.hideDevice\(\);/);
-    assert.match(text, /ctx\.hideTodos\(\);/);
-    assert.match(text, /ctx\.todoDockUi\(\{ compact: false, collision: false, behindRing: false \}\);/);
+    assert.match(text, /ctx\.ui\.title\("Hi"\);/);
+    assert.match(text, /ctx\.ui\.orientation\("landscape"\);/);
+    assert.match(text, /ctx\.ui\.orientation\("portrait"\);/);
+    assert.match(text, /ctx\.ui\.hideDevice\(\);/);
+    assert.match(text, /ctx\.ui\.hideTodos\(\);/);
+    assert.match(text, /ctx\.ui\.todoDockUi\(\{ compact: false, collision: false, behindRing: false \}\);/);
   });
 
   it("leaves other objects' methods alone", () => {
@@ -59,7 +59,7 @@ describe("codemod flows: ctx stubs", () => {
 
   it("turns a slot map into ctx.ring calls", () => {
     const { text } = run(`B.stubAfter({ title: { selector: "h1", label: "Title" } });`);
-    assert.match(text, /B\.stubAfter\(\(ctx\) => \{\s*ctx\.ring\("title", \{ selector: "h1", label: "Title" \}\);\s*\}\)/);
+    assert.match(text, /B\.stubAfter\(\(ctx\) => \{\s*ctx\.ui\.ring\("title", \{ selector: "h1", label: "Title" \}\);\s*\}\)/);
   });
 
   it("moves a stub out of a Block definition onto a chained call", () => {
@@ -79,8 +79,8 @@ export const M = defineMethodBlock({
   },
 });`);
     assert.doesNotMatch(text, /stubBefore:|stubAfter\(ctx\) \{/);
-    assert.match(text, /\}\)\.stubBefore\(\(ctx\) => \{\s*ctx\.title\("Checking"\);\s*\}\);/);
-    assert.match(text, /\}\)\.stubAfter\(\(ctx\) => \{\s*ctx\.ring\("x", \{ selector: "#x" \}\);\s*\}\);/);
+    assert.match(text, /\}\)\.stubBefore\(\(ctx\) => \{\s*ctx\.ui\.title\("Checking"\);\s*\}\);/);
+    assert.match(text, /\}\)\.stubAfter\(\(ctx\) => \{\s*ctx\.ui\.ring\("x", \{ selector: "#x" \}\);\s*\}\);/);
   });
 
   it("moves a Block's slides into ctx.slides in its stubAfter", () => {
@@ -105,9 +105,9 @@ export const R = defineMethodBlock({
   },
 });`);
     assert.doesNotMatch(text, /slides:/);
-    assert.match(text, /\}\)\.stubAfter\(\(ctx\) => ctx\.slides\(\[\{ caption: "One", tag: "YAP" \}\]\)\);/);
-    assert.match(text, /\.stubAfter\(\(ctx\) => ctx\.slides\(\(\(out\) => \[\{ caption: out\.__state \}\]\)\(ctx\.out!\)\)\);/);
-    assert.match(text, /\.stubAfter\(async \(ctx\) => \{\s*await \(\(ctx\) => ctx\.ring\("x", \{ selector: "#x" \}\)\)\(ctx\);\s*ctx\.slides\(\[\{ caption: "Two" \}\]\);\s*\}\);/);
+    assert.match(text, /\}\)\.stubAfter\(\(ctx\) => ctx\.ui\.slides\(\[\{ caption: "One", tag: "YAP" \}\]\)\);/);
+    assert.match(text, /\.stubAfter\(\(ctx\) => ctx\.ui\.slides\(\(\(out\) => \[\{ caption: out\.__state \}\]\)\(ctx\.out!\)\)\);/);
+    assert.match(text, /\.stubAfter\(async \(ctx\) => \{\s*await \(\(ctx\) => ctx\.ui\.ring\("x", \{ selector: "#x" \}\)\)\(ctx\);\s*ctx\.ui\.slides\(\[\{ caption: "Two" \}\]\);\s*\}\);/);
   });
 
   it("turns ctx.highlights({...}) into one ctx.ring per ring", () => {
@@ -118,8 +118,8 @@ export const R = defineMethodBlock({
 });`);
     assert.deepEqual(problems, []);
     assert.doesNotMatch(text, /highlights\(/);
-    assert.match(text, /ctx\.todos\("todos", \["A", "B"\]\);/);
-    assert.match(text, /ctx\.title\("Hi"\);\s*ctx\.ring\("email", \{ selector: "#e", label: "Email" \}\);\s*ctx\.ring\("sign-in", \{ selector: "#s", label: "Sign in" \}\);/);
+    assert.match(text, /ctx\.ui\.todos\("todos", \["A", "B"\]\);/);
+    assert.match(text, /ctx\.ui\.title\("Hi"\);\s*ctx\.ui\.ring\("email", \{ selector: "#e", label: "Email" \}\);\s*ctx\.ui\.ring\("sign-in", \{ selector: "#s", label: "Sign in" \}\);/);
   });
 
   it("unwraps narrate() to its action, reports the caption and drops the import", () => {
@@ -138,5 +138,21 @@ export const F = defineMethodBlock({
     assert.doesNotMatch(text, /narrate/);
     assert.equal(problems.length, 1);
     assert.match(problems[0]!, /"Placing the order"/);
+  });
+
+  it("moves everything a stub paints under ctx.ui, once, leaving ctx.mem / out / error alone", () => {
+    const source = `import type { StubCtx } from "waygraph";
+export function shared(ctx: StubCtx): void {
+  ctx.title(String(ctx.mem?.get(K)));
+  ["a", "b"].forEach((id) => ctx.ring(id, { selector: "#" + id }));
+}
+B.stubAfter((c) => c.caption(String(c.out?.__state)));
+const notAStub = (ctx: { title(t: string): void }) => ctx.title("x");`;
+    const once = run(source).text;
+    assert.match(once, /ctx\.ui\.title\(String\(ctx\.mem\?\.get\(K\)\)\);/);
+    assert.match(once, /forEach\(\(id\) => ctx\.ui\.ring\(id,/);
+    assert.match(once, /c\.ui\.caption\(String\(c\.out\?\.__state\)\)/);
+    assert.match(once, /notAStub = \(ctx: \{ title\(t: string\): void \}\) => ctx\.title\("x"\)/);
+    assert.equal(run(once).text, once);
   });
 });

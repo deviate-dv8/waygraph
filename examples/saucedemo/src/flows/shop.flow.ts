@@ -14,7 +14,7 @@ import { orderPlacedYap, placingOrder } from "../stubs/finish-order.js";
 export const shopFlow = engine
   .map({ memStub: true })
   .start()
-  .method(AddToCartBlock.stubBefore((ctx) => ctx.title("Shop & Checkout")))
+  .method(AddToCartBlock.stubBefore((ctx) => ctx.ui.title("Shop & Checkout")))
   .gotoPage(NavCartBlock)
   .gotoPage(NavCheckoutInfoBlock)
   .method(FillFirstNameBlock)

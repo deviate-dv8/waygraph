@@ -6,7 +6,8 @@
 // `ctx.ring` calls, and a stub set in a `define*Block({ ... })` (options or instruction) moves out to a chained
 // `.stubBefore(...)` on the Block; a Block's `slides` become `ctx.slides(...)` in its chained `.stubAfter(...)`;
 // `ctx.highlights({ a: ring })` becomes one `ctx.ring("a", ring)` per ring; `narrate(locator, caption, action)` in an
-// `act` becomes the action, reported so the caption can move to a stubBefore ring. Works on the TypeScript AST (ts-morph).
+// `act` becomes the action, reported so the caption can move to a stubBefore ring. Last, everything a stub paints moves
+// under `ctx.ui` (`ctx.ring(...)` -> `ctx.ui.ring(...)`). Works on the TypeScript AST (ts-morph).
 import { Node, SyntaxKind } from "ts-morph";
 import type { CallExpression, ExpressionStatement, Project, SourceFile } from "ts-morph";
 
@@ -230,6 +231,41 @@ function unwrapNarrate(sf: SourceFile, problems: { line: number; reason: string 
   return changed;
 }
 
+/** Everything a stub paints, which 0.16.3 moved under `ctx.ui`. */
+const UI_METHODS = new Set(["ring", "todos", "todoIndex", "todoGroups", "hideTodos", "device", "viewport", "touch", "orientation", "hideDevice", "zoom", "zoomOut", "title", "titlePos", "bannerUi", "caption", "hideCaption", "slides", "hideBanner", "showNetworkTab", "hideNetworkTab", "todoDockUi"]);
+
+/** Whether `name` at `node` is a stub's ctx: the nearest enclosing function with a parameter of that name is a stub. */
+function isStubCtxName(node: Node, name: string): boolean {
+  for (const fn of node.getAncestors()) {
+    if (!(Node.isArrowFunction(fn) || Node.isFunctionExpression(fn) || Node.isFunctionDeclaration(fn) || Node.isMethodDeclaration(fn))) continue;
+    const param = fn.getParameters().find((p) => p.getName() === name);
+    if (!param) continue;
+    if (/StubCtx/.test(param.getType().getText(param))) return true;
+    const parent = fn.getParent();
+    const callee = Node.isCallExpression(parent) ? parent.getExpression() : undefined;
+    if (Node.isPropertyAccessExpression(callee) && /^stub(Before|After|OnError)$/.test(callee.getName())) return true;
+    if (Node.isPropertyAssignment(parent) && /^stub(Before|After|OnError)$/.test(parent.getName())) return true;
+    // `((ctx) => ...)(ctx)`, as the slides merge writes it: called at once with an outer stub's ctx.
+    const call = Node.isParenthesizedExpression(parent) ? parent.getParent() : undefined;
+    const arg = Node.isCallExpression(call) ? call.getArguments()[0] : undefined;
+    return arg !== undefined && Node.isIdentifier(arg) && isStubCtxName(call!, arg.getText());
+  }
+  return false;
+}
+
+/** `ctx.ring(...)` -> `ctx.ui.ring(...)`, everywhere a stub's ctx paints (idempotent: `ctx.ui.ring` is left alone). */
+function moveToUi(sf: SourceFile): boolean {
+  let changed = false;
+  for (const access of sf.getDescendantsOfKind(SyntaxKind.PropertyAccessExpression).reverse()) {
+    if (access.wasForgotten() || !UI_METHODS.has(access.getName())) continue;
+    const receiver = access.getExpression();
+    if (!Node.isIdentifier(receiver) || !isStubCtxName(access, receiver.getText())) continue;
+    access.replaceWithText(`${receiver.getText()}.ui.${access.getName()}`);
+    changed = true;
+  }
+  return changed;
+}
+
 /** Rewrites the old stub forms in every file; returns the files it changed and the calls left for a person. */
 export function convertStubs(project: Project): { changed: SourceFile[]; problems: { file: string; line: number; reason: string }[] } {
   const changed: SourceFile[] = [];
@@ -244,6 +280,7 @@ export function convertStubs(project: Project): { changed: SourceFile[]; problem
       if (block.wasForgotten()) continue;
       if (convertStatements(block.getStatements(), left)) touched = true;
     }
+    if (moveToUi(sf)) touched = true;
     if (touched) changed.push(sf);
     problems.push(...left.map((p) => ({ file: sf.getFilePath(), ...p })));
   }

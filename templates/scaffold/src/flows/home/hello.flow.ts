@@ -13,32 +13,32 @@ export const homeHelloFlow = engine
   .start()
   .gotoPage(
     NavHomeBlock.stubBefore((ctx) => {
-      ctx.title("Scaffold: Hello Waygraph");
+      ctx.ui.title("Scaffold: Hello Waygraph");
     }).stubAfter((ctx) => {
-      ctx.ring("title", { selector: DemoSel.title, label: "Home heading", duration: true });
+      ctx.ui.ring("title", { selector: DemoSel.title, label: "Home heading", duration: true });
     }).stubOnError((ctx) => {
-      ctx.ring("title", { selector: DemoSel.title, label: "Home heading at failure" });
+      ctx.ui.ring("title", { selector: DemoSel.title, label: "Home heading at failure" });
     }),
   )
   .assert(
     AssertHelloBlock.stubBefore((ctx) => {
-      ctx.ring("title", { selector: DemoSel.title, label: "Heading about to check" });
+      ctx.ui.ring("title", { selector: DemoSel.title, label: "Heading about to check" });
     })
       .stubAfter((ctx) => {
-        ctx.ring("title", {
+        ctx.ui.ring("title", {
           selector: DemoSel.title,
           label: "AC · Hello visible",
           detail: "Replace this copy with your ticket lines.",
           tag: "AC",
           duration: true,
         });
-        ctx.ring("sub", { selector: DemoSel.sub, label: "Subcopy", duration: 1500 });
-        ctx.slides([
+        ctx.ui.ring("sub", { selector: DemoSel.sub, label: "Subcopy", duration: 1500 });
+        ctx.ui.slides([
           { caption: "Scaffold covers auto + narration", detail: "Page hub, Effect instanceOptions, stubs, YAP.", tag: "YAP", duration: true },
         ]);
       })
       .stubOnError((ctx) => {
-        ctx.ring("title", { selector: DemoSel.title, label: "Heading at failure", tag: "FAIL" });
+        ctx.ui.ring("title", { selector: DemoSel.title, label: "Heading at failure", tag: "FAIL" });
       }),
   )
   .gotoPage(NavDocsBlock)

@@ -37,12 +37,12 @@ export const InventoryReadBlock = defineReadBlock({
   instruction: {
     read: (ctx) =>
       Catalog({
-        items: ctx.list(InventorySel.card, (row) => ({
+        items: ctx.page.list(InventorySel.card, (row) => ({
           name: row.text(InventorySel.name),
           price: row.number(".inventory_item_price"),
           inCart: row.visible(InventorySel.removeBtnPrefix),
         })),
-        sort: ctx.value(".product_sort_container"),
+        sort: ctx.page.value(".product_sort_container"),
       }),
   },
 });
@@ -53,7 +53,7 @@ export const InventoryReadBlock = defineReadBlock({
 - **Type-checked:** a reader of the wrong type doesn't compile (`price: row.text(...)` when `price` is a `number`).
   A page may read part of a namespace.
 - **Several namespaces:** `read` can return an array (`[Catalog({...}), Header({...})]`).
-- **Nested objects:** pass an object of readers (`author: { name: ctx.text(".a"), url: ctx.attr(".a", "href") }`).
+- **Nested objects:** pass an object of readers (`author: { name: ctx.page.text(".a"), url: ctx.page.attr(".a", "href") }`).
 - **`requires`:** a Read Block that needs Mem (`ctx.mem.get(...)`) declares it. Without it set, the Read Block is
   skipped and the reply says why.
 
@@ -63,9 +63,9 @@ A Read Block never acts, navigates or appears in a flow. After a step lands on a
 
 ## Readers
 
-| `ctx.` | Gives | When nothing matches |
+| `ctx.page.` | Gives | When nothing matches |
 |---|---|---|
-| `text(sel)` | trimmed text of the first match | missing |
+| `text(sel)` | text of the first match | missing |
 | `texts(sel)` | every match's text | `[]` |
 | `number(sel)` | first number in the text: `"$1,299.00"` -> 1299, `"41 likes"` -> 41 | missing |
 | `attr(sel, name)` | an attribute | missing |
@@ -77,10 +77,11 @@ A Read Block never acts, navigates or appears in a flow. After a step lands on a
 | `fn(async (page, mem) => value)` | anything else | `null`/`undefined` is missing |
 
 Top-level selectors are Playwright selectors; selectors inside a `list` row are CSS. A read never waits: it takes the
-page as it is (verify Traits are what wait).
+page as it is (verify Traits are what wait). Text is the element's `textContent` with whitespace collapsed, like
+Playwright's `allTextContents`, so text hidden with CSS inside the element is included.
 
 **Speed:** each field, list or table is one round trip to the page, however many rows it has. A 1,000 x 8 table is
-one call.
+one call, about 70-150 ms.
 
 **Notes:** a table column that isn't there, or a grid that renders fewer rows than its `aria-rowcount`, is reported
 in the read's notes (`3 of 2,400 rows rendered (scroll or page to read more)`). Scrolling or paging is an action, so it

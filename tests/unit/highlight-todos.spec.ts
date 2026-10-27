@@ -63,8 +63,8 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
       name: "submit-login",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.title("Signing in");
-          ctx.todos("sign-in", ["Email", "Password"], { pos: "right", style: "bullets", index: 0 });
+          ctx.ui.title("Signing in");
+          ctx.ui.todos("sign-in", ["Email", "Password"], { pos: "right", style: "bullets", index: 0 });
         },
       },
     } as unknown as Block<any, any>;
@@ -81,7 +81,7 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
       name: "fill-username",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.caption("Click Add to cart to continue");
+          ctx.ui.caption("Click Add to cart to continue");
         },
       },
     } as unknown as Block<any, any>;
@@ -92,7 +92,7 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
       name: "submit-login",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.hideCaption();
+          ctx.ui.hideCaption();
         },
       },
     } as unknown as Block<any, any>;
@@ -120,7 +120,7 @@ describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
       },
     });
     const decorated = base.stubBefore((ctx) => {
-      ctx.caption("Enter something");
+      ctx.ui.caption("Enter something");
     });
     const phase = await runStubPhase(decorated, "stubBefore");
     assert.equal(phase.caption, "Enter something");
@@ -133,9 +133,9 @@ describe("open stubBefore(ctx) lifecycle", () => {
       name: "submit-login",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.todos("sign-in", ["Email", "Password", "Submit"], { index: 1 });
-          ctx.zoom(1.35);
-          ctx.ring("plan", { selector: "#login-button", label: "Plan" });
+          ctx.ui.todos("sign-in", ["Email", "Password", "Submit"], { index: 1 });
+          ctx.ui.zoom(1.35);
+          ctx.ui.ring("plan", { selector: "#login-button", label: "Plan" });
         },
       },
     } as unknown as Block<any, any>;
@@ -159,12 +159,12 @@ describe("open stubBefore(ctx) lifecycle", () => {
       name: "submit-login",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.todos("sign-in", [...todos], { index: 0 });
-          ctx.ring("email", { selector: "#email", label: "Email" });
+          ctx.ui.todos("sign-in", [...todos], { index: 0 });
+          ctx.ui.ring("email", { selector: "#email", label: "Email" });
         },
         stubAfter: (ctx: StubCtx) => {
-          ctx.todos("sign-in", [...todos], { index: 2 });
-          ctx.ring("inv", { selector: ".inventory", label: "Inventory" });
+          ctx.ui.todos("sign-in", [...todos], { index: 2 });
+          ctx.ui.ring("inv", { selector: ".inventory", label: "Inventory" });
         },
       },
     } as unknown as Block<any, any>;
@@ -186,7 +186,7 @@ describe("open stubBefore(ctx) lifecycle", () => {
       name: "submit-login",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.ring("plan", { selector: "#login-button", label: "Plan", zoom: 1.4 });
+          ctx.ui.ring("plan", { selector: "#login-button", label: "Plan", zoom: 1.4 });
         },
       },
     } as unknown as Block<any, any>;
@@ -205,7 +205,7 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
       name: "teach",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.todos(
+          ctx.ui.todos(
             "ep10-coverage",
             [
               { id: "fr-1", text: "FR: manpower read" },
@@ -220,7 +220,7 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
       name: "next-block",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.ring("x", { selector: "#x", label: "X" });
+          ctx.ui.ring("x", { selector: "#x", label: "X" });
         },
       },
     } as unknown as Block<any, any>;
@@ -242,7 +242,7 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
       name: "hide",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.hideTodos();
+          ctx.ui.hideTodos();
         },
       },
     } as unknown as Block<any, any>;
@@ -250,7 +250,7 @@ describe("todo persist + external ids (PIA #10 / Mailhog-style)", () => {
       name: "empty",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.todos("sign-in", []);
+          ctx.ui.todos("sign-in", []);
         },
       },
     } as unknown as Block<any, any>;

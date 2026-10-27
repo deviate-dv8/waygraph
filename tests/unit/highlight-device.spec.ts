@@ -58,8 +58,8 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
       name: "login",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.device("mobile");
-          ctx.ring("x", { selector: "#x", label: "X", gesture: "tap" });
+          ctx.ui.device("mobile");
+          ctx.ui.ring("x", { selector: "#x", label: "X", gesture: "tap" });
         },
       },
     } as unknown as Block<any, any>;
@@ -75,7 +75,7 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
       name: "bare",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.ring("x", { selector: "#x", label: "X" });
+          ctx.ui.ring("x", { selector: "#x", label: "X" });
         },
       },
     } as unknown as Block<any, any>;
@@ -83,7 +83,7 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
       name: "hide",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.hideDevice();
+          ctx.ui.hideDevice();
         },
       },
     } as unknown as Block<any, any>;
@@ -98,7 +98,7 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
       name: "touch-only",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.touch(true);
+          ctx.ui.touch(true);
         },
       },
     } as unknown as Block<any, any>;
@@ -123,8 +123,8 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
       name: "rotate",
       instruction: {
         stubBefore: (ctx: StubCtx) => {
-          ctx.device("mobile");
-          ctx.orientation("landscape");
+          ctx.ui.device("mobile");
+          ctx.ui.orientation("landscape");
         },
       },
     } as unknown as Block<any, any>;

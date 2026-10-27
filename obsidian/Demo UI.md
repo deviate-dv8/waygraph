@@ -22,8 +22,8 @@ What `waygraph demo` paints on the real page, around each step. Three parts:
 
 ```ts
 AddItemBlock.stubAfter((ctx) => {
-  ctx.ring("cart", { selector: CartSel.count, label: "AC · item in cart" });
-  ctx.todos("cart", ["Add an item", "Check the cart"], { index: 1 });
+  ctx.ui.ring("cart", { selector: CartSel.count, label: "AC · item in cart" });
+  ctx.ui.todos("cart", ["Add an item", "Check the cart"], { index: 1 });
 });
 ```
 

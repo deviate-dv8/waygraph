@@ -119,9 +119,9 @@ narrate the same Block differently. Full page: [Demo narration](./highlights).
 // .flow.ts
 .method(
   SendMagicLinkBlock.stubBefore((ctx) => {
-    ctx.ring("email", { selector: "#email", label: "Email", detail: "Magic link." });
+    ctx.ui.ring("email", { selector: "#email", label: "Email", detail: "Magic link." });
   }).stubAfter((ctx) => {
-    ctx.ring("sent", { selector: "text=Check your inbox", label: "Link sent", tag: "GATE" });
+    ctx.ui.ring("sent", { selector: "text=Check your inbox", label: "Link sent", tag: "GATE" });
   }),
 )
 ```

@@ -45,12 +45,18 @@ export interface RowCtx {
   count(selector: string): Reader<number>;
 }
 
-/** What a Read Block's `read` is given: the run's Mem and the readers for the page. */
+/** What a Read Block's `read` is given: the run's Mem, and `page`, the readers for what the page shows. */
 export interface ReadCtx {
   readonly mem: MemPage;
-  /** Trimmed text of the first match. */
+  /** Readers for the page: `ctx.page.text(sel)`, `ctx.page.list(sel, (row) => ...)`, ... */
+  readonly page: PageReaders;
+}
+
+/** The readers a Read Block reads the page with. */
+export interface PageReaders {
+  /** Text of the first match (textContent, whitespace collapsed). */
   text(selector: string): Reader<string>;
-  /** Trimmed text of every match. */
+  /** Text of every match (textContent, whitespace collapsed). */
   texts(selector: string): Reader<string[]>;
   /** The first number in the first match's text (`"$1,299.00"` -> 1299, `"41 likes"` -> 41). */
   number(selector: string): Reader<number>;
@@ -62,13 +68,13 @@ export interface ReadCtx {
   count(selector: string): Reader<number>;
   /**
    * One object per row, each field read inside its row, in one round trip for the whole list.
-   * @example ctx.list(".comment", (row) => ({ author: row.text(".author"), body: row.text(".body") }))
+   * @example ctx.page.list(".comment", (row) => ({ author: row.text(".author"), body: row.text(".body") }))
    */
   list<R>(rowSelector: string, row: (row: RowCtx) => { readonly [K in keyof R]: Reader<R[K]> }): Reader<R[]>;
   /**
    * One object per table row, each field the cell under the column with that header text (`<th>` or
    * `role=columnheader`), in one round trip. A header that isn't there is reported as missing.
-   * @example ctx.table("#orders", { id: "Order #", total: "Total" })
+   * @example ctx.page.table("#orders", { id: "Order #", total: "Total" })
    */
   table<C extends string>(selector: string, columns: Readonly<Record<C, string>>): Reader<Record<C, string>[]>;
   /** Anything the helpers don't cover; `null` or `undefined` is reported as missing. */
@@ -92,21 +98,23 @@ export function createReadCtx(mem: MemPage): ReadCtx {
   const row = fieldReaders();
   return {
     mem,
-    text: (s) => row.text(s),
-    texts: (s) => row.texts(s),
-    number: (s) => row.number(s),
-    attr: (s, name) => row.attr(s, name),
-    value: (s) => row.value(s),
-    visible: (s) => row.visible(s),
-    count: (s) => row.count(s),
-    list: (selector, build) => {
-      const fields: Record<string, FieldPlan> = {};
-      for (const [name, reader] of Object.entries(build(fieldReaders()) as Record<string, Reader<unknown>>)) {
-        fields[name] = reader.plan as FieldPlan;
-      }
-      return new Reader({ kind: "list", selector, fields });
+    page: {
+      text: (s) => row.text(s),
+      texts: (s) => row.texts(s),
+      number: (s) => row.number(s),
+      attr: (s, name) => row.attr(s, name),
+      value: (s) => row.value(s),
+      visible: (s) => row.visible(s),
+      count: (s) => row.count(s),
+      list: (selector, build) => {
+        const fields: Record<string, FieldPlan> = {};
+        for (const [name, reader] of Object.entries(build(fieldReaders()) as Record<string, Reader<unknown>>)) {
+          fields[name] = reader.plan as FieldPlan;
+        }
+        return new Reader({ kind: "list", selector, fields });
+      },
+      table: (selector, columns) => new Reader({ kind: "table", selector, columns: { ...columns } }),
+      fn: (read) => new Reader({ kind: "fn", fn: read }),
     },
-    table: (selector, columns) => new Reader({ kind: "table", selector, columns: { ...columns } }),
-    fn: (read) => new Reader({ kind: "fn", fn: read }),
   };
 }

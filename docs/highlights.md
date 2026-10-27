@@ -9,14 +9,14 @@ Narration is written in the **flow**, as ctx stubs chained on the Blocks it uses
 ```sh
 Block           → what it does (act / resolve / verify), no narration
 Flow            → the story: ctx stubs chained on each Block, in the order the flow runs them
-                  (rings, todos, captions, and ctx.slides for a multi-step yap)
+                  (rings, todos, captions, and ctx.ui.slides for a multi-step yap)
 ```
 
 | Feature | Where | Role |
 |---|---|---|
-| **Stubs** | Chained on a Block inside a flow | `ctx.ring(...)`, `ctx.todos(...)`, `ctx.title(...)` before, after or on error. |
+| **Stubs** | Chained on a Block inside a flow | `ctx.ui.ring(...)`, `ctx.ui.todos(...)`, `ctx.ui.title(...)` before, after or on error. |
 | **Captions** | Every ring / slide | `label` (or `caption` on slides), optional `detail` and `tag`. Rendered as: `[TAG] primary - detail`. |
-| **Slides** | `ctx.slides([...])` in a stub | Multi-step yap sequence. Demo pauses on each slide; user clicks **Next slide** (or auto-next). In `stubBefore` they play before the step runs, in `stubAfter` after it lands. |
+| **Slides** | `ctx.ui.slides([...])` in a stub | Multi-step yap sequence. Demo pauses on each slide; user clicks **Next slide** (or auto-next). In `stubBefore` they play before the step runs, in `stubAfter` after it lands. |
 
 ## Phases
 
@@ -36,10 +36,10 @@ Chain a ctx stub on the Block where the flow uses it. No separate fixture map:
 ```ts
 const SubmitLogin = SubmitLoginBlock
   .stubBefore((ctx) => {
-    ctx.ring("username", { label: "Demo user", detail: "standard_user from Mem.", tag: "AC" });
-    ctx.ring("submit", { label: "Sign in", tag: "GATE" });
+    ctx.ui.ring("username", { label: "Demo user", detail: "standard_user from Mem.", tag: "AC" });
+    ctx.ui.ring("submit", { label: "Sign in", tag: "GATE" });
   })
-  .stubAfter((ctx) => ctx.ring("badge", { label: "Signed in", tag: "AC", duration: true }));
+  .stubAfter((ctx) => ctx.ui.ring("badge", { label: "Signed in", tag: "AC", duration: true }));
 
 export const checkoutFlow = engine
   .map()
@@ -60,7 +60,7 @@ A stub is just a function of `ctx`, so share one the same way you share any func
 // src/stubs/checkout-ac.ts
 import type { StubCtx } from "waygraph";
 
-export const usernameAc = (ctx: StubCtx<any>) => ctx.ring("username", { label: "AC-1: standard_user", tag: "AC" });
+export const usernameAc = (ctx: StubCtx<any>) => ctx.ui.ring("username", { label: "AC-1: standard_user", tag: "AC" });
 
 // src/flows/checkout.flow.ts
 .method(SubmitLoginBlock.stubBefore(usernameAc))
@@ -69,14 +69,14 @@ export const usernameAc = (ctx: StubCtx<any>) => ctx.ring("username", { label: "
 Slides are a stub call like the rest:
 
 ```ts
-.method(FinishOrderBlock.stubAfter((ctx) => ctx.slides([
+.method(FinishOrderBlock.stubAfter((ctx) => ctx.ui.slides([
   { caption: "Checkout is a short pipeline", tag: "YAP", duration: true },
   { caption: "Completion page is the proof", selector: ".complete-header", tone: "success" },
 ])))
 ```
 
 The older `withHighlightFixtures(flow, map)` slot map was removed in 0.16.0, and a Block's own `slides` field in 0.16.2;
-chain ctx stubs on the Block as above (`waygraph upgrade --codemod flows` moves old `slides` into `ctx.slides`).
+chain ctx stubs on the Block as above (`waygraph upgrade --codemod flows` moves old `slides` into `ctx.ui.slides`).
 
 ## TypeScript exports
 
@@ -86,12 +86,12 @@ chain ctx stubs on the Block as above (`waygraph upgrade --codemod flows` moves 
 | `formatHighlightCaption(h)` | function | Format `[TAG] label - detail` string |
 | `hasAuthoredStubAfter(block, out)` | function | True when block has non-empty stubAfter (skips verify-trait fallback) |
 | `WaygraphHighlightStub` | type | One named stub slot |
-| `WaygraphSlide` | type | One yap slide for `ctx.slides` (caption, detail, tag, selector) |
+| `WaygraphSlide` | type | One yap slide for `ctx.ui.slides` (caption, detail, tag, selector) |
 | `ResolvedHighlight` | type | A resolved stub slot |
 
 ## Todo dock UI (demo, 0.15.8+)
 
-`ctx.todos(id, items, { title, index, style, pos })` paints a floating
+`ctx.ui.todos(id, items, { title, index, style, pos })` paints a floating
 checklist during `waygraph demo` (and Pilot overlay). Smart defaults
 keep long FR/AC lists from burying highlight rings:
 
@@ -101,29 +101,29 @@ keep long FR/AC lists from burying highlight rings:
 
 Opt out for the whole run: `waygraph demo ... --todo-full`
 (or `WAYGRAPH_TODO_UI=full`). Per-block:
-`ctx.todoDockUi({ compact: false, collision: false, behindRing: false })`.
+`ctx.ui.todoDockUi({ compact: false, collision: false, behindRing: false })`.
 Full flag table: [Demo / run → Todo dock UI](./demo#todo-dock-ui).
 
 ## Caption bar (demo, 0.15.49+)
 
-`ctx.caption(text)` shows a bottom-centered narration card (white, rounded, drop
-shadow) during `waygraph demo` - distinct from `ctx.title()`/`ctx.titlePos()`
+`ctx.ui.caption(text)` shows a bottom-centered narration card (white, rounded, drop
+shadow) during `waygraph demo` - distinct from `ctx.ui.title()`/`ctx.ui.titlePos()`
 (the top banner card). Call it from `stubBefore`/`stubAfter` like any other
 open-lifecycle fixture:
 
 ```sh
 instruction: {
 stubBefore(ctx) {
-ctx.caption("Enter the first name on the order");
+ctx.ui.caption("Enter the first name on the order");
 },
 }
 ```
 
-`ctx.hideCaption()` (or `ctx.caption("")`) fades it out. Leaving `caption`
+`ctx.ui.hideCaption()` (or `ctx.ui.caption("")`) fades it out. Leaving `caption`
 untouched on a later phase keeps whatever the previous step set - it does not
 reset between steps on its own, so clear it explicitly once it no longer
 applies (see `examples/saucedemo`'s `checkout.flow.ts`, which calls
-`ctx.hideCaption()` on the final checkout-info field).
+`ctx.ui.hideCaption()` on the final checkout-info field).
 
 ## Network tab (demo, 0.15.49+)
 
@@ -134,11 +134,11 @@ itself is **hidden by default**. Toggle it like any other overlay fixture:
 
 ```sh
 stubBefore(ctx) {
-ctx.showNetworkTab();
+ctx.ui.showNetworkTab();
 },
 ```
 
-`ctx.hideNetworkTab()` hides the panel again; capture keeps running in the
+`ctx.ui.hideNetworkTab()` hides the panel again; capture keeps running in the
 background either way, so nothing is lost by toggling visibility off. A block
 built with `defineApiBlock` also shows a terminal icon on the stepper while it
 runs, independent of whether the network tab itself is visible.
@@ -152,9 +152,9 @@ The [Sauce Demo](./saucedemo/index) shows all features in a real block/flow:
 
 - **submit-login** - `stubBefore` (fill rings on username/password/submit)
 - **add-to-cart** - `stubAfter` (cart badge ring after action)
-- **finish-order** - a `stubBefore` ring on Finish and `ctx.slides(...)` in its `stubAfter` (3-slide yap sequence), both in `src/stubs/finish-order.ts`
+- **finish-order** - a `stubBefore` ring on Finish and `ctx.ui.slides(...)` in its `stubAfter` (3-slide yap sequence), both in `src/stubs/finish-order.ts`
 - Stubs chained in `checkoutFlow` - AC/GATE captions, tag badges, detail lines
-- **login / cart blocks** - `ctx.todos(...)` so the floating dock (smart UX) shows in `waygraph demo`
+- **login / cart blocks** - `ctx.ui.todos(...)` so the floating dock (smart UX) shows in `waygraph demo`
 
 ## Related
 

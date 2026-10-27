@@ -115,7 +115,7 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
 
 /**
  * Some Blocks call page.setViewportSize() in their own act for their own tests; in a watched demo that would resize
- * the window, so it does nothing here. An authored ctx.device() still resizes through __wgRealSetViewportSize.
+ * the window, so it does nothing here. An authored ctx.ui.device() still resizes through __wgRealSetViewportSize.
  */
 function keepWindowSize(page: WgPage): void {
   page.__wgRealSetViewportSize = page.setViewportSize.bind(page);

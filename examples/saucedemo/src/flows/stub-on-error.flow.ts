@@ -19,7 +19,7 @@ export const stubOnErrorFlow = engine
   .start()
   .gotoPage(
     NavLoginBlock.stubBefore((ctx) =>
-      ctx.title("stubOnError: locked_out fail rings"),
+      ctx.ui.title("stubOnError: locked_out fail rings"),
     ),
   )
   .method(FillUsernameBlock)

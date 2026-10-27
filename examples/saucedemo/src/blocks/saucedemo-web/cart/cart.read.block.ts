@@ -16,7 +16,7 @@ export const CartReadBlock = defineReadBlock({
   instruction: {
     read: (ctx) =>
       Cart({
-        lines: ctx.list(".cart_item", (row) => ({
+        lines: ctx.page.list(".cart_item", (row) => ({
           name: row.text(".inventory_item_name"),
           qty: row.number(".cart_quantity"),
           price: row.number(".inventory_item_price"),

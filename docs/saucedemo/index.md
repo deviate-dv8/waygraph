@@ -86,7 +86,7 @@ Narration is written in the flow, chained on the Block where the flow uses it. F
 ```ts
 .method(
   FillUsernameBlock.stubBefore((ctx) => {
-    ctx.ring("username", {
+    ctx.ui.ring("username", {
       selector: LoginSel.username,
       label: "Demo user",
       tag: "AC",
@@ -103,14 +103,14 @@ Narration is written in the flow, chained on the Block where the flow uses it. F
 
 ```ts
 export function placingOrder(ctx: StubCtx): void {
-  ctx.ring("finish", {
+  ctx.ui.ring("finish", {
     selector: CheckoutOverviewSel.finishBtn,
     label: "Placing the order",
   });
 }
 
 export function orderPlacedYap(ctx: StubCtx): void {
-  ctx.slides([
+  ctx.ui.slides([
     { caption: "Checkout is a short pipeline", tag: "YAP", duration: true },
     {
       caption: "Completion page is the durable proof",

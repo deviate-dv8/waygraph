@@ -90,7 +90,7 @@ export const RUN_OPTIONS = {
   "fast": { type: "boolean", help: "Shorter auto-next / Next gates (keeps the smooth cursor)", for: ["demo"] },
   "full": { type: "boolean", help: "Classic wrap-all block chips (default: carousel)", for: ["demo"] },
   "mini": { type: "boolean", help: "Force the compact mini panel (Hide pill + Next)", for: ["demo"] },
-  "todo-left": { type: "boolean", help: "Floating checklist dock on the left (also ctx.todos(id, items, { pos }))", for: ["demo"] },
+  "todo-left": { type: "boolean", help: "Floating checklist dock on the left (also ctx.ui.todos(id, items, { pos }))", for: ["demo"] },
   "todo-right": { type: "boolean", help: "Floating checklist dock on the right", for: ["demo"] },
   "todo-full": { type: "boolean", help: "Full checklist: no compact / collision / behind-ring", for: ["demo"] },
   "todo-smart": { type: "boolean", help: "Compact + collision + behind-ring (the default)", for: ["demo"] },

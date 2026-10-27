@@ -38,13 +38,13 @@ function checklist(done: number, index: number) {
 export const deviceShowcase = {
   username: {
     before: (ctx: StubCtx) => {
-      ctx.title("Signing in · mobile");
-      ctx.device("mobile");
-      ctx.orientation("portrait");
-      ctx.todos("saucedemo", ...checklist(0, 0));
-      ctx.zoom(1.35);
+      ctx.ui.title("Signing in · mobile");
+      ctx.ui.device("mobile");
+      ctx.ui.orientation("portrait");
+      ctx.ui.todos("saucedemo", ...checklist(0, 0));
+      ctx.ui.zoom(1.35);
       const fromMem = ctx.mem?.get(LoginCreds.key)?.username;
-      ctx.ring("username", {
+      ctx.ui.ring("username", {
         selector: LoginSel.username,
         label: "Username",
         detail: fromMem
@@ -57,12 +57,12 @@ export const deviceShowcase = {
       });
     },
     after: (ctx: StubCtx) => {
-      ctx.todos("saucedemo", ...checklist(1, 1));
+      ctx.ui.todos("saucedemo", ...checklist(1, 1));
     },
   },
   password: {
     before: (ctx: StubCtx) => {
-      ctx.ring("password", {
+      ctx.ui.ring("password", {
         selector: LoginSel.password,
         label: "Password",
         detail: "tone: planned (purple)",
@@ -73,12 +73,12 @@ export const deviceShowcase = {
       });
     },
     after: (ctx: StubCtx) => {
-      ctx.todos("saucedemo", ...checklist(2, 2));
+      ctx.ui.todos("saucedemo", ...checklist(2, 2));
     },
   },
   submit: {
     before: (ctx: StubCtx) => {
-      ctx.ring("submit", {
+      ctx.ui.ring("submit", {
         selector: LoginSel.loginButton,
         label: "Login",
         detail: "tone: warning (yellow)",
@@ -91,10 +91,10 @@ export const deviceShowcase = {
       });
     },
     after: (ctx: StubCtx) => {
-      ctx.title("Inventory · landscape");
-      ctx.orientation("landscape");
-      ctx.todos("saucedemo", ...checklist(3, 3));
-      ctx.ring("shelf", {
+      ctx.ui.title("Inventory · landscape");
+      ctx.ui.orientation("landscape");
+      ctx.ui.todos("saucedemo", ...checklist(3, 3));
+      ctx.ui.ring("shelf", {
         selector: ".inventory_list",
         label: "Product shelf",
         detail: "tone: success (green) - ready to shop",
@@ -107,13 +107,13 @@ export const deviceShowcase = {
   },
   addToCart: {
     before: (ctx: StubCtx) => {
-      ctx.title("Pick a product · tablet");
-      ctx.device("tablet");
-      ctx.orientation("portrait");
-      ctx.todos("saucedemo", ...checklist(3, 3));
-      ctx.zoom(1.35);
-      ctx.zoomOut(false);
-      ctx.ring("product", {
+      ctx.ui.title("Pick a product · tablet");
+      ctx.ui.device("tablet");
+      ctx.ui.orientation("portrait");
+      ctx.ui.todos("saucedemo", ...checklist(3, 3));
+      ctx.ui.zoom(1.35);
+      ctx.ui.zoomOut(false);
+      ctx.ui.ring("product", {
         selector: InventorySel.title(PRODUCT_ID),
         label: "Sauce Labs Backpack",
         detail: "tone: info (blue)",
@@ -122,7 +122,7 @@ export const deviceShowcase = {
         zoom: 1.45,
         zoomOut: false,
       });
-      ctx.ring("add", {
+      ctx.ui.ring("add", {
         selector: InventorySel.addBtn(PRODUCT_ID),
         label: "Add to cart",
         detail: "tone: success (green)",
@@ -134,10 +134,10 @@ export const deviceShowcase = {
       });
     },
     after: (ctx: StubCtx) => {
-      ctx.title("In the cart");
-      ctx.todos("saucedemo", ...checklist(4, 4));
-      ctx.zoomOut(false);
-      ctx.ring("badge", {
+      ctx.ui.title("In the cart");
+      ctx.ui.todos("saucedemo", ...checklist(4, 4));
+      ctx.ui.zoomOut(false);
+      ctx.ui.ring("badge", {
         selector: InventorySel.cartBadge,
         label: "Cart badge",
         detail: "tone: success (green) - count updated",
@@ -150,12 +150,12 @@ export const deviceShowcase = {
   },
   openCart: {
     before: (ctx: StubCtx) => {
-      ctx.title("Open cart · landscape");
-      ctx.orientation("landscape");
-      ctx.todos("saucedemo", ...checklist(5, 5));
-      ctx.zoom(1.4);
-      ctx.zoomOut(false);
-      ctx.ring("cart", {
+      ctx.ui.title("Open cart · landscape");
+      ctx.ui.orientation("landscape");
+      ctx.ui.todos("saucedemo", ...checklist(5, 5));
+      ctx.ui.zoom(1.4);
+      ctx.ui.zoomOut(false);
+      ctx.ui.ring("cart", {
         selector: CartSel.cartLink,
         label: "Cart",
         detail: "tone: planned (purple) - open cart",
@@ -167,11 +167,11 @@ export const deviceShowcase = {
       });
     },
     after: (ctx: StubCtx) => {
-      ctx.title("Your cart · desktop");
-      ctx.hideDevice();
-      ctx.hideTodos();
-      ctx.zoomOut(true);
-      ctx.ring("items", {
+      ctx.ui.title("Your cart · desktop");
+      ctx.ui.hideDevice();
+      ctx.ui.hideTodos();
+      ctx.ui.zoomOut(true);
+      ctx.ui.ring("items", {
         selector: InventorySel.cartItem,
         label: "Cart items",
         detail: "tone: success (green) - product in cart",

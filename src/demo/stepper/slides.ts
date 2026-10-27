@@ -269,7 +269,7 @@ export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide
   await hideRing(page);
 }
 
-/** Plays a stub phase's `ctx.slides(...)` for the step on screen, in the flow's highlight style. */
+/** Plays a stub phase's `ctx.ui.slides(...)` for the step on screen, in the flow's highlight style. */
 export async function showSlides(ctx: StepperContext, view: StepView, slides: readonly WaygraphSlide[]): Promise<void> {
   if (slides.length === 0) return;
   if (!envFlag("WAYGRAPH_JSON")) demoLog(`  slides ${slides.length}: ` + slides.map((s) => JSON.stringify(s.caption)).join(" | "));

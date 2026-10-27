@@ -72,14 +72,14 @@ against a live site, use `--skill-pilot-blind`.
 
 - **Build flows with `map()`** (`engine.map({ memStub }).start().gotoPage(Nav).method(B, { pace }).assert(A).end()`;
   `.gotoExternal` for another origin); it is the only way to build one. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`) go in `map({ … })` before the chain
-  and `.end()` takes nothing. The flow's title is `ctx.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
+  and `.end()` takes nothing. The flow's title is `ctx.ui.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
   `defineFlow`, `chainFlow` and the `with*` flow wrappers were removed in 0.16.0; `waygraph upgrade --codemod flows` converts them.
 - **`src/flows/` holds use cases and mirrors the front end's endpoints**: a folder per page (`flows/auth/login/`) with one
   file per scenario named for its outcome (`success.flow.ts`, `wrong-password.flow.ts`, `empty-fields.flow.ts`), and
   `(user-stories)/` (any `(group)`) for flows that cross pages. Export names are `<page><Outcome>Flow`. Not one file per
   Block chain, not a flat folder of unrelated flows.
 - **Blocks carry no stubs; the flow does.** Demo highlights are ctx stubs chained on the Block where the flow uses it:
-  `AddItemBlock.stubAfter((ctx) => { ctx.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart" }); })`.
+  `AddItemBlock.stubAfter((ctx) => { ctx.ui.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart" }); })`.
   That chained function is the only form: a Block's definition (its options or `instruction`) takes no stub, and a stub
   is never a slot map. A Block used twice gets one `const AddShown = AddItemBlock.stubAfter(...)`. A stub that throws
   fails its step in the demo, named.

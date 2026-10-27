@@ -9,10 +9,10 @@ Owned by the waygraph camera/stepper seat (2026-09-18).
 3. Collapsed mini chrome must show **Next** when not auto-advance (`wg-mini-next`).
 4. CLI flag: `--mini` -> `WAYGRAPH_MINI=1`.
 5. Todos live in `#wg-todo-dock` (outside `#wg-panel`) so `--mini` / Hide never hide them.
-   Authors: `ctx.todos(id, items, { pos: "left"|"right" })`; also click dock / `--todo-left|--todo-right` /
+   Authors: `ctx.ui.todos(id, items, { pos: "left"|"right" })`; also click dock / `--todo-left|--todo-right` /
    `WAYGRAPH_TODO_POS`.
-6. Banner text: `ctx.title(...)` must update `#wg-banner .wg-banner-text`
-   every step (installOverlay creates once, then updates). Episode tab label = the flow's export name (a stub's `ctx.title(...)` sets the banner).
+6. Banner text: `ctx.ui.title(...)` must update `#wg-banner .wg-banner-text`
+   every step (installOverlay creates once, then updates). Episode tab label = the flow's export name (a stub's `ctx.ui.title(...)` sets the banner).
 7. Ring/label tone CSS: `transition:opacity` only — never border-color/background morph.
 8. **Blind-agent beacons (anti-blank):** every modal root (`#wg-panel`, `#wg-banner`,
    `#wg-todo-dock`, `#wg-auto-panel`) must stamp `data-wg-ui` / `data-wg-modal` / `data-wg-ready="1"` via

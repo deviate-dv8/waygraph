@@ -13,7 +13,7 @@ export const hoppscotchGetFlow = engine
   .start()
   .gotoExternal(
     NavHoppscotchSettingsBlock.stubBefore((ctx) => {
-      ctx.title("Scaffold: Hoppscotch GET");
+      ctx.ui.title("Scaffold: Hoppscotch GET");
     }),
   )
   .method(PickExtensionInterceptorBlock)

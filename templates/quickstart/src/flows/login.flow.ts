@@ -9,7 +9,7 @@ import { SubmitLoginForFlow } from "../blocks/saucedemo-web/methods/submit-login
 export const loginFlow = engine
   .map({ memStub: true })
   .start()
-  .gotoPage(NavLoginBlock.stubBefore((ctx) => ctx.title("Sign In")))
+  .gotoPage(NavLoginBlock.stubBefore((ctx) => ctx.ui.title("Sign In")))
   .method(FillUsernameBlock)
   .method(FillPasswordBlock)
   .method(SubmitLoginForFlow)

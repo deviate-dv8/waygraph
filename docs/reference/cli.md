@@ -123,12 +123,12 @@ Long FR/AC checklists used to bury highlight rings. **Smart defaults are on:**
 
 | Behavior | Default | Opt out |
 |----------|---------|---------|
-| Compact fold (~5 rows around current; hover expands; `+N more`) | on | `ctx.todoDockUi({ compact: false })` / `--todo-full` / `WAYGRAPH_TODO_UI=full` |
-| Collision flip (dock L/R when a ring overlaps) | on | `ctx.todoDockUi({ collision: false })` / `WAYGRAPH_TODO_COLLISION=0` |
-| Behind ring (dim + lower z-index while a ring is up) | on | `ctx.todoDockUi({ behindRing: false })` / `WAYGRAPH_TODO_BEHIND=0` |
+| Compact fold (~5 rows around current; hover expands; `+N more`) | on | `ctx.ui.todoDockUi({ compact: false })` / `--todo-full` / `WAYGRAPH_TODO_UI=full` |
+| Collision flip (dock L/R when a ring overlaps) | on | `ctx.ui.todoDockUi({ collision: false })` / `WAYGRAPH_TODO_COLLISION=0` |
+| Behind ring (dim + lower z-index while a ring is up) | on | `ctx.ui.todoDockUi({ behindRing: false })` / `WAYGRAPH_TODO_BEHIND=0` |
 
 Per-knob env also: `WAYGRAPH_TODO_COMPACT`, `WAYGRAPH_TODO_CAP` (default 5),
-`WAYGRAPH_TODO_EXPAND_CAP` (default 14). Author API: `ctx.todoDockUi({ ... })`.
+`WAYGRAPH_TODO_EXPAND_CAP` (default 14). Author API: `ctx.ui.todoDockUi({ ... })`.
 `browser highlight` (same as `auto`/`pilot highlight` - identical command, see "auto vs
 browser vs pilot" above) accepts the same knobs as `todoUi` on the JSON body.
 

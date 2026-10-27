@@ -43,7 +43,7 @@ const registry = new Map<string, ReadBlock>();
  *   name: "read-post",
  *   from: PostOpen,
  *   instruction: {
- *     read: (ctx) => Post({ title: ctx.text("h1"), likes: ctx.number(".likes") }),
+ *     read: (ctx) => Post({ title: ctx.page.text("h1"), likes: ctx.page.number(".likes") }),
  *   },
  * });
  */

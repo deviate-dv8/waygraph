@@ -19,7 +19,7 @@ export const hoppscotchAuthFlow = engine
   .start()
   .gotoExternal(
     NavHoppscotchSettingsBlock.stubBefore((ctx) => {
-      ctx.title("Scaffold: Hoppscotch GET with query params and bearer token");
+      ctx.ui.title("Scaffold: Hoppscotch GET with query params and bearer token");
     }),
   )
   .method(PickExtensionInterceptorBlock)

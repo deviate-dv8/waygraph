@@ -73,16 +73,16 @@ recorded, so **headless by default** (no live window needed). |
 
 ## Todo dock UI (demo, 0.15.8+)
 
-When a stub calls `ctx.todos(id, items, opts)`,
+When a stub calls `ctx.ui.todos(id, items, opts)`,
 `waygraph demo` renders a **floating checklist** outside
 the step panel (survives Hide / mini). Long FR/AC lists used to bury highlight
 rings - **smart defaults are on** in demo:
 
 | Behavior | Default | Opt out |
 |---|---|---|
-| Compact fold (~5 rows around current; hover expands; `+N more`) | on | `--todo-full` / `WAYGRAPH_TODO_UI=full` / `ctx.todoDockUi({ compact: false })` |
-| Collision flip (dock L/R when a ring overlaps) | on | `ctx.todoDockUi({ collision: false })` / `WAYGRAPH_TODO_COLLISION=0` |
-| Behind ring (dim + lower z-index while a ring is up) | on | `ctx.todoDockUi({ behindRing: false })` / `WAYGRAPH_TODO_BEHIND=0` |
+| Compact fold (~5 rows around current; hover expands; `+N more`) | on | `--todo-full` / `WAYGRAPH_TODO_UI=full` / `ctx.ui.todoDockUi({ compact: false })` |
+| Collision flip (dock L/R when a ring overlaps) | on | `ctx.ui.todoDockUi({ collision: false })` / `WAYGRAPH_TODO_COLLISION=0` |
+| Behind ring (dim + lower z-index while a ring is up) | on | `ctx.ui.todoDockUi({ behindRing: false })` / `WAYGRAPH_TODO_BEHIND=0` |
 
 Try it on Sauce Demo login / cart flows (they already seed todos):
 

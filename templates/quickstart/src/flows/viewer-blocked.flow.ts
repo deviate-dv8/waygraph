@@ -19,7 +19,7 @@ export const viewerBlockedFlow = engine
   .start()
   .gotoPage(
     NavLoginBlock.stubBefore((ctx) =>
-      ctx.title("Viewer: Blocked Login Attempt"),
+      ctx.ui.title("Viewer: Blocked Login Attempt"),
     ),
   )
   .method(FillUsernameBlock)

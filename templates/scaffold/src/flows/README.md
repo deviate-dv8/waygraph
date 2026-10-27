@@ -34,6 +34,6 @@ src/flows/
 
 - Build it with `engine.map({ memStub })…end()`; nest another with `.flow(sub, { reset: true })`;
   `.end()` takes nothing.
-- The flow's name and narration are ctx stubs chained on the Block where they apply: `ctx.title("…")`, `ctx.ring(…)`.
+- The flow's name and narration are ctx stubs chained on the Block where they apply: `ctx.ui.title("…")`, `ctx.ui.ring(…)`.
 - A flow expected to fail (a locked-out user) says so in `map({ expectedFailure: "…" })`.
 - A step's speed in the demo is `{ pace }`: `.method(FillBlock, { pace: "blitz" })`.

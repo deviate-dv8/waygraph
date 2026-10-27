@@ -26,7 +26,7 @@ split it into atomic Blocks (a login form is `fill-username` + `fill-password` +
 current page, with no state change, is `defineAssertBlock({ name, checkpoint, verify,
 waitForHeading?, requires? })` - self-loop and `resolve` are generated for you, so there's no
 hand-written `act`/`resolve` to accidentally make do two things. Narration (rings, todos,
-`ctx.slides`) is chained where a flow uses it, as on every other Block. `requires` (declare it whenever a mem-aware Trait reads a mem key the caller
+`ctx.ui.slides`) is chained where a flow uses it, as on every other Block. `requires` (declare it whenever a mem-aware Trait reads a mem key the caller
 must supply externally - see the mail example below) lets preflight catch a missing input
 before the flow ever runs, the same as every other Block helper:
 
@@ -158,7 +158,7 @@ export const CheckOrderCreatedBlock = defineApiBlock({
 
 `resolve` receives `{ status, ok, body }` (`body` is the parsed JSON, or raw text when it
 doesn't parse as JSON); leave it out when `to` is one Checkpoint. Put it in a flow with `map().method(CheckOrderCreatedBlock)`. Every call - real page traffic too - feeds the same demo-overlay
-network tab (hidden by default, `ctx.showNetworkTab()`/`hideNetworkTab()` to toggle); see
+network tab (hidden by default, `ctx.ui.showNetworkTab()`/`hideNetworkTab()` to toggle); see
 [Demo narration → Network tab](../highlights.md#network-tab-demo-0-15-49).
 
 Live reference: `examples/saucedemo/src/flows/api-demo.flow.ts` (a login chained into a

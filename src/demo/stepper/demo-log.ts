@@ -182,13 +182,13 @@ export function demoHighlight(h: LoggedHighlight | null | undefined, extra?: str
 export function logStubPhaseFixtures(phaseName: string, phase: StubPhaseResult | null | undefined): void {
   if (demoQuiet() || !phase) return;
   const tag = "stub." + phaseName;
-  if (phase.title) demoFixture(tag, "ctx.title(...)", JSON.stringify(phase.title));
-  if (phase.titlePos) demoFixture(tag, "ctx.titlePos(...)", JSON.stringify(phase.titlePos));
-  if (phase.bannerUi) demoFixture(tag, "ctx.bannerUi(...)", JSON.stringify(phase.bannerUi));
+  if (phase.title) demoFixture(tag, "ctx.ui.title(...)", JSON.stringify(phase.title));
+  if (phase.titlePos) demoFixture(tag, "ctx.ui.titlePos(...)", JSON.stringify(phase.titlePos));
+  if (phase.bannerUi) demoFixture(tag, "ctx.ui.bannerUi(...)", JSON.stringify(phase.bannerUi));
   if (phase.deviceSync && phase.deviceSync !== "keep") {
     demoFixture(
       tag,
-      phase.deviceSync === "clear" ? "ctx.hideDevice()" : "ctx.device(...)",
+      phase.deviceSync === "clear" ? "ctx.ui.hideDevice()" : "ctx.ui.device(...)",
       phase.device
         ? {
             preset: phase.device.preset,
@@ -200,12 +200,12 @@ export function logStubPhaseFixtures(phaseName: string, phase: StubPhaseResult |
         : phase.deviceSync,
     );
   }
-  if (phase.zoom != null) demoFixture(tag, "ctx.zoom(" + phase.zoom + ")", phase.zoom + "x");
-  if (phase.zoomOut !== undefined) demoFixture(tag, "ctx.zoomOut(" + !!phase.zoomOut + ")", !!phase.zoomOut);
+  if (phase.zoom != null) demoFixture(tag, "ctx.ui.zoom(" + phase.zoom + ")", phase.zoom + "x");
+  if (phase.zoomOut !== undefined) demoFixture(tag, "ctx.ui.zoomOut(" + !!phase.zoomOut + ")", !!phase.zoomOut);
   if (phase.todoSync && phase.todoSync !== "keep") {
     demoFixture(
       tag,
-      phase.todoSync === "clear" ? "ctx.hideTodos() / clear" : "ctx.todos(...)",
+      phase.todoSync === "clear" ? "ctx.ui.hideTodos() / clear" : "ctx.ui.todos(...)",
       phase.todoDock
         ? {
             id: phase.todoDock.id,
@@ -219,7 +219,7 @@ export function logStubPhaseFixtures(phaseName: string, phase: StubPhaseResult |
   phase.highlights.forEach((h, i) => {
     demoFixture(
       tag,
-      "ctx.ring[" + i + "]",
+      "ctx.ui.ring[" + i + "]",
       {
         selector: h.selector,
         label: h.label,

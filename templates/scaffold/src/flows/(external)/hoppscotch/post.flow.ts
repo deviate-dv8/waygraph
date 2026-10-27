@@ -18,7 +18,7 @@ export const hoppscotchPostFlow = engine
   .start()
   .gotoExternal(
     NavHoppscotchSettingsBlock.stubBefore((ctx) => {
-      ctx.title("Scaffold: Hoppscotch POST with header and JSON body");
+      ctx.ui.title("Scaffold: Hoppscotch POST with header and JSON body");
     }),
   )
   .method(PickExtensionInterceptorBlock)

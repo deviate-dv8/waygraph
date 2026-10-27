@@ -43,6 +43,6 @@ export const homeCartFlow = engine
 | `expectedFailure` | this flow is *meant* to fail (a blocked user); the demo explains instead of alarming |
 | `demoPace`, `highlightStyle` | how the demo plays this flow |
 
-A flow's on-screen title is set by a stub on its first step: `NavLoginBlock.stubBefore((ctx) => ctx.title("Sign in"))`.
+A flow's on-screen title is set by a stub on its first step: `NavLoginBlock.stubBefore((ctx) => ctx.ui.title("Sign in"))`.
 
 Where flows live in a project: [[Your Project]]. Code: `src/engine/flow/` (`map-builder.ts` is `map()`).

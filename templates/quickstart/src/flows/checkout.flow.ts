@@ -21,7 +21,7 @@ export const checkoutFlow = engine
   .gotoPage(NavLoginBlock, { ff: true })
   .method(
     FillUsernameBlock.stubBefore((ctx) => {
-      ctx.ring("username", {
+      ctx.ui.ring("username", {
         selector: LoginSel.username,
         label: "Demo user",
         detail:
@@ -35,7 +35,7 @@ export const checkoutFlow = engine
   )
   .method(
     FillPasswordBlock.stubBefore((ctx) => {
-      ctx.ring("password", {
+      ctx.ui.ring("password", {
         selector: LoginSel.password,
         label: "Password",
         detail: "Filled from Mem credentials.",
@@ -47,7 +47,7 @@ export const checkoutFlow = engine
   )
   .method(
     SubmitLoginForFlow.stubBefore((ctx) => {
-      ctx.ring("submit", {
+      ctx.ui.ring("submit", {
         selector: LoginSel.loginButton,
         label: "Sign in",
         tag: "GATE",
@@ -59,27 +59,27 @@ export const checkoutFlow = engine
     }),
     { ff: true },
   )
-  .method(AddToCartBlock.stubBefore((ctx) => ctx.title("Owner: Full Checkout")))
+  .method(AddToCartBlock.stubBefore((ctx) => ctx.ui.title("Owner: Full Checkout")))
   .gotoPage(NavCartBlock)
   .gotoPage(NavCheckoutInfoBlock)
   .method(
     FillFirstNameBlock.stubBefore((ctx) => {
-      ctx.caption("Enter the first name on the order");
-      ctx.titlePos("left");
+      ctx.ui.caption("Enter the first name on the order");
+      ctx.ui.titlePos("left");
     }),
   )
   .method(
     FillLastNameBlock.stubBefore((ctx) => {
-      ctx.caption("Enter the last name on the order");
-      ctx.titlePos("center");
+      ctx.ui.caption("Enter the last name on the order");
+      ctx.ui.titlePos("center");
     }),
   )
   .method(
     FillPostalCodeBlock.stubBefore((ctx) => {
-      ctx.caption("Enter a postal code to calculate shipping");
-      ctx.titlePos("right");
+      ctx.ui.caption("Enter a postal code to calculate shipping");
+      ctx.ui.titlePos("right");
     }),
   )
-  .method(SubmitCheckoutInfoBlock.stubBefore((ctx) => ctx.hideCaption()))
+  .method(SubmitCheckoutInfoBlock.stubBefore((ctx) => ctx.ui.hideCaption()))
   .method(FinishOrderBlock.stubBefore(placingOrder).stubAfter(orderPlacedYap))
   .end();

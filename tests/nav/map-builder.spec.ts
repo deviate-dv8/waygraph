@@ -215,7 +215,7 @@ test.describe("Engine.map() builder", () => {
   test("Block.stubBefore chains ctx and keeps map() kind markers", async () => {
     const { runStubPhase } = await import("../../src/index.js");
     const decorated = ClearThing.stubBefore((ctx) => {
-      ctx.ring("x", { selector: "#x", label: "from decorate", tone: "info" });
+      ctx.ui.ring("x", { selector: "#x", label: "from decorate", tone: "info" });
     });
     expect((decorated as { __waygraphSalt?: string }).__waygraphSalt).toBe("method");
     const phase = await runStubPhase(decorated, "stubBefore", { mem: new MemPage() });

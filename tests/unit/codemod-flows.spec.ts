@@ -37,7 +37,7 @@ ${IMPORTS}
 export const helloFlow = engine.defineFlow([start, NavHomeBlock, AddItemBlock, AssertHelloBlock, NavMailBlock, end], { title: "Hello", memStub: true });
 `);
     assert.deepEqual(problems, []);
-    assert.match(text, /engine\.map\(\{ memStub: true \}\)\s*\.start\(\)\s*\.gotoPage\(NavHomeBlock\.stubBefore\(\(ctx\) => \{\s*ctx\.title\("Hello"\);\s*\}\)\)\s*\.method\(AddItemBlock\)\s*\.assert\(AssertHelloBlock\)\s*\.gotoExternal\(NavMailBlock\)\s*\.end\(\)/);
+    assert.match(text, /engine\.map\(\{ memStub: true \}\)\s*\.start\(\)\s*\.gotoPage\(NavHomeBlock\.stubBefore\(\(ctx\) => \{\s*ctx\.ui\.title\("Hello"\);\s*\}\)\)\s*\.method\(AddItemBlock\)\s*\.assert\(AssertHelloBlock\)\s*\.gotoExternal\(NavMailBlock\)\s*\.end\(\)/);
     assert.doesNotMatch(text, /import \{[^}]*\b(start|end|withMemStub)\b[^}]*\} from "waygraph"/);
   });
 
@@ -47,7 +47,7 @@ ${IMPORTS}
 export const f = withTitle(withExpectedFailure(withSessionReset(engine.defineFlow([start, NavHomeBlock, end])), "blocked"), "Viewer");
 `);
     assert.match(text, /engine\.map\(\{ sessionReset: true, expectedFailure: "blocked" \}\)/);
-    assert.match(text, /\.gotoPage\(NavHomeBlock\.stubBefore\(\(ctx\) => \{\s*ctx\.title\("Viewer"\);\s*\}\)\)/);
+    assert.match(text, /\.gotoPage\(NavHomeBlock\.stubBefore\(\(ctx\) => \{\s*ctx\.ui\.title\("Viewer"\);\s*\}\)\)/);
     assert.doesNotMatch(text, /with(Title|SessionReset|ExpectedFailure)\(/);
   });
 

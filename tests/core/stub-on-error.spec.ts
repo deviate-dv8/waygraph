@@ -22,7 +22,7 @@ test.describe("stubOnError", () => {
   test("resolves block stubOnError slots", () => {
     const block = fakeBlock({
       stubOnError: (ctx: StubCtx) => {
-        ctx.ring("error", { selector: '[data-test="error"]', label: "Login error banner" });
+        ctx.ui.ring("error", { selector: '[data-test="error"]', label: "Login error banner" });
       },
     });
     const slots = resolveHighlightSlots(block, "stubOnError");
@@ -35,10 +35,10 @@ test.describe("stubOnError", () => {
   test("success stubAfter is independent of stubOnError", () => {
     const block = fakeBlock({
       stubAfter: (ctx: StubCtx) => {
-        ctx.ring("ok", { selector: ".inventory_list", label: "Inventory" });
+        ctx.ui.ring("ok", { selector: ".inventory_list", label: "Inventory" });
       },
       stubOnError: (ctx: StubCtx) => {
-        ctx.ring("error", { selector: '[data-test="error"]', label: "Error" });
+        ctx.ui.ring("error", { selector: '[data-test="error"]', label: "Error" });
       },
     });
     expect(hasAuthoredStubAfter(block, { __state: "LoggedIn" })).toBe(true);

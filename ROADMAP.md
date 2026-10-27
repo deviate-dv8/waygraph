@@ -52,7 +52,7 @@ otherwise.
 | `Layout` / `defineLayout` (cross-cutting, automatically-enforced `verify` for persistent UI across many Checkpoints, folder-convention-agnostic) | Shipped - `src/engine/run/run.ts`, `tests/verify/layout.spec.ts` |
 | `Engine.map()` / standalone `map()` fluent builder (kind-checked at runtime against `__waygraphKind`/`__waygraphSalt`, no-teleporting Checkpoint chain) | Shipped - `src/engine/flow/map-builder.ts` (`MapBuilder`), `tests/nav/map-builder.spec.ts` - see "Engine.map() builder" below |
 | Waygraph Pilot (plain-language ask -> narrate/agentic, built on AutoSession) | Proposed - `openspec/changes/waygraph-pilot/` |
-| Network tab overlay (live page traffic capture, `defineApiBlock` method/status, click-to-expand headers/body, copy-as-cURL, `ctx.showNetworkTab()`/`hideNetworkTab()`) | Shipped - real request/response **mocking** (not just observing) is backlogged, see "Network tab mocking" below |
+| Network tab overlay (live page traffic capture, `defineApiBlock` method/status, click-to-expand headers/body, copy-as-cURL, `ctx.ui.showNetworkTab()`/`hideNetworkTab()`) | Shipped - real request/response **mocking** (not just observing) is backlogged, see "Network tab mocking" below |
 | Narrated help-center video generation (core `waygraph render`) | Deferred to v1.0.x (`waygraph-demo` module) - not current focus, see below |
 | `waygraph.config.*` + native `.env` loading, consolidated `resolveBaseUrl` (was 3 drifted copies), scaffold `memStub` example | Shipped - see "Project config + scaffold memStub" below |
 | Stability declaration (1.0.0) | Gated on Waygraph Pilot demoable - see "1.0.0" below |
@@ -265,10 +265,14 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     the element does the same); `ctx.highlights({...})` is gone (one `ctx.ring` per ring). Codemod `flows` converts
     all three. The network tab no longer flashes after a navigation (its CSS is in the shared bundle). **Done.**
 16. Read Blocks (beta, `waygraph/beta`, issue #4): `reads("ns")<T>()` namespaces, `defineReadBlock({ name, from,
-    instruction: { read: (ctx) => Ns({...}) } })` with `ctx.text / number / list / table / ...` (one round trip per
+    instruction: { read: (ctx) => Ns({...}) } })` with `ctx.page.text / number / list / table / ...` (one round trip per
     list or table), `ReadPage`, `pilot read <id> [path]`, and `read` / `missing` in every status / send / reach reply.
     Saucedemo reads its catalogue, cart and header. **Experimenting.** Next: reads in the run log and demo panel,
     `Trait.read`, read paths in the manifest, `keys()` for Mem.
+17. One ctx per job, namespaced (0.16.3): a stub paints through `ctx.ui.*` (`ctx.ui.ring`, `ctx.ui.todos`, ...; `ctx.mem`
+    / `out` / `error` stay on ctx), a Read Block reads through `ctx.page.*`, and future Event Blocks move the world
+    through `ctx.world.*`. Codemod `flows` moves stub calls; the docs drift test rejects the old form. **Done** (`world`
+    comes with Event Blocks).
 
 
 
@@ -310,7 +314,7 @@ The network tab overlay (`demo/overlay/network-capture.ts`, `demo/overlay/inpage
 real, two-sided - it *observes* traffic (real page requests via `page.on('request'/
 'requestfinished'/'requestfailed')`, plus `defineApiBlock`'s own `page.request` calls) and
 renders it (method/status/headers/body, click-to-expand, copy-as-cURL), gated behind
-`ctx.showNetworkTab()`/`hideNetworkTab()` (default hidden, capture always runs). What it does
+`ctx.ui.showNetworkTab()`/`hideNetworkTab()` (default hidden, capture always runs). What it does
 **not** do yet: actually **mock** a response - intercept a real request and have the overlay (or
 a Block) serve a fabricated response back to the page, the way a Postman mock server or
 `page.route(...).fulfill(...)` would. Real, direct user ask ("so far, we aren't able to make a

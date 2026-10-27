@@ -10,10 +10,10 @@ import "../../map/(app_base)/home/_page.block.js";
 
 // `map({ memStub: true })` fills SelectedItem (alpha) from src/states/demo.mem-stubs.ts; --data overrides it.
 const AddShown = AddItemBlock.stubBefore((ctx) => {
-  ctx.ring("add", { selector: DemoSel.catalog, label: "Catalog" });
+  ctx.ui.ring("add", { selector: DemoSel.catalog, label: "Catalog" });
 })
   .stubAfter((ctx) => {
-    ctx.ring("cart", {
+    ctx.ui.ring("cart", {
       selector: DemoSel.cartCount,
       label: "AC · item in cart",
       detail: "Cart count bumped after Add.",
@@ -22,17 +22,17 @@ const AddShown = AddItemBlock.stubBefore((ctx) => {
     });
   })
   .stubOnError((ctx) => {
-    ctx.ring("cart", { selector: DemoSel.cartCount, label: "Cart at failure", tag: "FAIL" });
+    ctx.ui.ring("cart", { selector: DemoSel.cartCount, label: "Cart at failure", tag: "FAIL" });
   });
 
 const RemoveShown = RemoveItemBlock.stubAfter((ctx) => {
-  ctx.ring("cart", { selector: DemoSel.cartCount, label: "Cart count", duration: true });
+  ctx.ui.ring("cart", { selector: DemoSel.cartCount, label: "Cart count", duration: true });
 });
 
 const ClearShown = ClearCartBlock.stubBefore((ctx) => {
-  ctx.ring("clear", { selector: DemoSel.clear, label: "Clear cart" });
+  ctx.ui.ring("clear", { selector: DemoSel.clear, label: "Clear cart" });
 }).stubAfter((ctx) => {
-  ctx.ring("cart", { selector: DemoSel.cartCount, label: "Empty cart", duration: true });
+  ctx.ui.ring("cart", { selector: DemoSel.cartCount, label: "Empty cart", duration: true });
 });
 
 export const homeCartFlow = engine
@@ -40,7 +40,7 @@ export const homeCartFlow = engine
   .start()
   .gotoPage(
     NavHomeBlock.stubBefore((ctx) => {
-      ctx.title("Scaffold: Shop (Effect + clear)");
+      ctx.ui.title("Scaffold: Shop (Effect + clear)");
     }),
   )
   .method(AddShown)

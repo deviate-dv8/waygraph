@@ -33,7 +33,7 @@ test.describe("resolveFixtureDwellMs (all fixtures)", () => {
       name: "finish-order",
       instruction: {
         stubAfter: (ctx: StubCtx) => {
-          ctx.ring("thanks", { selector: ".complete-header", label: "Thanks", duration: true, fastMode: 700 });
+          ctx.ui.ring("thanks", { selector: ".complete-header", label: "Thanks", duration: true, fastMode: 700 });
         },
         resolve: () => ({ __state: "OrderComplete" }),
         act: async () => {},
@@ -54,8 +54,8 @@ test.describe("ctx.slides", () => {
 
   test("a stubBefore or stubAfter phase returns its slides, in order", async () => {
     const b = block({
-      stubBefore: (ctx: StubCtx) => ctx.slides([{ caption: "Before" }]),
-      stubAfter: (ctx: StubCtx) => ctx.slides([{ caption: "One", tag: "YAP" }, { caption: String(ctx.out?.__state) }]),
+      stubBefore: (ctx: StubCtx) => ctx.ui.slides([{ caption: "Before" }]),
+      stubAfter: (ctx: StubCtx) => ctx.ui.slides([{ caption: "One", tag: "YAP" }, { caption: String(ctx.out?.__state) }]),
     });
     expect((await runStubPhase(b, "stubBefore")).slides.map((s) => s.caption)).toEqual(["Before"]);
     const after = await runStubPhase(b, "stubAfter", { out: { __state: "OrderComplete" } });
@@ -63,11 +63,11 @@ test.describe("ctx.slides", () => {
   });
 
   test("a phase without slides returns none", async () => {
-    expect((await runStubPhase(block({ stubAfter: (ctx: StubCtx) => ctx.caption("x") }), "stubAfter")).slides).toEqual([]);
+    expect((await runStubPhase(block({ stubAfter: (ctx: StubCtx) => ctx.ui.caption("x") }), "stubAfter")).slides).toEqual([]);
   });
 
   test("slides in stubOnError fail the stub, naming the Block", async () => {
-    const b = block({ stubOnError: (ctx: StubCtx) => ctx.slides([{ caption: "Nope" }]) });
+    const b = block({ stubOnError: (ctx: StubCtx) => ctx.ui.slides([{ caption: "Nope" }]) });
     await expect(runStubPhase(b, "stubOnError")).rejects.toThrow(/finish-order: its stubOnError stub set slides/);
   });
 });

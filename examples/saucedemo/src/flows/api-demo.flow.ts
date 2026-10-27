@@ -32,7 +32,7 @@ export const apiDemoEpisode = engine
   .start()
   .method(
     CheckBackendHealth.stubBefore((ctx) => {
-      ctx.title("Checking backend health · real HTTP request, no browser");
+      ctx.ui.title("Checking backend health · real HTTP request, no browser");
     }),
   )
   .end();

@@ -71,4 +71,15 @@ describe("docs, skills and the scaffold do not teach deprecated API", () => {
     }
     assert.deepEqual(offenders, [], `taught deprecated API:\n${offenders.join("\n")}`);
   });
+
+  it("no taught file paints straight on a stub's ctx (it is ctx.ui.*)", () => {
+    const PAINT = /\bctx\.(ring|todos|todoIndex|todoGroups|hideTodos|device|viewport|touch|orientation|hideDevice|zoom|zoomOut|title|titlePos|bannerUi|caption|hideCaption|slides|hideBanner|showNetworkTab|hideNetworkTab|todoDockUi)\(/;
+    const offenders: string[] = [];
+    for (const file of TAUGHT) {
+      readFileSync(file, "utf8").split("\n").forEach((line, i) => {
+        if (PAINT.test(line) && !EXCUSE.test(line)) offenders.push(`${relative(root, file)}:${i + 1}  ${line.trim().slice(0, 80)}`);
+      });
+    }
+    assert.deepEqual(offenders, [], `taught the old stub form:\n${offenders.join("\n")}`);
+  });
 });

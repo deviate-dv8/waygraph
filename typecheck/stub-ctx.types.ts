@@ -13,16 +13,16 @@ const assert = defineAssertBlock({ name: "a", checkpoint: checkpoint("B"), verif
 
 // A stub gets a real StubCtx, not implicit any: a typo'd ctx method is a compile error.
 void method.stubAfter((ctx) => {
-  ctx.ring("x", { selector: "h1", label: "x" });
+  ctx.ui.ring("x", { selector: "h1", label: "x" });
   // @ts-expect-error - not a StubCtx method
-  ctx.ringg("x", {});
+  ctx.ui.ringg("x", {});
 });
 void nav.stubBefore((ctx) => {
-  ctx.caption("hi");
+  ctx.ui.caption("hi");
   // @ts-expect-error - not a StubCtx method
-  ctx.captionn("hi");
+  ctx.ui.captionn("hi");
 });
-void assert.stubOnError((ctx) => ctx.title("t")).stubAfter((ctx) => ctx.showNetworkTab());
+void assert.stubOnError((ctx) => ctx.ui.title("t")).stubAfter((ctx) => ctx.ui.showNetworkTab());
 
 // One form: a stub is a function chained where a flow uses the Block.
 // @ts-expect-error - a slot map is not a stub
@@ -34,4 +34,10 @@ defineMethodBlock({
   to: checkpoint("B"),
   // @ts-expect-error - nor in the instruction
   instruction: { async act() {}, stubBefore: () => {} },
+});
+
+// Painting lives under ctx.ui; ctx itself holds only the data a stub reads (mem, out, error).
+void nav.stubBefore((ctx) => {
+  // @ts-expect-error - ring is ctx.ui.ring
+  ctx.ring("x", { selector: "h1", label: "x" });
 });

@@ -46,12 +46,12 @@ export function phaseToOverlayFixtures(phase: StubPhaseResult, holdMs = 6000): P
 /** One verbose line per authored overlay fixture - same wording on every surface so a log reader (or an AI with no eyes) can tell what was painted. */
 export function describeOverlayFixtures(tag: string, f: PilotHighlightFixtures): string[] {
   const out: string[] = [];
-  if (f.title) out.push(`${tag} ctx.title(${JSON.stringify(f.title)})${f.titlePos ? ` pos=${f.titlePos}` : ""}`);
-  if (f.bannerUi) out.push(`${tag} ctx.bannerUi(${JSON.stringify(f.bannerUi)})`);
-  if (f.todos?.length) out.push(`${tag} ctx.todos n=${f.todos.length} index=${f.todoIndex ?? 0}${f.todoPos ? ` pos=${f.todoPos}` : ""}`);
+  if (f.title) out.push(`${tag} ctx.ui.title(${JSON.stringify(f.title)})${f.titlePos ? ` pos=${f.titlePos}` : ""}`);
+  if (f.bannerUi) out.push(`${tag} ctx.ui.bannerUi(${JSON.stringify(f.bannerUi)})`);
+  if (f.todos?.length) out.push(`${tag} ctx.ui.todos n=${f.todos.length} index=${f.todoIndex ?? 0}${f.todoPos ? ` pos=${f.todoPos}` : ""}`);
   if (f.todoUi) out.push(`${tag} todoUi ${JSON.stringify(f.todoUi)}`);
-  if (f.device) out.push(`${tag} ctx.device(${typeof f.device === "string" ? f.device : f.device.preset ?? "custom"})`);
-  if (f.zoom) out.push(`${tag} ctx.zoom(${f.zoom})`);
+  if (f.device) out.push(`${tag} ctx.ui.device(${typeof f.device === "string" ? f.device : f.device.preset ?? "custom"})`);
+  if (f.zoom) out.push(`${tag} ctx.ui.zoom(${f.zoom})`);
   for (const r of f.rings ?? []) out.push(`${tag} ring ${r.selector} tone=${r.tone ?? "planned"} label=${JSON.stringify(r.label)}`);
   return out;
 }

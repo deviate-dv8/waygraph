@@ -13,7 +13,7 @@ the **reference** for waygraph consumer conventions:
 - `defineApiBlock` - a real backend/HTTP check as one step in the same Flow as
   a UI step, with its own live network-activity panel during a demo - see
   `apiDemoFlow` (`src/flows/api-demo.flow.ts`)
-- `ctx.caption()` (bottom subtitle-bar) + `ctx.titlePos()` (banner
+- `ctx.ui.caption()` (bottom subtitle-bar) + `ctx.ui.titlePos()` (banner
   left/center/right) - also on `checkoutFlow`
 
 **GitHub Pages walkthrough:**
@@ -48,7 +48,7 @@ npx playwright install chromium
 | **Device showcase** (mobile/tablet + portrait/landscape; narration in `src/stubs/device-showcase.ts`) | `npm run demo:device` |
 | Device showcase + `.webm` | `npm run demo:video` |
 | **Cart bulk** demo (add-all → remove-all) | `npm run demo:bulk` |
-| **Owner checkout** (inline `{ ff: true }`, `ctx.caption()`, banner position) | `npm run demo:checkout` |
+| **Owner checkout** (inline `{ ff: true }`, `ctx.ui.caption()`, banner position) | `npm run demo:checkout` |
 | **FE + BE in one Flow** (`defineApiBlock`, live network panel) | `npm run demo:api` |
 | Record (headless `.webm`) | `npm run record` |
 | List flows | `npm run flows` |

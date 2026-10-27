@@ -7,7 +7,7 @@ export const cartContinueFlow = engine
   .map()
   .start()
   .gotoPage(
-    NavCartBlock.stubBefore((ctx) => ctx.title("Cart then continue shopping")),
+    NavCartBlock.stubBefore((ctx) => ctx.ui.title("Cart then continue shopping")),
   )
   .gotoPage(NavContinueShoppingBlock)
   .end();

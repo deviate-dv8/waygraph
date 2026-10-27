@@ -35,6 +35,6 @@ You never build a Block by hand; a factory makes it and marks its kind, so [[Flo
 | API | `defineApiBlock` | a real HTTP request inside the same flow |
 
 A Block carries no narration. A flow adds it where it uses the Block, by chaining a stub:
-`AddItemBlock.stubAfter((ctx) => ctx.ring(...))`. That is the only form; a Block's definition takes no stub. See [[Demo UI]].
+`AddItemBlock.stubAfter((ctx) => ctx.ui.ring(...))`. That is the only form; a Block's definition takes no stub. See [[Demo UI]].
 
 Code: `src/engine/block/` (`kinds/` has one file per kind).

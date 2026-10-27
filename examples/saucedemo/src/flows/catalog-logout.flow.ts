@@ -9,7 +9,7 @@ export const catalogLogoutFlow = engine
   .start()
   .gotoPage(
     NavItemDetailBlock.stubBefore((ctx) =>
-      ctx.title("Catalog browse then logout"),
+      ctx.ui.title("Catalog browse then logout"),
     ),
   )
   .gotoPage(NavBackToInventoryBlock)

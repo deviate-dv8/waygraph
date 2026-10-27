@@ -1,6 +1,6 @@
 // The waygraph OVERLAY stage: one owner of overlay state (todo docks, device, banner UX) and of how a resolved
 // stub phase is applied to the page. demo / auto / browser / pilot all go through this, so a "waygraph overlay
-// fixture" (ctx.todos / ctx.device / ctx.title / ...) means the same thing on every surface.
+// fixture" (ctx.ui.todos / ctx.ui.device / ctx.ui.title / ...) means the same thing on every surface.
 // NOT Playwright test fixtures - these paint the waygraph overlay on the page under test.
 import type { BannerUiState, StepperRefs, WgPage } from "../types.js";
 import type { StubPhaseResult } from "../../engine/stub/stub.js";
@@ -59,7 +59,7 @@ export function createOverlayStage(page: WgPage, { todoDockRef, deviceRef }: Pic
     if (!docks.length) {
       // Empty registry: do NOT clear the DOM. renderBefore/After may have
       // just painted from lastTodoDock (keep). Clearing here made todos
-      // vanish until the next ctx.todos() set (PIA #15).
+      // vanish until the next ctx.ui.todos() set (PIA #15).
       return;
     }
     await page
