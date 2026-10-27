@@ -63,6 +63,8 @@ export async function restoreNetworkHistory(page: WgPage) {
 }
 
 export function installNetworkCapture(page: WgPage) {
+  // defineApiBlock reports its calls through the engine's hook; show them in the same panel.
+  setApiCallRecorder((p, entry) => recordNetworkEntry(p, entry));
   if (page.__wgNetworkCaptureInstalled) return;
   page.__wgNetworkCaptureInstalled = true;
 
@@ -129,5 +131,3 @@ export function installNetworkCapture(page: WgPage) {
   });
 }
 
-// defineApiBlock reports its calls through core's hook; show them in the same panel.
-setApiCallRecorder((page, entry) => recordNetworkEntry(page, entry));

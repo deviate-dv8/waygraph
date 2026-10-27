@@ -1,7 +1,10 @@
-// The runtime layer supplies how an Engine launches its own browser (config, Chromium path, extensions).
-import "./runtime/full-launch.js";
-// Run events are written to the project's run log (.waygraph/runs) when the CLI turns it on.
-import "./runtime/run-log.js";
+import { installFullLaunch } from "./runtime/full-launch.js";
+import { installRunLog } from "./runtime/run-log.js";
+
+// The package entry wires the runtime in, explicitly: how an Engine launches its own browser (config, Chromium path,
+// extensions), and the run log (.waygraph/runs) the CLI turns on. No module switches itself on by being imported.
+installFullLaunch();
+installRunLog();
 export type { Checkpoint, Start } from "./engine/checkpoint/checkpoint.js";
 export type { Instruction, Block, DefinedBlock, SomeBlock, SomeDefinedBlock } from "./engine/block/block.js";
 export type { WaygraphInstanceOption } from "./engine/block/action-page.js";

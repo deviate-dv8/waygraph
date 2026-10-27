@@ -2,6 +2,7 @@
 // takes the page as it is. What a selector doesn't find comes back as missing, not as an error.
 import type { Page } from "@playwright/test";
 import type { MemPage } from "../mem/mem.js";
+import { ignorePageGone, ignoreTimeout } from "../page-gone.js";
 import type { ReadSpec } from "./read-key.js";
 import { Reader, type FieldPlan, type ReadFields, type ReaderPlan } from "./readers.js";
 
@@ -79,6 +80,34 @@ function readInPage(matched: Element[], ask: InPageAsk): unknown {
   });
   const declared = Number(table.getAttribute("aria-rowcount"));
   return { rows: out, absent, rowCount: Number.isFinite(declared) && declared > 0 ? declared - (headRow ? 1 : 0) : out.length };
+}
+
+/** In the page: resolves once the DOM has had no change for `quietMs` (or after `capMs`, whichever comes first). */
+function domQuiet({ quietMs, capMs }: { quietMs: number; capMs: number }): Promise<void> {
+  return new Promise((resolve) => {
+    const done = (): void => {
+      observer.disconnect();
+      clearTimeout(quiet);
+      clearTimeout(cap);
+      resolve();
+    };
+    let quiet = setTimeout(done, quietMs);
+    const cap = setTimeout(done, capMs);
+    const observer = new MutationObserver(() => {
+      clearTimeout(quiet);
+      quiet = setTimeout(done, quietMs);
+    });
+    observer.observe(document, { subtree: true, childList: true, characterData: true, attributes: true });
+  });
+}
+
+/**
+ * Waits for the page to stop changing before a read. A step's verify can pass before the app has rendered where it
+ * landed (a URL check passes the moment a client-side route changes), so a read right after it can see the old page.
+ */
+export async function settlePage(page: Page, quietMs = 150, capMs = 2000): Promise<void> {
+  await page.waitForLoadState("domcontentloaded", { timeout: capMs }).catch(ignoreTimeout);
+  await page.evaluate(domQuiet, { quietMs, capMs }).catch(ignorePageGone);
 }
 
 /** The first number in a display text: `"$1,299.00"` -> 1299, `"41 likes"` -> 41, no number -> null. */

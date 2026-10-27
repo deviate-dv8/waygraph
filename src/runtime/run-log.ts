@@ -5,12 +5,19 @@ import { join } from "node:path";
 import { onRunEvent } from "../engine/run/events.js";
 import { envString } from "../engine/env.js";
 
-onRunEvent((event) => {
-  const dir = envString("WAYGRAPH_RUN_LOG");
-  if (!dir || dir === "0") return;
-  mkdirSync(dir, { recursive: true });
-  appendFileSync(join(dir, `${event.runId}.jsonl`), JSON.stringify(event) + "\n");
-});
+let installed = false;
+
+/** Starts writing run events to the run log. Called by the package entry and the runner; a second call does nothing. */
+export function installRunLog(): void {
+  if (installed) return;
+  installed = true;
+  onRunEvent((event) => {
+    const dir = envString("WAYGRAPH_RUN_LOG");
+    if (!dir || dir === "0") return;
+    mkdirSync(dir, { recursive: true });
+    appendFileSync(join(dir, `${event.runId}.jsonl`), JSON.stringify(event) + "\n");
+  });
+}
 
 /** The folder run logs go to for a project unless the config or the environment says otherwise. */
 export function defaultRunLogDir(projectDir: string): string {

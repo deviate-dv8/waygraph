@@ -5,7 +5,8 @@ import { WaygraphError, MSG_PREFLIGHT_MISSING_KEY, MSG_RUNGRAPH_MAX_STEPS, MSG_R
 import { checkpoint } from "../checkpoint/checkpoint.js";
 import type { Block } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
-import { inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepStarted } from "./events.js";
+import { inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepRead, stepStarted } from "./events.js";
+import { readBlocksFor, readCheckpoint } from "../read/read-block.js";
 import { runPrecondition, runVerify } from "../trait/trait.js";
 import type { Trait } from "../trait/trait.js";
 import type { BrowserContext, Page } from "@playwright/test";
@@ -180,6 +181,7 @@ async function playGraph<TOut extends Checkpoint<string>>(
 
       await runVerify(current.instruction.verify, checkpoint, page, mem, current.name);
       await runLayouts(options?.layouts, checkpoint.__state, checkpoint, page, mem, current.name);
+      await readLanding(page, mem, checkpoint.__state);
       stepEnded(lastLeaf(current), checkpoint.__state);
 
       const next = current.next?.(checkpoint);
@@ -259,4 +261,14 @@ export async function spawnTab<TOut extends Checkpoint<string>>(
   return runGraph<TOut>(entry, undefined, page.context(), mem, maxSteps);
 }
 
-
+/** After a step's verify: what the page shows, from the Read Blocks for where it landed (none loaded: nothing to do). */
+async function readLanding(page: Page, mem: MemPage, checkpoint: string): Promise<void> {
+  if (readBlocksFor(checkpoint).length === 0) return;
+  try {
+    const { read, blocks } = await readCheckpoint(page, mem, checkpoint);
+    stepRead(checkpoint, { read: read.toJSON(), missing: [...read.missing], notes: { ...read.notes }, readBlocks: blocks });
+  } catch (err) {
+    // A broken Read Block is reported on the step, never fails the run it observes.
+    stepRead(checkpoint, { read: {}, missing: [], notes: {}, readBlocks: [], error: err instanceof Error ? err.message : String(err) });
+  }
+}

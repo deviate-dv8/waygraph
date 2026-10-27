@@ -7,7 +7,7 @@ import type { MemKey, MemPage } from "../mem/mem.js";
 import type { ReadSpec } from "./read-key.js";
 import { ReadPage } from "./read-page.js";
 import { createReadCtx, type ReadCtx } from "./readers.js";
-import { runReadSpecs } from "./run-read.js";
+import { runReadSpecs, settlePage } from "./run-read.js";
 
 /** Options for {@link defineReadBlock}: shaped like a Method's, with one instruction phase. */
 export interface ReadBlockOptions {
@@ -98,6 +98,7 @@ export async function readCheckpoint(page: Page, mem: MemPage, checkpoint: strin
     }
     blocks.push(block.name);
   }
+  if (specs.length) await settlePage(page);
   const { values, notes } = await runReadSpecs(page, mem, specs);
   return { read: new ReadPage(values, notes), blocks, skipped };
 }

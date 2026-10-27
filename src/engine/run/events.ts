@@ -7,8 +7,19 @@ export type RunEvent =
   | { type: "step:start"; runId: string; at: number; index: number; block: string; from: string }
   | { type: "step:end"; runId: string; at: number; index: number; block: string; to: string; ms: number }
   | { type: "step:error"; runId: string; at: number; index: number; block: string; error: string; ms: number }
+  | ({ type: "step:read"; runId: string; at: number; index: number; block: string; checkpoint: string } & StepRead)
   | { type: "run:end"; runId: string; at: number; ok: boolean; result?: string; error?: string; ms: number }
   | { type: "run:artifact"; runId: string; at: number; kind: "video" | "trace" | "screenshot"; path: string };
+
+/** What the page showed after a step, from the Read Blocks for the Checkpoint it landed on (beta). */
+export interface StepRead {
+  read: Record<string, unknown>;
+  missing: string[];
+  notes: Record<string, string>;
+  readBlocks: string[];
+  /** A Read Block that failed (two reading one key, say): the step still ran; the read is empty. */
+  error?: string;
+}
 
 /** What {@link onRunEvent} calls with each event. */
 export type RunEventListener = (event: RunEvent) => void;
@@ -88,6 +99,13 @@ export function stepEnded(block: string, to: string): void {
   const at = Date.now();
   emit({ type: "step:end", runId: open.runId, at, index: open.step.index, block, to, ms: at - open.step.startedAt });
   open.step = undefined;
+}
+
+/** What the page showed after the current step (emitted between its verify and its `step:end`). */
+export function stepRead(checkpoint: string, read: StepRead): void {
+  const open = scope.getStore();
+  if (!open?.step) return;
+  emit({ type: "step:read", runId: open.runId, at: Date.now(), index: open.step.index, block: open.step.block, checkpoint, ...read });
 }
 
 /** The step that started last failed. */

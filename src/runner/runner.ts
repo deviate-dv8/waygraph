@@ -4,7 +4,8 @@
 import { MemPage } from "../engine/mem/mem.js";
 import { inRun } from "../engine/run/events.js";
 import { withWebServer } from "../runtime/webserver.js";
-import "../runtime/run-log.js";
+import { installRunLog } from "../runtime/run-log.js";
+import { loadReadBlocks } from "../manifest/read-blocks.js";
 import { planSteps } from "./plan/plan.js";
 import { readOptions, slowMoFor } from "./options.js";
 import { openSession } from "./session.js";
@@ -19,6 +20,7 @@ import type { PlayOptions } from "./options.js";
 export async function play(projectDir: string, spec: string): Promise<void> {
   const options = readOptions();
   const mem = new MemPage();
+  await loadReadBlocks(projectDir);
   const { steps, flows } = await planSteps(projectDir, spec, mem, options);
   if (options.mode === "branches") return playBranches(flows, mem, options);
 
@@ -52,6 +54,7 @@ function finish(outcome: PlayOutcome): void {
 
 /** The process entry the CLI's bootstrap calls: one run (and one run log) per invocation. */
 export function startRunner(): void {
+  installRunLog();
   const projectDir = process.argv[2] ?? process.cwd();
   const spec = process.argv[3] ?? "";
   inRun(spec, () => withWebServer(projectDir, () => play(projectDir, spec))).catch((err) => {

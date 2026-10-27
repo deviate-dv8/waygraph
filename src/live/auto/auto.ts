@@ -102,9 +102,6 @@ export async function runOneBlock(
   return result;
 }
 
-/** Shown in the headful panel after each Block run. */
-let lastRunNote: string | null = null;
-
 /**
  * Interactive waygraph auto: locate current Checkpoint, list runnable Blocks, pick one, repeat.
  */
@@ -113,7 +110,8 @@ export async function runAutoExplore(projectDir: string, options: AutoExploreOpt
 }
 
 async function runAutoExploreCore(projectDir: string, options: AutoExploreOptions = {}): Promise<void> {
-  lastRunNote = null;
+  /** Shown in the headful panel after each Block run. */
+  let lastRunNote: string | null = null;
   const cli = options.cli === true;
   const baseURL = options.baseURL ?? (await resolveBaseUrl(projectDir)) ?? envString("WAYGRAPH_BASE_URL");
   const startUrl = options.startUrl ?? baseURL;

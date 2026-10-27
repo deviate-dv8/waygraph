@@ -6,12 +6,13 @@
  *   2. No circular value imports between src modules (type-only imports are ignored).
  *   3. Layers: each file's layer may only import the layers allowed for it; scripts/layer-debt.json may only shrink.
  *   4. No barrels: only the package entries (src/index.ts, src/beta.ts) re-export; everything else is imported from where it is declared.
- *   5. No HTML strings into the page: overlay elements are built with __wgEl / __wgSet / __wgSvg (demo/overlay/ui/shadow.ts),
+ *   5. No wiring by import: no module runs a call at its top level except the entries (index.ts, beta.ts, cli/cli.ts).
+ *   6. No HTML strings into the page: overlay elements are built with __wgEl / __wgSet / __wgSvg (demo/overlay/ui/shadow.ts),
  *      so page and author text is always a text node.
- *   6. WAYGRAPH_* variables are read and written only through engine/env.ts (the registry docs/env.md is generated from).
+ *   7. WAYGRAPH_* variables are read and written only through engine/env.ts (the registry docs/env.md is generated from).
  *   8. `any` only shrinks: each file's count of `any` keywords may not exceed scripts/any-debt.json (lower it when you
  *      type something; a file not listed has none). Counted with TypeScript's own parser.
- *   7. No `.catch(() => {})` in Node code: catch with ignorePageGone / ignoreTimeout (engine/page-gone.ts) or handle it.
+ *   9. No `.catch(() => {})` in Node code: catch with ignorePageGone / ignoreTimeout (engine/page-gone.ts) or handle it.
  * Run: npm run check:structure
  */
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -122,6 +123,17 @@ for (const f of files) {
     const target = relative(srcDir, resolve(dirname(f), m[1])).replace(/\\/g, "/").replace(/\.js$/, ".ts");
     const to = layerOf(target);
     if (to !== "unassigned" && !allowed.includes(to)) violations.push(`${rel} -> ${target}`);
+  }
+}
+// --- no wiring by import: a module runs nothing at its top level; entries call install functions explicitly ---
+const ENTRIES = new Set(["index.ts", "beta.ts", "cli/cli.ts"]);
+for (const f of files) {
+  const rel = relative(srcDir, f).replace(/\\/g, "/");
+  if (ENTRIES.has(rel)) continue;
+  // Template strings hold generated code (a bootstrap file), not this module's own statements.
+  const text = readFileSync(f, "utf8").replace(/`(?:[^`\\]|\\.)*`/gs, "``");
+  for (const m of text.matchAll(/^[A-Za-z_$][\w$.]*\(/gm)) {
+    problems.push(`${rel}: runs \`${m[0]}...)\` at import time (export an install function; the entry calls it)`);
   }
 }
 // --- no barrels ---

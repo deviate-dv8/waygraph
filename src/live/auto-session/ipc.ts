@@ -239,6 +239,8 @@ export async function serveSession(
   projectDir: string,
   sessionId: string,
   headless = true,
+  /** After a quit closed the session and removed its files: the session process exits here. */
+  onShutdown: () => void = () => {},
 ): Promise<void> {
   mkdirSync(sessionDir(projectDir), { recursive: true });
   mkdirSync(socketDir(), { recursive: true });
@@ -344,7 +346,7 @@ export async function serveSession(
     server.close();
     await session.close().catch(ignorePageGone);
     removeSessionFiles(projectDir, sessionId);
-    process.exit(0);
+    onShutdown();
   }
 
   await new Promise<void>((resolvePromise, reject) => {
@@ -370,7 +372,7 @@ export async function serveSession(
 /** Entry point for the hidden `__auto-serve` CLI command (runs in the detached child). */
 export async function runAutoServeCommand(init: AutoSessionInit, sessionId: string): Promise<void> {
   const session = await AutoSession.start({ ...init, sessionId });
-  await serveSession(session, init.projectDir, sessionId, init.headless ?? true);
+  await serveSession(session, init.projectDir, sessionId, init.headless ?? true, () => process.exit(0));
   // Tell the parent that spawned us (spawnDetachedSession) we are serving, then let it go.
   process.send?.({ ready: true });
   process.disconnect?.();
