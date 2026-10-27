@@ -44,19 +44,6 @@ export function installTodos({ todoPos }: OverlayInstallArgs) {
             [...__wgQA(".wg-todo-dock, #wg-todo-dock")].filter(
               (el, i, arr) => arr.indexOf(el) === i,
             );
-          const relayoutTodoDocks = () => {
-            const docks = allDocks();
-            // Must match .wg-todo-dock/#wg-todo-dock's own CSS `top` (demo/overlay/overlay-css.ts,
-            // ui/css/dock.css) - this inline style OVERRIDES that CSS the instant more than one
-            // dock exists (multi-todo stacking), so a CSS-only change here is silently underwater;
-            // real bug this was: the CSS top was bumped 72 -> 104 for banner clearance, but this
-            // hardcoded 72 kept winning at runtime and nothing actually moved.
-            let top = 104;
-            for (const el of docks) {
-              el.style.top = top + "px";
-              top += Math.max(48, el.getBoundingClientRect().height) + 10;
-            }
-          };
           const findDock = (key: string) => {
             if (key === "_default") {
               return (
@@ -96,7 +83,6 @@ export function installTodos({ todoPos }: OverlayInstallArgs) {
             } else {
               allDocks().forEach((el) => el.remove());
             }
-            relayoutTodoDocks();
             return;
           }
 
@@ -296,7 +282,6 @@ export function installTodos({ todoPos }: OverlayInstallArgs) {
             });
           }
           dock._wgLastPayload = syncPayload;
-          relayoutTodoDocks();
           if (window.__wgStampModal) {
             window.__wgStampModal(dock, "todos", { ready: true });
           }

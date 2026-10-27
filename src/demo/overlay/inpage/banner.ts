@@ -4,6 +4,7 @@ export function installBanner({ title, favicon, bannerPos, bannerUi, tag: banner
         const POSITIONS = ["left", "center", "right"];
         const applyPos = (el: HTMLElement, pos: string) => {
           el.dataset.pos = pos;
+          __wgAdd(el);
           el.dataset.home = pos;
           try {
             localStorage.setItem("wg-banner-pos", pos);
@@ -79,6 +80,7 @@ export function installBanner({ title, favicon, bannerPos, bannerUi, tag: banner
         if (bannerEl) {
           if (bui.pos && POSITIONS.includes(bui.pos) && bannerEl.dataset.home !== bui.pos) {
             bannerEl.dataset.pos = bui.pos;
+            __wgAdd(bannerEl);
             bannerEl.dataset.home = bui.pos;
             bannerEl.dataset.authored = "1";
           }
@@ -107,6 +109,7 @@ export function installBanner({ title, favicon, bannerPos, bannerUi, tag: banner
             if (line) (window.__wgBannerLog = window.__wgBannerLog || []).push(line);
           };
           b.dataset.pos = home;
+          __wgAdd(b);
           if (!hits()) {
             delete b.dataset.moved;
             log("clear");
@@ -114,6 +117,7 @@ export function installBanner({ title, favicon, bannerPos, bannerUi, tag: banner
           }
           for (const cand of POSITIONS.filter((p) => p !== home)) {
             b.dataset.pos = cand;
+            __wgAdd(b);
             if (!hits()) {
               b.dataset.moved = home + ">" + cand;
               log("moved:" + cand, "moved " + home + " -> " + cand + " (ring overlap)");
@@ -121,6 +125,7 @@ export function installBanner({ title, favicon, bannerPos, bannerUi, tag: banner
             }
           }
           b.dataset.pos = home;
+          __wgAdd(b);
           b.dataset.moved = "none-free";
           log("none-free", "overlap at every position (kept " + home + ")");
         };

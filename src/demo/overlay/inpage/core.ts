@@ -198,6 +198,7 @@ export function installCore({ envAutoplay, todoDockUi }: OverlayInstallArgs) {
             if (!overlaps(dock)) continue;
             const cur = dock.dataset.pos === "right" ? "right" : "left";
             dock.dataset.pos = cur === "right" ? "left" : "right";
+            __wgAdd(dock);
             try {
               localStorage.setItem("wg-todo-pos", dock.dataset.pos);
             } catch {

@@ -17,13 +17,13 @@ function toneRules(sel: string, decl: (t: (typeof TONES)[ToneName]) => string, o
 export function ringCss(): string {
   const p = TONES.planned;
   return (
-    "#wg-ring{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
+    "#wg-ring{position:fixed;z-index:var(--wg-z-ring,2147483646);pointer-events:none;opacity:0;" +
     `border:2.5px solid ${p.ring};border-radius:10px;` +
     // Opacity fade only - NEVER transition border-color/box-shadow: tone swaps must snap.
     `box-shadow:0 0 0 4px ${p.glow};transition:opacity .3s ease;}` +
     toneRules("#wg-ring", (t) => `border-color:${t.ring};box-shadow:0 0 0 4px ${t.glow};`) +
     // A real element (not ::after) so JS can measure it and clamp it back onto the screen.
-    "#wg-ring-label{position:fixed;z-index:2147483646;pointer-events:none;opacity:0;" +
+    "#wg-ring-label{position:fixed;z-index:var(--wg-z-ring,2147483646);pointer-events:none;opacity:0;" +
     `max-width:min(360px,70vw);white-space:normal;padding:6px 10px;border-radius:7px;background:${p.labelBg};color:${p.labelFg};` +
     "font:600 12px/1.35 system-ui,sans-serif;transition:opacity .3s ease;}" +
     "#wg-ring-label::after{content:attr(data-label);}" +

@@ -1,16 +1,13 @@
-/* Top title banner (#wg-banner). Sits BELOW the ring/label/dock layers (--wg-z-banner) - a title
- * card must never shadow a highlight; see tokens.css. Moves out of the way of a ring it overlaps
- * (data-collision, driven from inpage/banner.ts's __wgBannerAvoidRing) unless authored off. */
+/* Top title banner (#wg-banner), in the top-left / top-center / top-right slot by its data-pos (layout.css). Sits
+ * below rings and labels (--wg-z-banner): a title card never shadows a highlight. Moves to another slot when a ring
+ * overlaps it (inpage/banner.ts's __wgBannerAvoidRing) unless authored off. */
 #wg-banner {
-  position: fixed; z-index: var(--wg-z-banner); top: 14px; left: 14px;
+  z-index: var(--wg-z-banner);
   background: var(--wg-surface); color: #fff; border-radius: var(--wg-radius-lg); padding: 10px 16px;
   font: 14px/1.4 var(--wg-font); box-shadow: var(--wg-shadow-banner);
-  border: 1px solid rgba(124,58,237,.4); cursor: pointer;
-  transition: left .3s var(--wg-ease), right .3s var(--wg-ease), transform .3s var(--wg-ease);
+  border: 1px solid rgba(124,58,237,.4); cursor: pointer; max-width: min(92vw, 520px);
+  transition: opacity .3s var(--wg-ease);
 }
-#wg-banner[data-pos=left]   { left: 14px; right: auto; transform: none; }
-#wg-banner[data-pos=center] { left: 50%; right: auto; transform: translateX(-50%); }
-#wg-banner[data-pos=right]  { right: 14px; left: auto; transform: none; }
 /* Same "auto opacity" step-back the todo dock already has (.wg-todo-behind) while a ring caption
    is the current focus - added via __wgBannerSetBehind, not just the collision-driven move. */
 #wg-banner.wg-banner-behind { opacity: .42; }

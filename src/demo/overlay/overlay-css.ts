@@ -16,12 +16,12 @@ import { SURFACE } from "./ui/tokens.js";
 // never collides with that bundle.
 export const RUNNER_EXTRA_CSS =
   // Spotlight: dim everything except the highlight target (focus: true).
-  "#wg-focus-veil{position:fixed;z-index:2147483644;pointer-events:none;" +
+  "#wg-focus-veil{position:fixed;z-index:var(--wg-z-focus);pointer-events:none;" +
   "border-radius:12px;box-shadow:0 0 0 9999px rgba(8,4,20,.62);" +
   "opacity:0;transition:opacity .3s ease,left .3s ease,top .3s ease,width .3s ease,height .3s ease;}" +
   "#wg-focus-veil.wg-in{opacity:1;}" +
   // Touch swipe trail (mobile/tablet orientation + device theater).
-  "#wg-swipe-layer{position:fixed;inset:0;z-index:2147483646;pointer-events:none;" +
+  "#wg-swipe-layer{position:fixed;inset:0;z-index:var(--wg-z-cursor);pointer-events:none;" +
   "overflow:hidden;}" +
   "#wg-swipe-layer .wg-swipe-dot{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;" +
   "border-radius:50%;background:rgba(147,197,253,.55);border:2px solid rgba(255,255,255,.85);" +
@@ -35,8 +35,8 @@ export const RUNNER_EXTRA_CSS =
   "border:1px solid rgba(56,189,248,.55);font:700 12px/1.2 system-ui,sans-serif;" +
   "letter-spacing:.04em;text-transform:uppercase;opacity:0;transition:opacity .25s ease;}" +
   "#wg-swipe-layer.wg-in .wg-swipe-label{opacity:1;}" +
-  "#wg-panel{position:fixed;z-index:2147483647;left:50%;bottom:12px;transform:translateX(-50%);" +
-  "max-width:min(92vw,640px);max-height:calc(100vh - 24px);overflow-y:auto;box-sizing:border-box;" +
+  "#wg-panel{z-index:var(--wg-z-top);" +
+  "width:min(92vw,640px);overflow-y:auto;box-sizing:border-box;" +
   "background:" + SURFACE + ";color:#fff;border-radius:14px;" +
   "padding:16px 20px;font:14px/1.4 system-ui,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,.35);" +
   // .06s was tuned back when the panel was removed and recreated on
@@ -79,16 +79,14 @@ export const RUNNER_EXTRA_CSS =
   // Todo checklist(s) float outside #wg-panel so --mini / Hide never hide them.
   // Multiple docks (one per todoId) are supported - stacked on the same side.
   // Click a dock to slide left <-> right (WAYGRAPH_TODO_POS / --todo-left|right).
-  ".wg-todo-dock,#wg-todo-dock{position:fixed;z-index:2147483646;top:104px;left:14px;" +
-  "width:min(280px,42vw);max-height:calc(100vh - 100px);overflow:auto;box-sizing:border-box;" +
+  ".wg-todo-dock,#wg-todo-dock{z-index:var(--wg-z-dock);" +
+  "width:min(280px,42vw);overflow:auto;box-sizing:border-box;" +
   "padding:10px 12px;background:" + SURFACE + ";color:#fff;border-radius:12px;" +
   "border:1px solid rgba(124,58,237,.45);box-shadow:0 8px 24px rgba(0,0,0,.35);" +
   "pointer-events:auto;cursor:pointer;" +
-  "transition:transform .4s cubic-bezier(.22,1,.36,1),top .35s ease,opacity .25s ease,z-index 0s;transform:translateX(0);}" +
-  ".wg-todo-dock[data-pos=right],#wg-todo-dock[data-pos=right]{transform:translateX(calc(100vw - 100% - 28px));}" +
-  ".wg-todo-dock[data-pos=left],#wg-todo-dock[data-pos=left]{transform:translateX(0);}" +
+  "transition:opacity .25s ease,z-index 0s;}" +
   /* While a highlight ring is up: sit under the ring so captions stay readable. */
-  ".wg-todo-dock.wg-todo-behind,#wg-todo-dock.wg-todo-behind{z-index:2147483643;opacity:.42;}" +
+  ".wg-todo-dock.wg-todo-behind,#wg-todo-dock.wg-todo-behind{z-index:var(--wg-z-focus);opacity:.42;}" +
   /* Collision tuck: shrink so a mid-page ring can still breathe. */
   ".wg-todo-dock[data-tucked=\"1\"],#wg-todo-dock[data-tucked=\"1\"]{max-height:min(28vh,220px);}" +
   /* Compact + cap: fold overflow rows; hover / data-expanded reveals more. */
@@ -104,7 +102,7 @@ export const RUNNER_EXTRA_CSS =
   // Always-on zoom HUD - bottom-right (top-left is crowded: todos + banners). Violet, matching the
   // rest of the overlay's design tokens - this used to be a lone amber/yellow badge, the one
   // surface that never got pulled into the shared palette when everything else did.
-  "#wg-zoom-badge{position:fixed;z-index:2147483646;bottom:14px;right:14px;" +
+  "#wg-zoom-badge{z-index:var(--wg-z-chrome);" +
   "display:flex;align-items:center;gap:7px;padding:6px 11px 6px 8px;" +
   "border-radius:999px;background:" + SURFACE + ";color:#f0e8ff;" +
   "border:1px solid rgba(124,58,237,.55);box-shadow:0 6px 18px rgba(0,0,0,.4);" +
@@ -116,16 +114,16 @@ export const RUNNER_EXTRA_CSS =
   "#wg-zoom-badge .wg-zoom-val{color:#c9a6ff;font-variant-numeric:tabular-nums;font-weight:800;min-width:3.2em;}" +
   "#wg-zoom-badge[data-zoomed=\"1\"]{border-color:#7C3AED;}" +
   // Typing chip (method fills: username / password / etc.)
-  "#wg-typing-badge{position:fixed;z-index:2147483646;bottom:88px;left:50%;transform:translateX(-50%);" +
+  "#wg-typing-badge{z-index:var(--wg-z-chrome);" +
   "display:flex;align-items:center;gap:8px;padding:8px 14px;" +
   "border-radius:999px;background:rgba(20,10,40,.95);color:#e0f2fe;" +
   "border:1px solid rgba(56,189,248,.55);box-shadow:0 8px 22px rgba(0,0,0,.4);" +
   "font:700 12px/1.2 system-ui,sans-serif;pointer-events:none;" +
-  "opacity:0;transition:opacity .2s ease;}" +
+  "opacity:0;transition-duration:.2s;}" +
   "#wg-typing-badge.wg-in{opacity:1;}" +
   "#wg-typing-badge .wg-ty-dots{letter-spacing:.15em;color:#7dd3fc;}" +
   // Device toast + chip (0.13.2+) - icon toast on fixture change, then compact chip.
-  "#wg-device-toast{position:fixed;z-index:2147483647;top:14px;right:14px;" +
+  "#wg-device-toast{z-index:var(--wg-z-toast);" +
   "display:flex;align-items:center;gap:10px;min-width:200px;max-width:min(92vw,320px);" +
   "padding:12px 14px;border-radius:14px;background:rgba(20,10,40,.96);color:#f0e8ff;" +
   "border:1px solid rgba(124,58,237,.55);box-shadow:0 10px 28px rgba(0,0,0,.4);" +
@@ -147,20 +145,21 @@ export const RUNNER_EXTRA_CSS =
   "#wg-device-toast .wg-dev-title{font:800 13px/1.2 system-ui,sans-serif;color:#fff;}" +
   "#wg-device-toast .wg-dev-sub{margin-top:3px;font:600 11px/1.3 system-ui,sans-serif;" +
   "color:#c9a6ff;letter-spacing:.02em;}" +
-  "#wg-device-badge{position:fixed;z-index:2147483646;top:14px;right:14px;" +
+  "#wg-device-badge{z-index:var(--wg-z-chrome);" +
   "display:inline-flex;align-items:center;gap:6px;padding:6px 10px 6px 8px;" +
   "border-radius:999px;background:rgba(20,10,40,.92);color:#f0e8ff;" +
   "border:1px solid rgba(124,58,237,.5);font:700 11px/1.2 system-ui,sans-serif;" +
   "letter-spacing:.04em;text-transform:uppercase;pointer-events:none;" +
   "box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:0;transform:translateY(-4px);" +
-  "transition:opacity .3s ease,transform .35s cubic-bezier(.22,1,.36,1);}" +
+  "transition-duration:.35s;transition-timing-function:cubic-bezier(.22,1,.36,1);}" +
   "#wg-device-badge.wg-in{opacity:1;transform:translateY(0);}" +
   "#wg-device-badge[data-preset=mobile]{border-color:#3B82F6;}" +
   "#wg-device-badge[data-preset=tablet]{border-color:#22C55E;}" +
   "#wg-device-badge[data-preset=desktop]{border-color:#9CA3AF;}" +
   "#wg-device-badge .wg-dev-icon{width:16px;height:16px;display:flex;align-items:center;justify-content:center;}" +
   "#wg-device-badge .wg-dev-icon svg{width:14px;height:14px;display:block;}" +
-  "#wg-device-badge .wg-dev-label{white-space:nowrap;}" +
+  "#wg-device-badge{overflow:hidden;}" +
+  "#wg-device-badge .wg-dev-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}" +
   "#wg-cursor[data-touch=1]{width:28px;height:28px;}" +
   "#wg-todos,.wg-todos-list{list-style:none;margin:0 0 12px;padding:8px 10px;background:#0f0620;border-radius:8px;" +
   "border:1px solid #3a2a60;}" +
@@ -271,16 +270,14 @@ export const RUNNER_EXTRA_CSS =
   "#wg-panel button.wg-mini-next{background:#2a9d6f;border-color:#22855e;color:#fff;display:none;}" +
   "#wg-panel button.wg-mini-next:hover{background:#22855e;}" +
   "#wg-panel button.wg-mini-next:disabled{opacity:.55;cursor:default;}" +
-  "#wg-panel.wg-collapsed{width:auto;max-width:92vw;padding:8px 12px;max-height:none;overflow:hidden;}" +
+  "#wg-panel.wg-collapsed{width:auto;padding:8px 12px;overflow:hidden;}" +
   "#wg-panel.wg-collapsed .wg-body{display:none;}" +
   "#wg-panel.wg-collapsed .wg-chrome{margin:0;}" +
   "#wg-panel.wg-collapsed .wg-chrome-title{font:700 13px/1.25 system-ui,sans-serif;color:#fff;" +
   "letter-spacing:0;text-transform:none;}" +
   "#wg-panel.wg-collapsed button.wg-mini-next.wg-mini-next-show{display:inline-block;}" +
   "@media (max-width:640px){" +
-  "#wg-panel{left:8px;right:8px;bottom:8px;transform:none;max-width:none;width:auto;" +
-  "max-height:min(55vh,calc(100vh - 16px));padding:12px 14px;border-radius:12px;}" +
-  "#wg-panel.wg-collapsed{left:50%;right:auto;transform:translateX(-50%);width:auto;}" +
+  "#wg-panel{width:auto;padding:12px 14px;border-radius:12px;}" +
   "#wg-episodes{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;}" +
   "#wg-panel .wg-narration{font-size:13px;}" +
   "#wg-panel button{width:100%;}" +

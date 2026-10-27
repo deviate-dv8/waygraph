@@ -23,16 +23,21 @@
   --wg-font: system-ui, sans-serif;
   --wg-font-mono: ui-monospace, "SF Mono", Consolas, monospace;
 
-  /* Stacking: Open Props' --layer-important is the one legitimate use of a max z-index (a
-     floating control that must sit above literally anything the host page can throw at it). */
-  --wg-z-top: var(--layer-important, 2147483647);
-  --wg-z-ring: 2147483646;
-  --wg-z-fx: 2147483645;
-  --wg-z-focus: 2147483644;
-  --wg-z-dock: 2147483000;
-  /* Banner sits BELOW rings/labels/todos - a title card must never shadow a highlight. */
-  --wg-z-banner: 2147483000;
-
+  /* Stacking. All overlay UI lives in one fixed parent (#wg-ui, layout.css) that sits above the host page with the one
+     max z-index; these values only order the layers inside it, lowest first. */
+  --wg-z-ui: var(--layer-important, 2147483647);
+  --wg-z-focus: 1;      /* the spotlight veil; chrome stepping back while a ring is the focus */
+  --wg-z-chrome: 2;     /* banner, todo docks, caption, chips, network tab */
+  --wg-z-dock: 2;
+  --wg-z-banner: 2;
+  --wg-z-fx: 4;         /* rings and their labels: a highlight is never covered by chrome */
+  --wg-z-ring: 4;
+  --wg-z-top: 6;        /* the step panel and other controls a person clicks */
+  --wg-z-toast: 7;      /* short-lived notices (device change) */
+  --wg-z-cursor: 8;     /* the cursor, click pulse and swipe trail: the pointer is always on top */
+  /* Spacing of the chrome layout: between items in a slot, and from the viewport edge. */
+  --wg-gap: 10px;
+  --wg-edge: 14px;
   --wg-ease: var(--ease-3, cubic-bezier(.22,1,.36,1));
   --wg-shadow-dock: var(--shadow-3, 0 2px 10px rgba(0,0,0,.3));
   --wg-shadow-banner: var(--shadow-4, 0 8px 20px rgba(0,0,0,.3));

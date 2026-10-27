@@ -64,7 +64,7 @@ export async function playSwipeTrail(page: WgPage, opts?: SwipeTrailOptions) {
       layer.id = "wg-swipe-layer";
       layer.setAttribute("data-wg-ui", "1");
       layer.style.cssText =
-        "position:fixed;inset:0;z-index:2147483646;pointer-events:none;overflow:hidden;";
+        "position:fixed;inset:0;z-index:var(--wg-z-cursor,2147483646);pointer-events:none;overflow:hidden;";
       const finger = document.createElement("div");
       finger.style.cssText =
         "position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;" +

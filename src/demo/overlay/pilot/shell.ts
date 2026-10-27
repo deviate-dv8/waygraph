@@ -16,8 +16,10 @@ import { ignorePageGone } from "../../../engine/page-gone.js";
 // re-invented) - genuinely the same visual language, not just the ring CSS
 // this file already shared via WAYGRAPH_RING_CSS.
 const OVERLAY_CSS = `
+/* Every element here sits in a slot of the overlay layout (ui/css/layout.css) - bottom-right, bottom-left, top-right -
+   or on its stage (the spotlight); none is positioned by hand. */
 #wg-pilot-overlay {
-  position: fixed; z-index: 2147483000; bottom: 12px; right: 12px;
+  z-index: var(--wg-z-top); display: flex; flex-direction: column; align-items: flex-end;
   font: 12px/1.4 ui-monospace, "SF Mono", Consolas, monospace;
   color: #fff; pointer-events: auto;
 }
@@ -59,7 +61,7 @@ const OVERLAY_CSS = `
 #wg-pilot-panel-graph .wg-pilot-graph-edge { padding: 2px 0 2px 14px; border-left: 2px solid rgba(255,255,255,.15); font-size: 11px; }
 #wg-pilot-panel-graph .wg-pilot-graph-edge .wg-pilot-kind { color: #c9a6ff; }
 #wg-pilot-activity {
-  position: fixed; z-index: 2147483000; bottom: 12px; left: 12px;
+  z-index: var(--wg-z-chrome);
   font: 12px/1.4 ui-monospace, "SF Mono", Consolas, monospace;
   background: ${SURFACE}; color: #fff; padding: 6px 10px; border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.25); white-space: nowrap; pointer-events: none;
@@ -71,12 +73,12 @@ const OVERLAY_CSS = `
    #wg-banner all come from the ONE shared bundle ensureShadowRoot installs (ui/css/*.css) - not
    redefined here. */
 /* Spotlight (demo focus:true) - dim page, cutout around target. */
-#wg-pilot-fx-focus{position:fixed;z-index:2147483644;pointer-events:none;
+#wg-pilot-fx-focus{position:fixed;z-index:var(--wg-z-focus);pointer-events:none;
   border-radius:12px;box-shadow:0 0 0 9999px rgba(8,4,20,.62);
   opacity:0;transition:opacity .3s ease,left .3s ease,top .3s ease,width .3s ease,height .3s ease;}
 #wg-pilot-fx-focus.wg-in{opacity:1;}
 /* Zoom HUD (demo parity - badge only; no CSS scale of the page). */
-#wg-pilot-fx-zoom{position:fixed;z-index:2147483646;bottom:14px;right:14px;
+#wg-pilot-fx-zoom{z-index:var(--wg-z-chrome);
   display:flex;align-items:center;gap:7px;padding:6px 11px 6px 8px;
   border-radius:999px;background:${SURFACE};color:#f0e8ff;
   border:1px solid rgba(250,204,21,.6);box-shadow:0 6px 18px rgba(0,0,0,.4);
@@ -86,7 +88,7 @@ const OVERLAY_CSS = `
 #wg-pilot-fx-zoom .wg-pilot-fx-zoom-ico svg{width:14px;height:14px;display:block;}
 #wg-pilot-fx-zoom .wg-pilot-fx-zoom-val{color:#fde68a;font-variant-numeric:tabular-nums;font-weight:800;min-width:3.2em;}
 #wg-pilot-fx-zoom[data-zoomed="1"]{border-color:#fbbf24;}
-#wg-pilot-fx-device{position:fixed;z-index:2147483646;top:14px;right:14px;
+#wg-pilot-fx-device{z-index:var(--wg-z-chrome);
   padding:8px 12px;border-radius:10px;background:${SURFACE};color:#f0e8ff;
   border:1px solid rgba(124,58,237,.55);font:700 12px/1.2 system-ui,sans-serif;
   pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.35);}

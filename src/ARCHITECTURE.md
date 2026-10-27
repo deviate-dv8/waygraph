@@ -100,6 +100,7 @@ the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by 
 | Overlay colours, ring, cursor, banner, dock CSS | real `.css` in `demo/overlay/ui/css/` (see its README), bundled into `dist/demo/overlay/ui/overlay.css` |
 | Keeping an overlay through navigation (redirects, reloads) | `demo/overlay/reattach.ts`: register the surface's repaint with `keepOverlayOnNavigation(page, repaint)`; demo, auto and pilot all do |
 | A ring on any surface | `demo/overlay/inpage/core.ts`'s `__wgPaintRingAt` - the one ring painter for demo, auto and pilot |
+| A new piece of overlay chrome (a chip, a panel, a toast) | give it an id, add the id to `SLOT_OF` in `demo/overlay/ui/shadow.ts` (which slot) and, if it shares a slot, an `order` in `ui/css/layout.css`; add it with `__wgAdd(el)`. Never `position: fixed` (check:structure rejects it outside the anchored stage) |
 | A practice warning | `analysis/practices-check.ts` + a fixture in `tests/fixtures/practices-check/` |
 | An engine error | `engine/errors.ts`: a `WG_<AREA>_<WHAT>` code with its where / means / fix; never reuse a shipped code |
 
@@ -132,7 +133,11 @@ Adding an `index.ts` export changes the public API: update `tests/unit/api-surfa
 By convention:
 - Code that runs inside `page.evaluate` (`demo/overlay/inpage/`) must be self-contained and is run from `tsc` output,
   never tsx/esbuild (its `__name` helper breaks serialization). In-page globals are typed in `demo/overlay/ui/shadow-globals.d.ts`.
-- All overlay UI lives in one open shadow root (`#wg-root`, `demo/overlay/ui/shadow.ts`); in-page code uses
+- All overlay UI lives in one open shadow root (`#wg-root`, `demo/overlay/ui/shadow.ts`), inside one fixed layer, `#wg-ui`
+  (`ui/css/layout.css`): its stage holds what follows a target (ring, label, cursor, veil, swipe), and its chrome is
+  eight slots (top / middle / bottom row, left / center / right) where everything else stacks with a gap instead of
+  overlapping. `__wgAdd(el)` puts an element in its slot (by id and `data-pos`); after changing `data-pos`, call
+  `__wgAdd(el)` again before measuring it. One z-index scale, inside `#wg-ui` (`ui/css/tokens.css`). In-page code uses
   `__wgById / __wgQ / __wgQA / __wgAdd / __wgCss`, and builds elements with `__wgEl / __wgSet / __wgSvg`: text is always a
   text node, never parsed as HTML (`check:structure` rejects `innerHTML` and the other HTML sinks). CSS for the host page (the device stage) is `HOST_CSS` in `demo/overlay/overlay-css.ts`.
 - The runner is spawned inside the target project, so `waygraph/runner` and Playwright resolve from the project's own

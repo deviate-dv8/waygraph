@@ -2,7 +2,7 @@
  * free of the zoom HUD and the typing chip). Hidden until ctx.ui.showNetworkTab(); stays up once shown. In the shared
  * bundle, not the runner CSS: a navigation rebuilds the panel the moment the shadow root is back, before any later
  * stylesheet, and without its CSS it painted unstyled and visible, then faded out. */
-#wg-network-log{position:fixed;z-index:2147483646;bottom:14px;left:14px;min-width:260px;max-width:min(92vw,420px);max-height:min(60vh,420px);display:flex;flex-direction:column;border-radius:10px;background:var(--wg-surface);color:#f0e8ff;border:1px solid rgba(124,58,237,.45);box-shadow:0 8px 22px rgba(0,0,0,.4);font:12px/1.4 ui-monospace,"SF Mono",Consolas,monospace;opacity:0;transform:translateY(8px);transition:opacity .25s ease,transform .25s ease;overflow:hidden;}
+#wg-network-log{z-index:var(--wg-z-chrome);min-width:260px;max-width:min(92vw,420px);max-height:min(60vh,420px);display:flex;flex-direction:column;border-radius:10px;background:var(--wg-surface);color:#f0e8ff;border:1px solid rgba(124,58,237,.45);box-shadow:0 8px 22px rgba(0,0,0,.4);font:12px/1.4 ui-monospace,"SF Mono",Consolas,monospace;opacity:0;transform:translateY(8px);transition-duration:.25s;transition-timing-function:ease;overflow:hidden;}
 #wg-network-log.wg-in{opacity:1;transform:translateY(0);}
 #wg-network-log.wg-net-collapsed .wg-net-list{display:none;}
 #wg-network-log .wg-net-header{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid rgba(124,58,237,.25);cursor:default;flex:0 0 auto;}

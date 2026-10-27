@@ -7,14 +7,11 @@
  * duplicate of this file's own rules, is consolidated.
  */
 #wg-pilot-fx-todos {
-  position: fixed; z-index: var(--wg-z-fx); top: 104px; max-width: 280px; max-height: calc(100vh - 132px);
-  overflow: auto; font: 12px/1.4 ui-sans-serif, system-ui, sans-serif; color: #fff;
+  z-index: var(--wg-z-dock); width: min(280px, 42vw); overflow: auto; font: 12px/1.4 ui-sans-serif, system-ui, sans-serif; color: #fff;
   background: var(--wg-surface); border-radius: var(--wg-radius-md); padding: 10px 12px;
   box-shadow: var(--wg-shadow-dock); pointer-events: auto; transition: opacity .25s ease;
 }
 #wg-pilot-fx-todos.wg-todo-behind { z-index: var(--wg-z-focus); opacity: .42; pointer-events: none; }
-#wg-pilot-fx-todos[data-pos=left]  { left: 14px; right: auto; }
-#wg-pilot-fx-todos[data-pos=right] { right: 14px; left: auto; }
 #wg-pilot-fx-todos .wg-pilot-fx-todo-title {
   font: 700 11px/1.2 system-ui, sans-serif; color: var(--wg-accent-soft);
   letter-spacing: .04em; text-transform: uppercase; margin: 0 0 8px;

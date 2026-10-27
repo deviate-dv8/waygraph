@@ -7,12 +7,13 @@
  *   3. Layers: each file's layer may only import the layers allowed for it; scripts/layer-debt.json may only shrink.
  *   4. No barrels: only the package entries (src/index.ts, src/beta.ts) re-export; everything else is imported from where it is declared.
  *   5. No wiring by import: no module runs a call at its top level except the entries (index.ts, beta.ts, cli/cli.ts).
- *   6. No HTML strings into the page: overlay elements are built with __wgEl / __wgSet / __wgSvg (demo/overlay/ui/shadow.ts),
+ *   6. The overlay has one layout: in its CSS, only anchored things (ring, label, cursor, veil, swipe) are position:fixed.
+ *   7. No HTML strings into the page: overlay elements are built with __wgEl / __wgSet / __wgSvg (demo/overlay/ui/shadow.ts),
  *      so page and author text is always a text node.
- *   7. WAYGRAPH_* variables are read and written only through engine/env.ts (the registry docs/env.md is generated from).
- *   8. `any` only shrinks: each file's count of `any` keywords may not exceed scripts/any-debt.json (lower it when you
+ *   8. WAYGRAPH_* variables are read and written only through engine/env.ts (the registry docs/env.md is generated from).
+ *   9. `any` only shrinks: each file's count of `any` keywords may not exceed scripts/any-debt.json (lower it when you
  *      type something; a file not listed has none). Counted with TypeScript's own parser.
- *   9. No `.catch(() => {})` in Node code: catch with ignorePageGone / ignoreTimeout (engine/page-gone.ts) or handle it.
+ *   10. No `.catch(() => {})` in Node code: catch with ignorePageGone / ignoreTimeout (engine/page-gone.ts) or handle it.
  * Run: npm run check:structure
  */
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -134,6 +135,21 @@ for (const f of files) {
   const text = readFileSync(f, "utf8").replace(/`(?:[^`\\]|\\.)*`/gs, "``");
   for (const m of text.matchAll(/^[A-Za-z_$][\w$.]*\(/gm)) {
     problems.push(`${rel}: runs \`${m[0]}...)\` at import time (export an install function; the entry calls it)`);
+  }
+}
+// --- the overlay has one layout: only anchored things (they follow a target) are position:fixed ---
+// Chrome goes in a slot of #wg-ui (demo/overlay/ui/css/layout.css, placed by ui/shadow.ts); hand-placed fixed boxes are
+// what overlapped and overflowed before it.
+const ANCHORED = /#wg-(?:ui|stage|ring|ring-label|cursor|click-pulse|focus-veil|swipe-layer|pilot-fx-focus)\b|\.wg-ring-el\b|\.wg-ring-label-el\b/;
+const overlayFiles = [
+  ...files.filter((f) => /[\\/](demo|live)[\\/]/.test(f)),
+  ...readdirSync(join(srcDir, "demo/overlay/ui/css")).filter((n) => n.endsWith(".css")).map((n) => join(srcDir, "demo/overlay/ui/css", n)),
+];
+for (const f of overlayFiles) {
+  const rel = relative(srcDir, f).replace(/\\/g, "/");
+  for (const m of readFileSync(f, "utf8").matchAll(/([^{}]*)\{[^{}]*?position:\s*fixed/g)) {
+    const selector = m[1].split(/["`]/).pop().replace(/\/\*[\s\S]*?\*\//g, "").trim();
+    if (!ANCHORED.test(selector)) problems.push(`${rel}: "${selector.slice(0, 60)}" is position:fixed - put chrome in a slot of the overlay layout (ui/css/layout.css, ui/shadow.ts), not a hand-placed fixed box`);
   }
 }
 // --- no barrels ---

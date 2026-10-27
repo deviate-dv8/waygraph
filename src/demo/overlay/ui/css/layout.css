@@ -1,0 +1,66 @@
+/*
+ * The overlay's one layout. Every piece of waygraph UI lives in #wg-ui, a fixed layer over the page, in one of two
+ * places:
+ *
+ *   #wg-stage   things anchored to the page: ring, label, cursor, click pulse, spotlight veil, swipe trail. They follow
+ *               a target's coordinates (position: fixed against the viewport).
+ *   #wg-chrome  everything else, placed in a slot. Nothing in it is positioned by hand: a slot is a flex column with
+ *               a gap, so what shares a place stacks instead of overlapping, and a slot never grows past its row.
+ *
+ *     top-left    | top-center    | top-right       banner (by its side) · device chip / toast
+ *     left        |               | right           todo docks (by side)
+ *     bottom-left | bottom-center | bottom-right    network tab · typing, caption, step panel · zoom
+ *
+ * The slot an element goes in is decided once, in ui/shadow.ts (by id and data-pos), and a data-pos change moves it.
+ * Each row lays out on its own, so a wide step panel never squeezes the side docks.
+ */
+#wg-ui { position: fixed; inset: 0; z-index: var(--wg-z-ui); pointer-events: none; }
+#wg-stage { display: contents; }
+#wg-chrome {
+  position: absolute; inset: 0; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: var(--wg-gap); padding: var(--wg-edge);
+}
+.wg-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--wg-gap); min-height: 0; }
+.wg-row-top { flex: 0 0 auto; align-items: start; }
+.wg-row-middle { flex: 1 1 0; display: flex; justify-content: space-between; align-items: stretch; }
+.wg-row-bottom { flex: 0 1 auto; align-items: end; max-height: 62vh; }
+.wg-slot {
+  display: flex; flex-direction: column; gap: var(--wg-gap);
+  min-width: 0; min-height: 0; max-height: 100%; max-width: 100%;
+}
+.wg-slot[data-slot$="left"] { align-items: flex-start; }
+.wg-slot[data-slot$="center"] { align-items: center; }
+.wg-slot[data-slot$="right"] { align-items: flex-end; }
+.wg-row-bottom .wg-slot { justify-content: flex-end; }
+/* A slotted element shrinks (and scrolls inside) rather than spilling out of its slot: a min-width of its own (the
+   network tab's 260px) must not push it past the slot into its neighbour. */
+.wg-slot > * { position: relative; flex: 0 1 auto; box-sizing: border-box; pointer-events: auto; }
+/* The slot's limits win over an element's own sizing (an #id rule's min-width / max-height), hence the id here. */
+#wg-chrome .wg-slot > * { min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; }
+
+/* Order inside a shared slot: what is being typed, what the narration says, then the controls. */
+#wg-typing-badge { order: 1; }
+#wg-caption-bar { order: 2; }
+#wg-panel, #wg-auto-panel { order: 3; }
+#wg-device-toast { order: 1; }
+#wg-device-badge, #wg-pilot-fx-device { order: 2; }
+
+/*
+ * Chrome that comes and goes takes no space while hidden (an empty gap above the step panel would read as a bug), and
+ * still fades: display switches with the transition (allow-discrete), and @starting-style is where the fade starts.
+ */
+#wg-caption-bar, #wg-typing-badge, #wg-network-log, #wg-device-badge {
+  transition-property: opacity, transform, display; transition-behavior: allow-discrete;
+}
+#wg-caption-bar:not(.wg-in), #wg-typing-badge:not(.wg-in), #wg-network-log:not(.wg-in), #wg-device-badge:not(.wg-in) {
+  display: none;
+}
+@starting-style {
+  #wg-caption-bar.wg-in, #wg-typing-badge.wg-in, #wg-network-log.wg-in, #wg-device-badge.wg-in { opacity: 0; }
+}
+
+/* Narrow viewports: the bottom row's three slots stack (network, then the step panel full width, then zoom). */
+@media (max-width: 640px) {
+  .wg-row-bottom { grid-template-columns: minmax(0, 1fr); }
+  .wg-slot[data-slot="bottom-center"] { align-items: stretch; }
+}

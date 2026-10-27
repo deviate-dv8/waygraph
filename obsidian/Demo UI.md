@@ -46,3 +46,9 @@ once the redirects settle (`src/demo/overlay/reattach.ts`).
 banner or caption in the page, or restyles waygraph's overlay (`#wg-*`, `window.__wg*`), changes the page it is testing
 and breaks when the overlay changes. `waygraph check` warns on it (`hand-written UI`).
 
+**One layout.** Everything the demo draws sits in one layer over the page. What follows the page - the ring, its
+caption, the cursor - is drawn where the target is. Everything else has a fixed place: the title top-left (or centre,
+or right), todo checklists down the sides, the device chip top-right, and at the bottom centre, stacked top to bottom,
+what is being typed, the narration caption and the step panel; the network tab bottom-left, zoom bottom-right. Pieces
+that share a place stack instead of overlapping, and nothing spills off the screen.
+

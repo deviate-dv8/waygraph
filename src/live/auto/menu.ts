@@ -36,8 +36,9 @@ export async function setAutoPanelRunning(page: Page, label: string): Promise<vo
     )
     .catch(ignorePageGone);
 }
-export const PANEL_CSS = "#wg-auto-panel{position:fixed;z-index:2147483647;left:50%;bottom:12px;transform:translateX(-50%);" +
-  "max-width:min(92vw,720px);max-height:calc(100vh - 24px);overflow-y:auto;box-sizing:border-box;" +
+// In the bottom-center slot of the overlay layout (demo/overlay/ui/css/layout.css), like the demo's step panel.
+export const PANEL_CSS = "#wg-auto-panel{z-index:var(--wg-z-top);" +
+  "width:min(92vw,720px);overflow-y:auto;box-sizing:border-box;" +
   "background:rgba(20,10,40,.94);color:#fff;border-radius:14px;padding:16px 20px;" +
   "font:14px/1.4 system-ui,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,.35);}" +
   "#wg-auto-panel h3{margin:0 0 10px;font-size:16px;}" +
