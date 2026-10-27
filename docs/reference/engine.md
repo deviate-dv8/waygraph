@@ -100,6 +100,22 @@ typechecked one step at a time, with no limit on length - there is no method on 
 builder that can skip from one Checkpoint to an unrelated one without a real, kind-correct
 Block in between, which is what "no teleporting" means here.
 
+A Block that can land in more than one place (`to: [LoggedIn, LoginPage]`) leaves the flow on either, so the next step
+must start from both. When a flow is about one outcome, the step says which with `lands`:
+
+```ts
+map().start()
+  .gotoPage(NavLoginBlock)
+  .method(SubmitLoginBlock, { lands: LoggedIn }) // the flow continues from LoggedIn
+  .gotoPage(NavCartBlock)
+  .end();
+```
+
+The flow is typed from `lands`, and a run where the Block lands anywhere else fails at that step
+(`"submit-login" landed on LoginPage, but this flow continues from LoggedIn`). A `lands` that isn't one of the Block's
+outcomes fails to typecheck, and is rejected when the flow is built. To follow both outcomes, use `.branch()`. `lands` is
+on `.method()`, `.gotoPage()` and `.gotoExternal()`; it replaces casting a Block to a narrower type.
+
 `map()` is not a new execution engine - the result is a real
 `Flow`, so every Flow-level feature (Layouts, `withBlockVerify`, demo narration) works on it unchanged, and flows nest
 with `.flow(sub, { reset })`. `import { map } from "waygraph"` is also available

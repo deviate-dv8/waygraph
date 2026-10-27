@@ -14,7 +14,6 @@ src/blocks/
       fill-username.method.block.ts   # Method defineMethodBlock (self-loop on LoginPage)
       fill-password.method.block.ts   # Method defineMethodBlock (self-loop on LoginPage)
       submit-login.method.block.ts    # Method defineMethodBlock (click only; branches)
-      submit-login-for-flow.ts        # helper (not a discoverable *.block.ts alone)
       submit-logout.method.block.ts   # Method defineMethodBlock
       login.sel.ts                    # LoginSel (not a Block)
     inventory/                        # URL /inventory.html

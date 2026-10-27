@@ -98,6 +98,9 @@ against a live site, use `--skill-pilot-blind`.
 - **Reading a value into `mem` happens in `act`** (`mem.set(Key, value)`), like Mailpit's `extract-email-link`.
   `observe` is only for a Block that branches (it feeds `resolve`); an empty `act(){}` plus an `observe` that
   writes `mem` is a misuse.
+- **A flow about one outcome says so with `lands`, never a cast.** `.method(SubmitLoginBlock, { lands: LoggedIn })`
+  types the flow from `LoggedIn` and fails the run if the Block lands elsewhere; `Block as unknown as MethodBlock<A, B>`
+  (a `*-for-flow.ts` alias) hides the other outcome and never checks it. To follow every outcome, `.branch()`.
 - **Demo pace is a map option or config, never a wrapper.** `.method(SetBearerTokenBlock, { pace: "blitz" })` speeds one step,
   `map({ demoPace: "fast" })` a flow, `demo: { pace, typingMs, slowMo }` in the config the whole project.
 - **Per-environment values** (a different `baseUrl` for staging) come from `.env` files read in the config function:

@@ -34,6 +34,11 @@ export const WAYGRAPH_ERRORS = {
     means: "A Block passed to .method() isn't a real Method/Effect Block (missing __waygraphSalt).",
     fix: "Build it with defineMethodBlock/defineEffectBlock, or use .assert() if it's actually a defineAssertBlock.",
   },
+  WG_MAP_LANDS: {
+    where: "engine/flow/map-builder.ts - .method/.gotoPage/.gotoExternal(Block, { lands })",
+    means: "A step said which of its Block's outcomes the flow continues from (`lands`), and the Block resolved to another one - or `lands` names a Checkpoint the Block never resolves to.",
+    fix: "If the other outcome is a real case, write a flow (or a .branch()) for it; otherwise fix the step before it (wrong data) or the Block's resolve.",
+  },
   WG_MAP_WRONG_ORIGIN: {
     where: "engine/flow/map-builder.ts - MapBuilder.gotoPage/gotoExternal()",
     means: "A Block's static `url` origin doesn't match what .gotoPage() (same-origin) or .gotoExternal() (cross-origin) expects, given this map()'s homeOrigin.",
@@ -192,6 +197,12 @@ export const MSG_MAP_FF_EMPTY = (ffName: string) =>
 export const MSG_MAP_METHOD_GOT_ASSERT = (blockName: string) =>
   `Waygraph map: .method("${blockName}") got a defineAssertBlock - use .assert() for ` +
   "self-loop verify steps (Assert Blocks share method salt internally but are not methods).";
+
+export const MSG_MAP_LANDED_ELSEWHERE = (blockName: string, landed: string, lands: string) =>
+  `Waygraph map: "${blockName}" landed on ${landed}, but this flow continues from ${lands} (lands: ${lands})`;
+
+export const MSG_MAP_LANDS_NOT_AN_OUTCOME = (blockName: string, lands: string, outcomes: readonly string[]) =>
+  `Waygraph map: "${blockName}" never lands on ${lands} - its outcomes are ${outcomes.join(", ")}`;
 
 export const MSG_MAP_BRANCH_NO_PRIOR_STEP =
   "Waygraph map: .branch() needs at least one prior step - nothing to branch from. " +

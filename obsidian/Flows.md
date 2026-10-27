@@ -33,6 +33,8 @@ export const homeCartFlow = engine
 - `.branch({ LoggedIn: (m) => ..., LoginPage: (m) => ... })` - split by where the last step landed.
 - `.method(Block, { ff: true })` / `.ffStart()...ffEnd()` - fast-forward steps in a demo.
 - `.method(Block, { pace: "slow" })` - slow one step down in a demo.
+- `.method(SubmitLoginBlock, { lands: LoggedIn })` - continue from one outcome of a Block that can land in several
+  places (a run that lands elsewhere fails there).
 
 ## Settings in map({ ... })
 

@@ -33,7 +33,6 @@ src/blocks/
     nav-login.block.ts
     actions/
       submit-login.method.block.ts
-      submit-login-for-flow.ts
       submit-logout.method.block.ts
     inventory/                   # /inventory.html
       NAV.md

@@ -3,7 +3,8 @@ import "../states/checkout.mem-stubs.js";
 import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
 import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
 import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
-import { SubmitLoginForFlow } from "../blocks/saucedemo-web/methods/submit-login-for-flow.js";
+import { SubmitLoginBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
+import { LoggedIn } from "../states/checkout.states.js";
 import { AddToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.js";
 import { NavCartBlock } from "../blocks/saucedemo-web/cart/nav-cart.block.js";
 import { NavCheckoutInfoBlock } from "../blocks/saucedemo-web/cart/nav-checkout-info.block.js";
@@ -46,7 +47,7 @@ export const checkoutFlow = engine
     { ff: true },
   )
   .method(
-    SubmitLoginForFlow.stubBefore((ctx) => {
+    SubmitLoginBlock.stubBefore((ctx) => {
       ctx.ui.ring("submit", {
         selector: LoginSel.loginButton,
         label: "Sign in",
@@ -57,7 +58,7 @@ export const checkoutFlow = engine
         weight: "bold",
       });
     }),
-    { ff: true },
+    { ff: true, lands: LoggedIn },
   )
   .method(AddToCartBlock.stubBefore((ctx) => ctx.ui.title("Owner: Full Checkout")))
   .gotoPage(NavCartBlock)

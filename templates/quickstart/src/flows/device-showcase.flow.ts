@@ -3,7 +3,8 @@ import "../states/checkout.mem-stubs.js";
 import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
 import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
 import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
-import { SubmitLoginForFlow } from "../blocks/saucedemo-web/methods/submit-login-for-flow.js";
+import { SubmitLoginBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
+import { LoggedIn } from "../states/checkout.states.js";
 import { AddToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.js";
 import { NavCartBlock } from "../blocks/saucedemo-web/cart/nav-cart.block.js";
 import { deviceShowcase as d } from "../stubs/device-showcase.js";
@@ -20,7 +21,8 @@ export const deviceShowcaseFlow = engine
     FillPasswordBlock.stubBefore(d.password.before).stubAfter(d.password.after),
   )
   .method(
-    SubmitLoginForFlow.stubBefore(d.submit.before).stubAfter(d.submit.after),
+    SubmitLoginBlock.stubBefore(d.submit.before).stubAfter(d.submit.after),
+    { lands: LoggedIn },
   )
   .method(
     AddToCartBlock.stubBefore(d.addToCart.before).stubAfter(d.addToCart.after),

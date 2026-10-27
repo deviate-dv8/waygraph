@@ -19,7 +19,6 @@ Login page for Swag Labs. This folder is the namespace root (`/` in the browser)
 | `methods/fill-username.method.block.ts` | Method | Fills username only; self-loop on LoginPage |
 | `methods/fill-password.method.block.ts` | Method | Fills password only; self-loop on LoginPage |
 | `methods/submit-login.method.block.ts` | Method | Click Login only; branches LoggedIn vs LoginPage |
-| `methods/submit-login-for-flow.ts` | helper | Typed alias for linear Flows |
 | `methods/submit-logout.method.block.ts` | Method | Burger menu logout -> LoginPage |
 | `methods/login.sel.ts` | helper | `LoginSel` (not a Block) |
 

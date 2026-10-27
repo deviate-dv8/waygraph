@@ -99,15 +99,15 @@ test("the overlay never takes a click meant for the page: a button under the tod
     return top?.id === "wg-root" ? "overlay" : (top as HTMLElement | null)?.id ?? "";
   }, [x, y] as const);
   const at = [dock.x + 60, dock.y + 36] as const;
-  expect(await hit(...at)).toBe("overlay"); // the dock covers it
+  await expect.poll(() => hit(...at)).toBe("overlay"); // the dock covers it
 
   setLocatorTheater(page, { beforeFill: async () => {}, typingDelay: () => 0, afterFill: async () => {}, beforeClick: async () => "click", holdMs: () => 0, afterClick: async () => {} });
   await page.locator("#under").click({ timeout: 5000 });
   await expect(page.locator("#under")).toHaveText("clicked");
-  expect(await hit(...at)).toBe("overlay"); // the dock takes clicks again once the click is done
+  await expect.poll(() => hit(...at)).toBe("overlay"); // the dock takes clicks again once the click is done
 
   await setActing(page, true); // a step acting: the whole chrome lets clicks through
-  expect(await hit(...at)).toBe("under");
+  await expect.poll(() => hit(...at)).toBe("under");
   await setActing(page, false);
-  expect(await hit(...at)).toBe("overlay");
+  await expect.poll(() => hit(...at)).toBe("overlay");
 });

@@ -20,7 +20,7 @@ import type { DemoPace } from "../stub/pace.js";
 import type { HighlightStyleDefaults } from "../stub/ring.js";
 import type { Flow, FlowSettings } from "./flow.js";
 import { buildBranchedFlow } from "./map-branch.js";
-import { assertMapKind, assertMapOrigin, assertMapSalt, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
+import { assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
 
 type S = Checkpoint<"__start__">;
 
@@ -199,13 +199,13 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * Compile-time: {@link NavBlock} or {@link PageBlock} only (not Assert/Method).
    * `{ ff: true }`: fast-forward this one step inline - see `appendStep`'s own comment.
    */
-  gotoPage<NextOut extends Checkpoint<string>>(
+  gotoPage<NextOut extends Checkpoint<string>, Lands extends NextOut = NextOut>(
     block: (NavBlock<NextOut> | PageBlock<NextOut>) & { name: string },
-    opts?: MapStepOpts,
-  ): MapBuilder<NextOut> {
+    opts?: MapStepOpts<Lands>,
+  ): MapBuilder<Lands> {
     assertMapKind(block, ["nav", "page"], "gotoPage");
     assertMapOrigin(block, this.homeOrigin, "internal", "gotoPage");
-    return this.appendStep(paced(block, opts), opts?.ff);
+    return this.appendStep(landsOn(paced(block, opts), opts?.lands), opts?.ff);
   }
 
   /**
@@ -215,13 +215,13 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * Compile-time: {@link NavBlock} or {@link PageBlock} only.
    * `{ ff: true }`: fast-forward this one step inline - see `appendStep`'s own comment.
    */
-  gotoExternal<NextOut extends Checkpoint<string>>(
+  gotoExternal<NextOut extends Checkpoint<string>, Lands extends NextOut = NextOut>(
     block: (NavBlock<NextOut> | PageBlock<NextOut>) & { name: string },
-    opts?: MapStepOpts,
-  ): MapBuilder<NextOut> {
+    opts?: MapStepOpts<Lands>,
+  ): MapBuilder<Lands> {
     assertMapKind(block, ["nav", "page"], "gotoExternal");
     assertMapOrigin(block, this.homeOrigin, "external", "gotoExternal");
-    return this.appendStep(paced(block, opts), opts?.ff);
+    return this.appendStep(landsOn(paced(block, opts), opts?.lands), opts?.ff);
   }
 
   /**
@@ -229,7 +229,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * `defineAssertBlock`. Compile-time: {@link AssertBlock} only (not `.method()`).
    * `{ ff: true }`: fast-forward this one step inline - see `appendStep`'s own comment.
    */
-  assert(block: AssertBlock<Out> & { name: string }, opts?: MapStepOpts): MapBuilder<Out> {
+  assert(block: AssertBlock<Out> & { name: string }, opts?: Omit<MapStepOpts, "lands">): MapBuilder<Out> {
     assertMapKind(block, ["assert"], "assert");
     return this.appendStep(paced(block, opts), opts?.ff);
   }
@@ -243,15 +243,15 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * "assert"` (those still carry method salt from the factory internals).
    * `{ ff: true }`: fast-forward this one step inline - see `appendStep`'s own comment.
    */
-  method<NextOut extends Checkpoint<string>>(
+  method<NextOut extends Checkpoint<string>, Lands extends NextOut = NextOut>(
     block: (MethodBlock<Out, NextOut> | EffectBlock<Out, NextOut>) & { name: string },
-    opts?: MapStepOpts,
-  ): MapBuilder<NextOut> {
+    opts?: MapStepOpts<Lands>,
+  ): MapBuilder<Lands> {
     if (mapKindOf(block) === "assert") {
       throw new WaygraphError("WG_MAP_WRONG_KIND", MSG_MAP_METHOD_GOT_ASSERT(block.name));
     }
     assertMapSalt(block, ["method", "effect", "api"], "method");
-    return this.appendStep(paced(block, opts), opts?.ff);
+    return this.appendStep(landsOn(paced(block, opts), opts?.lands), opts?.ff);
   }
 
   /**

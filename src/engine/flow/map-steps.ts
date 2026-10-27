@@ -1,7 +1,8 @@
 // What `map()` checks and wraps on each step: the Block's kind and origin, `{ ff, pace }`, a session reset.
 import type { Page } from "@playwright/test";
+import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { type SomeBlock, type SomeDefinedBlock, copyWaygraphRuntime } from "../block/block.js";
-import { MSG_MAP_WRONG_KIND, MSG_MAP_WRONG_ORIGIN_EXTERNAL, MSG_MAP_WRONG_ORIGIN_INTERNAL, MSG_MAP_WRONG_SALT, WaygraphError } from "../errors.js";
+import { MSG_MAP_LANDED_ELSEWHERE, MSG_MAP_LANDS_NOT_AN_OUTCOME, MSG_MAP_WRONG_KIND, MSG_MAP_WRONG_ORIGIN_EXTERNAL, MSG_MAP_WRONG_ORIGIN_INTERNAL, MSG_MAP_WRONG_SALT, WaygraphError } from "../errors.js";
 import { MemPage } from "../mem/mem.js";
 import type { DemoPace } from "../stub/pace.js";
 import { clearSessionState } from "./flow.js";
@@ -22,6 +23,33 @@ export function resetBefore(block: SomeBlock): SomeBlock {
   } as SomeBlock;
   copyWaygraphRuntime(block, next);
   Object.defineProperty(next, "__waygraphResetBefore", { value: true, enumerable: false, configurable: true });
+  return next;
+}
+/**
+ * The same Block, narrowed to one of its outcomes: the flow continues from `lands`, and a run where the Block resolves
+ * anywhere else fails at that step, naming both. A `lands` the Block never declares is rejected when the flow is built.
+ */
+export function landsOn(block: SomeDefinedBlock, lands: Checkpoint<string> | undefined): SomeDefinedBlock {
+  if (!lands) return block;
+  const outcomes = (block as { __waygraphTo?: readonly string[] }).__waygraphTo;
+  if (outcomes?.length && !outcomes.includes(lands.__state)) {
+    throw new WaygraphError("WG_MAP_LANDS", MSG_MAP_LANDS_NOT_AN_OUTCOME(block.name, lands.__state, outcomes));
+  }
+  const resolve = block.instruction.resolve.bind(block.instruction);
+  const next = {
+    ...block,
+    instruction: {
+      ...block.instruction,
+      async resolve(observed: unknown) {
+        const landed = await (resolve as (o: unknown) => Checkpoint<string> | Promise<Checkpoint<string>>)(observed);
+        if (landed.__state !== lands.__state) {
+          throw new WaygraphError("WG_MAP_LANDS", MSG_MAP_LANDED_ELSEWHERE(block.name, landed.__state, lands.__state));
+        }
+        return landed;
+      },
+    },
+  } as SomeDefinedBlock;
+  copyWaygraphRuntime(block, next);
   return next;
 }
 /** Applies a step's `pace` option, keeping the Block's runtime markers. */
@@ -91,7 +119,13 @@ export const MAP_SALT_FACTORY_HINT: Record<string, string> = {
 };
 /** Per-step options for the map builder: `ff` fast-forwards the step, `pace` sets its demo pace. */
 
-export interface MapStepOpts {
+export interface MapStepOpts<Lands extends Checkpoint<string> = Checkpoint<string>> {
+  /**
+   * Which of a branching Block's outcomes this flow continues from. The flow is typed from it, and a run where the Block
+   * lands anywhere else fails at this step.
+   * @example map().method(SubmitLoginBlock, { lands: LoggedIn }).gotoPage(NavCartBlock)
+   */
+  lands?: Lands;
   /**
    * Fast-forward just this step, inline - no `.ffStart()/.ffEnd()` bracket needed. Consecutive
    * `{ ff: true }` steps merge into ONE fast-forward block, same result as the explicit bracket

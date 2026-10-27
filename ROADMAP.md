@@ -285,8 +285,9 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     wanted and saw (`TraitFailure`, `check` on `step:error`), and gain `contains` / `matches` / `value` / `attribute` /
     `absent` with mem-derived expected values; the CLI prints the run log path; a fast-forward step's inner steps nest
     in the run log (`parent`), each ending once (the last one used to be logged as the fast-forward step, which never
-    ended); the demo's text log prints a step's stub and slides under that step's heading. **Done.** Next: branch outcomes
-    (`lands`), accounts, repeatable runs (issue #5), flow input, one browser across a chain.
+    ended); the demo's text log prints a step's stub and slides under that step's heading; `lands` on a step continues a flow
+    from one outcome of a branching Block, typed and checked (the quickstart's `submit-login-for-flow.ts` cast is
+    gone). **Done.** Next: accounts, repeatable runs (issue #5), flow input, one browser across a chain.
 
 
 

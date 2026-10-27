@@ -153,7 +153,7 @@ export function composeBlock(
  * the inner step. Prefer this for boring or heavy-check prefixes (auth, seed,
  * dashboard settle) — you may put **several** FF units in one Flow with normal
  * Blocks between them.
- * @example fastForwardComposeBlock("ff-owner-auth", [NavLoginBlock, SubmitLoginForFlow])
+ * @example fastForwardComposeBlock("ff-owner-auth", [NavLoginBlock, SubmitLoginBlock])
  */
 export interface FastForwardComposedBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>
   extends ComposedBlock<In, Out> {
