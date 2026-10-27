@@ -53,6 +53,21 @@ function theaterFailed(err: unknown): undefined {
   return undefined;
 }
 
+/** Input types made of segments or pickers (a date, a colour, a slider): keys typed one by one don't build their value. */
+const NOT_TYPED = new Set(["date", "datetime-local", "time", "month", "week", "color", "range", "file", "checkbox", "radio"]);
+
+/** Whether the demo types this field key by key (a text field), or fills it at once as a run does. */
+async function typedByHand(locator: Locator): Promise<boolean> {
+  return locator
+    .evaluate((el, notTyped) => !(el instanceof HTMLInputElement && notTyped.includes(el.type)), [...NOT_TYPED])
+    .catch(() => true);
+}
+
+/** Whether the field now holds `value` (a contenteditable, with no input value, counts as holding it). */
+async function holds(locator: Locator, value: string): Promise<boolean> {
+  return locator.inputValue({ timeout: 1000 }).then((v) => v === String(value), () => true);
+}
+
 function patchLocator(proto: LocatorProto): void {
   if (proto.__wgTheaterPatched) return;
   proto.__wgTheaterPatched = true;
@@ -62,12 +77,20 @@ function patchLocator(proto: LocatorProto): void {
     const theater = theaters.get(this.page());
     if (!theater) return fill.call(this, value, options);
     await theater.beforeFill(this, options).catch(theaterFailed);
-    try {
-      // Not this.clear(): Locator.clear() is fill(""), which would come back into this wrapper.
-      await fill.call(this, "", { ...(options?.timeout !== undefined ? { timeout: options.timeout } : {}) });
-      await this.pressSequentially(String(value), { delay: theater.typingDelay(), ...(options?.timeout !== undefined ? { timeout: options.timeout } : {}) });
-    } catch {
-      // An element pressSequentially can't type into (a contenteditable, say): Playwright's own fill.
+    const timeout = options?.timeout !== undefined ? { timeout: options.timeout } : {};
+    if (await typedByHand(this)) {
+      try {
+        // Not this.clear(): Locator.clear() is fill(""), which would come back into this wrapper.
+        await fill.call(this, "", timeout);
+        await this.pressSequentially(String(value), { delay: theater.typingDelay(), ...timeout });
+      } catch {
+        // An element pressSequentially can't type into (a contenteditable, say): Playwright's own fill.
+        await fill.call(this, value, options);
+      }
+      // The typing is for the eye: the demo enters exactly what a run enters. A field that turned the keys into something
+      // else (a mask reading "," as a decimal point) gets Playwright's own fill, as a run does.
+      if (!(await holds(this, value))) await fill.call(this, value, options);
+    } else {
       await fill.call(this, value, options);
     }
     await theater.afterFill(this);

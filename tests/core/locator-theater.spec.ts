@@ -33,3 +33,43 @@ test("a theater shows only its own page's fills and clicks; another page runs Pl
   expect(await plain.locator("#name").inputValue()).toBe("plain");
   await context.close();
 });
+
+test("the demo's typing is for the eye: every field ends with what a plain run's fill enters", async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  // A date-time field (segments, not typed), a field that reads a typed "," as a decimal point (a number mask, like
+  // Mantine's NumberInput), and a plain text field.
+  await page.setContent(`
+    <input id="when" type="datetime-local">
+    <input id="qty" inputmode="decimal">
+    <input id="name">
+    <script>
+      document.getElementById("qty").addEventListener("keydown", (e) => {
+        if (e.key !== ",") return;
+        e.preventDefault();
+        const el = e.target;
+        el.value += ".";
+      });
+    </script>`);
+  const typed: string[] = [];
+  page.on("console", () => {});
+  await page.exposeFunction("noteKey", (k: string) => typed.push(k));
+  await page.evaluate(() => document.getElementById("name")!.addEventListener("keydown", (e) => (window as unknown as { noteKey(k: string): void }).noteKey(e.key)));
+  setLocatorTheater(page, {
+    beforeFill: async () => {},
+    typingDelay: () => 0,
+    afterFill: async () => {},
+    beforeClick: async () => "click",
+    holdMs: () => 0,
+    afterClick: async () => {},
+  });
+  await page.locator("#when").fill("2026-10-28T09:30");
+  await page.locator("#qty").fill("1,200");
+  await page.locator("#name").fill("Mixer");
+  expect(await page.locator("#when").inputValue()).toBe("2026-10-28T09:30");
+  expect(await page.locator("#qty").inputValue()).toBe("1,200");
+  expect(await page.locator("#name").inputValue()).toBe("Mixer");
+  // A plain text field is still typed key by key, for the demo.
+  expect(typed.filter((k) => k.length === 1).join("")).toBe("Mixer");
+  await context.close();
+});
