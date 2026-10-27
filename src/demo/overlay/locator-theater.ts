@@ -26,7 +26,14 @@ export interface LocatorTheater {
   capSleep?(ms: number): number;
 }
 
-const theaters = new WeakMap<Page, LocatorTheater>();
+/**
+ * Which page shows its actions through which theater. Kept on globalThis, not in this module: the patch below goes on
+ * Playwright's one Locator prototype once, so a second copy of this module (src and dist in one process, two installs
+ * of waygraph) must register its theaters where that one patch looks.
+ */
+const theaters: WeakMap<Page, LocatorTheater> = ((globalThis as { [k: symbol]: WeakMap<Page, LocatorTheater> | undefined })[
+  Symbol.for("waygraph.locatorTheaters")
+] ??= new WeakMap());
 
 type Timeout = { timeout?: number } | undefined;
 type LocatorProto = {
@@ -57,14 +64,16 @@ function theaterFailed(err: unknown): undefined {
  * Lets the click through the overlay's chrome to the page (a dock over the button must never take it), unless the target
  * is part of the overlay itself (the panel's Next). Returns whether it switched it on.
  */
-async function clickThroughChrome(locator: Locator): Promise<boolean> {
+async function clickThroughChrome(locator: Locator, options: Timeout): Promise<boolean> {
+  // As long as the click itself may wait for its target: a shorter wait could run out on a busy machine while the click
+  // still finds the element, and the chrome would then take it.
   return locator
     .evaluate((el) => {
       const root = document.getElementById("wg-root")?.shadowRoot;
       if (!root || el.getRootNode() === root) return false;
       root.getElementById("wg-ui")?.setAttribute("data-clicking", "");
       return true;
-    }, undefined, { timeout: 2000 })
+    }, undefined, options?.timeout !== undefined ? { timeout: options.timeout } : undefined)
     .catch(() => false);
 }
 
@@ -122,7 +131,7 @@ function patchLocator(proto: LocatorProto): void {
     const theater = theaters.get(this.page());
     if (!theater) return click.call(this, options);
     const gesture = (await theater.beforeClick(this, options).catch(theaterFailed)) ?? "click";
-    const through = await clickThroughChrome(this);
+    const through = await clickThroughChrome(this, options);
     try {
       if (gesture === "hold") await click.call(this, { ...(options ?? {}), delay: theater.holdMs() });
       else if (gesture === "tap") {
