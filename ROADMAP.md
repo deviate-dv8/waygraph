@@ -294,8 +294,10 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     flow instead of an export per data case. **Done.** One browser and one video across a case needs nothing new: a
     chain already plays in one session (one recording), and an input list makes a whole case one run instead of one
     `waygraph run` per request. `{ settle: true | { quietMs, maxMs } }` on a step: after it acts,
-    wait for the page to load and stop changing before it is checked, instead of fixed waits. **Done.** Next: batch
-    runner and flow settings (viewport, exclusive, order).
+    wait for the page to load and stop changing before it is checked, instead of fixed waits. **Done.** Flows as tests: `waygraph test --flows` makes every
+    exported flow a Playwright test (workers, retries, video, HTML / JSON reports), `map({ viewport })` and
+    `map({ exclusive: true })` (alone, after the rest); episodes and flows missing data are skipped with the reason.
+    **Done.** Next: narration in fast-forward steps, faults / throttling / time zone, mail claim.
 20. The overlay looks like macOS (0.16.6): one stylesheet built by Tailwind (theme tokens after macOS - system colours,
     label / fill / separator, translucent materials, the system font, hairlines, layered shadows - in light and dark,
     `demo.appearance` pins one), an element's look as utilities where it is built, states in small component files;

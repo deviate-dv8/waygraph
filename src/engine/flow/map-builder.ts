@@ -68,6 +68,17 @@ export interface MapBuilderOptions {
    * @example engine.map({ input: ApiCase }).gotoExternal(NavHoppscotchRestBlock).method(LoadCaseBlock)…
    */
   input?: MemKey<unknown>;
+  /**
+   * The browser size this flow plays at: a responsive layout, a page that needs room. `run` and `demo` resize to it when
+   * the flow starts; `waygraph test --flows` runs it at that size.
+   * @example engine.map({ viewport: { width: 1600, height: 900 } })
+   */
+  viewport?: { width: number; height: number };
+  /**
+   * Under `waygraph test --flows`, run this flow alone, after every other flow: it changes data others read (a bulk
+   * delete, a settings change), or it needs the app to itself.
+   */
+  exclusive?: boolean;
 }
 
 /** What `.flow()` takes for the sub-flow it runs inline. */

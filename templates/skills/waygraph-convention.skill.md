@@ -90,6 +90,9 @@ against a live site, use `--skill-pilot-blind`.
   `.gotoExternal` for another origin); it is the only way to build one. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`, `as`) go in `map({ … })` before the chain
   and `.end()` takes nothing. The flow's title is `ctx.ui.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
   `defineFlow`, `chainFlow` and the `with*` flow wrappers were removed in 0.16.0; `waygraph upgrade --codemod flows` converts them.
+- **Flows are the tests.** `waygraph test --flows` runs every flow as a Playwright test (workers, retries, video,
+  reports); `map({ viewport })` sizes one, `map({ exclusive: true })` runs one alone and last. A project-written batch
+  runner (parallelism, retries, "run these alone", a verdict file) is a smell. Write a spec only for what a flow can't say.
 - **No fixed waits.** A step whose page keeps changing after it acts takes `{ settle: true }` in the flow
   (`.method(TypeSearchBlock, { settle: true })`); a check that needs the page to catch up is already retried by verify.
   `page.waitForTimeout(...)` in a Block, or a hand-written "wait until the rows stop changing" loop, is a smell.

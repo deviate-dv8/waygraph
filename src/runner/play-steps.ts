@@ -47,6 +47,7 @@ export async function playSteps(steps: readonly PlayStep[], session: PlaySession
     }
     // A segment's --data is seeded when it starts, so two segments can give the same key different values.
     step.seedMem?.();
+    if (step.viewport) await session.page.setViewportSize(step.viewport);
     if ((clearSession || step.resetSession) && i > 0) {
       await resetPage(session);
       await mode.afterReset?.();

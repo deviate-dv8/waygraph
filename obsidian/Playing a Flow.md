@@ -40,6 +40,7 @@ episodes, an **expected failure** (a flow meant to fail stops cleanly), and "Ret
 > A new way to play steps is one file in `src/runner/modes/` that returns the hooks it wants.
 
 `waygraph test` is different: it runs your Playwright test files with the project's config, and those tests call
-`flow.run(...)` themselves.
+`flow.run(...)` themselves. `waygraph test --flows` makes every flow a test of its own - Playwright's workers,
+retries, video and reports, no spec written; exclusive flows run last, alone. Code: `src/cli/flow-tests/`.
 
 Code: `src/runner/runner.ts` (the whole story in ~60 lines), `play-steps.ts` (the loop), `modes/`.

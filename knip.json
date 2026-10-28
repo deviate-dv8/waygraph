@@ -8,7 +8,8 @@
     "src/runner/runner.*",
     "scripts/*.mjs",
     "tests/**/*.spec.ts",
-    "typecheck/*.ts"
+    "typecheck/*.ts",
+    "src/cli/flow-tests/*.spec.ts"
   ],
   "project": [
     "src/**/*.{ts,js}",

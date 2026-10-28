@@ -65,6 +65,15 @@ trace waiting - `waygraph test report` opens the HTML report, and
 own `show-report`/`show-trace`, which live outside `playwright test`, so they're handled
 before the `test` forward rather than passed through it).
 
+**`waygraph test --flows`** runs every flow the project exports as a Playwright test, with no spec to write: in
+parallel (`--workers N`), with `--retries N`, video and traces as configured, the HTML report, and
+`--reporter=json` for a results file; `-g <text>` picks flows by file or export name. Each flow runs at its
+`map({ viewport })`, with its mem stubs filling its `requires`. Flows marked `map({ exclusive: true })` run one at a
+time, after all the others (they change data the rest read, or need the app to themselves). A flow is skipped, with
+the reason, when it needs a key nothing supplies, or when it starts on a page it doesn't open (an episode that runs
+after another flow: its first step doesn't navigate by URL, sign an account in or call an API). A flow meant to fail
+(`expectedFailure`) passes when it fails.
+
 Flows are files (0.10.5+):
 
 | Want | Command |

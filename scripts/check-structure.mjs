@@ -129,7 +129,8 @@ for (const f of files) {
   }
 }
 // --- no wiring by import: a module runs nothing at its top level; entries call install functions explicitly ---
-const ENTRIES = new Set(["index.ts", "beta.ts", "cli/cli.ts"]);
+// The flow-tests specs are entries too: Playwright loads them (`waygraph test --flows`), and a spec registers at import.
+const ENTRIES = new Set(["index.ts", "beta.ts", "cli/cli.ts", "cli/flow-tests/flows.spec.ts", "cli/flow-tests/flows-exclusive.spec.ts"]);
 for (const f of files) {
   const rel = relative(srcDir, f).replace(/\\/g, "/");
   if (ENTRIES.has(rel)) continue;

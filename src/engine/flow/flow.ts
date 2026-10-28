@@ -124,6 +124,10 @@ export interface Flow<Out extends Checkpoint<string>> {
    * a mem stub, or `.flow(sub, { input })`.
    */
   readonly input?: MemKey<unknown>;
+  /** `map({ viewport })`: the browser size this flow plays at (`waygraph run`, `demo`, `test --flows`). */
+  readonly viewport?: { width: number; height: number };
+  /** `map({ exclusive: true })`: under `waygraph test --flows` it runs alone, after every other flow. */
+  readonly exclusive?: boolean;
   /**
    * This Flow's constituent Blocks, in order between `start`/`end`, as plain
    * data - for introspection/visualization tools, without running anything.
@@ -301,6 +305,8 @@ export function buildFlow<Out extends Checkpoint<string>>(
 export interface FlowSettings {
   /** The flow's input key (`map({ input })`). */
   input?: MemKey<unknown>;
+  viewport?: { width: number; height: number };
+  exclusive?: boolean;
   /** Cleanup steps from `.finally(Block)`, in order. */
   finally?: readonly SomeBlock[];
   /** Read by map() when it begins (the sign-in step); the Flow itself keeps nothing of it. */
@@ -319,6 +325,8 @@ export function withSettings<Out extends Checkpoint<string>>(flow: Flow<Out>, se
     ...(settings.sessionReset ? { resetSession: true } : {}),
     ...(settings.memStub ? { memStub: true } : {}),
     ...(settings.input ? { input: settings.input } : {}),
+    ...(settings.viewport ? { viewport: settings.viewport } : {}),
+    ...(settings.exclusive ? { exclusive: true } : {}),
     ...(settings.expectedFailure !== undefined ? { expectedFailureReason: settings.expectedFailure } : {}),
     ...(settings.demoPace ? { demoPace: settings.demoPace } : {}),
     ...(style

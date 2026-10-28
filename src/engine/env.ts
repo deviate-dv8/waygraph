@@ -19,6 +19,7 @@ export const WAYGRAPH_ENV = {
   WAYGRAPH_AUTO_MEM: "Mem seed JSON for auto sessions (same as WAYGRAPH_DATA)",
   WAYGRAPH_MEM_STUB: "1 fills missing requires from registerMemStub (--mem-stub)",
   WAYGRAPH_REPLAY: "A run id: seed mem with what that run recorded (--replay)",
+  WAYGRAPH_FLOW_TESTS: "1 makes waygraph test run every flow as a test (--flows)",
   WAYGRAPH_INPUT: "A flow's input: JSON or @file; an array plays the flow once per item (--input)",
   WAYGRAPH_AUTOPLAY: "1 advances demo steps on their own (--auto-next)",
   WAYGRAPH_AUTOPLAY_MS: "Auto-next wait per step, ms (default 1800)",

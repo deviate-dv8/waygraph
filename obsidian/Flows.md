@@ -46,6 +46,8 @@ export const homeCartFlow = engine
 |---|---|
 | `memStub` | fill missing [[Mem]] values with registered fakes |
 | `sessionReset` | start with a fresh browser session when run after another flow |
+| `viewport` | the browser size the flow plays at |
+| `exclusive` | under `waygraph test --flows`, run alone after every other flow |
 | `input` | the flow takes a value (a MemKey): one flow for many cases; `--input` gives it, a list plays it once per item |
 | `as` | start signed in as an account (`account("planner", { signIn: plannerSignInFlow })`): it signs in once per run, later flows reuse its session |
 | `expectedFailure` | this flow is *meant* to fail (a blocked user); the demo explains instead of alarming |

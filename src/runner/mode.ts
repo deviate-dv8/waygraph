@@ -26,6 +26,8 @@ export interface PlayStep {
   expectedFailureReason?: string | undefined;
   demoPace?: DemoPace | undefined;
   highlightStyle?: HighlightStyleDefaults | undefined;
+  /** The browser size its flow plays at (`map({ viewport })`); set on a segment's first step. */
+  viewport?: { width: number; height: number } | undefined;
   /** Which flow of the chain this step belongs to (its cleanup runs when that flow ends). */
   segment: number;
   /** A cleanup step (`.finally(Block)`): played when its flow ends, pass or fail; a failure is reported, not fatal. */

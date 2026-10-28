@@ -111,7 +111,9 @@ armed around the Block's action rather than written into it: `withDialog(CancelB
 ### Flows: `map()` is the one way to define them
 
 A flow is built with `engine.map()`. Its run settings go in `map({ … })`, before the chain (`memStub`, `expectedFailure`,
-`demoPace`, `highlightStyle`, `sessionReset`, `as`, `input`, `homeOrigin`); `.end()` takes nothing. `sessionReset: true` says the flow wants a fresh
+`demoPace`, `highlightStyle`, `sessionReset`, `as`, `input`, `viewport`, `exclusive`, `homeOrigin`); `.end()` takes
+nothing. `viewport: { width, height }` is the size the flow plays at (`run`, `demo`, `test --flows`); `exclusive: true`
+makes `waygraph test --flows` run it alone, after every other flow. `sessionReset: true` says the flow wants a fresh
 browser session when it runs after another one, in a CLI chain (`waygraph run "a then b"`) or nested with `.flow()`. The flow's title and narration are ctx stubs chained on
 the Block where they apply (`ctx.ui.title(…)` names the flow from that step on), and a step's pace is its `{ pace }` option:
 

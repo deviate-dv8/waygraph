@@ -30,6 +30,12 @@ export async function testCase(args: string[]): Promise<void> {
         return;
       }
 
+      // --flows: the tests are the project's flows (runtime/playwright-config.ts), not its spec files.
+      const flowsAt = rest.indexOf("--flows");
+      if (flowsAt >= 0) {
+        rest.splice(flowsAt, 1);
+        setEnv("WAYGRAPH_FLOW_TESTS", "1");
+      }
       const extensions = await configuredExtensions(proj);
       if (envString("WAYGRAPH_RUN_LOG") === undefined) setEnv("WAYGRAPH_RUN_LOG", defaultRunLogDir(proj));
       if (extensions.length > 0) setEnv("WAYGRAPH_EXTENSIONS", extensions.join(","));
