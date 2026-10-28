@@ -163,6 +163,13 @@ runs, independent of whether the network tab itself is visible.
 Network *mocking* (intercepting a request and serving a fabricated response,
 not just observing real traffic) isn't implemented yet - see `ROADMAP.md`.
 
+## Narration in a fast-forward step
+
+A fast-forward unit (`{ ff: true }` steps, or `.ffStart()…ffEnd()`) plays its steps at once, and narrates them at
+once: before it, each inner step's `stubBefore` runs in order; after it, each `stubAfter`; then the unit's own. The
+todo dock, title and caption they set are painted (the last one set wins); rings are not, since nothing is shown step
+by step. So a checklist advanced by the steps inside a fast-forward window needs no extra do-nothing step to paint it.
+
 ## Sauce Demo coverage
 
 The [Sauce Demo](./saucedemo/index) shows all features in a real block/flow:

@@ -7,6 +7,7 @@ import { createStubCtx } from "./stub-ctx.js";
 import { applyDefaultZoom, applyDefaultZoomOut, readStubRaw, resolvePhaseMap } from "./merge.js";
 import { buildTodoDock, normalizeTodoStyle, normalizeTodos } from "./todo-dock.js";
 import { resolveDeviceState } from "./device.js";
+import { isFastForwardBlock } from "../../engine/block/compose.js";
 import type { SomeBlock } from "../../engine/block/block.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import type { MemPage } from "../../engine/mem/mem.js";
@@ -50,6 +51,8 @@ export async function runStubPhase(
 
   let highlights = applyDefaultZoom(resolvePhaseMap(bag.highlights), bag.zoom);
   highlights = applyDefaultZoomOut(highlights, bag.zoomOut);
+  // A fast-forward unit shows what its steps narrate (todos, title, caption) but rushes past their rings.
+  if (isFastForwardBlock(block)) highlights = [];
 
   const todoDock = bag.hideTodos
     ? undefined

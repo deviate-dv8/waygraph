@@ -2,6 +2,7 @@ import type { HighlightStubPhase, ResolvedHighlight, WaygraphHighlightStub } fro
 import type { HighlightStubPhaseName, StubLifecycleFn } from "../../engine/stub/stub.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/stub/ring.js";
 import type { SomeBlock } from "../../engine/block/block.js";
+import { isFastForwardBlock } from "../../engine/block/compose.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 
 
@@ -81,5 +82,13 @@ export function resolvePhaseMap(phaseMap: HighlightStubPhase): ResolvedHighlight
 
 /** The stub a Block's flow chained for this phase, if any. */
 export function readStubRaw(block: SomeBlock, phase: HighlightStubPhaseName): StubLifecycleFn<Checkpoint<string>> | undefined {
-  return block.instruction[phase];
+  const own = block.instruction[phase];
+  if (!isFastForwardBlock(block)) return own;
+  // A fast-forward unit plays its steps at once, and narrates them at once: each inner step's stub of this phase, in
+  // order (the todo dock, title and caption they set), then the unit's own.
+  const stubs = [...block.steps().map((info) => (info.block as SomeBlock).instruction[phase]), own].filter((f) => f !== undefined);
+  if (stubs.length === 0) return undefined;
+  return async (ctx) => {
+    for (const stub of stubs) await stub(ctx);
+  };
 }

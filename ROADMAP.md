@@ -297,7 +297,8 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     wait for the page to load and stop changing before it is checked, instead of fixed waits. **Done.** Flows as tests: `waygraph test --flows` makes every
     exported flow a Playwright test (workers, retries, video, HTML / JSON reports), `map({ viewport })` and
     `map({ exclusive: true })` (alone, after the rest); episodes and flows missing data are skipped with the reason.
-    **Done.** Next: narration in fast-forward steps, faults / throttling / time zone, mail claim.
+    **Done.** A fast-forward unit narrates its inner steps' stubs (todos, title, caption) when it plays. **Done.** Next:
+    faults / throttling / time zone, mail claim.
 20. The overlay looks like macOS (0.16.6): one stylesheet built by Tailwind (theme tokens after macOS - system colours,
     label / fill / separator, translucent materials, the system font, hairlines, layered shadows - in light and dark,
     `demo.appearance` pins one), an element's look as utilities where it is built, states in small component files;

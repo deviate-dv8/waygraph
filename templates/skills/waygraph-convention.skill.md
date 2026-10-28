@@ -119,6 +119,8 @@ against a live site, use `--skill-pilot-blind`.
 - **A flow about one outcome says so with `lands`, never a cast.** `.method(SubmitLoginBlock, { lands: LoggedIn })`
   types the flow from `LoggedIn` and fails the run if the Block lands elsewhere; `Block as unknown as MethodBlock<A, B>`
   (a `*-for-flow.ts` alias) hides the other outcome and never checks it. To follow every outcome, `.branch()`.
+- **Narrate a fast-forwarded step on the step itself.** Stubs chained on Blocks inside an `{ ff: true }` window run
+  when the unit plays (todos, title, caption; no rings). A do-nothing Block added only to paint the dock is a smell.
 - **Demo pace is a map option or config, never a wrapper.** `.method(SetBearerTokenBlock, { pace: "blitz" })` speeds one step,
   `map({ demoPace: "fast" })` a flow, `demo: { pace, typingMs, slowMo }` in the config the whole project.
 - **Per-environment values** (a different `baseUrl` for staging) come from `.env` files read in the config function:

@@ -34,6 +34,9 @@ narration quietly going missing. Every `ctx` method is in `src/engine/stub/stub.
 
 ## Pace
 
+A fast-forward unit narrates the steps inside it at once: their stubs' todos, title and caption are painted when it
+plays (no rings).
+
 Each step has a pace: `blitz` (no theater), `fast`, `normal`, `slow`, or a number. It comes from the step's
 `{ pace }`, else the flow's `map({ demoPace })`, else the config's `demo.pace`. `--fast` only speeds up steps nobody
 gave a pace.
