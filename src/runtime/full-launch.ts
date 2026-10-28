@@ -22,7 +22,7 @@ export function installFullLaunch(): void {
     const executablePath = browserName === "chromium" ? chromiumExecutablePath() : undefined;
     const baseURL = config?.baseUrl ?? envString("WAYGRAPH_BASE_URL");
     return launchContext({
-      launcher: resolveLauncher(browserName, config),
+      launcher: await resolveLauncher(browserName, config),
       launch: {
         headless: config?.headless ?? true,
         ...(config?.slowMo !== undefined ? { slowMo: config.slowMo } : {}),

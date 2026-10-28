@@ -1,9 +1,6 @@
 // EngineConfig: which browser a flow launches when it opens its own, how, and the layouts every step is checked against.
-import { chromium, firefox, webkit } from "@playwright/test";
 import type { BrowserType } from "@playwright/test";
 import type { Layout } from "./run/run.js";
-
-const LAUNCHERS = { chromium, firefox, webkit };
 
 
 /**
@@ -21,11 +18,13 @@ const LAUNCHERS = { chromium, firefox, webkit };
 export type ExtensionSpec = string | { id?: string; path?: string; sha256?: string };
 
 
-export function resolveLauncher(
+export async function resolveLauncher(
   browserName: "chromium" | "firefox" | "webkit",
   config: EngineConfig | undefined,
-): BrowserType {
-  return config?.browsers?.[browserName] ?? LAUNCHERS[browserName];
+): Promise<BrowserType> {
+  // Imported here, not at the top: a project's own install must be the first to load @playwright/test (two copies in
+  // one process fail with "Requiring @playwright/test second time").
+  return config?.browsers?.[browserName] ?? (await import("@playwright/test"))[browserName];
 }
 
 

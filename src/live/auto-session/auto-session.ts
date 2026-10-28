@@ -21,7 +21,7 @@ import { resolveBaseUrl } from "../../runtime/waygraph-config.js";
 import { detectHere, ensureLivePage, runOneBlock } from "../auto/auto.js";
 import type { ExploreMenu } from "../auto/explore.js";
 import { buildExploreContext, buildExploreMenu } from "../auto/explore.js";
-import { ensureMem, seedDefaultMem } from "../auto/mem.js";
+import { ensureMem, optionChosen, seedDefaultMem } from "../auto/mem.js";
 import type { PilotOverlayInfo } from "../pilot/panel.js";
 import { updatePilotOverlay } from "../pilot/panel.js";
 import { recordPageConsole } from "./console.js";
@@ -469,11 +469,9 @@ export class AutoSession {
       if (!entry) {
         return { ok: false, error: `path step "${step.block}" is in the discovered graph but not loaded in this session's library` };
       }
-      if (entry.block.instanceOptions) {
-        return {
-          ok: false,
-          error: `path step "${step.block}" needs a specific live option chosen (an instanceOptions Block, e.g. one per product) - ambiguous for automatic routing, use applyPick directly with the specific index`,
-        };
+      // One option per row (add *this* item): runs when mem already says which (--data, a pick, a mem stub).
+      if (entry.block.instanceOptions && !(this.page && (await optionChosen(entry, this.page, this.mem)))) {
+        return { ok: false, error: `path step "${step.block}" needs a specific live option chosen (one per row, e.g. per product) and mem doesn't say which - pick one with send <index>, or give its key with --data or a mem stub` };
       }
       if (this.page) await showPilotActivity(this.page, `Running (Block): ${step.block} (reach -> ${targetCheckpoint})`);
       const result = await this.runNamedBlock(entry, step.to);

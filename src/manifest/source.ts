@@ -78,6 +78,11 @@ export function stringLiterals(sf: SourceFile): { value: string; property: strin
   return out;
 }
 
+/** The fixed start of every template literal with a substitution: `[data-test=add-${id}]` gives `[data-test=add-`. */
+export function templateHeads(sf: SourceFile): string[] {
+  return sf.getDescendantsOfKind(SyntaxKind.TemplateExpression).map((t) => t.getHead().getLiteralText());
+}
+
 /** Every call in the file (comments and strings are not calls): its callee as written and whether its first argument is a string. */
 export function calls(sf: SourceFile): { callee: string; literalFirstArg: boolean }[] {
   return sf.getDescendantsOfKind(SyntaxKind.CallExpression).map((call) => {

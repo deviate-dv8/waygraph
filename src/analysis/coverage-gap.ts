@@ -6,7 +6,7 @@
 import { exploreRoots } from "../manifest/roots.js";
 import type { BlockEntry } from "../manifest/project.js";
 import { walkDir } from "../manifest/scan.js";
-import { parseSource, stringLiterals } from "../manifest/source.js";
+import { parseSource, stringLiterals, templateHeads } from "../manifest/source.js";
 
 /** A colour like `{ color: "#fde68a" }` is not a selector. */
 const STYLE_PROPERTY = /colou?r|background|fill|stroke|border|shadow/i;
@@ -17,7 +17,18 @@ function isSelectorLiteral(value: string, property: string | undefined): boolean
   return value.includes("#") || value.startsWith("[") || value.includes("data-test");
 }
 
-/** Collect selector strings from NavClick blocks and Block/*Sel source files. */
+/**
+ * A selector built per row (`(id) => \`[data-test=add-${id}]\``) as one that matches every row: an attribute or id
+ * prefix (`[data-test^="add-"]`). Undefined when its fixed start isn't one of those.
+ */
+function rowSelector(head: string): string | undefined {
+  const attr = /^\[([\w-]+)=["']?([^"'\]]*)$/.exec(head);
+  if (attr) return `[${attr[1]}^="${attr[2]}"]`;
+  const id = /^#([\w-]+)$/.exec(head);
+  return id ? `[id^="${id[1]}"]` : undefined;
+}
+
+/** Collect selector strings from NavClick blocks and Block / selector files (`*.block.ts`, `_sel.ts`, `*.sel.ts`). */
 export function collectKnownInteractionSelectors(
   projectDir: string,
   library: { navBlocks: BlockEntry[] },
@@ -30,8 +41,13 @@ export function collectKnownInteractionSelectors(
     if (typeof click === "string") out.add(click);
   }
   for (const root of exploreRoots(projectDir, inject)) {
-    for (const file of walkDir(root, /\.(block|sel)\.ts$/)) {
-      for (const { value, property } of stringLiterals(parseSource(file))) if (isSelectorLiteral(value, property)) out.add(value);
+    for (const file of walkDir(root, /(\.block\.ts|[\\/._]sel\.ts)$/)) {
+      const source = parseSource(file);
+      for (const { value, property } of stringLiterals(source)) if (isSelectorLiteral(value, property)) out.add(value);
+      for (const head of templateHeads(source)) {
+        const selector = rowSelector(head);
+        if (selector) out.add(selector);
+      }
     }
   }
   return Array.from(out);

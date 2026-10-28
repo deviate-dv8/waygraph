@@ -34,12 +34,12 @@ export interface Plan {
 export async function planSteps(projectDir: string, spec: string, mem: MemPage, options: PlayOptions): Promise<Plan> {
   const bareFlow = await findBareFlow(projectDir, spec);
   const inputs = options.input === undefined ? undefined : readInputs(projectDir, options.input, bareFlow, spec);
-  const segments = bareFlow
-    ? inputs
-      ? inputs.map((value, i) => flowSegment(bareFlow, inputs.length > 1 ? `${spec.trim()} #${i + 1}` : spec.trim(), undefined, mem, options, value))
-      : [flowSegment(bareFlow, spec.trim(), undefined, mem, options)]
-    : await Promise.all(parseSegments(spec).map((seg) => resolveSegment(projectDir, seg, mem, options)));
   const recorded = options.replay ? recordedMem(projectDir, options.replay) : undefined;
+  // A replayed run that played one flow once per input plays it as many times again, each with its recorded mem.
+  const runs = inputs?.length ?? (bareFlow && recorded && recorded.size > 1 ? recorded.size : 1);
+  const segments = bareFlow
+    ? Array.from({ length: runs }, (_, i) => flowSegment(bareFlow, runs > 1 ? `${spec.trim()} #${i + 1}` : spec.trim(), undefined, mem, options, inputs?.[i]))
+    : await Promise.all(parseSegments(spec).map((seg) => resolveSegment(projectDir, seg, mem, options)));
   segments.forEach((segment, index) => {
     segment.seedMem = seeding(segment, index, mem, recorded);
   });

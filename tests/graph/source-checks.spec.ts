@@ -22,6 +22,8 @@ test.describe("source checks read the AST, not the file text", () => {
     await writeFile(join(dir, "src/blocks/comment.block.ts"), block("CommentBlock", `// never page.goto("/") in here\nconst note = "page.goto(";`));
     await writeFile(join(dir, "src/blocks/navigates.block.ts"), block("NavigatesBlock", `export const go = async (page: { goto(u: string): Promise<unknown> }) => page.goto("/");`));
     await writeFile(join(dir, "src/blocks/styled.sel.ts"), `export const StyledSel = { button: "[data-test=save]", color: "#fde68a" };`);
+    await mkdir(join(dir, "src/map/(app)/home"), { recursive: true });
+    await writeFile(join(dir, "src/map/(app)/home/_sel.ts"), "export const HomeSel = { clear: \"[data-test=clear]\", add: (id: string) => `[data-test=add-${id}]`, row: (id: string) => `#row-${id}` };");
   });
   test.afterAll(() => rm(dir, { recursive: true, force: true }));
 
@@ -35,5 +37,12 @@ test.describe("source checks read the AST, not the file text", () => {
     expect(known).toContain("#user-name");
     expect(known).toContain("[data-test=save]");
     expect(known).not.toContain("#fde68a");
+  });
+
+  test("a Map page's _sel.ts counts; a selector built per row matches every row", () => {
+    const known = collectKnownInteractionSelectors(dir, { navBlocks: [] });
+    expect(known).toContain("[data-test=clear]");
+    expect(known).toContain('[data-test^="add-"]');
+    expect(known).toContain('[id^="row-"]');
   });
 });

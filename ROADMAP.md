@@ -385,6 +385,24 @@ Left, each with its reason in the code: three `as unknown as` in the engine (`wi
 type clash between @types/node and the polyfill, the `AssertBlock` brand), the overlay's in-page installer
 (`shadow.ts`), and about 125 non-null assertions outside the engine (mostly bounded index reads).
 
+### Bugs found by playing a fresh project end to end (fixed, 0.16.8)
+
+- `waygraph test --flows` skipped every flow whose first Nav takes its URL from a function (another origin, a deep
+  link: the scaffold's mailpit and hoppscotch flows) as "starts on a page it doesn't open".
+- A Page hub's "it navigates" marker, a step's session reset and a cleanup step's mark were lost when the Block was
+  narrated or patched (`stubBefore`, `withVerify`): they are copied with the other runtime markers now.
+- `modVerifyAll` and a stub on a composed Block dropped its `steps()`.
+- `.flow(sub, { reset: true, input })` reset after the input step instead of before the whole sub-flow.
+- With two installs of waygraph (a global or `npx` CLI, and the project's own), `graph` found no Blocks and sessions
+  failed to start ("Requiring @playwright/test second time"): the engine imported Playwright's launchers at load, and
+  sessions ran on the CLI's copy. Launchers load when a browser opens; a session runs on the project's install.
+- Every page in a pilot session logged two errors from waygraph's own overlay (it installed before the page had an
+  `<html>`), and its stylesheet was not added.
+- Coverage-gap warnings ignored a Map page's `_sel.ts` and selectors built per row (`(id) => \`[data-test=add-${id}]\``),
+  so covered buttons were reported as unmapped.
+- `pilot reach` refused any route through a per-row step (an Effect) even when mem already named the row.
+- `--replay` of a run that played a flow once per `--input` item played it once.
+
 ### Network tab mocking (backlogged, not yet researched)
 
 The network tab overlay (`demo/overlay/network-capture.ts`, `demo/overlay/inpage/network.ts`) is

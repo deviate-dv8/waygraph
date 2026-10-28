@@ -6,6 +6,11 @@ import { ignorePageGone } from "../../../engine/page-gone.js";
 
 /** Browser-side shell install — runs on every document via context.addInitScript. */
 function installPilotOverlayShell(): void {
+  // Before the document has its <html> (an init script), after installShadowRoot's own wait (registered first).
+  if (!document.documentElement) {
+    document.addEventListener("DOMContentLoaded", installPilotOverlayShell, { once: true });
+    return;
+  }
   if (__wgById("wg-pilot-overlay")) return;
   const tab = (id: string, label: string, on: boolean) =>
     __wgEl(

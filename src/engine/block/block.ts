@@ -258,8 +258,11 @@ export function copyWaygraphRuntime(from: object, to: object): void {
     "__waygraphNavUrl",
     "__waygraphNavClick",
     "__waygraphNavFrom",
+    "__waygraphPageDeepLink",
     "__waygraphFrom",
     "__waygraphTo",
+    "__waygraphResetBefore",
+    "__waygraphCleanup",
   ] as const) {
     const desc = Object.getOwnPropertyDescriptor(from, key);
     if (!desc) continue;
@@ -391,23 +394,13 @@ function withStubPhase<In extends Checkpoint<string>, Out extends Checkpoint<str
   phase: "stubBefore" | "stubAfter" | "stubOnError",
   stub: StubPhaseFn<Out>,
 ): DefinedBlock<In, Out> {
-  const base = stripMethods(block);
-  const instr = base.instruction as {
-    stubBefore?: StubPhaseFn<Out>;
-    stubAfter?: StubPhaseFn<Out>;
-    stubOnError?: StubPhaseFn<Out>;
-  };
-  const prev = instr[phase];
-  const chained: import("../stub/stub.js").StubLifecycleFn<Out> = async (ctx) => {
+  const prev = block.instruction[phase];
+  const chained: StubLifecycleFn<Out> = async (ctx) => {
     await applyStubIntoCtx(prev, ctx);
     await applyStubIntoCtx(stub, ctx);
   };
-  const next = defineBlock({
-    ...base,
-    instruction: { ...base.instruction, [phase]: chained },
-  });
-  copyWaygraphRuntime(block, next);
-  return next;
+  // rebuild() attaches the methods, so the result is a DefinedBlock.
+  return rebuild(block, { ...block.instruction, [phase]: chained }) as DefinedBlock<In, Out>;
 }
 
 
@@ -467,8 +460,8 @@ export function modVerifyAll<In extends Checkpoint<string>, Out extends Checkpoi
   block: Block<In, Out>,
   patches: Record<string, Trait["check"] | Trait>,
 ): DefinedBlock<In, Out> {
-  const seed = defineBlock(stripMethods(block));
-  copyWaygraphRuntime(block, seed);
+  // rebuild() keeps what the Block carries (a composed Block's steps) and attaches the methods.
+  const seed = rebuild(block, block.instruction) as DefinedBlock<In, Out>;
   return Object.entries(patches).reduce(
     (current, [name, newCheck]) => modVerify(current, name, newCheck),
     seed,

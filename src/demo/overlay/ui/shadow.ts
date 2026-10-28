@@ -18,7 +18,13 @@ import { ignorePageGone } from "../../../engine/page-gone.js";
  * same on every surface; `icons` the overlay's icons (ui/icons.ts); `appearance` light / dark when the project pins
  * one. Passed in from Node, since in-page code can't read a file. Installed once per shadow root, before anything else.
  */
-export function installShadowRoot([overlaySheet, icons, appearance]: [string?, Record<string, string>?, string?] = []): void {
+export function installShadowRoot(args: [string?, Record<string, string>?, string?] = []): void {
+  // As an init script it runs before the document has its <html>: install once it does.
+  if (!document.documentElement) {
+    document.addEventListener("DOMContentLoaded", () => installShadowRoot(args), { once: true });
+    return;
+  }
+  const [overlaySheet, icons, appearance] = args;
   const w = window as unknown as Record<string, unknown> & { __wgCss?: (css: string, key: string) => void };
   if (w.__wgById) return;
   const root = (): ShadowRoot => {

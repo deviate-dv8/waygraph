@@ -48,6 +48,9 @@ waygraph browser stop <id>               # or --all
 | `resync <id>` | re-detects where it is from the real page |
 | `watch <id>` · `hello <id>` | the live feed · the protocol version and where it is |
 
+**`reach` and rows.** A step with one option per row (an Effect: add *this* item) runs when mem already says which
+row: `--data`, an earlier pick, or the key's mem stub. Otherwise `reach` stops there and says to pick one with `send`.
+
 **`reach` limits.** A route through a Nav that's open from anywhere, whose page needs setup first (fields filled before
 a submit), can't be found safely: `reach` fails within a timeout instead of guessing.
 

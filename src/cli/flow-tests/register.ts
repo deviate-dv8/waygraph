@@ -25,8 +25,16 @@ function unsupplied(flow: Flow<Checkpoint<string>>, mem: MemPage): string[] {
  * that runs after another flow (in a chain, or nested with `.flow()`).
  */
 function opensItsPage(block: object): boolean {
-  const b = block as { name: string; __waygraphKind?: string; __waygraphNavUrl?: unknown; steps?: () => { block: object }[] };
-  if (b.__waygraphNavUrl !== undefined || b.__waygraphKind === "api" || b.name.startsWith("sign-in-as-")) return true;
+  const b = block as {
+    name: string;
+    __waygraphKind?: string;
+    __waygraphNavClick?: unknown;
+    __waygraphPageDeepLink?: boolean;
+    steps?: () => { block: object }[];
+  };
+  // A Nav goes by URL or by a click; a Page hub navigates when it has either. The URL may be a function of mem.
+  const navigates = b.__waygraphKind === "nav" || (b.__waygraphKind === "page" && b.__waygraphPageDeepLink === true);
+  if ((navigates && b.__waygraphNavClick === undefined) || b.__waygraphKind === "api" || b.name.startsWith("sign-in-as-")) return true;
   const inner = typeof b.steps === "function" ? b.steps()[0] : undefined;
   return inner ? opensItsPage(inner.block) : false;
 }

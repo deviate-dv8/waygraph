@@ -12,7 +12,7 @@ const { CHROME_PATH: _c, CHROMIUM_PATH: _cc, ...env } = process.env;
 
 interface Result { title: string; status: string; startTime: string; duration: number }
 
-test("every flow runs as a test; the exclusive one after the others; viewport applied", async () => {
+test("every flow runs as a test; the exclusive one after the others; viewport applied; a URL from a function opens the page", async () => {
   const { stdout } = await exec(process.execPath, [CLI, "test", "--flows", "--reporter=json", "--workers=2"], { cwd: project, env: { ...env, WAYGRAPH_HEADED: "0" } });
   const report = JSON.parse(stdout) as { suites: unknown[] };
   const results: Result[] = [];
@@ -24,6 +24,8 @@ test("every flow runs as a test; the exclusive one after the others; viewport ap
   const by = (name: string) => results.find((r) => r.title.endsWith(name))!;
   expect(results.map((r) => [r.title.split(" › ").pop(), r.status]).sort()).toEqual([
     ["aloneFlow", "passed"],
+    ["fnUrlFlow", "passed"],
+    ["fnUrlPageFlow", "passed"],
     ["otherFlow", "passed"],
     ["wideFlow", "passed"],
   ]);

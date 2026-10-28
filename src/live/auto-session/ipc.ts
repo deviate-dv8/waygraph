@@ -356,6 +356,22 @@ export async function runAutoServeCommand(init: AutoSessionInit, sessionId: stri
 }
 
 /**
+ * The waygraph a session runs on: the project's own install when it has one, else this one. Like the runner (see
+ * cli/run-chain.ts), a session imports the project's Block files, and they load the project's @playwright/test; this
+ * copy's would be a second one in the same process ("Requiring @playwright/test second time").
+ */
+function sessionPackageRoot(projectDir: string): string {
+  try {
+    // <root>/dist/index.js
+    return dirname(dirname(createRequire(join(projectDir, "package.json")).resolve("waygraph")));
+  } catch {
+    // This file compiles to dist/live/auto-session/ipc.js - three levels down from the package root.
+    return join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+  }
+}
+
+
+/**
  * Parent-side: spawns a detached background process running the same
  * explore session as a socket server, waits for it to say it is serving (one
  * message over an IPC channel, then disconnect), and returns its identity. A
@@ -371,9 +387,7 @@ export async function spawnDetachedSession(
 ): Promise<SessionMeta> {
   const sessionId = generateSessionId();
   mkdirSync(sessionDir(init.projectDir), { recursive: true });
-  // This file compiles to dist/live/auto-session/ipc.js - three levels down from the package
-  // root, not one. Same bug class as cli/util.ts's own packageRoot(); see its comment.
-  const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+  const pkgRoot = sessionPackageRoot(init.projectDir);
   const require = createRequire(join(pkgRoot, "package.json"));
   const tsxEsm = require.resolve("tsx/esm");
   const cli = join(pkgRoot, "dist", "cli", "cli.js");

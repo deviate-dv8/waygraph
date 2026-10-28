@@ -5,6 +5,7 @@ import { envString } from "../../engine/env.js";
 import { getMemStub } from "../../engine/mem/mem-stub.js";
 import { MemPage, type MemKey } from "../../engine/mem/mem.js";
 import type { BlockEntry } from "../../manifest/project.js";
+import type { Page } from "@playwright/test";
 
 
 export function missingMemKeys(entry: BlockEntry, mem: MemPage): MemKey<unknown>[] {
@@ -81,4 +82,13 @@ export async function ensureMem(entry: BlockEntry, mem: MemPage, cli: boolean): 
   throw new Error(
     `Block "${entry.block.name}" needs MemPage keys - pass --data '{...}' / WAYGRAPH_DATA (or WAYGRAPH_AUTO_MEM), or enter values in --cli`
   );
+}
+
+
+/** Whether mem, or a mem stub, already holds the key a Block's live options set (which row to act on). */
+export async function optionChosen(entry: BlockEntry, page: Page, mem: MemPage): Promise<boolean> {
+  if (!entry.block.instanceOptions) return false;
+  const options = await entry.block.instanceOptions(page);
+  const keys = new Set(options.map((o) => o.key));
+  return keys.size > 0 && [...keys].every((k) => mem.has(k) || getMemStub(k) !== undefined);
 }

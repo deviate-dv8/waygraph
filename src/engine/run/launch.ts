@@ -17,7 +17,7 @@ async function plainLaunch(config: EngineConfig | undefined): Promise<OwnContext
   if (config?.extensions?.length) {
     throw new Error('waygraph: browser extensions need the runtime layer - import the Engine from "waygraph"');
   }
-  const browser = await resolveLauncher(config?.browserName ?? "chromium", config).launch({
+  const browser = await (await resolveLauncher(config?.browserName ?? "chromium", config)).launch({
     headless: config?.headless ?? true,
     ...(config?.slowMo !== undefined ? { slowMo: config.slowMo } : {}),
   });

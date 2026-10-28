@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
-import { Engine, MemPage, checkpoint, composeBlock, connect, withVerify } from "../../src/index.js";
+import { Engine, MemPage, checkpoint, composeBlock, connect, modVerifyAll, withVerify } from "../../src/index.js";
 import { buildFlow } from "../../src/engine/flow/flow.js";
 
 const fakePage = { close: async () => {} } as unknown as import("@playwright/test").Page;
@@ -148,5 +148,14 @@ test.describe("composeBlock", () => {
     expect(checked.instruction.verify).toEqual([expect.objectContaining({ name: "outer" })]);
     // Chained again, it still keeps them.
     expect(withVerify(checked, []).steps()).toHaveLength(3);
+  });
+
+  test("modVerifyAll and a stub on a composed Block keep its steps", () => {
+    const { step1, step2, step3 } = threeSteps();
+    const composed = composeBlock("three-steps", [step1, step2, step3]);
+    const patched = modVerifyAll(composed, { "step-3-check": async () => true }) as unknown as typeof composed;
+    expect(patched.steps()).toHaveLength(3);
+    const narrated = withVerify(composed, []) as unknown as { stubBefore(f: () => void): typeof composed };
+    expect(narrated.stubBefore(() => {}).steps()).toHaveLength(3);
   });
 });

@@ -46,6 +46,9 @@ waygraph auto reach <sessionId> <Checkpoint>  # path-find + run a whole route in
 waygraph auto highlight <sessionId> '<json>'  # paint rings/todos on the live page (agent fixtures)
 ```
 
+`reach` plays a per-row step (add *this* item) with the row mem already names (`--data`, an earlier pick, a mem
+stub); when mem names none it stops and says so - pick the row with `send <index>`, then `reach` again.
+
 `graph` in `pilot start`'s response is the **whole project's** Block/Checkpoint graph, not
 just what's reachable from here - use it to plan several steps ahead before you start
 sending picks.

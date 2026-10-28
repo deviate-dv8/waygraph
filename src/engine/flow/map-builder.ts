@@ -312,14 +312,14 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     }
     const infos = sub.blocks();
     infos.filter((info) => !info.cleanup).forEach((info, i) => {
-      let block = i === 0 && (opts?.reset ?? sub.resetSession) ? resetBefore(info.block) : info.block;
       // Given here, the input is no longer something the run must supply.
-      if (i === 0 && sub.input && opts && "input" in opts) block = withoutRequire(block, sub.input);
-      steps.push(block);
+      steps.push(i === 0 && sub.input && opts && "input" in opts ? withoutRequire(info.block, sub.input) : info.block);
     });
-    const [first, ...rest] = steps;
+    const [head, ...rest] = steps;
     // A flow can't be built without a step (WG_MAP_EMPTY), so a sub-flow always has one.
-    if (!first) throw new WaygraphError("WG_MAP_EMPTY", MSG_MAP_EMPTY);
+    if (!head) throw new WaygraphError("WG_MAP_EMPTY", MSG_MAP_EMPTY);
+    // The reset comes before the whole sub-flow, its input step included.
+    const first = (opts?.reset ?? sub.resetSession) ? resetBefore(head) : head;
     let next = this.appendStep<NextOut>(first);
     for (const block of rest) next = next.appendStep<NextOut>(block);
     // The sub-flow's cleanup runs with this flow's, at the end.

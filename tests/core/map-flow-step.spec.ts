@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createServer } from "node:http";
-import { Engine, MemPage, checkpoint, defineNavBlock, defineMethodBlock, defineAssertBlock } from "../../src/index.js";
+import { Engine, MemPage, checkpoint, defineNavBlock, defineMethodBlock, defineAssertBlock, keys } from "../../src/index.js";
 
 
 const Open = defineNavBlock({ name: "open", checkpoint: checkpoint("Page1"), url: "/" });
@@ -49,4 +49,12 @@ test("map({ memStub, expectedFailure, demoPace }) puts the settings on the flow"
   expect(flow.memStub).toBe(true);
   expect(flow.expectedFailureReason).toBe("locked out");
   expect(flow.demoPace).toBe("fast");
+});
+
+test("{ reset: true, input } resets before the whole sub-flow, its input step included", () => {
+  const engine = new Engine();
+  const Item = keys("probe")<{ item: string }>();
+  const sub = engine.map({ input: Item.item }).gotoPage(Open).method(Remember).end();
+  const infos = engine.map().flow(sub, { reset: true, input: "x" }).end().blocks();
+  expect(infos.map((b) => `${b.name}:${!!b.resetSessionBefore}`)).toEqual(["input-open:true", "open:false", "remember:false"]);
 });
