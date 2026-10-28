@@ -15,7 +15,7 @@ export type RunEvent =
   | { type: "run:end"; runId: string; at: number; ok: boolean; result?: string; error?: string; ms: number }
   | { type: "run:artifact"; runId: string; at: number; kind: "video" | "trace" | "screenshot"; path: string };
 
-/** What the page showed after a step, from the Read Blocks for the Checkpoint it landed on (beta). */
+/** What the page showed after a step, from the Read Blocks for the Checkpoint it landed on. */
 export interface StepRead {
   read: Record<string, unknown>;
   missing: string[];

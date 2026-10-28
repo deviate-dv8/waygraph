@@ -37,7 +37,7 @@ export interface ManifestFlow {
   settings: { memStub?: true; expectedFailure?: string; sessionReset?: true; demoPace?: unknown };
 }
 
-/** A Read Block (beta): which Checkpoints it reads and the shape of what it returns. */
+/** A Read Block: which Checkpoints it reads and the shape of what it returns. */
 export interface ManifestReadBlock {
   id: string;
   name: string;

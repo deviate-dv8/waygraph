@@ -265,7 +265,7 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     `slides` field (and `WaygraphSlidesOrFn`, `resolveSlides`); `narrate()` inside `act` is gone (a `stubBefore` ring on
     the element does the same); `ctx.highlights({...})` is gone (one `ctx.ring` per ring). Codemod `flows` converts
     all three. The network tab no longer flashes after a navigation (its CSS is in the shared bundle). **Done.**
-16. Read Blocks (beta, `waygraph/beta`, issue #4): `reads("ns")<T>()` namespaces, `defineReadBlock({ name, from,
+16. Read Blocks (issue #4; beta in 0.16.x, part of `waygraph` since 0.16.7): `reads("ns")<T>()` namespaces, `defineReadBlock({ name, from,
     instruction: { read: (ctx) => Ns({...}) } })` with `ctx.page.text / number / list / table / ...` (one round trip per
     list or table), `ReadPage`, `pilot read <id> [path]`, and `read` / `missing` in every status / send / reach reply.
     Saucedemo reads its catalogue, cart and header. **Experimenting.** Next: reads in the run log and demo panel,

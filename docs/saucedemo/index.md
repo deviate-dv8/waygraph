@@ -33,7 +33,7 @@ examples/saucedemo/
       checkout.states.ts      every Checkpoint
       checkout.mem-keys.ts    Mem keys (credentials, item)
       checkout.mem-stubs.ts   default Mem values
-      checkout.reads.ts       read namespaces (beta)
+      checkout.reads.ts       read namespaces
     blocks/saucedemo-web/     one folder per screen (its URL)
       nav-login.block.ts      Page: the login screen (/)
       methods/                fill / submit login, logout
@@ -59,7 +59,7 @@ lists the whole tree.
 | Nav | `defineNavClickBlock` / `defineMemNavBlock` | `nav-cart` clicks the cart icon; `nav-item-detail` opens the item named in Mem |
 | Method | `defineMethodBlock` | `fill-username`, `submit-login` (branches: `LoggedIn` or back to `LoginPage`), `finish-order` |
 | Effect | `defineEffectBlock` | `add-to-cart`: one auto-menu row per live "Add to cart" button |
-| Read (beta) | `defineReadBlock` | `read-inventory`, `read-cart`, `read-header`: what the pages show, as JSON for `pilot read` ([Beta: Read Blocks](../reference/beta.md)) |
+| Read | `defineReadBlock` | `read-inventory`, `read-cart`, `read-header`: what the pages show, as JSON for `pilot read` ([Read Blocks](../reference/reads.md)) |
 | API | `defineApiBlock` | `api-demo.flow.ts`: a backend check resolved into a Checkpoint like a UI step |
 
 Blocks carry behaviour only (act, observe, resolve, verify). They have no narration of their own.

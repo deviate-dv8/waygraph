@@ -1,6 +1,6 @@
 {
   "name": "waygraph",
-  "version": "0.16.6",
+  "version": "0.16.7",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -13,10 +13,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./beta": {
-      "types": "./dist/beta.d.ts",
-      "default": "./dist/beta.js"
     },
     "./runner": {
       "default": "./dist/runner/runner.js"

@@ -1,4 +1,4 @@
-import { reads } from "waygraph/beta";
+import { reads } from "waygraph";
 
 // What the store's pages show, by namespace: the Read Blocks fill these, `pilot read` returns them as JSON.
 export const Catalog = reads("catalog")<{

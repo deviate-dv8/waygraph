@@ -1,7 +1,4 @@
-# Beta: Read Blocks
-
-> [!WARNING]
-> Beta. Import from `waygraph/beta`; the shape may change in a later release before it moves into `waygraph`.
+# Read Blocks
 
 A page Block lists what you can **do** on a page (its methods). A **Read Block** says what you can **know** there:
 a typed object of what the page shows. An agent in a session gets it as JSON after every step, without parsing the
@@ -11,7 +8,7 @@ DOM; a test gets it as typed values.
 
 ```ts
 // src/states/checkout.reads.ts
-import { reads } from "waygraph/beta";
+import { reads } from "waygraph";
 
 export const Catalog = reads("catalog")<{
   items: { name: string; price: number; inCart: boolean }[];
@@ -28,7 +25,7 @@ It sits next to the page, shaped like a Method, with one instruction phase: `rea
 
 ```ts
 // src/blocks/saucedemo-web/inventory/inventory.read.block.ts
-import { defineReadBlock } from "waygraph/beta";
+import { defineReadBlock } from "waygraph";
 
 export const InventoryReadBlock = defineReadBlock({
   name: "read-inventory",
@@ -90,7 +87,7 @@ belongs in a Method.
 ## In code: `ReadPage`
 
 ```ts
-import { readCheckpoint } from "waygraph/beta";
+import { readCheckpoint } from "waygraph";
 
 const { read } = await readCheckpoint(page, mem, "ItemInCart");
 read.get(Header.cartCount);   // number - throws WG_READ_MISSING (naming the key) when the page didn't show it

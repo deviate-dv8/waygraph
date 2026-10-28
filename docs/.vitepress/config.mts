@@ -83,7 +83,7 @@ export default defineConfig({
           { text: "· Block helpers", link: "/reference/block-helpers" },
           { text: "· Mail adapters", link: "/reference/mail" },
           { text: "· Pilot", link: "/reference/pilot" },
-          { text: "· Beta: Read Blocks", link: "/reference/beta" },
+          { text: "· Read Blocks", link: "/reference/reads" },
           { text: "· The Map", link: "/reference/map" },
           { text: "· CLI reference", link: "/reference/cli" },
           { text: "· Developing waygraph", link: "/reference/developing" },

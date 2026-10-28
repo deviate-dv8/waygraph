@@ -2,7 +2,6 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     "src/index.ts",
-    "src/beta.ts",
     "src/cli/cli.ts",
     "src/runtime/playwright.config.ts",
     "src/runner/runner.*",

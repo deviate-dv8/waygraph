@@ -43,7 +43,7 @@ export interface BlockEntry {
   description: string;
 }
 
-/** A Read Block found in a scanned file (beta). */
+/** A Read Block found in a scanned file. */
 export interface ScannedReadBlock {
   block: ReadBlock;
   exportName: string;

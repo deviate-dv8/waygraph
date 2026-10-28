@@ -195,7 +195,7 @@ export class AutoSession {
     return { ...buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote), ...(await snapshotRead(this.page, this.mem, this.here)) };
   }
 
-  /** Pure getter - what the page shows, from the project's Read Blocks (beta). */
+  /** Pure getter - what the page shows, from the project's Read Blocks. */
   async read(path?: string): Promise<SessionRead> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
     return readSession(this.page, this.mem, this.here, path);

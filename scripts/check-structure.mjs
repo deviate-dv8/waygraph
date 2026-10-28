@@ -5,8 +5,8 @@
  *      that may only go DOWN (lower the number when you shrink a file; never raise it).
  *   2. No circular value imports between src modules (type-only imports are ignored).
  *   3. Layers: each file's layer may only import the layers allowed for it; scripts/layer-debt.json may only shrink.
- *   4. No barrels: only the package entries (src/index.ts, src/beta.ts) re-export; everything else is imported from where it is declared.
- *   5. No wiring by import: no module runs a call at its top level except the entries (index.ts, beta.ts, cli/cli.ts).
+ *   4. No barrels: only the package entry (src/index.ts) re-exports; everything else is imported from where it is declared.
+ *   5. No wiring by import: no module runs a call at its top level except the entries (index.ts, cli/cli.ts).
  *   6. The overlay has one layout: in its CSS, only anchored things (ring, label, cursor, veil, swipe) are position:fixed.
  *   7. No HTML strings into the page: overlay elements are built with __wgEl / __wgSet / __wgSvg (demo/overlay/ui/shadow.ts),
  *      so page and author text is always a text node.
@@ -101,7 +101,6 @@ const LAYER_OF = [
   ["live/", "live"],
   ["cli/", "cli"],
   ["index.ts", "public"],
-  ["beta.ts", "public"],
 ];
 const MAY_IMPORT = {
   engine: ["engine"],
@@ -130,7 +129,7 @@ for (const f of files) {
 }
 // --- no wiring by import: a module runs nothing at its top level; entries call install functions explicitly ---
 // The flow-tests specs are entries too: Playwright loads them (`waygraph test --flows`), and a spec registers at import.
-const ENTRIES = new Set(["index.ts", "beta.ts", "cli/cli.ts", "cli/flow-tests/flows.spec.ts", "cli/flow-tests/flows-exclusive.spec.ts"]);
+const ENTRIES = new Set(["index.ts", "cli/cli.ts", "cli/flow-tests/flows.spec.ts", "cli/flow-tests/flows-exclusive.spec.ts"]);
 for (const f of files) {
   const rel = relative(srcDir, f).replace(/\\/g, "/");
   if (ENTRIES.has(rel)) continue;
@@ -194,12 +193,12 @@ for (const f of overlayFiles) {
 const REEXPORT_RE = /^\s*export\s+(?:type\s+)?(?:\*|\{[^}]*\})\s+from\s+["']/m;
 for (const f of files) {
   const rel = relative(srcDir, f).replace(/\\/g, "/");
-  if (rel === "index.ts" || rel === "beta.ts") continue;
+  if (rel === "index.ts") continue;
   const text = readFileSync(f, "utf8");
   // `export { x }` of a name the file imports is a re-export too.
   const imported = new Set([...text.matchAll(/^import\s+(?:type\s+)?\{([^}]*)\}\s+from/gm)].flatMap((m) => m[1].split(",").map((n) => n.trim().split(/\s+as\s+/).pop()).filter(Boolean)));
   const passedOn = [...text.matchAll(/^export\s+(?:type\s+)?\{([^}]*)\}\s*;/gm)].flatMap((m) => m[1].split(",").map((n) => n.trim().split(/\s+as\s+/)[0])).filter((n) => imported.has(n));
-  if (REEXPORT_RE.test(text) || passedOn.length) problems.push(`${rel}: re-exports another module (import from where it is declared; only src/index.ts and src/beta.ts re-export)`);
+  if (REEXPORT_RE.test(text) || passedOn.length) problems.push(`${rel}: re-exports another module (import from where it is declared; only src/index.ts re-exports)`);
 }
 // --- no HTML strings into the page ---
 const HTML_SINK_RE = /\.(?:innerHTML|outerHTML)\s*\+?=|\binsertAdjacentHTML\s*\(|\bdocument\.write\s*\(/;

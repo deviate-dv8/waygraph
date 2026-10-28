@@ -66,6 +66,14 @@ ${found.length ? `| Name | Kind | Use instead |\n| --- | --- | --- |\n${rows}` :
 | \`traverse --headed\`, \`inject veciro\` / \`demosauce\` | \`traverse --non-headless\`, \`--inject <path>\` / \`--inject saucedemo\` |
 | \`resolveSlideDwellMs\`, \`SLIDE_DURATION_MS_DEFAULT\`, \`SLIDE_DURATION_FAST_MS_DEFAULT\` | \`resolveFixtureDwellMs\`, \`FIXTURE_DURATION_MS_DEFAULT\`, \`FIXTURE_DURATION_FAST_MS_DEFAULT\` |
 
+## Removed in 0.16.7: the beta entry
+
+Read Blocks are part of \`waygraph\` now.
+
+| Removed | Use instead |
+| --- | --- |
+| \`import { defineReadBlock, reads, ReadPage, readCheckpoint } from "waygraph/beta"\` | the same names from \`"waygraph"\` |
+
 ## Removed in 0.16.6: the overlay's CSS in code
 
 The overlay's look is one stylesheet now (Tailwind, macOS tokens), not CSS strings exported from code.

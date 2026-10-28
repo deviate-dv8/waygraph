@@ -106,3 +106,11 @@ export type { BlockKind } from "./engine/block/kind.js";
 export type { DomSnapshot, InspectDomOptions, InspectDomResult } from "./live/auto-session/helpers.js";
 export type { BrowserStartInit } from "./live/auto-session/start.js";
 export type { PilotFixtureRing, PilotHighlightFixtures } from "./demo/overlay/pilot/fixtures.js";
+
+// Read Blocks: what a page shows, as data (defineReadBlock, reads, ReadPage).
+export { reads, ReadKey } from "./engine/read/read-key.js";
+export type { ReadNamespace, ReadSpec, ReadFieldsOf } from "./engine/read/read-key.js";
+export type { Reader, ReadCtx, RowCtx } from "./engine/read/readers.js";
+export { ReadPage } from "./engine/read/read-page.js";
+export { defineReadBlock, readCheckpoint } from "./engine/read/read-block.js";
+export type { ReadBlock, ReadBlockOptions, CheckpointRead } from "./engine/read/read-block.js";

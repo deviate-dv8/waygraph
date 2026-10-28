@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { checkpoint, MemPage, key } from "../../dist/index.js";
-import { defineReadBlock, readCheckpoint, reads } from "../../dist/beta.js";
+import { defineReadBlock, readCheckpoint, reads } from "../../dist/index.js";
 import { readSession, snapshotRead } from "../../dist/live/auto-session/read.js";
 
 const PostOpen = checkpoint("PostOpen");
@@ -55,7 +55,7 @@ defineReadBlock({
 });
 defineReadBlock({ name: "read-session", instruction: { read: (ctx) => Session({ user: ctx.page.text(".user") }) } });
 
-test.describe("Read Blocks (beta)", () => {
+test.describe("Read Blocks", () => {
   test("reads a page into a typed ReadPage, nested by key path", async ({ page }) => {
     await page.setContent(POST_HTML);
     const { read, blocks } = await readCheckpoint(page, new MemPage(), "PostOpen");
@@ -173,7 +173,7 @@ test.describe("Read Blocks (beta)", () => {
 });
 
 // Compile-time checks (never run): a reader must match its field's type; unknown fields are rejected.
-export function typeChecks(ctx: import("../../dist/beta.js").ReadCtx): void {
+export function typeChecks(ctx: import("../../dist/index.js").ReadCtx): void {
   // @ts-expect-error likes is a number, ctx.text reads a string
   Post({ likes: ctx.page.text(".likes") });
   // @ts-expect-error no such field on Post

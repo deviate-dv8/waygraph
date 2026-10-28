@@ -58,7 +58,7 @@ TypeScript AST, so formatting and comments don't trip it).
 `waygraph manifest [project] [--out <file>]` prints everything the project defines as JSON: every Block (`kind`,
 `description`, route `from` -> `to`, `requires`, `file`, and its `map` group under `src/map/`), every Flow (its `useCase`
 from the `src/flows/<page>/<outcome>.flow.ts` path, its `steps` in run order and its settings), every Checkpoint, and
-(manifest version 2+) every [Read Block](./beta.md): the Checkpoints it reads and the shape of its fields
+(manifest version 2+) every [Read Block](./reads.md): the Checkpoints it reads and the shape of its fields
 (`"catalog.items": [{ "name": "string", "price": "number" }]`), so a viewer knows what each node can show before it runs.
 `buildManifest(projectDir)` returns the same object in code. It is read at runtime from the Blocks themselves, the same
 scan `graph`, `check`, `map`, `auto`, `traverse` and the runner use, and is what Waygraph UI and map packages read.
@@ -67,7 +67,7 @@ Blocks from installed [map packages](./map.md#map-packages) are included, with t
 ## Run events and the run log
 
 Every run emits events: `run:start`, then `step:start` / `step:end` (Block, its kind - `nav`, `page`, `method`, `effect`, `assert`, `api` or `block`, as in the manifest - from/to Checkpoint, duration) or `step:error`
-for each Block, `step:read` between a step's verify and its end when [Read Blocks](./beta.md) cover the page it landed
+for each Block, `step:read` between a step's verify and its end when [Read Blocks](./reads.md) cover the page it landed
 on (what the page showed, after it settled). A fast-forward step's inner Blocks are steps of their own whose `step:start`
 carries `parent` (the fast-forward step's index); the last one ends with it, at the same Checkpoint. A cleanup step
 (`.finally`) carries `cleanup: true`. `run:mem` records the mem each part of the run was seeded with (what

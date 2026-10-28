@@ -65,7 +65,7 @@ test("a failing Block is reported as the step that failed", async () => {
 });
 
 test("a step's read waits for the page it landed on to render (a client route: URL first, content later)", async ({ page }) => {
-  const { defineReadBlock, reads } = await import("../../src/beta.js");
+  const { defineReadBlock, reads } = await import("../../src/index.js");
   const Routed = checkpoint("RoutedPage");
   const Shown = reads("routed")<{ heading: string; items: string[] }>();
   defineReadBlock({ name: "read-routed", from: Routed, instruction: { read: (ctx) => Shown({ heading: ctx.page.text("h1"), items: ctx.page.texts("li") }) } });

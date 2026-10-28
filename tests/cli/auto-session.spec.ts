@@ -442,7 +442,7 @@ test("a session against a deeply nested project path still starts - session sock
   }
 });
 
-test("Read Blocks (beta): send replies carry the page's read; `read <path>` narrows it", async () => {
+test("Read Blocks: send replies carry the page's read; `read <path>` narrows it", async () => {
   test.setTimeout(90_000);
   const { sessionId } = await detach();
   for (const pick of ["fill-username", "fill-password", "submit-login"]) await send(sessionId, pick);

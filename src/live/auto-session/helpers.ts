@@ -46,7 +46,7 @@ export interface SessionSnapshot {
   /** True when there are no runnable moves from `here` right now. */
   done: boolean;
   lastRunNote: string | null;
-  /** What the page shows, from the project's Read Blocks (beta); absent when none covers this page. */
+  /** What the page shows, from the project's Read Blocks; absent when none covers this page. */
   read?: Record<string, unknown>;
   missing?: string[];
   readNotes?: Record<string, string>;

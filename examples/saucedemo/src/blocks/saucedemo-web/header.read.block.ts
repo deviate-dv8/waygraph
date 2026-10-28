@@ -1,9 +1,9 @@
-import { defineReadBlock } from "waygraph/beta";
+import { defineReadBlock } from "waygraph";
 import { Header } from "../../states/checkout.reads.js";
 import { InventorySel } from "./inventory/methods/inventory-items.js";
 
 /**
- * Kind: Read (beta)
+ * Kind: Read
  * Helper: defineReadBlock
  * Route: saucedemo-web/  (every signed-in page)
  *

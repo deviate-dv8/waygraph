@@ -121,7 +121,7 @@ project (as the CLI's runner does), and never loads two projects into one proces
 ## Rules
 
 Enforced: no file over 500 lines, no import cycles, the layer table above, no re-exports outside the package entries
-(`src/index.ts`, `src/beta.ts`), no module that runs a call at import time (entries call `install…()` explicitly), no HTML
+(`src/index.ts`), no module that runs a call at import time (entries call `install…()` explicitly), no HTML
 strings written into the page, `WAYGRAPH_*` variables only through `engine/env.ts` (its registry generates `docs/env.md`), no `.catch(() => {})` in Node
 code (`engine/page-gone.ts`: `ignorePageGone` when the page went away, `ignoreTimeout` for a probe), and `any` only goes
 down (`scripts/any-debt.json`, per file). What is left is the engine's "any Block" (`SomeBlock` in
