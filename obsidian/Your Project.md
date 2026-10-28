@@ -15,7 +15,7 @@ aliases:
 config/waygraph.config.ts   baseUrl, extensions, video, demo pace, test settings; exports `engine`
 src/
   map/                      the Waygraph Map: one folder per page, mirroring the app's real URLs
-    (app_base)/home/          _nav.block.ts  _page.block.ts  _sel.ts  _methods/*.block.ts
+    (app_base)/home/          _nav.block.ts  _page.block.ts  _sel.ts  _read.block.ts  _reads.ts  _methods/*.block.ts
     (external)/mailpit/       another origin; owns _states.ts + _keys.ts (packable)
   states/                   the app's Checkpoints and mem keys
   accounts/                 who signs in: account(name, { signIn }) - a flow runs map({ as }) and starts signed in

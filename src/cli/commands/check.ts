@@ -79,7 +79,7 @@ export async function typecheckCase(args: string[]): Promise<void> {
 export async function checkCase(args: string[]): Promise<void> {
       const flags = parseRunFlags(args.slice(1), args[0] ?? "check");
       const proj = resolve(flags.positionals[0] ?? process.cwd());
-      const { navWarnings, selWarnings, practiceWarnings, constantDataWarnings } = await checkProject(
+      const { navWarnings, selWarnings, practiceWarnings, constantDataWarnings, unreadPages } = await checkProject(
         proj,
         flags.noPractices ? { noPractices: true } : undefined,
       );
@@ -107,6 +107,10 @@ export async function checkCase(args: string[]): Promise<void> {
       for (const w of constantDataWarnings) {
         console.warn(`waygraph check: ${relative(proj, w.file)} (${w.blockName}) requires ${w.key}, whose mem stub gives the same value every run - a second run may collide with the first; build it from ctx.unique: registerMemStub(key, ({ unique }) => ...)`);
       }
+      for (const p of unreadPages) {
+        console.warn(`waygraph check: page ${p.checkpoint} has no Read Block - say what it shows (a _read.block.ts / <page>.read.block.ts next to ${relative(proj, p.file)}), so runs, agents and tests can read it`);
+      }
+      if (unreadPages.length > 0) console.log(`waygraph check: ${unreadPages.length} page${unreadPages.length === 1 ? "" : "s"} without a Read Block`);
       if (constantDataWarnings.length > 0) console.log(`waygraph check: ${constantDataWarnings.length} constant test data warning${constantDataWarnings.length === 1 ? "" : "s"}`);
       const groupProblems = checkMapGroups(proj);
       for (const p of groupProblems) {

@@ -42,7 +42,8 @@ workflow on top of it, not a restatement of them.
 1. Read the app router (Next.js `app/`, etc.) and list real page URLs.
 2. New project: lay out `src/map/(group)/page/` folders per route. Existing freeform project:
    draft `src/blocks/SITE-MAP.md` with namespaces + route folders instead - match what's there.
-3. For each route: list nav-to edges, methods/effects, checkpoints, mem keys in `NAV.md` (plan only).
+3. For each route: list nav-to edges, methods/effects, checkpoints, mem keys, and what its Read Block will read (the
+   page's data: lists, totals, errors, form values) in `NAV.md` (plan only).
 4. Call out external surfaces (Mailpit inbox, magic-link verify) under `*-external/`. Plan
    these Blocks as reusable across every email-driven scenario the product has (signup
    confirmation, password reset, magic link, ...) via mem (recipient, link pattern, expected

@@ -10,6 +10,7 @@ src/blocks/
     NAV.md
     nav-login.block.ts                # Page  definePageBlock url:/
     header.read.block.ts              # Read  defineReadBlock (every page: title, cart count)
+    login.read.block.ts               # Read  defineReadBlock (the login form's error)
     methods/
       fill-username.method.block.ts   # Method defineMethodBlock (self-loop on LoginPage)
       fill-password.method.block.ts   # Method defineMethodBlock (self-loop on LoginPage)
@@ -31,6 +32,7 @@ src/blocks/
     inventory-item/                   # URL /inventory-item.html
       NAV.md
       item-detail.sel.ts              # ItemDetailSel (not a Block)
+      item-detail.read.block.ts       # Read defineReadBlock (name, price, description, in cart)
       nav-continue-shopping.block.ts
       nav-back-to-products.block.ts
       nav-back-to-inventory.block.ts
@@ -42,6 +44,7 @@ src/blocks/
       nav-checkout-info.block.ts
     checkout-step-one/                # URL /checkout-step-one.html
       NAV.md
+      checkout-info.read.block.ts     # Read defineReadBlock (what each field holds, the form's error)
       methods/
         checkout-info.sel.ts               # CheckoutInfoSel (not a Block)
         fill-first-name.method.block.ts    # Method defineMethodBlock (self-loop on CheckoutInfoPage)
@@ -50,10 +53,13 @@ src/blocks/
         submit-checkout-info.method.block.ts  # Method defineMethodBlock (click only)
     checkout-step-two/                # URL /checkout-step-two.html
       NAV.md
+      checkout-overview.read.block.ts # Read defineReadBlock (the order's lines and total)
+      order-complete.read.block.ts    # Read defineReadBlock (the confirmation, /checkout-complete.html)
       methods/
         checkout-overview.sel.ts      # CheckoutOverviewSel (not a Block)
         finish-order.method.block.ts
 ```
 
-Checkpoints and mem keys live under `src/states/`. Flows under `src/flows/`
+Every page has a Read Block (`<page>.read.block.ts`, next to the page's Blocks): what it shows, as data, after every
+step that lands there. Checkpoints, mem keys and read namespaces (`checkout.reads.ts`) live under `src/states/`. Flows under `src/flows/`
 compose Blocks into episodes for `waygraph demo` / Playwright.

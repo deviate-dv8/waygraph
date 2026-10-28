@@ -11,6 +11,8 @@ version for whoever is inside this directory.
 | `_nav.block.ts` | Nav | How to get here - `url` (goto) or `click` (in-app link). One per page. |
 | `_page.block.ts` | Page | "You have arrived" - the hub other pages navigate to. One per page. |
 | `_sel.ts` | data | Every selector this page's Blocks use, in one object. Never inline a selector when this file exists - `waygraph check` warns on it. |
+| `_read.block.ts` | Read | What the page shows, as data: after every step that lands here it is in the run log, and `waygraph auto read` returns it to an agent. Every page has one (`waygraph check` says when one is missing). |
+| `_reads.ts` | data | The Read Block's typed namespace: `reads("home")<{ title: string; ... }>()`. |
 | `_methods/` | folder | One file per action, one action per file (`add-item.effect.block.ts`, not one file with three `.fill()` calls). |
 
 Never rename these, never combine them into one file, never add a `_selectors/` folder in

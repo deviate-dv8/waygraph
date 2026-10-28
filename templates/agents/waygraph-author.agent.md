@@ -39,6 +39,7 @@ Most "helpers" a project grows already exist in waygraph. Use these; never hand-
 | An outage, a slow network, another time zone | `map({ network: { faults: [{ url, status: 503 }], throttle: "offline" } })`, `map({ timezone })` - never `page.route` / CDP inside a Block |
 | A thing parallel runs share (the newest email in one inbox) | `claimOnce(name)` - never a hand-rolled lock |
 | A batch runner (parallel, retries, "run these alone", a results file) | `waygraph test --flows` (+ `--workers`, `--retries`, `--reporter=json`); `map({ exclusive: true })`, `map({ viewport })` |
+| Reading what a page shows (a list, a total, an error) in a test or for an agent | The page's Read Block (`_read.block.ts` / `<page>.read.block.ts`) - every page gets one; never DOM queries in a test |
 | A checklist painted inside a fast-forward window | Chain the stub on the fast-forwarded step itself - no do-nothing Block |
 
 ## Verify before reporting done

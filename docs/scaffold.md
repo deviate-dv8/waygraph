@@ -19,6 +19,7 @@ organizational only and never appear in a URL.
 │   │   │   │   ├── _nav.block.ts      # how to get here
 │   │   │   │   ├── _page.block.ts     # "you have arrived" hub
 │   │   │   │   ├── _sel.ts            # every selector for this page
+│   │   │   │   ├── _read.block.ts     # what the page shows, as data (+ _reads.ts, its namespace)
 │   │   │   │   ├── index.html         # offline fixture page
 │   │   │   │   └── _methods/          # one action per Block
 │   │   │   └── docs/                  # a second page, same shape

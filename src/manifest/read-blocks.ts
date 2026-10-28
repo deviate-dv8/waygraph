@@ -1,4 +1,4 @@
-// Loads a project's Read Blocks (`*.read.block.ts`, its own and its installed map packages'): importing one registers it,
+// Loads a project's Read Blocks (`<page>.read.block.ts`, or `_read.block.ts` in a Map page folder; its own and its installed map packages'): importing one registers it,
 // so every run can read the pages it lands on. Sessions get them from the full project scan; a run by flow name does not.
 import { relative } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -6,7 +6,7 @@ import { installedMapPackages, mapPackageBlockFiles } from "./maps.js";
 import { reportImportError } from "./project.js";
 import { walkDir } from "./scan.js";
 
-const READ_BLOCK = /\.read\.block\.ts$/;
+const READ_BLOCK = /(?:^|[\\/.])_?read\.block\.ts$/;
 
 /** Imports every Read Block file of the project; returns how many loaded. */
 export async function loadReadBlocks(projectDir: string): Promise<number> {

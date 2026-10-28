@@ -93,6 +93,11 @@ against a live site, use `--skill-pilot-blind`.
 - **Flows are the tests.** `waygraph test --flows` runs every flow as a Playwright test (workers, retries, video,
   reports); `map({ viewport })` sizes one, `map({ exclusive: true })` runs one alone and last. A project-written batch
   runner (parallelism, retries, "run these alone", a verdict file) is a smell. Write a spec only for what a flow can't say.
+- **Every page has a Read Block.** A page's Blocks say what you can do there; its Read Block says what it shows, as
+  typed data: in the run log after every step that lands there, from `waygraph auto read` for an agent, and for a test
+  without DOM queries. It lives with the page (`_read.block.ts` beside `_sel.ts`, its namespace in `_reads.ts`; freeform:
+  `<page>.read.block.ts`, namespaces in `src/states/<area>.reads.ts`), never with mem stubs: mem is what a flow is
+  given, a read is what the page shows. `waygraph check` lists pages without one.
 - **Shared things are claimed, not raced for.** When parallel runs could pick the same thing (the newest email in a
   shared inbox, an account from a pool), take it with `claimOnce(name)`: true for one caller on the machine. A
   hand-rolled lock file is a smell.
@@ -154,6 +159,7 @@ against a live site, use `--skill-pilot-blind`.
 | Effect | `*.effect.block.ts` in `methods/` / `_methods/` | `defineEffectBlock` | No |
 | Method | `*.method.block.ts` in `methods/` / `_methods/` | `defineMethodBlock` | No |
 | Assert | with Method/Effect peers | `defineAssertBlock` | No |
+| Read | `<page>.read.block.ts` / `_read.block.ts` (namespace: `src/states/<area>.reads.ts` / `_reads.ts`) | `defineReadBlock({ from, instruction: { read } })` | No |
 | API | `*.api.block.ts` in `methods/` | `defineApiBlock({ from, to, call })` (a real HTTP request; `map().method(...)`) | No |
 
 Effects that appear in `waygraph auto` menus need `instanceOptions` that scan the live DOM
@@ -185,6 +191,8 @@ src/map/
       _page.block.ts
       _nav.block.ts
       _sel.ts
+      _read.block.ts               # what the page shows, as data
+      _reads.ts                    # its namespace
       _methods/click-widget.block.ts
   (external)/                      # cross-origin (mailpit, etc.) - same shape
     docs/

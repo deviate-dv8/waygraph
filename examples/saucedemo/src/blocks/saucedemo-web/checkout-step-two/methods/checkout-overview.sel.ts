@@ -6,4 +6,8 @@
 export const CheckoutOverviewSel = {
   finishBtn: "#finish",
   completeHeader: ".complete-header",
+  item: ".cart_item",
+  itemName: ".inventory_item_name",
+  itemPrice: ".inventory_item_price",
+  total: ".summary_total_label",
 };

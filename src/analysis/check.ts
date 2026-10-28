@@ -1,7 +1,7 @@
 // `waygraph validate` and `waygraph check`: does every Flow file load, and do Blocks keep navigation and selectors where
 // they belong. Warnings only.
 import { basename, relative } from "node:path";
-import { importFresh, isBlockLike, walkDir } from "../manifest/scan.js";
+import { importFresh, isBlockLike, isReadBlockLike, walkDir } from "../manifest/scan.js";
 import { calls, parseSource } from "../manifest/source.js";
 import { collectPracticeWarnings } from "./practices-check.js";
 import type { PracticeWarning } from "./practices-check.js";
@@ -84,6 +84,13 @@ export interface SelWarning {
  * file that fails to import for unrelated reasons is silently skipped here;
  * `validate` is the command that reports import failures).
  */
+/** A page (a Checkpoint a Nav or Page Block lands on) that no Read Block reads. */
+export interface UnreadPage {
+  checkpoint: string;
+  /** A Block that lands there: where its Read Block belongs. */
+  file: string;
+}
+
 /** A Block that creates something a second run would collide with: an API call, or one named like a create. */
 const CREATES = /^(?:create|register|sign-?up|new|insert)-/;
 
@@ -102,11 +109,15 @@ export async function checkProject(
   selWarnings: SelWarning[];
   practiceWarnings: PracticeWarning[];
   constantDataWarnings: ConstantDataWarning[];
+  unreadPages: UnreadPage[];
 }> {
   const files = walkDir(projectDir, /\.block\.ts$/);
   const navWarnings: CheckWarning[] = [];
   const selWarnings: SelWarning[] = [];
   const constantDataWarnings: ConstantDataWarning[] = [];
+  // Pages (where a Nav / Page Block lands) and what the Read Blocks read: a page should say what it shows.
+  const pages = new Map<string, string>();
+  const read = new Set<string>();
   // Mem stubs are registered where a project keeps them; load those before asking them.
   for (const file of walkDir(projectDir, /\.mem-stubs?\.ts$/)) await importFresh(file).catch((err: unknown) => reportImportError(relative(projectDir, file), err));
   for (const file of files) {
@@ -120,7 +131,12 @@ export async function checkProject(
     // The calls in the Block's own file, read from the AST: a comment or a string that mentions page.goto doesn't count.
     const fileCalls = calls(parseSource(file));
     for (const [exportName, exported] of Object.entries(mod)) {
+      if (isReadBlockLike(exported)) for (const tag of exported.from) read.add(tag);
       if (!isBlockLike(exported)) continue;
+      const kind = blockKindOf(exported);
+      if (kind === "nav" || kind === "page") {
+        for (const tag of (exported as { __waygraphTo?: readonly string[] }).__waygraphTo ?? []) if (!pages.has(tag)) pages.set(tag, file);
+      }
       // Nav-escape: NavBlocks are exempt (their generated act() is the one legitimate goto/click call site).
       if (!isNavBlockMarked(exported) && fileCalls.some((c) => NAV_METHODS.has(c.callee))) {
         navWarnings.push({ file, blockName: exported.name, exportName });
@@ -139,7 +155,8 @@ export async function checkProject(
   const practiceWarnings = collectPracticeWarnings(projectDir, walkDir, {
     disabled: opts?.noPractices === true,
   });
-  return { navWarnings, selWarnings, practiceWarnings, constantDataWarnings };
+  const unreadPages = [...pages].filter(([tag]) => !read.has(tag)).map(([checkpoint, file]) => ({ checkpoint, file }));
+  return { navWarnings, selWarnings, practiceWarnings, constantDataWarnings, unreadPages };
 }
 
 

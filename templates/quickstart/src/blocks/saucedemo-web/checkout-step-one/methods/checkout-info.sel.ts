@@ -8,4 +8,5 @@ export const CheckoutInfoSel = {
   lastName: "#last-name",
   postalCode: "#postal-code",
   continueBtn: "#continue",
+  error: '[data-test="error"]',
 };
