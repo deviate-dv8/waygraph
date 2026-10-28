@@ -134,8 +134,31 @@ export async function sessionOpCase(args: string[], command: string): Promise<vo
       return;
     }
     if (sub === "read") {
-      const path = args[3];
-      const res = await requestSession(proj, sessionId, path ? { op: "read", path } : { op: "read" });
+      // read <id> [path] [--rows 10:30] [--where field=value ...]: rows and where narrow a list at path.
+      const path = args[3] && !args[3].startsWith("--") ? args[3] : undefined;
+      const rest = args.slice(path ? 4 : 3);
+      let rows: { from: number; to?: number } | undefined;
+      const where: Record<string, string> = {};
+      for (let i = 0; i < rest.length; i++) {
+        if (rest[i] === "--rows") {
+          const [from, to] = String(rest[++i] ?? "").split(":");
+          rows = { from: Number(from) || 0, ...(to ? { to: Number(to) } : {}) };
+        } else if (rest[i] === "--where") {
+          const [field, ...value] = String(rest[++i] ?? "").split("=");
+          if (field) where[field] = value.join("=");
+        }
+      }
+      if ((rows || Object.keys(where).length) && !path) {
+        console.error("waygraph read: --rows / --where narrow a list - give its path (read <id> catalog.items --rows 0:10)");
+        process.exitCode = 1;
+        return;
+      }
+      const res = await requestSession(proj, sessionId, {
+        op: "read",
+        ...(path ? { path } : {}),
+        ...(rows ? { rows } : {}),
+        ...(Object.keys(where).length ? { where } : {}),
+      });
       console.log(JSON.stringify(res));
       if (!res.ok) process.exitCode = 1;
       return;

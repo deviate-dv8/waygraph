@@ -43,7 +43,17 @@ export const WithEpisodesAndPace: Story = overlayStory(async (page) => {
 });
 
 export const AfterAStep: Story = overlayStory(async (page) => {
-  await renderAfterStep(page, { ...where, ...pace, result: checkpoint("MachineFormFilled"), resultTag: '{"__state":"MachineFormFilled"}', highlights: [], isLast: false });
+  await renderAfterStep(page, {
+    ...where,
+    ...pace,
+    result: checkpoint("MachineFormFilled"),
+    resultTag: '{"__state":"MachineFormFilled"}',
+    highlights: [],
+    isLast: false,
+    read: { machineForm: { name: "Mixer 2", capacity: 1200, line: "L3", error: null }, header: { title: "Add equipment", user: "planner@plant.test" } },
+  });
+  // Open the disclosure so the story shows it.
+  await page.evaluate(() => document.getElementById("wg-root")?.shadowRoot?.querySelector("details.wg-read")?.setAttribute("open", ""));
 });
 
 export const LastStep: Story = overlayStory(async (page) => {

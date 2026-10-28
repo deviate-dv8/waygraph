@@ -1,6 +1,7 @@
 // The demo's step-through UI: before each step a panel (what's about to happen, its mem, the Next gate), after it the
 // result (rings, slides, todos), and on a failure a panel with Retry / Stop. The runner's demo mode calls these
 // around each step it plays.
+import { trackReads } from "./last-read.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import type { MemPage } from "../../engine/mem/mem.js";
 import type { StepperRefs, WgPage } from "../types.js";
@@ -40,6 +41,8 @@ export interface StepperOptions {
 export async function createStepper(page: WgPage, mem: MemPage, steps: readonly StepperStep[], options: StepperOptions): Promise<Stepper> {
   const demoFast = envFlag("WAYGRAPH_DEMO_FAST");
   const pacing = newPacing(demoFast);
+  // The after-step panel shows what the page shows (its step:read).
+  trackReads();
   const refs: StepperRefs = { stubBefore: { current: [] }, todoDock: { current: undefined }, device: { current: undefined } };
   instrumentInteractionHighlighting(page, mem, options.beat, pacing, refs.stubBefore, refs.todoDock, refs.device);
   // A navigation inside a step (a redirect, a login bounce) repaints the overlay with the step's todos, device and ring.

@@ -96,11 +96,30 @@ read.missing;                 // ["header.title", ...]
 read.toJSON();                // { catalog: { items: [...], sort: "az" }, header: { ... } }
 ```
 
+## In a check: `Trait.read`
+
+A verify check in the page's own terms instead of selectors: it reads the key now, through the Read Blocks that fill
+its namespace, and passes when `test` does. Retried like every Trait until the page settles; on failure it says what
+the page showed.
+
+```ts
+verify: [
+  Trait.read(Catalog.items, (items) => items.length === 6, "6 products"),
+  Trait.read(Header.cartCount, (n) => n === 1),
+],
+```
+
+```text
+trait "read(catalog.items)" failed after "add-all-to-cart": wanted 6 products; saw [{"name":"Sauce Labs Backpack",...}]
+```
+
 ## In a session: `read`, and every reply
 
 ```sh
-waygraph pilot read <sessionId>                 # the whole page
-waygraph pilot read <sessionId> catalog.items   # one part
+waygraph pilot read <sessionId>                                   # the whole page
+waygraph pilot read <sessionId> catalog.items                     # one part
+waygraph pilot read <sessionId> catalog.items --where inCart=true # a list's rows where a field matches
+waygraph pilot read <sessionId> catalog.items --rows 20:40        # rows 20 to 39
 ```
 
 ```json
@@ -130,8 +149,10 @@ anything:
   "fields": { "catalog.items": [{ "name": "string", "price": "number", "inCart": "boolean" }], "catalog.sort": "string" } }
 ```
 
+## In the demo
+
+The panel after each step has a **The page shows** section: every value its Read Blocks read, one line each.
+
 ## Not yet
 
-- Reads in the demo panel.
-- `Trait.read(key, predicate)` in verify lists.
 - `keys("ns")<T>()` for Mem (the same one-declaration form, for `key` / `keyGroup`).

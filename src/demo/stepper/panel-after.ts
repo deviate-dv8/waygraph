@@ -18,6 +18,8 @@ export interface AfterPanelInfo extends StepPanelInfo, PanelTodos {
   isLast: boolean;
   pace?: DemoPace | undefined;
   todoDockRef?: Ref<TodoDockState | undefined> | undefined;
+  /** What the page shows now, from its Read Blocks (by namespace). */
+  read?: Record<string, unknown> | undefined;
 }
 
 
@@ -108,6 +110,24 @@ export async function renderAfterStep(page: WgPage, info: AfterPanelInfo) {
           { class: "wg-result wg-result-json rounded-card bg-fill px-3 py-2 font-mono text-sm whitespace-pre-wrap", style: "display:" + (pretty ? "none" : "block") },
           String(info.resultTag),
         ),
+        // What the page shows now (its Read Blocks), one line per value; open by the person who wants it.
+        info.read
+          ? __wgEl(
+              "details",
+              { class: "wg-read mt-3 rounded-card bg-fill" },
+              __wgEl("summary", { class: "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-label-2 cursor-default select-none" }, __wgIcon("chevronRight", "wg-read-chevron"), "The page shows"),
+              __wgEl(
+                "dl",
+                { class: "grid grid-cols-[max-content_1fr] gap-x-3 gap-y-0.5 px-3 pb-2 max-h-40 overflow-y-auto font-mono text-2xs" },
+                Object.entries(info.read).flatMap(([ns, fields]) =>
+                  Object.entries((fields ?? {}) as Record<string, unknown>).map(([field, value]) => [
+                    __wgEl("dt", { class: "text-label-2" }, ns + "." + field),
+                    __wgEl("dd", { class: "truncate", title: JSON.stringify(value) }, value === null ? "-" : typeof value === "string" ? value : JSON.stringify(value)),
+                  ]),
+                ),
+              ),
+            )
+          : null,
         window.__wgPanelFooter!(info.isLast ? "Finish" : "Next", autoNow, info.isLast ? undefined : "next"),
       );
       if (isNewPanel) {

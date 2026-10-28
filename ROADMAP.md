@@ -265,11 +265,12 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     `slides` field (and `WaygraphSlidesOrFn`, `resolveSlides`); `narrate()` inside `act` is gone (a `stubBefore` ring on
     the element does the same); `ctx.highlights({...})` is gone (one `ctx.ring` per ring). Codemod `flows` converts
     all three. The network tab no longer flashes after a navigation (its CSS is in the shared bundle). **Done.**
-16. Read Blocks (issue #4; beta in 0.16.x, part of `waygraph` since 0.16.7): `reads("ns")<T>()` namespaces, `defineReadBlock({ name, from,
+16. Read Blocks (issue #4; beta in 0.16.x, part of `waygraph` since 0.16.7; `Trait.read`, the demo panel's "The page
+    shows" and `pilot read --where / --rows` added in 0.16.7): `reads("ns")<T>()` namespaces, `defineReadBlock({ name, from,
     instruction: { read: (ctx) => Ns({...}) } })` with `ctx.page.text / number / list / table / ...` (one round trip per
     list or table), `ReadPage`, `pilot read <id> [path]`, and `read` / `missing` in every status / send / reach reply.
-    Saucedemo reads its catalogue, cart and header. **Experimenting.** Next: reads in the run log and demo panel,
-    `Trait.read`, read paths in the manifest, `keys()` for Mem.
+    Every page of the templates has one. **Done** (reads in the run log, the demo panel, `Trait.read`, field shapes in the
+    manifest). Next: `keys()` for Mem.
 17. One ctx per job, namespaced (0.16.3): a stub paints through `ctx.ui.*` (`ctx.ui.ring`, `ctx.ui.todos`, ...; `ctx.mem`
     / `out` / `error` stay on ctx), a Read Block reads through `ctx.page.*`, and future Event Blocks move the world
     through `ctx.world.*`. Codemod `flows` moves stub calls; the docs drift test rejects the old form. **Done** (`world`

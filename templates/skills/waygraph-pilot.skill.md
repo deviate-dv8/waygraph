@@ -158,7 +158,7 @@ properly (mirroring a sibling Block's shape) and `auto reload` it in rather than
 past the gap.
 
 To know what the page shows, read the `read` field every `status`/`send`/`reach` reply
-carries (or `pilot read <id> [path]` for one part, uncut): it comes from the project's Read
+carries (or `pilot read <id> [path]` for one part, uncut; `--where field=value` / `--rows 20:40` narrow a list): it comes from the project's Read
 Blocks (`*.read.block.ts`) as typed JSON. Reach for `auto dom` only when `read` is empty
 (no Read Block covers the page) or misses what you need - and then consider writing the Read
 Block. `pilot watch <id>` streams every step, read and snapshot as JSON lines if you need to

@@ -4,7 +4,7 @@ import type { Page } from "@playwright/test";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { WaygraphError, MSG_READ_DUPLICATE } from "../errors.js";
 import type { MemKey, MemPage } from "../mem/mem.js";
-import type { ReadSpec } from "./read-key.js";
+import type { ReadKey, ReadSpec } from "./read-key.js";
 import { ReadPage } from "./read-page.js";
 import { createReadCtx, Reader, type ReadCtx, type ReadFields } from "./readers.js";
 import { runReadSpecs, settlePage } from "./run-read.js";
@@ -101,6 +101,24 @@ export async function readCheckpoint(page: Page, mem: MemPage, checkpoint: strin
   if (specs.length) await settlePage(page);
   const { values, notes } = await runReadSpecs(page, mem, specs);
   return { read: new ReadPage(values, notes), blocks, skipped };
+}
+
+/**
+ * Reads one key now, wherever the page is: runs only the Read Blocks whose read fills that key's namespace (any
+ * Checkpoint - a check doesn't know which it is on). Undefined when no Read Block reads it, or the page doesn't show it.
+ */
+export async function readKeyNow<T>(page: Page, mem: MemPage, key: ReadKey<T>): Promise<T | undefined> {
+  const namespace = key.path.split(".")[0];
+  const specs: ReadSpec[] = [];
+  for (const block of registry.values()) {
+    if (block.requires.some((k) => !mem.has(k))) continue;
+    const got = block.instruction.read(createReadCtx(mem));
+    for (const spec of Array.isArray(got) ? got : [got as ReadSpec]) if (spec.namespace === namespace) specs.push(spec);
+  }
+  if (specs.length === 0) return undefined;
+  const { values, notes } = await runReadSpecs(page, mem, specs);
+  const read = new ReadPage(values, notes);
+  return read.has(key) ? read.get(key) : undefined;
 }
 
 /** What a field reads, as a type a viewer can show: `"string"`, `"number"`, `"boolean"`, `"string[]"`, a row shape. */

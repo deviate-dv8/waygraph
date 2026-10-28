@@ -97,7 +97,8 @@ against a live site, use `--skill-pilot-blind`.
   typed data: in the run log after every step that lands there, from `waygraph auto read` for an agent, and for a test
   without DOM queries. It lives with the page (`_read.block.ts` beside `_sel.ts`, its namespace in `_reads.ts`; freeform:
   `<page>.read.block.ts`, namespaces in `src/states/<area>.reads.ts`), never with mem stubs: mem is what a flow is
-  given, a read is what the page shows. `waygraph check` lists pages without one.
+  given, a read is what the page shows. `waygraph check` lists pages without one. A check on what a page shows is
+  `Trait.read(Catalog.items, (items) => items.length === 6)`, not a selector count.
 - **Shared things are claimed, not raced for.** When parallel runs could pick the same thing (the newest email in a
   shared inbox, an account from a pool), take it with `claimOnce(name)`: true for one caller on the machine. A
   hand-rolled lock file is a smell.

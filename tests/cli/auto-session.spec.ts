@@ -461,6 +461,13 @@ test("Read Blocks: send replies carry the page's read; `read <path>` narrows it"
   expect(narrowed).toMatchObject({ ok: true, page: "ItemInCart", read: { header: { cartCount: 1 } } });
   expect(narrowed.read.catalog).toBeUndefined();
 
+  // A list at a path: --where keeps the rows a field matches, --rows slices them.
+  const inCart = JSON.parse((await runCli(["pilot", "read", sessionId, "catalog.items", "--where", "inCart=true"], { cwd: sauceRoot })).trim());
+  expect(inCart.read.catalog.items.map((i: { name: string }) => i.name)).toEqual(["Sauce Labs Backpack"]);
+  expect(inCart.notes["catalog.items"]).toBe("rows 0-1 of 1 matching (of 6)");
+  const firstTwo = JSON.parse((await runCli(["pilot", "read", sessionId, "catalog.items", "--rows", "0:2"], { cwd: sauceRoot })).trim());
+  expect(firstTwo.read.catalog.items).toHaveLength(2);
+
   const atCart = await reach(sessionId, "CartPage");
   expect((atCart.snapshot as { read: unknown }).read).toEqual({
     cart: { lines: [{ name: "Sauce Labs Backpack", qty: 1, price: 29.99 }] },

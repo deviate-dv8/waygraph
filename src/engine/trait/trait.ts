@@ -1,4 +1,6 @@
 // Traits: the checks a Block's verify runs against the page (url, text, visible, ...), and the runner for them.
+import { readKeyNow } from "../read/read-block.js";
+import type { ReadKey } from "../read/read-key.js";
 import type { Page } from "@playwright/test";
 import type { MemPage } from "../mem/mem.js";
 // URLPattern is only a Node global from v23.8+ (and even then, Node's own, not a browser's) -
@@ -188,6 +190,24 @@ export function absent(selector: string): Trait {
 }
 
 /**
+ * Passes when what the page shows for `key` (its Read Block's value) passes `test`: a check in the page's own terms
+ * instead of selectors. Retried like every Trait until the page settles; fails when no Read Block reads the key.
+ * @example Trait.read(Catalog.items, (items) => items.length === 6, "6 products")
+ */
+export function readEquals<T>(key: ReadKey<T>, test: (value: T) => boolean, wants?: string): Trait {
+  return {
+    name: `read(${key.path})`,
+    wants: wants ?? `${key.path} to pass its check`,
+    async check(page, mem) {
+      const value = await readKeyNow(page, mem, key);
+      if (value === undefined) return { ok: false, saw: `no value for ${key.path} (is there a Read Block for it, and does the page show it?)` };
+      const saw = JSON.stringify(value);
+      return { ok: test(value), saw: saw.length > 120 ? saw.slice(0, 117) + "..." : saw };
+    },
+  };
+}
+
+/**
  * Passes once at least one element matching `selector` is visible on the page,
  * waiting for it to appear. Uses `.first()` so list selectors (e.g. one row per
  * message/document) don't trip Playwright strict mode - the check means
@@ -304,6 +324,7 @@ export const Trait = {
   value: valueEquals,
   attribute: attributeEquals,
   absent,
+  read: readEquals,
   visible,
   disabled,
   enabled,

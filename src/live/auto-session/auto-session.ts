@@ -1,6 +1,7 @@
 // AutoSession: one live browser session driven over IPC - its menu, picks, routes, raw actions and highlights.
 import type { BrowserContext, Page } from "@playwright/test";
 import type { UnmappedInteractionPayload } from "../../analysis/coverage-gap.js";
+import type { ListPick } from "./read.js";
 import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from "../../analysis/coverage-gap.js";
 import { findBlockPathDetailed } from "../../analysis/graph.js";
 import { runStubPhase } from "../../demo/narration/narration.js";
@@ -196,9 +197,9 @@ export class AutoSession {
   }
 
   /** Pure getter - what the page shows, from the project's Read Blocks. */
-  async read(path?: string): Promise<SessionRead> {
+  async read(path?: string, list?: ListPick): Promise<SessionRead> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    return readSession(this.page, this.mem, this.here, path);
+    return readSession(this.page, this.mem, this.here, path, list);
   }
 
   /**

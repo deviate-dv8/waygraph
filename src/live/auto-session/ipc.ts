@@ -120,7 +120,7 @@ export async function requestSession(
 export async function requestSession(
   projectDir: string,
   sessionId: string,
-  request: { op: "read"; path?: string },
+  request: { op: "read"; path?: string; rows?: { from: number; to?: number }; where?: Record<string, string> },
   timeoutMs?: number,
 ): Promise<ReadResponse>;
 export async function requestSession(
@@ -266,7 +266,7 @@ export async function serveSession(
         } else if (request.op === "console") {
           response = { ok: true, consoleLog: session.getConsoleLog() };
         } else if (request.op === "read") {
-          response = { ok: true, ...(await session.read(request.path)) };
+          response = { ok: true, ...(await session.read(request.path, { rows: request.rows, where: request.where })) };
         } else if (request.op === "storage") {
           response = { ok: true, ...(await session.inspectStorage()) };
         } else if (request.op === "upload") {

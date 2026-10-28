@@ -30,19 +30,44 @@ function pick(tree: Record<string, unknown>, path: string): Record<string, unkno
   return out;
 }
 
-/** Reads the page the session is on (`here`); with `path`, only that part (`post.comments`). */
-export async function readSession(page: Page, mem: MemPage, here: string | null, path?: string): Promise<SessionRead> {
+/** For a list at `path`: only the rows where each field equals the given text, then rows `from` up to `to` (exclusive). */
+export interface ListPick {
+  rows?: { from: number; to?: number } | undefined;
+  where?: Record<string, string> | undefined;
+}
+
+/** Applies a {@link ListPick} to the list `pick()` put at `path` (anything else is left as it is). */
+function pickRows(tree: Record<string, unknown>, path: string, list: ListPick, notes: Record<string, string>): void {
+  const parts = path.split(".");
+  let parent: Record<string, unknown> = tree;
+  for (const part of parts.slice(0, -1)) parent = parent[part] as Record<string, unknown>;
+  const last = parts[parts.length - 1]!;
+  const rows = parent[last];
+  if (!Array.isArray(rows)) return;
+  const where = Object.entries(list.where ?? {});
+  const matched = where.length ? rows.filter((row) => where.every(([field, value]) => String((row as Record<string, unknown>)?.[field] ?? "") === value)) : rows;
+  const from = list.rows?.from ?? 0;
+  const to = list.rows?.to ?? matched.length;
+  parent[last] = matched.slice(from, to);
+  notes[path] = `rows ${from}-${Math.min(to, matched.length)} of ${matched.length}${where.length ? ` matching (of ${rows.length})` : ""}`;
+}
+
+/** Reads the page the session is on (`here`); with `path`, only that part (`post.comments`), and of a list, `list`'s rows. */
+export async function readSession(page: Page, mem: MemPage, here: string | null, path?: string, list?: ListPick): Promise<SessionRead> {
   const base = { page: here, url: page.url() };
   if (readBlocksFor(here).length === 0) {
     return { ...base, read: {}, missing: [], notes: {}, readBlocks: [], skipped: [], hint: "no Read Block for this page: use `dom` to look at it" };
   }
   const { read, blocks, skipped } = await readCheckpoint(page, mem, here);
   const inPath = (p: string) => !path || p === path || p.startsWith(path + ".");
+  const tree = path ? pick(read.toJSON(), path) : read.toJSON();
+  const notes = Object.fromEntries(Object.entries(read.notes).filter(([p]) => inPath(p)));
+  if (path && (list?.rows || list?.where)) pickRows(tree, path, list, notes);
   return {
     ...base,
-    read: path ? pick(read.toJSON(), path) : read.toJSON(),
+    read: tree,
     missing: read.missing.filter(inPath),
-    notes: Object.fromEntries(Object.entries(read.notes).filter(([p]) => inPath(p))),
+    notes,
     readBlocks: blocks,
     skipped,
   };

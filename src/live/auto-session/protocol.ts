@@ -25,7 +25,7 @@ export type SessionRequest =
   | { op: "resync" }
   | { op: "console" }
   | { op: "storage" }
-  | { op: "read"; path?: string }
+  | { op: "read"; path?: string; rows?: { from: number; to?: number }; where?: Record<string, string> }
   | { op: "upload"; selector: string; stub: StubFileKind | { filePath: string } }
   | ({ op: "highlight" } & PilotHighlightFixtures);
 

@@ -10,6 +10,7 @@ import { logBannerDom, probeBanner } from "./banner-log.js";
 import { logDocks } from "./before.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
 import { renderAfterStep } from "./panel-after.js";
+import { lastRead } from "./last-read.js";
 import { showSlides } from "./slides.js";
 import { extractVerifyHighlights } from "./step-panels.js";
 import type { StepperContext, StepView } from "./view.js";
@@ -54,6 +55,7 @@ export async function showAfter(ctx: StepperContext, view: StepView, result: Che
     todoId: stage.state.lastTodoDock?.id,
     todoDockRef: refs.todoDock,
     forceCollapsed: forceCollapsed(),
+    read: lastRead(),
   });
   const parallel = !!after?.phase.todoParallel;
   await stage.syncAllTodoDocks({ parallel });

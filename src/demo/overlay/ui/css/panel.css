@@ -46,3 +46,9 @@
   #wg-panel { width: auto; padding-left: 12px; padding-right: 12px; }
   #wg-panel .wg-footer { flex-wrap: wrap; }
 }
+
+/* "The page shows" in the after-step panel: a disclosure; its chevron turns when open. */
+#wg-panel .wg-read summary { list-style: none; }
+#wg-panel .wg-read summary::-webkit-details-marker { display: none; }
+#wg-panel .wg-read .wg-read-chevron { transition: transform .15s var(--ease-mac); }
+#wg-panel .wg-read[open] .wg-read-chevron { transform: rotate(90deg); }
