@@ -32,11 +32,20 @@ export const OpenMessageBlock = defineMethodBlock({
   instruction: {
     async act(page, _in, mem) {
       const { email } = mem.get(ExpectedRecipient.key);
-      await page.locator(MailpitSel.messageRow, { hasText: email }).first().click();
-      await page.waitForURL(/\/view\//);
+      // Newest first; parallel runs sharing the inbox each open their own message.
+      for (const row of await page.locator(MailpitSel.messageRow, { hasText: email }).all()) {
+        if (!(await claimOnce(`mailpit:${await row.getAttribute("href")}`))) continue;
+        await row.click();
+        await page.waitForURL(/\/view\//);
+        return;
+      }
+      throw new Error(`every message for "${email}" was already opened by another run`);
     },
   },
 });
+
+// claimOnce(name) is true for the first caller on this machine (any process, any worker) and false after, for
+// 30 minutes (opts.ttlMs): parallel tests reading one shared inbox never open the same message.
 
 // demo-external/mailpit/methods/extract-email-link.method.block.ts
 // Named for what it does, not for one scenario - see "reusable across

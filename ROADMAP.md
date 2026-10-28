@@ -299,7 +299,9 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     `map({ exclusive: true })` (alone, after the rest); episodes and flows missing data are skipped with the reason.
     **Done.** A fast-forward unit narrates its inner steps' stubs (todos, title, caption) when it plays. **Done.** The world a flow runs in: `map({ timezone })`
     and `map({ network: { throttle, faults } })`, set by the first step and put back by a `restore-world` cleanup step.
-    **Done.** Next: mail claim.
+    **Done.** `claimOnce(name)`: something parallel runs share (the newest
+    email in one inbox) is taken by one caller on the machine; the scaffold's open-message claims its message. **Done.**
+    Every finding from that project review is in.
 20. The overlay looks like macOS (0.16.6): one stylesheet built by Tailwind (theme tokens after macOS - system colours,
     label / fill / separator, translucent materials, the system font, hairlines, layered shadows - in light and dark,
     `demo.appearance` pins one), an element's look as utilities where it is built, states in small component files;

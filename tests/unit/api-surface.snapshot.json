@@ -36,6 +36,7 @@
   "byText",
   "checkpoint",
   "chromiumExecutablePath",
+  "claimOnce",
   "collectBranchFlows",
   "collectGraphEdgeKeys",
   "completeSequentialTodoDock",
