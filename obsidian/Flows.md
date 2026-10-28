@@ -46,6 +46,7 @@ export const homeCartFlow = engine
 |---|---|
 | `memStub` | fill missing [[Mem]] values with registered fakes |
 | `sessionReset` | start with a fresh browser session when run after another flow |
+| `timezone`, `network` | the world the flow runs in: a time zone, a throttled or offline network, requests that fail on purpose - put back when it ends |
 | `viewport` | the browser size the flow plays at |
 | `exclusive` | under `waygraph test --flows`, run alone after every other flow |
 | `input` | the flow takes a value (a MemKey): one flow for many cases; `--input` gives it, a list plays it once per item |

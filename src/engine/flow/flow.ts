@@ -307,6 +307,9 @@ export interface FlowSettings {
   input?: MemKey<unknown>;
   viewport?: { width: number; height: number };
   exclusive?: boolean;
+  /** Read by map()'s `.end()` (the first step sets them, a cleanup step puts them back). */
+  timezone?: string;
+  network?: import("./world.js").World["network"];
   /** Cleanup steps from `.finally(Block)`, in order. */
   finally?: readonly SomeBlock[];
   /** Read by map() when it begins (the sign-in step); the Flow itself keeps nothing of it. */

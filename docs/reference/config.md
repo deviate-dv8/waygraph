@@ -111,8 +111,8 @@ armed around the Block's action rather than written into it: `withDialog(CancelB
 ### Flows: `map()` is the one way to define them
 
 A flow is built with `engine.map()`. Its run settings go in `map({ … })`, before the chain (`memStub`, `expectedFailure`,
-`demoPace`, `highlightStyle`, `sessionReset`, `as`, `input`, `viewport`, `exclusive`, `homeOrigin`); `.end()` takes
-nothing. `viewport: { width, height }` is the size the flow plays at (`run`, `demo`, `test --flows`); `exclusive: true`
+`demoPace`, `highlightStyle`, `sessionReset`, `as`, `input`, `viewport`, `exclusive`, `timezone`, `network`,
+`homeOrigin`); `.end()` takes nothing. `viewport: { width, height }` is the size the flow plays at (`run`, `demo`, `test --flows`); `exclusive: true`
 makes `waygraph test --flows` run it alone, after every other flow. `sessionReset: true` says the flow wants a fresh
 browser session when it runs after another one, in a CLI chain (`waygraph run "a then b"`) or nested with `.flow()`. The flow's title and narration are ctx stubs chained on
 the Block where they apply (`ctx.ui.title(…)` names the flow from that step on), and a step's pace is its `{ pace }` option:
@@ -172,6 +172,19 @@ waygraph run addItemFlow --input @cases/items.json     # an array: the flow once
 
 The input is required by the flow's first step, so preflight asks for it, and `--data`, a mem stub and `--replay`
 cover it like any key. In code, `.flow(addItemFlow, { input: item })` plays it with that input, once per call.
+
+**The world a flow runs in.** `timezone` and `network` set it for the flow and put it back when the flow ends, pass or
+fail (a `restore-world` cleanup step), so an outage test doesn't leave the next flow offline:
+
+```typescript
+engine.map({ timezone: "Asia/Tokyo" })                                         // dates and the clock in Tokyo time (Chromium)
+engine.map({ network: { throttle: "slow-3g" } })                               // or "fast-3g", { latencyMs, downloadKbps, uploadKbps } (Chromium)
+engine.map({ network: { throttle: "offline" } })                               // every browser
+engine.map({ network: { faults: [{ url: "**/api/orders", status: 503 }] } })   // or abort: true, delayMs: 3000
+```
+
+A fault answers matching requests instead of the server (`status`, `body`), fails them (`abort`), or holds them
+(`delayMs`) first. Offline mode and faults don't touch requests a test itself answers with `page.route`.
 
 **A step whose page keeps changing after it acts** (a debounced search, a list rendered in bursts) takes `settle`:
 `.method(TypeSearchBlock, { settle: true })` waits, after the step acts and before it is checked, for the page to load

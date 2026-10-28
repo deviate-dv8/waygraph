@@ -93,6 +93,9 @@ against a live site, use `--skill-pilot-blind`.
 - **Flows are the tests.** `waygraph test --flows` runs every flow as a Playwright test (workers, retries, video,
   reports); `map({ viewport })` sizes one, `map({ exclusive: true })` runs one alone and last. A project-written batch
   runner (parallelism, retries, "run these alone", a verdict file) is a smell. Write a spec only for what a flow can't say.
+- **Outages, slow networks and time zones are flow settings.** `map({ network: { faults: [{ url, status: 503 }] } })`,
+  `map({ network: { throttle: "offline" | "slow-3g" } })`, `map({ timezone: "Asia/Tokyo" })`: set when the flow starts,
+  put back when it ends. Hand-written `page.route` / CDP calls inside Blocks are a smell.
 - **No fixed waits.** A step whose page keeps changing after it acts takes `{ settle: true }` in the flow
   (`.method(TypeSearchBlock, { settle: true })`); a check that needs the page to catch up is already retried by verify.
   `page.waitForTimeout(...)` in a Block, or a hand-written "wait until the rows stop changing" loop, is a smell.

@@ -35,6 +35,7 @@ export { composeBlock, fastForwardComposeBlock, isFastForwardBlock } from "./eng
 export { MapBuilder } from "./engine/flow/map-builder.js";
 export { account, forgetSessions } from "./engine/flow/account.js";
 export type { Account } from "./engine/flow/account.js";
+export type { Fault, Throttle, World } from "./engine/flow/world.js";
 export { branchRoutes, collectBranchFlows, runBranchRegression } from "./engine/flow/branch-regression.js";
 export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./engine/flow/branch-regression.js";
 export type { ApiBlockOptions, ApiCallResult } from "./engine/block/kinds/api.js";

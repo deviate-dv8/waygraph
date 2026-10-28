@@ -23,6 +23,7 @@ import type { HighlightStyleDefaults } from "../stub/ring.js";
 import type { Flow, FlowSettings } from "./flow.js";
 import { buildBranchedFlow } from "./map-branch.js";
 import { signInStep, type Account } from "./account.js";
+import { inWorld, restoreWorld, type World } from "./world.js";
 import { asCleanup, settling, requiring, withoutRequire, settingInput, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
 
 type S = Checkpoint<"__start__">;
@@ -79,6 +80,19 @@ export interface MapBuilderOptions {
    * delete, a settings change), or it needs the app to itself.
    */
   exclusive?: boolean;
+  /**
+   * The time zone the flow runs in (an IANA name): the page's clock and dates follow it; put back when the flow ends.
+   * Chromium.
+   * @example engine.map({ timezone: "Asia/Tokyo" })
+   */
+  timezone?: string;
+  /**
+   * The network the flow runs on: `throttle` (`"offline"`, `"slow-3g"`, `"fast-3g"`, or latency and throughput;
+   * Chromium) and `faults` (requests that fail or are slow on purpose). Applied when the flow starts, put back when it
+   * ends, pass or fail.
+   * @example engine.map({ network: { faults: [{ url: "**\/api/orders", status: 500 }] } })
+   */
+  network?: World["network"];
 }
 
 /** What `.flow()` takes for the sub-flow it runs inline. */
@@ -401,7 +415,14 @@ export class MapBuilder<Out extends Checkpoint<string>> {
       throw new WaygraphError("WG_MAP_EMPTY", MSG_MAP_EMPTY);
     }
     // The input is required by the first step, so preflight, --data, mem stubs and replay all cover it.
-    const steps = this.settings.input ? [requiring(this.steps[0]!, this.settings.input), ...this.steps.slice(1)] : this.steps;
-    return this.build(steps, this.settings) as Flow<Out>;
+    let first = this.settings.input ? requiring(this.steps[0]!, this.settings.input) : this.steps[0]!;
+    let settings = this.settings;
+    // The flow's world (time zone, network) is set by its first step and put back by a cleanup step, pass or fail.
+    const world: World = { ...(settings.timezone ? { timezone: settings.timezone } : {}), ...(settings.network ? { network: settings.network } : {}) };
+    if (world.timezone || world.network) {
+      first = inWorld(first, world);
+      settings = { ...settings, finally: [...(settings.finally ?? []), asCleanup(restoreWorld(world))] };
+    }
+    return this.build([first, ...this.steps.slice(1)], settings) as Flow<Out>;
   }
 }
