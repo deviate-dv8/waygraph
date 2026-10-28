@@ -63,9 +63,9 @@ export interface MapBuilderOptions {
    */
   as?: Account;
   /**
-   * The MemKey this flow takes as its input: one flow for many cases. Its first step requires it; `waygraph run
-   * <flow> --input <json | @file>` gives it (an array plays the flow once per item), as do `--data`, a mem stub and
-   * `.flow(sub, { input })`.
+   * The MemKey this flow takes as its input: one flow for many cases. Its first step requires it; `--input`
+   * (JSON or `@file`) gives it on the command line - an array plays the flow once per item - as do `--data`, a mem stub
+   * and `.flow(sub, { input })`.
    * @example engine.map({ input: ApiCase }).gotoExternal(NavHoppscotchRestBlock).method(LoadCaseBlock)…
    */
   input?: MemKey<unknown>;
