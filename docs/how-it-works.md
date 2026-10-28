@@ -105,6 +105,6 @@ Every run writes `.waygraph/runs/<runId>.jsonl`, one event per line. Its path is
 
 ## Next
 
-- [Quick start](./quickstart) - see it run in two minutes
-- [Your project](./scaffold) - where each file goes
-- [Read Blocks](./reference/reads) - make every page say what it shows
+- [Quick start](./quickstart): see it run in two minutes
+- [Your project](./guides/project): where each file goes
+- [Blocks](./guides/blocks), [Flows](./guides/flows), [Read Blocks](./guides/reads), [Data](./guides/data)

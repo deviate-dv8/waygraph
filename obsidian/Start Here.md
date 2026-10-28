@@ -37,7 +37,7 @@ on-screen guide.
 | [[Inside the Code]] | The source folders and where to start reading |
 | [[Glossary]] | Every term in one place |
 
-For the details: the reference in `docs/reference/` (one topic per page), every `WAYGRAPH_*` variable in
+For the details: the guides in `docs/guides/` (one topic per page), every command and setting in `docs/reference/`, every `WAYGRAPH_*` variable in
 `docs/env.md`, and what 0.16.0 removed in `docs/deprecated.md`. Working on waygraph itself: `AGENTS.md` and
 `src/ARCHITECTURE.md`.
 

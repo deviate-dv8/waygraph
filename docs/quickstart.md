@@ -1,93 +1,52 @@
 # Quick start
 
-Three entry paths, then your first Block + Flow.
+## Pick a way in
 
-## Three ways in
+```mermaid
+graph TD
+  Q{what do you want?} -->|just look| T["npx waygraph try demo<br/>(a temp folder)"]
+  Q -->|start a project| I["npx waygraph init my-app<br/>(works offline)"]
+  Q -->|a full example| S["examples/saucedemo<br/>(the live site)"]
+  Q -->|add it to a repo| N["npm install waygraph<br/>@playwright/test"]
+```
 
-| Path | When | Command |
+| Way in | Command | Writes to your folder? |
 |---|---|---|
-| **Try demo** | Onboarding - watch nested flows on saucedemo.com; nothing written to your cwd | `npx waygraph try demo` |
-| **Try auto** | Temp Sauce Demo headed explorer (credentials from its `*.mem-stubs.ts`) | `npx waygraph try auto` |
-| **Try auto:cli** | Same explorer, terminal menu | `npx waygraph try auto:cli` |
-| **In-repo example** | Permanent Sauce Demo - headed `auto` | [Clone and run it](#saucedemo) (needs one root install + build first) |
-| **waygraph init** | New repo - offline scaffold, built into waygraph since 0.7.5 | `npx waygraph init my-app` |
+| watch a checkout on saucedemo.com, step by step | `npx waygraph try demo` | no |
+| pick Blocks by hand on it | `npx waygraph try auto` (`try auto:cli` in the terminal) | no |
+| a new project | `npx waygraph init my-app` | yes |
+| the full Sauce Demo example | [below](#saucedemo) | yes |
 
-After `init`:
+Needs Node 22+ and `@playwright/test` 1.40+ (a peer dependency: you bring your own).
+
+## A new project
 
 ```sh
+npx waygraph init my-app
 cd my-app
 npm install
 npx playwright install chromium
-npm test          # offline example flow - green immediately
-npm run test:ui   # same suite, Playwright's interactive UI Mode
-npx waygraph test report               # open the HTML report (trace on failure)
-npx waygraph test show-trace <trace.zip>  # open one trace directly
-npm run list      # .flow.ts → export map
-npm run check     # nav hygiene + orphan Blocks
-npm run demo      # watch example.flow.ts (manual Next)
-npm run auto      # headed explore
-npm run auto:cli  # same menus in the terminal
+npm test                 # passes offline straight away
 ```
 
-`try demo` / `try auto` use the live saucedemo quickstart
-template, not the offline scaffold.
-Flags: [Demo / run](./demo).
-Explore: [Auto explore](./auto) (headed by default; `--cli` for terminal).
+Then:
 
-## Run the Sauce Demo example
-
-`examples/saucedemo` is a complete project (Map layout, live tests, demos)
-against [saucedemo.com](https://www.saucedemo.com). It links to the waygraph
-checkout it lives in, so install and build the repo _first_:
-
-```sh
-git clone https://github.com/deviate-dv8/waygraph.git
-cd waygraph
-npm install && npm run build     # 1. install + build waygraph itself
-npx playwright install chromium    # 2. browser (once)
-cd examples/saucedemo
-npm install                        # 3. links the example to your build
-npm test                           # 15 tests, mostly against the live site
-npm run demo                       # watch the checkout with the step overlay
-npm run auto                       # explore it by picking Blocks
-npm run test:ui                    # Playwright's interactive UI
-```
-
-Changed waygraph's source? Run `npm run build` at the repo root again - the
-example picks it up immediately. Prefer not to clone? `npx waygraph try demo`
-runs the same walkthrough from a temp folder. What each folder in the example is for:
-[Sauce Demo walkthrough](./saucedemo/index).
-
-## Watch / run / explore (0.10+)
-
-| Want | Command |
+| Try | Command |
 |---|---|
-| List flows (file → export) | `npx waygraph list` |
-| Run a flow file | `npx waygraph run src/flows/shop.flow.ts --data '{…}'`
-`npx waygraph auto src/flows/shop.flow.ts --data '{…}'` |
-| Manual Next (default) | `npx waygraph demo src/flows/shop.flow.ts` |
-| Auto-advance timer | `npx waygraph demo --blocks shopFlow --auto-next` |
-| Faster demo / classic strip | `npx waygraph demo … --fast` · `--full` (default strip is carousel) |
-| Execute ad-hoc Blocks | `npx waygraph run --blocks "login then nav-cart" --data '{…}'` |
-| CLI explore (same menus as headed) | `npx waygraph auto --cli --data '{…}'` |
+| watch a flow, step by step | `npm run demo` |
+| the same, by itself | `npm run demo:auto-next` |
+| play every flow as a test | `npx waygraph test --flows` |
+| pick Blocks by hand | `npm run auto` (`npm run auto:cli` in the terminal) |
+| list the flows | `npm run list` |
+| lint Blocks and folders | `npm run check` |
+| Playwright's UI | `npm run test:ui` |
 
-Details: [Demo / run](./demo) ·
-[Auto explore](./auto).
+What each file is for: [Your project](./guides/project).
 
-## Install into an existing repo
-
-```sh
-npm install waygraph @playwright/test
-```
-
-## Minimal flow
-
-Prefer `defineNavBlock` for navigation and regular Blocks for page actions.
-Full handout examples live on the [engine handout](./handout) page.
+## Your first Block and flow
 
 ```ts
 import { Engine, MemPage, keys, checkpoint, defineNavBlock, defineMethodBlock, Trait } from "waygraph";
-import type { Checkpoint } from "waygraph";
 
 const LoginForm = checkpoint("LoginForm");
 type LoginForm = typeof LoginForm;
@@ -119,28 +78,40 @@ const SubmitLogin = defineMethodBlock({
 const mem = new MemPage();
 mem.set(LoginKeys.username, "alice");
 
-const flow = new Engine({ headless: true }).map().start().gotoPage(NavLogin).method(SubmitLogin).end();
-
-await flow.run(mem);
-// Or inside @playwright/test: await flow.run(context, mem);
+const flow = new Engine({ headless: true }).map().gotoPage(NavLogin).method(SubmitLogin).end();
+await flow.run(mem);                    // inside a Playwright test: await flow.run(context, mem)
 ```
 
-## Hard rules
+```mermaid
+graph LR
+  S((start)) -->|nav-login| L[LoginForm] -->|submit-login| D[LoggedIn]
+```
 
-- `resolve` never touches the browser or MemPage - only returns a Checkpoint.
-- `verify` runs only after resolve - confirms or fails loud; never redirects.
-- `precondition` Traits run right before `act()`.
-- `preflight` checks `requires: MemKey[]` before a tab opens.
-- Block output Checkpoint is the only contract the next Block can rely on.
+In a project the pieces go in their own files (`src/states/`, the page folder, `src/flows/`), and the flow imports
+`engine` from `config/waygraph.config.ts`. [How it works](./how-it-works) explains each part.
 
-## Develop this package
+## The Sauce Demo example {#saucedemo}
+
+`examples/saucedemo` is a complete project against [saucedemo.com](https://www.saucedemo.com): live tests, demos,
+accounts, Read Blocks. It uses the waygraph checkout it lives in, so build that first:
 
 ```sh
-git clone git@github.com:deviate-dv8/waygraph.git
+git clone https://github.com/deviate-dv8/waygraph.git
 cd waygraph
+npm install && npm run build
+npx playwright install chromium
+cd examples/saucedemo
 npm install
-npm run typecheck
-npm test
-npm run build
+npm test                 # 15 tests against the live site
+npm run demo             # sign in, then shop
+npm run auto             # pick Blocks by hand
 ```
 
+Changed waygraph's source? `npm run build` at the root again; the example picks it up. A tour of its folders:
+[Sauce Demo walkthrough](./saucedemo/).
+
+## Next
+
+- [How it works](./how-it-works): Checkpoints, Blocks, flows, one step's phases
+- [Blocks](./guides/blocks) · [Flows](./guides/flows) · [Read Blocks](./guides/reads) · [Data](./guides/data)
+- [Demo](./guides/demo): narrate a flow for people to watch

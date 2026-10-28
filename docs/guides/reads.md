@@ -4,6 +4,18 @@ A page Block lists what you can **do** on a page (its methods). A **Read Block**
 a typed object of what the page shows. An agent in a session gets it as JSON after every step, without parsing the
 DOM; a test gets it as typed values.
 
+```mermaid
+graph LR
+  S[a step lands on<br/>ItemInCart] --> R[its Read Blocks read<br/>the page]
+  R --> J["{ catalog: { items: […] },<br/>header: { cartCount: 1 } }"]
+  J --> L[run log<br/>step:read]
+  J --> P[pilot replies]
+  J --> D[demo panel]
+  J --> T[Trait.read]
+```
+
+Every page should have one: `waygraph check` lists the pages no Read Block reads.
+
 ## Declare the keys: one namespace, one type
 
 ```ts
@@ -24,7 +36,7 @@ Property names become key paths: `Catalog.items` is a `ReadKey` named `catalog.i
 It sits next to the page, shaped like a Method, with one instruction phase: `read`.
 
 ```ts
-// src/blocks/saucedemo-web/inventory/inventory.read.block.ts
+// src/blocks/saucedemo-web/inventory/inventory.read.block.ts  (in the Map layout: the page folder's _read.block.ts)
 import { defineReadBlock } from "waygraph";
 
 export const InventoryReadBlock = defineReadBlock({
@@ -153,5 +165,5 @@ anything:
 
 The panel after each step has a **The page shows** section: every value its Read Blocks read, one line each.
 
-Mem keys are declared the same way: `keys("checkout")<{ credentials: Creds; selectedItem: Item }>()` (see
-[Core concepts](./concepts.md)).
+Mem keys are declared the same way, with `keys("checkout")<{ credentials: Creds; selectedItem: Item }>()`: mem is
+what a flow is given, a read is what the page shows ([Data](./data)).

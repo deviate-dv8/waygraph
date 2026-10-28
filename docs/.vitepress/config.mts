@@ -31,10 +31,6 @@ export default withMermaid(defineConfig({
   base: "/waygraph/",
   cleanUrls: true,
   lastUpdated: true,
-  // Long, hand-written reference doc with plenty of raw <In, Out> generics outside code spans -
-  // Vue's template compiler chokes on those as stray HTML. Never rendered as a site page anyway
-  // (the original site always linked it straight to GitHub's own blob viewer); exclude it from the
-  // build rather than rewrite the whole file to escape every generic.
   head: [
     ["link", { rel: "icon", href: "/waygraph/favicon.svg" }],
     [
@@ -49,59 +45,58 @@ export default withMermaid(defineConfig({
   themeConfig: {
     logo: "/favicon.svg",
     nav: [
-      { text: "Home", link: "/" },
       { text: "Quick start", link: "/quickstart" },
-      { text: "Guides", link: "/scaffold" },
-      { text: "API", link: "/api/" },
+      { text: "Guides", link: "/guides/project" },
       { text: "Reference", link: "/reference/" },
+      { text: "API", link: "/api/" },
       { text: "Sauce Demo", link: "/saucedemo/" },
       { text: "npm", link: "https://www.npmjs.com/package/waygraph" },
     ],
 
     sidebar: {
-      "/api/": [{ text: "Guides", items: [{ text: "Back to the guides", link: "/scaffold" }, { text: "Deprecated", link: "/deprecated" }] }, ...apiSidebar],
+      "/api/": [{ text: "Back", items: [{ text: "Guides", link: "/guides/project" }, { text: "Reference", link: "/reference/" }] }, ...apiSidebar],
       "/": [
-      {
-        text: "Start here",
-        items: [
-          { text: "Home", link: "/" },
-          { text: "Quick start", link: "/quickstart" },
-          { text: "How it works", link: "/how-it-works" },
-          { text: "What init creates", link: "/scaffold" },
-          { text: "The Map layout", link: "/consumer" },
-        ],
-      },
-      {
-        text: "Use",
-        items: [
-          { text: "Run and demo flows", link: "/demo" },
-          { text: "Explore with auto", link: "/auto" },
-          { text: "Demo narration", link: "/highlights" },
-        ],
-      },
-      {
-        text: "Reference",
-        items: [
-          { text: "API reference", link: "/api/" },
-          { text: "Deprecated", link: "/deprecated" },
-          { text: "Environment variables", link: "/env" },
-          { text: "Engine handout", link: "/handout" },
-          { text: "Reference", link: "/reference/" },
-          { text: "· Getting started", link: "/reference/getting-started" },
-          { text: "· Project config", link: "/reference/config" },
-          { text: "· Core concepts", link: "/reference/concepts" },
-          { text: "· Engine features", link: "/reference/engine" },
-          { text: "· Block helpers", link: "/reference/block-helpers" },
-          { text: "· Mail adapters", link: "/reference/mail" },
-          { text: "· Pilot", link: "/reference/pilot" },
-          { text: "· Read Blocks", link: "/reference/reads" },
-          { text: "· The Map", link: "/reference/map" },
-          { text: "· CLI reference", link: "/reference/cli" },
-          { text: "· Developing waygraph", link: "/reference/developing" },
-          { text: "Preview / deploy these docs", link: "/deploy" },
-        ],
-      },
-    ],
+        {
+          text: "Start",
+          items: [
+            { text: "Home", link: "/" },
+            { text: "Quick start", link: "/quickstart" },
+            { text: "How it works", link: "/how-it-works" },
+            { text: "Sauce Demo walkthrough", link: "/saucedemo/" },
+          ],
+        },
+        {
+          text: "Guides",
+          items: [
+            { text: "Your project", link: "/guides/project" },
+            { text: "Blocks", link: "/guides/blocks" },
+            { text: "Flows", link: "/guides/flows" },
+            { text: "Read Blocks", link: "/guides/reads" },
+            { text: "Data", link: "/guides/data" },
+            { text: "Checks", link: "/guides/checks" },
+            { text: "Demo", link: "/guides/demo" },
+            { text: "Testing", link: "/guides/testing" },
+            { text: "Agents and exploring", link: "/guides/agents" },
+            { text: "Mail", link: "/guides/mail" },
+          ],
+        },
+        {
+          text: "Reference",
+          items: [
+            { text: "Overview", link: "/reference/" },
+            { text: "CLI", link: "/reference/cli" },
+            { text: "Config", link: "/reference/config" },
+            { text: "Environment variables", link: "/env" },
+            { text: "Run log and manifest", link: "/reference/run-log" },
+            { text: "Pilot", link: "/reference/pilot" },
+            { text: "The Map", link: "/reference/map" },
+            { text: "API", link: "/api/" },
+            { text: "Deprecated", link: "/deprecated" },
+            { text: "Developing waygraph", link: "/reference/developing" },
+            { text: "Preview these docs", link: "/deploy" },
+          ],
+        },
+      ],
     },
 
     socialLinks: [

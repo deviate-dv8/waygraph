@@ -2,91 +2,57 @@
 layout: home
 hero:
   name: Waygraph
-  tagline: Write browser tests as a graph of small, reusable steps instead of one long script. Built on Playwright.
+  tagline: Playwright with a map. Describe your app once, as pages and the actions between them, and every test is a path through it.
   actions:
     - theme: brand
       text: Quick start
       link: /quickstart
     - theme: alt
-      text: What init creates
-      link: /scaffold
+      text: How it works
+      link: /how-it-works
     - theme: alt
       text: GitHub
       link: https://github.com/deviate-dv8/waygraph
 ---
 
-## Start here
+## The idea
 
-### 1 · Just look
-
-Watch a full checkout on Sauce Demo, step by step. Nothing is written to your folder.
-
-```sh
-npx waygraph try demo
+```mermaid
+graph LR
+  S((start)) -->|nav-login| L[LoginPage]
+  L -->|submit-login| I[LoggedIn]
+  I -->|add-to-cart| C[ItemInCart]
+  C -->|nav-cart| P[CartPage]
 ```
 
-### 2 · Start a project
-
-A working, fully offline project: tests pass immediately.
-
-```sh
-npx waygraph init my-app
-cd my-app
-npm install
-npx playwright install chromium
-npm test
-```
-
-### 3 · Run the Sauce Demo
-
-The full example project, against the live site.
-
-```sh
-git clone https://github.com/deviate-dv8/waygraph.git
-cd waygraph
-npm install && npm run build
-npx playwright install chromium
-cd examples/saucedemo && npm install
-npm test
-```
-
-[More on the example →](/quickstart#saucedemo)
-
-## The four ideas
-
-| | |
+| Word | Means |
 |---|---|
-| **Checkpoint** | A named place the app can be: `LoginPage`, `LoggedIn`. |
-| **Block** | One action from one Checkpoint to another, with a `verify` that confirms it. |
-| **Flow** | Blocks in order. Run it, demo it, or let `auto` pick the route. |
-| **Mem** | Typed shared data for a run: credentials, the selected item. |
+| **Checkpoint** | a place the app can be: `LoginPage`, `ItemInCart` |
+| **Block** | one action from one Checkpoint to another, with checks that prove it |
+| **Flow** | Blocks in order. TypeScript checks each step starts where the last one ended |
+| **Read Block** | what a page shows, as typed data |
+| **Mem** | the data a run carries: credentials, the item being added |
 
-## Where files go
+## One flow, three ways to play it
 
-Use the **[Waygraph Map](/consumer)**: folders under `src/map/` mirror your app's URLs, one folder
-per page, and `waygraph map` fails if a folder stops matching its real URL. That's what
-`waygraph init` gives you. A plainer freeform layout still works for small projects; the Map is
-where the tooling is headed.
+| | Command | You get |
+|---|---|---|
+| run it | `npx waygraph run checkoutFlow` | pass / fail and a run log |
+| show it | `npx waygraph demo checkoutFlow` | step by step, with rings and captions |
+| test it | `npx waygraph test --flows` | every flow as a Playwright test |
+
+## Try it
+
+```sh
+npx waygraph try demo        # watch a checkout on saucedemo.com, nothing written to your folder
+npx waygraph init my-app     # a new project that passes offline
+```
 
 ## Guides
 
-### Learn
-
-- **[Quick start](/quickstart)** — Install, your first Block and Flow, the Sauce Demo example.
-- **[What `init` creates](/scaffold)** — The scaffold's folder layout, explained.
-- **[Sauce Demo walkthrough](/saucedemo/)** — A worked example of the Map layout.
-- **[The Map layout](/consumer)** — Folders that mirror your app's URLs.
-
-### Use
-
-- **[Run and demo flows](/demo)** — `run`, `demo`, and their flags.
-- **[Explore with `auto`](/auto)** — Pick Blocks by hand, in a browser or the terminal.
-- **[Demo narration](/highlights)** — Highlights, checklists, and captions in a demo.
-
-### Reference
-
-- **[Engine handout](/handout)** — The core model in one page.
-- **[Reference](./reference/)** — Every feature in detail, one topic per page.
-- **[Environment variables](/env)** — Every `WAYGRAPH_*` variable waygraph reads.
-- **[Removed in 0.16.0](/deprecated)** — Each old form and what replaces it.
-- **[Preview these docs](/deploy)** — Run this site locally or deploy it.
+| Start | Guides | Reference |
+|---|---|---|
+| [Quick start](/quickstart) | [Your project](/guides/project) · [Blocks](/guides/blocks) · [Flows](/guides/flows) | [CLI](/reference/cli) |
+| [How it works](/how-it-works) | [Read Blocks](/guides/reads) · [Data](/guides/data) · [Checks](/guides/checks) | [Config](/reference/config) |
+| [Sauce Demo](/saucedemo/) | [Demo](/guides/demo) · [Testing](/guides/testing) | [API](/api/) · [Environment](/env) |
+| | [Agents](/guides/agents) · [Mail](/guides/mail) | [Deprecated](/deprecated) |

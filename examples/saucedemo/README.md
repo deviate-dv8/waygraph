@@ -85,4 +85,4 @@ src/blocks/
 ```
 
 Docs: [Sauce Demo showcase](../../docs/saucedemo/) ·
-[Auto explore](../../docs/auto.html) · [Consumer layout](../../docs/consumer.html)
+[Agents and exploring](https://deviate-dv8.github.io/waygraph/guides/agents) · [Your project](https://deviate-dv8.github.io/waygraph/guides/project)

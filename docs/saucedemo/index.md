@@ -59,7 +59,7 @@ lists the whole tree.
 | Nav | `defineNavClickBlock` / `defineMemNavBlock` | `nav-cart` clicks the cart icon; `nav-item-detail` opens the item named in Mem |
 | Method | `defineMethodBlock` | `fill-username`, `submit-login` (branches: `LoggedIn` or back to `LoginPage`), `finish-order` |
 | Effect | `defineEffectBlock` | `add-to-cart`: one auto-menu row per live "Add to cart" button |
-| Read | `defineReadBlock` | `read-inventory`, `read-cart`, `read-header`: what the pages show, as JSON for `pilot read` ([Read Blocks](../reference/reads.md)) |
+| Read | `defineReadBlock` | `read-inventory`, `read-cart`, `read-header`: what the pages show, as JSON for `pilot read` ([Read Blocks](../guides/reads.md)) |
 | API | `defineApiBlock` | `api-demo.flow.ts`: a backend check resolved into a Checkpoint like a UI step |
 
 Blocks carry behaviour only (act, observe, resolve, verify). They have no narration of their own.
@@ -122,4 +122,4 @@ export function orderPlacedYap(ctx: StubCtx): void {
 ```
 
 The full stub API (rings, todos, title, caption, device, zoom, network tab, slides) is on
-[Demo narration](../highlights.md).
+[Demo narration](../guides/demo.md).

@@ -1,223 +1,113 @@
-# Project config
+# Config
 
-## Project config (`waygraph.config`, `.env`)
-
-Three places can supply a project's `baseUrl`, checked in this order (first one found wins):
-
-1. `WAYGRAPH_BASE_URL` - a real shell export, or one loaded from a `.env` file (next section).
-2. A `waygraph.config.ts`/`.mts`/`.mjs`/`.js`/`.cjs` file in the project root:
-   ```typescript
-   import { defineConfig } from "waygraph";
-
-   export default defineConfig({
-     baseUrl: "http://127.0.0.1:4177",
-   });
-   ```
-   `defineConfig` is a type-checking identity helper - `export default { baseUrl: "..." }` works identically without
-   it. `.ts` works unmodified; no separate build/transpile step.
-
-**Native `.env` support** - `.env`, `.env.local`, `.env.<mode>`, `.env.<mode>.local`
-(`<mode>` = `--env <mode>` / `WAYGRAPH_ENV`, else `NODE_ENV`, else `"development"`) are auto-loaded from the project root before
-`baseUrl` resolution runs, same layering Vite/Next use. No `dotenv` dependency - a small
-built-in parser (`src/runtime/env-file.ts`), matching the "bring nothing, read what's already there"
-approach memStub already takes with Faker. A real, already-exported shell env var always wins
-over anything in a `.env` file - loading one only fills a gap, never silently overrides a
-value you actually set. This replaces the hack of manually re-exporting an FE project's own
-`.env` values, or duplicating them into `package.json`, just to get waygraph to see them.
-
-### `config/waygraph.config.ts` replaces `playwright.config.ts`
-
-The scaffold keeps all settings in one object, `config/waygraph.config.ts` (the project root works too).
-`waygraph test` builds the test runner's config from it, so a project needs no `playwright.config.ts`:
+One file, `config/waygraph.config.ts` (the project root works too), holds everything a project needs to run. There is
+no `playwright.config.ts`: `waygraph test` builds Playwright's config from this one.
 
 ```typescript
-export default defineConfig({
+import { defineConfig, Engine } from "waygraph";
+
+const config = defineConfig({
   baseUrl: "http://localhost:3130",
-  testDir: "tests",                       // default
-  webServer: { command: "npm start", port: 3130 },
-  extensions: ["hoppscotch"],
-  playwright: { workers: 1, timeout: 180_000, use: { video: "on" } },   // merged over the defaults
+  testDir: "tests",                                  // default
+  webServer: { command: "npm start", port: 3130 },   // started around test, run, demo and auto
+  extensions: ["hoppscotch"],                        // browser extensions to load
+  playwright: { workers: 1, timeout: 180_000, use: { video: "on" } },   // merged over waygraph's defaults
+  run:  { slowMo: 0, video: { viewport: "1280x720" } },
+  demo: { pace: "fast", typingMs: 20, autoNext: true, appearance: "dark" },
 });
+export default config;
+export const engine = new Engine(config);           // every flow imports this
 ```
 
-Defaults: `fullyParallel`, `list` + `html` reporters, `trace: "retain-on-failure"`, `use.baseURL` from `baseUrl`
-(`WAYGRAPH_BASE_URL` still wins). `webServer` is also started around `run`, `demo` and `auto`.
-**Different environments.** The config can be a function that reads `.env` values, so one project points at
-several base URLs:
+```mermaid
+graph LR
+  C[config/waygraph.config.ts] --> T[waygraph test<br/>Playwright's config]
+  C --> R[run · demo · auto<br/>base URL, server, settings]
+  C --> E[engine<br/>the browser a flow launches]
+```
+
+## The fields
+
+| Field | Is |
+|---|---|
+| `baseUrl` | where relative URLs go (`WAYGRAPH_BASE_URL` overrides it) |
+| `webServer` | `{ command, port }`, started before and stopped after |
+| `extensions` | browser extensions ([below](#browser-extensions)) |
+| `testDir` | where `waygraph test` looks for specs (default `tests`) |
+| `playwright` | Playwright's own config, merged over the defaults: `fullyParallel`, `list` + `html` reporters, `trace: "retain-on-failure"`, `use.baseURL` from `baseUrl` |
+| `slowMo`, `headed`, `video: { dir, viewport }` | run settings shared by `run` and `demo` |
+| `run: { … }`, `demo: { … }` | the same per command, over the shared ones |
+| `runLog` | `false` turns the run log off; a folder moves it ([Run log](./run-log)) |
+
+Config values are defaults: a flag, a shell variable or a `.env` value beats them.
+
+## Demo settings
+
+| `demo.` | Does |
+|---|---|
+| `pace` | default pace for flows and steps that set none: `"fast"`, `"slow"`, `"blitz"`, or a multiplier |
+| `speeds` | what the named paces mean, as multipliers of normal (`{ blitz: 0.05, fast: 0.33, slow: 2 }`) |
+| `typingMs` | typing animation, ms per character (`0` types instantly) |
+| `slowMo` | waygraph's pause after each action (in `run`, `slowMo` is Playwright's) |
+| `autoNext`, `fast` | as the `--auto-next` / `--fast` flags |
+| `appearance` | `"light"` or `"dark"` overlay, so recordings match whichever machine makes them |
+
+## Environments and `.env`
+
+`.env`, `.env.local`, `.env.<mode>` and `.env.<mode>.local` load from the project root, in that order, each over the
+one before. The mode is `--env <mode>` (any command) or `WAYGRAPH_ENV`, else `NODE_ENV`, else `development`. A
+variable already exported in the shell always wins over the files.
+
+The config can be a function of them, so one project points at several environments:
 
 ```typescript
 export default defineConfig(({ mode, env }) => ({
-  baseUrl: env.BASE_URL,            // .env: BASE_URL=http://localhost:3000, .env.staging: BASE_URL=https://staging.example.com
+  baseUrl: env.BASE_URL,            // .env: http://localhost:3000 · .env.staging: https://staging.example.com
   extensions: mode === "staging" ? [] : ["hoppscotch"],
 }));
 ```
 
-`waygraph test --env staging` (any command takes `--env <mode>`; or `WAYGRAPH_ENV=staging`) loads `.env`, `.env.local`,
-`.env.staging`, `.env.staging.local` in that order, each overriding the one before; the default mode is `NODE_ENV`, else
-`development`. A value exported in the shell always wins over every file, and `WAYGRAPH_BASE_URL` still overrides `baseUrl`.
-
-**Run and demo settings.** Each command has its own section, over shared top-level defaults:
-
-```typescript
-export default defineConfig({
-  slowMo: 100,                                   // shared by run and demo
-  run:  { slowMo: 0, video: { viewport: "1280x720" } },
-  demo: { pace: "fast", typingMs: 20, slowMo: 350, autoNext: true, video: { viewport: "1920x1080" } },
-});
+```sh
+npx waygraph test --flows --env staging
 ```
 
-`demo.appearance` pins the overlay to `"light"` or `"dark"` (by default it follows the system's setting), so every
-recording looks the same whichever machine makes it.
+## Several configs
 
-`demo.pace` is the default pace for flows and steps that set none (`"fast"`, `"slow"`, `"blitz"`, or a multiplier);
-`demo.speeds` defines the named paces as multipliers of normal dwell and gate time (defaults `{ blitz: 0.05, fast: 0.33, slow: 2 }`, lower is faster), e.g. `speeds: { fast: 0.5 }`. `demo.typingMs` is the typing animation in ms per character (`0` types instantly). In `demo`, `slowMo` is waygraph's own
-pause after each action, applied once per action and not per keystroke, so a step's pace can remove it; in `run` it is
-Playwright's `slowMo`. A single step takes `{ pace }` in the map: `.method(SetBearerTokenBlock, { pace: "blitz" })`, which
-skips that step's typing animation and its pause. A flow takes `map({ demoPace })`.
+`config/waygraph.staging.config.ts` next to the default is picked with `--config staging` (any command, or
+`WAYGRAPH_CONFIG`). The picked config replaces the default for everything. One can build on the other:
+`defineConfig({ ...base, baseUrl: "https://staging.example.com" })`. A flow's `import { engine }` follows the picked
+config too.
 
-Run settings can be defaults in the config, applied only when no flag, shell variable or `.env` value sets them:
-`video: { dir, viewport }`, `slowMo`, `headed`, `demo: { autoNext, fast, appearance }`. `extensions`, `video`, `slowMo`, `headed`, `demo`,
-`webServer` and `testDir` are waygraph's own; only the `playwright: {…}` block is Playwright's (browser extensions are not a
-Playwright config option at all - waygraph launches a persistent context for them).
+## Videos
 
-**Videos.** `--video` saves recordings to `<Downloads>/waygraph-videos/<project>` by default. Set `video.dir` in the config
-(absolute, `~/…`, or relative to the project) or `WAYGRAPH_VIDEO_DIR` to put them elsewhere; `--video <dir>` wins over both.
-"Downloads" is `~/Downloads` on macOS and Windows and `XDG_DOWNLOAD_DIR` on Linux. Without a Downloads folder (a server, a
-container) or on CI the default is the project's `.waygraph-videos/`. waygraph checks the folder is writable first: on macOS the
-first write into Downloads can trigger a one-time permission prompt for your terminal, and if it is refused waygraph warns and
-saves in the project instead.
+`--video` saves to `<Downloads>/waygraph-videos/<project>` (`~/Downloads` on macOS and Windows, `XDG_DOWNLOAD_DIR` on
+Linux). On CI, or without a Downloads folder, it's the project's `.waygraph-videos/`. `video.dir` in the config or
+`WAYGRAPH_VIDEO_DIR` moves it; `--video <dir>` beats both. If the folder isn't writable (macOS can ask once for
+permission), waygraph warns and saves in the project.
 
-**Several configs.** A project can keep more than one: `config/waygraph.staging.config.ts` next to the default, chosen with
-`waygraph test --config staging` (any command takes `--config <name|path>`, or set `WAYGRAPH_CONFIG`). The chosen config
-replaces the default for everything: `baseUrl`, `extensions`, `webServer`, the `playwright` block, `run` / `demo`. A second
-config can build on the first: `defineConfig({ ...base, baseUrl: "https://staging.example.com" })`. Each config file may export
-its own `engine`; and an engine built from any config still follows the selected one for the browser it launches itself, so a
-flow's static `import { engine }` does not pin the run to the default config.
+## The Engine
 
-Flows pass the same object to the Engine, so it is imported rather than read out of band:
-the config file exports `export const engine = new Engine(config)`, and flows `import { engine } from "../../config/waygraph.config.js"`. The Engine uses
-`baseUrl` and `extensions` for the browser it launches itself (`flow.run(mem)`); `waygraph test`, `run`, `demo`
-and `auto` read the file too, for everything else.
-A project's own `playwright.config.*` is not read (removed in 0.16.0); `waygraph upgrade` points one out so its settings
-can move into `config/waygraph.config.ts`.
-Editor integrations that look for a `playwright.config.ts` (the VS Code Playwright extension) won't find one; use `waygraph test` or `npm test`.
+The config file exports `engine = new Engine(config)`, and every flow imports it. Options for the browser it launches
+itself (`flow.run(mem)`, no context):
 
-### Browser dialogs
+| Option | Does |
+|---|---|
+| `headless`, `browserName`, `slowMo` | how that browser launches; `flow.run(mem, { ...overrides })` changes them for one call |
+| `browsers: { chromium, firefox, webkit }` | another launcher with Playwright's `.launch()` shape (a stealth-patched Chromium) |
+| `layouts: [...]` | checks every step that lands on a matching Checkpoint runs ([Checks](../guides/checks#layouts-one-check-for-many-pages)) |
+
+`flow.run(context, mem)` uses a context you already launched and ignores these. `spawnTab(entry, page, mem)` drives a
+second tab, in the same context, through its own flow.
+
+Flow settings (`map({ memStub, as, input, viewport, timezone, network, … })`) are on [Flows](../guides/flows#flow-settings).
+
+## Browser dialogs
 
 A `confirm()`, `alert()`, `prompt()` or `beforeunload` freezes the page until it is answered, so the answer is
 armed around the Block's action rather than written into it: `withDialog(CancelBlock, { accept: true, into: LeaveWarning })`
 (`accept: false` dismisses; `into` keeps the dialog's text in `mem` for an assert Block to check).
 
-### Flows: `map()` is the one way to define them
-
-A flow is built with `engine.map()`. Its run settings go in `map({ … })`, before the chain (`memStub`, `expectedFailure`,
-`demoPace`, `highlightStyle`, `sessionReset`, `as`, `input`, `viewport`, `exclusive`, `timezone`, `network`,
-`homeOrigin`); `.end()` takes nothing. `viewport: { width, height }` is the size the flow plays at (`run`, `demo`, `test --flows`); `exclusive: true`
-makes `waygraph test --flows` run it alone, after every other flow. `sessionReset: true` says the flow wants a fresh
-browser session when it runs after another one, in a CLI chain (`waygraph run "a then b"`) or nested with `.flow()`. The flow's title and narration are ctx stubs chained on
-the Block where they apply (`ctx.ui.title(…)` names the flow from that step on), and a step's pace is its `{ pace }` option:
-
-```typescript
-const AddShown = AddItemBlock.stubAfter((ctx) => {
-  ctx.ui.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart", tag: "AC", duration: true });
-});
-
-export const shopFlow = engine
-  .map({ memStub: true })
-  .start()
-  .gotoPage(NavHomeBlock.stubBefore((ctx) => ctx.ui.title("Shop")))
-  .method(AddShown)
-  .method(ClearCartBlock, { pace: "blitz" })
-  .end();
-```
-
-**Accounts.** A flow that starts as someone signed in says who with `as`. An account is a name and the flow that signs
-it in:
-
-```typescript
-// src/accounts/accounts.ts
-export const StandardUser = account("standard-user", { signIn: loginFlow });
-
-// src/flows/cart-as-account.flow.ts
-export const cartAsAccountFlow = engine
-  .map({ as: StandardUser, memStub: true })
-  .gotoPage(NavInventoryBlock)
-  .method(AddToCartBlock)
-  .end();
-```
-
-The flow's first step is `sign-in-as-standard-user`: it clears the session, then restores the one kept since that
-account's first sign-in in this process (cookies, and each origin's localStorage), or runs the account's sign-in flow
-now and keeps what it leaves. So a chain or a test run signs each account in once, and a flow as an account has no login
-steps of its own. The sign-in flow's steps run inside that step (the run log nests them under it; the demo plays them).
-The step `requires` whatever the sign-in flow reads from mem, so preflight and `memStub` cover its credentials.
-`forgetSessions()` drops every kept session. Sessions are kept per process, not on disk.
-
-**Input: one flow for many cases.** A flow that runs the same steps over different data declares its input, a MemKey,
-instead of one export per case:
-
-```typescript
-export const addItemFlow = engine
-  .map({ as: StandardUser, input: SelectedItem.key, memStub: true })
-  .gotoPage(NavInventoryBlock)
-  .method(AddToCartBlock)
-  .gotoPage(NavCartBlock)
-  .end();
-```
-
-```bash
-waygraph run addItemFlow --input '{"id":"sauce-labs-onesie","name":"Sauce Labs Onesie"}'
-waygraph run addItemFlow --input @cases/items.json     # an array: the flow once per item, one episode each
-```
-
-The input is required by the flow's first step, so preflight asks for it, and `--data`, a mem stub and `--replay`
-cover it like any key. In code, `.flow(addItemFlow, { input: item })` plays it with that input, once per call.
-
-**The world a flow runs in.** `timezone` and `network` set it for the flow and put it back when the flow ends, pass or
-fail (a `restore-world` cleanup step), so an outage test doesn't leave the next flow offline:
-
-```typescript
-engine.map({ timezone: "Asia/Tokyo" })                                         // dates and the clock in Tokyo time (Chromium)
-engine.map({ network: { throttle: "slow-3g" } })                               // or "fast-3g", { latencyMs, downloadKbps, uploadKbps } (Chromium)
-engine.map({ network: { throttle: "offline" } })                               // every browser
-engine.map({ network: { faults: [{ url: "**/api/orders", status: 503 }] } })   // or abort: true, delayMs: 3000
-```
-
-A fault answers matching requests instead of the server (`status`, `body`), fails them (`abort`), or holds them
-(`delayMs`) first. Offline mode and faults don't touch requests a test itself answers with `page.route`.
-
-**A step whose page keeps changing after it acts** (a debounced search, a list rendered in bursts) takes `settle`:
-`.method(TypeSearchBlock, { settle: true })` waits, after the step acts and before it is checked, for the page to load
-and then not change for 300 ms (at most 5 s); `{ settle: { quietMs: 600, maxMs: 8000 } }` tunes it. It replaces a
-fixed `page.waitForTimeout(...)`, which is either too short on a slow run or wasted time on a fast one.
-
-**A step that only some cases need** takes `when`: `.method(SetJsonBodyBlock, { when: (mem) => mem.get(Case).body !==
-undefined })` plays only when it returns true; otherwise the step ends at once where it started, without acting or
-verifying. `when` is offered only on a step that stays on its Checkpoint (filling an optional field), so a skipped
-step can't leave the flow somewhere its next step doesn't start.
-
-**Nesting flows** is a step too: `.flow(sub, { reset })` runs another flow's steps inline, in the same page, browser and `mem`.
-`{ reset: true }` (default: the sub-flow's own `sessionReset`) clears cookies and storage right before the sub-flow, for a second user that must start fresh:
-
-```typescript
-export const showcase = engine
-  .map()
-  .start()
-  .flow(ownerFlow)
-  .flow(viewerFlow, { reset: true })
-  .end();
-```
-
-Removed in 0.16.0: `defineFlow([start, …, end])`, `chainFlow` and the `with*` flow wrappers (`withTitle`, `withMemStub`,
-`withSessionReset`, `withDemoPace`, `withHighlightStyle`, `withExpectedFailure`, `withHighlightFixtures`, `withBlockPace`,
-`withStubBefore|After|OnError`). `waygraph upgrade --codemod flows` rewrites a project onto
-`map()`: it reads each Block's kind to pick the step, folds wrappers into `map({ … })`, moves a title into
-`ctx.ui.title(…)` on the first step, and lists anything it can't convert (a Block not made by a factory, a
-`withHighlightFixtures` map) with the fix. The same pass moves ctx stubs onto their one form: `ctx.ui.todos([...])` with
-`todoId` / `todoTitle` / `todoStyle` / `todoPos` / `todoIndex` becomes `ctx.ui.todos(id, items, { title, style, pos, index })`,
-and the method aliases become the names they stood for (`banner` -> `title`, `clearDevice` -> `hideDevice`, ...).
-
-### Browser extensions
+## Browser extensions
 
 ```typescript
 export default defineConfig({
@@ -242,7 +132,7 @@ Limits, because Chromium only loads extensions into a persistent profile:
 - An extension runs with its manifest permissions on every page of the run (Hoppscotch's asks for
   `<all_urls>` and cookies). Only list ones you trust, and pin `sha256` in shared configs.
 
-### Testing a REST API through Hoppscotch
+## Testing a REST API through Hoppscotch
 
 The scaffold's `(external)/hoppscotch` map drives Hoppscotch's REST client through its extension,
 so requests skip CORS and can hit `localhost` APIs. Chain the blocks you need and set their `mem`
@@ -265,7 +155,7 @@ keys (`flows/hoppscotch-get`, `-post` and `-auth` are working examples):
 
 Not covered yet: other auth types (Basic, API key, OAuth), form/multipart bodies, non-JSON content types.
 
-### Updating an existing project
+## Updating an existing project
 
 `npm install waygraph@latest` updates the framework, but the scaffold files copied at `init` stay as they were.
 `waygraph upgrade [project]` compares the project with the scaffold shipped in the installed waygraph and lists

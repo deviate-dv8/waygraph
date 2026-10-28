@@ -1,12 +1,9 @@
 # The Map
 
-## Waygraph Map
+The Map is a folder convention, like Next.js routes: the project's folders *are* its map of the app, so there's no
+separate schema to keep in sync. The guide is [Your project](../guides/project); this page has the exact rules.
 
-An opinionated, Next.js/Nuxt-style folder convention where a project's own directory
-structure mechanically *is* its map - not a separate schema file to generate, maintain, or
-let drift out of sync. Needs zero new engine code: `discoverGraph`/`loadBlockLibrary` already
-recurse through any folder structure, matching only the `.block.ts` filename pattern - folder
-naming and depth are already 100% cosmetic to every existing command.
+## The rules
 
 ```text
 src/map/
@@ -32,12 +29,12 @@ src/map/
 must **verbatim-match** the real site's own URL path segments, `(group)` parens excluded
 (purely organizational, same as a Next.js route group): `/app/chats` lives at
 `map/(app_base)/app/chats/`, never `map/(auth)/chats/` for a fabricated grouping that was
-never a real `/auth/*` URL. `waygraph map [project]` (see [CLI reference](./cli.md#cli-reference))
+never a real `/auth/*` URL. `waygraph map [project]` (see [CLI](./cli.md))
 enforces this mechanically and exits 1 on a mismatch - don't rely on review alone. Same Block
 helpers as today's freeform "manual mode" (`definePageBlock`/`defineNavBlock`/
 `defineMethodBlock`/etc.) either way - Map only changes *where files live and what they're
 named*, never what kind of Block authors them or how they execute. A project adopts it
-incrementally, folder by folder. Build flows with [`map()`](./engine.md#map-a-kind-checked-no-teleporting-flow-builder) -
+incrementally, folder by folder. Build flows with [`map()`](../guides/flows.md) -
 it can't silently accept a Block that didn't come from a real factory.
 
 **Leading underscore = this Checkpoint's own fixed machinery, never a route segment.**
@@ -59,20 +56,6 @@ mechanism `examples/saucedemo`'s own `"waygraph": "file:../.."` already uses) is
 understandable: `waygraph graph node_modules/<loaded-package>` correctly discovers its full
 Checkpoint/edge structure, with nothing generated or maintained separately. Proven end to end
 in `examples/routed-demo-consumer/` against `examples/routed-demo/`.
-
-**A real bug this proof surfaced, fixed, not left as a caveat:** a *live* background session
-against a package loaded through a consumer project's own deeply nested `node_modules/<pkg>`
-path used to fail with `listen EINVAL` - the session's Unix socket lived under the project
-directory, and that absolute path could exceed the OS's AF_UNIX limit (~108 bytes on Linux).
-Fixed: session sockets now live in a short, fixed location (`os.tmpdir()/waygraph-auto/`),
-independent of how deeply the project itself is nested - confirmed against the exact
-previously-failing path (a background session, `auto reach`, and quit all working normally).
-Session metadata (`.waygraph-auto/<id>.json`, discoverable per-project) is unaffected - only
-the socket moved.
-
-Full design history (why "Router" isn't a separate thing to build, two prior wrong readings
-of this before landing here, and everything above stated as requirements) in
-`openspec/changes/waygraph-map/`.
 
 ## Map packages
 
@@ -153,5 +136,5 @@ filename pattern, never folder depth or naming.
    wave off as "close enough."
 
 Once the folder structure is settled, build Flows over these Blocks with
-[`map()`](./engine.md#map-a-kind-checked-no-teleporting-flow-builder) - it can't silently accept a Block that isn't
+[`map()`](../guides/flows.md) - it can't silently accept a Block that isn't
 really a Nav/Page/Assert/Method from this package's own factories.

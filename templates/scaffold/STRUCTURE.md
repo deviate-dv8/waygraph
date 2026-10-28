@@ -53,4 +53,4 @@ page folder uses, so any agent or teammate knows where to look without asking.
 | Share a tool's map with another project | `waygraph map pack hoppscotch`, then publish `.waygraph/packages/hoppscotch` |
 
 `waygraph map` fails if a folder path stops matching the real URL it claims to represent.
-Full convention: https://deviate-dv8.github.io/waygraph/consumer.html
+Full convention: https://deviate-dv8.github.io/waygraph/guides/project

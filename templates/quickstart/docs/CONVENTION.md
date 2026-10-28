@@ -8,7 +8,7 @@ Atomic Blocks - one nav / effect / action per real URL or on-page mutation so
 still a `Block` - there is no separate Effect or Nav engine.
 
 **Multi-route consumers:** folder layout must mirror Next.js `app/` page routes -
-see package docs `docs/consumer.html` (no invented `root/`, `landing/`, or
+see package docs `https://deviate-dv8.github.io/waygraph/guides/project` (no invented `root/`, `landing/`, or
 `shell/nav/*` families; `/` lives at the namespace root).
 
 ## Block kinds (file convention)

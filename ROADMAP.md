@@ -310,6 +310,10 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     redrawn on it, the panels sharing one frame / heading / footer; Storybook (`npm run storybook`) shows every piece
     painted by the real builders. CSS strings in code, Open Props and `WAYGRAPH_RING_CSS` are gone; `check:structure`
     rejects written colours, stock palette classes and glyph icons. **Done.**
+21. The docs site in three parts (0.16.7): Start (home, quick start, how it works), Guides (one topic per page: your
+    project, Blocks, flows, Read Blocks, data, checks, demo, testing, agents, mail) and Reference (CLI, config,
+    environment variables, run log and manifest, pilot, the Map, API, deprecated). Short sections, tables, and hand-drawn
+    diagrams (Mermaid's hand-drawn look). Old page URLs redirect to their new pages. **Done.**
 
 
 
@@ -351,7 +355,7 @@ The common flaky case: a flow that creates something (a signup, an order) passes
 because its test data is constant or the first run's data is still there. Mem stubs are already functions, called fresh
 every run (`registerMemStub(Signup.email, () => ...)`), so fresh data was possible, but every project hand-rolled it
 (`Date.now()`, which collides across parallel workers), a failure couldn't be rerun with the data that failed, and
-nothing cleaned up. Built (issue #5; the reference is docs/reference/engine.md, "Repeatable runs"):
+nothing cleaned up. Built (issue #5; the guide is docs/guides/data.md):
 
 1. **`unique` in mem stubs:** `registerMemStub(Signup.email, ({ unique }) => \`qa+${unique}@example.com\`)`. Different
    every run, stable within one, safe across parallel workers (time, randomness and the worker index, made once per

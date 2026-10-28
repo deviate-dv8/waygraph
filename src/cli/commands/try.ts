@@ -301,7 +301,7 @@ async function runTryAuto(opts: { cli: boolean } = { cli: false }): Promise<void
       `  cd ${destDir} && npm run auto\n` +
       `  cd ${destDir} && npm run auto:cli\n\n` +
       "In-package: examples/saucedemo\n" +
-      "Docs: https://deviate-dv8.github.io/waygraph/auto.html\n",
+      "Docs: https://deviate-dv8.github.io/waygraph/guides/agents\n",
   );
 }
 

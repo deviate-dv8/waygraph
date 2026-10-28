@@ -109,8 +109,9 @@ names) still works and is fine for small projects, but the Map is where the tool
 ## Learn more
 
 - **[Docs site](https://deviate-dv8.github.io/waygraph/)** - guides and walkthroughs
-- **[Reference](./docs/reference/index.md)** - every feature in detail, one topic per page
-- **[Environment variables](./docs/env.md)** - every `WAYGRAPH_*` variable · **[Removed in 0.16.0](./docs/deprecated.md)** - each old form and what replaces it (`waygraph upgrade --codemod flows|checkpoints` converts a project)
+- **[Guides](https://deviate-dv8.github.io/waygraph/guides/project)** - one topic per page: Blocks, flows, Read Blocks, data, checks, demo, testing, agents
+- **[Reference](https://deviate-dv8.github.io/waygraph/reference/)** - every command, setting and variable
+- **[Environment variables](./docs/env.md)** - every `WAYGRAPH_*` variable · **[Removed in 0.16.0](./docs/deprecated.md)** - each old form and what replaces it (`waygraph upgrade --codemod flows|checkpoints|keys` converts a project)
 - **[Sauce Demo walkthrough](https://deviate-dv8.github.io/waygraph/saucedemo/)** - a worked example
 - Agent skills: `waygraph --skill` prints them (pilot, blind-pilot, convention)
 
