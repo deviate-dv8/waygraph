@@ -371,6 +371,16 @@ nothing cleaned up. Built (issue #5; the guide is docs/guides/data.md):
    requires a key whose mem stub returns the same value for two `unique` tokens. (Effects in general are not flagged:
    adding a fixed catalogue item to a cart is constant on purpose.)
 
+### Engine internals fully typed (noted, not started)
+
+The compiler runs `strict` plus `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`, with no `@ts-ignore`, and
+the authoring API is typed end to end. The engine's internals still have escape hatches: 28 `any` in 7 files
+(`block/compose.ts` 13, `block/block.ts` 6, `block/branch.ts` 3, and `flow/flow.ts`, `flow/map-builder.ts`,
+`run/connect.ts`, `locate.ts`), about 31 `as unknown as` casts (mostly in the Block factories) and about 117 non-null
+assertions. Plan: `SomeBlock` as `Block<Checkpoint<string>, Checkpoint<string>>` with `unknown` for what a step
+observed; type `branch` and `compose`; let factories return their type without a cast; lower `scripts/any-debt.json`
+to zero so `check:structure` rejects any new `any`.
+
 ### Network tab mocking (backlogged, not yet researched)
 
 The network tab overlay (`demo/overlay/network-capture.ts`, `demo/overlay/inpage/network.ts`) is
