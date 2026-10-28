@@ -1,6 +1,6 @@
 import { defineMethodBlock } from "waygraph";
 import { HoppscotchRest } from "../_states.js";
-import { RequestBody } from "../_keys.js";
+import { HoppscotchKeys } from "../_keys.js";
 import { HoppscotchSel } from "../_sel.js";
 
 const spansLines = (text: string): boolean => {
@@ -16,7 +16,7 @@ export const SetJsonBodyBlock = defineMethodBlock({
   description: "Sets the content type to application/json and types the mem-supplied body, prettified.",
   from: HoppscotchRest,
   to: HoppscotchRest,
-  requires: [RequestBody],
+  requires: [HoppscotchKeys.requestBody],
   instruction: {
     async act(page, _in, mem) {
       await page.locator(HoppscotchSel.tab("Body")).click();
@@ -24,7 +24,7 @@ export const SetJsonBodyBlock = defineMethodBlock({
       await page.locator(HoppscotchSel.menuItem("application/json")).click();
       const editor = page.locator(HoppscotchSel.visibleEditor).last();
       await editor.click();
-      const body = mem.get(RequestBody);
+      const body = mem.get(HoppscotchKeys.requestBody);
       await page.keyboard.type(body);
       if (!spansLines(body)) return;
       // Prettify is the third toolbar button (Clear, Wrap lines, Prettify); typed JSON stays on one line otherwise.

@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import net from "node:net";
 import { MemPage, checkpoint } from "waygraph";
 import { emailVerificationFlow } from "../src/flows/(user-stories)/email-verification.flow.js";
-import { ExpectedRecipient, ExpectedLinkPattern, ExpectedEmailContent } from "../src/map/(external)/mailpit/_keys.js";
+import { MailpitKeys } from "../src/map/(external)/mailpit/_keys.js";
 import { HOME_URL } from "../src/map/(app_base)/home/_sel.js";
 
 // Plays "the app sent a verification email": starts a throwaway Mailpit container, sends a real SMTP message,
@@ -97,9 +97,9 @@ test("emailVerificationFlow: confirms arrival, confirms content, reads the real 
     });
 
     const mem = new MemPage();
-    mem.set(ExpectedRecipient({ email: recipient }));
-    mem.set(ExpectedLinkPattern, "verified=1");
-    mem.set(ExpectedEmailContent, VERIFICATION_CONTENT);
+    mem.set(MailpitKeys.expectedRecipient, { email: recipient });
+    mem.set(MailpitKeys.expectedLinkPattern, "verified=1");
+    mem.set(MailpitKeys.expectedEmailContent, VERIFICATION_CONTENT);
     const result = await emailVerificationFlow.run(context, mem);
     expect(result).toEqual(checkpoint("HomeVerified"));
   });
@@ -127,9 +127,9 @@ test("the same four mail-reading Blocks handle a second, unrelated email scenari
     });
 
     const mem = new MemPage();
-    mem.set(ExpectedRecipient({ email: recipient }));
-    mem.set(ExpectedLinkPattern, "verified=1");
-    mem.set(ExpectedEmailContent, resetContent);
+    mem.set(MailpitKeys.expectedRecipient, { email: recipient });
+    mem.set(MailpitKeys.expectedLinkPattern, "verified=1");
+    mem.set(MailpitKeys.expectedEmailContent, resetContent);
     const result = await emailVerificationFlow.run(context, mem);
     expect(result).toEqual(checkpoint("HomeVerified"));
   });
@@ -141,9 +141,9 @@ test("assert-email-received fails loud, naming itself, when no email ever arrive
 
   await withMailpit(async () => {
     const mem = new MemPage();
-    mem.set(ExpectedRecipient({ email: "nobody-sent-this-one@example.com" }));
-    mem.set(ExpectedLinkPattern, "verified=1");
-    mem.set(ExpectedEmailContent, VERIFICATION_CONTENT);
+    mem.set(MailpitKeys.expectedRecipient, { email: "nobody-sent-this-one@example.com" });
+    mem.set(MailpitKeys.expectedLinkPattern, "verified=1");
+    mem.set(MailpitKeys.expectedEmailContent, VERIFICATION_CONTENT);
     // A flow's verify-failure error names the whole path taken so
     // far (each composed Block's own name accumulates through connect()),
     // not just the leaf Block - real, useful QA context, not a bug - so this
@@ -172,9 +172,9 @@ test("assert-email-content fails loud, naming itself, when the email's copy does
     });
 
     const mem = new MemPage();
-    mem.set(ExpectedRecipient({ email: recipient }));
-    mem.set(ExpectedLinkPattern, "verified=1");
-    mem.set(ExpectedEmailContent, VERIFICATION_CONTENT);
+    mem.set(MailpitKeys.expectedRecipient, { email: recipient });
+    mem.set(MailpitKeys.expectedLinkPattern, "verified=1");
+    mem.set(MailpitKeys.expectedEmailContent, VERIFICATION_CONTENT);
     await expect(emailVerificationFlow.run(context, mem)).rejects.toThrow(
       /trait "body-contains-expected-text" failed after ".*assert-email-content"/,
     );

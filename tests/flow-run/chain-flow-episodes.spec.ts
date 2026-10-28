@@ -7,7 +7,7 @@ import {
   defineNavBlock,
   defineBlock,
   Trait,
-  keyGroup,
+  keys,
 } from "../../src/index.js";
 import { buildFlow, chainFlow, withSettings } from "../../src/engine/flow/flow.js";
 
@@ -29,8 +29,10 @@ type LoginPage = Checkpoint<"LoginPage">;
 type LoggedIn = Checkpoint<"LoggedIn">;
 type ItemInCart = Checkpoint<"ItemInCart">;
 
-const OwnerCreds = keyGroup<{ username: string; password: string }>("example.owner-creds");
-const ViewerCreds = keyGroup<{ username: string; password: string }>("example.viewer-creds");
+const ExampleKeys = keys("example")<{
+  ownerCreds: { username: string; password: string };
+  viewerCreds: { username: string; password: string };
+}>();
 
 // The app's own entry point - no click path exists to get here from
 // nowhere, so url is the right call, not an escape hatch.
@@ -61,13 +63,13 @@ function makeSubmitLogin(name: string, credsKey: MemKey<{ username: string; pass
   });
 }
 
-const ownerLogin = makeSubmitLogin("owner-login", OwnerCreds.key);
+const ownerLogin = makeSubmitLogin("owner-login", ExampleKeys.ownerCreds);
 
 // locked_out_user never reaches /inventory.html - Trait.url's default
 // page.waitForURL() has no timeout override, so it would hang instead of
 // failing. A bounded version of the same check still fails (correctly),
 // just in 5s instead of forever.
-const viewerLoginAttempt = makeSubmitLogin("viewer-login", ViewerCreds.key).withVerify([
+const viewerLoginAttempt = makeSubmitLogin("viewer-login", ExampleKeys.viewerCreds).withVerify([
   {
     name: "reached-inventory-or-genuinely-blocked",
     async check(page) {
@@ -116,7 +118,7 @@ const viewerBlockedFlow = withSettings(buildFlow([navLogin, viewerLoginAttempt],
 test.describe("chainFlow - a real 2-episode example (saucedemo.com)", () => {
   test("episode 1 alone: the Owner shops, then browses again via click-based navigation", async () => {
     const mem = new MemPage();
-    mem.set(OwnerCreds({ username: "standard_user", password: "secret_sauce" }));
+    mem.set(ExampleKeys.ownerCreds, { username: "standard_user", password: "secret_sauce" });
 
     const result = await ownerFlow.run(mem);
 
@@ -125,15 +127,15 @@ test.describe("chainFlow - a real 2-episode example (saucedemo.com)", () => {
 
   test("episode 2 alone: a locked-out Viewer's identical login attempt genuinely fails", async () => {
     const mem = new MemPage();
-    mem.set(ViewerCreds({ username: "locked_out_user", password: "secret_sauce" }));
+    mem.set(ExampleKeys.viewerCreds, { username: "locked_out_user", password: "secret_sauce" });
 
     await expect(viewerBlockedFlow.run(mem)).rejects.toThrow(/viewer-login/);
   });
 
   test("chained together: Owner succeeds first, then the Viewer's attempt genuinely fails - not a silent pass, not a mem clobber", async () => {
     const mem = new MemPage();
-    mem.set(OwnerCreds({ username: "standard_user", password: "secret_sauce" }));
-    mem.set(ViewerCreds({ username: "locked_out_user", password: "secret_sauce" }));
+    mem.set(ExampleKeys.ownerCreds, { username: "standard_user", password: "secret_sauce" });
+    mem.set(ExampleKeys.viewerCreds, { username: "locked_out_user", password: "secret_sauce" });
 
     const combined = chainFlow(ownerFlow, viewerBlockedFlow);
 

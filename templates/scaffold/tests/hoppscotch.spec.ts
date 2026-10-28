@@ -5,7 +5,7 @@ import config from "../config/waygraph.config.js";
 import { hoppscotchGetFlow } from "../src/flows/(external)/hoppscotch/get.flow.js";
 import { hoppscotchAuthFlow } from "../src/flows/(external)/hoppscotch/auth.flow.js";
 import { hoppscotchPostFlow } from "../src/flows/(external)/hoppscotch/post.flow.js";
-import { ExpectedResponseHeader, ExpectedResponseText, ExpectedStatus, RequestBearerToken, RequestBody, RequestHeaders, RequestMethod, RequestParams, RequestUrl } from "../src/map/(external)/hoppscotch/_keys.js";
+import { HoppscotchKeys } from "../src/map/(external)/hoppscotch/_keys.js";
 
 // The API under test: no CORS headers, so only the extension can reach it from hoppscotch.io.
 let server: Server;
@@ -33,48 +33,48 @@ test.setTimeout(120_000);
 
 test("GET returns 200", async () => {
   const mem = new MemPage();
-  mem.set(RequestUrl, apiUrl);
-  mem.set(ExpectedStatus, 200);
+  mem.set(HoppscotchKeys.requestUrl, apiUrl);
+  mem.set(HoppscotchKeys.expectedStatus, 200);
   expect(await hoppscotchGetFlow.run(mem, {})).toEqual(checkpoint("HoppscotchRest"));
 });
 
 test("POST sends the header and JSON body, returns 201", async () => {
   const mem = new MemPage();
-  mem.set(RequestMethod, "POST");
-  mem.set(RequestUrl, apiUrl);
-  mem.set(RequestHeaders, { "x-token": "abc123" });
-  mem.set(RequestBody, '{"name":"waygraph"}');
-  mem.set(ExpectedStatus, 201);
-  mem.set(ExpectedResponseText, '"token":"abc123"');
+  mem.set(HoppscotchKeys.requestMethod, "POST");
+  mem.set(HoppscotchKeys.requestUrl, apiUrl);
+  mem.set(HoppscotchKeys.requestHeaders, { "x-token": "abc123" });
+  mem.set(HoppscotchKeys.requestBody, '{"name":"waygraph"}');
+  mem.set(HoppscotchKeys.expectedStatus, 201);
+  mem.set(HoppscotchKeys.expectedResponseText, '"token":"abc123"');
   expect(await hoppscotchPostFlow.run(mem, {})).toEqual(checkpoint("HoppscotchRest"));
 });
 
 test("a wrong expected status fails the flow, naming assert-status", async () => {
   const mem = new MemPage();
-  mem.set(RequestUrl, apiUrl);
-  mem.set(ExpectedStatus, 404);
+  mem.set(HoppscotchKeys.requestUrl, apiUrl);
+  mem.set(HoppscotchKeys.expectedStatus, 404);
   await expect(hoppscotchGetFlow.run(mem, {})).rejects.toThrow(/assert-status/);
 });
 
 test("a response body without the expected text fails the flow, naming assert-response-body", async () => {
   const mem = new MemPage();
-  mem.set(RequestMethod, "POST");
-  mem.set(RequestUrl, apiUrl);
-  mem.set(RequestHeaders, { "x-token": "abc123" });
-  mem.set(RequestBody, '{"name":"waygraph"}');
-  mem.set(ExpectedStatus, 201);
-  mem.set(ExpectedResponseText, '"token":"nope"');
+  mem.set(HoppscotchKeys.requestMethod, "POST");
+  mem.set(HoppscotchKeys.requestUrl, apiUrl);
+  mem.set(HoppscotchKeys.requestHeaders, { "x-token": "abc123" });
+  mem.set(HoppscotchKeys.requestBody, '{"name":"waygraph"}');
+  mem.set(HoppscotchKeys.expectedStatus, 201);
+  mem.set(HoppscotchKeys.expectedResponseText, '"token":"nope"');
   await expect(hoppscotchPostFlow.run(mem, {})).rejects.toThrow(/assert-response-body/);
 });
 
 const authMem = (headerValue: string): MemPage => {
   const mem = new MemPage();
-  mem.set(RequestUrl, apiUrl);
-  mem.set(RequestParams, { q: "waygraph" });
-  mem.set(RequestBearerToken, "tok-9");
-  mem.set(ExpectedStatus, 200);
-  mem.set(ExpectedResponseText, '"url":"/items?q=waygraph","auth":"Bearer tok-9"');
-  mem.set(ExpectedResponseHeader({ name: "X-Request-Id", value: headerValue }));
+  mem.set(HoppscotchKeys.requestUrl, apiUrl);
+  mem.set(HoppscotchKeys.requestParams, { q: "waygraph" });
+  mem.set(HoppscotchKeys.requestBearerToken, "tok-9");
+  mem.set(HoppscotchKeys.expectedStatus, 200);
+  mem.set(HoppscotchKeys.expectedResponseText, '"url":"/items?q=waygraph","auth":"Bearer tok-9"');
+  mem.set(HoppscotchKeys.expectedResponseHeader, { name: "X-Request-Id", value: headerValue });
   return mem;
 };
 

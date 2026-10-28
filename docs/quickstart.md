@@ -86,7 +86,7 @@ Prefer `defineNavBlock` for navigation and regular Blocks for page actions.
 Full handout examples live on the [engine handout](./handout) page.
 
 ```ts
-import { Engine, MemPage, key, checkpoint, defineNavBlock, defineMethodBlock, Trait } from "waygraph";
+import { Engine, MemPage, keys, checkpoint, defineNavBlock, defineMethodBlock, Trait } from "waygraph";
 import type { Checkpoint } from "waygraph";
 
 const LoginForm = checkpoint("LoginForm");
@@ -94,7 +94,7 @@ type LoginForm = typeof LoginForm;
 const LoggedIn = checkpoint("LoggedIn");
 type LoggedIn = typeof LoggedIn;
 
-const Username = key<string>("username");
+const LoginKeys = keys("login")<{ username: string }>();
 
 const NavLogin = defineNavBlock({
   name: "nav-login",
@@ -106,10 +106,10 @@ const SubmitLogin = defineMethodBlock({
   name: "submit-login",
   from: LoginForm,
   to: LoggedIn,
-  requires: [Username],
+  requires: [LoginKeys.username],
   instruction: {
     async act(page, _input, mem) {
-      await page.getByLabel("Username").fill(mem.get(Username));
+      await page.getByLabel("Username").fill(mem.get(LoginKeys.username));
       await page.getByRole("button", { name: "Sign in" }).click();
     },
     verify: [Trait.url({ pathname: "/dashboard" })],
@@ -117,7 +117,7 @@ const SubmitLogin = defineMethodBlock({
 });
 
 const mem = new MemPage();
-mem.set(Username, "alice");
+mem.set(LoginKeys.username, "alice");
 
 const flow = new Engine({ headless: true }).map().start().gotoPage(NavLogin).method(SubmitLogin).end();
 

@@ -4,10 +4,11 @@ import {
   Engine,
   MemPage,
   checkpoint,
-  key,
   registerMemStub,
   seedMemStub,
   preflight,
+  keys,
+  MemKey,
 } from "../../src/index.js";
 import { buildFlow, withSettings } from "../../src/engine/flow/flow.js";
 
@@ -19,12 +20,14 @@ type A = Checkpoint<"A">;
 
 test.describe("memStub", () => {
   test("seedMemStub fills a required key from its registered generator", async () => {
-    const Username = key<string>("mem-stub-test.username");
-    registerMemStub(Username, () => "fake-user");
+    const MemStubTestKeys = keys("mem-stub-test")<{
+      username: string;
+    }>();
+    registerMemStub(MemStubTestKeys.username, () => "fake-user");
 
     const block: Block<Start, A> = {
       name: "needs-username",
-      requires: [Username],
+      requires: [MemStubTestKeys.username],
       instruction: { async act() {}, resolve: () => checkpoint("A") },
     };
     const engine = new Engine();
@@ -32,47 +35,51 @@ test.describe("memStub", () => {
 
     const mem = new MemPage();
     seedMemStub(mem, flow);
-    expect(mem.get(Username)).toBe("fake-user");
+    expect(mem.get(MemStubTestKeys.username)).toBe("fake-user");
 
     const result = await flow.run(fakeContext, mem);
     expect(result).toEqual(checkpoint("A"));
   });
 
   test("seedMemStub does not overwrite a key that's already set", async () => {
-    const Password = key<string>("mem-stub-test.password");
-    registerMemStub(Password, () => "fake-password");
+    const MemStubTestKeys = keys("mem-stub-test")<{
+      password: string;
+    }>();
+    registerMemStub(MemStubTestKeys.password, () => "fake-password");
 
     const block: Block<Start, A> = {
       name: "needs-password",
-      requires: [Password],
+      requires: [MemStubTestKeys.password],
       instruction: { async act() {}, resolve: () => checkpoint("A") },
     };
     const flow = withSettings(buildFlow([block], new Engine().config), { memStub: true });
 
     const mem = new MemPage();
-    mem.set(Password, "real-password");
+    mem.set(MemStubTestKeys.password, "real-password");
     seedMemStub(mem, flow);
-    expect(mem.get(Password)).toBe("real-password");
+    expect(mem.get(MemStubTestKeys.password)).toBe("real-password");
   });
 
   test("an unregistered required key is left unfilled - preflight still catches it", async () => {
-    const Unregistered = key<string>("mem-stub-test.unregistered");
+    const MemStubTestKeys = keys("mem-stub-test")<{
+      unregistered: string;
+    }>();
     const block: Block<Start, A> = {
       name: "needs-unregistered",
-      requires: [Unregistered],
+      requires: [MemStubTestKeys.unregistered],
       instruction: { async act() {}, resolve: () => checkpoint("A") },
     };
     const flow = withSettings(buildFlow([block], new Engine().config), { memStub: true });
 
     const mem = new MemPage();
     seedMemStub(mem, flow);
-    expect(mem.has(Unregistered)).toBe(false);
+    expect(mem.has(MemStubTestKeys.unregistered)).toBe(false);
     expect(() => preflight(mem, block)).toThrow(/mem-stub-test\.unregistered/);
   });
 
   test("registry is keyed by MemKey identity, not by name - two keys sharing a debug name never cross-contaminate", () => {
-    const KeyA = key<string>("mem-stub-test.shared-name");
-    const KeyB = key<string>("mem-stub-test.shared-name");
+    const KeyA = new MemKey<string>("mem-stub-test.shared-name");
+    const KeyB = new MemKey<string>("mem-stub-test.shared-name");
     registerMemStub(KeyA, () => "value-for-a");
 
     const mem = new MemPage();

@@ -3,7 +3,7 @@ import {
   Engine,
   MemPage,
   checkpoint,
-  key,
+  keys,
   defineNavBlock,
   defineMethodBlock,
   runBranchRegression,
@@ -17,7 +17,7 @@ const NavHome = defineNavBlock({
   checkpoint: checkpoint("Home"),
   url: "https://app.example.com/home",
 });
-const WhichWay = key<"home" | "away">("which-way");
+const { whichWay: WhichWay } = keys("test")<{ whichWay: "home" | "away" }>();
 const Decide = defineMethodBlock({
   name: "decide",
   from: checkpoint("Home"),
@@ -147,7 +147,7 @@ test.describe("runBranchRegression", () => {
 
   test("each cloned branch gets an ISOLATED MemPage clone - a write inside one branch never leaks into a sibling or the caller's own mem", async () => {
     const engine = new Engine();
-    const Marker = key<string>("marker");
+    const { marker: Marker } = keys("test")<{ marker: string }>();
     const NearBlock = defineMethodBlock({
       name: "near-block",
         from: checkpoint("Home"),
@@ -190,7 +190,7 @@ test.describe("runBranchRegression", () => {
 
   test("a nested branch is reachable too - runBranchRegression walks the whole tree, not just one level", async () => {
     const engine = new Engine();
-    const SubWhichWay = key<"near" | "far">("sub-which-way");
+    const { subWhichWay: SubWhichWay } = keys("test")<{ subWhichWay: "near" | "far" }>();
     const SubDecide = defineMethodBlock({
       name: "sub-decide",
         from: checkpoint("Away"),

@@ -4,7 +4,7 @@ import type { Block } from "../../src/engine/block/block.js";
 import { connect } from "../../src/engine/run/connect.js";
 import { checkpoint } from "../../src/engine/checkpoint/checkpoint.js";
 import { runGraph } from "../../src/engine/run/run.js";
-import { MemPage, key } from "../../src/engine/mem/mem.js";
+import { MemPage, keys } from "../../src/engine/mem/mem.js";
 
 // A tiny two-field form, self-contained as a data: URL - no fixture server needed.
 // On submit it swaps in a "Submitted" heading, so a real assertion can confirm the
@@ -29,9 +29,10 @@ type FormLoaded = Checkpoint<"FormLoaded">;
 type FormFilled = Checkpoint<"FormFilled">;
 type Submitted = Checkpoint<"Submitted">;
 
-const EmailKey = key<string>("form.email");
-const PasswordKey = key<string>("form.password");
-
+const FormKeys = keys("form")<{
+  email: string;
+  password: string;
+}>();
 const GotoForm: Block<Start, FormLoaded> = {
   name: "goto-form",
   instruction: {
@@ -46,8 +47,8 @@ const FillForm: Block<FormLoaded, FormFilled> = {
   name: "fill-form",
   instruction: {
     async act(page, _input, mem) {
-      await page.getByPlaceholder("Email").fill(mem.get(EmailKey));
-      await page.getByPlaceholder("Password").fill(mem.get(PasswordKey));
+      await page.getByPlaceholder("Email").fill(mem.get(FormKeys.email));
+      await page.getByPlaceholder("Password").fill(mem.get(FormKeys.password));
     },
     resolve: () => checkpoint("FormFilled"),
   },
@@ -72,8 +73,8 @@ test("a 3-Block chain drives a real page and runGraph returns the expected termi
   context,
 }) => {
   const mem = new MemPage();
-  mem.set(EmailKey, "alice@test.com");
-  mem.set(PasswordKey, "hunter2");
+  mem.set(FormKeys.email, "alice@test.com");
+  mem.set(FormKeys.password, "hunter2");
 
   const chain = connect(GotoForm, connect(FillForm, SubmitForm));
 

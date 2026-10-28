@@ -18,7 +18,7 @@ shape. At runtime the engine only sees `Block`.
 | `Block` / `defineBlock` | One act (+ optional observe/verify) + resolve |
 | `NavBlock` / `defineNavBlock` | Navigation-only salt (`url` XOR `click`) |
 | `EffectBlock` / `defineEffectBlock` | Instance-menu salt (add/remove/toggle via mem + `instanceOptions`) |
-| `MemPage` + `key()` | Typed shared memory across the run |
+| `MemPage` + `keys()` | Typed shared memory across the run |
 | `Trait` | verify after resolve; precondition before act |
 | `Engine` + `map()` | `engine.map().start()…end()` -> runnable Flow |
 | `Flow.run` | `run(mem)` owns browser, or `run(context, mem)` |

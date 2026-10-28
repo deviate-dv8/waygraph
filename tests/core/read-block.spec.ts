@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { checkpoint, MemPage, key } from "../../dist/index.js";
+import { checkpoint, MemPage, keys } from "../../dist/index.js";
 import { defineReadBlock, readCheckpoint, reads } from "../../dist/index.js";
 import { readSession, snapshotRead } from "../../dist/live/auto-session/read.js";
 
@@ -121,14 +121,16 @@ test.describe("Read Blocks", () => {
   });
 
   test("a Read Block that needs an unset Mem key is skipped, and says why", async ({ page }) => {
-    const Pick = key<string>("read-test.pick");
+    const ReadTestKeys = keys("read-test")<{
+      pick: string;
+    }>();
     const Picked = reads("picked")<{ title: string }>();
-    defineReadBlock({ name: "read-picked", from: checkpoint("PickPage"), requires: [Pick], instruction: { read: (ctx) => Picked({ title: ctx.page.text(`#${ctx.mem.get(Pick)}`) }) } });
+    defineReadBlock({ name: "read-picked", from: checkpoint("PickPage"), requires: [ReadTestKeys.pick], instruction: { read: (ctx) => Picked({ title: ctx.page.text(`#${ctx.mem.get(ReadTestKeys.pick)}`) }) } });
     await page.setContent(`<h2 id="x">X marks</h2>`);
     const unset = await readCheckpoint(page, new MemPage(), "PickPage");
     expect(unset.skipped).toEqual([{ block: "read-picked", reason: "needs mem read-test.pick" }]);
     const mem = new MemPage();
-    mem.set(Pick, "x");
+    mem.set(ReadTestKeys.pick, "x");
     expect((await readCheckpoint(page, mem, "PickPage")).read.get(Picked.title)).toBe("X marks");
   });
 

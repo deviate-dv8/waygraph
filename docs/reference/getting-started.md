@@ -13,7 +13,7 @@ Node 22+ (uses `URL`/`URLPattern` from `@types/node` for `Trait.url`'s type chec
 ## Quick start
 
 ```typescript
-import { Engine, MemPage, key, defineNavBlock, defineMethodBlock, checkpoint, Trait } from "waygraph";
+import { Engine, MemPage, keys, defineNavBlock, defineMethodBlock, checkpoint, Trait } from "waygraph";
 import type { Checkpoint } from "waygraph";
 
 const LoginForm = checkpoint("LoginForm");
@@ -21,7 +21,7 @@ type LoginForm = typeof LoginForm;
 const LoggedIn = checkpoint("LoggedIn");
 type LoggedIn = typeof LoggedIn;
 
-const Username = key<string>("username");
+const LoginKeys = keys("login")<{ username: string }>();
 
 const NavLogin = defineNavBlock({
   name: "nav-login",
@@ -34,10 +34,10 @@ const SignIn = defineMethodBlock({
   name: "sign-in",
   from: LoginForm,
   to: LoggedIn,
-  requires: [Username],
+  requires: [LoginKeys.username],
   instruction: {
     async act(page, _input, mem) {
-      await page.getByLabel("Username").fill(mem.get(Username));
+      await page.getByLabel("Username").fill(mem.get(LoginKeys.username));
       await page.getByRole("button", { name: "Sign in" }).click();
     },
     verify: [Trait.url({ pathname: "/dashboard" })],
@@ -45,7 +45,7 @@ const SignIn = defineMethodBlock({
 });
 
 const mem = new MemPage();
-mem.set(Username, "alice");
+mem.set(LoginKeys.username, "alice");
 
 const flow = new Engine().map().start().gotoPage(NavLogin).method(SignIn).end();
 const result = await flow.run(mem); // Engine launches its own browser

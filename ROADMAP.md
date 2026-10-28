@@ -270,7 +270,7 @@ Block, Flow, Checkpoint and edge, read at runtime) and **run logs** (`.waygraph/
     instruction: { read: (ctx) => Ns({...}) } })` with `ctx.page.text / number / list / table / ...` (one round trip per
     list or table), `ReadPage`, `pilot read <id> [path]`, and `read` / `missing` in every status / send / reach reply.
     Every page of the templates has one. **Done** (reads in the run log, the demo panel, `Trait.read`, field shapes in the
-    manifest). Next: `keys()` for Mem.
+    manifest), and `keys("ns")<T>()` for Mem replacing `key` / `keyGroup` (`--codemod keys`).
 17. One ctx per job, namespaced (0.16.3): a stub paints through `ctx.ui.*` (`ctx.ui.ring`, `ctx.ui.todos`, ...; `ctx.mem`
     / `out` / `error` stay on ctx), a Read Block reads through `ctx.page.*`, and future Event Blocks move the world
     through `ctx.world.*`. Codemod `flows` moves stub calls; the docs drift test rejects the old form. **Done** (`world`

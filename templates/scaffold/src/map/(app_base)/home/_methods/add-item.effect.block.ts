@@ -3,7 +3,7 @@ import {
   type WaygraphInstanceOption,
 } from "waygraph";
 import { CanAddItem, ItemInCart } from "../../../../states/demo.states.js";
-import { SelectedItem } from "../../../../states/demo.mem-keys.js";
+import { DemoKeys } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
 /** `waygraph auto` lists one "Add …" row per live Add button via `instanceOptions`. */
@@ -12,17 +12,17 @@ export const AddItemBlock = defineEffectBlock({
   description: "Adds the mem-selected catalog item to the cart.",
   from: CanAddItem,
   to: ItemInCart,
-  requires: [SelectedItem.key],
+  requires: [DemoKeys.selectedItem],
   instruction: {
     async act(page, _input, mem) {
-      const { id } = mem.get(SelectedItem.key);
+      const { id } = mem.get(DemoKeys.selectedItem);
       await page.locator(DemoSel.addBtn(id)).click();
     },
     verify: [
       {
         name: "item-added",
         async check(page, mem) {
-          const { id } = mem.get(SelectedItem.key);
+          const { id } = mem.get(DemoKeys.selectedItem);
           return page.locator(DemoSel.removeBtn(id)).isVisible();
         },
       },
@@ -41,7 +41,7 @@ export const AddItemBlock = defineEffectBlock({
       out.push({
         id,
         label: label || `Add ${id}`,
-        key: SelectedItem.key,
+        key: DemoKeys.selectedItem,
         value: { id, name: id },
         highlight: DemoSel.addBtn(id),
       });

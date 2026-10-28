@@ -1,6 +1,6 @@
 import { defineEffectBlock, checkpoint, type WaygraphInstanceOption } from "waygraph";
 import { RemoveFromCartOutcome } from "../../../../states/checkout.states.js";
-import { SelectedItem } from "../../../../states/checkout.mem-keys.js";
+import { SaucedemoKeys } from "../../../../states/checkout.mem-keys.js";
 import { collectRemovableItems, InventorySel } from "./inventory-items.js";
 
 type RemoveObserve = "still-has-items" | "cart-empty";
@@ -17,10 +17,10 @@ export const RemoveFromCartBlock = defineEffectBlock({
   name: "remove-from-cart",
   description: "Removes the item named by mem (saucedemo.selectedItem) from the cart.",
   to: RemoveFromCartOutcome,
-  requires: [SelectedItem.key],
+  requires: [SaucedemoKeys.selectedItem],
   instruction: {
     async act(page, _input, mem) {
-      const { id } = mem.get(SelectedItem.key);
+      const { id } = mem.get(SaucedemoKeys.selectedItem);
       await page.locator(InventorySel.removeBtn(id)).click();
     },
     async observe(page): Promise<RemoveObserve> {
@@ -53,7 +53,7 @@ export const RemoveFromCartBlock = defineEffectBlock({
     return items.map((item) => ({
       id: item.id,
       label: `Remove "${item.name}" from cart`,
-      key: SelectedItem.key,
+      key: SaucedemoKeys.selectedItem,
       value: item,
       highlight: InventorySel.removeBtn(item.id),
     }));

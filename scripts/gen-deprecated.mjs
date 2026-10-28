@@ -74,6 +74,15 @@ Read Blocks are part of \`waygraph\` now.
 | --- | --- |
 | \`import { defineReadBlock, reads, ReadPage, readCheckpoint } from "waygraph/beta"\` | the same names from \`"waygraph"\` |
 
+## Removed in 0.16.7: one key per declaration
+
+\`waygraph upgrade --codemod keys\` rewrites them into namespaces and updates every use.
+
+| Removed | Use instead |
+| --- | --- |
+| \`const Creds = key<Creds>("saucedemo.credentials")\` | \`const SaucedemoKeys = keys("saucedemo")<{ credentials: Creds }>()\`, used as \`SaucedemoKeys.credentials\` |
+| \`keyGroup<T>(name)\`, \`Creds.key\`, \`mem.set(Creds({ ... }))\` | a namespace field: \`mem.set(SaucedemoKeys.credentials, { ... })\` |
+
 ## Removed in 0.16.6: the overlay's CSS in code
 
 The overlay's look is one stylesheet now (Tailwind, macOS tokens), not CSS strings exported from code.

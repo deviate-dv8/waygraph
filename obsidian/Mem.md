@@ -13,11 +13,11 @@ aliases:
 email. Each value has a typed key:
 
 ```ts
-export const Credentials = key<{ username: string; password: string }>("app.credentials");
+export const AppKeys = keys("app")<{ credentials: { username: string; password: string }; emailLink: string }>();
 ```
 
 - A [[Blocks|Block]] lists the keys it `requires`; the run checks they are set before it starts.
-- `act` reads them (`mem.get(Credentials)`) and writes new ones (`mem.set(EmailLink, url)`).
+- `act` reads them (`mem.get(AppKeys.credentials)`) and writes new ones (`mem.set(AppKeys.emailLink, url)`).
 - Values come from `--data '{...}'` on the CLI, from a test, or from **mem stubs**: fakes registered with
   `registerMemStub` in a `*.mem-stubs.ts` file, used when a flow says `map({ memStub: true })` or the CLI says
   `--mem-stub`. [[Live Sessions]] (auto, pilot, traverse) load every `*.mem-stubs.ts` and use those fakes by default.

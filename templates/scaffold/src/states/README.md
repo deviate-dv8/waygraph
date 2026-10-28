@@ -6,7 +6,7 @@ against. Nothing here drives the browser; this is pure data shape.
 - `*.states.ts` - Checkpoint values: `export const X = checkpoint("X"); export type X = typeof X;`. One per real app state
   (`LoginPage`, `LoggedIn`), never `Checkpoint<string>` (a wildcard - `waygraph check` warns
   on it; a Block should say exactly which states it moves between).
-- `*.mem-keys.ts` - `key<T>("...")` / `keyGroup<T>("...")` declarations. A Mem key stores a
+- `*.mem-keys.ts` - `keys("demo")<{ selectedItem: { id: string; name: string } }>()`: one namespace, its fields the keys. A Mem key stores a
   *value* a Block needs (credentials, a selected row's id) - never a selector (those live in
   `_sel.ts` next to the page) and never something a Block could instead read straight off the
   live page.

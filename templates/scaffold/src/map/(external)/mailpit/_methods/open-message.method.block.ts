@@ -1,7 +1,7 @@
 // waygraph-ignore: empty-verify (confirmed by AssertEmailContentBlock right after it in mail-verify.flow.ts)
 import { claimOnce, defineMethodBlock } from "waygraph";
 import { MailpitInbox, MailpitMessageOpen } from "../_states.js";
-import { ExpectedRecipient } from "../_keys.js";
+import { MailpitKeys } from "../_keys.js";
 import { MailpitSel } from "../_sel.js";
 
 /**
@@ -13,10 +13,10 @@ export const OpenMessageBlock = defineMethodBlock({
   description: "Opens the newest unclaimed message addressed to the expected recipient.",
   from: MailpitInbox,
   to: MailpitMessageOpen,
-  requires: [ExpectedRecipient.key],
+  requires: [MailpitKeys.expectedRecipient],
   instruction: {
     async act(page, _in, mem) {
-      const { email } = mem.get(ExpectedRecipient.key);
+      const { email } = mem.get(MailpitKeys.expectedRecipient);
       const rows = page.locator(MailpitSel.messageRow, { hasText: email });
       try {
         await rows.first().waitFor({ state: "visible", timeout: 30_000 });

@@ -1,13 +1,13 @@
 import { defineAssertBlock, type Trait } from "waygraph";
 import { MailpitInbox } from "../_states.js";
-import { ExpectedRecipient } from "../_keys.js";
+import { MailpitKeys } from "../_keys.js";
 import { MailpitSel } from "../_sel.js";
 
 // Mem-aware: which recipient to look for is only known at run time.
 const emailReceived: Trait = {
   name: "email-received",
   async check(page, mem) {
-    const { email } = mem.get(ExpectedRecipient.key);
+    const { email } = mem.get(MailpitKeys.expectedRecipient);
     try {
       await page.locator(MailpitSel.messageRow, { hasText: email }).first().waitFor({
         state: "visible",
@@ -25,6 +25,6 @@ export const AssertEmailReceivedBlock = defineAssertBlock({
   name: "assert-email-received",
   description: "Confirms a message addressed to the expected recipient has arrived.",
   checkpoint: MailpitInbox,
-  requires: [ExpectedRecipient.key],
+  requires: [MailpitKeys.expectedRecipient],
   verify: [emailReceived],
 });

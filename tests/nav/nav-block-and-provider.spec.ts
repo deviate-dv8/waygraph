@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
-import { Engine, MemPage, checkpoint, defineNavBlock, defineBlock, key } from "../../src/index.js";
+import { Engine, MemPage, checkpoint, defineNavBlock, defineBlock, keys } from "../../src/index.js";
 import { buildFlow } from "../../src/engine/flow/flow.js";
 
 type Start = Checkpoint<"__start__">;
@@ -26,7 +26,7 @@ test.describe("defineNavBlock", () => {
   });
 
   test("a mem-function url resolves from mem at run time", async ({ page }) => {
-    const RequestId = key<string>("test.request-id");
+    const { requestId: RequestId } = keys("test")<{ requestId: string }>();
     const nav = defineNavBlock({
       name: "nav-request-detail",
       checkpoint: checkpoint("Arrived"),
@@ -79,7 +79,7 @@ test.describe("defineNavBlock", () => {
         'document.getElementById("row-7").addEventListener("click", () => { document.getElementById("label").textContent = "row 7"; });' +
         "</script>",
     );
-    const RowId = key<string>("test.row-id");
+    const { rowId: RowId } = keys("test")<{ rowId: string }>();
     const nav = defineNavBlock({
       name: "nav-row",
       checkpoint: checkpoint("Arrived"),

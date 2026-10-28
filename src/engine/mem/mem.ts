@@ -15,28 +15,36 @@ export class MemKey<T> {
   constructor(readonly name: string) {}
 }
 
-/**
- * Builds a MemKey for a single typed value - the `T` you give here is what
- * `mem.get`/`mem.set` enforce everywhere this key is used.
- * @example const Username = key<string>("saucedemo.username");
- */
-export function key<T>(name: string): MemKey<T> {
-  return new MemKey<T>(name);
-}
+/** A Mem namespace: each property is that field's {@link MemKey}, named `"<namespace>.<field>"`. */
+export type KeyNamespace<T> = { readonly [K in keyof T & string]: MemKey<T[K]> };
+
+/** Names that must not mint a key: awaiting, printing or inspecting a namespace reads these. */
+const NOT_KEYS = new Set(["then", "toJSON", "constructor", "prototype", "valueOf", "toString", "inspect"]);
 
 /**
- * A named shorthand for a single MemKey holding a whole shaped value (a
- * credentials object, not two separate primitive keys). `LoginCreds({ username,
- * password })` returns a `[key, value]` pair ready for `setAll`; `LoginCreds.key`
- * is the underlying MemKey, for `mem.get(LoginCreds.key)` or `Block.requires`.
- * `T` is given explicitly at the `keyGroup<T>(...)` call site, not inferred from
- * how it's later called, so this doesn't carry the same inference risk `setAll`'s
- * first attempt did.
+ * Declares the Mem keys of one namespace in one line: a type, whose property names become the keys
+ * (`"<namespace>.<field>"`, the name `--data` and the run log use). Each property is one key, the same object every
+ * time it is read - Mem stores values by key.
+ * @example
+ * export const SaucedemoKeys = keys("saucedemo")<{ credentials: { username: string; password: string } }>();
+ * mem.set(SaucedemoKeys.credentials, { username: "standard_user", password: "secret_sauce" });
+ * requires: [SaucedemoKeys.credentials]
  */
-export function keyGroup<T>(name: string): ((value: T) => readonly [MemKey<T>, T]) & { key: MemKey<T> } {
-  const k = key<T>(name);
-  const factory = (value: T) => [k, value] as const;
-  return Object.assign(factory, { key: k });
+export function keys(namespace: string): <T extends object>() => KeyNamespace<T> {
+  return <T extends object>() => {
+    const cache = new Map<string, MemKey<unknown>>();
+    return new Proxy({} as KeyNamespace<T>, {
+      get(target, prop) {
+        if (typeof prop !== "string" || NOT_KEYS.has(prop)) return Reflect.get(target, prop);
+        let k = cache.get(prop);
+        if (!k) {
+          k = new MemKey(`${namespace}.${prop}`);
+          cache.set(prop, k);
+        }
+        return k;
+      },
+    });
+  };
 }
 
 /**
@@ -47,19 +55,16 @@ export function keyGroup<T>(name: string): ((value: T) => readonly [MemKey<T>, T
 export class MemPage {
   private readonly store = new Map<MemKey<unknown>, unknown>();
 
-  /** `mem.set(key, value)`, or `mem.set(LoginCreds({ ... }))` with a `keyGroup` pair directly - no "All" for just one. */
-  set<T>(k: MemKey<T>, value: T): void;
-  set<T>(pair: readonly [MemKey<T>, T]): void;
-  set<T>(kOrPair: MemKey<T> | readonly [MemKey<T>, T], value?: T): void {
-    const [k, v] = kOrPair instanceof MemKey ? [kOrPair, value as T] : kOrPair;
-    this.store.set(k as MemKey<unknown>, v);
+  /** `mem.set(SaucedemoKeys.credentials, { ... })`. */
+  set<T>(k: MemKey<T>, value: T): void {
+    this.store.set(k as MemKey<unknown>, value);
   }
 
   /**
    * Reads `k`'s value, throwing (naming `k`) if it was never `set` - never
    * returns `undefined` for a genuinely missing key, so a misuse fails loud at
    * the read site instead of surfacing as a confusing error deep in `act`.
-   * @example const { username, password } = mem.get(LoginCreds.key);
+   * @example const { username, password } = mem.get(SaucedemoKeys.credentials);
    */
   get<T>(k: MemKey<T>): T {
     if (!this.store.has(k as MemKey<unknown>)) {
@@ -79,7 +84,7 @@ export class MemPage {
   }
 
   /**
-   * Sets several keys in one call - `mem.setAll([UsernameKey, "standard_user"], [PasswordKey, "secret_sauce"])`
+   * Sets several keys in one call - `mem.setAll([Login.username, "standard_user"], [Login.password, "secret_sauce"])`
    * instead of one `.set()` per line. Can't take a plain `{ ... }` object literal:
    * MemKey instances are the identity the store is keyed by, and object literals
    * can only have string/symbol property names, not object instances - a `[key,

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { checkpoint, defineMethodBlock, Engine, MemPage, key, onRunEvent, Trait, TraitFailure, type RunEvent } from "../../src/index.js";
+import { checkpoint, defineMethodBlock, Engine, MemPage, onRunEvent, Trait, TraitFailure, type RunEvent, keys } from "../../src/index.js";
 import { runVerify } from "../../src/engine/trait/verify.js";
 
 const Saved = checkpoint("Saved");
@@ -25,11 +25,13 @@ test("a custom check can say what it saw", async ({ page }) => {
 
 test("the Traits for values, attributes, text inside, patterns and absence; expected values from mem", async ({ page }) => {
   await page.setContent(`<input id="name" value="Mixer 2"><input id="code" readonly value="MCH-0042"><p id="msg">Saved Mixer 2 at 09:30</p><span id="code-text">MCH-0042</span>`);
-  const Name = key<string>("test.name");
+  const TestKeys = keys("test")<{
+    name: string;
+  }>();
   const mem = new MemPage();
-  mem.set(Name, "Mixer 2");
+  mem.set(TestKeys.name, "Mixer 2");
   await runVerify(
-    [Trait.value("#name", (m) => m.get(Name)), Trait.attribute("#code", "readonly", ""), Trait.contains("#msg", (m) => m.get(Name)), Trait.matches("#code-text", /^MCH-\d{4}$/), Trait.absent("[data-testid=archive]"), Trait.text("#code-text", "MCH-0042")],
+    [Trait.value("#name", (m) => m.get(TestKeys.name)), Trait.attribute("#code", "readonly", ""), Trait.contains("#msg", (m) => m.get(TestKeys.name)), Trait.matches("#code-text", /^MCH-\d{4}$/), Trait.absent("[data-testid=archive]"), Trait.text("#code-text", "MCH-0042")],
     Saved, page, mem, "check-all",
   );
   await expect(runVerify([{ ...Trait.absent("#name"), timeoutMs: 100 }], Saved, page, mem, "x")).rejects.toThrow("wanted no #name on the page; saw 1 of them");

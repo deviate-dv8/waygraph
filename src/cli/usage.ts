@@ -178,6 +178,8 @@ Also:
                                            --skills refreshes .agents/skills to this waygraph's.
                                            --codemod checkpoints rewrites tag strings and <In, Out>
                                            to Checkpoint values (checkpoint: Home, from/to).
+                                           --codemod keys rewrites key() / keyGroup() into one
+                                           keys("ns")<{...}>() namespace per file and namespace.
   waygraph extensions install [project] [--update]
                                            Download the browser extensions listed in
                                            waygraph.config.* (extensions: ["hoppscotch"]) into

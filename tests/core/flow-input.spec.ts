@@ -1,10 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { checkpoint, defineAssertBlock, defineMethodBlock, Engine, key, MemPage, Trait } from "../../src/index.js";
+import { checkpoint, defineAssertBlock, defineMethodBlock, Engine, MemPage, Trait, keys } from "../../src/index.js";
 
 const Start = checkpoint("__start__");
 const Form = checkpoint("Form");
 const Sent = checkpoint("Sent");
-const Case = key<{ url: string; body?: string }>("test.case");
+
+const TestKeys = keys("test")<{
+  case: { url: string; body?: string };
+}>();
 const sent: string[] = [];
 
 const open = defineMethodBlock({ name: "open-form", from: Start, to: Form, instruction: { async act() {} } });
@@ -13,17 +16,17 @@ const setBody = defineMethodBlock({
   from: Form,
   to: Form,
   instruction: {
-    async act(_p, _i, mem) { sent.push("body " + mem.get(Case).body); },
+    async act(_p, _i, mem) { sent.push("body " + mem.get(TestKeys.case).body); },
     // Holds only when there is a body: verifying the skipped step (no body) would fail.
-    verify: [{ name: "has-body", timeoutMs: 0, async check(_p, mem) { return mem.get(Case).body !== undefined; } }],
+    verify: [{ name: "has-body", timeoutMs: 0, async check(_p, mem) { return mem.get(TestKeys.case).body !== undefined; } }],
   },
 });
-const send = defineMethodBlock({ name: "send", from: Form, to: Sent, instruction: { async act(_p, _i, mem) { sent.push("send " + mem.get(Case).url); } } });
+const send = defineMethodBlock({ name: "send", from: Form, to: Sent, instruction: { async act(_p, _i, mem) { sent.push("send " + mem.get(TestKeys.case).url); } } });
 const engine = new Engine();
 const caseFlow = engine
-  .map({ input: Case })
+  .map({ input: TestKeys.case })
   .method(open)
-  .method(setBody, { when: (mem) => mem.get(Case).body !== undefined })
+  .method(setBody, { when: (mem) => mem.get(TestKeys.case).body !== undefined })
   .method(send)
   .end();
 
@@ -33,13 +36,13 @@ test.beforeEach(() => {
 
 test("a skipped step ends where it started, without acting or verifying", async ({ page }) => {
   const mem = new MemPage();
-  mem.set(Case, { url: "/a" });
+  mem.set(TestKeys.case, { url: "/a" });
   expect(await caseFlow.run(page.context(), mem, { page })).toEqual(Sent);
   expect(sent).toEqual(["send /a"]);
 });
 
 test("a flow's input is required: preflight asks for it", async ({ page }) => {
-  expect(caseFlow.input).toBe(Case);
+  expect(caseFlow.input).toBe(TestKeys.case);
   await expect(caseFlow.run(page.context(), new MemPage(), { page })).rejects.toThrow(/"test\.case"/);
 });
 

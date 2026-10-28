@@ -11,10 +11,9 @@ test.describe("constant test data", () => {
     await mkdir(join(dir, "src/states"), { recursive: true });
     await writeFile(
       join(dir, "src/states/signup.keys.ts"),
-      `import { key } from "waygraph";
-export const SignupEmail = key<string>("signup.email");
-export const FreshEmail = key<string>("signup.fresh-email");
-export const Item = key<string>("cart.item");`,
+      `import { keys } from "waygraph";
+export const { email: SignupEmail, freshEmail: FreshEmail } = keys("signup")<{ email: string; freshEmail: string }>();
+export const { item: Item } = keys("cart")<{ item: string }>();`,
     );
     await writeFile(
       join(dir, "src/states/signup.mem-stubs.ts"),

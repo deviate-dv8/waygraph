@@ -1,6 +1,6 @@
 import { defineMethodBlock } from "waygraph";
 import { HoppscotchRest } from "../_states.js";
-import { ResponseHeaders } from "../_keys.js";
+import { HoppscotchKeys } from "../_keys.js";
 import { HoppscotchSel } from "../_sel.js";
 
 export const ReadResponseHeadersBlock = defineMethodBlock({
@@ -16,7 +16,7 @@ export const ReadResponseHeadersBlock = defineMethodBlock({
       const texts = (await cells.allInnerTexts()).map((t) => t.trim());
       const headers: Record<string, string> = {};
       for (let i = 0; i + 1 < texts.length; i += 2) headers[texts[i]!.toLowerCase()] = texts[i + 1]!;
-      mem.set(ResponseHeaders, headers);
+      mem.set(HoppscotchKeys.responseHeaders, headers);
     },
   },
 });

@@ -1,11 +1,11 @@
 import { registerMemStub } from "waygraph";
-import { LoginCreds, SelectedItem } from "./checkout.mem-keys.js";
+import { SaucedemoKeys } from "./checkout.mem-keys.js";
 
-registerMemStub(LoginCreds.key, () => ({
+registerMemStub(SaucedemoKeys.credentials, () => ({
   username: "standard_user",
   password: "secret_sauce",
 }));
-registerMemStub(SelectedItem.key, () => ({
+registerMemStub(SaucedemoKeys.selectedItem, () => ({
   id: "sauce-labs-backpack",
   name: "Sauce Labs Backpack",
 }));

@@ -50,7 +50,7 @@ test("--mem-stub alone does not silently succeed for a key with no registered ge
   await expect(
     exec(node, [CLI, "run", "src/flows/needs-key.flow.ts", "--mem-stub"], { cwd: unregistered, env: cleanEnv }),
   ).rejects.toMatchObject({
-    stderr: expect.stringMatching(/missing required key.*fixture\.needs-a-key|requires fixture\.needs-a-key/),
+    stderr: expect.stringMatching(/missing required key.*fixture\.needsAKey|requires fixture\.needsAKey/),
   });
 });
 

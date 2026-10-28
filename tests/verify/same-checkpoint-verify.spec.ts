@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint } from "../../src/index.js";
-import { Engine, checkpoint, defineBlock, defineNavBlock, Trait, MemPage, key } from "../../src/index.js";
+import { Engine, checkpoint, defineBlock, defineNavBlock, Trait, MemPage, keys } from "../../src/index.js";
 import { buildFlow } from "../../src/engine/flow/flow.js";
 
 // Proves a real gap-turned-non-gap: a Block whose action doesn't move to a
@@ -16,8 +16,9 @@ import { buildFlow } from "../../src/engine/flow/flow.js";
 
 type ProductPage = Checkpoint<"ProductPage">;
 
-const Quantity = key<number>("test.quantity");
-
+const TestKeys = keys("test")<{
+  quantity: number;
+}>();
 const PRODUCT_PAGE_HTML = `<!doctype html><html><body>
   <div id="qty">0</div>
   <button id="inc">+</button>
@@ -33,11 +34,11 @@ const PRODUCT_PAGE_URL = `data:text/html,${encodeURIComponent(PRODUCT_PAGE_HTML)
 function makeIncrementBlock(name: string, reallyClick: boolean) {
   return defineBlock<ProductPage, ProductPage>({
     name,
-    requires: [Quantity],
+    requires: [TestKeys.quantity],
     instruction: {
       async act(page, _input, mem) {
         if (reallyClick) await page.locator("#inc").click();
-        mem.set(Quantity, mem.get(Quantity) + 1);
+        mem.set(TestKeys.quantity, mem.get(TestKeys.quantity) + 1);
       },
       resolve: () => checkpoint("ProductPage"),
       verify: [
@@ -47,7 +48,7 @@ function makeIncrementBlock(name: string, reallyClick: boolean) {
           name: "quantity-matches-mem",
           async check(page, mem) {
             const shown = await page.locator("#qty").textContent();
-            return shown === String(mem.get(Quantity));
+            return shown === String(mem.get(TestKeys.quantity));
           },
         },
       ],
@@ -89,7 +90,7 @@ test.describe("same-checkpoint Blocks verifying against mem", () => {
     page,
   }) => {
     const mem = new MemPage();
-    mem.set(Quantity, 0);
+    mem.set(TestKeys.quantity, 0);
 
     const engine = new Engine();
     const flow = buildFlow([navProduct, incrementQuantity, incrementQuantity, incrementQuantity], engine.config);
@@ -97,7 +98,7 @@ test.describe("same-checkpoint Blocks verifying against mem", () => {
     const outcome = await flow.run(fakeContext, mem, { page, closeOnFinish: false });
 
     expect(outcome.result).toEqual(checkpoint("ProductPage"));
-    expect(mem.get(Quantity)).toBe(3);
+    expect(mem.get(TestKeys.quantity)).toBe(3);
     await expect(page.locator("#qty")).toHaveText("3");
   });
 
@@ -105,7 +106,7 @@ test.describe("same-checkpoint Blocks verifying against mem", () => {
     page,
   }) => {
     const mem = new MemPage();
-    mem.set(Quantity, 0);
+    mem.set(TestKeys.quantity, 0);
 
     // reallyClick: false simulates a broken act() - mem says "incremented,"
     // the page never actually moved. A verify Trait that only checked "does

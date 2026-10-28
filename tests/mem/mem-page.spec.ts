@@ -1,27 +1,29 @@
 import { test, expect } from "@playwright/test";
-import { MemPage, key, keyGroup } from "../../src/engine/mem/mem.js";
+import { MemKey, MemPage, keys } from "../../src/engine/mem/mem.js";
 
 test.describe("MemPage", () => {
   test("get after set returns the exact value written", () => {
     const mem = new MemPage();
-    const OrgIdKey = key<string>("org.id");
+    const OrgKeys = keys("org")<{
+      id: string;
+    }>();
+    mem.set(OrgKeys.id, "org_123");
 
-    mem.set(OrgIdKey, "org_123");
-
-    expect(mem.get(OrgIdKey)).toBe("org_123");
+    expect(mem.get(OrgKeys.id)).toBe("org_123");
   });
 
   test("get on an unset key throws, naming the key", () => {
     const mem = new MemPage();
-    const NeverSetKey = key<string>("never.set");
-
-    expect(() => mem.get(NeverSetKey)).toThrow(/never\.set/);
+    const NeverKeys = keys("never")<{
+      set: string;
+    }>();
+    expect(() => mem.get(NeverKeys.set)).toThrow(/never\.set/);
   });
 
   test("two keys with the same debug name never collide", () => {
     const mem = new MemPage();
-    const KeyA = key<string>("duplicate.name");
-    const KeyB = key<string>("duplicate.name");
+    const KeyA = new MemKey<string>("duplicate.name");
+    const KeyB = new MemKey<string>("duplicate.name");
 
     mem.set(KeyA, "from-a");
     mem.set(KeyB, "from-b");
@@ -32,8 +34,7 @@ test.describe("MemPage", () => {
 
   test("setAll sets several keys in one call", () => {
     const mem = new MemPage();
-    const UsernameKey = key<string>("username");
-    const PasswordKey = key<string>("password");
+    const { username: UsernameKey, password: PasswordKey } = keys("login")<{ username: string; password: string }>();
 
     mem.setAll([UsernameKey, "standard_user"], [PasswordKey, "secret_sauce"]);
 
@@ -41,27 +42,26 @@ test.describe("MemPage", () => {
     expect(mem.get(PasswordKey)).toBe("secret_sauce");
   });
 
-  test("keyGroup bundles a shaped value under one key, usable via setAll", () => {
-    const LoginCreds = keyGroup<{ username: string; password: string }>("auth.creds");
+  test("a namespace field holds a shaped value, usable via setAll", () => {
+    const AuthKeys = keys("auth")<{
+      creds: { username: string; password: string };
+    }>();
     const mem = new MemPage();
 
-    mem.setAll(LoginCreds({ username: "standard_user", password: "secret_sauce" }));
+    mem.setAll([AuthKeys.creds, { username: "standard_user", password: "secret_sauce" }] as const);
 
-    expect(mem.get(LoginCreds.key)).toEqual({ username: "standard_user", password: "secret_sauce" });
+    expect(mem.get(AuthKeys.creds)).toEqual({ username: "standard_user", password: "secret_sauce" });
   });
 
-  test("set() also accepts a keyGroup pair directly - no setAll needed for just one", () => {
-    const LoginCreds = keyGroup<{ username: string; password: string }>("auth.creds");
-    const mem = new MemPage();
-
-    mem.set(LoginCreds({ username: "standard_user", password: "secret_sauce" }));
-
-    expect(mem.get(LoginCreds.key)).toEqual({ username: "standard_user", password: "secret_sauce" });
+  test("a namespace field is the same key every time it is read, named <namespace>.<field>", () => {
+    const AuthKeys = keys("auth")<{ creds: { username: string; password: string } }>();
+    expect(AuthKeys.creds).toBe(AuthKeys.creds);
+    expect(AuthKeys.creds.name).toBe("auth.creds");
   });
 
   test("update reads, transforms, and writes back", () => {
     const mem = new MemPage();
-    const ListKey = key<string[]>("recipients");
+    const { recipients: ListKey } = keys("mail")<{ recipients: string[] }>();
 
     mem.set(ListKey, ["alice@test.com"]);
     mem.update(ListKey, (list) => [...list, "bob@test.com"]);

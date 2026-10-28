@@ -5,11 +5,11 @@ import { NavLoginBlock } from "../src/blocks/saucedemo-web/nav-login.block.js";
 import { FillUsernameBlock } from "../src/blocks/saucedemo-web/methods/fill-username.method.block.js";
 import { FillPasswordBlock } from "../src/blocks/saucedemo-web/methods/fill-password.method.block.js";
 import { SubmitLoginBlock } from "../src/blocks/saucedemo-web/methods/submit-login.method.block.js";
-import { LoginCreds } from "../src/states/checkout.mem-keys.js";
+import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
 
 test("submit-login: wrong password branches to LoginPage with error banner", async () => {
   const mem = new MemPage();
-  mem.set(LoginCreds({ username: "standard_user", password: "wrong-password" }));
+  mem.set(SaucedemoKeys.credentials, { username: "standard_user", password: "wrong-password" });
 
   const flow = engine
     .map()
@@ -26,7 +26,7 @@ test("submit-login: wrong password branches to LoginPage with error banner", asy
 
 test("submit-login: good password branches to LoggedIn", async () => {
   const mem = new MemPage();
-  mem.set(LoginCreds({ username: "standard_user", password: "secret_sauce" }));
+  mem.set(SaucedemoKeys.credentials, { username: "standard_user", password: "secret_sauce" });
 
   const flow = engine
     .map()

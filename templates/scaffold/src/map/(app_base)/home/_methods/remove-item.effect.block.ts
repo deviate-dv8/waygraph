@@ -3,7 +3,7 @@ import {
   type WaygraphInstanceOption,
 } from "waygraph";
 import { CartEmpty, ItemInCart } from "../../../../states/demo.states.js";
-import { SelectedItem } from "../../../../states/demo.mem-keys.js";
+import { DemoKeys } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
 export const RemoveItemBlock = defineEffectBlock({
@@ -11,17 +11,17 @@ export const RemoveItemBlock = defineEffectBlock({
   description: "Removes the mem-selected catalog item from the cart.",
   from: ItemInCart,
   to: CartEmpty,
-  requires: [SelectedItem.key],
+  requires: [DemoKeys.selectedItem],
   instruction: {
     async act(page, _input, mem) {
-      const { id } = mem.get(SelectedItem.key);
+      const { id } = mem.get(DemoKeys.selectedItem);
       await page.locator(DemoSel.removeBtn(id)).click();
     },
     verify: [
       {
         name: "item-removed",
         async check(page, mem) {
-          const { id } = mem.get(SelectedItem.key);
+          const { id } = mem.get(DemoKeys.selectedItem);
           return page.locator(DemoSel.addBtn(id)).isVisible();
         },
       },
@@ -40,7 +40,7 @@ export const RemoveItemBlock = defineEffectBlock({
       out.push({
         id,
         label: label || `Remove ${id}`,
-        key: SelectedItem.key,
+        key: DemoKeys.selectedItem,
         value: { id, name: id },
         highlight: DemoSel.removeBtn(id),
       });

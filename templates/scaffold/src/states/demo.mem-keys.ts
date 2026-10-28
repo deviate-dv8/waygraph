@@ -1,4 +1,6 @@
-import { keyGroup } from "waygraph";
+import { keys } from "waygraph";
 
-/** The catalog row `add-item` / `remove-item` act on; `waygraph auto` fills it from `instanceOptions`. */
-export const SelectedItem = keyGroup<{ id: string; name: string }>("demo.selectedItem");
+export const DemoKeys = keys("demo")<{
+  /** The catalog row `add-item` / `remove-item` act on; `waygraph auto` fills it from `instanceOptions`. */
+  selectedItem: { id: string; name: string };
+}>();

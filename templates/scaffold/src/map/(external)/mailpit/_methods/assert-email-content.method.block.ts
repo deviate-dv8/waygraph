@@ -1,13 +1,13 @@
 import { defineAssertBlock, type Trait } from "waygraph";
 import { MailpitMessageOpen } from "../_states.js";
-import { ExpectedEmailContent } from "../_keys.js";
+import { MailpitKeys } from "../_keys.js";
 import { MailpitSel } from "../_sel.js";
 
 // Reads the expected copy from mem, so one Block serves any email template.
 const bodyContainsExpectedText: Trait = {
   name: "body-contains-expected-text",
   async check(page, mem) {
-    const expected = mem.get(ExpectedEmailContent);
+    const expected = mem.get(MailpitKeys.expectedEmailContent);
     const text = await page.frameLocator(MailpitSel.previewIframe).locator("body").textContent();
     return (text ?? "").includes(expected);
   },
@@ -18,6 +18,6 @@ export const AssertEmailContentBlock = defineAssertBlock({
   name: "assert-email-content",
   description: "Confirms the open message's body contains the mem-supplied expected copy.",
   checkpoint: MailpitMessageOpen,
-  requires: [ExpectedEmailContent],
+  requires: [MailpitKeys.expectedEmailContent],
   verify: [bodyContainsExpectedText],
 });

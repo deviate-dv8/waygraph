@@ -1,6 +1,6 @@
 import { defineMethodBlock } from "waygraph";
 import { LoginPage } from "../../../states/checkout.states.js";
-import { LoginCreds } from "../../../states/checkout.mem-keys.js";
+import { SaucedemoKeys } from "../../../states/checkout.mem-keys.js";
 import { LoginSel } from "./login.sel.js";
 
 /**
@@ -16,10 +16,10 @@ export const FillPasswordBlock = defineMethodBlock({
   description: "Fills the password field on the login form.",
   from: LoginPage,
   to: LoginPage,
-  requires: [LoginCreds.key],
+  requires: [SaucedemoKeys.credentials],
   instruction: {
     async act(page, _input, mem) {
-      const { password } = mem.get(LoginCreds.key);
+      const { password } = mem.get(SaucedemoKeys.credentials);
       await page.locator(LoginSel.password).fill(password);
     },
   },

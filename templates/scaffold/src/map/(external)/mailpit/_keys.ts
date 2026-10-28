@@ -1,13 +1,12 @@
-import { key, keyGroup } from "waygraph";
+import { keys } from "waygraph";
 
-/** The link read out of the opened message - set by extract-email-link. */
-export const EmailLink = keyGroup<{ url: string }>("mailpit.emailLink");
-
-/** Matched by email, not inbox position, so one inbox can hold several recipients' mail. */
-export const ExpectedRecipient = keyGroup<{ email: string }>("mailpit.expectedRecipient");
-
-/** Substring the link's `href` must contain; mem varies per scenario, the Blocks do not. */
-export const ExpectedLinkPattern = key<string>("mailpit.expectedLinkPattern");
-
-/** Substring the open message's body must contain. */
-export const ExpectedEmailContent = key<string>("mailpit.expectedEmailContent");
+export const MailpitKeys = keys("mailpit")<{
+  /** The link read out of the opened message - set by extract-email-link. */
+  emailLink: { url: string };
+  /** Matched by email, not inbox position, so one inbox can hold several recipients' mail. */
+  expectedRecipient: { email: string };
+  /** Substring the link's `href` must contain; mem varies per scenario, the Blocks do not. */
+  expectedLinkPattern: string;
+  /** Substring the open message's body must contain. */
+  expectedEmailContent: string;
+}>();

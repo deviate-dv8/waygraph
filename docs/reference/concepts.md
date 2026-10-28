@@ -5,8 +5,11 @@
 - **Checkpoints** - a state identified by its tag, declared once as a value and a type:
   `export const Home = checkpoint("Home"); export type Home = typeof Home;`. Blocks take the values
   (`checkpoint: Home`, `from: Home, to: ItemInCart`), so each Block carries its route at runtime.
-- **`MemPage`** / **`MemKey<T>`** - typed shared memory across a run, keyed by object
-  identity (`key<T>("debug-name")`), not by name string.
+- **`MemPage`** / **`keys()`** - typed shared memory across a run. One declaration per namespace:
+  `export const SaucedemoKeys = keys("saucedemo")<{ credentials: Creds; selectedItem: Item }>();` - each property is a
+  `MemKey` named `"saucedemo.credentials"` (the name `--data` and the run log use), the same key every time it is read.
+  Mem stores values by key, not by name string. Older projects: `waygraph upgrade --codemod keys` rewrites `key()` /
+  `keyGroup()` declarations into namespaces and every use (a name that isn't `"<namespace>.<field>"` is listed to rename).
 - **`Block<In, Out>`** - one step: `act(page, input, mem)` does the work,
   `resolve()` decides the resulting Checkpoint (never touches the page or mem),
   `verify` (optional) confirms the page actually matches what `resolve()` claimed.

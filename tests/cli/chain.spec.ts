@@ -11,14 +11,14 @@ const WAYGRAPH_ROOT = join(import.meta.dirname, "..", "..");
 
 // `requires` must hold a real `MemKey` instance - `chain`'s runner script
 // calls `mem.set(key, value)`, and `MemPage.set()` does `instanceof MemKey`
-// on it. `import { key } from "waygraph"` needs an actual `node_modules/waygraph`
+// on it. `import { keys } from "waygraph"` needs an actual `node_modules/waygraph`
 // in the tmp project below (walk-up resolution doesn't find one on its own,
 // since this package doesn't list itself in its own node_modules) - so
 // `withTmpProject` symlinks one in, matching how a real consumer project
 // would have its own waygraph install.
 const GREET_BLOCK = `
-import { key } from "waygraph";
-const GreetInput = key("chain.greet.input");
+import { keys } from "waygraph";
+const GreetInput = keys("chain")<{ greetInput: unknown }>().greetInput;
 export const GreetBlock = {
   name: "greet",
   requires: [GreetInput],
@@ -84,7 +84,7 @@ test('waygraph run --blocks runs two Blocks in order via "then"', async () => {
 test("waygraph run --blocks errors loudly on a missing required payload", async () => {
   await withTmpProject("chain-missing-payload", { "greet.block.ts": GREET_BLOCK }, async (dir) => {
     await expect(exec(node, [CLI, "run", "--blocks", "greet", dir])).rejects.toMatchObject({
-      stderr: expect.stringContaining("requires chain.greet.input"),
+      stderr: expect.stringContaining("requires chain.greetInput"),
     });
   });
 });

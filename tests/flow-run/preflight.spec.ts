@@ -1,13 +1,12 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
-import { connect, runGraph, preflight, MemPage, key, checkpoint } from "../../src/index.js";
+import { connect, runGraph, preflight, MemPage, keys, checkpoint } from "../../src/index.js";
 
 type Start = Checkpoint<"__start__">;
 type LoggedIn = Checkpoint<"LoggedIn">;
 type Done = Checkpoint<"Done">;
 
-const UsernameKey = key<string>("username");
-const PasswordKey = key<string>("password");
+const { username: UsernameKey, password: PasswordKey } = keys("login")<{ username: string; password: string }>();
 
 test.describe("preflight", () => {
   test("throws naming every missing key, without ever opening a tab", async () => {
@@ -35,7 +34,7 @@ test.describe("preflight", () => {
 
     await expect(
       runGraph<LoggedIn>(login, undefined, contextThatShouldNeverBeUsed, mem),
-    ).rejects.toThrow(/"username".*"password"|"password".*"username"/);
+    ).rejects.toThrow(/"login\.username".*"login\.password"|"login\.password".*"login\.username"/);
 
     expect(openedTab).toBe(false);
   });
@@ -84,7 +83,7 @@ test.describe("preflight", () => {
     const mem = new MemPage();
     mem.set(UsernameKey, "alice"); // PasswordKey still missing
 
-    expect(() => preflight(mem, needsBoth)).toThrow(/"password"/);
+    expect(() => preflight(mem, needsBoth)).toThrow(/"login\.password"/);
     expect(() => preflight(mem, needsBoth)).not.toThrow(/"username"/);
   });
 });

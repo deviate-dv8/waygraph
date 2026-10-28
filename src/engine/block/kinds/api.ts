@@ -9,8 +9,7 @@ import type { Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { DefinedBlock } from "../block.js";
 import type { Trait } from "../../trait/trait.js";
 import { defineBlock } from "../block.js";
-import { MemPage, key } from "../../mem/mem.js";
-import type { MemKey } from "../../mem/mem.js";
+import { MemKey, MemPage } from "../../mem/mem.js";
 import type { APIRequestContext, APIResponse } from "@playwright/test";
 import { ignorePageGone } from "../../page-gone.js";
 
@@ -54,7 +53,7 @@ export interface ApiBlockOptions<In extends Checkpoint<string>, Out extends Chec
 // channel for this (resolve is pure, given only what observe returns). Identity-keyed, so this can
 // never collide with a real author's own MemKey even if names happened to match; safe to share one
 // instance across every ApiBlock since runGraph runs act->observe->resolve fully serially per Block.
-const API_RESULT_SCRATCH = key<ApiCallResult>("__wgApiBlockResult");
+const API_RESULT_SCRATCH = new MemKey<ApiCallResult>("__wgApiBlockResult");
 
 /**
  * A Block whose `act()` is a real HTTP request, not a page interaction - lets one Flow narrate a

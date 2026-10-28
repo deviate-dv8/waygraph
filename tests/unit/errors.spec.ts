@@ -20,9 +20,9 @@ test("WaygraphError.message is prefixed with [code], and .code is readable separ
 
 test("a real preflight failure throws a WaygraphError with .code, not a plain Error", async () => {
   const { preflight } = await import("../../src/engine/run/run.js");
-  const { MemPage, key } = await import("../../src/engine/mem/mem.js");
+  const { MemPage, MemKey } = await import("../../src/engine/mem/mem.js");
   const mem = new MemPage();
-  const need = key<string>("needed");
+  const need = new MemKey<string>("needed");
   try {
     preflight(mem, { name: "some-block", requires: [need], instruction: {} } as never);
     assert.fail("expected preflight to throw");
@@ -34,9 +34,9 @@ test("a real preflight failure throws a WaygraphError with .code, not a plain Er
 });
 
 test("mem.get() on an unset key throws WG_MEM_READ_BEFORE_SET", async () => {
-  const { MemPage, key } = await import("../../src/engine/mem/mem.js");
+  const { MemPage, MemKey } = await import("../../src/engine/mem/mem.js");
   const mem = new MemPage();
-  const k = key<string>("unset");
+  const k = new MemKey<string>("unset");
   try {
     mem.get(k);
     assert.fail("expected mem.get to throw");

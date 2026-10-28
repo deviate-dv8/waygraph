@@ -1,6 +1,6 @@
 import { defineEffectBlock, type WaygraphInstanceOption } from "waygraph";
 import { ItemInCart } from "../../../../states/checkout.states.js";
-import { SelectedItem } from "../../../../states/checkout.mem-keys.js";
+import { SaucedemoKeys } from "../../../../states/checkout.mem-keys.js";
 import { collectAddableItems, InventorySel } from "./inventory-items.js";
 
 /**
@@ -16,17 +16,17 @@ export const AddToCartBlock = defineEffectBlock({
   description:
     "Adds the item named by mem (saucedemo.selectedItem) to the cart.",
   to: ItemInCart,
-  requires: [SelectedItem.key],
+  requires: [SaucedemoKeys.selectedItem],
   instruction: {
     async act(page, _input, mem) {
-      const { id } = mem.get(SelectedItem.key);
+      const { id } = mem.get(SaucedemoKeys.selectedItem);
       await page.locator(InventorySel.addBtn(id)).click();
     },
     verify: [
       {
         name: "item-added-to-cart",
         async check(page, mem) {
-          const { id } = mem.get(SelectedItem.key);
+          const { id } = mem.get(SaucedemoKeys.selectedItem);
           return await page
             .locator(InventorySel.removeBtn(id))
             .first()
@@ -40,7 +40,7 @@ export const AddToCartBlock = defineEffectBlock({
     return items.map((item) => ({
       id: item.id,
       label: `Add "${item.name}" to cart`,
-      key: SelectedItem.key,
+      key: SaucedemoKeys.selectedItem,
       value: item,
       highlight: InventorySel.addBtn(item.id),
     }));

@@ -1,6 +1,6 @@
 import { defineMethodBlock } from "waygraph";
 import { HoppscotchRest } from "../_states.js";
-import { ResponseBody } from "../_keys.js";
+import { HoppscotchKeys } from "../_keys.js";
 import { HoppscotchSel } from "../_sel.js";
 
 export const ReadResponseBodyBlock = defineMethodBlock({
@@ -13,7 +13,7 @@ export const ReadResponseBodyBlock = defineMethodBlock({
       await page.locator(HoppscotchSel.rawTab).click();
       const body = page.locator(HoppscotchSel.responseEditor);
       await body.waitFor();
-      mem.set(ResponseBody, (await body.innerText()).trim());
+      mem.set(HoppscotchKeys.responseBody, (await body.innerText()).trim());
       // Raw is the reliable place to read from; go back to the formatted JSON view so a recording ends on it.
       const json = page.locator(HoppscotchSel.responseJsonTab);
       if (await json.count()) await json.click();

@@ -1,5 +1,5 @@
 import type { StubCtx } from "waygraph";
-import { LoginCreds } from "../states/checkout.mem-keys.js";
+import { SaucedemoKeys } from "../states/checkout.mem-keys.js";
 import { LoginSel } from "../blocks/saucedemo-web/methods/login.sel.js";
 import { CartSel } from "../blocks/saucedemo-web/cart/cart.sel.js";
 import { InventorySel } from "../blocks/saucedemo-web/inventory/methods/inventory-items.js";
@@ -43,7 +43,7 @@ export const deviceShowcase = {
       ctx.ui.orientation("portrait");
       ctx.ui.todos("saucedemo", ...checklist(0, 0));
       ctx.ui.zoom(1.35);
-      const fromMem = ctx.mem?.get(LoginCreds.key)?.username;
+      const fromMem = ctx.mem?.get(SaucedemoKeys.credentials)?.username;
       ctx.ui.ring("username", {
         selector: LoginSel.username,
         label: "Username",

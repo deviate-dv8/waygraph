@@ -28,7 +28,7 @@ workflow on top of it, not a restatement of them.
      for you. Accepts `requires` like every other helper, for a mem-aware Trait's externally
      -supplied input.
    - Effect — `defineEffectBlock` + `instanceOptions` for per-row auto menus (add/remove/toggle)
-4. **Mem keys:** typed `key` / `keyGroup`. Never rely on substring `"login"` defaults — email keys like `login-email` stay strings; credential objects use exact names such as `saucedemo.credentials` / `login-credentials`.
+4. **Mem keys:** one `keys("ns")<{ ... }>()` namespace per area (`SaucedemoKeys.credentials`). Never rely on substring `"login"` defaults — email keys like `login-email` stay strings; credential objects use exact names such as `saucedemo.credentials` / `login-credentials`.
 5. Prefer `click` NavBlocks when the product has a real control; use `url` for deep links / email tokens.
 6. **People are accounts.** Each role that signs in (`planner`, `viewer`, ...) is an `account(name, { signIn })` in
    `src/accounts/`; flows for that role say `map({ as: Planner })` and carry no login steps.

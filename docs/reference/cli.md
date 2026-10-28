@@ -156,7 +156,7 @@ after the fact rather than asserting mid-`observe`, built into a flow and run ag
 real page:
 
 ```typescript
-import { Engine, MemPage, key, checkpoint, defineNavBlock, defineMethodBlock } from "waygraph";
+import { Engine, MemPage, keys, checkpoint, defineNavBlock, defineMethodBlock } from "waygraph";
 import type { Checkpoint } from "waygraph";
 
 const FormLoaded = checkpoint("FormLoaded");
@@ -164,8 +164,7 @@ type FormLoaded = typeof FormLoaded;
 const Submitted = checkpoint("Submitted");
 type Submitted = typeof Submitted;
 
-const EmailKey = key<string>("form.email");
-const PasswordKey = key<string>("form.password");
+const FormKeys = keys("form")<{ email: string; password: string }>();
 
 const GotoForm = defineNavBlock({
   name: "goto-form",
@@ -177,11 +176,11 @@ const FillAndSubmit = defineMethodBlock({
   name: "fill-and-submit",
   from: FormLoaded,
   to: Submitted,
-  requires: [EmailKey, PasswordKey],
+  requires: [FormKeys.email, FormKeys.password],
   instruction: {
     async act(page, _input, mem) {
-      await page.getByPlaceholder("Email").fill(mem.get(EmailKey));
-      await page.getByPlaceholder("Password").fill(mem.get(PasswordKey));
+      await page.getByPlaceholder("Email").fill(mem.get(FormKeys.email));
+      await page.getByPlaceholder("Password").fill(mem.get(FormKeys.password));
       await page.getByRole("button", { name: "Submit" }).click();
     },
     verify: [
@@ -197,8 +196,8 @@ const FillAndSubmit = defineMethodBlock({
 });
 
 const mem = new MemPage();
-mem.set(EmailKey, "alice@test.com");
-mem.set(PasswordKey, "hunter2");
+mem.set(FormKeys.email, "alice@test.com");
+mem.set(FormKeys.password, "hunter2");
 
 const flow = new Engine().map().start().gotoPage(GotoForm).method(FillAndSubmit).end();
 const result = await flow.run(mem);

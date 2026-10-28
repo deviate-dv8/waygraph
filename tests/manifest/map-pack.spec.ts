@@ -33,7 +33,7 @@ test("a map group packs into a package another project picks up", async () => {
         include: ["src/**/*.ts"],
       }),
       [`${GROUP}/_states.ts`]: 'import { checkpoint } from "waygraph";\nexport const EchoReady = checkpoint("EchoReady");\nexport type EchoReady = typeof EchoReady;\nexport const EchoDone = checkpoint("EchoDone");\nexport type EchoDone = typeof EchoDone;\n',
-      [`${GROUP}/_keys.ts`]: 'import { key } from "waygraph";\nexport const Message = key<string>("echo.message");\n',
+      [`${GROUP}/_keys.ts`]: 'import { keys } from "waygraph";\nexport const { message: Message } = keys("echo")<{ message: string }>();\n',
       [`${GROUP}/_methods/send.method.block.ts`]:
         'import { defineMethodBlock } from "waygraph";\nimport { EchoReady, EchoDone } from "../_states.js";\nimport { Message } from "../_keys.js";\n' +
         'export const SendBlock = defineMethodBlock({ name: "echo-send", from: EchoReady, to: EchoDone, requires: [Message], instruction: { async act() {} } });\n',

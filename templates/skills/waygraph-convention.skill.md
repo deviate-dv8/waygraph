@@ -62,6 +62,9 @@ against a live site, use `--skill-pilot-blind`.
    (leave `from` out for "from anywhere"; `resolve` is implied when `to` is one Checkpoint). The Block then carries its
    route at runtime, so `waygraph graph`, `auto` and the manifest read it exactly. Older projects:
    `waygraph upgrade --codemod checkpoints`.
+   Mem keys likewise: one namespace per area, its type's fields the keys -
+   `export const SaucedemoKeys = keys("saucedemo")<{ credentials: Creds; selectedItem: Item }>();`, used as
+   `SaucedemoKeys.credentials` (`requires`, `mem.get`, `registerMemStub`). Older projects: `waygraph upgrade --codemod keys`.
 7. **One input/action per Method Block.** No block that `.fill()`s two fields or `.fill()` + `.click()` in one
    `act()` — split like saucedemo login (`fill-username`, `fill-password`, `submit-login`). Opt out per file:
    `// waygraph-ignore: multi-input` or `// waygraph-ignore-practices`.

@@ -6,7 +6,7 @@ import {
   defineNavBlock,
   definePageBlock,
   Engine,
-  key,
+  keys,
 } from "../src/index.js";
 import type { MethodBlock, NavBlock } from "../src/index.js";
 
@@ -16,7 +16,7 @@ export const CartEmpty = checkpoint("CartEmpty");
 export type CartEmpty = typeof CartEmpty;
 export const ItemInCart = checkpoint("ItemInCart");
 export type ItemInCart = typeof ItemInCart;
-const Item = key<string>("item");
+const { item: Item } = keys("test")<{ item: string }>();
 
 export const NavHome = defineNavBlock({ name: "nav-home", checkpoint: Home, url: "/" });
 export const navType: NavBlock<Home> = NavHome;

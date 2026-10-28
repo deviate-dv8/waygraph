@@ -10,7 +10,8 @@ export type { Instruction, Block, DefinedBlock, SomeBlock, SomeDefinedBlock } fr
 export type { WaygraphInstanceOption } from "./engine/block/action-page.js";
 export { connect } from "./engine/run/connect.js";
 export { checkpoint } from "./engine/checkpoint/checkpoint.js";
-export { MemKey, MemPage, key, keyGroup } from "./engine/mem/mem.js";
+export { MemKey, MemPage, keys } from "./engine/mem/mem.js";
+export type { KeyNamespace } from "./engine/mem/mem.js";
 export { registerMemStub, seedMemStub, getMemStub } from "./engine/mem/mem-stub.js";
 export type { MemStubContext } from "./engine/mem/mem-stub.js";
 export { css, byText, byRole } from "./engine/trait/selector.js";

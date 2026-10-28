@@ -4,7 +4,7 @@ import {
   Engine,
   MemPage,
   checkpoint,
-  key,
+  keys,
   defineNavBlock,
   defineAssertBlock,
   defineMethodBlock,
@@ -60,7 +60,7 @@ const fakeContext = {
 
 // A real two-outcome Block (Decision = Home | Away): observe() reads what act() wrote, resolve()
 // picks the tag from it - the actual shape .branch() has to dispatch on, not a hand-fixed Out.
-const WhichWay = key<"home" | "away">("which-way");
+const { whichWay: WhichWay } = keys("test")<{ whichWay: "home" | "away" }>();
 const Decide = defineMethodBlock({
   name: "decide",
   from: checkpoint("Home"),
@@ -364,7 +364,7 @@ test.describe("Engine.map() builder", () => {
 
   test("a route can itself end in another .branch() - a real 2-level tree, both levels actually dispatch independently", async () => {
     const engine = new Engine();
-    const SubWhichWay = key<"near" | "far">("sub-which-way");
+    const { subWhichWay: SubWhichWay } = keys("test")<{ subWhichWay: "near" | "far" }>();
     let ranAwayHome = false;
     let ranFar = false;
     const SubDecide = defineMethodBlock({
@@ -467,7 +467,7 @@ test.describe("Engine.map() builder", () => {
 
   test("seedMemStub() fills requires for EVERY block across EVERY branch (and nested branch), not only whichever path a live run would take - regression coverage: a required key missing on an unreached branch still fails preflight", () => {
     const engine = new Engine();
-    const WantsSecret = key<string>("wants-secret");
+    const { wantsSecret: WantsSecret } = keys("test")<{ wantsSecret: string }>();
     const NeedsSecret = defineMethodBlock({
       name: "needs-secret",
         from: checkpoint("Away"),

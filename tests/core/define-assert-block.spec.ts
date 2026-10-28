@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { defineAssertBlock, checkpoint, MemPage, key } from "../../src/index.js";
+import { defineAssertBlock, checkpoint, MemPage, keys } from "../../src/index.js";
 import { runVerify } from "../../src/engine/trait/verify.js";
 
 
@@ -57,7 +57,7 @@ test.describe("defineAssertBlock", () => {
   });
 
   test("requires is passed through - preflight can catch a missing mem-aware Trait's input before the flow runs", () => {
-    const expectedThing = key<string>("expected-thing");
+    const { expectedThing } = keys("test")<{ expectedThing: string }>();
     const block = defineAssertBlock({
       name: "assert-mem-aware",
       checkpoint: checkpoint("Screen"),

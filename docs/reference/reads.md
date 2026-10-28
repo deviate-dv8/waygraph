@@ -153,6 +153,5 @@ anything:
 
 The panel after each step has a **The page shows** section: every value its Read Blocks read, one line each.
 
-## Not yet
-
-- `keys("ns")<T>()` for Mem (the same one-declaration form, for `key` / `keyGroup`).
+Mem keys are declared the same way: `keys("checkout")<{ credentials: Creds; selectedItem: Item }>()` (see
+[Core concepts](./concepts.md)).

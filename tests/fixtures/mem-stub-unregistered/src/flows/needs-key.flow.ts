@@ -1,6 +1,6 @@
-import { Engine, defineMethodBlock, defineNavBlock, checkpoint, key } from "waygraph";
+import { Engine, defineMethodBlock, defineNavBlock, checkpoint, keys } from "waygraph";
 
-const NeedsKey = key<string>("fixture.needs-a-key");
+const { needsAKey: NeedsKey } = keys("fixture")<{ needsAKey: string }>();
 
 const Open = defineNavBlock({ name: "open", checkpoint: checkpoint("Home"), url: "about:blank" });
 const Use = defineMethodBlock({
