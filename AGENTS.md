@@ -24,6 +24,11 @@ shrinks (`scripts/any-debt.json`); files under 500 lines; no import cycles. `npm
   templates, `templates/skills/`, `ROADMAP.md`, the generated pages (`npm run docs:api`), and `obsidian/`.
 - Commit locally; never push or publish unless asked. Versions are patch bumps.
 - Never leave a browser, server or detached session running (`pgrep -af __auto-serve` should be empty).
+- The CLI loads no `@playwright/test` before a project's config: `src/cli/cli.ts` imports each command when it runs,
+  and engine code doesn't import Playwright values it can test by name. Otherwise a project with its own install
+  (`waygraph try demo`) fails with "Requiring @playwright/test second time".
+- Module state another copy of waygraph must see (the Locator patch's theaters, mem stubs) lives on `globalThis` under a
+  `Symbol.for("waygraph.…")` key: src and dist, or two installs, can load in one process.
 
 ## Verify
 

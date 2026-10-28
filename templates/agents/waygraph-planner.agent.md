@@ -30,6 +30,12 @@ workflow on top of it, not a restatement of them.
    - Effect — `defineEffectBlock` + `instanceOptions` for per-row auto menus (add/remove/toggle)
 4. **Mem keys:** typed `key` / `keyGroup`. Never rely on substring `"login"` defaults — email keys like `login-email` stay strings; credential objects use exact names such as `saucedemo.credentials` / `login-credentials`.
 5. Prefer `click` NavBlocks when the product has a real control; use `url` for deep links / email tokens.
+6. **People are accounts.** Each role that signs in (`planner`, `viewer`, ...) is an `account(name, { signIn })` in
+   `src/accounts/`; flows for that role say `map({ as: Planner })` and carry no login steps.
+7. **One flow per scenario, not per data case.** Cases that run the same steps over different data are one flow with
+   `map({ input })` and a list of inputs; steps only some cases need are `{ when }`.
+8. **Plan the second run.** A flow that creates something plans its `unique` test data and its `.finally(...)` cleanup;
+   a create that can meet an earlier run's data plans `Created` / `AlreadyExists` outcomes.
 
 ## Workflow
 
@@ -42,7 +48,11 @@ workflow on top of it, not a restatement of them.
    confirmation, password reset, magic link, ...) via mem (recipient, link pattern, expected
    copy), not as a separate Block set per scenario - see
    `templates/scaffold/src/map/(external)/mailpit/` for the live, proven shape.
-5. Propose 1-3 starter flows (happy path, login/verify, one feature) — do not implement unless asked.
+5. Propose 1-3 starter flows (happy path, login/verify, one feature) — do not implement unless asked. Mark flows that
+   change data others read as `exclusive`, and note any that need a world: an outage (`network.faults`), offline or slow
+   (`network.throttle`), another time zone (`timezone`).
+6. Say how they run: `waygraph test --flows` makes every standalone flow a test (episodes that start mid-app are chained
+   after the flow that gets them there, not run alone).
 
 ## Blind mode (no frontend source)
 
