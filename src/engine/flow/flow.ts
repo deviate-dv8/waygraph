@@ -1,26 +1,20 @@
 // A Flow: Blocks joined in order (connect), run as one with `run()`; map() builds them, with its settings (withSettings).
-import { connect } from "../run/connect.js";
+import { joinSteps } from "../run/connect.js";
 import { launchOwnContext } from "../run/launch.js";
-import {
-  WaygraphError,
-  MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_INDEX,
-  MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_NAME,
-  MSG_CHAINFLOW_EMPTY,
-} from "../errors.js";
 import type { Block } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
-import { preflight, runGraph } from "../run/run.js";
+import { preflight, runSteps } from "../run/run.js";
 import type { RunGraphOptions } from "../run/run.js";
 import type { EngineConfig } from "../config.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import { MemPage, type MemKey } from "../mem/mem.js";
 import type { Trait } from "../trait/trait.js";
-import { findBlockIndex, modVerify, withVerify } from "../block/block.js";
+import { findBlock, modVerify, withVerify } from "../block/block.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../stub/ring.js";
 import type { DemoPace } from "../stub/pace.js";
 import type { HighlightStyleDefaults } from "../stub/ring.js";
 import { ignorePageGone } from "../page-gone.js";
-import type { SomeBlock } from "../block/block.js";
+import type { SomeBlock } from "../block/some-block.js";
 
 /**
  * A composed, runnable flow. Always begins from Checkpoint<"__start__">, same as
@@ -163,7 +157,7 @@ export interface Flow<Out extends Checkpoint<string>> {
    */
   withBlockVerify(
     block: SomeBlock | string | number,
-    verify: Trait[] | ((out: any) => Trait[]),
+    verify: Trait[] | ((out: Checkpoint<string>) => Trait[]),
   ): Flow<Out>;
   /**
    * Replaces one Trait inside the given Block's verify list - same rules as
@@ -193,10 +187,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
   // trailing runGraph call - see connect()'s own doc comment in types.ts:
   // buildFlow's reduce IS the only place a Flow's
   // intermediate (non-final) Checkpoints are ever verified at all.
-  const chain = middle.reduce((a, b) => connect(a, b, engineConfig.layouts)) as unknown as Block<
-    Checkpoint<"__start__">,
-    Out
-  >;
+  const chain = middle.reduce((a, b) => joinSteps(a, b, engineConfig.layouts));
   // Declared separately (not as the object-literal method below) so the
   // three-overload `Flow.run` signature can be checked against the actual
   // per-call-shape behavior, then attached with a cast - object-literal
@@ -248,11 +239,12 @@ export function buildFlow<Out extends Checkpoint<string>>(
     const resolvedLayouts = options?.layouts ?? engineConfig.layouts;
     let result: Out;
     try {
-      result = await runGraph<Out>(chain, undefined, context, mem, 5000, {
+      // A flow ends where its last step lands: the Out its map() chain was checked against.
+      result = (await runSteps(chain, undefined, context, mem, 5000, {
         page,
         closeOnFinish: false,
         ...(resolvedLayouts !== undefined ? { layouts: resolvedLayouts } : {}),
-      });
+      })) as Out;
     } finally {
       // Cleanup runs whether the steps passed or failed; its own failures don't replace theirs.
       await runCleanup(cleanup, context, mem, page, engineConfig);
@@ -286,15 +278,15 @@ export function buildFlow<Out extends Checkpoint<string>>(
     ],
     run: run as Flow<Out>["run"],
     withBlockVerify(block, verify) {
-      const index = findBlockIndex(middle, block);
+      const { index, block: found } = findBlock(middle, block);
       const patched = [...middle];
-      patched[index] = withVerify(middle[index]!, verify);
+      patched[index] = withVerify(found, verify);
       return buildFlow<Out>(patched, engineConfig, cleanup);
     },
     modBlockVerify(block, nameOrIndex, newCheck) {
-      const index = findBlockIndex(middle, block);
+      const { index, block: found } = findBlock(middle, block);
       const patched = [...middle];
-      patched[index] = modVerify(middle[index]!, nameOrIndex, newCheck);
+      patched[index] = modVerify(found, nameOrIndex, newCheck);
       return buildFlow<Out>(patched, engineConfig, cleanup);
     },
   };
@@ -352,28 +344,6 @@ export function withSettings<Out extends Checkpoint<string>>(flow: Flow<Out>, se
 }
 
 
-function locateInChain(
-  flows: readonly Flow<Checkpoint<string>>[],
-  block: SomeBlock | string | number,
-): { flowIndex: number; localIndex: number } {
-  if (typeof block === "number") {
-    let remaining = block;
-    for (let fi = 0; fi < flows.length; fi++) {
-      const len = flows[fi]!.blocks().length;
-      if (remaining < len) return { flowIndex: fi, localIndex: remaining };
-      remaining -= len;
-    }
-    throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_INDEX(block, flows.length));
-  }
-  const blockName = typeof block === "string" ? block : block.name;
-  for (let fi = 0; fi < flows.length; fi++) {
-    const localIndex = flows[fi]!.blocks().findIndex((bi) => bi.name === blockName);
-    if (localIndex !== -1) return { flowIndex: fi, localIndex };
-  }
-  throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_NAME(blockName));
-}
-
-
 /**
  * Runs a flow's cleanup steps (`.finally(Block)`) one by one on its page. A cleanup step that fails is reported (on
  * stderr, and as its step:error) and the rest still run: cleanup never decides whether the flow passed.
@@ -403,82 +373,3 @@ export async function clearSessionState(context: BrowserContext, page: Page): Pr
 }
 
 
-/**
- * Runs whole Flows one after another on the same page, context and mem - the runner's way of executing a CLI chain
- * (`waygraph run "a then b"`) with each segment still its own episode. A Flow with `resetSession` gets its cookies and
- * storage cleared right before it runs (skipped for the first one). Authors nest flows with `map().flow(sub)` instead.
- */
-export function chainFlow(...flows: readonly Flow<Checkpoint<string>>[]): Flow<Checkpoint<string>> {
-  if (flows.length === 0) {
-    throw new WaygraphError("WG_CHAINFLOW_EMPTY", MSG_CHAINFLOW_EMPTY);
-  }
-  const run = async function run(
-    contextOrMem: BrowserContext | MemPage,
-    memOrConfig?: MemPage | EngineConfig,
-    options?: RunGraphOptions,
-  ): Promise<unknown> {
-    if (contextOrMem instanceof MemPage) {
-      const mem = contextOrMem;
-      const config = memOrConfig as EngineConfig | undefined;
-      // One browser for the WHOLE chain - each sub-flow's own run(mem,
-      // config) would otherwise each launch a separate browser, defeating
-      // the point of sequencing them (a fresh browser is itself a full
-      // session reset, silently making sessionReset a no-op).
-      const { context, close } = await launchOwnContext(config);
-      try {
-        try {
-          return await run(context, mem, { closeOnFinish: true });
-        } finally {
-          await context.close();
-        }
-      } finally {
-        await close();
-      }
-    }
-    const context = contextOrMem;
-    const mem = memOrConfig as MemPage;
-    const gotOwnPage = options?.page === undefined;
-    const page = options?.page ?? (await context.newPage());
-    const closeOnFinish = options?.closeOnFinish ?? gotOwnPage;
-    let result: unknown;
-    for (let i = 0; i < flows.length; i++) {
-      const flow = flows[i]!;
-      if (i > 0 && flow.resetSession) {
-        await clearSessionState(context, page);
-      }
-      const outcome = (await flow.run(context, mem, { page, closeOnFinish: false })) as { result: unknown };
-      result = outcome.result;
-    }
-    if (closeOnFinish) {
-      await page.close();
-    }
-    if (options?.closeOnFinish === false) {
-      return { result, page };
-    }
-    return result;
-  };
-  return {
-    config: flows[0]!.config,
-    resetSession: false,
-    blocks: () =>
-      flows.flatMap((flow, idx) =>
-        flow.blocks().map((bi, i) => ({
-          ...bi,
-          ...(i === 0 && idx > 0 && flow.resetSession ? { resetSessionBefore: true } : {}),
-        })),
-      ),
-    run: run as Flow<Checkpoint<string>>["run"],
-    withBlockVerify(block, verify) {
-      const { flowIndex, localIndex } = locateInChain(flows, block);
-      const patched = [...flows];
-      patched[flowIndex] = patched[flowIndex]!.withBlockVerify(localIndex, verify);
-      return chainFlow(...patched);
-    },
-    modBlockVerify(block, nameOrIndex, newCheck) {
-      const { flowIndex, localIndex } = locateInChain(flows, block);
-      const patched = [...flows];
-      patched[flowIndex] = patched[flowIndex]!.modBlockVerify(localIndex, nameOrIndex, newCheck);
-      return chainFlow(...patched);
-    },
-  };
-}

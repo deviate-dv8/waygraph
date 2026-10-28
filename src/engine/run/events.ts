@@ -114,9 +114,9 @@ export function stepStarted(block: string, kind: BlockKind, from: string, cleanu
 export function stepEnded(block: string, to: string): void {
   const open = scope.getStore();
   if (!open?.open.length) return;
-  let found = open.open.length - 1;
-  while (found > 0 && open.open[found]!.block !== block) found--;
-  if (open.open[found]!.block !== block) found = open.open.length - 1;
+  // The innermost open step with this name; the last one when none has it.
+  const named = open.open.map((s) => s.block).lastIndexOf(block);
+  const found = named === -1 ? open.open.length - 1 : named;
   const at = Date.now();
   for (const step of open.open.splice(found).reverse()) {
     emit({ type: "step:end", runId: open.runId, at, index: step.index, block: step.block, kind: step.kind, to, ms: at - step.startedAt });
@@ -125,9 +125,10 @@ export function stepEnded(block: string, to: string): void {
 
 /** What the page showed after the current step (emitted between its verify and its `step:end`). */
 export function stepRead(checkpoint: string, read: StepRead): void {
-  const step = scope.getStore()?.open.at(-1);
-  if (!step) return;
-  emit({ type: "step:read", runId: scope.getStore()!.runId, at: Date.now(), index: step.index, block: step.block, kind: step.kind, checkpoint, ...read });
+  const run = scope.getStore();
+  const step = run?.open.at(-1);
+  if (!run || !step) return;
+  emit({ type: "step:read", runId: run.runId, at: Date.now(), index: step.index, block: step.block, kind: step.kind, checkpoint, ...read });
 }
 
 /** The step that started last failed, and every step still open around it (a fast-forward step with its inner step). */

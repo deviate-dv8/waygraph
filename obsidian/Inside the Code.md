@@ -20,7 +20,7 @@ No barrels: things are imported from the file that declares them.
 |---|---|---|---|
 | `engine/` | `engine.ts` | [[The Engine]]: Checkpoints, Blocks, Flows, runGraph | imports nothing outside itself |
 | `engine/checkpoint/` | `checkpoint.ts` | [[Checkpoints]] | |
-| `engine/block/` | `block.ts` | [[Blocks]]; `kinds/` = nav, page, method, effect, api | |
+| `engine/block/` | `block.ts` | [[Blocks]]; `kinds/` = nav, page, method, effect, api; `some-block.ts` = any Block, as the runner holds it | |
 | `engine/flow/` | `flow.ts` | [[Flows]]; `map-builder.ts` = `map()` | |
 | `engine/run/` | `run.ts` | the per-Block sequence, run events | |
 | `engine/mem/`, `engine/trait/` | `mem.ts`, `trait.ts` | [[Mem]], verify checks | |

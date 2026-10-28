@@ -13,6 +13,7 @@ import {
 import type { MemKey } from "../mem/mem.js";
 import { MemPage } from "../mem/mem.js";
 import type { StubLifecycleFn } from "../stub/stub.js";
+import type { SomeBlock, SomeInstruction } from "./some-block.js";
 import type { Trait } from "../trait/trait.js";
 import type { ActionPage, WaygraphInstanceOption } from "./action-page.js";
 
@@ -102,7 +103,7 @@ export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<str
    */
   description?: string;
   /** The act/observe/resolve/verify pipeline itself. See {@link Instruction}. */
-  instruction: Instruction<In, Out, any>;
+  instruction: Instruction<In, Out, unknown>;
   /**
    * Routing attached by {@link branch}. Unset on a plain or `connect()`-composed
    * Block, meaning "terminal after one step". Returning the Block itself is a
@@ -201,32 +202,19 @@ export type DefinedBlock<In extends Checkpoint<string>, Out extends Checkpoint<s
   stubOnError(stub: import("../stub/stub.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
 };
 
-/**
- * Any Block, whatever its route. A Block takes its `In` Checkpoint as a callback argument, so it is contravariant in `In`
- * and no one Checkpoint type covers every Block: `any` is that "some Block", written once here.
- */
-export type SomeBlock = Block<any, any>;
 /** The Checkpoint a Block resolves to. */
-type BlockOut<B> = B extends Block<infer _In, infer Out> ? Out : never;
-/** Any {@link DefinedBlock} (see {@link SomeBlock}). */
-export type SomeDefinedBlock = DefinedBlock<any, any>;
-
-export function findBlockIndex(middle: readonly SomeBlock[], block: SomeBlock | string | number): number {
-  if (typeof block === "number") {
-    if (block < 0 || block >= middle.length) {
-      throw new WaygraphError("WG_FLOW_BLOCK_NOT_FOUND", MSG_FLOW_BLOCK_NOT_FOUND_BY_INDEX(block, middle.length));
-    }
-    return block;
-  }
-  const blockName = typeof block === "string" ? block : block.name;
-  const index = middle.findIndex((b) => b.name === blockName);
-  if (index === -1) {
-    throw new WaygraphError(
-      "WG_FLOW_BLOCK_NOT_FOUND",
-      MSG_FLOW_BLOCK_NOT_FOUND_BY_NAME(blockName, middle.map((b) => b.name).join(", ")),
-    );
-  }
-  return index;
+type BlockOut<B> = B extends Block<infer _In, infer Out> ? Out : Checkpoint<string>;
+/** A Block in a list, by reference, name or position; throws, naming what the list has, when it isn't there. */
+export function findBlock<B extends SomeBlock>(list: readonly B[], ref: SomeBlock | string | number): { index: number; block: B } {
+  const index = typeof ref === "number" ? ref : list.findIndex((b) => b.name === (typeof ref === "string" ? ref : ref.name));
+  const block = list[index];
+  if (block) return { index, block };
+  throw new WaygraphError(
+    "WG_FLOW_BLOCK_NOT_FOUND",
+    typeof ref === "number"
+      ? MSG_FLOW_BLOCK_NOT_FOUND_BY_INDEX(ref, list.length)
+      : MSG_FLOW_BLOCK_NOT_FOUND_BY_NAME(typeof ref === "string" ? ref : ref.name, list.map((b) => b.name).join(", ")),
+  );
 }
 
 
@@ -307,13 +295,13 @@ export function copyWaygraphRuntime(from: object, to: object): void {
 export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(base: {
   name: string;
   description?: Block<In, Out>["description"];
-  // Narrower than Instruction<In,Out,any>'s own act() - page is typed as
+  // Narrower than Instruction's own act() - page is typed as
   // ActionPage here (the @deprecated-tagged navigation methods), not the
   // real Page. A real Page is still what's passed at runtime (Page is
   // assignable to ActionPage - same members, only the JSDoc tag differs -
   // so this satisfies Instruction.act's own wider signature structurally);
   // this only affects what an AUTHOR sees while writing act() by hand.
-  instruction: Omit<Instruction<In, Out, any>, "act"> & {
+  instruction: Omit<Instruction<In, Out, unknown>, "act"> & {
     act(page: ActionPage, input: In, mem: MemPage): Promise<void>;
   };
   next?: Block<In, Out>["next"];
@@ -361,10 +349,28 @@ export function withVerify<B extends SomeBlock>(
   block: B,
   verify: Trait[] | ((out: BlockOut<B>) => Trait[]),
 ): B {
-  const base = stripMethods(block);
-  const next = defineBlock({ ...base, instruction: { ...base.instruction, verify } });
+  // The engine calls `verify` with the Checkpoint this Block resolved to, which is a BlockOut<B>.
+  const erased = verify as NonNullable<SomeInstruction["verify"]>;
+  return rebuild(block, { ...block.instruction, verify: erased });
+}
+
+
+/**
+ * `block` with another instruction. Everything else it carries stays (a composed Block's steps, a fast-forward flag,
+ * its runtime markers), and its methods are bound to the new Block, so a chain of them keeps every change.
+ */
+export function rebuild<B extends SomeBlock>(block: B, instruction: SomeInstruction): B {
+  const next = { ...block, ...stripMethods(block), instruction };
+  Object.assign(next, {
+    withVerify: (verify: Trait[] | ((out: Checkpoint<string>) => Trait[])) => withVerify(next, verify),
+    modVerify: (nameOrIndex: string | number, newCheck: Trait["check"] | Trait) => modVerify(next, nameOrIndex, newCheck),
+    modVerifyAll: (patches: Record<string, Trait["check"] | Trait>) => modVerifyAll(next, patches),
+    stubBefore: (stub: StubLifecycleFn<Checkpoint<string>>) => withStubPhase(next, "stubBefore", stub),
+    stubAfter: (stub: StubLifecycleFn<Checkpoint<string>>) => withStubPhase(next, "stubAfter", stub),
+    stubOnError: (stub: StubLifecycleFn<Checkpoint<string>>) => withStubPhase(next, "stubOnError", stub),
+  });
   copyWaygraphRuntime(block, next);
-  return next as unknown as B;
+  return next;
 }
 
 

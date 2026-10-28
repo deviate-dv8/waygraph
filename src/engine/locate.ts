@@ -1,5 +1,5 @@
 // locate(): which Checkpoint is the page on right now, asked of the Nav Blocks' verifies.
-import type { NavBlock } from "./block/kinds/nav.js";
+import type { SomeBlock } from "./block/some-block.js";
 import type { Page } from "@playwright/test";
 import { MemPage } from "./mem/mem.js";
 import { asResult } from "./trait/verify.js";
@@ -27,7 +27,7 @@ import { asResult } from "./trait/verify.js";
  */
 export async function locate(
   page: Page,
-  library: readonly NavBlock<any>[],
+  library: readonly SomeBlock[],
   options?: { timeoutMs?: number },
 ): Promise<string | null> {
   const mem = new MemPage();
@@ -42,7 +42,7 @@ export async function locate(
         // exactly `checkpoint(options.checkpoint)` - so this is safe to call
         // before verify, unlike a regular Block where resolve depends on
         // observed evidence.
-        const resolved = await block.instruction.resolve(undefined as never);
+        const resolved = await block.instruction.resolve(undefined);
         const verify = block.instruction.verify;
         const traits = typeof verify === "function" ? verify(resolved) : (verify ?? []);
         let allPass = true;

@@ -9,7 +9,7 @@ import {
   Trait,
   keys,
 } from "../../src/index.js";
-import { buildFlow, chainFlow, withSettings } from "../../src/engine/flow/flow.js";
+import { buildFlow, withSettings } from "../../src/engine/flow/flow.js";
 
 // THE flagship multi-episode example, living in waygraph's own repo, not a
 // downstream consumer project - real saucedemo.com, not a synthetic fixture.
@@ -112,10 +112,10 @@ const navContinueShopping = defineNavBlock({
 
 const engine = new Engine();
 
-const ownerFlow = withSettings(buildFlow([navLogin, ownerLogin, addToCart, navCart, navContinueShopping], engine.config), { sessionReset: true });
+const ownerFlow = buildFlow([navLogin, ownerLogin, addToCart, navCart, navContinueShopping], engine.config);
 const viewerBlockedFlow = withSettings(buildFlow([navLogin, viewerLoginAttempt], engine.config), { sessionReset: true });
 
-test.describe("chainFlow - a real 2-episode example (saucedemo.com)", () => {
+test.describe("nested flows - a real 2-episode example (saucedemo.com)", () => {
   test("episode 1 alone: the Owner shops, then browses again via click-based navigation", async () => {
     const mem = new MemPage();
     mem.set(ExampleKeys.ownerCreds, { username: "standard_user", password: "secret_sauce" });
@@ -137,7 +137,8 @@ test.describe("chainFlow - a real 2-episode example (saucedemo.com)", () => {
     mem.set(ExampleKeys.ownerCreds, { username: "standard_user", password: "secret_sauce" });
     mem.set(ExampleKeys.viewerCreds, { username: "locked_out_user", password: "secret_sauce" });
 
-    const combined = chainFlow(ownerFlow, viewerBlockedFlow);
+    // The Viewer flow wants a fresh session (sessionReset), so nesting it resets before its first step.
+    const combined = engine.map().flow(ownerFlow).flow(viewerBlockedFlow).end();
 
     await expect(combined.run(mem)).rejects.toThrow(/viewer-login/);
     // Blocked on the SECOND episode's own login attempt, not the first -
@@ -145,7 +146,7 @@ test.describe("chainFlow - a real 2-episode example (saucedemo.com)", () => {
   });
 
   test("the flattened chain includes the click-based NavBlocks", () => {
-    const info = chainFlow(ownerFlow, viewerBlockedFlow).blocks();
+    const info = engine.map().flow(ownerFlow).flow(viewerBlockedFlow).end().blocks();
     expect(info.map((bi) => bi.name)).toEqual([
       "nav-login",
       "owner-login",

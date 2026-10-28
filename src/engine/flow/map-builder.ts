@@ -1,6 +1,6 @@
 // map(): builds a Flow one step at a time - gotoPage / method / assert / flow / branch - each checked for its Block kind.
-import type { SomeBlock, SomeDefinedBlock } from "../block/block.js";
-import { fastForwardComposeBlock } from "../block/compose.js";
+import type { SomeBlock, SomeDefinedBlock } from "../block/some-block.js";
+import { fastForwardSteps } from "../block/compose.js";
 import type { EffectBlock } from "../block/kinds/effect.js";
 import type { AssertBlock, MethodBlock } from "../block/kinds/method.js";
 import type { NavBlock } from "../block/kinds/nav.js";
@@ -126,13 +126,13 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     // From Engine.map(): see BuildFlowFn.
     private readonly build: BuildFlowFn,
     private readonly settings: FlowSettings,
-    private readonly steps: readonly SomeDefinedBlock[],
+    private readonly steps: readonly SomeBlock[],
     private readonly homeOrigin: string | undefined,
     // `auto: true` = opened implicitly by a `{ ff: true }` step flag, not an explicit .ffStart() -
     // closes silently at the next non-flagged step (or at .end()/.branch()) instead of demanding a
     // matching .ffEnd(), since the author never opened anything they'd need to remember to close.
     private readonly ff:
-      | { name: string; buffer: readonly SomeDefinedBlock[]; auto: boolean }
+      | { name: string; buffer: readonly SomeBlock[]; auto: boolean }
       | null = null,
   ) {}
 
@@ -185,15 +185,12 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     if (ff.buffer.length === 0) {
       throw new WaygraphError("WG_MAP_FF_EMPTY", MSG_MAP_FF_EMPTY(ff.name));
     }
-    const composed = fastForwardComposeBlock(
-      ff.name,
-      // The window's steps were typechecked as they were added; the one-step overload takes them as one Block.
-      ff.buffer as readonly [SomeDefinedBlock],
-    );
+    // The window's steps were typechecked as they were added.
+    const composed = fastForwardSteps(ff.name, ff.buffer);
     return new MapBuilder<Out>(
       this.build,
       this.settings,
-      [...this.steps, composed as unknown as SomeDefinedBlock],
+      [...this.steps, composed],
       this.homeOrigin,
       null,
     );
@@ -208,7 +205,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * (stays open until its own `.ffEnd()`, regardless of whether a step passed `{ ff: true }`).
    */
   private appendStep<NextOut extends Checkpoint<string>>(
-    block: SomeDefinedBlock,
+    block: SomeBlock,
     ff?: boolean,
   ): MapBuilder<NextOut> {
     if (ff) {
@@ -220,7 +217,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
       });
     }
     if (this.ff && this.ff.auto) {
-      return (this.closeFf() as unknown as MapBuilder<NextOut>).appendStep(block);
+      return this.closeFf().appendStep<NextOut>(block);
     }
     if (this.ff) {
       // Explicit .ffStart() window still open - absorbs a plain step too, same as always.
@@ -307,23 +304,28 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * right before the sub-flow's first step.
    */
   flow<NextOut extends Checkpoint<string>>(sub: Flow<NextOut>, opts?: MapFlowOpts): MapBuilder<NextOut> {
-    // The steps' types live in `sub`; at runtime this is one untyped walk, typed again as the sub-flow's last Checkpoint.
-    let next = this as unknown as MapBuilder<any>;
+    // `sub` was checked step by step when it was built, so its steps play here as they are, ending on its NextOut.
+    const steps: SomeBlock[] = [];
     if (opts && "input" in opts) {
       if (!sub.input) throw new WaygraphError("WG_MAP_NO_INPUT", MSG_MAP_NO_INPUT(sub.blocks()[0]?.name ?? "?"));
-      next = next.appendStep(settingInput(sub.input, opts.input, sub.blocks()[0]?.name ?? "flow"));
+      steps.push(settingInput(sub.input, opts.input, sub.blocks()[0]?.name ?? "flow"));
     }
     const infos = sub.blocks();
     infos.filter((info) => !info.cleanup).forEach((info, i) => {
       let block = i === 0 && (opts?.reset ?? sub.resetSession) ? resetBefore(info.block) : info.block;
       // Given here, the input is no longer something the run must supply.
-      if (i === 0 && sub.input && opts && "input" in opts) block = withoutRequire(block as SomeDefinedBlock, sub.input);
-      next = next.appendStep(block as SomeDefinedBlock);
+      if (i === 0 && sub.input && opts && "input" in opts) block = withoutRequire(block, sub.input);
+      steps.push(block);
     });
+    const [first, ...rest] = steps;
+    // A flow can't be built without a step (WG_MAP_EMPTY), so a sub-flow always has one.
+    if (!first) throw new WaygraphError("WG_MAP_EMPTY", MSG_MAP_EMPTY);
+    let next = this.appendStep<NextOut>(first);
+    for (const block of rest) next = next.appendStep<NextOut>(block);
     // The sub-flow's cleanup runs with this flow's, at the end.
     const cleanup = infos.filter((info) => info.cleanup).map((info) => info.block);
-    if (cleanup.length) next = new MapBuilder(next.build, { ...next.settings, finally: [...(next.settings.finally ?? []), ...cleanup] }, next.steps, next.homeOrigin, next.ff);
-    return next as MapBuilder<NextOut>;
+    if (cleanup.length) next = new MapBuilder<NextOut>(next.build, { ...next.settings, finally: [...(next.settings.finally ?? []), ...cleanup] }, next.steps, next.homeOrigin, next.ff);
+    return next;
   }
 
   /**
@@ -377,7 +379,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     routes: Routes,
   ): Flow<
     {
-      [K in keyof Routes & string]: Routes[K] extends (m: any) => Flow<infer R>
+      [K in keyof Routes & string]: Routes[K] extends (m: never) => Flow<infer R>
         ? R
         : Extract<Out, Checkpoint<K>>;
     }[keyof Routes & string]
@@ -411,11 +413,12 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     if (this.ff && this.ff.auto) {
       return this.closeFf().end();
     }
-    if (this.steps.length === 0) {
+    const [firstStep, ...rest] = this.steps;
+    if (!firstStep) {
       throw new WaygraphError("WG_MAP_EMPTY", MSG_MAP_EMPTY);
     }
     // The input is required by the first step, so preflight, --data, mem stubs and replay all cover it.
-    let first = this.settings.input ? requiring(this.steps[0]!, this.settings.input) : this.steps[0]!;
+    let first = this.settings.input ? requiring(firstStep, this.settings.input) : firstStep;
     let settings = this.settings;
     // The flow's world (time zone, network) is set by its first step and put back by a cleanup step, pass or fail.
     const world: World = { ...(settings.timezone ? { timezone: settings.timezone } : {}), ...(settings.network ? { network: settings.network } : {}) };
@@ -423,6 +426,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
       first = inWorld(first, world);
       settings = { ...settings, finally: [...(settings.finally ?? []), asCleanup(restoreWorld(world))] };
     }
-    return this.build([first, ...this.steps.slice(1)], settings) as Flow<Out>;
+    // map() checked each step against the last one, so the flow ends on Out.
+    return this.build([first, ...rest], settings) as Flow<Out>;
   }
 }

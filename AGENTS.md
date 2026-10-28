@@ -14,8 +14,8 @@ engine plays it (`waygraph run`, or `waygraph demo` with the overlay around each
 
 Layers; no re-exports outside `src/index.ts`; no HTML strings into the page (`__wgEl` / `__wgSet` / `__wgSvg`);
 `WAYGRAPH_*` only through `src/engine/env.ts`; overlay colours are tokens (`src/demo/overlay/ui/css/theme.css`), icons
-are `__wgIcon`, never glyphs; no `.catch(() => {})` (`ignorePageGone` / `ignoreTimeout`); `any` only
-shrinks (`scripts/any-debt.json`); files under 500 lines; no import cycles. `npm run knip` finds unused code.
+are `__wgIcon`, never glyphs; no `.catch(() => {})` (`ignorePageGone` / `ignoreTimeout`); no `any`, and no
+`x!` in `src/engine/`; files under 500 lines; no import cycles. `npm run knip` finds unused code.
 
 ## Rules by convention
 

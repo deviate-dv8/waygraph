@@ -1,6 +1,8 @@
 // branch(): a Block that routes on the Checkpoint it resolved to.
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
-import { Block, DefinedBlock, SomeBlock, copyWaygraphRuntime, defineBlock, stripMethods } from "./block.js";
+import type { Block, DefinedBlock } from "./block.js";
+import type { BlockFrom, SomeBlock } from "./some-block.js";
+import { copyWaygraphRuntime, defineBlock, stripMethods } from "./block.js";
 
 
 /**
@@ -10,29 +12,29 @@ import { Block, DefinedBlock, SomeBlock, copyWaygraphRuntime, defineBlock, strip
  * by whichever next Block the resolved tag routes to. `null` for a tag means that
  * tag is terminal - the run stops there, same as a Block with no routing at all.
  * A route pointing back at `block` itself is a self-loop; see `runGraph`'s
- * `maxSteps` for its safety net. The return type is deliberately `Block<In, any>` -
+ * `maxSteps` for its safety net. The result ends on any Checkpoint (`Checkpoint<string>`):
  * a route can lead anywhere, including back through itself, so there is no fixed
  * Out type to express; state the expected outcomes to `runGraph` via `terminals`
- * instead.
+ * instead. Each route's Block must start from the tag it routes on.
  */
 
 
 export function branch<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   block: Block<In, Out>,
   routes: {
-    [K in Out["__state"]]: Block<Extract<Out, Checkpoint<K>>, any> | null;
+    [K in Out["__state"]]: BlockFrom<Extract<Out, Checkpoint<K>>> | null;
   }
-): DefinedBlock<In, any> {
-  const base = stripMethods(block);
-  let routed!: DefinedBlock<In, any>;
+): DefinedBlock<In, Checkpoint<string>> {
+  const base = stripMethods(widenOut(block));
+  let routed!: DefinedBlock<In, Checkpoint<string>>;
   const routesAsData: Record<string, string | null> = {};
-  for (const [tag, target] of Object.entries(routes as Record<string, SomeBlock | null>)) {
+  for (const [tag, target] of Object.entries(routes as Readonly<Record<string, SomeBlock | null>>)) {
     routesAsData[tag] = target === null ? null : target === block ? base.name : target.name;
   }
   routed = defineBlock({
     ...base,
-    next: (checkpoint: Out) => {
-      const target = (routes as Record<string, SomeBlock | null>)[checkpoint.__state];
+    next: (checkpoint: Checkpoint<string>) => {
+      const target = (routes as Readonly<Record<string, SomeBlock | null>>)[checkpoint.__state];
       if (target === undefined || target === null) return undefined;
       // A route naming `block` itself (the only self-reference in scope when
       // `routes` was written) means "loop back with routing intact" - substitute
@@ -47,4 +49,16 @@ export function branch<In extends Checkpoint<string>, Out extends Checkpoint<str
   // Waygraph Map, only from a raw runGraph() call.
   copyWaygraphRuntime(block, routed);
   return routed;
+}
+
+
+/**
+ * The same Block, typed as ending on any Checkpoint: for routing, where whatever follows decides where the run ends.
+ * Nothing changes at run time, and its own `verify` and stubs are still only called with what its own `resolve`
+ * returned, which is an `Out`.
+ */
+function widenOut<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
+  block: Block<In, Out>,
+): Block<In, Checkpoint<string>> {
+  return block as unknown as Block<In, Checkpoint<string>>;
 }

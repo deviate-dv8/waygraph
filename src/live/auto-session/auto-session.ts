@@ -168,7 +168,7 @@ export class AutoSession {
   private async warnUnmappedInteractions(): Promise<void> {
     const knownPathnames: string[] = [];
     for (const entry of this.library.navBlocks) {
-      const url = (entry.block as unknown as { __waygraphNavUrl?: string }).__waygraphNavUrl;
+      const url = (entry.block as { __waygraphNavUrl?: string }).__waygraphNavUrl;
       if (!url) continue;
       try {
         knownPathnames.push(new URL(url, this.page.url()).pathname);

@@ -39,8 +39,9 @@ const NOT_KEYS = new Set(["then", "toJSON", "constructor", "prototype", "name", 
 export function reads(namespace: string): <T extends object>() => ReadNamespace<T> {
   return <T extends object>() => {
     const cache = new Map<string, ReadKey<unknown>>();
-    const build = (fields: ReadFields): ReadSpec => ({ namespace, fields });
-    return new Proxy(build, {
+    const build = (fields: ReadFieldsOf<T>): ReadSpec => ({ namespace, fields });
+    // The Proxy answers every property of T with its key, so the function is the whole namespace.
+    return new Proxy(build as ReadNamespace<T>, {
       get(target, prop) {
         if (typeof prop !== "string" || NOT_KEYS.has(prop)) return Reflect.get(target, prop);
         let key = cache.get(prop);
@@ -50,6 +51,6 @@ export function reads(namespace: string): <T extends object>() => ReadNamespace<
         }
         return key;
       },
-    }) as unknown as ReadNamespace<T>;
+    });
   };
 }

@@ -111,6 +111,26 @@ interface Window {
   }>;
 }
 
+// In-page state other waygraph scripts keep on the page's window.
+interface Window {
+  /** The pilot's vision veil and toast: the timers that hide them (pilot/actions.ts, pilot/shell.ts). */
+  __wgVisionHideTimer?: ReturnType<typeof setTimeout>;
+  __wgPilotToastTimer?: ReturnType<typeof setTimeout>;
+  /** The pilot's highlight effects (pilot/fixtures.ts). */
+  __wgPilotFxHideTimer?: ReturnType<typeof setTimeout>;
+  __wgPilotFxClear?: () => void;
+  __wgPilotFxZoomOutOnHide?: boolean;
+  /** Links and buttons a coverage-gap warning was already printed for (analysis/coverage-gap.ts). */
+  __wgWarnedPaths?: Set<string>;
+  __wgWarnedButtons?: Set<string>;
+  /** The session panel's graph: Mermaid, loaded into the page on first use (live/pilot/panel.ts). */
+  mermaid?: {
+    initialize: (opts: Record<string, unknown>) => void;
+    render: (id: string, src: string) => Promise<{ svg: string }>;
+  };
+  __wgMermaidLoadPromise?: Promise<unknown>;
+}
+
 // The todo dock's in-page payload (inpage/todos.ts): the Node side's TodoDockState after a JSON round trip.
 interface WgTodoRow {
   id?: string | undefined;

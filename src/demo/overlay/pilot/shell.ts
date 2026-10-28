@@ -108,7 +108,7 @@ export async function showPilotActivity(page: Page, text: string): Promise<void>
       if (!toast) return;
       toast.textContent = text;
       toast.classList.add("wg-pilot-toast-show");
-      const w = window as unknown as { __wgPilotToastTimer?: ReturnType<typeof setTimeout> };
+      const w = window;
       if (w.__wgPilotToastTimer) clearTimeout(w.__wgPilotToastTimer);
       w.__wgPilotToastTimer = setTimeout(() => {
         toast.classList.remove("wg-pilot-toast-show");
@@ -175,7 +175,7 @@ export async function showPilotVision(
         const ring = __wgById("wg-ring");
         const tag = __wgById("wg-ring-label");
         if (!ring || !tag) return;
-        const w = window as unknown as { __wgVisionHideTimer?: ReturnType<typeof setTimeout> };
+        const w = window;
         if (w.__wgVisionHideTimer) clearTimeout(w.__wgVisionHideTimer);
         if (!box) {
           ring.style.opacity = "0";

@@ -74,11 +74,7 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
   options: ApiBlockOptions<In, Out>,
 ): DefinedBlock<In, Out> {
   const targets = tagsOf(options.to);
-  const pick = options.resolve;
-  if (!pick && targets.length !== 1) {
-    throw new Error(`waygraph: API Block "${options.name}" lands on several Checkpoints; give it a resolve() that picks one`);
-  }
-  const resolve = pick ?? ((): Out => checkpoint(targets[0]!) as Out);
+  const resolve = options.resolve ?? onlyTarget(options.name, targets);
   const built = defineBlock<In, Out>({
     name: options.name,
     ...(options.description ? { description: options.description } : {}),
@@ -122,4 +118,14 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
   // Accepted by map().method(), like a Method: one step that lands on a Checkpoint.
   Object.defineProperty(built, "__waygraphSalt", { value: "api", enumerable: false, configurable: false });
   return built;
+}
+
+
+/** The resolve of an API Block that lands on one Checkpoint; one that lands on several must pick with its own. */
+function onlyTarget<Out extends Checkpoint<string>>(name: string, targets: readonly string[]): () => Out {
+  const [only, ...more] = targets;
+  if (only === undefined || more.length > 0) {
+    throw new Error(`waygraph: API Block "${name}" lands on several Checkpoints; give it a resolve() that picks one`);
+  }
+  return () => checkpoint(only) as Out;
 }

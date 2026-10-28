@@ -1,7 +1,7 @@
 import type { HighlightStubPhase, ResolvedHighlight, WaygraphHighlightStub } from "../../engine/stub/ring.js";
 import type { HighlightStubPhaseName, StubLifecycleFn } from "../../engine/stub/stub.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../../engine/stub/ring.js";
-import type { SomeBlock } from "../../engine/block/block.js";
+import type { SomeBlock } from "../../engine/block/some-block.js";
 import { isFastForwardBlock } from "../../engine/block/compose.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 

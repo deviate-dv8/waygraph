@@ -36,10 +36,11 @@ export function routed<In extends Checkpoint<string>, Out extends Checkpoint<str
   const { from: _from, to, ...rest } = base;
   if (rest.instruction.resolve) return rest as BlockBase<In, Out>;
   const targets = tagsOf(to);
-  if (targets.length !== 1) {
+  const [only] = targets;
+  if (only === undefined || targets.length > 1) {
     throw new Error(`waygraph: Block "${base.name}" lands on ${targets.join(" or ")}; give it a resolve() that picks one`);
   }
-  return { ...rest, instruction: { ...rest.instruction, resolve: () => checkpoint(targets[0]!) as Out } } as BlockBase<In, Out>;
+  return { ...rest, instruction: { ...rest.instruction, resolve: () => checkpoint(only) as Out } } as BlockBase<In, Out>;
 }
 
 /** Records a routed Block's `from`/`to` on the built Block. */

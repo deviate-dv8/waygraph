@@ -96,13 +96,7 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
           );
         };
         try {
-          const w = window as unknown as {
-            mermaid?: {
-              initialize: (opts: Record<string, unknown>) => void;
-              render: (id: string, src: string) => Promise<{ svg: string }>;
-            };
-            __wgMermaidLoadPromise?: Promise<unknown>;
-          };
+          const w = window;
           if (!w.mermaid) {
             if (!w.__wgMermaidLoadPromise) {
               w.__wgMermaidLoadPromise = new Promise((resolve, reject) => {

@@ -31,6 +31,11 @@ function opensItsPage(block: object): boolean {
   return inner ? opensItsPage(inner.block) : false;
 }
 
+/** An export that runs and lists its Blocks: a flow `map()` built. */
+function isFlow(value: unknown): value is Flow<Checkpoint<string>> {
+  return isFlowLike(value);
+}
+
 /** Registers one test per exported flow: the exclusive ones, or every other one. */
 export async function registerFlowTests(exclusive: boolean): Promise<void> {
   installRunLog();
@@ -38,8 +43,8 @@ export async function registerFlowTests(exclusive: boolean): Promise<void> {
   for (const file of walkDir(projectDir, /\.flow\.ts$/)) {
     const mod = await importFresh(file);
     for (const [exportName, value] of Object.entries(mod)) {
-      if (!isFlowLike(value)) continue;
-      const flow = value as unknown as Flow<Checkpoint<string>>;
+      if (!isFlow(value)) continue;
+      const flow = value;
       if ((flow.exclusive === true) !== exclusive) continue;
       test(`${relative(projectDir, file)} › ${exportName}`, async ({ page, context }) => {
         const first = flow.blocks()[0];

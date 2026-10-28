@@ -42,7 +42,7 @@ export type WgBeaconRow = {
 
 /** Browser-side beacon reader (also installed as window.__wgOverlayBeacon). */
 export function readWgOverlayBeaconInPage(): WgBeaconRow[] {
-  const w = globalThis as unknown as { __wgOverlayBeacon?: () => WgBeaconRow[] };
+  const w = window;
   if (typeof w.__wgOverlayBeacon === "function") return w.__wgOverlayBeacon();
   return Array.from(document.querySelectorAll(WG_UI_SEL)).map((el) => {
     const r = el.getBoundingClientRect();
@@ -68,9 +68,9 @@ export function readWgOverlayBeaconInPage(): WgBeaconRow[] {
 /** Reads the overlay beacon from a page: what waygraph's own UI is showing. */
 export async function readWgOverlayBeacon(page: Page): Promise<WgBeaconRow[]> {
   return page.evaluate(() => {
-    const w = window as unknown as { __wgOverlayBeacon?: () => unknown };
+    const w = window;
     if (typeof w.__wgOverlayBeacon === "function") {
-      return w.__wgOverlayBeacon() as WgBeaconRow[];
+      return w.__wgOverlayBeacon();
     }
     return Array.from(document.querySelectorAll('[data-wg-ui="1"]')).map((el) => {
       const r = el.getBoundingClientRect();

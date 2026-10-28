@@ -13,7 +13,7 @@ async function showPilotRect(page: Page, box: Box, label: string, tone = "auto")
         const ring = __wgById("wg-ring");
         const tag = __wgById("wg-ring-label");
         if (!ring || !tag) return;
-        const w = window as unknown as { __wgVisionHideTimer?: ReturnType<typeof setTimeout> };
+        const w = window;
         if (w.__wgVisionHideTimer) clearTimeout(w.__wgVisionHideTimer);
         ring.dataset.tone = tone;
         ring.dataset.size = "md";

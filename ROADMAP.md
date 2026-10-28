@@ -371,15 +371,19 @@ nothing cleaned up. Built (issue #5; the guide is docs/guides/data.md):
    requires a key whose mem stub returns the same value for two `unique` tokens. (Effects in general are not flagged:
    adding a fixed catalogue item to a cart is constant on purpose.)
 
-### Engine internals fully typed (noted, not started)
+### Engine internals fully typed (done, 0.16.8)
 
-The compiler runs `strict` plus `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`, with no `@ts-ignore`, and
-the authoring API is typed end to end. The engine's internals still have escape hatches: 28 `any` in 7 files
-(`block/compose.ts` 13, `block/block.ts` 6, `block/branch.ts` 3, and `flow/flow.ts`, `flow/map-builder.ts`,
-`run/connect.ts`, `locate.ts`), about 31 `as unknown as` casts (mostly in the Block factories) and about 117 non-null
-assertions. Plan: `SomeBlock` as `Block<Checkpoint<string>, Checkpoint<string>>` with `unknown` for what a step
-observed; type `branch` and `compose`; let factories return their type without a cast; lower `scripts/any-debt.json`
-to zero so `check:structure` rejects any new `any`.
+`src/` has no `any`, and `src/engine/` no non-null assertion (`x!`); `check:structure` rejects both (the
+`any-debt.json` ratchet is gone). "Any Block" is `SomeBlock` (`engine/block/some-block.ts`), an interface every
+`Block<In, Out>` satisfies; `branch()` routes take `BlockFrom<Tag>` (the target must still start from the tag) and its
+result ends on `Checkpoint<string>` instead of `any`. Routes are checked where they are written (`map()`, `connect`'s
+and `composeBlock`'s signatures); joining checked steps uses `joinSteps` / `composeSteps` / `fastForwardSteps` /
+`runSteps`, so the public functions keep only their typed signatures. Found on the way: `withVerify(composed, …)`
+dropped a composed Block's `steps()` / `withStepVerify` while its type said it kept them (fixed: `rebuild()` keeps what
+a Block carries), and the internal `chainFlow` was dead code (the runner's "a then b" reset rule is `startsFresh()`).
+Left, each with its reason in the code: three `as unknown as` in the engine (`widenOut` for routing, the `URLPattern`
+type clash between @types/node and the polyfill, the `AssertBlock` brand), the overlay's in-page installer
+(`shadow.ts`), and about 125 non-null assertions outside the engine (mostly bounded index reads).
 
 ### Network tab mocking (backlogged, not yet researched)
 

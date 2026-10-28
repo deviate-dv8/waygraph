@@ -1,12 +1,12 @@
 // Several Blocks as one: composeBlock groups steps; fastForwardComposeBlock plays a group at blitz speed in a demo.
 import type { BlockInfo } from "../flow/flow.js";
-import { connect } from "../run/connect.js";
+import { joinSteps } from "../run/connect.js";
 import type { Block } from "./block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import type { Trait } from "../trait/trait.js";
 import { WaygraphError, MSG_COMPOSE_EMPTY, MSG_FASTFORWARD_EMPTY } from "../errors.js";
-import { findBlockIndex, modVerify, withVerify } from "./block.js";
-import type { SomeBlock } from "./block.js";
+import { findBlock, modVerify, withVerify } from "./block.js";
+import type { SomeBlock } from "./some-block.js";
 
 /**
  * A Block guaranteed to have `withStepVerify`/`modStepVerify` attached - what
@@ -29,7 +29,7 @@ export interface ComposedBlock<In extends Checkpoint<string>, Out extends Checkp
    */
   withStepVerify(
     step: SomeBlock | string | number,
-    verify: Trait[] | ((out: any) => Trait[]),
+    verify: Trait[] | ((out: Checkpoint<string>) => Trait[]),
   ): ComposedBlock<In, Out>;
   /**
    * Replaces one Trait inside one step's verify list - same rules as
@@ -42,6 +42,14 @@ export interface ComposedBlock<In extends Checkpoint<string>, Out extends Checkp
     nameOrIndex: string | number,
     newCheck: Trait["check"] | Trait,
   ): ComposedBlock<In, Out>;
+}
+
+
+/** Any {@link ComposedBlock}, whatever its route (see {@link SomeBlock}). */
+export interface SomeComposedBlock extends SomeBlock {
+  steps(): readonly BlockInfo[];
+  withStepVerify(step: SomeBlock | string | number, verify: Trait[] | ((out: Checkpoint<string>) => Trait[])): SomeComposedBlock;
+  modStepVerify(step: SomeBlock | string | number, nameOrIndex: string | number, newCheck: Trait["check"] | Trait): SomeComposedBlock;
 }
 
 
@@ -116,29 +124,31 @@ export function composeBlock<
   steps: readonly [Block<In, B>, Block<B, C>, Block<C, D>, Block<D, E>, Block<E, F>, Block<F, Out>],
 ): ComposedBlock<In, Out>;
 
-export function composeBlock(
-  name: string,
-  steps: readonly SomeBlock[],
-): ComposedBlock<any, any> {
+export function composeBlock(name: string, steps: readonly SomeBlock[]): SomeComposedBlock {
+  return composeSteps(name, steps);
+}
+
+/** {@link composeBlock} for steps whose routes were already checked (by its overloads, or by `map()`). */
+export function composeSteps(name: string, steps: readonly SomeBlock[]): SomeComposedBlock {
   if (steps.length === 0) {
     throw new WaygraphError("WG_COMPOSE_EMPTY", MSG_COMPOSE_EMPTY(name));
   }
-  const chain = steps.reduce((a, b) => connect(a, b));
+  const chain = steps.reduce((a, b) => joinSteps(a, b));
   return {
     ...chain,
     name,
     steps: () => steps.map((b) => ({ name: b.name, block: b, ...(b.routes ? { routes: b.routes } : {}) })),
     withStepVerify(step, verify) {
-      const index = findBlockIndex(steps, step);
+      const { index, block: found } = findBlock(steps, step);
       const patched = [...steps];
-      patched[index] = withVerify(steps[index]!, verify);
-      return composeBlock(name, patched as [SomeBlock]);
+      patched[index] = withVerify(found, verify);
+      return composeSteps(name, patched);
     },
     modStepVerify(step, nameOrIndex, newCheck) {
-      const index = findBlockIndex(steps, step);
+      const { index, block: found } = findBlock(steps, step);
       const patched = [...steps];
-      patched[index] = modVerify(steps[index]!, nameOrIndex, newCheck);
-      return composeBlock(name, patched as [SomeBlock]);
+      patched[index] = modVerify(found, nameOrIndex, newCheck);
+      return composeSteps(name, patched);
     },
   };
 }
@@ -164,11 +174,17 @@ export interface FastForwardComposedBlock<In extends Checkpoint<string>, Out ext
 /** True when `block` came from {@link fastForwardComposeBlock}. */
 export function isFastForwardBlock(
   block: SomeBlock,
-): block is FastForwardComposedBlock<any, any> {
+): block is SomeFastForwardBlock {
   return (
-    (block as FastForwardComposedBlock<any, any>).fastForward === true &&
-    typeof (block as ComposedBlock<any, any>).steps === "function"
+    (block as Partial<SomeFastForwardBlock>).fastForward === true &&
+    typeof (block as Partial<SomeFastForwardBlock>).steps === "function"
   );
+}
+
+
+/** Any {@link FastForwardComposedBlock}, whatever its route (see {@link SomeBlock}). */
+export interface SomeFastForwardBlock extends SomeComposedBlock {
+  readonly fastForward: true;
 }
 
 
@@ -243,16 +259,18 @@ export function fastForwardComposeBlock<
   steps: readonly [Block<In, B>, Block<B, C>, Block<C, D>, Block<D, E>, Block<E, F>, Block<F, Out>],
 ): FastForwardComposedBlock<In, Out>;
 
-export function fastForwardComposeBlock(
-  name: string,
-  steps: readonly SomeBlock[],
-): FastForwardComposedBlock<any, any> {
+export function fastForwardComposeBlock(name: string, steps: readonly SomeBlock[]): SomeFastForwardBlock {
+  return fastForwardSteps(name, steps);
+}
+
+/** {@link fastForwardComposeBlock} for steps whose routes were already checked (by its overloads, or by `map()`). */
+export function fastForwardSteps(name: string, steps: readonly SomeBlock[]): SomeFastForwardBlock {
   if (steps.length === 0) {
     throw new WaygraphError("WG_FASTFORWARD_EMPTY", MSG_FASTFORWARD_EMPTY(name));
   }
-  const base = composeBlock(name, steps as [SomeBlock]);
+  const base = composeSteps(name, steps);
   const origAct = base.instruction.act.bind(base.instruction);
-  const ff: FastForwardComposedBlock<any, any> = {
+  const ff: SomeFastForwardBlock = {
     ...base,
     fastForward: true,
     instruction: {
@@ -266,16 +284,16 @@ export function fastForwardComposeBlock(
       },
     },
     withStepVerify(step, verify) {
-      const index = findBlockIndex(steps, step);
+      const { index, block: found } = findBlock(steps, step);
       const patched = [...steps];
-      patched[index] = withVerify(steps[index]!, verify);
-      return fastForwardComposeBlock(name, patched as [SomeBlock]);
+      patched[index] = withVerify(found, verify);
+      return fastForwardSteps(name, patched);
     },
     modStepVerify(step, nameOrIndex, newCheck) {
-      const index = findBlockIndex(steps, step);
+      const { index, block: found } = findBlock(steps, step);
       const patched = [...steps];
-      patched[index] = modVerify(steps[index]!, nameOrIndex, newCheck);
-      return fastForwardComposeBlock(name, patched as [SomeBlock]);
+      patched[index] = modVerify(found, nameOrIndex, newCheck);
+      return fastForwardSteps(name, patched);
     },
   };
   return ff;

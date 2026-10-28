@@ -264,11 +264,7 @@ export async function showPilotFixtures(
         clearAll,
         todoUi,
       }) => {
-        const w = window as unknown as {
-          __wgPilotFxHideTimer?: ReturnType<typeof setTimeout>;
-          __wgPilotFxClear?: () => void;
-          __wgPilotFxZoomOutOnHide?: boolean;
-        };
+        const w = window;
         if (w.__wgPilotFxHideTimer) clearTimeout(w.__wgPilotFxHideTimer);
 
         const clearFocus = () => {

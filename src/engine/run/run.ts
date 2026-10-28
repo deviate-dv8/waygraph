@@ -11,7 +11,7 @@ import { blockKindOf } from "../block/kind.js";
 import { runPrecondition, runVerify } from "../trait/verify.js";
 import type { Trait } from "../trait/trait.js";
 import type { BrowserContext, Page } from "@playwright/test";
-import type { SomeBlock } from "../block/block.js";
+import type { SomeBlock } from "../block/some-block.js";
 
 /**
  * Checks `block.requires` against `mem` and throws, naming every missing key at
@@ -145,6 +145,19 @@ export async function runGraph<TOut extends Checkpoint<string>>(
   maxSteps = 5000,
   options?: RunGraphOptions,
 ): Promise<TOut> {
+  // The walk ends on a Checkpoint some Block resolved to: the entry's TOut, or one its routes lead to.
+  return (await runSteps(entry, terminals, context, mem, maxSteps, options)) as TOut;
+}
+
+/** {@link runGraph} for a Block whose route was checked where it was built (a flow's joined steps). */
+export async function runSteps(
+  entry: SomeBlock,
+  terminals: ReadonlySet<string> | undefined,
+  context: BrowserContext,
+  mem: MemPage,
+  maxSteps = 5000,
+  options?: RunGraphOptions,
+): Promise<Checkpoint<string>> {
   preflight(mem, entry);
   const page = options?.page ?? (await context.newPage());
   const closeOnFinish = options?.closeOnFinish ?? true;
@@ -154,14 +167,14 @@ export async function runGraph<TOut extends Checkpoint<string>>(
 }
 
 /** The step loop of {@link runGraph}, inside its run: act, observe, resolve, verify, then the next Block. */
-async function playGraph<TOut extends Checkpoint<string>>(
-  entry: Block<Checkpoint<"__start__">, TOut>,
+async function playGraph(
+  entry: SomeBlock,
   terminals: ReadonlySet<string> | undefined,
   page: Page,
   mem: MemPage,
   maxSteps: number,
   options: RunGraphOptions | undefined,
-): Promise<TOut> {
+): Promise<Checkpoint<string>> {
   try {
     let current: SomeBlock = entry;
     let input: Checkpoint<string> = checkpoint("__start__");
@@ -193,7 +206,7 @@ async function playGraph<TOut extends Checkpoint<string>>(
             MSG_RUNGRAPH_NOT_TERMINAL(current.name, checkpoint.__state, [...terminals].join(", ")),
           );
         }
-        return checkpoint as TOut;
+        return checkpoint;
       }
 
       current = next;

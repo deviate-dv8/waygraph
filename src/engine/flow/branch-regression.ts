@@ -135,7 +135,8 @@ export async function runBranchRegression(
       results.push({ path, status: "failed", error: err instanceof Error ? err.message : String(err) });
       return;
     }
-    if (!cloneSession) {
+    // `browser` is there whenever the session is cloned (checked above).
+    if (!cloneSession || !browser) {
       // Shared-session mode: only the ONE route the live state actually resolved to is reachable -
       // the page has already moved past every other tag.
       const route = info.routes[first.result.__state];
@@ -156,7 +157,7 @@ export async function runBranchRegression(
         results.push({ path: branchPath, status: "ok", result: { __state: tag } as Checkpoint<string> });
         continue;
       }
-      const branchContext = await browser!.newContext({ storageState });
+      const branchContext = await browser.newContext({ storageState });
       try {
         const branchPage = await branchContext.newPage();
         // Best-effort: land back on the same page the prefix ended on before this route's own

@@ -23,7 +23,8 @@ package API, is the only file that re-exports).
 engine/           the engine (layer: engine - imports nothing outside engine/)
   engine.ts         Engine + map(): the authoring story
   checkpoint/       checkpoint.ts (the Checkpoint value), route.ts (a Block's from/to)
-  block/            block.ts (Block, Instruction, defineBlock, withVerify, stubs), branch.ts, dialog.ts, action-page.ts,
+  block/            block.ts (Block, Instruction, defineBlock, withVerify, stubs), some-block.ts (SomeBlock: any Block),
+                    branch.ts, dialog.ts, action-page.ts,
                     compose.ts, kinds/ (nav, page, method, effect, api)
   flow/             flow.ts (Flow, buildFlow, settings), map-builder.ts (map()) + map-steps.ts (per-step checks) +
                     map-branch.ts, branch-regression.ts
@@ -123,10 +124,11 @@ project (as the CLI's runner does), and never loads two projects into one proces
 Enforced: no file over 500 lines, no import cycles, the layer table above, no re-exports outside the package entries
 (`src/index.ts`), no module that runs a call at import time (entries call `install…()` explicitly), no HTML
 strings written into the page, `WAYGRAPH_*` variables only through `engine/env.ts` (its registry generates `docs/env.md`), no `.catch(() => {})` in Node
-code (`engine/page-gone.ts`: `ignorePageGone` when the page went away, `ignoreTimeout` for a probe), and `any` only goes
-down (`scripts/any-debt.json`, per file). What is left is the engine's "any Block" (`SomeBlock` in
-`engine/block/block.ts`, and the same escape in `compose.ts` / `branch.ts`): Block types are invariant in their
-Checkpoints, so no one Checkpoint type covers every Block. The overlay's in-page bridge (`window.__wg*` and its
+code (`engine/page-gone.ts`: `ignorePageGone` when the page went away, `ignoreTimeout` for a probe), no `any`, and no
+non-null assertion (`x!`) in `engine/`. "Any Block, whatever its route" is `SomeBlock` (`engine/block/some-block.ts`):
+every `Block<In, Out>` is one, so the runner, the graph and the tools hold Blocks without `any`; a route is checked
+where it is written (`map()`, `composeBlock`'s and `connect`'s signatures) and joined with `joinSteps` /
+`composeSteps` / `runSteps` after that. The overlay's in-page bridge (`window.__wg*` and its
 payloads) is typed in `demo/overlay/ui/shadow-globals.d.ts`; the Node-side `page.__wg*` state in `demo/types.ts`.
 Adding an `index.ts` export changes the public API: update `tests/unit/api-surface.snapshot.json` deliberately.
 

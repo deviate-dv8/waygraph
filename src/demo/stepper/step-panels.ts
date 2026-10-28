@@ -4,7 +4,7 @@ import { hasAuthoredStubOnError, runStubPhase } from "../narration/narration.js"
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
 import { installOverlay } from "../overlay/overlay.js";
 import { cycleHighlightRings } from "../overlay/rings.js";
-import type { SomeBlock } from "../../engine/block/block.js";
+import type { SomeBlock } from "../../engine/block/some-block.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import type { MemPage } from "../../engine/mem/mem.js";
 import type { HighlightStyleDefaults, ResolvedHighlight } from "../../engine/stub/ring.js";

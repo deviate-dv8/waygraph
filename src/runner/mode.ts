@@ -7,7 +7,7 @@ import type { MemPage } from "../engine/mem/mem.js";
 import type { DemoPace } from "../engine/stub/pace.js";
 import type { HighlightStyleDefaults } from "../engine/stub/ring.js";
 import type { WgPage } from "../demo/types.js";
-import type { SomeBlock } from "../engine/block/block.js";
+import type { SomeBlock } from "../engine/block/some-block.js";
 
 /** One Block to play, with what its flow says about it. */
 export interface PlayStep {

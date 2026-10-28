@@ -73,7 +73,8 @@ function readInPage(matched: Element[], ask: InPageAsk): unknown {
     const cells = [...r.querySelectorAll(CELL)];
     const row: Record<string, string | null> = {};
     for (const name of Object.keys(ask.columns)) {
-      const cell = index[name] === undefined ? undefined : cells[index[name]!];
+      const at = index[name];
+      const cell = at === undefined ? undefined : cells[at];
       row[name] = cell ? textOf(cell) : null;
     }
     return row;

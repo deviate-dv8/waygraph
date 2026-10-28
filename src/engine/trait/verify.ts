@@ -61,7 +61,7 @@ async function settle(trait: Trait, page: Page, mem: MemPage): Promise<TraitResu
     try {
       result = asResult(await trait.check(page, mem));
     } catch (error) {
-      return { ok: false, saw: error instanceof Error ? error.message.split("\n")[0]! : String(error), error };
+      return { ok: false, saw: error instanceof Error ? (error.message.split("\n")[0] ?? "") : String(error), error };
     }
     if (result.ok || Date.now() >= until) return result;
     await new Promise((r) => setTimeout(r, RETRY_EVERY_MS));

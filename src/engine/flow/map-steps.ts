@@ -1,11 +1,11 @@
 // What `map()` checks and wraps on each step: the Block's kind and origin, `{ ff, pace }`, a session reset.
-import type { Page } from "@playwright/test";
 import { checkpoint, type Checkpoint } from "../checkpoint/checkpoint.js";
 import type { MemKey } from "../mem/mem.js";
 import type { Trait } from "../trait/trait.js";
 import { defineMethodBlock } from "../block/kinds/method.js";
 import { settlePage } from "../read/run-read.js";
-import { type SomeBlock, type SomeDefinedBlock, copyWaygraphRuntime } from "../block/block.js";
+import { copyWaygraphRuntime } from "../block/block.js";
+import type { SomeBlock } from "../block/some-block.js";
 import { MSG_MAP_LANDED_ELSEWHERE, MSG_MAP_LANDS_NOT_AN_OUTCOME, MSG_MAP_WRONG_KIND, MSG_MAP_WRONG_ORIGIN_EXTERNAL, MSG_MAP_WRONG_ORIGIN_INTERNAL, MSG_MAP_WRONG_SALT, WaygraphError } from "../errors.js";
 import { MemPage } from "../mem/mem.js";
 import type { DemoPace } from "../stub/pace.js";
@@ -14,17 +14,17 @@ import { clearSessionState } from "./flow.js";
 
 /** The same Block, but it clears cookies and storage before it acts. Keeps the runtime markers. */
 export function resetBefore(block: SomeBlock): SomeBlock {
-  const act = block.instruction.act.bind(block.instruction);
-  const next = {
+  const ins = block.instruction;
+  const next: SomeBlock = {
     ...block,
     instruction: {
-      ...block.instruction,
-      async act(page: Page, input: unknown, mem: MemPage) {
-        await clearSessionState(page.context(), page as unknown as Page);
-        return (act as (p: unknown, i: unknown, m: MemPage) => unknown)(page, input, mem);
+      ...ins,
+      async act(page, input, mem) {
+        await clearSessionState(page.context(), page);
+        await ins.act(page, input, mem);
       },
     },
-  } as SomeBlock;
+  };
   copyWaygraphRuntime(block, next);
   Object.defineProperty(next, "__waygraphResetBefore", { value: true, enumerable: false, configurable: true });
   return next;
@@ -33,39 +33,39 @@ export function resetBefore(block: SomeBlock): SomeBlock {
  * The same Block, narrowed to one of its outcomes: the flow continues from `lands`, and a run where the Block resolves
  * anywhere else fails at that step, naming both. A `lands` the Block never declares is rejected when the flow is built.
  */
-export function landsOn(block: SomeDefinedBlock, lands: Checkpoint<string> | undefined): SomeDefinedBlock {
+export function landsOn(block: SomeBlock, lands: Checkpoint<string> | undefined): SomeBlock {
   if (!lands) return block;
   const outcomes = (block as { __waygraphTo?: readonly string[] }).__waygraphTo;
   if (outcomes?.length && !outcomes.includes(lands.__state)) {
     throw new WaygraphError("WG_MAP_LANDS", MSG_MAP_LANDS_NOT_AN_OUTCOME(block.name, lands.__state, outcomes));
   }
-  const resolve = block.instruction.resolve.bind(block.instruction);
-  const next = {
+  const ins = block.instruction;
+  const next: SomeBlock = {
     ...block,
     instruction: {
-      ...block.instruction,
-      async resolve(observed: unknown) {
-        const landed = await (resolve as (o: unknown) => Checkpoint<string> | Promise<Checkpoint<string>>)(observed);
+      ...ins,
+      async resolve(observed) {
+        const landed = await ins.resolve(observed);
         if (landed.__state !== lands.__state) {
           throw new WaygraphError("WG_MAP_LANDS", MSG_MAP_LANDED_ELSEWHERE(block.name, landed.__state, lands.__state));
         }
         return landed;
       },
     },
-  } as SomeDefinedBlock;
+  };
   copyWaygraphRuntime(block, next);
   return next;
 }
 /** The same Block, also requiring `key` (a flow's input is required by its first step, so preflight asks for it). */
-export function requiring(block: SomeDefinedBlock, key: MemKey<unknown>): SomeDefinedBlock {
-  const next = { ...block, requires: [...(block.requires ?? []).filter((k) => k !== key), key] } as SomeDefinedBlock;
+export function requiring(block: SomeBlock, key: MemKey<unknown>): SomeBlock {
+  const next: SomeBlock = { ...block, requires: [...(block.requires ?? []).filter((k) => k !== key), key] };
   copyWaygraphRuntime(block, next);
   return next;
 }
 
 /** The same Block, no longer requiring `key` (a step before it supplies it). */
-export function withoutRequire(block: SomeDefinedBlock, key: MemKey<unknown>): SomeDefinedBlock {
-  const next = { ...block, requires: (block.requires ?? []).filter((k) => k !== key) } as SomeDefinedBlock;
+export function withoutRequire(block: SomeBlock, key: MemKey<unknown>): SomeBlock {
+  const next: SomeBlock = { ...block, requires: (block.requires ?? []).filter((k) => k !== key) };
   copyWaygraphRuntime(block, next);
   return next;
 }
@@ -82,43 +82,43 @@ const stayedAt = (observed: unknown): Checkpoint<string> | undefined =>
  * observing or verifying. For a step that stays on its Checkpoint (`map()` only offers `when` there). The decision is
  * kept per run (by its mem): Blocks are shared, runs may be parallel.
  */
-export function skippable(block: SomeDefinedBlock, when: ((mem: MemPage) => boolean) | undefined): SomeDefinedBlock {
+export function skippable(block: SomeBlock, when: ((mem: MemPage) => boolean) | undefined): SomeBlock {
   if (!when) return block;
   const skipped = new WeakMap<MemPage, Checkpoint<string>>();
   const ins = block.instruction;
   const keepTrait = (t: Trait): Trait => ({ ...t, check: async (page, mem) => (skipped.has(mem) ? true : t.check(page, mem)) });
   const verify = ins.verify;
-  const next = {
+  const next: SomeBlock = {
     ...block,
     instruction: {
       ...ins,
-      async act(page: Page, input: Checkpoint<string>, mem: MemPage) {
+      async act(page, input, mem) {
         if (!when(mem)) {
           skipped.set(mem, input);
           return;
         }
         skipped.delete(mem);
-        return (ins.act as (p: Page, i: Checkpoint<string>, m: MemPage) => unknown)(page, input, mem);
+        await ins.act(page, input, mem);
       },
-      async observe(page: Page, mem: MemPage) {
+      async observe(page, mem) {
         const at = skipped.get(mem);
         if (at) return { __wgStayedAt: at } satisfies Stayed;
-        return ins.observe ? (ins.observe as (p: Page, m: MemPage) => unknown)(page, mem) : undefined;
+        return ins.observe ? ins.observe(page, mem) : undefined;
       },
-      resolve(observed: unknown) {
-        return stayedAt(observed) ?? (ins.resolve as (o: unknown) => unknown)(observed);
+      resolve(observed) {
+        return stayedAt(observed) ?? ins.resolve(observed);
       },
       ...(verify
-        ? { verify: typeof verify === "function" ? (out: Checkpoint<string>) => (verify as (o: Checkpoint<string>) => Trait[])(out).map(keepTrait) : (verify as Trait[]).map(keepTrait) }
+        ? { verify: typeof verify === "function" ? (out: Checkpoint<string>) => verify(out).map(keepTrait) : verify.map(keepTrait) }
         : {}),
     },
-  } as SomeDefinedBlock;
+  };
   copyWaygraphRuntime(block, next);
   return next;
 }
 
 /** A step that sets a flow's input and ends where it started: what `.flow(sub, { input })` puts before the sub-flow. */
-export function settingInput(key: MemKey<unknown>, value: unknown, flowName: string): SomeDefinedBlock {
+export function settingInput(key: MemKey<unknown>, value: unknown, flowName: string): SomeBlock {
   const at = new WeakMap<MemPage, Checkpoint<string>>();
   return defineMethodBlock<Checkpoint<string>, Checkpoint<string>>({
     name: `input-${flowName}`,
@@ -129,43 +129,50 @@ export function settingInput(key: MemKey<unknown>, value: unknown, flowName: str
         mem.set(key, value);
         at.set(mem, input);
       },
-      observe: async (_page, mem) => ({ __wgStayedAt: at.get(mem)! }) satisfies Stayed,
-      resolve: (observed) => stayedAt(observed)!,
+      observe: async (_page, mem) => {
+        const here = at.get(mem);
+        return here ? ({ __wgStayedAt: here } satisfies Stayed) : undefined;
+      },
+      resolve: (observed) => {
+        const here = stayedAt(observed);
+        if (!here) throw new Error(`waygraph: "input-${flowName}" resolved before it acted`);
+        return here;
+      },
     },
-  }) as unknown as SomeDefinedBlock;
+  });
 }
 
 /** The same Block, marked as a cleanup step: its run events say so (`cleanup: true` on step:start). */
-export function asCleanup(block: SomeDefinedBlock): SomeDefinedBlock {
-  const next = { ...block } as SomeDefinedBlock;
+export function asCleanup(block: SomeBlock): SomeBlock {
+  const next: SomeBlock = { ...block };
   copyWaygraphRuntime(block, next);
   Object.defineProperty(next, "__waygraphCleanup", { value: true, enumerable: false, configurable: true });
   return next;
 }
 /** The same Block, waiting for the page to settle after it acts (the `settle` step option). */
-export function settling(block: SomeDefinedBlock, settle: MapStepOpts["settle"]): SomeDefinedBlock {
+export function settling(block: SomeBlock, settle: MapStepOpts["settle"]): SomeBlock {
   if (!settle) return block;
   const { quietMs = 300, maxMs = 5000 } = settle === true ? {} : settle;
-  const act = block.instruction.act as (p: Page, i: Checkpoint<string>, m: MemPage) => unknown;
-  const next = {
+  const ins = block.instruction;
+  const next: SomeBlock = {
     ...block,
     instruction: {
-      ...block.instruction,
-      async act(page: Page, input: Checkpoint<string>, mem: MemPage) {
-        await act.call(block.instruction, page, input, mem);
+      ...ins,
+      async act(page, input, mem) {
+        await ins.act(page, input, mem);
         await settlePage(page, quietMs, maxMs);
       },
     },
-  } as SomeDefinedBlock;
+  };
   copyWaygraphRuntime(block, next);
   return next;
 }
 
 /** Applies a step's `pace` option, keeping the Block's runtime markers. */
-export function paced(block: object, opts: MapStepOpts | undefined): SomeDefinedBlock {
-  if (opts?.pace === undefined) return block as SomeDefinedBlock;
-  const next = { ...block, demoPace: opts.pace } as SomeDefinedBlock;
-  copyWaygraphRuntime(block as SomeDefinedBlock, next);
+export function paced(block: SomeBlock, opts: MapStepOpts | undefined): SomeBlock {
+  if (opts?.pace === undefined) return block;
+  const next: SomeBlock = { ...block, demoPace: opts.pace };
+  copyWaygraphRuntime(block, next);
   return next;
 }
 export function mapKindOf(block: unknown): string | undefined {

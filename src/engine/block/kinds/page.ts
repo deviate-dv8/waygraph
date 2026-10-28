@@ -8,7 +8,7 @@ import type { MemKey } from "../../mem/mem.js";
 import { defineBlock } from "../block.js";
 import type { Page } from "@playwright/test";
 import { markRoute } from "../../checkpoint/route.js";
-import type { SomeDefinedBlock } from "../block.js";
+import type { SomeDefinedBlock } from "../some-block.js";
 
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */
 export type PageMethodEntry =
@@ -94,14 +94,15 @@ export function definePageBlock<Out extends Checkpoint<string>>(
     ...(options.requires ? { requires: options.requires } : {}),
     ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
     instruction: {
-      async act(page, _input, mem) {
+      // The real Page, not ActionPage: navigating is this Block's job.
+      async act(page: Page, _input: Checkpoint<string>, mem: MemPage) {
         if (options.url !== undefined) {
           const url = typeof options.url === "function" ? options.url(mem) : options.url;
-          await (page as unknown as Page).goto(url);
+          await page.goto(url);
         } else if (options.click !== undefined) {
           const selector =
             typeof options.click === "function" ? options.click(mem) : options.click;
-          await (page as unknown as Page).locator(selector).click();
+          await page.locator(selector).click();
         }
         // else: arrival-only hub — previous Block already landed here
       },

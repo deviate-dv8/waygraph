@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import type { Checkpoint, Block } from "../../src/index.js";
-import { Engine, MemPage, checkpoint, composeBlock, connect } from "../../src/index.js";
+import { Engine, MemPage, checkpoint, composeBlock, connect, withVerify } from "../../src/index.js";
 import { buildFlow } from "../../src/engine/flow/flow.js";
 
 const fakePage = { close: async () => {} } as unknown as import("@playwright/test").Page;
@@ -137,5 +137,16 @@ test.describe("composeBlock", () => {
     const composed = composeBlock("three-steps", [step1, step2, step3]);
     const flow = buildFlow([composed], new Engine().config);
     await expect(flow.run(fakeContext, new MemPage())).resolves.toEqual(checkpoint("Done"));
+  });
+
+  test("withVerify on a composed Block keeps its steps and step methods, and the new verify", async () => {
+    const { step1, step2, step3 } = threeSteps();
+    const composed = composeBlock("three-steps", [step1, step2, step3]);
+    const checked = withVerify(composed, [{ name: "outer", check: async () => true }]);
+    expect(checked.steps().map((s) => s.name)).toEqual(["step-1", "step-2", "step-3"]);
+    expect(typeof checked.withStepVerify).toBe("function");
+    expect(checked.instruction.verify).toEqual([expect.objectContaining({ name: "outer" })]);
+    // Chained again, it still keeps them.
+    expect(withVerify(checked, []).steps()).toHaveLength(3);
   });
 });

@@ -2,7 +2,7 @@
 // signed in: the first time in a process the account's own sign-in flow runs and its session (cookies and storage) is
 // kept; every later flow as that account starts from the kept session instead of signing in again.
 import type { BrowserContext, Page } from "@playwright/test";
-import type { SomeDefinedBlock } from "../block/block.js";
+import type { SomeBlock } from "../block/some-block.js";
 import { defineMethodBlock } from "../block/kinds/method.js";
 import { checkpoint, type Checkpoint, type Start } from "../checkpoint/checkpoint.js";
 import type { Flow } from "./flow.js";
@@ -51,8 +51,8 @@ async function restore(page: Page, session: Session): Promise<void> {
  * The step a flow `as` an account starts with: a fresh session, then the account's kept one, or its sign-in flow the
  * first time (whose steps run inside this one). From the start, back to the start: the flow's own first step follows.
  */
-export function signInStep(acc: Account): SomeDefinedBlock {
-  const requires = [...new Set(acc.signIn.blocks().flatMap((info) => (info.block as SomeDefinedBlock).requires ?? []))];
+export function signInStep(acc: Account): SomeBlock {
+  const requires = [...new Set(acc.signIn.blocks().flatMap((info) => info.block.requires ?? []))];
   return defineMethodBlock<Start, Start>({
     name: `sign-in-as-${acc.name}`,
     description: `Signs in as ${acc.name}: the session kept from the first sign-in in this run, or ${acc.name}'s sign-in flow.`,
@@ -70,5 +70,5 @@ export function signInStep(acc: Account): SomeDefinedBlock {
         sessions.set(acc.name, await page.context().storageState());
       },
     },
-  }) as unknown as SomeDefinedBlock;
+  });
 }

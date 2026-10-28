@@ -122,16 +122,17 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
     ...(options.requires ? { requires: options.requires } : {}),
     ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
     instruction: {
-      async act(page, _input, mem) {
+      // The real Page, not ActionPage: navigating is this Block's job.
+      async act(page: Page, _input: Checkpoint<string>, mem: MemPage) {
         if (options.url !== undefined) {
           const url = typeof options.url === "function" ? options.url(mem) : options.url;
-          await (page as unknown as Page).goto(url);
+          await page.goto(url);
         } else {
           // Always Locator.click() so the demo stepper's cursor/pulse patch
           // (instrumentInteractionHighlighting) sees NavBlock click-nav -
           // never page.click() / goto teleport.
           const selector = typeof options.click === "function" ? options.click(mem) : options.click;
-          await (page as unknown as Page).locator(selector).click();
+          await page.locator(selector).click();
         }
       },
       resolve: () => checkpoint(options.checkpoint.__state) as Out,

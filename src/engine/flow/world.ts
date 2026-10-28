@@ -2,11 +2,10 @@
 // (`map({ timezone, network })`). Applied when the flow starts, undone when it ends - pass or fail - so a flow that
 // tests an outage doesn't leave the next one offline.
 import type { CDPSession, Page, Route } from "@playwright/test";
-import type { SomeDefinedBlock } from "../block/block.js";
+import type { SomeBlock } from "../block/some-block.js";
 import { copyWaygraphRuntime } from "../block/block.js";
 import { defineMethodBlock } from "../block/kinds/method.js";
 import { checkpoint, type Checkpoint } from "../checkpoint/checkpoint.js";
-import type { MemPage } from "../mem/mem.js";
 
 /** Network speed: a preset, or latency and throughput. */
 export type Throttle = "offline" | "slow-3g" | "fast-3g" | { latencyMs: number; downloadKbps: number; uploadKbps: number };
@@ -101,28 +100,28 @@ async function undo(page: Page, world: World): Promise<void> {
 }
 
 /** The flow's first step, setting its world before it acts. */
-export function inWorld(block: SomeDefinedBlock, world: World): SomeDefinedBlock {
-  const act = block.instruction.act as (p: Page, i: Checkpoint<string>, m: MemPage) => unknown;
-  const next = {
+export function inWorld(block: SomeBlock, world: World): SomeBlock {
+  const ins = block.instruction;
+  const next: SomeBlock = {
     ...block,
     instruction: {
-      ...block.instruction,
-      async act(page: Page, input: Checkpoint<string>, mem: MemPage) {
+      ...ins,
+      async act(page, input, mem) {
         await apply(page, world);
-        return act.call(block.instruction, page, input, mem);
+        await ins.act(page, input, mem);
       },
     },
-  } as SomeDefinedBlock;
+  };
   copyWaygraphRuntime(block, next);
   return next;
 }
 
 /** The cleanup step that puts the world back (a `.finally` step: it runs whether the flow passed or failed). */
-export function restoreWorld(world: World): SomeDefinedBlock {
+export function restoreWorld(world: World): SomeBlock {
   return defineMethodBlock<Checkpoint<string>, Checkpoint<string>>({
     name: "restore-world",
     description: "Puts the time zone and network back as they were before this flow.",
     to: checkpoint("*"),
     instruction: { act: (page) => undo(page, world) },
-  }) as unknown as SomeDefinedBlock;
+  });
 }

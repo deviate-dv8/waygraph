@@ -44,10 +44,7 @@ export interface UnmappedInteractionPayload {
 
 /** Page-side: warn once per unmapped same-origin href or visible button. */
 export function unmappedInteractionsPageScript(payload: UnmappedInteractionPayload): void {
-  const w = window as unknown as {
-    __wgWarnedPaths?: Set<string>;
-    __wgWarnedButtons?: Set<string>;
-  };
+  const w = window;
   w.__wgWarnedPaths ??= new Set<string>();
   w.__wgWarnedButtons ??= new Set<string>();
 

@@ -6,7 +6,6 @@ import { defineBlock } from "../block.js";
 import { markRouteOf, routed } from "../../checkpoint/route.js";
 import type { RoutedBlockBase } from "../../checkpoint/route.js";
 import type { MemKey } from "../../mem/mem.js";
-import type { Page } from "@playwright/test";
 
 /**
  * TypeScript salt over {@link defineBlock} for one-shot non-nav app steps
@@ -100,7 +99,7 @@ export function defineAssertBlock<Out extends Checkpoint<string>>(options: Asser
     instruction: {
       async act(page) {
         if (options.waitForHeading !== undefined) {
-          await (page as unknown as Page).getByRole("heading", { name: options.waitForHeading }).waitFor();
+          await page.getByRole("heading", { name: options.waitForHeading }).waitFor();
         }
       },
       verify: options.verify,

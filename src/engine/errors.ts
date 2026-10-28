@@ -100,14 +100,9 @@ export const WAYGRAPH_ERRORS = {
     fix: "Add at least one Block between ffStart()/ffEnd() (or the equivalent Map builder call).",
   },
   WG_FLOW_BLOCK_NOT_FOUND: {
-    where: "engine/block/block.ts - findBlockIndex() (used by withBlockVerify/modBlockVerify/chainFlow)",
+    where: "engine/block/block.ts - findBlock() (used by withBlockVerify/modBlockVerify)",
     means: "The Block name/index/reference given doesn't exist in this Flow (or chained Flows).",
     fix: "Check the name/index against flow.blocks() - it lists every Block this Flow actually has, tag-prefixed for branches.",
-  },
-  WG_CHAINFLOW_EMPTY: {
-    where: "engine/flow/flow.ts - chainFlow()",
-    means: "chainFlow() was called with zero Flows.",
-    fix: "Pass at least one Flow.",
   },
   WG_MODVERIFY_FUNCTION_FORM: {
     where: "engine/block/block.ts - modVerify()",
@@ -239,13 +234,8 @@ export const MSG_COMPOSE_EMPTY = (name: string) => `composeBlock: "${name}" need
 
 export const MSG_FASTFORWARD_EMPTY = (name: string) => `fastForwardComposeBlock: "${name}" needs at least one step`;
 
-export const MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_INDEX = (index: number, count: number) =>
-  `chainFlow: no Block at index ${index} across ${count} chained flows`;
 
-export const MSG_CHAINFLOW_BLOCK_NOT_FOUND_BY_NAME = (blockName: string) =>
-  `chainFlow: no Block named "${blockName}" in any chained flow`;
 
-export const MSG_CHAINFLOW_EMPTY = "chainFlow: give at least one Flow";
 
 /** The code of a `WaygraphError`, e.g. `WG_PREFLIGHT_MISSING_KEY`. */
 export type WaygraphErrorCode = keyof typeof WAYGRAPH_ERRORS;

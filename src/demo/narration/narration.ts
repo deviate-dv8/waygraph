@@ -8,7 +8,7 @@ import { applyDefaultZoom, applyDefaultZoomOut, readStubRaw, resolvePhaseMap } f
 import { buildTodoDock, normalizeTodoStyle, normalizeTodos } from "./todo-dock.js";
 import { resolveDeviceState } from "./device.js";
 import { isFastForwardBlock } from "../../engine/block/compose.js";
-import type { SomeBlock } from "../../engine/block/block.js";
+import type { SomeBlock } from "../../engine/block/some-block.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import type { MemPage } from "../../engine/mem/mem.js";
 

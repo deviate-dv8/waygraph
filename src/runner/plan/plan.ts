@@ -1,7 +1,7 @@
 // What to play: the CLI spec ("cartFlow", or "loginFlow then add-item({...})") turned into the steps to play, each
 // knowing its episode, its flow's settings and when to seed its segment's mem.
 import type { MemPage } from "../../engine/mem/mem.js";
-import { buildFlow, chainFlow } from "../../engine/flow/flow.js";
+import { buildFlow } from "../../engine/flow/flow.js";
 import type { BlockInfo, Flow } from "../../engine/flow/flow.js";
 import { isFastForwardBlock } from "../../engine/block/compose.js";
 import type { PlayStep } from "../mode.js";
@@ -14,7 +14,7 @@ import { resolve } from "node:path";
 import { recordMem } from "../../engine/run/events.js";
 import { readRunLog } from "../../runtime/run-log.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
-import type { SomeBlock } from "../../engine/block/block.js";
+import type { SomeBlock } from "../../engine/block/some-block.js";
 
 /** One part of the spec: a named Flow, or a single Block wrapped as one. */
 interface Segment {
@@ -140,9 +140,15 @@ function expand(infos: readonly BlockInfo[], options: PlayOptions): (BlockInfo &
   );
 }
 
+/**
+ * Whether a segment of `run "a then b"` starts with a fresh session: when it follows another and wants one
+ * (`map({ sessionReset: true })`), or when its first step resets (`.flow(sub, { reset: true })`).
+ */
+export function startsFresh(flow: Pick<Flow<Checkpoint<string>>, "resetSession" | "blocks">, segmentIndex: number): boolean {
+  return (segmentIndex > 0 && flow.resetSession) || !!flow.blocks()[0]?.resetSessionBefore;
+}
+
 function stepsOf(segments: readonly Segment[], options: PlayOptions, { episodes }: { episodes: boolean }): PlayStep[] {
-  // chainFlow marks each segment's first Block when that segment wants a fresh session.
-  const resets = new Set(chainFlow(...segments.map((s) => s.flow)).blocks().filter((b) => b.resetSessionBefore).map((b) => b.block));
   let episode = 0;
   return segments.flatMap((segment, segmentIndex) => {
     const episodeNumber = episodes && segment.named ? ++episode : undefined;
@@ -154,7 +160,7 @@ function stepsOf(segments: readonly Segment[], options: PlayOptions, { episodes 
       config: segment.flow.config,
       episodeNumber,
       episodeTitle: episodeNumber === undefined ? undefined : segment.ref,
-      resetSession: i === 0 && resets.has(segment.flow.blocks()[0]?.block as SomeBlock),
+      resetSession: i === 0 && startsFresh(segment.flow, segmentIndex),
       seedMem: i === 0 ? segment.seedMem : undefined,
       expectedFailureReason: i === last ? segment.flow.expectedFailureReason : undefined,
       segment: segmentIndex,

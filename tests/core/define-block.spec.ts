@@ -87,7 +87,7 @@ test.describe("defineBlock", () => {
     // "on-a.act" would never fire.
     const decorated = routed.withVerify([{ name: "harmless", check: async () => true }]);
 
-    await runGraph<Done>(decorated, undefined, fakeContext, new MemPage());
+    await runGraph(decorated, undefined, fakeContext, new MemPage());
 
     expect(calls).toEqual(["gate.act", "on-a.act"]);
   });

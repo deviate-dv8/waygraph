@@ -113,10 +113,11 @@ function convertDeclarations(project: Project, file: string, dir: string, proble
     byBlock.set(block, groups);
   }
   for (const [block, groups] of byBlock) {
-    const container = block as unknown as { insertStatements(index: number, text: string[]): unknown };
+    // A variable statement's parent is a file or a block: both hold statements.
+    if (!Node.isStatemented(block)) continue;
     const first = Math.min(...[...groups.values()].map((g) => g.at));
     for (const g of groups.values()) for (const statement of g.statements) statement.remove();
-    container.insertStatements(
+    block.insertStatements(
       first,
       [...groups].map(([nsVar, g]) => `${Node.isSourceFile(block) ? "\n" : ""}${g.exported ? "export " : ""}const ${nsVar} = keys("${g.ns}")<{\n  ${g.fields.join("\n  ")}\n}>();`),
     );

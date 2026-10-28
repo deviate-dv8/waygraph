@@ -14,9 +14,10 @@ export class ReadPage {
     for (const [path, value] of values) {
       if (value === null || value === undefined) missing.push(path);
       const parts = path.split(".");
+      const leaf = parts.pop() ?? path;
       let node = this.tree;
-      for (const part of parts.slice(0, -1)) node = (node[part] ??= {}) as Record<string, unknown>;
-      node[parts[parts.length - 1]!] = value ?? null;
+      for (const part of parts) node = (node[part] ??= {}) as Record<string, unknown>;
+      node[leaf] = value ?? null;
     }
     this.missing = missing;
     this.notes = Object.fromEntries(notes);

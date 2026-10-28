@@ -1,6 +1,6 @@
 // What the stepper's panels show about the run as a whole and about the current step.
 import type { MemPage } from "../../engine/mem/mem.js";
-import type { SomeBlock } from "../../engine/block/block.js";
+import type { SomeBlock } from "../../engine/block/some-block.js";
 import type { DemoPace } from "../../engine/stub/pace.js";
 import type { HighlightStyleDefaults } from "../../engine/stub/ring.js";
 import type { StepperRefs, WgPage } from "../types.js";

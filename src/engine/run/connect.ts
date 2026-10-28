@@ -1,6 +1,7 @@
 // Joins Blocks into one: A's whole step (act, observe, resolve, verify, layouts) runs, then B acts on A's Checkpoint.
 // A flow is its steps joined this way.
 import type { Block } from "../block/block.js";
+import type { SomeBlock } from "../block/some-block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import type { Trait } from "../trait/trait.js";
 import { runVerify, runPrecondition } from "../trait/verify.js";
@@ -14,7 +15,7 @@ import { blockKindOf } from "../block/kind.js";
 export interface ConnectLayout {
   name: string;
   appliesTo: (tag: string) => boolean;
-  verify: Trait[] | ((out: any) => Trait[]);
+  verify: Trait[] | ((out: Checkpoint<string>) => Trait[]);
 }
 
 /**
@@ -36,11 +37,20 @@ export function connect<
   A extends Checkpoint<string>,
   B extends Checkpoint<string>,
   C extends Checkpoint<string>,
->(a: Block<A, B>, b: Block<B, C>, layouts?: readonly ConnectLayout[]): Block<A, C> {
+>(a: Block<A, B>, b: Block<B, C>, layouts?: readonly ConnectLayout[]): Block<A, C>;
+export function connect(a: SomeBlock, b: SomeBlock, layouts?: readonly ConnectLayout[]): SomeBlock {
+  return joinSteps(a, b, layouts);
+}
+
+/**
+ * {@link connect} for steps whose routes were already checked where they were chosen: a flow's steps (`map()` checks
+ * each one), a composed Block's steps (its overloads do).
+ */
+export function joinSteps(a: SomeBlock, b: SomeBlock, layouts?: readonly ConnectLayout[]): SomeBlock {
   const bObserve = b.instruction.observe;
   const bVerify = b.instruction.verify;
   const requires = [...(a.requires ?? []), ...(b.requires ?? [])];
-  const connected: Block<A, C> = {
+  const connected: SomeBlock = {
     name: `${a.name} -> ${b.name}`,
     ...(requires.length > 0 ? { requires } : {}),
     instruction: {
