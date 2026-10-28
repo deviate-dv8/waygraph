@@ -8,13 +8,16 @@
     "scripts/*.mjs",
     "tests/**/*.spec.ts",
     "typecheck/*.ts",
-    "src/cli/flow-tests/*.spec.ts"
+    "src/cli/flow-tests/*.spec.ts",
+    "docs/.vitepress/config.mts",
+    "docs/.vitepress/theme/index.ts"
   ],
   "project": [
     "src/**/*.{ts,js}",
     "scripts/**",
     "tests/**/*.ts",
-    "typecheck/**/*.ts"
+    "typecheck/**/*.ts",
+    "docs/.vitepress/theme/*.ts"
   ],
   "ignore": [
     "tests/fixtures/**",
