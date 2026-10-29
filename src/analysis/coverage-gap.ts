@@ -53,6 +53,19 @@ export function collectKnownInteractionSelectors(
   return Array.from(out);
 }
 
+/** The paths the project's Nav Blocks with a fixed URL go to, resolved against the page's URL. */
+export function knownNavPathnames(navBlocks: readonly BlockEntry[], pageUrl: string): string[] {
+  return navBlocks.flatMap((entry) => {
+    const url = (entry.block as { __waygraphNavUrl?: string }).__waygraphNavUrl;
+    if (!url) return [];
+    try {
+      return [new URL(url, pageUrl).pathname];
+    } catch {
+      return []; // not a resolvable URL (relative to an unset base) - skip
+    }
+  });
+}
+
 export interface UnmappedInteractionPayload {
   knownPathnames: string[];
   knownSelectors: string[];

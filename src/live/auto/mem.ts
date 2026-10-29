@@ -35,9 +35,12 @@ export function seedMemFromEnv(mem: MemPage, entry: BlockEntry): boolean {
     return false;
   }
 }
-/** Pre-seeds required keys from WAYGRAPH_DATA and the project's mem stubs, so a session does not stop for mem forms. */
-
-export function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage, dataJson?: string): void {
+/**
+ * Pre-seeds required keys from `--data` / WAYGRAPH_DATA, else the project's mem stubs, so a session does not stop for mem
+ * forms. Returns where each key it set came from.
+ */
+export function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage, dataJson?: string): Map<string, "data" | "stub"> {
+  const sources = new Map<string, "data" | "stub">();
   const raw = dataJson ?? envString("WAYGRAPH_DATA");
   let envParsed: Record<string, unknown> = {};
   if (raw) {
@@ -52,12 +55,17 @@ export function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage, d
       if (mem.has(k)) continue;
       if (k.name in envParsed) {
         mem.set(k, envParsed[k.name]);
+        sources.set(k.name, "data");
         continue;
       }
       const def = memStubValue(k);
-      if (def !== undefined) mem.set(k, def);
+      if (def !== undefined) {
+        mem.set(k, def);
+        sources.set(k.name, "stub");
+      }
     }
   }
+  return sources;
 }
 export async function promptMemCli(entry: BlockEntry, mem: MemPage): Promise<void> {
   const rl = createInterface({ input, output });

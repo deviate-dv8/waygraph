@@ -89,7 +89,7 @@ type HelpFor = "demo" | "run" | "session";
  */
 export const RUN_OPTIONS = {
   "blocks": { type: "string", value: "<flow|file|spec>", help: "Flow export, .flow.ts path or \"a then b\" chain; auto: <From> <To> Checkpoints", for: ["demo", "run"] },
-  "data": { type: "string", value: "'{...}'", help: "Mem seed JSON (or inline flow({...}))", for: ["demo", "run"] },
+  "data": { type: "string", value: "'{...}'", help: "Mem seed JSON, keys by name (or inline flow({...})); a session also takes it on send / reach", for: ["demo", "run", "session"] },
   "mem-stub": { type: "boolean", help: "Fill any requires key --data didn't cover from registerMemStub's registry", for: ["demo", "run"] },
   "input": { type: "string", value: "<json|@file>", help: "The flow's input (map({ input })): JSON or @file.json; an array plays the flow once per item", for: ["demo", "run"] },
   "replay": { type: "string", value: "<runId>", help: "Seed mem with exactly what that run seeded (its run log), to rerun a failure with its data", for: ["demo", "run"] },

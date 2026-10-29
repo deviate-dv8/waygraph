@@ -13,7 +13,7 @@ export type SessionRequest =
   | { op: "hello" }
   | { op: "subscribe" }
   | { op: "status" }
-  | { op: "send"; pick: string }
+  | { op: "send"; pick: string; data?: Record<string, unknown> }
   | ({ op: "dom" } & InspectDomOptions)
   | { op: "trace" }
   | { op: "click"; selector: string }
@@ -21,7 +21,7 @@ export type SessionRequest =
   | { op: "press"; selector: string; key: string }
   | { op: "goto"; url: string }
   | { op: "reload" }
-  | { op: "reach"; checkpoint: string }
+  | { op: "reach"; checkpoint: string; data?: Record<string, unknown> }
   | { op: "resync" }
   | { op: "console" }
   | { op: "storage" }

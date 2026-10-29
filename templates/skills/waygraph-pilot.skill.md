@@ -37,41 +37,117 @@ waygraph pilot attach <sessionId>          # graph + snapshot for an existing se
 ## Starting a session
 
 ```
-waygraph pilot start                      # bootstraps: {sessionId, socketPath, headless, graph, snapshot}
-waygraph browser start [--inject path] [--goto <url>] [--cli]  # new browser session; --cli opens terminal picker
-waygraph pilot start [--cli]              # --cli opens terminal picker after bootstrap JSON
-waygraph auto status <sessionId>          # re-read the live menu, no side effects
-waygraph auto send <sessionId> "<pick>"   # run exactly one Block (by menu index or name)
-waygraph auto reach <sessionId> <Checkpoint>  # path-find + run a whole route in one call
-waygraph auto highlight <sessionId> '<json>'  # paint rings/todos on the live page (agent fixtures)
+waygraph pilot start [flags]              # {sessionId, socketPath, headless, graph, snapshot}
+waygraph browser start [flags]            # {sessionId, socketPath, headless, inject} - no graph
 ```
 
-`reach` plays a per-row step (add *this* item) with the row mem already names (`--data`, an earlier pick, a mem
-stub); when mem names none it stops and says so - pick the row with `send <index>`, then `reach` again.
+| Flag | Does |
+|------|------|
+| `--headless` / `--non-headless` | no window / a visible one (`browser start` is visible by default) |
+| `--goto <url>` | open this first (default: the project's base URL for `pilot`, `about:blank` for `browser`) |
+| `--base-url <url>` | where relative URLs go (default: the config's `baseUrl` / `.env`) |
+| `--data '{...}'` | the session's mem, by key name: **whose** credentials and which rows it uses (see Mem) |
+| `--inject <path>` | also load another project's Blocks |
+| `--cli` | open the terminal picker after the bootstrap JSON |
 
-`graph` in `pilot start`'s response is the **whole project's** Block/Checkpoint graph, not
-just what's reachable from here - use it to plan several steps ahead before you start
-sending picks.
+A start URL that can't be opened (server down, DNS) fails the start with the reason; it never starts a blank session
+silently. An unknown flag is an error, not a project path. A session that dies at start leaves its reason in
+`<project>/.waygraph-auto/<sessionId>.log`.
 
-A Block's `requires` are filled from `--data '{...}'` first, then from the project's mem stubs: the session loads
-every `*.mem-stubs.ts` and uses each `registerMemStub` fake as that key's default. A start URL that can't be opened
-(server down, DNS) fails `browser start` / `pilot start` with the reason; it never starts a blank session silently.
-An unknown flag is an error, not a project path.
+`graph` in `pilot start`'s reply is the **whole project's** Block/Checkpoint graph, not just what's reachable from
+here - plan several steps ahead from it before you start sending picks.
 
-## Bad practices (`waygraph check` / `waygraph typecheck`)
+## Mem: whose data the session uses (read this before you sign in)
 
-Run `waygraph typecheck .` (or `npm run typecheck`) — runs `tsc --noEmit` then bad-practice warnings.
-`waygraph check` includes the same practice scan plus nav/orphan/selector hygiene.
-Use `--no-practices` on either command to skip the practice scan.
+A Block's `requires` (credentials, the row to act on) come from mem, and a session fills mem **once, when it starts**:
 
-Patterns warned (does not fail `check`; fails `typecheck` only when `tsc` fails):
+1. a key given in `pilot start --data '{"<namespace>.<field>": ...}'` (or `WAYGRAPH_DATA` in the shell), else
+2. that key's **mem stub** (`registerMemStub` in a `*.mem-stubs.ts`): the project's default user, a fake email.
 
-- **Multiple `.fill()` in one Method** — split into one Block per input (fill-username, fill-password, …).
-- **`.fill()` + `.click()` in one Method** — split fill and submit into separate Blocks.
+So a session started without `--data` signs in as **the mem stub's user**, whoever that is. Every reply's
+`snapshot.mem` says where each key's value came from, never the value itself:
 
-Opt out per file: `// waygraph-ignore-practices` or `// waygraph-ignore: multi-input, combined-action`.
+```json
+"mem": { "acme.credentials": "stub", "acme.selectedItem": "step" }
+```
 
-Fix these before adding more Blocks; wildcard Checkpoints hide real graph edges from the type checker.
+| Source | Means |
+|--------|-------|
+| `data` | given with `--data` when the session started |
+| `stub` | the project's mem stub - **not** necessarily the user the task is about |
+| `step` | set by `--data` on a `send` / `reach` |
+
+To act as someone else mid-session, give the keys with the step:
+
+```
+waygraph pilot send <id> fill-username --data '{"acme.credentials":{"username":"kat","password":"..."}}'
+waygraph pilot reach <id> Dashboard --data '{"acme.credentials":{"username":"ops-admin","password":"..."}}'
+```
+
+The keys stay set for the steps after it. A name no Block requires is refused before anything runs, and the error
+lists the keys there are - that's how to find a key's exact name. Before any step that signs in or acts on a person's
+data, check `mem`: a `stub` there means you are about to act as the stub's user. Key names are `<namespace>.<field>`
+from the project's `keys("<namespace>")<{ ... }>()` declarations (`grep -rn 'keys("' src`).
+
+## Reading a reply
+
+Every `status` / `send` / `reach` reply is `{ "ok": true, "snapshot": { ... } }` or `{ "ok": false, "error": "..." }`
+(and the CLI exits 1). The snapshot:
+
+| Field | Is |
+|-------|----|
+| `here` | the Checkpoint the session is on; `null` until something located it (then `status` or `resync`) |
+| `sections[].edges[]` | the menu: `index` (1-based, what you pick), `block`, `kind` (`nav` / `action`), `to` (where it lands), `label` (one row of a per-row Block: "Add Sauce Labs Backpack"), `description` |
+| `done` | nothing runnable from here |
+| `lastRunNote` | `"<block> -> <Checkpoint>"`, or `"<block> failed"` |
+| `read` / `missing` / `readNotes` | what the page shows, from its Read Blocks (lists cut to 20 rows; `pilot read <id> <path>` gets them all) |
+| `mem` | where each mem value came from (above) |
+
+Picking: `send <id> 3` (the index), `send <id> submit-login` (the Block's name - an ambiguous name is refused, not
+guessed), `send <id> q` (ends the session). One Block may run 45 s; a `send` waits 15 s for its reply (`--timeout <ms>`
+for a slow one), a `reach` 90 s.
+
+## Other ops
+
+```
+waygraph auto status <id>                   # the menu, no side effects
+waygraph auto send <id> "<pick>"            # run exactly one Block
+waygraph auto reach <id> <Checkpoint>       # path-find + run a whole route in one call
+waygraph pilot read <id> [path] [--where field=value] [--rows 20:40]
+waygraph auto dom <id> [--mode aria|full] [--selector s] [--depth n]
+waygraph auto trace <id>                    # the Blocks this session ran, where each landed
+waygraph auto console <id>                  # console / network errors, unmapped links and buttons
+waygraph auto storage <id>                  # localStorage, sessionStorage, service workers
+waygraph auto watch <id>                    # every step, read and snapshot as JSON lines (Ctrl-C ends)
+waygraph auto hello <id>                    # protocol version, waygraph version, where it is
+waygraph auto resync <id>                   # re-detect `here` from the real page
+waygraph auto highlight <id> '<json>'       # paint rings / todos (below)
+```
+
+`reach` path-finds over the graph and checks each step lands where its edge says. It plays a per-row step (add *this*
+item) with the row mem already names (`--data`, an earlier pick, a mem stub); when mem names none it stops and says so
+- pick the row with `send <index>`, then `reach` again. A route through a Nav that's open from anywhere, whose page
+needs setup first (fields filled before a submit), can't be found safely: `reach` fails within its timeout instead of
+guessing - drive those steps with `send`.
+
+When you're done: `waygraph browser stop <id>` (or `--all`). Never leave a session running.
+
+## Before you add Blocks: `waygraph check`
+
+`npx waygraph check .` (warnings only) and `npx waygraph typecheck .` (`tsc --noEmit`, then the same warnings) read
+the Block files' syntax trees and flag:
+
+| Warning | Means |
+|---------|-------|
+| `multi-input` | a Method with two `.fill()`s - one input per Block |
+| `combined-action` | `.fill()` and `.click()` in one Method - fill and submit are two Blocks |
+| `empty-verify` | a transition (or an Assert Block) with no checks |
+| `overcomplex-selector` | `:has-text(/regex/)`, `:text-matches(...)` or XPath where a plain selector would do |
+| `inline-selector-should-use-sel-file` | a selector written in the Block while its folder has a `_sel.ts` / `*.sel.ts` |
+| `hand-written-ui` | DOM built or the overlay restyled from a Block / flow / stub - use `ctx.ui` |
+
+plus navigation outside Nav Blocks, orphans, and pages no Read Block reads. Opt out per file only on purpose:
+`// waygraph-ignore: <kind>, <kind>` (or `// waygraph-ignore-practices`). The rules behind them: `--skill-convention`.
 
 ## Coverage gaps on the live page (`auto console`)
 
@@ -145,7 +221,7 @@ Supported fields (demo parity):
 - `holdMs`: ms to keep fixtures; `0` = until the next highlight / clear (default 30000)
 - `clear`: true drops rings/todos/focus/zoom badge
 
-- `tone`: all demo tones - `planned` | `auto` | `info` | `warning` | `danger` | `success` | `orange` (aliases like `error`/`blue`/`green` work too)
+- `tone`: `planned` | `auto` | `info` | `warning` | `danger` | `success` | `orange` - exactly these; another spelling (`error`, `green`) is refused, naming them
 - Bottom-left toast shows `Highlighting: …` (same strip as `Running (no Block): …` for raw ops)
 - Missing selectors are listed in the JSON response (`missing`) - not a hard failure
 - Does not replace `auto send` - paint, then run the real Block
@@ -193,8 +269,8 @@ catch a real app bug (mem states what's expected, DOM states what's real, `verif
 them - if mem always mirrored the DOM, a genuine bug would just silently agree with itself).
 A Block with an `instanceOptions` re-asserts its own mem input fresh every time it's picked
 from a live menu; a Block without one has no such protection - if something outside your
-control (a human click) might have interfered, re-supply mem explicitly before the next
-step rather than trusting stale state.
+control (a human click) might have interfered, re-supply mem explicitly with `--data` on the
+next `send` rather than trusting stale state, and check the reply's `mem` says `step`.
 
 ## Rule 4: a transition Block needs its OWN `verify`
 
@@ -230,9 +306,9 @@ confusingly.
   in the session's life - ESM caches that import too, and only the top-level `.block.ts`
   file gets cache-busted on reload. When in doubt after editing a shared file, restart.
 - **HeadlessUI-style popovers** (or similar open/close transitions) sometimes aren't
-  interactable the instant their trigger is clicked - a real, reproducible flake, not
-  paranoia. A short `page.waitForTimeout(300-400)` between opening a popover and acting
-  inside it is a real, load-bearing fix seen live more than once, not defensive padding.
+  interactable the instant their trigger is clicked. Don't add a `page.waitForTimeout(...)`:
+  give the Block that opens it a `verify: [Trait.visible(PopoverSel.panel)]` (retried until the
+  panel is there), or the flow step `{ settle: true }` (waits until the page stops changing).
 - **Orphan Blocks** (not wired into any `.flow.ts`) are still fully visible and runnable in
   the live Pilot menu - orphan status only blocks `auto --blocks <From> <To>` pathfinding,
   never `auto`'s own interactive menu.
@@ -240,3 +316,17 @@ confusingly.
   to reaching the same page via a real in-app click-nav - if `auto dom` output looks wrong
   right after a raw `goto`, try reaching the page through its real click-based NavBlock
   instead before assuming the DOM read is broken.
+
+## Troubleshooting
+
+| You see | It means / do |
+|---------|---------------|
+| `Unknown option '--x'` | the op doesn't take that flag (`send` takes `--timeout` and `--data`; `reach` takes `--data`) |
+| `"x" is not a valid pick` | not in this page's menu - read `status`; maybe `here` is wrong (`resync`) or you need a Nav first |
+| `no such session "id"` | wrong project directory, or it ended - `waygraph pilot sessions` from the project that started it |
+| `session ... exited before it was ready` | read `<project>/.waygraph-auto/<id>.log` |
+| `--data names x, which no Block requires` | a typo in the key name; the error lists the real ones |
+| `needs a specific live option chosen` | a per-row step in `reach` with no row in mem: `send` the row's index, or `--data` its key |
+| `mem` says `stub` for credentials | you're signed in as the mem stub's user, not the one you meant: `--data` on the next sign-in step |
+| `here` is `null` | nothing located the page yet: `status`, or `send` a Nav from the "Start here" section |
+| a step "landed on X, not Y" | the app went somewhere else (a failed login stays on the login page): read `read` / `console` |

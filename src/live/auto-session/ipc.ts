@@ -76,7 +76,7 @@ export async function requestSession(
   sessionId: string,
   request:
     | { op: "status" }
-    | { op: "send"; pick: string }
+    | { op: "send"; pick: string; data?: Record<string, unknown> }
     | { op: "click"; selector: string }
     | { op: "type"; selector: string; text: string }
     | { op: "press"; selector: string; key: string }
@@ -125,7 +125,7 @@ export async function requestSession(
 export async function requestSession(
   projectDir: string,
   sessionId: string,
-  request: { op: "reach"; checkpoint: string },
+  request: { op: "reach"; checkpoint: string; data?: Record<string, unknown> },
   timeoutMs?: number,
 ): Promise<ReachResponse>;
 export async function requestSession(
@@ -248,7 +248,11 @@ export async function serveSession(
       let response: SessionResponse;
       let shouldQuit = false;
       try {
-        if (request.op === "status") {
+        // `--data` on a step sets its keys first; a name no Block requires stops it before anything runs.
+        const dataError = (request.op === "send" || request.op === "reach") && request.data ? session.setData(request.data) : undefined;
+        if (dataError) {
+          response = { ok: false, error: dataError };
+        } else if (request.op === "status") {
           response = { ok: true, snapshot: await session.currentSnapshot(), quit: false };
         } else if (request.op === "send") {
           const result = await session.applyPick(request.pick);

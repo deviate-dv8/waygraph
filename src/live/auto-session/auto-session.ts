@@ -1,9 +1,10 @@
 // AutoSession: one live browser session driven over IPC - its menu, picks, routes, raw actions and highlights.
+import { setStepData, type MemSource } from "./session-mem.js";
 import { messageOf } from "../../engine/errors.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { UnmappedInteractionPayload } from "../../analysis/coverage-gap.js";
 import type { ListPick } from "./read.js";
-import { collectKnownInteractionSelectors, unmappedInteractionsPageScript } from "../../analysis/coverage-gap.js";
+import { collectKnownInteractionSelectors, knownNavPathnames, unmappedInteractionsPageScript } from "../../analysis/coverage-gap.js";
 import { findBlockPathDetailed } from "../../analysis/graph.js";
 import { runStubPhase } from "../../demo/narration/narration.js";
 import { describeOverlayFixtures, phaseToOverlayFixtures } from "../../demo/overlay/phase-fixtures.js";
@@ -39,6 +40,8 @@ import { readSession, snapshotRead, type SessionRead } from "./read.js";
 export class AutoSession {
   private here: string | null = null;
   private lastRunNote: string | null = null;
+  /** Where each mem key's value came from (the replies say it; never the values). */
+  private memSources = new Map<string, MemSource>();
   private readonly trace: TraceStep[] = [];
   private readonly consoleLog: ConsoleLogEntry[] = [];
   private lastOverlayInfo: PilotOverlayInfo | null = null;
@@ -73,7 +76,7 @@ export class AutoSession {
       Object.keys(exploreOpts).length ? exploreOpts : undefined,
     );
     const mem = new MemPage();
-    seedDefaultMem(library.byName, mem);
+    const seeded = seedDefaultMem(library.byName, mem);
     const headless = init.headless ?? true;
     const engine = new Engine({ headless });
     const { closeBrowser, context, page } = await openSessionBrowser(init.projectDir, headless, baseURL, startUrl);
@@ -98,6 +101,7 @@ export class AutoSession {
       knownInteractionSelectors,
       headless,
     );
+    session.memSources = new Map(seeded);
     keepOverlayOnNavigation(page, () => session.repaintOverlayAfterNavigation());
     if (!headless) {
       await session.bootstrapOverlay().catch(ignorePageGone);
@@ -167,18 +171,8 @@ export class AutoSession {
    * Deduped per page load so repeated status/send calls stay quiet.
    */
   private async warnUnmappedInteractions(): Promise<void> {
-    const knownPathnames: string[] = [];
-    for (const entry of this.library.navBlocks) {
-      const url = (entry.block as { __waygraphNavUrl?: string }).__waygraphNavUrl;
-      if (!url) continue;
-      try {
-        knownPathnames.push(new URL(url, this.page.url()).pathname);
-      } catch {
-        /* not a resolvable URL (relative to an unset base, etc.) - skip */
-      }
-    }
     const payload: UnmappedInteractionPayload = {
-      knownPathnames,
+      knownPathnames: knownNavPathnames(this.library.navBlocks, this.page.url()),
       knownSelectors: this.knownInteractionSelectors,
     };
     await this.page.evaluate(unmappedInteractionsPageScript, payload).catch(ignorePageGone);
@@ -194,7 +188,13 @@ export class AutoSession {
 
   /** The menu as a snapshot, with what the page shows (Read Blocks) when any covers it. */
   private async snapshotOf(menu: ExploreMenu): Promise<SessionSnapshot> {
-    return { ...buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote), ...(await snapshotRead(this.page, this.mem, this.here)) };
+    const mem = this.memSources.size ? { mem: Object.fromEntries(this.memSources) } : {};
+    return { ...buildSessionSnapshot(menu, this.library.byName, this.here, this.lastRunNote), ...mem, ...(await snapshotRead(this.page, this.mem, this.here)) };
+  }
+
+  /** Sets keys for the steps that follow (`--data` on send / reach); an error when a name is no Block's key. */
+  setData(data: Record<string, unknown>): string | undefined {
+    return setStepData(this.library.byName, this.mem, data, this.memSources);
   }
 
   /** Pure getter - what the page shows, from the project's Read Blocks. */
@@ -434,17 +434,9 @@ export class AutoSession {
         ? "highlight cleared"
         : `highlight painted ${painted}` +
           (missing.length ? ` (missing: ${missing.join(", ")})` : "");
-      return {
-        ok: true,
-        painted,
-        missing,
-        snapshot: await this.snapshotOf(menu),
-      };
+      return { ok: true, painted, missing, snapshot: await this.snapshotOf(menu) };
     } catch (err) {
-      return {
-        ok: false,
-        error: `highlight failed - ${messageOf(err)}`,
-      };
+      return { ok: false, error: `highlight failed - ${messageOf(err)}` };
     }
   }
 

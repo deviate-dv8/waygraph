@@ -12,8 +12,9 @@ against a live site, use `--skill-pilot-blind`.
 
 1. **One distinct action per Block.** Fill and submit are two Blocks. A login form is
    `fill-username` (self-loop) + `fill-password` (self-loop) + `submit-login` (transition),
-   never one Method that "fills and logs in." Same split for checkout fields. Canonical
-   shape: `examples/saucedemo/src/blocks/saucedemo-web/methods/`.
+   never one Method that "fills and logs in." Same split for checkout fields: no Block `.fill()`s
+   two fields or `.fill()`s and `.click()`s in one `act()` (`waygraph check`: `multi-input`,
+   `combined-action`). Canonical shape: `node_modules/waygraph/examples/saucedemo/src/blocks/saucedemo-web/methods/`.
 2. **Navigation only inside Nav.** `page.goto` / NavBlock `click` live in
    `defineNavBlock` / `defineNavClickBlock` only. Method/Effect `act` uses ActionPage
    (no goto) even when the app changes URL as a side effect of a button click.
@@ -32,9 +33,8 @@ against a live site, use `--skill-pilot-blind`.
    one-line class or id selector already targets uniquely; `waygraph check` flags this too.
    A regex/text match is for a genuinely unstable DOM with no stable attribute at all, not
    the default first move.
-4. **Assert-only = `defineAssertBlock`.** Self-loop, no hand-written `act`/`resolve`. Pass
-   an explicit type argument when it sits between two specifically-typed Blocks in a Flow.
-   Not just static content or an action's result - it also names a *feature state* worth a
+4. **Assert-only = `defineAssertBlock`.** Self-loop, no hand-written `act`/`resolve`; its
+   `checkpoint` (a value) is where it runs and stays. Not just static content or an action's result - it also names a *feature state* worth a
    Checkpoint of its own (a submit button greyed out until required fields are filled, a
    field error under one input, a stale "Save" re-enabling). Reach for a built-in Trait first: `Trait.text`,
    `contains`, `matches`, `value`, `attribute`, `absent`, `visible`, `disabled` / `enabled` (`text`, `contains` and `value`
@@ -65,10 +65,7 @@ against a live site, use `--skill-pilot-blind`.
    Mem keys likewise: one namespace per area, its type's fields the keys -
    `export const SaucedemoKeys = keys("saucedemo")<{ credentials: Creds; selectedItem: Item }>();`, used as
    `SaucedemoKeys.credentials` (`requires`, `mem.get`, `registerMemStub`). Older projects: `waygraph upgrade --codemod keys`.
-7. **One input/action per Method Block.** No block that `.fill()`s two fields or `.fill()` + `.click()` in one
-   `act()` — split like saucedemo login (`fill-username`, `fill-password`, `submit-login`). Opt out per file:
-   `// waygraph-ignore: multi-input` or `// waygraph-ignore-practices`.
-8. **A transition never ships with an empty `verify`.** A framework can enforce that a check
+7. **A transition never ships with an empty `verify`.** A framework can enforce that a check
    *exists*; it can't author the semantic content of one - only whoever knows what "success"
    means for this app can write it. That's the right line to draw, but it means an unfilled
    `verify: []` placeholder (codegen's honest way of not guessing) is indistinguishable from
@@ -79,7 +76,7 @@ against a live site, use `--skill-pilot-blind`.
    when a *different* Block right after it in the `.flow.ts` is what actually confirms the
    transition (e.g. an `AssertXBlock`) - `// waygraph-ignore: empty-verify`.
 
-9. **Never hand-write UI.** All demo UI goes through `ctx.ui` (`ring`, `caption`, `title`, `todos`, `slides`,
+8. **Never hand-write UI.** All demo UI goes through `ctx.ui` (`ring`, `caption`, `title`, `todos`, `slides`,
    `device`, `zoom`, `showNetworkTab`), chained where the flow uses the Block. Never build your own caption, highlight
    or banner in the page (`page.evaluate` + `document.createElement` / `innerHTML` / `.style`, `page.addStyleTag`),
    and never restyle or call waygraph's overlay (`#wg-*`, `.wg-*`, `window.__wg*`). It changes the page under test (an
@@ -153,6 +150,128 @@ against a live site, use `--skill-pilot-blind`.
   `send-request`, `assert-status`, `read-response-body`, `assert-response-body`.
 - **Updating an older project:** `npm install waygraph@latest`, then `waygraph upgrade` (dry run) to see new
   and differing scaffold files; copy the paths you want with `--apply`. `waygraph upgrade --skills` refreshes these skills.
+
+## Complete files (copy the shape, not the names)
+
+A Nav: where a page is, and how you know you're there.
+
+```ts
+// src/map/(app)/inventory/_nav.block.ts
+import { defineNavBlock, Trait } from "waygraph";
+import { Inventory, SIGNED_IN } from "../../../states/shop.states.js";
+import { InventorySel } from "./_sel.js";
+
+export const NavInventoryBlock = defineNavBlock({
+  name: "nav-inventory",
+  description: "Opens the product list.",
+  checkpoint: Inventory,
+  url: "/inventory.html",          // or click: InventorySel.menuLink (defineNavClickBlock), or (mem) => `/item/${mem.get(ShopKeys.item).id}`
+  from: SIGNED_IN,                 // only reachable after sign-in; leave out for "from anywhere"
+  verify: [Trait.url({ pathname: "/inventory.html" }), Trait.visible(InventorySel.list)],
+});
+```
+
+A Method with two outcomes: `observe` looks, `resolve` names the Checkpoint from what `observe` returned (it gets no
+page and no mem), `verify` checks the outcome it landed on.
+
+```ts
+export const SubmitLoginBlock = defineMethodBlock({
+  name: "submit-login",
+  description: "Submits the form; a wrong password stays on the login page.",
+  from: LoginPage,
+  to: [LoggedIn, LoginPage],
+  instruction: {
+    async act(page) {
+      await page.locator(LoginSel.submit).click();
+    },
+    async observe(page) {
+      return (await page.locator(LoginSel.error).isVisible()) ? "refused" : "in";
+    },
+    resolve: (seen) => (seen === "in" ? LoggedIn : LoginPage),
+    verify: (out) => (out.__state === "LoggedIn" ? [Trait.url({ pathname: "/inventory.html" })] : [Trait.visible(LoginSel.error)]),
+  },
+});
+```
+
+An Effect: one action on one row of many; `instanceOptions` lists the rows for `auto` / Pilot menus, each setting the
+key `act` reads.
+
+```ts
+export const AddToCartBlock = defineEffectBlock({
+  name: "add-to-cart",
+  from: [Inventory, ItemInCart],                     // the list, before or after an item is in the cart
+  to: ItemInCart,
+  requires: [ShopKeys.selectedItem],
+  instruction: {
+    async act(page, _input, mem) {
+      await page.locator(InventorySel.addBtn(mem.get(ShopKeys.selectedItem).id)).click();
+    },
+    verify: [Trait.read(Header.cartCount, (n) => n > 0, "a cart count")],
+  },
+  async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
+    const ids = await page.locator(InventorySel.addButtons).evaluateAll((els) => els.map((el) => el.getAttribute("data-test")!.replace(/^add-/, "")));
+    return ids.map((id) => ({ id, label: `Add ${id}`, key: ShopKeys.selectedItem, value: { id, name: id }, highlight: InventorySel.addBtn(id) }));
+  },
+});
+```
+
+An Assert, an API Block, and a Read Block:
+
+```ts
+export const AssertCheckoutGatedBlock = defineAssertBlock({
+  name: "assert-checkout-gated",
+  checkpoint: CartEmpty,
+  verify: [Trait.disabled(CartSel.checkout)],
+});
+
+export const DeleteTestUserApiBlock = defineApiBlock({
+  name: "delete-test-user",
+  to: checkpoint("*"),                               // cleanup: lands where it started
+  requires: [SignupKeys.email],
+  method: "DELETE",
+  call: ({ request, mem }) => request.delete(`/api/users/${encodeURIComponent(mem.get(SignupKeys.email))}`),
+});
+
+// _reads.ts: export const Catalog = reads("catalog")<{ items: { name: string; price: number; inCart: boolean }[] }>();
+export const InventoryReadBlock = defineReadBlock({
+  name: "read-inventory",
+  description: "Every product, its price and whether it is in the cart.",
+  from: [Inventory, ItemInCart],
+  instruction: {
+    read: (ctx) =>
+      Catalog({
+        items: ctx.page.list(InventorySel.card, (row) => ({
+          name: row.text(InventorySel.name),
+          price: row.number(InventorySel.price),
+          inCart: row.visible(InventorySel.removeBtn),
+        })),
+      }),
+  },
+});
+```
+
+Readers: `text`, `texts`, `number` (`"$1,299.00"` -> 1299), `attr`, `value`, `visible`, `count`,
+`list(rowSel, (row) => ({ ... }))`, `table(sel, { field: "Column header" })`, `fn(async (page, mem) => ...)`.
+
+A flow, narrated where it uses the Blocks:
+
+```ts
+// src/flows/inventory/add-item.flow.ts
+import { engine } from "../../../config/waygraph.config.js";
+
+const AddShown = AddToCartBlock.stubAfter((ctx) => ctx.ui.ring("cart", { selector: HeaderSel.cart, label: "Item in cart", tag: "AC" }));
+
+export const inventoryAddItemFlow = engine
+  .map({ as: StandardUser, input: ShopKeys.selectedItem, memStub: true })
+  .gotoPage(NavInventoryBlock.stubBefore((ctx) => ctx.ui.title("Add an item")))
+  .method(AddShown)
+  .gotoPage(NavCartBlock)
+  .finally(EmptyCartApiBlock)
+  .end();
+```
+
+Check an API Block's exact `call` signature and the helpers' options against the installed version's types
+(`node_modules/waygraph/dist/index.d.ts`) rather than memory.
 
 ## Block kinds (file convention)
 
@@ -259,6 +378,6 @@ npx waygraph --skill-pilot-blind     # cold-start: raw ops + author Blocks as yo
 npx waygraph --skill-convention      # this file
 ```
 
-Worked freeform example: `examples/saucedemo` (`src/blocks/saucedemo-web/`).
-Map design history: `openspec/changes/waygraph-map/`.
+Worked freeform example: `node_modules/waygraph/examples/saucedemo` (`src/blocks/saucedemo-web/`); every Block kind,
+accounts, Read Blocks and narration, against saucedemo.com. Docs: https://deviate-dv8.github.io/waygraph/guides/blocks
 Agent personas (author/planner/healer): `npx waygraph agent-dive --loop claude`.

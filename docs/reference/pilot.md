@@ -37,8 +37,8 @@ waygraph browser stop <id>               # or --all
 | Command | Does |
 |---|---|
 | `status <id>` | the snapshot: where it is, the menu, what the page shows. No side effects |
-| `send <id> "<pick>"` | runs one Block (menu index or name), answers with the new snapshot |
-| `reach <id> <Checkpoint>` | finds the route and plays it, checking each step lands where its edge says |
+| `send <id> "<pick>" [--data '{...}']` | runs one Block (menu index or name), answers with the new snapshot |
+| `reach <id> <Checkpoint> [--data '{...}']` | finds the route and plays it, checking each step lands where its edge says |
 | `read <id> [path] [--where f=v] [--rows a:b]` | what the page shows ([Read Blocks](../guides/reads)) |
 | `dom <id> [--mode full] [--selector s] [--depth n]` | the accessibility tree (default, small), or a bounded DOM (`truncated: true` when cut) |
 | `trace <id>` | the last 500 Blocks run: name, Checkpoint before and after, their narration |
@@ -47,6 +47,17 @@ waygraph browser stop <id>               # or --all
 | `highlight <id> "#x\|Label\|tone"` | paints rings on the page (or a JSON body) |
 | `resync <id>` | re-detects where it is from the real page |
 | `watch <id>` · `hello <id>` | the live feed · the protocol version and where it is |
+
+**Mem in a session.** A session fills each key a Block requires once, when it starts: from `--data` on `pilot start`
+/ `browser start` (or `WAYGRAPH_DATA`), else from the key's mem stub. `--data` on a `send` or `reach` sets keys before
+that step, so you can switch users mid-session; a name no Block requires is refused, naming the keys there are. Every
+snapshot's `mem` says where each value came from - `data` (start), `stub` or `step` - never the value itself:
+
+```json
+"mem": { "saucedemo.credentials": "stub", "saucedemo.selectedItem": "stub" }
+```
+
+A credential that says `stub` signed in as the mem stub's user, not the one you meant.
 
 **`reach` and rows.** A step with one option per row (an Effect: add *this* item) runs when mem already says which
 row: `--data`, an earlier pick, or the key's mem stub. Otherwise `reach` stops there and says to pick one with `send`.

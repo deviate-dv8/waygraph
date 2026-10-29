@@ -12,9 +12,27 @@ import { subscribeSession } from "../../live/auto-session/feed.js";
 import { SESSION_OPS } from "../../live/auto-session/protocol.js";
 import type { PilotHighlightFixtures } from "../../demo/overlay/pilot/fixtures.js";
 
+const STEP_DATA = { type: "string", value: "'{...}'", help: "Mem keys to set first, by name (switch users mid-session)" } as const;
+
 const SEND_OPTIONS = {
   timeout: { type: "string", value: "<ms>", help: "How long one Block may run (default 15000)" },
+  data: STEP_DATA,
 } as const satisfies OptionTable;
+
+const REACH_OPTIONS = { data: STEP_DATA } as const satisfies OptionTable;
+
+/** `--data '{...}'` as an object; stops the command when it isn't JSON for one. */
+function stepData(command: string, raw: string | undefined): Record<string, unknown> | undefined {
+  if (raw === undefined) return undefined;
+  try {
+    const data: unknown = JSON.parse(raw);
+    if (data && typeof data === "object" && !Array.isArray(data)) return data as Record<string, unknown>;
+  } catch {
+    /* reported below */
+  }
+  console.error(`waygraph ${command}: --data must be a JSON object of mem keys by name, e.g. '{"login.username":"ada"}'`);
+  process.exit(1);
+}
 
 const READ_OPTIONS = {
   rows: { type: "string", value: "<from>:<to>", help: "Rows of the list at <path>, e.g. 20:40" },
@@ -41,9 +59,7 @@ const POSITIONAL_OPS = {
   type: { args: ["selector", "text"], usage: '"<selector>" "<text>"' },
   press: { args: ["selector", "key"], usage: '"<selector>" <key>' },
   goto: { args: ["url"], usage: "<url>" },
-  // A route runs several Blocks before it answers: longer than one op's 15 s.
-  reach: { args: ["checkpoint"], usage: "<Checkpoint>", timeoutMs: 90_000 },
-} as const satisfies Record<string, { args: readonly string[]; usage: string; timeoutMs?: number }>;
+} as const satisfies Record<string, { args: readonly string[]; usage: string }>;
 
 /** Ops that take nothing but the session id. */
 const BARE_OPS = new Set(["status", "trace", "console", "hello", "storage", "reload", "resync"]);
@@ -82,7 +98,7 @@ export async function sessionOpCase(args: string[], command: string): Promise<vo
     const values = args.slice(3, 3 + spec.args.length);
     if (values.length < spec.args.length) usage(command, sub, spec.usage);
     const req = { op: sub, ...Object.fromEntries(spec.args.map((name, i) => [name, values[i]])) } as SessionRequest;
-    return request(req, "timeoutMs" in spec ? spec.timeoutMs : undefined);
+    return request(req);
   }
   if (BARE_OPS.has(sub)) return request({ op: sub } as SessionRequest);
 
@@ -91,15 +107,24 @@ export async function sessionOpCase(args: string[], command: string): Promise<vo
       return runAttachLoop(proj, sessionId);
     case "send": {
       const pick = args[3];
-      if (pick === undefined) usage(command, sub, '"<pick>" [--timeout <ms>]');
+      if (pick === undefined) usage(command, sub, `"<pick>" [--timeout <ms>] [--data '{...}']`);
       // One Block may legitimately be slow (a long drag); unlike reach, send can't know ahead, so it's a flag.
-      const raw = parseCommand(`${command} send`, SEND_OPTIONS, args.slice(4)).values.timeout;
+      const { values } = parseCommand(`${command} send`, SEND_OPTIONS, args.slice(4));
+      const raw = values.timeout;
       const timeoutMs = raw === undefined ? undefined : Number(raw);
       if (timeoutMs !== undefined && !(timeoutMs > 0)) {
         console.error(`waygraph ${command} send: --timeout must be a positive number of ms, got "${raw}"`);
         process.exit(1);
       }
-      return request({ op: "send", pick }, timeoutMs);
+      const data = stepData(`${command} send`, values.data);
+      return request({ op: "send", pick, ...(data ? { data } : {}) }, timeoutMs);
+    }
+    case "reach": {
+      const checkpoint = args[3];
+      if (checkpoint === undefined) usage(command, sub, "<Checkpoint> [--data '{...}']");
+      const data = stepData(`${command} reach`, parseCommand(`${command} reach`, REACH_OPTIONS, args.slice(4)).values.data);
+      // A route runs several Blocks before it answers: longer than one op's 15 s.
+      return request({ op: "reach", checkpoint, ...(data ? { data } : {}) }, 90_000);
     }
     case "dom": {
       const dom = parseCommand(`${command} dom`, DOM_OPTIONS, args.slice(3)).values;

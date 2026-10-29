@@ -57,6 +57,9 @@ Primary (less is more):
                  --timeout <ms>            Override the 15s default wait for this one call -
                                            a single Block can legitimately run a slow real
                                            interaction (e.g. a multi-step mouse drag)
+                 --data '{...}'            Set mem keys (by name) before the step: another
+                                           user mid-session. Every reply's "mem" says where
+                                           each key's value came from (data / stub / step)
   waygraph auto status <sessionId>         Read a session's state (no side effects)
   waygraph auto attach <sessionId>         Reopen an interactive terminal against a
                                            running session
@@ -107,7 +110,8 @@ Primary (less is more):
                                            <From> <To> already uses, against this session's
                                            own live graph/position. Fails loud (not a guess)
                                            if a step has several live options on the page
-                                           (an instanceOptions Block) - use send for that step
+                                           (an instanceOptions Block) and mem names none -
+                                           use send for that step. --data '{...}' sets keys first
   waygraph auto resync <sessionId>         Force here to be re-detected from the real live
                                            page right now, discarding whatever was cached -
                                            fixes a session's tracked position going stale

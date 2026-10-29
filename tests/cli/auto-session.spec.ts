@@ -496,3 +496,23 @@ test("session protocol: hello names the version; subscribe streams each step's e
   expect(messages.find((m) => m.type === "snapshot")?.snapshot).toMatchObject({ here: "LoginPage" });
   await send(sessionId, "q");
 });
+
+test("mem in a session: replies say where each key came from; send --data switches users mid-session", async () => {
+  test.setTimeout(90_000);
+  const { sessionId } = await detach();
+  const first = await status(sessionId);
+  expect((first.snapshot as { mem: Record<string, string> }).mem).toMatchObject({ "saucedemo.credentials": "stub" });
+
+  const problemUser = JSON.stringify({ "saucedemo.credentials": { username: "problem_user", password: "secret_sauce" } });
+  const filled = JSON.parse((await runCli(["pilot", "send", sessionId, "fill-username", "--data", problemUser], { cwd: sauceRoot })).trim());
+  expect(filled.ok).toBe(true);
+  expect(filled.snapshot.mem["saucedemo.credentials"]).toBe("step");
+  const field = JSON.parse((await runCli(["pilot", "dom", sessionId, "--mode", "full", "--selector", "#user-name"], { cwd: sauceRoot })).trim());
+  expect(JSON.stringify(field)).toContain('"value":"problem_user"');
+
+  // A name no Block requires is refused before anything runs.
+  const refused = JSON.parse((await runCli(["pilot", "send", sessionId, "fill-password", "--data", '{"nope.key":1}'], { cwd: sauceRoot }).catch((e: { stdout: string }) => e.stdout)).trim());
+  expect(refused).toMatchObject({ ok: false });
+  expect(refused.error).toContain("saucedemo.credentials");
+  await send(sessionId, "q");
+});
