@@ -2,7 +2,7 @@ import { blockExportToLabel, extractFlowNames, extractGotos, extractUrlTraits, p
 import { walkDir } from "../../manifest/scan.js";
 import { exportedNames, parseSource } from "../../manifest/source.js";
 import { relative, resolve } from "node:path";
-import { existsSync } from "node:fs";
+import { projectDirOf } from "../util.js";
 
 // ---------------------------------------------------------------------------
 // `list`
@@ -58,11 +58,7 @@ function navCommand(projectDir: string, flowName: string | undefined): void {
 }
 
 export async function listCase(args: string[]): Promise<void> {
-      const proj = resolve(args[1] ?? process.cwd());
-      if (!existsSync(proj)) {
-        console.error(`waygraph: no such directory: ${proj}`);
-        process.exit(1);
-      }
+      const proj = projectDirOf("list", args[1]);
       listCommand(proj);
       return;
 }

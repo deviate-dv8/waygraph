@@ -205,6 +205,14 @@ export type DefinedBlock<In extends Checkpoint<string>, Out extends Checkpoint<s
 
 /** The Checkpoint a Block resolves to. */
 type BlockOut<B> = B extends Block<infer _In, infer Out> ? Out : Checkpoint<string>;
+/** The list with one Block (by reference, name or position, as {@link findBlock}) replaced by `change` of it. */
+export function replaceBlock<B extends SomeBlock>(list: readonly B[], ref: SomeBlock | string | number, change: (block: B) => B): B[] {
+  const { index, block } = findBlock(list, ref);
+  const out = [...list];
+  out[index] = change(block);
+  return out;
+}
+
 /** A Block in a list, by reference, name or position; throws, naming what the list has, when it isn't there. */
 export function findBlock<B extends SomeBlock>(list: readonly B[], ref: SomeBlock | string | number): { index: number; block: B } {
   const index = typeof ref === "number" ? ref : list.findIndex((b) => b.name === (typeof ref === "string" ? ref : ref.name));

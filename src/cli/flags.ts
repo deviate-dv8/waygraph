@@ -4,7 +4,7 @@ import type { OptionSpec } from "./args.js";
 import { existsSync } from "node:fs";
 import { walkDir } from "../manifest/scan.js";
 import { exportedNames, parseSource } from "../manifest/source.js";
-import { loadWaygraphConfig, resolveBaseUrl } from "../runtime/waygraph-config.js";
+import { loadWaygraphConfig, useProjectBaseUrl } from "../runtime/waygraph-config.js";
 import { envFlag, envString, setEnv } from "../engine/env.js";
 import { parseViewport } from "../runtime/viewport.js";
 import { chainSegments } from "../runner/plan/spec.js";
@@ -340,10 +340,7 @@ export async function applyDemoDefaults(projectDir: string): Promise<void> {
       setEnv("WAYGRAPH_AUTOPLAY", "0");
     }
   }
-  if (!envString("WAYGRAPH_BASE_URL")) {
-    const resolved = await resolveBaseUrl(projectDir);
-    if (resolved) setEnv("WAYGRAPH_BASE_URL", resolved);
-  }
+  await useProjectBaseUrl(projectDir);
 }
 
 

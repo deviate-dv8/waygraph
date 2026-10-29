@@ -1,6 +1,7 @@
 // A session's live feed (`subscribe`): every run event in the session (steps, reads) and the snapshot after each change,
 // as JSON lines to every subscribed socket. Waygraph UI watches a session through it; `pilot watch <id>` prints it.
 import { connect, type Socket } from "node:net";
+import { createInterface as readLines } from "node:readline";
 import { onRunEvent } from "../../engine/run/events.js";
 import { resolveSessionMeta } from "./files.js";
 import type { SessionStreamMessage } from "./protocol.js";
@@ -48,27 +49,18 @@ export function subscribeSession(
       reject(new Error(`session "${sessionId}" did not answer subscribe within ${timeoutMs}ms`));
     }, timeoutMs);
     const closed = new Promise<void>((done) => sock.on("close", () => done()));
-    let buf = "";
     let acked = false;
     sock.on("connect", () => sock.write(JSON.stringify({ op: "subscribe" }) + "\n"));
     sock.on("error", (err) => {
       clearTimeout(timer);
       if (!acked) reject(err);
     });
-    sock.on("data", (chunk: Buffer) => {
-      buf += chunk.toString("utf-8");
-      let nl: number;
-      while ((nl = buf.indexOf("\n")) !== -1) {
-        const line = buf.slice(0, nl);
-        buf = buf.slice(nl + 1);
-        if (!acked) {
-          acked = true;
-          clearTimeout(timer);
-          resolve({ close: () => sock.end(), closed });
-          continue;
-        }
-        onMessage(JSON.parse(line) as SessionStreamMessage);
-      }
+    // The first line acknowledges the subscription; every later one is a message.
+    readLines({ input: sock, crlfDelay: Infinity }).on("line", (line) => {
+      if (acked) return onMessage(JSON.parse(line) as SessionStreamMessage);
+      acked = true;
+      clearTimeout(timer);
+      resolve({ close: () => sock.end(), closed });
     });
   });
 }

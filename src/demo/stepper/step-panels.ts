@@ -1,4 +1,5 @@
 // The stepper's panels: before a step (what will happen, its mem), after it (the result and rings), and on failure.
+import { stopRingTracker } from "../overlay/rings.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 import { hasAuthoredStubOnError, runStubPhase } from "../narration/narration.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
@@ -105,15 +106,7 @@ export async function presentFailPanel(page: WgPage, opts: FailPanelOptions) {
     mem,
   } = opts;
   if (hasAuthoredStubOnError(block)) {
-    await page
-      .evaluate(() => {
-        if (window.__wgRingTrack) {
-          window.removeEventListener("resize", window.__wgRingTrack);
-          window.removeEventListener("scroll", window.__wgRingTrack, true);
-          window.__wgRingTrack = null;
-        }
-      })
-      .catch(ignorePageGone);
+    await stopRingTracker(page);
     const errPhase = await runStubPhase(block, "stubOnError", {
       error,
       out: opts.out,

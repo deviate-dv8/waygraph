@@ -40,18 +40,6 @@ function ctxCall(statement: Node): { receiver: string; method: string; call: Cal
   return { receiver: callee.getExpression().getText(), method: callee.getName(), call };
 }
 
-/** Whether `receiver` is a stub's ctx: typed as StubCtx, or the first parameter of a function passed to a stub phase. */
-function isStubCtx(call: CallExpression, receiver: string): boolean {
-  const fn = call.getFirstAncestor((a) => Node.isArrowFunction(a) || Node.isFunctionExpression(a) || Node.isFunctionDeclaration(a) || Node.isMethodDeclaration(a));
-  if (!fn || !(Node.isArrowFunction(fn) || Node.isFunctionExpression(fn) || Node.isFunctionDeclaration(fn) || Node.isMethodDeclaration(fn))) return false;
-  const param = fn.getParameters()[0];
-  if (!param || param.getName() !== receiver) return false;
-  if (/StubCtx/.test(param.getType().getText(param))) return true;
-  const parent = fn.getParent();
-  const callee = Node.isCallExpression(parent) ? parent.getExpression() : undefined;
-  if (Node.isPropertyAccessExpression(callee) && /^stub(Before|After|OnError)$/.test(callee.getName())) return true;
-  return Node.isPropertyAssignment(parent) && /^stub(Before|After|OnError)$/.test(parent.getName());
-}
 
 /** Todo items written with the old `name` key get `id`. */
 function renameItemNames(items: Node): void {
@@ -67,7 +55,7 @@ function convertStatements(statements: readonly Node[], problems: { line: number
   let changed = false;
   const consumed = new Set<number>();
   calls.forEach((c, i) => {
-    if (!c || !isStubCtx(c.call, c.receiver)) return;
+    if (!c || !isStubCtxName(c.call, c.receiver)) return;
     const args = c.call.getArguments().map((a) => a.getText());
     if (RENAMED[c.method]) {
       c.call.replaceWithText(`${c.receiver}.${RENAMED[c.method]!(args)}`);
@@ -96,7 +84,7 @@ function convertStatements(statements: readonly Node[], problems: { line: number
   });
   for (const i of [...consumed].sort((a, b) => b - a)) (statements[i] as ExpressionStatement).remove();
   for (const [i, c] of calls.entries()) {
-    if (!c || consumed.has(i) || c.call.wasForgotten() || !isStubCtx(c.call, c.receiver)) continue;
+    if (!c || consumed.has(i) || c.call.wasForgotten() || !isStubCtxName(c.call, c.receiver)) continue;
     if (DOCK_SETTERS[c.method] && c.method !== "todoIndex") problems.push({ line: c.call.getStartLineNumber(), reason: `ctx.${c.method}() with no ctx.todos(...) beside it: pass it as an option of ctx.todos(id, items, { ... })` });
     if (c.method === "set") problems.push({ line: c.call.getStartLineNumber(), reason: "ctx.set({...}) was removed: call ctx.ring / ctx.todos / ctx.title ... instead" });
   }
@@ -184,7 +172,7 @@ function convertHighlights(sf: SourceFile, problems: { line: number; reason: str
     // Raw text replacement forgets the file's nodes, so look the next call up again each time.
     const statement = sf.getDescendantsOfKind(SyntaxKind.ExpressionStatement).find((st) => {
       const c = ctxCall(st);
-      return c && c.method === "highlights" && !skipped.has(st.getStart()) && isStubCtx(c.call, c.receiver);
+      return c && c.method === "highlights" && !skipped.has(st.getStart()) && isStubCtxName(c.call, c.receiver);
     });
     if (!statement) return changed;
     const c = ctxCall(statement)!;

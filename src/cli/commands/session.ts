@@ -1,14 +1,15 @@
 // `waygraph auto` / `graph` / `browser` / `pilot`: hands `browser` and `pilot` subcommands and session ops to their
 // files, then runs the interactive explore (or the graph print) for a project; `__auto-serve` is the session child.
+import { projectDirOf } from "../util.js";
 import { existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { discoverGraph, findOrphanBlocks, toMermaid } from "../../analysis/graph.js";
-import { envString, setEnv } from "../../engine/env.js";
+import { envString } from "../../engine/env.js";
 import { runAutoServeCommand } from "../../live/auto-session/ipc.js";
 import { runAutoExplore } from "../../live/auto/auto.js";
 import { resolveInjectRoots } from "../../manifest/roots.js";
 import { isFileSelectToken, parseBlocksSelect } from "../../manifest/select.js";
-import { resolveBaseUrl } from "../../runtime/waygraph-config.js";
+import { resolveBaseUrl, useProjectBaseUrl } from "../../runtime/waygraph-config.js";
 import { applyRunFlags, looksLikeFlowFileRef, parseRunFlags } from "../flags.js";
 import { runChain, runChainAuto } from "../run-chain.js";
 import { browserCase } from "./browser.js";
@@ -36,15 +37,8 @@ export async function sessionCase(args: string[], command: string | undefined): 
       // auto src/flows/shop.flow.ts → run that flow (same as `run`). Do not
       // treat a .flow.ts path as a project directory (existsSync is true for files).
       if (command === "auto" && firstPos && looksLikeFlowFileRef(firstPos) && !flags.blocksFromTo) {
-        const proj = resolve(process.cwd());
-        if (!existsSync(proj) || !statSync(proj).isDirectory()) {
-          console.error(`waygraph: no such directory: ${proj}`);
-          process.exit(1);
-        }
-        if (!envString("WAYGRAPH_BASE_URL")) {
-          const resolved = await resolveBaseUrl(proj);
-          if (resolved) setEnv("WAYGRAPH_BASE_URL", resolved);
-        }
+        const proj = projectDirOf(command, undefined);
+        await useProjectBaseUrl(proj);
         await runChain(proj, firstPos);
         return;
       }

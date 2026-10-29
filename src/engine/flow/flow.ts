@@ -9,7 +9,7 @@ import type { EngineConfig } from "../config.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import { MemPage, type MemKey } from "../mem/mem.js";
 import type { Trait } from "../trait/trait.js";
-import { findBlock, modVerify, withVerify } from "../block/block.js";
+import { replaceBlock, modVerify, withVerify } from "../block/block.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight } from "../stub/ring.js";
 import type { DemoPace } from "../stub/pace.js";
 import type { HighlightStyleDefaults } from "../stub/ring.js";
@@ -278,16 +278,10 @@ export function buildFlow<Out extends Checkpoint<string>>(
     ],
     run: run as Flow<Out>["run"],
     withBlockVerify(block, verify) {
-      const { index, block: found } = findBlock(middle, block);
-      const patched = [...middle];
-      patched[index] = withVerify(found, verify);
-      return buildFlow<Out>(patched, engineConfig, cleanup);
+      return buildFlow<Out>(replaceBlock(middle, block, (b) => withVerify(b, verify)), engineConfig, cleanup);
     },
     modBlockVerify(block, nameOrIndex, newCheck) {
-      const { index, block: found } = findBlock(middle, block);
-      const patched = [...middle];
-      patched[index] = modVerify(found, nameOrIndex, newCheck);
-      return buildFlow<Out>(patched, engineConfig, cleanup);
+      return buildFlow<Out>(replaceBlock(middle, block, (b) => modVerify(b, nameOrIndex, newCheck)), engineConfig, cleanup);
     },
   };
 }

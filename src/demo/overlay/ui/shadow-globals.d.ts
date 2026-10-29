@@ -111,20 +111,7 @@ interface Window {
     kind: string,
     meta?: Record<string, unknown>,
   ) => void;
-  __wgOverlayBeacon?: () => Array<{
-    id: string | null;
-    modal: string | null;
-    ready: boolean;
-    phase: string | null;
-    step: string | null;
-    block: string | null;
-    collapsed: boolean;
-    opacity: string;
-    textLen: number;
-    w: number;
-    h: number;
-    visible: boolean;
-  }>;
+  __wgOverlayBeacon?: () => import("../beacon.js").WgBeaconRow[];
 }
 
 // In-page state other waygraph scripts keep on the page's window.

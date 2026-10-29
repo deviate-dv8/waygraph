@@ -100,24 +100,7 @@ export async function findOrphanBlocks(projectDir: string): Promise<OrphanBlock[
  * edges. NavBlocks (`from: "*"`) count from any state.
  */
 export function findBlockPath(graph: WaygraphGraph, fromTag: string, toTag: string): string[] | null {
-  if (fromTag === toTag) return [];
-  type QueueItem = { tag: string; path: string[] };
-  const queue: QueueItem[] = [{ tag: fromTag, path: [] }];
-  const visited = new Set<string>([fromTag]);
-
-  while (queue.length > 0) {
-    const { tag, path } = queue.shift()!;
-    for (const edge of graph.edges) {
-      if (edge.from !== tag && edge.from !== "*") continue;
-      const nextPath = [...path, edge.block];
-      if (edge.to === toTag) return nextPath;
-      if (!visited.has(edge.to)) {
-        visited.add(edge.to);
-        queue.push({ tag: edge.to, path: nextPath });
-      }
-    }
-  }
-  return null;
+  return findBlockPathDetailed(graph, fromTag, toTag)?.map((step) => step.block) ?? null;
 }
 
 export interface BlockPathStep {
@@ -132,11 +115,8 @@ export interface BlockPathStep {
 }
 
 /**
- * Same BFS as `findBlockPath`, but returns each hop's specific edge (block
- * name + the Checkpoint it targets), not just the block name - needed by any
- * caller that must verify a step actually landed where the route intended,
- * not just re-guess it afterward. `findBlockPath` itself is unchanged and
- * still used wherever only the block-name sequence matters.
+ * The shortest route (breadth-first) as each hop's edge: the Block's name and the Checkpoint it targets, so a caller can
+ * check each step landed where the route intended. `findBlockPath` is the same route as names only.
  */
 export function findBlockPathDetailed(graph: WaygraphGraph, fromTag: string, toTag: string): BlockPathStep[] | null {
   if (fromTag === toTag) return [];

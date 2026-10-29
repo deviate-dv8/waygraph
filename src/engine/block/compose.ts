@@ -5,7 +5,7 @@ import type { Block } from "./block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import type { Trait } from "../trait/trait.js";
 import { WaygraphError, MSG_COMPOSE_EMPTY, MSG_FASTFORWARD_EMPTY, messageOf } from "../errors.js";
-import { findBlock, modVerify, withVerify } from "./block.js";
+import { replaceBlock, modVerify, withVerify } from "./block.js";
 import type { SomeBlock } from "./some-block.js";
 
 /**
@@ -139,16 +139,10 @@ export function composeSteps(name: string, steps: readonly SomeBlock[]): SomeCom
     name,
     steps: () => steps.map((b) => ({ name: b.name, block: b, ...(b.routes ? { routes: b.routes } : {}) })),
     withStepVerify(step, verify) {
-      const { index, block: found } = findBlock(steps, step);
-      const patched = [...steps];
-      patched[index] = withVerify(found, verify);
-      return composeSteps(name, patched);
+      return composeSteps(name, replaceBlock(steps, step, (b) => withVerify(b, verify)));
     },
     modStepVerify(step, nameOrIndex, newCheck) {
-      const { index, block: found } = findBlock(steps, step);
-      const patched = [...steps];
-      patched[index] = modVerify(found, nameOrIndex, newCheck);
-      return composeSteps(name, patched);
+      return composeSteps(name, replaceBlock(steps, step, (b) => modVerify(b, nameOrIndex, newCheck)));
     },
   };
 }
@@ -284,16 +278,10 @@ export function fastForwardSteps(name: string, steps: readonly SomeBlock[]): Som
       },
     },
     withStepVerify(step, verify) {
-      const { index, block: found } = findBlock(steps, step);
-      const patched = [...steps];
-      patched[index] = withVerify(found, verify);
-      return fastForwardSteps(name, patched);
+      return fastForwardSteps(name, replaceBlock(steps, step, (b) => withVerify(b, verify)));
     },
     modStepVerify(step, nameOrIndex, newCheck) {
-      const { index, block: found } = findBlock(steps, step);
-      const patched = [...steps];
-      patched[index] = modVerify(found, nameOrIndex, newCheck);
-      return fastForwardSteps(name, patched);
+      return fastForwardSteps(name, replaceBlock(steps, step, (b) => modVerify(b, nameOrIndex, newCheck)));
     },
   };
   return ff;

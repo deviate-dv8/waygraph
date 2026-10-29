@@ -67,75 +67,34 @@
   --color-gray: var(--wg-gray);
 }
 
-/* Light, then dark when the viewer's setting is dark; data-appearance on #wg-ui (inside the root) wins over both. */
-:host, #wg-ui[data-appearance="light"] {
-  color-scheme: light;
-  --wg-label: rgb(0 0 0 / 0.85);
-  --wg-label-2: rgb(0 0 0 / 0.55);
-  --wg-label-3: rgb(0 0 0 / 0.3);
-  --wg-label-4: rgb(0 0 0 / 0.1);
-  --wg-separator: rgb(0 0 0 / 0.1);
-  --wg-fill: rgb(0 0 0 / 0.05);
-  --wg-fill-2: rgb(0 0 0 / 0.08);
-  --wg-material: rgb(246 246 246 / 0.8);
-  --wg-material-thick: rgb(250 250 250 / 0.94);
-  --wg-control: #fff;
-  --wg-field: #fff;
-  --wg-blue: #007aff;
-  --wg-green: #28cd41;
-  --wg-red: #ff3b30;
-  --wg-orange: #ff9500;
-  --wg-yellow: #ffcc00;
-  --wg-teal: #30b0c7;
-  --wg-gray: #8e8e93;
-  --wg-rim: rgb(255 255 255 / 0.6);
+/*
+ * Every colour in light and dark; color-scheme picks: the viewer's setting, or data-appearance on #wg-ui (inside the
+ * root) pinning one. light-dark() resolves where a colour is used, so the pin reaches every element under #wg-ui.
+ */
+:host {
+  color-scheme: light dark;
+  --wg-label: light-dark(rgb(0 0 0 / 0.85), rgb(255 255 255 / 0.88));
+  --wg-label-2: light-dark(rgb(0 0 0 / 0.55), rgb(255 255 255 / 0.55));
+  --wg-label-3: light-dark(rgb(0 0 0 / 0.3), rgb(255 255 255 / 0.28));
+  --wg-label-4: light-dark(rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.1));
+  --wg-separator: light-dark(rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.12));
+  --wg-fill: light-dark(rgb(0 0 0 / 0.05), rgb(255 255 255 / 0.07));
+  --wg-fill-2: light-dark(rgb(0 0 0 / 0.08), rgb(255 255 255 / 0.11));
+  --wg-material: light-dark(rgb(246 246 246 / 0.8), rgb(38 38 40 / 0.78));
+  --wg-material-thick: light-dark(rgb(250 250 250 / 0.94), rgb(30 30 32 / 0.94));
+  --wg-control: light-dark(#fff, rgb(255 255 255 / 0.12));
+  --wg-field: light-dark(#fff, rgb(0 0 0 / 0.25));
+  --wg-blue: light-dark(#007aff, #0a84ff);
+  --wg-green: light-dark(#28cd41, #32d74b);
+  --wg-red: light-dark(#ff3b30, #ff453a);
+  --wg-orange: light-dark(#ff9500, #ff9f0a);
+  --wg-yellow: light-dark(#ffcc00, #ffd60a);
+  --wg-teal: light-dark(#30b0c7, #40c8e0);
+  --wg-gray: light-dark(#8e8e93, #98989d);
+  --wg-rim: light-dark(rgb(255 255 255 / 0.6), rgb(255 255 255 / 0.12));
 }
-@media (prefers-color-scheme: dark) {
-  :host {
-    color-scheme: dark;
-    --wg-label: rgb(255 255 255 / 0.88);
-    --wg-label-2: rgb(255 255 255 / 0.55);
-    --wg-label-3: rgb(255 255 255 / 0.28);
-    --wg-label-4: rgb(255 255 255 / 0.1);
-    --wg-separator: rgb(255 255 255 / 0.12);
-    --wg-fill: rgb(255 255 255 / 0.07);
-    --wg-fill-2: rgb(255 255 255 / 0.11);
-    --wg-material: rgb(38 38 40 / 0.78);
-    --wg-material-thick: rgb(30 30 32 / 0.94);
-    --wg-control: rgb(255 255 255 / 0.12);
-    --wg-field: rgb(0 0 0 / 0.25);
-    --wg-blue: #0a84ff;
-    --wg-green: #32d74b;
-    --wg-red: #ff453a;
-    --wg-orange: #ff9f0a;
-    --wg-yellow: #ffd60a;
-    --wg-teal: #40c8e0;
-    --wg-gray: #98989d;
-    --wg-rim: rgb(255 255 255 / 0.12);
-  }
-}
-#wg-ui[data-appearance="dark"] {
-  color-scheme: dark;
-  --wg-label: rgb(255 255 255 / 0.88);
-  --wg-label-2: rgb(255 255 255 / 0.55);
-  --wg-label-3: rgb(255 255 255 / 0.28);
-  --wg-label-4: rgb(255 255 255 / 0.1);
-  --wg-separator: rgb(255 255 255 / 0.12);
-  --wg-fill: rgb(255 255 255 / 0.07);
-  --wg-fill-2: rgb(255 255 255 / 0.11);
-  --wg-material: rgb(38 38 40 / 0.78);
-  --wg-material-thick: rgb(30 30 32 / 0.94);
-  --wg-control: rgb(255 255 255 / 0.12);
-  --wg-field: rgb(0 0 0 / 0.25);
-  --wg-blue: #0a84ff;
-  --wg-green: #32d74b;
-  --wg-red: #ff453a;
-  --wg-orange: #ff9f0a;
-  --wg-yellow: #ffd60a;
-  --wg-teal: #40c8e0;
-  --wg-gray: #98989d;
-  --wg-rim: rgb(255 255 255 / 0.12);
-}
+#wg-ui[data-appearance="light"] { color-scheme: light; }
+#wg-ui[data-appearance="dark"] { color-scheme: dark; }
 
 /*
  * Highlight tones (a ring, its label, a click pulse). The tone names are part of the authoring API (ctx.ui.ring(...,

@@ -1,7 +1,7 @@
 import { configuredExtensions } from "../runtime/waygraph-config.js";
 import { defaultRunLogDir } from "../runtime/run-log.js";
 import { expandSpecFlowFiles } from "./flags.js";
-import { resolveBaseUrl } from "../runtime/waygraph-config.js";
+import { resolveBaseUrl, useProjectBaseUrl } from "../runtime/waygraph-config.js";
 import { discoverGraph, findBlockPath, findOrphanBlocks } from "../analysis/graph.js";
 import { join } from "node:path";
 import { rmSync, writeFileSync } from "node:fs";
@@ -102,9 +102,6 @@ export async function runChainAuto(projectDir: string, fromTag: string, toTag: s
   }
   const spec = path.join(" then ");
   console.error(`waygraph auto --blocks: ${fromTag} -> ${toTag} via ${spec}`);
-  if (!envString("WAYGRAPH_BASE_URL")) {
-    const resolved = await resolveBaseUrl(projectDir);
-    if (resolved) setEnv("WAYGRAPH_BASE_URL", resolved);
-  }
+  await useProjectBaseUrl(projectDir);
   await runChain(projectDir, spec);
 }

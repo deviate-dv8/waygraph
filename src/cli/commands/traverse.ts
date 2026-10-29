@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { existsSync, statSync } from "node:fs";
+import { projectDirOf } from "../util.js";
 import { parseBlocksSelect } from "../../manifest/select.js";
 import { parseMinEdgeCoverage } from "../../live/traverse/coverage.js";
 import { runTraverse } from "../../live/traverse/traverse.js";
@@ -60,7 +60,7 @@ COVER: [Coverage edges=H/T ratio=R% min=M% PASS|FAIL]
         process.exit(1);
       }
       const session = v.session as "clone" | "inherit" | undefined;
-      const projectDir = resolve(positionals[0] ?? process.cwd());
+      const projectDir = projectDirOf("traverse", positionals[0]);
       const from = v.from;
       const data = v.data;
       const maxSteps = numberFlag("max-steps", v["max-steps"]);
@@ -73,10 +73,6 @@ COVER: [Coverage edges=H/T ratio=R% min=M% PASS|FAIL]
       const minEdgeCoverageRaw = v["min-edge-coverage"];
       const coverageOut = v["coverage-out"];
       const noCoverageReport = v["no-coverage-report"] === true;
-      if (!existsSync(projectDir) || !statSync(projectDir).isDirectory()) {
-        console.error(`waygraph traverse: no such directory: ${projectDir}`);
-        process.exit(1);
-      }
       const blocksSelect = blocksFilter
         ? parseBlocksSelect(blocksFilter)
         : undefined;

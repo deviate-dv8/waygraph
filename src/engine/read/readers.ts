@@ -33,6 +33,16 @@ export interface ReadFields {
   readonly [field: string]: Reader<unknown> | ReadFields | undefined;
 }
 
+/** Calls `visit` with every reader in `fields` (nested objects included) and its key path under `prefix` (`catalog.items`). */
+export function eachReader(fields: ReadFields, prefix: string, visit: (path: string, reader: Reader<unknown>) => void): void {
+  for (const [name, value] of Object.entries(fields)) {
+    if (value === undefined) continue;
+    const path = `${prefix}.${name}`;
+    if (value instanceof Reader) visit(path, value);
+    else eachReader(value, path, visit);
+  }
+}
+
 /** The readers a list row offers, each scoped to the row (no selector: the row itself). */
 export interface RowCtx {
   text(selector?: string): Reader<string>;

@@ -4,14 +4,12 @@ import { missingMemKeys, seedDefaultMem } from "../auto/mem.js";
 import { messageOf } from "../../engine/errors.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { WaygraphGraph } from "../../analysis/graph.js";
-import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import { Engine } from "../../engine/engine.js";
-import { buildFlow } from "../../engine/flow/flow.js";
 import { MemPage } from "../../engine/mem/mem.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 import { inRun } from "../../engine/run/events.js";
 import type { BlockEntry } from "../../manifest/project.js";
-import { detectHere } from "../auto/auto.js";
+import { detectHere, runOneBlock } from "../auto/auto.js";
 import { buildExploreContext, buildExploreMenu, type ExploreEdge } from "../auto/explore.js";
 import { EdgeLeaseCoordinator } from "./lease.js";
 import type { TraverseWorkerResult } from "./traverse.js";
@@ -55,34 +53,6 @@ export function ensureMem(entry: BlockEntry, mem: MemPage): void {
 export function edgeKey(edge: ExploreEdge): string {
   const id = edge.instanceOption?.id;
   return id ? `${edge.block}::${id}` : edge.block;
-}
-export async function runOneBlock(
-  engine: Engine,
-  entry: BlockEntry,
-  context: BrowserContext,
-  page: Page,
-  mem: MemPage): Promise<Checkpoint<string>> {
-  const flow = buildFlow([entry.block], engine.config);
-  const BLOCK_TIMEOUT_MS = 45000;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    const ran = await Promise.race([
-      flow.run(context, mem, { page, closeOnFinish: false }),
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(
-          () => reject(
-            new Error(
-              `Block "${entry.block.name}" timed out after ${BLOCK_TIMEOUT_MS / 1000}s`
-            )
-          ),
-          BLOCK_TIMEOUT_MS
-        );
-      }),
-    ]);
-    return ran.result;
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
 }
 export interface WorkerOpts {
   traverseId: string;
@@ -216,7 +186,7 @@ async function walk(opts: WorkerOpts): Promise<TraverseWorkerResult> {
           (pick.label ? ` (${pick.label})` : "")
         );
 
-        const out = await runOneBlock(engine, entry, context, page, mem);
+        const out = await runOneBlock(engine, entry, context, page, mem, false);
         const observed = typeof out === "object" && out && "__state" in out
           ? String((out as { __state: string; }).__state)
           : pick.to;

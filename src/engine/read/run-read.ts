@@ -4,7 +4,7 @@ import type { Page } from "@playwright/test";
 import type { MemPage } from "../mem/mem.js";
 import { ignorePageGone, ignoreTimeout } from "../page-gone.js";
 import type { ReadSpec } from "./read-key.js";
-import { Reader, type FieldPlan, type ReadFields, type ReaderPlan } from "./readers.js";
+import { eachReader, type FieldPlan, type ReaderPlan } from "./readers.js";
 
 /** A read's leaves by path (`post.likes`), `null` where the page did not show it, plus why a path is missing. */
 export interface ReadResult {
@@ -151,17 +151,12 @@ export async function runReadSpecs(page: Page, mem: MemPage, specs: readonly Rea
   const values = new Map<string, unknown>();
   const notes = new Map<string, string>();
   const jobs: Promise<void>[] = [];
-  const walk = (fields: ReadFields, prefix: string): void => {
-    for (const [name, value] of Object.entries(fields)) {
-      if (value === undefined) continue;
-      const path = `${prefix}.${name}`;
-      if (value instanceof Reader) {
-        values.set(path, null);
-        jobs.push(readOne(page, mem, value.plan, path, notes).then((v) => void values.set(path, v)));
-      } else walk(value as ReadFields, path);
-    }
-  };
-  for (const spec of specs) walk(spec.fields, spec.namespace);
+  for (const spec of specs) {
+    eachReader(spec.fields, spec.namespace, (path, reader) => {
+      values.set(path, null);
+      jobs.push(readOne(page, mem, reader.plan, path, notes).then((v) => void values.set(path, v)));
+    });
+  }
   await Promise.all(jobs);
   return { values, notes };
 }

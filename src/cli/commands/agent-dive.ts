@@ -1,7 +1,6 @@
 import { runAgentDive } from "./agent-dive-scaffold.js";
 import type { AgentDiveLoop } from "./agent-dive-scaffold.js";
-import { resolve } from "node:path";
-import { existsSync, statSync } from "node:fs";
+import { projectDirOf } from "../util.js";
 import { helpLines, parseCommand } from "../args.js";
 import type { OptionTable } from "../args.js";
 
@@ -37,11 +36,7 @@ Agents shipped: waygraph-planner, waygraph-author, waygraph-healer.
         process.exit(1);
       }
       const prompts = values.prompts === true;
-      const projectDir = resolve(positionals[0] ?? process.cwd());
-      if (!existsSync(projectDir) || !statSync(projectDir).isDirectory()) {
-        console.error(`waygraph agent-dive: no such directory: ${projectDir}`);
-        process.exit(1);
-      }
+      const projectDir = projectDirOf("agent-dive", positionals[0]);
       runAgentDive({ loop, projectDir, prompts });
       return;
 }

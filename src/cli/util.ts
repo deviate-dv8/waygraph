@@ -1,3 +1,4 @@
+import { existsSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
@@ -31,4 +32,15 @@ export function runInherited(cmd: string, args: string[], cwd: string): Promise<
     child.on("error", rej);
     child.on("exit", (code) => res(code ?? 1));
   });
+}
+
+
+/** The project a command works in: `dir`, or the current directory, resolved. Stops the command when it isn't a directory. */
+export function projectDirOf(command: string, dir: string | undefined): string {
+  const proj = resolve(dir ?? process.cwd());
+  if (!existsSync(proj) || !statSync(proj).isDirectory()) {
+    console.error(`waygraph ${command}: no such directory: ${proj}`);
+    process.exit(1);
+  }
+  return proj;
 }

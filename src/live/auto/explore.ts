@@ -161,6 +161,15 @@ export async function buildExploreMenu(
     return options;
   }
 
+  /** One menu row per live option of a per-row Block (add *this* item), each once. */
+  const pushOptions = async (list: ExploreEdge[], edge: ExploreEdge, entry: BlockEntry): Promise<void> => {
+    for (const option of await loadInstanceOptions(entry)) {
+      const seenKey = `${edge.block}::${option.id}`;
+      if (seen.has(seenKey)) continue;
+      seen.add(seenKey);
+      list.push({ ...edge, label: option.label, instanceOption: option });
+    }
+  };
   for (const edge of graph.edges) {
     const entry = library.byName.get(edge.block);
     if (!entry) continue;
@@ -168,29 +177,13 @@ export async function buildExploreMenu(
     if (edge.kind === "action") {
       if (here !== null && edge.from === here) {
         if (entry.block.instanceOptions) {
-          const options = await loadInstanceOptions(entry);
-          for (const option of options) {
-            const seenKey = `${edge.block}::${option.id}`;
-            if (seen.has(seenKey)) continue;
-            seen.add(seenKey);
-            (isBackEdge(edge) ? back : forward).push({
-              ...edge,
-              label: option.label,
-              instanceOption: option,
-            });
-          }
+          await pushOptions(isBackEdge(edge) ? back : forward, edge, entry);
         } else {
           push(isBackEdge(edge) ? back : forward, edge);
         }
       } else if (here !== null && edge.from === "*") {
         if (entry.block.instanceOptions) {
-          const options = await loadInstanceOptions(entry);
-          for (const option of options) {
-            const seenKey = `${edge.block}::${option.id}`;
-            if (seen.has(seenKey)) continue;
-            seen.add(seenKey);
-            anywhere.push({ ...edge, label: option.label, instanceOption: option });
-          }
+          await pushOptions(anywhere, edge, entry);
         } else if (await wildcardActionRunnable(page, entry, here)) {
           const bulkLabel: Record<string, string> = {
             "add-all-to-cart": "Add all to cart",

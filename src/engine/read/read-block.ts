@@ -6,7 +6,7 @@ import { WaygraphError, MSG_READ_DUPLICATE } from "../errors.js";
 import type { MemKey, MemPage } from "../mem/mem.js";
 import type { ReadKey, ReadSpec } from "./read-key.js";
 import { ReadPage } from "./read-page.js";
-import { createReadCtx, Reader, type ReadCtx, type ReadFields } from "./readers.js";
+import { createReadCtx, eachReader, Reader, type ReadCtx } from "./readers.js";
 import { runReadSpecs, settlePage } from "./run-read.js";
 
 /** Options for {@link defineReadBlock}: shaped like a Method's, with one instruction phase. */
@@ -132,21 +132,12 @@ const SHAPE: Record<string, string> = { text: "string", attr: "string", value: "
  */
 export function readBlockShape(block: ReadBlock, mem: MemPage): Record<string, ReadShape> {
   const out: Record<string, ReadShape> = {};
-  const walk = (fields: ReadFields, prefix: string): void => {
-    for (const [name, value] of Object.entries(fields)) {
-      if (value === undefined) continue;
-      const path = `${prefix}.${name}`;
-      if (!(value instanceof Reader)) {
-        walk(value as ReadFields, path);
-        continue;
-      }
-      const plan = value.plan;
-      if (plan.kind === "list") out[path] = [Object.fromEntries(Object.entries(plan.fields).map(([k, f]) => [k, SHAPE[f.kind] ?? "unknown"]))];
-      else if (plan.kind === "table") out[path] = [Object.fromEntries(Object.keys(plan.columns).map((k) => [k, "string"]))];
-      else out[path] = SHAPE[plan.kind] ?? "unknown";
-    }
+  const shapeOf = (path: string, { plan }: Reader<unknown>): void => {
+    if (plan.kind === "list") out[path] = [Object.fromEntries(Object.entries(plan.fields).map(([k, f]) => [k, SHAPE[f.kind] ?? "unknown"]))];
+    else if (plan.kind === "table") out[path] = [Object.fromEntries(Object.keys(plan.columns).map((k) => [k, "string"]))];
+    else out[path] = SHAPE[plan.kind] ?? "unknown";
   };
   const got = block.instruction.read(createReadCtx(mem));
-  for (const spec of Array.isArray(got) ? got : [got as ReadSpec]) walk(spec.fields, spec.namespace);
+  for (const spec of Array.isArray(got) ? got : [got as ReadSpec]) eachReader(spec.fields, spec.namespace, shapeOf);
   return out;
 }

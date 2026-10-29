@@ -2,7 +2,7 @@
  * Phase B+D: graph traverse (serial or --parallel with --session clone).
  * Walk unused legal edges until leaf / budget / break.
  */
-import type { Browser } from "@playwright/test";
+import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { Engine } from "../../engine/engine.js";
 import { envFlag, envString } from "../../engine/env.js";
 import { MemPage } from "../../engine/mem/mem.js";
@@ -177,13 +177,34 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
     return 0;
   };
 
+  // Every worker's context and options; only its index, page and mem differ.
+  const openContext = (storageState?: Awaited<ReturnType<BrowserContext["storageState"]>>) =>
+    browser.newContext({ viewport: { width: 1280, height: 720 }, ...(baseURL ? { baseURL } : {}), ...(storageState ? { storageState } : {}) });
+  const runWorker = (traverseId: string, workerIndex: number, context: BrowserContext, page: Page, mem: MemPage) =>
+    runTraverseWorker({
+      traverseId,
+      workerIndex,
+      parallel: Math.max(1, parallel),
+      maxSteps,
+      maxVisitsPerNode,
+      maxVisitsPerEdge,
+      timeoutMs,
+      ...(options.from ? { from: options.from } : {}),
+      ...(startUrl ? { startUrl } : {}),
+      ...(baseURL ? { baseURL } : {}),
+      ...(options.data ? { data: options.data } : {}),
+      graph,
+      library,
+      engine,
+      context,
+      page,
+      mem,
+      leases,
+    });
+
   try {
     if (parallel <= 1) {
-      const contextOpts: Parameters<Browser["newContext"]>[0] = {
-        viewport: { width: 1280, height: 720 },
-      };
-      if (baseURL) contextOpts.baseURL = baseURL;
-      const context = await browser.newContext(contextOpts);
+      const context = await openContext();
       const page = await context.newPage();
       const mem = new MemPage();
       seedDefaultMem(library.byName, mem, options.data);
@@ -192,26 +213,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
         await page.waitForLoadState("load").catch(ignoreTimeout);
       }
       const traverseId = options.traverseId ?? "traverse-1";
-      const result = await runTraverseWorker({
-        traverseId,
-        workerIndex: 0,
-        parallel: 1,
-        maxSteps,
-        maxVisitsPerNode,
-        maxVisitsPerEdge,
-        timeoutMs,
-        ...(options.from ? { from: options.from } : {}),
-        ...(startUrl ? { startUrl } : {}),
-        ...(baseURL ? { baseURL } : {}),
-        ...(options.data ? { data: options.data } : {}),
-        graph,
-        library,
-        engine,
-        context,
-        page,
-        mem,
-        leases,
-      });
+      const result = await runWorker(traverseId, 0, context, page, mem);
       await context.close().catch(ignorePageGone);
       const coverageCode = emitCoverage([{ traverseId, result }]);
       if (result.exitCode !== 0) return result.exitCode;
@@ -219,11 +221,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
     }
 
     // Phase D: bootstrap one context for storageState, then N clones.
-    const bootOpts: Parameters<Browser["newContext"]>[0] = {
-      viewport: { width: 1280, height: 720 },
-    };
-    if (baseURL) bootOpts.baseURL = baseURL;
-    const bootContext = await browser.newContext(bootOpts);
+    const bootContext = await openContext();
     const bootPage = await bootContext.newPage();
     const bootMem = new MemPage();
     seedDefaultMem(library.byName, bootMem, options.data);
@@ -243,12 +241,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
       await Promise.all(
         Array.from({ length: parallel }, async (_, i) => {
           const traverseId = `traverse-${i + 1}`;
-          const ctxOpts: Parameters<Browser["newContext"]>[0] = {
-            viewport: { width: 1280, height: 720 },
-            storageState,
-          };
-          if (baseURL) ctxOpts.baseURL = baseURL;
-          const context = await browser.newContext(ctxOpts);
+          const context = await openContext(storageState);
           const page = await context.newPage();
           const mem = new MemPage();
           restoreMem(library.byName, mem, memSnap, options.data);
@@ -256,26 +249,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
             await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(ignorePageGone);
           }
           try {
-            const result = await runTraverseWorker({
-              traverseId,
-              workerIndex: i,
-              parallel,
-              maxSteps,
-              maxVisitsPerNode,
-              maxVisitsPerEdge,
-              timeoutMs,
-              ...(options.from ? { from: options.from } : {}),
-              ...(startUrl ? { startUrl } : {}),
-              ...(baseURL ? { baseURL } : {}),
-              ...(options.data ? { data: options.data } : {}),
-              graph,
-              library,
-              engine,
-              context,
-              page,
-              mem,
-              leases,
-            });
+            const result = await runWorker(traverseId, i, context, page, mem);
             return { traverseId, result };
           } finally {
             await context.close().catch(ignorePageGone);

@@ -15,6 +15,7 @@ import {
 } from "node:fs";
 import { createRequire } from "node:module";
 import { connect, createServer, type Socket } from "node:net";
+import { createInterface as readLines } from "node:readline";
 import { dirname, join } from "node:path";
 import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
@@ -31,16 +32,12 @@ import type { HelloResponse, ConsoleResponse, DomResponse, HighlightResponse, Re
 /** Reads newline-delimited JSON off a socket, one message at a time. */
 function readOneMessage<T>(sock: Socket, timeoutMs: number): Promise<T> {
   return new Promise((resolvePromise, reject) => {
-    let buf = "";
+    const lines = readLines({ input: sock, crlfDelay: Infinity });
     const timer = setTimeout(() => {
       cleanup();
       reject(new Error(`timed out after ${timeoutMs}ms waiting for a response`));
     }, timeoutMs);
-    const onData = (chunk: Buffer) => {
-      buf += chunk.toString("utf-8");
-      const nl = buf.indexOf("\n");
-      if (nl === -1) return;
-      const line = buf.slice(0, nl);
+    const onLine = (line: string) => {
       cleanup();
       try {
         resolvePromise(JSON.parse(line) as T);
@@ -58,11 +55,12 @@ function readOneMessage<T>(sock: Socket, timeoutMs: number): Promise<T> {
     };
     function cleanup() {
       clearTimeout(timer);
-      sock.off("data", onData);
+      lines.off("line", onLine);
+      lines.close();
       sock.off("error", onError);
       sock.off("close", onClose);
     }
-    sock.on("data", onData);
+    lines.on("line", onLine);
     sock.on("error", onError);
     sock.on("close", onClose);
   });
@@ -224,17 +222,9 @@ export async function serveSession(
   };
 
   const feed = createFeed();
+  // One JSON request per line.
   const server = createServer((sock) => {
-    let buf = "";
-    sock.on("data", (chunk: Buffer) => {
-      buf += chunk.toString("utf-8");
-      let nl: number;
-      while ((nl = buf.indexOf("\n")) !== -1) {
-        const line = buf.slice(0, nl);
-        buf = buf.slice(nl + 1);
-        void handleLine(line, sock);
-      }
-    });
+    readLines({ input: sock, crlfDelay: Infinity }).on("line", (line) => void handleLine(line, sock));
   });
 
   async function handleLine(line: string, sock: Socket): Promise<void> {

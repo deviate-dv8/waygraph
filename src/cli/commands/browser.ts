@@ -1,7 +1,7 @@
 // `waygraph browser start | sessions | stop`: start a detached session, list them, stop them. The session ops
 // (send, status, ...) are session-ops.ts.
 import { messageOf } from "../../engine/errors.js";
-import { existsSync } from "node:fs";
+import { projectDirOf } from "../util.js";
 import { resolve } from "node:path";
 import { envString } from "../../engine/env.js";
 import { listBrowserSessions, stopAllBrowserSessions, stopBrowserSession } from "../../live/auto-session/files.js";
@@ -56,11 +56,7 @@ export async function browserCase(args: string[]): Promise<boolean> {
       const flagArgs = sub === "start" ? args.slice(2) : args.slice(1);
       const flags = parseRunFlags(flagArgs, "browser");
       applyRunFlags(flags);
-      const proj = resolve(flags.positionals[0] ?? process.cwd());
-      if (!existsSync(proj)) {
-        console.error(`waygraph browser: no such directory: ${proj}`);
-        process.exit(1);
-      }
+      const proj = projectDirOf("browser", flags.positionals[0]);
       const baseURL = flags.baseUrl ?? envString("WAYGRAPH_BASE_URL") ?? (await resolveBaseUrl(proj));
       try {
         const inject = flags.inject?.length ? resolveInjectRoots(flags.inject, proj) : undefined;

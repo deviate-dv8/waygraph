@@ -156,6 +156,13 @@ export async function loadWaygraphConfig(projectDir: string): Promise<WaygraphCo
   return undefined;
 }
 
+/** Sets WAYGRAPH_BASE_URL from the project's config / .env, unless a flag or the shell already set it. */
+export async function useProjectBaseUrl(projectDir: string): Promise<void> {
+  if (envString("WAYGRAPH_BASE_URL")) return;
+  const resolved = await resolveBaseUrl(projectDir);
+  if (resolved) setEnv("WAYGRAPH_BASE_URL", resolved);
+}
+
 /**
  * Single source of truth for a project's base URL. Was three independently drifted copies
  * (`src/cli/flags.ts`, `src/live/traverse/traverse.ts`, `src/live/auto/auto.ts`), each checking

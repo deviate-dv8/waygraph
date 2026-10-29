@@ -20,17 +20,21 @@ import { installedMapPackages, mapPackageBlockFiles } from "../../manifest/maps.
 import { reportImportError } from "../../manifest/project.js";
 
 
+/** Each file's module, in order; a file that fails to import is reported and skipped. */
+async function* importEach(projectDir: string, files: readonly string[]): AsyncGenerator<{ file: string; mod: Record<string, unknown> }> {
+  for (const file of files) {
+    try {
+      yield { file, mod: await import(pathToFileURL(file).href) };
+    } catch (err) {
+      reportImportError(relative(projectDir, file), err);
+    }
+  }
+}
+
 export async function findBlock(projectDir: string, ref: string): Promise<FoundBlock> {
   const files = [...walkDir(projectDir, /\.block\.ts$/), ...installedMapPackages(projectDir).flatMap(mapPackageBlockFiles)];
   const byRuntimeName: FoundBlock[] = [];
-  for (const file of files) {
-    let mod: Record<string, unknown>;
-    try {
-      mod = await import(pathToFileURL(file).href);
-    } catch (err) {
-      reportImportError(relative(projectDir, file), err);
-      continue;
-    }
+  for await (const { file, mod } of importEach(projectDir, files)) {
     for (const [exportName, exported] of Object.entries(mod)) {
       if (!isBlockLike(exported)) continue;
       if (exportName === ref) return { block: exported, exportName, file };
@@ -59,14 +63,7 @@ export async function findBlock(projectDir: string, ref: string): Promise<FoundB
  */
 export async function findFlow(projectDir: string, flowName: string): Promise<Flow<Checkpoint<string>> | null> {
   const files = walkDir(projectDir, /\.flow\.ts$/);
-  for (const file of files) {
-    let mod: Record<string, unknown>;
-    try {
-      mod = await import(pathToFileURL(file).href);
-    } catch (err) {
-      reportImportError(relative(projectDir, file), err);
-      continue;
-    }
+  for await (const { mod } of importEach(projectDir, files)) {
     const candidate = mod[flowName];
     if (isFlow(candidate)) return candidate;
   }
