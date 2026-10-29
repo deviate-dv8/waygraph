@@ -64,6 +64,7 @@ reading the run log gets it too.
 const fiveRows: Trait = {
   name: "five-rows",
   wants: "5 rows",
+  selector: "table",                             // optional: the demo rings it after the step
   async check(page) {
     const n = await page.locator("tr").count();
     return { ok: n === 5, saw: `${n} rows` };   // or just true / false

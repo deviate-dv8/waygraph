@@ -66,6 +66,14 @@ ${found.length ? `| Name | Kind | Use instead |\n| --- | --- | --- |\n${rows}` :
 | \`traverse --headed\`, \`inject veciro\` / \`demosauce\` | \`traverse --non-headless\`, \`--inject <path>\` / \`--inject saucedemo\` |
 | \`resolveSlideDwellMs\`, \`SLIDE_DURATION_MS_DEFAULT\`, \`SLIDE_DURATION_FAST_MS_DEFAULT\` | \`resolveFixtureDwellMs\`, \`FIXTURE_DURATION_MS_DEFAULT\`, \`FIXTURE_DURATION_FAST_MS_DEFAULT\` |
 
+## Removed in 0.16.9: the hand-written glob matcher
+
+\`--blocks\` globs are matched by picomatch now (\`**\`, \`*\`, \`?\`, \`{a,b}\`, \`[abc]\`).
+
+| Removed | Use instead |
+| --- | --- |
+| \`globToRegExp(glob)\` | \`matchBlocksSelect(parseBlocksSelect(glob), { relFile })\`, or picomatch itself |
+
 ## Removed in 0.16.7: the beta entry
 
 Read Blocks are part of \`waygraph\` now.

@@ -8,18 +8,10 @@ import type { WgPage } from "../demo/types.js";
 import type { PlaySession } from "./mode.js";
 import type { PlayOptions } from "./options.js";
 import { ignorePageGone } from "../engine/page-gone.js";
+import { parseViewport } from "../runtime/viewport.js";
 
 type Size = { width: number; height: number };
 
-/** WAYGRAPH_VIDEO_VIEWPORT / --video-viewport: "1920x1080" or "1920,1080". */
-function parseVideoViewport(raw: string | undefined): Size | null {
-  const m = raw?.trim().match(/^(\d{3,5})[xX,](\d{3,5})$/);
-  if (!m) return null;
-  const width = Number(m[1]);
-  const height = Number(m[2]);
-  if (width < 320 || height < 240 || width > 7680 || height > 4320) return null;
-  return { width, height };
-}
 
 /**
  * A demo window fills the screen (viewport null, maximized). A video is a fixed 16:9 capture (1920x1080 for a demo,
@@ -34,7 +26,7 @@ export async function openSession(projectDir: string, options: PlayOptions, mem:
   const videoDir = options.video ? (options.video === "1" ? await resolveVideoDir(projectDir) : options.video) : null;
   if (videoDir) mkdirSync(videoDir, { recursive: true });
   const videoSize = videoDir
-    ? (parseVideoViewport(options.videoViewport) ?? (options.mode === "demo" ? { width: 1920, height: 1080 } : { width: 1280, height: 720 }))
+    ? (parseViewport(options.videoViewport) ?? (options.mode === "demo" ? { width: 1920, height: 1080 } : { width: 1280, height: 720 }))
     : null;
   const { chromium } = await import("@playwright/test");
   const executablePath = chromiumExecutablePath();

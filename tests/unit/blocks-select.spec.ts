@@ -1,7 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
-  globToRegExp,
   isFileSelectToken,
   matchBlocksSelect,
   parseBlocksSelect,
@@ -58,9 +57,11 @@ describe("blocks-select (Phase C)", () => {
     );
   });
 
-  it("globToRegExp handles * and **", () => {
-    assert.equal(globToRegExp("a/*/b").test("a/x/b"), true);
-    assert.equal(globToRegExp("a/*/b").test("a/x/y/b"), false);
-    assert.equal(globToRegExp("a/**/b").test("a/x/y/b"), true);
+  it("a glob matches * within a folder, ** across folders, and {a,b} alternatives", () => {
+    const glob = (pattern: string, relFile: string) => matchBlocksSelect(parseBlocksSelect(pattern), { relFile });
+    assert.equal(glob("a/*/b", "a/x/b"), true);
+    assert.equal(glob("a/*/b", "a/x/y/b"), false);
+    assert.equal(glob("a/**/b", "a/x/y/b"), true);
+    assert.equal(glob("src/{cart,login}/*.block.ts", "src/login/nav.block.ts"), true);
   });
 });

@@ -1,7 +1,7 @@
 // Reads a TypeScript file's shape (its exports, imports, string arguments) from the AST (ts-morph), for the places that
 // need it without importing the file: `list`, `nav`, a flow file's export name, a map group's imports.
 import { readFileSync } from "node:fs";
-import { Node, Project, SyntaxKind } from "ts-morph";
+import { IndentationText, Node, Project, SyntaxKind } from "ts-morph";
 import type { SourceFile } from "ts-morph";
 
 const project = new Project({ useInMemoryFileSystem: true, skipFileDependencyResolution: true });
@@ -9,6 +9,12 @@ const project = new Project({ useInMemoryFileSystem: true, skipFileDependencyRes
 /** The file as it is on disk now. */
 export function parseSource(file: string): SourceFile {
   return project.createSourceFile(file.replace(/\\/g, "/").replace(/^[A-Za-z]:/, ""), readFileSync(file, "utf8"), { overwrite: true });
+}
+
+/** The indentation a file uses (tabs, two or four spaces), so an edit to it keeps its style. */
+export function indentationOf(text: string): IndentationText {
+  if (/\n\t/.test(text)) return IndentationText.Tab;
+  return /\n {4}\S/.test(text) && !/\n {2}\S/.test(text) ? IndentationText.FourSpaces : IndentationText.TwoSpaces;
 }
 
 /** Names the file exports: `export const|let|var|function|class X`, and `export { X }`. */

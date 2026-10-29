@@ -78,7 +78,6 @@
   "frameTextEquals",
   "frameVisible",
   "getMemStub",
-  "globToRegExp",
   "hasAuthoredStubAfter",
   "hasAuthoredStubOnError",
   "isFastForwardBlock",

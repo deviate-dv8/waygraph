@@ -51,8 +51,9 @@ export function css(raw: string): string {
  * @example byText("out of stock", { contains: true }) // substring match
  */
 export function byText(text: string, opts?: { within?: string; contains?: boolean }): string {
-  const escaped = text.replace(/"/g, '\\"');
-  const clause = opts?.contains ? `:has-text("${escaped}")` : `:text-is("${escaped}")`;
+  // A JSON string is a quoted Playwright selector string: quotes and backslashes escaped.
+  const quoted = JSON.stringify(text);
+  const clause = opts?.contains ? `:has-text(${quoted})` : `:text-is(${quoted})`;
   return opts?.within ? `${css(opts.within)} ${clause}` : `*${clause}`;
 }
 
@@ -68,7 +69,7 @@ export function byRole(
   opts?: { name?: string; checked?: boolean; disabled?: boolean; pressed?: boolean },
 ): string {
   const attrs: string[] = [];
-  if (opts?.name !== undefined) attrs.push(`name="${opts.name.replace(/"/g, '\\"')}"`);
+  if (opts?.name !== undefined) attrs.push(`name=${JSON.stringify(opts.name)}`);
   if (opts?.checked !== undefined) attrs.push(`checked=${opts.checked}`);
   if (opts?.disabled !== undefined) attrs.push(`disabled=${opts.disabled}`);
   if (opts?.pressed !== undefined) attrs.push(`pressed=${opts.pressed}`);

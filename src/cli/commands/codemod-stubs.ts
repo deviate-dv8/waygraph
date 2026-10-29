@@ -9,7 +9,7 @@
 // `act` becomes the action, reported so the caption can move to a stubBefore ring. Last, everything a stub paints moves
 // under `ctx.ui` (`ctx.ring(...)` -> `ctx.ui.ring(...)`). Works on the TypeScript AST (ts-morph).
 import { Node, SyntaxKind } from "ts-morph";
-import type { CallExpression, ExpressionStatement, Project, SourceFile } from "ts-morph";
+import type { CallExpression, ExpressionStatement, Project, PropertyAssignment, SourceFile } from "ts-morph";
 
 const RENAMED: Record<string, (args: string[]) => string> = {
   banner: (a) => `title(${a.join(", ")})`,
@@ -25,6 +25,12 @@ const DOCK_SETTERS: Record<string, string> = { todoId: "id", todoTitle: "title",
 const DEFAULT_DOCK_ID = '"todos"';
 
 /** `ctx.method(...)` as a statement on its own: the receiver, the method and the call. */
+/** A property's name as written, a quoted one (`"#login": …`) unquoted. */
+function propertyName(p: PropertyAssignment): string {
+  const name = p.getNameNode();
+  return Node.isStringLiteral(name) ? name.getLiteralValue() : p.getName();
+}
+
 function ctxCall(statement: Node): { receiver: string; method: string; call: CallExpression } | undefined {
   if (!Node.isExpressionStatement(statement)) return undefined;
   const call = statement.getExpression();
@@ -102,7 +108,7 @@ const PHASES = new Set(["stubBefore", "stubAfter", "stubOnError"]);
 /** A slot map as a stub function: `{ a: {...} }` -> `(ctx) => { ctx.ring("a", {...}); }`. */
 function mapToStub(map: Node): string {
   if (!Node.isObjectLiteralExpression(map)) return map.getText();
-  const rings = map.getProperties().flatMap((p) => (Node.isPropertyAssignment(p) ? [`ctx.ring(${JSON.stringify(p.getName().replace(/^["']|["']$/g, ""))}, ${p.getInitializerOrThrow().getText()});`] : []));
+  const rings = map.getProperties().flatMap((p) => (Node.isPropertyAssignment(p) ? [`ctx.ring(${JSON.stringify(propertyName(p))}, ${p.getInitializerOrThrow().getText()});`] : []));
   return `(ctx) => {\n${rings.map((r) => "  " + r).join("\n")}\n}`;
 }
 
@@ -195,7 +201,7 @@ function convertHighlights(sf: SourceFile, problems: { line: number; reason: str
       if (!Node.isPropertyAssignment(p)) return [];
       const from = column(p);
       const value = p.getInitializerOrThrow().getText().split("\n").map((l, n) => (n === 0 ? l : indent + l.slice(Math.min(from, l.search(/\S|$/))))).join("\n");
-      return [`${c.receiver}.ring(${JSON.stringify(p.getName().replace(/^["']|["']$/g, ""))}, ${value});`];
+      return [`${c.receiver}.ring(${JSON.stringify(propertyName(p))}, ${value});`];
     });
     sf.replaceText([statement.getStart(), statement.getEnd()], rings.join("\n" + indent));
     changed = true;

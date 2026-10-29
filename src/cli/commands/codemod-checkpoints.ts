@@ -3,7 +3,8 @@
 // on the TypeScript AST (ts-morph), so formatting, comments and odd line breaks don't fool it.
 import { readFileSync, writeFileSync } from "node:fs";
 import { relative } from "node:path";
-import { IndentationText, Node, Project, SyntaxKind } from "ts-morph";
+import { Node, Project, SyntaxKind } from "ts-morph";
+import { indentationOf } from "../../manifest/source.js";
 import type { CallExpression, ObjectLiteralExpression, SourceFile } from "ts-morph";
 import { walkDir } from "../../manifest/scan.js";
 
@@ -14,8 +15,7 @@ interface StatesInfo {
 }
 
 function parse(text: string): SourceFile {
-  const indentationText = /\n\t/.test(text) ? IndentationText.Tab : /\n {4}\S/.test(text) && !/\n {2}\S/.test(text) ? IndentationText.FourSpaces : IndentationText.TwoSpaces;
-  return new Project({ useInMemoryFileSystem: true, manipulationSettings: { indentationText } }).createSourceFile("/file.ts", text);
+  return new Project({ useInMemoryFileSystem: true, manipulationSettings: { indentationText: indentationOf(text) } }).createSourceFile("/file.ts", text);
 }
 
 /** Whether `name` is still used anywhere outside import statements. */

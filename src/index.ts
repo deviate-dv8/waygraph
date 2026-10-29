@@ -71,7 +71,7 @@ export { onRunEvent } from "./engine/run/events.js";
 export type { RunEvent } from "./engine/run/events.js";
 export type { Manifest, ManifestBlock, ManifestFlow, ManifestReadBlock } from "./manifest/manifest.js";
 export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock, OrphanBlock } from "./analysis/graph.js";
-export { isFileSelectToken, parseBlocksSelect, matchBlocksSelect, globToRegExp } from "./manifest/select.js";
+export { isFileSelectToken, parseBlocksSelect, matchBlocksSelect } from "./manifest/select.js";
 export type { BlocksSelect, BlocksSelectKind } from "./manifest/select.js";
 export { EdgeLeaseCoordinator } from "./live/traverse/lease.js";
 export { runTraverse } from "./live/traverse/traverse.js";

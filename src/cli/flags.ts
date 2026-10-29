@@ -6,6 +6,8 @@ import { walkDir } from "../manifest/scan.js";
 import { exportedNames, parseSource } from "../manifest/source.js";
 import { loadWaygraphConfig, resolveBaseUrl } from "../runtime/waygraph-config.js";
 import { envFlag, envString, setEnv } from "../engine/env.js";
+import { parseViewport } from "../runtime/viewport.js";
+import { chainSegments } from "../runner/plan/spec.js";
 
 // ---------------------------------------------------------------------------
 // CLI plumbing - run flags (flags beat WAYGRAPH_* env)
@@ -205,17 +207,6 @@ export function parseRunFlags(argv: string[], command: string): RunFlags {
 }
 
 
-/** Parses WAYGRAPH_VIDEO_VIEWPORT / --video-viewport: "1920x1080" or "1920,1080". */
-function parseVideoViewportFlag(raw: string | undefined): { width: number; height: number } | null {
-  if (!raw?.trim()) return null;
-  const m = raw.trim().match(/^(\d{3,5})[xX,](\d{3,5})$/);
-  if (!m) return null;
-  const width = Number(m[1]);
-  const height = Number(m[2]);
-  if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
-  if (width < 320 || height < 240 || width > 7680 || height > 4320) return null;
-  return { width, height };
-}
 
 
 /** Writes flag values into process.env so the chain child inherits them. Flags beat prior env. */
@@ -275,7 +266,7 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
     setEnv("WAYGRAPH_VIDEO", flags.video || "1");
   }
   if (flags.videoViewport !== undefined) {
-    if (!parseVideoViewportFlag(flags.videoViewport)) {
+    if (!parseViewport(flags.videoViewport)) {
       console.error('waygraph: --video-viewport must look like "1920x1080"');
       process.exit(1);
     }
@@ -391,7 +382,7 @@ async function resolveFlowFileToExport(projectDir: string, fileArg: string): Pro
   let abs = resolve(projectDir, fileArg);
   if (!existsSync(abs)) {
     const want = basename(fileArg);
-    const hits = walkDir(projectDir, new RegExp(`${want.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`));
+    const hits = walkDir(projectDir, /\.ts$/).filter((f) => basename(f) === want);
     if (hits.length === 1) abs = hits[0]!;
     else if (hits.length === 0) {
       throw new Error(`waygraph: no flow file "${fileArg}" under ${projectDir}`);
@@ -423,22 +414,10 @@ async function resolveFlowFileToExport(projectDir: string, fileArg: string): Pro
  * `src/flows/shop.flow.ts` → `shopFlow`; leaves `loginFlow then nav-cart` alone.
  */
 export async function expandSpecFlowFiles(projectDir: string, spec: string): Promise<string> {
-  const parts = spec.split(/\bthen\b/).map((s) => s.trim()).filter((s) => s.length > 0);
   const out: string[] = [];
-  for (const part of parts) {
-    const m = /^([^\s(]+)(\s*\([\s\S]*\))?$/.exec(part);
-    if (!m) {
-      out.push(part);
-      continue;
-    }
-    const ref = m[1]!;
-    const payload = m[2] ?? "";
-    if (looksLikeFlowFileRef(ref)) {
-      const exportName = await resolveFlowFileToExport(projectDir, ref);
-      out.push(exportName + payload);
-    } else {
-      out.push(part);
-    }
+  for (const { ref, payload } of chainSegments(spec)) {
+    const name = looksLikeFlowFileRef(ref) ? await resolveFlowFileToExport(projectDir, ref) : ref;
+    out.push(payload === undefined ? name : `${name}(${payload})`);
   }
   return out.join(" then ");
 }

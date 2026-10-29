@@ -3,7 +3,7 @@ import { relative } from "node:path";
 import type { BlocksSelect } from "./select.js";
 import { matchBlocksSelect } from "./select.js";
 import { exploreRoots, injectTaggedFile } from "./roots.js";
-import { importFresh, isBlockLike, isFlowLike, isReadBlockLike, walkDir } from "./scan.js";
+import { importFresh, isBlockLike, isFlowLike, isReadBlockLike, toPosix, walkDir } from "./scan.js";
 import type { ReadBlock } from "../engine/read/read-block.js";
 import type { AnyBlock } from "./scan.js";
 import { installedMapPackages, mapPackageBlockFiles } from "./maps.js";
@@ -124,15 +124,15 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
   for (const root of exploreRoots(projectDir, opts.inject)) {
     let files = walkDir(root, /\.block\.ts$/);
     if (select && select.kind !== "regex") {
-      files = files.filter((f) => matchBlocksSelect(select, { relFile: relative(root, f).replace(/\\/g, "/") }));
+      files = files.filter((f) => matchBlocksSelect(select, { relFile: toPosix(relative(root, f)) }));
     }
     for (const absFile of files) {
-      const rel = relative(root, absFile).replace(/\\/g, "/");
+      const rel = toPosix(relative(root, absFile));
       await scanBlockFile(absFile, rel, injectTaggedFile(projectDir, root, rel));
     }
     if (opts.flows === false) continue;
     for (const absFile of walkDir(root, /\.flow\.ts$/)) {
-      const rel = relative(root, absFile).replace(/\\/g, "/");
+      const rel = toPosix(relative(root, absFile));
       let mod: Record<string, unknown>;
       try {
         mod = await importFresh(absFile);
@@ -148,7 +148,7 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
   if (opts.maps !== false) {
     for (const pkg of installedMapPackages(projectDir)) {
       for (const absFile of mapPackageBlockFiles(pkg)) {
-        const rel = relative(pkg.dir, absFile).replace(/\\/g, "/");
+        const rel = toPosix(relative(pkg.dir, absFile));
         if (select && select.kind !== "regex" && !matchBlocksSelect(select, { relFile: `${pkg.name}/${rel}` })) continue;
         await scanBlockFile(absFile, rel, `${pkg.name}/${rel}`, pkg.name);
       }

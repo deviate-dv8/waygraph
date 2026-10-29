@@ -1,4 +1,5 @@
 import { basename, join, relative, resolve, dirname } from "node:path";
+import semver from "semver";
 import { tmpdir } from "node:os";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -21,10 +22,10 @@ function walk(dir: string, base = dir): string[] {
 }
 
 const targetName = (rel: string): string => (rel === "gitignore" ? ".gitignore" : rel);
-const major = (v: string): number[] => v.replace(/^[^\d]*/, "").split(".").map((n) => parseInt(n, 10) || 0);
-const isOlder = (a: number[], b: number[]): boolean => {
-  for (let i = 0; i < 3; i++) if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) < (b[i] ?? 0);
-  return false;
+/** The dependency range (`^0.16.4`) lets the project install a waygraph older than this one. */
+const allowsOlder = (range: string, version: string): boolean => {
+  const lowest = semver.validRange(range) ? semver.minVersion(range) : null;
+  return lowest !== null && semver.lt(lowest, version);
 };
 
 const OPTIONS = {
@@ -105,7 +106,7 @@ export async function upgradeCase(args: string[]): Promise<void> {
 
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
   const current = pkg.dependencies?.waygraph as string | undefined;
-  const depStale = current !== undefined && !current.startsWith("file:") && isOlder(major(current), major(ownVersion));
+  const depStale = current !== undefined && allowsOlder(current, ownVersion);
   console.log(`waygraph upgrade: ${proj} (waygraph ${current ?? "not a dependency"} -> ${ownVersion})`);
   if (depStale) console.log(`  dependency  waygraph ${current} -> ^${ownVersion}`);
   for (const rel of added) console.log(`  new         ${rel}`);

@@ -31,6 +31,8 @@ export interface Trait {
   check(page: Page, mem: MemPage): Promise<boolean | TraitResult>;
   /** How long verify keeps retrying this check, ms (default 5000). */
   timeoutMs?: number;
+  /** The element the check looks at, when it looks at one: the demo rings it after the step. */
+  selector?: string;
 }
 
 /** A check's answer with what it saw: `{ ok: false, saw: '"Draft"' }`. */
@@ -113,6 +115,7 @@ export function urlMatches(pattern: URLPatternInit): Trait {
 export function textEquals(selector: string, expected: Expected<string>): Trait {
   return {
     name: `text-equals(${selector}, ${typeof expected === "string" ? JSON.stringify(expected) : "from mem"})`,
+    selector,
     wants: typeof expected === "string" ? `${JSON.stringify(expected)} in ${selector}` : `the mem value in ${selector}`,
     async check(page, mem) {
       const want = expectedValue(expected, mem);
@@ -129,6 +132,7 @@ export function textEquals(selector: string, expected: Expected<string>): Trait 
 export function containsText(selector: string, expected: Expected<string>): Trait {
   return {
     name: `contains(${selector}, ${typeof expected === "string" ? JSON.stringify(expected) : "from mem"})`,
+    selector,
     wants: typeof expected === "string" ? `${JSON.stringify(expected)} inside ${selector}` : `the mem value inside ${selector}`,
     async check(page, mem) {
       const text = await textAt(page, selector);
@@ -141,6 +145,7 @@ export function containsText(selector: string, expected: Expected<string>): Trai
 export function matchesText(selector: string, pattern: RegExp): Trait {
   return {
     name: `matches(${selector}, ${pattern})`,
+    selector,
     wants: `text matching ${pattern} in ${selector}`,
     async check(page) {
       const text = await textAt(page, selector);
@@ -153,6 +158,7 @@ export function matchesText(selector: string, pattern: RegExp): Trait {
 export function valueEquals(selector: string, expected: Expected<string>): Trait {
   return {
     name: `value(${selector}, ${typeof expected === "string" ? JSON.stringify(expected) : "from mem"})`,
+    selector,
     wants: typeof expected === "string" ? `${JSON.stringify(expected)} in the field ${selector}` : `the mem value in the field ${selector}`,
     async check(page, mem) {
       const loc = page.locator(selector).first();
@@ -167,6 +173,7 @@ export function valueEquals(selector: string, expected: Expected<string>): Trait
 export function attributeEquals(selector: string, name: string, value: string): Trait {
   return {
     name: `attribute(${selector}, ${name}, ${JSON.stringify(value)})`,
+    selector,
     wants: `${name}=${JSON.stringify(value)} on ${selector}`,
     async check(page) {
       const loc = page.locator(selector).first();
@@ -216,6 +223,7 @@ export function readEquals<T>(key: ReadKey<T>, test: (value: T) => boolean, want
 export function visible(selector: string): Trait {
   return {
     name: `visible(${selector})`,
+    selector,
     async check(page) {
       await page.locator(selector).first().waitFor({ state: "visible" });
       return true;
@@ -237,6 +245,7 @@ export function visible(selector: string): Trait {
 export function disabled(selector: string): Trait {
   return {
     name: `disabled(${selector})`,
+    selector,
     wants: `${selector} disabled`,
     async check(page) {
       const loc = page.locator(selector).first();
@@ -251,6 +260,7 @@ export function disabled(selector: string): Trait {
 export function enabled(selector: string): Trait {
   return {
     name: `enabled(${selector})`,
+    selector,
     wants: `${selector} enabled`,
     async check(page) {
       const loc = page.locator(selector).first();

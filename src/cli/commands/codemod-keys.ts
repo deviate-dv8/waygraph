@@ -5,7 +5,8 @@
 // { ... })`. Key names stay the same, so `--data` payloads and recorded runs still match. Works on the TypeScript AST.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
-import { IndentationText, Node, Project, SyntaxKind } from "ts-morph";
+import { Node, Project, SyntaxKind } from "ts-morph";
+import { indentationOf } from "../../manifest/source.js";
 import type { CallExpression, Identifier, SourceFile, VariableStatement } from "ts-morph";
 import { walkDir } from "../../manifest/scan.js";
 
@@ -42,8 +43,7 @@ function keyCall(node: Node | undefined): { type: string; name: string; group: b
 /** A file in the project, edited in its own indentation (tabs, two or four spaces). */
 function parse(project: Project, file: string): SourceFile {
   const text = readFileSync(file, "utf8");
-  const indentationText = /\n\t/.test(text) ? IndentationText.Tab : /\n {4}\S/.test(text) && !/\n {2}\S/.test(text) ? IndentationText.FourSpaces : IndentationText.TwoSpaces;
-  project.manipulationSettings.set({ indentationText });
+  project.manipulationSettings.set({ indentationText: indentationOf(text) });
   return project.createSourceFile(file, text, { overwrite: true });
 }
 

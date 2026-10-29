@@ -403,6 +403,18 @@ type clash between @types/node and the polyfill, the `AssertBlock` brand), the o
 - `pilot reach` refused any route through a per-row step (an Effect) even when mem already named the row.
 - `--replay` of a run that played a flow once per `--input` item played it once.
 
+### Hand-rolled code replaced by libraries (0.16.9)
+
+- `--blocks` globs: picomatch instead of a hand-written glob-to-RegExp (`globToRegExp` removed; `{a,b}` and `[abc]` work).
+- `.env` files: Node's `util.parseEnv` (the dotenv format Vite and Next read) instead of a hand-written parser.
+- `waygraph upgrade`'s stale-dependency check: semver instead of splitting versions on dots.
+- `waygraph check`'s practice warnings read the syntax tree (ts-morph) instead of regexes over the file text: a call in
+  a comment or a string no longer counts.
+- `byText` / `byRole` quote with `JSON.stringify` (a backslash in the text broke the selector).
+- The demo rings what a verify looked at from each built-in Trait's `selector` field, not by parsing its name.
+- One parser each for the chain spec (`then` inside a payload no longer splits it), the viewport size and a file's
+  indentation; paths turn into `/` form with `toPosix`; a `.flow.ts` file is found by its exact name.
+
 ### Network tab mocking (backlogged, not yet researched)
 
 The network tab overlay (`demo/overlay/network-capture.ts`, `demo/overlay/inpage/network.ts`) is

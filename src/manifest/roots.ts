@@ -5,6 +5,7 @@
 import { existsSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { toPosix } from "./scan.js";
 
 /**
  * This package's own installed root (contains `templates/`/`examples/`, sibling to `dist/`) -
@@ -26,8 +27,8 @@ function injectLabel(root: string): string {
 export function injectTaggedFile(hostDir: string, root: string, relFile: string): string {
   const host = resolve(hostDir);
   const r = resolve(root);
-  if (r === host) return relFile.replace(/\\/g, "/");
-  return `@${injectLabel(r)}/${relFile.replace(/\\/g, "/")}`;
+  if (r === host) return toPosix(relFile);
+  return `@${injectLabel(r)}/${toPosix(relFile)}`;
 }
 
 const PRESETS: Record<string, () => string | null> = {

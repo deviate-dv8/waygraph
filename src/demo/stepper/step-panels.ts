@@ -223,11 +223,8 @@ async function renderStepError(page: WgPage, info: ErrorPanelInfo) {
 
 
 /**
- * Recovers a DOM selector from a built-in Trait's own .name string -
- * visible(sel) / text-equals(sel, "...") - since Trait.check itself is
- * an opaque closure with no selector field of its own. Best-effort only: a
- * hand-written bespoke Trait, or url-matches(...) (no DOM target), yields
- * nothing to highlight, which is fine - the panel still shows the result.
+ * The elements a Block's verify looked at (each built-in Trait's `selector`), to ring after the step. A Trait with none
+ * (url-matches, a hand-written one) rings nothing; the panel still shows the result.
  */
 export function extractVerifyHighlights(block: SomeBlock, resultTag: string) {
   let verify = block.instruction && block.instruction.verify;
@@ -241,10 +238,7 @@ export function extractVerifyHighlights(block: SomeBlock, resultTag: string) {
   if (!Array.isArray(verify)) return [];
   const highlights: ResolvedHighlight[] = [];
   for (const t of verify) {
-    const name = t && t.name;
-    if (typeof name !== "string") continue;
-    const selector = /^visible\((.+)\)$/.exec(name)?.[1] ?? /^text-equals\((.+?),\s*"/.exec(name)?.[1];
-    if (selector) highlights.push({ selector, label: name, tone: "auto" });
+    if (t?.selector) highlights.push({ selector: t.selector, label: t.name, tone: "auto" });
   }
   return highlights;
 }

@@ -1,11 +1,16 @@
 // The one place a project's files are walked and imported. Everything that needs the project's Blocks or Flows
 // (graph, check, map, auto, traverse, the runner) goes through here.
 import { readdirSync, statSync, type Dirent } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, posix, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Block } from "../engine/block/block.js";
 import type { Checkpoint } from "../engine/checkpoint/checkpoint.js";
 import type { ReadBlock } from "../engine/read/read-block.js";
+
+/** A path with `/` separators on every OS (a relative file path as the manifest, selectors and reports write it). */
+export function toPosix(path: string): string {
+  return path.split(sep).join(posix.sep);
+}
 
 /** Every file under `dir` whose name matches, skipping `node_modules`, `dist` and `.git`. */
 export function walkDir(dir: string, pattern: RegExp): string[] {

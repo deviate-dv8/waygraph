@@ -20,6 +20,8 @@ test("waygraph check flags multi-input and combined-action Method blocks", async
   expect(output).toMatch(/multi-input\.block\.ts \(multiple inputs in one Block\)/);
   expect(output).toMatch(/combined-action\.block\.ts \(fill and click in one Block\)/);
   expect(output).not.toMatch(/ignored-multi-input\.block\.ts \(multiple inputs in one Block\)/);
+  // Read from the syntax tree: a call in a comment or a string is not code.
+  expect(output).not.toMatch(/fill-in-comment\.block\.ts \((multiple inputs|fill and click|hand-written UI)/);
 });
 
 test("waygraph check flags empty/missing verify on a transition Block and on defineAssertBlock", async () => {
