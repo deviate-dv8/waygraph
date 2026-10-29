@@ -22,7 +22,8 @@ are `__wgIcon`, never glyphs; no `.catch(() => {})` (`ignorePageGone` / `ignoreT
 - A change updates the docs with it: the site (`docs/`: guides, reference, and the generated pages via
   `npm run docs:api`), the agent skills (`templates/skills/`), and `ROADMAP.md` (what's next). Templates and examples
   are code, not docs: their READMEs only link to the site.
-- Commit locally; never push or publish unless asked. Versions are patch bumps.
+- Commit locally; never push or publish unless asked. Versions are patch bumps. A release is `npm run release` (once the
+  version's commits are pushed): it publishes to npm, tags the commit `vX.Y.Z` and creates its GitHub Release.
 - Never leave a browser, server or detached session running (`pgrep -af __auto-serve` should be empty).
 - The CLI loads no `@playwright/test` before a project's config: `src/cli/cli.ts` imports each command when it runs,
   and engine code doesn't import Playwright values it can test by name. Otherwise a project with its own install

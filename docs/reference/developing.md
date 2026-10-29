@@ -76,6 +76,18 @@ project's own `.npmrc` - `install-links=true` is required there, or npm will sym
 instead of copy and pull this package's own `node_modules` in through the symlink, causing
 a duplicate-Playwright-installation error).
 
+## Releasing
+
+A version is bumped in `package.json` (patch bumps) at the start of its changes. When they are all on `main`:
+
+```bash
+git push origin main
+npm run release      # build, npm publish, tag the commit vX.Y.Z, create its GitHub Release
+```
+
+The release's notes are the commits since the previous version's tag; every version since 0.0.1 is tagged on the
+commit it was published from (`git tag`, or the repository's Releases page). It needs `gh` signed in and an npm login.
+
 ## These docs
 
 `npm run docs:dev` serves the site with hot reload, `npm run docs:build` builds it (and fails on a dead link),
