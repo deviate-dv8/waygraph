@@ -1,4 +1,5 @@
 // The demo panel before a step: episode and step chips, pace, the mem it reads (editable), and the Run gate.
+import { stopRingTracker } from "../overlay/rings.js";
 import { envFlag, envString } from "../../engine/env.js";
 import { ignorePageGone, ignoreTimeout } from "../../engine/page-gone.js";
 import { installOverlay } from "../overlay/overlay.js";
@@ -19,13 +20,9 @@ export async function renderBeforeStep(page: WgPage, info: BeforePanelInfo) {
   // resize/scroll tracker) shouldn't linger once a new step's own panel is
   // up - only relevant when a Block's act() doesn't navigate away, since a
   // real navigation already wipes document.documentElement's children.
+  await stopRingTracker(page);
   await page
     .evaluate(() => {
-      if (window.__wgRingTrack) {
-        window.removeEventListener("resize", window.__wgRingTrack);
-        window.removeEventListener("scroll", window.__wgRingTrack, true);
-        window.__wgRingTrack = null;
-      }
       if (window.__wgHideRing) window.__wgHideRing();
       if (window.__wgHideCursor) window.__wgHideCursor();
     })
@@ -76,48 +73,7 @@ export async function renderBeforeStep(page: WgPage, info: BeforePanelInfo) {
         keys,
         window.__wgPanelFooter!("Run Step", autoNow, "play"),
       );
-      if (isNewPanel) {
-        __wgAdd(panel);
-        requestAnimationFrame(() => panel.classList.add("wg-in"));
-      } else {
-        panel.classList.add("wg-in");
-      }
-      if (window.__wgWirePanelChrome) {
-        window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-          stepLabel: info.stepLabel || "",
-          forceCollapsed: info.forceCollapsed === true ? true : undefined,
-          fastForward: !!info.fastForward,
-          isApi: !!info.isApi,
-        });
-      }
-      if (window.__wgSyncTodos) {
-        const sync = info.todoSync || (info.todos && info.todos.length ? "set" : "keep");
-        // Prefer dock-only payload. Passing list:[] with a dock used to clear
-        // marks a frame later (empty-list clear path).
-        if (sync === "keep" && !info.todoDock) {
-          /* leave floating dock alone */
-        } else {
-          const payload: WgTodoSyncPayload = {
-            sync: sync,
-            dock: info.todoDock || null,
-            pos: info.todoPos || null,
-            todoId: info.todoId || (info.todoDock && info.todoDock.id) || null,
-          };
-          if (!info.todoDock && info.todos && info.todos.length) {
-            payload.list = info.todos;
-          }
-          window.__wgSyncTodos(payload);
-        }
-      }
-      if (window.__wgStampModal) {
-        window.__wgStampModal(panel, "panel", {
-          phase: "before",
-          step: info.index + 1,
-          total: info.total,
-          block: info.blockName || "",
-          ready: true,
-        });
-      }
+      window.__wgShowPanel!(panel, isNewPanel, info, "before");
       // Live, human-readable preview of what a MemKey's raw JSON will
       // actually write - object fields become "Field: value" lines
       // (camelCase split the same way state tags already are); a

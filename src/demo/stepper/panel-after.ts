@@ -1,4 +1,5 @@
 // The demo panel after a step: what it resolved to (pretty / JSON), its rings, and the Next gate.
+import { stopRingTracker } from "../overlay/rings.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 import { installOverlay } from "../overlay/overlay.js";
 import { cycleHighlightRings } from "../overlay/rings.js";
@@ -27,15 +28,7 @@ export async function renderAfterStep(page: WgPage, info: AfterPanelInfo) {
   await installOverlay(page, info.title, info.bannerUi, info.caption, info.networkTabVisible);
   // Clear any tracker from a previous highlight before cycling through this
   // step's own.
-  await page
-    .evaluate(() => {
-      if (window.__wgRingTrack) {
-        window.removeEventListener("resize", window.__wgRingTrack);
-        window.removeEventListener("scroll", window.__wgRingTrack, true);
-        window.__wgRingTrack = null;
-      }
-    })
-    .catch(ignorePageGone);
+  await stopRingTracker(page);
   const highlights = info.highlights || [];
   const gatesFast = !!info.gatesFast;
   // Cycle through EVERY declared/recovered highlight in order, each shown
@@ -130,48 +123,7 @@ export async function renderAfterStep(page: WgPage, info: AfterPanelInfo) {
           : null,
         window.__wgPanelFooter!(info.isLast ? "Finish" : "Next", autoNow, info.isLast ? undefined : "next"),
       );
-      if (isNewPanel) {
-        __wgAdd(panel);
-        requestAnimationFrame(() => panel.classList.add("wg-in"));
-      } else {
-        panel.classList.add("wg-in");
-      }
-      if (window.__wgWirePanelChrome) {
-        window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-          stepLabel: info.stepLabel || "",
-          forceCollapsed: info.forceCollapsed === true ? true : undefined,
-          fastForward: !!info.fastForward,
-          isApi: !!info.isApi,
-        });
-      }
-      if (window.__wgSyncTodos) {
-        const sync = info.todoSync || (info.todos && info.todos.length ? "set" : "keep");
-        // Prefer dock-only payload. Passing list:[] with a dock used to clear
-        // marks a frame later (empty-list clear path).
-        if (sync === "keep" && !info.todoDock) {
-          /* leave floating dock alone */
-        } else {
-          const payload: WgTodoSyncPayload = {
-            sync: sync,
-            dock: info.todoDock || null,
-            pos: info.todoPos || null,
-            todoId: info.todoId || (info.todoDock && info.todoDock.id) || null,
-          };
-          if (!info.todoDock && info.todos && info.todos.length) {
-            payload.list = info.todos;
-          }
-          window.__wgSyncTodos(payload);
-        }
-      }
-      if (window.__wgStampModal) {
-        window.__wgStampModal(panel, "panel", {
-          phase: "after",
-          step: info.index + 1,
-          total: info.total,
-          block: info.blockName || "",
-          ready: true,
-        });
-      }
+      window.__wgShowPanel!(panel, isNewPanel, info, "after");
       panel.querySelectorAll<HTMLElement>(".wg-toggle-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
           const wantPretty = btn.getAttribute("data-mode") === "pretty";

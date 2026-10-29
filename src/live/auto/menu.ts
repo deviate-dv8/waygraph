@@ -1,7 +1,9 @@
 // The auto picker's menu: the in-page panel (headfulPick) or the terminal menu (cliPick), and the "running" banner.
+import { messageOf } from "../../engine/errors.js";
 import type { Page } from "@playwright/test";
 import { createInterface } from "node:readline/promises";
 import { ensureShadowRoot } from "../../demo/overlay/ui/shadow.js";
+import { installStamp } from "../../demo/overlay/inpage/stamp.js";
 import type { MemKey, MemPage } from "../../engine/mem/mem.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 import type { BlockEntry } from "../../manifest/project.js";
@@ -85,7 +87,7 @@ export async function syncPanelMem(page: Page, mem: MemPage, keys: readonly MemK
       mem.set(k, JSON.parse(raw));
     } catch (err) {
       throw new Error(
-        `Invalid JSON for mem key "${k.name}": ${err instanceof Error ? err.message : String(err)}`
+        `Invalid JSON for mem key "${k.name}": ${messageOf(err)}`
       );
     }
   }
@@ -170,6 +172,8 @@ export async function headfulPick(
   }));
 
   await ensureShadowRoot(page);
+  // The beacon stamps (data-wg-ui / data-wg-ready, window.__wgOverlayBeacon) the panel is read by.
+  await page.evaluate(installStamp).catch(ignorePageGone);
   await page.evaluate(
     ({ note, hereLabel, memFields, sections }) => {
       __wgById("wg-auto-panel")?.remove();
@@ -274,35 +278,7 @@ export async function headfulPick(
         }
       };
       window.__wgWirePanelChrome(root, "wg-auto-panel-hidden", "waygraph auto");
-      if (typeof window.__wgStampModal === "function") {
-        window.__wgStampModal(root, "auto-panel", { phase: "pick", ready: true });
-      } else {
-        root.setAttribute("data-wg-ui", "1");
-        root.setAttribute("data-wg-modal", "auto-panel");
-        root.setAttribute("data-wg-phase", "pick");
-        root.setAttribute("data-wg-collapsed", root.classList.contains("wg-collapsed") ? "1" : "0");
-        root.setAttribute("data-wg-ready", "1");
-        window.__wgOverlayBeacon =
-          window.__wgOverlayBeacon ||
-          (() => Array.from(__wgQA('[data-wg-ui="1"]')).map((el) => {
-            const r = el.getBoundingClientRect();
-            const st = getComputedStyle(el);
-            return {
-              id: el.id || null,
-              modal: el.getAttribute("data-wg-modal"),
-              ready: el.getAttribute("data-wg-ready") === "1",
-              phase: el.getAttribute("data-wg-phase"),
-              step: el.getAttribute("data-wg-step"),
-              block: el.getAttribute("data-wg-block"),
-              collapsed: el.getAttribute("data-wg-collapsed") === "1" || el.classList.contains("wg-collapsed"),
-              opacity: st.opacity,
-              textLen: (el.innerText || "").trim().length,
-              w: Math.round(r.width),
-              h: Math.round(r.height),
-              visible: r.width > 0 && r.height > 0 && Number(st.opacity) > 0.05,
-            };
-          }));
-      }
+      window.__wgStampModal!(root, "auto-panel", { phase: "pick", ready: true });
       root.querySelectorAll<HTMLElement>("button[data-idx]").forEach((btn) => {
         btn.addEventListener("click", () => window.__wgAutoPick?.(Number(btn.dataset.idx)));
         btn.addEventListener("mouseenter", () => {

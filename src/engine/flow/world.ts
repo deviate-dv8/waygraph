@@ -1,6 +1,7 @@
 // The world a flow runs in: its time zone, the network's speed, requests that fail or are slow on purpose
 // (`map({ timezone, network })`). Applied when the flow starts, undone when it ends - pass or fail - so a flow that
 // tests an outage doesn't leave the next one offline.
+import { setTimeout as sleep } from "node:timers/promises";
 import type { CDPSession, Page, Route } from "@playwright/test";
 import type { SomeBlock } from "../block/some-block.js";
 import { copyWaygraphRuntime } from "../block/block.js";
@@ -77,7 +78,7 @@ async function apply(page: Page, world: World): Promise<void> {
   const added = [];
   for (const fault of world.network?.faults ?? []) {
     const handler = async (route: Route): Promise<void> => {
-      if (fault.delayMs) await new Promise((r) => setTimeout(r, fault.delayMs));
+      if (fault.delayMs) await sleep(fault.delayMs);
       if (fault.abort) return route.abort("failed");
       if (fault.status !== undefined) return route.fulfill({ status: fault.status, body: fault.body ?? "" });
       return route.continue();

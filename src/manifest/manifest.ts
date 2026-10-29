@@ -1,5 +1,6 @@
 // The manifest: everything a project defines, as plain JSON. `waygraph manifest` prints it; Waygraph UI and map packages
 // read it instead of importing the project.
+import { messageOf } from "../engine/errors.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { scanProject } from "./project.js";
@@ -147,7 +148,7 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
     try {
       shape = { fields: readBlockShape(r.block, new MemPage()) };
     } catch (err) {
-      shape = { fieldsError: err instanceof Error ? err.message : String(err) };
+      shape = { fieldsError: messageOf(err) };
     }
     for (const t of r.block.from) if (t !== "*") checkpoints.add(t);
     return {

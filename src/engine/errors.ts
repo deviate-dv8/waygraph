@@ -249,3 +249,9 @@ export class WaygraphError extends Error {
     this.name = "WaygraphError";
   }
 }
+
+
+/** What went wrong, as text: an Error's message, or anything else as a string. */
+export function messageOf(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}

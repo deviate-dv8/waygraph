@@ -1,4 +1,5 @@
 // `waygraph auto`: the explore loop - where the page is, the menu, run the picked Block, repeat.
+import { messageOf } from "../../engine/errors.js";
 import type { BrowserContext, BrowserContextOptions, Page } from "@playwright/test";
 import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
@@ -240,7 +241,7 @@ async function runAutoExploreCore(projectDir: string, options: AutoExploreOption
         console.error(`waygraph auto: ran ${entry.block.name} -> ${here}`);
       } catch (err) {
         lastRunNote = `${entry.block.name} failed`;
-        console.error(`waygraph auto: ${entry.block.name} failed - ${err instanceof Error ? err.message : String(err)}`);
+        console.error(`waygraph auto: ${entry.block.name} failed - ${messageOf(err)}`);
       }
     }
   } finally {

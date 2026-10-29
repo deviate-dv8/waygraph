@@ -40,58 +40,17 @@ export type WgBeaconRow = {
   visible: boolean;
 };
 
-/** Browser-side beacon reader (also installed as window.__wgOverlayBeacon). */
+/**
+ * Browser-side beacon reader: every overlay modal and its state, from the `window.__wgOverlayBeacon` the overlay installs
+ * with its stamps (inpage/stamp.ts). A page with no overlay has none, so it reads as no modals.
+ */
 export function readWgOverlayBeaconInPage(): WgBeaconRow[] {
-  const w = window;
-  if (typeof w.__wgOverlayBeacon === "function") return w.__wgOverlayBeacon();
-  return Array.from(document.querySelectorAll(WG_UI_SEL)).map((el) => {
-    const r = el.getBoundingClientRect();
-    const st = getComputedStyle(el);
-    return {
-      id: el.id || null,
-      modal: el.getAttribute("data-wg-modal"),
-      ready: el.getAttribute("data-wg-ready") === "1",
-      phase: el.getAttribute("data-wg-phase"),
-      step: el.getAttribute("data-wg-step"),
-      block: el.getAttribute("data-wg-block"),
-      collapsed:
-        el.getAttribute("data-wg-collapsed") === "1" || el.classList.contains("wg-collapsed"),
-      opacity: st.opacity,
-      textLen: (el.textContent || "").trim().length,
-      w: Math.round(r.width),
-      h: Math.round(r.height),
-      visible: r.width > 0 && r.height > 0 && Number(st.opacity) > 0.05,
-    };
-  });
+  return typeof window.__wgOverlayBeacon === "function" ? window.__wgOverlayBeacon() : [];
 }
 
 /** Reads the overlay beacon from a page: what waygraph's own UI is showing. */
 export async function readWgOverlayBeacon(page: Page): Promise<WgBeaconRow[]> {
-  return page.evaluate(() => {
-    const w = window;
-    if (typeof w.__wgOverlayBeacon === "function") {
-      return w.__wgOverlayBeacon();
-    }
-    return Array.from(document.querySelectorAll('[data-wg-ui="1"]')).map((el) => {
-      const r = el.getBoundingClientRect();
-      const st = getComputedStyle(el);
-      return {
-        id: el.id || null,
-        modal: el.getAttribute("data-wg-modal"),
-        ready: el.getAttribute("data-wg-ready") === "1",
-        phase: el.getAttribute("data-wg-phase"),
-        step: el.getAttribute("data-wg-step"),
-        block: el.getAttribute("data-wg-block"),
-        collapsed:
-          el.getAttribute("data-wg-collapsed") === "1" || el.classList.contains("wg-collapsed"),
-        opacity: st.opacity,
-        textLen: (el.textContent || "").trim().length,
-        w: Math.round(r.width),
-        h: Math.round(r.height),
-        visible: r.width > 0 && r.height > 0 && Number(st.opacity) > 0.05,
-      };
-    });
-  });
+  return page.evaluate(readWgOverlayBeaconInPage);
 }
 
 /**

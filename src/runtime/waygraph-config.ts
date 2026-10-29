@@ -2,6 +2,7 @@
 // keeps working untouched; this is a second, richer place to put the same kind of project-level
 // setting, for consumers who'd rather have a real typed file than a JSON field. Real ask: "I
 // think its time to add waygraph config now."
+import { messageOf } from "../engine/errors.js";
 import { existsSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -145,7 +146,7 @@ export async function loadWaygraphConfig(projectDir: string): Promise<WaygraphCo
       mod = (await import(pathToFileURL(p).href)) as { default?: WaygraphConfig } & WaygraphConfig;
     } catch (err) {
       throw new Error(
-        `waygraph: failed to load ${name}: ${err instanceof Error ? err.message : String(err)}`,
+        `waygraph: failed to load ${name}: ${messageOf(err)}`,
       );
     }
     const loaded = mod.default ?? mod;

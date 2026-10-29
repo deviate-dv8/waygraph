@@ -1,7 +1,7 @@
 // runGraph: plays Blocks on a page. For each Block: precondition -> act -> observe -> resolve (which Checkpoint did we
 // reach?) -> verify (is the page really there?) -> layouts, then follows `next` for a branched Block. Emits run events.
 import { MemPage } from "../mem/mem.js";
-import { WaygraphError, MSG_PREFLIGHT_MISSING_KEY, MSG_RUNGRAPH_MAX_STEPS, MSG_RUNGRAPH_NOT_TERMINAL } from "../errors.js";
+import { WaygraphError, MSG_PREFLIGHT_MISSING_KEY, MSG_RUNGRAPH_MAX_STEPS, MSG_RUNGRAPH_NOT_TERMINAL, messageOf } from "../errors.js";
 import { checkpoint } from "../checkpoint/checkpoint.js";
 import type { Block } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
@@ -283,6 +283,6 @@ async function readLanding(page: Page, mem: MemPage, checkpoint: string): Promis
     stepRead(checkpoint, { read: read.toJSON(), missing: [...read.missing], notes: { ...read.notes }, readBlocks: blocks });
   } catch (err) {
     // A broken Read Block is reported on the step, never fails the run it observes.
-    stepRead(checkpoint, { read: {}, missing: [], notes: {}, readBlocks: [], error: err instanceof Error ? err.message : String(err) });
+    stepRead(checkpoint, { read: {}, missing: [], notes: {}, readBlocks: [], error: messageOf(err) });
   }
 }

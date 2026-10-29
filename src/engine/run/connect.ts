@@ -1,5 +1,6 @@
 // Joins Blocks into one: A's whole step (act, observe, resolve, verify, layouts) runs, then B acts on A's Checkpoint.
 // A flow is its steps joined this way.
+import { mark } from "../block/mark.js";
 import type { Block } from "../block/block.js";
 import type { SomeBlock } from "../block/some-block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
@@ -81,6 +82,6 @@ export function joinSteps(a: SomeBlock, b: SomeBlock, layouts?: readonly Connect
       ...(bVerify ? { verify: bVerify } : {}),
     },
   };
-  Object.defineProperty(connected, "__wgLastLeaf", { value: lastLeaf(b), enumerable: false });
+  mark(connected, "__wgLastLeaf", lastLeaf(b));
   return connected;
 }

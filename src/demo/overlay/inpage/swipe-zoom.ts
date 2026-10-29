@@ -95,29 +95,23 @@ export function installSwipeZoom() {
           layer._wgTimer = setTimeout(tick, 40);
           return ms + 120;
         };
-        window.__wgClearZoom = () => {
-          // Strip leftover element transforms from older zoom path.
+        /** Undoes a zoom: element transforms from the older zoom path, and the device shell's camera (back to its fit). */
+        const unzoom = () => {
           document.querySelectorAll<HTMLElement>("[data-wg-zoomed=\"1\"]").forEach((el) => {
-            el.style.removeProperty("transform");
-            el.style.removeProperty("transform-origin");
-            el.style.removeProperty("transition");
-            el.style.removeProperty("z-index");
-            el.style.removeProperty("position");
+            for (const prop of ["transform", "transform-origin", "transition", "z-index", "position"]) el.style.removeProperty(prop);
             delete el.dataset.wgZoomed;
           });
-          // Undo any prior shell-camera experiment - restore device fit scale only.
           const shell = __wgById("wg-device-shell");
           if (shell && shell.dataset.wgCamBase != null) {
             shell.style.transform = shell.dataset.wgCamBase;
-            if (shell.dataset.wgCamOrigin) {
-              shell.style.transformOrigin = shell.dataset.wgCamOrigin;
-            } else {
-              shell.style.transformOrigin = "center center";
-            }
+            shell.style.transformOrigin = shell.dataset.wgCamOrigin || "center center";
             delete shell.dataset.wgCamBase;
             delete shell.dataset.wgCamOrigin;
             delete shell.dataset.wgCamZoom;
           }
+        };
+        window.__wgClearZoom = () => {
+          unzoom();
           window.__wgZoomLevel = 1;
           window.__wgZoomSel = "";
           if (window.__wgSetZoomBadge) window.__wgSetZoomBadge(1, "");
@@ -189,22 +183,7 @@ export function installSwipeZoom() {
          * is ring + focus veil; badge still shows authored zoom level.
          */
         window.__wgApplyZoom = (sel: string | undefined, scale: number) => {
-          document.querySelectorAll<HTMLElement>("[data-wg-zoomed=\"1\"]").forEach((el) => {
-            el.style.removeProperty("transform");
-            el.style.removeProperty("transform-origin");
-            el.style.removeProperty("transition");
-            el.style.removeProperty("z-index");
-            el.style.removeProperty("position");
-            delete el.dataset.wgZoomed;
-          });
-          const shell = __wgById("wg-device-shell");
-          if (shell && shell.dataset.wgCamBase != null) {
-            shell.style.transform = shell.dataset.wgCamBase;
-            shell.style.transformOrigin = shell.dataset.wgCamOrigin || "center center";
-            delete shell.dataset.wgCamBase;
-            delete shell.dataset.wgCamOrigin;
-            delete shell.dataset.wgCamZoom;
-          }
+          unzoom();
           const n = Number(scale);
           if (!Number.isFinite(n) || n <= 1.001) {
             window.__wgZoomLevel = 1;

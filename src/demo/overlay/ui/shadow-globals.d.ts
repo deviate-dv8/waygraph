@@ -75,6 +75,22 @@ interface Window {
   __wgPanelHeading?: (kicker: string, title: string, tone?: "error" | "expected") => HTMLElement;
   __wgPanelFooter?: (label: string, autoNow: boolean, icon?: import("./icons.js").IconName) => HTMLElement;
   __wgWireAutoplay?: () => void;
+  __wgShowPanel?: (panel: HTMLElement, isNew: boolean, info: WgPanelShowInfo, phase: "before" | "after" | "error") => void;
+}
+/** What `__wgShowPanel` needs from a step: its place, its chrome options, and the todo dock to sync (before / after). */
+interface WgPanelShowInfo {
+  index: number;
+  total: number;
+  blockName?: string | undefined;
+  stepLabel?: string | undefined;
+  forceCollapsed?: boolean | undefined;
+  fastForward?: boolean | undefined;
+  isApi?: boolean | undefined;
+  todoSync?: string | undefined;
+  todos?: readonly WgTodoRow[] | undefined;
+  todoDock?: WgTodoDockRow | null | undefined;
+  todoPos?: string | null | undefined;
+  todoId?: string | null | undefined;
 }
 
 // Ring, cursor, panel and beacon calls the overlay installs (inpage/core.ts, stamp.ts, panel-chrome.ts).

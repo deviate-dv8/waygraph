@@ -1,4 +1,5 @@
 // A Nav Block: gets to a page, by URL or by clicking a link, and lands on that page's Checkpoint.
+import { mark } from "../mark.js";
 import { checkpoint } from "../../checkpoint/checkpoint.js";
 import type { Block, DefinedBlock } from "../block.js";
 import type { Checkpoint } from "../../checkpoint/checkpoint.js";
@@ -102,6 +103,45 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
 );
 
 
+/** A Block that navigates (a Nav, or a Page hub that has a url or click) and lands on its `checkpoint`. */
+export function defineNavigating<Out extends Checkpoint<string>>(options: {
+  name: string;
+  description?: string | undefined;
+  checkpoint: Out;
+  url?: string | ((mem: MemPage) => string) | undefined;
+  click?: string | ((mem: MemPage) => string) | undefined;
+  requires?: Block<Checkpoint<string>, Out>["requires"];
+  instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
+  verify?: Trait[] | ((out: Out) => Trait[]) | undefined;
+}): DefinedBlock<Checkpoint<string>, Out> {
+  return defineBlock<Checkpoint<string>, Out>({
+    name: options.name,
+    ...(options.description ? { description: options.description } : {}),
+    ...(options.requires ? { requires: options.requires } : {}),
+    ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
+    instruction: {
+      // The real Page, not ActionPage: navigating is this Block's job.
+      act: (page: Page, _input: Checkpoint<string>, mem: MemPage) => navigate(page, mem, options),
+      resolve: () => checkpoint(options.checkpoint.__state) as Out,
+      ...(options.verify ? { verify: options.verify } : {}),
+    },
+  });
+}
+
+/**
+ * A Nav or Page Block's act: go to its `url`, or click its `click` (always through a Locator, so the demo's cursor and
+ * pulse show a click-nav, never a teleport). Neither: an arrival-only Page hub, already there.
+ */
+export async function navigate(
+  page: Page,
+  mem: MemPage,
+  to: { url?: string | ((mem: MemPage) => string) | undefined; click?: string | ((mem: MemPage) => string) | undefined },
+): Promise<void> {
+  if (to.url !== undefined) await page.goto(typeof to.url === "function" ? to.url(mem) : to.url);
+  else if (to.click !== undefined) await page.locator(typeof to.click === "function" ? to.click(mem) : to.click).click();
+}
+
+
 /**
  * Builds a {@link NavBlock}. The generated `act()` is always exactly
  * `page.goto(url)` or `page.locator(click).click()` - never anything else,
@@ -116,55 +156,21 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
  * For click-nav in app code prefer {@link defineNavClickBlock} (url stays here).
  */
 export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlockOptions<Out>): NavBlock<Out> {
-  const built = defineBlock<Checkpoint<string>, Out>({
-    name: options.name,
-    ...(options.description ? { description: options.description } : {}),
-    ...(options.requires ? { requires: options.requires } : {}),
-    ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
-    instruction: {
-      // The real Page, not ActionPage: navigating is this Block's job.
-      async act(page: Page, _input: Checkpoint<string>, mem: MemPage) {
-        if (options.url !== undefined) {
-          const url = typeof options.url === "function" ? options.url(mem) : options.url;
-          await page.goto(url);
-        } else {
-          // Always Locator.click() so the demo stepper's cursor/pulse patch
-          // (instrumentInteractionHighlighting) sees NavBlock click-nav -
-          // never page.click() / goto teleport.
-          const selector = typeof options.click === "function" ? options.click(mem) : options.click;
-          await page.locator(selector).click();
-        }
-      },
-      resolve: () => checkpoint(options.checkpoint.__state) as Out,
-      ...(options.verify ? { verify: options.verify } : {}),
-    },
-  });
+  const built = defineNavigating(options);
   markRoute(built, options.from?.length ? tagsOf(options.from) : ["*"], [options.checkpoint.__state]);
   // Non-enumerable so it never shows up in Object.keys/JSON/autocomplete -
   // purely a runtime marker `waygraph check` (or anything else walking a
   // project's Blocks) can test for to tell a NavBlock apart from a regular
   // one, since the TypeScript type alone (NavBlock = DefinedBlock) doesn't
   // survive to runtime.
-  Object.defineProperty(built, "__waygraphKind", {
-    value: "nav",
-    enumerable: false,
-    configurable: false,
-  });
+  mark(built, "__waygraphKind", "nav");
   // Demo/step tooling: remember the click selector (or factory) so
   // overlays can label "nav click" without re-parsing source.
   if (options.from && options.from.length > 0) {
-    Object.defineProperty(built, "__waygraphNavFrom", {
-      value: tagsOf(options.from),
-      enumerable: false,
-      configurable: false,
-    });
+    mark(built, "__waygraphNavFrom", tagsOf(options.from));
   }
   if (options.click !== undefined) {
-    Object.defineProperty(built, "__waygraphNavClick", {
-      value: options.click,
-      enumerable: false,
-      configurable: false,
-    });
+    mark(built, "__waygraphNavClick", options.click);
   }
   // Same idea, for the url case - only when it's a plain string (a
   // function URL is mem-dependent/dynamic, can't be compared statically
@@ -174,11 +180,7 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
   // every nav.block.ts's own source - this is what `AutoSession` now reads
   // to warn about real, unmapped nav links found live on the page.
   if (typeof options.url === "string") {
-    Object.defineProperty(built, "__waygraphNavUrl", {
-      value: options.url,
-      enumerable: false,
-      configurable: false,
-    });
+    mark(built, "__waygraphNavUrl", options.url);
   }
   return built;
 }
@@ -248,10 +250,6 @@ export function defineMemNavBlock<Out extends Checkpoint<string>>(
   },
 ): MemNavBlock<Out> {
   const built = defineNavBlock<Out>(options) as MemNavBlock<Out>;
-  Object.defineProperty(built, "__waygraphMemKind", {
-    value: "nav",
-    enumerable: false,
-    configurable: false,
-  });
+  mark(built, "__waygraphMemKind", "nav");
   return built;
 }

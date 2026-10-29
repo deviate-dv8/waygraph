@@ -1,5 +1,6 @@
 // Plays a Block's narration for one phase (stubBefore / stubAfter / stubOnError): runs its ctx stub and returns the
 // rings, todos, device, title and caption it set, for the overlay to paint.
+import { messageOf } from "../../engine/errors.js";
 import type { DeviceState } from "../../engine/stub/viewport.js";
 import type { HighlightStubPhaseName, StubBagState, StubPhaseResult } from "../../engine/stub/stub.js";
 import type { ResolvedHighlight } from "../../engine/stub/ring.js";
@@ -42,7 +43,7 @@ export async function runStubPhase(
       await raw(ctx);
     } catch (err) {
       // A mistake in the author's stub: shown on the step (the demo's failure panel), never dropped.
-      throw new Error(`${block.name}: its ${phase} stub threw: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+      throw new Error(`${block.name}: its ${phase} stub threw: ${messageOf(err)}`, { cause: err });
     }
   }
   if (phase === "stubOnError" && bag.slides?.length) {
@@ -151,7 +152,7 @@ export function resolveHighlightSlots(
     try {
       void raw(createStubCtx<Checkpoint<string>>(bag, { ...(opts?.out !== undefined ? { out: opts.out } : {}) }));
     } catch (err) {
-      throw new Error(`${block.name}: its ${phase} stub threw: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+      throw new Error(`${block.name}: its ${phase} stub threw: ${messageOf(err)}`, { cause: err });
     }
   }
   return applyDefaultZoom(resolvePhaseMap(bag.highlights), bag.zoom);

@@ -1,4 +1,5 @@
 // Scans a project (and any injected Block libraries) into its Blocks and Flows, with each Block's route.
+import { messageOf } from "../engine/errors.js";
 import { relative } from "node:path";
 import type { BlocksSelect } from "./select.js";
 import { matchBlocksSelect } from "./select.js";
@@ -72,7 +73,7 @@ export interface ScanOptions {
 
 /** A file that fails to import is left out of the scan, and said so: a silent skip reads as "nothing there". */
 export function reportImportError(relFile: string, err: unknown): void {
-  const msg = err instanceof Error ? err.message : String(err);
+  const msg = messageOf(err);
   console.error(`waygraph: skip ${relFile}: ${msg.split("\n")[0]}`);
 }
 

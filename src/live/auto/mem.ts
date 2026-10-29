@@ -1,4 +1,5 @@
 // Mem for a live session: --data first, then the project's mem stubs; the terminal prompt for what is missing.
+import { messageOf } from "../../engine/errors.js";
 import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { envString } from "../../engine/env.js";
@@ -36,14 +37,14 @@ export function seedMemFromEnv(mem: MemPage, entry: BlockEntry): boolean {
 }
 /** Pre-seeds required keys from WAYGRAPH_DATA and the project's mem stubs, so a session does not stop for mem forms. */
 
-export function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage): void {
-  const raw = envString("WAYGRAPH_DATA") ?? envString("WAYGRAPH_AUTO_MEM");
+export function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage, dataJson?: string): void {
+  const raw = dataJson ?? envString("WAYGRAPH_DATA") ?? envString("WAYGRAPH_AUTO_MEM");
   let envParsed: Record<string, unknown> = {};
   if (raw) {
     try {
       envParsed = JSON.parse(raw) as Record<string, unknown>;
     } catch (err) {
-      throw new Error(`waygraph: --data / WAYGRAPH_DATA is not valid JSON: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(`waygraph: --data / WAYGRAPH_DATA is not valid JSON: ${messageOf(err)}`);
     }
   }
   for (const entry of library.values()) {

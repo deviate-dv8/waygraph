@@ -11,7 +11,7 @@
 // behavior, one real dispatch down whichever path the live state actually takes. Useful as a
 // baseline, but it cannot explore siblings: once a branch's Blocks run, the page has moved on.
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
-import { WaygraphError, MSG_BRANCH_REGRESSION_NO_BROWSER } from "../errors.js";
+import { WaygraphError, MSG_BRANCH_REGRESSION_NO_BROWSER, messageOf } from "../errors.js";
 import type { Flow } from "./flow.js";
 import type { RunGraphOptions } from "../run/run.js";
 import { MemPage } from "../mem/mem.js";
@@ -119,7 +119,7 @@ export async function runBranchRegression(
         const result = await f.run(ctx, m, { ...options, page, closeOnFinish: true });
         results.push({ path, status: "ok", result: result as Checkpoint<string> });
       } catch (err) {
-        results.push({ path, status: "failed", error: err instanceof Error ? err.message : String(err) });
+        results.push({ path, status: "failed", error: messageOf(err) });
       }
       return;
     }
@@ -132,7 +132,7 @@ export async function runBranchRegression(
         page: Page;
       };
     } catch (err) {
-      results.push({ path, status: "failed", error: err instanceof Error ? err.message : String(err) });
+      results.push({ path, status: "failed", error: messageOf(err) });
       return;
     }
     // `browser` is there whenever the session is cloned (checked above).

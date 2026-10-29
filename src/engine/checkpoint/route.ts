@@ -1,4 +1,5 @@
 // A routed Block says where it runs: `from` (one Checkpoint, a list, or anywhere) and `to`; the route is kept on the Block for the manifest.
+import { mark } from "../block/mark.js";
 import type { Checkpoint } from "./checkpoint.js";
 import { checkpoint } from "./checkpoint.js";
 import type { defineBlock } from "../block/block.js";
@@ -13,8 +14,8 @@ export function tagsOf(refs: Checkpoint<string> | readonly Checkpoint<string>[])
  * means reachable from anywhere.
  */
 export function markRoute(block: object, from: readonly string[], to: readonly string[]): void {
-  Object.defineProperty(block, "__waygraphFrom", { value: [...from], enumerable: false, configurable: true });
-  Object.defineProperty(block, "__waygraphTo", { value: [...to], enumerable: false, configurable: true });
+  mark(block, "__waygraphFrom", [...from]);
+  mark(block, "__waygraphTo", [...to]);
 }
 
 export type BlockBase<In extends Checkpoint<string>, Out extends Checkpoint<string>> = Parameters<typeof defineBlock<In, Out>>[0];

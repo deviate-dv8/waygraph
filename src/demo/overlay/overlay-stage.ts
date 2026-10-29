@@ -2,6 +2,7 @@
 // stub phase is applied to the page. demo / auto / browser / pilot all go through this, so a "waygraph overlay
 // fixture" (ctx.ui.todos / ctx.ui.device / ctx.ui.title / ...) means the same thing on every surface.
 // NOT Playwright test fixtures - these paint the waygraph overlay on the page under test.
+import { setTimeout as sleep } from "node:timers/promises";
 import type { BannerUiState, StepperRefs, WgPage } from "../types.js";
 import type { StubPhaseResult } from "../../engine/stub/stub.js";
 import type { TodoDockState, TodoDockUiOpts } from "../../engine/stub/todos.js";
@@ -111,7 +112,7 @@ export function createOverlayStage(page: WgPage, { todoDockRef, deviceRef }: Pic
       // a ring/camera-zoom transition kicked off immediately after (the very next thing this step
       // does) reads as happening AT THE SAME TIME as the device change on video, with no visual
       // breathing room between them - two transitions with no gap look like one confused one.
-      await new Promise((r) => setTimeout(r, 220));
+      await sleep(220);
     }
     return { appliedTodo, appliedDevice };
   };

@@ -7,6 +7,7 @@ import type { Plugin } from "vite";
 const STYLESHEET = fileURLToPath(new URL("../src/demo/overlay/ui/stylesheet.ts", import.meta.url));
 const PLAYWRIGHT_STUB = fileURLToPath(new URL("./playwright-stub.ts", import.meta.url));
 const ASYNC_HOOKS_STUB = fileURLToPath(new URL("./async-hooks-stub.ts", import.meta.url));
+const TIMERS_STUB = fileURLToPath(new URL("./timers-stub.ts", import.meta.url));
 
 /** `ui/stylesheet.ts` reads the built CSS from disk; in Storybook it is built on the fly, and again on every change. */
 function overlayStylesheet(): Plugin {
@@ -41,7 +42,7 @@ const config: StorybookConfig = {
     vite.plugins = [...(vite.plugins ?? []), overlayStylesheet()];
     // The overlay reads WAYGRAPH_* settings through engine/env.ts; a story has none.
     vite.define = { ...vite.define, "process.env": "{}" };
-    vite.resolve = { ...vite.resolve, alias: { ...(vite.resolve?.alias as Record<string, string> | undefined), "@playwright/test": PLAYWRIGHT_STUB, "node:async_hooks": ASYNC_HOOKS_STUB } };
+    vite.resolve = { ...vite.resolve, alias: { ...(vite.resolve?.alias as Record<string, string> | undefined), "@playwright/test": PLAYWRIGHT_STUB, "node:async_hooks": ASYNC_HOOKS_STUB, "node:timers/promises": TIMERS_STUB } };
     return vite;
   },
 };

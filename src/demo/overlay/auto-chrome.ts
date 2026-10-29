@@ -1,5 +1,6 @@
 // The auto session's overlay: the same ring, cursor and click pulse the demo runner installs (inpage/core.ts), plus a
 // small "waygraph auto" banner, and a locator theater (locator-theater.ts) that points at what the automation touches.
+import { setTimeout as sleep } from "node:timers/promises";
 import type { Page } from "@playwright/test";
 import type { MemPage } from "../../engine/mem/mem.js";
 import { ensureShadowRoot } from "./ui/shadow.js";
@@ -81,7 +82,7 @@ export function instrumentAutoInteractions(
       const label = memTrack.lastKeyName && Date.now() - memTrack.at < 3000 ? "from mem: " + memTrack.lastKeyName : "writing from mem";
       await moveCursorTo(page, box, cursorMs(500));
       await showRing(page, box, label);
-      await new Promise((res) => setTimeout(res, 200));
+      await sleep(200);
     },
     typingDelay: typeDelay,
     async afterFill() {
@@ -97,16 +98,16 @@ export function instrumentAutoInteractions(
       if (text && text.length <= 30) label = text;
       const clickPoint = await moveCursorTo(page, box, cursorMs(600));
       await showRing(page, box, label);
-      await new Promise((res) => setTimeout(res, clickPrePop()));
+      await sleep(clickPrePop());
       if (clickPoint) {
         await clickPulseAt(page, clickPoint.x, clickPoint.y, "auto");
-        await new Promise((res) => setTimeout(res, 80));
+        await sleep(80);
       }
       return "click";
     },
     holdMs: () => 600,
     async afterClick() {
-      await new Promise((res) => setTimeout(res, clickPostPop()));
+      await sleep(clickPostPop());
       await hideRing(page);
     },
   });

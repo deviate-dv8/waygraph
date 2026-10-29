@@ -190,29 +190,7 @@ async function renderStepError(page: WgPage, info: ErrorPanelInfo) {
           __wgEl("button", { id: "wg-error-retry", class: "wg-error-retry button button-primary h-7 px-3.5", attrs: { type: "button" } }, __wgIcon("retry"), retryLabel),
         ),
       );
-      if (isNewPanel) {
-        __wgAdd(panel);
-        requestAnimationFrame(() => panel.classList.add("wg-in"));
-      } else {
-        panel.classList.add("wg-in");
-      }
-      if (window.__wgWirePanelChrome) {
-        window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
-          stepLabel: info.stepLabel || "",
-          forceCollapsed: info.forceCollapsed === true ? true : undefined,
-          fastForward: !!info.fastForward,
-          isApi: !!info.isApi,
-        });
-      }
-      if (window.__wgStampModal) {
-        window.__wgStampModal(panel, "panel", {
-          phase: "error",
-          step: info.index + 1,
-          total: info.total,
-          block: info.blockName || "",
-          ready: true,
-        });
-      }
+      window.__wgShowPanel!(panel, isNewPanel, info, "error");
       const runBtn = __wgById<HTMLButtonElement>("wg-run");
       if (runBtn) runBtn.addEventListener("click", () => window.__wgNext({}));
       const retryBtn = __wgById("wg-error-retry");

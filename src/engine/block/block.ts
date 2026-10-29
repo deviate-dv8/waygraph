@@ -1,5 +1,6 @@
 // A Block: one step on a page. Its instruction acts, observes, resolves to a Checkpoint and verifies it; the helpers
 // below build, decorate and route Blocks.
+import { mark } from "./mark.js";
 import type { Page } from "@playwright/test";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import {
@@ -265,15 +266,7 @@ export function copyWaygraphRuntime(from: object, to: object): void {
     "__waygraphCleanup",
   ] as const) {
     const desc = Object.getOwnPropertyDescriptor(from, key);
-    if (!desc) continue;
-    // Re-define as configurable so later decorate chains can copy again
-    // (factory markers are non-configurable on the original).
-    Object.defineProperty(to, key, {
-      value: desc.value,
-      enumerable: false,
-      writable: false,
-      configurable: true,
-    });
+    if (desc) mark(to, key, desc.value);
   }
   const ff = (from as { fastForward?: boolean }).fastForward;
   if (ff === true) {

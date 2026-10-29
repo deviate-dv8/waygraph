@@ -1,5 +1,6 @@
 // `waygraph run` with WAYGRAPH_JSON=1: plays like `run` and prints one JSON report (each step's Checkpoint and time,
 // a screenshot on failure). `runId` names the matching `.waygraph/runs/<runId>.jsonl`.
+import { messageOf } from "../../engine/errors.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
@@ -18,7 +19,6 @@ export function reportMode(session: PlaySession): Mode {
   let steps: readonly PlayStep[] = [];
   const done: StepReport[] = [];
   let screenshot: string | null = null;
-  const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
   return {
     name: "report",
     async begin(all) {
@@ -32,7 +32,7 @@ export function reportMode(session: PlaySession): Mode {
       if (failure.result) {
         done.push({ name: step.block.name, checkpoint: failure.result, ms });
       } else if (step.expectedFailureReason) {
-        done.push({ name: step.block.name, expectedFailure: true, error: message(failure.error), ms });
+        done.push({ name: step.block.name, expectedFailure: true, error: messageOf(failure.error), ms });
       } else {
         screenshot = join(tmpdir(), "waygraph-chain-failure-" + Date.now() + ".png");
         await session.page.screenshot({ path: screenshot, fullPage: true }).then(
@@ -51,7 +51,7 @@ export function reportMode(session: PlaySession): Mode {
             failedAt: outcome.failedAt.step.block.name,
             stepIndex: outcome.failedAt.index,
             totalSteps: steps.length,
-            error: message(outcome.failedAt.error),
+            error: messageOf(outcome.failedAt.error),
             steps: done,
             screenshot,
           }

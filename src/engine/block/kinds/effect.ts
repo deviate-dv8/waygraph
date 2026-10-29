@@ -1,4 +1,5 @@
 // An Effect: a page action on one of several live instances (add this item, remove that row); `waygraph auto` offers one menu row per instance.
+import { mark } from "../mark.js";
 import type { Block, DefinedBlock } from "../block.js";
 import type { Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { MemKey } from "../../mem/mem.js";
@@ -53,16 +54,8 @@ export function defineEffectBlock<In extends Checkpoint<string>, Out extends Che
 ): EffectBlock<In, Out> {
   const built = defineBlock(routed(base) as Parameters<typeof defineBlock<In, Out>>[0]) as EffectBlock<In, Out>;
   markRouteOf(built, base);
-  Object.defineProperty(built, "__waygraphMemKind", {
-    value: "effect",
-    enumerable: false,
-    configurable: false,
-  });
-  Object.defineProperty(built, "__waygraphSalt", {
-    value: "effect",
-    enumerable: false,
-    configurable: false,
-  });
+  mark(built, "__waygraphMemKind", "effect");
+  mark(built, "__waygraphSalt", "effect");
   return built;
 }
 

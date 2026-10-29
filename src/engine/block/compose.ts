@@ -4,7 +4,7 @@ import { joinSteps } from "../run/connect.js";
 import type { Block } from "./block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import type { Trait } from "../trait/trait.js";
-import { WaygraphError, MSG_COMPOSE_EMPTY, MSG_FASTFORWARD_EMPTY } from "../errors.js";
+import { WaygraphError, MSG_COMPOSE_EMPTY, MSG_FASTFORWARD_EMPTY, messageOf } from "../errors.js";
 import { findBlock, modVerify, withVerify } from "./block.js";
 import type { SomeBlock } from "./some-block.js";
 
@@ -189,7 +189,7 @@ export interface SomeFastForwardBlock extends SomeComposedBlock {
 
 
 function wrapFfError(ffName: string, err: unknown): Error {
-  const msg = err instanceof Error ? err.message : String(err);
+  const msg = messageOf(err);
   if (msg.startsWith(`${ffName} > `)) {
     return err instanceof Error ? err : new Error(msg);
   }

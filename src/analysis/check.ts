@@ -1,5 +1,6 @@
 // `waygraph validate` and `waygraph check`: does every Flow file load, and do Blocks keep navigation and selectors where
 // they belong. Warnings only.
+import { messageOf } from "../engine/errors.js";
 import { basename, relative } from "node:path";
 import { importFresh, isBlockLike, isReadBlockLike, walkDir } from "../manifest/scan.js";
 import { calls, parseSource } from "../manifest/source.js";
@@ -54,7 +55,7 @@ export async function validateFlows(projectDir: string): Promise<FlowInfo[]> {
         }
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = messageOf(err);
       results.push({ file, name: basename(file, ".ts"), valid: false, error: msg });
     }
   }

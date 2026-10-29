@@ -1,44 +1,22 @@
 // One traverse worker: its own context and mem, walking unused legal edges (leased so parallel workers never share
 // one) until a leaf, a budget limit or the first broken edge.
+import { missingMemKeys, seedDefaultMem } from "../auto/mem.js";
+import { messageOf } from "../../engine/errors.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { WaygraphGraph } from "../../analysis/graph.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import { Engine } from "../../engine/engine.js";
-import { envString } from "../../engine/env.js";
 import { buildFlow } from "../../engine/flow/flow.js";
-import { MemPage, type MemKey } from "../../engine/mem/mem.js";
+import { MemPage } from "../../engine/mem/mem.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 import { inRun } from "../../engine/run/events.js";
 import type { BlockEntry } from "../../manifest/project.js";
 import { detectHere } from "../auto/auto.js";
 import { buildExploreContext, buildExploreMenu, type ExploreEdge } from "../auto/explore.js";
-import { memStubValue } from "../auto/mem.js";
 import { EdgeLeaseCoordinator } from "./lease.js";
 import type { TraverseWorkerResult } from "./traverse.js";
 
 
-export function seedMem(library: Map<string, BlockEntry>, mem: MemPage, dataJson?: string): void {
-  const raw = dataJson ?? envString("WAYGRAPH_DATA") ?? envString("WAYGRAPH_AUTO_MEM");
-  let envParsed: Record<string, unknown> = {};
-  if (raw) {
-    try {
-      envParsed = JSON.parse(raw) as Record<string, unknown>;
-    } catch {
-      throw new Error(`waygraph traverse: --data / WAYGRAPH_DATA is not valid JSON`);
-    }
-  }
-  for (const entry of library.values()) {
-    for (const k of entry.block.requires ?? []) {
-      if (mem.has(k)) continue;
-      if (k.name in envParsed) {
-        mem.set(k, envParsed[k.name]);
-        continue;
-      }
-      const def = memStubValue(k);
-      if (def !== undefined) mem.set(k, def);
-    }
-  }
-}
 export function snapshotMem(
   library: Map<string, BlockEntry>,
   mem: MemPage): Record<string, unknown> {
@@ -57,7 +35,7 @@ export function restoreMem(
   mem: MemPage,
   snap: Record<string, unknown>,
   dataJson?: string): void {
-  seedMem(library, mem, dataJson);
+  seedDefaultMem(library, mem, dataJson);
   for (const entry of library.values()) {
     for (const k of entry.block.requires ?? []) {
       if (k.name in snap) {
@@ -65,9 +43,6 @@ export function restoreMem(
       }
     }
   }
-}
-export function missingMemKeys(entry: BlockEntry, mem: MemPage): MemKey<unknown>[] {
-  return (entry.block.requires ?? []).filter((k) => !mem.has(k));
 }
 export function ensureMem(entry: BlockEntry, mem: MemPage): void {
   const missing = missingMemKeys(entry, mem);
@@ -258,7 +233,7 @@ async function walk(opts: WorkerOpts): Promise<TraverseWorkerResult> {
           );
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = messageOf(err);
         console.log(
           `[Broke at edge[${traverseId}] block=${pick.block} from=${fromLabel} to=${pick.to}] ${msg}`
         );

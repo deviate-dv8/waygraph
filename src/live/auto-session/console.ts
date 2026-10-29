@@ -1,4 +1,5 @@
 // A session's console log: the page's console messages, uncaught errors, and every failed or non-GET response.
+import { messageOf } from "../../engine/errors.js";
 import type { Page } from "@playwright/test";
 import type { ConsoleLogEntry } from "./helpers.js";
 
@@ -19,7 +20,7 @@ export function recordPageConsole(page: Page, push: (entry: ConsoleLogEntry) => 
   page.on("pageerror", (err) => {
     push({
       type: "pageerror",
-      text: err instanceof Error ? err.message : String(err),
+      text: messageOf(err),
       timestamp: new Date().toISOString(),
     });
   });

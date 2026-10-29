@@ -1,12 +1,11 @@
 // A Page Block: "you have arrived" - the hub other pages navigate to, verified by what the page shows.
-import { checkpoint } from "../../checkpoint/checkpoint.js";
+import { defineNavigating } from "./nav.js";
+import { mark } from "../mark.js";
 import type { Block, DefinedBlock } from "../block.js";
 import type { Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { Trait } from "../../trait/trait.js";
 import { MemPage } from "../../mem/mem.js";
 import type { MemKey } from "../../mem/mem.js";
-import { defineBlock } from "../block.js";
-import type { Page } from "@playwright/test";
 import { markRoute } from "../../checkpoint/route.js";
 import type { SomeDefinedBlock } from "../some-block.js";
 
@@ -88,51 +87,18 @@ export function definePageBlock<Out extends Checkpoint<string>>(
     );
   }
   const methodList = resolvePageMethods(options.methods);
-  const built = defineBlock<Checkpoint<string>, Out>({
-    name: options.name,
-    ...(options.description ? { description: options.description } : {}),
-    ...(options.requires ? { requires: options.requires } : {}),
-    ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
-    instruction: {
-      // The real Page, not ActionPage: navigating is this Block's job.
-      async act(page: Page, _input: Checkpoint<string>, mem: MemPage) {
-        if (options.url !== undefined) {
-          const url = typeof options.url === "function" ? options.url(mem) : options.url;
-          await page.goto(url);
-        } else if (options.click !== undefined) {
-          const selector =
-            typeof options.click === "function" ? options.click(mem) : options.click;
-          await page.locator(selector).click();
-        }
-        // else: arrival-only hub — previous Block already landed here
-      },
-      resolve: () => checkpoint(options.checkpoint.__state) as Out,
-      ...(options.verify ? { verify: options.verify } : {}),
-    },
-  }) as PageBlock<Out>;
+  const built = defineNavigating(options) as PageBlock<Out>;
 
   markRoute(built, ["*"], [options.checkpoint.__state]);
-  Object.defineProperty(built, "__waygraphKind", {
-    value: "page",
-    enumerable: false,
-    configurable: false,
-  });
-  Object.defineProperty(built, "__waygraphSalt", {
-    value: "page",
-    enumerable: false,
-    configurable: false,
-  });
+  mark(built, "__waygraphKind", "page");
+  mark(built, "__waygraphSalt", "page");
   Object.defineProperty(built, "methods", {
     value: Object.freeze([...methodList]),
     enumerable: true,
     configurable: false,
     writable: false,
   });
-  Object.defineProperty(built, "__waygraphMethods", {
-    value: methodList.map((m) => m.name),
-    enumerable: false,
-    configurable: false,
-  });
+  mark(built, "__waygraphMethods", methodList.map((m) => m.name));
   // Same marker `defineNavBlock` sets, same reason - a page hub with a
   // `url` (deep-link) is exactly as "known, coverable" as a plain
   // `defineNavBlock`, and in practice most real projects' own nav Blocks
@@ -141,25 +107,13 @@ export function definePageBlock<Out extends Checkpoint<string>>(
   // for every one of its own nav-* Blocks. Missing this here meant the
   // marker existed but was never actually set on any real project's Blocks.
   if (typeof options.url === "string") {
-    Object.defineProperty(built, "__waygraphNavUrl", {
-      value: options.url,
-      enumerable: false,
-      configurable: false,
-    });
+    mark(built, "__waygraphNavUrl", options.url);
   }
   if (options.url !== undefined || options.click !== undefined) {
-    Object.defineProperty(built, "__waygraphPageDeepLink", {
-      value: true,
-      enumerable: false,
-      configurable: false,
-    });
+    mark(built, "__waygraphPageDeepLink", true);
   }
   if (options.click !== undefined) {
-    Object.defineProperty(built, "__waygraphNavClick", {
-      value: options.click,
-      enumerable: false,
-      configurable: false,
-    });
+    mark(built, "__waygraphNavClick", options.click);
   }
   return built;
 }

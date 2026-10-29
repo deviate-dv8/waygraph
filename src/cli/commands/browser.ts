@@ -1,5 +1,6 @@
 // `waygraph browser start | sessions | stop`: start a detached session, list them, stop them. The session ops
 // (send, status, ...) are session-ops.ts.
+import { messageOf } from "../../engine/errors.js";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { envString } from "../../engine/env.js";
@@ -12,19 +13,20 @@ import { parseCommand } from "../args.js";
 import { applyRunFlags, parseRunFlags } from "../flags.js";
 import { printBrowserSessionsList, printBrowserUsage } from "../usage.js";
 
+/** `browser sessions [project] [--json]` (and `pilot sessions`): the project's live sessions. */
+export function sessionsCommand(rest: string[]): void {
+  const { values, positionals } = parseCommand("sessions", { json: { type: "boolean", help: "Machine-readable JSON" } }, rest);
+  const proj = resolve(positionals[0] ?? process.cwd());
+  const sessions = listBrowserSessions(proj);
+  if (values.json === true) console.log(JSON.stringify(sessions, null, 2));
+  else printBrowserSessionsList(sessions, proj);
+}
+
 /** Runs a `browser` subcommand; false when it is a session op for session-ops.ts. */
 export async function browserCase(args: string[]): Promise<boolean> {
     const sub = args[1];
     if (sub === "sessions") {
-      const { values, positionals: positional } = parseCommand("sessions", { json: { type: "boolean", help: "Machine-readable JSON" } }, args.slice(2));
-      const json = values.json === true;
-      const proj = resolve(positional[0] ?? process.cwd());
-      const sessions = listBrowserSessions(proj);
-      if (json) {
-        console.log(JSON.stringify(sessions, null, 2));
-      } else {
-        printBrowserSessionsList(sessions, proj);
-      }
+      sessionsCommand(args.slice(2));
       return true;
     }
     if (sub === "stop") {
@@ -79,7 +81,7 @@ export async function browserCase(args: string[]): Promise<boolean> {
           await runAttachLoop(proj, result.sessionId);
         }
       } catch (err) {
-        console.error(`waygraph browser start: ${err instanceof Error ? err.message : String(err)}`);
+        console.error(`waygraph browser start: ${messageOf(err)}`);
         process.exit(1);
       }
       return true;

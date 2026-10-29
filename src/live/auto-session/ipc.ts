@@ -4,6 +4,7 @@
  * directory, mirroring the existing `.waygraph-traverse/` dotdir convention.
  * See openspec/changes/waygraph-auto-cli-session-control.
  */
+import { messageOf } from "../../engine/errors.js";
 import { spawn } from "node:child_process";
 import {
     mkdirSync,
@@ -44,7 +45,7 @@ function readOneMessage<T>(sock: Socket, timeoutMs: number): Promise<T> {
       try {
         resolvePromise(JSON.parse(line) as T);
       } catch (err) {
-        reject(new Error(`malformed response: ${err instanceof Error ? err.message : String(err)}`));
+        reject(new Error(`malformed response: ${messageOf(err)}`));
       }
     };
     const onError = (err: Error) => {
@@ -135,6 +136,13 @@ export async function requestSession(
   request: { op: "highlight" } & PilotHighlightFixtures,
   timeoutMs?: number,
 ): Promise<HighlightResponse>;
+/** Any request, answered with any reply (the CLI prints it as it comes). */
+export async function requestSession(
+  projectDir: string,
+  sessionId: string,
+  request: SessionRequest,
+  timeoutMs?: number,
+): Promise<SessionResponse>;
 export async function requestSession(
   projectDir: string,
   sessionId: string,
@@ -180,7 +188,7 @@ export async function requestSession(
       })
       .catch((err) => {
         clearTimeout(connectTimer);
-        resolvePromise({ ok: false, error: err instanceof Error ? err.message : String(err) });
+        resolvePromise({ ok: false, error: messageOf(err) });
       })
       .finally(() => sock.end());
   });
@@ -301,7 +309,7 @@ export async function serveSession(
         // uncaught, crashing the whole detached session process on a single
         // bad request. One request failing must never take the rest of the
         // still-live session (browser/page/socket) down with it.
-        response = { ok: false, error: err instanceof Error ? err.message : String(err) };
+        response = { ok: false, error: messageOf(err) };
       }
       sock.write(JSON.stringify(response) + "\n");
       // Whatever changed (a step ran, a reload, a raw action): subscribers get the new snapshot.

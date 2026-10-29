@@ -1,4 +1,5 @@
 // Highlight rings: shows, cycles and zooms the rings a step's narration names, and matches a clicked element to its ring.
+import { setTimeout as sleep } from "node:timers/promises";
 import type { WgBox, WgPage } from "../types.js";
 import type { Locator } from "@playwright/test";
 import { ANSI, ansiPaint, demoFixture, demoHighlight, demoLog } from "../stepper/demo-log.js";
@@ -278,7 +279,7 @@ export async function cycleHighlightRings(page: WgPage, highlights: readonly Res
             (gap != null && gap < 120 ? ansiPaint(ANSI.yellow, " WARN gap<120ms") : "") +
             (holdMs < 250 && list.length > 1 ? ansiPaint(ANSI.yellow, " WARN short hold") : ""),
         );
-        await new Promise((res) => setTimeout(res, holdMs));
+        await sleep(holdMs);
         lastRingEndedAt = Date.now();
       } else {
         demoHighlight(h, "SKIP no boundingBox");
@@ -418,7 +419,7 @@ export async function dwellMatchedStub(page: WgPage, locator: Locator, stubs: re
     pace: pacing && pacing.demoPace,
   });
   if (ms != null && ms > 0) {
-    await new Promise((res) => setTimeout(res, ms));
+    await sleep(ms);
   }
 }
 
@@ -427,6 +428,20 @@ export async function hideRing(page: WgPage) {
   await page
     .evaluate(() => {
       if (window.__wgHideRing) window.__wgHideRing();
+    })
+    .catch(ignorePageGone);
+}
+
+
+/** Stops the last ring following its element on resize and scroll (a new step's panel is up). */
+export async function stopRingTracker(page: WgPage): Promise<void> {
+  await page
+    .evaluate(() => {
+      if (window.__wgRingTrack) {
+        window.removeEventListener("resize", window.__wgRingTrack);
+        window.removeEventListener("scroll", window.__wgRingTrack, true);
+        window.__wgRingTrack = null;
+      }
     })
     .catch(ignorePageGone);
 }

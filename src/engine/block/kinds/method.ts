@@ -1,4 +1,5 @@
 // A Method: a page action that doesn't navigate (fill, submit, toggle), from one Checkpoint to another. Also the Assert Block.
+import { mark } from "../mark.js";
 import type { Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { DefinedBlock } from "../block.js";
 import type { Trait } from "../../trait/trait.js";
@@ -43,11 +44,7 @@ export function defineMethodBlock<In extends Checkpoint<string>, Out extends Che
 ): MethodBlock<In, Out> {
   const built = defineBlock(routed(base)) as MethodBlock<In, Out>;
   markRouteOf(built, base);
-  Object.defineProperty(built, "__waygraphSalt", {
-    value: "method",
-    enumerable: false,
-    configurable: false,
-  });
+  mark(built, "__waygraphSalt", "method");
   return built;
 }
 
@@ -105,11 +102,7 @@ export function defineAssertBlock<Out extends Checkpoint<string>>(options: Asser
       verify: options.verify,
     },
   });
-  Object.defineProperty(built, "__waygraphKind", {
-    value: "assert",
-    enumerable: false,
-    configurable: false,
-  });
+  mark(built, "__waygraphKind", "assert");
   // Brand for map().assert() - distinct from MethodBlock so .method(assert)
   // is a compile error even though runtime still carries method salt.
   return built as unknown as AssertBlock<Out>;

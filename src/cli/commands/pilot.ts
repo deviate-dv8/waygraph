@@ -1,28 +1,19 @@
 // `waygraph pilot start | sessions | attach`: a session plus the whole graph and a starting snapshot in one call.
+import { messageOf } from "../../engine/errors.js";
 import { resolve } from "node:path";
 import { envString } from "../../engine/env.js";
-import { listBrowserSessions } from "../../live/auto-session/files.js";
 import { runAttachLoop } from "../../live/auto-session/ipc.js";
 import { pilotAttach, pilotStart } from "../../live/pilot/pilot.js";
 import { resolveInjectRoots } from "../../manifest/roots.js";
 import { resolveBaseUrl } from "../../runtime/waygraph-config.js";
-import { parseCommand } from "../args.js";
 import { applyRunFlags, parseRunFlags } from "../flags.js";
-import { printBrowserSessionsList } from "../usage.js";
 import { isSessionOp } from "./session-ops.js";
+import { sessionsCommand } from "./browser.js";
 
 /** Runs a `pilot` subcommand; false when it is a session op for session-ops.ts. */
 export async function pilotCase(args: string[]): Promise<boolean> {
     if (args[1] === "sessions") {
-      const { values, positionals: positional } = parseCommand("sessions", { json: { type: "boolean", help: "Machine-readable JSON" } }, args.slice(2));
-      const json = values.json === true;
-      const proj = resolve(positional[0] ?? process.cwd());
-      const sessions = listBrowserSessions(proj);
-      if (json) {
-        console.log(JSON.stringify(sessions, null, 2));
-      } else {
-        printBrowserSessionsList(sessions, proj);
-      }
+      sessionsCommand(args.slice(2));
       return true;
     }
     if (args[1] === "attach") {
@@ -38,7 +29,7 @@ export async function pilotCase(args: string[]): Promise<boolean> {
         const result = await pilotAttach(proj, sessionId, inject);
         console.log(JSON.stringify(result));
       } catch (err) {
-        console.error(`waygraph pilot attach: ${err instanceof Error ? err.message : String(err)}`);
+        console.error(`waygraph pilot attach: ${messageOf(err)}`);
         process.exit(1);
       }
       return true;
@@ -72,7 +63,7 @@ export async function pilotCase(args: string[]): Promise<boolean> {
           await runAttachLoop(proj, result.sessionId);
         }
       } catch (err) {
-        console.error(`waygraph pilot start: ${err instanceof Error ? err.message : String(err)}`);
+        console.error(`waygraph pilot start: ${messageOf(err)}`);
         process.exit(1);
       }
       return true;

@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { messageOf } from "../../engine/errors.js";
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { packageRoot, runInherited } from "../util.js";
@@ -170,7 +171,7 @@ async function prepareTryQuickstart(label: string): Promise<string | null> {
   try {
     await wireQuickstartToPackageRoot(destDir);
   } catch (err) {
-    console.error(err instanceof Error ? err.message : String(err));
+    console.error(messageOf(err));
     process.exitCode = 1;
     return null;
   }

@@ -1,4 +1,5 @@
 // Device emulation for a step (ctx.device): resizes the page, switches touch, and frames it on a video.
+import { setTimeout as sleep } from "node:timers/promises";
 import type { DeviceState } from "../../engine/stub/viewport.js";
 import type { WgPage } from "../types.js";
 import { resolveDeviceState } from "../narration/device.js";
@@ -214,7 +215,7 @@ export async function applyVideoDeviceStage(page: WgPage, target: Size, stage: S
     )
     .catch(() => ({ waitMs: 0 }));
   const waitMs = result && result.waitMs ? Number(result.waitMs) : 0;
-  if (waitMs > 0) await new Promise((r) => setTimeout(r, waitMs));
+  if (waitMs > 0) await sleep(waitMs);
 }
 
 
@@ -340,22 +341,7 @@ export async function applyDeviceToPage(page: WgPage, device: DeviceState | null
         shellFrom &&
         (shellFrom.width !== target.width || shellFrom.height !== target.height)
       ) {
-        const steps = 14;
-        const ms = envNumber("WAYGRAPH_DEVICE_TRANSITION_MS") ?? 520;
-        const stepMs = Math.max(12, Math.floor(ms / steps));
-        for (let i = 1; i <= steps; i++) {
-          const t = i / steps;
-          const e = t * t * (3 - 2 * t);
-          const mid = {
-            width: Math.round(shellFrom.width + (target.width - shellFrom.width) * e),
-            height: Math.round(shellFrom.height + (target.height - shellFrom.height) * e),
-          };
-          await applyVideoDeviceStage(page, mid, stage, {
-            clear: false,
-            enterIn: i === 1 && firstDevice,
-          });
-          if (i < steps) await new Promise((r) => setTimeout(r, stepMs));
-        }
+        await tweenSize(shellFrom, target, (mid, i) => applyVideoDeviceStage(page, mid, stage, { clear: false, enterIn: i === 1 && firstDevice }));
       } else {
         await applyVideoDeviceStage(page, target, stage, {
           clear: false,
@@ -377,22 +363,10 @@ export async function applyDeviceToPage(page: WgPage, device: DeviceState | null
 
     try {
       if (shouldAnimate) {
-        const steps = 14;
-        const ms = envNumber("WAYGRAPH_DEVICE_TRANSITION_MS") ?? 520;
-        const stepMs = Math.max(12, Math.floor(ms / steps));
-        for (let i = 1; i <= steps; i++) {
-          const t = i / steps;
-          const e = t * t * (3 - 2 * t); // smoothstep
-          const mid = {
-            width: Math.round(from!.width + (target.width - from!.width) * e),
-            height: Math.round(from!.height + (target.height - from!.height) * e),
-          };
+        await tweenSize(from!, target, async (mid, i, steps) => {
           await realSet(mid);
-          if (!toDesktop && (i === 1 || i === steps || i % 3 === 0)) {
-            await fitWindowToDeviceViewport(page, mid, { maximize: false });
-          }
-          if (i < steps) await new Promise((r) => setTimeout(r, stepMs));
-        }
+          if (!toDesktop && (i === 1 || i === steps || i % 3 === 0)) await fitWindowToDeviceViewport(page, mid, { maximize: false });
+        });
       } else {
         await realSet(target);
       }
@@ -421,4 +395,24 @@ export async function applyDeviceToPage(page: WgPage, device: DeviceState | null
       },
     )
     .catch(ignorePageGone);
+}
+
+
+/**
+ * Animates a size from `from` to `to` in 14 smoothstep steps over WAYGRAPH_DEVICE_TRANSITION_MS (default 520 ms),
+ * calling `step` with each size.
+ */
+async function tweenSize(
+  from: { width: number; height: number },
+  to: { width: number; height: number },
+  step: (mid: { width: number; height: number }, i: number, steps: number) => Promise<unknown>,
+): Promise<void> {
+  const steps = 14;
+  const stepMs = Math.max(12, Math.floor((envNumber("WAYGRAPH_DEVICE_TRANSITION_MS") ?? 520) / steps));
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const e = t * t * (3 - 2 * t);
+    await step({ width: Math.round(from.width + (to.width - from.width) * e), height: Math.round(from.height + (to.height - from.height) * e) }, i, steps);
+    if (i < steps) await sleep(stepMs);
+  }
 }

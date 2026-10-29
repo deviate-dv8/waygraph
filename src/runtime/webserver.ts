@@ -1,5 +1,6 @@
 // Starts/stops a project's `webServer` (from config/waygraph.config.ts) around `waygraph run`/`demo`/`auto`,
 // the same block `waygraph test` already honors.
+import { setTimeout as sleep } from "node:timers/promises";
 import { join } from "node:path";
 import { spawn, type ChildProcess } from "node:child_process";
 import { loadWaygraphConfig } from "./waygraph-config.js";
@@ -35,7 +36,7 @@ async function waitUntilUp(target: string, timeoutMs: number): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     if (await isUp(target)) return;
-    await new Promise((r) => setTimeout(r, 100));
+    await sleep(100);
   }
   throw new Error(`waygraph: webServer "${target}" not ready after ${timeoutMs}ms`);
 }

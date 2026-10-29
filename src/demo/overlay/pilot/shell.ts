@@ -48,18 +48,15 @@ function installPilotOverlayShell(): void {
   __wgById("wg-pilot-badge")!.addEventListener("click", () => {
     __wgById("wg-pilot-panel")!.classList.toggle("wg-pilot-open");
   });
-  __wgById("wg-pilot-view-current")!.addEventListener("click", () => {
-    __wgById("wg-pilot-view-current")!.classList.add("wg-pilot-tab-active");
-    __wgById("wg-pilot-view-graph")!.classList.remove("wg-pilot-tab-active");
-    __wgById("wg-pilot-panel-current")!.style.display = "";
-    __wgById("wg-pilot-panel-graph")!.style.display = "none";
-  });
-  __wgById("wg-pilot-view-graph")!.addEventListener("click", () => {
-    __wgById("wg-pilot-view-graph")!.classList.add("wg-pilot-tab-active");
-    __wgById("wg-pilot-view-current")!.classList.remove("wg-pilot-tab-active");
-    __wgById("wg-pilot-panel-graph")!.style.display = "";
-    __wgById("wg-pilot-panel-current")!.style.display = "none";
-  });
+  // Two tabs, "Here" (current) and "All nodes" (graph): the clicked one shows its panel.
+  const showTab = (on: "current" | "graph") => {
+    for (const tab of ["current", "graph"] as const) {
+      __wgById(`wg-pilot-view-${tab}`)!.classList.toggle("wg-pilot-tab-active", tab === on);
+      __wgById(`wg-pilot-panel-${tab}`)!.style.display = tab === on ? "" : "none";
+    }
+  };
+  __wgById("wg-pilot-view-current")!.addEventListener("click", () => showTab("current"));
+  __wgById("wg-pilot-view-graph")!.addEventListener("click", () => showTab("graph"));
   if (!__wgById("wg-pilot-activity")) {
     __wgAdd(__wgEl("div", { id: "wg-pilot-activity", class: "capsule material h-7 px-3 font-mono text-xs pointer-events-none" }));
   }

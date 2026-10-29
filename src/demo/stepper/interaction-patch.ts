@@ -1,6 +1,7 @@
 // During a demo, every fill and click moves the cursor there, rings the target and types visibly: the demo's locator
 // theater (overlay/locator-theater.ts).
-import type { StepperRefs, WgPage } from "../types.js";
+import { setTimeout as sleep } from "node:timers/promises";
+import type { StepperRefs, WgBox, WgPage } from "../types.js";
 import type { Pacing } from "./pacing.js";
 import type { MemKey, MemPage } from "../../engine/mem/mem.js";
 import { installOverlay } from "../overlay/overlay.js";
@@ -31,7 +32,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
   // `slowMo` here is the demo's own beat: ms to rest after each action (once per call, never per keystroke). The browser
   // itself is launched with slowMo 0 in step mode, so a step whose pace is blitz really does run at full speed.
   const beat = () => (skipTheater() ? 0 : slowMo || 0);
-  const pause = (ms: number) => (ms > 0 ? new Promise((res) => setTimeout(res, ms)) : undefined);
+  const pause = (ms: number) => (ms > 0 ? sleep(ms) : undefined);
   // Per-character typing delay (WAYGRAPH_TYPING_MS, default 30). 0 for blitz steps.
   const typingMs = () => {
     if (skipTheater()) return 0;
@@ -84,6 +85,38 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
   const WAIT_CAP_FLOOR_MS = 700;
   const WAIT_CAP_FRACTION = 0.3;
   const scaledWaitCap = (declared: number) => Math.min(declared, Math.max(WAIT_CAP_FLOOR_MS, declared * WAIT_CAP_FRACTION));
+  /**
+   * What a fill or click shows before it acts: its caption (from the matching stubBefore ring, or `fallback`), the todo
+   * dock advanced, the cursor moved over it, the stub's zoom, the highlight logged, the ring, and the stub's dwell.
+   */
+  const presentAction = async (locator: Locator, box: WgBox, fallback: string, travelMs: number, kind: "fill" | "click") => {
+    const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
+    const cap = await captionForLocator(page, locator, stubs, fallback);
+    const stubIdx = await matchStubIndexForLocator(page, locator, stubs);
+    const stub = stubIdx >= 0 ? stubs[stubIdx] : null;
+    await syncTodoDockAdvance(page, todoDockRef, stubIdx, stub);
+    const point = await moveCursorTo(page, box, cursorMs(travelMs));
+    if (stub) await applyHighlightZoom(page, stub.selector, stub.zoom, stub.zoomOut);
+    demoHighlight(
+      {
+        selector: stub?.selector,
+        label: cap.label,
+        tone: cap.tone || stub?.tone || "planned",
+        color: stub?.color,
+        focus: !!stub?.focus,
+        zoom: stub?.zoom,
+        zoomOut: stub?.zoomOut,
+        gesture: stub?.gesture,
+        weight: cap.weight,
+        size: cap.size,
+      },
+      kind,
+    );
+    await showRing(page, box, cap.label, cap.tone, { size: cap.size, weight: cap.weight, selector: stub?.selector, focus: !!stub?.focus });
+    await dwellMatchedStub(page, locator, stubs, pacing);
+    return { cap, point };
+  };
+
   setLocatorTheater(page, {
     async beforeFill(locator: Locator, options) {
       await installOverlay(page);
@@ -118,38 +151,8 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         const fallback = memTrack.lastKeyName && Date.now() - memTrack.at < 3000
           ? "from mem: " + memTrack.lastKeyName
           : "writing from mem";
-        const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
-        const cap = await captionForLocator(page, locator, stubs, fallback);
-        const stubIdx = await matchStubIndexForLocator(page, locator, stubs);
-        const stub = stubIdx >= 0 ? stubs[stubIdx] : null;
-        await syncTodoDockAdvance(page, todoDockRef, stubIdx, stub);
-        await moveCursorTo(page, box, cursorMs(500));
-        if (stub) {
-          await applyHighlightZoom(page, stub.selector, stub.zoom, stub.zoomOut);
-        }
-        demoHighlight(
-          {
-            selector: stub?.selector,
-            label: cap.label,
-            tone: cap.tone || (stub?.tone) || "planned",
-            color: stub?.color,
-            focus: !!(stub?.focus),
-            zoom: stub?.zoom,
-            zoomOut: stub?.zoomOut,
-            gesture: stub?.gesture,
-            weight: cap.weight,
-            size: cap.size,
-          },
-          "fill",
-        );
-        await showRing(page, box, cap.label, cap.tone, {
-          size: cap.size,
-          weight: cap.weight,
-          selector: stub?.selector,
-          focus: !!(stub?.focus),
-        });
-        await dwellMatchedStub(page, locator, stubs, pacing);
-        await new Promise((res) => setTimeout(res, skipTheater() ? 0 : 200));
+        const { cap } = await presentAction(locator, box, fallback, 500, "fill");
+        await sleep(skipTheater() ? 0 : 200);
         if (cap && cap.label) typeLabel = String(cap.label).slice(0, 40);
       }
       await page
@@ -200,42 +203,11 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         // (set on page by runStepMode just before act).
         const navLabel = await page.evaluate(() => window.__wgPendingNavClickLabel || null).catch(ignorePageGone);
         if (navLabel) fallback = String(navLabel);
-        const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
-        const cap = await captionForLocator(page, locator, stubs, fallback);
-        const stubIdx = await matchStubIndexForLocator(page, locator, stubs);
-        const stub = stubIdx >= 0 ? stubs[stubIdx] : null;
-        await syncTodoDockAdvance(page, todoDockRef, stubIdx, stub);
-        clickTone = cap.tone;
-        clickPoint = await moveCursorTo(page, box, cursorMs(600));
-        if (stub) {
-          await applyHighlightZoom(page, stub.selector, stub.zoom, stub.zoomOut);
-        }
-        demoHighlight(
-          {
-            selector: stub?.selector,
-            label: cap.label,
-            tone: cap.tone || (stub?.tone) || "planned",
-            color: stub?.color,
-            focus: !!(stub?.focus),
-            zoom: stub?.zoom,
-            zoomOut: stub?.zoomOut,
-            gesture: stub?.gesture,
-            weight: cap.weight,
-            size: cap.size,
-          },
-          "click",
-        );
-        await showRing(page, box, cap.label, cap.tone, {
-          size: cap.size,
-          weight: cap.weight,
-          selector: stub?.selector,
-          focus: !!(stub?.focus),
-        });
-        await dwellMatchedStub(page, locator, stubs, pacing);
-        // "pop for a few seconds" - the user's own phrase, matching the
-        // zsign demo-engine's ring-before-click pattern in
-        // services/help-center-clip-engine's video-pipeline.
-        await new Promise((res) => setTimeout(res, clickPrePop()));
+        const shown = await presentAction(locator, box, fallback, 600, "click");
+        clickTone = shown.cap.tone;
+        clickPoint = shown.point;
+        // "pop for a few seconds": the ring stays up a moment before the click.
+        await sleep(clickPrePop());
       }
       if (clickPoint) {
         await clickPulseAt(page, clickPoint.x, clickPoint.y, clickTone);
@@ -245,7 +217,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
         // mid-animation, sometimes cutting it off before it's even visible.
         // Wait out the same .5s the "@keyframes wg-pulse" rule uses, so the
         // mock click visually completes before the real one fires.
-        await new Promise((res) => setTimeout(res, skipTheater() ? 0 : 500));
+        await sleep(skipTheater() ? 0 : 500);
       }
       // Touch theater (0.13+): prefer Locator.tap / long-press when device
       // touchMode is on (context launched with hasTouch). gesture on stub
@@ -259,7 +231,7 @@ export function instrumentInteractionHighlighting(page: WgPage, mem: MemPage, sl
     },
     holdMs: () => (skipTheater() ? 0 : 600),
     async afterClick() {
-      await new Promise((res) => setTimeout(res, clickPostPop()));
+      await sleep(clickPostPop());
       await hideRing(page);
       // Full document navigation drops #wg-todo-dock + rings; restore carry.
       await repaintOverlay(page);

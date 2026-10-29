@@ -127,6 +127,35 @@ export function installPanelChrome() {
             ),
           );
         };
+        // Puts a built panel on screen: mounted (sliding in the first time), its chrome wired, the todo dock synced, stamped.
+        window.__wgShowPanel = (panel, isNew, info, phase) => {
+          if (isNew) {
+            __wgAdd(panel);
+            requestAnimationFrame(() => panel.classList.add("wg-in"));
+          } else {
+            panel.classList.add("wg-in");
+          }
+          window.__wgWirePanelChrome?.(panel, "wg-panel-hidden", "waygraph demo", {
+            stepLabel: info.stepLabel || "",
+            forceCollapsed: info.forceCollapsed === true ? true : undefined,
+            fastForward: !!info.fastForward,
+            isApi: !!info.isApi,
+          });
+          const sync = info.todoSync || (info.todos && info.todos.length ? "set" : "keep");
+          // Prefer a dock-only payload (list: [] with a dock used to clear its marks a frame later); "keep" with no dock
+          // leaves the floating dock alone.
+          if (window.__wgSyncTodos && !(sync === "keep" && !info.todoDock)) {
+            const payload: WgTodoSyncPayload = {
+              sync,
+              dock: info.todoDock || null,
+              pos: info.todoPos || null,
+              todoId: info.todoId || (info.todoDock && info.todoDock.id) || null,
+            };
+            if (!info.todoDock && info.todos && info.todos.length) payload.list = info.todos;
+            window.__wgSyncTodos(payload);
+          }
+          window.__wgStampModal?.(panel, "panel", { phase, step: info.index + 1, total: info.total, block: info.blockName || "", ready: true });
+        };
         // The Auto-advance switch: remembered across pages; the gate polls it, so flipping it mid-wait takes effect.
         window.__wgWireAutoplay = () => {
           const cb = __wgById<HTMLInputElement>("wg-autoplay-cb");

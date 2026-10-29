@@ -1,6 +1,7 @@
 // Runs a Block's Traits: after resolve (verify) and before act (precondition). A check that doesn't wait is retried until
 // it passes or its time runs out, so a page still settling doesn't fail it; a failure says what the check wanted, what the
 // page showed and where, as one sentence and as data (on the run's step:error event).
+import { setTimeout as sleep } from "node:timers/promises";
 import type { Page } from "@playwright/test";
 import type { MemPage } from "../mem/mem.js";
 import type { Trait, TraitResult } from "./trait.js";
@@ -64,7 +65,7 @@ async function settle(trait: Trait, page: Page, mem: MemPage): Promise<TraitResu
       return { ok: false, saw: error instanceof Error ? (error.message.split("\n")[0] ?? "") : String(error), error };
     }
     if (result.ok || Date.now() >= until) return result;
-    await new Promise((r) => setTimeout(r, RETRY_EVERY_MS));
+    await sleep(RETRY_EVERY_MS);
   }
 }
 

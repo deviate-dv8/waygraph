@@ -1,4 +1,5 @@
 // What `map()` checks and wraps on each step: the Block's kind and origin, `{ ff, pace }`, a session reset.
+import { mark } from "../block/mark.js";
 import { checkpoint, type Checkpoint } from "../checkpoint/checkpoint.js";
 import type { MemKey } from "../mem/mem.js";
 import type { Trait } from "../trait/trait.js";
@@ -26,7 +27,7 @@ export function resetBefore(block: SomeBlock): SomeBlock {
     },
   };
   copyWaygraphRuntime(block, next);
-  Object.defineProperty(next, "__waygraphResetBefore", { value: true, enumerable: false, configurable: true });
+  mark(next, "__waygraphResetBefore", true);
   return next;
 }
 /**
@@ -146,7 +147,7 @@ export function settingInput(key: MemKey<unknown>, value: unknown, flowName: str
 export function asCleanup(block: SomeBlock): SomeBlock {
   const next: SomeBlock = { ...block };
   copyWaygraphRuntime(block, next);
-  Object.defineProperty(next, "__waygraphCleanup", { value: true, enumerable: false, configurable: true });
+  mark(next, "__waygraphCleanup", true);
   return next;
 }
 /** The same Block, waiting for the page to settle after it acts (the `settle` step option). */

@@ -1,5 +1,6 @@
 // Every command's flags, read with node:util's parseArgs from the command's own table, which also prints its help. An
 // unknown flag or a flag missing its value stops the command with the reason.
+import { messageOf } from "../engine/errors.js";
 import { parseArgs } from "node:util";
 
 export interface OptionSpec {
@@ -29,7 +30,7 @@ export function parseCommand<T extends OptionTable>(command: string, table: T, a
     const { values, positionals, tokens } = parseArgs({ args: argv, options, allowPositionals: true, strict: true, tokens: true });
     return { values: values as ParsedOptions<T>, positionals, tokens };
   } catch (err) {
-    console.error(`waygraph ${command}: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(`waygraph ${command}: ${messageOf(err)}`);
     process.exit(1);
   }
 }

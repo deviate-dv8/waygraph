@@ -2,6 +2,7 @@
 // (defineNavBlock/defineMethodBlock) with a real HTTP request in the SAME state machine, verified
 // by the same Trait system everything else uses. Built on Playwright's own `page.request`
 // (APIRequestContext) - no shell-out to curl, no second HTTP client to depend on.
+import { mark } from "../mark.js";
 import { recordApiCall } from "../../run/hooks.js";
 import { checkpoint } from "../../checkpoint/checkpoint.js";
 import { markRouteOf, tagsOf } from "../../checkpoint/route.js";
@@ -114,9 +115,9 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
     },
   }) as DefinedBlock<In, Out>;
   markRouteOf(built, options);
-  Object.defineProperty(built, "__waygraphKind", { value: "api", enumerable: false, configurable: false });
+  mark(built, "__waygraphKind", "api");
   // Accepted by map().method(), like a Method: one step that lands on a Checkpoint.
-  Object.defineProperty(built, "__waygraphSalt", { value: "api", enumerable: false, configurable: false });
+  mark(built, "__waygraphSalt", "api");
   return built;
 }
 

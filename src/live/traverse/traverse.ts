@@ -20,7 +20,8 @@ import {
     writeCoverageReport,
 } from "./coverage.js";
 import { EdgeLeaseCoordinator } from "./lease.js";
-import { restoreMem, runTraverseWorker, seedMem, snapshotMem } from "./worker.js";
+import { restoreMem, runTraverseWorker, snapshotMem } from "./worker.js";
+import { seedDefaultMem } from "../auto/mem.js";
 
 /** How `traverse` workers share a browser: one session, or a clone per worker. */
 export type TraverseSessionMode = "clone" | "inherit";
@@ -185,7 +186,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
       const context = await browser.newContext(contextOpts);
       const page = await context.newPage();
       const mem = new MemPage();
-      seedMem(library.byName, mem, options.data);
+      seedDefaultMem(library.byName, mem, options.data);
       if (startUrl) {
         await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(ignorePageGone);
         await page.waitForLoadState("load").catch(ignoreTimeout);
@@ -225,7 +226,7 @@ export async function runTraverse(projectDir: string, options: TraverseOptions =
     const bootContext = await browser.newContext(bootOpts);
     const bootPage = await bootContext.newPage();
     const bootMem = new MemPage();
-    seedMem(library.byName, bootMem, options.data);
+    seedDefaultMem(library.byName, bootMem, options.data);
     if (startUrl) {
       await bootPage.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(ignorePageGone);
       await bootPage.waitForLoadState("load").catch(ignoreTimeout);

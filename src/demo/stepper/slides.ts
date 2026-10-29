@@ -1,4 +1,5 @@
 // Slides: a step's multi-page explanation shown after it runs, each page gated by Next.
+import { setTimeout as sleep } from "node:timers/promises";
 import type { WgPage } from "../types.js";
 import { demoPaceGateMs, formatDemoPaceBadge, formatDemoPaceLabel, normalizeDemoPace, resolveFixtureDwellMs } from "../narration/demo-pace.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, type WaygraphSlide } from "../../engine/stub/ring.js";
@@ -230,7 +231,7 @@ export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide
         })
         .catch(() => false);
       if (auto && Date.now() - started >= autoWaitMs) break;
-      await new Promise((res) => setTimeout(res, 100));
+      await sleep(100);
     }
   }
   await hideRing(page);

@@ -1,4 +1,5 @@
 // The browser a run plays in: launched with the project's extensions, sized for the mode and an optional video.
+import { setTimeout as sleep } from "node:timers/promises";
 import { mkdirSync } from "node:fs";
 import { recordArtifact } from "../engine/run/events.js";
 import type { MemPage } from "../engine/mem/mem.js";
@@ -53,7 +54,7 @@ export async function openSession(projectDir: string, options: PlayOptions, mem:
 
   const close = async (): Promise<void> => {
     // A recording's last moment (a ring, the network panel) would be cut off mid-fade without a little room.
-    if (videoDir && !page.isClosed()) await new Promise((r) => setTimeout(r, 1800));
+    if (videoDir && !page.isClosed()) await sleep(1800);
     await context.close();
     const video = await page.video()?.path().catch(() => null);
     if (video) {

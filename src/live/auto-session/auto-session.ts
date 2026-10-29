@@ -1,4 +1,5 @@
 // AutoSession: one live browser session driven over IPC - its menu, picks, routes, raw actions and highlights.
+import { messageOf } from "../../engine/errors.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { UnmappedInteractionPayload } from "../../analysis/coverage-gap.js";
 import type { ListPick } from "./read.js";
@@ -263,7 +264,7 @@ export class AutoSession {
       });
     } catch (err) {
       this.lastRunNote = `${entry.block.name} failed`;
-      const message = err instanceof Error ? err.message : String(err);
+      const message = messageOf(err);
       const stubOnErrorResult = await runStubPhase(entry.block, "stubOnError", { error: err });
       await this.paintStubPhase("stub.error", stubOnErrorResult, 8000);
       this.pushTrace({
@@ -374,7 +375,7 @@ export class AutoSession {
       try {
         await page.goto(url, { waitUntil: "domcontentloaded" });
       } catch (err) {
-        return `goto "${url}" failed - ${err instanceof Error ? err.message : String(err)}`;
+        return `goto "${url}" failed - ${messageOf(err)}`;
       }
     });
   }
@@ -389,7 +390,7 @@ export class AutoSession {
       try {
         await target.setInputFiles(filePath);
       } catch (err) {
-        return `upload into "${selector}" failed - ${err instanceof Error ? err.message : String(err)}`;
+        return `upload into "${selector}" failed - ${messageOf(err)}`;
       }
     });
   }
@@ -442,7 +443,7 @@ export class AutoSession {
     } catch (err) {
       return {
         ok: false,
-        error: `highlight failed - ${err instanceof Error ? err.message : String(err)}`,
+        error: `highlight failed - ${messageOf(err)}`,
       };
     }
   }

@@ -15,6 +15,7 @@
  * "project" defaults to cwd. Flags beat WAYGRAPH_* env.
  */
 
+import { messageOf } from "../engine/errors.js";
 import { SKILL_FLAG_MAP, printSkillIndex, readSkillMarkdown } from "./commands/agent-dive-scaffold.js";
 import type { SkillFlag } from "./commands/agent-dive-scaffold.js";
 import { takeEnvFlag } from "../runtime/env-file.js";
@@ -93,6 +94,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: unknown) => {
-  console.error(err instanceof Error ? err.message : String(err));
+  console.error(messageOf(err));
   process.exitCode = 1;
 });
