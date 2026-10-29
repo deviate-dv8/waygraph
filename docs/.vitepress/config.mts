@@ -93,7 +93,6 @@ export default withMermaid(defineConfig({
             { text: "API", link: "/api/" },
             { text: "Deprecated", link: "/deprecated" },
             { text: "Developing waygraph", link: "/reference/developing" },
-            { text: "Preview these docs", link: "/deploy" },
           ],
         },
       ],

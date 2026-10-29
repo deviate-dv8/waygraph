@@ -64,4 +64,4 @@ navigation into a `defineNavBlock`, or build the create's data from `unique`), t
 
 Ship compiling TypeScript under `src/map/` (Map layout) or `src/blocks/` + `src/flows/` +
 `src/states/` (freeform layout) - match whatever this project already uses; don't introduce the
-other layout partway through. Update `NAV.md`/`STRUCTURE.md` when edges change.
+other layout partway through. In a freeform project, update its `NAV.md` plan when edges change.

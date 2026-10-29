@@ -259,6 +259,6 @@ npx waygraph --skill-pilot-blind     # cold-start: raw ops + author Blocks as yo
 npx waygraph --skill-convention      # this file
 ```
 
-Worked freeform example: `examples/saucedemo/docs/CONVENTION.md`.
+Worked freeform example: `examples/saucedemo` (`src/blocks/saucedemo-web/`).
 Map design history: `openspec/changes/waygraph-map/`.
 Agent personas (author/planner/healer): `npx waygraph agent-dive --loop claude`.

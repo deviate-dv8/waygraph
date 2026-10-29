@@ -87,7 +87,7 @@ function initCommand(projectName: string): void {
   console.log("  waygraph graph       # static state graph JSON");
   console.log("  .agents/skills/      # waygraph skills for coding agents (waygraph agent-dive adds agent personas)");
   console.log("");
-  console.log("  Layout: see STRUCTURE.md (or https://deviate-dv8.github.io/waygraph/guides/project)");
+  console.log("  Layout: https://deviate-dv8.github.io/waygraph/guides/project");
 }
 
 export async function initCase(args: string[]): Promise<void> {

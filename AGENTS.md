@@ -6,7 +6,6 @@ engine plays it (`waygraph run`, or `waygraph demo` with the overlay around each
 ## Read first
 
 - `src/ARCHITECTURE.md`: where the code starts, one line per folder, the layers, where new code goes.
-- `obsidian/Start Here.md`: the same, high level, with pictures.
 - `docs/guides/` for how each feature works (one topic per page), `docs/reference/` for every command and setting; `docs/env.md` for every `WAYGRAPH_*` variable; `docs/deprecated.md` for what 0.16.0
   removed and what replaces it.
 
@@ -20,8 +19,9 @@ are `__wgIcon`, never glyphs; no `.catch(() => {})` (`ignorePageGone` / `ignoreT
 ## Rules by convention
 
 - One way to write each thing: no aliases, no deprecated forms kept alongside new ones.
-- A change updates every docs surface with it: `docs/guides/`, `docs/reference/`, `docs/*.md`, the scaffold and quickstart
-  templates, `templates/skills/`, `ROADMAP.md`, the generated pages (`npm run docs:api`), and `obsidian/`.
+- A change updates the docs with it: the site (`docs/`: guides, reference, and the generated pages via
+  `npm run docs:api`), the agent skills (`templates/skills/`), and `ROADMAP.md` (what's next). Templates and examples
+  are code, not docs: their READMEs only link to the site.
 - Commit locally; never push or publish unless asked. Versions are patch bumps.
 - Never leave a browser, server or detached session running (`pgrep -af __auto-serve` should be empty).
 - The CLI loads no `@playwright/test` before a project's config: `src/cli/cli.ts` imports each command when it runs,

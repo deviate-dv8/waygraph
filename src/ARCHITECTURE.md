@@ -5,8 +5,8 @@ Waygraph is an opinionated Playwright. **Blocks** are steps between **Checkpoint
 are two ways of playing the same steps: `run` plays them like a Playwright test, `demo` adds the waygraph UI around
 each one.
 
-A high-level tour with pictures is the Obsidian vault in `obsidian/` (open the folder as a vault; start at
-`Start Here.md`). There are two places to start reading the code, one per side:
+The docs site (`docs/`) explains the features; this page is the code. There are two places to start reading it, one per
+side:
 
 | You want to know... | Start at | It reads as |
 |---|---|---|
@@ -150,5 +150,8 @@ By convention:
   shows every piece (`stories/`), painted by the real builders. CSS for the page itself (the device stage) is
   `ui/css/host.css`.
 - The runner is spawned inside the target project, so `waygraph/runner` and Playwright resolve from the project's own
-  install (two Playwright copies in one process is a hard error). Read `CLI-STOMP-GUARD.md` before changing the stepper.
+  install (two Playwright copies in one process is a hard error).
+- The stepper keeps: Hide (`localStorage['wg-panel-hidden']`) across steps, Next on a collapsed panel, the todo dock
+  outside `#wg-panel` (so Hide and `--mini` never hide it), and a `data-wg-ready` stamp on every modal root
+  (`assertWgOverlayReady`, `tests/cli/overlay-beacon.spec.ts`).
 - Never mix a move with an edit in one commit.

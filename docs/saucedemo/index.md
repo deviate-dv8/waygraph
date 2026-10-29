@@ -47,9 +47,7 @@ examples/saucedemo/
   tests/                      Playwright specs running the flows
 ```
 
-Each screen folder has a `NAV.md` describing what can be reached from it, and
-[`src/blocks/SITE-MAP.md`](https://github.com/deviate-dv8/waygraph/blob/main/examples/saucedemo/src/blocks/SITE-MAP.md)
-lists the whole tree.
+`waygraph graph` prints what can be reached from each screen.
 
 ## Blocks
 

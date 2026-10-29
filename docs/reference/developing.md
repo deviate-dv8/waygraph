@@ -41,7 +41,7 @@ WAYGRAPH_PROVE_EXIT=1 WAYGRAPH_PROVE_SHOT=/tmp/wg.png \
 ```
 
 Tests: `tests/cli/overlay-beacon.spec.ts`. Helpers: `src/demo/overlay/beacon.ts`. Rules for
-touching the stepper/overlay chrome itself: `src/CLI-STOMP-GUARD.md`.
+touching the stepper/overlay chrome itself: `src/ARCHITECTURE.md` ("By convention").
 
 ## Layout
 
@@ -61,7 +61,7 @@ examples/saucedemo/         live Sauce Demo (Page + methods/ + Sel)
 templates/quickstart/       try demo / init template (mirrors sauce)
 templates/scaffold/         offline waygraph init scaffold template
 templates/agents/           waygraph agent-dive coding-agent definitions
-docs/                       GitHub Pages static HTML + docs/proposals/ RFCs
+docs/                       this site (VitePress); npm run docs:dev / docs:build / docs:preview
 openspec/                   spec-driven planning: specs/ (current), changes/ (in-flight),
                             changes/archive/ (shipped)
 tests/                      runtime unit + integration tests (@playwright/test)
@@ -75,3 +75,9 @@ experiments may still live in a sibling workspace folder and depend on this pack
 project's own `.npmrc` - `install-links=true` is required there, or npm will symlink
 instead of copy and pull this package's own `node_modules` in through the symlink, causing
 a duplicate-Playwright-installation error).
+
+## These docs
+
+`npm run docs:dev` serves the site with hot reload, `npm run docs:build` builds it (and fails on a dead link),
+`npm run docs:preview` serves the build. A push to `main` touching `docs/` deploys it to GitHub Pages
+(`.github/workflows/pages.yml`).

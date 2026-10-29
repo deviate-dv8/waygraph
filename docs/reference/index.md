@@ -13,7 +13,6 @@ Every command, setting and variable. To learn a topic, start with the [guides](.
 | [API](../api/) | every export, generated from the source |
 | [Deprecated](../deprecated) | what was removed and what replaces it |
 | [Developing waygraph](./developing) | working on waygraph itself |
-| [Preview these docs](../deploy) | run this site locally |
 
 waygraph is not 1.0 yet: a minor version can change syntax. [ROADMAP.md](https://github.com/deviate-dv8/waygraph/blob/main/ROADMAP.md)
 says what's shipped and what's planned.
