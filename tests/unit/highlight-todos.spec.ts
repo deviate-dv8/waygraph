@@ -33,21 +33,19 @@ describe("normalizeTodos", () => {
 });
 
 describe("normalizeTodoPos + ctx.todoPos / ctx.title", () => {
-  it("normalizes left/right aliases", async () => {
+  it("takes left or right", async () => {
     const { normalizeTodoPos } = await import("../../src/demo/narration/todo-dock.js");
     assert.equal(normalizeTodoPos("left"), "left");
-    assert.equal(normalizeTodoPos("RIGHT"), "right");
-    assert.equal(normalizeTodoPos("r"), "right");
-    assert.equal(normalizeTodoPos("nope"), undefined);
+    assert.equal(normalizeTodoPos("right"), "right");
+    assert.equal(normalizeTodoPos(undefined), undefined);
+    assert.throws(() => normalizeTodoPos("r"), /todo dock side "r"/);
   });
 
-  it("normalizes bullets style aliases", async () => {
+  it("takes sequential, checklist or bullets", async () => {
     const { normalizeTodoStyle } = await import("../../src/demo/narration/todo-dock.js");
     assert.equal(normalizeTodoStyle("bullets"), "bullets");
-    assert.equal(normalizeTodoStyle("bullet"), "bullets");
-    assert.equal(normalizeTodoStyle("list"), "bullets");
-    assert.equal(normalizeTodoStyle("plain"), "bullets");
     assert.equal(normalizeTodoStyle("checklist"), "checklist");
+    assert.throws(() => normalizeTodoStyle("list"), /todo style "list"/);
   });
 
   it("bullets style ignores todoIndex current marks", () => {

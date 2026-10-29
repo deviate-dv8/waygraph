@@ -23,7 +23,7 @@ export function defaultMemJsonPrompt(key: MemKey<unknown>): string {
   return def === undefined ? "{}" : JSON.stringify(def);
 }
 export function seedMemFromEnv(mem: MemPage, entry: BlockEntry): boolean {
-  const raw = envString("WAYGRAPH_DATA") ?? envString("WAYGRAPH_AUTO_MEM");
+  const raw = envString("WAYGRAPH_DATA");
   if (!raw) return false;
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -38,7 +38,7 @@ export function seedMemFromEnv(mem: MemPage, entry: BlockEntry): boolean {
 /** Pre-seeds required keys from WAYGRAPH_DATA and the project's mem stubs, so a session does not stop for mem forms. */
 
 export function seedDefaultMem(library: Map<string, BlockEntry>, mem: MemPage, dataJson?: string): void {
-  const raw = dataJson ?? envString("WAYGRAPH_DATA") ?? envString("WAYGRAPH_AUTO_MEM");
+  const raw = dataJson ?? envString("WAYGRAPH_DATA");
   let envParsed: Record<string, unknown> = {};
   if (raw) {
     try {
@@ -81,7 +81,7 @@ export async function ensureMem(entry: BlockEntry, mem: MemPage, cli: boolean): 
     return;
   }
   throw new Error(
-    `Block "${entry.block.name}" needs MemPage keys - pass --data '{...}' / WAYGRAPH_DATA (or WAYGRAPH_AUTO_MEM), or enter values in --cli`
+    `Block "${entry.block.name}" needs MemPage keys - pass --data '{...}' / WAYGRAPH_DATA, or enter values in --cli`
   );
 }
 

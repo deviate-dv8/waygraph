@@ -1,4 +1,5 @@
 import type { DemoPace } from "../../engine/stub/pace.js";
+import { choice } from "../../engine/stub/choice.js";
 import type { FixtureDurationFields } from "../../engine/stub/ring.js";
 import { envString } from "../../engine/env.js";
 
@@ -14,24 +15,12 @@ export const FIXTURE_DURATION_SLOW_MS_DEFAULT = 4000;
 
 
 
-/** Turns any accepted pace spelling into a `DemoPace`; unknown values mean normal. */
+/** A pace: `blitz`, `fast`, `normal`, `slow`, or a number (also as text, from the environment); default `normal`. */
 export function normalizeDemoPace(raw: unknown): DemoPace {
   if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return raw;
-  if (typeof raw === "string") {
-    const t = raw.trim().toLowerCase();
-    if (t === "blitz" || t === "ff") return "blitz";
-    if (t === "fast" || t === "quick") return "fast";
-    if (t === "slow" || t === "careful" || t === "review") return "slow";
-    if (t === "normal" || t === "default" || t === "1x") return "normal";
-    // "2x" / "0.5x"
-    if (t.endsWith("x")) {
-      const n = Number(t.slice(0, -1));
-      if (Number.isFinite(n) && n > 0) return n;
-    }
-    const n = Number(t);
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-  return "normal";
+  // A number written as text (WAYGRAPH_DEMO_PACE=0.5) is that number.
+  if (typeof raw === "string" && raw !== "" && Number(raw) > 0) return Number(raw);
+  return choice("pace", raw, ["blitz", "fast", "normal", "slow"]) ?? "normal";
 }
 
 

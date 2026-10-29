@@ -1,4 +1,5 @@
 // A ring: one highlighted element with its caption, and its tone, size and weight; slides between steps.
+import { choice } from "./choice.js";
 
 /** Shared dwell fields on stubs, fixtures, and yap slides. */
 export type FixtureDurationFields = {
@@ -138,33 +139,17 @@ export type HighlightStyleDefaults = {
 /** A ring or caption after its defaults and overrides are merged, ready to paint. */
 export type ResolvedHighlight = WaygraphHighlightStub;
 
-/** Map author aliases (`error` -> danger) to a canonical tone. */
+/** A ring's tone (default `planned`). */
 export function normalizeHighlightTone(raw: unknown): HighlightTone {
-  if (typeof raw !== "string") return "planned";
-  const t = raw.trim().toLowerCase();
-  if (t === "auto" || t === "automation" || t === "engine") return "auto";
-  if (t === "info" || t === "blue") return "info";
-  if (t === "warning" || t === "warn" || t === "yellow") return "warning";
-  if (t === "danger" || t === "error" || t === "red") return "danger";
-  if (t === "success" || t === "ok" || t === "green") return "success";
-  if (t === "orange" || t === "amber" || t === "dom" || t === "inspect") return "orange";
-  if (t === "planned" || t === "purple" || t === "authored") return "planned";
-  return "planned";
+  return choice("tone", raw, ["planned", "auto", "info", "warning", "danger", "success", "orange"]) ?? "planned";
 }
 
-/** Map size aliases to sm/md/lg. */
+/** A ring label's size (default `md`). */
 export function normalizeHighlightSize(raw: unknown): HighlightSize {
-  if (typeof raw !== "string") return "md";
-  const t = raw.trim().toLowerCase();
-  if (t === "sm" || t === "s" || t === "small" || t === "tiny") return "sm";
-  if (t === "lg" || t === "l" || t === "large" || t === "big" || t === "xl") return "lg";
-  return "md";
+  return choice("size", raw, ["sm", "md", "lg"]) ?? "md";
 }
 
-/** Map weight aliases to normal/bold. */
+/** A ring label's weight (default `normal`). */
 export function normalizeHighlightWeight(raw: unknown): HighlightWeight {
-  if (typeof raw !== "string") return "normal";
-  const t = raw.trim().toLowerCase();
-  if (t === "bold" || t === "strong" || t === "heavy" || t === "b") return "bold";
-  return "normal";
+  return choice("weight", raw, ["normal", "bold"]) ?? "normal";
 }

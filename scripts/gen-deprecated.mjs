@@ -66,6 +66,20 @@ ${found.length ? `| Name | Kind | Use instead |\n| --- | --- | --- |\n${rows}` :
 | \`traverse --headed\`, \`inject veciro\` / \`demosauce\` | \`traverse --non-headless\`, \`--inject <path>\` / \`--inject saucedemo\` |
 | \`resolveSlideDwellMs\`, \`SLIDE_DURATION_MS_DEFAULT\`, \`SLIDE_DURATION_FAST_MS_DEFAULT\` | \`resolveFixtureDwellMs\`, \`FIXTURE_DURATION_MS_DEFAULT\`, \`FIXTURE_DURATION_FAST_MS_DEFAULT\` |
 
+## Removed in 0.16.9: other spellings of the same value
+
+A narration option takes its documented values only; anything else stops the step with the values it takes.
+
+| Removed | Use instead |
+| --- | --- |
+| tone \`error\` / \`red\`, \`warn\` / \`yellow\`, \`ok\` / \`green\`, \`blue\`, \`amber\` / \`dom\` / \`inspect\`, \`purple\` / \`authored\`, \`automation\` / \`engine\` | \`danger\`, \`warning\`, \`success\`, \`info\`, \`orange\`, \`planned\`, \`auto\` |
+| size \`s\` / \`small\` / \`tiny\`, \`l\` / \`large\` / \`big\` / \`xl\`; weight \`strong\` / \`heavy\` / \`b\` | \`sm\`, \`lg\`; \`bold\` |
+| device \`phone\` / \`m\`, \`pad\` / \`t\`, \`desk\` / \`d\` / \`main\`; orientation \`port\` / \`tall\` / \`p\`, \`land\` / \`wide\` / \`l\` | \`mobile\`, \`tablet\`, \`desktop\`; \`portrait\`, \`landscape\` |
+| pace \`ff\`, \`quick\`, \`careful\` / \`review\`, \`default\` / \`1x\`, \`2x\` | \`blitz\`, \`fast\`, \`slow\`, \`normal\`, \`2\` |
+| todo style \`seq\` / \`steps\`, \`check\` / \`box\`, \`bullet\` / \`list\` / \`ul\` / \`plain\`; dock side \`l\` / \`r\` | \`sequential\`, \`checklist\`, \`bullets\`; \`left\`, \`right\` |
+| Upper case or spaces around a value (\`"Danger "\`) | the value as written above |
+| \`WAYGRAPH_AUTO_MEM\` | \`WAYGRAPH_DATA\` (\`--data\`) |
+
 ## Removed in 0.16.9: the hand-written glob matcher
 
 \`--blocks\` globs are matched by picomatch now (\`**\`, \`*\`, \`?\`, \`{a,b}\`, \`[abc]\`).

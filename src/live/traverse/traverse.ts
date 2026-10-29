@@ -40,7 +40,7 @@ export interface TraverseOptions {
   startUrl?: string;
   /** Seed checkpoint label (optional - otherwise detect from page / nav). */
   from?: string;
-  /** Global Mem seed JSON (or use WAYGRAPH_DATA / WAYGRAPH_AUTO_MEM). */
+  /** Global Mem seed JSON (or WAYGRAPH_DATA). */
   data?: string;
   /** Max Block runs this traverse (default 50). */
   maxSteps?: number;

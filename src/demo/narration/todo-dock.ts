@@ -1,4 +1,5 @@
 import type { TodoDockState, TodoDockUiOpts, TodoDockUiResolved, TodoListStyle, WaygraphTodoGroup, WaygraphTodoGroupInput, WaygraphTodoInput, WaygraphTodoItem } from "../../engine/stub/todos.js";
+import { choice } from "../../engine/stub/choice.js";
 import { envNumber, envString, envSwitch } from "../../engine/env.js";
 
 const positiveInt = (n: number | undefined, fallback: number): number => (n !== undefined && n > 0 ? Math.floor(n) : fallback);
@@ -40,35 +41,15 @@ export function resolveTodoDockUi(patch?: TodoDockUiOpts | null): TodoDockUiReso
 }
 
 
-/** Normalize checklist dock side. */
+/** The todo dock's side: `left` or `right`. */
 export function normalizeTodoPos(raw: unknown): "left" | "right" | undefined {
-  const s = String(raw ?? "")
-    .trim()
-    .toLowerCase();
-  if (s === "left" || s === "l") return "left";
-  if (s === "right" || s === "r") return "right";
-  return undefined;
+  return choice("todo dock side", raw, ["left", "right"]);
 }
 
 
-/** Normalize dock list style. */
+/** The todo list's style: `sequential`, `checklist` or `bullets`. */
 export function normalizeTodoStyle(raw: unknown): TodoListStyle | undefined {
-  const s = String(raw ?? "")
-    .trim()
-    .toLowerCase();
-  if (s === "sequential" || s === "seq" || s === "steps" || s === "step") return "sequential";
-  if (s === "checklist" || s === "check" || s === "checks" || s === "box") return "checklist";
-  if (
-    s === "bullets" ||
-    s === "bullet" ||
-    s === "list" ||
-    s === "ul" ||
-    s === "points" ||
-    s === "plain"
-  ) {
-    return "bullets";
-  }
-  return undefined;
+  return choice("todo style", raw, ["sequential", "checklist", "bullets"]);
 }
 
 

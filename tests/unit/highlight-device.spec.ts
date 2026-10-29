@@ -6,12 +6,12 @@ import type { Block } from "../../src/engine/block/block.js";
 import type { StubCtx } from "../../src/engine/stub/stub.js";
 
 describe("device presets + resolve", () => {
-  it("normalizes aliases", () => {
+  it("takes mobile, tablet or desktop; anything else is refused", () => {
     assert.equal(normalizeDevicePreset("mobile"), "mobile");
-    assert.equal(normalizeDevicePreset("phone"), "mobile");
     assert.equal(normalizeDevicePreset("tablet"), "tablet");
-    assert.equal(normalizeDevicePreset("main"), "desktop");
-    assert.equal(normalizeDevicePreset("nope"), undefined);
+    assert.equal(normalizeDevicePreset("desktop"), "desktop");
+    assert.equal(normalizeDevicePreset(undefined), undefined);
+    assert.throws(() => normalizeDevicePreset("phone"), /device "phone"/);
   });
 
   it("resolves mobile with touchMode by default", () => {
@@ -110,8 +110,8 @@ describe("ctx.device / touch / clearDevice via runStubPhase", () => {
   it("landscape swaps mobile width/height", async () => {
     const { applyOrientation, resolveDeviceState, normalizeDeviceOrientation } =
       await import("../../src/demo/narration/device.js");
-    assert.equal(normalizeDeviceOrientation("land"), "landscape");
-    assert.equal(normalizeDeviceOrientation("port"), "portrait");
+    assert.equal(normalizeDeviceOrientation("landscape"), "landscape");
+    assert.equal(normalizeDeviceOrientation("portrait"), "portrait");
     const mobile = resolveDeviceState("mobile")!;
     assert.ok(mobile.viewport.width < mobile.viewport.height);
     const land = applyOrientation(mobile, "landscape");

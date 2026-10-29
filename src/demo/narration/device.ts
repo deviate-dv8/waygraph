@@ -1,4 +1,5 @@
 import type { DeviceOrientation, DevicePreset, DeviceState, DeviceViewport } from "../../engine/stub/viewport.js";
+import { choice } from "../../engine/stub/choice.js";
 
 /** Built-in preset sizes (CSS pixels) — stored in portrait for mobile/tablet. */
 export const DEVICE_PRESETS: Record<DevicePreset, Omit<DeviceState, "touchMode"> & { touchMode?: boolean }> = {
@@ -29,26 +30,15 @@ export const DEVICE_PRESETS: Record<DevicePreset, Omit<DeviceState, "touchMode">
 };
 
 
-/** Turns a device name (`mobile`, `tablet`, ...) into a known preset. */
+/** A device preset: `mobile`, `tablet` or `desktop`. */
 export function normalizeDevicePreset(raw: unknown): DevicePreset | undefined {
-  const s = String(raw ?? "")
-    .trim()
-    .toLowerCase();
-  if (s === "mobile" || s === "phone" || s === "m") return "mobile";
-  if (s === "tablet" || s === "pad" || s === "t") return "tablet";
-  if (s === "desktop" || s === "desk" || s === "d" || s === "main") return "desktop";
-  return undefined;
+  return choice("device", raw, ["mobile", "tablet", "desktop"]);
 }
 
 
-/** Turns `portrait` / `landscape` spellings into a device orientation. */
+/** A device orientation: `portrait` or `landscape`. */
 export function normalizeDeviceOrientation(raw: unknown): DeviceOrientation | undefined {
-  const s = String(raw ?? "")
-    .trim()
-    .toLowerCase();
-  if (s === "portrait" || s === "port" || s === "tall" || s === "p") return "portrait";
-  if (s === "landscape" || s === "land" || s === "wide" || s === "l") return "landscape";
-  return undefined;
+  return choice("orientation", raw, ["portrait", "landscape"]);
 }
 
 

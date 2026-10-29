@@ -18,30 +18,21 @@ import {
 } from "../../src/demo/narration/demo-pace.js";
 
 describe("normalizeHighlightTone", () => {
-  it("maps aliases to canonical tones", () => {
-    assert.equal(normalizeHighlightTone("auto"), "auto");
-    assert.equal(normalizeHighlightTone("automation"), "auto");
-    assert.equal(normalizeHighlightTone("warn"), "warning");
-    assert.equal(normalizeHighlightTone("error"), "danger");
-    assert.equal(normalizeHighlightTone("blue"), "info");
-    assert.equal(normalizeHighlightTone("ok"), "success");
-    assert.equal(normalizeHighlightTone("purple"), "planned");
+  it("takes its tones; nothing given is planned", () => {
+    for (const tone of ["planned", "auto", "info", "warning", "danger", "success", "orange"]) assert.equal(normalizeHighlightTone(tone), tone);
     assert.equal(normalizeHighlightTone(undefined), "planned");
+    assert.throws(() => normalizeHighlightTone("error"), /tone "error"/);
   });
 });
 
 describe("normalizeHighlightSize / weight", () => {
-  it("maps size aliases", () => {
-    assert.equal(normalizeHighlightSize("small"), "sm");
+  it("takes sm / md / lg and normal / bold", () => {
     assert.equal(normalizeHighlightSize("lg"), "lg");
-    assert.equal(normalizeHighlightSize("big"), "lg");
     assert.equal(normalizeHighlightSize(undefined), "md");
-  });
-
-  it("maps weight aliases", () => {
-    assert.equal(normalizeHighlightWeight("strong"), "bold");
-    assert.equal(normalizeHighlightWeight("regular"), "normal");
+    assert.throws(() => normalizeHighlightSize("big"), /size "big"/);
+    assert.equal(normalizeHighlightWeight("bold"), "bold");
     assert.equal(normalizeHighlightWeight(undefined), "normal");
+    assert.throws(() => normalizeHighlightWeight("strong"), /weight "strong"/);
   });
 });
 
@@ -64,18 +55,17 @@ describe("formatHighlightCaption", () => {
 });
 
 describe("normalizeDemoPace / resolveStepDemoPace", () => {
-  it("normalizes pace aliases", () => {
-    assert.equal(normalizeDemoPace("ff"), "blitz");
-    assert.equal(normalizeDemoPace("quick"), "fast");
-    assert.equal(normalizeDemoPace("review"), "slow");
+  it("takes blitz / fast / normal / slow; nothing given is normal", () => {
+    assert.equal(normalizeDemoPace("blitz"), "blitz");
     assert.equal(normalizeDemoPace(""), "normal");
+    assert.throws(() => normalizeDemoPace("quick"), /pace "quick"/);
   });
 
   it("accepts numeric scale and absolute ms", () => {
     assert.equal(normalizeDemoPace(0.5), 0.5);
     assert.equal(normalizeDemoPace(2), 2);
     assert.equal(normalizeDemoPace(4500), 4500);
-    assert.equal(normalizeDemoPace("2x"), 2);
+    assert.equal(normalizeDemoPace("2"), 2);
     assert.equal(demoPaceScale(2), 2);
     assert.equal(demoPaceGateMs(4500, 1800), 4500);
     assert.equal(demoPaceGateMs(2, 1800), 3600);
