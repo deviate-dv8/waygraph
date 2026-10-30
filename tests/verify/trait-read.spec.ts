@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { checkpoint, defineReadBlock, MemPage, reads, Trait } from "../../src/index.js";
+import { checkpoint, defineReadBlock, keys, MemPage, reads, Trait } from "../../src/index.js";
 import { runVerify } from "../../src/engine/trait/verify.js";
 
 const Shop = reads("traitReadShop")<{ items: string[]; total: number }>();
@@ -27,4 +27,15 @@ test("a key no Read Block reads fails, saying so", async ({ page }) => {
   const Nothing = reads("traitReadNothing")<{ x: string }>();
   await page.setContent(`<p>x</p>`);
   await expect(runVerify([{ ...Trait.read(Nothing.x, () => true), timeoutMs: 0 }], Done, page, new MemPage(), "x")).rejects.toThrow(/no value for traitReadNothing\.x/);
+});
+
+test("Trait.read's test gets mem: what the page shows against what the flow did", async ({ page }) => {
+  const Picked = keys("traitReadPicked")<{ item: string }>();
+  const mem = new MemPage();
+  mem.set(Picked.item, "b");
+  await page.setContent(`<ul><li>a</li><li>b</li></ul><p id="total">$3</p>`);
+  const has = Trait.read(Shop.items, (items, m) => items.includes(m.get(Picked.item)), "the picked item");
+  await runVerify([has], Done, page, mem, "list");
+  mem.set(Picked.item, "z");
+  await expect(runVerify([{ ...has, timeoutMs: 200 }], Done, page, mem, "list")).rejects.toThrow('wanted the picked item; saw ["a","b"]');
 });

@@ -24,7 +24,7 @@ graph TD
 | `Trait.attribute(sel, "aria-pressed", "true")` | an attribute equals |
 | `Trait.disabled(sel)` / `Trait.enabled(sel)` | the control is disabled / enabled |
 | `Trait.frameVisible` / `frameText` / `frameContains` | the same, inside an iframe |
-| `Trait.read(key, test, wants?)` | what the page's Read Block reads passes `test` ([below](#in-the-page-s-own-terms-trait-read)) |
+| `Trait.read(key, (value, mem) => …, wants?)` | what the page's Read Block reads passes the test ([below](#in-the-page-s-own-terms-trait-read)) |
 
 An expected value can come from mem: `Trait.text("#code", (mem) => mem.get(MachineKeys.code))`.
 
@@ -91,6 +91,8 @@ With a [Read Block](./reads) on the page, a check can name what the page shows i
 verify: [
   Trait.read(Catalog.items, (items) => items.length === 6, "6 products"),
   Trait.read(Header.cartCount, (n) => n === 1),
+  // the test also gets mem: what the page shows against what the flow did
+  Trait.read(Catalog.items, (items, mem) => items.some((i) => i.inCart && i.name === mem.get(ShopKeys.selectedItem).name), "the selected item in the cart"),
 ],
 ```
 

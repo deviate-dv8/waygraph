@@ -118,6 +118,8 @@ the page showed.
 verify: [
   Trait.read(Catalog.items, (items) => items.length === 6, "6 products"),
   Trait.read(Header.cartCount, (n) => n === 1),
+  // the test also gets mem: what the page shows against what the flow did
+  Trait.read(Catalog.items, (items, mem) => items.some((i) => i.inCart && i.name === mem.get(ShopKeys.selectedItem).name), "the selected item in the cart"),
 ],
 ```
 
