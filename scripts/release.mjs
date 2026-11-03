@@ -5,7 +5,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { encoding: "utf8", ...opts }).trim();
+// Output passed through to the terminal (stdio: "inherit") comes back as null: nothing to trim.
+const run = (cmd, args, opts = {}) => (execFileSync(cmd, args, { encoding: "utf8", ...opts }) ?? "").trim();
 const fail = (why) => {
   console.error(`release: ${why}`);
   process.exit(1);
