@@ -123,7 +123,7 @@ interface BuilderState {
 }
 
 /** `when` only on a step that stays on its Checkpoint: a skipped step ends where it started. */
-type WhenOpt<Out, NextOut> = [NextOut] extends [Out] ? { when?: (mem: MemPage) => boolean } : { when?: never };
+export type WhenOpt<Out, NextOut> = [NextOut] extends [Out] ? { when?: (mem: MemPage) => boolean } : { when?: never };
 
 
 /**

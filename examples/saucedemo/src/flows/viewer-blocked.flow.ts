@@ -1,8 +1,5 @@
 import { engine } from "../../config/waygraph.config.js";
-import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
-import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
-import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
-import { SubmitLoginBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
+import { Login } from "../blocks/saucedemo-web/nav-login.block.js";
 import { loginRefused } from "../stubs/login.js";
 
 /**
@@ -16,14 +13,14 @@ export const viewerBlockedFlow = engine
       "locked_out_user stays on LoginPage with the error banner - this is the product working as intended.",
   })
   .gotoPage(
-    NavLoginBlock.stubBefore((ctx) =>
+    Login.stubBefore((ctx) =>
       ctx.ui.title("Viewer: Blocked Login Attempt"),
     ),
   )
-  .method(FillUsernameBlock)
-  .method(FillPasswordBlock)
+  .method(Login.do.fillUsername)
+  .method(Login.do.fillPassword)
   .method(
-    SubmitLoginBlock.stubAfter((ctx) => {
+    Login.do.submitLogin.stubAfter((ctx) => {
       if (ctx.out?.__state === "LoginPage") loginRefused(ctx);
     }),
   );

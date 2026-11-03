@@ -1,6 +1,24 @@
 import { defineConfig } from "@playwright/test";
 import { chromiumExecutablePath } from "./src/runtime/browser.js";
 
+// Specs that drive the live saucedemo.com or spawn session processes: a dozen of them at once overload the site and the
+// machine, and fail on timeouts that never show alone. They run in their own project, two at a time; the rest stay
+// fully parallel.
+const LIVE = [
+  "auto-explore/inventory-bulk-menu",
+  "cli/auto-session",
+  "cli/auto-session-blind-pilot",
+  "cli/browser-inject",
+  "cli/flags",
+  "cli/input",
+  "cli/mem-stub",
+  "cli/overlay-beacon",
+  "cli/pilot",
+  "cli/replay",
+  "flow-run/chain-flow-episodes",
+  "pilot/pilot",
+].map((spec) => `**/tests/${spec}.spec.ts`);
+
 export default defineConfig({
   testDir: "./tests",
   // tests/unit runs on node:test (see `npm run test:unit`), not @playwright/test -
@@ -16,6 +34,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 2 : undefined,
   reporter: [["list"], ["html", { open: "never" }]],
+  projects: [
+    { name: "local", testIgnore: LIVE },
+    { name: "live", testMatch: LIVE, workers: 2 },
+  ],
   use: {
     headless: true,
     trace: "retain-on-failure",

@@ -1,9 +1,6 @@
 import { engine } from "../../config/waygraph.config.js";
 import { Trait } from "waygraph";
-import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
-import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
-import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
-import { SubmitLoginBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
+import { Login } from "../blocks/saucedemo-web/nav-login.block.js";
 import { loginFailed } from "../stubs/login.js";
 
 /**
@@ -16,13 +13,13 @@ export const stubOnErrorFlow = engine
       "Intentional verify fail - stubOnError rings the error banner before the panel",
   })
   .gotoPage(
-    NavLoginBlock.stubBefore((ctx) =>
+    Login.stubBefore((ctx) =>
       ctx.ui.title("stubOnError: locked_out fail rings"),
     ),
   )
-  .method(FillUsernameBlock)
-  .method(FillPasswordBlock)
-  .method(SubmitLoginBlock.stubOnError(loginFailed))
+  .method(Login.do.fillUsername)
+  .method(Login.do.fillPassword)
+  .method(Login.do.submitLogin.stubOnError(loginFailed))
   .withBlockVerify("submit-login", [
     Trait.url({ pathname: "/inventory.html" }),
   ]);

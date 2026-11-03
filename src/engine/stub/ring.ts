@@ -46,12 +46,12 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
   /**
    * Camera zoom while this ring is up (Screen Studio style - page scales toward
    * the target / cursor). Typical `1.25` .. `2`. Cleared when the ring hides
-   * unless `zoomOut: false`. Episode default: {@link StubCtx.zoom}.
+   * unless `zoomOut: false`. Episode default: {@link StubUi.zoom}.
    */
   zoom?: number;
   /**
    * When false, keep the camera zoomed after this ring (pan to the next target
-   * instead of zooming out). Default true. Phase default: {@link StubCtx.zoomOut}.
+   * instead of zooming out). Default true. Phase default: {@link StubUi.zoomOut}.
    */
   zoomOut?: boolean;
   /**
@@ -88,7 +88,7 @@ export interface WaygraphHighlightStub extends FixtureDurationFields {
 export type HighlightStubPhase = Record<string, WaygraphHighlightStub>;
 
 /**
- * One yap/slide in a multi-step demo caption sequence, painted with {@link StubCtx.slides}.
+ * One yap/slide in a multi-step demo caption sequence, painted with {@link StubUi.slides}.
  * The demo pauses on each (Next, or auto-next) before moving on.
  */
 export interface WaygraphSlide extends FixtureDurationFields {

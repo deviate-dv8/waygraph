@@ -1,8 +1,9 @@
-// `waygraph upgrade --codemod lands`, `--codemod ff` and `--codemod chain`: step forms a project wrote by hand, onto the map() options
+// `waygraph upgrade --codemod lands`, `ff`, `chain` and `pages`: step forms a project wrote by hand, onto the map() options
 // that do the same. `lands`: an alias that casts a branching Block to one outcome (`const Saved = SubmitBlock as
 // MethodBlock<Form, Detail>`) becomes the step option (`.method(SubmitBlock, { lands: Detail })`), checked at runtime.
 // `ff`: three or more chained steps that each pass `{ ff: true }` become one `.ffStart()` ... `.ffEnd()` window, the
-// same fast-forward. `chain`: a flow's `.start()` and `.end()` go - the chain itself is the flow. Works on the TypeScript AST.
+// same fast-forward. `chain`: a flow's `.start()` and `.end()` go - the chain itself is the flow. `pages`: Blocks a
+// Page Block names are used through it (`Page.nav`, `Page.do.x`). Works on the TypeScript AST.
 import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, relative } from "node:path";
 import { Node, Project, SyntaxKind } from "ts-morph";
@@ -294,4 +295,100 @@ export function codemodChain(dir: string): { changed: string[]; problems: string
     }
   }
   return { changed, problems: [] };
+}
+
+/** Where a Block is reached through a page: `Page.nav` or `Page.do.<name>`. */
+interface PageAccess {
+  page: string;
+  pageFile: string;
+  access: string;
+}
+
+/** Every Block a Page Block names (its `nav`, its `methods` record), by `file#exportName`; a page's nav wins. */
+function pageAccessMap(project: Project, files: string[]): Map<string, PageAccess> {
+  const found = new Map<string, PageAccess>();
+  const methods: [string, PageAccess][] = [];
+  for (const file of files) {
+    const sf = parse(project, file);
+    for (const decl of sf.getVariableDeclarations()) {
+      const call = decl.getInitializer();
+      if (!Node.isCallExpression(call) || call.getExpression().getText() !== "definePageBlock") continue;
+      const options = call.getArguments()[0];
+      if (!Node.isObjectLiteralExpression(options)) continue;
+      const blockOf = (init: Node | undefined): string | undefined => {
+        const body = Node.isArrowFunction(init) ? init.getBody() : init;
+        return Node.isIdentifier(body) ? body.getText() : undefined;
+      };
+      const at = (name: string | undefined, access: string): void => {
+        const source = name ? sourceOf(sf, name) : undefined;
+        if (!name || !source) return;
+        const entry: [string, PageAccess] = [`${source}#${name}`, { page: decl.getName(), pageFile: file, access }];
+        if (access === "nav") found.set(...entry);
+        else methods.push(entry);
+      };
+      const nav = options.getProperty("nav");
+      if (Node.isPropertyAssignment(nav)) at(blockOf(nav.getInitializer()), "nav");
+      if (Node.isShorthandPropertyAssignment(nav)) at(nav.getName(), "nav");
+      const record = options.getProperty("methods");
+      const init = Node.isPropertyAssignment(record) ? record.getInitializer() : undefined;
+      if (!Node.isObjectLiteralExpression(init)) continue;
+      for (const prop of init.getProperties()) {
+        if (Node.isPropertyAssignment(prop)) at(blockOf(prop.getInitializer()), `do.${prop.getName()}`);
+      }
+    }
+  }
+  for (const [key, access] of methods) if (!found.has(key)) found.set(key, access);
+  return found;
+}
+
+/** Rewrites one file's Block imports into its pages' namespaces; returns whether it changed. */
+function usePages(sf: SourceFile, pages: Map<string, PageAccess>, dir: string, problems: string[]): boolean {
+  let changed = false;
+  for (const imp of sf.getImportDeclarations()) {
+    const from = resolveImport(sf.getFilePath(), imp.getModuleSpecifierValue());
+    if (!from) continue;
+    for (const named of imp.getNamedImports()) {
+      const local = named.getAliasNode()?.getText() ?? named.getName();
+      const via = pages.get(`${from}#${named.getName()}`);
+      if (!via || via.pageFile === sf.getFilePath()) continue;
+      const uses = sf.getDescendantsOfKind(SyntaxKind.Identifier).filter((id) => id.getText() === local && !id.getFirstAncestorByKind(SyntaxKind.ImportDeclaration));
+      if (uses.some((id) => id.getFirstAncestorByKind(SyntaxKind.ExportDeclaration))) {
+        problems.push(`${relative(dir, sf.getFilePath())}: ${local} is re-exported - use ${via.page}.${via.access} by hand`);
+        continue;
+      }
+      for (const id of uses) {
+        const parent = id.getParent();
+        // A property name that happens to match (`{ AddToCartBlock: … }`, `x.AddToCartBlock`) is not the Block.
+        if ((Node.isPropertyAccessExpression(parent) && parent.getNameNode() === id) || (Node.isPropertyAssignment(parent) && parent.getNameNode() === id)) continue;
+        if (Node.isShorthandPropertyAssignment(parent)) parent.replaceWithText(`${local}: ${via.page}.${via.access}`);
+        else id.replaceWithText(`${via.page}.${via.access}`);
+      }
+      named.remove();
+      importValue(sf, via.page, via.pageFile);
+      changed = true;
+    }
+    if (!imp.wasForgotten() && imp.getNamedImports().length === 0 && !imp.getDefaultImport() && !imp.getNamespaceImport()) imp.remove();
+  }
+  return changed;
+}
+
+/**
+ * Runs `--codemod pages` over a project: a file that imports Blocks a Page Block names (its `nav`, its `methods`) uses
+ * them through the page instead (`Page.nav`, `Page.do.addItem`), one import per page. Block and Page files keep theirs.
+ */
+export function codemodPages(dir: string): { changed: string[]; problems: string[] } {
+  const project = new Project({ useInMemoryFileSystem: true });
+  const files = projectFiles(dir);
+  const pages = pageAccessMap(project, files);
+  const changed: string[] = [];
+  const problems: string[] = [];
+  if (pages.size === 0) return { changed, problems: ["no Page Block names a Block yet: give each page `nav` and a `methods` record first"] };
+  for (const file of files.filter((f) => !f.endsWith(".block.ts"))) {
+    const sf = parse(project, file);
+    if (usePages(sf, pages, dir, problems)) {
+      writeFileSync(file, sf.getFullText());
+      changed.push(relative(dir, file));
+    }
+  }
+  return { changed, problems };
 }

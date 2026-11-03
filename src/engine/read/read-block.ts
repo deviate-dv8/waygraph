@@ -121,6 +121,24 @@ export async function readKeyNow<T>(page: Page, mem: MemPage, key: ReadKey<T>): 
   return read.has(key) ? read.get(key) : undefined;
 }
 
+/**
+ * The selector a key's value is read from (a list's or table's own selector for those), from the Read Blocks that read
+ * it; undefined when none does, or its reader is a function. No page needed: `read` only builds plans.
+ */
+export function readKeySelector(mem: MemPage, key: ReadKey<unknown>): string | undefined {
+  let found: string | undefined;
+  for (const block of registry.values()) {
+    if (found || block.requires.some((k) => !mem.has(k))) continue;
+    const got = block.instruction.read(createReadCtx(mem));
+    for (const spec of Array.isArray(got) ? got : [got as ReadSpec]) {
+      eachReader(spec.fields, spec.namespace, (path, { plan }) => {
+        if (path === key.path && "selector" in plan) found ??= plan.selector;
+      });
+    }
+  }
+  return found;
+}
+
 /** What a field reads, as a type a viewer can show: `"string"`, `"number"`, `"boolean"`, `"string[]"`, a row shape. */
 export type ReadShape = string | readonly [Record<string, string>];
 

@@ -8,7 +8,7 @@ import { agentSkillFiles } from "./agent-dive-scaffold.js";
 import { codemodCheckpoints } from "./codemod-checkpoints.js";
 import { codemodFlows } from "./codemod-flows.js";
 import { codemodKeys } from "./codemod-keys.js";
-import { codemodChain, codemodFf, codemodLands } from "./codemod-steps.js";
+import { codemodChain, codemodFf, codemodLands, codemodPages } from "./codemod-steps.js";
 import { parseCommand } from "../args.js";
 import type { OptionTable } from "../args.js";
 
@@ -34,7 +34,7 @@ const OPTIONS = {
   overwrite: { type: "boolean", help: "Also replace files that differ from the scaffold" },
   diff: { type: "boolean", help: "Show what differs" },
   skills: { type: "boolean", help: "Refresh .agents/skills to this waygraph's" },
-  codemod: { type: "string", value: "flows|checkpoints|keys|lands|ff|chain", help: "Rewrite the project's source onto the current API" },
+  codemod: { type: "string", value: "flows|checkpoints|keys|lands|ff|chain|pages", help: "Rewrite the project's source onto the current API" },
 } as const satisfies OptionTable;
 
 /**
@@ -56,7 +56,7 @@ export async function upgradeCase(args: string[]): Promise<void> {
       if (problems.length) process.exitCode = 1;
       return;
     }
-    const plain = new Map([["keys", codemodKeys], ["lands", codemodLands], ["ff", codemodFf], ["chain", codemodChain]]).get(what);
+    const plain = new Map([["keys", codemodKeys], ["lands", codemodLands], ["ff", codemodFf], ["chain", codemodChain], ["pages", codemodPages]]).get(what);
     if (plain) {
       const { changed, problems } = plain(dir);
       for (const f of changed) console.log(`  rewrote     ${f}`);
@@ -66,7 +66,7 @@ export async function upgradeCase(args: string[]): Promise<void> {
       return;
     }
     if (what !== "checkpoints") {
-      console.error("waygraph upgrade --codemod: known codemods: checkpoints, flows, keys, lands, ff, chain");
+      console.error("waygraph upgrade --codemod: known codemods: checkpoints, flows, keys, lands, ff, chain, pages");
       process.exit(1);
     }
     const { changed, skipped } = codemodCheckpoints(dir);

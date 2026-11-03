@@ -1,22 +1,18 @@
 import { engine } from "../../config/waygraph.config.js";
-import { AddToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.js";
-import { NavCartBlock } from "../blocks/saucedemo-web/cart/nav-cart.block.js";
-import { NavCheckoutInfoBlock } from "../blocks/saucedemo-web/cart/nav-checkout-info.block.js";
-import { FillFirstNameBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/fill-first-name.method.block.js";
-import { FillLastNameBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/fill-last-name.method.block.js";
-import { FillPostalCodeBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/fill-postal-code.method.block.js";
-import { SubmitCheckoutInfoBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/submit-checkout-info.method.block.js";
-import { FinishOrderBlock } from "../blocks/saucedemo-web/checkout-step-two/methods/finish-order.method.block.js";
 import { orderPlacedYap, placingOrder } from "../stubs/finish-order.js";
+import { Inventory } from "../blocks/saucedemo-web/inventory/inventory.page.block.js";
+import { Cart } from "../blocks/saucedemo-web/cart/cart.page.block.js";
+import { CheckoutInfo } from "../blocks/saucedemo-web/checkout-step-one/checkout-info.page.block.js";
+import { CheckoutOverview } from "../blocks/saucedemo-web/checkout-step-two/checkout-overview.page.block.js";
 
 /** Add the selected item, check out and place the order. Starts signed in (run it after loginFlow). */
 export const shopFlow = engine
   .map({ memStub: true })
-  .method(AddToCartBlock.stubBefore((ctx) => ctx.ui.title("Shop & Checkout")))
-  .gotoPage(NavCartBlock)
-  .gotoPage(NavCheckoutInfoBlock)
-  .method(FillFirstNameBlock)
-  .method(FillLastNameBlock)
-  .method(FillPostalCodeBlock)
-  .method(SubmitCheckoutInfoBlock)
-  .method(FinishOrderBlock.stubBefore(placingOrder).stubAfter(orderPlacedYap));
+  .method(Inventory.do.addToCart.stubBefore((ctx) => ctx.ui.title("Shop & Checkout")))
+  .gotoPage(Cart.nav)
+  .gotoPage(CheckoutInfo.nav)
+  .method(CheckoutInfo.do.fillFirstName)
+  .method(CheckoutInfo.do.fillLastName)
+  .method(CheckoutInfo.do.fillPostalCode)
+  .method(CheckoutInfo.do.submit)
+  .method(CheckoutOverview.do.finishOrder.stubBefore(placingOrder).stubAfter(orderPlacedYap));

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { codemodLands, convertChainEnds, convertFfRuns } from "../../src/cli/commands/codemod-steps.js";
+import { codemodLands, codemodPages, convertChainEnds, convertFfRuns } from "../../src/cli/commands/codemod-steps.js";
 
 describe("--codemod ff", () => {
   it("brackets three or more { ff: true } steps with .ffStart() / .ffEnd(), keeping the other options", () => {
@@ -127,6 +127,47 @@ describe("--codemod lands", () => {
       assert.equal(problems.length, 1);
       assert.match(problems[0] ?? "", /Saved is used outside a step/);
       assert.match(readFileSync(join(dir, "src/b.ts"), "utf8"), /as MethodBlock/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("--codemod pages", () => {
+  it("uses Blocks through the Page Block that names them: nav first, then methods; Block files keep their imports", () => {
+    const dir = mkdtempSync(join(tmpdir(), "wg-codemod-pages-"));
+    const files: Record<string, string> = {
+      "src/home/nav.block.ts": "export const NavHomeBlock = {};\nexport const NavDetailBlock = {};\n",
+      "src/home/add.block.ts": "export const AddItemBlock = {};\n",
+      "src/home/home.page.block.ts": [
+        'import { NavHomeBlock, NavDetailBlock } from "./nav.block.js";',
+        'import { AddItemBlock } from "./add.block.js";',
+        "export const HomePage = definePageBlock({ nav: NavHomeBlock, methods: { addItem: () => AddItemBlock, openDetail: NavDetailBlock } });",
+        "",
+      ].join("\n"),
+      "src/detail/detail.page.block.ts": 'import { NavDetailBlock } from "../home/nav.block.js";\nexport const DetailPage = definePageBlock({ nav: NavDetailBlock });\n',
+      "src/flows/a.flow.ts": [
+        'import { NavHomeBlock, NavDetailBlock } from "../home/nav.block.js";',
+        'import { AddItemBlock } from "../home/add.block.js";',
+        "const Shown = AddItemBlock.stubAfter(() => {});",
+        "export const f = map().gotoPage(NavHomeBlock).method(Shown).method(AddItemBlock).gotoPage(NavDetailBlock);",
+        "",
+      ].join("\n"),
+    };
+    for (const [path, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(dir, path)), { recursive: true });
+      writeFileSync(join(dir, path), text);
+    }
+    try {
+      const { changed, problems } = codemodPages(dir);
+      assert.deepEqual(problems, []);
+      assert.deepEqual(changed, ["src/flows/a.flow.ts"]);
+      const flow = readFileSync(join(dir, "src/flows/a.flow.ts"), "utf8");
+      assert.match(flow, /const Shown = HomePage\.do\.addItem\.stubAfter/);
+      assert.match(flow, /\.gotoPage\(HomePage\.nav\)\.method\(Shown\)\.method\(HomePage\.do\.addItem\)\.gotoPage\(DetailPage\.nav\)/);
+      assert.match(flow, /import \{ HomePage \} from "\.\.\/home\/home\.page\.block\.js";/);
+      assert.match(flow, /import \{ DetailPage \} from "\.\.\/detail\/detail\.page\.block\.js";/);
+      assert.doesNotMatch(flow, /nav\.block\.js|add\.block\.js/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

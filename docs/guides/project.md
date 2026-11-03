@@ -111,6 +111,7 @@ npx waygraph upgrade --codemod keys                   # rewrite code a release c
 npx waygraph upgrade --codemod lands                  # `Block as MethodBlock<A, B>` casts -> .method(Block, { lands: B })
 npx waygraph upgrade --codemod ff                     # { ff: true } on step after step -> .ffStart() ... .ffEnd()
 npx waygraph upgrade --codemod chain                  # drops .start() and .end(): the chain is the flow
+npx waygraph upgrade --codemod pages                  # a flow's Block imports -> its pages' Page.nav / Page.do.x
 ```
 
 `upgrade` copies only the paths you name, and replaces a file that differs only with `--overwrite`.

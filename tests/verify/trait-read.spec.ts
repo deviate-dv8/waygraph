@@ -39,3 +39,11 @@ test("Trait.read's test gets mem: what the page shows against what the flow did"
   mem.set(Picked.item, "z");
   await expect(runVerify([{ ...has, timeoutMs: 200 }], Done, page, mem, "list")).rejects.toThrow('wanted the picked item; saw ["a","b"]');
 });
+
+test("once checked, Trait.read names the element the value came from, so the demo rings it", async ({ page }) => {
+  await page.setContent(`<ul><li>a</li></ul><p id="total">$3</p>`);
+  const total = Trait.read(Shop.total, (t) => t === 3);
+  expect(total.selector).toBeUndefined();
+  await runVerify([total], Done, page, new MemPage(), "total");
+  expect(total.selector).toBe("#total");
+});

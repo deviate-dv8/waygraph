@@ -1,10 +1,9 @@
 import { engine } from "../../config/waygraph.config.js";
-import { NavCartBlock } from "../blocks/saucedemo-web/cart/nav-cart.block.js";
-import { NavContinueShoppingBlock } from "../blocks/saucedemo-web/inventory-item/nav-continue-shopping.block.js";
+import { Cart } from "../blocks/saucedemo-web/cart/cart.page.block.js";
 
 export const cartContinueFlow = engine
   .map()
   .gotoPage(
-    NavCartBlock.stubBefore((ctx) => ctx.ui.title("Cart then continue shopping")),
+    Cart.nav.stubBefore((ctx) => ctx.ui.title("Cart then continue shopping")),
   )
-  .gotoPage(NavContinueShoppingBlock);
+  .gotoPage(Cart.do.continueShopping);

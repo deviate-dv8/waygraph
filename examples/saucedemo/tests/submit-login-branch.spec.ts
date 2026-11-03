@@ -1,10 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { MemPage } from "waygraph";
 import { engine } from "../config/waygraph.config.js";
-import { NavLoginBlock } from "../src/blocks/saucedemo-web/nav-login.block.js";
-import { FillUsernameBlock } from "../src/blocks/saucedemo-web/methods/fill-username.method.block.js";
-import { FillPasswordBlock } from "../src/blocks/saucedemo-web/methods/fill-password.method.block.js";
-import { SubmitLoginBlock } from "../src/blocks/saucedemo-web/methods/submit-login.method.block.js";
+import { Login } from "../src/blocks/saucedemo-web/nav-login.block.js";
 import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
 
 test("submit-login: wrong password branches to LoginPage with error banner", async () => {
@@ -13,10 +10,10 @@ test("submit-login: wrong password branches to LoginPage with error banner", asy
 
   const flow = engine
     .map()
-    .gotoPage(NavLoginBlock)
-    .method(FillUsernameBlock)
-    .method(FillPasswordBlock)
-    .method(SubmitLoginBlock);
+    .gotoPage(Login)
+    .method(Login.do.fillUsername)
+    .method(Login.do.fillPassword)
+    .method(Login.do.submitLogin);
   const result = await flow.run(mem);
 
   expect(result.__state).toBe("LoginPage");
@@ -28,10 +25,10 @@ test("submit-login: good password branches to LoggedIn", async () => {
 
   const flow = engine
     .map()
-    .gotoPage(NavLoginBlock)
-    .method(FillUsernameBlock)
-    .method(FillPasswordBlock)
-    .method(SubmitLoginBlock);
+    .gotoPage(Login)
+    .method(Login.do.fillUsername)
+    .method(Login.do.fillPassword)
+    .method(Login.do.submitLogin);
   const result = await flow.run(mem);
 
   expect(result.__state).toBe("LoggedIn");

@@ -189,6 +189,8 @@ Also:
                                            or more { ff: true } steps -> .ffStart() ... .ffEnd().
                                            --codemod chain drops .start() / .end() (the chain
                                            is the flow).
+                                           --codemod pages: Blocks a Page Block names (nav,
+                                           methods) are used through it: Page.nav, Page.do.x.
   waygraph extensions install [project] [--update]
                                            Download the browser extensions listed in
                                            waygraph.config.* (extensions: ["hoppscotch"]) into

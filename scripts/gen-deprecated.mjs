@@ -163,7 +163,7 @@ Not API, but the convention the tools and docs assume.
 | \`act(){}\` plus an \`observe\` that writes \`mem\` | Read into \`mem\` inside \`act\`. \`observe\` is only for a Block that branches. |
 | \`checkpoint("__start__")\`, \`Checkpoint<"__start__">\` | \`import { Start } from "waygraph"\` (\`waygraph check\` points them out). |
 | \`import "…/_page.block.js"\` or \`import "…/x.mem-stubs.js"\` in a flow, for its side effect | Nothing: the tools load every Block and mem stub file themselves. |
-| One import per Block a flow uses | One per page: \`HomePage.nav\`, \`HomePage.do.addItem\` (a Page Block's \`nav\` and \`methods\`). |
+| One import per Block a flow uses | One per page: \`HomePage.nav\`, \`HomePage.do.addItem\` (a Page Block's \`nav\` and \`methods\`; \`waygraph upgrade --codemod pages\`). |
 | \`seedMemStub(mem, flow)\` before \`flow.run()\` | \`memStub: true\` on the Engine (or the \`map()\`): the flow fills missing keys when it runs. |
 | \`const Saved = Block as MethodBlock<A, B>\` | \`.method(Block, { lands: B })\` (\`waygraph upgrade --codemod lands\`). |
 | \`{ ff: true }\` on three or more steps in a row | \`.ffStart()\` … \`.ffEnd()\` (\`waygraph upgrade --codemod ff\`). |

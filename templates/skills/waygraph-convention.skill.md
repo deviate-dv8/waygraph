@@ -99,7 +99,8 @@ against a live site, use `--skill-pilot-blind`.
   `.gotoPage(HomePage.nav).method(HomePage.do.addItem)`, each typed as its own Block. Imports use the project's
   `#config/`, `#map/`, `#states/` names (`import { HomePage } from "#map/(app_base)/home/_page.block"`), never a chain of
   `../`. No file is imported for its side effect (`import ".../_page.block.js"`, `import ".../x.mem-stubs.js"`): the
-  tools load Block, Page and stub files themselves.
+  tools load Block, Page and stub files themselves. An older project moves onto pages with `waygraph upgrade --codemod pages` once each
+  Page Block has its `nav` and a `methods` record.
 - **A check on one value the page shows is `.expect(Key, want)` in the flow**, not an Assert Block per value:
   `.expect(Machine.status, "Down")`, `.expect(Registry.rows, (rows, mem) => rows.some((r) => r.code === mem.get(Keys.machine).code))`.
   Write an Assert Block for a named check worth reusing, or one that needs selectors.

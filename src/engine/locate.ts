@@ -6,7 +6,7 @@ import { asResult } from "./trait/verify.js";
 
 /**
  * "Where am I" - reverse-matches a live `page` against every NavBlock /
- * PageBlock in `library`, in order, returning the first one whose own `verify`
+ * PageBlock in `library` (all at once), returning the first in order whose own `verify`
  * Traits all pass (its `checkpoint`), or `null` if none match. Deliberately
  * Nav/Page hubs only: each has exactly one fixed `checkpoint` and a `verify`
  * list whose whole job is already "confirm arrival here," so it's a reliable
@@ -35,31 +35,27 @@ export async function locate(
   if (timeoutMs !== undefined) {
     page.setDefaultTimeout(timeoutMs);
   }
-  try {
-    for (const block of library) {
-      try {
-        // NavBlock's own resolve() ignores whatever it's called with - always
-        // exactly `checkpoint(options.checkpoint)` - so this is safe to call
-        // before verify, unlike a regular Block where resolve depends on
-        // observed evidence.
-        const resolved = await block.instruction.resolve(undefined);
-        const verify = block.instruction.verify;
-        const traits = typeof verify === "function" ? verify(resolved) : (verify ?? []);
-        let allPass = true;
-        for (const trait of traits) {
-          // A probe: one look, no retries (verify's retries are for a page that is settling, not for guessing).
-          if (!asResult(await trait.check(page, mem)).ok) {
-            allPass = false;
-            break;
-          }
-        }
-        if (allPass) return resolved.__state;
-      } catch {
-        // This NavBlock's own verify threw (e.g. a waitFor timing out) -
-        // treat that the same as "didn't match," try the next candidate.
+  /** The candidate's Checkpoint when every one of its checks passes now, else null. A check that throws doesn't match. */
+  const matches = async (block: SomeBlock): Promise<string | null> => {
+    try {
+      // A Nav / Page Block's resolve ignores what it's given (it always names its checkpoint), so it is safe before verify.
+      const resolved = await block.instruction.resolve(undefined);
+      const verify = block.instruction.verify;
+      const traits = typeof verify === "function" ? verify(resolved) : (verify ?? []);
+      for (const trait of traits) {
+        // A probe: one look, no retries (verify's retries are for a page that is settling, not for guessing).
+        if (!asResult(await trait.check(page, mem)).ok) return null;
       }
+      return resolved.__state;
+    } catch {
+      return null;
     }
-    return null;
+  };
+  try {
+    // Checks only read the page, so every candidate is asked at once: a page no candidate matches costs one wait, not
+    // one per candidate. The first match in library order wins, as before.
+    const found = await Promise.all(library.map(matches));
+    return found.find((tag) => tag !== null) ?? null;
   } finally {
     if (timeoutMs !== undefined) {
       page.setDefaultTimeout(30_000);

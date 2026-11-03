@@ -1,16 +1,13 @@
 import { engine } from "../../config/waygraph.config.js";
-import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
-import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
-import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
-import { SubmitLoginBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
+import { Login } from "../blocks/saucedemo-web/nav-login.block.js";
 import { LoggedIn } from "../states/checkout.states.js";
-import { AddToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.js";
+import { Inventory } from "../blocks/saucedemo-web/inventory/inventory.page.block.js";
 
 /** Smoke: the happy path with the Blocks' own verify lists switched off where a later step already proves the outcome. */
 export const smokeFlow = engine
   .map()
-  .gotoPage(NavLoginBlock.withVerify([]))
-  .method(FillUsernameBlock)
-  .method(FillPasswordBlock)
-  .method(SubmitLoginBlock.withVerify([]), { lands: LoggedIn })
-  .method(AddToCartBlock.withVerify([]));
+  .gotoPage(Login.withVerify([]))
+  .method(Login.do.fillUsername)
+  .method(Login.do.fillPassword)
+  .method(Login.do.submitLogin.withVerify([]), { lands: LoggedIn })
+  .method(Inventory.do.addToCart.withVerify([]));

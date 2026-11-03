@@ -1,5 +1,5 @@
 // Traits: the checks a Block's verify runs against the page (url, text, visible, ...), and the runner for them.
-import { readKeyNow } from "../read/read-block.js";
+import { readKeyNow, readKeySelector } from "../read/read-block.js";
 import type { ReadKey } from "../read/read-key.js";
 import type { Page } from "@playwright/test";
 import type { MemPage } from "../mem/mem.js";
@@ -32,7 +32,7 @@ export interface Trait {
   /** How long verify keeps retrying this check, ms (default 5000). */
   timeoutMs?: number;
   /** The element the check looks at, when it looks at one: the demo rings it after the step. */
-  selector?: string;
+  selector?: string | undefined;
 }
 
 /** A check's answer with what it saw: `{ ok: false, saw: '"Draft"' }`. */
@@ -205,10 +205,16 @@ export function absent(selector: string): Trait {
  * @example Trait.read(Catalog.items, (items, mem) => items.some((i) => i.inCart && i.name === mem.get(ShopKeys.selectedItem).name), "the selected item in the cart")
  */
 export function readEquals<T>(key: ReadKey<T>, test: (value: T, mem: MemPage) => boolean, wants?: string): Trait {
+  // Where the value was read, once checked: the demo rings it like any check's selector.
+  let readFrom: string | undefined;
   return {
     name: `read(${key.path})`,
     wants: wants ?? `${key.path} to pass its check`,
+    get selector() {
+      return readFrom;
+    },
     async check(page, mem) {
+      readFrom = readKeySelector(mem, key);
       const value = await readKeyNow(page, mem, key);
       if (value === undefined) return { ok: false, saw: `no value for ${key.path} (is there a Read Block for it, and does the page show it?)` };
       const saw = JSON.stringify(value);

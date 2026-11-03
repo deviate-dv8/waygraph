@@ -1,25 +1,19 @@
 import { engine } from "../../config/waygraph.config.js";
-import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
-import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
-import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";
-import { SubmitLoginBlock } from "../blocks/saucedemo-web/methods/submit-login.method.block.js";
+import { Login } from "../blocks/saucedemo-web/nav-login.block.js";
 import { LoggedIn } from "../states/checkout.states.js";
-import { AddToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.js";
-import { NavCartBlock } from "../blocks/saucedemo-web/cart/nav-cart.block.js";
-import { NavCheckoutInfoBlock } from "../blocks/saucedemo-web/cart/nav-checkout-info.block.js";
-import { FillFirstNameBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/fill-first-name.method.block.js";
-import { FillLastNameBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/fill-last-name.method.block.js";
-import { FillPostalCodeBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/fill-postal-code.method.block.js";
-import { SubmitCheckoutInfoBlock } from "../blocks/saucedemo-web/checkout-step-one/methods/submit-checkout-info.method.block.js";
-import { FinishOrderBlock } from "../blocks/saucedemo-web/checkout-step-two/methods/finish-order.method.block.js";
 import { orderPlacedYap, placingOrder } from "../stubs/finish-order.js";
 import { LoginSel } from "../blocks/saucedemo-web/methods/login.sel.js";
+import { Inventory } from "../blocks/saucedemo-web/inventory/inventory.page.block.js";
+import { Cart } from "../blocks/saucedemo-web/cart/cart.page.block.js";
+import { CheckoutInfo } from "../blocks/saucedemo-web/checkout-step-one/checkout-info.page.block.js";
+import { CheckoutOverview } from "../blocks/saucedemo-web/checkout-step-two/checkout-overview.page.block.js";
 
 export const checkoutFlow = engine
   .map({ memStub: true })
-  .gotoPage(NavLoginBlock, { ff: true })
+  .ffStart()
+  .gotoPage(Login)
   .method(
-    FillUsernameBlock.stubBefore((ctx) => {
+    Login.do.fillUsername.stubBefore((ctx) => {
       ctx.ui.ring("username", {
         selector: LoginSel.username,
         label: "Demo user",
@@ -29,11 +23,10 @@ export const checkoutFlow = engine
         duration: true,
         focus: true,
       });
-    }),
-    { ff: true },
+    })
   )
   .method(
-    FillPasswordBlock.stubBefore((ctx) => {
+    Login.do.fillPassword.stubBefore((ctx) => {
       ctx.ui.ring("password", {
         selector: LoginSel.password,
         label: "Password",
@@ -41,11 +34,10 @@ export const checkoutFlow = engine
         duration: 1500,
         focus: true,
       });
-    }),
-    { ff: true },
+    })
   )
   .method(
-    SubmitLoginBlock.stubBefore((ctx) => {
+    Login.do.submitLogin.stubBefore((ctx) => {
       ctx.ui.ring("submit", {
         selector: LoginSel.loginButton,
         label: "Sign in",
@@ -56,28 +48,29 @@ export const checkoutFlow = engine
         weight: "bold",
       });
     }),
-    { ff: true, lands: LoggedIn },
+    { lands: LoggedIn },
   )
-  .method(AddToCartBlock.stubBefore((ctx) => ctx.ui.title("Owner: Full Checkout")))
-  .gotoPage(NavCartBlock)
-  .gotoPage(NavCheckoutInfoBlock)
+  .ffEnd()
+  .method(Inventory.do.addToCart.stubBefore((ctx) => ctx.ui.title("Owner: Full Checkout")))
+  .gotoPage(Cart.nav)
+  .gotoPage(CheckoutInfo.nav)
   .method(
-    FillFirstNameBlock.stubBefore((ctx) => {
+    CheckoutInfo.do.fillFirstName.stubBefore((ctx) => {
       ctx.ui.caption("Enter the first name on the order");
       ctx.ui.titlePos("left");
     }),
   )
   .method(
-    FillLastNameBlock.stubBefore((ctx) => {
+    CheckoutInfo.do.fillLastName.stubBefore((ctx) => {
       ctx.ui.caption("Enter the last name on the order");
       ctx.ui.titlePos("center");
     }),
   )
   .method(
-    FillPostalCodeBlock.stubBefore((ctx) => {
+    CheckoutInfo.do.fillPostalCode.stubBefore((ctx) => {
       ctx.ui.caption("Enter a postal code to calculate shipping");
       ctx.ui.titlePos("right");
     }),
   )
-  .method(SubmitCheckoutInfoBlock.stubBefore((ctx) => ctx.ui.hideCaption()))
-  .method(FinishOrderBlock.stubBefore(placingOrder).stubAfter(orderPlacedYap));
+  .method(CheckoutInfo.do.submit.stubBefore((ctx) => ctx.ui.hideCaption()))
+  .method(CheckoutOverview.do.finishOrder.stubBefore(placingOrder).stubAfter(orderPlacedYap));

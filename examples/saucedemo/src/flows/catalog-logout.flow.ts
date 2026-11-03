@@ -1,14 +1,13 @@
 import { engine } from "../../config/waygraph.config.js";
-import { NavItemDetailBlock } from "../blocks/saucedemo-web/inventory/nav-item-detail.block.js";
-import { NavBackToInventoryBlock } from "../blocks/saucedemo-web/inventory-item/nav-back-to-inventory.block.js";
-import { SubmitLogoutBlock } from "../blocks/saucedemo-web/methods/submit-logout.method.block.js";
+import { ItemDetail } from "../blocks/saucedemo-web/inventory-item/item-detail.page.block.js";
+import { Inventory } from "../blocks/saucedemo-web/inventory/inventory.page.block.js";
 
 export const catalogLogoutFlow = engine
   .map()
   .gotoPage(
-    NavItemDetailBlock.stubBefore((ctx) =>
+    ItemDetail.nav.stubBefore((ctx) =>
       ctx.ui.title("Catalog browse then logout"),
     ),
   )
-  .gotoPage(NavBackToInventoryBlock)
-  .method(SubmitLogoutBlock);
+  .gotoPage(ItemDetail.do.backToProducts)
+  .method(Inventory.do.logout);

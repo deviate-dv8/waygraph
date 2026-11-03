@@ -2,7 +2,7 @@
 
 /**
  * One checklist row for episode planning (demo panel).
- * Set via {@link StubCtx.todos} / {@link StubCtx.todoIndex} inside the lifecycle.
+ * Set via {@link StubUi.todos} / {@link StubUi.todoIndex} inside the lifecycle.
  */
 export type WaygraphTodoItem = {
   text: string;
@@ -58,13 +58,13 @@ export type TodoDockState = {
   id?: string;
   /** Default style for groups that omit their own. */
   style: TodoListStyle;
-  /** Single-list title when using {@link StubCtx.todos} with `title`. */
+  /** Single-list title when using {@link StubUi.todos} with `title`. */
   title?: string;
   groups: WaygraphTodoGroup[];
   pos?: "left" | "right";
 };
 
-/** Options for compact {@link StubCtx.todos}(`id`, items, opts). */
+/** Options for compact {@link StubUi.todos}(`id`, items, opts). */
 export type WaygraphTodosOpts = {
   /** Dock heading. */
   title?: string;

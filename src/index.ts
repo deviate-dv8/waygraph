@@ -7,8 +7,8 @@ installFullLaunch();
 installRunLog();
 export { Start } from "./engine/checkpoint/checkpoint.js";
 export type { Checkpoint } from "./engine/checkpoint/checkpoint.js";
-export type { Instruction, Block, DefinedBlock } from "./engine/block/block.js";
-export type { SomeBlock, SomeDefinedBlock } from "./engine/block/some-block.js";
+export type { Instruction, Block, BlockOut, DefinedBlock } from "./engine/block/block.js";
+export type { BlockFrom, SomeBlock, SomeDefinedBlock, SomeInstruction } from "./engine/block/some-block.js";
 export type { WaygraphInstanceOption } from "./engine/block/action-page.js";
 export { connect } from "./engine/run/connect.js";
 export { checkpoint } from "./engine/checkpoint/checkpoint.js";
@@ -45,7 +45,7 @@ export { branchRoutes, collectBranchFlows, runBranchRegression } from "./engine/
 export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./engine/flow/branch-regression.js";
 export type { ApiBlockOptions, ApiCallResult } from "./engine/block/kinds/api.js";
 export type { MapStepOpts } from "./engine/flow/map-steps.js";
-export type { MapFlowOpts } from "./engine/flow/map-builder.js";
+export type { MapFlowOpts, WhenOpt } from "./engine/flow/map-builder.js";
 export type { Steps } from "./engine/flow/map-part.js";
 export { resolveHighlightSlots, runStubPhase, hasAuthoredStubAfter, hasAuthoredStubOnError } from "./demo/narration/narration.js";
 export { resolveFixtureDwellMs, normalizeDemoPace, resolveStepDemoPace, demoPaceScale, demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, demoPaceGateMs, formatDemoPaceBadge, formatDemoPaceLabel, FIXTURE_DURATION_MS_DEFAULT, FIXTURE_DURATION_FAST_MS_DEFAULT, FIXTURE_DURATION_SLOW_MS_DEFAULT } from "./demo/narration/demo-pace.js";
@@ -55,12 +55,12 @@ export { normalizeTodos, normalizeTodoPos, normalizeTodoStyle, buildTodoDock, ap
 export { applyDevicePhase, resolveDeviceState, normalizeDevicePreset, normalizeDeviceOrientation, applyOrientation, orientationFromViewport, DEVICE_PRESETS } from "./demo/narration/device.js";
 export type { WaygraphHighlightStub, WaygraphSlide, FixtureDurationFields, HighlightStubPhase, ResolvedHighlight, HighlightTone, HighlightSize, HighlightWeight, HighlightStyleDefaults } from "./engine/stub/ring.js";
 export type { WaygraphTodoItem, WaygraphTodoInput, WaygraphTodoGroup, WaygraphTodoGroupInput, WaygraphTodosOpts, TodoDockUiOpts, TodoDockUiResolved, TodoDockState, TodoListStyle } from "./engine/stub/todos.js";
-export type { BannerPos, BannerUiOpts, HighlightStubPhaseName, StubCtx, StubLifecycleFn, StubPhaseResult, StubPhaseFixtures } from "./engine/stub/stub.js";
+export type { BannerPos, BannerUiOpts, HighlightStubPhaseName, StubCtx, StubLifecycleFn, StubPhaseResult, StubPhaseFixtures, StubUi } from "./engine/stub/stub.js";
 export type { DemoPace, DemoPaceName } from "./engine/stub/pace.js";
 export type { DevicePreset, DeviceViewport, DeviceState, DeviceOrientation } from "./engine/stub/viewport.js";
 export type { Flow, BlockInfo } from "./engine/flow/flow.js";
 export type { EngineConfig } from "./engine/config.js";
-export type { ComposedBlock, FastForwardComposedBlock } from "./engine/block/compose.js";
+export type { ComposedBlock, FastForwardComposedBlock, SomeComposedBlock, SomeFastForwardBlock } from "./engine/block/compose.js";
 export type { RunGraphOptions, Layout, LayoutOptions } from "./engine/run/run.js";
 export type { NavBlock, NavBlockOptions, NavClickBlock, NavClickBlockOptions, MemNavBlock } from "./engine/block/kinds/nav.js";
 export type { MethodBlock, AssertBlock, AssertBlockOptions } from "./engine/block/kinds/method.js";
@@ -71,7 +71,7 @@ export type { ActionPage } from "./engine/block/action-page.js";
 export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./analysis/graph.js";
 export { buildManifest } from "./manifest/manifest.js";
 export { onRunEvent } from "./engine/run/events.js";
-export type { RunEvent } from "./engine/run/events.js";
+export type { RunEvent, StepRead } from "./engine/run/events.js";
 export type { Manifest, ManifestBlock, ManifestFlow, ManifestReadBlock } from "./manifest/manifest.js";
 export type { WaygraphGraph, WaygraphNode, WaygraphEdge, SkippedBlock, OrphanBlock } from "./analysis/graph.js";
 export { isFileSelectToken, parseBlocksSelect, matchBlocksSelect } from "./manifest/select.js";
@@ -84,8 +84,22 @@ export type { TraverseCoverageReport } from "./live/traverse/coverage.js";
 export { WG_UI_SEL, WG_READY_PANEL_SEL, WG_READY_AUTO_SEL, WG_READY_BANNER_SEL, readWgOverlayBeacon, readWgOverlayBeaconInPage, assertWgOverlayReady } from "./demo/overlay/beacon.js";
 export type { WgModalKind, WgBeaconRow } from "./demo/overlay/beacon.js";
 export { AutoSession } from "./live/auto-session/auto-session.js";
+export type { ListPick, SessionRead } from "./live/auto-session/read.js";
 export { SESSION_OPS, SESSION_PROTOCOL_VERSION } from "./live/auto-session/protocol.js";
-export type { SessionRequest, SessionResponse, SessionStreamMessage, HelloResponse } from "./live/auto-session/protocol.js";
+export type {
+  SessionRequest,
+  SessionResponse,
+  SessionStreamMessage,
+  HelloResponse,
+  StatusOrSendResponse,
+  DomResponse,
+  TraceResponse,
+  ConsoleResponse,
+  StorageResponse,
+  ReachResponse,
+  ReadResponse,
+  HighlightResponse,
+} from "./live/auto-session/protocol.js";
 export { subscribeSession } from "./live/auto-session/feed.js";
 export { requestSession } from "./live/auto-session/ipc.js";
 export { stubFilePath } from "./live/auto-session/helpers.js";
@@ -114,7 +128,7 @@ export type { PilotFixtureRing, PilotHighlightFixtures } from "./demo/overlay/pi
 // Read Blocks: what a page shows, as data (defineReadBlock, reads, ReadPage).
 export { reads, ReadKey } from "./engine/read/read-key.js";
 export type { ReadNamespace, ReadSpec, ReadFieldsOf } from "./engine/read/read-key.js";
-export type { Reader, ReadCtx, RowCtx } from "./engine/read/readers.js";
+export type { FieldKind, FieldPlan, PageReaders, Reader, ReaderPlan, ReadCtx, ReadFields, RowCtx } from "./engine/read/readers.js";
 export { ReadPage } from "./engine/read/read-page.js";
 export { defineReadBlock, readCheckpoint } from "./engine/read/read-block.js";
-export type { ReadBlock, ReadBlockOptions, CheckpointRead } from "./engine/read/read-block.js";
+export type { ReadBlock, ReadBlockOptions, CheckpointRead, ReadShape } from "./engine/read/read-block.js";

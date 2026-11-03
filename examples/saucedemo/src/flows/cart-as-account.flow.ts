@@ -1,12 +1,11 @@
 import { engine } from "../../config/waygraph.config.js";
 import { StandardUser } from "../accounts/accounts.js";
-import { NavInventoryBlock } from "../blocks/saucedemo-web/inventory/nav-inventory.block.js";
-import { AddToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.js";
-import { NavCartBlock } from "../blocks/saucedemo-web/cart/nav-cart.block.js";
+import { Inventory } from "../blocks/saucedemo-web/inventory/inventory.page.block.js";
+import { Cart } from "../blocks/saucedemo-web/cart/cart.page.block.js";
 
 /** The standard user, already signed in, puts an item in the cart: no login steps of its own. */
 export const cartAsAccountFlow = engine
   .map({ as: StandardUser, memStub: true })
-  .gotoPage(NavInventoryBlock)
-  .method(AddToCartBlock)
-  .gotoPage(NavCartBlock);
+  .gotoPage(Inventory.nav)
+  .method(Inventory.do.addToCart)
+  .gotoPage(Cart.nav);

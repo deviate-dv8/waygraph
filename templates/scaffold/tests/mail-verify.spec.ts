@@ -70,6 +70,11 @@ async function withMailpit<T>(fn: (opts: { httpPort: number; smtpPort: number })
   const originalMailUrl = process.env.WAYGRAPH_MAIL_URL;
   try {
     process.env.WAYGRAPH_MAIL_URL = `http://127.0.0.1:${httpPort}`;
+    // Docker's port forward accepts a connection before Mailpit listens, and an SMTP greeting never comes: wait until
+    // Mailpit itself answers.
+    await expect
+      .poll(() => fetch(`http://127.0.0.1:${httpPort}/livez`).then((r) => r.ok, () => false), { timeout: 30_000 })
+      .toBe(true);
     return await fn({ httpPort, smtpPort });
   } finally {
     if (originalMailUrl === undefined) delete process.env.WAYGRAPH_MAIL_URL;

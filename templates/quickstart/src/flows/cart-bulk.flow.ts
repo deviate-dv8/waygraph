@@ -1,17 +1,16 @@
 import { engine } from "../../config/waygraph.config.js";
 import { loginFlow } from "./login.flow.js";
-import { AddAllToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-all-to-cart.method.block.js";
-import { RemoveAllFromCartBlock } from "../blocks/saucedemo-web/inventory/methods/remove-all-from-cart.method.block.js";
+import { Inventory } from "../blocks/saucedemo-web/inventory/inventory.page.block.js";
 
 /** Add every item, then remove them all (the bulk Methods). */
 export const cartBulkEpisode = engine
   .map()
   .method(
-    AddAllToCartBlock.stubBefore((ctx) =>
+    Inventory.do.addAllToCart.stubBefore((ctx) =>
       ctx.ui.title("Cart bulk add/remove all"),
     ),
   )
-  .method(RemoveAllFromCartBlock);
+  .method(Inventory.do.removeAllFromCart);
 
 export const cartBulkFlow = engine
   .map({ memStub: true })

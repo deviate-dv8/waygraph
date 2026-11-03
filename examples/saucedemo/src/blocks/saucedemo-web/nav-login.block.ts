@@ -17,7 +17,7 @@ import { LoginSel } from "./methods/login.sel.js";
  * and submits. Name stays `nav-login` so existing flows / chain specs keep
  * working.
  */
-export const NavLoginBlock = definePageBlock({
+export const Login = definePageBlock({
   name: "nav-login",
   description: "Goes to the Swag Labs login page.",
   checkpoint: LoginPage,

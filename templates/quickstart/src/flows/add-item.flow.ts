@@ -1,9 +1,8 @@
 import { engine } from "../../config/waygraph.config.js";
 import { SaucedemoKeys } from "../states/checkout.mem-keys.js";
 import { StandardUser } from "../accounts/accounts.js";
-import { NavInventoryBlock } from "../blocks/saucedemo-web/inventory/nav-inventory.block.js";
-import { AddToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-to-cart.effect.block.js";
-import { NavCartBlock } from "../blocks/saucedemo-web/cart/nav-cart.block.js";
+import { Inventory } from "../blocks/saucedemo-web/inventory/inventory.page.block.js";
+import { Cart } from "../blocks/saucedemo-web/cart/cart.page.block.js";
 
 /**
  * One flow for every item: its input is the item. `waygraph run addItemFlow --input '{"id":"sauce-labs-bike-light","name":"Sauce Labs Bike Light"}'`,
@@ -11,6 +10,6 @@ import { NavCartBlock } from "../blocks/saucedemo-web/cart/nav-cart.block.js";
  */
 export const addItemFlow = engine
   .map({ as: StandardUser, input: SaucedemoKeys.selectedItem, memStub: true })
-  .gotoPage(NavInventoryBlock)
-  .method(AddToCartBlock)
-  .gotoPage(NavCartBlock);
+  .gotoPage(Inventory.nav)
+  .method(Inventory.do.addToCart)
+  .gotoPage(Cart.nav);
