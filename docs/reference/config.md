@@ -94,7 +94,7 @@ itself (`flow.run(mem)`, no context):
 |---|---|
 | `headless`, `browserName`, `slowMo` | how that browser launches; `flow.run(mem, { ...overrides })` changes them for one call |
 | `browsers: { chromium, firefox, webkit }` | another launcher with Playwright's `.launch()` shape (a stealth-patched Chromium) |
-| `layouts: [...]` | checks every step that lands on a matching Checkpoint runs ([Checks](../guides/checks#layouts-one-check-for-many-pages)) |
+| `memStub: true` | every flow from this engine fills missing keys from mem stubs ([Data](../guides/data)) |
 
 `flow.run(context, mem)` uses a context you already launched and ignores these. `spawnTab(entry, page, mem)` drives a
 second tab, in the same context, through its own flow.
@@ -105,7 +105,7 @@ Flow settings (`map({ memStub, as, input, viewport, timezone, network, … })`) 
 
 A `confirm()`, `alert()`, `prompt()` or `beforeunload` freezes the page until it is answered, so the answer is
 armed around the Block's action rather than written into it: `withDialog(CancelBlock, { accept: true, into: LeaveWarning })`
-(`accept: false` dismisses; `into` keeps the dialog's text in `mem` for an assert Block to check).
+(`accept: false` dismisses; `into` keeps the dialog's text in `mem` for an expectation to check).
 
 ## Browser extensions
 
@@ -147,11 +147,11 @@ keys (`flows/hoppscotch-get`, `-post` and `-auth` are working examples):
 | `set-bearer-token` | `RequestBearerToken` |
 | `set-json-body` | `RequestBody` (JSON text) |
 | `send-request` | - |
-| `assert-status` | `ExpectedStatus` |
+| `expect-status` | `ExpectedStatus` |
 | `read-response-headers` | writes `ResponseHeaders` (lower-cased names) |
-| `assert-response-header` | `ExpectedResponseHeader({ name, value })` |
+| `expect-response-header` | `ExpectedResponseHeader({ name, value })` |
 | `read-response-body` | writes `ResponseBody` |
-| `assert-response-body` | `ExpectedResponseText` (substring, whitespace ignored) |
+| `expect-response-body` | `ExpectedResponseText` (substring, whitespace ignored) |
 
 Not covered yet: other auth types (Basic, API key, OAuth), form/multipart bodies, non-JSON content types.
 

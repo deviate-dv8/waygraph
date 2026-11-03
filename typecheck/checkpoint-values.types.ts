@@ -1,6 +1,6 @@
 import {
   checkpoint,
-  defineAssertBlock,
+  defineExpectBlock,
   defineEffectBlock,
   defineMethodBlock,
   defineNavBlock,
@@ -49,10 +49,10 @@ export const AddEffect = defineEffectBlock({
   instruction: { async act() {} },
 });
 
-export const Seen = defineAssertBlock({ name: "seen", checkpoint: ItemInCart, verify: [] });
+export const Seen = defineExpectBlock({ name: "seen", checkpoint: ItemInCart, verify: [] });
 
 // The chain still type-checks step to step.
-export const flow = new Engine().map().gotoPage(NavHome).method(AddItem).assert(Seen).method(Clear);
+export const flow = new Engine().map().gotoPage(NavHome).method(AddItem, { expect: [Seen] }).method(Clear);
 
 // @ts-expect-error Clear runs from ItemInCart, not Home
 new Engine().map().gotoPage(NavHome).method(Clear);

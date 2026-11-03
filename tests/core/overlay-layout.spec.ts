@@ -9,7 +9,7 @@ async function showAllChrome(page: Page): Promise<void> {
   await installOverlay(page, "Checkout - happy path", null, "Fill in the username from the test data", true);
   await recordNetworkEntry(page, { method: "POST", url: "https://example.test/api/login", status: 200, ok: true, ms: 41 });
   await renderBeforeStep(page, {
-    index: 1, total: 6, blockName: "fill-username", description: "Types the username from mem into the login form.",
+    index: 1, total: 6, blockName: "fill-username", expects: [], description: "Types the username from mem into the login form.",
     keys: [{ name: "saucedemo.credentials", value: '{"username":"standard_user"}' }],
     allNames: ["nav-login", "fill-username", "fill-password", "submit-login"], moduleIndex: 1, justEnteredEpisode: false,
     title: "Checkout - happy path", caption: "Fill in the username from the test data", networkTabVisible: true,

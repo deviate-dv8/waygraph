@@ -84,7 +84,7 @@ export function convertStates(text: string, info: StatesInfo): string {
   return sf.getFullText();
 }
 
-const SINGLE_CHECKPOINT = ["defineNavBlock", "defineNavClickBlock", "defineMemNavBlock", "definePageBlock", "defineAssertBlock"];
+const SINGLE_CHECKPOINT = ["defineNavBlock", "defineNavClickBlock", "defineMemNavBlock", "definePageBlock", "defineAssertBlock", "defineExpectBlock"];
 const ROUTED = ["defineMethodBlock", "defineEffectBlock"];
 
 function optionsOf(call: CallExpression): ObjectLiteralExpression | undefined {

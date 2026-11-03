@@ -1,4 +1,7 @@
 // Read keys: what a page shows, named by namespace and field (`post.likes`), the way Mem keys name what a run carries.
+import { isDeepStrictEqual } from "node:util";
+import type { MemPage } from "../mem/mem.js";
+import { readEquals, type Trait } from "../trait/trait.js";
 import type { Reader, ReadFields } from "./readers.js";
 
 /** A typed key into a {@link ReadPage}, named by its path (`"post.likes"`). Made by a {@link reads} namespace. */
@@ -7,6 +10,24 @@ export class ReadKey<T> {
   declare readonly __type?: T;
 
   constructor(readonly path: string) {}
+
+  /**
+   * An expectation that the page shows exactly `want` here (deep-equal, for lists and objects). Read through the
+   * page's Read Block and retried until the page settles, like every check.
+   * @example expect: [Machine.status.is("Archived")]
+   */
+  is(want: T, wants?: string): Trait {
+    return readEquals(this, (value) => isDeepStrictEqual(value, want), wants ?? `${this.path} = ${JSON.stringify(want)}`);
+  }
+
+  /**
+   * An expectation that what the page shows here passes `test`, which also gets mem: what the page shows against what
+   * the flow did.
+   * @example expect: [Catalog.items.passes((items, mem) => items.some((i) => i.name === mem.get(Shop.item).name), "the item in the list")]
+   */
+  passes(test: (value: T, mem: MemPage) => boolean, wants?: string): Trait {
+    return readEquals(this, test, wants);
+  }
 }
 
 /** One namespace's fields and the reader that fills each: what calling a namespace returns (`Post({ ... })`). */

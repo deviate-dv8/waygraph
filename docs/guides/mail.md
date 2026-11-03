@@ -6,9 +6,9 @@ pointed at a mail catcher's own web page (Mailpit, MailHog, MailDev). No mail AP
 ```mermaid
 graph LR
   A[app sends<br/>the email] --> I[MailpitInbox]
-  I -->|assert-email-received| I
+  I -.->|expect-email-received| I
   I -->|open-message| O[MailpitMessageOpen]
-  O -->|assert-email-content| O
+  O -.->|expect-email-content| O
   O -->|extract-email-link<br/>writes mailpit.emailLink| O
   O -->|nav-verification-link| V[HomeVerified]
 ```
@@ -21,9 +21,9 @@ and `tests/mail-verify.spec.ts`, which starts a throwaway Mailpit in Docker.
 | Block | Kind | Does | Reads from mem |
 |---|---|---|---|
 | `nav-mailpit-inbox` | Nav | opens the inbox (`WAYGRAPH_MAIL_URL`, default `http://127.0.0.1:8025`) | - |
-| `assert-email-received` | Assert | a message for the recipient arrived (opens nothing) | `mailpit.expectedRecipient` |
+| `expect-email-received` | Expect | a message for the recipient arrived (opens nothing): expected on the inbox step | `mailpit.expectedRecipient` |
 | `open-message` | Method | opens that recipient's newest message | `mailpit.expectedRecipient` |
-| `assert-email-content` | Assert | the body says what it should | `mailpit.expectedEmailContent` |
+| `expect-email-content` | Expect | the body says what it should: expected on the open-message step | `mailpit.expectedEmailContent` |
 | `extract-email-link` | Method | reads the matching link into mem | `mailpit.expectedLinkPattern` |
 | `nav-verification-link` | Nav | back in the app, follows that link | `mailpit.emailLink` (written above) |
 

@@ -32,13 +32,15 @@ export interface Trait {
   /** How long verify keeps retrying this check, ms (default 5000). */
   timeoutMs?: number;
   /** The element the check looks at, when it looks at one: the demo rings it after the step. */
-  selector?: string | undefined;
+  selector?: string;
 }
 
 /** A check's answer with what it saw: `{ ok: false, saw: '"Draft"' }`. */
 export interface TraitResult {
   ok: boolean;
   saw?: string;
+  /** The element the check looked at, when it decides that at run time (a row it found): the demo rings it. */
+  at?: string;
 }
 
 /** A value a Trait compares against: fixed, or read from mem when the check runs. */
@@ -199,26 +201,19 @@ export function absent(selector: string): Trait {
 
 /**
  * Passes when what the page shows for `key` (its Read Block's value) passes `test`: a check in the page's own terms
- * instead of selectors. `test` also gets mem, to compare what the page shows with what the flow did. Retried like every
- * Trait until the page settles; fails when no Read Block reads the key.
- * @example Trait.read(Catalog.items, (items) => items.length === 6, "6 products")
- * @example Trait.read(Catalog.items, (items, mem) => items.some((i) => i.inCart && i.name === mem.get(ShopKeys.selectedItem).name), "the selected item in the cart")
+ * instead of selectors. `test` also gets mem. Retried like every Trait until the page settles; fails when no Read Block
+ * reads the key. Written as `Key.is(want)` / `Key.passes(test)` (read-key.ts); this is what they build.
  */
 export function readEquals<T>(key: ReadKey<T>, test: (value: T, mem: MemPage) => boolean, wants?: string): Trait {
-  // Where the value was read, once checked: the demo rings it like any check's selector.
-  let readFrom: string | undefined;
   return {
     name: `read(${key.path})`,
     wants: wants ?? `${key.path} to pass its check`,
-    get selector() {
-      return readFrom;
-    },
     async check(page, mem) {
-      readFrom = readKeySelector(mem, key);
+      const at = readKeySelector(mem, key);
       const value = await readKeyNow(page, mem, key);
       if (value === undefined) return { ok: false, saw: `no value for ${key.path} (is there a Read Block for it, and does the page show it?)` };
       const saw = JSON.stringify(value);
-      return { ok: test(value, mem), saw: saw.length > 120 ? saw.slice(0, 117) + "..." : saw };
+      return { ok: test(value, mem), saw: saw.length > 120 ? saw.slice(0, 117) + "..." : saw, ...(at ? { at } : {}) };
     },
   };
 }
@@ -343,7 +338,6 @@ export const Trait = {
   value: valueEquals,
   attribute: attributeEquals,
   absent,
-  read: readEquals,
   visible,
   disabled,
   enabled,

@@ -25,14 +25,14 @@ export const WAYGRAPH_ERRORS = {
     fix: "Add that Checkpoint to `terminals`, or fix the Block's resolve() - it landed somewhere the caller didn't expect.",
   },
   WG_MAP_WRONG_KIND: {
-    where: "engine/flow/map-builder.ts - MapBuilder.gotoPage/gotoExternal/assert/method()",
-    means: "A Block passed to a MapBuilder step method doesn't carry the __waygraphKind a real defineNavBlock/definePageBlock/defineAssertBlock/defineMethodBlock/defineEffectBlock stamps - either the wrong factory was used, or the object was hand-rolled instead of going through one.",
-    fix: "Use the factory the error names, or move this Block to the matching .gotoPage()/.assert()/.method() call.",
+    where: "engine/flow/map-builder.ts - MapBuilder.gotoPage/gotoExternal/method()",
+    means: "A Block passed to a MapBuilder step method doesn't carry the __waygraphKind a real defineNavBlock/definePageBlock/defineMethodBlock/defineEffectBlock stamps - either the wrong factory was used, or the object was hand-rolled instead of going through one.",
+    fix: "Use the factory the error names, or move this Block to the matching .gotoPage()/.method() call (an Expect Block goes in expect: [...]).",
   },
   WG_MAP_WRONG_SALT: {
     where: "engine/flow/map-builder.ts - MapBuilder.method()",
     means: "A Block passed to .method() isn't a real Method/Effect Block (missing __waygraphSalt).",
-    fix: "Build it with defineMethodBlock/defineEffectBlock, or use .assert() if it's actually a defineAssertBlock.",
+    fix: "Build it with defineMethodBlock/defineEffectBlock; an Expect Block goes in a step's expect: [...], not in a step.",
   },
   WG_MAP_NO_INPUT: {
     where: "engine/flow/map-builder.ts - .flow(sub, { input })",
@@ -57,7 +57,17 @@ export const WAYGRAPH_ERRORS = {
   WG_MAP_FF_EMPTY: {
     where: "engine/flow/map-builder.ts - MapBuilder.ffEnd()",
     means: ".ffEnd() closed a window with zero steps inside it.",
-    fix: "Add at least one .gotoPage()/.method()/.assert() inside the .ffStart()/.ffEnd() window.",
+    fix: "Add at least one .gotoPage()/.method() inside the .ffStart()/.ffEnd() window.",
+  },
+  WG_EXPECT_CHANGED_PAGE: {
+    where: "engine/run/read-only.ts - a step's expectations",
+    means: "An expectation clicked, typed, navigated or otherwise acted on the page. Expectations only read and judge.",
+    fix: "Make the action a step of its own (a Method Block) before the step whose expectation reads what it left.",
+  },
+  WG_EXPECT_SET_MEM: {
+    where: "engine/run/expect.ts - a step's expectations",
+    means: "An expectation set a mem key. Expectations only read; a step that records something sets it in its act.",
+    fix: "Set the key in a Block's act (or with .set() in the flow), and let the expectation read it.",
   },
   WG_MAP_STEPS_END: {
     where: "engine/flow/map-builder.ts - steps()",
@@ -77,12 +87,12 @@ export const WAYGRAPH_ERRORS = {
   WG_MAP_EMPTY: {
     where: "engine/flow/map-builder.ts - the flow, when first used",
     means: "A map() with no steps was used as a flow.",
-    fix: "Add at least one .gotoPage()/.gotoExternal()/.assert()/.method().",
+    fix: "Add at least one .gotoPage()/.gotoExternal()/.method().",
   },
   WG_MAP_BRANCH_NO_PRIOR_STEP: {
     where: "engine/flow/map-builder.ts - MapBuilder.branch()",
     means: ".branch() was called before any step existed to branch FROM.",
-    fix: "Add a .gotoPage()/.gotoExternal()/.method()/.assert() before .branch().",
+    fix: "Add a .gotoPage()/.gotoExternal()/.method() before .branch().",
   },
   WG_MAP_BRANCH_SHARED_SESSION_UNSUPPORTED: {
     where: "engine/flow/map-builder.ts - a .branch()-built Flow's run()",
@@ -199,12 +209,18 @@ export const MSG_MAP_FF_NOT_OPEN = "Waygraph map: .ffEnd() with no open .ffStart
 export const MSG_MAP_FF_EMPTY = (ffName: string) =>
   `Waygraph map: .ffEnd() for "${ffName}" has no steps - add .gotoPage/.method/… inside the window`;
 
+export const MSG_EXPECT_CHANGED_PAGE = (action: string, step: string) =>
+  `Waygraph expect: an expectation of "${step}" called ${action} - an expectation only reads; make the action a step of its own`;
+
+export const MSG_EXPECT_SET_MEM = (key: string, step: string) =>
+  `Waygraph expect: an expectation of "${step}" set mem key "${key}" - an expectation only reads; set it in a step's act`;
+
 export const MSG_MAP_STEPS_END =
   "Waygraph map: a part made with steps() isn't a flow on its own - a flow plays it with .steps(part)";
 
-export const MSG_MAP_METHOD_GOT_ASSERT = (blockName: string) =>
-  `Waygraph map: .method("${blockName}") got a defineAssertBlock - use .assert() for ` +
-  "self-loop verify steps (Assert Blocks share method salt internally but are not methods).";
+export const MSG_MAP_METHOD_GOT_EXPECT = (blockName: string) =>
+  `Waygraph map: .method("${blockName}") got an Expect Block - an expectation isn't a step of its own: list it in the ` +
+  "step's expect: [...] (or in the Block's own expect).";
 
 export const MSG_MAP_NO_INPUT = (firstStep: string) =>
   `Waygraph map: .flow(sub, { input }) - the sub-flow starting at "${firstStep}" takes no input (give it map({ input }))`;
@@ -217,13 +233,13 @@ export const MSG_MAP_LANDS_NOT_AN_OUTCOME = (blockName: string, lands: string, o
 
 export const MSG_MAP_BRANCH_NO_PRIOR_STEP =
   "Waygraph map: .branch() needs at least one prior step - nothing to branch from. " +
-  "Add .gotoPage()/.gotoExternal()/.method()/.assert() first.";
+  "Add .gotoPage()/.gotoExternal()/.method() first.";
 
 export const MSG_MAP_FF_NOT_CLOSED = (ffName: string) =>
   `Waygraph map: the flow's .ffStart("${ffName}") is still open - close it with .ffEnd() after its last step`;
 
 export const MSG_MAP_EMPTY =
-  "Waygraph map: a flow with zero steps - add at least one .gotoPage()/.gotoExternal()/.assert()/.method()";
+  "Waygraph map: a flow with zero steps - add at least one .gotoPage()/.gotoExternal()/.method()";
 
 export const MSG_BRANCH_REGRESSION_NO_BROWSER =
   "Waygraph runBranchRegression: cloneSession needs context.browser() (a persistent context " +

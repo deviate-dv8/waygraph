@@ -55,6 +55,7 @@ In the Map layout (`src/map/(app)/<url segments>/`, the folder path = the page's
 | `_nav.block.ts` | `defineNavBlock({ name: "nav-login", checkpoint: LoginPage, url: "/login", verify: [Trait.visible(LoginSel.submit)] })` |
 | `_page.block.ts` | `export const LoginPage = definePageBlock({ name: "page-login", checkpoint: Login, nav: NavLoginBlock, verify: [...], methods: { fillUsername: () => FillUsernameBlock } })` - the page's namespace: a flow writes `.gotoPage(LoginPage.nav).method(LoginPage.do.fillUsername)` |
 | `_methods/<action>.method.block.ts` | one action each: `defineMethodBlock({ name, from, to, requires, instruction: { act, verify } })` |
+| `_expect/<what>.expect.block.ts` | what a scenario can expect here: `defineExpectBlock({ name, description, checkpoint, verify })`, listed on the Page Block's `expects` and used as `{ expect: [LoginPage.expects.error] }` on a step. Reads only |
 | `_read.block.ts` + `_reads.ts` | what the page shows: `reads("login")<{ error: string }>()` and `defineReadBlock({ name, from: [LoginPage], instruction: { read: (ctx) => LoginRead({ error: ctx.page.text(LoginSel.error) }) } })` |
 
 Shared across pages, in `src/states/`:

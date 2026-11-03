@@ -40,8 +40,17 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
    one-line class or id selector already targets uniquely; `waygraph check` flags this too.
    A regex/text match is for a genuinely unstable DOM with no stable attribute at all, not
    the default first move.
-4. **Assert-only = `defineAssertBlock`.** Self-loop, no hand-written `act`/`resolve`; its
-   `checkpoint` (a value) is where it runs and stays. Not just static content or an action's result - it also names a *feature state* worth a
+4. **Two questions, two homes.** A Block's `verify` answers "did this step do what it says?" (it arrived where `resolve`
+   said; its action took effect) - true in every flow that uses the Block, and what a live session uses to tell where it
+   is. What a *scenario expects* (a toast's text, a row reading Down, an error message) is an **expectation**:
+   `expect: [...]` on the Block when every use expects it (per outcome for a branching Block: `{ Saved: [...],
+   Form: [...] }`), or on the step when only this scenario does. Expectations are Expect Blocks
+   (`defineExpectBlock({ name, description, checkpoint, verify })`, in the page's `_expect/`, named on its Page Block's
+   `expects`), Traits, and read checks (`Machine.status.is("Archived")`, `Catalog.items.passes((items, mem) => ...)`).
+   **An expectation only reads**: no click, type, navigation or `mem.set` (it fails, naming the action) - an action a
+   check needs is a Method step before it. They run together after `verify` and a failing step lists every one that
+   didn't hold. A URL or "is visible" check is `verify`, not an expectation; a message or toast check is an expectation,
+   not `verify`. An Expect Block also names a *feature state* worth a
    Checkpoint of its own (a submit button greyed out until required fields are filled, a
    field error under one input, a stale "Save" re-enabling). Reach for a built-in Trait first: `Trait.text`,
    `contains`, `matches`, `value`, `attribute`, `absent`, `visible`, `disabled` / `enabled` (`text`, `contains` and `value`
@@ -69,7 +78,7 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
    `src/states/`: `export const Home = checkpoint("Home");
    export type Home = typeof Home;` (a union: `export const CanAddItem = [Home, CartEmpty] as const`). Blocks take
    the values, never tag strings or `<In, Out>` type arguments: `defineNavBlock({ checkpoint: Home, … })`,
-   `defineAssertBlock({ checkpoint: ItemInCart, … })`, `defineMethodBlock({ from: CanAddItem, to: ItemInCart, … })`
+   `defineExpectBlock({ checkpoint: ItemInCart, … })`, `defineMethodBlock({ from: CanAddItem, to: ItemInCart, … })`
    (leave `from` out for "from anywhere"; `resolve` is implied when `to` is one Checkpoint). The Block then carries its
    route at runtime, so `waygraph graph`, `auto` and the manifest read it exactly. Older projects:
    `waygraph upgrade --codemod checkpoints`.
@@ -83,9 +92,8 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
    a Block that was never given real verification at all, and it passes `check`/`typecheck`/
    the orphan scan/`tsc` silently unless something is actually looking for it. Something is:
    `defineMethodBlock`/`defineEffectBlock` where `In`/`Out` genuinely differ (a transition,
-   not a self-loop) needs a non-empty `verify`, same for `defineAssertBlock`. Opt out only
-   when a *different* Block right after it in the `.flow.ts` is what actually confirms the
-   transition (e.g. an `AssertXBlock`) - `// waygraph-ignore: empty-verify`.
+   not a self-loop) needs a non-empty `verify`, same for `defineExpectBlock`. Opt out only
+   when the step's expectations are what actually confirm the transition - `// waygraph-ignore: empty-verify`.
 
 8. **Never hand-write UI.** All demo UI goes through `ctx.ui` (`ring`, `caption`, `title`, `todos`, `slides`,
    `device`, `zoom`, `showNetworkTab`), chained where the flow uses the Block. Never build your own caption, highlight
@@ -97,7 +105,7 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
 
 ## Flows, stubs and config (the scaffold's shape)
 
-- **Build flows with `map()`** (`engine.map().gotoPage(Page.nav).method(Page.do.b, { pace }).assert(Page.do.a)`;
+- **Build flows with `map()`** (`engine.map().gotoPage(Page.nav).method(Page.do.b, { pace, expect: [Page.expects.a] })`;
   `.gotoExternal` for another origin); it is the only way to build one. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`, `as`) go in `map({ … })` before the chain
   and the chain itself is the flow: there is no closing call. The flow's title is `ctx.ui.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
   `defineFlow`, `chainFlow` and the `with*` flow wrappers were removed in 0.16.0; `waygraph upgrade --codemod flows` converts them.
@@ -106,11 +114,13 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
   `.gotoPage(HomePage.nav).method(HomePage.do.addItem)`, each typed as its own Block. Imports use the project's
   `#config/`, `#map/`, `#states/` names (`import { HomePage } from "#map/(app_base)/home/_page.block"`), never a chain of
   `../`. No file is imported for its side effect (`import ".../_page.block.js"`, `import ".../x.mem-stubs.js"`): the
-  tools load Block, Page and stub files themselves. An older project moves onto pages with `waygraph upgrade --codemod pages` once each
-  Page Block has its `nav` and a `methods` record.
-- **A check on one value the page shows is `.expect(Key, want)` in the flow**, not an Assert Block per value:
-  `.expect(Machine.status, "Down")`, `.expect(Registry.rows, (rows, mem) => rows.some((r) => r.code === mem.get(Keys.machine).code))`.
-  Write an Assert Block for a named check worth reusing, or one that needs selectors.
+  tools load Block, Page and stub files themselves. A Page Block's `expects: { saved: () => ExpectSavedBlock }` names what
+  can be checked on the page, so `HomePage.expects.saved` comes from the same import. An older project moves onto pages
+  with `waygraph upgrade --codemod pages` once each Page Block has its `nav` and `methods` / `expects` records.
+- **What a step's scenario expects goes on the step:** `.method(Detail.do.confirmArchive, { expect: [Registry.expects.archivedToast,
+  Machine.status.is("Archived")] })`. A check on one value is `Key.is(value)` inline, not an Expect Block per value;
+  write an Expect Block for a named check worth reusing, or one that needs selectors. `.assert()` steps are gone
+  (`waygraph upgrade --codemod expect` folds them into the step before). `map({ expect: false })` for a setup flow.
 - **One Block, many inputs: `.set(Key, value)` before the step.** `.set(Keys.search, (mem) => mem.get(Keys.machine).code)
   .method(RegistryPage.do.fillSearch)`; never one Fill Block per value (`fill-search-padded`, `fill-search-down-machine`).
 - **The same steps in several flows are a part:** `export const logDisruption = steps(DisruptionLog, (m) => m.method(…).method(…))`,
@@ -125,9 +135,9 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
   without DOM queries. It lives with the page (`_read.block.ts` beside `_sel.ts`, its namespace in `_reads.ts`; freeform:
   `<page>.read.block.ts`, namespaces in `src/states/<area>.reads.ts`), never with mem stubs: mem is what a flow is
   given, a read is what the page shows. `waygraph check` lists pages without one. A check on what a page shows is
-  `Trait.read(Catalog.items, (items) => items.length === 6)`, not a selector count; it works in any `verify`, an
-  Assert Block's included, and its test also gets mem: `(items, mem) => items.some((i) => i.name === mem.get(Keys.item).name)`
-  checks the page shows what the flow did.
+  `Catalog.items.passes((items) => items.length === 6)` or `Header.cartCount.is(1)`, not a selector count; its test
+  also gets mem: `(items, mem) => items.some((i) => i.name === mem.get(Keys.item).name)` checks the page shows what the
+  flow did.
 - **Shared things are claimed, not raced for.** When parallel runs could pick the same thing (the newest email in a
   shared inbox, an account from a pool), take it with `claimOnce(name)`: true for one caller on the machine. A
   hand-rolled lock file is a smell.
@@ -178,7 +188,7 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
 - **Another origin the test needs is a Map external** under `src/map/(external)/<tool>/`. For REST API
   tests, `(external)/hoppscotch` (list `extensions: ["hoppscotch"]` in the config) drives hoppscotch.io's client
   with the extension, so requests skip CORS: `set-method`, `set-url`, `set-headers`, `set-json-body`,
-  `send-request`, `assert-status`, `read-response-body`, `assert-response-body`.
+  `send-request`, `read-response-body` (Methods), and on its Page Block's `expects`: `status`, `response-body`, `response-header`.
 - **Updating an older project:** `npm install waygraph@latest`, then `waygraph upgrade` (dry run) to see new
   and differing scaffold files; copy the paths you want with `--apply`. `waygraph upgrade --skills` refreshes these skills.
 
@@ -237,7 +247,7 @@ export const AddToCartBlock = defineEffectBlock({
     async act(page, _input, mem) {
       await page.locator(InventorySel.addBtn(mem.get(ShopKeys.selectedItem).id)).click();
     },
-    verify: [Trait.read(Header.cartCount, (n) => n > 0, "a cart count")],
+    verify: [Header.cartCount.passes((n) => n > 0, "a cart count")],      // its contract: the badge counts it
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     const ids = await page.locator(InventorySel.addButtons).evaluateAll((els) => els.map((el) => el.getAttribute("data-test")!.replace(/^add-/, "")));
@@ -246,13 +256,15 @@ export const AddToCartBlock = defineEffectBlock({
 });
 ```
 
-An Assert, an API Block, and a Read Block:
+An Expect Block, an API Block, and a Read Block:
 
 ```ts
-export const AssertCheckoutGatedBlock = defineAssertBlock({
-  name: "assert-checkout-gated",
+// src/map/(app_base)/cart/_expect/checkout-gated.expect.block.ts - listed on CartPage's `expects`
+export const ExpectCheckoutGatedBlock = defineExpectBlock({
+  name: "expect-checkout-gated",
+  description: "Checkout stays disabled while the cart is empty.",
   checkpoint: CartEmpty,
-  verify: [Trait.disabled(CartSel.checkout)],
+  verify: [Trait.disabled(CartSel.checkout)],                       // reads only: no click, no navigation
 });
 
 export const DeleteTestUserApiBlock = defineApiBlock({
@@ -303,8 +315,9 @@ export const inventoryAddItemFlow = engine
   .map({ as: StandardUser, input: ShopKeys.selectedItem })
   .gotoPage(InventoryPage.nav.stubBefore((ctx) => ctx.ui.title("Add an item")))
   .method(AddShown)
-  .gotoPage(CartPage.nav)
-  .expect(Cart.items, (items, mem) => items.some((i) => i.name === mem.get(ShopKeys.selectedItem).name), "the item in the cart")
+  .gotoPage(CartPage.nav, {
+    expect: [Cart.items.passes((items, mem) => items.some((i) => i.name === mem.get(ShopKeys.selectedItem).name), "the item in the cart")],
+  })
   .finally(EmptyCartApiBlock);
 ```
 
@@ -319,7 +332,7 @@ Check an API Block's exact `call` signature and the helpers' options against the
 | Nav | `nav-*.block.ts` / `_nav.block.ts` | `defineNavBlock` / `defineNavClickBlock` | Yes (`url` XOR `click`) |
 | Effect | `*.effect.block.ts` in `methods/` / `_methods/` | `defineEffectBlock` | No |
 | Method | `*.method.block.ts` in `methods/` / `_methods/` | `defineMethodBlock` | No |
-| Assert | with Method/Effect peers | `defineAssertBlock` | No |
+| Expect | `*.expect.block.ts` in `_expect/` (freeform: `expect/`) | `defineExpectBlock` (in an `expect: [...]`, never a step) | No |
 | Read | `<page>.read.block.ts` / `_read.block.ts` (namespace: `src/states/<area>.reads.ts` / `_reads.ts`) | `defineReadBlock({ from, instruction: { read } })` | No |
 | API | `*.api.block.ts` in `methods/` | `defineApiBlock({ from, to, call })` (a real HTTP request; `map().method(...)`) | No |
 

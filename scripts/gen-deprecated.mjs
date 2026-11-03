@@ -151,6 +151,11 @@ A stub paints through \`ctx.ui\`; \`ctx\` itself holds only what a stub reads (\
 | --- | --- |
 | \`MapStart\` | \`Start\`, a value and a type: \`from: Start\`, \`to: Start\`, \`Block<Start, Home>\` |
 | \`.start()\`, \`.end()\` on a \`map()\` chain | Nothing: the chain is the flow (\`waygraph upgrade --codemod chain\`). |
+| \`defineAssertBlock\`, \`AssertBlock\`, \`AssertBlockOptions\` | \`defineExpectBlock\`, \`ExpectBlock\`, \`ExpectBlockOptions\` (\`waygraph upgrade --codemod expect\`) |
+| \`.assert(Block)\` step | \`{ expect: [Block] }\` on the step it judges (the codemod folds them in) |
+| \`.expect(key, want)\` step | \`{ expect: [key.is(want)] }\` / \`key.passes(test)\` on the step |
+| \`Trait.read(key, test, wants)\` | \`key.passes(test, wants)\` (and \`key.is(value)\`) |
+| \`defineLayout\`, \`EngineConfig.layouts\`, \`RunGraphOptions.layouts\` | an Expect Block (or a shared list of them) in the \`expect\` of each Block that lands on those pages: what runs is what the flow says |
 
 ## Style
 

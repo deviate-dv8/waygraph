@@ -1,5 +1,6 @@
 import { checkpoint } from "../src/engine/checkpoint/checkpoint.js";
-import { defineMethodBlock, defineAssertBlock } from "../src/engine/block/kinds/method.js";
+import { defineMethodBlock } from "../src/engine/block/kinds/method.js";
+import { defineExpectBlock } from "../src/engine/block/kinds/expect.js";
 import { defineNavBlock } from "../src/engine/block/kinds/nav.js";
 
 const method = defineMethodBlock({
@@ -9,7 +10,7 @@ const method = defineMethodBlock({
   instruction: { async act() {}, resolve: () => checkpoint("B") },
 });
 const nav = defineNavBlock({ name: "n", checkpoint: checkpoint("B"), url: "/" });
-const assert = defineAssertBlock({ name: "a", checkpoint: checkpoint("B"), verify: [] });
+const assert = defineExpectBlock({ name: "a", checkpoint: checkpoint("B"), verify: [] });
 
 // A stub gets a real StubCtx, not implicit any: a typo'd ctx method is a compile error.
 void method.stubAfter((ctx) => {

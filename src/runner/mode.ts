@@ -13,7 +13,7 @@ import type { SomeBlock } from "../engine/block/some-block.js";
 export interface PlayStep {
   block: SomeBlock;
   exportName: string;
-  /** The engine config of the flow it came from (its layouts apply when it runs). */
+  /** The engine config of the flow it came from (how a step it runs on its own launches). */
   config: EngineConfig;
   /** Set on a named flow's steps; ad hoc Block chains have no episodes. */
   episodeNumber?: number | undefined;

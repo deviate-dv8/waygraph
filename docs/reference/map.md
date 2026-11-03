@@ -14,6 +14,7 @@ src/map/
       _sel.ts                  # selectors for this Checkpoint - fixed name, every folder
       _read.block.ts            # what the page shows, as data (defineReadBlock) - every page
       _reads.ts                 # its typed namespace (reads("dashboard")<{...}>())
+      _expect/                  # what a scenario can expect on this page (Expect Blocks) - fixed name
       _methods/                 # this Checkpoint's own action Blocks - fixed name, every
         click-widget.block.ts    # folder. Contents keep their own descriptive names -
   (external)/                     # only the folder itself is fixed.
@@ -38,7 +39,7 @@ incrementally, folder by folder. Build flows with [`map()`](../guides/flows.md) 
 it can't silently accept a Block that didn't come from a real factory.
 
 **Leading underscore = this Checkpoint's own fixed machinery, never a route segment.**
-`_nav.block.ts`/`_page.block.ts`/`_sel.ts`/`_methods/` (same private-folder idea as Next.js's
+`_nav.block.ts`/`_page.block.ts`/`_sel.ts`/`_methods/`/`_expect/` (same private-folder idea as Next.js's
 own `_folder` convention) mark "this belongs to the endpoint whose folder it's directly in,"
 so a bare (non-underscore, non-`(group)`) folder name always means a real child
 Checkpoint/URL segment - `_methods/` can never be mistaken for a sibling endpoint folder the
@@ -83,7 +84,7 @@ another project, `npm i waygraph-map-hoppscotch` is all it takes: the scanner fi
 them like any module:
 
 ```typescript
-import { NavHoppscotchRestBlock, SetUrlBlock, SendRequestBlock, AssertStatusBlock } from "waygraph-map-hoppscotch";
+import { HoppscotchRestPage } from "waygraph-map-hoppscotch";   // .nav, .do.setUrl, .expects.status
 ```
 
 The scaffold's `(external)/hoppscotch` and `(external)/mailpit` are written this way.
@@ -137,4 +138,4 @@ filename pattern, never folder depth or naming.
 
 Once the folder structure is settled, build Flows over these Blocks with
 [`map()`](../guides/flows.md) - it can't silently accept a Block that isn't
-really a Nav/Page/Assert/Method from this package's own factories.
+really a Nav/Page/Method/Effect from this package's own factories.

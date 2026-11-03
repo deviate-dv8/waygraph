@@ -13,7 +13,7 @@ folders under `src/map/`, or `src/blocks/` in a freeform project).
 
 **Load the `waygraph-convention` skill first** (`--skill-convention` / the skill tool) - it owns
 the actual authoring rules (one action per Block, `_nav`/`_page`/`_sel.ts`/`_methods/` naming,
-selectors never inline, when to reach for `defineAssertBlock`, Mem key typing). Don't restate
+selectors never inline, `verify` vs `expect: [...]` and `defineExpectBlock`, Mem key typing). Don't restate
 those rules here from memory; re-read the skill, since it's the one place they're kept current.
 
 ## This agent's own job (on top of the skill)

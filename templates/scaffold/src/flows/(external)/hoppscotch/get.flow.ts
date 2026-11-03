@@ -14,5 +14,4 @@ export const hoppscotchGetFlow = engine
   .method(PickExtensionInterceptorBlock)
   .gotoExternal(HoppscotchRestPage.nav)
   .method(HoppscotchRestPage.do.setUrl)
-  .method(HoppscotchRestPage.do.sendRequest)
-  .assert(HoppscotchRestPage.do.assertStatus);
+  .method(HoppscotchRestPage.do.sendRequest, { expect: [HoppscotchRestPage.expects.status] });

@@ -1,6 +1,5 @@
-// EngineConfig: which browser a flow launches when it opens its own, how, and the layouts every step is checked against.
+// EngineConfig: which browser a flow launches when it opens its own, and how.
 import type { BrowserType } from "@playwright/test";
-import type { Layout } from "./run/run.js";
 
 
 /**
@@ -54,14 +53,6 @@ export interface EngineConfig {
    * @example new Engine({ recordVideo: { dir: "./videos" } })
    */
   recordVideo?: { dir: string; size?: { width: number; height: number } };
-  /**
-   * Cross-cutting, automatically-enforced verify (see {@link defineLayout})
-   * - applies to every Flow this Engine defines. Works the same regardless
-   * of folder convention (Waygraph Map or freeform "manual mode") since
-   * matching is by Checkpoint tag, never by file path.
-   * @example new Engine({ layouts: [AppShellLayout] })
-   */
-  layouts?: readonly Layout[];
   /** Chromium extensions to load: names, store ids or paths (see `extensions` in `waygraph.config.ts`). Default `WAYGRAPH_EXTENSIONS`. */
   extensions?: readonly ExtensionSpec[];
   /**

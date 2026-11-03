@@ -1,8 +1,9 @@
-// map(): builds a Flow one step at a time - gotoPage / method / assert / flow / branch - each checked for its Block kind.
+// map(): builds a Flow one step at a time - gotoPage / method / flow / branch - each checked for its Block kind; a step's
+// expectations ride on it (`expect: [...]`).
 import type { SomeBlock, SomeDefinedBlock } from "../block/some-block.js";
 import { fastForwardSteps } from "../block/compose.js";
 import type { EffectBlock } from "../block/kinds/effect.js";
-import type { AssertBlock, MethodBlock } from "../block/kinds/method.js";
+import type { MethodBlock } from "../block/kinds/method.js";
 import type { NavBlock } from "../block/kinds/nav.js";
 import type { PageBlock } from "../block/kinds/page.js";
 import type { Checkpoint, Start } from "../checkpoint/checkpoint.js";
@@ -13,25 +14,25 @@ import {
     MSG_MAP_FF_EMPTY,
     MSG_MAP_FF_NOT_CLOSED,
     MSG_MAP_FF_NOT_OPEN,
-    MSG_MAP_METHOD_GOT_ASSERT,
+    MSG_MAP_METHOD_GOT_EXPECT,
     WaygraphError,
   MSG_MAP_NO_INPUT,
   MSG_MAP_STEPS_END,
 } from "../errors.js";
 import type { MemKey, MemPage } from "../mem/mem.js";
-import type { ReadKey } from "../read/read-key.js";
 import type { Expected } from "../trait/trait.js";
 import type { DemoPace } from "../stub/pace.js";
 import type { HighlightStyleDefaults } from "../stub/ring.js";
 import type { Flow, FlowSettings } from "./flow.js";
 import type { Steps } from "./map-part.js";
+import type { ExpectList } from "../block/kinds/expect.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { RunGraphOptions } from "../run/run.js";
 import type { EngineConfig } from "../config.js";
 import { buildBranchedFlow } from "./map-branch.js";
 import { signInStep, type Account } from "./account.js";
 import { inWorld, restoreWorld, type World } from "./world.js";
-import { asCleanup, settling, requiring, withoutRequire, settingInput, settingKey, expecting, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
+import { asCleanup, settling, requiring, withoutRequire, settingInput, settingKey, stepExpect, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
 
 
 /**
@@ -51,6 +52,11 @@ export interface MapBuilderOptions {
   homeOrigin?: string;
   /** Fill missing `requires` keys from `registerMemStub` when the flow runs. */
   memStub?: boolean;
+  /**
+   * `false`: run each step's `verify` but none of its expectations (the Blocks' `expect` and the steps'): a setup flow
+   * nobody is judging. `--no-expect` does the same for one run.
+   */
+  expect?: false;
   /**
    * This flow wants a fresh browser session (cookies and storage cleared) when it runs after another one, in a CLI chain
    * (`waygraph run "a then b"`) or nested with `.flow(sub)`: a second user signing in, a logged-out check.
@@ -131,7 +137,7 @@ export type WhenOpt<Out, NextOut> = [NextOut] extends [Out] ? { when?: (mem: Mem
  * comment for why this exists. Each step method is scoped to exactly the
  * Block kind its name promises, checked at RUNTIME against the
  * `__waygraphKind`/`__waygraphSalt` markers `defineNavBlock`/`definePageBlock`/
- * `defineAssertBlock`/`defineMethodBlock`/`defineEffectBlock` already set
+ * `defineExpectBlock`/`defineMethodBlock`/`defineEffectBlock` already set
  * (the same markers `graph.ts` and `map-check.ts` trust) - not just a type
  * hint, since a hand-rolled object can satisfy the TypeScript `Block<In,Out>`
  * shape without ever going through a real factory. Each call also
@@ -222,7 +228,9 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
    * A key an earlier `.set()` gave is no longer one this step requires from the run.
    */
   private appendStep<NextOut extends Checkpoint<string>>(given: SomeBlock, ff?: boolean): MapBuilder<NextOut> {
-    const block = this.at.provided.reduce((b, key) => withoutRequire(b, key), given);
+    const keyed = this.at.provided.reduce((b, key) => withoutRequire(b, key), given);
+    // map({ expect: false }): every step's verify, none of its expectations.
+    const block = this.at.settings.expect === false ? stepExpect(keyed, false) : keyed;
     const ffWin = this.at.ff;
     if (ff) {
       const win = ffWin ?? { name: `ff-${this.at.chain.length + 1}`, buffer: [], auto: true };
@@ -247,7 +255,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
   ): MapBuilder<Lands> {
     assertMapKind(block, ["nav", "page"], "gotoPage");
     assertMapOrigin(block, this.at.homeOrigin, "internal", "gotoPage");
-    return this.appendStep(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.ff);
+    return this.appendStep(stepExpect(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.expect), opts?.ff);
   }
 
   /**
@@ -263,37 +271,26 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
   ): MapBuilder<Lands> {
     assertMapKind(block, ["nav", "page"], "gotoExternal");
     assertMapOrigin(block, this.at.homeOrigin, "external", "gotoExternal");
-    return this.appendStep(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.ff);
-  }
-
-  /**
-   * Appends a self-loop verification step - requires a Block from
-   * `defineAssertBlock`. Compile-time: {@link AssertBlock} only (not `.method()`).
-   * `{ ff: true }`: fast-forward this one step inline - see `appendStep`'s own comment.
-   */
-  assert(block: AssertBlock<Out> & { name: string }, opts?: Omit<MapStepOpts, "lands">): MapBuilder<Out> {
-    assertMapKind(block, ["assert"], "assert");
-    return this.appendStep(skippable(settling(paced(block, opts), opts?.settle), opts?.when), opts?.ff);
+    return this.appendStep(stepExpect(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.expect), opts?.ff);
   }
 
   /**
    * Appends a non-navigating page action (submit, upload, add/remove an
    * instance) - requires a Block from `defineMethodBlock`/`defineActionBlock`/
    * `defineEffectBlock`/`defineMemEffectBlock`.
-   * Compile-time: {@link MethodBlock} or {@link EffectBlock} only - Assert
-   * Blocks must use `.assert()`. Runtime also rejects `__waygraphKind =
-   * "assert"` (those still carry method salt from the factory internals).
+   * Compile-time: {@link MethodBlock} or {@link EffectBlock} only. Runtime also rejects an Expect Block (it carries
+   * method salt from the factory internals): an expectation goes in a step's `expect: [...]`, not in a step of its own.
    * `{ ff: true }`: fast-forward this one step inline - see `appendStep`'s own comment.
    */
   method<NextOut extends Checkpoint<string>, Lands extends NextOut = NextOut>(
     block: (MethodBlock<Out, NextOut> | EffectBlock<Out, NextOut>) & { name: string },
     opts?: Omit<MapStepOpts<Lands>, "when"> & WhenOpt<Out, NextOut>,
   ): MapBuilder<Lands> {
-    if (mapKindOf(block) === "assert") {
-      throw new WaygraphError("WG_MAP_WRONG_KIND", MSG_MAP_METHOD_GOT_ASSERT(block.name));
+    if (mapKindOf(block) === "expect") {
+      throw new WaygraphError("WG_MAP_WRONG_KIND", MSG_MAP_METHOD_GOT_EXPECT(block.name));
     }
     assertMapSalt(block, ["method", "effect", "api"], "method");
-    return this.appendStep(skippable(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.when), opts?.ff);
+    return this.appendStep(skippable(stepExpect(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.expect), opts?.when), opts?.ff);
   }
 
   /**
@@ -308,19 +305,9 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
   }
 
   /**
-   * Checks what the page shows for a Read key, right here in the flow: equal to `want`, or passing it (`want` also gets
-   * mem, to compare with what the flow did). Retried until the page settles, like every check. No Assert Block to write
-   * for each value.
-   * @example .expect(Order.status, "Paid") · .expect(Catalog.items, (items) => items.length === 6, "6 products")
-   */
-  expect<T>(key: ReadKey<T>, want: T | ((value: T, mem: MemPage) => boolean), wants?: string): MapBuilder<Out> {
-    return this.appendStep(expecting(key, want, wants));
-  }
-
-  /**
    * Plays a part made with {@link steps}: the same steps wherever a flow is on the part's Checkpoint. Typed like any
    * step - a part from another Checkpoint doesn't fit.
-   * @example const addToCart = steps(Inventory, (m) => m.method(AddItemBlock).assert(AssertBadgeBlock)); map().gotoPage(NavInventoryBlock).steps(addToCart)
+   * @example const addToCart = steps(Inventory, (m) => m.method(AddItemBlock, { expect: [ExpectBadgeBlock] })); map().gotoPage(NavInventoryBlock).steps(addToCart)
    */
   steps<NextOut extends Checkpoint<string>>(part: Steps<Out, NextOut>): MapBuilder<NextOut> {
     let next = this.appendStep<NextOut>(part.blocks[0] as SomeBlock);
@@ -332,9 +319,10 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
   /**
    * Runs another flow's steps inline here, in the same page, browser and `mem`. This is how flows nest:
    * `map().flow(loginFlow).flow(viewerFlow, { reset: true })`. With `{ reset: true }` cookies and storage are cleared
-   * right before the sub-flow's first step.
+   * right before the sub-flow's first step; `expect: [...]` is what this flow expects once the sub-flow is done (on its
+   * last step).
    */
-  flow<NextOut extends Checkpoint<string>>(sub: Flow<NextOut>, opts?: MapFlowOpts): MapBuilder<NextOut> {
+  flow<NextOut extends Checkpoint<string>>(sub: Flow<NextOut>, opts?: MapFlowOpts & { expect?: ExpectList<NextOut> }): MapBuilder<NextOut> {
     // `sub` was checked step by step when it was built, so its steps play here as they are, ending on its NextOut.
     const steps: SomeBlock[] = [];
     if (opts && "input" in opts) {
@@ -346,6 +334,8 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
       // Given here, the input is no longer something the run must supply.
       steps.push(i === 0 && sub.input && opts && "input" in opts ? withoutRequire(info.block, sub.input) : info.block);
     });
+    const last = steps.length - 1;
+    if (opts?.expect && last >= 0) steps[last] = stepExpect(steps[last] as SomeBlock, opts.expect);
     const [head, ...rest] = steps;
     // A flow can't be built without a step (WG_MAP_EMPTY), so a sub-flow always has one.
     if (!head) throw new WaygraphError("WG_MAP_EMPTY", MSG_MAP_EMPTY);

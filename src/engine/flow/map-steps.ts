@@ -2,13 +2,13 @@
 import { mark } from "../block/mark.js";
 import { checkpoint, type Checkpoint } from "../checkpoint/checkpoint.js";
 import type { MemKey } from "../mem/mem.js";
-import { expectedValue, readEquals, type Expected, type Trait } from "../trait/trait.js";
-import type { ReadKey } from "../read/read-key.js";
-import { isDeepStrictEqual } from "node:util";
+import { expectedValue, type Expected, type Trait } from "../trait/trait.js";
 import type { Page } from "@playwright/test";
 import { defineMethodBlock } from "../block/kinds/method.js";
 import { settlePage } from "../read/run-read.js";
 import { copyWaygraphRuntime } from "../block/block.js";
+import type { ExpectList } from "../block/kinds/expect.js";
+import { withExpect } from "../run/expect.js";
 import type { SomeBlock } from "../block/some-block.js";
 import { MSG_MAP_LANDED_ELSEWHERE, MSG_MAP_LANDS_NOT_AN_OUTCOME, MSG_MAP_WRONG_KIND, MSG_MAP_WRONG_ORIGIN_EXTERNAL, MSG_MAP_WRONG_ORIGIN_INTERNAL, MSG_MAP_WRONG_SALT, WaygraphError } from "../errors.js";
 import { MemPage } from "../mem/mem.js";
@@ -119,6 +119,8 @@ export function skippable(block: SomeBlock, when: ((mem: MemPage) => boolean) | 
     },
   };
   copyWaygraphRuntime(block, next);
+  // A skipped step's expectations are skipped too (runExpect asks).
+  mark(next, "__waygraphSkipped", (mem: MemPage) => skipped.has(mem));
   return next;
 }
 
@@ -161,13 +163,9 @@ export function settingKey<T>(key: MemKey<T>, value: Expected<T>): SomeBlock {
   return stayingStep(`set-${key.name}`, `Sets ${key.name}.`, (_page, mem) => void mem.set(key, expectedValue(value, mem)));
 }
 
-/** `.expect(key, want)`: a check step on what the page shows for `key` (equal to `want`, or passing it). */
-export function expecting<T>(key: ReadKey<T>, want: T | ((value: T, mem: MemPage) => boolean), wants?: string): SomeBlock {
-  const test = typeof want === "function" ? (want as (value: T, mem: MemPage) => boolean) : (value: T) => isDeepStrictEqual(value, want);
-  const said = wants ?? (typeof want === "function" ? undefined : `${key.path} = ${JSON.stringify(want)}`);
-  const step = stayingStep(`expect-${key.path}`, `Checks ${said ?? key.path}.`, () => {}, [readEquals(key, test, said)]);
-  mark(step, "__waygraphKind", "assert");
-  return step;
+/** The same Block with a step's `expect` option applied (see {@link MapStepOpts.expect}). */
+export function stepExpect<Out extends Checkpoint<string>>(block: SomeBlock, expect: false | ExpectList<Out> | undefined): SomeBlock {
+  return expect === undefined ? block : withExpect(block, expect as Parameters<typeof withExpect>[1]);
 }
 
 /** The same Block, marked as a cleanup step: its run events say so (`cleanup: true` on step:start). */
@@ -197,7 +195,7 @@ export function settling(block: SomeBlock, settle: MapStepOpts["settle"]): SomeB
 }
 
 /** Applies a step's `pace` option, keeping the Block's runtime markers. */
-export function paced(block: SomeBlock, opts: MapStepOpts | undefined): SomeBlock {
+export function paced(block: SomeBlock, opts: { pace?: DemoPace | undefined } | undefined): SomeBlock {
   if (opts?.pace === undefined) return block;
   const next: SomeBlock = { ...block, demoPace: opts.pace };
   copyWaygraphRuntime(block, next);
@@ -254,7 +252,7 @@ export function assertMapOrigin(
 export const MAP_KIND_FACTORY_HINT: Record<string, string> = {
   nav: "defineNavBlock/defineMemNavBlock",
   page: "definePageBlock",
-  assert: "defineAssertBlock",
+  expect: "defineExpectBlock",
 };
 export const MAP_SALT_FACTORY_HINT: Record<string, string> = {
   method: "defineMethodBlock",
@@ -264,6 +262,13 @@ export const MAP_SALT_FACTORY_HINT: Record<string, string> = {
 /** Per-step options for the map builder: `ff` fast-forwards the step, `pace` sets its demo pace. */
 
 export interface MapStepOpts<Lands extends Checkpoint<string> = Checkpoint<string>> {
+  /**
+   * What this step's scenario expects after it, on top of what the Block itself expects: Expect Blocks, Traits,
+   * `Key.is(...)`. Per outcome for a Block that can land in several places. `false` drops the Block's own
+   * expectations for this step (its verify still runs).
+   * @example .method(ConfirmArchiveBlock, { expect: [ExpectArchivedToastBlock, Machine.status.is("Archived")] })
+   */
+  expect?: false | ExpectList<Lands>;
   /**
    * Which of a branching Block's outcomes this flow continues from. The flow is typed from it, and a run where the Block
    * lands anywhere else fails at this step.

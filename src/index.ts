@@ -23,13 +23,15 @@ export { Trait, urlMatches, textEquals, visible, disabled, enabled, frameVisible
 export type { TraitResult, Expected } from "./engine/trait/trait.js";
 export { TraitFailure } from "./engine/trait/verify.js";
 export type { TraitCheckReport } from "./engine/trait/verify.js";
-export { runGraph, spawnTab, preflight, defineLayout } from "./engine/run/run.js";
+export { runGraph, spawnTab, preflight } from "./engine/run/run.js";
+export { ExpectFailure } from "./engine/run/expect.js";
 export { Engine, map } from "./engine/engine.js";
 export { branch } from "./engine/block/branch.js";
 export { withVerify, modVerify, modVerifyAll, defineBlock } from "./engine/block/block.js";
 export { withDialog } from "./engine/block/dialog.js";
 export { defineNavBlock, defineNavClickBlock, defineMemNavBlock } from "./engine/block/kinds/nav.js";
-export { defineMethodBlock, defineAssertBlock } from "./engine/block/kinds/method.js";
+export { defineMethodBlock } from "./engine/block/kinds/method.js";
+export { defineExpectBlock } from "./engine/block/kinds/expect.js";
 export { definePageBlock } from "./engine/block/kinds/page.js";
 export { defineEffectBlock } from "./engine/block/kinds/effect.js";
 export { defineApiBlock } from "./engine/block/kinds/api.js";
@@ -61,10 +63,11 @@ export type { DevicePreset, DeviceViewport, DeviceState, DeviceOrientation } fro
 export type { Flow, BlockInfo } from "./engine/flow/flow.js";
 export type { EngineConfig } from "./engine/config.js";
 export type { ComposedBlock, FastForwardComposedBlock, SomeComposedBlock, SomeFastForwardBlock } from "./engine/block/compose.js";
-export type { RunGraphOptions, Layout, LayoutOptions } from "./engine/run/run.js";
+export type { RunGraphOptions } from "./engine/run/run.js";
 export type { NavBlock, NavBlockOptions, NavClickBlock, NavClickBlockOptions, MemNavBlock } from "./engine/block/kinds/nav.js";
-export type { MethodBlock, AssertBlock, AssertBlockOptions } from "./engine/block/kinds/method.js";
-export type { PageBlock, PageBlockOptions, PageMethodEntry, PageMethods } from "./engine/block/kinds/page.js";
+export type { MethodBlock } from "./engine/block/kinds/method.js";
+export type { Expectation, ExpectBlock, ExpectBlockOptions, ExpectList } from "./engine/block/kinds/expect.js";
+export type { PageBlock, PageBlockOptions, PageExpectEntry, PageMethodEntry, PageMethods } from "./engine/block/kinds/page.js";
 export type { EffectBlock } from "./engine/block/kinds/effect.js";
 export type { MapBuilderOptions } from "./engine/flow/map-builder.js";
 export type { ActionPage } from "./engine/block/action-page.js";
@@ -115,7 +118,6 @@ export type { ExtensionSpec } from "./engine/config.js";
 export type { WebServerConfig } from "./runtime/webserver.js";
 
 // Types the API above refers to (each is part of a public signature).
-export type { ConnectLayout } from "./engine/run/connect.js";
 export type { EffectExtras } from "./engine/block/kinds/effect.js";
 export type { BlockBase, RoutedBlockBase } from "./engine/checkpoint/route.js";
 export type { RunEventListener } from "./engine/run/events.js";

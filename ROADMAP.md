@@ -20,6 +20,9 @@ against a real consumer.
 
 ## Open
 
+- **Soft expectations** - a step already reports every expectation it didn't meet; a flow-level `soft` mode would go on
+  to the next steps and fail the run at the end, so one QA case reports every expected result it checks.
+
 - **Split `requires`** - say which keys the caller must supply (credentials, config) and which another Block produces,
   so a failed preflight can suggest the Block that would produce the missing key.
 - **Demo text matchable by the page's selectors** - the overlay is an open shadow root, and Playwright's text engines

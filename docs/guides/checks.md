@@ -1,14 +1,22 @@
 # Checks
 
-A Block says where it landed (`resolve`); its checks (`verify`) prove the page agrees. A check is a **Trait**: one
-named thing that holds or doesn't.
+Every check answers one of two questions, and each question has one home:
+
+| Question | Where it lives | True | Runs |
+|---|---|---|---|
+| **Did the step do what it says?** It arrived where `resolve` said; its action took effect. | the Block's `verify` | in every flow that uses the Block | after every run of the Block; never skipped |
+| **Is this what the scenario expects?** The toast says *Archived*, the row reads *Down*. | `expect: [...]`: on the Block (what it promises everywhere) or on the step (what only this scenario expects) | in this scenario | right after the step's `verify`; `--no-expect` skips them |
 
 ```mermaid
 graph TD
-  PC[precondition: is the page still ready?] --> A[act] --> R[resolve: says ItemInCart] --> V[verify: does the page agree?<br/>tried again until it does, up to 5 s]
-  V -->|yes| N[next step]
+  PC[precondition: is the page still ready?] --> A[act] --> R[resolve: says Registry] --> V[verify: did I arrive, did my action take effect?<br/>retried until it holds, up to 5 s]
+  V -->|yes| E[expect: what the scenario expects<br/>all at once, read-only]
+  E -->|all hold| N[next step]
   V -->|no| F[fail: wanted / saw / where]
+  E -->|any fail| F2[fail: every expectation that didn't hold]
 ```
+
+The checks themselves are **Traits**: one named thing that holds or doesn't. Both homes use them.
 
 ## Built-in Traits
 
@@ -24,18 +32,26 @@ graph TD
 | `Trait.attribute(sel, "aria-pressed", "true")` | an attribute equals |
 | `Trait.disabled(sel)` / `Trait.enabled(sel)` | the control is disabled / enabled |
 | `Trait.frameVisible` / `frameText` / `frameContains` | the same, inside an iframe |
-| `Trait.read(key, (value, mem) => …, wants?)` | what the page's Read Block reads passes the test ([below](#in-the-page-s-own-terms-trait-read)) |
+| `Key.is(value)` / `Key.passes((value, mem) => …)` | what the page's [Read Block](./reads) reads for that key equals the value, or passes the test |
 
 An expected value can come from mem: `Trait.text("#code", (mem) => mem.get(MachineKeys.code))`.
 
-## Where checks go
+## `verify`: the step's own checks
 
-| Field | When it runs | For |
-|---|---|---|
-| `verify` | after `resolve` | "did this step do what it says?" |
-| `precondition` | right before `act` | "is the page still there?" (a session timeout, a redirect, a popup) |
-| Assert Block | as its own step | a state worth naming: "submit is disabled until the form is filled" |
-| Layout | after every step that lands on a matching Checkpoint | chrome that should be everywhere (a sidebar) |
+`verify` says the step arrived and its action took effect, true wherever the Block is used. A Nav's `verify` is also how
+a live session tells which page it is on, so keep it to what identifies the page.
+
+```ts
+defineMethodBlock({
+  name: "confirm-archive",
+  from: ArchiveConfirm,
+  to: Registry,
+  instruction: {
+    async act(page) { await page.locator(DetailSel.archiveConfirm).click(); },
+    verify: [Trait.url({ pathname: "/platform/plant/equipment" })],       // arrived on the list
+  },
+});
+```
 
 `verify` can depend on where the Block landed:
 
@@ -44,19 +60,66 @@ verify: (out) =>
   out.__state === "LoggedIn" ? [Trait.url({ pathname: "/inventory.html" })] : [Trait.visible(LoginSel.errorBanner)],
 ```
 
-## Retries, and what a failure says
+## `expect`: what the scenario expects
 
-A check that doesn't hold is tried again every 200 ms until it does or 5 s pass (`timeoutMs` on the Trait changes
-that). A page still settling doesn't fail it. When it does fail, it says what it wanted, what the page showed, and
-where:
+What the scenario expects after a step goes in `expect: [...]`: Expect Blocks (named, reusable), Traits, and `Key.is`.
 
-```text
-trait "text-equals(.toast, "Saved")" failed after "save-machine":
-  wanted "Saved" in .toast; saw "Name is required" (on /equipment/new "Add equipment")
+```ts
+export const ExpectArchivedToastBlock = defineExpectBlock({
+  name: "expect-archived-toast",
+  description: "The toast says the machine was archived.",
+  checkpoint: Registry,
+  verify: [Trait.text(RegistrySel.toast, "Equipment archived")],
+});
 ```
 
-The same is data on the run's `step:error` event (`check: { trait, block, wants, saw, url, heading }`), so a script
-reading the run log gets it too.
+**On the Block**, when every flow that uses it expects the same thing. A Block that can land in several places lists
+them per outcome, each list typed to its own Checkpoint:
+
+```ts
+defineMethodBlock({
+  name: "submit-machine",
+  from: AddMachine,
+  to: [MachineDetail, AddMachine],
+  expect: { MachineDetail: [ExpectSavedToastBlock], AddMachine: [ExpectFieldErrorsBlock] },
+  // ...
+});
+```
+
+**On the step**, for what only this scenario expects (added to the Block's own):
+
+```ts
+engine.map({ as: Planner })
+  .gotoPage(Registry.nav, { expect: [Registry.expects.header] })
+  .method(Detail.do.confirmArchive, { expect: [ExpectArchivedToastBlock, Machine.status.is("Archived")] })
+  .method(Registry.do.sortByName, { expect: [Registry.expects.archivedLast] });
+```
+
+| Write | Does |
+|---|---|
+| `{ expect: [...] }` on a step | adds this scenario's expectations to the Block's |
+| `{ expect: false }` on a step | drops the Block's expectations for this step (its `verify` still runs) |
+| `.flow(sub, { expect: [...] })` | what this flow expects once the sub-flow is done |
+| `map({ expect: false })` | a setup flow nobody is judging: every step's `verify`, no expectations |
+| `--no-expect` | the same, for one run |
+
+Live sessions (`pilot`, `auto`, `traverse`) drive the app Block by Block: they run each Block's `verify`, not its
+expectations.
+
+### Expectations only read
+
+An expectation reads and judges; it never changes the page or mem. So a step's expectations run **at once**, the step
+costs its slowest check, not the sum, and a failing step reports **every** expectation it didn't meet:
+
+```text
+2 expectations failed after "confirm-archive" (on /platform/plant/equipment "Equipment")
+  - expect-archived-toast › text-equals(.toast, "Equipment archived"): wanted "Equipment archived" in .toast; saw "Saved"
+  - read(machine.status): wanted machine.status = "Archived"; saw "Operational"
+```
+
+While they run, the page is read-only: a click, a key press, a navigation or `mem.set` in an expectation stops the step,
+naming it. If checking needs an action first (reload, open a tab, click to prove nothing opens), that action is a
+Method step, and the expectation reads what it left.
 
 ## Your own Trait
 
@@ -72,54 +135,30 @@ const fiveRows: Trait = {
 };
 ```
 
-`check(page, mem)` also gets mem, so it can check the result of what the step did:
+`check(page, mem)` also gets mem, to check the result of what the flow did. A check that finds its element at run time
+(a row, a toast) names it with `at`, and the demo rings that:
 
 ```ts
-const removeShownForSelected: Trait = {
-  name: "remove-shown-for-selected-item",
+const machineRowDown: Trait = {
+  name: "machine-row-down",
+  wants: "the machine's row to read Down",
   async check(page, mem) {
-    return page.locator(DemoSel.removeBtn(mem.get(DemoKeys.selectedItem).id)).isVisible();
+    const row = RegistrySel.rowOf(mem.get(Keys.machine).code);
+    const status = await page.locator(`${row} ${RegistrySel.status}`).textContent();
+    return { ok: status === "Down", saw: String(status), at: row };
   },
 };
 ```
 
-## In the page's own terms: `Trait.read`
+## A check retries; a failure says why
 
-With a [Read Block](./reads) on the page, a check can name what the page shows instead of selectors:
-
-```ts
-verify: [
-  Trait.read(Catalog.items, (items) => items.length === 6, "6 products"),
-  Trait.read(Header.cartCount, (n) => n === 1),
-  // the test also gets mem: what the page shows against what the flow did
-  Trait.read(Catalog.items, (items, mem) => items.some((i) => i.inCart && i.name === mem.get(ShopKeys.selectedItem).name), "the selected item in the cart"),
-],
-```
-
-```text
-trait "read(catalog.items)" failed after "add-all-to-cart": wanted 6 products; saw [{"name":"Sauce Labs Backpack",…}]
-```
-
-A check on one value needs no Assert Block at all: the flow says it in place with
-`.expect(Catalog.items, (items) => items.length === 6)` or `.expect(Header.cartCount, 1)` ([Flows](./flows#checking-what-the-page-shows-expect)).
-
-## Layouts: one check for many pages
-
-```ts
-const AppShell = defineLayout({
-  name: "AppShell",
-  appliesTo: (tag) => !["LoginPage", "SignedOut"].includes(tag),   // or a list of tags
-  verify: [Trait.visible(ShellSel.sidebar)],
-});
-
-const engine = new Engine({ ...config, layouts: [AppShell] });
-```
-
-Every step that lands on a matching Checkpoint also runs the Layout's `verify`, so the sidebar check can't be
-forgotten on one page.
+A check that doesn't hold is tried again every 200 ms until it does or 5 s pass (`timeoutMs` on the Trait changes
+that). A page still settling doesn't fail it. When it does fail, it says what it wanted, what the page showed, and
+where. The same is data on the run's `step:error` event (`check: { trait, block, when, wants, saw, url, heading }`;
+`when` is `"after"` for verify, `"expect"` for an expectation).
 
 ## Empty `verify` is a warning
 
-A Method that moves to another Checkpoint with `verify: []`, or an Assert Block with none, passes every run: it checks
-nothing. `waygraph check` warns on it. When the next step is what proves it, say so:
-`// waygraph-ignore: empty-verify`.
+A Method that moves to another Checkpoint with `verify: []`, or an Expect Block with none, passes every run: it checks
+nothing. `waygraph check` warns on it, and on checks in the wrong home (see [Blocks](./blocks#lint-it)). When the next
+step is what proves it, say so: `// waygraph-ignore: empty-verify`.

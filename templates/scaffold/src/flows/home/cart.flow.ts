@@ -36,8 +36,7 @@ export const homeCartFlow = engine
       ctx.ui.title("Scaffold: Shop (Effect + clear)");
     }),
   )
-  .method(AddShown)
-  .assert(HomePage.do.assertItemAdded)
+  .method(AddShown, { expect: [HomePage.expects.itemAdded] })
   .method(RemoveShown)
   .method(AddShown)
   .method(ClearShown);

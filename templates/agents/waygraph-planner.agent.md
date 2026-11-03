@@ -23,10 +23,10 @@ workflow on top of it, not a restatement of them.
    - Page — `definePageBlock` hub + `methods` registry
    - Method - one same-URL action (a single form field fill, a single submit/click) - never
      "fill several fields and submit" in one Block; each of those is its own Method
-   - Assert - `defineAssertBlock` - a same-URL check with no state change (self-loop);
-     prefer this over a hand-written Method for pure assertions, since `resolve` is generated
-     for you. Accepts `requires` like every other helper, for a mem-aware Trait's externally
-     -supplied input.
+   - Expect - `defineExpectBlock` - what a scenario expects on a page (a toast, a disabled
+     button, a row's status); it only reads, and goes in a step's `expect: [...]` (or a Block's
+     own `expect` when every use expects it), never as a step. Plan each case's expected results
+     as these, next to the step they judge. Accepts `requires` for a mem-aware Trait's input.
    - Effect — `defineEffectBlock` + `instanceOptions` for per-row auto menus (add/remove/toggle)
 4. **Mem keys:** one `keys("ns")<{ ... }>()` namespace per area (`SaucedemoKeys.credentials`). Never rely on substring `"login"` defaults — email keys like `login-email` stay strings; credential objects use exact names such as `saucedemo.credentials` / `login-credentials`.
 5. Prefer `click` NavBlocks when the product has a real control; use `url` for deep links / email tokens.

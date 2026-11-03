@@ -33,13 +33,14 @@ export const BeforeAStep: Story = overlayStory(async (page) => {
   await renderBeforeStep(page, {
     ...where,
     description: "Types the machine's name from mem into the add form.",
+    expects: ["The toast says the machine was saved.", "equipment.status = \"Operational\""],
     keys: [{ name: "equipment.machine", value: '{"name":"Mixer 2","capacity":1200,"line":"L3"}' }],
     justEnteredEpisode: false,
   });
 });
 
 export const WithEpisodesAndPace: Story = overlayStory(async (page) => {
-  await renderBeforeStep(page, { ...where, ...episodes, ...pace, keys: [], description: "", justEnteredEpisode: true });
+  await renderBeforeStep(page, { ...where, ...episodes, ...pace, keys: [], description: "", expects: [], justEnteredEpisode: true });
 });
 
 export const AfterAStep: Story = overlayStory(async (page) => {
@@ -90,5 +91,5 @@ export const Slide: Story = overlayStory(async (page) => {
 });
 
 export const Collapsed: Story = overlayStory(async (page) => {
-  await renderBeforeStep(page, { ...where, ...pace, keys: [], description: "", justEnteredEpisode: false, forceCollapsed: true, fastForward: true });
+  await renderBeforeStep(page, { ...where, ...pace, keys: [], description: "", expects: [], justEnteredEpisode: false, forceCollapsed: true, fastForward: true });
 });

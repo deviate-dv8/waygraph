@@ -9,6 +9,8 @@ import { miniStepLabel, type PanelTodos, type StepPanelInfo } from "./step-panel
 /** The panel before a step: its description, the mem it reads (editable), and whether its episode just began. */
 export interface BeforePanelInfo extends StepPanelInfo, PanelTodos {
   description: string;
+  /** What the step expects after it (its expectations, in words). */
+  expects: readonly string[];
   keys: readonly { name: string; value: string }[];
   justEnteredEpisode: boolean;
 }
@@ -70,6 +72,9 @@ export async function renderBeforeStep(page: WgPage, info: BeforePanelInfo) {
         }),
         window.__wgPanelHeading!("Step " + (info.index + 1) + " of " + info.total, info.blockName),
         info.description ? __wgEl("p", { class: "wg-narration text-base text-label-2 mb-3" }, info.description) : null,
+        info.expects.length
+          ? __wgEl("ul", { class: "wg-expects text-sm text-label-2 mb-3" }, ...info.expects.map((e) => __wgEl("li", {}, "Expects: " + e)))
+          : null,
         keys,
         window.__wgPanelFooter!("Run Step", autoNow, "play"),
       );

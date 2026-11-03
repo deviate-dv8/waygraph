@@ -1,23 +1,13 @@
-// Joins Blocks into one: A's whole step (act, observe, resolve, verify, layouts) runs, then B acts on A's Checkpoint.
+// Joins Blocks into one: A's whole step (act, observe, resolve, verify, expect) runs, then B acts on A's Checkpoint.
 // A flow is its steps joined this way.
 import { mark } from "../block/mark.js";
 import type { Block } from "../block/block.js";
 import type { SomeBlock } from "../block/some-block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
-import type { Trait } from "../trait/trait.js";
 import { runVerify, runPrecondition } from "../trait/verify.js";
 import { isConnected, lastLeaf, stepEnded, stepStarted } from "./events.js";
 import { blockKindOf } from "../block/kind.js";
-
-/**
- * Structural twin of `run.ts`'s `Layout`, so this file needs no import from it. Any real `Layout` satisfies it with no
- * cast at the `connect()` call site.
- */
-export interface ConnectLayout {
-  name: string;
-  appliesTo: (tag: string) => boolean;
-  verify: Trait[] | ((out: Checkpoint<string>) => Trait[]);
-}
+import { expectOf, runExpect } from "./expect.js";
 
 /**
  * Composes two Blocks into one, typechecked so this only compiles when A's output
@@ -25,29 +15,24 @@ export interface ConnectLayout {
  * (act -> observe? -> resolve) then hands the resulting Checkpoint into B's act;
  * its own observe/resolve are simply B's, since B is what decides the final Out.
  *
- * `layouts`, if given, also runs against the intermediate Checkpoint (A's
- * resolved output, right before B's act) - the same enforcement `runGraph`'s
- * own loop already applies to a chain's FINAL Checkpoint, but a
- * `map()`-built Flow never reaches that loop per-hop: `buildFlow`
- * reduces the whole Block array into one `connect()`-composed super-Block, so
- * every intermediate hop's verify (and now layout) has to run HERE, inside
- * this recursive `act`, not in `runGraph`'s loop, which only ever sees the
- * one composed Block run start to finish.
+ * A's verify and expectations run here, on the intermediate Checkpoint, right before B's act: a `map()`-built Flow is
+ * its steps reduced into one composed Block, so `runGraph`'s loop only sees the last step's. B's expectations ride on
+ * the composed Block, for that loop.
  */
 export function connect<
   A extends Checkpoint<string>,
   B extends Checkpoint<string>,
   C extends Checkpoint<string>,
->(a: Block<A, B>, b: Block<B, C>, layouts?: readonly ConnectLayout[]): Block<A, C>;
-export function connect(a: SomeBlock, b: SomeBlock, layouts?: readonly ConnectLayout[]): SomeBlock {
-  return joinSteps(a, b, layouts);
+>(a: Block<A, B>, b: Block<B, C>): Block<A, C>;
+export function connect(a: SomeBlock, b: SomeBlock): SomeBlock {
+  return joinSteps(a, b);
 }
 
 /**
  * {@link connect} for steps whose routes were already checked where they were chosen: a flow's steps (`map()` checks
  * each one), a composed Block's steps (its overloads do).
  */
-export function joinSteps(a: SomeBlock, b: SomeBlock, layouts?: readonly ConnectLayout[]): SomeBlock {
+export function joinSteps(a: SomeBlock, b: SomeBlock): SomeBlock {
   const bObserve = b.instruction.observe;
   const bVerify = b.instruction.verify;
   const requires = [...(a.requires ?? []), ...(b.requires ?? [])];
@@ -64,12 +49,7 @@ export function joinSteps(a: SomeBlock, b: SomeBlock, layouts?: readonly Connect
           : undefined;
         const mid = await a.instruction.resolve(aObserved);
         await runVerify(a.instruction.verify, mid, page, mem, a.name);
-        if (layouts) {
-          for (const layout of layouts) {
-            if (!layout.appliesTo(mid.__state)) continue;
-            await runVerify(layout.verify, mid, page, mem, `${a.name} (layout: "${layout.name}")`);
-          }
-        }
+        await runExpect(a, mid, page, mem, lastLeaf(a));
         stepEnded(lastLeaf(a), mid.__state);
         if (!isConnected(b)) stepStarted(b.name, blockKindOf(b), mid.__state);
         await runPrecondition(b.instruction.precondition, mid, page, mem, b.name);
@@ -83,5 +63,7 @@ export function joinSteps(a: SomeBlock, b: SomeBlock, layouts?: readonly Connect
     },
   };
   mark(connected, "__wgLastLeaf", lastLeaf(b));
+  const bExpect = expectOf(b);
+  if (bExpect) mark(connected, "__waygraphExpect", bExpect);
   return connected;
 }

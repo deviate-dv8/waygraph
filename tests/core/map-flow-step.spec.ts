@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createServer } from "node:http";
-import { Engine, MemPage, checkpoint, defineNavBlock, defineMethodBlock, defineAssertBlock, keys } from "../../src/index.js";
+import { Engine, MemPage, checkpoint, defineNavBlock, defineMethodBlock, defineExpectBlock, keys } from "../../src/index.js";
 
 
 const Open = defineNavBlock({ name: "open", checkpoint: checkpoint("Page1"), url: "/" });
@@ -16,7 +16,7 @@ const Remember = defineMethodBlock({
   },
 });
 const Seen = (expected: string | null) =>
-  defineAssertBlock({
+  defineExpectBlock({
     name: `seen-${expected}`,
     checkpoint: checkpoint("Page1"),
     verify: [{ name: "who", check: async (page) => (await page.evaluate(() => localStorage.getItem("who"))) === expected }],
@@ -29,9 +29,9 @@ test("map().flow() nests a flow inline; { reset: true } clears storage before it
   try {
     const engine = new Engine();
     const OpenAt = defineNavBlock({ name: "open-at", checkpoint: checkpoint("Page1"), url: () => base + "/" });
-    const first = engine.map().gotoPage(OpenAt).method(Remember).assert(Seen("ada"));
-    const carried = engine.map().flow(first).assert(Seen("ada"));
-    const reset = engine.map().flow(first).flow(engine.map().gotoPage(OpenAt), { reset: true }).assert(Seen(null));
+    const first = engine.map().gotoPage(OpenAt).method(Remember, { expect: [Seen("ada")] });
+    const carried = engine.map().flow(first, { expect: [Seen("ada")] });
+    const reset = engine.map().flow(first).flow(engine.map().gotoPage(OpenAt), { reset: true, expect: [Seen(null)] });
 
     const page = await context.newPage();
     await carried.run(context, new MemPage(), { page, closeOnFinish: false });

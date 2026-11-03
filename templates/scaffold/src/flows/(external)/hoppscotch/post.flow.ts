@@ -17,7 +17,5 @@ export const hoppscotchPostFlow = engine
   .method(HoppscotchRestPage.do.setUrl)
   .method(HoppscotchRestPage.do.setHeaders)
   .method(HoppscotchRestPage.do.setJsonBody)
-  .method(HoppscotchRestPage.do.sendRequest)
-  .assert(HoppscotchRestPage.do.assertStatus)
-  .method(HoppscotchRestPage.do.readResponseBody)
-  .assert(HoppscotchRestPage.do.assertResponseBody);
+  .method(HoppscotchRestPage.do.sendRequest, { expect: [HoppscotchRestPage.expects.status] })
+  .method(HoppscotchRestPage.do.readResponseBody, { expect: [HoppscotchRestPage.expects.responseBody] });

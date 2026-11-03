@@ -1,12 +1,12 @@
 import { test, expect } from "@playwright/test";
-import type { Checkpoint, AssertBlock } from "../../src/index.js";
+import type { Checkpoint } from "../../src/index.js";
 import {
   Engine,
   MemPage,
   checkpoint,
   keys,
   defineNavBlock,
-  defineAssertBlock,
+  defineExpectBlock,
   defineMethodBlock,
   registerMemStub,
   seedMemStub,
@@ -22,7 +22,7 @@ const NavHome = defineNavBlock({
   checkpoint: checkpoint("Home"),
   url: "https://app.example.com/home",
 });
-const AssertHome = defineAssertBlock({
+const AssertHome = defineExpectBlock({
   name: "assert-home",
   checkpoint: checkpoint("Home"),
   verify: [],
@@ -81,7 +81,7 @@ const AwayBlock = defineMethodBlock({
 test.describe("Engine.map() builder", () => {
   test("a chain of real Blocks (nav -> assert -> method) builds and runs a real Flow", async () => {
     const engine = new Engine();
-    const flow = engine.map().gotoPage(NavHome).assert(AssertHome).method(ClearThing);
+    const flow = engine.map().gotoPage(NavHome, { expect: [AssertHome] }).method(ClearThing);
     const mem = new MemPage();
     const result = await flow.run(fakeContext, mem);
     expect(result).toEqual(checkpoint("Home"));
@@ -94,22 +94,11 @@ test.describe("Engine.map() builder", () => {
     );
   });
 
-  test("assert() rejects a real Block of the wrong kind at runtime (cast past the brand)", () => {
-    // Compile-time brands already reject Nav in .assert(); this cast proves the
-    // runtime __waygraphKind marker still fails loud if something bypasses TS.
-    const engine = new Engine();
-    expect(() =>
-      engine.map().assert(NavHome as unknown as AssertBlock<Checkpoint<"__start__">>),
-    ).toThrow(
-      /assert\("nav-home"\).*defineAssertBlock.*kind "nav"/s,
-    );
-  });
-
-  test("method() rejects AssertBlock at runtime when cast past the brand (use .assert())", () => {
+  test("method() rejects an Expect Block at runtime when cast past the brand (it goes in expect: [...])", () => {
     const engine = new Engine();
     expect(() =>
       engine.map().gotoPage(NavHome).method(AssertHome as unknown as typeof ClearThing),
-    ).toThrow(/method\("assert-home"\).*defineAssertBlock.*\.assert\(\)/s);
+    ).toThrow(/method\("assert-home"\) got an Expect Block.*expect: \[\.\.\.\]/s);
   });
 
   test("method() rejects a hand-rolled object with no waygraph salt marker at all", () => {

@@ -26,7 +26,7 @@ a wrong password keeps you on the login page) says so.
 | Page | "you have arrived" - lists what you can do here | `definePageBlock` |
 | Method | one action on the page: fill, click, submit | `defineMethodBlock` |
 | Effect | an action on one row of many (add *this* item) | `defineEffectBlock` |
-| Assert | a check that changes nothing | `defineAssertBlock` |
+| Expect | what a scenario expects: reads and judges, changes nothing | `defineExpectBlock` |
 | API | an HTTP call, no page | `defineApiBlock` |
 | Read | what the page **shows**, as data | `defineReadBlock` |
 

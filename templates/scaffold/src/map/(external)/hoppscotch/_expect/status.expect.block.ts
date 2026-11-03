@@ -1,4 +1,4 @@
-import { defineAssertBlock, type Trait } from "waygraph";
+import { defineExpectBlock, type Trait } from "waygraph";
 import { HoppscotchRest } from "../_states.js";
 import { HoppscotchKeys } from "../_keys.js";
 import { HoppscotchSel } from "../_sel.js";
@@ -11,8 +11,8 @@ const statusMatches: Trait = {
   },
 };
 
-export const AssertStatusBlock = defineAssertBlock({
-  name: "assert-status",
+export const ExpectStatusBlock = defineExpectBlock({
+  name: "expect-status",
   description: "Confirms the response status code equals the mem-supplied one.",
   checkpoint: HoppscotchRest,
   requires: [HoppscotchKeys.expectedStatus],

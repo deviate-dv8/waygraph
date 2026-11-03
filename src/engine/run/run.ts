@@ -1,15 +1,15 @@
 // runGraph: plays Blocks on a page. For each Block: precondition -> act -> observe -> resolve (which Checkpoint did we
-// reach?) -> verify (is the page really there?) -> layouts, then follows `next` for a branched Block. Emits run events.
+// reach?) -> verify (is the page really there?) -> expect (what the scenario expects), then follows `next` for a branched Block. Emits run events.
 import { MemPage } from "../mem/mem.js";
 import { WaygraphError, MSG_PREFLIGHT_MISSING_KEY, MSG_RUNGRAPH_MAX_STEPS, MSG_RUNGRAPH_NOT_TERMINAL, messageOf } from "../errors.js";
 import { Start } from "../checkpoint/checkpoint.js";
 import type { Block } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
+import { runExpect } from "./expect.js";
 import { inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepRead, stepStarted } from "./events.js";
 import { readBlocksFor, readCheckpoint } from "../read/read-block.js";
 import { blockKindOf } from "../block/kind.js";
 import { runPrecondition, runVerify } from "../trait/verify.js";
-import type { Trait } from "../trait/trait.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { SomeBlock } from "../block/some-block.js";
 
@@ -28,93 +28,6 @@ export function preflight(mem: MemPage, block: SomeBlock): void {
       "WG_PREFLIGHT_MISSING_KEY",
       MSG_PREFLIGHT_MISSING_KEY(block.name, missing.map((k) => `"${k.name}"`).join(", ")),
     );
-  }
-}
-
-
-/**
- * A cross-cutting, automatically-enforced verify - the real engine
- * primitive behind "persistent UI" (a sidebar, a header, anything that's
- * supposed to be present on many/most Checkpoints, not just one page's own
- * Block). Deliberately NOT tied to any folder convention - `appliesTo`
- * matches by Checkpoint tag, explicitly, so this works the same whether a
- * project uses the Waygraph Map folder convention or the older freeform
- * "manual mode" layout real production consumers (pia-waygraph,
- * zsign-atomic-waygraph) already use - registering a Layout with an Engine
- * is the only requirement, folder structure is irrelevant to it.
- *
- * Not a Block: no `act`/`resolve`/Checkpoint of its own, never a graph
- * node - it only ever adds extra `verify` Traits to Checkpoints something
- * else already resolved to, the same way `runVerify` already runs after
- * any Block's own `resolve()` (see `runGraph`'s own verify step, just
- * below) - a Layout is that mechanism made reusable across many
- * Checkpoints instead of hand-repeated per Block.
- */
-export interface Layout {
-  name: string;
-  description?: string;
-  appliesTo: (tag: string) => boolean;
-  /** Function form gets the full resolved Checkpoint, same shape `runVerify`/a Block's own `verify` already use - not just the tag. */
-  verify: Trait[] | ((out: Checkpoint<string>) => Trait[]);
-}
-
-
-/** Options for `defineLayout`: which Checkpoints it applies to and the Traits it enforces. */
-export interface LayoutOptions {
-  name: string;
-  description?: string;
-  /** A fixed tag list, or a predicate for open-ended matching (e.g. a naming pattern). */
-  appliesTo: readonly string[] | ((tag: string) => boolean);
-  verify: Trait[] | ((out: Checkpoint<string>) => Trait[]);
-}
-
-
-/**
- * @example
- * const AppShellLayout = defineLayout({
- *   name: "app-shell",
- *   appliesTo: ["AppHome", "Chats", "Notifications", "Settings"],
- *   verify: [Trait.visible(SidebarSel.root)],
- * });
- * const engine = new Engine({ layouts: [AppShellLayout] });
- * // Now every Block resolving to one of those four Checkpoints, in any
- * // Flow this engine defines, also gets AppShellLayout's own verify run
- * // automatically - a page that silently drops the sidebar fails loud,
- * // even though no individual Block's own `verify` mentions it.
- */
-export function defineLayout(options: LayoutOptions): Layout {
-  const appliesTo =
-    typeof options.appliesTo === "function"
-      ? options.appliesTo
-      : (tag: string) => (options.appliesTo as readonly string[]).includes(tag);
-  return {
-    name: options.name,
-    ...(options.description ? { description: options.description } : {}),
-    appliesTo,
-    verify: options.verify,
-  };
-}
-
-
-/**
- * Runs every registered layout whose `appliesTo(tag)` matches the just-
- * resolved Checkpoint, in registration order, right after the Block's own
- * `verify` already ran. A layout's own Trait failing throws the same way
- * any other `runVerify` failure does, naming the layout so it's clearly
- * distinguishable from the Block's own verify in the error message.
- */
-async function runLayouts(
-  layouts: readonly Layout[] | undefined,
-  tag: string,
-  out: Checkpoint<string>,
-  page: Page,
-  mem: MemPage,
-  blockName: string,
-): Promise<void> {
-  if (!layouts) return;
-  for (const layout of layouts) {
-    if (!layout.appliesTo(tag)) continue;
-    await runVerify(layout.verify, out, page, mem, `${blockName} (layout: "${layout.name}")`);
   }
 }
 
@@ -194,7 +107,7 @@ async function playGraph(
       const checkpoint = await current.instruction.resolve(observed);
 
       await runVerify(current.instruction.verify, checkpoint, page, mem, current.name);
-      await runLayouts(options?.layouts, checkpoint.__state, checkpoint, page, mem, current.name);
+      await runExpect(current, checkpoint, page, mem, lastLeaf(current));
       await readLanding(page, mem, checkpoint.__state);
       stepEnded(lastLeaf(current), checkpoint.__state);
 
@@ -239,14 +152,6 @@ export interface RunGraphOptions {
    * `page` and `closeOnFinish` together) - it just does what you ask.
    */
   closeOnFinish?: boolean;
-  /**
-   * Layouts (see {@link defineLayout}) whose `verify` runs automatically
-   * after any Block in this run resolves to a Checkpoint they apply to -
-   * `Flow.run` threads this in from `EngineConfig.layouts` by default; pass
-   * it directly here to call `runGraph` standalone (outside a `Flow`) with
-   * layouts still enforced.
-   */
-  layouts?: readonly Layout[];
   /**
    * The Checkpoint the run starts on: its first Block's input. Default `Start`. A runner that plays a flow one step at a
    * time passes where the last step landed, so a step that stays where it is (`.set`, `.expect`, a skipped `when`) stays

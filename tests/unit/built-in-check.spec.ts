@@ -44,8 +44,4 @@ describe("waygraph check: code for what waygraph already does", () => {
     assert.deepEqual(kinds("/p/s.ts", 'type Start = Checkpoint<"__start__">;'), ["start-tag"]);
   });
 
-  it("an Assert Block that is one Trait.read; not one with more checks", () => {
-    assert.deepEqual(kinds("/p/a.block.ts", "defineAssertBlock({ name: 'a', checkpoint: X, verify: [Trait.read(K.status, (s) => s === 'Down')] });"), ["assert-one-read"]);
-    assert.deepEqual(kinds("/p/a.block.ts", "defineAssertBlock({ name: 'a', checkpoint: X, verify: [Trait.read(K.status, (s) => s === 'Down'), Trait.visible(S.x)] });"), []);
-  });
 });

@@ -11,7 +11,7 @@ graph LR
   J --> L[run log<br/>step:read]
   J --> P[pilot replies]
   J --> D[demo panel]
-  J --> T[Trait.read]
+  J --> T[Key.is / Key.passes]
 ```
 
 Every page should have one: `waygraph check` lists the pages no Read Block reads.
@@ -108,20 +108,24 @@ read.missing;                 // ["header.title", ...]
 read.toJSON();                // { catalog: { items: [...], sort: "az" }, header: { ... } }
 ```
 
-## In a check: `Trait.read`
+## In a check: `Key.is` and `Key.passes`
 
-A verify check in the page's own terms instead of selectors: it reads the key now, through the Read Blocks that fill
-its namespace, and passes when `test` does. Retried like every Trait until the page settles; on failure it says what
-the page showed.
+A check in the page's own terms instead of selectors: it reads the key now, through the Read Blocks that fill its
+namespace. Retried like every Trait until the page settles; on failure it says what the page showed, and the demo rings
+the element the value came from.
 
 ```ts
-verify: [
-  Trait.read(Catalog.items, (items) => items.length === 6, "6 products"),
-  Trait.read(Header.cartCount, (n) => n === 1),
-  // the test also gets mem: what the page shows against what the flow did
-  Trait.read(Catalog.items, (items, mem) => items.some((i) => i.inCart && i.name === mem.get(ShopKeys.selectedItem).name), "the selected item in the cart"),
-],
+.method(InventoryPage.do.addAllToCart, {
+  expect: [
+    Catalog.items.passes((items) => items.length === 6, "6 products"),
+    Header.cartCount.is(6),                                           // equal (deep, for lists and objects)
+    // the test also gets mem: what the page shows against what the flow did
+    Catalog.items.passes((items, mem) => items.some((i) => i.inCart && i.name === mem.get(ShopKeys.selectedItem).name), "the selected item in the cart"),
+  ],
+})
 ```
+
+They are Traits, so they also fit a Block's `verify` or an Expect Block's.
 
 ```text
 trait "read(catalog.items)" failed after "add-all-to-cart": wanted 6 products; saw [{"name":"Sauce Labs Backpack",...}]

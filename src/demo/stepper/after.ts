@@ -1,4 +1,5 @@
-// After a demo step ran: play its stubAfter narration (its slides, then its rings; without one, ring what verify checked),
+// After a demo step ran: play its stubAfter narration (its slides, then its rings; without one, ring what its checks
+// looked at), then its Expect Blocks' narration,
 // show the result panel, then wait at the Next gate.
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import { envFlag } from "../../engine/env.js";
@@ -12,7 +13,8 @@ import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summar
 import { renderAfterStep } from "./panel-after.js";
 import { lastRead } from "./last-read.js";
 import { showSlides } from "./slides.js";
-import { extractVerifyHighlights } from "./step-panels.js";
+import { expectationsFor } from "../../engine/run/expect.js";
+import { takeCheckedElements } from "../../engine/trait/verify.js";
 import type { StepperContext, StepView } from "./view.js";
 import { forceCollapsed } from "./view.js";
 
@@ -21,6 +23,7 @@ const quiet = () => envFlag("WAYGRAPH_JSON");
 export async function showAfter(ctx: StepperContext, view: StepView, result: Checkpoint<string>): Promise<void> {
   const { stage, refs } = ctx;
   const after = hasAuthoredStubAfter(view.step.block, result) ? await narrateAfter(ctx, view, result) : undefined;
+  const expectRings = await narrateExpectations(ctx, view, result);
   if (after) await showSlides(ctx, view, after.phase.slides);
   const applied = after ? await stage.applyPhase(after.phase) : { appliedTodo: { sync: "keep" as const }, appliedDevice: { sync: "keep" as const } };
 
@@ -30,7 +33,7 @@ export async function showAfter(ctx: StepperContext, view: StepView, result: Che
     blockName: view.step.block.name,
     result,
     resultTag: JSON.stringify(result),
-    highlights: after?.highlights ?? verifyRings(view, result),
+    highlights: [...(after?.highlights ?? checkedRings(ctx, view)), ...expectRings],
     gatesFast: ctx.pacing.gatesFast,
     ...paceSpeakFields(ctx.pacing.demoPace, ctx.gate.autoplayMs),
     isLast: view.index === ctx.steps.length - 1,
@@ -95,7 +98,27 @@ async function narrateAfter(ctx: StepperContext, view: StepView, result: Checkpo
   return { phase, highlights };
 }
 
-/** No stubAfter: ring what the Block's verify checked. */
-function verifyRings(view: StepView, result: Checkpoint<string>): ResolvedHighlight[] {
-  return extractVerifyHighlights(view.step.block, result.__state).map((h) => applyHighlightStyleDefaults(h, view.step.highlightStyle));
+/** No stubAfter: ring what the step's checks looked at (its verify and its expectations), once each. */
+function checkedRings(ctx: StepperContext, view: StepView): ResolvedHighlight[] {
+  const seen = new Set<string>();
+  return takeCheckedElements(ctx.page)
+    .filter((c) => !seen.has(c.selector) && !!seen.add(c.selector))
+    .map((c) => applyHighlightStyleDefaults({ selector: c.selector, label: c.check, tone: "auto" }, view.step.highlightStyle));
+}
+
+/**
+ * The narration of the step's Expect Blocks (a case's to-do marked, a caption, a ring), played after the step in the
+ * order they're listed: an expectation isn't a step of its own, so this is where its narration shows.
+ */
+async function narrateExpectations(ctx: StepperContext, view: StepView, result: Checkpoint<string>): Promise<ResolvedHighlight[]> {
+  const rings: ResolvedHighlight[] = [];
+  for (const item of expectationsFor(view.step.block, result.__state)) {
+    if (!("instruction" in item)) continue;
+    for (const phase of ["stubBefore", "stubAfter"] as const) {
+      const played = await runStubPhase(item, phase, { out: result, mem: ctx.mem });
+      await ctx.stage.applyPhase(played);
+      rings.push(...played.highlights.map((h) => applyHighlightStyleDefaults(h, view.step.highlightStyle)));
+    }
+  }
+  return rings;
 }

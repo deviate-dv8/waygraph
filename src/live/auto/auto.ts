@@ -1,4 +1,5 @@
 // `waygraph auto`: the explore loop - where the page is, the menu, run the picked Block, repeat.
+import { withExpect } from "../../engine/run/expect.js";
 import { messageOf } from "../../engine/errors.js";
 import type { BrowserContext, BrowserContextOptions, Page } from "@playwright/test";
 import { stdin as input, stdout as output } from "node:process";
@@ -75,7 +76,8 @@ export async function runOneBlock(
       .catch(ignorePageGone);
   }
   if (headful) await setAutoPanelRunning(page, entry.block.name);
-  const flow = buildFlow([entry.block], engine.config);
+  // Driving the app one Block at a time (auto, sessions, traverse): each Block's verify, not what a scenario expects.
+  const flow = buildFlow([withExpect(entry.block, false)], engine.config);
   const BLOCK_TIMEOUT_MS = 45_000;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let result: Checkpoint<string>;

@@ -7,6 +7,7 @@ import type { Trait } from "../../trait/trait.js";
 import { defineBlock } from "../block.js";
 import { markRouteOf, routed } from "../../checkpoint/route.js";
 import type { RoutedBlockBase } from "../../checkpoint/route.js";
+import { markExpect } from "../../run/expect.js";
 
 /**
  * TypeScript salt over {@link defineBlock}: same runtime Block, but the type
@@ -54,6 +55,7 @@ export function defineEffectBlock<In extends Checkpoint<string>, Out extends Che
 ): EffectBlock<In, Out> {
   const built = defineBlock(routed(base) as Parameters<typeof defineBlock<In, Out>>[0]) as EffectBlock<In, Out>;
   markRouteOf(built, base);
+  markExpect(built, base.expect);
   mark(built, "__waygraphMemKind", "effect");
   mark(built, "__waygraphSalt", "effect");
   return built;

@@ -1,4 +1,4 @@
-import { defineAssertBlock, type Trait } from "waygraph";
+import { defineExpectBlock, type Trait } from "waygraph";
 import { MailpitMessageOpen } from "../_states.js";
 import { MailpitKeys } from "../_keys.js";
 import { MailpitSel } from "../_sel.js";
@@ -14,8 +14,8 @@ const bodyContainsExpectedText: Trait = {
 };
 
 /** The open message says what the scenario expects (copy comes from mem). */
-export const AssertEmailContentBlock = defineAssertBlock({
-  name: "assert-email-content",
+export const ExpectEmailContentBlock = defineExpectBlock({
+  name: "expect-email-content",
   description: "Confirms the open message's body contains the mem-supplied expected copy.",
   checkpoint: MailpitMessageOpen,
   requires: [MailpitKeys.expectedEmailContent],

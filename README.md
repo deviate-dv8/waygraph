@@ -70,7 +70,7 @@ npm run auto                         # explore it by hand
 | **Mem** | Typed shared data for a run (`LoginCreds`, `SelectedItem`). |
 
 Block kinds: **Nav** (go to a page), **Method** (one action), **Effect** (act on one row of a
-list), **Assert** (confirm a state, e.g. a button is disabled), **Page** (a page's hub).
+list), **Expect** (what a scenario expects, e.g. a button is disabled: it only reads), **Page** (a page's hub).
 
 ## Where files go: the Map
 

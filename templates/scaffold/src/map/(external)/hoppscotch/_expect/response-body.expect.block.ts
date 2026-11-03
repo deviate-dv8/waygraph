@@ -1,4 +1,4 @@
-import { defineAssertBlock, type Trait } from "waygraph";
+import { defineExpectBlock, type Trait } from "waygraph";
 import { HoppscotchRest } from "../_states.js";
 import { HoppscotchKeys } from "../_keys.js";
 
@@ -12,8 +12,8 @@ const bodyContainsExpected: Trait = {
   },
 };
 
-export const AssertResponseBodyBlock = defineAssertBlock({
-  name: "assert-response-body",
+export const ExpectResponseBodyBlock = defineExpectBlock({
+  name: "expect-response-body",
   description: "Confirms the response body read earlier contains the mem-supplied text (whitespace ignored).",
   checkpoint: HoppscotchRest,
   requires: [HoppscotchKeys.expectedResponseText],

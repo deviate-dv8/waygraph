@@ -10,6 +10,7 @@ import type { CallExpression, SourceFile } from "ts-morph";
 import { parseSource } from "../manifest/source.js";
 import { toPosix } from "../manifest/scan.js";
 import { builtInFindings, type BuiltInKind } from "./built-in-check.js";
+import { expectFindings, type ExpectKind } from "./expect-check.js";
 
 export type PracticeKind =
   | "multi-input"
@@ -18,7 +19,8 @@ export type PracticeKind =
   | "overcomplex-selector"
   | "inline-selector-should-use-sel-file"
   | "hand-written-ui"
-  | BuiltInKind;
+  | BuiltInKind
+  | ExpectKind;
 
 export interface PracticeWarning {
   kind: PracticeKind;
@@ -190,7 +192,7 @@ export function collectPracticeWarnings(
           file: rel,
           detail:
             `transition Block (${route.from} → ${route.to}) has no verify checks — resolve() moving ` +
-            "to a new Checkpoint is never confirmed by anything; add a Trait (or defineAssertBlock right after it), " +
+            "to a new Checkpoint is never confirmed by anything; add a Trait (verify says the step arrived), " +
             "or opt out explicitly with // waygraph-ignore: empty-verify if that's intentional",
         });
       }
@@ -226,12 +228,12 @@ export function collectPracticeWarnings(
     const ui = isIgnored("hand-written-ui", ignore) ? undefined : handWrittenUi(facts);
     if (ui) warnings.push(handWrittenUiWarning(rel, ui));
 
-    if (!isIgnored("empty-verify", ignore) && facts.defines("defineAssertBlock").some((call) => verifyOf(call) === "empty")) {
+    if (!isIgnored("empty-verify", ignore) && facts.defines("defineExpectBlock").some((call) => verifyOf(call) === "empty")) {
       warnings.push({
         kind: "empty-verify",
         file: rel,
         detail:
-          "defineAssertBlock's verify array is empty — an assert Block whose only job is checking will pass " +
+          "defineExpectBlock's verify array is empty — an Expect Block whose only job is checking will pass " +
           "trivially forever; fill in real Traits or remove the stub",
       });
     }
@@ -245,7 +247,7 @@ export function collectPracticeWarnings(
   for (const file of walkDir(projectDir, /\.ts$/).filter((f) => !f.endsWith(".d.ts"))) {
     const sf = parseSource(file);
     const ignore = ignoredKindsForFile(sf.getFullText());
-    for (const found of builtInFindings(file, sf)) {
+    for (const found of [...builtInFindings(file, sf), ...expectFindings(sf)]) {
       if (!isIgnored(found.kind, ignore)) warnings.push({ ...found, file: toPosix(relative(projectDir, file)) });
     }
   }
@@ -291,8 +293,14 @@ export function practiceKindLabel(kind: PracticeKind): string {
       return "a workaround for the demo overlay it no longer needs";
     case "start-tag":
       return "the start tag by hand — use Start";
-    case "assert-one-read":
-      return "an Assert Block that is one Trait.read — use .expect()";
+    case "mutating-expectation":
+      return "an expectation that acts on the page — expectations only read";
+    case "arrival-in-expect":
+      return "an arrival check in an Expect Block — it belongs in verify";
+    case "outcome-in-verify":
+      return "an outcome check in a Method's verify — it belongs in expect";
+    case "expect-one-read":
+      return "an Expect Block that is one read check — use Key.is()";
     default: {
       const _exhaustive: never = kind;
       return _exhaustive;

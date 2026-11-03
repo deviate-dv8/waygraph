@@ -24,7 +24,7 @@ test("waygraph check flags multi-input and combined-action Method blocks", async
   expect(output).not.toMatch(/fill-in-comment\.block\.ts \((multiple inputs|fill and click|hand-written UI)/);
 });
 
-test("waygraph check flags empty/missing verify on a transition Block and on defineAssertBlock", async () => {
+test("waygraph check flags empty/missing verify on a transition Block and on defineExpectBlock", async () => {
   const { stdout, stderr } = await exec(node, [CLI, "check", fixtureDir]);
   const output = stdout + stderr;
 

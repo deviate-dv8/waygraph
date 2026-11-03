@@ -20,7 +20,9 @@ graph TD
   A -->|it fails| E[fail panel<br/>+ stubOnError<br/>Retry / Stop]
 ```
 
-The after-step panel's **The page shows** section lists every value the page's [Read Block](./reads) read.
+The before-step panel lists what the step expects (`expect: [...]`). After it, the rings show what its checks looked
+at (its `verify` and its expectations), its Expect Blocks' own narration plays (a case's to-do marked, a caption), and
+the **The page shows** section lists every value the page's [Read Block](./reads) read.
 
 ## Narration lives in the flow
 

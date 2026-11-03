@@ -18,6 +18,7 @@ export const Everything: Story = overlayStory(async (page) => {
     allNames: ["nav-equipment", "open-add-form", "fill-machine-name", "fill-capacity", "submit-machine"],
     keys: [{ name: "equipment.machine", value: '{"name":"Mixer 2"}' }],
     description: "Types the machine's name from mem.",
+    expects: [],
     title: "Equipment registry · add a machine", caption: "Name the machine the way the floor knows it", networkTabVisible: true,
   });
   await page.evaluate((box) => {

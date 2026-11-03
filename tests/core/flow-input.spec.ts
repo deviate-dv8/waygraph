@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { checkpoint, defineAssertBlock, defineMethodBlock, Engine, MemPage, Trait, keys } from "../../src/index.js";
+import { checkpoint, defineMethodBlock, Engine, MemPage, keys } from "../../src/index.js";
 
 const Start = checkpoint("__start__");
 const Form = checkpoint("Form");
@@ -61,5 +61,5 @@ test("when is only offered on a step that stays on its Checkpoint", () => {
   const map = engine.map().method(open);
   // @ts-expect-error send moves from Form to Sent: skipping it would leave the flow on Form
   map.method(send, { when: () => true });
-  map.assert(defineAssertBlock({ name: "form-shown", checkpoint: Form, verify: [Trait.visible("form")] }), { when: () => false });
+  map.method(setBody, { when: () => false });
 });

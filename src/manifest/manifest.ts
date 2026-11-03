@@ -8,6 +8,8 @@ import type { BlockKind } from "../engine/block/kind.js";
 import type { ProjectScan, ScanOptions } from "./project.js";
 import { MemPage } from "../engine/mem/mem.js";
 import { readBlockShape, type ReadShape } from "../engine/read/read-block.js";
+import { describeExpectations } from "../engine/run/expect.js";
+import type { SomeBlock } from "../engine/block/some-block.js";
 
 export const MANIFEST_VERSION = 2;
 
@@ -21,6 +23,8 @@ export interface ManifestBlock {
   from: string[];
   to: string[];
   requires: string[];
+  /** What the Block promises wherever it's used (its `expect`), in words; per outcome as "if Tag: ...". */
+  expect: string[];
   file: string;
   /** The `src/map/` group folder the Block lives in (e.g. `(external)/hoppscotch`), or the map package it came from. */
   map?: string;
@@ -35,6 +39,8 @@ export interface ManifestFlow {
   useCase: { path: string[]; outcome: string };
   /** Block names in run order, nested flows flattened. */
   steps: string[];
+  /** What each step expects (the Block's and the step's own), in words: one list per entry of `steps`. */
+  stepExpects: string[][];
   settings: { memStub?: true; expectedFailure?: string; sessionReset?: true; demoPace?: unknown };
 }
 
@@ -117,13 +123,14 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
       from: b.from,
       to: b.to,
       requires: b.requires,
+      expect: describeExpectations(b.block),
       file: b.file,
       ...(map ? { map } : {}),
     };
   });
   const flows: ManifestFlow[] = scan.flows.map((f) => {
     const flow = f.flow as {
-      blocks: () => { name: string }[];
+      blocks: () => { name: string; block: SomeBlock }[];
       memStub?: boolean;
       expectedFailureReason?: string;
       resetSession?: boolean;
@@ -135,6 +142,7 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
       file: f.file,
       useCase: useCaseOf(f.file),
       steps: flow.blocks().map((s) => s.name),
+      stepExpects: flow.blocks().map((s) => describeExpectations(s.block)),
       settings: {
         ...(flow.memStub ? { memStub: true as const } : {}),
         ...(flow.expectedFailureReason ? { expectedFailure: flow.expectedFailureReason } : {}),

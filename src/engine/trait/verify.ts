@@ -14,8 +14,8 @@ const RETRY_EVERY_MS = 200;
 export interface TraitCheckReport {
   trait: string;
   block: string;
-  /** "after": the Block's verify; "before": its precondition. */
-  when: "after" | "before";
+  /** "after": the Block's verify; "before": its precondition; "expect": one of the step's expectations. */
+  when: "after" | "before" | "expect";
   wants?: string;
   saw?: string;
   url?: string;
@@ -38,7 +38,7 @@ export function asResult(answer: boolean | TraitResult): TraitResult {
 }
 
 /** Where the page is, for a failure: its path and first heading (short waits only; a failure is already slow). */
-async function whereIs(page: Page): Promise<{ url?: string; heading?: string }> {
+export async function whereIs(page: Page): Promise<{ url?: string; heading?: string }> {
   try {
     const url = new URL(page.url());
     const heading = await page
@@ -54,8 +54,26 @@ async function whereIs(page: Page): Promise<{ url?: string; heading?: string }> 
   }
 }
 
+/** An element a passing check looked at: what the demo rings after the step. */
+export interface CheckedElement {
+  check: string;
+  selector: string;
+}
+
+/** The elements each page's checks looked at since the demo last took them. On globalThis: src and dist can share a page. */
+const checked: WeakMap<Page, CheckedElement[]> = ((globalThis as { [k: symbol]: WeakMap<Page, CheckedElement[]> | undefined })[
+  Symbol.for("waygraph.checkedElements")
+] ??= new WeakMap());
+
+/** The elements the page's passing checks looked at since the last call (the demo rings them after a step). */
+export function takeCheckedElements(page: Page): CheckedElement[] {
+  const list = checked.get(page) ?? [];
+  checked.delete(page);
+  return list;
+}
+
 /** Runs one Trait until it passes or its time is up. A check that throws (one that waited, e.g. for a URL) is not retried. */
-async function settle(trait: Trait, page: Page, mem: MemPage): Promise<TraitResult & { error?: unknown }> {
+export async function settle(trait: Trait, page: Page, mem: MemPage): Promise<TraitResult & { error?: unknown }> {
   const until = Date.now() + (trait.timeoutMs ?? DEFAULT_TIMEOUT_MS);
   for (;;) {
     let result: TraitResult;
@@ -63,6 +81,10 @@ async function settle(trait: Trait, page: Page, mem: MemPage): Promise<TraitResu
       result = asResult(await trait.check(page, mem));
     } catch (error) {
       return { ok: false, saw: error instanceof Error ? (error.message.split("\n")[0] ?? "") : String(error), error };
+    }
+    if (result.ok) {
+      const selector = result.at ?? trait.selector;
+      if (selector) checked.set(page, [...(checked.get(page) ?? []), { check: trait.name, selector }]);
     }
     if (result.ok || Date.now() >= until) return result;
     await sleep(RETRY_EVERY_MS);

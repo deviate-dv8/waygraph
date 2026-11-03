@@ -9,6 +9,7 @@ import type { MemKey } from "../../mem/mem.js";
 import { markRoute } from "../../checkpoint/route.js";
 import type { SomeDefinedBlock } from "../some-block.js";
 import type { NavBlock } from "./nav.js";
+import type { ExpectList } from "./expect.js";
 
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */
 export type PageMethodEntry =
@@ -17,18 +18,42 @@ export type PageMethodEntry =
 
 
 /** Options for `definePageBlock`: the Checkpoint a page hub confirms and the Methods that hang off it. */
-export type PageBlockOptions<Out extends Checkpoint<string>, M extends Record<string, PageMethodEntry> = Record<string, PageMethodEntry>> = {
+/**
+ * One Expect Block (or lazy factory) a {@link PageBlock} names. Typed loosely here: an expectation often judges the
+ * state an action on the page leads to (an item in the cart), and each entry keeps its own exact type in `expects`, so
+ * a step's `expect` still checks it against where the step lands.
+ */
+export type PageExpectEntry = PageMethodEntry;
+
+export type PageBlockOptions<
+  Out extends Checkpoint<string>,
+  M extends Record<string, PageMethodEntry> = Record<string, PageMethodEntry>,
+  E extends Record<string, PageExpectEntry> = Record<string, PageExpectEntry>,
+> = {
   name: string;
   description?: string;
   /** The Checkpoint this page hub confirms: its value (`Home`). */
   checkpoint: Out;
   verify?: Trait[] | ((out: Out) => Trait[]);
+  /**
+   * What this Block promises wherever it's used, checked after its verify: Expect Blocks, Traits, `Key.is(...)`. A
+   * Block that can land in several places lists them per outcome. Read-only and run together; a step can drop them
+   * (`{ expect: false }`) or add its own.
+   * @example expect: [ExpectArchivedToastBlock] · expect: { EquipmentDetail: [ExpectSavedBlock], EquipmentAdd: [ExpectNameRequiredBlock] }
+   */
+  expect?: ExpectList<Out>;
   requires?: readonly MemKey<unknown>[];
   /**
    * Methods available on this page: a record of Blocks (or `() => Block` factories, lazy so the page object can colocate
    * method definitions), or an array. A record's Blocks are also the page's `do`, by name, typed.
    */
   methods?: readonly PageMethodEntry[] | M;
+  /**
+   * What a scenario can expect on this page, by name: Expect Blocks (or `() => Block` factories). The page's `expects`,
+   * typed, for a step's `expect: [...]`: what you can do here is `do`, what you can check here is `expects`.
+   * @example expects: { itemAdded: () => ExpectItemAddedBlock } · .method(HomePage.do.addItem, { expect: [HomePage.expects.itemAdded] })
+   */
+  expects?: E;
   /**
    * The Nav Block that opens this page (its `_nav.block.ts`): the page's `nav`, so a flow imports the page alone.
    * @example definePageBlock({ ..., nav: NavLoginBlock }) · map().gotoPage(LoginPage.nav).method(LoginPage.do.fillUsername)
@@ -53,7 +78,12 @@ export type PageBlockOptions<Out extends Checkpoint<string>, M extends Record<st
  * Branded `__wgFactory: "page"` (not `"nav"`) - both are accepted by
  * {@link MapBuilder.gotoPage} / {@link MapBuilder.gotoExternal}.
  */
-export type PageBlock<Out extends Checkpoint<string>, M extends Record<string, PageMethodEntry> = Record<string, PageMethodEntry>, Nav = undefined> = Omit<
+export type PageBlock<
+  Out extends Checkpoint<string>,
+  M extends Record<string, PageMethodEntry> = Record<string, PageMethodEntry>,
+  Nav = undefined,
+  E extends Record<string, PageExpectEntry> = Record<never, never>,
+> = Omit<
   DefinedBlock<Checkpoint<string>, Out>,
   "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
 > & {
@@ -62,22 +92,24 @@ export type PageBlock<Out extends Checkpoint<string>, M extends Record<string, P
   readonly methods: readonly SomeDefinedBlock[];
   /**
    * The page's Methods by name, each its own Block type: what a flow does on this page, from one import.
-   * @example map().gotoPage(Inventory.nav).method(Inventory.do.addItem).assert(Inventory.do.assertBadge)
+   * @example map().gotoPage(Inventory.nav).method(Inventory.do.addItem, { expect: [ExpectBadgeBlock] })
    */
   readonly do: PageMethods<M>;
   /** The Nav Block that opens this page (`nav` in `definePageBlock`). */
   readonly nav: Nav;
+  /** The page's Expect Blocks by name, each its own Block type: what a step here can expect. */
+  readonly expects: PageMethods<E>;
   withVerify(
     verify: Trait[] | ((out: Out) => Trait[]),
-  ): PageBlock<Out, M, Nav>;
+  ): PageBlock<Out, M, Nav, E>;
   modVerify(
     nameOrIndex: string | number,
     newCheck: Trait["check"] | Trait,
-  ): PageBlock<Out, M, Nav>;
-  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav>;
-  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav>;
-  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav>;
-  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav>;
+  ): PageBlock<Out, M, Nav, E>;
+  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav, E>;
+  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E>;
+  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E>;
+  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E>;
 };
 
 
@@ -94,17 +126,23 @@ function resolvePageMethods(
 
 
 /** @see {@link PageBlockOptions} */
-export function definePageBlock<Out extends Checkpoint<string>, M extends Record<string, PageMethodEntry> = Record<never, never>, Nav extends NavBlock<Out> | undefined = undefined>(
-  options: PageBlockOptions<Out, M> & { nav?: Nav },
-): PageBlock<Out, M, Nav> {
+export function definePageBlock<
+  Out extends Checkpoint<string>,
+  M extends Record<string, PageMethodEntry> = Record<never, never>,
+  Nav extends NavBlock<Out> | undefined = undefined,
+  E extends Record<string, PageExpectEntry> = Record<never, never>,
+>(options: PageBlockOptions<Out, M, E> & { nav?: Nav }): PageBlock<Out, M, Nav, E> {
   if (options.url !== undefined && options.click !== undefined) {
     throw new Error(
       `definePageBlock("${options.name}"): pass url XOR click (or neither for arrival-only hub)`,
     );
   }
   const methodList = resolvePageMethods(options.methods);
-  const { nav, ...rest } = options;
-  const built = defineNavigating(rest) as PageBlock<Out, M, Nav>;
+  const { nav, expects, ...rest } = options;
+  const built = defineNavigating(rest) as PageBlock<Out, M, Nav, E>;
+  const expectByName: Record<string, SomeDefinedBlock> = Object.fromEntries(
+    Object.entries(expects ?? {}).map(([k, entry]) => [k, typeof entry === "function" ? entry() : entry]),
+  );
 
   markRoute(built, ["*"], [options.checkpoint.__state]);
   mark(built, "__waygraphKind", "page");
@@ -115,11 +153,13 @@ export function definePageBlock<Out extends Checkpoint<string>, M extends Record
     configurable: false,
     writable: false,
   });
-  mark(built, "__waygraphMethods", methodList.map((m) => m.name));
+  // Every Block the page names (its methods and its expectations) counts as used: none is an orphan.
+  mark(built, "__waygraphMethods", [...methodList.map((m) => m.name), ...Object.values(expectByName).map((b) => b.name)]);
   // By name, for flows: `Page.do.fillUsername`. Plain fields like `methods`, so a decorated copy (withVerify) keeps them.
   const byName = options.methods && !Array.isArray(options.methods) ? Object.fromEntries(Object.keys(options.methods).map((k, i) => [k, methodList[i]])) : {};
   Object.defineProperty(built, "do", { value: Object.freeze(byName), enumerable: true });
   Object.defineProperty(built, "nav", { value: nav, enumerable: true });
+  Object.defineProperty(built, "expects", { value: Object.freeze(expectByName), enumerable: true });
   // Same marker `defineNavBlock` sets, same reason - a page hub with a
   // `url` (deep-link) is exactly as "known, coverable" as a plain
   // `defineNavBlock`, and in practice most real projects' own nav Blocks

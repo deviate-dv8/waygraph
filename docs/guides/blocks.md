@@ -48,7 +48,7 @@ defineMethodBlock({ name: "sign-out", from: Dashboard, to: Start, instruction: {
 | Page | say "you are here" and list what you can do | `definePageBlock` | no |
 | Method | do one thing: fill, click, submit | `defineMethodBlock` | `from` → `to` |
 | Effect | do one thing to one row of many | `defineEffectBlock` | `from` → `to` |
-| Assert | check something, change nothing | `defineAssertBlock` | no |
+| Expect | what a scenario expects on a page: reads and judges, changes nothing | `defineExpectBlock` | no (an expectation, not a step) |
 | API | make an HTTP call, no page | `defineApiBlock` | `from` → `to` |
 | Read | say what the page shows | `defineReadBlock` | never ([Read Blocks](./reads)) |
 
@@ -134,11 +134,12 @@ export const HomePage = definePageBlock({
 });
 ```
 
-A Page Block is the page's namespace: `HomePage.nav` opens it, and `HomePage.do.addItem` is the Add Item Block, typed
-as itself. A flow imports the page, not each Block:
+A Page Block is the page's namespace: `HomePage.nav` opens it, `HomePage.do.addItem` is the Add Item Block, typed as
+itself, and `HomePage.expects.itemAdded` an Expect Block for the page (`expects: { itemAdded: () => ExpectItemAddedBlock }`).
+A flow imports the page, not each Block:
 
 ```ts
-engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem).method(HomePage.do.clearCart);
+engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem, { expect: [HomePage.expects.itemAdded] });
 ```
 
 `waygraph auto` groups a page's methods under it, and they never count as orphans. Name the Page Block after the page
@@ -165,11 +166,12 @@ defineEffectBlock({
 });
 ```
 
-## Assert and API
+## Expect and API
 
 ```ts
-export const AssertSubmitGatedBlock = defineAssertBlock({
-  name: "assert-submit-gated",
+export const ExpectSubmitGatedBlock = defineExpectBlock({
+  name: "expect-submit-gated",
+  description: "Continue stays disabled until the form is filled.",
   checkpoint: CheckoutInfoPage,
   verify: [Trait.disabled(CheckoutSel.submit)],
 });
@@ -183,6 +185,9 @@ export const CheckOrderCreatedBlock = defineApiBlock({
   resolve: (r) => (r.ok ? OrderConfirmed : OrderFailed),  // r = { status, ok, body }
 });
 ```
+
+An Expect Block goes in an `expect: [...]` list, on a Block or on a step, never as a step of its own; it only reads
+([Checks](./checks#expect-what-the-scenario-expects)).
 
 ## Selectors live in `_sel.ts`
 
@@ -223,7 +228,10 @@ npx waygraph typecheck    # tsc --noEmit, then the same checks
 | `seeded-spec` | `seedMemStub` in a spec | `memStub: true`: the flow fills keys when it runs |
 | `builder-helper` | a function over `MapBuilder` | a part, `steps(Checkpoint, (m) => …)`, or an account for signing in |
 | `overlay-workaround` | a dispatched click, a native value setter | `click()` and `fill()`: they work in a demo |
-| `assert-one-read` | an Assert Block that is one `Trait.read` | `.expect(key, want)` in the flow |
+| `expect-one-read` | an Expect Block that is one read check | `Key.is(value)` in the step's `expect` |
+| `mutating-expectation` | an Expect Block that clicks, types, navigates or sets mem | a Method step before it; the expectation only reads |
+| `arrival-in-expect` | an Expect Block that only checks the URL or that something is visible | the `verify` of the Block that lands there |
+| `outcome-in-verify` | a Method's `verify` that reads a message (a toast, an alert, an error) | `expect: [...]` on the step (or the Block's `expect` when every use expects it) |
 | `start-tag` | `"__start__"` written by hand | `import { Start } from "waygraph"` |
 
 Silence one warning on purpose with `// waygraph-ignore: empty-verify` (or any other kind: `multi-input`,

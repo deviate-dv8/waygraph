@@ -5,6 +5,8 @@
 import { mark } from "../mark.js";
 import { recordApiCall } from "../../run/hooks.js";
 import { checkpoint } from "../../checkpoint/checkpoint.js";
+import type { ExpectList } from "./expect.js";
+import { markExpect } from "../../run/expect.js";
 import { markRouteOf, tagsOf } from "../../checkpoint/route.js";
 import type { Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { DefinedBlock } from "../block.js";
@@ -47,6 +49,13 @@ export interface ApiBlockOptions<In extends Checkpoint<string>, Out extends Chec
   /** Pure, like every other Block's resolve - picks the Checkpoint from the response. Optional when `to` is one Checkpoint. */
   resolve?: (result: ApiCallResult) => Out;
   verify?: Trait[] | ((out: Out) => Trait[]);
+  /**
+   * What this Block promises wherever it's used, checked after its verify: Expect Blocks, Traits, `Key.is(...)`. A
+   * Block that can land in several places lists them per outcome. Read-only and run together; a step can drop them
+   * (`{ expect: false }`) or add its own.
+   * @example expect: [ExpectArchivedToastBlock] · expect: { EquipmentDetail: [ExpectSavedBlock], EquipmentAdd: [ExpectNameRequiredBlock] }
+   */
+  expect?: ExpectList<Out>;
   requires?: readonly MemKey<unknown>[];
 }
 
@@ -115,6 +124,7 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
     },
   }) as DefinedBlock<In, Out>;
   markRouteOf(built, options);
+  markExpect(built, options.expect);
   mark(built, "__waygraphKind", "api");
   // Accepted by map().method(), like a Method: one step that lands on a Checkpoint.
   mark(built, "__waygraphSalt", "api");

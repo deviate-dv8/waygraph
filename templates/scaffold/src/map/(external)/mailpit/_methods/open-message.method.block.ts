@@ -1,4 +1,4 @@
-// waygraph-ignore: empty-verify (confirmed by AssertEmailContentBlock right after it in mail-verify.flow.ts)
+// waygraph-ignore: empty-verify (confirmed by ExpectEmailContentBlock right after it in mail-verify.flow.ts)
 import { claimOnce, defineMethodBlock } from "waygraph";
 import { MailpitInbox, MailpitMessageOpen } from "../_states.js";
 import { MailpitKeys } from "../_keys.js";

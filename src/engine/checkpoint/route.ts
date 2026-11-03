@@ -24,9 +24,18 @@ export type BlockBase<In extends Checkpoint<string>, Out extends Checkpoint<stri
  * A Method or Effect that says where it runs: `from` (one Checkpoint value or a list; leave it out for "from anywhere") and
  * `to`. `resolve` may be left out when `to` is one Checkpoint; it then always lands there.
  */
+import type { ExpectList } from "../block/kinds/expect.js";
+
 export type RoutedBlockBase<In extends Checkpoint<string>, Out extends Checkpoint<string>> = Omit<BlockBase<In, Out>, "instruction"> & {
   from?: In | readonly In[];
   to: Out | readonly Out[];
+  /**
+   * What this Block promises wherever it's used, checked after its verify: Expect Blocks, Traits, `Key.is(...)`. A
+   * Block that can land in several places lists them per outcome. Read-only and run together; a step can drop them
+   * (`{ expect: false }`) or add its own.
+   * @example expect: [ExpectArchivedToastBlock] · expect: { EquipmentDetail: [ExpectSavedBlock], EquipmentAdd: [ExpectNameRequiredBlock] }
+   */
+  expect?: ExpectList<Out>;
   instruction: Omit<BlockBase<In, Out>["instruction"], "resolve" | "stubBefore" | "stubAfter" | "stubOnError"> & {
     resolve?: BlockBase<In, Out>["instruction"]["resolve"];
   };

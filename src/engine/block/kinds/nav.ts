@@ -6,6 +6,8 @@ import type { Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { Trait } from "../../trait/trait.js";
 import { MemPage } from "../../mem/mem.js";
 import type { MemKey } from "../../mem/mem.js";
+import type { ExpectList } from "./expect.js";
+import { markExpect } from "../../run/expect.js";
 import { defineBlock } from "../block.js";
 import type { Page } from "@playwright/test";
 import { markRoute, tagsOf } from "../../checkpoint/route.js";
@@ -67,6 +69,13 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
   requires?: readonly MemKey<unknown>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
   /**
+   * What this Block promises wherever it's used, checked after its verify: Expect Blocks, Traits, `Key.is(...)`. A
+   * Block that can land in several places lists them per outcome. Read-only and run together; a step can drop them
+   * (`{ expect: false }`) or add its own.
+   * @example expect: [ExpectArchivedToastBlock] · expect: { EquipmentDetail: [ExpectSavedBlock], EquipmentAdd: [ExpectNameRequiredBlock] }
+   */
+  expect?: ExpectList<Out>;
+  /**
    * Live per-instance menu rows for `waygraph auto` (see {@link Block.instanceOptions}).
    * When set, the explore menu lists one row per option instead of a single
    * generic nav edge - used by {@link defineMemNavBlock}.
@@ -113,8 +122,9 @@ export function defineNavigating<Out extends Checkpoint<string>>(options: {
   requires?: Block<Checkpoint<string>, Out>["requires"];
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
   verify?: Trait[] | ((out: Out) => Trait[]) | undefined;
+  expect?: ExpectList<Out> | undefined;
 }): DefinedBlock<Checkpoint<string>, Out> {
-  return defineBlock<Checkpoint<string>, Out>({
+  const built = defineBlock<Checkpoint<string>, Out>({
     name: options.name,
     ...(options.description ? { description: options.description } : {}),
     ...(options.requires ? { requires: options.requires } : {}),
@@ -126,6 +136,8 @@ export function defineNavigating<Out extends Checkpoint<string>>(options: {
       ...(options.verify ? { verify: options.verify } : {}),
     },
   });
+  markExpect(built, options.expect);
+  return built;
 }
 
 /**
@@ -202,6 +214,8 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   from?: readonly Checkpoint<string>[];
   requires?: readonly MemKey<unknown>[];
   verify?: Trait[] | ((out: Out) => Trait[]);
+  /** What this Block promises wherever it's used (see `NavBlockOptions.expect`). */
+  expect?: ExpectList<Out>;
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
 };
 
@@ -222,6 +236,7 @@ export function defineNavClickBlock<Out extends Checkpoint<string>>(
     ...(options.description ? { description: options.description } : {}),
     ...(options.requires ? { requires: options.requires } : {}),
     ...(options.verify ? { verify: options.verify } : {}),
+    ...(options.expect ? { expect: options.expect } : {}),
     ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
   });
 }

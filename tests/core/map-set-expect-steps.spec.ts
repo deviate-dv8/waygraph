@@ -55,21 +55,17 @@ test(".set gives the next step its key, a value or one worked out from mem; the 
   expect(typed).toEqual(["MCH-1", "MCH-2"]);
 });
 
-test(".expect checks what the page shows: a value, or a test that also gets mem", async ({ page }) => {
+test("Key.is and Key.passes in a step's expect check what the page shows: a value, or a test that also gets mem", async ({ page }) => {
   const flow = engine
-    .map()
-    .method(open)
-    .expect(Shown.rows, ["MCH-1", "MCH-2"])
-    .expect(Shown.status, "Down")
-    .expect(Shown.rows, (rows, mem) => rows.includes(mem.get(K.machine).code), "the machine's row");
+    .map().method(open, { expect: [Shown.rows.is(["MCH-1", "MCH-2"]), Shown.status.is("Down"), Shown.rows.passes((rows, mem) => rows.includes(mem.get(K.machine).code), "the machine's row")] });
   expect(await flow.run(page.context(), new MemPage().set(K.machine, { code: "MCH-2" }), { page })).toEqual(List);
   await expect(flow.run(page.context(), new MemPage().set(K.machine, { code: "MCH-9" }), { page })).rejects.toThrow(
     /wanted the machine's row; saw \["MCH-1","MCH-2"\]/,
   );
 });
 
-test("a failed .expect of a value says what it wanted", async ({ page }) => {
-  const flow = engine.map().method(open).expect(Shown.status, "Operational");
+test("a failed Key.is says what it wanted", async ({ page }) => {
+  const flow = engine.map().method(open, { expect: [Shown.status.is("Operational")] });
   await expect(flow.run(page.context(), new MemPage(), { page })).rejects.toThrow(/wanted setExpectShown\.status = "Operational"; saw "Down"/);
 });
 

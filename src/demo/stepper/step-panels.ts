@@ -8,7 +8,7 @@ import { cycleHighlightRings } from "../overlay/rings.js";
 import type { SomeBlock } from "../../engine/block/some-block.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import type { MemPage } from "../../engine/mem/mem.js";
-import type { HighlightStyleDefaults, ResolvedHighlight } from "../../engine/stub/ring.js";
+import type { HighlightStyleDefaults } from "../../engine/stub/ring.js";
 import type { TodoDockState, WaygraphTodoItem } from "../../engine/stub/todos.js";
 import type { DemoPace } from "../../engine/stub/pace.js";
 import type { BannerUiState, WgPage } from "../types.js";
@@ -193,23 +193,3 @@ async function renderStepError(page: WgPage, info: ErrorPanelInfo) {
 }
 
 
-/**
- * The elements a Block's verify looked at (each built-in Trait's `selector`), to ring after the step. A Trait with none
- * (url-matches, a hand-written one) rings nothing; the panel still shows the result.
- */
-export function extractVerifyHighlights(block: SomeBlock, resultTag: string) {
-  let verify = block.instruction && block.instruction.verify;
-  if (typeof verify === "function") {
-    try {
-      verify = verify({ __state: resultTag });
-    } catch {
-      verify = [];
-    }
-  }
-  if (!Array.isArray(verify)) return [];
-  const highlights: ResolvedHighlight[] = [];
-  for (const t of verify) {
-    if (t?.selector) highlights.push({ selector: t.selector, label: t.name, tone: "auto" });
-  }
-  return highlights;
-}

@@ -17,13 +17,12 @@ const open = defineMethodBlock({
 });
 const maybe = defineMethodBlock({ name: "play-stay-maybe", from: Form, to: Form, instruction: { async act() {} } });
 
-test("run and demo play one step at a time: a step that stays where it is (.set, .expect, a skipped when) stays on the last step's Checkpoint", async ({ page, context }) => {
+test("run and demo play one step at a time: a step that stays where it is (.set, a skipped when) stays on the last step's Checkpoint", async ({ page, context }) => {
   const flow = new Engine()
     .map()
     .method(open)
     .set(K.q, "x")
-    .method(maybe, { when: () => false })
-    .expect(Shown.title, "Form");
+    .method(maybe, { when: () => false, expect: [Shown.title.is("Form")] });
   const steps: PlayStep[] = flow.blocks().map((info) => ({ block: info.block, exportName: "flow", config: {}, resetSession: false, segment: 0 }));
   const landed: string[] = [];
   const outcome = await playSteps(
@@ -33,5 +32,5 @@ test("run and demo play one step at a time: a step that stays where it is (.set,
     false,
   );
   expect(outcome.ok).toBe(true);
-  expect(landed).toEqual(["PlayStayForm", "PlayStayForm", "PlayStayForm", "PlayStayForm"]);
+  expect(landed).toEqual(["PlayStayForm", "PlayStayForm", "PlayStayForm"]);
 });

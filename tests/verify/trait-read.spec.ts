@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { checkpoint, defineReadBlock, keys, MemPage, reads, Trait } from "../../src/index.js";
-import { runVerify } from "../../src/engine/trait/verify.js";
+import { checkpoint, defineReadBlock, keys, MemPage, reads } from "../../src/index.js";
+import { runVerify, takeCheckedElements } from "../../src/engine/trait/verify.js";
 
 const Shop = reads("traitReadShop")<{ items: string[]; total: number }>();
 defineReadBlock({
@@ -9,41 +9,40 @@ defineReadBlock({
 });
 const Done = checkpoint("Done");
 
-test("Trait.read checks what the page shows through its Read Block, retried until it settles", async ({ page }) => {
+test("Key.passes checks what the page shows through its Read Block, retried until it settles", async ({ page }) => {
   await page.setContent(`<ul></ul><p id="total">$0</p><script>
     setTimeout(() => { document.querySelector("ul").innerHTML = "<li>a</li><li>b</li><li>c</li>"; document.getElementById("total").textContent = "$12.50"; }, 400);
   </script>`);
-  await runVerify([Trait.read(Shop.items, (items) => items.length === 3, "3 items"), Trait.read(Shop.total, (t) => t === 12.5)], Done, page, new MemPage(), "list");
+  await runVerify([Shop.items.passes((items) => items.length === 3, "3 items"), Shop.total.passes((t) => t === 12.5)], Done, page, new MemPage(), "list");
 });
 
-test("a failed Trait.read says what the page showed", async ({ page }) => {
+test("a failed read check says what the page showed", async ({ page }) => {
   await page.setContent(`<ul><li>a</li></ul><p id="total">$3</p>`);
   await expect(
-    runVerify([{ ...Trait.read(Shop.items, (items) => items.length === 3, "3 items"), timeoutMs: 200 }], Done, page, new MemPage(), "list"),
+    runVerify([{ ...Shop.items.passes((items) => items.length === 3, "3 items"), timeoutMs: 200 }], Done, page, new MemPage(), "list"),
   ).rejects.toThrow('trait "read(traitReadShop.items)" failed after "list": wanted 3 items; saw ["a"]');
 });
 
 test("a key no Read Block reads fails, saying so", async ({ page }) => {
   const Nothing = reads("traitReadNothing")<{ x: string }>();
   await page.setContent(`<p>x</p>`);
-  await expect(runVerify([{ ...Trait.read(Nothing.x, () => true), timeoutMs: 0 }], Done, page, new MemPage(), "x")).rejects.toThrow(/no value for traitReadNothing\.x/);
+  await expect(runVerify([{ ...Nothing.x.passes(() => true), timeoutMs: 0 }], Done, page, new MemPage(), "x")).rejects.toThrow(/no value for traitReadNothing\.x/);
 });
 
-test("Trait.read's test gets mem: what the page shows against what the flow did", async ({ page }) => {
+test("Key.passes' test gets mem: what the page shows against what the flow did", async ({ page }) => {
   const Picked = keys("traitReadPicked")<{ item: string }>();
   const mem = new MemPage();
   mem.set(Picked.item, "b");
   await page.setContent(`<ul><li>a</li><li>b</li></ul><p id="total">$3</p>`);
-  const has = Trait.read(Shop.items, (items, m) => items.includes(m.get(Picked.item)), "the picked item");
+  const has = Shop.items.passes((items, m) => items.includes(m.get(Picked.item)), "the picked item");
   await runVerify([has], Done, page, mem, "list");
   mem.set(Picked.item, "z");
   await expect(runVerify([{ ...has, timeoutMs: 200 }], Done, page, mem, "list")).rejects.toThrow('wanted the picked item; saw ["a","b"]');
 });
 
-test("once checked, Trait.read names the element the value came from, so the demo rings it", async ({ page }) => {
+test("a passing read check names the element its value came from, so the demo rings it", async ({ page }) => {
   await page.setContent(`<ul><li>a</li></ul><p id="total">$3</p>`);
-  const total = Trait.read(Shop.total, (t) => t === 3);
-  expect(total.selector).toBeUndefined();
-  await runVerify([total], Done, page, new MemPage(), "total");
-  expect(total.selector).toBe("#total");
+  takeCheckedElements(page);
+  await runVerify([Shop.total.is(3)], Done, page, new MemPage(), "total");
+  expect(takeCheckedElements(page)).toEqual([{ check: "read(traitReadShop.total)", selector: "#total" }]);
 });

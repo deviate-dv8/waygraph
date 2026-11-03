@@ -141,7 +141,7 @@ the project's syntax trees (Blocks, flows, helpers, specs) and flag:
 |---------|-------|
 | `multi-input` | a Method with two `.fill()`s - one input per Block |
 | `combined-action` | `.fill()` and `.click()` in one Method - fill and submit are two Blocks |
-| `empty-verify` | a transition (or an Assert Block) with no checks |
+| `empty-verify` | a transition (or an Expect Block) with no checks |
 | `overcomplex-selector` | `:has-text(/regex/)`, `:text-matches(...)` or XPath where a plain selector would do |
 | `inline-selector-should-use-sel-file` | a selector written in the Block while its folder has a `_sel.ts` / `*.sel.ts` |
 | `hand-written-ui` | DOM built or the overlay restyled from a Block / flow / stub - use `ctx.ui` |
@@ -151,7 +151,10 @@ the project's syntax trees (Blocks, flows, helpers, specs) and flag:
 | `seeded-spec` | `seedMemStub` in a spec - `memStub: true` fills keys when the flow runs |
 | `builder-helper` | a function over `MapBuilder` - a part: `steps(Checkpoint, (m) => m...)`, or an account for signing in |
 | `overlay-workaround` | a dispatched click or a native value setter - `click()` and `fill()` work in a demo |
-| `assert-one-read` | an Assert Block that is one `Trait.read` - `.expect(key, want)` in the flow |
+| `expect-one-read` | an Expect Block that is one read check - `Key.is(value)` in the step's `expect` |
+| `mutating-expectation` | an Expect Block that clicks, types, navigates or sets mem - expectations only read |
+| `arrival-in-expect` | an Expect Block that only checks the URL / visibility - that's `verify` |
+| `outcome-in-verify` | a Method's `verify` reading a message (toast, alert, error) - that's an expectation (`expect: [...]`) |
 | `start-tag` | `"__start__"` written by hand - `import { Start } from "waygraph"` |
 
 plus navigation outside Nav Blocks, orphans, and pages no Read Block reads. Opt out per file only on purpose:
@@ -271,8 +274,8 @@ pool membership vs home).
 
 Checkpoint is *designed* to be DOM-derivable (that's what `resync` does) - when in doubt,
 trust the DOM for "where am I." Mem is different: it holds the agent's own intent or
-expectation (which row to act on next, what value a later assertion should find) - it must
-never be inferred from the DOM, because doing so breaks assertion Blocks' entire ability to
+expectation (which row to act on next, what value a later expectation should find) - it must
+never be inferred from the DOM, because doing so breaks expectations' entire ability to
 catch a real app bug (mem states what's expected, DOM states what's real, `verify` compares
 them - if mem always mirrored the DOM, a genuine bug would just silently agree with itself).
 A Block with an `instanceOptions` re-asserts its own mem input fresh every time it's picked
@@ -292,12 +295,14 @@ self-reports success instead of failing loud. Any Block whose `act()` can plausi
 server-side after a client-side click needs its own verify - don't assume the destination
 Checkpoint's PageBlock covers it.
 
-## Rule 5: `defineAssertBlock` for "already there, assert a fact" checks
+## Rule 5: `defineExpectBlock` for "what the scenario expects" checks
 
-The majority shape of real QA/verification: you're already logged in, already at some
-Checkpoint, and need to assert something is true. `defineAssertBlock({ name, checkpoint,
-verify })` is sugar for exactly this - no hand-written act/resolve. For a check whose target
-varies per run (assert a specific matched user's name is present, not a fixed string), hand-
+The majority shape of real QA/verification: an action happened, and the scenario expects
+something to be true. `defineExpectBlock({ name, description, checkpoint, verify })` names that
+check; it goes in `expect: [...]` on the step (or on the Block when every use expects it), never
+as a step of its own, and it only reads - a click or navigation in it fails. Sessions run each
+Block's `verify`, not its expectations; to check one live, `send` the Expect Block itself. For a
+check whose target varies per run (a specific matched user's name, not a fixed string), hand-
 write a `Trait` object directly instead of the `Trait.visible`/`text` factories - `Trait`'s
 own shape is `{ name, check(page, mem) }`, so a plain object literal gets real mem access a
 factory-built Trait can't. Gate it with `requires: [SomeKey]` so it's correctly hidden from

@@ -140,7 +140,7 @@ test("the same four mail-reading Blocks handle a second, unrelated email scenari
   });
 });
 
-test("assert-email-received fails loud, naming itself, when no email ever arrives", async ({ context }) => {
+test("expect-email-received fails loud, naming itself, when no email ever arrives", async ({ context }) => {
   test.skip(!dockerAvailable(), "Docker not reachable in this environment");
   test.setTimeout(30_000);
 
@@ -149,18 +149,12 @@ test("assert-email-received fails loud, naming itself, when no email ever arrive
     mem.set(MailpitKeys.expectedRecipient, { email: "nobody-sent-this-one@example.com" });
     mem.set(MailpitKeys.expectedLinkPattern, "verified=1");
     mem.set(MailpitKeys.expectedEmailContent, VERIFICATION_CONTENT);
-    // A flow's verify-failure error names the whole path taken so
-    // far (each composed Block's own name accumulates through connect()),
-    // not just the leaf Block - real, useful QA context, not a bug - so this
-    // matches the accumulated name ending at assert-email-received, not an
-    // exact "failed after \"assert-email-received\"" alone.
-    await expect(emailVerificationFlow.run(context, mem)).rejects.toThrow(
-      /trait "email-received" failed after ".*assert-email-received"/,
-    );
+    // An expectation's failure names the step it belongs to, then each expectation that didn't hold.
+    await expect(emailVerificationFlow.run(context, mem)).rejects.toThrow(/expect-email-received › email-received/);
   });
 });
 
-test("assert-email-content fails loud, naming itself, when the email's copy doesn't match", async ({ context }) => {
+test("expect-email-content fails loud, naming itself, when the email's copy doesn't match", async ({ context }) => {
   test.skip(!dockerAvailable(), "Docker not reachable in this environment");
   test.setTimeout(60_000);
 
@@ -180,8 +174,6 @@ test("assert-email-content fails loud, naming itself, when the email's copy does
     mem.set(MailpitKeys.expectedRecipient, { email: recipient });
     mem.set(MailpitKeys.expectedLinkPattern, "verified=1");
     mem.set(MailpitKeys.expectedEmailContent, VERIFICATION_CONTENT);
-    await expect(emailVerificationFlow.run(context, mem)).rejects.toThrow(
-      /trait "body-contains-expected-text" failed after ".*assert-email-content"/,
-    );
+    await expect(emailVerificationFlow.run(context, mem)).rejects.toThrow(/expect-email-content › body-contains-expected-text/);
   });
 });

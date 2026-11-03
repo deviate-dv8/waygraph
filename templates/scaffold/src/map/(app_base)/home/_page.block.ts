@@ -5,12 +5,12 @@ import { DemoSel } from "./_sel.js";
 import { AddItemBlock } from "./_methods/add-item.effect.block.js";
 import { RemoveItemBlock } from "./_methods/remove-item.effect.block.js";
 import { ClearCartBlock } from "./_methods/clear-cart.method.block.js";
-import { AssertHelloBlock } from "./_methods/assert-hello.method.block.js";
-import { AssertItemAddedBlock } from "./_methods/assert-item-added.method.block.js";
+import { ExpectHelloBlock } from "./_expect/hello.expect.block.js";
+import { ExpectItemAddedBlock } from "./_expect/item-added.expect.block.js";
 
 export const HomePage = definePageBlock({
   name: "page-home",
-  description: "Offline home hub - add/remove effects, clear, assert-hello.",
+  description: "Offline home hub - add/remove effects, clear; expects hello and item-added.",
   checkpoint: Home,
   nav: NavHomeBlock,
   verify: [Trait.visible(DemoSel.catalog)],
@@ -18,7 +18,9 @@ export const HomePage = definePageBlock({
     addItem: () => AddItemBlock,
     removeItem: () => RemoveItemBlock,
     clearCart: () => ClearCartBlock,
-    assertHello: () => AssertHelloBlock,
-    assertItemAdded: () => AssertItemAddedBlock,
+  },
+  expects: {
+    hello: () => ExpectHelloBlock,
+    itemAdded: () => ExpectItemAddedBlock,
   },
 });

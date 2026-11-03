@@ -1,4 +1,4 @@
-import { defineAssertBlock, type Trait } from "waygraph";
+import { defineExpectBlock, type Trait } from "waygraph";
 import { HoppscotchRest } from "../_states.js";
 import { HoppscotchKeys } from "../_keys.js";
 
@@ -10,8 +10,8 @@ const headerMatches: Trait = {
   },
 };
 
-export const AssertResponseHeaderBlock = defineAssertBlock({
-  name: "assert-response-header",
+export const ExpectResponseHeaderBlock = defineExpectBlock({
+  name: "expect-response-header",
   description: "Confirms a response header read earlier has the mem-supplied value.",
   checkpoint: HoppscotchRest,
   requires: [HoppscotchKeys.expectedResponseHeader],

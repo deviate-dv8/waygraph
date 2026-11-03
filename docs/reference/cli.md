@@ -22,6 +22,7 @@ command's flags, from the same table the CLI parses, so an unknown flag stops wi
 | `--input '{…}'` · `--input @cases.json` | the flow's input; an array plays it once per item |
 | `--replay <runId>` | the mem a past run was seeded with |
 | `--mem-stub` | fill missing keys from mem stubs, opted in or not |
+| `--no-expect` | run each step's `verify` only, none of the expectations (`expect: [...]`) |
 | `--env <mode>` · `--config <name>` | which `.env` / config file ([Config](./config)) |
 
 ## Test
@@ -78,7 +79,7 @@ More: [Testing](../guides/testing).
 | try Sauce Demo in a temp folder | `waygraph try demo` · `try auto` · `try auto:cli` |
 | update scaffold files | `waygraph upgrade [paths] [--apply] [--overwrite] [--diff]` |
 | refresh agent skills | `waygraph upgrade --skills` |
-| rewrite removed code | `waygraph upgrade --codemod keys` (also `flows`, `checkpoints`, `lands`, `ff`, `chain`, `pages`) |
+| rewrite removed code | `waygraph upgrade --codemod keys` (also `flows`, `checkpoints`, `lands`, `ff`, `chain`, `pages`, `expect`) |
 | fetch browser extensions | `waygraph extensions install [--update]` |
 | coding-agent files | `waygraph agent-dive --loop claude` (also `opencode`, `cursor`, `vscode`) |
 | print a skill | `waygraph --skill` · `--skill-pilot` · `--skill-pilot-blind` · `--skill-convention` |

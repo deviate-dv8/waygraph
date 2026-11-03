@@ -304,7 +304,7 @@ interface PageAccess {
   access: string;
 }
 
-/** Every Block a Page Block names (its `nav`, its `methods` record), by `file#exportName`; a page's nav wins. */
+/** Every Block a Page Block names (its `nav`, its `methods` and `expects` records), by `file#exportName`; a page's nav wins. */
 function pageAccessMap(project: Project, files: string[]): Map<string, PageAccess> {
   const found = new Map<string, PageAccess>();
   const methods: [string, PageAccess][] = [];
@@ -329,11 +329,13 @@ function pageAccessMap(project: Project, files: string[]): Map<string, PageAcces
       const nav = options.getProperty("nav");
       if (Node.isPropertyAssignment(nav)) at(blockOf(nav.getInitializer()), "nav");
       if (Node.isShorthandPropertyAssignment(nav)) at(nav.getName(), "nav");
-      const record = options.getProperty("methods");
-      const init = Node.isPropertyAssignment(record) ? record.getInitializer() : undefined;
-      if (!Node.isObjectLiteralExpression(init)) continue;
-      for (const prop of init.getProperties()) {
-        if (Node.isPropertyAssignment(prop)) at(blockOf(prop.getInitializer()), `do.${prop.getName()}`);
+      for (const [field, access] of [["methods", "do"], ["expects", "expects"]] as const) {
+        const record = options.getProperty(field);
+        const init = Node.isPropertyAssignment(record) ? record.getInitializer() : undefined;
+        if (!Node.isObjectLiteralExpression(init)) continue;
+        for (const prop of init.getProperties()) {
+          if (Node.isPropertyAssignment(prop)) at(blockOf(prop.getInitializer()), `${access}.${prop.getName()}`);
+        }
       }
     }
   }

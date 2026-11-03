@@ -4,7 +4,7 @@ import { Node, SyntaxKind } from "ts-morph";
 import type { CallExpression, SourceFile } from "ts-morph";
 import { parseSource } from "../manifest/source.js";
 
-export type BuiltInKind = "cast-to-outcome" | "ff-run" | "hand-rolled-retry" | "seeded-spec" | "builder-helper" | "overlay-workaround" | "assert-one-read" | "start-tag";
+export type BuiltInKind = "cast-to-outcome" | "ff-run" | "hand-rolled-retry" | "seeded-spec" | "builder-helper" | "overlay-workaround" | "start-tag";
 
 export interface BuiltInFinding {
   kind: BuiltInKind;
@@ -82,19 +82,6 @@ function overlayWorkaround(sf: SourceFile): string | undefined {
   return undefined;
 }
 
-/** An Assert Block whose only check is one Trait.read: the flow can say it with .expect(). */
-function assertOneRead(sf: SourceFile): boolean {
-  return sf
-    .getDescendantsOfKind(SyntaxKind.CallExpression)
-    .filter((c) => c.getExpression().getText() === "defineAssertBlock")
-    .some((call) => {
-      const verify = call.getDescendantsOfKind(SyntaxKind.PropertyAssignment).find((p) => p.getName() === "verify")?.getInitializer();
-      if (!Node.isArrayLiteralExpression(verify) || verify.getElements().length !== 1) return false;
-      const only = verify.getElements()[0];
-      return Node.isCallExpression(only) && only.getExpression().getText() === "Trait.read";
-    });
-}
-
 /** What one file does by hand that waygraph already does. */
 export function builtInFindings(file: string, sf: SourceFile = parseSource(file)): BuiltInFinding[] {
   const found: BuiltInFinding[] = [];
@@ -130,9 +117,6 @@ export function builtInFindings(file: string, sf: SourceFile = parseSource(file)
   }
   const overlay = overlayWorkaround(sf);
   if (overlay) found.push({ kind: "overlay-workaround", detail: overlay });
-  if (assertOneRead(sf)) {
-    found.push({ kind: "assert-one-read", detail: "an Assert Block whose only check is Trait.read - the flow can say it in place: .expect(Key, value) or .expect(Key, (v, mem) => ...)" });
-  }
   const literals = [...sf.getDescendantsOfKind(SyntaxKind.StringLiteral), ...sf.getDescendantsOfKind(SyntaxKind.NoSubstitutionTemplateLiteral)];
   if (literals.some((l) => l.getLiteralValue() === "__start__")) {
     found.push({ kind: "start-tag", detail: 'spells the start Checkpoint\'s tag ("__start__") - import { Start } from "waygraph": from: Start, to: Start, Block<Start, Home>' });

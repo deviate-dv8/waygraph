@@ -49,14 +49,14 @@ test("POST sends the header and JSON body, returns 201", async () => {
   expect(await hoppscotchPostFlow.run(mem, {})).toEqual(checkpoint("HoppscotchRest"));
 });
 
-test("a wrong expected status fails the flow, naming assert-status", async () => {
+test("a wrong expected status fails the flow, naming expect-status", async () => {
   const mem = new MemPage();
   mem.set(HoppscotchKeys.requestUrl, apiUrl);
   mem.set(HoppscotchKeys.expectedStatus, 404);
-  await expect(hoppscotchGetFlow.run(mem, {})).rejects.toThrow(/assert-status/);
+  await expect(hoppscotchGetFlow.run(mem, {})).rejects.toThrow(/expect-status/);
 });
 
-test("a response body without the expected text fails the flow, naming assert-response-body", async () => {
+test("a response body without the expected text fails the flow, naming expect-response-body", async () => {
   const mem = new MemPage();
   mem.set(HoppscotchKeys.requestMethod, "POST");
   mem.set(HoppscotchKeys.requestUrl, apiUrl);
@@ -64,7 +64,7 @@ test("a response body without the expected text fails the flow, naming assert-re
   mem.set(HoppscotchKeys.requestBody, '{"name":"waygraph"}');
   mem.set(HoppscotchKeys.expectedStatus, 201);
   mem.set(HoppscotchKeys.expectedResponseText, '"token":"nope"');
-  await expect(hoppscotchPostFlow.run(mem, {})).rejects.toThrow(/assert-response-body/);
+  await expect(hoppscotchPostFlow.run(mem, {})).rejects.toThrow(/expect-response-body/);
 });
 
 const authMem = (headerValue: string): MemPage => {
@@ -82,6 +82,6 @@ test("query params and a bearer token reach the API; a response header is checke
   expect(await hoppscotchAuthFlow.run(authMem("req-42"), {})).toEqual(checkpoint("HoppscotchRest"));
 });
 
-test("a wrong response header value fails the flow, naming assert-response-header", async () => {
-  await expect(hoppscotchAuthFlow.run(authMem("other"), {})).rejects.toThrow(/assert-response-header/);
+test("a wrong response header value fails the flow, naming expect-response-header", async () => {
+  await expect(hoppscotchAuthFlow.run(authMem("other"), {})).rejects.toThrow(/expect-response-header/);
 });

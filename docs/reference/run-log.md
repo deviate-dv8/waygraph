@@ -17,7 +17,7 @@ graph LR
 |---|---|
 | `run:start` | the run's id and what it plays |
 | `run:mem` | the mem each part of the run was seeded with, by key name (what `--replay <runId>` seeds again) |
-| `step:start` | the Block, its kind (`nav`, `page`, `method`, `effect`, `assert`, `api`), where it starts; `parent` for a step inside a fast-forward unit, `cleanup: true` for a `.finally` step |
+| `step:start` | the Block, its kind (`nav`, `page`, `method`, `effect`, `api`), where it starts; `parent` for a step inside a fast-forward unit, `cleanup: true` for a `.finally` step |
 | `step:read` | what the page showed after the step: `{ checkpoint, read, missing, notes, readBlocks }` ([Read Blocks](../guides/reads)) |
 | `step:end` | where it landed, how long it took |
 | `step:error` | the failure; for a failed check, `check: { trait, block, wants, saw, url, heading }` |

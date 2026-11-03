@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { defineAssertBlock, checkpoint, MemPage, keys } from "../../src/index.js";
+import { defineExpectBlock, checkpoint, MemPage, keys } from "../../src/index.js";
 import { runVerify } from "../../src/engine/trait/verify.js";
 
 
@@ -15,10 +15,10 @@ function fakePage(waitForCalls: { name?: string }[]) {
   } as unknown as import("@playwright/test").Page;
 }
 
-test.describe("defineAssertBlock", () => {
+test.describe("defineExpectBlock", () => {
   test("with no waitForHeading, act is a no-op and resolve returns the given checkpoint", async () => {
     const calls: { name?: string }[] = [];
-    const block = defineAssertBlock({ name: "assert-something", checkpoint: checkpoint("Screen"), verify: [] });
+    const block = defineExpectBlock({ name: "assert-something", checkpoint: checkpoint("Screen"), verify: [] });
     const mem = new MemPage();
     await block.instruction.act(fakePage(calls), checkpoint("Screen"), mem);
     expect(calls).toEqual([]);
@@ -27,7 +27,7 @@ test.describe("defineAssertBlock", () => {
 
   test("waitForHeading waits for that heading before verify runs", async () => {
     const calls: { name?: string }[] = [];
-    const block = defineAssertBlock({
+    const block = defineExpectBlock({
       name: "assert-heading",
       checkpoint: checkpoint("Screen"),
       waitForHeading: "Some Heading",
@@ -37,8 +37,8 @@ test.describe("defineAssertBlock", () => {
     expect(calls).toEqual([{ name: "Some Heading" }]);
   });
 
-  test("verify still runs and fails loud, naming itself - defineAssertBlock does not bypass verify", async () => {
-    const block = defineAssertBlock({
+  test("verify still runs and fails loud, naming itself - defineExpectBlock does not bypass verify", async () => {
+    const block = defineExpectBlock({
       name: "assert-fails",
       checkpoint: checkpoint("Screen"),
       verify: [{ name: "always-false", check: async () => false }],
@@ -50,15 +50,15 @@ test.describe("defineAssertBlock", () => {
   });
 
   test("the checkpoint tag is stated once - two Blocks self-loop to their own tag, not a shared default", () => {
-    const a = defineAssertBlock({ name: "assert-a", checkpoint: checkpoint("A"), verify: [] });
-    const b = defineAssertBlock({ name: "assert-b", checkpoint: checkpoint("B"), verify: [] });
+    const a = defineExpectBlock({ name: "assert-a", checkpoint: checkpoint("A"), verify: [] });
+    const b = defineExpectBlock({ name: "assert-b", checkpoint: checkpoint("B"), verify: [] });
     expect(a.instruction.resolve(undefined as never)).toEqual(checkpoint("A"));
     expect(b.instruction.resolve(undefined as never)).toEqual(checkpoint("B"));
   });
 
   test("requires is passed through - preflight can catch a missing mem-aware Trait's input before the flow runs", () => {
     const { expectedThing } = keys("test")<{ expectedThing: string }>();
-    const block = defineAssertBlock({
+    const block = defineExpectBlock({
       name: "assert-mem-aware",
       checkpoint: checkpoint("Screen"),
       requires: [expectedThing],
@@ -75,7 +75,7 @@ test.describe("defineAssertBlock", () => {
   });
 
   test("omitting requires leaves it unset, not an empty array - matches every other Block helper", () => {
-    const block = defineAssertBlock({ name: "assert-no-requires", checkpoint: checkpoint("Screen"), verify: [] });
+    const block = defineExpectBlock({ name: "assert-no-requires", checkpoint: checkpoint("Screen"), verify: [] });
     expect(block.requires).toBeUndefined();
   });
 });

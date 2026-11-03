@@ -1,5 +1,7 @@
 // Before a demo step runs: play the Block's stubBefore narration (slides, rings, todos, device, title, caption) and show the
 // step's panel, then log what was painted so an agent without eyes can check it.
+import { describeExpectations } from "../../engine/run/expect.js";
+import { takeCheckedElements } from "../../engine/trait/verify.js";
 import { envFlag } from "../../engine/env.js";
 import type { StubPhaseResult } from "../../engine/stub/stub.js";
 import { runStubPhase } from "../narration/narration.js";
@@ -16,6 +18,8 @@ const quiet = () => envFlag("WAYGRAPH_JSON");
 
 export async function showBefore(ctx: StepperContext, view: StepView): Promise<void> {
   const { stage } = ctx;
+  // What this step's checks look at is collected while it runs; the demo rings it after.
+  takeCheckedElements(ctx.page);
   const phase = await narrateBefore(ctx, view);
   const { appliedTodo } = await stage.applyPhase(phase, { reapplyDeviceOnKeep: true });
   const paceSpeak = paceSpeakFields(ctx.pacing.demoPace, ctx.gate.autoplayMs);
@@ -31,6 +35,7 @@ export async function showBefore(ctx: StepperContext, view: StepView): Promise<v
     total: ctx.steps.length,
     blockName: step.block.name,
     description: step.block.description || "",
+    expects: describeExpectations(step.block),
     keys: memKeysOf(ctx, view),
     allNames: view.moduleNames,
     allDescriptions: view.moduleDescriptions,

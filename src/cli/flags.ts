@@ -30,6 +30,7 @@ interface RunFlags {
   data?: string;
   /** Fill any requires key with no --data coverage from registerMemStub's registry (--mem-stub). */
   memStub?: boolean;
+  noExpect?: boolean;
   /** Seed mem with what a recorded run seeded (--replay <runId>). */
   replay?: string;
   /** The flow's input: JSON or @file (--input). */
@@ -91,6 +92,7 @@ export const RUN_OPTIONS = {
   "blocks": { type: "string", value: "<flow|file|spec>", help: "Flow export, .flow.ts path or \"a then b\" chain; auto: <From> <To> Checkpoints", for: ["demo", "run"] },
   "data": { type: "string", value: "'{...}'", help: "Mem seed JSON, keys by name (or inline flow({...})); a session also takes it on send / reach", for: ["demo", "run", "session"] },
   "mem-stub": { type: "boolean", help: "Fill any requires key --data didn't cover from registerMemStub's registry", for: ["demo", "run"] },
+  "no-expect": { type: "boolean", help: "Skip every expectation (expect: [...]): each step's verify only", for: ["demo", "run"] },
   "input": { type: "string", value: "<json|@file>", help: "The flow's input (map({ input })): JSON or @file.json; an array plays the flow once per item", for: ["demo", "run"] },
   "replay": { type: "string", value: "<runId>", help: "Seed mem with exactly what that run seeded (its run log), to rerun a failure with its data", for: ["demo", "run"] },
   "auto-next": { type: "boolean", help: "Auto-advance steps", for: ["demo"] },
@@ -197,6 +199,7 @@ export function parseRunFlags(argv: string[], command: string): RunFlags {
   if (v.title !== undefined) out.title = v.title;
   if (v.data !== undefined) out.data = v.data;
   if (v["mem-stub"]) out.memStub = true;
+  if (v["no-expect"]) out.noExpect = true;
   if (v.replay !== undefined) out.replay = v.replay;
   if (v.input !== undefined) out.input = v.input;
   if (v["all-branches"]) out.allBranches = true;
@@ -277,6 +280,9 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
   }
   if (flags.memStub) {
     setEnv("WAYGRAPH_MEM_STUB", "1");
+  }
+  if (flags.noExpect) {
+    setEnv("WAYGRAPH_NO_EXPECT", "1");
   }
   if (flags.replay !== undefined) {
     setEnv("WAYGRAPH_REPLAY", flags.replay);

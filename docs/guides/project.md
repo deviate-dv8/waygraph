@@ -31,7 +31,8 @@ Every page folder uses the same file names, so you (or an agent) always know whe
 | `_sel.ts` | every selector this page uses | a plain object |
 | `_read.block.ts` | what the page shows, as data | `defineReadBlock` |
 | `_reads.ts` | the namespace that data is typed by | `reads("home")<{…}>()` |
-| `_methods/` | one action per file: fill, click, submit | `defineMethodBlock`, `defineEffectBlock`, `defineAssertBlock` |
+| `_methods/` | one action per file: fill, click, submit | `defineMethodBlock`, `defineEffectBlock` |
+| `_expect/` | what a scenario can expect on this page, one per file | `defineExpectBlock` |
 
 A leading `_` means "this page's own machinery". A folder name without one is a child page with its own URL segment.
 
@@ -86,7 +87,7 @@ A page's folder shows every way a user can go through that page.
 |---|---|
 | add a page | copy a page folder, keep the `_` names, match the URL |
 | add an action | one file in that page's `_methods/` |
-| check a state (disabled button, error shown) | an Assert Block in `_methods/` ([Checks](./checks)) |
+| check a state (disabled button, error shown) | an Expect Block in `_expect/`, in a step's `expect` ([Checks](./checks)) |
 | say what a page shows | its `_read.block.ts` ([Read Blocks](./reads)) |
 | string steps together | a file in `src/flows/` ([Flows](./flows)) |
 | give a flow data | a mem key and a mem stub in `src/states/` ([Data](./data)) |
@@ -112,6 +113,7 @@ npx waygraph upgrade --codemod lands                  # `Block as MethodBlock<A,
 npx waygraph upgrade --codemod ff                     # { ff: true } on step after step -> .ffStart() ... .ffEnd()
 npx waygraph upgrade --codemod chain                  # drops .start() and .end(): the chain is the flow
 npx waygraph upgrade --codemod pages                  # a flow's Block imports -> its pages' Page.nav / Page.do.x
+npx waygraph upgrade --codemod expect                 # Assert Blocks and .assert() steps -> Expect Blocks in each step's expect: [...]
 ```
 
 `upgrade` copies only the paths you name, and replaces a file that differs only with `--overwrite`.

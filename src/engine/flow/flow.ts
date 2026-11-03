@@ -83,7 +83,7 @@ export interface Flow<Out extends Checkpoint<string>> {
    * `.flow(sub)` or chained on the CLI). `run()` itself never reads it.
    */
   readonly resetSession: boolean;
-  /** The engine config the Flow was built with (launcher, layouts); running one of its steps on its own uses it too. */
+  /** The engine config the Flow was built with (how it launches a browser); running one of its steps on its own uses it too. */
   readonly config: EngineConfig;
   /**
    * `map({ expectedFailure })` - a display hint for a step-through overlay: this Flow is DESIGNED to throw
@@ -180,11 +180,8 @@ export function buildFlow<Out extends Checkpoint<string>>(
 ): Flow<Out> {
   // Settings (sessionReset, memStub, ...) are added afterwards by withSettings, which re-applies them after any
   // withBlockVerify/modBlockVerify patch so they survive.
-  // Layouts have to be threaded into every pairwise connect(), not just the
-  // trailing runGraph call - see connect()'s own doc comment in types.ts:
-  // buildFlow's reduce IS the only place a Flow's
-  // intermediate (non-final) Checkpoints are ever verified at all.
-  const chain = middle.reduce((a, b) => joinSteps(a, b, engineConfig.layouts));
+  // Every step's verify and expectations run inside the joined Block (see joinSteps): the run loop sees only the last.
+  const chain = middle.reduce((a, b) => joinSteps(a, b));
   // Declared separately (not as the object-literal method below) so the
   // three-overload `Flow.run` signature can be checked against the actual
   // per-call-shape behavior, then attached with a cast - object-literal
@@ -206,7 +203,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
       const { context, close } = await launchOwnContext(config);
       try {
         try {
-          return await run(context, mem, config.layouts !== undefined ? { layouts: config.layouts } : undefined);
+          return await run(context, mem);
         } finally {
           // Playwright finalizes recordVideo on context.close(); skip when
           // not recording so mem-only runs with stub contexts stay unchanged.
@@ -233,14 +230,12 @@ export function buildFlow<Out extends Checkpoint<string>>(
     // call from before this option existed. An explicit `closeOnFinish`
     // always wins either way.
     const closeOnFinish = options?.closeOnFinish ?? gotOwnPage;
-    const resolvedLayouts = options?.layouts ?? engineConfig.layouts;
     let result: Out;
     try {
       // A flow ends where its last step lands: the Out its map() chain was checked against.
       result = (await runSteps(chain, undefined, context, mem, 5000, {
         page,
         closeOnFinish: false,
-        ...(resolvedLayouts !== undefined ? { layouts: resolvedLayouts } : {}),
         ...(options?.from ? { from: options.from } : {}),
       })) as Out;
     } finally {
@@ -299,6 +294,8 @@ export interface FlowSettings {
   /** Read by map() when it begins (the sign-in step); the Flow itself keeps nothing of it. */
   as?: import("./account.js").Account;
   memStub?: boolean;
+  /** `map({ expect: false })`: read by map() as it adds each step. */
+  expect?: false;
   sessionReset?: boolean;
   expectedFailure?: string;
   demoPace?: DemoPace;

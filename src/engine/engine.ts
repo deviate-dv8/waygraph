@@ -1,6 +1,6 @@
 // Where authoring starts. Blocks (block/) are steps between Checkpoints (checkpoint/); `engine.map()` chains them into a
 // Flow (flow/), checking each step's kind; `flow.run()` plays it Block by Block through runGraph (run/), with Playwright.
-// An Engine carries the config every flow it builds shares: how to launch a browser, and the layouts to verify.
+// An Engine carries the config every flow it builds shares: how to launch a browser, and the defaults its flows take.
 import type { Start } from "./checkpoint/checkpoint.js";
 import type { EngineConfig } from "./config.js";
 import { buildFlow, withSettings } from "./flow/flow.js";
@@ -15,7 +15,7 @@ import type { MapBuilderOptions } from "./flow/map-builder.js";
  * @example const engine = new Engine({ headless: false, slowMo: 250 });
  */
 export class Engine {
-  /** How flows from this engine launch their own browser, and the layouts every step is checked against. */
+  /** How flows from this engine launch their own browser, and the defaults its flows take (memStub). */
   constructor(readonly config: EngineConfig = {}) {}
 
   /**
@@ -32,7 +32,6 @@ export class Engine {
    * @example
    * const flow = engine.map({ homeOrigin: "https://app.example.com" })
    *   .gotoPage(NavHomeBlock)
-   *   .assert(AssertHelloBlock)
    *   .gotoExternal(NavMailpitBlock)
    */
   map(options?: MapBuilderOptions): MapBuilder<Start> {
@@ -45,7 +44,7 @@ export class Engine {
 /**
  * Standalone convenience for `new Engine(config).map(options)` - use this
  * when a call site doesn't otherwise need its own `Engine` instance (no
- * shared `headless`/`slowMo`/`layouts` across several flows).
+ * shared `headless`/`slowMo` across several flows).
  * @example const flow = map({ homeOrigin: "https://app.example.com" }).gotoPage(NavHomeBlock);
  */
 export function map(options?: MapBuilderOptions & EngineConfig): MapBuilder<Start> {

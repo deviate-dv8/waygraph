@@ -79,10 +79,10 @@ export const AddToCartBlock = defineEffectBlock({
 `;
 
 const ASSERT_LOGIN_BLOCK = `
-import { defineAssertBlock, Trait } from "waygraph";
+import { defineExpectBlock, Trait } from "waygraph";
 import { LoginPage } from "../states.js";
 
-export const AssertLoginBlock = defineAssertBlock({
+export const ExpectLoginBlock = defineExpectBlock({
   name: "assert-login",
   checkpoint: LoginPage,
   verify: [Trait.visible("h1")],
@@ -167,7 +167,7 @@ test("discoverGraph: a bare defineBlock (no route) is skipped, not crashed", asy
   });
 });
 
-test("discoverGraph: an Assert Block is a self-loop on its Checkpoint", async () => {
+test("discoverGraph: an Expect Block is a self-loop on its Checkpoint", async () => {
   await withFixtureProject("assert-no-generic", { "assert-login.block.ts": ASSERT_LOGIN_BLOCK }, async (dir) => {
     const graph = await discoverGraph(dir);
     expect(graph.skipped).toEqual([]);

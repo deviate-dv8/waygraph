@@ -11,10 +11,11 @@ engine.map({ as: Planner })
   .gotoPage(Registry.nav)
   .method(Registry.do.searchFor)
   .method(Detail.do.archive)
-  .method(Detail.do.confirmArchive);
+  .method(Detail.do.confirmArchive, { expect: [Registry.expects.archivedToast, Machine.status.is("Archived")] });
 ```
 
-> The planner opens the registry, searches for the machine, archives it and confirms.
+> The planner opens the registry, searches for the machine, archives it and confirms. Expected: the list says it was
+> archived, and the machine reads Archived.
 
 ## The test for every feature
 
@@ -30,14 +31,16 @@ the wrong shape for it. Find another shape.
 
 ## The opinions
 
-- **Everything is a Block.** A navigation, an action, a page, a check and a read are all Blocks, played the same way
-  as a step. No kind of Block does extra things behind the flow's back: what runs is what the flow says.
+- **Everything is a Block.** A navigation, an action, a page, an expectation and a read are all Blocks. No kind of Block
+  does extra things behind the flow's back: what runs is what the flow says.
 - **One action per Block.** Fill, click, submit: separate Blocks. A Block says where it starts and where it lands
   (Checkpoints), and TypeScript checks that a flow never skips between unrelated pages.
 - **Pages are namespaces.** A page's Page Block names how to get there (`nav`) and what you can do there (`do`); a
   flow imports pages, not Blocks.
-- **Each kind of check has one home.** A Block's `verify` is its fast must-pass check: it arrived where it says, and
-  its action took effect. What a scenario *expects* is an assert: it only reads and judges, and never changes the page.
+- **Each kind of check has one home.** A Block's `verify` is its own must-pass check: it arrived where it says, and its
+  action took effect, true in every flow. What a scenario *expects* goes in `expect: [...]` (Expect Blocks, `Key.is`):
+  on the Block when every use expects it, on the step when only this scenario does. An expectation only reads and
+  judges; it never changes the page, so a step's expectations run together and report every failure.
 - **Data is named, never hidden.** What a run needs is a typed mem key; fake values come from mem stubs; what a page
   shows is a Read Block.
 - **The flows are the tests.** `waygraph test` runs every flow; a spec file is only for what a flow can't say.

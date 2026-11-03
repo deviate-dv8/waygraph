@@ -16,13 +16,12 @@ import { HomePage } from "#map/(app_base)/home/_page.block";
 export const homeCartFlow = engine
   .map()
   .gotoPage(HomePage.nav)
-  .method(HomePage.do.addItem)
-  .assert(HomePage.do.assertItemAdded)
+  .method(HomePage.do.addItem, { expect: [HomePage.expects.itemAdded] })
   .method(HomePage.do.clearCart);
 ```
 
-A flow imports one thing per page it visits: the page's Page Block, whose `nav` opens it and whose `do` holds what you
-can do there ([Blocks](./blocks#page-blocks)). `#config/` and `#map/` are the project's own short paths
+A flow imports one thing per page it visits: the page's Page Block, whose `nav` opens it, whose `do` holds what you
+can do there and whose `expects` holds what you can check there ([Blocks](./blocks#page-blocks)). `#config/` and `#map/` are the project's own short paths
 ([Project](./project#imports)).
 
 ## The steps
@@ -35,11 +34,9 @@ and it throws, naming the factory to use.
 | `.gotoPage(b)` | a Nav or Page Block on your app |
 | `.gotoExternal(b)` | a Nav Block on another site (a mail catcher, a REST client) |
 | `.method(b)` | a Method, Effect or API Block |
-| `.assert(b)` | an Assert Block |
-| `.expect(key, want)` | a check on what the page shows, in place: `want` is a value, or a test that gets the value and mem |
 | `.set(key, value)` | sets a mem key for the steps after it: a value, or one worked out from mem |
 | `.steps(part)` | a part made with `steps()`: the same steps in several flows |
-| `.flow(sub, { reset })` | another flow's steps, in the same page and mem |
+| `.flow(sub, { reset, expect })` | another flow's steps, in the same page and mem; `expect` is checked once it's done |
 | `.branch({ Tag: (m) => … })` | a different continuation for each place the last step can land |
 | `.finally(b)` | a cleanup step: runs after the others, pass or fail |
 
@@ -49,6 +46,7 @@ The second argument tunes one step:
 
 | Option | Does | Example |
 |---|---|---|
+| `expect` | what the scenario expects after this step ([below](#what-the-scenario-expects-expect)) | `{ expect: [ExpectSavedToastBlock, Machine.status.is("Saved")] }` |
 | `lands` | the outcome this flow is about, when a Block can land in several | `.method(SubmitLoginBlock, { lands: LoggedIn })` |
 | `settle` | waits for a page that keeps changing (a debounced search) | `{ settle: true }` or `{ settle: { quietMs: 600, maxMs: 8000 } }` |
 | `when` | plays the step only if it returns true (an optional field) | `{ when: (mem) => mem.get(Case.body) !== undefined }` |
@@ -58,20 +56,26 @@ The second argument tunes one step:
 A run where the Block lands somewhere other than `lands` fails at that step:
 `"submit-login" landed on LoginPage, but this flow continues from LoggedIn`.
 
-## Checking what the page shows: `.expect()`
+## What the scenario expects: `expect`
 
-A check on one value doesn't need an Assert Block of its own. `.expect` reads the key through the page's
-[Read Block](./reads), retried until the page settles like every check:
+After a step, the flow says what the scenario expects: Expect Blocks, Traits, and what the page shows
+(`Key.is(value)`, `Key.passes(test)`, read through the page's [Read Block](./reads)):
 
 ```ts
-engine.map()
-  .gotoPage(MachinePage.nav)
-  .expect(Machine.status, "Down")                                            // equal (deep, for lists and objects)
-  .expect(Machine.code, (code, mem) => code === mem.get(Keys.machine).code, "the machine we logged");
+engine.map({ as: Planner })
+  .gotoPage(Machine.nav, { expect: [Machine.expects.header] })
+  .method(Machine.do.confirmArchive, {
+    expect: [
+      ExpectArchivedToastBlock,                                                  // named, reusable
+      Machine.status.is("Archived"),                                             // equal (deep, for lists and objects)
+      Machine.code.passes((code, mem) => code === mem.get(Keys.machine).code, "the machine we archived"),
+    ],
+  });
 ```
 
-A failure says what it wanted and saw: `wanted machine.status = "Down"; saw "Operational"`. Write an Assert Block when
-the check has a name worth reusing, or needs selectors.
+They're added to what the Block itself expects, run together right after its `verify`, never change the page, and a
+failing step lists every one that didn't hold ([Checks](./checks#expect-what-the-scenario-expects)).
+`{ expect: false }` drops the Block's own for one step; `map({ expect: false })` or `--no-expect` runs only `verify`.
 
 ## One Block, several inputs: `.set()`
 
@@ -114,8 +118,7 @@ database happens to hold; what it made goes away in `.finally()`, pass or fail:
 ```ts
 engine.map({ as: Planner })
   .flow(seedDownMachineFlow)          // API Blocks: create the machine, keep its code in mem
-  .gotoPage(RegistryPage.nav)
-  .expect(Registry.rows, (rows, mem) => rows.some((r) => r.code === mem.get(Keys.downMachine).code))
+  .gotoPage(RegistryPage.nav, { expect: [Registry.rows.passes((rows, mem) => rows.some((r) => r.code === mem.get(Keys.downMachine).code))] })
   .finally(DeleteMachineApiBlock);
 ```
 
@@ -126,16 +129,16 @@ graph LR
   L[LoginPage] -->|submit-login| I[LoggedIn]
   L -->|submit-login| L2[LoginPage<br/>error shown]
   I --> N[nav-cart …]
-  L2 --> A[assert-error]
+  L2 --> A[expects the error]
 ```
 
 ```ts
 engine.map()
   .gotoPage(NavLoginBlock)
-  .method(SubmitLoginBlock)
+  .method(SubmitLoginBlock, { expect: { LoginPage: [ExpectLoginErrorBlock] } })    // per outcome
   .branch({
     LoggedIn: (m) => m.gotoPage(NavCartBlock),
-    LoginPage: (m) => m.assert(AssertLoginErrorBlock),
+    LoginPage: null,
   });
 ```
 

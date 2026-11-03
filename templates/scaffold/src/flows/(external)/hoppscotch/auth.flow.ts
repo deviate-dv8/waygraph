@@ -16,9 +16,6 @@ export const hoppscotchAuthFlow = engine
   .method(HoppscotchRestPage.do.setUrl)
   .method(HoppscotchRestPage.do.setQueryParams)
   .method(HoppscotchRestPage.do.setBearerToken)
-  .method(HoppscotchRestPage.do.sendRequest)
-  .assert(HoppscotchRestPage.do.assertStatus)
-  .method(HoppscotchRestPage.do.readResponseBody)
-  .assert(HoppscotchRestPage.do.assertResponseBody)
-  .method(HoppscotchRestPage.do.readResponseHeaders)
-  .assert(HoppscotchRestPage.do.assertResponseHeader);
+  .method(HoppscotchRestPage.do.sendRequest, { expect: [HoppscotchRestPage.expects.status] })
+  .method(HoppscotchRestPage.do.readResponseBody, { expect: [HoppscotchRestPage.expects.responseBody] })
+  .method(HoppscotchRestPage.do.readResponseHeaders, { expect: [HoppscotchRestPage.expects.responseHeader] });

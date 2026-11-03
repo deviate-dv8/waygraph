@@ -1,12 +1,12 @@
-// A Method: a page action that doesn't navigate (fill, submit, toggle), from one Checkpoint to another. Also the Assert Block.
+// A Method: a page action that doesn't navigate (fill, submit, toggle), from one Checkpoint to another.
 import { mark } from "../mark.js";
 import type { Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { DefinedBlock } from "../block.js";
 import type { Trait } from "../../trait/trait.js";
 import { defineBlock } from "../block.js";
 import { markRouteOf, routed } from "../../checkpoint/route.js";
+import { markExpect } from "../../run/expect.js";
 import type { RoutedBlockBase } from "../../checkpoint/route.js";
-import type { MemKey } from "../../mem/mem.js";
 
 /**
  * TypeScript salt over {@link defineBlock} for one-shot non-nav app steps
@@ -44,89 +44,7 @@ export function defineMethodBlock<In extends Checkpoint<string>, Out extends Che
 ): MethodBlock<In, Out> {
   const built = defineBlock(routed(base)) as MethodBlock<In, Out>;
   markRouteOf(built, base);
+  markExpect(built, base.expect);
   mark(built, "__waygraphSalt", "method");
   return built;
 }
-
-
-/** Options for `defineAssertBlock`: a Checkpoint to stay on and the Traits that must hold. */
-export interface AssertBlockOptions<Out extends Checkpoint<string> = Checkpoint<string>> {
-  name: string;
-  description?: string;
-  /** The Checkpoint this assertion runs on and returns to: its value (`Home`). */
-  checkpoint: Out;
-  /**
-   * Shorthand for the wait-then-assert shape found repeatedly in hand-written
-   * assertion Blocks: waits for a heading with this accessible name before
-   * `verify` runs. Omit for a pure "assert whatever is already on the page"
-   * check with no wait. Not a general `act()` override - a Block that needs
-   * more than this stays a plain `defineMethodBlock`.
-   */
-  waitForHeading?: string;
-  verify: Trait[] | ((out: Out) => Trait[]);
-  /** Mem keys this assertion's `verify` reads (e.g. a mem-aware Trait) - checked by preflight before the flow runs. */
-  requires?: readonly MemKey<unknown>[];
-}
-
-
-/**
- * Sugar for a self-loop-only "pure assertion" Block: no hand-written
- * `act`/`resolve`, just a name, a `checkpoint` tag, and a `verify` array.
- * `resolve` is generated from the one `checkpoint` field given, closing the
- * copy/rename footgun where a hand-restated checkpoint string can silently
- * drift wrong across a copy/pasted file. Mirrors `definePageBlock`'s own
- * construction pattern (flat options in, `defineBlock` built internally).
- * See openspec/changes/waygraph-agent-skill-hardening/spec.md.
- * @example
- * defineAssertBlock({
- *   name: "assert-raw-materials-table",
- *   checkpoint: "RawMaterials",
- *   waitForHeading: "Raw Materials & Lead Times",
- *   verify: [Trait.visible(RawMaterialsSel.reorderBadge)],
- * });
- */
-export function defineAssertBlock<Out extends Checkpoint<string>>(options: AssertBlockOptions<Out>): AssertBlock<Out> {
-  const built = defineMethodBlock<Out, Out>({
-    name: options.name,
-    ...(options.description ? { description: options.description } : {}),
-    ...(options.requires ? { requires: options.requires } : {}),
-    // An assertion stays where it is: from and to are its one Checkpoint, and resolve lands there.
-    from: options.checkpoint,
-    to: options.checkpoint,
-    instruction: {
-      async act(page) {
-        if (options.waitForHeading !== undefined) {
-          await page.getByRole("heading", { name: options.waitForHeading }).waitFor();
-        }
-      },
-      verify: options.verify,
-    },
-  });
-  mark(built, "__waygraphKind", "assert");
-  // Brand for map().assert() - distinct from MethodBlock so .method(assert)
-  // is a compile error even though runtime still carries method salt.
-  return built as unknown as AssertBlock<Out>;
-}
-
-
-/**
- * Self-loop verify Block from {@link defineAssertBlock}. Branded for
- * {@link MapBuilder.assert} (not accepted by `.method()`).
- */
-export type AssertBlock<Out extends Checkpoint<string>> = Omit<
-  DefinedBlock<Out, Out>,
-  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
-> & {
-  readonly __wgFactory?: "assert";
-  withVerify(
-    verify: Trait[] | ((out: Out) => Trait[]),
-  ): AssertBlock<Out>;
-  modVerify(
-    nameOrIndex: string | number,
-    newCheck: Trait["check"] | Trait,
-  ): AssertBlock<Out>;
-  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): AssertBlock<Out>;
-  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): AssertBlock<Out>;
-  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): AssertBlock<Out>;
-  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): AssertBlock<Out>;
-};
