@@ -11,11 +11,12 @@ against a real consumer.
 
 ## Next
 
-- **Waygraph UI** - a separate app (not in this package) over what the CLI already emits. The read-only first slice is
-  built: the map from `waygraph manifest` (pages, the Blocks between them, each page's actions, expectations and Read
-  Block fields), the flow catalogue (each flow's steps and their expectations) and run results from
-  `.waygraph/runs/*.jsonl`. Next: starting `run` / `demo` / `test` from it, live sessions through the session protocol,
-  a form over `config/waygraph.config.ts`.
+- **Waygraph UI** - a separate app (not in this package) over what the CLI already emits. Built: the map from
+  `waygraph manifest` (pages, the Blocks between them, each page's actions, expectations and Read Block fields), the
+  flow catalogue (each flow's steps and their expectations), run results from `.waygraph/runs/*.jsonl`, and playing a
+  flow (`run` / `demo`, verify only, replay a run's mem) with its run followed live and Stop. Next: starting `test`,
+  live sessions through the session protocol, a form over `config/waygraph.config.ts`. Each expectation's result in the
+  run log (today only the one that failed is logged) would let the UI show every expectation a step met.
 - **Event Blocks** - Blocks that move the world instead of the page (a webhook, a clock, a second user), through
   `ctx.world.*`, next to `ctx.ui.*` (stubs) and `ctx.page.*` (Read Blocks).
 
