@@ -2,11 +2,14 @@
 layout: home
 hero:
   name: Waygraph
-  tagline: Playwright with a map. Describe your app once, as pages and the actions between them, and every test is a path through it.
+  tagline: An opinionated Playwright, testing first. Your app's features become readable, reusable Blocks, and every test reads like a scenario.
   actions:
     - theme: brand
       text: Quick start
       link: /quickstart
+    - theme: alt
+      text: What Waygraph is
+      link: /doctrine
     - theme: alt
       text: How it works
       link: /how-it-works
@@ -53,6 +56,6 @@ npx waygraph init my-app     # a new project that passes offline
 | Start | Guides | Reference |
 |---|---|---|
 | [Quick start](/quickstart) | [Your project](/guides/project) · [Blocks](/guides/blocks) · [Flows](/guides/flows) | [CLI](/reference/cli) |
-| [How it works](/how-it-works) | [Read Blocks](/guides/reads) · [Data](/guides/data) · [Checks](/guides/checks) | [Config](/reference/config) |
+| [What Waygraph is](/doctrine) · [How it works](/how-it-works) | [Read Blocks](/guides/reads) · [Data](/guides/data) · [Checks](/guides/checks) | [Config](/reference/config) |
 | [Sauce Demo](/saucedemo/) | [Demo](/guides/demo) · [Testing](/guides/testing) | [API](/api/) · [Environment](/env) |
 | | [Agents](/guides/agents) · [Mail](/guides/mail) | [Deprecated](/deprecated) |

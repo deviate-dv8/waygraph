@@ -1,8 +1,9 @@
 # Waygraph
 
-Write browser tests as a **graph of small, reusable steps** instead of one long script.
-Built on Playwright. Every step says where it starts, where it ends, and how to confirm it
-worked - so a whole app becomes something you (or an AI agent) can walk, check, and demo.
+An **opinionated Playwright**, testing first. Your app's features become readable, reusable functions
+(Blocks), and the result is a structured end-to-end project whose flows read like scenarios a non-technical QA can
+follow. The same Blocks also record demo videos, navigate deterministically and let agents drive your app.
+[What Waygraph is](https://deviate-dv8.github.io/waygraph/doctrine).
 
 ```typescript
 // One Block = one action.  It says: start on LoginPage, end on LoggedIn, and prove it.

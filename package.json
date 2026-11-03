@@ -5,7 +5,7 @@
   "engines": {
     "node": ">=22"
   },
-  "description": "A typed graph of reusable Blocks for driving a browser through E2E flows.",
+  "description": "An opinionated Playwright, testing first: an app's features as readable, reusable Blocks, and flows that read like scenarios.",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

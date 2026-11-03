@@ -32,6 +32,12 @@ against a real consumer.
 
 ## Later
 
+- **Waygraph to MCP** - an MCP server over a live session, so a model can use the app as a virtual user through checked
+  Blocks only (the step before **VirtualUser** below).
+- **Scraping with Waygraph GUI** - reading data out of pages with Read Blocks, from the GUI.
+- **More drivers** - not before Playwright is mastered; the engine's Playwright seams (`EngineConfig.browsers`, the
+  Locator patch) would become one driver interface.
+
 - **Federated pool** - several site-specific map packages (`waygraph map pack`) loaded together, namespaced per package,
   so route finding works across sites. Scoped to sites you own or cooperate with.
 - **VirtualUser** - an agent in a Pilot session told to behave like a real user of the app (sign in, browse, decide

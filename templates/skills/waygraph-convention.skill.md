@@ -8,6 +8,13 @@ driven. Print this skill, then write or rearrange files so `waygraph check` / `w
 stay clean. For operating an existing graph, use `--skill-pilot`. For cold-start authoring
 against a live site, use `--skill-pilot-blind`.
 
+## What this project is for
+
+Waygraph is an opinionated Playwright, testing first: the app's features become readable, reusable Blocks, and the flows
+read like scenarios a QA who doesn't write code can follow. When two ways of writing something both work, pick the one
+that makes the flow read more like the scenario and the Block more reusable. Demos, sessions and automation reuse the
+same Blocks; they never justify a Block or flow that is harder to read as a test.
+
 ## Hard rules (not style preferences)
 
 1. **One distinct action per Block.** Fill and submit are two Blocks. A login form is

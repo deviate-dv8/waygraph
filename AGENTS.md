@@ -1,7 +1,8 @@
 # Working on waygraph
 
-waygraph is an opinionated Playwright: Blocks move between Checkpoints, `map()` chains Blocks into a Flow, and the
-engine plays it (`waygraph run`, or `waygraph demo` with the overlay around each step).
+waygraph is an opinionated Playwright, testing first: Blocks move between Checkpoints, `map()` chains Blocks into a
+Flow, and the engine plays it (`waygraph run`, or `waygraph demo` with the overlay around each step). Every change is
+held to `docs/doctrine.md`: does it make flows read more like the scenario, and Blocks more reusable?
 
 ## Read first
 
