@@ -177,7 +177,7 @@ async function playGraph(
 ): Promise<Checkpoint<string>> {
   try {
     let current: SomeBlock = entry;
-    let input: Checkpoint<string> = Start;
+    let input: Checkpoint<string> = options?.from ?? Start;
     let steps = 0;
 
     for (;;) {
@@ -247,6 +247,12 @@ export interface RunGraphOptions {
    * layouts still enforced.
    */
   layouts?: readonly Layout[];
+  /**
+   * The Checkpoint the run starts on: its first Block's input. Default `Start`. A runner that plays a flow one step at a
+   * time passes where the last step landed, so a step that stays where it is (`.set`, `.expect`, a skipped `when`) stays
+   * there, not at the start.
+   */
+  from?: Checkpoint<string>;
 }
 
 

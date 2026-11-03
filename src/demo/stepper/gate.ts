@@ -57,16 +57,21 @@ export async function installGate(page: WgPage, pacing: Pacing, demoFast: boolea
       }
       resolveNext = res;
     });
-  const autoplayOn = () =>
-    page
+  // The panel's checkbox, kept in the page's localStorage. A page with no origin (the blank tab a run without a base URL
+  // starts on) has no storage: then the command's own --auto-next decides, or the demo would wait for a click forever.
+  const fromFlag = envString("WAYGRAPH_AUTOPLAY") === undefined ? false : envFlag("WAYGRAPH_AUTOPLAY");
+  const autoplayOn = async (): Promise<boolean> => {
+    const stored = await page
       .evaluate(() => {
         try {
-          return localStorage.getItem("wg-autoplay") === "1";
+          return localStorage.getItem("wg-autoplay");
         } catch {
-          return false;
+          return null;
         }
       })
-      .catch(() => false);
+      .catch(() => null);
+    return stored === null ? fromFlag : stored === "1";
+  };
 
   const wait = async (): Promise<Record<string, string>> => {
     const next = waitForNext();

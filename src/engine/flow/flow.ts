@@ -241,6 +241,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
         page,
         closeOnFinish: false,
         ...(resolvedLayouts !== undefined ? { layouts: resolvedLayouts } : {}),
+        ...(options?.from ? { from: options.from } : {}),
       })) as Out;
     } finally {
       // Cleanup runs whether the steps passed or failed; its own failures don't replace theirs.
