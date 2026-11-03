@@ -53,9 +53,13 @@ against a live site, use `--skill-pilot-blind`.
    never a constant or `Date.now()`; what a flow creates is deleted in `.finally(DeleteApiBlock)`; a create that can
    meet an earlier run's data resolves to `Created` / `AlreadyExists` instead of failing. A failure that depended on its
    data reruns with `waygraph run <flow> --replay <runId>`.
-   Put those `registerMemStub` calls in a `*.mem-stubs.ts` file (`src/states/demo.mem-stubs.ts`): live sessions (`auto`,
-   `pilot`, `traverse`) load every one and use them as the default for a Block's `requires`.
-6. **Checkpoints are values.** Declare each once in `src/states/`: `export const Home = checkpoint("Home");
+   Put those `registerMemStub` calls in a `*.mem-stubs.ts` file (`src/states/demo.mem-stubs.ts`): `run`, `demo`, `test`
+   and the live sessions load every one themselves, so no flow or spec imports it. The scaffold's engine is
+   `new Engine({ ...config, memStub: true })`: every flow fills missing keys from stubs, and `flow.run()` does it too, so a
+   spec never calls `seedMemStub`.
+6. **Checkpoints are values.** Where every flow begins is `Start` (`import { Start } from "waygraph"`): a Block
+   that leads off a flow is `from: Start`, a sign-out goes `to: Start`; never write its tag. Declare the rest once in
+   `src/states/`: `export const Home = checkpoint("Home");
    export type Home = typeof Home;` (a union: `export const CanAddItem = [Home, CartEmpty] as const`). Blocks take
    the values, never tag strings or `<In, Out>` type arguments: `defineNavBlock({ checkpoint: Home, … })`,
    `defineAssertBlock({ checkpoint: ItemInCart, … })`, `defineMethodBlock({ from: CanAddItem, to: ItemInCart, … })`
@@ -86,10 +90,25 @@ against a live site, use `--skill-pilot-blind`.
 
 ## Flows, stubs and config (the scaffold's shape)
 
-- **Build flows with `map()`** (`engine.map({ memStub }).start().gotoPage(Nav).method(B, { pace }).assert(A).end()`;
+- **Build flows with `map()`** (`engine.map().gotoPage(Page.nav).method(Page.do.b, { pace }).assert(Page.do.a).end()`;
   `.gotoExternal` for another origin); it is the only way to build one. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`, `as`) go in `map({ … })` before the chain
   and `.end()` takes nothing. The flow's title is `ctx.ui.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
   `defineFlow`, `chainFlow` and the `with*` flow wrappers were removed in 0.16.0; `waygraph upgrade --codemod flows` converts them.
+- **A flow imports one thing per page it visits: the page's Page Block.** `definePageBlock({ checkpoint: Home, nav:
+  NavHomeBlock, methods: { addItem: () => AddItemBlock } })` exported as `HomePage`; the flow writes
+  `.gotoPage(HomePage.nav).method(HomePage.do.addItem)`, each typed as its own Block. Imports use the project's
+  `#config/`, `#map/`, `#states/` names (`import { HomePage } from "#map/(app_base)/home/_page.block"`), never a chain of
+  `../`. No file is imported for its side effect (`import ".../_page.block.js"`, `import ".../x.mem-stubs.js"`): the
+  tools load Block, Page and stub files themselves.
+- **A check on one value the page shows is `.expect(Key, want)` in the flow**, not an Assert Block per value:
+  `.expect(Machine.status, "Down")`, `.expect(Registry.rows, (rows, mem) => rows.some((r) => r.code === mem.get(Keys.machine).code))`.
+  Write an Assert Block for a named check worth reusing, or one that needs selectors.
+- **One Block, many inputs: `.set(Key, value)` before the step.** `.set(Keys.search, (mem) => mem.get(Keys.machine).code)
+  .method(RegistryPage.do.fillSearch)`; never one Fill Block per value (`fill-search-padded`, `fill-search-down-machine`).
+- **The same steps in several flows are a part:** `export const logDisruption = steps(DisruptionLog, (m) => m.method(…).method(…))`,
+  played with `.steps(logDisruption)`. A function over `MapBuilder` with a hand-written `type Start = MapBuilder<…>` is a smell.
+- **Setup is steps, cleanup is `.finally`.** Data a flow needs is made first (`.flow(seedFlow)` of API Blocks), not taken
+  from whatever the database holds; what it made is deleted in `.finally(DeleteApiBlock)`.
 - **Flows are the tests.** `waygraph test --flows` runs every flow as a Playwright test (workers, retries, video,
   reports); `map({ viewport })` sizes one, `map({ exclusive: true })` runs one alone and last. A project-written batch
   runner (parallelism, retries, "run these alone", a verdict file) is a smell. Write a spec only for what a flow can't say.
@@ -132,7 +151,9 @@ against a live site, use `--skill-pilot-blind`.
   writes `mem` is a misuse.
 - **A flow about one outcome says so with `lands`, never a cast.** `.method(SubmitLoginBlock, { lands: LoggedIn })`
   types the flow from `LoggedIn` and fails the run if the Block lands elsewhere; `Block as unknown as MethodBlock<A, B>`
-  (a `*-for-flow.ts` alias) hides the other outcome and never checks it. To follow every outcome, `.branch()`.
+  (a `*-for-flow.ts` alias) hides the other outcome and never checks it (`waygraph upgrade --codemod lands` converts
+  them). To follow every outcome, `.branch()`.
+- **Fast-forward several steps with `.ffStart()` … `.ffEnd()`**, one step with `{ ff: true }`.
 - **Narrate a fast-forwarded step on the step itself.** Stubs chained on Blocks inside an `{ ff: true }` window run
   when the unit plays (todos, title, caption; no rings). A do-nothing Block added only to paint the dock is a smell.
 - **Demo pace is a map option or config, never a wrapper.** `.method(SetBearerTokenBlock, { pace: "blitz" })` speeds one step,
@@ -144,7 +165,7 @@ against a live site, use `--skill-pilot-blind`.
 - **A browser dialog (`confirm`, `beforeunload`) is answered with `withDialog(block, { accept, into })`**, not inside the
   Block's `act`; the click Block stays a plain click.
 - **Project settings live in `config/waygraph.config.ts`** (`defineConfig({ baseUrl, testDir, webServer,
-  extensions, playwright: {...} })`). The config file also exports `engine = new Engine(config)`; flows `import { engine } from "../../config/waygraph.config.js"`; a project needs no
+  extensions, playwright: {...} })`). The config file also exports `engine = new Engine({ ...config, memStub: true })`; flows `import { engine } from "#config/waygraph.config"`; a project needs no
   `playwright.config.ts` - `waygraph test` builds one from it (a project's own `playwright.config.*` is not read).
 - **Another origin the test needs is a Map external** under `src/map/(external)/<tool>/`. For REST API
   tests, `(external)/hoppscotch` (list `extensions: ["hoppscotch"]` in the config) drives hoppscotch.io's client
@@ -259,15 +280,23 @@ A flow, narrated where it uses the Blocks:
 
 ```ts
 // src/flows/inventory/add-item.flow.ts
-import { engine } from "../../../config/waygraph.config.js";
+import { engine } from "#config/waygraph.config";
+import { StandardUser } from "#states/accounts";
+import { ShopKeys } from "#states/shop.mem-keys";
+import { InventoryPage } from "#map/(app_base)/inventory/_page.block";
+import { CartPage } from "#map/(app_base)/cart/_page.block";
+import { HeaderSel } from "#map/(app_base)/inventory/_sel";
+import { Cart } from "#map/(app_base)/cart/_reads";
+import { EmptyCartApiBlock } from "#map/(api)/cart/empty.api.block";
 
-const AddShown = AddToCartBlock.stubAfter((ctx) => ctx.ui.ring("cart", { selector: HeaderSel.cart, label: "Item in cart", tag: "AC" }));
+const AddShown = InventoryPage.do.addToCart.stubAfter((ctx) => ctx.ui.ring("cart", { selector: HeaderSel.cart, label: "Item in cart", tag: "AC" }));
 
 export const inventoryAddItemFlow = engine
-  .map({ as: StandardUser, input: ShopKeys.selectedItem, memStub: true })
-  .gotoPage(NavInventoryBlock.stubBefore((ctx) => ctx.ui.title("Add an item")))
+  .map({ as: StandardUser, input: ShopKeys.selectedItem })
+  .gotoPage(InventoryPage.nav.stubBefore((ctx) => ctx.ui.title("Add an item")))
   .method(AddShown)
-  .gotoPage(NavCartBlock)
+  .gotoPage(CartPage.nav)
+  .expect(Cart.items, (items, mem) => items.some((i) => i.name === mem.get(ShopKeys.selectedItem).name), "the item in the cart")
   .finally(EmptyCartApiBlock)
   .end();
 ```

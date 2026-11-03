@@ -1,24 +1,19 @@
-import { engine } from "../../../config/waygraph.config.js";
-import { NavMailpitInboxBlock } from "../../map/(external)/mailpit/_nav.block.js";
-import { AssertEmailReceivedBlock } from "../../map/(external)/mailpit/_methods/assert-email-received.method.block.js";
-import { OpenMessageBlock } from "../../map/(external)/mailpit/_methods/open-message.method.block.js";
-import { AssertEmailContentBlock } from "../../map/(external)/mailpit/_methods/assert-email-content.method.block.js";
-import { ExtractEmailLinkBlock } from "../../map/(external)/mailpit/_methods/extract-email-link.method.block.js";
-import { NavVerificationLinkBlock } from "../../map/(app_base)/home/nav-verification-link.block.js";
-import "../../map/(external)/mailpit/_page.block.js";
-import { MailpitSel } from "../../map/(external)/mailpit/_sel.js";
+import { engine } from "#config/waygraph.config";
+import { MailpitInboxPage } from "#map/(external)/mailpit/_page.block";
+import { MailpitSel } from "#map/(external)/mailpit/_sel";
+import { NavVerificationLinkBlock } from "#map/(app_base)/home/nav-verification-link.block";
 
 /** Needs a Mailpit at WAYGRAPH_MAIL_URL (default http://127.0.0.1:8025); tests/mail-verify.spec.ts starts one. */
 export const emailVerificationFlow = engine
   .map()
   .start()
   .gotoExternal(
-    NavMailpitInboxBlock.stubBefore((ctx) => {
+    MailpitInboxPage.nav.stubBefore((ctx) => {
       ctx.ui.title("Scaffold: Cross-origin mail verification (QA-rich)");
     }),
   )
   .assert(
-    AssertEmailReceivedBlock.stubAfter((ctx) => {
+    MailpitInboxPage.do.assertEmailReceived.stubAfter((ctx) => {
       ctx.ui.ring("note", {
         selector: MailpitSel.messageRow,
         label: "AC · email arrived",
@@ -27,14 +22,14 @@ export const emailVerificationFlow = engine
       });
     }),
   )
-  .method(OpenMessageBlock)
+  .method(MailpitInboxPage.do.openMessage)
   .assert(
-    AssertEmailContentBlock.stubAfter((ctx) => {
+    MailpitInboxPage.do.assertEmailContent.stubAfter((ctx) => {
       ctx.ui.ring("note", { selector: MailpitSel.previewIframe, label: "AC · email body matches expected copy", tag: "AC" });
     }),
   )
   .method(
-    ExtractEmailLinkBlock.stubAfter((ctx) => {
+    MailpitInboxPage.do.extractEmailLink.stubAfter((ctx) => {
       ctx.ui.ring("note", {
         selector: MailpitSel.previewIframe,
         label: "AC · link found",

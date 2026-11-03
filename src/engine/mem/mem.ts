@@ -55,9 +55,10 @@ export function keys(namespace: string): <T extends object>() => KeyNamespace<T>
 export class MemPage {
   private readonly store = new Map<MemKey<unknown>, unknown>();
 
-  /** `mem.set(SaucedemoKeys.credentials, { ... })`. */
-  set<T>(k: MemKey<T>, value: T): void {
+  /** `mem.set(SaucedemoKeys.credentials, { ... })`. Returns the page, so a test sets several in one line: `new MemPage().set(A, 1).set(B, 2)`. */
+  set<T>(k: MemKey<T>, value: T): this {
     this.store.set(k as MemKey<unknown>, value);
+    return this;
   }
 
   /**

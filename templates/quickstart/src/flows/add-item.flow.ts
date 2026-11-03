@@ -1,5 +1,4 @@
 import { engine } from "../../config/waygraph.config.js";
-import "../states/checkout.mem-stubs.js";
 import { SaucedemoKeys } from "../states/checkout.mem-keys.js";
 import { StandardUser } from "../accounts/accounts.js";
 import { NavInventoryBlock } from "../blocks/saucedemo-web/inventory/nav-inventory.block.js";

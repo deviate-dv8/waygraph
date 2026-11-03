@@ -31,6 +31,15 @@ export type CanAddItem = (typeof CanAddItem)[number];
 
 Two Checkpoints can share a URL: `Home` and `ItemInCart` are the same page in two states.
 
+One Checkpoint comes with waygraph: `Start`, where every flow begins, before its first step. A Block that leads off a
+flow starts `from: Start`; one that sends the run back to the beginning (signing out) goes `to: Start`.
+
+```ts
+import { Start } from "waygraph";
+
+defineMethodBlock({ name: "sign-out", from: Dashboard, to: Start, instruction: { … } });
+```
+
 ## The kinds
 
 | Kind | Use it to | Made with | Moves? |
@@ -110,12 +119,13 @@ defineMethodBlock({
 | `resolve` | names the Checkpoint | nothing: it gets only what `observe` returned |
 | `verify` | checks the page is what `resolve` said ([Checks](./checks)) | reads only |
 
-## Page: the hub
+## Page: the hub {#page-blocks}
 
 ```ts
-export const HomePageBlock = definePageBlock({
+export const HomePage = definePageBlock({
   name: "page-home",
   checkpoint: Home,
+  nav: NavHomeBlock,                                 // its _nav.block.ts
   verify: [Trait.visible(DemoSel.catalog)],
   methods: {
     addItem: () => AddItemBlock,
@@ -124,7 +134,15 @@ export const HomePageBlock = definePageBlock({
 });
 ```
 
-`waygraph auto` groups a page's methods under it, and they never count as orphans.
+A Page Block is the page's namespace: `HomePage.nav` opens it, and `HomePage.do.addItem` is the Add Item Block, typed
+as itself. A flow imports the page, not each Block:
+
+```ts
+engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem).method(HomePage.do.clearCart).end();
+```
+
+`waygraph auto` groups a page's methods under it, and they never count as orphans. Name the Page Block after the page
+(`HomePage`): the Checkpoint already has the page's own name (`Home`).
 
 ## Effect: one row of many
 
@@ -195,5 +213,18 @@ npx waygraph check        # navigation outside Nav Blocks, inline selectors, emp
 npx waygraph typecheck    # tsc --noEmit, then the same checks
 ```
 
-Silence one warning on purpose with `// waygraph-ignore: empty-verify` (or `multi-input`, `combined-action`,
-`hand-written-ui`) in that file.
+`check` also points out code written for something waygraph already does, in any file (helpers and specs too):
+
+| Warning | Found | Use instead |
+|---|---|---|
+| `cast-to-outcome` | `Block as MethodBlock<A, B>` | `.method(Block, { lands: B })` (`upgrade --codemod lands`) |
+| `ff-run` | `{ ff: true }` on three or more steps in a row | `.ffStart()` … `.ffEnd()` (`upgrade --codemod ff`) |
+| `hand-rolled-retry` | a polling loop in a Trait file | nothing: Traits retry, and say what they wanted and saw |
+| `seeded-spec` | `seedMemStub` in a spec | `memStub: true`: the flow fills keys when it runs |
+| `builder-helper` | a function over `MapBuilder` | a part, `steps(Checkpoint, (m) => …)`, or an account for signing in |
+| `overlay-workaround` | a dispatched click, a native value setter | `click()` and `fill()`: they work in a demo |
+| `assert-one-read` | an Assert Block that is one `Trait.read` | `.expect(key, want)` in the flow |
+| `start-tag` | `"__start__"` written by hand | `import { Start } from "waygraph"` |
+
+Silence one warning on purpose with `// waygraph-ignore: empty-verify` (or any other kind: `multi-input`,
+`combined-action`, `hand-written-ui`, `ff-run`, …) in that file.

@@ -272,6 +272,7 @@ export function copyWaygraphRuntime(from: object, to: object): void {
     "__waygraphTo",
     "__waygraphResetBefore",
     "__waygraphCleanup",
+    "__waygraphMethods",
   ] as const) {
     const desc = Object.getOwnPropertyDescriptor(from, key);
     if (desc) mark(to, key, desc.value);

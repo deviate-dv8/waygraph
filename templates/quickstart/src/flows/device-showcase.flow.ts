@@ -1,5 +1,4 @@
 import { engine } from "../../config/waygraph.config.js";
-import "../states/checkout.mem-stubs.js";
 import { NavLoginBlock } from "../blocks/saucedemo-web/nav-login.block.js";
 import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username.method.block.js";
 import { FillPasswordBlock } from "../blocks/saucedemo-web/methods/fill-password.method.block.js";

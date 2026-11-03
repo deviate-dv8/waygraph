@@ -9,6 +9,7 @@ import type { PlayOptions } from "../options.js";
 import { findBlock, findFlow } from "./find.js";
 import { seedMemForBlock, seedMemForFlow } from "./seed-mem.js";
 import { parseChainSpec } from "./spec.js";
+import { loadMemStubs } from "../../manifest/project.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { recordMem } from "../../engine/run/events.js";
@@ -32,6 +33,8 @@ export interface Plan {
 }
 
 export async function planSteps(projectDir: string, spec: string, mem: MemPage, options: PlayOptions): Promise<Plan> {
+  // A flow's keys may come from mem stubs: load them, whether or not a flow file imports them.
+  await loadMemStubs(projectDir);
   const bareFlow = await findBareFlow(projectDir, spec);
   const inputs = options.input === undefined ? undefined : readInputs(projectDir, options.input, bareFlow, spec);
   const recorded = options.replay ? recordedMem(projectDir, options.replay) : undefined;

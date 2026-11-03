@@ -77,6 +77,14 @@ export function reportImportError(relFile: string, err: unknown): void {
   console.error(`waygraph: skip ${relFile}: ${msg.split("\n")[0]}`);
 }
 
+/**
+ * Imports every `*.mem-stubs.ts` in the project: a stub registers when its file is imported, so a run, a demo, a test
+ * or a session that needs one never depends on a flow importing the file.
+ */
+export async function loadMemStubs(projectDir: string): Promise<void> {
+  for (const file of walkDir(projectDir, /\.mem-stubs?\.ts$/)) await importFresh(file).catch((err: unknown) => reportImportError(relative(projectDir, file), err));
+}
+
 /** Imports every `*.block.ts` (and `*.flow.ts`) under the project and its injected roots. */
 export async function scanProject(projectDir: string, opts: ScanOptions = {}): Promise<ProjectScan> {
   const select = opts.blocksSelect;

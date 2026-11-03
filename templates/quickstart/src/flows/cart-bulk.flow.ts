@@ -1,5 +1,4 @@
 import { engine } from "../../config/waygraph.config.js";
-import "../states/checkout.mem-stubs.js";
 import { loginFlow } from "./login.flow.js";
 import { AddAllToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-all-to-cart.method.block.js";
 import { RemoveAllFromCartBlock } from "../blocks/saucedemo-web/inventory/methods/remove-all-from-cart.method.block.js";

@@ -44,7 +44,8 @@ export interface TraitResult {
 /** A value a Trait compares against: fixed, or read from mem when the check runs. */
 export type Expected<T> = T | ((mem: MemPage) => T);
 
-const expectedValue = <T>(expected: Expected<T>, mem: MemPage): T =>
+/** An {@link Expected} value, worked out from mem when it is a function. */
+export const expectedValue = <T>(expected: Expected<T>, mem: MemPage): T =>
   typeof expected === "function" ? (expected as (mem: MemPage) => T)(mem) : expected;
 
 /** What a selector's first match reads (text collapsed), or that nothing matched. */

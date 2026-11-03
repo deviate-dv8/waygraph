@@ -7,7 +7,7 @@ import { calls, parseSource } from "../manifest/source.js";
 import { collectPracticeWarnings } from "./practices-check.js";
 import type { PracticeWarning } from "./practices-check.js";
 import { mapGroups } from "../manifest/maps.js";
-import { reportImportError } from "../manifest/project.js";
+import { loadMemStubs, reportImportError } from "../manifest/project.js";
 import { mapGroupImportProblems } from "../manifest/map-imports.js";
 import { blockKindOf } from "../engine/block/kind.js";
 import { memStubIsConstant } from "../engine/mem/mem-stub.js";
@@ -120,7 +120,7 @@ export async function checkProject(
   const pages = new Map<string, string>();
   const read = new Set<string>();
   // Mem stubs are registered where a project keeps them; load those before asking them.
-  for (const file of walkDir(projectDir, /\.mem-stubs?\.ts$/)) await importFresh(file).catch((err: unknown) => reportImportError(relative(projectDir, file), err));
+  await loadMemStubs(projectDir);
   for (const file of files) {
     let mod: Record<string, unknown>;
     try {

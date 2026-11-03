@@ -4,7 +4,7 @@
 import type { BrowserContext, Page } from "@playwright/test";
 import type { SomeBlock } from "../block/some-block.js";
 import { defineMethodBlock } from "../block/kinds/method.js";
-import { checkpoint, type Checkpoint, type Start } from "../checkpoint/checkpoint.js";
+import { Start, type Checkpoint } from "../checkpoint/checkpoint.js";
 import type { Flow } from "./flow.js";
 import { clearSessionState } from "./flow.js";
 
@@ -56,7 +56,7 @@ export function signInStep(acc: Account): SomeBlock {
   return defineMethodBlock<Start, Start>({
     name: `sign-in-as-${acc.name}`,
     description: `Signs in as ${acc.name}: the session kept from the first sign-in in this run, or ${acc.name}'s sign-in flow.`,
-    to: checkpoint("__start__"),
+    to: Start,
     ...(requires.length ? { requires } : {}),
     instruction: {
       async act(page, _input, mem) {

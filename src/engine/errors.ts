@@ -59,6 +59,11 @@ export const WAYGRAPH_ERRORS = {
     means: ".ffEnd() closed a window with zero steps inside it.",
     fix: "Add at least one .gotoPage()/.method()/.assert() inside the .ffStart()/.ffEnd() window.",
   },
+  WG_MAP_STEPS_END: {
+    where: "engine/flow/map-builder.ts - steps()",
+    means: "A part made with steps() called .end() (or .branch()): a part is steps a flow plays, not a flow.",
+    fix: "Return the builder from the part's function, without .end(); play it in a flow with .steps(part).",
+  },
   WG_MAP_FF_NOT_CLOSED: {
     where: "engine/flow/map-builder.ts - MapBuilder.end()",
     means: ".end() was called while a .ffStart() window was still open.",
@@ -193,6 +198,9 @@ export const MSG_MAP_FF_NOT_OPEN = "Waygraph map: .ffEnd() with no open .ffStart
 
 export const MSG_MAP_FF_EMPTY = (ffName: string) =>
   `Waygraph map: .ffEnd() for "${ffName}" has no steps - add .gotoPage/.method/… inside the window`;
+
+export const MSG_MAP_STEPS_END =
+  "Waygraph map: a part made with steps() doesn't end - return the builder from its function; a flow plays it with .steps(part)";
 
 export const MSG_MAP_METHOD_GOT_ASSERT = (blockName: string) =>
   `Waygraph map: .method("${blockName}") got a defineAssertBlock - use .assert() for ` +

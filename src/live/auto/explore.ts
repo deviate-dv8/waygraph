@@ -1,10 +1,8 @@
 // What auto can do from here: the project's Block library and graph, and the live menu of Blocks that can run now.
 import type { Page } from "@playwright/test";
-import { join } from "node:path";
 import { discoverGraph, type WaygraphEdge, type WaygraphGraph } from "../../analysis/graph.js";
 import type { WaygraphInstanceOption } from "../../engine/block/action-page.js";
-import { scanProject } from "../../manifest/project.js";
-import { importFresh, walkDir } from "../../manifest/scan.js";
+import { loadMemStubs, scanProject } from "../../manifest/project.js";
 
 export interface ExploreContextOpts {
   blocksSelect?: import("../../manifest/select.js").BlocksSelect;
@@ -100,8 +98,8 @@ export async function loadBlockLibrary(
     inject: opts?.inject,
     flows: false,
   });
-  // A Block's required keys get the project's own defaults: every `*.mem-stubs.ts` registers its fakes on import.
-  for (const file of walkDir(join(projectDir, "src"), /\.mem-stubs\.ts$/)) await importFresh(file);
+  // A Block's required keys get the project's own defaults: its mem stubs.
+  await loadMemStubs(projectDir);
   for (const b of scan.blocks) {
     const kind = isNavBlockMarked(b.block) ? "nav" : "action";
     if (byName.has(b.name)) {

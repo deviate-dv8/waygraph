@@ -2,7 +2,10 @@
 import { mark } from "../block/mark.js";
 import { checkpoint, type Checkpoint } from "../checkpoint/checkpoint.js";
 import type { MemKey } from "../mem/mem.js";
-import type { Trait } from "../trait/trait.js";
+import { expectedValue, readEquals, type Expected, type Trait } from "../trait/trait.js";
+import type { ReadKey } from "../read/read-key.js";
+import { isDeepStrictEqual } from "node:util";
+import type { Page } from "@playwright/test";
 import { defineMethodBlock } from "../block/kinds/method.js";
 import { settlePage } from "../read/run-read.js";
 import { copyWaygraphRuntime } from "../block/block.js";
@@ -66,6 +69,7 @@ export function requiring(block: SomeBlock, key: MemKey<unknown>): SomeBlock {
 
 /** The same Block, no longer requiring `key` (a step before it supplies it). */
 export function withoutRequire(block: SomeBlock, key: MemKey<unknown>): SomeBlock {
+  if (!block.requires?.includes(key)) return block;
   const next: SomeBlock = { ...block, requires: (block.requires ?? []).filter((k) => k !== key) };
   copyWaygraphRuntime(block, next);
   return next;
@@ -118,16 +122,19 @@ export function skippable(block: SomeBlock, when: ((mem: MemPage) => boolean) | 
   return next;
 }
 
-/** A step that sets a flow's input and ends where it started: what `.flow(sub, { input })` puts before the sub-flow. */
-export function settingInput(key: MemKey<unknown>, value: unknown, flowName: string): SomeBlock {
+/**
+ * A step that ends where it started, doing `act` without touching the page's position: setting a key, checking what the
+ * page shows. Its route is `*` -> where it was, so it fits after any step.
+ */
+function stayingStep(name: string, description: string, act: (page: Page, mem: MemPage) => Promise<void> | void, verify?: Trait[]): SomeBlock {
   const at = new WeakMap<MemPage, Checkpoint<string>>();
   return defineMethodBlock<Checkpoint<string>, Checkpoint<string>>({
-    name: `input-${flowName}`,
-    description: `Gives the next flow its input (${key.name}).`,
+    name,
+    description,
     to: checkpoint("*"),
     instruction: {
-      async act(_page, input, mem) {
-        mem.set(key, value);
+      async act(page, input, mem) {
+        await act(page, mem);
         at.set(mem, input);
       },
       observe: async (_page, mem) => {
@@ -136,11 +143,31 @@ export function settingInput(key: MemKey<unknown>, value: unknown, flowName: str
       },
       resolve: (observed) => {
         const here = stayedAt(observed);
-        if (!here) throw new Error(`waygraph: "input-${flowName}" resolved before it acted`);
+        if (!here) throw new Error(`waygraph: "${name}" resolved before it acted`);
         return here;
       },
+      ...(verify ? { verify } : {}),
     },
   });
+}
+
+/** A step that sets a flow's input: what `.flow(sub, { input })` puts before the sub-flow. */
+export function settingInput(key: MemKey<unknown>, value: unknown, flowName: string): SomeBlock {
+  return stayingStep(`input-${flowName}`, `Gives the next flow its input (${key.name}).`, (_page, mem) => void mem.set(key, value));
+}
+
+/** `.set(key, value)`: a step that sets `key` (a value, or one worked out from mem when the step runs). */
+export function settingKey<T>(key: MemKey<T>, value: Expected<T>): SomeBlock {
+  return stayingStep(`set-${key.name}`, `Sets ${key.name}.`, (_page, mem) => void mem.set(key, expectedValue(value, mem)));
+}
+
+/** `.expect(key, want)`: a check step on what the page shows for `key` (equal to `want`, or passing it). */
+export function expecting<T>(key: ReadKey<T>, want: T | ((value: T, mem: MemPage) => boolean), wants?: string): SomeBlock {
+  const test = typeof want === "function" ? (want as (value: T, mem: MemPage) => boolean) : (value: T) => isDeepStrictEqual(value, want);
+  const said = wants ?? (typeof want === "function" ? undefined : `${key.path} = ${JSON.stringify(want)}`);
+  const step = stayingStep(`expect-${key.path}`, `Checks ${said ?? key.path}.`, () => {}, [readEquals(key, test, said)]);
+  mark(step, "__waygraphKind", "assert");
+  return step;
 }
 
 /** The same Block, marked as a cleanup step: its run events say so (`cleanup: true` on step:start). */

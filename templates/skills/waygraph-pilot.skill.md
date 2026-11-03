@@ -135,7 +135,7 @@ When you're done: `waygraph browser stop <id>` (or `--all`). Never leave a sessi
 ## Before you add Blocks: `waygraph check`
 
 `npx waygraph check .` (warnings only) and `npx waygraph typecheck .` (`tsc --noEmit`, then the same warnings) read
-the Block files' syntax trees and flag:
+the project's syntax trees (Blocks, flows, helpers, specs) and flag:
 
 | Warning | Means |
 |---------|-------|
@@ -145,6 +145,14 @@ the Block files' syntax trees and flag:
 | `overcomplex-selector` | `:has-text(/regex/)`, `:text-matches(...)` or XPath where a plain selector would do |
 | `inline-selector-should-use-sel-file` | a selector written in the Block while its folder has a `_sel.ts` / `*.sel.ts` |
 | `hand-written-ui` | DOM built or the overlay restyled from a Block / flow / stub - use `ctx.ui` |
+| `cast-to-outcome` | `Block as MethodBlock<A, B>` - write `.method(Block, { lands: B })` (`upgrade --codemod lands`) |
+| `ff-run` | `{ ff: true }` on three or more steps in a row - `.ffStart()` ... `.ffEnd()` (`upgrade --codemod ff`) |
+| `hand-rolled-retry` | a polling loop in a Trait file - Traits already retry and say what they saw |
+| `seeded-spec` | `seedMemStub` in a spec - `memStub: true` fills keys when the flow runs |
+| `builder-helper` | a function over `MapBuilder` - a part: `steps(Checkpoint, (m) => m...)`, or an account for signing in |
+| `overlay-workaround` | a dispatched click or a native value setter - `click()` and `fill()` work in a demo |
+| `assert-one-read` | an Assert Block that is one `Trait.read` - `.expect(key, want)` in the flow |
+| `start-tag` | `"__start__"` written by hand - `import { Start } from "waygraph"` |
 
 plus navigation outside Nav Blocks, orphans, and pages no Read Block reads. Opt out per file only on purpose:
 `// waygraph-ignore: <kind>, <kind>` (or `// waygraph-ignore-practices`). The rules behind them: `--skill-convention`.

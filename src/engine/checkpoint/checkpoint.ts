@@ -15,12 +15,11 @@ export function checkpoint<Tag extends string>(tag: Tag): Checkpoint<Tag> {
 }
 
 /**
- * The type every entry Block's `In` must be - `runGraph` always seeds a fresh
- * run with `checkpoint("__start__")` as the fake initial input, so a Block
- * meant to lead off a Flow needs exactly this type. Exported so no project
- * has to know or hand-type the `"__start__"` literal itself - the same reason
- * `checkpoint()` exists instead of every call site spelling `{ __state: tag }`
- * by hand.
- * @example export const LoginBlock: Block<Start, LoggedIn> = { ... }
+ * Where every flow begins, before its first step: the Checkpoint a Block that leads off a flow starts `from`, and the one
+ * a Block that sends the run back to the beginning (a sign-out, a fresh session) goes `to`. A value and a type, like any
+ * Checkpoint, so no project spells out the tag it stands for.
+ * @example defineMethodBlock({ name: "open-form", from: Start, to: Form, ... })
+ * @example defineMethodBlock({ name: "sign-out", from: Home, to: Start, ... })
  */
-export type Start = Checkpoint<"__start__">;
+export const Start = checkpoint("__start__");
+export type Start = typeof Start;

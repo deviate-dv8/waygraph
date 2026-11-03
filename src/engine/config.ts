@@ -64,6 +64,11 @@ export interface EngineConfig {
   layouts?: readonly Layout[];
   /** Chromium extensions to load: names, store ids or paths (see `extensions` in `waygraph.config.ts`). Default `WAYGRAPH_EXTENSIONS`. */
   extensions?: readonly ExtensionSpec[];
+  /**
+   * Every flow from this Engine fills missing keys from mem stubs, as `map({ memStub: true })` does for one flow.
+   * @example new Engine({ memStub: true })
+   */
+  memStub?: boolean;
   /** Resolves relative `url`s in Nav Blocks when the Engine launches its own browser. Default `WAYGRAPH_BASE_URL`. */
   baseUrl?: string;
 }

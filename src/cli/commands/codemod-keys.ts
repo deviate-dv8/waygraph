@@ -48,7 +48,7 @@ function parse(project: Project, file: string): SourceFile {
 }
 
 /** The project file an import specifier points at (`./keys.js` -> `/abs/keys.ts`). */
-function resolveImport(from: string, spec: string): string | undefined {
+export function resolveImport(from: string, spec: string): string | undefined {
   if (!spec.startsWith(".")) return undefined;
   const base = resolve(dirname(from), spec);
   for (const candidate of [base.replace(/\.js$/, ".ts"), base + ".ts", base, resolve(base, "index.ts")]) {

@@ -14,10 +14,11 @@ import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeigh
 import type { DemoPace } from "../stub/pace.js";
 import type { HighlightStyleDefaults } from "../stub/ring.js";
 import { ignorePageGone } from "../page-gone.js";
+import { seedMemStub } from "../mem/mem-stub.js";
 import type { SomeBlock } from "../block/some-block.js";
 
 /**
- * A composed, runnable flow. Always begins from Checkpoint<"__start__">, same as
+ * A composed, runnable flow. Always begins from `Start`, same as
  * runGraph's `entry`. `run(context, mem)` uses a context you already have (the
  * usual case inside a `@playwright/test` file, via its `context` fixture) -
  * there's no browser for this Flow to launch, so no config to pass. `run(mem,
@@ -104,12 +105,8 @@ export interface Flow<Out extends Checkpoint<string>> {
    */
   readonly highlightStyle?: import("../stub/ring.js").HighlightStyleDefaults;
   /**
-   * `map({ memStub: true })` - opts into
-   * auto-filling `requires` keys with registered fake values
-   * (`registerMemStub`, `src/engine/mem/mem-stub.ts`) instead of failing preflight when
-   * the caller didn't supply them. `run()` never reads this - the CLI's own
-   * `--data`/`--mem-stub` seeding, or a bare-library caller's own explicit
-   * `seedMemStub(mem, flow)` call, is what actually fills mem before `run()`.
+   * `map({ memStub: true })` (or `new Engine({ memStub: true })`): a key the flow requires and mem doesn't have comes from
+   * its mem stub (`registerMemStub`) instead of failing preflight. `run()` fills them first; the CLI does the same.
    */
   readonly memStub?: boolean;
   /**
@@ -332,11 +329,22 @@ export function withSettings<Out extends Checkpoint<string>>(flow: Flow<Out>, se
   return {
     ...flow,
     ...fields,
+    ...(settings.memStub ? { run: stubbingRun(flow) } : {}),
     withBlockVerify: (block, verify) => withSettings(flow.withBlockVerify(block, verify), settings),
     modBlockVerify: (block, nameOrIndex, newCheck) => withSettings(flow.modBlockVerify(block, nameOrIndex, newCheck), settings),
   };
 }
 
+
+/** `map({ memStub: true })`: `run()` fills each key the flow requires and mem doesn't have from its mem stub, first. */
+function stubbingRun<Out extends Checkpoint<string>>(flow: Flow<Out>): Flow<Out>["run"] {
+  const run = flow.run as (contextOrMem: BrowserContext | MemPage, memOrConfig?: MemPage | EngineConfig, options?: RunGraphOptions) => Promise<Out>;
+  return ((contextOrMem: BrowserContext | MemPage, memOrConfig?: MemPage | EngineConfig, options?: RunGraphOptions) => {
+    const mem = contextOrMem instanceof MemPage ? contextOrMem : memOrConfig;
+    if (mem instanceof MemPage) seedMemStub(mem, flow);
+    return run(contextOrMem, memOrConfig, options);
+  }) as Flow<Out>["run"];
+}
 
 /**
  * Runs a flow's cleanup steps (`.finally(Block)`) one by one on its page. A cleanup step that fails is reported (on

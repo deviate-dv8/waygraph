@@ -76,14 +76,9 @@ export function memStubIsConstant(key: MemKey<unknown>): boolean | undefined {
 }
 
 /**
- * For a bare library `flow.run(mem, ...)` call outside the CLI (which has its
- * own `--mem-stub`-aware seeding) - call this yourself before `run()` when
- * `flow.memStub` is true, the same way external tooling already reads
- * `flow.resetSession`/`flow.title`/etc. (`run()` itself never reads Flow
- * flags; the settings come from `map({ ... })`).
- * @example
- * if (flow.memStub) seedMemStub(mem, flow);
- * await flow.run(mem, config);
+ * Fills each key the flow's steps require and mem doesn't have from its mem stub. A flow with `map({ memStub: true })`
+ * does this itself when it runs; call it for a flow without, to use the stubs anyway.
+ * @example seedMemStub(mem, flow); await flow.run(context, mem);
  */
 export function seedMemStub(mem: MemPage, flow: Flow<Checkpoint<string>>): void {
   for (const bi of flow.blocks()) {

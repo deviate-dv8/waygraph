@@ -2,7 +2,7 @@
 // reach?) -> verify (is the page really there?) -> layouts, then follows `next` for a branched Block. Emits run events.
 import { MemPage } from "../mem/mem.js";
 import { WaygraphError, MSG_PREFLIGHT_MISSING_KEY, MSG_RUNGRAPH_MAX_STEPS, MSG_RUNGRAPH_NOT_TERMINAL, messageOf } from "../errors.js";
-import { checkpoint } from "../checkpoint/checkpoint.js";
+import { Start } from "../checkpoint/checkpoint.js";
 import type { Block } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepRead, stepStarted } from "./events.js";
@@ -138,7 +138,7 @@ async function runLayouts(
  * no routing at all) - there is nothing to validate against.
  */
 export async function runGraph<TOut extends Checkpoint<string>>(
-  entry: Block<Checkpoint<"__start__">, TOut>,
+  entry: Block<Start, TOut>,
   terminals: ReadonlySet<string> | undefined,
   context: BrowserContext,
   mem: MemPage,
@@ -177,7 +177,7 @@ async function playGraph(
 ): Promise<Checkpoint<string>> {
   try {
     let current: SomeBlock = entry;
-    let input: Checkpoint<string> = checkpoint("__start__");
+    let input: Checkpoint<string> = Start;
     let steps = 0;
 
     for (;;) {
@@ -267,7 +267,7 @@ export interface RunGraphOptions {
  * }
  */
 export async function spawnTab<TOut extends Checkpoint<string>>(
-  entry: Block<Checkpoint<"__start__">, TOut>,
+  entry: Block<Start, TOut>,
   page: Page,
   mem: MemPage,
   maxSteps = 5000,

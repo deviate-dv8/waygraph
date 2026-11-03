@@ -53,17 +53,18 @@ In the Map layout (`src/map/(app)/<url segments>/`, the folder path = the page's
 |------|-------|
 | `_sel.ts` | `export const LoginSel = { username: "#user-name", submit: "[data-test=login]" } as const` - every selector the page's Blocks use |
 | `_nav.block.ts` | `defineNavBlock({ name: "nav-login", checkpoint: LoginPage, url: "/login", verify: [Trait.visible(LoginSel.submit)] })` |
-| `_page.block.ts` | `definePageBlock({ name: "page-login", checkpoint: LoginPage, verify: [...], methods: { fillUsername: () => FillUsernameBlock } })` - only when the page has methods to group |
+| `_page.block.ts` | `export const LoginPage = definePageBlock({ name: "page-login", checkpoint: Login, nav: NavLoginBlock, verify: [...], methods: { fillUsername: () => FillUsernameBlock } })` - the page's namespace: a flow writes `.gotoPage(LoginPage.nav).method(LoginPage.do.fillUsername)` |
 | `_methods/<action>.method.block.ts` | one action each: `defineMethodBlock({ name, from, to, requires, instruction: { act, verify } })` |
 | `_read.block.ts` + `_reads.ts` | what the page shows: `reads("login")<{ error: string }>()` and `defineReadBlock({ name, from: [LoginPage], instruction: { read: (ctx) => LoginRead({ error: ctx.page.text(LoginSel.error) }) } })` |
 
 Shared across pages, in `src/states/`:
 
-- `<area>.states.ts`: the Checkpoints, as values - `export const LoginPage = checkpoint("LoginPage"); export type LoginPage = typeof LoginPage;`
+- `<area>.states.ts`: the Checkpoints, as values - `export const Login = checkpoint("Login"); export type Login = typeof Login;`
+  (where a flow begins is waygraph's own `Start`: `from: Start`, `to: Start`)
 - `<area>.mem-keys.ts`: `export const AppKeys = keys("app")<{ credentials: { username: string; password: string } }>();`
 - `<area>.mem-stubs.ts`: `registerMemStub(AppKeys.credentials, () => ({ username: "...", password: "..." }))` - the
   session uses it for any key `--data` didn't give, so a Block with `requires` runs. Say whose account it is, and
-  remember a session run without `--data` signs in as it.
+  remember a session run without `--data` signs in as it. Nothing imports this file: the tools load it.
 
 A freeform project (`src/blocks/<site>/<page>/`, `nav-*.block.ts`, `methods/`, `<page>.sel.ts`,
 `<page>.read.block.ts`) keeps its layout; don't switch layouts partway. Full rules and complete files:
@@ -79,7 +80,8 @@ npx waygraph check . && npx waygraph map .   # no warnings, folders match URLs
 ```
 
 A Block that lands on the wrong Checkpoint or fails its `verify` is wrong now, not later - fix it before writing the
-next one. When a page is done, a flow that walks it (`src/flows/<page>/success.flow.ts`) turns it into a test.
+next one. When a page is done, a flow that walks it (`src/flows/<page>/success.flow.ts`) turns it into a test: it imports the page's
+Page Block (`#map/(app)/login/_page.block`) and uses `LoginPage.nav` and `LoginPage.do.<method>`.
 
 ## Real gotchas specific to cold-start authoring
 

@@ -1,14 +1,11 @@
 // Where authoring starts. Blocks (block/) are steps between Checkpoints (checkpoint/); `engine.map()` chains them into a
 // Flow (flow/), checking each step's kind; `flow.run()` plays it Block by Block through runGraph (run/), with Playwright.
 // An Engine carries the config every flow it builds shares: how to launch a browser, and the layouts to verify.
-import type { Checkpoint } from "./checkpoint/checkpoint.js";
+import type { Start } from "./checkpoint/checkpoint.js";
 import type { EngineConfig } from "./config.js";
 import { buildFlow, withSettings } from "./flow/flow.js";
 import { MapBuilder } from "./flow/map-builder.js";
 import type { MapBuilderOptions } from "./flow/map-builder.js";
-
-/** Where every `map()` starts: before its first step. */
-export type MapStart = Checkpoint<"__start__">;
 
 /**
  * Holds engine-level configuration shared across every flow defined from it -
@@ -40,8 +37,9 @@ export class Engine {
    *   .gotoExternal(NavMailpitBlock)
    *   .end();
    */
-  map(options?: MapBuilderOptions): MapBuilder<MapStart> {
-    const { homeOrigin, ...settings } = options ?? {};
+  map(options?: MapBuilderOptions): MapBuilder<Start> {
+    // The engine's memStub is every flow's default; a map() may still turn it off.
+    const { homeOrigin, ...settings } = { ...(this.config.memStub ? { memStub: true } : {}), ...options };
     return MapBuilder.begin((steps, flowSettings) => withSettings(buildFlow(steps, this.config, flowSettings.finally ?? []), flowSettings), settings, homeOrigin);
   }
 }
@@ -52,6 +50,6 @@ export class Engine {
  * shared `headless`/`slowMo`/`layouts` across several flows).
  * @example const flow = map({ homeOrigin: "https://app.example.com" }).gotoPage(NavHomeBlock).end();
  */
-export function map(options?: MapBuilderOptions & EngineConfig): MapBuilder<MapStart> {
+export function map(options?: MapBuilderOptions & EngineConfig): MapBuilder<Start> {
   return new Engine(options).map(options);
 }

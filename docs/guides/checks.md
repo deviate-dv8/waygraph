@@ -100,6 +100,9 @@ verify: [
 trait "read(catalog.items)" failed after "add-all-to-cart": wanted 6 products; saw [{"name":"Sauce Labs Backpack",…}]
 ```
 
+A check on one value needs no Assert Block at all: the flow says it in place with
+`.expect(Catalog.items, (items) => items.length === 6)` or `.expect(Header.cartCount, 1)` ([Flows](./flows#checking-what-the-page-shows-expect)).
+
 ## Layouts: one check for many pages
 
 ```ts

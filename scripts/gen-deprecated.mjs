@@ -20,7 +20,7 @@ const rows = found.map((f) => `| \`${f.name}\` | ${f.kind} | ${f.note || "Deprec
 const md = `# Deprecated and removed
 
 0.16.0 removed every old form instead of keeping it alongside the new one, so there is one way to write each thing.
-The two codemods in \`waygraph upgrade\` convert a project; the tables say what replaces what.
+The codemods in \`waygraph upgrade\` convert a project; the tables say what replaces what.
 
 ## Deprecated now (generated)
 
@@ -145,6 +145,12 @@ A stub paints through \`ctx.ui\`; \`ctx\` itself holds only what a stub reads (\
 | \`WAYGRAPH_TODO_UI=legacy\` / \`classic\` | \`WAYGRAPH_TODO_UI=full\` |
 | \`create-waygraph\` (npm) | \`npx waygraph init\` |
 
+## Removed in 0.16.11
+
+| Removed | Use instead |
+| --- | --- |
+| \`MapStart\` | \`Start\`, a value and a type: \`from: Start\`, \`to: Start\`, \`Block<Start, Home>\` |
+
 ## Style
 
 Not API, but the convention the tools and docs assume.
@@ -154,6 +160,12 @@ Not API, but the convention the tools and docs assume.
 | Stubs written inside Block files | Stubs in the flow. Blocks carry no narration. |
 | \`new Engine()\` in every flow | \`import { engine } from "../../config/waygraph.config.js"\` (built from the loaded config). |
 | \`act(){}\` plus an \`observe\` that writes \`mem\` | Read into \`mem\` inside \`act\`. \`observe\` is only for a Block that branches. |
+| \`checkpoint("__start__")\`, \`Checkpoint<"__start__">\` | \`import { Start } from "waygraph"\` (\`waygraph check\` points them out). |
+| \`import "…/_page.block.js"\` or \`import "…/x.mem-stubs.js"\` in a flow, for its side effect | Nothing: the tools load every Block and mem stub file themselves. |
+| One import per Block a flow uses | One per page: \`HomePage.nav\`, \`HomePage.do.addItem\` (a Page Block's \`nav\` and \`methods\`). |
+| \`seedMemStub(mem, flow)\` before \`flow.run()\` | \`memStub: true\` on the Engine (or the \`map()\`): the flow fills missing keys when it runs. |
+| \`const Saved = Block as MethodBlock<A, B>\` | \`.method(Block, { lands: B })\` (\`waygraph upgrade --codemod lands\`). |
+| \`{ ff: true }\` on three or more steps in a row | \`.ffStart()\` … \`.ffEnd()\` (\`waygraph upgrade --codemod ff\`). |
 
 ## Releases
 

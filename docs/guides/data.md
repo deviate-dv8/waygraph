@@ -56,7 +56,8 @@ the run before that step could write it.
 | a flow's input | `--input '{…}'` or `--input @cases.json` |
 | a past run | `--replay <runId>` |
 | a mem stub | `registerMemStub(key, fake)` in a `*.mem-stubs.ts` file |
-| code | `mem.set(key, value)` before `flow.run(mem)` |
+| the flow itself | `.set(key, value)` before the step that reads it ([Flows](./flows#one-block-several-inputs-set)) |
+| code | `new MemPage().set(a, 1).set(b, 2)` before `flow.run(context, mem)` |
 
 `--data` always wins for a key it covers; a stub fills only what is left.
 
@@ -70,8 +71,10 @@ import { SaucedemoKeys } from "./checkout.mem-keys.js";
 registerMemStub(SaucedemoKeys.credentials, () => ({ username: "standard_user", password: "secret_sauce" }));
 ```
 
-A flow opts in with `map({ memStub: true })`, or one command does with `--mem-stub`. A stub fills only what nothing
-else supplied. `auto`, `pilot` and `traverse` load every `*.mem-stubs.ts` under `src/` and use them as defaults.
+A flow opts in with `map({ memStub: true })`, every flow from an Engine with `new Engine({ memStub: true })` (the
+scaffold's), or one command with `--mem-stub`. A stub fills only what nothing else supplied, and `flow.run()` fills
+them itself, so a spec of your own needs no `seedMemStub`. `run`, `demo`, `test`, `auto`, `pilot` and `traverse` load
+every `*.mem-stubs.ts` themselves: no flow imports one.
 
 ## Different every run: `unique`
 

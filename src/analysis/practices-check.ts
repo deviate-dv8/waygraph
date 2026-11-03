@@ -9,6 +9,7 @@ import { Node, SyntaxKind } from "ts-morph";
 import type { CallExpression, SourceFile } from "ts-morph";
 import { parseSource } from "../manifest/source.js";
 import { toPosix } from "../manifest/scan.js";
+import { builtInFindings, type BuiltInKind } from "./built-in-check.js";
 
 export type PracticeKind =
   | "multi-input"
@@ -16,7 +17,8 @@ export type PracticeKind =
   | "empty-verify"
   | "overcomplex-selector"
   | "inline-selector-should-use-sel-file"
-  | "hand-written-ui";
+  | "hand-written-ui"
+  | BuiltInKind;
 
 export interface PracticeWarning {
   kind: PracticeKind;
@@ -239,6 +241,14 @@ export function collectPracticeWarnings(
     const ui = isIgnored("hand-written-ui", ignoredKindsForFile(sf.getFullText())) ? undefined : handWrittenUi(factsOf(sf));
     if (ui) warnings.push(handWrittenUiWarning(toPosix(relative(projectDir, file)), ui));
   }
+  // Code written for something waygraph already does, in any .ts file: helpers and specs too.
+  for (const file of walkDir(projectDir, /\.ts$/).filter((f) => !f.endsWith(".d.ts"))) {
+    const sf = parseSource(file);
+    const ignore = ignoredKindsForFile(sf.getFullText());
+    for (const found of builtInFindings(file, sf)) {
+      if (!isIgnored(found.kind, ignore)) warnings.push({ ...found, file: toPosix(relative(projectDir, file)) });
+    }
+  }
   return warnings;
 }
 
@@ -267,6 +277,22 @@ export function practiceKindLabel(kind: PracticeKind): string {
       return "inline selector — a _sel.ts/*.sel.ts file already exists here";
     case "hand-written-ui":
       return "hand-written UI — use ctx.ui, don't build or override the overlay";
+    case "cast-to-outcome":
+      return "a cast picks a Block's outcome — use { lands }";
+    case "ff-run":
+      return "{ ff: true } on step after step — use .ffStart()/.ffEnd()";
+    case "hand-rolled-retry":
+      return "a retry loop by hand — Traits already retry";
+    case "seeded-spec":
+      return "a spec seeding stubs by hand";
+    case "builder-helper":
+      return "a function over MapBuilder — use steps()";
+    case "overlay-workaround":
+      return "a workaround for the demo overlay it no longer needs";
+    case "start-tag":
+      return "the start tag by hand — use Start";
+    case "assert-one-read":
+      return "an Assert Block that is one Trait.read — use .expect()";
     default: {
       const _exhaustive: never = kind;
       return _exhaustive;

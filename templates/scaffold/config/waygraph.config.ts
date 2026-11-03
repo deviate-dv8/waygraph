@@ -42,5 +42,6 @@ const config = defineConfig(({ env }) => ({
 
 export default config;
 
-// Flows import this, so they run with the config above already applied.
-export const engine = new Engine(config);
+// Flows import this, so they run with the config above already applied. memStub: a key no --data gives comes from
+// src/states/*.mem-stubs.ts.
+export const engine = new Engine({ ...config, memStub: true });

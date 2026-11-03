@@ -48,6 +48,23 @@ my-app/
 └── .agents/skills/               # how-to for coding agents
 ```
 
+## Imports
+
+`package.json` gives the project's folders short names (Node's own [subpath imports](https://nodejs.org/api/packages.html#subpath-imports),
+which TypeScript and the test runner resolve too), so an import doesn't count `../`:
+
+```json
+"imports": { "#config/*": "./config/*.ts", "#states/*": "./src/states/*.ts", "#map/*": "./src/map/*.ts" }
+```
+
+```ts
+import { engine } from "#config/waygraph.config";
+import { HomePage } from "#map/(app_base)/home/_page.block";
+```
+
+A flow imports only what it uses: one Page Block per page it visits. Block files, Page Blocks and mem stubs are loaded
+by the tools themselves, so no file is imported for its side effect.
+
 There is no `playwright.config.ts`: `waygraph test` builds the Playwright config from `config/waygraph.config.ts`
 (see [Config](../reference/config)).
 
@@ -91,6 +108,8 @@ npx waygraph upgrade                                  # dry run: lists new and c
 npx waygraph upgrade "src/map/(external)/hoppscotch" --apply
 npx waygraph upgrade --skills                         # refresh .agents/skills
 npx waygraph upgrade --codemod keys                   # rewrite code a release changed (see Deprecated)
+npx waygraph upgrade --codemod lands                  # `Block as MethodBlock<A, B>` casts -> .method(Block, { lands: B })
+npx waygraph upgrade --codemod ff                     # { ff: true } on step after step -> .ffStart() ... .ffEnd()
 ```
 
 `upgrade` copies only the paths you name, and replaces a file that differs only with `--overwrite`.

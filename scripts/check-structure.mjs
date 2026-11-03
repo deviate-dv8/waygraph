@@ -105,7 +105,7 @@ const MAY_IMPORT = {
   engine: ["engine"],
   manifest: ["engine", "manifest"],
   analysis: ["engine", "manifest", "analysis"],
-  runtime: ["engine", "runtime"],
+  runtime: ["engine", "manifest", "runtime"],
   demo: ["engine", "runtime", "demo"],
   live: ["engine", "manifest", "analysis", "runtime", "demo", "live"],
   cli: null,

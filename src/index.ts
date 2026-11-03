@@ -5,7 +5,8 @@ import { installRunLog } from "./runtime/run-log.js";
 // extensions), and the run log (.waygraph/runs) the CLI turns on. No module switches itself on by being imported.
 installFullLaunch();
 installRunLog();
-export type { Checkpoint, Start } from "./engine/checkpoint/checkpoint.js";
+export { Start } from "./engine/checkpoint/checkpoint.js";
+export type { Checkpoint } from "./engine/checkpoint/checkpoint.js";
 export type { Instruction, Block, DefinedBlock } from "./engine/block/block.js";
 export type { SomeBlock, SomeDefinedBlock } from "./engine/block/some-block.js";
 export type { WaygraphInstanceOption } from "./engine/block/action-page.js";
@@ -34,7 +35,7 @@ export { defineEffectBlock } from "./engine/block/kinds/effect.js";
 export { defineApiBlock } from "./engine/block/kinds/api.js";
 export { locate } from "./engine/locate.js";
 export { composeBlock, fastForwardComposeBlock, isFastForwardBlock } from "./engine/block/compose.js";
-export { MapBuilder } from "./engine/flow/map-builder.js";
+export { MapBuilder, steps } from "./engine/flow/map-builder.js";
 export { account, forgetSessions } from "./engine/flow/account.js";
 export type { Account } from "./engine/flow/account.js";
 export type { Fault, Throttle, World } from "./engine/flow/world.js";
@@ -43,7 +44,7 @@ export { branchRoutes, collectBranchFlows, runBranchRegression } from "./engine/
 export type { BranchEntry, BranchRunResult, RunBranchRegressionOptions } from "./engine/flow/branch-regression.js";
 export type { ApiBlockOptions, ApiCallResult } from "./engine/block/kinds/api.js";
 export type { MapStepOpts } from "./engine/flow/map-steps.js";
-export type { MapFlowOpts } from "./engine/flow/map-builder.js";
+export type { MapFlowOpts, Steps } from "./engine/flow/map-builder.js";
 export { resolveHighlightSlots, runStubPhase, hasAuthoredStubAfter, hasAuthoredStubOnError } from "./demo/narration/narration.js";
 export { resolveFixtureDwellMs, normalizeDemoPace, resolveStepDemoPace, demoPaceScale, demoPaceIsBlitz, demoPaceIsFast, demoPaceIsSlow, demoPaceGateMs, formatDemoPaceBadge, formatDemoPaceLabel, FIXTURE_DURATION_MS_DEFAULT, FIXTURE_DURATION_FAST_MS_DEFAULT, FIXTURE_DURATION_SLOW_MS_DEFAULT } from "./demo/narration/demo-pace.js";
 export { formatHighlightCaption, applyHighlightStyleDefaults, toneIconPrefix } from "./demo/narration/style.js";
@@ -61,7 +62,7 @@ export type { ComposedBlock, FastForwardComposedBlock } from "./engine/block/com
 export type { RunGraphOptions, Layout, LayoutOptions } from "./engine/run/run.js";
 export type { NavBlock, NavBlockOptions, NavClickBlock, NavClickBlockOptions, MemNavBlock } from "./engine/block/kinds/nav.js";
 export type { MethodBlock, AssertBlock, AssertBlockOptions } from "./engine/block/kinds/method.js";
-export type { PageBlock, PageBlockOptions, PageMethodEntry } from "./engine/block/kinds/page.js";
+export type { PageBlock, PageBlockOptions, PageMethodEntry, PageMethods } from "./engine/block/kinds/page.js";
 export type { EffectBlock } from "./engine/block/kinds/effect.js";
 export type { MapBuilderOptions } from "./engine/flow/map-builder.js";
 export type { ActionPage } from "./engine/block/action-page.js";
@@ -98,7 +99,6 @@ export type { ExtensionSpec } from "./engine/config.js";
 export type { WebServerConfig } from "./runtime/webserver.js";
 
 // Types the API above refers to (each is part of a public signature).
-export type { MapStart } from "./engine/engine.js";
 export type { ConnectLayout } from "./engine/run/connect.js";
 export type { EffectExtras } from "./engine/block/kinds/effect.js";
 export type { BlockBase, RoutedBlockBase } from "./engine/checkpoint/route.js";

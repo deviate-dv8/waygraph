@@ -20,6 +20,10 @@ against a real consumer.
 
 ## Open
 
+- **Examples on page namespaces** - the scaffold imports by `#map/` and writes `Page.nav` / `Page.do.x`; `examples/saucedemo`
+  and the quickstart template still import each Block by a relative path. A codemod (`--codemod pages`: a flow's Block
+  imports -> its page's `do`) would move them and older projects alike.
+
 - **Split `requires`** - say which keys the caller must supply (credentials, config) and which another Block produces,
   so a failed preflight can suggest the Block that would produce the missing key.
 - **Demo text matchable by the page's selectors** - the overlay is an open shadow root, and Playwright's text engines
