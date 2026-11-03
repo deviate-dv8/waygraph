@@ -24,6 +24,10 @@ import type { Expected } from "../trait/trait.js";
 import type { DemoPace } from "../stub/pace.js";
 import type { HighlightStyleDefaults } from "../stub/ring.js";
 import type { Flow, FlowSettings } from "./flow.js";
+import type { Steps } from "./map-part.js";
+import type { BrowserContext, Page } from "@playwright/test";
+import type { RunGraphOptions } from "../run/run.js";
+import type { EngineConfig } from "../config.js";
 import { buildBranchedFlow } from "./map-branch.js";
 import { signInStep, type Account } from "./account.js";
 import { inWorld, restoreWorld, type World } from "./world.js";
@@ -113,34 +117,9 @@ interface BuilderState {
   readonly chain: readonly SomeBlock[];
   readonly homeOrigin: string | undefined;
   // `auto: true` = opened implicitly by a `{ ff: true }` step flag, not an explicit .ffStart() - closes silently at the
-  // next non-flagged step (or at .end()/.branch()) instead of demanding a matching .ffEnd().
+  // next non-flagged step (or where the flow ends, or at .branch()) instead of demanding a matching .ffEnd().
   readonly ff: { readonly name: string; readonly buffer: readonly SomeBlock[]; readonly auto: boolean } | null;
   readonly provided: readonly MemKey<unknown>[];
-}
-
-/**
- * Steps a flow plays as one part, from Checkpoint `In` to `Out`: made with {@link steps}, played with
- * `MapBuilder.steps()`.
- */
-export interface Steps<In extends Checkpoint<string>, Out extends Checkpoint<string>> {
-  /** Type-only: the Checkpoint the part starts on (a parameter, so only a flow on `In` takes it). Never set. */
-  readonly __in?: (at: In) => void;
-  /** Type-only: where the part ends. Never set. */
-  readonly __out?: Out;
-  readonly blocks: readonly SomeBlock[];
-  readonly cleanup: readonly SomeBlock[];
-  readonly provided: readonly MemKey<unknown>[];
-}
-
-/**
- * A part of a flow, written once and played by several (`.steps(part)`): the steps after `from`, as a flow writes them.
- * `from` is the Checkpoint the part starts on; the part is checked step by step, as a flow is.
- * @example
- * export const logDisruption = steps(DisruptionLog, (m) => m.method(SelectMachineBlock).method(FillShiftStartBlock).method(SubmitDisruptionBlock));
- * map({ as: Planner }).gotoPage(NavDisruptionLogBlock).steps(logDisruption).gotoPage(NavDisruptionLogBlock).steps(logDisruption)
- */
-export function steps<In extends Checkpoint<string>, Out extends Checkpoint<string>>(_from: In, build: (m: MapBuilder<In>) => MapBuilder<Out>): Steps<In, Out> {
-  return MapBuilder.part(build);
 }
 
 /** `when` only on a step that stays on its Checkpoint: a skipped step ends where it started. */
@@ -160,8 +139,14 @@ type WhenOpt<Out, NextOut> = [NextOut] extends [Out] ? { when?: (mem: MemPage) =
  * `Out`) - this is what "no teleporting" means: there is no method on this
  * builder that can skip from one Checkpoint to an unrelated one without a
  * real, kind-correct Block in between.
+ *
+ * The chain is the flow: there is no closing call. A MapBuilder runs, lists its Blocks, nests (`.flow(sub)`) and
+ * branches as a {@link Flow}, built from its steps the first time it's used that way.
  */
-export class MapBuilder<Out extends Checkpoint<string>> {
+export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
+  // The Flow these steps make, built the first time it's used: the chain is immutable, so it is built once.
+  private built: Flow<Out> | undefined;
+
   private constructor(private readonly at: BuilderState) {}
 
   /** @internal - use `engine.map()` or the standalone `map()` export. */
@@ -170,7 +155,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     return new MapBuilder<Start>({ build, settings, chain: settings.as ? [signInStep(settings.as)] : [], homeOrigin, ff: null, provided: [] });
   }
 
-  /** @internal - use {@link steps}. */
+  /** @internal - use `steps()` (map-part.ts). */
   static part<In extends Checkpoint<string>, Out extends Checkpoint<string>>(build: (m: MapBuilder<In>) => MapBuilder<Out>): Steps<In, Out> {
     const noFlow: BuildFlowFn = () => {
       throw new WaygraphError("WG_MAP_STEPS_END", MSG_MAP_STEPS_END);
@@ -182,11 +167,6 @@ export class MapBuilder<Out extends Checkpoint<string>> {
 
   private next<Next extends Checkpoint<string>>(change: Partial<BuilderState>): MapBuilder<Next> {
     return new MapBuilder<Next>({ ...this.at, ...change });
-  }
-
-  /** Readable chain-opener. Returns `this` unchanged; entirely optional. */
-  start(): MapBuilder<Out> {
-    return this;
   }
 
   /**
@@ -382,7 +362,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * A cleanup step: it runs after the flow's steps, whether they passed or failed, and its own failure is reported
    * without failing the flow - deleting what the flow created, usually with an API Block. Several run in the order
    * given. Doesn't move the flow: the next step still starts where the last one landed.
-   * @example engine.map().gotoPage(NavSignupBlock).method(SubmitSignupBlock).finally(DeleteTestUserApiBlock).end()
+   * @example engine.map().gotoPage(NavSignupBlock).method(SubmitSignupBlock).finally(DeleteTestUserApiBlock)
    */
   finally(block: SomeDefinedBlock): MapBuilder<Out> {
     assertMapSalt(block, ["method", "effect", "api"], "finally");
@@ -403,8 +383,8 @@ export class MapBuilder<Out extends Checkpoint<string>> {
    * `mem`, not `input`.
    * @example
    * map({ homeOrigin }).gotoPage(NavCartBlock).branch({
-   *   ItemInCart: (m) => m.method(RemoveFromCartBlock).end(),
-   *   LoggedIn: (m) => m.method(AddToCartBlock).end(),
+   *   ItemInCart: (m) => m.method(RemoveFromCartBlock),
+   *   LoggedIn: (m) => m.method(AddToCartBlock),
    * });
    */
   branch<
@@ -423,7 +403,7 @@ export class MapBuilder<Out extends Checkpoint<string>> {
     if (this.at.chain.length === 0) {
       throw new WaygraphError("WG_MAP_BRANCH_NO_PRIOR_STEP", MSG_MAP_BRANCH_NO_PRIOR_STEP);
     }
-    const before = this.end();
+    const before = this.finished();
     const resolvedRoutes: Record<string, Flow<Checkpoint<string>> | null> = {};
     for (const [tag, fn] of Object.entries(
       routes as Record<string, ((m: MapBuilder<Checkpoint<string>>) => Flow<Checkpoint<string>>) | null>,
@@ -436,13 +416,12 @@ export class MapBuilder<Out extends Checkpoint<string>> {
   }
 
   /**
-   * Finalizes this chain into a runnable {@link Flow} with the settings given to `map({ ... })`;
-   * `withBlockVerify`/`modBlockVerify` work on it. Throws if no step was ever added - an empty map
-   * isn't a flow. An auto-opened `{ ff: true }` window (see {@link MapStepOpts})
-   * left open at `.end()` closes silently; an EXPLICIT `.ffStart()` left open
-   * still throws - the author opened that one and needs to close it themselves.
+   * The runnable Flow these steps make, with the settings given to `map({ … })`: built the first time the chain is used
+   * as a flow (run, listed, nested, branched), then kept. Throws if no step was ever added, or an explicit `.ffStart()`
+   * was left open; an auto-opened `{ ff: true }` window closes by itself.
    */
-  end(): Flow<Out> {
+  private finished(): Flow<Out> {
+    if (this.built) return this.built;
     const { chain, settings: given, build } = this.closed().at;
     const [firstStep, ...rest] = chain;
     if (!firstStep) {
@@ -458,6 +437,54 @@ export class MapBuilder<Out extends Checkpoint<string>> {
       settings = { ...settings, finally: [...(settings.finally ?? []), asCleanup(restoreWorld(world))] };
     }
     // map() checked each step against the last one, so the flow ends on Out.
-    return build([first, ...rest], settings) as Flow<Out>;
+    this.built = build([first, ...rest], settings) as Flow<Out>;
+    return this.built;
+  }
+
+  // The chain is the flow: each Flow member is the built flow's.
+  get resetSession(): boolean {
+    return this.finished().resetSession;
+  }
+  get config(): Flow<Out>["config"] {
+    return this.finished().config;
+  }
+  get expectedFailureReason(): string | undefined {
+    return this.finished().expectedFailureReason;
+  }
+  get demoPace(): Flow<Out>["demoPace"] {
+    return this.finished().demoPace;
+  }
+  get highlightStyle(): Flow<Out>["highlightStyle"] {
+    return this.finished().highlightStyle;
+  }
+  get memStub(): boolean | undefined {
+    return this.finished().memStub;
+  }
+  get input(): Flow<Out>["input"] {
+    return this.finished().input;
+  }
+  get viewport(): Flow<Out>["viewport"] {
+    return this.finished().viewport;
+  }
+  get exclusive(): boolean | undefined {
+    return this.finished().exclusive;
+  }
+  run(context: BrowserContext, mem: MemPage): Promise<Out>;
+  run(context: BrowserContext, mem: MemPage, options: RunGraphOptions & { closeOnFinish: false }): Promise<{ result: Out; page: Page }>;
+  run(context: BrowserContext, mem: MemPage, options?: RunGraphOptions): Promise<Out>;
+  run(mem: MemPage, config?: EngineConfig): Promise<Out>;
+  async run(...args: [BrowserContext | MemPage, (MemPage | EngineConfig)?, RunGraphOptions?]): Promise<unknown> {
+    const run = this.finished().run as (...a: typeof args) => Promise<unknown>;
+    return run(...args);
+  }
+  /** The flow's Blocks; none for a chain with no step yet (a base other flows extend). */
+  blocks(): ReturnType<Flow<Out>["blocks"]> {
+    return this.at.chain.length === 0 && !this.at.ff ? [] : this.finished().blocks();
+  }
+  withBlockVerify(...args: Parameters<Flow<Out>["withBlockVerify"]>): Flow<Out> {
+    return this.finished().withBlockVerify(...args);
+  }
+  modBlockVerify(...args: Parameters<Flow<Out>["modBlockVerify"]>): Flow<Out> {
+    return this.finished().modBlockVerify(...args);
   }
 }

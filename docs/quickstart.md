@@ -78,7 +78,7 @@ const SubmitLogin = defineMethodBlock({
 const mem = new MemPage();
 mem.set(LoginKeys.username, "alice");
 
-const flow = new Engine({ headless: true }).map().gotoPage(NavLogin).method(SubmitLogin).end();
+const flow = new Engine({ headless: true }).map().gotoPage(NavLogin).method(SubmitLogin);
 await flow.run(mem);                    // inside a Playwright test: await flow.run(context, mem)
 ```
 

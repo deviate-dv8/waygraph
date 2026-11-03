@@ -63,12 +63,16 @@ export function isReadBlockLike(val: unknown): val is ReadBlock {
 }
 
 export function isFlowLike(val: unknown): val is { run: (...args: unknown[]) => Promise<unknown>; blocks: () => unknown[] } {
-  return (
-    val !== null &&
-    typeof val === "object" &&
-    typeof (val as { run?: unknown }).run === "function" &&
-    typeof (val as { blocks?: unknown }).blocks === "function"
-  );
+  if (val === null || typeof val !== "object") return false;
+  const { run, blocks } = val as { run?: unknown; blocks?: unknown };
+  if (typeof run !== "function" || typeof blocks !== "function") return false;
+  // A map() chain is a flow once it has a step: an exported base (`engine.map({ as: Planner })`) others extend isn't one.
+  try {
+    return (blocks as () => unknown[]).call(val).length > 0;
+  } catch {
+    // Its own error (an .ffStart() left open) says what's wrong when it's used.
+    return true;
+  }
 }
 
 

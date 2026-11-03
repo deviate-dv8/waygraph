@@ -15,7 +15,6 @@ export const viewerBlockedFlow = engine
     expectedFailure:
       "locked_out_user stays on LoginPage with the error banner - this is the product working as intended.",
   })
-  .start()
   .gotoPage(
     NavLoginBlock.stubBefore((ctx) =>
       ctx.ui.title("Viewer: Blocked Login Attempt"),
@@ -27,5 +26,4 @@ export const viewerBlockedFlow = engine
     SubmitLoginBlock.stubAfter((ctx) => {
       if (ctx.out?.__state === "LoginPage") loginRefused(ctx);
     }),
-  )
-  .end();
+  );

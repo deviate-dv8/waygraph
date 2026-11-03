@@ -1,8 +1,8 @@
-// `waygraph upgrade --codemod lands` and `--codemod ff`: two step forms a project wrote by hand, onto the map() options
+// `waygraph upgrade --codemod lands`, `--codemod ff` and `--codemod chain`: step forms a project wrote by hand, onto the map() options
 // that do the same. `lands`: an alias that casts a branching Block to one outcome (`const Saved = SubmitBlock as
 // MethodBlock<Form, Detail>`) becomes the step option (`.method(SubmitBlock, { lands: Detail })`), checked at runtime.
 // `ff`: three or more chained steps that each pass `{ ff: true }` become one `.ffStart()` ... `.ffEnd()` window, the
-// same fast-forward. Works on the TypeScript AST.
+// same fast-forward. `chain`: a flow's `.start()` and `.end()` go - the chain itself is the flow. Works on the TypeScript AST.
 import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, relative } from "node:path";
 import { Node, Project, SyntaxKind } from "ts-morph";
@@ -226,6 +226,68 @@ export function codemodFf(dir: string): { changed: string[]; problems: string[] 
     const before = readFileSync(file, "utf8");
     if (!before.includes("ff:")) continue;
     const after = convertFfRuns(before);
+    if (after !== before) {
+      writeFileSync(file, after);
+      changed.push(relative(dir, file));
+    }
+  }
+  return { changed, problems: [] };
+}
+
+/** The calls a flow chain is made of: a `.start()` / `.end()` after one of these is a flow's. */
+const CHAIN_STEPS = new Set(["map", "gotoPage", "gotoExternal", "method", "assert", "flow", "steps", "set", "expect", "finally", "ffStart", "ffEnd", "start"]);
+
+/** Whether `node` is (or ends) a flow chain: a step call on its way down, or the builder a `.branch()` route is given. */
+function isChain(node: Node | undefined): boolean {
+  for (let at = node; at; ) {
+    if (Node.isCallExpression(at)) {
+      const callee = at.getExpression();
+      if (Node.isPropertyAccessExpression(callee) && CHAIN_STEPS.has(callee.getName())) return true;
+      if (Node.isIdentifier(callee) && callee.getText() === "map") return true;
+      at = Node.isPropertyAccessExpression(callee) ? callee.getExpression() : undefined;
+    } else if (Node.isIdentifier(at)) {
+      // `(m) => m.end()` as a route: m is the parameter of a function given to .branch({ ... }).
+      const fn = at.getFirstAncestor((a) => Node.isArrowFunction(a) || Node.isFunctionExpression(a));
+      const param = fn && (Node.isArrowFunction(fn) || Node.isFunctionExpression(fn)) ? fn.getParameters()[0]?.getName() : undefined;
+      const branch = fn?.getFirstAncestorByKind(SyntaxKind.CallExpression)?.getExpression();
+      return param === at.getText() && Node.isPropertyAccessExpression(branch) && branch.getName() === "branch";
+    } else return false;
+  }
+  return false;
+}
+
+/** The first `.start()` / `.end()` on a flow chain in a file, or undefined. */
+function chainEnd(sf: SourceFile): CallExpression | undefined {
+  return sf.getDescendantsOfKind(SyntaxKind.CallExpression).find((call) => {
+    const callee = call.getExpression();
+    return (
+      call.getArguments().length === 0 &&
+      Node.isPropertyAccessExpression(callee) &&
+      (callee.getName() === "start" || callee.getName() === "end") &&
+      isChain(callee.getExpression())
+    );
+  });
+}
+
+/** Drops every flow chain's `.start()` and `.end()` from one file's text; returns the new text. */
+export function convertChainEnds(text: string): string {
+  const project = new Project({ useInMemoryFileSystem: true, manipulationSettings: { indentationText: indentationOf(text) } });
+  for (;;) {
+    const sf = project.createSourceFile("/file.ts", text, { overwrite: true });
+    const call = chainEnd(sf);
+    if (!call) return text;
+    const receiver = call.getExpression().asKindOrThrow(SyntaxKind.PropertyAccessExpression).getExpression();
+    text = text.slice(0, call.getStart()) + receiver.getText() + text.slice(call.getEnd());
+  }
+}
+
+/** Runs `--codemod chain` over a project; returns the files changed. */
+export function codemodChain(dir: string): { changed: string[]; problems: string[] } {
+  const changed: string[] = [];
+  for (const file of projectFiles(dir)) {
+    const before = readFileSync(file, "utf8");
+    if (!/\.(start|end)\(\s*\)/.test(before)) continue;
+    const after = convertChainEnds(before);
     if (after !== before) {
       writeFileSync(file, after);
       changed.push(relative(dir, file));

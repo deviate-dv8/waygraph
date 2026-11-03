@@ -2,7 +2,7 @@
 // they belong. Warnings only.
 import { messageOf } from "../engine/errors.js";
 import { basename, relative } from "node:path";
-import { importFresh, isBlockLike, isReadBlockLike, walkDir } from "../manifest/scan.js";
+import { importFresh, isBlockLike, isFlowLike, isReadBlockLike, walkDir } from "../manifest/scan.js";
 import { calls, parseSource } from "../manifest/source.js";
 import { collectPracticeWarnings } from "./practices-check.js";
 import type { PracticeWarning } from "./practices-check.js";
@@ -13,11 +13,6 @@ import { blockKindOf } from "../engine/block/kind.js";
 import { memStubIsConstant } from "../engine/mem/mem-stub.js";
 import type { MemKey } from "../engine/mem/mem.js";
 import type { MapImportProblem } from "../manifest/map-imports.js";
-
-/** Anything runnable counts for `validate` (looser than the manifest, which also wants `.blocks()`). */
-function isFlowLike(val: unknown): boolean {
-  return val !== null && typeof val === "object" && typeof (val as { run?: unknown }).run === "function";
-}
 
 /** Set by `defineNavBlock` (non-enumerable) - see engine/block/kinds/nav.ts. */
 function isNavBlockMarked(val: object): boolean {

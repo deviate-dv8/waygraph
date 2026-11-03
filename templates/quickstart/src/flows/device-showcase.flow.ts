@@ -11,7 +11,6 @@ import { deviceShowcase as d } from "../stubs/device-showcase.js";
 /** Sign in on a phone, shop on a tablet, open the cart in landscape: the device and zoom narration in src/stubs/device-showcase.ts. */
 export const deviceShowcaseFlow = engine
   .map({ memStub: true })
-  .start()
   .gotoPage(NavLoginBlock)
   .method(
     FillUsernameBlock.stubBefore(d.username.before).stubAfter(d.username.after),
@@ -28,5 +27,4 @@ export const deviceShowcaseFlow = engine
   )
   .gotoPage(
     NavCartBlock.stubBefore(d.openCart.before).stubAfter(d.openCart.after),
-  )
-  .end();
+  );

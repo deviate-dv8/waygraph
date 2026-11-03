@@ -32,9 +32,9 @@ const SubmitLogin = defineMethodBlock({
   },
 });
 const engine = new Engine();
-const Planner = account("planner", { signIn: engine.map().gotoPage(NavLogin).method(SubmitLogin).end() });
+const Planner = account("planner", { signIn: engine.map().gotoPage(NavLogin).method(SubmitLogin) });
 const NavHome = defineNavBlock({ name: "nav-home", checkpoint: Home, url: "https://app.test/home" });
-const homeAsPlanner = engine.map({ as: Planner }).gotoPage(NavHome).end();
+const homeAsPlanner = engine.map({ as: Planner }).gotoPage(NavHome);
 
 test.beforeEach(() => {
   forgetSessions();

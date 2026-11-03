@@ -9,5 +9,4 @@ export const cartAsAccountFlow = engine
   .map({ as: StandardUser, memStub: true })
   .gotoPage(NavInventoryBlock)
   .method(AddToCartBlock)
-  .gotoPage(NavCartBlock)
-  .end();
+  .gotoPage(NavCartBlock);

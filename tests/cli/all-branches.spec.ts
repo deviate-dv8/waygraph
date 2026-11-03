@@ -39,14 +39,14 @@ export const branchFlow = map()
   .method(Decide)
   .branch({
     Home: null,
-    Away: (m) => m.method(AwayLeaf).end(),
+    Away: (m) => m.method(AwayLeaf),
   });
 `;
 
 const PLAIN_FLOW = `
 import { map, defineNavBlock, checkpoint } from "waygraph";
 const NavStart = defineNavBlock({ name: "nav-start", checkpoint: checkpoint("Start"), url: "about:blank" });
-export const plainFlow = map().gotoPage(NavStart).end();
+export const plainFlow = map().gotoPage(NavStart);
 `;
 
 async function withTmpProject(name: string, files: Record<string, string>, run: (dir: string) => Promise<void>) {

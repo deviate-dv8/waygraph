@@ -13,12 +13,10 @@ test("submit-login: wrong password branches to LoginPage with error banner", asy
 
   const flow = engine
     .map()
-    .start()
     .gotoPage(NavLoginBlock)
     .method(FillUsernameBlock)
     .method(FillPasswordBlock)
-    .method(SubmitLoginBlock)
-    .end();
+    .method(SubmitLoginBlock);
   const result = await flow.run(mem);
 
   expect(result.__state).toBe("LoginPage");
@@ -30,12 +28,10 @@ test("submit-login: good password branches to LoggedIn", async () => {
 
   const flow = engine
     .map()
-    .start()
     .gotoPage(NavLoginBlock)
     .method(FillUsernameBlock)
     .method(FillPasswordBlock)
-    .method(SubmitLoginBlock)
-    .end();
+    .method(SubmitLoginBlock);
   const result = await flow.run(mem);
 
   expect(result.__state).toBe("LoggedIn");

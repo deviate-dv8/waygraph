@@ -5,7 +5,5 @@ import { FillUsernameBlock } from "../blocks/saucedemo-web/methods/fill-username
 /** memStub: the credentials are never supplied; src/states/checkout.mem-stubs.ts fills them. */
 export const memStubDemoFlow = engine
   .map({ memStub: true })
-  .start()
   .gotoPage(NavLoginBlock)
-  .method(FillUsernameBlock)
-  .end();
+  .method(FillUsernameBlock);

@@ -28,7 +28,7 @@ const FLOW = `
 import { Engine } from "waygraph";
 import { BlockA } from "../blocks/a.block.js";
 const engine = new Engine();
-export const demoFlow = engine.map().start().method(BlockA).end();
+export const demoFlow = engine.map().method(BlockA);
 `;
 
 test("findOrphanBlocks reports Blocks no flow plays", async () => {
@@ -65,7 +65,7 @@ import { Engine } from "waygraph";
 import { BlockA } from "../blocks/a.block.js";
 import { BlockB } from "../blocks/b.block.js";
 import { BlockC } from "../blocks/c.block.js";
-export const ffFlow = new Engine().map().start().method(BlockA).method(BlockB, { ff: true }).method(BlockC, { ff: true }).end();
+export const ffFlow = new Engine().map().method(BlockA).method(BlockB, { ff: true }).method(BlockC, { ff: true });
 `);
   try {
     const orphans = await findOrphanBlocks(tmpDir);

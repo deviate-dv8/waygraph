@@ -19,7 +19,7 @@ export interface Account {
  * browser (its credentials come from mem, like any flow's).
  * @example
  * export const Planner = account("planner", { signIn: plannerSignInFlow });
- * export const addMachineFlow = engine.map({ as: Planner }).gotoPage(NavEquipmentBlock).method(AddMachineBlock).end();
+ * export const addMachineFlow = engine.map({ as: Planner }).gotoPage(NavEquipmentBlock).method(AddMachineBlock);
  */
 export function account(name: string, opts: { signIn: Flow<Checkpoint<string>> }): Account {
   return { name, signIn: opts.signIn };

@@ -12,4 +12,4 @@ const Use = defineMethodBlock({
 });
 
 /** Opts into memStub, but nothing registers a generator for its key. */
-export const needsKeyFlow = new Engine().map({ memStub: true }).start().gotoPage(Open).method(Use).end();
+export const needsKeyFlow = new Engine().map({ memStub: true }).gotoPage(Open).method(Use);

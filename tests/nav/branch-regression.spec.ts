@@ -94,8 +94,8 @@ test.describe("runBranchRegression", () => {
       .gotoPage(NavHome)
       .method(Decide)
       .branch({
-        Home: (m) => m.method(NearBlock).end(),
-        Away: (m) => m.method(AwayBlock).end(),
+        Home: (m) => m.method(NearBlock),
+        Away: (m) => m.method(AwayBlock),
       });
 
     const { browser, root, newContextCalls } = fakeBrowser();
@@ -132,8 +132,8 @@ test.describe("runBranchRegression", () => {
       .gotoPage(NavHome)
       .method(Decide)
       .branch({
-        Home: (m) => m.method(NearBlock).end(),
-        Away: (m) => m.method(AwayBlock).end(),
+        Home: (m) => m.method(NearBlock),
+        Away: (m) => m.method(AwayBlock),
       });
 
     const { root, newContextCalls } = fakeBrowser();
@@ -175,8 +175,8 @@ test.describe("runBranchRegression", () => {
       .gotoPage(NavHome)
       .method(Decide)
       .branch({
-        Home: (m) => m.method(NearBlock).end(),
-        Away: (m) => m.method(AwayBlock).end(),
+        Home: (m) => m.method(NearBlock),
+        Away: (m) => m.method(AwayBlock),
       });
 
     const { root } = fakeBrowser();
@@ -221,8 +221,8 @@ test.describe("runBranchRegression", () => {
         Home: null,
         Away: (m) =>
           m.method(SubDecide).branch({
-            Home: (m2) => m2.method(NearBlock).end(),
-            Away: (m2) => m2.method(FarBlock).end(),
+            Home: (m2) => m2.method(NearBlock),
+            Away: (m2) => m2.method(FarBlock),
           }),
       });
 
@@ -247,7 +247,7 @@ test.describe("runBranchRegression", () => {
       .map()
       .gotoPage(NavHome)
       .method(Decide)
-      .branch({ Home: (m) => m.method(NearBlock).end(), Away: null });
+      .branch({ Home: (m) => m.method(NearBlock), Away: null });
     const wrapped = withSettings(branched, { sessionReset: true });
     expect(wrapped.resetSession).toBe(true);
     expect([...branchRoutes(wrapped)!.keys()].sort()).toEqual(["Away", "Home"]);

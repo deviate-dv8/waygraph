@@ -15,7 +15,6 @@ export const stubOnErrorFlow = engine
     expectedFailure:
       "Intentional verify fail - stubOnError rings the error banner before the panel",
   })
-  .start()
   .gotoPage(
     NavLoginBlock.stubBefore((ctx) =>
       ctx.ui.title("stubOnError: locked_out fail rings"),
@@ -24,7 +23,6 @@ export const stubOnErrorFlow = engine
   .method(FillUsernameBlock)
   .method(FillPasswordBlock)
   .method(SubmitLoginBlock.stubOnError(loginFailed))
-  .end()
   .withBlockVerify("submit-login", [
     Trait.url({ pathname: "/inventory.html" }),
   ]);

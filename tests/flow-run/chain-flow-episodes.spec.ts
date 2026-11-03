@@ -138,7 +138,7 @@ test.describe("nested flows - a real 2-episode example (saucedemo.com)", () => {
     mem.set(ExampleKeys.viewerCreds, { username: "locked_out_user", password: "secret_sauce" });
 
     // The Viewer flow wants a fresh session (sessionReset), so nesting it resets before its first step.
-    const combined = engine.map().flow(ownerFlow).flow(viewerBlockedFlow).end();
+    const combined = engine.map().flow(ownerFlow).flow(viewerBlockedFlow);
 
     await expect(combined.run(mem)).rejects.toThrow(/viewer-login/);
     // Blocked on the SECOND episode's own login attempt, not the first -
@@ -146,7 +146,7 @@ test.describe("nested flows - a real 2-episode example (saucedemo.com)", () => {
   });
 
   test("the flattened chain includes the click-based NavBlocks", () => {
-    const info = engine.map().flow(ownerFlow).flow(viewerBlockedFlow).end().blocks();
+    const info = engine.map().flow(ownerFlow).flow(viewerBlockedFlow).blocks();
     expect(info.map((bi) => bi.name)).toEqual([
       "nav-login",
       "owner-login",

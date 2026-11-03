@@ -18,7 +18,6 @@ import { NavBackToProductsBlock } from "../blocks/saucedemo-web/inventory-item/n
 /** Full checkout, then the "Back Home" click-based Nav Block returns to the catalogue. */
 export const checkoutThenBrowseAgainFlow = engine
   .map({ memStub: true })
-  .start()
   .gotoPage(
     NavLoginBlock.stubBefore((ctx) =>
       ctx.ui.title(
@@ -37,5 +36,4 @@ export const checkoutThenBrowseAgainFlow = engine
   .method(FillPostalCodeBlock)
   .method(SubmitCheckoutInfoBlock)
   .method(FinishOrderBlock.stubBefore(placingOrder).stubAfter(orderPlacedYap))
-  .gotoPage(NavBackToProductsBlock)
-  .end();
+  .gotoPage(NavBackToProductsBlock);

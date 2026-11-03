@@ -46,8 +46,7 @@ export const checkoutFlow = engine
   .gotoPage(NavInventoryBlock)
   .method(AddToCartBlock)
   .gotoPage(NavCartBlock)
-  .finally(EmptyCartApiBlock)         // clean up, pass or fail
-  .end();
+  .finally(EmptyCartApiBlock)         // clean up, pass or fail;
 ```
 
 ## What happens in one step

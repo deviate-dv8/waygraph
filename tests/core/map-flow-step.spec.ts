@@ -29,9 +29,9 @@ test("map().flow() nests a flow inline; { reset: true } clears storage before it
   try {
     const engine = new Engine();
     const OpenAt = defineNavBlock({ name: "open-at", checkpoint: checkpoint("Page1"), url: () => base + "/" });
-    const first = engine.map().start().gotoPage(OpenAt).method(Remember).assert(Seen("ada")).end();
-    const carried = engine.map().start().flow(first).assert(Seen("ada")).end();
-    const reset = engine.map().start().flow(first).flow(engine.map().start().gotoPage(OpenAt).end(), { reset: true }).assert(Seen(null)).end();
+    const first = engine.map().gotoPage(OpenAt).method(Remember).assert(Seen("ada"));
+    const carried = engine.map().flow(first).assert(Seen("ada"));
+    const reset = engine.map().flow(first).flow(engine.map().gotoPage(OpenAt), { reset: true }).assert(Seen(null));
 
     const page = await context.newPage();
     await carried.run(context, new MemPage(), { page, closeOnFinish: false });
@@ -45,7 +45,7 @@ test("map().flow() nests a flow inline; { reset: true } clears storage before it
 });
 
 test("map({ memStub, expectedFailure, demoPace }) puts the settings on the flow", () => {
-  const flow = new Engine().map({ memStub: true, expectedFailure: "locked out", demoPace: "fast" }).start().gotoPage(Open).end();
+  const flow = new Engine().map({ memStub: true, expectedFailure: "locked out", demoPace: "fast" }).gotoPage(Open);
   expect(flow.memStub).toBe(true);
   expect(flow.expectedFailureReason).toBe("locked out");
   expect(flow.demoPace).toBe("fast");
@@ -54,7 +54,7 @@ test("map({ memStub, expectedFailure, demoPace }) puts the settings on the flow"
 test("{ reset: true, input } resets before the whole sub-flow, its input step included", () => {
   const engine = new Engine();
   const Item = keys("probe")<{ item: string }>();
-  const sub = engine.map({ input: Item.item }).gotoPage(Open).method(Remember).end();
-  const infos = engine.map().flow(sub, { reset: true, input: "x" }).end().blocks();
+  const sub = engine.map({ input: Item.item }).gotoPage(Open).method(Remember);
+  const infos = engine.map().flow(sub, { reset: true, input: "x" }).blocks();
   expect(infos.map((b) => `${b.name}:${!!b.resetSessionBefore}`)).toEqual(["input-open:true", "open:false", "remember:false"]);
 });

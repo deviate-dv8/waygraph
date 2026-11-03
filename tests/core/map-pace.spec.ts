@@ -12,10 +12,8 @@ test("map() step pace sets the Block's demoPace and keeps its runtime markers, N
   });
   const flow = new Engine()
     .map()
-    .start()
     .gotoPage(nav, { pace: "slow" })
-    .method(act, { pace: "blitz" })
-    .end();
+    .method(act, { pace: "blitz" });
   const [navStep, actStep] = flow.blocks().map((info) => (info as unknown as { block: object }).block);
   expect((navStep as unknown as { demoPace: string }).demoPace).toBe("slow");
   expect((actStep as unknown as { demoPace: string }).demoPace).toBe("blitz");

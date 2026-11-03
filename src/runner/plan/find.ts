@@ -1,7 +1,7 @@
 // Finds a Block or Flow in the project (and its installed map packages) by export name or Block name.
 import { relative } from "node:path";
 import { pathToFileURL } from "node:url";
-import { isBlockLike, walkDir } from "../../manifest/scan.js";
+import { isBlockLike, isFlowLike, walkDir } from "../../manifest/scan.js";
 import type { AnyBlock } from "../../manifest/scan.js";
 import type { Flow } from "../../engine/flow/flow.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
@@ -12,9 +12,9 @@ export interface FoundBlock {
   file: string;
 }
 
-/** A built Flow: what `map().end()` returns. */
+/** A flow: a map() chain with at least one step. */
 function isFlow(val: unknown): val is Flow<Checkpoint<string>> {
-  return val !== null && typeof val === "object" && typeof (val as { run?: unknown }).run === "function" && typeof (val as { blocks?: unknown }).blocks === "function";
+  return isFlowLike(val);
 }
 import { installedMapPackages, mapPackageBlockFiles } from "../../manifest/maps.js";
 import { reportImportError } from "../../manifest/project.js";

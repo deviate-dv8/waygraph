@@ -6,7 +6,6 @@ import { HoppscotchRestPage } from "#map/(external)/hoppscotch/_page.block";
 /** GET with query params and a bearer token, check the status, that the API received them, and a response header. Needs `extensions: ["hoppscotch"]`. */
 export const hoppscotchAuthFlow = engine
   .map()
-  .start()
   .gotoExternal(
     NavHoppscotchSettingsBlock.stubBefore((ctx) => {
       ctx.ui.title("Scaffold: Hoppscotch GET with query params and bearer token");
@@ -22,5 +21,4 @@ export const hoppscotchAuthFlow = engine
   .method(HoppscotchRestPage.do.readResponseBody)
   .assert(HoppscotchRestPage.do.assertResponseBody)
   .method(HoppscotchRestPage.do.readResponseHeaders)
-  .assert(HoppscotchRestPage.do.assertResponseHeader)
-  .end();
+  .assert(HoppscotchRestPage.do.assertResponseHeader);

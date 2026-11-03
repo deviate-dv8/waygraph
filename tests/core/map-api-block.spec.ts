@@ -22,15 +22,15 @@ test("an API Block goes into map().method(), lands on its to, and records its ro
       });
     const engine = new Engine();
     const page = await context.newPage();
-    const up = await engine.map().start().method(Check("/health")).end().run(context, new MemPage(), { page, closeOnFinish: false });
-    const down = await engine.map().start().method(Check("/broken")).end().run(context, new MemPage(), { page, closeOnFinish: false });
+    const up = await engine.map().method(Check("/health")).run(context, new MemPage(), { page, closeOnFinish: false });
+    const down = await engine.map().method(Check("/broken")).run(context, new MemPage(), { page, closeOnFinish: false });
     expect(up.result).toEqual(Healthy);
     expect(down.result).toEqual(Down);
 
     const Single = defineApiBlock({ name: "ping", to: Healthy, call: ({ request }) => request.get(base + "/health") });
     const route = Single as unknown as { __waygraphFrom: string[]; __waygraphTo: string[] };
     expect([route.__waygraphFrom, route.__waygraphTo]).toEqual([["*"], ["Healthy"]]);
-    const single = await engine.map().start().method(Single).end().run(context, new MemPage(), { page, closeOnFinish: false });
+    const single = await engine.map().method(Single).run(context, new MemPage(), { page, closeOnFinish: false });
     expect(single.result).toEqual(Healthy);
   } finally {
     server.close();

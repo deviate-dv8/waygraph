@@ -9,6 +9,7 @@ import { Node, Project, SyntaxKind } from "ts-morph";
 import type { CallExpression, Expression, SourceFile } from "ts-morph";
 import { scanProject } from "../../manifest/project.js";
 import { walkDir } from "../../manifest/scan.js";
+import { convertChainEnds } from "./codemod-steps.js";
 import { convertStubs } from "./codemod-stubs.js";
 
 /** A Block's kind by the file and export it is declared in; undefined when it isn't a known Block. */
@@ -107,7 +108,7 @@ function titleStub(block: string, title: string, indent: string): string {
 }
 
 function chain(head: string, steps: string[], indent: string): string {
-  return [head, ...steps, ".end()"].join(`\n${indent}  `);
+  return [head, ...steps].join(`\n${indent}  `);
 }
 
 /** Rewrites one call if it is one of the old forms; returns a problem message when it can't. */
@@ -151,12 +152,12 @@ function rewrite(call: CallExpression, kindOf: KindOf, needsMap: Set<SourceFile>
       if (kept.length) settings = `{ ${kept.join(", ")} }`;
     }
     if (title && steps[0]) steps[0] = steps[0].replace(/^(\.\w+\()(.*)\)$/s, (_all, head: string, block: string) => `${head}${titleStub(block, title!, indent)})`);
-    call.replaceWithText(chain(`${callee.getExpression().getText()}.map(${settings})`, [".start()", ...steps], indent));
+    call.replaceWithText(chain(`${callee.getExpression().getText()}.map(${settings})`, steps, indent));
     return "changed";
   }
 
   if (name === "chainFlow") {
-    call.replaceWithText(chain(`${mapRoot(sf, needsMap)}()`, [".start()", ...args.map((a) => `.flow(${a.getText()})`)], indent));
+    call.replaceWithText(chain(`${mapRoot(sf, needsMap)}()`, args.map((a) => `.flow(${a.getText()})`), indent));
     return "changed";
   }
 
@@ -175,7 +176,7 @@ function rewrite(call: CallExpression, kindOf: KindOf, needsMap: Set<SourceFile>
     } else if (mapCall) {
       addSetting(mapCall, SETTINGS[name]!(args[1]?.getText()));
     } else {
-      call.replaceWithText(chain(`${mapRoot(sf, needsMap)}({ ${SETTINGS[name]!(args[1]?.getText())} })`, [".start()", `.flow(${flow.getText()})`], indent));
+      call.replaceWithText(chain(`${mapRoot(sf, needsMap)}({ ${SETTINGS[name]!(args[1]?.getText())} })`, [`.flow(${flow.getText()})`], indent));
       return "changed";
     }
     call.replaceWithText(flow.getText());
@@ -190,8 +191,8 @@ function rewrite(call: CallExpression, kindOf: KindOf, needsMap: Set<SourceFile>
     if (Node.isObjectLiteralExpression(options)) {
       const mapCall = mapCallOf(call)!;
       for (const p of options.getProperties()) addSetting(mapCall, p.getText());
-      options.replaceWithText("");
-      call.replaceWithText(call.getText().replace(/\.end\(\s*\)$/, ".end()"));
+      // The chain is the flow: `.end(options)` goes, its options moved into map().
+      call.replaceWithText(callee.getExpression().getText());
       return "changed";
     }
   }
@@ -245,6 +246,8 @@ export function convertFlows(project: Project, kindOf: KindOf): { changed: Sourc
       if (needsMap.has(sf) && !imp.getNamedImports().some((n) => n.getName() === "map")) imp.addNamedImport("map");
       if (imp.getNamedImports().length === 0 && !imp.getDefaultImport() && !imp.getNamespaceImport()) imp.remove();
     }
+    // The chain is the flow: no .start() / .end() left in a file this rewrote.
+    sf.replaceWithText(convertChainEnds(sf.getFullText()));
   }
   return { changed: [...changed], problems };
 }

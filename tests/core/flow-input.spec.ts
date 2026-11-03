@@ -27,8 +27,7 @@ const caseFlow = engine
   .map({ input: TestKeys.case })
   .method(open)
   .method(setBody, { when: (mem) => mem.get(TestKeys.case).body !== undefined })
-  .method(send)
-  .end();
+  .method(send);
 
 test.beforeEach(() => {
   sent.length = 0;
@@ -48,13 +47,13 @@ test("a flow's input is required: preflight asks for it", async ({ page }) => {
 
 test(".flow(sub, { input }) plays one flow for several cases", async ({ page }) => {
   const sendAgain = defineMethodBlock({ name: "back-to-form", from: Sent, to: Start, instruction: { async act() {} } });
-  const both = engine.map().flow(caseFlow, { input: { url: "/a" } }).method(sendAgain).flow(caseFlow, { input: { url: "/b", body: "{}" } }).end();
+  const both = engine.map().flow(caseFlow, { input: { url: "/a" } }).method(sendAgain).flow(caseFlow, { input: { url: "/b", body: "{}" } });
   await both.run(page.context(), new MemPage(), { page });
   expect(sent).toEqual(["send /a", "body {}", "send /b"]);
 });
 
 test("an input for a sub-flow that takes none is rejected", () => {
-  const plain = engine.map().method(open).end();
+  const plain = engine.map().method(open);
   expect(() => engine.map().flow(plain, { input: 1 })).toThrow(/takes no input/);
 });
 

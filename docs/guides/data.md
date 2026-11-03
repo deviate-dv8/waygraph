@@ -106,8 +106,7 @@ A flow that plays the same steps over different data declares its input instead 
 export const addItemFlow = engine
   .map({ as: StandardUser, input: SaucedemoKeys.selectedItem, memStub: true })
   .gotoPage(NavInventoryBlock)
-  .method(AddToCartBlock)
-  .end();
+  .method(AddToCartBlock);
 ```
 
 ```sh
@@ -126,8 +125,7 @@ never decides whether the flow passed.
 engine.map({ memStub: true })
   .gotoPage(NavSignupBlock)
   .method(SubmitSignupBlock, { lands: SignedUp })
-  .finally(DeleteTestUserApiBlock)
-  .end();
+  .finally(DeleteTestUserApiBlock);
 ```
 
 When a rerun can legitimately meet what the last run made, make it an outcome, not a failure: the create Block lands

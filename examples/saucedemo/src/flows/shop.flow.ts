@@ -12,7 +12,6 @@ import { orderPlacedYap, placingOrder } from "../stubs/finish-order.js";
 /** Add the selected item, check out and place the order. Starts signed in (run it after loginFlow). */
 export const shopFlow = engine
   .map({ memStub: true })
-  .start()
   .method(AddToCartBlock.stubBefore((ctx) => ctx.ui.title("Shop & Checkout")))
   .gotoPage(NavCartBlock)
   .gotoPage(NavCheckoutInfoBlock)
@@ -20,5 +19,4 @@ export const shopFlow = engine
   .method(FillLastNameBlock)
   .method(FillPostalCodeBlock)
   .method(SubmitCheckoutInfoBlock)
-  .method(FinishOrderBlock.stubBefore(placingOrder).stubAfter(orderPlacedYap))
-  .end();
+  .method(FinishOrderBlock.stubBefore(placingOrder).stubAfter(orderPlacedYap));

@@ -29,17 +29,13 @@ const CheckBackendHealth = defineApiBlock({
 
 export const apiDemoEpisode = engine
   .map()
-  .start()
   .method(
     CheckBackendHealth.stubBefore((ctx) => {
       ctx.ui.title("Checking backend health · real HTTP request, no browser");
     }),
-  )
-  .end();
+  );
 
 export const apiDemoFlow = engine
   .map({ memStub: true })
-  .start()
   .flow(loginFlow)
-  .flow(apiDemoEpisode)
-  .end();
+  .flow(apiDemoEpisode);

@@ -6,7 +6,6 @@ import { HoppscotchRestPage } from "#map/(external)/hoppscotch/_page.block";
 /** POST JSON with a header, check the status and the response body. Needs `extensions: ["hoppscotch"]`. */
 export const hoppscotchPostFlow = engine
   .map()
-  .start()
   .gotoExternal(
     NavHoppscotchSettingsBlock.stubBefore((ctx) => {
       ctx.ui.title("Scaffold: Hoppscotch POST with header and JSON body");
@@ -21,5 +20,4 @@ export const hoppscotchPostFlow = engine
   .method(HoppscotchRestPage.do.sendRequest)
   .assert(HoppscotchRestPage.do.assertStatus)
   .method(HoppscotchRestPage.do.readResponseBody)
-  .assert(HoppscotchRestPage.do.assertResponseBody)
-  .end();
+  .assert(HoppscotchRestPage.do.assertResponseBody);

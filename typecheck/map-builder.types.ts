@@ -32,39 +32,35 @@ const ClearThing = defineMethodBlock({
 
 // Happy path - each step method accepts only its factory brand.
 const _ok = map()
-  .start()
   .gotoPage(NavHome)
   .assert(AssertHome)
-  .method(ClearThing)
-  .end();
+  .method(ClearThing);
 void _ok;
 
-const _okPage = map().start().gotoPage(PageHome).assert(AssertHome).end();
+const _okPage = map().gotoPage(PageHome).assert(AssertHome);
 void _okPage;
 
 // Decorate keeps the brand so stubBefore still typechecks into .method().
 const _okDecorated = map()
-  .start()
   .gotoPage(NavHome)
-  .method(ClearThing.stubBefore(() => {}))
-  .end();
+  .method(ClearThing.stubBefore(() => {}));
 void _okDecorated;
 
 // Assert must not go through .method(); Method must not go through .assert().
 // @ts-expect-error - AssertBlock is not a MethodBlock
-map().start().gotoPage(NavHome).method(AssertHome);
+map().gotoPage(NavHome).method(AssertHome);
 
 // @ts-expect-error - MethodBlock is not an AssertBlock
-map().start().gotoPage(NavHome).assert(ClearThing);
+map().gotoPage(NavHome).assert(ClearThing);
 
 // @ts-expect-error - MethodBlock is not a Nav/Page Block
-map().start().gotoPage(ClearThing);
+map().gotoPage(ClearThing);
 
 // @ts-expect-error - AssertBlock is not a Nav/Page Block
-map().start().gotoPage(AssertHome);
+map().gotoPage(AssertHome);
 
 // @ts-expect-error - NavBlock is not an AssertBlock
-map().start().assert(NavHome);
+map().assert(NavHome);
 
 // @ts-expect-error - NavBlock is not a MethodBlock
-map().start().gotoPage(NavHome).method(NavHome);
+map().gotoPage(NavHome).method(NavHome);

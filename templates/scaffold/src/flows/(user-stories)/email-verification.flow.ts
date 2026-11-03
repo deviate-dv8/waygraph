@@ -6,7 +6,6 @@ import { NavVerificationLinkBlock } from "#map/(app_base)/home/nav-verification-
 /** Needs a Mailpit at WAYGRAPH_MAIL_URL (default http://127.0.0.1:8025); tests/mail-verify.spec.ts starts one. */
 export const emailVerificationFlow = engine
   .map()
-  .start()
   .gotoExternal(
     MailpitInboxPage.nav.stubBefore((ctx) => {
       ctx.ui.title("Scaffold: Cross-origin mail verification (QA-rich)");
@@ -38,5 +37,4 @@ export const emailVerificationFlow = engine
       });
     }),
   )
-  .gotoPage(NavVerificationLinkBlock)
-  .end();
+  .gotoPage(NavVerificationLinkBlock);

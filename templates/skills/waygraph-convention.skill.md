@@ -90,9 +90,9 @@ against a live site, use `--skill-pilot-blind`.
 
 ## Flows, stubs and config (the scaffold's shape)
 
-- **Build flows with `map()`** (`engine.map().gotoPage(Page.nav).method(Page.do.b, { pace }).assert(Page.do.a).end()`;
+- **Build flows with `map()`** (`engine.map().gotoPage(Page.nav).method(Page.do.b, { pace }).assert(Page.do.a)`;
   `.gotoExternal` for another origin); it is the only way to build one. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`, `as`) go in `map({ … })` before the chain
-  and `.end()` takes nothing. The flow's title is `ctx.ui.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
+  and the chain itself is the flow: there is no closing call. The flow's title is `ctx.ui.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
   `defineFlow`, `chainFlow` and the `with*` flow wrappers were removed in 0.16.0; `waygraph upgrade --codemod flows` converts them.
 - **A flow imports one thing per page it visits: the page's Page Block.** `definePageBlock({ checkpoint: Home, nav:
   NavHomeBlock, methods: { addItem: () => AddItemBlock } })` exported as `HomePage`; the flow writes
@@ -297,8 +297,7 @@ export const inventoryAddItemFlow = engine
   .method(AddShown)
   .gotoPage(CartPage.nav)
   .expect(Cart.items, (items, mem) => items.some((i) => i.name === mem.get(ShopKeys.selectedItem).name), "the item in the cart")
-  .finally(EmptyCartApiBlock)
-  .end();
+  .finally(EmptyCartApiBlock);
 ```
 
 Check an API Block's exact `call` signature and the helpers' options against the installed version's types

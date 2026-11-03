@@ -13,5 +13,4 @@ export const addItemFlow = engine
   .map({ as: StandardUser, input: SaucedemoKeys.selectedItem, memStub: true })
   .gotoPage(NavInventoryBlock)
   .method(AddToCartBlock)
-  .gotoPage(NavCartBlock)
-  .end();
+  .gotoPage(NavCartBlock);

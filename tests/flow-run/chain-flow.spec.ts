@@ -29,7 +29,7 @@ test.describe("startsFresh", () => {
 
   test("a flow whose first step resets starts fresh even when it runs first", () => {
     const inner = withSettings(buildFlow([makeBlock("a")], engine.config), { sessionReset: true });
-    const outer = engine.map().flow(inner, { reset: true }).end();
+    const outer = engine.map().flow(inner, { reset: true });
     expect(startsFresh(outer, 0)).toBe(true);
   });
 });

@@ -15,12 +15,15 @@ const CLI = join(import.meta.dirname, "..", "..", "dist", "cli", "cli.js");
 const tsxEsm = createRequire(import.meta.url).resolve("tsx/esm");
 
 // Plain object literals, no `import { ... } from "waygraph"` - a Flow is a
-// duck-typed shape (`.run`), and these fixtures avoid needing their own
+// duck-typed shape (`.run`, `.blocks()`), and these fixtures avoid needing their own
 // node_modules for the happy-path list/validate checks.
 const VALID_FLOW = `
 export const DemoFlow = {
   async run() {
     return { __state: "Done" };
+  },
+  blocks() {
+    return [{ name: "done" }];
   },
 };
 `;

@@ -52,10 +52,10 @@ export const AddEffect = defineEffectBlock({
 export const Seen = defineAssertBlock({ name: "seen", checkpoint: ItemInCart, verify: [] });
 
 // The chain still type-checks step to step.
-export const flow = new Engine().map().start().gotoPage(NavHome).method(AddItem).assert(Seen).method(Clear).end();
+export const flow = new Engine().map().gotoPage(NavHome).method(AddItem).assert(Seen).method(Clear);
 
 // @ts-expect-error Clear runs from ItemInCart, not Home
-new Engine().map().start().gotoPage(NavHome).method(Clear).end();
+new Engine().map().gotoPage(NavHome).method(Clear);
 
 defineMethodBlock({
   name: "bad",

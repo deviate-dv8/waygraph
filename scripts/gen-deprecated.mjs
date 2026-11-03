@@ -150,6 +150,7 @@ A stub paints through \`ctx.ui\`; \`ctx\` itself holds only what a stub reads (\
 | Removed | Use instead |
 | --- | --- |
 | \`MapStart\` | \`Start\`, a value and a type: \`from: Start\`, \`to: Start\`, \`Block<Start, Home>\` |
+| \`.start()\`, \`.end()\` on a \`map()\` chain | Nothing: the chain is the flow (\`waygraph upgrade --codemod chain\`). |
 
 ## Style
 

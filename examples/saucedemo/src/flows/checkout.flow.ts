@@ -17,7 +17,6 @@ import { LoginSel } from "../blocks/saucedemo-web/methods/login.sel.js";
 
 export const checkoutFlow = engine
   .map({ memStub: true })
-  .start()
   .gotoPage(NavLoginBlock, { ff: true })
   .method(
     FillUsernameBlock.stubBefore((ctx) => {
@@ -81,5 +80,4 @@ export const checkoutFlow = engine
     }),
   )
   .method(SubmitCheckoutInfoBlock.stubBefore((ctx) => ctx.ui.hideCaption()))
-  .method(FinishOrderBlock.stubBefore(placingOrder).stubAfter(orderPlacedYap))
-  .end();
+  .method(FinishOrderBlock.stubBefore(placingOrder).stubAfter(orderPlacedYap));

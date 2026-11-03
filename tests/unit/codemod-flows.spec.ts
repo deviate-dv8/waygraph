@@ -37,7 +37,7 @@ ${IMPORTS}
 export const helloFlow = engine.defineFlow([start, NavHomeBlock, AddItemBlock, AssertHelloBlock, NavMailBlock, end], { title: "Hello", memStub: true });
 `);
     assert.deepEqual(problems, []);
-    assert.match(text, /engine\.map\(\{ memStub: true \}\)\s*\.start\(\)\s*\.gotoPage\(NavHomeBlock\.stubBefore\(\(ctx\) => \{\s*ctx\.ui\.title\("Hello"\);\s*\}\)\)\s*\.method\(AddItemBlock\)\s*\.assert\(AssertHelloBlock\)\s*\.gotoExternal\(NavMailBlock\)\s*\.end\(\)/);
+    assert.match(text, /engine\.map\(\{ memStub: true \}\)\s*\.gotoPage\(NavHomeBlock\.stubBefore\(\(ctx\) => \{\s*ctx\.ui\.title\("Hello"\);\s*\}\)\)\s*\.method\(AddItemBlock\)\s*\.assert\(AssertHelloBlock\)\s*\.gotoExternal\(NavMailBlock\);/);
     assert.doesNotMatch(text, /import \{[^}]*\b(start|end|withMemStub)\b[^}]*\} from "waygraph"/);
   });
 
@@ -58,11 +58,11 @@ import { a, b } from "./other.flow.js";
 export const both = chainFlow(a, b);
 export const stubbed = withMemStub(a);
 `);
-    assert.match(text, /both = engine\.map\(\)\s*\.start\(\)\s*\.flow\(a\)\s*\.flow\(b\)\s*\.end\(\)/);
-    assert.match(text, /stubbed = engine\.map\(\{ memStub: true \}\)\s*\.start\(\)\s*\.flow\(a\)\s*\.end\(\)/);
+    assert.match(text, /both = engine\.map\(\)\s*\.flow\(a\)\s*\.flow\(b\);/);
+    assert.match(text, /stubbed = engine\.map\(\{ memStub: true \}\)\s*\.flow\(a\);/);
   });
 
-  it("chains stubs, moves .end(options) into map(), and reports what it can't convert", () => {
+  it("chains stubs, moves .end(options) into map() and drops .start() / .end(), and reports what it can't convert", () => {
     const { text, problems } = run(`import { start, end, withStubBefore } from "waygraph";
 ${IMPORTS}
 import { RawBlock } from "../../map/home/_nav.block.js";
@@ -71,7 +71,7 @@ export const y = engine.map().start().gotoPage(NavHomeBlock).end({ memStub: true
 export const z = engine.defineFlow([start, RawBlock, end]);
 `);
     assert.match(text, /x = NavHomeBlock\.stubBefore\(\(ctx\) => ctx\.title\("x"\)\)/);
-    assert.match(text, /y = engine\.map\(\{ memStub: true \}\)\.start\(\)\.gotoPage\(NavHomeBlock\)\.end\(\)/);
+    assert.match(text, /y = engine\.map\(\{ memStub: true \}\)\.gotoPage\(NavHomeBlock\);/);
     assert.equal(problems.length, 1);
     assert.match(problems[0]!, /RawBlock is not a Block from a define\*Block factory/);
     assert.match(text, /engine\.defineFlow\(\[start, RawBlock, end\]\)/);

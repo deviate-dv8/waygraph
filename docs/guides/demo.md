@@ -40,8 +40,7 @@ export const loginFlow = engine
   .gotoPage(NavLoginBlock.stubBefore((ctx) => ctx.ui.title("Sign in")))
   .method(FillUsernameBlock)
   .method(FillPasswordBlock)
-  .method(SubmitLogin)
-  .end();
+  .method(SubmitLogin);
 ```
 
 | Stub | Runs | Show |

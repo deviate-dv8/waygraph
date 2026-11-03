@@ -13,7 +13,7 @@ test("nested flows: Episode 1 signs in + shops, Episode 2 locked-out user stays 
   mem.set(LoginCreds({ username: "standard_user", password: "secret_sauce" }));
   mem.set(BACKPACK);
 
-  const ep1 = engine.map().start().flow(loginFlow).flow(shopFlow).end();
+  const ep1 = engine.map().flow(loginFlow).flow(shopFlow);
   const result1 = await ep1.run(mem);
   expect(result1).toEqual(checkpoint("OrderComplete"));
 
@@ -27,12 +27,12 @@ test("shopFlow alone: already-seeded SelectedItem completes checkout after login
   mem.set(LoginCreds({ username: "standard_user", password: "secret_sauce" }));
   mem.set(BACKPACK);
 
-  const result = await engine.map().start().flow(loginFlow).flow(shopFlow).end().run(mem);
+  const result = await engine.map().flow(loginFlow).flow(shopFlow).run(mem);
   expect(result).toEqual(checkpoint("OrderComplete"));
 });
 
 test("blocks() lists the flattened episode chain in order", () => {
-  const blocks = engine.map().start().flow(loginFlow).flow(shopFlow).flow(viewerBlockedFlow).end().blocks();
+  const blocks = engine.map().flow(loginFlow).flow(shopFlow).flow(viewerBlockedFlow).blocks();
   expect(blocks.map((b) => b.name)).toEqual([
     "nav-login",
     "fill-username",

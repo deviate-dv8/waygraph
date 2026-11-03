@@ -6,7 +6,6 @@ import { DocsPage } from "#map/(app_base)/docs/_page.block";
 /** Smoke: nav + assert (no mem), then nav to the sibling docs/ page. Green offline. */
 export const homeHelloFlow = engine
   .map()
-  .start()
   .gotoPage(
     HomePage.nav.stubBefore((ctx) => {
       ctx.ui.title("Scaffold: Hello Waygraph");
@@ -37,5 +36,4 @@ export const homeHelloFlow = engine
         ctx.ui.ring("title", { selector: DemoSel.title, label: "Heading at failure", tag: "FAIL" });
       }),
   )
-  .gotoPage(DocsPage.nav)
-  .end();
+  .gotoPage(DocsPage.nav);

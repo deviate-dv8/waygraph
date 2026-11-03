@@ -81,7 +81,7 @@ const AwayBlock = defineMethodBlock({
 test.describe("Engine.map() builder", () => {
   test("a chain of real Blocks (nav -> assert -> method) builds and runs a real Flow", async () => {
     const engine = new Engine();
-    const flow = engine.map().start().gotoPage(NavHome).assert(AssertHome).method(ClearThing).end();
+    const flow = engine.map().gotoPage(NavHome).assert(AssertHome).method(ClearThing);
     const mem = new MemPage();
     const result = await flow.run(fakeContext, mem);
     expect(result).toEqual(checkpoint("Home"));
@@ -89,7 +89,7 @@ test.describe("Engine.map() builder", () => {
 
   test("gotoPage() rejects a hand-rolled object with no waygraph kind marker", () => {
     const engine = new Engine();
-    expect(() => engine.map().start().gotoPage(fakeBlock)).toThrow(
+    expect(() => engine.map().gotoPage(fakeBlock)).toThrow(
       /gotoPage\("sneaky-fake"\).*defineNavBlock.*no waygraph kind marker/s,
     );
   });
@@ -99,7 +99,7 @@ test.describe("Engine.map() builder", () => {
     // runtime __waygraphKind marker still fails loud if something bypasses TS.
     const engine = new Engine();
     expect(() =>
-      engine.map().start().assert(NavHome as unknown as AssertBlock<Checkpoint<"__start__">>),
+      engine.map().assert(NavHome as unknown as AssertBlock<Checkpoint<"__start__">>),
     ).toThrow(
       /assert\("nav-home"\).*defineAssertBlock.*kind "nav"/s,
     );
@@ -108,14 +108,14 @@ test.describe("Engine.map() builder", () => {
   test("method() rejects AssertBlock at runtime when cast past the brand (use .assert())", () => {
     const engine = new Engine();
     expect(() =>
-      engine.map().start().gotoPage(NavHome).method(AssertHome as unknown as typeof ClearThing),
+      engine.map().gotoPage(NavHome).method(AssertHome as unknown as typeof ClearThing),
     ).toThrow(/method\("assert-home"\).*defineAssertBlock.*\.assert\(\)/s);
   });
 
   test("method() rejects a hand-rolled object with no waygraph salt marker at all", () => {
     const engine = new Engine();
     expect(() =>
-      engine.map().start().gotoPage(NavHome).method(fakeBlock as unknown as typeof ClearThing),
+      engine.map().gotoPage(NavHome).method(fakeBlock as unknown as typeof ClearThing),
     ).toThrow(
       /method\("sneaky-fake"\).*defineMethodBlock.*no waygraph salt marker/s,
     );
@@ -124,41 +124,40 @@ test.describe("Engine.map() builder", () => {
   test("gotoPage() throws when the Block's static url is actually cross-origin", () => {
     const engine = new Engine();
     expect(() =>
-      engine.map({ homeOrigin: "https://app.example.com" }).start().gotoPage(NavExternal),
+      engine.map({ homeOrigin: "https://app.example.com" }).gotoPage(NavExternal),
     ).toThrow(/gotoPage\("nav-mailpit"\).*NOT this map's home origin.*gotoExternal/s);
   });
 
   test("gotoExternal() throws when the Block's static url is actually same-origin", () => {
     const engine = new Engine();
     expect(() =>
-      engine.map({ homeOrigin: "https://app.example.com" }).start().gotoExternal(NavHome),
+      engine.map({ homeOrigin: "https://app.example.com" }).gotoExternal(NavHome),
     ).toThrow(/gotoExternal\("nav-home"\).*IS this map's home origin.*gotoPage/s);
   });
 
   test("origin check is skipped (not an error) when homeOrigin isn't configured", async () => {
     const engine = new Engine();
     // No homeOrigin given - gotoExternal on an actually-internal Block is allowed, undecidable by design.
-    const flow = engine.map().start().gotoExternal(NavHome).end();
+    const flow = engine.map().gotoExternal(NavHome);
     const mem = new MemPage();
     const result = await flow.run(fakeContext, mem);
     expect(result).toEqual(checkpoint("Home"));
   });
 
-  test("end() throws when called with zero steps", () => {
+  test("a map() with zero steps lists no Blocks, and fails when it's run", async () => {
     const engine = new Engine();
-    expect(() => engine.map().start().end()).toThrow(/zero steps/);
+    expect(engine.map().blocks()).toEqual([]);
+    await expect(engine.map().run(new MemPage())).rejects.toThrow(/zero steps/);
   });
 
   test("ffStart/ffEnd collapses inners into one fastForwardCompose step", async () => {
     const engine = new Engine();
     const flow = engine
       .map()
-      .start()
       .ffStart("ff-auth")
       .gotoPage(NavHome)
       .method(ClearThing)
-      .ffEnd()
-      .end();
+      .ffEnd();
     const blocks = flow.blocks();
     expect(blocks).toHaveLength(1);
     expect(blocks[0]!.name).toBe("ff-auth");
@@ -168,20 +167,18 @@ test.describe("Engine.map() builder", () => {
     expect(result).toEqual(checkpoint("Home"));
   });
 
-  test("ffEnd without ffStart / end while ff open throw", () => {
+  test("ffEnd without ffStart throws; a flow used with an ffStart still open throws", () => {
     const engine = new Engine();
-    expect(() => engine.map().start().ffEnd()).toThrow(/no open/);
-    expect(() => engine.map().start().ffStart("x").end()).toThrow(/still open/);
+    expect(() => engine.map().ffEnd()).toThrow(/no open/);
+    expect(() => engine.map().ffStart("x").gotoPage(NavHome).blocks()).toThrow(/still open/);
   });
 
   test("{ ff: true } fast-forwards a step inline, no ffStart/ffEnd bracket - PIA ask", async () => {
     const engine = new Engine();
     const flow = engine
       .map()
-      .start()
       .gotoPage(NavHome, { ff: true })
-      .method(ClearThing, { ff: true })
-      .end();
+      .method(ClearThing, { ff: true });
     const blocks = flow.blocks();
     expect(blocks).toHaveLength(1);
     expect((blocks[0]!.block as { fastForward?: boolean }).fastForward).toBe(true);
@@ -194,21 +191,19 @@ test.describe("Engine.map() builder", () => {
     const engine = new Engine();
     const flow = engine
       .map()
-      .start()
       .gotoPage(NavHome, { ff: true })
       .method(ClearThing, { ff: true })
-      .method(ClearThing)
-      .end();
+      .method(ClearThing);
     const blocks = flow.blocks();
     expect(blocks).toHaveLength(2);
     expect((blocks[0]!.block as { fastForward?: boolean }).fastForward).toBe(true);
     expect((blocks[1]!.block as { fastForward?: boolean }).fastForward).toBeUndefined();
   });
 
-  test("an auto-opened { ff: true } window left open at .end() closes silently - no 'still open' error, unlike an explicit .ffStart()", () => {
+  test("an auto-opened { ff: true } window left open at the flow's end closes silently - no 'still open' error, unlike an explicit .ffStart()", () => {
     const engine = new Engine();
     expect(() =>
-      engine.map().start().gotoPage(NavHome, { ff: true }).end(),
+      engine.map().gotoPage(NavHome, { ff: true }).blocks(),
     ).not.toThrow();
   });
 
@@ -221,14 +216,14 @@ test.describe("Engine.map() builder", () => {
     const phase = await runStubPhase(decorated, "stubBefore", { mem: new MemPage() });
     expect(phase.highlights.some((h) => h.label?.includes("from decorate"))).toBe(true);
     const engine = new Engine();
-    const flow = engine.map().start().gotoPage(NavHome).method(decorated).end();
+    const flow = engine.map().gotoPage(NavHome).method(decorated);
     const mem = new MemPage();
     expect(await flow.run(fakeContext, mem)).toEqual(checkpoint("Home"));
   });
 
   test("the standalone map() export is equivalent to new Engine().map()", async () => {
     const { map } = await import("../../src/index.js");
-    const flow = map().gotoPage(NavHome).end();
+    const flow = map().gotoPage(NavHome);
     const mem = new MemPage();
     const result = await flow.run(fakeContext, mem);
     expect(result).toEqual(checkpoint("Home"));
@@ -240,7 +235,7 @@ test.describe("Engine.map() builder", () => {
       .map()
       .gotoPage(NavHome)
       .method(Decide)
-      .branch({ Home: null, Away: (m) => m.method(AwayBlock).end() });
+      .branch({ Home: null, Away: (m) => m.method(AwayBlock) });
     const mem = new MemPage();
     mem.set(WhichWay, "away");
     const result = await flow.run(fakeContext, mem);
@@ -275,7 +270,7 @@ test.describe("Engine.map() builder", () => {
       .map()
       .gotoPage(NavHome)
       .method(Decide)
-      .branch({ Home: null, Away: (m) => m.method(routeAware).end() });
+      .branch({ Home: null, Away: (m) => m.method(routeAware) });
     const mem = new MemPage();
     mem.set(WhichWay, "away");
     const result = await flow.run(fakeContext, mem);
@@ -301,7 +296,7 @@ test.describe("Engine.map() builder", () => {
       .map()
       .gotoPage(NavHome)
       .method(Decide)
-      .branch({ Home: null, Away: (m) => m.method(spiedAway).end() });
+      .branch({ Home: null, Away: (m) => m.method(spiedAway) });
     const mem = new MemPage();
     mem.set(WhichWay, "home");
     const result = await flow.run(fakeContext, mem);
@@ -327,7 +322,7 @@ test.describe("Engine.map() builder", () => {
       .map()
       .gotoPage(NavHome)
       .method(Decide)
-      .branch({ Home: null, Away: (m) => m.method(spiedAway).end() });
+      .branch({ Home: null, Away: (m) => m.method(spiedAway) });
     const mem = new MemPage();
     mem.set(WhichWay, "away");
     const page = { close: async () => {}, goto: async () => {} };
@@ -342,7 +337,7 @@ test.describe("Engine.map() builder", () => {
       .map()
       .gotoPage(NavHome)
       .method(Decide)
-      .branch({ Home: null, Away: (m) => m.method(AwayBlock).end() });
+      .branch({ Home: null, Away: (m) => m.method(AwayBlock) });
     const mem = new MemPage();
     mem.set(WhichWay, "home");
     await expect((flow.run as any)(mem, {})).rejects.toThrow(/run\(context, mem/);
@@ -354,7 +349,7 @@ test.describe("Engine.map() builder", () => {
       .map()
       .gotoPage(NavHome)
       .method(Decide)
-      .branch({ Home: null, Away: (m) => m.method(AwayBlock).end() })
+      .branch({ Home: null, Away: (m) => m.method(AwayBlock) })
       .withBlockVerify("decide", []);
     const mem = new MemPage();
     mem.set(WhichWay, "home");
@@ -410,8 +405,8 @@ test.describe("Engine.map() builder", () => {
         // with its own condition, not the first branch's route reused.
         Away: (m) =>
           m.method(SubDecide).branch({
-            Home: (m2) => m2.method(NearBlock).end(),
-            Away: (m2) => m2.method(FarBlock).end(),
+            Home: (m2) => m2.method(NearBlock),
+            Away: (m2) => m2.method(FarBlock),
           }),
       });
     const mem = new MemPage();
@@ -451,8 +446,8 @@ test.describe("Engine.map() builder", () => {
         Home: null,
         Away: (m) =>
           m.method(SubDecide).branch({
-            Home: (m2) => m2.method(NearBlock).end(),
-            Away: (m2) => m2.method(FarBlock).end(),
+            Home: (m2) => m2.method(NearBlock),
+            Away: (m2) => m2.method(FarBlock),
           }),
       });
     const names = flow.blocks().map((b) => b.name);
@@ -482,7 +477,7 @@ test.describe("Engine.map() builder", () => {
       .branch({
         Home: null,
         // Only the Away leg needs this key - a live run with WhichWay="home" would never touch it.
-        Away: (m) => m.method(NeedsSecret).end(),
+        Away: (m) => m.method(NeedsSecret),
       });
     // Unregistered: seedMemStub leaves it unset (matches withMemStub's own preflight-fails-loud contract).
     const mem1 = new MemPage();
@@ -510,8 +505,8 @@ test.describe("Engine.map() builder", () => {
       .gotoPage(NavHome)
       .method(Decide)
       .branch({
-        Home: (m) => m.method(NearBlock).end(),
-        Away: (m) => m.gotoPage(NavHome).end(),
+        Home: (m) => m.method(NearBlock),
+        Away: (m) => m.gotoPage(NavHome),
       });
 
     const routes = branchRoutes(flow);

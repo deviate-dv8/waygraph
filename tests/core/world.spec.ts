@@ -28,8 +28,7 @@ test("a flow runs in its time zone with its faults, and both are put back when i
   const before = await tzOf(page);
   const flow = engine
     .map({ timezone: "Asia/Tokyo", network: { faults: [{ url: "**/api/orders", status: 503 }] } })
-    .gotoPage(open([shows("#tz", "Asia/Tokyo"), shows("#orders", "503")]))
-    .end();
+    .gotoPage(open([shows("#tz", "Asia/Tokyo"), shows("#orders", "503")]));
   await flow.run(page.context(), new MemPage(), { page });
   expect(flow.blocks().at(-1)).toMatchObject({ name: "restore-world", cleanup: true });
   await page.reload();
@@ -48,8 +47,7 @@ test("an offline flow sees its requests fail; the network is back after it", asy
     const fetchFails: Trait = { name: "orders-fetch", wants: "a failed fetch", async check() { const got = await status(); return { ok: got === "failed", saw: got }; } };
     const flow = engine
       .map({ network: { throttle: "offline" } })
-      .method(defineMethodBlock({ name: "load-orders", to: Home, instruction: { async act() {}, verify: [fetchFails] } }))
-      .end();
+      .method(defineMethodBlock({ name: "load-orders", to: Home, instruction: { async act() {}, verify: [fetchFails] } }));
     await flow.run(page.context(), new MemPage(), { page });
     expect(await status()).toBe("200");
   } finally {
@@ -67,8 +65,7 @@ test("a throttled flow's requests are slow; normal speed after it", async ({ pag
     let during = 0;
     const flow = engine
       .map({ network: { throttle: { latencyMs: 800, downloadKbps: 10_000, uploadKbps: 10_000 } } })
-      .method(defineMethodBlock({ name: "load", to: Home, instruction: { async act() { during = await timed(); } } }))
-      .end();
+      .method(defineMethodBlock({ name: "load", to: Home, instruction: { async act() { during = await timed(); } } }));
     await flow.run(page.context(), new MemPage(), { page });
     expect(during).toBeGreaterThanOrEqual(750);
     expect(await timed()).toBeLessThan(400);

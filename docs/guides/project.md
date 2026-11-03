@@ -110,6 +110,7 @@ npx waygraph upgrade --skills                         # refresh .agents/skills
 npx waygraph upgrade --codemod keys                   # rewrite code a release changed (see Deprecated)
 npx waygraph upgrade --codemod lands                  # `Block as MethodBlock<A, B>` casts -> .method(Block, { lands: B })
 npx waygraph upgrade --codemod ff                     # { ff: true } on step after step -> .ffStart() ... .ffEnd()
+npx waygraph upgrade --codemod chain                  # drops .start() and .end(): the chain is the flow
 ```
 
 `upgrade` copies only the paths you name, and replaces a file that differs only with `--overwrite`.

@@ -4,9 +4,7 @@ import { NavContinueShoppingBlock } from "../blocks/saucedemo-web/inventory-item
 
 export const cartContinueFlow = engine
   .map()
-  .start()
   .gotoPage(
     NavCartBlock.stubBefore((ctx) => ctx.ui.title("Cart then continue shopping")),
   )
-  .gotoPage(NavContinueShoppingBlock)
-  .end();
+  .gotoPage(NavContinueShoppingBlock);

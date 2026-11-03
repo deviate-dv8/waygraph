@@ -16,9 +16,9 @@ const search = defineMethodBlock({ name: "search", from: Start, to: Results, ins
 const engine = new Engine();
 
 test("without settle, a check right after the step sees the page mid-render", async ({ page }) => {
-  await expect(engine.map().method(search).end().run(page.context(), new MemPage(), { page })).rejects.toThrow(/three-rows/);
+  await expect(engine.map().method(search).run(page.context(), new MemPage(), { page })).rejects.toThrow(/three-rows/);
 });
 
 test("settle waits until the page stops changing, then the step is checked", async ({ page }) => {
-  expect(await engine.map().method(search, { settle: true }).end().run(page.context(), new MemPage(), { page })).toEqual(Results);
+  expect(await engine.map().method(search, { settle: true }).run(page.context(), new MemPage(), { page })).toEqual(Results);
 });

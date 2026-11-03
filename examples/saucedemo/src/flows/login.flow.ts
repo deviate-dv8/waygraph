@@ -8,9 +8,7 @@ import { LoggedIn } from "../states/checkout.states.js";
 /** Standard user signs in. Credentials come from the memStub in src/states/checkout.mem-stubs.ts unless --data / mem set them. */
 export const loginFlow = engine
   .map({ memStub: true })
-  .start()
   .gotoPage(NavLoginBlock.stubBefore((ctx) => ctx.ui.title("Sign In")))
   .method(FillUsernameBlock)
   .method(FillPasswordBlock)
-  .method(SubmitLoginBlock, { lands: LoggedIn })
-  .end();
+  .method(SubmitLoginBlock, { lands: LoggedIn });

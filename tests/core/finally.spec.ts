@@ -17,14 +17,14 @@ test.beforeEach(() => {
 });
 
 test("cleanup runs after the steps pass, and the flow lands where its steps did", async ({ page }) => {
-  const flow = engine.map().method(create).finally(cleanup).end();
+  const flow = engine.map().method(create).finally(cleanup);
   expect(await flow.run(page.context(), new MemPage(), { page })).toEqual(Created);
   expect(log).toEqual(["create", "delete"]);
   expect(flow.blocks().map((b) => [b.name, b.cleanup ?? false])).toEqual([["create-user", false], ["delete-user", true]]);
 });
 
 test("cleanup runs after a step fails, and the step's error is the flow's", async ({ page }) => {
-  const flow = engine.map().method(create).method(broken).finally(cleanup).end();
+  const flow = engine.map().method(create).method(broken).finally(cleanup);
   await expect(flow.run(page.context(), new MemPage(), { page })).rejects.toThrow("profile missing");
   expect(log).toEqual(["create", "check", "delete"]);
 });
@@ -32,7 +32,7 @@ test("cleanup runs after a step fails, and the step's error is the flow's", asyn
 test("a failing cleanup step is reported, the rest still run, and the flow still passes", async ({ page }) => {
   const events: RunEvent[] = [];
   const off = onRunEvent((e) => events.push(e));
-  const flow = engine.map().method(create).finally(failingCleanup).finally(cleanup).end();
+  const flow = engine.map().method(create).finally(failingCleanup).finally(cleanup);
   expect(await flow.run(page.context(), new MemPage(), { page })).toEqual(Created);
   off();
   expect(log).toEqual(["create", "delete-orders", "delete"]);
@@ -42,14 +42,14 @@ test("a failing cleanup step is reported, the rest still run, and the flow still
 });
 
 test("a nested flow's cleanup runs at the end of the outer flow", async ({ page }) => {
-  const inner = engine.map().method(create).finally(cleanup).end();
-  const outer = engine.map().flow(inner).method(defineMethodBlock({ name: "use-user", from: Created, to: Created, instruction: { async act() { log.push("use"); } } })).end();
+  const inner = engine.map().method(create).finally(cleanup);
+  const outer = engine.map().flow(inner).method(defineMethodBlock({ name: "use-user", from: Created, to: Created, instruction: { async act() { log.push("use"); } } }));
   await outer.run(page.context(), new MemPage(), { page });
   expect(log).toEqual(["create", "use", "delete"]);
 });
 
 test("the runner plays a flow's cleanup when one of its steps fails, and the run still fails", async ({ page }) => {
-  const flow = engine.map().method(create).method(broken).finally(cleanup).end();
+  const flow = engine.map().method(create).method(broken).finally(cleanup);
   const steps: PlayStep[] = flow.blocks().map((info) => ({
     block: info.block,
     exportName: info.name,

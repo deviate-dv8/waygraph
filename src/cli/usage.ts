@@ -184,6 +184,11 @@ Also:
                                            to Checkpoint values (checkpoint: Home, from/to).
                                            --codemod keys rewrites key() / keyGroup() into one
                                            keys("ns")<{...}>() namespace per file and namespace.
+                                           --codemod lands: Block as MethodBlock<A, B> casts
+                                           -> .method(Block, { lands: B }). --codemod ff: three
+                                           or more { ff: true } steps -> .ffStart() ... .ffEnd().
+                                           --codemod chain drops .start() / .end() (the chain
+                                           is the flow).
   waygraph extensions install [project] [--update]
                                            Download the browser extensions listed in
                                            waygraph.config.* (extensions: ["hoppscotch"]) into

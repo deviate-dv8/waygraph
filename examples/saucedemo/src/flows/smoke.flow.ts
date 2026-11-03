@@ -9,10 +9,8 @@ import { AddToCartBlock } from "../blocks/saucedemo-web/inventory/methods/add-to
 /** Smoke: the happy path with the Blocks' own verify lists switched off where a later step already proves the outcome. */
 export const smokeFlow = engine
   .map()
-  .start()
   .gotoPage(NavLoginBlock.withVerify([]))
   .method(FillUsernameBlock)
   .method(FillPasswordBlock)
   .method(SubmitLoginBlock.withVerify([]), { lands: LoggedIn })
-  .method(AddToCartBlock.withVerify([]))
-  .end();
+  .method(AddToCartBlock.withVerify([]));

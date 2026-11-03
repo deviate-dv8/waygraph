@@ -138,7 +138,7 @@ A Page Block is the page's namespace: `HomePage.nav` opens it, and `HomePage.do.
 as itself. A flow imports the page, not each Block:
 
 ```ts
-engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem).method(HomePage.do.clearCart).end();
+engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem).method(HomePage.do.clearCart);
 ```
 
 `waygraph auto` groups a page's methods under it, and they never count as orphans. Name the Page Block after the page

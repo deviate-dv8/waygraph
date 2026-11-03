@@ -5,12 +5,10 @@ import { SubmitLogoutBlock } from "../blocks/saucedemo-web/methods/submit-logout
 
 export const catalogLogoutFlow = engine
   .map()
-  .start()
   .gotoPage(
     NavItemDetailBlock.stubBefore((ctx) =>
       ctx.ui.title("Catalog browse then logout"),
     ),
   )
   .gotoPage(NavBackToInventoryBlock)
-  .method(SubmitLogoutBlock)
-  .end();
+  .method(SubmitLogoutBlock);

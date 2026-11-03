@@ -93,32 +93,32 @@ export interface Flow<Out extends Checkpoint<string>> {
    * to show an informational "this is the point" panel instead of an
    * alarming one indistinguishable from a real break.
    */
-  readonly expectedFailureReason?: string;
+  readonly expectedFailureReason?: string | undefined;
   /**
    * Demo pacing for this Flow's episode (`map({ demoPace })`).
    * `run()` ignores; step/demo applies per Block in the episode.
    */
-  readonly demoPace?: import("../stub/pace.js").DemoPace;
+  readonly demoPace?: import("../stub/pace.js").DemoPace | undefined;
   /**
    * Default highlight size/weight/tone for this Flow's episode (`map({ highlightStyle })`).
    * Per-slot stub/fixture values win. `run()` ignores.
    */
-  readonly highlightStyle?: import("../stub/ring.js").HighlightStyleDefaults;
+  readonly highlightStyle?: import("../stub/ring.js").HighlightStyleDefaults | undefined;
   /**
    * `map({ memStub: true })` (or `new Engine({ memStub: true })`): a key the flow requires and mem doesn't have comes from
    * its mem stub (`registerMemStub`) instead of failing preflight. `run()` fills them first; the CLI does the same.
    */
-  readonly memStub?: boolean;
+  readonly memStub?: boolean | undefined;
   /**
    * `map({ input: CaseKey })`: the MemKey this flow takes as its input - one flow for many cases instead of one export
    * per case. Required like any `requires` key; given by `--input` (an array runs the flow once per item), `--data`,
    * a mem stub, or `.flow(sub, { input })`.
    */
-  readonly input?: MemKey<unknown>;
+  readonly input?: MemKey<unknown> | undefined;
   /** `map({ viewport })`: the browser size this flow plays at (`waygraph run`, `demo`, `test --flows`). */
-  readonly viewport?: { width: number; height: number };
+  readonly viewport?: { width: number; height: number } | undefined;
   /** `map({ exclusive: true })`: under `waygraph test --flows` it runs alone, after every other flow. */
-  readonly exclusive?: boolean;
+  readonly exclusive?: boolean | undefined;
   /**
    * This Flow's constituent Blocks, in order between `start`/`end`, as plain
    * data - for introspection/visualization tools, without running anything.
@@ -290,7 +290,7 @@ export interface FlowSettings {
   input?: MemKey<unknown>;
   viewport?: { width: number; height: number };
   exclusive?: boolean;
-  /** Read by map()'s `.end()` (the first step sets them, a cleanup step puts them back). */
+  /** Read when a map() chain is built into its flow (the first step sets them, a cleanup step puts them back). */
   timezone?: string;
   network?: import("./world.js").World["network"];
   /** Cleanup steps from `.finally(Block)`, in order. */

@@ -42,7 +42,7 @@ test("a run's step:error carries the failed check as data", async ({ page }) => 
   const save = defineMethodBlock({ name: "save", from: checkpoint("A"), to: Saved, instruction: { async act() {}, verify: [{ ...Trait.text(".toast", "Saved"), timeoutMs: 200 }] } });
   const events: RunEvent[] = [];
   const off = onRunEvent((e) => events.push(e));
-  await new Engine().map().start().method(save as never).end().run(page.context(), new MemPage(), { page }).catch(() => {});
+  await new Engine().map().method(save as never).run(page.context(), new MemPage(), { page }).catch(() => {});
   off();
   const error = events.find((e) => e.type === "step:error") as Extract<RunEvent, { type: "step:error" }>;
   expect(error.check).toMatchObject({ trait: 'text-equals(.toast, "Saved")', block: "save", wants: '"Saved" in .toast', saw: '"Draft"', heading: "Registry" });

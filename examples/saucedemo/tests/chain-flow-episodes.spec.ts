@@ -15,14 +15,14 @@ test("nested flows run 2 episodes (loginFlow then shopFlow) against the real liv
   mem.set(SaucedemoKeys.credentials, { username: "standard_user", password: "secret_sauce" });
   mem.set(SaucedemoKeys.selectedItem, { id: "sauce-labs-backpack", name: "Sauce Labs Backpack" });
 
-  const combined = engine.map().start().flow(loginFlow).flow(shopFlow).end();
+  const combined = engine.map().flow(loginFlow).flow(shopFlow);
   const result = await combined.run(mem);
 
   expect(result).toEqual(checkpoint("OrderComplete"));
 });
 
 test("blocks() reports the flattened chain in order", () => {
-  const combined = engine.map().start().flow(loginFlow).flow(shopFlow).end();
+  const combined = engine.map().flow(loginFlow).flow(shopFlow);
   const blocks = combined.blocks();
 
   expect(blocks.map((b) => b.name)).toEqual([

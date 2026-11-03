@@ -77,7 +77,7 @@ index.ts          the public API
 
 The engine never imports the demo or runtime: the demo plugs in through `engine/run/hooks.ts` (the network panel) and
 the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by `index.ts`, registers the full launcher).
-`Engine.map()` builds a `MapBuilder`, and `MapBuilder.end()` calls back through a plain `BuildFlowFn`, so `engine.ts` and
+`Engine.map()` builds a `MapBuilder` (the chain is the flow), and building it calls back through a plain `BuildFlowFn`, so `engine.ts` and
 `map-builder.ts` never import each other.
 
 ## Where to put new code

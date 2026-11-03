@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { codemodLands, convertFfRuns } from "../../src/cli/commands/codemod-steps.js";
+import { codemodLands, convertChainEnds, convertFfRuns } from "../../src/cli/commands/codemod-steps.js";
 
 describe("--codemod ff", () => {
   it("brackets three or more { ff: true } steps with .ffStart() / .ffEnd(), keeping the other options", () => {
@@ -13,7 +13,7 @@ describe("--codemod ff", () => {
       "    .gotoPage(NavLoginBlock, { ff: true })",
       "    .method(FillEmailBlock, { ff: true, pace: \"fast\" })",
       "    .method(SubmitBlock, { ff: true });",
-      "const short = map().method(A, { ff: true }).method(B, { ff: true }).end();",
+      "const short = map().method(A, { ff: true }).method(B, { ff: true });",
       "",
     ].join("\n");
     const after = [
@@ -24,7 +24,7 @@ describe("--codemod ff", () => {
       "    .method(FillEmailBlock, { pace: \"fast\" })",
       "    .method(SubmitBlock)",
       "    .ffEnd();",
-      "const short = map().method(A, { ff: true }).method(B, { ff: true }).end();",
+      "const short = map().method(A, { ff: true }).method(B, { ff: true });",
       "",
     ].join("\n");
     assert.equal(convertFfRuns(before), after);
@@ -32,8 +32,44 @@ describe("--codemod ff", () => {
 
   it("two runs in one file", () => {
     const step = ".method(X, { ff: true })";
-    const out = convertFfRuns(`a${step.repeat(3)}.method(Y);\nb${step.repeat(4)}.end();\n`);
-    assert.equal(out, `a.ffStart()${".method(X)".repeat(3)}.ffEnd().method(Y);\nb.ffStart()${".method(X)".repeat(4)}.ffEnd().end();\n`);
+    const out = convertFfRuns(`a${step.repeat(3)}.method(Y);\nb${step.repeat(4)};\n`);
+    assert.equal(out, `a.ffStart()${".method(X)".repeat(3)}.ffEnd().method(Y);\nb.ffStart()${".method(X)".repeat(4)}.ffEnd();\n`);
+  });
+});
+
+describe("--codemod chain", () => {
+  it("drops a flow's .start() and .end(), in branch routes too, and leaves other .start() / .end() alone", () => {
+    const before = [
+      "export const f = engine",
+      "  .map({ as: Planner })",
+      "  .start()",
+      "  .gotoPage(NavHomeBlock)",
+      "  .method(AddItemBlock)",
+      "  .end();",
+      "export const g = map().gotoPage(NavLoginBlock).method(SubmitBlock).branch({",
+      "  LoggedIn: (m) => m.gotoPage(NavCartBlock).end(),",
+      "  LoginPage: (m) => m.end(),",
+      "});",
+      "res.end();",
+      "timer.start();",
+      "items.map((x) => x).join();",
+      "",
+    ].join("\n");
+    const after = [
+      "export const f = engine",
+      "  .map({ as: Planner })",
+      "  .gotoPage(NavHomeBlock)",
+      "  .method(AddItemBlock);",
+      "export const g = map().gotoPage(NavLoginBlock).method(SubmitBlock).branch({",
+      "  LoggedIn: (m) => m.gotoPage(NavCartBlock),",
+      "  LoginPage: (m) => m,",
+      "});",
+      "res.end();",
+      "timer.start();",
+      "items.map((x) => x).join();",
+      "",
+    ].join("\n");
+    assert.equal(convertChainEnds(before), after);
   });
 });
 
@@ -61,7 +97,7 @@ describe("--codemod lands", () => {
       ].join("\n"),
       "src/a.flow.ts": [
         'import { SubmitSaved, SubmitRefused } from "./submit-for-flow.js";',
-        "export const f = map().method(SubmitRefused).method(SubmitSaved, { pace: \"fast\" }).end();",
+        "export const f = map().method(SubmitRefused).method(SubmitSaved, { pace: \"fast\" });",
         "",
       ].join("\n"),
     });

@@ -1,7 +1,8 @@
 # Flows
 
 A flow is a path through your Blocks, written with `engine.map()`. TypeScript checks that each step starts where the
-last one ended, so a flow can't skip from one page to an unrelated one.
+last one ended, so a flow can't skip from one page to an unrelated one. The chain is the flow: there is no closing call, and
+whatever the chain holds when you export it, runs.
 
 ```mermaid
 graph LR
@@ -17,8 +18,7 @@ export const homeCartFlow = engine
   .gotoPage(HomePage.nav)
   .method(HomePage.do.addItem)
   .assert(HomePage.do.assertItemAdded)
-  .method(HomePage.do.clearCart)
-  .end();
+  .method(HomePage.do.clearCart);
 ```
 
 A flow imports one thing per page it visits: the page's Page Block, whose `nav` opens it and whose `do` holds what you
@@ -42,7 +42,6 @@ and it throws, naming the factory to use.
 | `.flow(sub, { reset })` | another flow's steps, in the same page and mem |
 | `.branch({ Tag: (m) => … })` | a different continuation for each place the last step can land |
 | `.finally(b)` | a cleanup step: runs after the others, pass or fail |
-| `.end()` | the finished `Flow` |
 
 ## Step options
 
@@ -68,8 +67,7 @@ A check on one value doesn't need an Assert Block of its own. `.expect` reads th
 engine.map()
   .gotoPage(MachinePage.nav)
   .expect(Machine.status, "Down")                                            // equal (deep, for lists and objects)
-  .expect(Machine.code, (code, mem) => code === mem.get(Keys.machine).code, "the machine we logged")
-  .end();
+  .expect(Machine.code, (code, mem) => code === mem.get(Keys.machine).code, "the machine we logged");
 ```
 
 A failure says what it wanted and saw: `wanted machine.status = "Down"; saw "Operational"`. Write an Assert Block when
@@ -86,8 +84,7 @@ engine.map()
   .set(Keys.search, "MCH-0111")
   .method(RegistryPage.do.fillSearch)
   .set(Keys.search, (mem) => mem.get(Keys.downMachine).code)                 // worked out when the step runs
-  .method(RegistryPage.do.fillSearch)
-  .end();
+  .method(RegistryPage.do.fillSearch);
 ```
 
 A key a `.set()` gives is no longer one the run must supply: `--data` and mem stubs aren't asked for it.
@@ -103,12 +100,11 @@ engine.map({ as: Planner })
   .gotoPage(LogPage.nav)
   .steps(logDisruption)
   .gotoPage(LogPage.nav)
-  .steps(logDisruption)
-  .end();
+  .steps(logDisruption);
 ```
 
 A part is typed from the Checkpoint it starts on, like any step: played from anywhere else, it doesn't compile. It
-doesn't `.end()`; the flow that plays it does. For signing in, use an [account](#accounts) instead.
+isn't a flow on its own; the flow that plays it is. For signing in, use an [account](#accounts) instead.
 
 ## Before and after: setup and cleanup
 
@@ -120,8 +116,7 @@ engine.map({ as: Planner })
   .flow(seedDownMachineFlow)          // API Blocks: create the machine, keep its code in mem
   .gotoPage(RegistryPage.nav)
   .expect(Registry.rows, (rows, mem) => rows.some((r) => r.code === mem.get(Keys.downMachine).code))
-  .finally(DeleteMachineApiBlock)
-  .end();
+  .finally(DeleteMachineApiBlock);
 ```
 
 ## Two outcomes: `lands` or `.branch()`
@@ -139,8 +134,8 @@ engine.map()
   .gotoPage(NavLoginBlock)
   .method(SubmitLoginBlock)
   .branch({
-    LoggedIn: (m) => m.gotoPage(NavCartBlock).end(),
-    LoginPage: (m) => m.assert(AssertLoginErrorBlock).end(),
+    LoggedIn: (m) => m.gotoPage(NavCartBlock),
+    LoginPage: (m) => m.assert(AssertLoginErrorBlock),
   });
 ```
 
@@ -175,8 +170,7 @@ export const StandardUser = account("standard-user", { signIn: loginFlow });
 export const cartAsAccountFlow = engine
   .map({ as: StandardUser })
   .gotoPage(NavInventoryBlock)
-  .method(AddToCartBlock)
-  .end();
+  .method(AddToCartBlock);
 ```
 
 ```mermaid
@@ -196,8 +190,7 @@ So a test run signs each account in once. `forgetSessions()` drops the kept sess
 export const showcase = engine
   .map()
   .flow(ownerFlow)                       // episode 1
-  .flow(viewerFlow, { reset: true })     // episode 2: a second user, fresh cookies
-  .end();
+  .flow(viewerFlow, { reset: true })     // episode 2: a second user, fresh cookies;
 ```
 
 ## Running a flow

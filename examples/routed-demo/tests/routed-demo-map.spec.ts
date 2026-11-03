@@ -8,7 +8,7 @@ import { routedDemoMapFlow } from "../src/flows/routed-demo-map.flow.js";
  * tests/nav/map-builder.spec.ts already covers in the main waygraph
  * package - same real fixture server and real Blocks routed-demo.spec.ts
  * already proves work via defineFlow/the CLI, this time built with
- * .start().gotoPage(...).method(...).gotoPage(...).end() instead.
+ * .gotoPage(...).method(...).gotoPage(...) instead.
  */
 test("engine.map()-built flow runs for real: Dashboard -> click widget -> Docs", async ({ context }) => {
   const mem = new MemPage();

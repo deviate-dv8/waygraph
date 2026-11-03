@@ -31,8 +31,7 @@ test("a Page Block is the page's namespace: nav and do.<method>, each its own Bl
     .gotoPage(ShopPage.nav)
     .assert(ShopPage.do.assertHeading)
     .method(ShopPage.do.add)
-    .method(ShopPage.do.checkout)
-    .end();
+    .method(ShopPage.do.checkout);
   expect(await flow.run(page.context(), new MemPage(), { page })).toEqual(Done);
   expect(did).toEqual(["add", "checkout"]);
   // Still typed step by step: checkout lands on Done, where the shop's methods don't fit.

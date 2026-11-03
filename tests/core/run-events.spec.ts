@@ -33,7 +33,7 @@ async function collect(run: () => Promise<unknown>): Promise<RunEvent[]> {
 const fakeContext = { newPage: async () => ({ close: async () => {} }) } as never;
 
 test("a run reports each Block it ran, in order, with where it went", async () => {
-  const flow = new Engine().map().start().method(ab as never).method(bc as never).end();
+  const flow = new Engine().map().method(ab as never).method(bc as never);
   const events = await collect(() => flow.run(fakeContext, new MemPage()));
   expect(events.map((e) => e.type)).toEqual(["run:start", "step:start", "step:end", "step:start", "step:end", "run:end"]);
   const ends = events.filter((e) => e.type === "step:end") as Extract<RunEvent, { type: "step:end" }>[];
@@ -45,7 +45,7 @@ test("a run reports each Block it ran, in order, with where it went", async () =
 
 test("every step event says what kind of Block ran (page, method, ...), as the manifest does", async () => {
   const home = definePageBlock({ name: "page-a", checkpoint: A });
-  const flow = new Engine().map().start().gotoPage(home as never).method(ab as never).end();
+  const flow = new Engine().map().gotoPage(home as never).method(ab as never);
   const events = await collect(() => flow.run(fakeContext, new MemPage()));
   const steps = events.filter((e): e is Extract<RunEvent, { type: `step:${string}` }> => e.type.startsWith("step:"));
   expect(steps.map((e) => [e.type, e.block, e.kind])).toEqual([
@@ -57,7 +57,7 @@ test("every step event says what kind of Block ran (page, method, ...), as the m
 });
 
 test("a failing Block is reported as the step that failed", async () => {
-  const flow = new Engine().map().start().method(ab as never).method(fails as never).end();
+  const flow = new Engine().map().method(ab as never).method(fails as never);
   const events = await collect(() => flow.run(fakeContext, new MemPage()));
   const error = events.find((e) => e.type === "step:error") as Extract<RunEvent, { type: "step:error" }>;
   expect(error).toMatchObject({ block: "fails", error: "boom", index: 1 });
@@ -84,7 +84,7 @@ test("a step's read waits for the page it landed on to render (a client route: U
     },
   });
   await page.setContent("<h1>Old page</h1>");
-  const flow = new Engine().map().start().method(go as never).end();
+  const flow = new Engine().map().method(go as never);
   const events = await collect(() => flow.run(page.context(), new MemPage(), { page }));
   const read = events.find((e) => e.type === "step:read") as Extract<RunEvent, { type: "step:read" }>;
   expect(read).toMatchObject({ block: "go-routed", checkpoint: "RoutedPage", read: { routed: { heading: "Routed", items: ["one", "two"] } }, missing: [] });

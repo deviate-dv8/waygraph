@@ -3,6 +3,4 @@ import { RemoveFromCartBlock } from "../blocks/saucedemo-web/inventory/methods/r
 
 export const cartMemFlow = engine
   .map()
-  .start()
-  .method(RemoveFromCartBlock)
-  .end();
+  .method(RemoveFromCartBlock);

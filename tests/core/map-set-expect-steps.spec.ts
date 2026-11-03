@@ -47,8 +47,7 @@ test(".set gives the next step its key, a value or one worked out from mem; the 
     .set(K.search, "MCH-1")
     .method(search)
     .set(K.search, (mem) => mem.get(K.machine).code)
-    .method(search)
-    .end();
+    .method(search);
   const required = flow.blocks().flatMap((b) => b.block.requires ?? []).map((k) => k.name);
   expect(required).toEqual([]);
   const mem = new MemPage().set(K.machine, { code: "MCH-2" });
@@ -62,8 +61,7 @@ test(".expect checks what the page shows: a value, or a test that also gets mem"
     .method(open)
     .expect(Shown.rows, ["MCH-1", "MCH-2"])
     .expect(Shown.status, "Down")
-    .expect(Shown.rows, (rows, mem) => rows.includes(mem.get(K.machine).code), "the machine's row")
-    .end();
+    .expect(Shown.rows, (rows, mem) => rows.includes(mem.get(K.machine).code), "the machine's row");
   expect(await flow.run(page.context(), new MemPage().set(K.machine, { code: "MCH-2" }), { page })).toEqual(List);
   await expect(flow.run(page.context(), new MemPage().set(K.machine, { code: "MCH-9" }), { page })).rejects.toThrow(
     /wanted the machine's row; saw \["MCH-1","MCH-2"\]/,
@@ -71,13 +69,13 @@ test(".expect checks what the page shows: a value, or a test that also gets mem"
 });
 
 test("a failed .expect of a value says what it wanted", async ({ page }) => {
-  const flow = engine.map().method(open).expect(Shown.status, "Operational").end();
+  const flow = engine.map().method(open).expect(Shown.status, "Operational");
   await expect(flow.run(page.context(), new MemPage(), { page })).rejects.toThrow(/wanted setExpectShown\.status = "Operational"; saw "Down"/);
 });
 
 test("steps() is a part several flows play, typed from its Checkpoint", async ({ page }) => {
   const findAndView = steps(List, (m) => m.set(K.search, "MCH-1").method(search).method(view));
-  const flow = engine.map().method(open).steps(findAndView).method(back).steps(findAndView).end();
+  const flow = engine.map().method(open).steps(findAndView).method(back).steps(findAndView);
   expect(await flow.run(page.context(), new MemPage(), { page })).toEqual(Detail);
   expect(typed).toEqual(["MCH-1", "MCH-1"]);
   // A part from List doesn't fit a flow on Detail.
@@ -85,8 +83,8 @@ test("steps() is a part several flows play, typed from its Checkpoint", async ({
   expect(() => engine.map().method(open).method(view).steps(findAndView)).toBeDefined();
 });
 
-test("a part can't end", () => {
-  expect(() => steps(List, (m) => m.method(search).end() as never)).toThrow(/doesn't end/);
+test("a part isn't a flow on its own", () => {
+  expect(() => steps(List, (m) => (m.method(search).blocks(), m))).toThrow(/isn't a flow on its own/);
 });
 
 test("map({ memStub: true }) fills missing keys from stubs when it runs; new Engine({ memStub: true }) does it for every flow", async ({ page }) => {
@@ -99,8 +97,8 @@ test("map({ memStub: true }) fills missing keys from stubs when it runs; new Eng
     requires: [K.stubbed],
     instruction: { async act(_p, _i, mem) { seen.push(mem.get(K.stubbed)); } },
   });
-  await engine.map({ memStub: true }).method(useStub).end().run(page.context(), new MemPage(), { page });
-  await new Engine({ memStub: true }).map().method(useStub).end().run(page.context(), new MemPage().set(K.stubbed, "given"), { page });
-  await expect(engine.map().method(useStub).end().run(page.context(), new MemPage(), { page })).rejects.toThrow(/setExpect\.stubbed/);
+  await engine.map({ memStub: true }).method(useStub).run(page.context(), new MemPage(), { page });
+  await new Engine({ memStub: true }).map().method(useStub).run(page.context(), new MemPage().set(K.stubbed, "given"), { page });
+  await expect(engine.map().method(useStub).run(page.context(), new MemPage(), { page })).rejects.toThrow(/setExpect\.stubbed/);
   expect(seen).toEqual(["from-stub", "given"]);
 });

@@ -31,7 +31,6 @@ const ClearShown = HomePage.do.clearCart.stubBefore((ctx) => {
 
 export const homeCartFlow = engine
   .map()
-  .start()
   .gotoPage(
     HomePage.nav.stubBefore((ctx) => {
       ctx.ui.title("Scaffold: Shop (Effect + clear)");
@@ -41,5 +40,4 @@ export const homeCartFlow = engine
   .assert(HomePage.do.assertItemAdded)
   .method(RemoveShown)
   .method(AddShown)
-  .method(ClearShown)
-  .end();
+  .method(ClearShown);

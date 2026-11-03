@@ -5,4 +5,4 @@ import { NavDocsBlock } from "../map/(external)/docs/_nav.block.js";
 
 
 /** Smoke: dashboard -> click widget -> docs, all Blocks under the Waygraph Map folder convention. */
-export const routedDemoFlow = engine.map().start().gotoPage(NavDashboardBlock).method(ClickWidgetBlock).gotoPage(NavDocsBlock).end();
+export const routedDemoFlow = engine.map().gotoPage(NavDashboardBlock).method(ClickWidgetBlock).gotoPage(NavDocsBlock);

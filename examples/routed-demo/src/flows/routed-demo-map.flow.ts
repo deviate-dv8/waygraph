@@ -27,8 +27,6 @@ const homeOrigin = process.env.WAYGRAPH_BASE_URL || "http://127.0.0.1:4277";
  */
 export const routedDemoMapFlow = engine
   .map({ homeOrigin })
-  .start()
   .gotoPage(NavDashboardBlock)
   .method(ClickWidgetBlock)
-  .gotoPage(NavDocsBlock)
-  .end();
+  .gotoPage(NavDocsBlock);

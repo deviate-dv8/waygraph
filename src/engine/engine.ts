@@ -31,11 +31,9 @@ export class Engine {
    * statically checkable, same limitation `map-check.ts` already documents).
    * @example
    * const flow = engine.map({ homeOrigin: "https://app.example.com" })
-   *   .start()
    *   .gotoPage(NavHomeBlock)
    *   .assert(AssertHelloBlock)
    *   .gotoExternal(NavMailpitBlock)
-   *   .end();
    */
   map(options?: MapBuilderOptions): MapBuilder<Start> {
     // The engine's memStub is every flow's default; a map() may still turn it off.
@@ -48,7 +46,7 @@ export class Engine {
  * Standalone convenience for `new Engine(config).map(options)` - use this
  * when a call site doesn't otherwise need its own `Engine` instance (no
  * shared `headless`/`slowMo`/`layouts` across several flows).
- * @example const flow = map({ homeOrigin: "https://app.example.com" }).gotoPage(NavHomeBlock).end();
+ * @example const flow = map({ homeOrigin: "https://app.example.com" }).gotoPage(NavHomeBlock);
  */
 export function map(options?: MapBuilderOptions & EngineConfig): MapBuilder<Start> {
   return new Engine(options).map(options);

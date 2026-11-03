@@ -61,13 +61,13 @@ export const WAYGRAPH_ERRORS = {
   },
   WG_MAP_STEPS_END: {
     where: "engine/flow/map-builder.ts - steps()",
-    means: "A part made with steps() called .end() (or .branch()): a part is steps a flow plays, not a flow.",
-    fix: "Return the builder from the part's function, without .end(); play it in a flow with .steps(part).",
+    means: "A part made with steps() was run, nested or branched as a flow: a part is steps a flow plays, not a flow.",
+    fix: "Play it in a flow with .steps(part); a .branch() goes in the flow, after it.",
   },
   WG_MAP_FF_NOT_CLOSED: {
-    where: "engine/flow/map-builder.ts - MapBuilder.end()",
-    means: ".end() was called while a .ffStart() window was still open.",
-    fix: "Call .ffEnd() before .end().",
+    where: "engine/flow/map-builder.ts - the flow, when first used",
+    means: "The flow was used (run, listed, nested, branched) while a .ffStart() window was still open.",
+    fix: "Close it with .ffEnd() after its last step.",
   },
   WG_MAP_FF_NOT_OPEN: {
     where: "engine/flow/map-builder.ts - MapBuilder.ffEnd()",
@@ -75,9 +75,9 @@ export const WAYGRAPH_ERRORS = {
     fix: "Remove the stray .ffEnd(), or add the .ffStart() it's meant to close.",
   },
   WG_MAP_EMPTY: {
-    where: "engine/flow/map-builder.ts - MapBuilder.end()",
-    means: ".end() was called with zero steps added.",
-    fix: "Add at least one .gotoPage()/.gotoExternal()/.assert()/.method() before .end().",
+    where: "engine/flow/map-builder.ts - the flow, when first used",
+    means: "A map() with no steps was used as a flow.",
+    fix: "Add at least one .gotoPage()/.gotoExternal()/.assert()/.method().",
   },
   WG_MAP_BRANCH_NO_PRIOR_STEP: {
     where: "engine/flow/map-builder.ts - MapBuilder.branch()",
@@ -200,7 +200,7 @@ export const MSG_MAP_FF_EMPTY = (ffName: string) =>
   `Waygraph map: .ffEnd() for "${ffName}" has no steps - add .gotoPage/.method/… inside the window`;
 
 export const MSG_MAP_STEPS_END =
-  "Waygraph map: a part made with steps() doesn't end - return the builder from its function; a flow plays it with .steps(part)";
+  "Waygraph map: a part made with steps() isn't a flow on its own - a flow plays it with .steps(part)";
 
 export const MSG_MAP_METHOD_GOT_ASSERT = (blockName: string) =>
   `Waygraph map: .method("${blockName}") got a defineAssertBlock - use .assert() for ` +
@@ -220,11 +220,10 @@ export const MSG_MAP_BRANCH_NO_PRIOR_STEP =
   "Add .gotoPage()/.gotoExternal()/.method()/.assert() first.";
 
 export const MSG_MAP_FF_NOT_CLOSED = (ffName: string) =>
-  `Waygraph map: .end() while .ffStart("${ffName}") is still open - call .ffEnd() first`;
+  `Waygraph map: the flow's .ffStart("${ffName}") is still open - close it with .ffEnd() after its last step`;
 
 export const MSG_MAP_EMPTY =
-  "Waygraph map: .end() called with zero steps - add at least one .gotoPage()/.gotoExternal()/" +
-  ".assert()/.method() before .end()";
+  "Waygraph map: a flow with zero steps - add at least one .gotoPage()/.gotoExternal()/.assert()/.method()";
 
 export const MSG_BRANCH_REGRESSION_NO_BROWSER =
   "Waygraph runBranchRegression: cloneSession needs context.browser() (a persistent context " +

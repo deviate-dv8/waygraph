@@ -6,18 +6,14 @@ import { RemoveAllFromCartBlock } from "../blocks/saucedemo-web/inventory/method
 /** Add every item, then remove them all (the bulk Methods). */
 export const cartBulkEpisode = engine
   .map()
-  .start()
   .method(
     AddAllToCartBlock.stubBefore((ctx) =>
       ctx.ui.title("Cart bulk add/remove all"),
     ),
   )
-  .method(RemoveAllFromCartBlock)
-  .end();
+  .method(RemoveAllFromCartBlock);
 
 export const cartBulkFlow = engine
   .map({ memStub: true })
-  .start()
   .flow(loginFlow)
-  .flow(cartBulkEpisode)
-  .end();
+  .flow(cartBulkEpisode);
