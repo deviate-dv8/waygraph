@@ -30,6 +30,8 @@ the wrong shape for it. Find another shape.
 
 ## The opinions
 
+- **Everything is a Block.** A navigation, an action, a page, a check and a read are all Blocks, played the same way
+  as a step. No kind of Block does extra things behind the flow's back: what runs is what the flow says.
 - **One action per Block.** Fill, click, submit: separate Blocks. A Block says where it starts and where it lands
   (Checkpoints), and TypeScript checks that a flow never skips between unrelated pages.
 - **Pages are namespaces.** A page's Page Block names how to get there (`nav`) and what you can do there (`do`); a
