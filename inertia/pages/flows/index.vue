@@ -62,7 +62,7 @@ const groups = computed(() => {
             <div class="space-y-2 p-4">
               <div class="flex items-start justify-between gap-2">
                 <p class="font-hand text-xl leading-tight break-all">{{ f.exportName }}</p>
-                <RunStatus v-if="f.lastRun" :ok="f.lastRun.ok" />
+                <RunStatus v-if="f.lastRun" :id="f.lastRun.id" :ok="f.lastRun.ok" />
               </div>
               <p class="truncate font-mono text-xs text-(--ink-soft)" :title="f.file">
                 {{ f.file }}

@@ -38,10 +38,7 @@ export class ProjectService {
     ) {
       return cached.manifest
     }
-    const bin = join(dir, 'node_modules', '.bin', 'waygraph')
-    const [cmd, args] = existsSync(bin)
-      ? [bin, ['manifest', dir]]
-      : ['npx', ['--no-install', 'waygraph', 'manifest', dir]]
+    const [cmd, args] = waygraphCommand(dir, ['manifest', dir])
     const { stdout } = await run(cmd, args, {
       cwd: dir,
       maxBuffer: 64 * 1024 * 1024,
@@ -98,9 +95,15 @@ export class ProjectService {
     return dir
   }
 
-  private runsDir(): string {
+  runsDir(): string {
     return join(this.requireDir(), '.waygraph', 'runs')
   }
+}
+
+/** The project's own waygraph with these arguments: its install, or npx when it has none of its own. */
+export function waygraphCommand(dir: string, args: string[]): [string, string[]] {
+  const bin = join(dir, 'node_modules', '.bin', 'waygraph')
+  return existsSync(bin) ? [bin, args] : ['npx', ['--no-install', 'waygraph', ...args]]
 }
 
 async function readEvents(file: string): Promise<RunEvent[]> {
@@ -155,6 +158,7 @@ function foldSteps(events: RunEvent[]): RunStep[] {
         check: null,
         read: null,
         cleanup: e.cleanup === true,
+        parent: typeof e.parent === 'number' ? e.parent : null,
       })
       continue
     }

@@ -4,7 +4,8 @@ import WorkspaceLayout from '~/layouts/workspace.vue'
 import StepPipeline from '~/components/graph/step_pipeline.vue'
 import RunStatus from '~/components/run_status.vue'
 import { urlFor } from '~/client'
-import { ago, duration } from '~/lib/format'
+import { ago, count, duration } from '~/lib/format'
+import { usePlay } from '~/lib/play'
 import type { ManifestBlock, ManifestFlow, RunSummary } from '#types/project'
 
 /** One flow: its steps on the canvas, what each expects, and its recent runs. */
@@ -28,6 +29,10 @@ const step = computed(() =>
   selected.value === null ? null : (props.steps[selected.value] ?? null)
 )
 const settings = computed(() => Object.entries(props.flow.settings))
+
+const { playing, start } = usePlay()
+/** Play it with each step's verify only: `--no-expect`. */
+const noExpect = ref(false)
 </script>
 
 <template>
@@ -47,11 +52,32 @@ const settings = computed(() => Object.entries(props.flow.settings))
           size="sm"
         />
         <UBadge
-          :label="`${props.steps.length} steps`"
+          :label="count(props.steps.length, 'step')"
           color="neutral"
           variant="outline"
           size="sm"
         />
+      </div>
+      <div class="flex flex-wrap items-center gap-2 pt-2">
+        <UButton
+          label="Run"
+          icon="i-lucide-play"
+          size="sm"
+          :disabled="playing"
+          @click="start(props.flow.exportName, 'run', { noExpect })"
+        />
+        <UTooltip text="Opens a browser with the step panel around each step">
+          <UButton
+            label="Demo"
+            icon="i-lucide-monitor-play"
+            size="sm"
+            color="neutral"
+            variant="outline"
+            :disabled="playing"
+            @click="start(props.flow.exportName, 'demo', { noExpect })"
+          />
+        </UTooltip>
+        <UCheckbox v-model="noExpect" label="verify only" size="sm" />
       </div>
     </div>
 
@@ -103,9 +129,7 @@ const settings = computed(() => Object.entries(props.flow.settings))
 
       <aside class="island pointer-events-auto w-80 p-3">
         <p class="mb-2 text-sm font-semibold">Recent runs</p>
-        <p v-if="!props.runs.length" class="text-xs text-(--ink-soft)">
-          Not run yet: <code>waygraph run {{ props.flow.exportName }}</code>
-        </p>
+        <p v-if="!props.runs.length" class="text-xs text-(--ink-soft)">Not run yet.</p>
         <ul class="space-y-1">
           <li v-for="r in props.runs.slice(0, 8)" :key="r.id">
             <ULink
@@ -113,7 +137,7 @@ const settings = computed(() => Object.entries(props.flow.settings))
               class="flex items-center justify-between gap-2 rounded px-1 py-0.5 text-sm hover:bg-(--island-line)"
             >
               <span class="flex items-center gap-2"
-                ><RunStatus :ok="r.ok" /> {{ ago(r.startedAt) }}</span
+                ><RunStatus :id="r.id" :ok="r.ok" /> {{ ago(r.startedAt) }}</span
               >
               <span class="text-xs text-(--ink-soft)">{{ duration(r.ms) }}</span>
             </ULink>

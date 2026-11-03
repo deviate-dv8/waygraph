@@ -38,6 +38,18 @@ const routes = {
     tokens: [[0,"runs"],[1,"id"]],
     types: placeholder as Registry['runs.show']['types'],
   },
+  'plays.store': {
+    methods: ["POST"],
+    pattern: '/plays',
+    tokens: [[0,"plays"]],
+    types: placeholder as Registry['plays.store']['types'],
+  },
+  'plays.destroy': {
+    methods: ["DELETE"],
+    pattern: '/plays',
+    tokens: [[0,"plays"]],
+    types: placeholder as Registry['plays.destroy']['types'],
+  },
   'new_account.create': {
     methods: ["GET","HEAD"],
     pattern: '/signup',

@@ -1,27 +1,34 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import StepPipeline from '~/components/graph/step_pipeline.vue'
 import RunStatus from '~/components/run_status.vue'
 import { urlFor } from '~/client'
 import { ago, count, duration } from '~/lib/format'
 import { runTitle } from '~/lib/runs'
+import { usePlay } from '~/lib/play'
 import type { RunDetail } from '#types/project'
 
 /** One run: its steps on the canvas, coloured by how each went, and the failure, the page's data and the mem it used. */
 const props = defineProps<{
   project: { name: string; dir: string; waygraph: string }
   run: RunDetail
+  /** What the flow expects after each step, when the run is of one flow. */
+  expects: string[][]
 }>()
 
-const failedIndex = props.run.stepsList.findIndex((s) => s.status === 'failed')
-const selected = ref<number | null>(failedIndex >= 0 ? failedIndex : null)
+const failedIndex = computed(() => props.run.stepsList.findIndex((s) => s.status === 'failed'))
+const selected = ref<number | null>(failedIndex.value >= 0 ? failedIndex.value : null)
+// A run that fails while it's watched opens its failure.
+watch(failedIndex, (index) => {
+  if (index >= 0 && selected.value === null) selected.value = index
+})
 const pipeline = computed(() =>
-  props.run.stepsList.map((s) => ({
+  props.run.stepsList.map((s, i) => ({
     name: s.block,
     kind: s.kind,
     description: s.cleanup ? 'cleanup' : `${s.from} → ${s.to ?? '?'}`,
-    expects: [],
+    expects: props.expects[i] ?? [],
     status: s.status,
     ms: s.ms,
   }))
@@ -29,19 +36,40 @@ const pipeline = computed(() =>
 const step = computed(() =>
   selected.value === null ? null : (props.run.stepsList[selected.value] ?? null)
 )
+
+const { play, playing, isPlaying, start } = usePlay()
+/** What the play that wrote this run printed, while this app still has it. */
+const output = computed(() => (play.value?.runId === props.run.id ? play.value.output : []))
+/** A run of one flow can be played again with the mem it was seeded with. */
+const again = computed(() => (props.run.flows.length === 1 ? props.run.flows[0] : null))
 </script>
 
 <template>
   <WorkspaceLayout :project="props.project">
     <StepPipeline :steps="pipeline" :selected="selected" @select="selected = $event" />
+    <div
+      v-if="!pipeline.length"
+      class="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center"
+    >
+      <p class="font-hand text-2xl text-(--ink-soft)">
+        {{
+          isPlaying(props.run.id)
+            ? play?.mode === 'demo'
+              ? 'The demo is open in its browser: its steps show here as they play.'
+              : 'Waiting for the first step…'
+            : 'No step was played.'
+        }}
+      </p>
+    </div>
 
     <div class="island absolute bottom-3 left-3 max-w-lg space-y-1 px-4 py-3">
       <div class="flex items-center gap-2">
-        <RunStatus :ok="props.run.ok" size="md" />
+        <RunStatus :id="props.run.id" :ok="props.run.ok" size="md" />
         <p class="font-hand text-2xl leading-tight">{{ runTitle(props.run) }}</p>
       </div>
       <p class="text-xs text-(--ink-soft)">
-        {{ ago(props.run.startedAt) }} · {{ duration(props.run.ms) }} ·
+        {{ ago(props.run.startedAt) }} ·
+        <template v-if="props.run.ms !== null">{{ duration(props.run.ms) }} ·</template>
         {{ count(props.run.steps, 'step') }} · <span class="font-mono">{{ props.run.id }}</span>
       </p>
       <div v-if="props.run.flows.length" class="flex gap-1 pt-1">
@@ -55,6 +83,28 @@ const step = computed(() =>
           color="neutral"
           variant="outline"
         />
+        <UButton
+          v-if="again"
+          label="Play again"
+          icon="i-lucide-rotate-ccw"
+          size="xs"
+          :disabled="playing"
+          @click="start(again, 'run', { replay: props.run.id })"
+        />
+        <UPopover v-if="output.length">
+          <UButton
+            label="Output"
+            icon="i-lucide-terminal"
+            size="xs"
+            color="neutral"
+            variant="outline"
+          />
+          <template #content>
+            <pre
+              class="max-h-96 max-w-2xl overflow-auto p-3 font-mono text-xs whitespace-pre-wrap"
+              >{{ output.join('\n') }}</pre>
+          </template>
+        </UPopover>
       </div>
     </div>
 

@@ -79,10 +79,28 @@ export type RunStep = {
   check: { trait: string; wants?: string; saw?: string; when?: string; url?: string } | null
   read: Record<string, Json> | null
   cleanup: boolean
+  /** The step inside a composed Block (a fast-forward) this one is part of. */
+  parent: number | null
 }
 
 export type RunDetail = RunSummary & {
   stepsList: RunStep[]
   mem: { flow: string; values: Record<string, Json> }[]
   artifacts: { kind: string; path: string }[]
+}
+
+/** How a flow is played: `waygraph run` (headless) or `waygraph demo` (a browser with the step panel). */
+export type PlayMode = 'run' | 'demo'
+
+/** A flow this app started playing. */
+export type Play = {
+  flow: string
+  mode: PlayMode
+  command: string
+  startedAt: number
+  /** The run it's writing, once its log has started. */
+  runId: string | null
+  /** Null while it's still going. */
+  exitCode: number | null
+  output: string[]
 }

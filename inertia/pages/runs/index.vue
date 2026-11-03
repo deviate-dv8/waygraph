@@ -16,7 +16,11 @@ const props = defineProps<{
 
 const ULink = resolveComponent('ULink')
 const columns: TableColumn<RunSummary>[] = [
-  { accessorKey: 'ok', header: 'Result', cell: ({ row }) => h(RunStatus, { ok: row.original.ok }) },
+  {
+    accessorKey: 'ok',
+    header: 'Result',
+    cell: ({ row }) => h(RunStatus, { id: row.original.id, ok: row.original.ok }),
+  },
   {
     accessorKey: 'flows',
     header: 'Played',

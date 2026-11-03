@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { VueFlow, type Edge, type Node } from '@vue-flow/core'
+import { VueFlow, type Edge, type Node, type VueFlowStore } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import StepNode from '~/components/graph/step_node.vue'
 import SketchEdge from '~/components/graph/sketch_edge.vue'
@@ -17,6 +17,16 @@ export interface PipelineStep {
 /** A flow's steps left to right, on the canvas: n8n's pipeline, drawn by hand. Clicking a step selects it. */
 const props = defineProps<{ steps: PipelineStep[]; selected: number | null }>()
 const emit = defineEmits<{ select: [index: number | null] }>()
+
+let flow: VueFlowStore | null = null
+/** Fit every step in view once they're measured: on load, and as a run still playing grows a step at a time. */
+function fit() {
+  void flow?.fitView({ padding: 0.2, duration: 200 })
+}
+function ready(instance: VueFlowStore) {
+  flow = instance
+  fit()
+}
 
 const GAP_X = 300
 const ROW = 4
@@ -63,7 +73,8 @@ const edges = computed<Edge[]>(() =>
     :min-zoom="0.2"
     :max-zoom="1.25"
     class="h-full w-full"
-    @pane-ready="({ fitView }) => fitView({ padding: 0.2 })"
+    @pane-ready="ready"
+    @nodes-initialized="fit"
     @node-click="
       ({ node }) => emit('select', Number(node.id) === props.selected ? null : Number(node.id))
     "

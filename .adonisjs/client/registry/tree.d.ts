@@ -11,6 +11,10 @@ export interface ApiDefinition {
     index: typeof routes['runs.index']
     show: typeof routes['runs.show']
   }
+  plays: {
+    store: typeof routes['plays.store']
+    destroy: typeof routes['plays.destroy']
+  }
   newAccount: {
     create: typeof routes['new_account.create']
     store: typeof routes['new_account.store']

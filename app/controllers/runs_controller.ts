@@ -21,6 +21,14 @@ export default class RunsController {
     const run = await this.project.run(params.id)
     if (!run) return response.notFound(`No run ${params.id}`)
     const manifest = await this.project.manifest()
-    return inertia.render('runs/show', { project: manifest.project, run })
+    // A run of one flow: each of its own steps (not a cleanup, not inside a fast-forward) is the flow's next step.
+    const flow =
+      run.flows.length === 1 ? manifest.flows.find((f) => f.exportName === run.flows[0]) : undefined
+    let next = 0
+    const expects = run.stepsList.map((s) => {
+      if (!flow || s.cleanup || s.parent !== null || flow.steps[next] !== s.block) return []
+      return flow.stepExpects[next++] ?? []
+    })
+    return inertia.render('runs/show', { project: manifest.project, run, expects })
   }
 }

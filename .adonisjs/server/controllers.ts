@@ -6,6 +6,7 @@
 export const controllers = {
   Flows: () => import('#controllers/flows_controller'),
   NewAccount: () => import('#controllers/new_account_controller'),
+  Plays: () => import('#controllers/plays_controller'),
   Runs: () => import('#controllers/runs_controller'),
   Session: () => import('#controllers/session_controller'),
   Workspaces: () => import('#controllers/workspaces_controller'),
