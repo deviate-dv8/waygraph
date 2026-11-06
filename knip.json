@@ -25,6 +25,12 @@
     "scripts/build-ui-css.d.mts"
   ],
   "ignoreDependencies": [
+    "@adonisjs/inertia",
+    "@adonisjs/session",
+    "@adonisjs/shield",
+    "@adonisjs/static",
+    "@adonisjs/vite",
+    "@tuyau/core",
     "tailwindcss",
     "@tailwindcss/cli",
     "@phosphor-icons/core"

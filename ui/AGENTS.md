@@ -24,7 +24,7 @@ for the stack are in `.claude/skills/` (adonisjs, nuxt-ui, vue-*, vite, vitest; 
 `waygraph ui` starts the build in `dist/ui` (made by `npm run build` at the repo root, via
 `scripts/build-waygraph-ui.mjs`) with the project it found in `WAYGRAPH_PROJECT_DIR`. The built server's packages are
 waygraph's own dependencies, so a package the server imports at runtime goes in the root package.json too (same
-version); browser-side packages are bundled and stay in this one. `bin/server.ts` stops on SIGINT and SIGTERM: Ctrl-C
+version), and in the root knip.json's `ignoreDependencies` (waygraph's own code never imports it); browser-side packages are bundled and stay in this one. `bin/server.ts` stops on SIGINT and SIGTERM: Ctrl-C
 must also stop a flow it's playing.
 
 ## Rules
