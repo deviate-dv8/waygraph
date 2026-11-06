@@ -3,8 +3,8 @@
 // setting, for consumers who'd rather have a real typed file than a JSON field. Real ask: "I
 // think its time to add waygraph config now."
 import { messageOf } from "../engine/errors.js";
-import { existsSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { extensionPathsFromEnv } from "./browser.js";
 import type { PlaywrightTestConfig } from "@playwright/test";
@@ -103,6 +103,29 @@ export function defineConfig(config: WaygraphConfig | ((context: ConfigContext) 
 const CONFIG_NAMES = ["waygraph.config.ts", "waygraph.config.mts", "waygraph.config.mjs", "waygraph.config.js", "waygraph.config.cjs"];
 /** `config/` first, then the project root. */
 const CONFIG_FILENAMES = [...CONFIG_NAMES.map((n) => join("config", n)), ...CONFIG_NAMES];
+
+/**
+ * The waygraph project `start` is in: the nearest folder, `start` or above, with a `waygraph.config.*` (in it or its
+ * `config/`) or a package.json that depends on waygraph. Null when there is none up to the filesystem root.
+ */
+export function findProjectDir(start: string): string | null {
+  for (let dir = resolve(start); ; dir = dirname(dir)) {
+    if (CONFIG_FILENAMES.some((name) => existsSync(join(dir, name))) || dependsOnWaygraph(dir)) return dir;
+    if (dirname(dir) === dir) return null;
+  }
+}
+
+function dependsOnWaygraph(dir: string): boolean {
+  const file = join(dir, "package.json");
+  if (!existsSync(file)) return false;
+  try {
+    const pkg = JSON.parse(readFileSync(file, "utf8")) as { dependencies?: object; devDependencies?: object };
+    return "waygraph" in (pkg.dependencies ?? {}) || "waygraph" in (pkg.devDependencies ?? {});
+  } catch {
+    // Not valid JSON: not a project waygraph can read either.
+    return false;
+  }
+}
 
 /**
  * Which config file(s) to try. `--config <file>` / `WAYGRAPH_CONFIG` picks one: a path (`config/staging.ts`), or a short name

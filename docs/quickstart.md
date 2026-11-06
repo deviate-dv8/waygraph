@@ -17,7 +17,7 @@ graph TD
 | a new project | `npx waygraph init my-app` | yes |
 | the full Sauce Demo example | [below](#saucedemo) | yes |
 
-Needs Node 22+ and `@playwright/test` 1.40+ (a peer dependency: you bring your own).
+Needs Node 24+ and `@playwright/test` 1.40+ (a peer dependency: you bring your own).
 
 ## A new project
 

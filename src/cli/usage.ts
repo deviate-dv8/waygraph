@@ -165,6 +165,10 @@ ${optionHelp("run")}
                                            has a trace - test report opens it.
 
 Also:
+  waygraph ui [project] [--port N]         Waygraph UI in the browser: the project's map, flows
+                                           and runs, and playing a flow (run, demo, replay).
+                                           The project is the folder given, or the one the
+                                           current folder is in. http://localhost:3333
   waygraph manifest [project] [--out <file>]
                                            Every Block (kind, route from -> to, requires, map
                                            group), Flow (use case, steps, settings) and

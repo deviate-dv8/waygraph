@@ -31,7 +31,7 @@ test.group('ProjectService', (group) => {
     const log = events.map((e) => JSON.stringify(e)).join('\n')
     // The last line is cut off mid-write, as a run that was killed leaves it.
     await writeFile(join(dir, '.waygraph', 'runs', 'run-1.jsonl'), `${log}\n{"type":"step:st`)
-    env.set('WAYGRAPH_PROJECT', dir)
+    env.set('WAYGRAPH_PROJECT_DIR', dir)
     return () => rm(dir, { recursive: true, force: true })
   })
 

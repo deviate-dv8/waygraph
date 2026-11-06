@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [22, 24]
+        node-version: [24]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -27,6 +27,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install Waygraph UI dependencies (the build builds it into dist/ui)
+        run: npm ci --prefix ui
 
       - name: Build
         run: npm run build
@@ -76,11 +79,14 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install waygraph dependencies
         run: npm ci
+
+      - name: Install Waygraph UI dependencies (the build builds it into dist/ui)
+        run: npm ci --prefix ui
 
       - name: Build waygraph
         run: npm run build

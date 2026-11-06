@@ -27,6 +27,8 @@ const log = run("git", ["log", "--no-merges", "--format=- %s (%h)", `${previous}
 const notes = join(tmpdir(), `waygraph-${tag}-notes.md`);
 writeFileSync(notes, `${log || "- No changes since " + previous}\n\n**Full changes**: ${previous}...${tag}\n`);
 
+// The build builds Waygraph UI into dist/ui: install it exactly as its lockfile says first.
+run("npm", ["ci", "--prefix", "ui"], { stdio: "inherit" });
 run("npm", ["run", "build"], { stdio: "inherit" });
 run("npm", ["publish"], { stdio: "inherit" });
 run("git", ["tag", "-a", tag, "-m", tag, head]);

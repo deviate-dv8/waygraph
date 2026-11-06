@@ -84,6 +84,8 @@ async function main(): Promise<void> {
     case "upgrade": await (await import("./commands/upgrade.js")).upgradeCase(args); break;
 
     case "manifest": await (await import("./commands/manifest.js")).manifestCase(args); break;
+    // Waygraph UI on the project: map, flows, runs, playing a flow.
+    case "ui": await (await import("./commands/ui.js")).uiCase(args); break;
 
     case "extensions": await (await import("./commands/extensions.js")).extensionsCase(args); break;
 

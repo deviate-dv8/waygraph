@@ -2,19 +2,9 @@ import { defineConfig } from '@adonisjs/inertia'
 
 const inertiaConfig = defineConfig({
   /**
-   * Server-side rendering options.
+   * The pages render in the browser only: the app is a local tool, no search engine reads it.
    */
-  ssr: {
-    /**
-     * Toggle SSR mode for Inertia pages.
-     */
-    enabled: false,
-
-    /**
-     * Entry file used by the SSR server build.
-     */
-    entrypoint: 'inertia/ssr.ts',
-  },
+  ssr: { enabled: false },
 })
 
 export default inertiaConfig

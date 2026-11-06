@@ -12,7 +12,7 @@ This page is generated from `src/engine/env.ts` (`npm run docs:api`).
 | `WAYGRAPH_CONFIG` | Which config file to load (--config &lt;name\|file&gt;) |
 | `WAYGRAPH_ENV` | Env mode: loads .env.&lt;mode&gt; on top of .env (--env) |
 | `WAYGRAPH_COMMAND` | The command running (run / demo / test), so the config's per-command section applies |
-| `WAYGRAPH_PROJECT_DIR` | The project waygraph test runs Playwright for |
+| `WAYGRAPH_PROJECT_DIR` | The project a command works on when it runs as its own process: waygraph test's Playwright, waygraph ui's server |
 | `WAYGRAPH_HEADED` | 1 shows the browser, 0 hides it (--non-headless; demo default 1) |
 | `WAYGRAPH_STEP` | 1 plays steps through the demo stepper (demo, run --step) |
 | `WAYGRAPH_JSON` | 1 prints a JSON report instead of the demo log |

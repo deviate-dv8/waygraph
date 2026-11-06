@@ -50,36 +50,6 @@ const routes = {
     tokens: [[0,"plays"]],
     types: placeholder as Registry['plays.destroy']['types'],
   },
-  'new_account.create': {
-    methods: ["GET","HEAD"],
-    pattern: '/signup',
-    tokens: [[0,"signup"]],
-    types: placeholder as Registry['new_account.create']['types'],
-  },
-  'new_account.store': {
-    methods: ["POST"],
-    pattern: '/signup',
-    tokens: [[0,"signup"]],
-    types: placeholder as Registry['new_account.store']['types'],
-  },
-  'session.create': {
-    methods: ["GET","HEAD"],
-    pattern: '/login',
-    tokens: [[0,"login"]],
-    types: placeholder as Registry['session.create']['types'],
-  },
-  'session.store': {
-    methods: ["POST"],
-    pattern: '/login',
-    tokens: [[0,"login"]],
-    types: placeholder as Registry['session.store']['types'],
-  },
-  'session.destroy': {
-    methods: ["POST"],
-    pattern: '/logout',
-    tokens: [[0,"logout"]],
-    types: placeholder as Registry['session.destroy']['types'],
-  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

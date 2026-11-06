@@ -2,13 +2,8 @@
 
 ## Questions
 
-- **Sign-in.** The starter's sign-in and sign-up pages (and its SQLite users table) are still here, restyled, but no page
-  needs them: the app is a local tool over one folder. Keep them for a shared or hosted install later, or remove them
-  (and Lucid, the session guard, the database) until then?
-- **One project or several.** `WAYGRAPH_PROJECT` names one folder. Should the app open several projects (a picker, a
+- **One project or several.** `WAYGRAPH_PROJECT_DIR` names one folder. Should the app open several projects (a picker, a
   recent list) or stay one per instance?
-- **`waygraph ui`.** The app lives in the waygraph repo (`ui/`) but isn't published with the package. Should the CLI
-  start it (`waygraph ui`)? That needs the app built and shipped with waygraph, or installed on demand.
 
 ## Next
 

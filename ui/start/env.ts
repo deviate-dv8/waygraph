@@ -22,8 +22,8 @@ export default await Env.create(new URL('../', import.meta.url), {
   APP_KEY: Env.schema.secret(),
 
   // Session
-  SESSION_DRIVER: Env.schema.enum(['cookie', 'memory', 'database'] as const),
+  SESSION_DRIVER: Env.schema.enum(['cookie', 'memory'] as const),
 
   // The waygraph project this UI shows (a folder with a waygraph config and src/)
-  WAYGRAPH_PROJECT: Env.schema.string.optional(),
+  WAYGRAPH_PROJECT_DIR: Env.schema.string.optional(),
 })

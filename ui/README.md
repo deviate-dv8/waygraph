@@ -16,15 +16,21 @@ match) and the run logs, and plays flows with the project's own `waygraph run` /
 
 ## Run it
 
-Needs Node 24 or newer. From the repo root, once: `npm run examples:link` (the saucedemo example uses this checkout's
-waygraph). Then in `ui/`:
+Users run it with `waygraph ui` (the package ships it built, in `dist/ui`): see the docs' Waygraph UI guide.
+
+To work on it: Node 24 or newer. From the repo root, once: `npm run examples:link` (the saucedemo example uses this
+checkout's waygraph). Then in `ui/`:
 
 ```bash
 npm install
-cp .env.example .env        # WAYGRAPH_PROJECT: ../examples/saucedemo, or any waygraph project's folder
+cp .env.example .env        # WAYGRAPH_PROJECT_DIR: ../examples/saucedemo, or any waygraph project's folder
 node ace generate:key
 npm run dev                 # http://localhost:3333
 ```
+
+`npm run build` at the repo root builds it into `dist/ui` (`scripts/build-waygraph-ui.mjs`); `waygraph ui` starts that
+build on the project it finds. Its runtime packages are waygraph's own dependencies: a package the built server imports
+goes in both package.json files.
 
 ## Stack
 

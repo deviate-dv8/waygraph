@@ -14,15 +14,15 @@ type RunEvent = { type: string; [k: string]: unknown }
 const MANIFEST_TTL_MS = 30_000
 
 /**
- * The waygraph project this UI shows: `WAYGRAPH_PROJECT`. It reads what the project's own waygraph reports (its
+ * The waygraph project this UI shows: `WAYGRAPH_PROJECT_DIR`. It reads what the project's own waygraph reports (its
  * manifest) and the run logs it wrote; it never changes the project.
  */
 export class ProjectService {
   private static cached: { at: number; manifest: Manifest } | null = null
 
-  /** The project folder, or null when `WAYGRAPH_PROJECT` is unset or isn't a folder. */
+  /** The project folder, or null when `WAYGRAPH_PROJECT_DIR` is unset or isn't a folder. */
   get dir(): string | null {
-    const dir = env.get('WAYGRAPH_PROJECT')
+    const dir = env.get('WAYGRAPH_PROJECT_DIR')
     return dir && existsSync(dir) ? resolve(dir) : null
   }
 
@@ -89,7 +89,7 @@ export class ProjectService {
     const dir = this.dir
     if (!dir) {
       throw new Error(
-        'Set WAYGRAPH_PROJECT to a waygraph project folder (it has a waygraph config and src/).'
+        'Set WAYGRAPH_PROJECT_DIR to a waygraph project folder (it has a waygraph config and src/).'
       )
     }
     return dir

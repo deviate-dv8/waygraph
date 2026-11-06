@@ -14,7 +14,7 @@ const APP_ENV = [
   'LOG_LEVEL',
   'SESSION_DRIVER',
   'TZ',
-  'WAYGRAPH_PROJECT',
+  'WAYGRAPH_PROJECT_DIR',
 ]
 /** The lines of output kept: enough to see why a run never started. */
 const OUTPUT_LINES = 200
@@ -120,5 +120,8 @@ export class PlayerService {
     } catch {
       // It ended on its own in the meantime.
     }
+    // What it prints while it stops doesn't matter, and its output pipes can outlive it: they'd keep this app running.
+    job.child.stdout?.destroy()
+    job.child.stderr?.destroy()
   }
 }

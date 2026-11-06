@@ -15,13 +15,4 @@ export interface ApiDefinition {
     store: typeof routes['plays.store']
     destroy: typeof routes['plays.destroy']
   }
-  newAccount: {
-    create: typeof routes['new_account.create']
-    store: typeof routes['new_account.store']
-  }
-  session: {
-    create: typeof routes['session.create']
-    store: typeof routes['session.store']
-    destroy: typeof routes['session.destroy']
-  }
 }
