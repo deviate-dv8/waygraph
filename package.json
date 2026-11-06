@@ -1,6 +1,6 @@
 {
   "name": "waygraph",
-  "version": "0.16.13",
+  "version": "0.16.14",
   "type": "module",
   "engines": {
     "node": ">=24"
