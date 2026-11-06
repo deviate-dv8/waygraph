@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
-import { basename, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import env from '#start/env'
 import type { Json, Manifest, RunDetail, RunStep, RunSummary } from '#types/project'
@@ -100,10 +100,17 @@ export class ProjectService {
   }
 }
 
-/** The project's own waygraph with these arguments: its install, or npx when it has none of its own. */
+/**
+ * The project's own waygraph with these arguments: the waygraph installed in its node_modules, or in a folder above
+ * (a workspace hoists it there). Run with this Node, so it needs no `.bin` link or shell.
+ */
 export function waygraphCommand(dir: string, args: string[]): [string, string[]] {
-  const bin = join(dir, 'node_modules', '.bin', 'waygraph')
-  return existsSync(bin) ? [bin, args] : ['npx', ['--no-install', 'waygraph', ...args]]
+  for (let at = resolve(dir); ; at = dirname(at)) {
+    const bin = join(at, 'node_modules', 'waygraph', 'bin', 'waygraph')
+    if (existsSync(bin)) return [process.execPath, [bin, ...args]]
+    if (dirname(at) === at) break
+  }
+  throw new Error(`${dir} has no waygraph installed: run npm install there.`)
 }
 
 async function readEvents(file: string): Promise<RunEvent[]> {
