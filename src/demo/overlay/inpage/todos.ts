@@ -95,6 +95,9 @@ export function installTodos({ todoPos }: OverlayInstallArgs) {
           }
 
           const POS = ["left", "right"];
+          // The side the narration asked for: in the call, or carried in the dock's own state.
+          const authored =
+            wantPos || (dockState && (dockState.pos === "left" || dockState.pos === "right") ? dockState.pos : null);
           let dock = findDock(dockKey);
           if (!dock) {
             dock = __wgEl("div", {
@@ -113,9 +116,12 @@ export function installTodos({ todoPos }: OverlayInstallArgs) {
               /* ignore */
             }
             const start =
-              wantPos ||
+              authored ||
               (saved && POS.includes(saved) ? saved : todoPos === "right" ? "right" : "left");
             dock.dataset.pos = start;
+            // The side the narration asked for: a later sync asking for the same side leaves a dock that moved out of a
+            // ring's way where it is.
+            if (authored) dock.dataset.authoredPos = authored;
             dock.title = "Click to move checklist: left / right";
             dock.addEventListener("click", (e) => {
               e.stopPropagation();
@@ -129,10 +135,12 @@ export function installTodos({ todoPos }: OverlayInstallArgs) {
               }
             });
             __wgAdd(dock);
-          } else if (wantPos) {
-            dock.dataset.pos = wantPos;
+          } else if (authored && authored !== dock.dataset.authoredPos) {
+            // The narration picked a different side: that wins over where the dock had moved to.
+            dock.dataset.authoredPos = authored;
+            dock.dataset.pos = authored;
             try {
-              localStorage.setItem("wg-todo-pos", wantPos);
+              localStorage.setItem("wg-todo-pos", authored);
             } catch {
               /* ignore */
             }

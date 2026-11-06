@@ -149,6 +149,8 @@ interface WgTodoGroupRow {
 }
 interface WgTodoDockRow {
   id?: string | undefined;
+  /** The side the narration put it on (`ctx.ui.todos(..., { pos })`). */
+  pos?: string | undefined;
   title?: string | undefined;
   style?: string | undefined;
   groups?: readonly WgTodoGroupRow[] | undefined;
