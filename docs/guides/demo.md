@@ -15,14 +15,21 @@ npx waygraph demo checkoutFlow --auto-play-video   # unattended, recorded, headl
 graph TD
   B[panel: what's next<br/>+ stubBefore rings] --> N{Next}
   N --> A[the step plays<br/>cursor, typing]
-  A --> AF[panel: where it landed<br/>+ stubAfter rings<br/>+ The page shows]
+  A --> AF[outcome card: expected, now shows<br/>+ stubAfter rings<br/>+ panel: where it landed, The page shows]
   AF --> N2{Next}
   A -->|it fails| E[fail panel<br/>+ stubOnError<br/>Retry / Stop]
 ```
 
-The before-step panel lists what the step expects (`expect: [...]`). After it, the rings show what its checks looked
-at (its `verify` and its expectations), its Expect Blocks' own narration plays (its slides, then its rings, a case's to-do marked, a caption), and
-the **The page shows** section lists every value the page's [Read Block](./reads) read.
+The before-step panel lists what the step expects (`expect: [...]`). After it:
+
+- The **outcome card** (above the step panel, shown whether the panel is open or not) says how the step went: under
+  **Expected**, each expectation in words (an Expect Block's description), ticked in turn, or crossed with what the
+  page showed; under **Now shows**, what the page's [Read Block](./reads) reads that changed since the step before
+  (`cart.count 0 > 1`; a list by its size). A failed step shows the card next to its fail panel.
+- The rings show what the step's checks looked at, labelled in words: an expectation's description, or what the check
+  looked for (`shows`, `reads "Saved"`; a custom Trait's `says`).
+- Its Expect Blocks' own narration plays: its slides, then its rings, a case's to-do marked, a caption.
+- The panel's **The page shows** section lists every value the page's Read Blocks read.
 
 ## Narration lives in the flow
 

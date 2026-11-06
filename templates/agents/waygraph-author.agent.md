@@ -28,7 +28,7 @@ Most "helpers" a project grows already exist in waygraph. Use these; never hand-
 
 | You need | Use |
 |---|---|
-| A check on text, a value, an attribute, absence | `Trait.text` / `contains` / `matches` / `value` / `attribute` / `absent` (expected values may come from mem: `Trait.value(sel, (mem) => mem.get(Key))`). A custom Trait returns `{ ok, saw }` and sets `wants` |
+| A check on text, a value, an attribute, absence | `Trait.text` / `contains` / `matches` / `value` / `attribute` / `absent` (expected values may come from mem: `Trait.value(sel, (mem) => mem.get(Key))`). A custom Trait returns `{ ok, saw }` and sets `wants` (and `says`, its demo ring label in words, without the selector) |
 | Waiting for the page to catch up | Nothing: verify retries every Trait for 5 s. For a debounced search or a list that renders in bursts, `{ settle: true }` on the step. Never `page.waitForTimeout` |
 | A flow that continues from one outcome of a branching Block | `.method(SubmitBlock, { lands: Saved })` - never a `Block as unknown as MethodBlock<A, B>` cast |
 | A flow that starts signed in | `account("planner", { signIn: plannerSignInFlow })` in `src/accounts/`, then `map({ as: Planner })` - never a "saved session" Block or tokens in env |

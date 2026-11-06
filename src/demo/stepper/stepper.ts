@@ -13,7 +13,8 @@ import { presentFailPanel } from "./step-panels.js";
 import { installGate } from "./gate.js";
 import { newPacing, paceStep } from "./pacing.js";
 import { showBefore } from "./before.js";
-import { showAfter } from "./after.js";
+import { showAfter, showOutcomeCard } from "./after.js";
+import { takeExpectResults } from "../../engine/run/expect.js";
 import { episodesOf, viewOf } from "./view.js";
 import type { StepperContext, StepperStep, StepView } from "./view.js";
 import { envFlag, envString } from "../../engine/env.js";
@@ -85,6 +86,8 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
     async failed(index, failure) {
       await stepRan(ctx);
       const step = view.step;
+      // An expectation that didn't hold: the card shows which held and which didn't, next to the fail panel.
+      await showOutcomeCard(ctx, takeExpectResults(page), []);
       const edits = await presentFailPanel(page, {
         block: step.block,
         highlightStyle: step.highlightStyle,

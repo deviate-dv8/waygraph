@@ -24,6 +24,11 @@ export interface Trait {
   /** What the check is looking for, in words (`"Saved" in .toast`): the failure says it. */
   wants?: string;
   /**
+   * What it checks, said to a person watching, without the selector (`reads "Saved"`, `shows`): the demo labels the ring
+   * around the element with it. Falls back to `wants`, then `name`.
+   */
+  says?: string;
+  /**
    * Passes or not. Return `{ ok, saw }` to say what the page showed when it doesn't pass: the failure says it. May wait
    * (e.g. `page.waitForURL`) - just don't redirect the run. A check that doesn't wait is retried until it passes or
    * `timeoutMs` runs out, so a page still settling doesn't fail it.
@@ -83,6 +88,7 @@ export function urlMatches(pattern: URLPatternInit): Trait {
   const urlPattern = new URLPattern(pattern);
   return {
     name: `url-matches(${JSON.stringify(pattern)})`,
+    says: `on ${pattern.pathname ?? pattern.hostname ?? "the expected page"}`,
     async check(page) {
       // No explicit timeout - inherits whatever `page.setDefaultTimeout()`
       // is currently in effect (matching Trait.visible's own precedent),
@@ -120,6 +126,7 @@ export function textEquals(selector: string, expected: Expected<string>): Trait 
     name: `text-equals(${selector}, ${typeof expected === "string" ? JSON.stringify(expected) : "from mem"})`,
     selector,
     wants: typeof expected === "string" ? `${JSON.stringify(expected)} in ${selector}` : `the mem value in ${selector}`,
+    says: `reads ${typeof expected === "string" ? JSON.stringify(expected) : "the expected value"}`,
     async check(page, mem) {
       const want = expectedValue(expected, mem);
       const text = await textAt(page, selector);
@@ -137,6 +144,7 @@ export function containsText(selector: string, expected: Expected<string>): Trai
     name: `contains(${selector}, ${typeof expected === "string" ? JSON.stringify(expected) : "from mem"})`,
     selector,
     wants: typeof expected === "string" ? `${JSON.stringify(expected)} inside ${selector}` : `the mem value inside ${selector}`,
+    says: `says ${typeof expected === "string" ? JSON.stringify(expected) : "the expected value"}`,
     async check(page, mem) {
       const text = await textAt(page, selector);
       return { ok: text !== undefined && text.includes(expectedValue(expected, mem)), saw: shown(text === undefined ? text : text.slice(0, 160)) };
@@ -150,6 +158,7 @@ export function matchesText(selector: string, pattern: RegExp): Trait {
     name: `matches(${selector}, ${pattern})`,
     selector,
     wants: `text matching ${pattern} in ${selector}`,
+    says: `matches ${pattern}`,
     async check(page) {
       const text = await textAt(page, selector);
       return { ok: text !== undefined && pattern.test(text), saw: shown(text === undefined ? text : text.slice(0, 160)) };
@@ -163,6 +172,7 @@ export function valueEquals(selector: string, expected: Expected<string>): Trait
     name: `value(${selector}, ${typeof expected === "string" ? JSON.stringify(expected) : "from mem"})`,
     selector,
     wants: typeof expected === "string" ? `${JSON.stringify(expected)} in the field ${selector}` : `the mem value in the field ${selector}`,
+    says: `holds ${typeof expected === "string" ? JSON.stringify(expected) : "the expected value"}`,
     async check(page, mem) {
       const loc = page.locator(selector).first();
       if ((await loc.count()) === 0) return { ok: false, saw: "no such field" };
@@ -178,6 +188,7 @@ export function attributeEquals(selector: string, name: string, value: string): 
     name: `attribute(${selector}, ${name}, ${JSON.stringify(value)})`,
     selector,
     wants: `${name}=${JSON.stringify(value)} on ${selector}`,
+    says: `${name} is ${JSON.stringify(value)}`,
     async check(page) {
       const loc = page.locator(selector).first();
       if ((await loc.count()) === 0) return { ok: false, saw: "nothing matched" };
@@ -192,6 +203,7 @@ export function absent(selector: string): Trait {
   return {
     name: `absent(${selector})`,
     wants: `no ${selector} on the page`,
+    says: "isn't there",
     async check(page) {
       const n = await page.locator(selector).count();
       return { ok: n === 0, saw: `${n} of them` };
@@ -228,6 +240,7 @@ export function visible(selector: string): Trait {
   return {
     name: `visible(${selector})`,
     selector,
+    says: "shows",
     async check(page) {
       await page.locator(selector).first().waitFor({ state: "visible" });
       return true;
@@ -251,6 +264,7 @@ export function disabled(selector: string): Trait {
     name: `disabled(${selector})`,
     selector,
     wants: `${selector} disabled`,
+    says: "is disabled",
     async check(page) {
       const loc = page.locator(selector).first();
       if ((await loc.count()) === 0) return { ok: false, saw: "nothing matched" };
@@ -266,6 +280,7 @@ export function enabled(selector: string): Trait {
     name: `enabled(${selector})`,
     selector,
     wants: `${selector} enabled`,
+    says: "is enabled",
     async check(page) {
       const loc = page.locator(selector).first();
       if ((await loc.count()) === 0) return { ok: false, saw: "nothing matched" };
@@ -286,6 +301,7 @@ export function enabled(selector: string): Trait {
 export function frameVisible(frameSelector: string, innerSelector: string): Trait {
   return {
     name: `frame-visible(${frameSelector}, ${innerSelector})`,
+    says: "shows",
     async check(page) {
       await page.frameLocator(frameSelector).locator(innerSelector).first().waitFor({ state: "visible" });
       return true;
@@ -297,6 +313,7 @@ export function frameVisible(frameSelector: string, innerSelector: string): Trai
 export function frameTextEquals(frameSelector: string, innerSelector: string, expected: string): Trait {
   return {
     name: `frame-text-equals(${frameSelector}, ${innerSelector}, ${JSON.stringify(expected)})`,
+    says: `reads ${JSON.stringify(expected)}`,
     async check(page) {
       return (await page.frameLocator(frameSelector).locator(innerSelector).textContent()) === expected;
     },
@@ -313,6 +330,7 @@ export function frameTextEquals(frameSelector: string, innerSelector: string, ex
 export function frameContainsText(frameSelector: string, innerSelector: string, expected: string): Trait {
   return {
     name: `frame-contains-text(${frameSelector}, ${innerSelector}, ${JSON.stringify(expected)})`,
+    says: `says ${JSON.stringify(expected)}`,
     async check(page) {
       const text = await page.frameLocator(frameSelector).locator(innerSelector).textContent();
       return (text ?? "").includes(expected);

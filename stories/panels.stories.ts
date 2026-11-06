@@ -3,6 +3,7 @@ import { renderBeforeStep } from "../src/demo/stepper/panel-before.js";
 import { renderAfterStep } from "../src/demo/stepper/panel-after.js";
 import { presentFailPanel } from "../src/demo/stepper/step-panels.js";
 import { presentSlides } from "../src/demo/stepper/slides.js";
+import { showOutcome, tickOutcome } from "../src/demo/overlay/inpage/outcome.js";
 import { checkpoint } from "../src/engine/checkpoint/checkpoint.js";
 import { MemPage } from "../src/engine/mem/mem.js";
 import { overlayStory } from "./page.js";
@@ -92,4 +93,22 @@ export const Slide: Story = overlayStory(async (page) => {
 
 export const Collapsed: Story = overlayStory(async (page) => {
   await renderBeforeStep(page, { ...where, ...pace, keys: [], description: "", expects: [], justEnteredEpisode: false, forceCollapsed: true, fastForward: true });
+});
+
+/** After a step: what the scenario expected (one held, one didn't) and what the page now shows that changed. */
+export const Outcome: Story = overlayStory(async (page) => {
+  await page.evaluate(showOutcome, {
+    expects: [
+      { text: "The toast says the machine was saved.", ok: true },
+      { text: "The registry lists the machine as Operational", ok: false, saw: '"Down"' },
+    ],
+    changes: [
+      { key: "equipment.count", from: "12", to: "13" },
+      { key: "equipment.lastAdded", from: "Mixer 1", to: "Mixer 2" },
+    ],
+    moreChanges: 0,
+  });
+  await page.evaluate(tickOutcome, 0);
+  await page.evaluate(tickOutcome, 1);
+  await new Promise((r) => setTimeout(r, 400));
 });

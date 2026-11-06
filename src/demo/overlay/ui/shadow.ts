@@ -46,6 +46,7 @@ export function installShadowRoot(args: [string?, Record<string, string>?, strin
   const SLOT_OF: Record<string, string> = {
     "wg-typing-badge": "bottom-center",
     "wg-caption-bar": "bottom-center",
+    "wg-outcome": "bottom-center",
     "wg-panel": "bottom-center",
     "wg-auto-panel": "bottom-center",
     "wg-network-log": "bottom-left",

@@ -9,7 +9,7 @@
  *
  *     top-left    | top-center    | top-right       banner (by its side) · device chip / toast
  *     left        |               | right           todo docks (by side)
- *     bottom-left | bottom-center | bottom-right    network tab · typing, caption, step panel · zoom
+ *     bottom-left | bottom-center | bottom-right    network tab · typing, caption, outcome, step panel · zoom
  *
  * The slot an element goes in is decided once, in ui/shadow.ts (by id and data-pos), and a data-pos change moves it.
  * Each row lays out on its own, so a wide step panel never squeezes the side docks.
@@ -42,10 +42,11 @@
    the banner over a button must never take the click (demo/overlay/acting.ts, locator-theater.ts). */
 #wg-ui:is([data-acting], [data-clicking]) #wg-chrome .wg-slot * { pointer-events: none; }
 
-/* Order inside a shared slot: what is being typed, what the narration says, then the controls. */
+/* Order inside a shared slot: what is being typed, what the narration says, how the step went, then the controls. */
 #wg-typing-badge { order: 1; }
 #wg-caption-bar { order: 2; }
-#wg-panel, #wg-auto-panel { order: 3; }
+#wg-outcome { order: 3; }
+#wg-panel, #wg-auto-panel { order: 4; }
 #wg-device-toast { order: 1; }
 #wg-device-badge, #wg-pilot-fx-device { order: 2; }
 

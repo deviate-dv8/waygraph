@@ -164,6 +164,9 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
   That chained function is the only form: a Block's definition (its options or `instruction`) takes no stub, and a stub
   is never a slot map. A Block used twice gets one `const AddShown = AddItemBlock.stubAfter(...)`. A stub that throws
   fails its step in the demo, named.
+- **The demo already says how each step went**, with no stub: its outcome card ticks each expectation (an Expect Block's
+  `description`, so give every Expect Block one a QA reader understands) and lists what the Read Block reads that
+  changed. Narrate what that doesn't say; don't repeat it in a caption.
 - **Reading a value into `mem` happens in `act`** (`mem.set(Key, value)`), like Mailpit's `extract-email-link`.
   `observe` is only for a Block that branches (it feeds `resolve`); an empty `act(){}` plus an `observe` that
   writes `mem` is a misuse.

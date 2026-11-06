@@ -57,11 +57,13 @@ export function expectationsFor(block: SomeBlock, tag: string): readonly AnyExpe
   return list ? listFor(list, tag) : [];
 }
 
-/** A Block's expectations in words, for a panel: an Expect Block's description (or name), a check's `wants` (or name). */
+/** One expectation in words: an Expect Block's description (or name), a check's `wants` (or name). */
+const say = (item: AnyExpectation): string => (isTrait(item) ? (item.wants ?? item.name) : (item.description ?? item.name));
+
+/** A Block's expectations in words, for a panel. */
 export function describeExpectations(block: SomeBlock): string[] {
   const list = expectOf(block);
   if (!list) return [];
-  const say = (item: AnyExpectation): string => (isTrait(item) ? (item.wants ?? item.name) : (item.description ?? item.name));
   if (Array.isArray(list)) return list.map(say);
   return Object.entries(list as Readonly<Record<string, readonly AnyExpectation[] | undefined>>).flatMap(([tag, items]) => (items ?? []).map((item) => `if ${tag}: ${say(item)}`));
 }
@@ -111,6 +113,35 @@ async function check(item: AnyExpectation, out: Checkpoint<string>, page: Page, 
   return traits.flatMap((trait, i) => (results[i]?.ok ? [] : [{ trait, ...(results[i]?.saw ? { saw: results[i].saw } : {}), of: item.name }]));
 }
 
+/** How one expectation went after a step, for the demo: its words, whether it held, what it saw, what it looked at. */
+export interface ExpectResult {
+  text: string;
+  ok: boolean;
+  saw?: string;
+  /** The elements its checks look at (an Expect Block's verify, a Trait's selector). */
+  selectors: string[];
+}
+
+/** Each page's expectation results since the demo last took them. On globalThis: src and dist can share a page. */
+const results: WeakMap<Page, ExpectResult[]> = ((globalThis as { [k: symbol]: WeakMap<Page, ExpectResult[]> | undefined })[
+  Symbol.for("waygraph.expectResults")
+] ??= new WeakMap());
+
+/** How the page's last step's expectations went (the demo's checklist), once: taking them clears them. */
+export function takeExpectResults(page: Page): ExpectResult[] {
+  const list = results.get(page) ?? [];
+  results.delete(page);
+  return list;
+}
+
+/** The elements an expectation's checks look at. */
+function selectorsOf(item: AnyExpectation, out: Checkpoint<string>): string[] {
+  if (isTrait(item)) return item.selector ? [item.selector] : [];
+  const verify = item.instruction.verify;
+  const traits = typeof verify === "function" ? verify(out) : (verify ?? []);
+  return traits.flatMap((t) => (t.selector ? [t.selector] : []));
+}
+
 /** Every expectation a step didn't meet: `checks` as data (the first is `check`), and one line each in the message. */
 export class ExpectFailure extends Error {
   readonly check: TraitCheckReport;
@@ -135,10 +166,19 @@ export async function runExpect(block: SomeBlock, out: Checkpoint<string>, page:
   if ((block as { __waygraphSkipped?: (mem: MemPage) => boolean }).__waygraphSkipped?.(mem)) return;
   const items = expectationsFor(block, out.__state);
   if (items.length === 0) return;
-  const failed = await readOnlyWhile(page, step, async () => {
+  const perItem = await readOnlyWhile(page, step, async () => {
     const guarded = readOnlyMem(mem, step);
-    return (await Promise.all(items.map((item) => check(item, out, page, guarded)))).flat();
+    return Promise.all(items.map((item) => check(item, out, page, guarded)));
   });
+  results.set(
+    page,
+    items.map((item, i) => {
+      const misses = perItem[i] ?? [];
+      const saw = misses[0]?.saw;
+      return { text: say(item), ok: misses.length === 0, ...(saw ? { saw } : {}), selectors: selectorsOf(item, out) };
+    }),
+  );
+  const failed = perItem.flat();
   if (failed.length === 0) return;
   const where = await whereIs(page);
   throw new ExpectFailure(

@@ -58,6 +58,8 @@ export async function whereIs(page: Page): Promise<{ url?: string; heading?: str
 export interface CheckedElement {
   check: string;
   selector: string;
+  /** What the check looked for, said to a person (the Trait's `says`, else its `wants`): the ring's label. */
+  says?: string;
 }
 
 /** The elements each page's checks looked at since the demo last took them. On globalThis: src and dist can share a page. */
@@ -84,7 +86,8 @@ export async function settle(trait: Trait, page: Page, mem: MemPage): Promise<Tr
     }
     if (result.ok) {
       const selector = result.at ?? trait.selector;
-      if (selector) checked.set(page, [...(checked.get(page) ?? []), { check: trait.name, selector }]);
+      const says = trait.says ?? trait.wants;
+      if (selector) checked.set(page, [...(checked.get(page) ?? []), { check: trait.name, selector, ...(says ? { says } : {}) }]);
     }
     if (result.ok || Date.now() >= until) return result;
     await sleep(RETRY_EVERY_MS);

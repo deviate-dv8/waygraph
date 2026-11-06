@@ -1,0 +1,11 @@
+/* A step's outcome card (#wg-outcome, built in inpage/outcome.ts): what was expected, ticked in turn, and what changed on
+   the page. In the bottom-centre slot between the caption and the step panel (layout.css). */
+#wg-outcome {
+  z-index: var(--wg-z-chrome); opacity: 0; transform: translateY(6px);
+  transition: opacity .3s var(--ease-mac), transform .3s var(--ease-mac);
+}
+#wg-outcome.wg-in { opacity: 1; transform: translateY(0); }
+/* A row pops a little as it's ticked. */
+#wg-outcome .wg-outcome-mark { transition: transform .2s var(--ease-mac); }
+#wg-outcome .wg-outcome-row:not([data-state="pending"]) .wg-outcome-mark { animation: wg-outcome-tick .25s var(--ease-mac); }
+@keyframes wg-outcome-tick { 50% { transform: scale(1.25); } }

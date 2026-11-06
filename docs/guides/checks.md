@@ -127,6 +127,7 @@ Method step, and the expectation reads what it left.
 const fiveRows: Trait = {
   name: "five-rows",
   wants: "5 rows",
+  says: "has 5 rows",                            // optional: the demo's ring label, in words, without the selector
   selector: "table",                             // optional: the demo rings it after the step
   async check(page) {
     const n = await page.locator("tr").count();

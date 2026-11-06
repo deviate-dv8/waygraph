@@ -44,5 +44,5 @@ test("a passing read check names the element its value came from, so the demo ri
   await page.setContent(`<ul><li>a</li></ul><p id="total">$3</p>`);
   takeCheckedElements(page);
   await runVerify([Shop.total.is(3)], Done, page, new MemPage(), "total");
-  expect(takeCheckedElements(page)).toEqual([{ check: "read(traitReadShop.total)", selector: "#total" }]);
+  expect(takeCheckedElements(page)).toEqual([{ check: "read(traitReadShop.total)", selector: "#total", says: "traitReadShop.total = 3" }]);
 });
