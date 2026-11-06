@@ -21,7 +21,7 @@ graph TD
 ```
 
 The before-step panel lists what the step expects (`expect: [...]`). After it, the rings show what its checks looked
-at (its `verify` and its expectations), its Expect Blocks' own narration plays (a case's to-do marked, a caption), and
+at (its `verify` and its expectations), its Expect Blocks' own narration plays (its slides, then its rings, a case's to-do marked, a caption), and
 the **The page shows** section lists every value the page's [Read Block](./reads) read.
 
 ## Narration lives in the flow

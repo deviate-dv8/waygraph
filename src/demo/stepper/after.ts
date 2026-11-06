@@ -116,6 +116,8 @@ async function narrateExpectations(ctx: StepperContext, view: StepView, result: 
     if (!("instruction" in item)) continue;
     for (const phase of ["stubBefore", "stubAfter"] as const) {
       const played = await runStubPhase(item, phase, { out: result, mem: ctx.mem });
+      // Its slides first, then its rings, as a step's own narration plays.
+      await showSlides(ctx, view, played.slides);
       await ctx.stage.applyPhase(played);
       rings.push(...played.highlights.map((h) => applyHighlightStyleDefaults(h, view.step.highlightStyle)));
     }
