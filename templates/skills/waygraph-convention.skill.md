@@ -401,8 +401,8 @@ npm run typecheck             # when the consumer has it
 Every `run`/`demo`/`test` also writes `.waygraph/runs/<runId>.jsonl` (step start/end/error, artifacts): read the
 newest one to see which Block failed and with what error, instead of re-running.
 
-`waygraph check` should report zero nav warnings. Orphan Blocks (not in any `.flow.ts`)
-are still runnable in Pilot's live menu - orphan status only blocks
+`waygraph check` should report zero nav warnings. Orphan Blocks (not in any `.flow.ts`; a Page Block's
+`nav`, methods and expectations never are) are still runnable in Pilot's live menu - orphan status only blocks
 `auto --blocks <From> <To>` pathfinding.
 
 **Static tools above only find gaps in Blocks that already exist.** A real link/button on

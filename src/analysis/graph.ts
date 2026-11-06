@@ -69,8 +69,8 @@ export function toMermaid(graph: WaygraphGraph): string {
 
 /**
  * Blocks the project exports but no flow plays. Read at runtime: every flow's `blocks()` (nested flows flattened, the
- * Blocks inside a fast-forward or composed step, and the Blocks a `branch()` routes to) against every scanned Block. Page hubs and the Blocks a Page lists as its
- * `methods` are not orphans.
+ * Blocks inside a fast-forward or composed step, and the Blocks a `branch()` routes to) against every scanned Block. Page hubs and the Blocks a Page names
+ * (its `nav`, `methods` and `expects`) are not orphans.
  */
 export async function findOrphanBlocks(projectDir: string): Promise<OrphanBlock[]> {
   const scan = await scanProject(projectDir, { maps: false });

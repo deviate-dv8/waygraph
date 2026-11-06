@@ -153,8 +153,12 @@ export function definePageBlock<
     configurable: false,
     writable: false,
   });
-  // Every Block the page names (its methods and its expectations) counts as used: none is an orphan.
-  mark(built, "__waygraphMethods", [...methodList.map((m) => m.name), ...Object.values(expectByName).map((b) => b.name)]);
+  // Every Block the page names (its nav, its methods and its expectations) counts as used: none is an orphan.
+  mark(built, "__waygraphMethods", [
+    ...(nav ? [nav.name] : []),
+    ...methodList.map((m) => m.name),
+    ...Object.values(expectByName).map((b) => b.name),
+  ]);
   // By name, for flows: `Page.do.fillUsername`. Plain fields like `methods`, so a decorated copy (withVerify) keeps them.
   const byName = options.methods && !Array.isArray(options.methods) ? Object.fromEntries(Object.keys(options.methods).map((k, i) => [k, methodList[i]])) : {};
   Object.defineProperty(built, "do", { value: Object.freeze(byName), enumerable: true });

@@ -22,6 +22,9 @@ export const HoppscotchSel = {
   bodyLine: ".cm-line",
   editor: ".cm-content",
   visibleEditor: ".cm-content:visible",
-  interceptorHeading: "h4:text('Interceptor')",
+  /** The settings page's first heading: in view as the page opens. */
+  settingsHeading: "h4:text('Language')",
+  /** The sidebar's REST link: opens the REST client inside the app, without loading the site again. */
+  restLink: "a[href='/'] >> nth=0",
   extensionInterceptor: 'button:has-text("Browser extension: v")',
 } as const;

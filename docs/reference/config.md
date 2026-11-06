@@ -136,7 +136,9 @@ Limits, because Chromium only loads extensions into a persistent profile:
 
 The scaffold's `(external)/hoppscotch` map drives Hoppscotch's REST client through its extension,
 so requests skip CORS and can hit `localhost` APIs. Chain the blocks you need and set their `mem`
-keys (`flows/hoppscotch-get`, `-post` and `-auth` are working examples):
+keys (`flows/hoppscotch-get`, `-post` and `-auth` are working examples). Each starts on the settings page
+(`nav-hoppscotch-settings`), picks the extension interceptor (`pick-extension-interceptor`), then opens the REST client
+from the sidebar (`open-rest`), inside the app: hoppscotch.io loads once per flow.
 
 | Block | Reads from `mem` |
 |---|---|

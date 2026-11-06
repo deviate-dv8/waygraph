@@ -142,7 +142,8 @@ A flow imports the page, not each Block:
 engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem, { expect: [HomePage.expects.itemAdded] });
 ```
 
-`waygraph auto` groups a page's methods under it, and they never count as orphans. Name the Page Block after the page
+`waygraph auto` groups a page's methods under it. A page's `nav`, methods and expectations never count as orphans,
+though no flow plays them. Name the Page Block after the page
 (`HomePage`): the Checkpoint already has the page's own name (`Home`).
 
 ## Effect: one row of many

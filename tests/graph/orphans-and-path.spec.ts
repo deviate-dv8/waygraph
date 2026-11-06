@@ -75,6 +75,26 @@ export const ffFlow = new Engine().map().method(BlockA).method(BlockB, { ff: tru
   }
 });
 
+test("a Page Block's nav is not an orphan, though no flow goes to it", async () => {
+  const tmpDir = join(import.meta.dirname, ".tmp-orphans-page-nav");
+  await mkdir(join(tmpDir, "src/blocks"), { recursive: true });
+  await mkdir(join(tmpDir, "src/flows"), { recursive: true });
+  await writeFile(join(tmpDir, "src/blocks/a.block.ts"), BLOCK_A);
+  await writeFile(join(tmpDir, "src/blocks/orphan.block.ts"), BLOCK_ORPHAN);
+  await writeFile(join(tmpDir, "src/blocks/b.page.block.ts"), `
+import { defineNavBlock, definePageBlock, checkpoint } from "waygraph";
+export const NavB = defineNavBlock({ name: "nav-b", checkpoint: checkpoint("B"), url: "https://example.test/b" });
+export const BPage = definePageBlock({ name: "page-b", checkpoint: checkpoint("B"), nav: NavB });
+`);
+  await writeFile(join(tmpDir, "src/flows/demo.flow.ts"), FLOW);
+  try {
+    const orphans = await findOrphanBlocks(tmpDir);
+    expect(orphans.map((o) => o.block)).toEqual(["orphan"]);
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test("findBlockPath walks discovered edges including nav from *", () => {
   const graph: WaygraphGraph = {
     nodes: [{ checkpoint: "LoggedIn" }, { checkpoint: "Cart" }, { checkpoint: "Done" }],

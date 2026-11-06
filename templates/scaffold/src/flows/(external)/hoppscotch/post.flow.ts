@@ -1,6 +1,7 @@
 import { engine } from "#config/waygraph.config";
 import { NavHoppscotchSettingsBlock } from "#map/(external)/hoppscotch/settings/_nav.block";
 import { PickExtensionInterceptorBlock } from "#map/(external)/hoppscotch/_methods/pick-extension-interceptor.method.block";
+import { OpenRestBlock } from "#map/(external)/hoppscotch/_methods/open-rest.method.block";
 import { HoppscotchRestPage } from "#map/(external)/hoppscotch/_page.block";
 
 /** POST JSON with a header, check the status and the response body. Needs `extensions: ["hoppscotch"]`. */
@@ -12,7 +13,7 @@ export const hoppscotchPostFlow = engine
     }),
   )
   .method(PickExtensionInterceptorBlock)
-  .gotoExternal(HoppscotchRestPage.nav)
+  .method(OpenRestBlock)
   .method(HoppscotchRestPage.do.setMethod)
   .method(HoppscotchRestPage.do.setUrl)
   .method(HoppscotchRestPage.do.setHeaders)

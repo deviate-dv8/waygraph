@@ -6,5 +6,5 @@ export const NavHoppscotchSettingsBlock = defineNavBlock({
   name: "nav-hoppscotch-settings",
   checkpoint: HoppscotchSettings,
   url: () => "https://hoppscotch.io/settings",
-  verify: [Trait.visible(HoppscotchSel.interceptorHeading)],
+  verify: [Trait.visible(HoppscotchSel.settingsHeading)],
 });
