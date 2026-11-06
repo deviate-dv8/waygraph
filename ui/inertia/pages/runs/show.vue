@@ -108,7 +108,7 @@ const again = computed(() => (props.run.flows.length === 1 ? props.run.flows[0] 
       </div>
     </div>
 
-    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-start p-3 pt-20">
+    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-start p-3 pt-16">
       <aside
         v-if="step"
         class="island pointer-events-auto flex max-h-full w-96 flex-col overflow-hidden"

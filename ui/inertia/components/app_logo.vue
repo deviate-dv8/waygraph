@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { sketchEllipse, sketchPath, seedOf } from '~/lib/sketch'
 
-/** The wordmark: three hand-drawn stops on a path, then "waygraph" in the canvas's hand. */
+/** The wordmark: three hand-drawn stops on a path, then "waygraph" in the canvas's hand; `mark` is the stops alone. */
+const props = defineProps<{ mark?: boolean }>()
 const stops = [6, 20, 34].map((x, i) => ({
   x,
   paths: sketchEllipse(9, 9, { seed: seedOf(`logo-${i}`), roughness: 0.7, strokeWidth: 1.4 }),
@@ -35,6 +36,8 @@ const route = sketchPath('M 9 12 Q 16 4 24 12 T 38 12', {
         />
       </g>
     </svg>
-    <span class="font-hand text-xl font-bold leading-none text-(--ink)">waygraph</span>
+    <span v-if="!props.mark" class="font-hand text-xl leading-none font-bold text-(--ink)"
+      >waygraph</span
+    >
   </span>
 </template>

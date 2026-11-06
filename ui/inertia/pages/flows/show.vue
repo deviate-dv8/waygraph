@@ -82,7 +82,7 @@ const noExpect = ref(false)
     </div>
 
     <div
-      class="pointer-events-none absolute inset-y-0 right-0 flex flex-col items-end gap-3 p-3 pt-20"
+      class="pointer-events-none absolute inset-y-0 right-0 flex flex-col items-end gap-3 p-3 pt-16"
     >
       <aside v-if="step" class="island pointer-events-auto w-80 space-y-3 p-4">
         <div class="flex items-start justify-between">
