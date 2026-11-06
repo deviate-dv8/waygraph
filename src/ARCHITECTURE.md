@@ -43,7 +43,8 @@ runner/           waygraph run / demo, spawned inside the project (exported as w
 demo/             everything the demo shows (layer: demo)
   stepper/          stepper.ts: around each step - panel-before.ts / panel-after.ts, step-panels.ts (failure panel), the Next
                     gate, pacing, slides, demo log
-  overlay/          overlay.ts: rings, cursor, banner, caption, todos, device stage, network tab; inpage/ (code that runs
+  overlay/          overlay.ts: rings, cursor, banner, caption, todos, device stage, network tab; overlay-layer.ts (what
+                    each piece last showed, repainted after a page load); inpage/ (code that runs
                     in the page, self-contained); ui/ (shadow root + the real .css bundle); locator-theater (the one fill/click
                     patch), reattach, beacon (overlay readiness); auto-chrome and pilot/ for the live sessions' overlay
   narration/        narration.ts: plays a Block's ctx stubs into rings, todos, device, title; stub-ctx, pace, style, todo dock
@@ -99,7 +100,8 @@ the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by 
 | Showing what a fill / click touches on a new surface | a `LocatorTheater` registered with `setLocatorTheater(page, theater)` (`demo/overlay/locator-theater.ts`); the demo's is `demo/stepper/interaction-patch.ts`, auto's is `demo/overlay/auto-chrome.ts` |
 | A page call whose failure is expected | `.catch(ignorePageGone)` (the page went away) or `.catch(ignoreTimeout)` (a probe) from `engine/page-gone.ts` |
 | Overlay colours, ring, cursor, banner, dock CSS | real `.css` in `demo/overlay/ui/css/` (see its README), bundled into `dist/demo/overlay/ui/overlay.css` |
-| Keeping an overlay through navigation (redirects, reloads) | `demo/overlay/reattach.ts`: register the surface's repaint with `keepOverlayOnNavigation(page, repaint)`; demo, auto and pilot all do |
+| Keeping an overlay through navigation (redirects, reloads) | `demo/overlay/reattach.ts`: register the surface's repaint with `keepOverlayOnNavigation(page, repaint)`; demo, auto and pilot all do, and each repaint ends with `overlayLayer(page).repaint(page)` |
+| A piece of overlay UI that should still show after a page load (a caption, a card, a dock) | a piece of the page's `OverlayLayer` (`demo/overlay/overlay-layer.ts`): a `StoredPiece` (`layer.stored(name, paint, erase)`, then `.set(page, value)`) remembers what it showed; a `LivePiece` repaints from state its owner keeps. Never restore a piece by hand in a surface's repaint |
 | A ring on any surface | `demo/overlay/inpage/core.ts`'s `__wgPaintRingAt` - the one ring painter for demo, auto and pilot |
 | A new piece of overlay chrome (a chip, a panel, a toast) | give it an id, add the id to `SLOT_OF` in `demo/overlay/ui/shadow.ts` (which slot) and, if it shares a slot, an `order` in `ui/css/layout.css`; add it with `__wgAdd(el)`. Never `position: fixed` (check:structure rejects it outside the anchored stage) |
 | A practice warning | `analysis/practices-check.ts` + a fixture in `tests/fixtures/practices-check/` |

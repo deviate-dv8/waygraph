@@ -11,9 +11,8 @@ import { logBannerDom, probeBanner } from "./banner-log.js";
 import { logDocks } from "./before.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
 import { renderAfterStep } from "./panel-after.js";
-import { lastRead, takeReadChanges, type ReadChange } from "./last-read.js";
-import { showOutcome, tickOutcome } from "../overlay/inpage/outcome.js";
-import { ignorePageGone } from "../../engine/page-gone.js";
+import { lastRead, takeReadChanges } from "./last-read.js";
+import { showOutcomeCard } from "./outcome.js";
 import { showSlides } from "./slides.js";
 import { expectationsFor, takeExpectResults, type ExpectResult } from "../../engine/run/expect.js";
 import { takeCheckedElements } from "../../engine/trait/verify.js";
@@ -118,28 +117,6 @@ function checkedRings(ctx: StepperContext, view: StepView, expects: readonly Exp
     });
 }
 
-/** At most this many changed values on the card; the rest are in the step panel's read. */
-const MAX_CHANGES = 5;
-
-/** How the step went, on a card that shows whether the panel is open: its expectations ticked in turn, then what changed. */
-export async function showOutcomeCard(ctx: StepperContext, expects: readonly ExpectResult[], changes: readonly ReadChange[]): Promise<void> {
-  if (!quiet()) {
-    for (const e of expects) demoLog(`  expected ${e.ok ? "ok" : "FAILED"}: ${e.text}${e.ok || !e.saw ? "" : ` (saw ${e.saw})`}`);
-    for (const c of changes) demoLog(`  now shows ${c.key}: ${c.from} -> ${c.to}`);
-  }
-  if (expects.length === 0 && changes.length === 0) return;
-  const card = {
-    expects: expects.map((e) => ({ text: e.text, ok: e.ok, ...(e.saw ? { saw: e.saw } : {}) })),
-    changes: changes.slice(0, MAX_CHANGES),
-    moreChanges: Math.max(0, changes.length - MAX_CHANGES),
-  };
-  await ctx.page.evaluate(showOutcome, card).catch(ignorePageGone);
-  const beat = ctx.pacing.gatesFast ? 120 : 450;
-  for (const [i] of expects.entries()) {
-    await new Promise((r) => setTimeout(r, beat));
-    await ctx.page.evaluate(tickOutcome, i).catch(ignorePageGone);
-  }
-}
 
 /**
  * The narration of the step's Expect Blocks (a case's to-do marked, a caption, a ring), played after the step in the

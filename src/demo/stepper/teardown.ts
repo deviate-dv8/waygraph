@@ -1,7 +1,7 @@
 // Marking a step as running, restoring the overlay after a navigation, and removing it all when the demo ends.
 import type { StepperRefs, WgPage } from "../types.js";
 import { installOverlay } from "../overlay/overlay.js";
-import { applyDeviceToPage } from "../overlay/device-stage.js";
+import { overlayLayer } from "../overlay/overlay-layer.js";
 import { showRing } from "../overlay/rings.js";
 import { formatHighlightCaption } from "../narration/style.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
@@ -82,31 +82,16 @@ export async function markStepRunning(page: WgPage) {
  * carried todos / device / optional stubBefore ring so keep-dock and nav
  * highlights do not vanish until the next ctx.todos() / stubAfter (PIA #15).
  */
-export async function restoreTheaterAfterNavigation(page: WgPage, todoDockRef: StepperRefs["todoDock"], deviceRef: StepperRefs["device"], stubBeforeRef: StepperRefs["stubBefore"]) {
-  const needs =
+export async function restoreTheaterAfterNavigation(page: WgPage, stubBeforeRef: StepperRefs["stubBefore"]) {
+  // The overlay survived (an SPA route change, no new document): nothing to bring back.
+  const wiped =
     (await page
       .evaluate(() => !window.__wgSyncTodos || !__wgById("wg-ring"))
       .catch(ignorePageGone)) ?? true;
-  if (!needs) {
-    // Overlay survived (SPA / no full document wipe) - still refresh dock
-    // if Node has a carry and the DOM lost .wg-todo-dock.
-    const hasDock = await page
-      .evaluate(() => !!__wgQ(".wg-todo-dock, #wg-todo-dock"))
-      .catch(ignorePageGone);
-    if (hasDock || !todoDockRef || !todoDockRef.current) return;
-  }
+  if (!wiped) return;
+  // The base, then every piece of the overlay layer as it last was: banner, caption, todo docks, device, outcome card.
   await installOverlay(page);
-  const dock = todoDockRef && todoDockRef.current;
-  if (dock) {
-    await page
-      .evaluate((d) => {
-        if (window.__wgSyncTodos) window.__wgSyncTodos({ sync: "set", dock: d });
-      }, dock)
-      .catch(ignorePageGone);
-  }
-  if (deviceRef && deviceRef.current) {
-    await applyDeviceToPage(page, deviceRef.current, "set").catch(ignorePageGone);
-  }
+  await overlayLayer(page).repaint(page);
   // Re-show first matching stubBefore ring if selector still exists (sidebar
   // nav targets often survive the route change).
   const stubs = (stubBeforeRef && stubBeforeRef.current) || [];
@@ -151,6 +136,8 @@ export async function restoreTheaterAfterNavigation(page: WgPage, todoDockRef: S
  * re-creates them once torn down here unless another Block/fill/click runs.
  */
 export async function teardownOverlay(page: WgPage) {
+  // Nothing the demo showed comes back on a later page load.
+  overlayLayer(page).clear();
   await page
     .evaluate(() => {
       if (window.__wgRingTrack) {
@@ -165,6 +152,8 @@ export async function teardownOverlay(page: WgPage) {
         "wg-cursor",
         "wg-click-pulse",
         "wg-banner",
+        "wg-caption-bar",
+        "wg-outcome",
         "wg-todo-dock",
         "wg-device-shell",
         "wg-device-toast",

@@ -6,6 +6,7 @@ import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { installDemoChrome, instrumentAutoInteractions } from "../../demo/overlay/auto-chrome.js";
 import { keepOverlayOnNavigation } from "../../demo/overlay/reattach.js";
+import { overlayLayer } from "../../demo/overlay/overlay-layer.js";
 import type { NavBlock } from "../../engine/block/kinds/nav.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import { Engine } from "../../engine/engine.js";
@@ -172,7 +173,10 @@ async function runAutoExploreCore(projectDir: string, options: AutoExploreOption
     });
     if (!cli) {
       await installDemoChrome(target, "", { banner: false });
-      keepOverlayOnNavigation(target, () => installDemoChrome(target, "", { banner: false }));
+      keepOverlayOnNavigation(target, async () => {
+        await installDemoChrome(target, "", { banner: false });
+        await overlayLayer(target).repaint(target);
+      });
       instrumentAutoInteractions(target, mem, 250);
     }
     wiredPage = target;

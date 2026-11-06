@@ -1,5 +1,6 @@
 // The demo overlay on a page: installs the shadow root, styles and every in-page piece (rings, banner, caption, panel,
-// todos, device, network tab). Idempotent; called before every step since a navigation wipes the page.
+// todos, device, network tab). Idempotent; called before every step since a navigation wipes the page. The banner and the
+// caption are pieces of the page's overlay layer (overlay-layer.ts): what they last showed comes back after a page load.
 import type { BannerPos } from "../../engine/stub/stub.js";
 import type { BannerUiState, OverlayInstallArgs, WgPage } from "../types.js";
 import { ensureShadowRoot } from "./ui/shadow.js";
@@ -18,6 +19,7 @@ import { applyVideoDeviceStage } from "./device-stage.js";
 import { installNetworkCapture, restoreNetworkHistory } from "./network-capture.js";
 import { setNetworkTabVisible } from "./inpage/network.js";
 import { envFlag, envString } from "../../engine/env.js";
+import { overlayLayer, type StoredPiece } from "./overlay-layer.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 
 /** The tab's icon while waygraph drives it: a dot in the accent colour, so a run's window is easy to pick out. */
@@ -32,6 +34,40 @@ const FAVICON =
  * `undefined` leaves it alone (default state is hidden, set the very first time restoreNetworkHistory
  * builds a panel); capture itself is unconditional and unaffected by this either way.
  */
+/** What the banner shows: the flow's title and its authored placement. */
+interface BannerState {
+  title: string | undefined;
+  ui: BannerUiState | null;
+}
+
+/** Everything the in-page installers read, with the banner's title and placement. */
+function installArgs(banner: BannerState): OverlayInstallArgs {
+  // Default top-left; override with WAYGRAPH_TITLE_POS=left|center|right.
+  // Click cycles left -> center -> right (persisted in localStorage so a
+  // navigation that rebuilds the banner keeps the human's last pick).
+  const envPos = (envString("WAYGRAPH_TITLE_POS") || "left").toLowerCase();
+  const bannerPos: BannerPos = envPos === "center" || envPos === "right" ? envPos : "left";
+  const envTodoPos = (envString("WAYGRAPH_TODO_POS") || "left").toLowerCase();
+  const todoPos: "left" | "right" = envTodoPos === "right" ? "right" : "left";
+  return { title: banner.title, favicon: FAVICON, bannerPos, todoPos, envAutoplay: envFlag("WAYGRAPH_AUTOPLAY"), todoDockUi: resolveTodoDockUi(), bannerUi: banner.ui };
+}
+
+/** The banner on this page: its title and placement survive a page load. */
+const bannerPiece = (page: WgPage): StoredPiece<BannerState> =>
+  overlayLayer(page).stored<BannerState>(
+    "banner",
+    (p, banner) => p.evaluate(installBanner, installArgs(banner)),
+    (p) => p.evaluate(() => __wgById("wg-banner")?.remove()),
+  );
+
+/** The narration caption on this page (ctx.ui.caption): it stays up across a page load until a stub changes it. */
+const captionPiece = (page: WgPage): StoredPiece<string> =>
+  overlayLayer(page).stored<string>(
+    "caption",
+    (p, text) => p.evaluate(showCaption, text),
+    (p) => p.evaluate(hideCaption),
+  );
+
 export async function installOverlay(page: WgPage, title?: string, ui?: BannerUiState | null, caption?: string, networkTabVisible?: boolean) {
   // ring/cursor/banner/dock come from the ONE shared bundle every surface installs (ui/css/*.css).
   await ensureShadowRoot(page);
@@ -58,30 +94,19 @@ export async function installOverlay(page: WgPage, title?: string, ui?: BannerUi
     await page.evaluate(setNetworkTabVisible, networkTabVisible).catch(ignorePageGone);
   }
   await page.addStyleTag({ content: getHostSheet() }).catch(ignorePageGone);
-  // Default top-left; override with WAYGRAPH_TITLE_POS=left|center|right.
-  // Click cycles left -> center -> right (persisted in localStorage so a
-  // navigation that rebuilds the banner keeps the human's last pick).
-  const envPos = (envString("WAYGRAPH_TITLE_POS") || "left").toLowerCase();
-  const bannerPos: BannerPos = envPos === "center" || envPos === "right" ? envPos : "left";
-  const envTodoPos = (envString("WAYGRAPH_TODO_POS") || "left").toLowerCase();
-  const todoPos: "left" | "right" = envTodoPos === "right" ? "right" : "left";
-  const envAutoplay = envFlag("WAYGRAPH_AUTOPLAY");
-  const todoDockUi = resolveTodoDockUi();
-  const args: OverlayInstallArgs = { title, favicon: FAVICON, bannerPos, todoPos, envAutoplay, todoDockUi, bannerUi: ui || null };
+  // No title or placement given (a repaint after a page load, a step that sets none): the banner keeps what it showed.
+  const banner = bannerPiece(page);
+  const shown: BannerState = { title: title ?? banner.current?.title, ui: ui ?? banner.current?.ui ?? null };
+  const args = installArgs(shown);
   await page.evaluate(installCore, args).catch(ignorePageGone);
   await page.evaluate(installSwipeZoom, args).catch(ignorePageGone);
-  await page.evaluate(installBanner, args).catch(ignorePageGone);
+  await banner.set(page, shown);
   await page.evaluate(installStamp, args).catch(ignorePageGone);
   await page.evaluate(installPanelChrome, args).catch(ignorePageGone);
   await page.evaluate(installTodos, args).catch(ignorePageGone);
   await page.evaluate(installDevice, args).catch(ignorePageGone);
-  if (caption !== undefined) {
-    if (caption === "") {
-      await page.evaluate(hideCaption).catch(ignorePageGone);
-    } else {
-      await page.evaluate(showCaption, caption).catch(ignorePageGone);
-    }
-  }
+  // `undefined` leaves the caption as it is (on a new page: what it last said); "" takes it away.
+  if (caption !== undefined) await captionPiece(page).set(page, caption === "" ? undefined : caption);
   // Navigations wipe #wg-device-shell - rebuild when video stage + device are live.
   // If we already shuttered to desktop-flat, re-apply FLAT (never re-add bezel).
   if (

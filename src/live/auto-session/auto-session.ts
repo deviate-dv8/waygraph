@@ -12,6 +12,7 @@ import type { PilotHighlightFixtures } from "../../demo/overlay/pilot/fixtures.j
 import { showPilotFixtures } from "../../demo/overlay/pilot/fixtures.js";
 import { showPilotActivity } from "../../demo/overlay/pilot/shell.js";
 import { keepOverlayOnNavigation } from "../../demo/overlay/reattach.js";
+import { overlayLayer } from "../../demo/overlay/overlay-layer.js";
 import { verboseLog } from "../../demo/verbose-log.js";
 import type { WaygraphInstanceOption } from "../../engine/block/action-page.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
@@ -158,11 +159,11 @@ export class AutoSession {
   private async repaintOverlayAfterNavigation(): Promise<void> {
     if (this.lastOverlayInfo) {
       await updatePilotOverlay(this.page, this.lastOverlayInfo).catch(ignorePageGone);
-      return;
-    }
-    if (!this.headless) {
+    } else if (!this.headless) {
       await this.bootstrapOverlay().catch(ignorePageGone);
     }
+    // Every piece of the page's overlay layer as it last was (what a step painted with the demo's pieces).
+    await overlayLayer(this.page).repaint(this.page);
   }
 
   /**

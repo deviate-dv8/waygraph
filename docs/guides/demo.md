@@ -75,6 +75,9 @@ panel instead of the narration quietly missing. A stub is a function of `ctx`: s
 | `zoom(1.5)` | zooms the page in |
 | `showNetworkTab()` / `hideNetworkTab()` | the network panel: requests, status, bodies, Copy as cURL |
 
+The banner, the caption, the checklist, the device and the outcome card stay through a navigation: a step that goes to
+another page or site (a redirect, a payment provider) shows them there as they were, until a stub changes them.
+
 `tone` is `"info"`, `"success"`, `"warning"` or `"danger"`. Blue rings are yours; grey ones are waygraph showing what
 a step does on its own (a fill, a click, a check), so the blue stands out.
 

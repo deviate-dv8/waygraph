@@ -9,11 +9,14 @@ import { createOverlayStage } from "../overlay/overlay-stage.js";
 import { instrumentInteractionHighlighting } from "./interaction-patch.js";
 import { markStepRunning, restoreTheaterAfterNavigation, teardownOverlay } from "./teardown.js";
 import { keepOverlayOnNavigation } from "../overlay/reattach.js";
+import { LivePiece, overlayLayer } from "../overlay/overlay-layer.js";
+import { applyDeviceToPage } from "../overlay/device-stage.js";
 import { presentFailPanel } from "./step-panels.js";
 import { installGate } from "./gate.js";
 import { newPacing, paceStep } from "./pacing.js";
 import { showBefore } from "./before.js";
-import { showAfter, showOutcomeCard } from "./after.js";
+import { showAfter } from "./after.js";
+import { showOutcomeCard } from "./outcome.js";
 import { takeExpectResults } from "../../engine/run/expect.js";
 import { episodesOf, viewOf } from "./view.js";
 import type { StepperContext, StepperStep, StepView } from "./view.js";
@@ -46,8 +49,21 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
   trackReads();
   const refs: StepperRefs = { stubBefore: { current: [] }, todoDock: { current: undefined }, device: { current: undefined } };
   instrumentInteractionHighlighting(page, mem, options.beat, pacing, refs.stubBefore, refs.todoDock, refs.device);
-  // A navigation inside a step (a redirect, a login bounce) repaints the overlay with the step's todos, device and ring.
-  keepOverlayOnNavigation(page, () => restoreTheaterAfterNavigation(page, refs.todoDock, refs.device, refs.stubBefore));
+  // The todo docks and the device are pieces of the page's overlay layer, painted from what the steps carry: a navigation
+  // inside a step (a redirect, a login bounce, an external site) brings them back with the rest of the layer.
+  const layer = overlayLayer(page);
+  layer.register(
+    new LivePiece("todos", async (p) => {
+      const dock = refs.todoDock.current;
+      if (dock) await p.evaluate((d) => window.__wgSyncTodos?.({ sync: "set", dock: d }), dock);
+    }),
+  );
+  layer.register(
+    new LivePiece("device", async (p) => {
+      if (refs.device.current) await applyDeviceToPage(p, refs.device.current, "set");
+    }),
+  );
+  keepOverlayOnNavigation(page, () => restoreTheaterAfterNavigation(page, refs.stubBefore));
   keepWindowSize(page);
   const gate = await installGate(page, pacing, demoFast);
   await gate.syncAutoplay();
