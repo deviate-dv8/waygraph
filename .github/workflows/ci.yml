@@ -93,3 +93,44 @@ jobs:
 
       - name: "List flows (smoke: discovery actually works against the built package)"
         run: node bin/waygraph list examples/saucedemo
+
+  ui:
+    # Waygraph UI (ui/): its own app and dependencies, on the Node it needs (AdonisJS 7: 24+).
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    env:
+      TZ: UTC
+      PORT: 3333
+      HOST: localhost
+      NODE_ENV: test
+      LOG_LEVEL: info
+      APP_KEY: ci-only-key-not-a-secret-0123456789
+      APP_URL: http://localhost:3333
+      SESSION_DRIVER: memory
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: node ace test
+
+      - name: Build
+        run: npm run build

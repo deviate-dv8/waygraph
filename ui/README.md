@@ -16,11 +16,12 @@ match) and the run logs, and plays flows with the project's own `waygraph run` /
 
 ## Run it
 
-Needs Node 24 or newer.
+Needs Node 24 or newer. From the repo root, once: `npm run examples:link` (the saucedemo example uses this checkout's
+waygraph). Then in `ui/`:
 
 ```bash
 npm install
-cp .env.example .env        # then set WAYGRAPH_PROJECT to a waygraph project's folder
+cp .env.example .env        # WAYGRAPH_PROJECT: ../examples/saucedemo, or any waygraph project's folder
 node ace generate:key
 npm run dev                 # http://localhost:3333
 ```

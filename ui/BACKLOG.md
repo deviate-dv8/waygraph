@@ -7,8 +7,8 @@
   (and Lucid, the session guard, the database) until then?
 - **One project or several.** `WAYGRAPH_PROJECT` names one folder. Should the app open several projects (a picker, a
   recent list) or stay one per instance?
-- **Where it lives.** A separate repo (as now), or a package the waygraph CLI starts (`waygraph ui`)? The second needs
-  the app built and shipped with waygraph, or installed on demand.
+- **`waygraph ui`.** The app lives in the waygraph repo (`ui/`) but isn't published with the package. Should the CLI
+  start it (`waygraph ui`)? That needs the app built and shipped with waygraph, or installed on demand.
 
 ## Next
 

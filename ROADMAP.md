@@ -11,7 +11,7 @@ against a real consumer.
 
 ## Next
 
-- **Waygraph UI** - a separate app (not in this package) over what the CLI already emits. Built: the map from
+- **Waygraph UI** - `ui/`: its own app (not published with the package) over what the CLI already emits. Built: the map from
   `waygraph manifest` (pages, the Blocks between them, each page's actions, expectations and Read Block fields), the
   flow catalogue (each flow's steps and their expectations), run results from `.waygraph/runs/*.jsonl`, and playing a
   flow (`run` / `demo`, verify only, replay a run's mem) with its run followed live and Stop. Next: starting `test`,

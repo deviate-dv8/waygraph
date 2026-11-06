@@ -9,6 +9,8 @@ held to `docs/doctrine.md`: does it make flows read more like the scenario, and 
 - `src/ARCHITECTURE.md`: where the code starts, one line per folder, the layers, where new code goes.
 - `docs/guides/` for how each feature works (one topic per page), `docs/reference/` for every command and setting; `docs/env.md` for every `WAYGRAPH_*` variable; `docs/deprecated.md` for what 0.16.0
   removed and what replaces it.
+- `ui/` is Waygraph UI, its own AdonisJS app over a project's manifest and run logs: `ui/AGENTS.md`. It isn't part of
+  the package; the package's tooling skips it.
 
 ## Rules the tooling enforces (`npm run check:structure`)
 

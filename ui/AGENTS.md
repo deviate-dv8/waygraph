@@ -1,7 +1,7 @@
 # Working on Waygraph UI
 
-A read-only AdonisJS 7 + Inertia + Vue app over one waygraph project (`WAYGRAPH_PROJECT`). Skills for the stack are in
-`.claude/skills/` (adonisjs, nuxt-ui, vue-*, vite, vitest).
+The waygraph repo's `ui/`: an AdonisJS 7 + Inertia + Vue app over one waygraph project (`WAYGRAPH_PROJECT`). Skills
+for the stack are in `.claude/skills/` (adonisjs, nuxt-ui, vue-*, vite, vitest; local, not committed).
 
 ## Where things are
 
@@ -26,7 +26,8 @@ A read-only AdonisJS 7 + Inertia + Vue app over one waygraph project (`WAYGRAPH_
   `--pass`, ...), set for light and dark; the accent is `sketch-*`. rough.js can't take CSS variables, so a shape is
   drawn in marker colours and coloured with `style`.
 - Icons are Lucide through Nuxt UI (`i-lucide-*`), bundled at build time.
-- Commit locally; never push unless asked.
+- The repo's rules for commits and processes apply (`../AGENTS.md`): commit locally, never push unless asked, leave no
+  server or browser running.
 
 ## Verify
 
