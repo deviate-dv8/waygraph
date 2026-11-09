@@ -11,6 +11,7 @@ import { MemPage } from "../../engine/mem/mem.js";
 import { seedMemStub } from "../../engine/mem/mem-stub.js";
 import { importFresh, isFlowLike, walkDir } from "../../manifest/scan.js";
 import { installRunLog } from "../../runtime/run-log.js";
+import { inRun } from "../../engine/run/events.js";
 
 /** The keys a flow needs that nothing will give it in a test (no mem stub): it is skipped, saying which. */
 function unsupplied(flow: Flow<Checkpoint<string>>, mem: MemPage): string[] {
@@ -62,16 +63,18 @@ export async function registerFlowTests(exclusive: boolean): Promise<void> {
         const missing = unsupplied(flow, mem);
         test.skip(missing.length > 0, `needs ${missing.join(", ")}: register a mem stub (and map({ memStub: true })), or run it with --data`);
         if (flow.viewport) await page.setViewportSize(flow.viewport);
+        // The run log names the flow: a flow doesn't know its own export name, its file does.
+        const play = () => inRun(exportName, () => flow.run(context, mem, { page }));
         if (flow.expectedFailureReason) {
           // Meant to fail (map({ expectedFailure })): ending on its failure branch or throwing both pass.
           try {
-            await flow.run(context, mem, { page });
+            await play();
           } catch {
             test.info().annotations.push({ type: "expected failure", description: flow.expectedFailureReason });
           }
           return;
         }
-        await flow.run(context, mem, { page });
+        await play();
       });
     }
   }

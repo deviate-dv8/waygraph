@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { PageSummary } from '~/lib/project_graph'
 import { kindColor } from '~/lib/kinds'
 import ShapeTree from '~/components/map/shape_tree.vue'
 import RunStatus from '~/components/run_status.vue'
 import { urlFor } from '~/client'
-import { count } from '~/lib/format'
 import type { Json, ManifestBlock, PageFlow } from '#types/project'
 
 /** The selected page: its addresses, how you get there, what you can do and expect there, where it leads, what it shows. */
@@ -53,6 +53,41 @@ const byNamespace = (fields: Record<string, Json>): [string, [string, Json][]][]
   }
   return [...groups]
 }
+
+/** Its flows, those that land here first, then those that may, then those that only act here; by name within each. */
+const REACH_ORDER: PageFlow['reach'][] = ['lands', 'may land', 'acts']
+const sortedFlows = computed(() =>
+  [...props.flows].sort(
+    (a, b) =>
+      REACH_ORDER.indexOf(a.reach) - REACH_ORDER.indexOf(b.reach) || a.name.localeCompare(b.name)
+  )
+)
+/** The flows in two lines: how many get here each way, and how their newest runs went. */
+const flowSummary = computed(() => {
+  const of = (test: (f: PageFlow) => boolean) => props.flows.filter(test).length
+  const reach = [
+    [of((f) => f.reach === 'lands'), 'land here'],
+    [of((f) => f.reach === 'may land'), 'may land here'],
+    [of((f) => f.reach === 'acts'), 'act here'],
+  ]
+    .filter(([n]) => n)
+    .map(([n, what]) => `${n} ${what}`)
+    .join(' · ')
+  const ran = of((f) => f.runId !== null)
+  const results = [
+    [of((f) => f.ok === true), 'passed'],
+    [of((f) => f.ok === false), 'failed'],
+    [of((f) => f.runId !== null && f.ok === null), 'stopped'],
+  ]
+    .filter(([n]) => n)
+    .map(([n, what]) => `${n} ${what}`)
+    .join(', ')
+  const notRun = props.flows.length - ran
+  const runs = ran
+    ? `Newest runs: ${results}${notRun ? ` · ${notRun} never run` : ''}`
+    : 'None has run yet.'
+  return { reach, runs }
+})
 
 const where = (b: ManifestBlock, key: string) =>
   key === 'waysIn'
@@ -113,16 +148,22 @@ const where = (b: ManifestBlock, key: string) =>
           <span class="text-xs font-normal text-(--ink-soft)">{{ props.flows.length }}</span>
         </h3>
         <p v-if="!props.flows.length" class="text-xs text-(--ink-soft)">No flow comes here.</p>
-        <p v-else class="mb-2 text-xs text-(--ink-soft)">
-          {{ count(props.flows.filter((f) => f.reach === 'lands').length, 'flow') }} reach it;
-          {{ props.flows.filter((f) => f.ok === true).length }} passed their last run.
-        </p>
+        <div v-else class="mb-2 space-y-0.5 text-xs text-(--ink-soft)">
+          <p>{{ flowSummary.reach }}</p>
+          <p>{{ flowSummary.runs }}</p>
+        </div>
         <ul class="space-y-1.5">
-          <li v-for="f in props.flows" :key="f.name" class="flex items-center gap-1.5 text-sm">
-            <ULink :to="urlFor('flows.show', { name: f.name })" class="font-medium hover:underline">
+          <li v-for="f in sortedFlows" :key="f.name" class="flex items-center gap-1.5 text-sm">
+            <ULink
+              :to="urlFor('flows.show', { name: f.name })"
+              class="min-w-0 truncate font-medium hover:underline"
+              :title="f.name"
+            >
               {{ f.name }}
             </ULink>
-            <span class="text-xs text-(--ink-soft)">{{ f.reach }} here</span>
+            <span class="shrink-0 text-xs whitespace-nowrap text-(--ink-soft)"
+              >{{ f.reach }} here</span
+            >
             <span class="flex-1" />
             <ULink v-if="f.runId" :to="urlFor('runs.show', { id: f.runId })">
               <RunStatus :id="f.runId" :ok="f.ok" />

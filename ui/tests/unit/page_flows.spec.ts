@@ -1,5 +1,5 @@
 import { test } from '@japa/runner'
-import { pageFlows } from '#services/page_flows'
+import { flowOfRun, pageFlows } from '#services/page_flows'
 import type { Manifest, RunDetail } from '#types/project'
 
 const block = (name: string, from: string[], to: string[]) =>
@@ -100,5 +100,36 @@ test.group('pageFlows', () => {
       flows: [flow('signIn', ['submit-login'])],
     } as Manifest
     assert.equal(pageFlows(manifest, new Map()).LoginPage[0].reach, 'acts')
+  })
+
+  test('a run with no flow named is the flow whose steps it played', ({ assert }) => {
+    const flows = [
+      flow('loginFlow', ['nav-login', 'submit-login']),
+      flow('cartFlow', ['nav-login', 'submit-login', 'add-to-cart']),
+      flow('blockedFlow', ['nav-login', 'submit-locked']),
+    ]
+    const played = (blocks: string[], ok: boolean | null, extra: object[] = []) =>
+      ({
+        flows: [],
+        ok,
+        stepsList: [...blocks.map((block) => ({ block, parent: null, cleanup: false })), ...extra],
+      }) as unknown as RunDetail
+    // Steps inside a composed Block, and cleanup, aren't the flow's own.
+    assert.equal(
+      flowOfRun(
+        played(['nav-login', 'submit-login'], true, [
+          { block: 'fill', parent: 1, cleanup: false },
+          { block: 'logout', parent: null, cleanup: true },
+        ]),
+        flows
+      ),
+      'loginFlow'
+    )
+    // Failed partway: the only flow starting that way.
+    assert.equal(flowOfRun(played(['nav-login', 'submit-locked'], false), flows), 'blockedFlow')
+    assert.isUndefined(flowOfRun(played(['nav-login'], false), flows))
+    // A passing run that played no flow's steps is none of them.
+    assert.isUndefined(flowOfRun(played(['nav-login'], true), flows))
+    assert.equal(flowOfRun({ ...played([], true), flows: ['cartFlow'] }, flows), 'cartFlow')
   })
 })

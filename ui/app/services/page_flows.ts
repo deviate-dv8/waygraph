@@ -60,3 +60,20 @@ export function pageFlows(
 
 /** Which of a flow's ways to a page wins: landing there over maybe landing over only acting there. */
 const RANK: Record<PageFlow['reach'], number> = { 'acts': 0, 'may land': 1, 'lands': 2 }
+
+/**
+ * The flow a run played, when its log doesn't name one (a test calling `flow.run`): the flow whose steps its top-level
+ * steps are. A run that failed partway is that flow when it's the only one starting with those steps.
+ */
+export function flowOfRun(run: RunDetail, flows: Manifest['flows']): string | undefined {
+  if (run.flows.length) return run.flows.length === 1 ? run.flows[0] : undefined
+  const played = run.stepsList.filter((s) => s.parent === null && !s.cleanup).map((s) => s.block)
+  if (!played.length) return undefined
+  const same = (steps: string[]) =>
+    steps.length === played.length && steps.every((s, i) => s === played[i])
+  const exact = flows.filter((f) => same(f.steps))
+  if (exact.length) return exact.length === 1 ? exact[0].exportName : undefined
+  if (run.ok !== false) return undefined
+  const starting = flows.filter((f) => played.every((s, i) => f.steps[i] === s))
+  return starting.length === 1 ? starting[0].exportName : undefined
+}
