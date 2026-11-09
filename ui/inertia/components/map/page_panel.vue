@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { PageSummary } from '~/lib/project_graph'
 import { kindColor } from '~/lib/kinds'
-import type { ManifestBlock } from '#types/project'
+import ShapeTree from '~/components/map/shape_tree.vue'
+import type { Json, ManifestBlock } from '#types/project'
 
 /** The selected page: its addresses, how you get there, what you can do and expect there, where it leads, what it shows. */
 const props = defineProps<{ page: PageSummary; urls: string[]; image?: string | undefined }>()
@@ -33,6 +34,17 @@ const sections: {
     empty: 'Nothing leaves from here.',
   },
 ]
+/** A Read Block's fields by namespace (`catalog.items`, `catalog.sort` under `catalog`), each field by its own name. */
+const byNamespace = (fields: Record<string, Json>): [string, [string, Json][]][] => {
+  const groups = new Map<string, [string, Json][]>()
+  for (const [key, shape] of Object.entries(fields)) {
+    const dot = key.indexOf('.')
+    const [ns, field] = dot > 0 ? [key.slice(0, dot), key.slice(dot + 1)] : ['', key]
+    groups.set(ns, [...(groups.get(ns) ?? []), [field, shape]])
+  }
+  return [...groups]
+}
+
 const where = (b: ManifestBlock, key: string) =>
   key === 'waysIn'
     ? b.from.includes('*')
@@ -123,16 +135,19 @@ const where = (b: ManifestBlock, key: string) =>
         <p v-if="!props.page.reads.length" class="text-xs text-(--ink-soft)">
           No Read Block reads this page.
         </p>
-        <div v-for="r in props.page.reads" :key="r.id" class="mb-2">
-          <p class="text-xs text-(--ink-soft)">{{ r.name }}</p>
-          <ul class="mt-1 space-y-0.5 font-mono text-xs">
-            <li v-for="(shape, key) in r.fields" :key="key" class="break-all">
-              {{ key }}
-              <span class="text-(--ink-soft)">{{
-                typeof shape === 'string' ? shape : JSON.stringify(shape)
-              }}</span>
-            </li>
-          </ul>
+        <div v-for="r in props.page.reads" :key="r.id" class="mb-3">
+          <p class="mb-1.5 text-xs text-(--ink-soft)">{{ r.name }}</p>
+          <div v-for="[ns, fields] in byNamespace(r.fields)" :key="ns" class="mb-2">
+            <p class="font-hand text-base leading-tight">{{ ns }}</p>
+            <ul class="mt-1 space-y-1">
+              <ShapeTree
+                v-for="[field, shape] in fields"
+                :key="field"
+                :name="field"
+                :shape="shape"
+              />
+            </ul>
+          </div>
         </div>
       </section>
     </div>
