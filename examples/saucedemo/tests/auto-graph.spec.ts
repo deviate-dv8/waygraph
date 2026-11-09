@@ -14,24 +14,17 @@ test("waygraph auto discovers the decomposed saucedemo graph, with no Block skip
       "CheckoutInfoPage",
       "CheckoutOverviewPage",
       "ItemDetailPage",
-      "ItemInCart",
       "LoggedIn",
       "LoginPage",
       "OrderComplete",
     ].sort(),
   );
-  // 25 vs the earlier 15: checkout-info split into fill-first-name/
-  // fill-last-name/fill-postal-code (+2 net), the atomic login Blocks
-  // (fill-username/fill-password/submit-login's 2 branches), and nav-inventory
-  // (straight to the catalogue for a flow that starts signed in).
-  expect(graph.edges.length).toBe(25);
+  // checkout-info split into fill-first-name/fill-last-name/fill-postal-code, the atomic login Blocks
+  // (fill-username/fill-password/submit-login's 2 branches), nav-inventory (straight to the catalogue for a flow that
+  // starts signed in); the cart's Methods each stay on the inventory (what's in the cart is what it shows).
+  expect(graph.edges.length).toBe(22);
   const removeEdges = graph.edges.filter((e) => e.block === "remove-from-cart");
-  expect(removeEdges).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({ from: "*", to: "ItemInCart", kind: "action" }),
-      expect.objectContaining({ from: "*", to: "LoggedIn", kind: "action" }),
-    ]),
-  );
+  expect(removeEdges).toEqual([expect.objectContaining({ from: "*", to: "LoggedIn", kind: "action" })]);
 
   const loginFail = graph.edges.find((e) => e.block === "submit-login" && e.to === "LoginPage");
   expect(loginFail).toMatchObject({ from: "LoginPage", to: "LoginPage", kind: "action" });

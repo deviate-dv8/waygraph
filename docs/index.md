@@ -24,13 +24,13 @@ hero:
 graph LR
   S((start)) -->|nav-login| L[LoginPage]
   L -->|submit-login| I[LoggedIn]
-  I -->|add-to-cart| C[ItemInCart]
-  C -->|nav-cart| P[CartPage]
+  I -->|add-to-cart| I
+  I -->|nav-cart| P[CartPage]
 ```
 
 | Word | Means |
 |---|---|
-| **Checkpoint** | a place the app can be: `LoginPage`, `ItemInCart` |
+| **Checkpoint** | a page the app can be on: `LoginPage`, `CartPage` |
 | **Block** | one action from one Checkpoint to another, with checks that prove it |
 | **Flow** | Blocks in order. TypeScript checks each step starts where the last one ended |
 | **Read Block** | what a page shows, as typed data |

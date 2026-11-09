@@ -1,16 +1,17 @@
-import { defineMethodBlock, Trait } from "waygraph";
-import { ItemInCart, CartEmpty } from "../../../../states/demo.states.js";
+import { defineMethodBlock } from "waygraph";
+import { Home } from "../../../../states/demo.states.js";
 import { DemoSel } from "../_sel.js";
+import { HomeRead } from "../_reads.js";
 
 export const ClearCartBlock = defineMethodBlock({
   name: "clear-cart",
   description: "Clears every item via the Clear cart control.",
-  from: ItemInCart,
-  to: CartEmpty,
+  from: Home,
+  to: Home,
   instruction: {
     async act(page) {
       await page.locator(DemoSel.clear).click();
     },
-    verify: [Trait.text(DemoSel.cartCount, "0")],
+    verify: [HomeRead.cartCount.is(0)],
   },
 });

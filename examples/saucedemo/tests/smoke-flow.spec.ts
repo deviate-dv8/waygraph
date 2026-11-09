@@ -10,5 +10,5 @@ test("smoke flow reuses login + add-to-cart with navigation-only confirmation, n
 
   const result = await smokeFlow.run(mem, { headless: true });
 
-  expect(result).toEqual(checkpoint("ItemInCart"));
+  expect(result).toEqual(checkpoint("LoggedIn"));
 });

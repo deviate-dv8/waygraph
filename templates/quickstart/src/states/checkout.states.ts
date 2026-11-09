@@ -1,8 +1,8 @@
 import { checkpoint } from "waygraph";
 
-// One Checkpoint per real state the target app can be in - kept together so the
-// whole checkout flow's state space reads in one place, the same reason a
-// backend keeps its models together instead of scattered across handlers.
+// One Checkpoint per page of the target app - kept together so the whole
+// checkout flow's pages read in one place. What changes on a page (what's in
+// the cart) is what its Read Block shows, not another Checkpoint.
 // `Start` is waygraph's own exported type, not redeclared here.
 
 export const LoginPage = checkpoint("LoginPage");
@@ -12,11 +12,6 @@ export type LoggedIn = typeof LoggedIn;
 /** submit-login: inventory on success, login form + error banner on auth failure. */
 export const LoginSubmitOutcome = [LoggedIn, LoginPage] as const;
 export type LoginSubmitOutcome = (typeof LoginSubmitOutcome)[number];
-export const ItemInCart = checkpoint("ItemInCart");
-export type ItemInCart = typeof ItemInCart;
-/** remove-from-cart: still has items → ItemInCart; empty cart → LoggedIn. */
-export const RemoveFromCartOutcome = [ItemInCart, LoggedIn] as const;
-export type RemoveFromCartOutcome = (typeof RemoveFromCartOutcome)[number];
 export const CartPage = checkpoint("CartPage");
 export type CartPage = typeof CartPage;
 export const CheckoutInfoPage = checkpoint("CheckoutInfoPage");

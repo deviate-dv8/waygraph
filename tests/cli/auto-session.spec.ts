@@ -254,7 +254,8 @@ test("full non-interactive sequence: detach, drive login + add-to-cart, status, 
 
   const afterAdd = await pickByBlockName("add-to-cart");
   expect(afterAdd.ok).toBe(true);
-  expect((afterAdd.snapshot as { here: string }).here).toBe("ItemInCart");
+  // The page stays the inventory; the cart is what it shows.
+  expect((afterAdd.snapshot as { here: string }).here).toBe("LoggedIn");
 
   // dom --mode full on the real inventory page (much larger DOM than the
   // login form) actually hits the node/depth caps and reports truncated.
@@ -458,7 +459,7 @@ test("Read Blocks: send replies carry the page's read; `read <path>` narrows it"
   expect(snap.missing).toEqual([]);
 
   const narrowed = JSON.parse((await runCli(["pilot", "read", sessionId, "header.cartCount"], { cwd: sauceRoot })).trim());
-  expect(narrowed).toMatchObject({ ok: true, page: "ItemInCart", read: { header: { cartCount: 1 } } });
+  expect(narrowed).toMatchObject({ ok: true, page: "LoggedIn", read: { header: { cartCount: 1 } } });
   expect(narrowed.read.catalog).toBeUndefined();
 
   // A list at a path: --where keeps the rows a field matches, --rows slices them.

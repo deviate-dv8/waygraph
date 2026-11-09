@@ -41,7 +41,7 @@ test.describe("pilotStart (real spawnDetachedSession + discoverGraph, real sauce
       // gets steps-ahead planning context, not a scoped-down menu.
       const checkpointNames = result.graph.nodes.map((n) => n.checkpoint);
       expect(checkpointNames).toEqual(
-        expect.arrayContaining(["LoginPage", "LoggedIn", "ItemInCart", "CartPage", "CheckoutInfoPage", "OrderComplete"]),
+        expect.arrayContaining(["LoginPage", "LoggedIn", "CartPage", "CheckoutInfoPage", "OrderComplete"]),
       );
       expect(result.graph.edges.some((e) => e.block === "finish-order")).toBe(true);
 

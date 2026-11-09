@@ -1,9 +1,8 @@
-import { defineMethodBlock, checkpoint, type WaygraphInstanceOption } from "waygraph";
-import { RemoveFromCartOutcome } from "../../../../states/checkout.states.js";
+import { defineMethodBlock, type WaygraphInstanceOption } from "waygraph";
+import { LoggedIn } from "../../../../states/checkout.states.js";
+import { Catalog } from "../../../../states/checkout.reads.js";
 import { SaucedemoKeys } from "../../../../states/checkout.mem-keys.js";
 import { collectRemovableItems, InventorySel } from "./inventory-items.js";
-
-type RemoveObserve = "still-has-items" | "cart-empty";
 
 /**
  * Kind: Method (one row of many)
@@ -11,42 +10,25 @@ type RemoveObserve = "still-has-items" | "cart-empty";
  * Route: saucedemo-web/inventory/methods/  (= /inventory.html)
  *
  * Removes the mem-picked product. After Add, waygraph auto shows matching
- * "Remove ..." rows from live Remove buttons.
+ * "Remove ..." rows from live Remove buttons. The page stays the inventory;
+ * its Read Block shows the product out of the cart.
  */
 export const RemoveFromCartBlock = defineMethodBlock({
   name: "remove-from-cart",
   description: "Removes the item named by mem (saucedemo.selectedItem) from the cart.",
-  to: RemoveFromCartOutcome,
+  to: LoggedIn,
   requires: [SaucedemoKeys.selectedItem],
   instruction: {
     async act(page, _input, mem) {
       const { id } = mem.get(SaucedemoKeys.selectedItem);
       await page.locator(InventorySel.removeBtn(id)).click();
     },
-    async observe(page): Promise<RemoveObserve> {
-      const left = await collectRemovableItems(page);
-      return left.length > 0 ? "still-has-items" : "cart-empty";
-    },
-    resolve: (observed) =>
-      checkpoint(observed === "still-has-items" ? "ItemInCart" : "LoggedIn"),
-    verify: (out) =>
-      out.__state === "ItemInCart"
-        ? [
-            {
-              name: "cart-still-has-items",
-              async check(page) {
-                return (await collectRemovableItems(page)).length > 0;
-              },
-            },
-          ]
-        : [
-            {
-              name: "cart-empty",
-              async check(page) {
-                return (await page.locator(InventorySel.cartBadge).count()) === 0;
-              },
-            },
-          ],
+    verify: [
+      Catalog.items.passes(
+        (items, mem) => !items.some((item) => item.name === mem.get(SaucedemoKeys.selectedItem).name && item.inCart),
+        "the item out of the cart",
+      ),
+    ],
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     const items = await collectRemovableItems(page);

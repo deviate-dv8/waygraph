@@ -79,9 +79,9 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
    **Checkpoints are values.** Where every flow begins is `Start` (`import { Start } from "waygraph"`): a Block
    that leads off a flow is `from: Start`, a sign-out goes `to: Start`; never write its tag. Declare the rest once in
    `src/states/`: `export const Home = checkpoint("Home");
-   export type Home = typeof Home;` (a union: `export const CanAddItem = [Home, CartEmpty] as const`). Blocks take
+   export type Home = typeof Home;` (a union: `export const HomeOrDocs = [Home, Docs] as const`). Blocks take
    the values, never tag strings or `<In, Out>` type arguments: `defineNavBlock({ checkpoint: Home, … })`,
-   `defineExpectBlock({ checkpoint: ItemInCart, … })`, `defineMethodBlock({ from: CanAddItem, to: ItemInCart, … })`
+   `defineExpectBlock({ checkpoint: Cart, … })`, `defineMethodBlock({ from: HomeOrDocs, to: Cart, … })`
    (leave `from` out for "from anywhere"; `resolve` is implied when `to` is one Checkpoint). The Block then carries its
    route at runtime, so `waygraph graph`, `auto` and the manifest read it exactly. Older projects:
    `waygraph upgrade --codemod checkpoints`.
@@ -249,18 +249,21 @@ Pilot menus, each setting the key `act` reads.
 ```ts
 export const AddToCartBlock = defineMethodBlock({
   name: "add-to-cart",
-  from: [Inventory, ItemInCart],                     // the list, before or after an item is in the cart
-  to: ItemInCart,
+  from: Inventory,
+  to: Inventory,                                     // the page stays the list; what changed is what it shows
   requires: [ShopKeys.selectedItem],
   instruction: {
     async act(page, _input, mem) {
       await page.locator(InventorySel.addBtn(mem.get(ShopKeys.selectedItem).id)).click();
     },
-    verify: [Header.cartCount.passes((n) => n > 0, "a cart count")],      // its contract: the badge counts it
+    verify: [
+      Catalog.items.passes((items, mem) => items.some((i) => i.name === mem.get(ShopKeys.selectedItem).name && i.inCart), "the item in the cart"),
+    ],
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
-    const ids = await page.locator(InventorySel.addButtons).evaluateAll((els) => els.map((el) => el.getAttribute("data-test")!.replace(/^add-/, "")));
-    return ids.map((id) => ({ id, label: `Add ${id}`, key: ShopKeys.selectedItem, value: { id, name: id }, highlight: InventorySel.addBtn(id) }));
+    // { id, name } per live Add button; name as the Read Block reads it, so verify can find the row
+    const items = await collectAddableItems(page);
+    return items.map((item) => ({ id: item.id, label: `Add ${item.name}`, key: ShopKeys.selectedItem, value: item, highlight: InventorySel.addBtn(item.id) }));
   },
 });
 ```
@@ -272,7 +275,7 @@ An Expect Block, an API Block, and a Read Block:
 export const ExpectCheckoutGatedBlock = defineExpectBlock({
   name: "expect-checkout-gated",
   description: "Checkout stays disabled while the cart is empty.",
-  checkpoint: CartEmpty,
+  checkpoint: CartPage,
   verify: [Trait.disabled(CartSel.checkout)],                       // reads only: no click, no navigation
 });
 
@@ -288,7 +291,7 @@ export const DeleteTestUserApiBlock = defineApiBlock({
 export const InventoryReadBlock = defineReadBlock({
   name: "read-inventory",
   description: "Every product, its price and whether it is in the cart.",
-  from: [Inventory, ItemInCart],
+  from: [Inventory],
   instruction: {
     read: (ctx) =>
       Catalog({

@@ -2,15 +2,16 @@ import {
   defineMethodBlock,
   type WaygraphInstanceOption,
 } from "waygraph";
-import { CartEmpty, ItemInCart } from "../../../../states/demo.states.js";
+import { Home } from "../../../../states/demo.states.js";
+import { HomeRead } from "../_reads.js";
 import { DemoKeys } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
 export const RemoveItemBlock = defineMethodBlock({
   name: "remove-item",
   description: "Removes the mem-selected catalog item from the cart.",
-  from: ItemInCart,
-  to: CartEmpty,
+  from: Home,
+  to: Home,
   requires: [DemoKeys.selectedItem],
   instruction: {
     async act(page, _input, mem) {
@@ -18,13 +19,10 @@ export const RemoveItemBlock = defineMethodBlock({
       await page.locator(DemoSel.removeBtn(id)).click();
     },
     verify: [
-      {
-        name: "item-removed",
-        async check(page, mem) {
-          const { id } = mem.get(DemoKeys.selectedItem);
-          return page.locator(DemoSel.addBtn(id)).isVisible();
-        },
-      },
+      HomeRead.items.passes(
+        (items, mem) => !items.some((item) => item.name === mem.get(DemoKeys.selectedItem).name && item.inCart),
+        "the item out of the cart",
+      ),
     ],
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
@@ -41,7 +39,7 @@ export const RemoveItemBlock = defineMethodBlock({
         id,
         label: label || `Remove ${id}`,
         key: DemoKeys.selectedItem,
-        value: { id, name: id },
+        value: { id, name: label.replace(/^Remove\s+/, "") || id },
         highlight: DemoSel.removeBtn(id),
       });
     }

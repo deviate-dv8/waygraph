@@ -2,16 +2,20 @@ import {
   defineMethodBlock,
   type WaygraphInstanceOption,
 } from "waygraph";
-import { CanAddItem, ItemInCart } from "../../../../states/demo.states.js";
+import { Home } from "../../../../states/demo.states.js";
+import { HomeRead } from "../_reads.js";
 import { DemoKeys } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
-/** `waygraph auto` lists one "Add …" row per live Add button via `instanceOptions`. */
+/**
+ * The page stays the home page; its Read Block shows the item in the cart. `waygraph auto` lists one "Add …" row per
+ * live Add button via `instanceOptions`.
+ */
 export const AddItemBlock = defineMethodBlock({
   name: "add-item",
   description: "Adds the mem-selected catalog item to the cart.",
-  from: CanAddItem,
-  to: ItemInCart,
+  from: Home,
+  to: Home,
   requires: [DemoKeys.selectedItem],
   instruction: {
     async act(page, _input, mem) {
@@ -19,13 +23,10 @@ export const AddItemBlock = defineMethodBlock({
       await page.locator(DemoSel.addBtn(id)).click();
     },
     verify: [
-      {
-        name: "item-added",
-        async check(page, mem) {
-          const { id } = mem.get(DemoKeys.selectedItem);
-          return page.locator(DemoSel.removeBtn(id)).isVisible();
-        },
-      },
+      HomeRead.items.passes(
+        (items, mem) => items.some((item) => item.name === mem.get(DemoKeys.selectedItem).name && item.inCart),
+        "the item in the cart",
+      ),
     ],
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
@@ -42,7 +43,7 @@ export const AddItemBlock = defineMethodBlock({
         id,
         label: label || `Add ${id}`,
         key: DemoKeys.selectedItem,
-        value: { id, name: id },
+        value: { id, name: label.replace(/^Add\s+/, "") || id },
         highlight: DemoSel.addBtn(id),
       });
     }

@@ -10,7 +10,7 @@ graph LR
   I -->|open-message| O[MailpitMessageOpen]
   O -.->|expect-email-content| O
   O -->|extract-email-link<br/>writes mailpit.emailLink| O
-  O -->|nav-verification-link| V[HomeVerified]
+  O -->|nav-verification-link| V[Home]
 ```
 
 The scaffold ships it: `src/map/(external)/mailpit/`, the flow `src/flows/(user-stories)/email-verification.flow.ts`,
@@ -49,9 +49,9 @@ export const ExtractEmailLinkBlock = defineMethodBlock({
 
 export const NavVerificationLinkBlock = defineNavBlock({
   name: "nav-verification-link",
-  checkpoint: HomeVerified,
+  checkpoint: Home,                                   // the home page, now showing the verified banner
   url: (mem) => mem.get(MailpitKeys.emailLink).url,
-  verify: [Trait.visible(DemoSel.verifiedBanner)],
+  verify: [HomeRead.verified.is(true)],
 });
 ```
 

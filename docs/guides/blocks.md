@@ -4,15 +4,15 @@ A Block is one step: it starts on a Checkpoint, does one thing, and lands on a C
 
 ```mermaid
 graph LR
-  A[Home] -->|add-item| B[ItemInCart]
-  B -->|clear-cart| C[CartEmpty]
-  C -->|add-item| B
+  S((start)) -->|nav-home| A[Home]
+  A -->|add-item| A
+  A -->|nav-docs| D[Docs]
 ```
 
 ## Checkpoints first
 
-A Checkpoint is a place the app can be. Each one is declared once, in `src/states/`, as a value and a type with the
-same name:
+A Checkpoint is a page: a place the app can be, with its own address. Each one is declared once, in `src/states/`,
+as a value and a type with the same name:
 
 ```ts
 // src/states/demo.states.ts
@@ -20,16 +20,17 @@ import { checkpoint } from "waygraph";
 
 export const Home = checkpoint("Home");
 export type Home = typeof Home;
-export const ItemInCart = checkpoint("ItemInCart");
-export type ItemInCart = typeof ItemInCart;
-export const CartEmpty = checkpoint("CartEmpty");
-export type CartEmpty = typeof CartEmpty;
+export const Docs = checkpoint("Docs");
+export type Docs = typeof Docs;
 
-export const CanAddItem = [Home, CartEmpty] as const;   // "any of these"
-export type CanAddItem = (typeof CanAddItem)[number];
+export const HomeOrDocs = [Home, Docs] as const;   // "any of these"
+export type HomeOrDocs = (typeof HomeOrDocs)[number];
 ```
 
-Two Checkpoints can share a URL: `Home` and `ItemInCart` are the same page in two states.
+What changes on a page is not another Checkpoint. Adding an item to the cart leaves you on `Home`; what changed is
+what Home shows, its [Read Block](./reads)'s `home.cartCount` and each item's `inCart`, which the Block's `verify`
+checks. A link sent, an alert shown, a banner up: the same. `waygraph check` names a Checkpoint that is a state of a
+page (only Methods land on it and it has no address of its own, or it has another page's).
 
 One Checkpoint comes with waygraph: `Start`, where every flow begins, before its first step. A Block that leads off a
 flow starts `from: Start`; one that sends the run back to the beginning (signing out) goes `to: Start`.
@@ -82,13 +83,13 @@ defineNavBlock({ name: "nav-equipment", checkpoint: Equipment, url: "/equipment"
 export const ClearCartBlock = defineMethodBlock({
   name: "clear-cart",
   description: "Clears every item via the Clear cart control.",
-  from: ItemInCart,
-  to: CartEmpty,
+  from: Home,
+  to: Home,
   instruction: {
     async act(page) {
       await page.locator(DemoSel.clear).click();
     },
-    verify: [Trait.text(DemoSel.cartCount, "0")],
+    verify: [HomeRead.cartCount.is(0)],   // what the page shows now: no item in the cart
   },
 });
 ```
@@ -134,11 +135,11 @@ export const HomePage = definePageBlock({
 ```
 
 A Page Block is the page's namespace: `HomePage.nav` opens it, `HomePage.do.addItem` is the Add Item Block, typed as
-itself, and `HomePage.expects.itemAdded` an Expect Block for the page (`expects: { itemAdded: () => ExpectItemAddedBlock }`).
+itself, and `HomePage.expects.hello` an Expect Block for the page (`expects: { hello: () => ExpectHelloBlock }`).
 A flow imports the page, not each Block:
 
 ```ts
-engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem, { expect: [HomePage.expects.itemAdded] });
+engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem, { expect: [HomeRead.cartCount.is(1)] });
 ```
 
 `waygraph auto` groups a page's methods under it. A page's `nav`, methods and expectations never count as orphans,
@@ -168,13 +169,16 @@ page (`instanceOptions`), so `waygraph auto` shows "Add Alpha", "Add Beta"…:
 ```ts
 defineMethodBlock({
   name: "add-item",
-  from: CanAddItem,
-  to: ItemInCart,
+  from: Home,
+  to: Home,
   requires: [DemoKeys.selectedItem],
   instruction: {
     async act(page, _input, mem) {
       await page.locator(DemoSel.addBtn(mem.get(DemoKeys.selectedItem).id)).click();
     },
+    verify: [
+      HomeRead.items.passes((items, mem) => items.some((i) => i.name === mem.get(DemoKeys.selectedItem).name && i.inCart), "the item in the cart"),
+    ],
   },
   async instanceOptions(page) {
     // one { id, label, key: DemoKeys.selectedItem, value, highlight } per Add button on the page

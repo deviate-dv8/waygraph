@@ -21,7 +21,7 @@ test("the manifest lists every Block with its route, every flow with its steps",
 test("the manifest lists each Read Block with the Checkpoints it reads and the shape of what it returns", async () => {
   const m = await buildManifest(join(examples, "saucedemo"));
   expect(m.readBlocks.find((r) => r.name === "read-inventory")).toMatchObject({
-    from: ["LoggedIn", "ItemInCart"],
+    from: ["LoggedIn"],
     fields: { "catalog.items": [{ name: "string", price: "number", inCart: "boolean" }], "catalog.sort": "string" },
     file: "src/blocks/saucedemo-web/inventory/inventory.read.block.ts",
   });

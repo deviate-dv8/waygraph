@@ -13,8 +13,8 @@ graph TD
   S((start)) -->|nav-login| L[LoginPage]
   L -->|submit-login| I[LoggedIn]
   L -.->|wrong password| L
-  I -->|add-to-cart| C[ItemInCart]
-  C -->|nav-cart| P[CartPage]
+  I -->|add-to-cart| I
+  I -->|nav-cart| P[CartPage]
 ```
 
 Each arrow is one Block, in one file, doing one thing. A Block that can end in more than one place (the dotted arrow:

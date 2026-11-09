@@ -106,7 +106,7 @@ test("emailVerificationFlow: confirms arrival, confirms content, reads the real 
     mem.set(MailpitKeys.expectedLinkPattern, "verified=1");
     mem.set(MailpitKeys.expectedEmailContent, VERIFICATION_CONTENT);
     const result = await emailVerificationFlow.run(context, mem);
-    expect(result).toEqual(checkpoint("HomeVerified"));
+    expect(result).toEqual(checkpoint("Home"));
   });
 });
 
@@ -136,7 +136,7 @@ test("the same four mail-reading Blocks handle a second, unrelated email scenari
     mem.set(MailpitKeys.expectedLinkPattern, "verified=1");
     mem.set(MailpitKeys.expectedEmailContent, resetContent);
     const result = await emailVerificationFlow.run(context, mem);
-    expect(result).toEqual(checkpoint("HomeVerified"));
+    expect(result).toEqual(checkpoint("Home"));
   });
 });
 

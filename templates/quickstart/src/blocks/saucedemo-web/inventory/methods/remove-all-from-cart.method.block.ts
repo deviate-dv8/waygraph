@@ -1,8 +1,7 @@
-import { defineMethodBlock, checkpoint } from "waygraph";
-import { RemoveFromCartOutcome } from "../../../../states/checkout.states.js";
+import { defineMethodBlock } from "waygraph";
+import { LoggedIn } from "../../../../states/checkout.states.js";
+import { Catalog } from "../../../../states/checkout.reads.js";
 import { collectRemovableItems, InventorySel } from "./inventory-items.js";
-
-type BulkObserve = "still-has-items" | "cart-empty";
 
 /**
  * Kind: Method
@@ -10,14 +9,13 @@ type BulkObserve = "still-has-items" | "cart-empty";
  * Route: saucedemo-web/inventory/methods/  (= /inventory.html)
  *
  * Bulk: click every live "Remove" once. No instanceOptions - one auto menu
- * row. In is Checkpoint<string> (from: "*") so round-trips work the same as
- * single-item remove. Out: LoggedIn when cart empty; ItemInCart if anything
- * remains (partial failure / race).
+ * row. From anywhere (from: "*") so round-trips work the same as single-item
+ * remove. The page stays the inventory; its Read Block shows nothing in the cart.
  */
 export const RemoveAllFromCartBlock = defineMethodBlock({
   name: "remove-all-from-cart",
   description: "Removes every product still showing Remove on this page.",
-  to: RemoveFromCartOutcome,
+  to: LoggedIn,
   instruction: {
     async act(page) {
       const items = await collectRemovableItems(page);
@@ -25,29 +23,6 @@ export const RemoveAllFromCartBlock = defineMethodBlock({
         await page.locator(InventorySel.removeBtn(item.id)).click();
       }
     },
-    async observe(page): Promise<BulkObserve> {
-      const left = await collectRemovableItems(page);
-      return left.length > 0 ? "still-has-items" : "cart-empty";
-    },
-    resolve: (observed) =>
-      checkpoint(observed === "still-has-items" ? "ItemInCart" : "LoggedIn"),
-    verify: (out) =>
-      out.__state === "ItemInCart"
-        ? [
-            {
-              name: "cart-still-has-items",
-              async check(page) {
-                return (await collectRemovableItems(page)).length > 0;
-              },
-            },
-          ]
-        : [
-            {
-              name: "cart-empty",
-              async check(page) {
-                return (await page.locator(InventorySel.cartBadge).count()) === 0;
-              },
-            },
-          ],
+    verify: [Catalog.items.passes((items) => items.every((item) => !item.inCart), "nothing in the cart")],
   },
 });

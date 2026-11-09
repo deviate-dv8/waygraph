@@ -6,7 +6,7 @@ DOM; a test gets it as typed values.
 
 ```mermaid
 graph LR
-  S[a step lands on<br/>ItemInCart] --> R[its Read Blocks read<br/>the page]
+  S[a step lands on<br/>LoggedIn] --> R[its Read Blocks read<br/>the page]
   R --> J["{ catalog: { items: […] },<br/>header: { cartCount: 1 } }"]
   J --> L[run log<br/>step:read]
   J --> P[pilot replies]
@@ -42,7 +42,7 @@ import { defineReadBlock } from "waygraph";
 export const InventoryReadBlock = defineReadBlock({
   name: "read-inventory",
   description: "Every product, its price and whether it is in the cart; the sort order.",
-  from: [LoggedIn, ItemInCart],
+  from: [LoggedIn],
   instruction: {
     read: (ctx) =>
       Catalog({
@@ -102,7 +102,7 @@ belongs in a Method.
 ```ts
 import { readCheckpoint } from "waygraph";
 
-const { read } = await readCheckpoint(page, mem, "ItemInCart");
+const { read } = await readCheckpoint(page, mem, "LoggedIn");
 read.get(Header.cartCount);   // number - throws WG_READ_MISSING (naming the key) when the page didn't show it
 read.has(Catalog.sort);       // false when missing
 read.missing;                 // ["header.title", ...]
@@ -142,7 +142,7 @@ waygraph pilot read <sessionId> catalog.items --rows 20:40        # rows 20 to 3
 ```
 
 ```json
-{ "ok": true, "page": "ItemInCart", "url": "https://www.saucedemo.com/inventory.html",
+{ "ok": true, "page": "LoggedIn", "url": "https://www.saucedemo.com/inventory.html",
   "read": { "catalog": { "items": [{ "name": "Sauce Labs Backpack", "price": 29.99, "inCart": true }, "..."], "sort": "az" },
             "header": { "title": "Products", "cartCount": 1 } },
   "missing": [], "notes": {}, "readBlocks": ["read-inventory", "read-header"], "skipped": [] }
@@ -164,7 +164,7 @@ Read Block that fails (two reading one key) is reported on the event and never f
 anything:
 
 ```json
-{ "name": "read-inventory", "from": ["LoggedIn", "ItemInCart"],
+{ "name": "read-inventory", "from": ["LoggedIn"],
   "fields": { "catalog.items": [{ "name": "string", "price": "number", "inCart": "boolean" }], "catalog.sort": "string" } }
 ```
 

@@ -6,17 +6,20 @@ whatever the chain holds when you export it, runs.
 
 ```mermaid
 graph LR
-  S((start)) -->|nav-home| H[Home] -->|add-item| I[ItemInCart] -->|clear-cart| C[CartEmpty]
+  S((start)) -->|nav-home| H[Home]
+  H -->|add-item| H
+  H -->|clear-cart| H
 ```
 
 ```ts
 import { engine } from "#config/waygraph.config";
 import { HomePage } from "#map/(app_base)/home/_page.block";
+import { HomeRead } from "#map/(app_base)/home/_reads";
 
 export const homeCartFlow = engine
   .map()
   .gotoPage(HomePage.nav)
-  .method(HomePage.do.addItem, { expect: [HomePage.expects.itemAdded] })
+  .method(HomePage.do.addItem, { expect: [HomeRead.cartCount.is(1)] })
   .method(HomePage.do.clearCart);
 ```
 
