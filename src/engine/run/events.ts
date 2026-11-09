@@ -1,6 +1,6 @@
 // Run events: what happened, step by step, during a run. Core emits them; subscribers (the run log, the demo overlay,
 // reports, Waygraph UI) listen. Emitting never throws into the run.
-import { messageOf } from "../errors.js";
+import { stepMessageOf } from "./act-error.js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { BlockKind } from "../block/kind.js";
 import type { TraitCheckReport } from "../trait/verify.js";
@@ -147,7 +147,7 @@ export function stepFailed(error: unknown): void {
   const at = Date.now();
   // A failed check also says, as data, what it wanted, what the page showed and where (TraitFailure).
   const check = (error as { check?: TraitCheckReport } | null)?.check;
-  const message = messageOf(error);
+  const message = stepMessageOf(error);
   for (const { index, block, kind, startedAt } of open.open.splice(0).reverse()) {
     emit({ type: "step:error", runId: open.runId, at, index, block, kind, error: message, ms: at - startedAt, ...(check ? { check } : {}) });
   }

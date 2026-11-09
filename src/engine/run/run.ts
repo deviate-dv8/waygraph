@@ -11,6 +11,7 @@ import { addressOf, inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepRea
 import { readBlocksFor, readCheckpoint } from "../read/read-block.js";
 import { blockKindOf } from "../block/kind.js";
 import { runPrecondition, runVerify } from "../trait/verify.js";
+import { namingStep } from "./act-error.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { SomeBlock } from "../block/some-block.js";
 
@@ -101,7 +102,11 @@ async function playGraph(
 
       if (!isConnected(current)) stepStarted(current.name, blockKindOf(current), input.__state, (current as { __waygraphCleanup?: boolean }).__waygraphCleanup);
       await runPrecondition(current.instruction.precondition, input, page, mem, current.name);
-      await current.instruction.act(page, input, mem);
+      try {
+        await current.instruction.act(page, input, mem);
+      } catch (err) {
+        throw namingStep(err, current.name);
+      }
       const observed = current.instruction.observe
         ? await current.instruction.observe(page, mem)
         : undefined;

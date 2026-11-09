@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { checkpoint, defineMethodBlock, Engine, MemPage, onRunEvent, Trait, TraitFailure, type RunEvent, keys } from "../../src/index.js";
+import { checkpoint, defineMethodBlock, Engine, MemPage, onRunEvent, Start, Trait, TraitFailure, type RunEvent, keys } from "../../src/index.js";
 import { runVerify } from "../../src/engine/trait/verify.js";
 
 const Saved = checkpoint("Saved");
@@ -46,4 +46,24 @@ test("a run's step:error carries the failed check as data", async ({ page }) => 
   off();
   const error = events.find((e) => e.type === "step:error") as Extract<RunEvent, { type: "step:error" }>;
   expect(error.check).toMatchObject({ trait: 'text-equals(.toast, "Saved")', block: "save", wants: '"Saved" in .toast', saw: '"Draft"', heading: "Registry" });
+});
+
+test("a failure inside a step's act names the step, and stays the error it was", async ({ context, page }) => {
+  await page.setContent(`<h1>Machines</h1>`);
+  const Machines = checkpoint("Machines");
+  const open = defineMethodBlock({ name: "open-list", from: Start, to: Machines, instruction: { async act() {} } });
+  const click = defineMethodBlock({
+    name: "click-archive",
+    from: Machines,
+    to: Machines,
+    instruction: {
+      async act(p) {
+        await p.locator("#archive").click({ timeout: 200 });
+      },
+    },
+  });
+  const flow = new Engine().map().method(open).method(click);
+  const err = await flow.run(context, new MemPage(), { page, closeOnFinish: false }).catch((e: unknown) => e);
+  expect((err as Error).name).toBe("TimeoutError");
+  expect((err as Error).message).toMatch(/^act of "click-archive" failed: locator\.\w+: Timeout 200ms exceeded/);
 });

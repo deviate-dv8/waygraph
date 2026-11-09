@@ -1,5 +1,6 @@
 // Joins Blocks into one: A's whole step (act, observe, resolve, verify, expect) runs, then B acts on A's Checkpoint.
 // A flow is its steps joined this way.
+import { namingStep } from "./act-error.js";
 import { mark } from "../block/mark.js";
 import type { Block } from "../block/block.js";
 import type { SomeBlock } from "../block/some-block.js";
@@ -44,7 +45,11 @@ export function joinSteps(a: SomeBlock, b: SomeBlock): SomeBlock {
       async act(page, input, mem) {
         if (!isConnected(a)) stepStarted(a.name, blockKindOf(a), input.__state);
         await runPrecondition(a.instruction.precondition, input, page, mem, a.name);
-        await a.instruction.act(page, input, mem);
+        try {
+          await a.instruction.act(page, input, mem);
+        } catch (err) {
+          throw namingStep(err, a.name);
+        }
         const aObserved = a.instruction.observe
           ? await a.instruction.observe(page, mem)
           : undefined;
@@ -55,7 +60,11 @@ export function joinSteps(a: SomeBlock, b: SomeBlock): SomeBlock {
         stepEnded(lastLeaf(a), mid.__state, addressOf(page));
         if (!isConnected(b)) stepStarted(b.name, blockKindOf(b), mid.__state);
         await runPrecondition(b.instruction.precondition, mid, page, mem, b.name);
-        await b.instruction.act(page, mid, mem);
+        try {
+          await b.instruction.act(page, mid, mem);
+        } catch (err) {
+          throw namingStep(err, b.name);
+        }
       },
       resolve: (observed) => b.instruction.resolve(observed),
       // Only attach optional fields when B actually has them - exactOptionalPropertyTypes

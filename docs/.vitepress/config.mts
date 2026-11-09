@@ -62,6 +62,7 @@ export default withMermaid(defineConfig({
             { text: "Home", link: "/" },
             { text: "Quick start", link: "/quickstart" },
             { text: "What Waygraph is", link: "/doctrine" },
+            { text: "Page objects and waygraph", link: "/page-objects" },
             { text: "How it works", link: "/how-it-works" },
             { text: "Sauce Demo walkthrough", link: "/saucedemo/" },
           ],

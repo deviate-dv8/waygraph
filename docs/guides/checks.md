@@ -121,6 +121,14 @@ While they run, the page is read-only: a click, a key press, a navigation or `me
 naming it. If checking needs an action first (reload, open a tab, click to prove nothing opens), that action is a
 Method step, and the expectation reads what it left.
 
+### A failure names its step
+
+A failed check says which check, after which step, what it wanted and what the page showed:
+`trait "read(catalog.items)" failed after "add-to-cart": wanted the item in the cart; saw [...]`. A failure inside a
+step's own action (a click that timed out, a page object's method that threw) names the step the same way, and stays
+the error it was (a Playwright `TimeoutError` is still one): `act of "sign-in" failed: locator.click: Timeout 10000ms
+exceeded.` The run log's `step:error` keeps the error's own text, beside the step's name.
+
 ## Your own Trait
 
 ```ts

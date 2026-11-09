@@ -1,0 +1,15 @@
+{
+  "name": "waygraph-example-pom-vs-waygraph",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "The same Sauce Demo checkout as page objects, as waygraph, and as waygraph Blocks wrapping the page objects; run against UI changes to compare where each fails.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "compare": "node compare.mjs"
+  },
+  "dependencies": {
+    "waygraph": "file:../.."
+  }
+}

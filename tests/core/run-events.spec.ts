@@ -61,7 +61,8 @@ test("a failing Block is reported as the step that failed", async () => {
   const events = await collect(() => flow.run(fakeContext, new MemPage()));
   const error = events.find((e) => e.type === "step:error") as Extract<RunEvent, { type: "step:error" }>;
   expect(error).toMatchObject({ block: "fails", error: "boom", index: 1 });
-  expect(events.at(-1)).toMatchObject({ type: "run:end", ok: false, error: "boom" });
+  // The step's event keeps the error as it was (the step is its own field); the run's says which step it came from.
+  expect(events.at(-1)).toMatchObject({ type: "run:end", ok: false, error: 'act of "fails" failed: boom' });
 });
 
 test("a step's read waits for the page it landed on to render (a client route: URL first, content later)", async ({ page }) => {
