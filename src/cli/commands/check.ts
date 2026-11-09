@@ -1,3 +1,5 @@
+import { findStatePages } from "../../analysis/state-pages.js";
+import { buildManifest } from "../../manifest/manifest.js";
 import { relative, resolve } from "node:path";
 import { findOrphanBlocks } from "../../analysis/graph.js";
 import { checkMapGroups, checkProject, validateFlows } from "../../analysis/check.js";
@@ -117,6 +119,14 @@ export async function checkCase(args: string[]): Promise<void> {
         console.warn(`waygraph check: ${relative(proj, p.file)} imports "${p.spec}" from outside map group ${p.group} - a group imports only waygraph and its own files, so it can be packed`);
       }
       if (groupProblems.length > 0) console.log(`waygraph check: ${groupProblems.length} map group import warning${groupProblems.length === 1 ? "" : "s"}`);
+      const statePages = findStatePages(await buildManifest(proj));
+      for (const s of statePages) {
+        const why = s.sharesWith
+          ? `has ${s.sharesWith.page}'s address (${s.sharesWith.address})`
+          : `has no address of its own and only Methods land on it (${s.reachedBy!.join(", ")})`;
+        console.warn(`waygraph check: Checkpoint ${s.checkpoint} ${why}, and nothing starts from it - a state of a page, not a page: keep the page's Checkpoint and say what changed in its Read Block (a field the step's verify or expect checks)`);
+      }
+      if (statePages.length > 0) console.log(`waygraph check: ${statePages.length} Checkpoint${statePages.length === 1 ? "" : "s"} that ${statePages.length === 1 ? "is a state" : "are states"} of a page`);
       const orphans = await findOrphanBlocks(proj);
       printOrphanReport(proj, orphans);
       // Warnings only - never fail exit code. Orphans are reported for

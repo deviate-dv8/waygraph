@@ -35,6 +35,9 @@ the wrong shape for it. Find another shape.
   does extra things behind the flow's back: what runs is what the flow says.
 - **One action per Block.** Fill, click, submit: separate Blocks. A Block says where it starts and where it lands
   (Checkpoints), and TypeScript checks that a flow never skips between unrelated pages.
+- **A Checkpoint is a page.** A place the app can be, with its own address. What changed on a page (an item in the
+  cart, a link sent, an alert) is what the page shows: a Read Block's field, checked in `verify` or expected, not
+  another Checkpoint. `waygraph check` names a Checkpoint that is a state of a page.
 - **Pages are namespaces.** A page's Page Block names how to get there (`nav`) and what you can do there (`do`); a
   flow imports pages, not Blocks.
 - **Each kind of check has one home.** A Block's `verify` is its own must-pass check: it arrived where it says, and its

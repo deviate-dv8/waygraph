@@ -230,7 +230,8 @@ A selector written inline in a Block, or a regex / XPath selector, is a `waygrap
 ## Lint it
 
 ```sh
-npx waygraph check        # navigation outside Nav Blocks, inline selectors, empty verify, orphans, pages no Read Block reads
+npx waygraph check        # navigation outside Nav Blocks, inline selectors, empty verify, orphans, pages no Read Block reads,
+                          # Checkpoints that are a state of a page (no address of their own, or another page's)
 npx waygraph typecheck    # tsc --noEmit, then the same checks
 ```
 

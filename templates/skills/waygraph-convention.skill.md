@@ -74,7 +74,9 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
    and the live sessions load every one themselves, so no flow or spec imports it. The scaffold's engine is
    `new Engine({ ...config, memStub: true })`: every flow fills missing keys from stubs, and `flow.run()` does it too, so a
    spec never calls `seedMemStub`.
-6. **Checkpoints are values.** Where every flow begins is `Start` (`import { Start } from "waygraph"`): a Block
+6. **A Checkpoint is a page**, with its own address; what changed on it is a Read Block field, not another
+   Checkpoint (`waygraph check` names one that only Methods reach with no address, or that has another page's).
+   **Checkpoints are values.** Where every flow begins is `Start` (`import { Start } from "waygraph"`): a Block
    that leads off a flow is `from: Start`, a sign-out goes `to: Start`; never write its tag. Declare the rest once in
    `src/states/`: `export const Home = checkpoint("Home");
    export type Home = typeof Home;` (a union: `export const CanAddItem = [Home, CartEmpty] as const`). Blocks take
