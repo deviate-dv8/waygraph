@@ -5,7 +5,7 @@ import type { Block } from "../block/block.js";
 import type { SomeBlock } from "../block/some-block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { runVerify, runPrecondition } from "../trait/verify.js";
-import { isConnected, lastLeaf, stepEnded, stepStarted } from "./events.js";
+import { addressOf, isConnected, lastLeaf, stepEnded, stepStarted } from "./events.js";
 import { blockKindOf } from "../block/kind.js";
 import { expectOf, runExpect } from "./expect.js";
 
@@ -50,7 +50,7 @@ export function joinSteps(a: SomeBlock, b: SomeBlock): SomeBlock {
         const mid = await a.instruction.resolve(aObserved);
         await runVerify(a.instruction.verify, mid, page, mem, a.name);
         await runExpect(a, mid, page, mem, lastLeaf(a));
-        stepEnded(lastLeaf(a), mid.__state);
+        stepEnded(lastLeaf(a), mid.__state, addressOf(page));
         if (!isConnected(b)) stepStarted(b.name, blockKindOf(b), mid.__state);
         await runPrecondition(b.instruction.precondition, mid, page, mem, b.name);
         await b.instruction.act(page, mid, mem);

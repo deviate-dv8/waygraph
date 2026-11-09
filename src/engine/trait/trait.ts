@@ -12,6 +12,7 @@ import type { MemPage } from "../mem/mem.js";
 // directly - a named `import { URLPattern }` gives a fixed class that's a different constructor
 // than the native global on newer Node, and `instanceof` would then fail on those versions.
 import "urlpattern-polyfill";
+import { mark } from "../block/mark.js";
 
 /**
  * A named, independently-reportable check. `check` never runs before `resolve` has
@@ -86,7 +87,8 @@ const shown = (text: string | undefined): string => (text === undefined ? "nothi
  */
 export function urlMatches(pattern: URLPatternInit): Trait {
   const urlPattern = new URLPattern(pattern);
-  return {
+  // The pattern itself rides along out of sight: the manifest reads it as the page's address (Waygraph UI's site map).
+  const trait: Trait = {
     name: `url-matches(${JSON.stringify(pattern)})`,
     says: `on ${pattern.pathname ?? pattern.hostname ?? "the expected page"}`,
     async check(page) {
@@ -114,6 +116,8 @@ export function urlMatches(pattern: URLPatternInit): Trait {
       return true;
     },
   };
+  mark(trait, "__waygraphUrl", pattern);
+  return trait;
 }
 
 /**

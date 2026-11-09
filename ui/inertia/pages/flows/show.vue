@@ -22,6 +22,7 @@ const pipeline = computed(() =>
     name: s.name,
     kind: s.block?.kind ?? 'step',
     description: s.block?.description ?? '',
+    ...(s.block?.url ? { url: s.block.url } : {}),
     expects: s.expects,
   }))
 )

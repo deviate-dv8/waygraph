@@ -4,13 +4,15 @@ import { messageOf } from "../errors.js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { BlockKind } from "../block/kind.js";
 import type { TraitCheckReport } from "../trait/verify.js";
+import type { Page } from "@playwright/test";
 
 export type RunEvent =
   | { type: "run:start"; runId: string; at: number; label?: string }
   /** The mem a segment of the run was seeded with (`--data`, mem stubs): what `--replay <runId>` sets again. */
   | { type: "run:mem"; runId: string; at: number; segment: number; flow: string; values: Record<string, unknown> }
   | { type: "step:start"; runId: string; at: number; index: number; block: string; kind: BlockKind; from: string; parent?: number; cleanup?: true }
-  | { type: "step:end"; runId: string; at: number; index: number; block: string; kind: BlockKind; to: string; ms: number }
+  /** `url`: the page's address when the step ended (where it navigated to). */
+  | { type: "step:end"; runId: string; at: number; index: number; block: string; kind: BlockKind; to: string; ms: number; url?: string }
   | { type: "step:error"; runId: string; at: number; index: number; block: string; kind: BlockKind; error: string; ms: number; check?: TraitCheckReport }
   | ({ type: "step:read"; runId: string; at: number; index: number; block: string; kind: BlockKind; checkpoint: string } & StepRead)
   | { type: "run:end"; runId: string; at: number; ok: boolean; result?: string; error?: string; ms: number }
@@ -108,11 +110,16 @@ export function stepStarted(block: string, kind: BlockKind, from: string, cleanu
   emit({ type: "step:start", runId: open.runId, at, index: step.index, block, kind, from, ...(parent !== undefined ? { parent } : {}), ...(cleanup ? { cleanup: true as const } : {}) });
 }
 
+/** The page's address now, for a step's end; a stand-in page with no `url()` (a test's) has none. */
+export function addressOf(page: Page): string | undefined {
+  return typeof (page as { url?: unknown }).url === "function" ? page.url() : undefined;
+}
+
 /**
- * The step named `block` ended at `to`. Steps still open inside it end with it: a fast-forward step's last inner step
- * lands where the fast-forward step lands.
+ * The step named `block` ended at `to`, with the page at `url`. Steps still open inside it end with it: a fast-forward
+ * step's last inner step lands where the fast-forward step lands.
  */
-export function stepEnded(block: string, to: string): void {
+export function stepEnded(block: string, to: string, url?: string): void {
   const open = scope.getStore();
   if (!open?.open.length) return;
   // The innermost open step with this name; the last one when none has it.
@@ -120,7 +127,7 @@ export function stepEnded(block: string, to: string): void {
   const found = named === -1 ? open.open.length - 1 : named;
   const at = Date.now();
   for (const step of open.open.splice(found).reverse()) {
-    emit({ type: "step:end", runId: open.runId, at, index: step.index, block: step.block, kind: step.kind, to, ms: at - step.startedAt });
+    emit({ type: "step:end", runId: open.runId, at, index: step.index, block: step.block, kind: step.kind, to, ms: at - step.startedAt, ...(url ? { url } : {}) });
   }
 }
 

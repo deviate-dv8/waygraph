@@ -26,9 +26,13 @@ The project is the folder you name, or the one the current folder is in: the nea
 
 | Page | Shows |
 |---|---|
-| **Map** | every page (Checkpoint) as a box, every move between pages as an arrow labelled with the Blocks that make it. Click a page: the ways in, what you can do there, its Expect Blocks, where it leads, what it promises on arrival, and what its [Read Block](./reads) reads |
+| **Map** | a site map: each site at the top (the base url's host, and every other site a page's address names: a payment provider, a mail catcher), its pages below by their addresses, dashed lines labelled with the Navs that open them. Every move between pages is an arrow labelled with the Blocks that make it. Click a page: its addresses, the ways in, what you can do there, its Expect Blocks, where it leads, what it promises on arrival, and what its [Read Block](./reads) reads |
 | **Flows** | every flow as a card; open one for its steps on a canvas, each with what it [expects](./checks#expect-what-the-scenario-expects), and its recent runs |
-| **Runs** | every run from the [run log](../reference/run-log): each step passed or failed, how long it took, what the flow expected after it; a failed step opens with what its check wanted and what it saw |
+| **Runs** | every run from the [run log](../reference/run-log): each step passed or failed, how long it took, the address it ended on, what the flow expected after it; a failed step opens with what its check wanted and what it saw |
+
+A page's address comes from the Navs that open it (a url built from mem shows as a pattern: `/requests/:id`) and from
+the `Trait.url` its Blocks verify on arrival. A page with no address of its own (a state of another page: an item in the
+cart) sits under the page whose move reaches it. Pages in a row follow the order your flows visit them.
 
 ## Playing a flow
 

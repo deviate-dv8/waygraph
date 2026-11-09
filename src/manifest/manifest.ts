@@ -8,6 +8,7 @@ import type { BlockKind } from "../engine/block/kind.js";
 import type { ProjectScan, ScanOptions } from "./project.js";
 import { MemPage } from "../engine/mem/mem.js";
 import { readBlockShape, type ReadShape } from "../engine/read/read-block.js";
+import { pageUrls, urlOf } from "./urls.js";
 import { describeExpectations } from "../engine/run/expect.js";
 import type { SomeBlock } from "../engine/block/some-block.js";
 
@@ -28,6 +29,8 @@ export interface ManifestBlock {
   file: string;
   /** The `src/map/` group folder the Block lives in (e.g. `(external)/hoppscotch`), or the map package it came from. */
   map?: string;
+  /** Where a Nav or Page Block goes by url: the url, or the pattern a url built from mem makes (`/requests/:id`). */
+  url?: string;
 }
 
 export interface ManifestFlow {
@@ -63,10 +66,13 @@ export interface ManifestReadBlock {
 
 export interface Manifest {
   version: number;
-  project: { name: string; dir: string; waygraph: string };
+  /** `baseUrl`: the address relative urls start from (`WAYGRAPH_BASE_URL`, the config's `baseUrl`), when one is set. */
+  project: { name: string; dir: string; waygraph: string; baseUrl?: string };
   checkpoints: string[];
   maps: string[];
   blocks: ManifestBlock[];
+  /** The addresses each Checkpoint's page is known by: its Navs' urls and the urls its Blocks' verify checks. */
+  pageUrls: Record<string, string[]>;
   /** What each Checkpoint's page shows, from its Read Blocks (version 2+). */
   readBlocks: ManifestReadBlock[];
   flows: ManifestFlow[];
@@ -113,6 +119,7 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
   const blocks: ManifestBlock[] = scan.blocks.map((b) => {
     for (const t of [...b.from, ...b.to]) if (t !== "*") checkpoints.add(t);
     const map = b.map ?? mapGroupOf(b.file);
+    const url = urlOf(b.block);
     if (map) maps.add(map);
     return {
       id: `${b.file}#${b.exportName}`,
@@ -126,6 +133,7 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
       expect: describeExpectations(b.block),
       file: b.file,
       ...(map ? { map } : {}),
+      ...(url ? { url } : {}),
     };
   });
   const flows: ManifestFlow[] = scan.flows.map((f) => {
@@ -177,6 +185,7 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
     checkpoints: [...checkpoints].sort(),
     maps: [...maps].sort(),
     blocks,
+    pageUrls: pageUrls(scan.blocks),
     readBlocks,
     flows,
     skipped: scan.skipped,
@@ -184,7 +193,9 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
 }
 
 /** Scans the project and returns its manifest. */
-export async function buildManifest(projectDir: string, opts: ScanOptions = {}): Promise<Manifest> {
-  return manifestFromScan(await scanProject(projectDir, opts));
+export async function buildManifest(projectDir: string, opts: ScanOptions & { baseUrl?: string | undefined } = {}): Promise<Manifest> {
+  const { baseUrl, ...scanOpts } = opts;
+  const manifest = manifestFromScan(await scanProject(projectDir, scanOpts));
+  return baseUrl ? { ...manifest, project: { ...manifest.project, baseUrl } } : manifest;
 }
 

@@ -2,8 +2,8 @@
 import type { PageSummary } from '~/lib/project_graph'
 import type { ManifestBlock } from '#types/project'
 
-/** The selected page: how you get there, what you can do and expect there, where it leads, what it shows. */
-const props = defineProps<{ page: PageSummary }>()
+/** The selected page: its addresses, how you get there, what you can do and expect there, where it leads, what it shows. */
+const props = defineProps<{ page: PageSummary; urls: string[] }>()
 defineEmits<{ close: [] }>()
 
 const kindColor: Record<string, 'primary' | 'neutral' | 'success' | 'warning' | 'info'> = {
@@ -42,7 +42,9 @@ const sections: {
 const where = (b: ManifestBlock, key: string) =>
   key === 'waysIn'
     ? b.from.includes('*')
-      ? 'from anywhere'
+      ? b.url
+        ? `opens ${b.url}`
+        : 'from any page'
       : `from ${b.from.join(', ')}`
     : key === 'leadsTo'
       ? `to ${b.to.join(', ')}`
@@ -55,6 +57,13 @@ const where = (b: ManifestBlock, key: string) =>
       <div>
         <p class="text-xs tracking-wide text-(--ink-soft) uppercase">Page</p>
         <h2 class="font-hand text-2xl leading-tight">{{ props.page.checkpoint }}</h2>
+        <p
+          v-for="url in props.urls"
+          :key="url"
+          class="font-mono text-xs break-all text-(--color-sketch-600) dark:text-(--color-sketch-300)"
+        >
+          {{ url }}
+        </p>
         <p v-if="props.page.hubs.length" class="mt-1 text-xs text-(--ink-soft)">
           Page Block: {{ props.page.hubs.map((h) => h.exportName).join(', ') }}
         </p>

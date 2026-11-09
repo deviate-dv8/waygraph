@@ -9,6 +9,7 @@ export interface PipelineStep {
   name: string
   kind: string
   description: string
+  url?: string
   expects: string[]
   status?: 'passed' | 'failed' | 'running' | 'skipped'
   ms?: number | null

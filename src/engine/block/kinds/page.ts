@@ -173,6 +173,9 @@ export function definePageBlock<
   // marker existed but was never actually set on any real project's Blocks.
   if (typeof options.url === "string") {
     mark(built, "__waygraphNavUrl", options.url);
+  } else if (typeof options.url === "function") {
+    // A url built from mem: the manifest reads its source for the pattern it makes (`/requests/:id`).
+    mark(built, "__waygraphNavUrlFn", options.url);
   }
   if (options.url !== undefined || options.click !== undefined) {
     mark(built, "__waygraphPageDeepLink", true);

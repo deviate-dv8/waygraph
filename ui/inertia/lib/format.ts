@@ -17,3 +17,23 @@ const plural = new Intl.PluralRules('en')
 export function count(n: number, word: string, many = `${word}s`): string {
   return `${n} ${plural.select(n) === 'one' ? word : many}`
 }
+
+/** An address as a step shows it: its path, and its host too when it isn't the site the run started on. */
+export function shortUrl(url: string, home: string | undefined): string {
+  try {
+    const u = new URL(url)
+    const path = `${u.pathname}${u.search}`
+    return u.host === home || !u.host ? path : `${u.host}${path}`
+  } catch {
+    return url
+  }
+}
+
+/** The host of an address, when it has one. */
+export function hostOf(url: string | null | undefined): string | undefined {
+  try {
+    return url ? new URL(url).host || undefined : undefined
+  } catch {
+    return undefined
+  }
+}

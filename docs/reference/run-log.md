@@ -19,7 +19,7 @@ graph LR
 | `run:mem` | the mem each part of the run was seeded with, by key name (what `--replay <runId>` seeds again) |
 | `step:start` | the Block, its kind (`nav`, `page`, `method`, `effect`, `api`), where it starts; `parent` for a step inside a fast-forward unit, `cleanup: true` for a `.finally` step |
 | `step:read` | what the page showed after the step: `{ checkpoint, read, missing, notes, readBlocks }` ([Read Blocks](../guides/reads)) |
-| `step:end` | where it landed, how long it took |
+| `step:end` | where it landed, how long it took, the page's address (`url`) |
 | `step:error` | the failure; for a failed check, `check: { trait, block, wants, saw, url, heading }` |
 | `run:artifact` | a saved video or failure screenshot |
 | `run:end` | ok, the result or the error |
@@ -44,7 +44,9 @@ npx waygraph manifest [project] [--out manifest.json]
 
 | Lists | With |
 |---|---|
-| every Block | `kind`, `description`, route `from` → `to`, `requires`, `file`, its `map` group |
+| every Block | `kind`, `description`, route `from` → `to`, `requires`, `file`, its `map` group; a Nav or Page Block's `url` (a url built from mem as a pattern: `/requests/:id`) |
+| every page's addresses | `pageUrls`: by Checkpoint, its Navs' urls and the `Trait.url` its Blocks verify |
+| the project | its name, folder, waygraph version, and `baseUrl` when one is set |
 | every flow | its `useCase` (from `src/flows/<page>/<outcome>.flow.ts`), its steps in order, its settings |
 | every Checkpoint | its tag |
 | every Read Block | the Checkpoints it reads and the shape of its fields: `"catalog.items": [{ "name": "string", "price": "number" }]` |

@@ -161,6 +161,7 @@ function foldSteps(events: RunEvent[]): RunStep[] {
         to: null,
         ms: null,
         status: 'running',
+        url: null,
         error: null,
         check: null,
         read: null,
@@ -173,8 +174,14 @@ function foldSteps(events: RunEvent[]): RunStep[] {
       .reverse()
       .find((s) => s.index === Number(e.index) && s.block === String(e.block))
     if (!step) continue
-    if (e.type === 'step:end')
-      Object.assign(step, { to: String(e.to), ms: Number(e.ms), status: 'passed' })
+    if (e.type === 'step:end') {
+      Object.assign(step, {
+        to: String(e.to),
+        ms: Number(e.ms),
+        status: 'passed',
+        url: typeof e.url === 'string' ? e.url : null,
+      })
+    }
     if (e.type === 'step:error') {
       Object.assign(step, {
         ms: Number(e.ms),

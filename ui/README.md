@@ -34,5 +34,4 @@ goes in both package.json files.
 
 ## Stack
 
-AdonisJS 7 with Inertia and Vue, Nuxt UI 4 (Tailwind 4), Vue Flow for the canvases, rough.js for the hand-drawn shapes,
-dagre for the map's layout.
+AdonisJS 7 with Inertia and Vue, Nuxt UI 4 (Tailwind 4), Vue Flow for the canvases, rough.js for the hand-drawn shapes.

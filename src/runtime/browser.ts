@@ -5,21 +5,13 @@ import type { Browser, BrowserContext, BrowserContextOptions, BrowserType, Launc
 import { envString } from "../engine/env.js";
 import { ignoreTimeout } from "../engine/page-gone.js";
 
-let warned = false;
-
 /**
- * CHROME_PATH / CHROMIUM_PATH, if set and the file exists. A stale path (browser uninstalled)
- * falls back to Playwright's bundled Chromium with a one-time warning instead of failing the run.
+ * CHROME_PATH / CHROMIUM_PATH, if set and the file exists. Other tools read these too, so a path that doesn't exist (a
+ * browser since uninstalled) isn't waygraph's to complain about: the run uses Playwright's bundled Chromium.
  */
 export function chromiumExecutablePath(): string | undefined {
   const path = process.env.CHROME_PATH || process.env.CHROMIUM_PATH;
-  if (!path) return undefined;
-  if (existsSync(path)) return path;
-  if (!warned) {
-    warned = true;
-    console.error(`waygraph: CHROME_PATH/CHROMIUM_PATH "${path}" does not exist - using Playwright's bundled Chromium`);
-  }
-  return undefined;
+  return path && existsSync(path) ? path : undefined;
 }
 
 /** Unpacked extension directories, as resolved by `resolveExtensions` - also what `WAYGRAPH_EXTENSIONS` carries to child processes. */

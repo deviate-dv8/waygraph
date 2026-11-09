@@ -18,6 +18,8 @@ export type ManifestBlock = {
   expect: string[]
   file: string
   map?: string
+  /** Where a Nav or Page Block goes by url (`/requests/:id` for one built from mem). */
+  url?: string
 }
 
 export type ManifestFlow = {
@@ -43,8 +45,10 @@ export type ManifestReadBlock = {
 /** What `waygraph manifest` prints: everything a project defines, without running it. */
 export type Manifest = {
   version: number
-  project: { name: string; dir: string; waygraph: string }
+  project: { name: string; dir: string; waygraph: string; baseUrl?: string }
   checkpoints: string[]
+  /** The addresses each page is known by (its Navs' urls, the urls its Blocks verify); missing before waygraph 0.16.16. */
+  pageUrls?: Record<string, string[]>
   blocks: ManifestBlock[]
   readBlocks: ManifestReadBlock[]
   flows: ManifestFlow[]
@@ -75,6 +79,8 @@ export type RunStep = {
   to: string | null
   ms: number | null
   status: 'passed' | 'failed' | 'running'
+  /** The page's address when the step ended. */
+  url: string | null
   error: string | null
   check: { trait: string; wants?: string; saw?: string; when?: string; url?: string } | null
   read: Record<string, Json> | null

@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@vue-flow/core'
+import { EdgeLabelRenderer, getBezierPath, Position, type EdgeProps } from '@vue-flow/core'
 import { sketchPath, seedOf } from '~/lib/sketch'
 
 /** A hand-drawn arrow between two pages, labelled with the Blocks that make that move. */
-const props =
-  defineProps<EdgeProps<{ label: string; highlighted?: boolean; status?: 'passed' | 'failed' }>>()
+const props = defineProps<
+  EdgeProps<{
+    label: string
+    highlighted?: boolean
+    status?: 'passed' | 'failed'
+    /** A page's place in its site (the site map), not a move. */
+    dashed?: boolean
+  }>
+>()
 
 /**
  * The edge's path and its label's place. A move to the next row of a pipeline runs back along the gap between the
@@ -13,7 +20,9 @@ const props =
  */
 const geometry = computed<[string, number, number]>(() => {
   const { sourceX: sx, sourceY: sy, targetX: tx, targetY: ty } = props
-  if (tx < sx - 20 && ty > sy + 120) {
+  // Only a move left to right gets routed around boxes; a tree edge (top to bottom) curves straight in.
+  const sideways = props.sourcePosition === Position.Right && props.targetPosition === Position.Left
+  if (sideways && tx < sx - 20 && ty > sy + 120) {
     const gapY = (sy + ty) / 2
     const midX = (sx + tx) / 2
     return [
@@ -22,7 +31,7 @@ const geometry = computed<[string, number, number]>(() => {
       gapY,
     ]
   }
-  if (tx < sx - 20) {
+  if (sideways && tx < sx - 20) {
     const drop = Math.max(sy, ty) + 90
     const midX = (sx + tx) / 2
     return [
@@ -58,6 +67,8 @@ const line = computed(() =>
     roughness: 1.2,
     strokeWidth: props.data?.highlighted ? 2 : 1.2,
     bowing: 2,
+    // A dashed line is one stroke: rough's second pass would fill the gaps.
+    ...(props.data?.dashed ? { disableMultiStroke: true } : {}),
   })
 )
 
@@ -76,8 +87,18 @@ const head = computed(() => {
 <template>
   <g>
     <path
-      v-for="(p, i) in [...line, ...head]"
-      :key="i"
+      v-for="(p, i) in line"
+      :key="'l' + i"
+      :d="p.d"
+      fill="none"
+      stroke-linecap="round"
+      :stroke-width="p.strokeWidth"
+      :stroke-dasharray="props.data?.dashed ? '7 6' : undefined"
+      :style="{ stroke: color }"
+    />
+    <path
+      v-for="(p, i) in head"
+      :key="'h' + i"
       :d="p.d"
       fill="none"
       stroke-linecap="round"

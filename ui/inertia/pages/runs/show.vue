@@ -4,7 +4,7 @@ import WorkspaceLayout from '~/layouts/workspace.vue'
 import StepPipeline from '~/components/graph/step_pipeline.vue'
 import RunStatus from '~/components/run_status.vue'
 import { urlFor } from '~/client'
-import { ago, count, duration } from '~/lib/format'
+import { ago, count, duration, hostOf, shortUrl } from '~/lib/format'
 import { runTitle } from '~/lib/runs'
 import { usePlay } from '~/lib/play'
 import type { RunDetail } from '#types/project'
@@ -17,6 +17,8 @@ const props = defineProps<{
   expects: string[][]
 }>()
 
+/** The site the run started on: a step on it shows only its path. */
+const home = computed(() => hostOf(props.run.stepsList.find((s) => s.url)?.url))
 const failedIndex = computed(() => props.run.stepsList.findIndex((s) => s.status === 'failed'))
 const selected = ref<number | null>(failedIndex.value >= 0 ? failedIndex.value : null)
 // A run that fails while it's watched opens its failure.
@@ -28,6 +30,7 @@ const pipeline = computed(() =>
     name: s.block,
     kind: s.kind,
     description: s.cleanup ? 'cleanup' : `${s.from} → ${s.to ?? '?'}`,
+    ...(s.url ? { url: shortUrl(s.url, home.value) } : {}),
     expects: props.expects[i] ?? [],
     status: s.status,
     ms: s.ms,
@@ -133,6 +136,16 @@ const again = computed(() => (props.run.flows.length === 1 ? props.run.flows[0] 
           />
         </div>
         <div class="flex-1 space-y-4 overflow-y-auto p-4 text-sm">
+          <p v-if="step.url" class="flex items-start gap-1.5 text-xs">
+            <UIcon name="i-lucide-globe" class="mt-0.5 size-3.5 shrink-0 text-(--ink-soft)" />
+            <a
+              :href="step.url"
+              target="_blank"
+              rel="noreferrer"
+              class="font-mono break-all text-(--color-sketch-600) hover:underline dark:text-(--color-sketch-300)"
+              >{{ step.url }}</a
+            >
+          </p>
           <div
             v-if="step.status === 'failed'"
             class="space-y-2 rounded-lg border border-(--fail) p-3"

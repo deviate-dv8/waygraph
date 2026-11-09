@@ -193,6 +193,9 @@ export function defineNavBlock<Out extends Checkpoint<string>>(options: NavBlock
   // to warn about real, unmapped nav links found live on the page.
   if (typeof options.url === "string") {
     mark(built, "__waygraphNavUrl", options.url);
+  } else if (typeof options.url === "function") {
+    // A url built from mem: the manifest reads its source for the pattern it makes (`/requests/:id`).
+    mark(built, "__waygraphNavUrlFn", options.url);
   }
   return built;
 }

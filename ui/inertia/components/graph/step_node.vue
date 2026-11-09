@@ -9,6 +9,8 @@ const props = defineProps<{
     name: string
     kind: string
     description: string
+    /** Where the step goes (a Nav's url) or, on a run, the address it ended on. */
+    url?: string
     expects: string[]
     status?: 'passed' | 'failed' | 'running' | 'skipped'
     ms?: number | null
@@ -47,6 +49,13 @@ const stroke = () =>
       </div>
       <p class="font-hand mt-0.5 text-lg leading-tight break-words">
         {{ /^ff-\d+$/.test(props.data.name) ? 'fast-forward' : props.data.name }}
+      </p>
+      <p
+        v-if="props.data.url"
+        class="mt-0.5 truncate font-mono text-[11px] text-(--color-sketch-600) dark:text-(--color-sketch-300)"
+        :title="props.data.url"
+      >
+        {{ props.data.url }}
       </p>
       <p v-if="props.data.description" class="mt-1 line-clamp-2 text-xs text-(--ink-soft)">
         {{ props.data.description }}

@@ -2,10 +2,15 @@
 import { Handle, Position } from '@vue-flow/core'
 import SketchBox from '~/components/sketch/sketch_box.vue'
 
-/** A page (Checkpoint) on the map: its name, and how much you can do, expect and read there. */
+/**
+ * A page (Checkpoint) on the map: its name, its address, and how much you can do, expect and read there. A site (`site`)
+ * is the root its pages hang from: an oval with its host.
+ */
 const props = defineProps<{
   data: {
     label: string
+    /** The page's path on its site, or a site's full origin. */
+    url?: string
     start?: boolean
     selected?: boolean
     actions: number
@@ -32,13 +37,23 @@ const props = defineProps<{
   >
     <div class="flex min-w-36 flex-col items-center px-5 py-3 text-center">
       <span class="font-hand text-lg leading-tight text-(--ink)">{{ props.data.label }}</span>
+      <span
+        v-if="props.data.url && !props.data.start"
+        class="mt-0.5 max-w-52 truncate font-mono text-[11px] text-(--color-sketch-600) dark:text-(--color-sketch-300)"
+        :title="props.data.url"
+      >
+        {{ props.data.url }}
+      </span>
       <span v-if="!props.data.start" class="mt-1 flex gap-2 text-xs text-(--ink-soft)">
         <span v-if="props.data.actions">{{ props.data.actions }} do</span>
         <span v-if="props.data.expects">{{ props.data.expects }} expect</span>
         <span v-if="props.data.reads">reads</span>
       </span>
     </div>
-    <Handle type="target" :position="Position.Left" class="opacity-0" />
-    <Handle type="source" :position="Position.Right" class="opacity-0" />
+    <!-- Moves come in on the left and leave on the right; the site map's tree runs top to bottom. -->
+    <Handle id="in" type="target" :position="Position.Left" class="opacity-0" />
+    <Handle id="out" type="source" :position="Position.Right" class="opacity-0" />
+    <Handle id="up" type="target" :position="Position.Top" class="opacity-0" />
+    <Handle id="down" type="source" :position="Position.Bottom" class="opacity-0" />
   </SketchBox>
 </template>

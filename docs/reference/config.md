@@ -96,6 +96,9 @@ itself (`flow.run(mem)`, no context):
 | `browsers: { chromium, firefox, webkit }` | another launcher with Playwright's `.launch()` shape (a stealth-patched Chromium) |
 | `memStub: true` | every flow from this engine fills missing keys from mem stubs ([Data](../guides/data)) |
 
+Chromium comes from `CHROME_PATH` (or `CHROMIUM_PATH`) when that file exists, and otherwise from Playwright's own
+download, without a word: other tools set these variables too.
+
 `flow.run(context, mem)` uses a context you already launched and ignores these. `spawnTab(entry, page, mem)` drives a
 second tab, in the same context, through its own flow.
 
