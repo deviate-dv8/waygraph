@@ -14,7 +14,8 @@ npx waygraph ui ../shop    # another project
 
 It comes with waygraph (0.16.13 and later) and needs Node 24 or newer, like the rest of waygraph: nothing else to
 install. In a project, `npx waygraph ui` runs the project's own waygraph; on an older one, update it first
-(`npm install waygraph@latest`).
+(`npm install waygraph@latest`). The map's addresses (a site map, one level per part of the address) and page
+screenshots need 0.16.16 or later in the project; on an older one the pages hang from where flows reach them.
 
 It prints the address (`http://localhost:9294`, or the next free port; `--port N` picks one). Ctrl-C stops it, and a
 flow it's still playing, with its browser.
