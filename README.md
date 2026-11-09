@@ -120,6 +120,7 @@ names) still works and is fine for small projects, but the Map is where the tool
 ```bash
 git clone https://github.com/deviate-dv8/waygraph.git && cd waygraph
 npm install && npm ci --prefix ui && npm run build
+npm run ui                           # Waygraph UI on the Sauce Demo example, from this checkout
 npm run typecheck && npm test        # unit + Playwright suites
 ```
 

@@ -9,6 +9,8 @@ export type ScannedRoutes = {
     'flows.show': { paramsTuple: [ParamValue]; params: {'name': ParamValue} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }
+    'screenshots.step': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
     'plays.store': { paramsTuple?: []; params?: {} }
     'plays.destroy': { paramsTuple?: []; params?: {} }
   }
@@ -18,6 +20,8 @@ export type ScannedRoutes = {
     'flows.show': { paramsTuple: [ParamValue]; params: {'name': ParamValue} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }
+    'screenshots.step': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
   }
   HEAD: {
     'map': { paramsTuple?: []; params?: {} }
@@ -25,6 +29,8 @@ export type ScannedRoutes = {
     'flows.show': { paramsTuple: [ParamValue]; params: {'name': ParamValue} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }
+    'screenshots.step': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
   }
   POST: {
     'plays.store': { paramsTuple?: []; params?: {} }

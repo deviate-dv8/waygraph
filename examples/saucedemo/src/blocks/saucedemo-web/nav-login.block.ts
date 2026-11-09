@@ -21,6 +21,7 @@ export const Login = definePageBlock({
   name: "nav-login",
   description: "Goes to the Swag Labs login page.",
   checkpoint: LoginPage,
+  screenshot: true,
   url: "/",
   verify: [Trait.visible(LoginSel.loginButton)],
   methods: {

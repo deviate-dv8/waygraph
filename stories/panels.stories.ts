@@ -4,6 +4,7 @@ import { renderAfterStep } from "../src/demo/stepper/panel-after.js";
 import { presentFailPanel } from "../src/demo/stepper/step-panels.js";
 import { presentSlides } from "../src/demo/stepper/slides.js";
 import { showOutcome, tickOutcome } from "../src/demo/overlay/inpage/outcome.js";
+import { showFinish } from "../src/demo/overlay/inpage/finish.js";
 import { checkpoint } from "../src/engine/checkpoint/checkpoint.js";
 import { MemPage } from "../src/engine/mem/mem.js";
 import { overlayStory } from "./page.js";
@@ -111,4 +112,21 @@ export const Outcome: Story = overlayStory(async (page) => {
   await page.evaluate(tickOutcome, 0);
   await page.evaluate(tickOutcome, 1);
   await new Promise((r) => setTimeout(r, 400));
+});
+
+/** The demo's last word: every step played. */
+export const Finished: Story = overlayStory(async (page) => {
+  await page.evaluate(showFinish, { status: "passed" as const, title: "Equipment registry · add a machine", summary: "6 steps · 12.4 s" });
+  await new Promise((r) => setTimeout(r, 450));
+});
+
+/** ...or it stopped on a failure, saying where. */
+export const Stopped: Story = overlayStory(async (page) => {
+  await page.evaluate(showFinish, {
+    status: "stopped" as const,
+    title: "Equipment registry · add a machine",
+    summary: "4 steps · 9.8 s",
+    detail: 'Step 4, submit-machine: wanted "Saved" in .toast; saw "Name is required"',
+  });
+  await new Promise((r) => setTimeout(r, 450));
 });

@@ -87,6 +87,8 @@ export type RunStep = {
   cleanup: boolean
   /** The step inside a composed Block (a fast-forward) this one is part of. */
   parent: number | null
+  /** Its screenshot's file name in the run's folder, when its Block took one (`screenshot: true`). */
+  screenshot: string | null
 }
 
 export type RunDetail = RunSummary & {

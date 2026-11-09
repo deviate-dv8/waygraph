@@ -6,6 +6,7 @@ import { Start } from "../checkpoint/checkpoint.js";
 import type { Block } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { runExpect } from "./expect.js";
+import { screenshotStep } from "./screenshot.js";
 import { addressOf, inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepRead, stepStarted } from "./events.js";
 import { readBlocksFor, readCheckpoint } from "../read/read-block.js";
 import { blockKindOf } from "../block/kind.js";
@@ -109,6 +110,8 @@ async function playGraph(
       await runVerify(current.instruction.verify, checkpoint, page, mem, current.name);
       await runExpect(current, checkpoint, page, mem, lastLeaf(current));
       await readLanding(page, mem, checkpoint.__state);
+      // Last in the step: what the page looks like once it's done, when the Block asks.
+      await screenshotStep(page, current, checkpoint.__state, lastLeaf(current));
       stepEnded(lastLeaf(current), checkpoint.__state, addressOf(page));
 
       const next = current.next?.(checkpoint);

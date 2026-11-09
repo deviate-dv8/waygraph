@@ -11,6 +11,10 @@ export interface ApiDefinition {
     index: typeof routes['runs.index']
     show: typeof routes['runs.show']
   }
+  screenshots: {
+    page: typeof routes['screenshots.page']
+    step: typeof routes['screenshots.step']
+  }
   plays: {
     store: typeof routes['plays.store']
     destroy: typeof routes['plays.destroy']

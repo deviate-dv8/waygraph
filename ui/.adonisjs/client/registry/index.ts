@@ -38,6 +38,18 @@ const routes = {
     tokens: [[0,"runs"],[1,"id"]],
     types: placeholder as Registry['runs.show']['types'],
   },
+  'screenshots.page': {
+    methods: ["GET","HEAD"],
+    pattern: '/screenshots/pages/:checkpoint',
+    tokens: [[0,"screenshots"],[0,"pages"],[1,"checkpoint"]],
+    types: placeholder as Registry['screenshots.page']['types'],
+  },
+  'screenshots.step': {
+    methods: ["GET","HEAD"],
+    pattern: '/screenshots/runs/:id/:file',
+    tokens: [[0,"screenshots"],[0,"runs"],[1,"id"],[1,"file"]],
+    types: placeholder as Registry['screenshots.step']['types'],
+  },
   'plays.store': {
     methods: ["POST"],
     pattern: '/plays',

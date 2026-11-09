@@ -117,6 +117,9 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
   tools load Block, Page and stub files themselves. A Page Block's `expects: { saved: () => ExpectSavedBlock }` names what
   can be checked on the page, so `HomePage.expects.saved` comes from the same import. An older project moves onto pages
   with `waygraph upgrade --codemod pages` once each Page Block has its `nav` and `methods` / `expects` records.
+- **`screenshot: true` on a Page Block** takes the page's picture whenever a step lands there (on any other Block: once
+  its step is done). Waygraph UI shows each page's newest on its map and each step's on the run; put it on the pages a
+  reader would want to see, not on every Block.
 - **What a step's scenario expects goes on the step:** `.method(Detail.do.confirmArchive, { expect: [Registry.expects.archivedToast,
   Machine.status.is("Archived")] })`. A check on one value is `Key.is(value)` inline, not an Expect Block per value;
   write an Expect Block for a named check worth reusing, or one that needs selectors. `.assert()` steps are gone

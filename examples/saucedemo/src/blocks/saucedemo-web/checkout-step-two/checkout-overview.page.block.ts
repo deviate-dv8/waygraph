@@ -7,6 +7,7 @@ export const CheckoutOverview = definePageBlock({
   name: "page-checkout-overview",
   description: "Checkout step two - the summary; Finish places the order.",
   checkpoint: CheckoutOverviewPage,
+  screenshot: true,
   verify: [Trait.url({ pathname: "/checkout-step-two.html" })],
   methods: {
     finishOrder: () => FinishOrderBlock,

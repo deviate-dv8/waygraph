@@ -1,0 +1,14 @@
+/* The demo's finish card (#wg-finish, built in inpage/finish.ts): a veil over the whole page with the card in its middle,
+   fading in once the steps end. A veil like the focus veil: anchored to the viewport, not a chrome slot. */
+#wg-finish {
+  position: fixed; inset: 0; z-index: var(--wg-z-top);
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--wg-material) 60%, transparent);
+  backdrop-filter: blur(2px);
+  opacity: 0; transition: opacity .35s var(--ease-mac);
+  pointer-events: auto;
+}
+#wg-finish.wg-in { opacity: 1; }
+#wg-finish .wg-finish-card { transform: translateY(8px) scale(.98); transition: transform .35s var(--ease-mac); }
+#wg-finish.wg-in .wg-finish-card { transform: none; }
+#wg-finish .wg-finish-icon .icon { width: 44px; height: 44px; }

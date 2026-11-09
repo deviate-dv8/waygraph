@@ -1,15 +1,25 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, computed } from 'vue'
-import { FILL, OUTLINE, sketchEllipse, sketchRect, seedOf } from '~/lib/sketch'
+import {
+  FILL,
+  OUTLINE,
+  sketchEllipse,
+  sketchParallelogram,
+  sketchRect,
+  sketchStadium,
+  sketchSubroutine,
+  seedOf,
+} from '~/lib/sketch'
 
 /**
- * A hand-drawn outline behind its content, sized to it: the box every node and card on the canvas is drawn with.
- * The same `seed` (by default the label) draws the same wobble every time.
+ * A hand-drawn outline behind its content, sized to it: the box every node and card on the canvas is drawn with, in
+ * flowchart's shapes (`stadium` a terminator, `rect` a process, `subroutine` a predefined process, `parallelogram` input
+ * / output). The same `seed` (by default the label) draws the same wobble every time.
  */
 const props = withDefaults(
   defineProps<{
     seed: string
-    shape?: 'rect' | 'ellipse'
+    shape?: 'rect' | 'ellipse' | 'stadium' | 'parallelogram' | 'subroutine'
     stroke?: string
     fill?: string
     fillStyle?: 'hachure' | 'solid' | 'cross-hatch' | 'zigzag'
@@ -53,7 +63,14 @@ const drawn = computed(() => {
     fillWeight: 0.6,
     hachureGap: 6,
   }
-  return props.shape === 'ellipse' ? sketchEllipse(w, h, options) : sketchRect(w, h, options)
+  const draw = {
+    rect: sketchRect,
+    ellipse: sketchEllipse,
+    stadium: sketchStadium,
+    parallelogram: sketchParallelogram,
+    subroutine: sketchSubroutine,
+  }[props.shape]
+  return draw(w, h, options)
 })
 </script>
 

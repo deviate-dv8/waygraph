@@ -16,7 +16,8 @@ export type RunEvent =
   | { type: "step:error"; runId: string; at: number; index: number; block: string; kind: BlockKind; error: string; ms: number; check?: TraitCheckReport }
   | ({ type: "step:read"; runId: string; at: number; index: number; block: string; kind: BlockKind; checkpoint: string } & StepRead)
   | { type: "run:end"; runId: string; at: number; ok: boolean; result?: string; error?: string; ms: number }
-  | { type: "run:artifact"; runId: string; at: number; kind: "video" | "trace" | "screenshot"; path: string };
+  /** `index`, `block`, `checkpoint`: the step a screenshot ends, and where the page was. */
+  | { type: "run:artifact"; runId: string; at: number; kind: "video" | "trace" | "screenshot"; path: string; index?: number; block?: string; checkpoint?: string };
 
 /** What the page showed after a step, from the Read Blocks for the Checkpoint it landed on. */
 export interface StepRead {
@@ -164,8 +165,20 @@ export function currentRunId(): string | undefined {
   return scope.getStore()?.runId;
 }
 
-export function recordArtifact(kind: "video" | "trace" | "screenshot", path: string, runId = scope.getStore()?.runId): void {
-  if (runId) emit({ type: "run:artifact", runId, at: Date.now(), kind, path });
+export function recordArtifact(
+  kind: "video" | "trace" | "screenshot",
+  path: string,
+  runId = scope.getStore()?.runId,
+  step?: { index: number; block: string; checkpoint: string },
+): void {
+  if (runId) emit({ type: "run:artifact", runId, at: Date.now(), kind, path, ...(step ?? {}) });
+}
+
+/** The run and the step open right now (the innermost one), if any. */
+export function currentStep(): { runId: string; index: number } | undefined {
+  const run = scope.getStore();
+  const step = run?.open.at(-1);
+  return run && step ? { runId: run.runId, index: step.index } : undefined;
 }
 
 /** The last real Block inside a Block built by `connect` (or the Block itself). */

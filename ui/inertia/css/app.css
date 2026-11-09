@@ -76,7 +76,8 @@ body {
 /* An "island": a floating panel over the canvas, as Excalidraw's toolbars are. */
 .island {
   background: var(--island);
-  border: 1px solid var(--island-line);
+  /* Visible on any canvas: a faint line disappears against the paper. */
+  border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent);
   border-radius: 0.75rem;
   box-shadow:
     0 0 0.9px rgb(0 0 0 / 0.17),

@@ -1,7 +1,7 @@
 // A Nav Block: gets to a page, by URL or by clicking a link, and lands on that page's Checkpoint.
 import { mark } from "../mark.js";
 import { checkpoint } from "../../checkpoint/checkpoint.js";
-import type { Block, DefinedBlock } from "../block.js";
+import type { Block, DefinedBlock, StepScreenshot } from "../block.js";
 import type { Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { Trait } from "../../trait/trait.js";
 import { MemPage } from "../../mem/mem.js";
@@ -75,6 +75,8 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
    * @example expect: [ExpectArchivedToastBlock] · expect: { EquipmentDetail: [ExpectSavedBlock], EquipmentAdd: [ExpectNameRequiredBlock] }
    */
   expect?: ExpectList<Out>;
+  /** A screenshot of the page once the step is done (`true`, or `{ fullPage: true }`): Waygraph UI shows it on the map. */
+  screenshot?: StepScreenshot;
   /**
    * Live per-instance menu rows for `waygraph auto` (see {@link Block.instanceOptions}).
    * When set, the explore menu lists one row per option instead of a single
@@ -123,10 +125,12 @@ export function defineNavigating<Out extends Checkpoint<string>>(options: {
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
   verify?: Trait[] | ((out: Out) => Trait[]) | undefined;
   expect?: ExpectList<Out> | undefined;
+  screenshot?: StepScreenshot | undefined;
 }): DefinedBlock<Checkpoint<string>, Out> {
   const built = defineBlock<Checkpoint<string>, Out>({
     name: options.name,
     ...(options.description ? { description: options.description } : {}),
+    ...(options.screenshot ? { screenshot: options.screenshot } : {}),
     ...(options.requires ? { requires: options.requires } : {}),
     ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
     instruction: {
@@ -219,6 +223,8 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   verify?: Trait[] | ((out: Out) => Trait[]);
   /** What this Block promises wherever it's used (see `NavBlockOptions.expect`). */
   expect?: ExpectList<Out>;
+  /** A screenshot of the page once the step is done (`true`, or `{ fullPage: true }`): Waygraph UI shows it on the map. */
+  screenshot?: StepScreenshot;
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
 };
 
@@ -240,6 +246,7 @@ export function defineNavClickBlock<Out extends Checkpoint<string>>(
     ...(options.requires ? { requires: options.requires } : {}),
     ...(options.verify ? { verify: options.verify } : {}),
     ...(options.expect ? { expect: options.expect } : {}),
+    ...(options.screenshot ? { screenshot: options.screenshot } : {}),
     ...(options.instanceOptions ? { instanceOptions: options.instanceOptions } : {}),
   });
 }

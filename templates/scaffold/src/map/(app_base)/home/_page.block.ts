@@ -12,6 +12,7 @@ export const HomePage = definePageBlock({
   name: "page-home",
   description: "Offline home hub - add/remove effects, clear; expects hello and item-added.",
   checkpoint: Home,
+  screenshot: true,
   nav: NavHomeBlock,
   verify: [Trait.visible(DemoSel.catalog)],
   methods: {

@@ -85,6 +85,38 @@ export class ProjectService {
     }
   }
 
+  /** Each page's newest screenshot (`.waygraph/screenshots/<Checkpoint>.png`), by Checkpoint, with when it was taken. */
+  async pageShots(): Promise<Record<string, number>> {
+    const folder = join(this.runsDir(), '..', 'screenshots')
+    if (!existsSync(folder)) return {}
+    const names = await readdir(folder)
+    const shots = await Promise.all(
+      names
+        .filter((n) => n.endsWith('.png'))
+        .map(async (n) => {
+          const info = await stat(join(folder, n))
+          return [basename(n, '.png'), info.mtimeMs] as const
+        })
+    )
+    return Object.fromEntries(shots)
+  }
+
+  /**
+   * The path of a screenshot to send: a page's newest (`page`), or one step's in a run (`run`). Null for any name that
+   * isn't a plain file name, or a file that isn't there: nothing outside these folders is ever read.
+   */
+  screenshotFile(where: { page: string } | { run: string; file: string }): string | null {
+    const plain = (name: string) => /^[\w.-]+$/.test(name)
+    const path =
+      'page' in where
+        ? plain(where.page) && join(this.runsDir(), '..', 'screenshots', `${where.page}.png`)
+        : plain(where.run) &&
+          plain(where.file) &&
+          where.file.endsWith('.png') &&
+          join(this.runsDir(), where.run, where.file)
+    return path && existsSync(path) ? path : null
+  }
+
   private requireDir(): string {
     const dir = this.dir
     if (!dir) {
@@ -162,6 +194,7 @@ function foldSteps(events: RunEvent[]): RunStep[] {
         ms: null,
         status: 'running',
         url: null,
+        screenshot: null,
         error: null,
         check: null,
         read: null,
@@ -191,6 +224,8 @@ function foldSteps(events: RunEvent[]): RunStep[] {
       })
     }
     if (e.type === 'step:read') step.read = (e.read ?? null) as Record<string, Json> | null
+    if (e.type === 'run:artifact' && e.kind === 'screenshot')
+      step.screenshot = basename(String(e.path))
   }
   return steps
 }

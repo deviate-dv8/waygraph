@@ -7,7 +7,7 @@ installFullLaunch();
 installRunLog();
 export { Start } from "./engine/checkpoint/checkpoint.js";
 export type { Checkpoint } from "./engine/checkpoint/checkpoint.js";
-export type { Instruction, Block, BlockOut, DefinedBlock } from "./engine/block/block.js";
+export type { Instruction, Block, BlockOut, DefinedBlock, StepScreenshot } from "./engine/block/block.js";
 export type { BlockFrom, SomeBlock, SomeDefinedBlock, SomeInstruction } from "./engine/block/some-block.js";
 export type { WaygraphInstanceOption } from "./engine/block/action-page.js";
 export { connect } from "./engine/run/connect.js";

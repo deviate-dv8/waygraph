@@ -21,7 +21,7 @@ graph LR
 | `step:read` | what the page showed after the step: `{ checkpoint, read, missing, notes, readBlocks }` ([Read Blocks](../guides/reads)) |
 | `step:end` | where it landed, how long it took, the page's address (`url`) |
 | `step:error` | the failure; for a failed check, `check: { trait, block, wants, saw, url, heading }` |
-| `run:artifact` | a saved video or failure screenshot |
+| `run:artifact` | a saved video or screenshot; a Block's screenshot (`screenshot: true`) also names its step (`index`, `block`) and the page (`checkpoint`) |
 | `run:end` | ok, the result or the error |
 
 Each run has its own id, even when several run at once in one process (parallel `traverse` workers). In code:

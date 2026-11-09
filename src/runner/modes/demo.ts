@@ -1,5 +1,6 @@
 // `waygraph demo`: the same steps, with the waygraph UI around each one (src/demo/stepper/).
 import { createStepper } from "../../demo/stepper/stepper.js";
+import { messageOf } from "../../engine/errors.js";
 import type { Mode, PlaySession, PlayStep } from "../mode.js";
 import type { PlayOptions } from "../options.js";
 
@@ -11,6 +12,12 @@ export async function demoMode(session: PlaySession, steps: readonly PlayStep[],
     before: stepper.before,
     after: (index, result) => stepper.after(index, result),
     failed: (index, failure) => stepper.failed(index, failure),
-    end: () => stepper.end(),
+    end: (outcome) =>
+      stepper.end({
+        stoppedAt: outcome.failedAt
+          ? { index: outcome.failedAt.index, block: outcome.failedAt.step.block.name, message: messageOf(outcome.failedAt.error) }
+          : undefined,
+        expectedFailure: outcome.expectedFailure?.reason,
+      }),
   };
 }

@@ -40,6 +40,7 @@ are `__wgIcon`, never glyphs; no `.catch(() => {})` (`ignorePageGone` / `ignoreT
 ```bash
 npm run examples:link   # once per checkout: examples/*/node_modules/waygraph -> this repo (CI does the same)
 npm ci --prefix ui      # once per checkout: the build builds Waygraph UI
+npm run ui              # this checkout's Waygraph UI on examples/saucedemo (npm run ui:dev: the UI's hot-reload server)
 npx tsc --noEmit && npm run build && npm run check:structure && npm run knip && npm run test:unit
 WAYGRAPH_HEADED=0 npx playwright test --grep-invert non-headless
 npm run storybook:build   # overlay changes: also look at the piece in `npm run storybook`, light and dark

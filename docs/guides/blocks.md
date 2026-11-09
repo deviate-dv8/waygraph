@@ -146,6 +146,21 @@ engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem, { expect: [HomeP
 though no flow plays them. Name the Page Block after the page
 (`HomePage`): the Checkpoint already has the page's own name (`Home`).
 
+## Screenshots
+
+`screenshot: true` (or `{ fullPage: true }`) on a Block takes a screenshot of the page as the last thing in its step:
+after its action, its checks, its expectations and the page's read. On a Page Block it's the page's: every step that lands
+on that page takes one, whichever Block it was.
+
+```ts
+export const CartPage = definePageBlock({ name: "page-cart", checkpoint: CartPage, screenshot: true, ... });
+```
+
+Each is kept with its run (`.waygraph/runs/<runId>/<step>-<block>.png`, a `run:artifact` in the [run log](../reference/run-log)
+naming the step and the page), and the newest per page as `.waygraph/screenshots/<Checkpoint>.png`.
+[Waygraph UI](./ui) shows a page's newest on its map, and each step's on the run. waygraph's own overlay (the demo's
+panel, rings, banner) is left out of the picture; a screenshot that can't be taken never fails the step.
+
 ## Effect: one row of many
 
 An Effect is a Method that also lists the rows it can act on, so `waygraph auto` shows "Add Alpha", "Add Beta"…:

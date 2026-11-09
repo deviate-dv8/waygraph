@@ -52,6 +52,8 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "npm run clean && tsc -p tsconfig.build.json && node scripts/build-ui-css.mjs && node scripts/build-waygraph-ui.mjs",
+    "ui": "npm run build && node bin/waygraph ui examples/saucedemo",
+    "ui:dev": "npm run dev --prefix ui",
     "typecheck": "node bin/waygraph typecheck .",
     "test": "npm run check:structure && npm run knip && npm run test:unit && playwright test",
     "test:ui": "playwright test --ui",

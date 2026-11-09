@@ -136,6 +136,19 @@ const again = computed(() => (props.run.flows.length === 1 ? props.run.flows[0] 
           />
         </div>
         <div class="flex-1 space-y-4 overflow-y-auto p-4 text-sm">
+          <a
+            v-if="step.screenshot"
+            :href="urlFor('screenshots.step', { id: props.run.id, file: step.screenshot })"
+            target="_blank"
+            rel="noreferrer"
+            title="Open full size"
+          >
+            <img
+              :src="urlFor('screenshots.step', { id: props.run.id, file: step.screenshot })"
+              :alt="`The page after ${step.block}`"
+              class="w-full rounded border border-(--island-line)"
+            />
+          </a>
           <p v-if="step.url" class="flex items-start gap-1.5 text-xs">
             <UIcon name="i-lucide-globe" class="mt-0.5 size-3.5 shrink-0 text-(--ink-soft)" />
             <a

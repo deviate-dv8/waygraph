@@ -18,6 +18,22 @@ const props = defineProps<{
   }
 }>()
 
+/**
+ * The step in flowchart's shapes: going to a page (a Nav or Page step) is a terminator, an API call input / output, a
+ * fast-forward (several Blocks as one) a predefined process, any other step a process.
+ */
+const shape = (): 'stadium' | 'parallelogram' | 'subroutine' | 'rect' => {
+  const { kind, name } = props.data
+  if (kind === 'nav' || kind === 'page') return 'stadium'
+  if (kind === 'api') return 'parallelogram'
+  if (/^ff-\d+$/.test(name) || kind === 'block') return 'subroutine'
+  return 'rect'
+}
+
+/** Room for the shape's own edges: round ends, slanted sides, side bars. */
+const padding = (): string =>
+  ({ stadium: 'px-7', parallelogram: 'px-8', subroutine: 'px-7', rect: 'px-4' })[shape()]
+
 const stroke = () =>
   props.data.status === 'failed'
     ? 'var(--fail)'
@@ -31,6 +47,7 @@ const stroke = () =>
 <template>
   <SketchBox
     :seed="`${props.data.index}-${props.data.name}`"
+    :shape="shape()"
     :stroke="stroke()"
     :fill="
       props.data.selected
@@ -42,7 +59,7 @@ const stroke = () =>
     :stroke-width="props.data.selected || props.data.status === 'failed' ? 2.2 : 1.4"
     class="cursor-pointer"
   >
-    <div class="w-56 px-4 py-3">
+    <div class="w-56 py-3" :class="padding()">
       <div class="flex items-center justify-between gap-2 text-xs text-(--ink-soft)">
         <span>step {{ props.data.index + 1 }} · {{ props.data.kind }}</span>
         <span v-if="props.data.ms != null">{{ props.data.ms }} ms</span>

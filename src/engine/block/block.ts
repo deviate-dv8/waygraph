@@ -266,6 +266,8 @@ export function copyWaygraphRuntime(from: object, to: object): void {
     "__waygraphKind",
     "__waygraphSalt",
     "__waygraphNavUrl",
+    "__waygraphNavUrlFn",
+    "__waygraphScreenshot",
     "__waygraphNavClick",
     "__waygraphNavFrom",
     "__waygraphPageDeepLink",
@@ -299,9 +301,18 @@ export function copyWaygraphRuntime(from: object, to: object): void {
  * these attached. The methods are thin: they delegate to the identically-named
  * free functions, which remain the one place this logic actually lives.
  */
+/**
+ * A screenshot of the page once a Block's step is done (act, resolve, verify, its expectations, the page's read): `true`
+ * for what's in view, `{ fullPage: true }` for the whole page. Kept with the run (`.waygraph/runs/<runId>/`), and as the
+ * page's newest look (`.waygraph/screenshots/<Checkpoint>.png`), which Waygraph UI shows on its map.
+ */
+export type StepScreenshot = true | { fullPage?: boolean };
+
 export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(base: {
   name: string;
   description?: Block<In, Out>["description"];
+  /** A screenshot once the step is done: see {@link StepScreenshot}. */
+  screenshot?: StepScreenshot;
   // Narrower than Instruction's own act() - page is typed as
   // ActionPage here (the @deprecated-tagged navigation methods), not the
   // real Page. A real Page is still what's passed at runtime (Page is
@@ -337,6 +348,7 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
     stubAfter: (stub) => withStubPhase(defined, "stubAfter", stub),
     stubOnError: (stub) => withStubPhase(defined, "stubOnError", stub),
   };
+  if (base.screenshot) mark(defined, "__waygraphScreenshot", base.screenshot === true ? {} : base.screenshot);
   return defined;
 }
 

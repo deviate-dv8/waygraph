@@ -73,6 +73,32 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/runs_controller').default['show']>>>
     }
   }
+  'screenshots.page': {
+    methods: ["GET","HEAD"]
+    pattern: '/screenshots/pages/:checkpoint'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { checkpoint: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/screenshots_controller').default['page']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/screenshots_controller').default['page']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/screenshots_controller').default['page']>>>
+    }
+  }
+  'screenshots.step': {
+    methods: ["GET","HEAD"]
+    pattern: '/screenshots/runs/:id/:file'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; file: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/screenshots_controller').default['step']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/screenshots_controller').default['step']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/screenshots_controller').default['step']>>>
+    }
+  }
   'plays.store': {
     methods: ["POST"]
     pattern: '/plays'

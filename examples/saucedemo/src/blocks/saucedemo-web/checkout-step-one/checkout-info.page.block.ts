@@ -11,6 +11,7 @@ export const CheckoutInfo = definePageBlock({
   name: "page-checkout-info",
   description: "Checkout step one - name and postal code.",
   checkpoint: CheckoutInfoPage,
+  screenshot: true,
   nav: NavCheckoutInfoBlock,
   verify: [Trait.url({ pathname: "/checkout-step-one.html" })],
   methods: {

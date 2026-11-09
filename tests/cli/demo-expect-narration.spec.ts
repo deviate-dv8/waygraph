@@ -83,6 +83,8 @@ test("the outcome card ticks each expectation and shows what changed", async () 
   expect(log).toContain("now shows counter.count: 0 -> 1");
   // A check without an Expect Block is ringed in words, not by its code name.
   expect(log).toMatch(/reads "1"\s+sel=#count/);
+  // The demo ends on a card that says it's done.
+  expect(log).toMatch(/finished: passed · 2 steps · [\d.]+ s/);
 });
 
 test("a failed expectation is crossed on the card, next to the one that held", async () => {
@@ -90,4 +92,6 @@ test("a failed expectation is crossed on the card, next to the one that held", a
   const log = await demo("byeFlow");
   expect(log).toContain("expected ok: The page says hello");
   expect(log).toContain('expected FAILED: The page says bye (saw "Hello")');
+  // ...and when a step failed, the card says where it stopped.
+  expect(log).toMatch(/finished: stopped · 1 step · [\d.]+ s · Step 1, nav-home: /);
 });

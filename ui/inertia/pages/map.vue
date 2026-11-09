@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { VueFlow, type Edge, type Node } from '@vue-flow/core'
+import { computed, nextTick, ref, watch } from 'vue'
+import { VueFlow, type Edge, type Node, type VueFlowStore } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import PageNode from '~/components/graph/page_node.vue'
 import SketchEdge from '~/components/graph/sketch_edge.vue'
 import PagePanel from '~/components/map/page_panel.vue'
-import { layoutTree } from '~/lib/layout'
+import { useStorage } from '@vueuse/core'
+import { layoutTree, type TreeDirection } from '~/lib/layout'
 import { SITE, edgeLabel, mapEdges, pageSummary, siteMap } from '~/lib/project_graph'
 import { count } from '~/lib/format'
+import { urlFor } from '~/client'
 import type { ManifestBlock, ManifestReadBlock } from '#types/project'
 
 /**
@@ -23,11 +25,15 @@ const props = defineProps<{
   pageUrls: Record<string, string[]>
   /** The pages in the order the project's flows reach them. */
   journey: string[]
+  /** Each page's newest screenshot (a Block's `screenshot: true`), by Checkpoint: when it was taken. */
+  shots: Record<string, number>
   flows: { id: string; name: string; file: string; steps: number }[]
   skipped: { file: string; error: string }[]
 }>()
 
 const selected = ref<string | null>(null)
+/** Which way the site map grows: left to right by default; the viewer's pick is remembered in this browser. */
+const direction = useStorage<TreeDirection>('waygraph-map-direction', 'LR')
 const edgesData = computed(() => mapEdges(props.blocks))
 const site = computed(() =>
   siteMap(props.checkpoints, props.pageUrls, props.project.baseUrl, props.blocks)
@@ -55,7 +61,8 @@ const journey = computed(() => {
   return order
 })
 
-const nodes = computed<Node[]>(() => {
+/** Where every node sits: the site map's tree, laid out in the chosen direction. */
+const placed = computed(() => {
   const sites = site.value.sites
   // The site map's tree: a page under the page (or site) its address hangs from; a page with no known address under the
   // page whose move first reaches it, else under the first site. Children in journey order.
@@ -72,12 +79,18 @@ const nodes = computed<Node[]>(() => {
     if (parent) childrenOf.set(parent, [...(childrenOf.get(parent) ?? []), id])
   }
   const roots = [...sites.map((s) => s.id), ...journey.value.filter((id) => !parentOf.has(id))]
-  const placed = layoutTree(roots, childrenOf, { width: 200, height: 84 })
+  // Pages with a screenshot are taller: every box in a row gets the same height.
+  const hasShots = Object.keys(props.shots).length > 0
+  return layoutTree(roots, childrenOf, { width: 200, height: hasShots ? 190 : 84 }, direction.value)
+})
+
+const nodes = computed<Node[]>(() => {
+  const sites = site.value.sites
   return [
     ...sites.map((s) => ({
       id: s.id,
       type: 'page',
-      position: placed.get(s.id) ?? { x: 0, y: 0 },
+      position: placed.value.get(s.id) ?? { x: 0, y: 0 },
       data: { label: s.label, url: s.origin, start: true, actions: 0, expects: 0, reads: 0 },
     })),
     ...props.checkpoints.map((id) => {
@@ -85,10 +98,11 @@ const nodes = computed<Node[]>(() => {
       return {
         id,
         type: 'page',
-        position: placed.get(id) ?? { x: 0, y: 0 },
+        position: placed.value.get(id) ?? { x: 0, y: 0 },
         data: {
           label: id,
           url: site.value.paths[id],
+          image: shotUrl(id),
           selected: selected.value === id,
           actions: page.actions.length,
           expects: page.expects.length,
@@ -99,33 +113,80 @@ const nodes = computed<Node[]>(() => {
   ]
 })
 
-const edges = computed<Edge[]>(() => [
-  ...site.value.edges.map((e) => ({
-    id: e.id,
-    source: e.source,
-    target: e.target,
-    type: 'sketch',
-    sourceHandle: 'down',
-    targetHandle: 'up',
-    data: {
-      label: edgeLabel(e.blocks),
-      dashed: true,
-      highlighted: selected.value === e.target,
-    },
-  })),
-  ...edgesData.value.map((e) => ({
-    id: e.id,
-    source: e.source,
-    target: e.target,
-    type: 'sketch',
-    sourceHandle: 'out',
-    targetHandle: 'in',
-    data: {
-      label: edgeLabel(e.blocks),
-      highlighted: selected.value === e.source || selected.value === e.target,
-    },
-  })),
-])
+/** Each edge's lane: its place among the edges that leave the same node the same way, so their lines run apart. */
+function lanes<E extends { source: string }>(edges: E[]): number[] {
+  const seen = new Map<string, number>()
+  return edges.map((e) => {
+    const n = seen.get(e.source) ?? 0
+    seen.set(e.source, n + 1)
+    return n
+  })
+}
+
+let flow: VueFlowStore | null = null
+/** Fit the whole map in view once its nodes are measured (and again when the layout changes). */
+function fit() {
+  void flow?.fitView({ padding: 0.15, duration: 200 })
+}
+function ready(instance: VueFlowStore) {
+  flow = instance
+  fit()
+}
+watch(direction, async () => {
+  await nextTick()
+  fit()
+})
+
+const edges = computed<Edge[]>(() => {
+  const siteLanes = lanes(site.value.edges)
+  const moveLanes = lanes(edgesData.value)
+  return [
+    ...site.value.edges.map((e, i) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      type: 'sketch',
+      // Along the tree: rightwards (left to right) or downwards (top down).
+      sourceHandle: direction.value === 'LR' ? 'out' : 'down',
+      targetHandle: direction.value === 'LR' ? 'in' : 'up',
+      data: {
+        label: edgeLabel(e.blocks),
+        dashed: true,
+        squared: true,
+        lane: siteLanes[i],
+        highlighted: selected.value === e.target,
+      },
+    })),
+    ...edgesData.value.map((e, i) => {
+      // A move deeper into the tree runs along it; one to a page of the same depth (or back up) brackets out to the side
+      // and back, past the boxes instead of through them.
+      const from = placed.value.get(e.source)
+      const to = placed.value.get(e.target)
+      const lr = direction.value === 'LR'
+      const deeper = !!from && !!to && (lr ? to.x > from.x + 40 : to.y > from.y + 40)
+      return {
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        type: 'sketch',
+        sourceHandle: lr ? 'out' : 'down',
+        targetHandle: deeper ? (lr ? 'in' : 'up') : lr ? 'back' : 'under',
+        data: {
+          label: edgeLabel(e.blocks),
+          squared: true,
+          lane: moveLanes[i],
+          highlighted: selected.value === e.source || selected.value === e.target,
+        },
+      }
+    }),
+  ]
+})
+
+/** A page's newest screenshot, versioned by when it was taken so a new one shows without a stale cache. */
+const shotUrl = (checkpoint: string): string | undefined =>
+  props.shots[checkpoint]
+    ? `${urlFor('screenshots.page', { checkpoint })}?v=${Math.round(props.shots[checkpoint])}`
+    : undefined
 
 const page = computed(() =>
   selected.value && !selected.value.startsWith(SITE)
@@ -143,7 +204,8 @@ const page = computed(() =>
       :nodes-connectable="false"
       :min-zoom="0.2"
       class="h-full w-full"
-      @pane-ready="({ fitView }) => fitView({ padding: 0.2 })"
+      @pane-ready="ready"
+      @nodes-initialized="fit"
       @node-click="({ node }) => (selected = node.id === selected ? null : node.id)"
       @pane-click="selected = null"
     >
@@ -162,6 +224,7 @@ const page = computed(() =>
         class="pointer-events-auto"
         :page="page"
         :urls="props.pageUrls[page.checkpoint] ?? []"
+        :image="shotUrl(page.checkpoint)"
         @close="selected = null"
       />
     </div>
@@ -169,6 +232,18 @@ const page = computed(() =>
     <div
       class="island absolute bottom-3 left-3 flex items-center gap-3 px-3 py-2 text-xs text-(--ink-soft)"
     >
+      <UTooltip :text="direction === 'LR' ? 'Lay out top down' : 'Lay out left to right'">
+        <UButton
+          :icon="
+            direction === 'LR' ? 'i-lucide-arrow-right-from-line' : 'i-lucide-arrow-down-from-line'
+          "
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          :aria-label="direction === 'LR' ? 'Lay out top down' : 'Lay out left to right'"
+          @click="direction = direction === 'LR' ? 'TB' : 'LR'"
+        />
+      </UTooltip>
       <span>{{ count(props.checkpoints.length, 'page') }}</span>
       <span>{{ count(props.blocks.length, 'Block') }}</span>
       <span>{{ count(props.flows.length, 'flow') }}</span>

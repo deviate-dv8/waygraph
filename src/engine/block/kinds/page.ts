@@ -1,7 +1,8 @@
 // A Page Block: "you have arrived" - the hub other pages navigate to, verified by what the page shows.
 import { defineNavigating } from "./nav.js";
 import { mark } from "../mark.js";
-import type { Block, DefinedBlock } from "../block.js";
+import type { Block, DefinedBlock, StepScreenshot } from "../block.js";
+import { screenshotPage } from "../../run/screenshot.js";
 import type { Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { Trait } from "../../trait/trait.js";
 import { MemPage } from "../../mem/mem.js";
@@ -42,6 +43,11 @@ export type PageBlockOptions<
    * @example expect: [ExpectArchivedToastBlock] · expect: { EquipmentDetail: [ExpectSavedBlock], EquipmentAdd: [ExpectNameRequiredBlock] }
    */
   expect?: ExpectList<Out>;
+  /**
+   * A screenshot of this page whenever a step lands on it (`true`, or `{ fullPage: true }`): kept with the run, and the
+   * newest one shows on Waygraph UI's map.
+   */
+  screenshot?: StepScreenshot;
   requires?: readonly MemKey<unknown>[];
   /**
    * Methods available on this page: a record of Blocks (or `() => Block` factories, lazy so the page object can colocate
@@ -140,6 +146,8 @@ export function definePageBlock<
   const methodList = resolvePageMethods(options.methods);
   const { nav, expects, ...rest } = options;
   const built = defineNavigating(rest) as PageBlock<Out, M, Nav, E>;
+  // A page's screenshot is taken whenever a step lands on it, not only when this hub runs as a step.
+  if (options.screenshot) screenshotPage(options.checkpoint.__state, options.screenshot === true ? {} : options.screenshot);
   const expectByName: Record<string, SomeDefinedBlock> = Object.fromEntries(
     Object.entries(expects ?? {}).map(([k, entry]) => [k, typeof entry === "function" ? entry() : entry]),
   );

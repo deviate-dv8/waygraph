@@ -3,7 +3,7 @@ import type { PageSummary } from '~/lib/project_graph'
 import type { ManifestBlock } from '#types/project'
 
 /** The selected page: its addresses, how you get there, what you can do and expect there, where it leads, what it shows. */
-const props = defineProps<{ page: PageSummary; urls: string[] }>()
+const props = defineProps<{ page: PageSummary; urls: string[]; image?: string | undefined }>()
 defineEmits<{ close: [] }>()
 
 const kindColor: Record<string, 'primary' | 'neutral' | 'success' | 'warning' | 'info'> = {
@@ -79,6 +79,19 @@ const where = (b: ManifestBlock, key: string) =>
     </div>
 
     <div class="flex-1 space-y-5 overflow-y-auto p-4">
+      <a
+        v-if="props.image"
+        :href="props.image"
+        target="_blank"
+        rel="noreferrer"
+        title="Open full size"
+      >
+        <img
+          :src="props.image"
+          :alt="`${props.page.checkpoint} as it last looked`"
+          class="w-full rounded border border-(--island-line)"
+        />
+      </a>
       <section v-for="s in sections" :key="s.key">
         <h3 class="mb-2 flex items-center gap-1.5 text-sm font-semibold">
           <UIcon :name="s.icon" class="size-4 text-(--ink-soft)" /> {{ s.title }}

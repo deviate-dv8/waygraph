@@ -22,6 +22,7 @@ export default class WorkspacesController {
       readBlocks: manifest.readBlocks,
       pageUrls: manifest.pageUrls ?? {},
       journey,
+      shots: await this.project.pageShots(),
       flows: manifest.flows.map((f) => ({
         id: f.id,
         name: f.exportName,

@@ -7,6 +7,7 @@ export const DocsPage = definePageBlock({
   name: "page-docs",
   description: "Docs hub - Waygraph Map convention demo.",
   checkpoint: Docs,
+  screenshot: true,
   nav: NavDocsBlock,
   verify: [Trait.visible(DocsSel.heading)],
 });

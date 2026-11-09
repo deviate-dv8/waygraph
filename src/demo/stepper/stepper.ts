@@ -23,6 +23,9 @@ import type { StepperContext, StepperStep, StepView } from "./view.js";
 import { envFlag, envString } from "../../engine/env.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 import { setActing } from "../overlay/acting.js";
+import { showFinish, type FinishCard } from "../overlay/inpage/finish.js";
+import { ensureShadowRoot } from "../overlay/ui/shadow.js";
+import { demoLog } from "./demo-log.js";
 
 export interface Stepper {
   /** After the page was reset between episodes: storage was wiped, so the auto-advance setting is put back. */
@@ -31,7 +34,14 @@ export interface Stepper {
   after(index: number, result: Checkpoint<string>): Promise<void>;
   /** A step threw, or reached the failure its flow expects: show why, then the person picks Retry or Stop. */
   failed(index: number, failure: { error?: unknown; result?: Checkpoint<string> | undefined }): Promise<"retry" | "stop">;
-  end(): Promise<void>;
+  /** The steps ended: the overlay goes, and a card says it's done and how it went, held a moment before the page closes. */
+  end(ended: DemoEnd): Promise<void>;
+}
+
+/** How a demo ended: every step played, it stopped on a failure, or it reached the failure its flow expects. */
+export interface DemoEnd {
+  stoppedAt?: { index: number; block: string; message: string } | undefined;
+  expectedFailure?: string | undefined;
 }
 
 export interface StepperOptions {
@@ -42,7 +52,19 @@ export interface StepperOptions {
   beat: number;
 }
 
+/** The finish card: how the demo ended, its title, and how many steps it played in how long. */
+function finishCard(ended: DemoEnd, title: string, steps: number, ms: number): FinishCard {
+  const summary = `${steps} ${steps === 1 ? "step" : "steps"} · ${(ms / 1000).toFixed(1)} s`;
+  if (ended.stoppedAt) {
+    const { index, block, message } = ended.stoppedAt;
+    return { status: "stopped", title, summary, detail: `Step ${index + 1}, ${block}: ${message.split("\n")[0]}` };
+  }
+  if (ended.expectedFailure) return { status: "expected", title, summary, detail: ended.expectedFailure };
+  return { status: "passed", title, summary };
+}
+
 export async function createStepper(page: WgPage, mem: MemPage, steps: readonly StepperStep[], options: StepperOptions): Promise<Stepper> {
+  const startedAt = Date.now();
   const demoFast = envFlag("WAYGRAPH_DEMO_FAST");
   const pacing = newPacing(demoFast);
   // The after-step panel shows what the page shows (its step:read).
@@ -132,7 +154,15 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
       return edits && edits.__wgRetry ? "retry" : "stop";
     },
 
-    end: () => teardownOverlay(page),
+    async end(ended) {
+      await teardownOverlay(page);
+      const card = finishCard(ended, ctx.stickyTitle || options.title || "waygraph demo", steps.length, Date.now() - startedAt);
+      if (!envFlag("WAYGRAPH_JSON")) demoLog(`finished: ${card.status} · ${card.summary}${card.detail ? ` · ${card.detail}` : ""}`);
+      await ensureShadowRoot(page).catch(ignorePageGone);
+      await page.evaluate(showFinish, card).catch(ignorePageGone);
+      // Long enough to read (and to be in a recording) before the page closes.
+      await new Promise((r) => setTimeout(r, pacing.gatesFast ? 500 : 2500));
+    },
   };
 }
 

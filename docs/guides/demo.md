@@ -75,6 +75,10 @@ panel instead of the narration quietly missing. A stub is a function of `ctx`: s
 | `zoom(1.5)` | zooms the page in |
 | `showNetworkTab()` / `hideNetworkTab()` | the network panel: requests, status, bodies, Copy as cURL |
 
+When the steps end, the overlay clears and a card says the demo is done and how it went: **Finished** (or **Finished as
+expected**, for a flow that's meant to fail), or **Stopped** with the step and the reason; the flow's title, and how
+many steps in how long. It stays a moment (a short one with `--fast`) before the page closes, so a recording ends on it.
+
 The banner, the caption, the checklist, the device and the outcome card stay through a navigation: a step that goes to
 another page or site (a redirect, a payment provider) shows them there as they were, until a stub changes them.
 

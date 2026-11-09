@@ -17,6 +17,7 @@
 @import "./banner.css" layer(components);
 @import "./caption.css" layer(components);
 @import "./outcome.css" layer(components);
+@import "./finish.css" layer(components);
 @import "./chips.css" layer(components);
 @import "./todos.css" layer(components);
 @import "./panel.css" layer(components);

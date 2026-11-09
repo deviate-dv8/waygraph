@@ -7,7 +7,8 @@
  *   3. Layers: each file's layer may only import the layers allowed for it; scripts/layer-debt.json may only shrink.
  *   4. No barrels: only the package entry (src/index.ts) re-exports; everything else is imported from where it is declared.
  *   5. No wiring by import: no module runs a call at its top level except the entries (index.ts, cli/cli.ts).
- *   6. The overlay has one layout: in its CSS, only anchored things (ring, label, cursor, veil, swipe) are position:fixed.
+ *   6. The overlay has one layout: in its CSS, only anchored things (ring, label, cursor, veil, swipe, the finish veil) are
+ *      position:fixed.
  *   7. No HTML strings into the page: overlay elements are built with __wgEl / __wgSet / __wgSvg (demo/overlay/ui/shadow.ts),
  *      so page and author text is always a text node.
  *   8. WAYGRAPH_* variables are read and written only through engine/env.ts (the registry docs/env.md is generated from).
@@ -141,7 +142,7 @@ for (const f of files) {
 // --- the overlay has one layout: only anchored things (they follow a target) are position:fixed ---
 // Chrome goes in a slot of #wg-ui (demo/overlay/ui/css/layout.css, placed by ui/shadow.ts); hand-placed fixed boxes are
 // what overlapped and overflowed before it.
-const ANCHORED = /#wg-(?:ui|stage|ring|ring-label|cursor|click-pulse|focus-veil|swipe-layer|pilot-fx-focus)\b|\.wg-ring-el\b|\.wg-ring-label-el\b/;
+const ANCHORED = /#wg-(?:ui|stage|ring|ring-label|cursor|click-pulse|focus-veil|finish|swipe-layer|pilot-fx-focus)\b|\.wg-ring-el\b|\.wg-ring-label-el\b/;
 const overlayFiles = [
   ...files.filter((f) => /[\\/](demo|live)[\\/]/.test(f)),
   ...readdirSync(join(srcDir, "demo/overlay/ui/css")).filter((n) => n.endsWith(".css")).map((n) => join(srcDir, "demo/overlay/ui/css", n)),
