@@ -66,8 +66,9 @@ export const InventoryReadBlock = defineReadBlock({
 - **`requires`:** a Read Block that needs Mem (`ctx.mem.get(...)`) declares it. Without it set, the Read Block is
   skipped and the reply says why.
 
-A Read Block never acts, navigates or appears in a flow. After a step lands on a Checkpoint, every Read Block for it
-(plus the every-page ones) is read and merged. Two Read Blocks reading the same key on one page fail with
+A Read Block never acts, navigates or appears in a flow, and nothing imports it: `run`, `demo`, `test` and the live
+sessions load every `*.read.block.ts` / `_read.block.ts` themselves. After a step lands on a Checkpoint, every Read
+Block for it (plus the every-page ones) is read and merged. Two Read Blocks reading the same key on one page fail with
 `WG_READ_DUPLICATE`.
 
 ## Readers
