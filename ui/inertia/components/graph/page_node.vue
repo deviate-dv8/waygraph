@@ -18,6 +18,9 @@ const props = defineProps<{
     actions: number
     expects: number
     reads: number
+    /** How many flows pass through it, and how many of those failed their newest run. */
+    flows: number
+    failing: number
   }
 }>()
 </script>
@@ -60,6 +63,17 @@ const props = defineProps<{
         <span v-if="props.data.actions">{{ props.data.actions }} do</span>
         <span v-if="props.data.expects">{{ props.data.expects }} expect</span>
         <span v-if="props.data.reads">reads</span>
+      </span>
+      <span
+        v-if="props.data.flows"
+        class="mt-0.5 flex items-center gap-1 text-xs text-(--ink-soft)"
+        :title="`${props.data.flows} flow(s) pass through this page`"
+      >
+        <UIcon name="i-lucide-route" class="size-3" />
+        {{ props.data.flows }} {{ props.data.flows === 1 ? 'flow' : 'flows' }}
+        <span v-if="props.data.failing" class="text-(--fail)"
+          >· {{ props.data.failing }} failing</span
+        >
       </span>
     </div>
     <!-- Moves come in on the left and leave on the right; the site map's tree runs top to bottom. -->

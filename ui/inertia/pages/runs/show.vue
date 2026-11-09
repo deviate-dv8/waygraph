@@ -43,7 +43,7 @@ const step = computed(() =>
 const { play, playing, isPlaying, start } = usePlay()
 /** What the play that wrote this run printed, while this app still has it. */
 const output = computed(() => (play.value?.runId === props.run.id ? play.value.output : []))
-/** A run of one flow can be played again with the mem it was seeded with. */
+/** A run of one flow can be played again, as a run or a demo, with the mem it was seeded with. */
 const again = computed(() => (props.run.flows.length === 1 ? props.run.flows[0] : null))
 </script>
 
@@ -86,14 +86,28 @@ const again = computed(() => (props.run.flows.length === 1 ? props.run.flows[0] 
           color="neutral"
           variant="outline"
         />
-        <UButton
-          v-if="again"
-          label="Play again"
-          icon="i-lucide-rotate-ccw"
-          size="xs"
-          :disabled="playing"
-          @click="start(again, 'run', { replay: props.run.id })"
-        />
+        <template v-if="again">
+          <UButton
+            label="Run again"
+            icon="i-lucide-rotate-ccw"
+            size="xs"
+            :disabled="playing"
+            @click="start(again, 'run', { replay: props.run.id })"
+          />
+          <UTooltip
+            text="Opens a browser with the step panel around each step, with this run's mem"
+          >
+            <UButton
+              label="Demo again"
+              icon="i-lucide-monitor-play"
+              size="xs"
+              color="neutral"
+              variant="outline"
+              :disabled="playing"
+              @click="start(again, 'demo', { replay: props.run.id })"
+            />
+          </UTooltip>
+        </template>
         <UPopover v-if="output.length">
           <UButton
             label="Output"

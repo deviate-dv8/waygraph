@@ -1,6 +1,8 @@
 import { inject } from '@adonisjs/core'
 import type { HttpContext } from '@adonisjs/core/http'
 import { ProjectService } from '#services/project_service'
+import { pageFlows } from '#services/page_flows'
+import type { RunDetail } from '#types/project'
 
 /** The project's map: its pages (Checkpoints), the Blocks between them, what each page shows and can be expected. */
 @inject()
@@ -22,6 +24,7 @@ export default class WorkspacesController {
       readBlocks: manifest.readBlocks,
       pageUrls: manifest.pageUrls ?? {},
       journey,
+      pageFlows: pageFlows(manifest, await this.newestRuns()),
       shots: await this.project.pageShots(),
       flows: manifest.flows.map((f) => ({
         id: f.id,
@@ -31,5 +34,18 @@ export default class WorkspacesController {
       })),
       skipped: manifest.skipped,
     })
+  }
+
+  /** Each flow's newest run of it alone, step by step (where each step landed). */
+  private async newestRuns(): Promise<Map<string, RunDetail>> {
+    const newest = new Map<string, RunDetail>()
+    // Runs come newest first: the first of a flow alone is its newest.
+    for (const run of await this.project.runs()) {
+      const flow = run.flows.length === 1 ? run.flows[0] : undefined
+      if (!flow || newest.has(flow)) continue
+      const detail = await this.project.run(run.id)
+      if (detail) newest.set(flow, detail)
+    }
+    return newest
   }
 }

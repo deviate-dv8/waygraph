@@ -55,6 +55,19 @@ export type Manifest = {
   skipped: { file: string; error: string }[]
 }
 
+/** A flow that passes through a page: how it gets there, and how the flow's newest run went. */
+export type PageFlow = {
+  name: string
+  /**
+   * `lands`: a step lands on the page; `may land`: a step with several outcomes may (its flow ends there, so nothing
+   * says which); `acts`: a step only starts there (something is done on it).
+   */
+  reach: 'lands' | 'may land' | 'acts'
+  /** Its newest run's outcome (null: it never ended); no run yet: no runId. */
+  ok: boolean | null
+  runId: string | null
+}
+
 /** One run, from its log, in a line. */
 export type RunSummary = {
   id: string

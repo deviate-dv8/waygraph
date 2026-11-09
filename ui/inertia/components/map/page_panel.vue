@@ -2,10 +2,19 @@
 import type { PageSummary } from '~/lib/project_graph'
 import { kindColor } from '~/lib/kinds'
 import ShapeTree from '~/components/map/shape_tree.vue'
-import type { Json, ManifestBlock } from '#types/project'
+import RunStatus from '~/components/run_status.vue'
+import { urlFor } from '~/client'
+import { count } from '~/lib/format'
+import type { Json, ManifestBlock, PageFlow } from '#types/project'
 
 /** The selected page: its addresses, how you get there, what you can do and expect there, where it leads, what it shows. */
-const props = defineProps<{ page: PageSummary; urls: string[]; image?: string | undefined }>()
+const props = defineProps<{
+  page: PageSummary
+  urls: string[]
+  image?: string | undefined
+  /** The flows that pass through it, with how each one's newest run went. */
+  flows: PageFlow[]
+}>()
 defineEmits<{ close: [] }>()
 
 const sections: {
@@ -98,6 +107,31 @@ const where = (b: ManifestBlock, key: string) =>
           class="w-full rounded border border-(--island-line)"
         />
       </a>
+      <section>
+        <h3 class="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+          <UIcon name="i-lucide-route" class="size-4 text-(--ink-soft)" /> Flows
+          <span class="text-xs font-normal text-(--ink-soft)">{{ props.flows.length }}</span>
+        </h3>
+        <p v-if="!props.flows.length" class="text-xs text-(--ink-soft)">No flow comes here.</p>
+        <p v-else class="mb-2 text-xs text-(--ink-soft)">
+          {{ count(props.flows.filter((f) => f.reach === 'lands').length, 'flow') }} reach it;
+          {{ props.flows.filter((f) => f.ok === true).length }} passed their last run.
+        </p>
+        <ul class="space-y-1.5">
+          <li v-for="f in props.flows" :key="f.name" class="flex items-center gap-1.5 text-sm">
+            <ULink :to="urlFor('flows.show', { name: f.name })" class="font-medium hover:underline">
+              {{ f.name }}
+            </ULink>
+            <span class="text-xs text-(--ink-soft)">{{ f.reach }} here</span>
+            <span class="flex-1" />
+            <ULink v-if="f.runId" :to="urlFor('runs.show', { id: f.runId })">
+              <RunStatus :id="f.runId" :ok="f.ok" />
+            </ULink>
+            <span v-else class="text-xs text-(--ink-soft)">not run</span>
+          </li>
+        </ul>
+      </section>
+
       <section v-for="s in sections" :key="s.key">
         <h3 class="mb-2 flex items-center gap-1.5 text-sm font-semibold">
           <UIcon :name="s.icon" class="size-4 text-(--ink-soft)" /> {{ s.title }}

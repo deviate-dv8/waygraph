@@ -26,7 +26,7 @@ The project is the folder you name, or the one the current folder is in: the nea
 
 | Page | Shows |
 |---|---|
-| **Map** | a site map: each site at the top (the base url's host, and every other site a page's address names: a payment provider, a mail catcher), its pages below by their addresses, dashed lines labelled with the Navs that open them, each with its newest [screenshot](./blocks#screenshots) when one was taken. Every move between pages is an arrow labelled with the Blocks that make it. Each Block on a line is a badge with its whole name, in its kind's colour (Nav blue, Method grey, Effect amber, API green; the key is in the map's bottom bar). Click a page: its screenshot, its addresses, the ways in, what you can do there, its Expect Blocks, where it leads, what it promises on arrival, and what its [Read Block](./reads) reads |
+| **Map** | a site map: each site at the top (the base url's host, and every other site a page's address names: a payment provider, a mail catcher), its pages below by their addresses, dashed lines labelled with the Navs that open them, each with its newest [screenshot](./blocks#screenshots) when one was taken. Every move between pages is an arrow labelled with the Blocks that make it. Each Block on a line is a badge with its whole name, in its kind's colour (Nav blue, Method grey, Effect amber, API green; the key is in the map's bottom bar). Each page says how many flows pass through it, and how many of those failed their newest run. Click a page: its screenshot, its addresses, its flows (each one that lands there, may land there (a step with several outcomes that ends the flow) or does something there, with its newest run's outcome), the ways in, what you can do there, its Expect Blocks, where it leads, what it promises on arrival, and what its [Read Block](./reads) reads |
 | **Flows** | every flow as a card; open one for its steps on a canvas, each with what it [expects](./checks#expect-what-the-scenario-expects), and its recent runs |
 | **Runs** | every run from the [run log](../reference/run-log): each step passed or failed, how long it took, the address it ended on, its screenshot when one was taken, what the flow expected after it; a failed step opens with what its check wanted and what it saw |
 
@@ -43,7 +43,7 @@ cart) sits under the page whose move reaches it. Pages in a row follow the order
 ## Playing a flow
 
 On a flow: **Run** plays it in the background (`waygraph run`), **Demo** opens a browser with the step panel
-(`waygraph demo`). **verify only** skips the expectations (`--no-expect`). On a run of one flow, **Play again** plays it
+(`waygraph demo`). **verify only** skips the expectations (`--no-expect`). On a run of one flow, **Run again** or **Demo again** plays it
 with the mem that run was seeded with (`--replay`).
 
 The run's page follows it step by step; a step that fails opens as it happens. Every page shows what's playing, with

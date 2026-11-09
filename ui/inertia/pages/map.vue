@@ -12,7 +12,7 @@ import { SITE, mapEdges, pageSummary, siteMap } from '~/lib/project_graph'
 import { count } from '~/lib/format'
 import { MOVE_KINDS, kindColor } from '~/lib/kinds'
 import { urlFor } from '~/client'
-import type { ManifestBlock, ManifestReadBlock } from '#types/project'
+import type { ManifestBlock, ManifestReadBlock, PageFlow } from '#types/project'
 
 /**
  * The project's map, as a site map: each site at the root, its pages hung from it by their addresses (dashed), and every
@@ -26,6 +26,8 @@ const props = defineProps<{
   pageUrls: Record<string, string[]>
   /** The pages in the order the project's flows reach them. */
   journey: string[]
+  /** Each page's flows: those with a step that lands, may land or starts on it, and how each one's newest run went. */
+  pageFlows: Record<string, PageFlow[]>
   /** Each page's newest screenshot (a Block's `screenshot: true`), by Checkpoint: when it was taken. */
   shots: Record<string, number>
   flows: { id: string; name: string; file: string; steps: number }[]
@@ -92,7 +94,16 @@ const nodes = computed<Node[]>(() => {
       id: s.id,
       type: 'page',
       position: placed.value.get(s.id) ?? { x: 0, y: 0 },
-      data: { label: s.label, url: s.origin, start: true, actions: 0, expects: 0, reads: 0 },
+      data: {
+        label: s.label,
+        url: s.origin,
+        start: true,
+        actions: 0,
+        expects: 0,
+        reads: 0,
+        flows: 0,
+        failing: 0,
+      },
     })),
     ...props.checkpoints.map((id) => {
       const page = pageSummary(id, props.blocks, props.readBlocks)
@@ -108,6 +119,8 @@ const nodes = computed<Node[]>(() => {
           actions: page.actions.length,
           expects: page.expects.length,
           reads: page.reads.length,
+          flows: props.pageFlows[id]?.length ?? 0,
+          failing: props.pageFlows[id]?.filter((f) => f.ok === false).length ?? 0,
         },
       }
     }),
@@ -226,6 +239,7 @@ const page = computed(() =>
         :page="page"
         :urls="props.pageUrls[page.checkpoint] ?? []"
         :image="shotUrl(page.checkpoint)"
+        :flows="props.pageFlows[page.checkpoint] ?? []"
         @close="selected = null"
       />
     </div>
