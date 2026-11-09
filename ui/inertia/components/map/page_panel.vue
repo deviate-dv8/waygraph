@@ -1,18 +1,12 @@
 <script setup lang="ts">
 import type { PageSummary } from '~/lib/project_graph'
+import { kindColor } from '~/lib/kinds'
 import type { ManifestBlock } from '#types/project'
 
 /** The selected page: its addresses, how you get there, what you can do and expect there, where it leads, what it shows. */
 const props = defineProps<{ page: PageSummary; urls: string[]; image?: string | undefined }>()
 defineEmits<{ close: [] }>()
 
-const kindColor: Record<string, 'primary' | 'neutral' | 'success' | 'warning' | 'info'> = {
-  nav: 'info',
-  method: 'neutral',
-  effect: 'warning',
-  api: 'success',
-  expect: 'primary',
-}
 const sections: {
   title: string
   icon: string
@@ -101,12 +95,7 @@ const where = (b: ManifestBlock, key: string) =>
         <ul class="space-y-2">
           <li v-for="b in props.page[s.key]" :key="b.id" class="text-sm">
             <div class="flex items-center gap-1.5">
-              <UBadge
-                :label="b.kind"
-                :color="kindColor[b.kind] ?? 'neutral'"
-                variant="subtle"
-                size="sm"
-              />
+              <UBadge :label="b.kind" :color="kindColor(b.kind)" variant="subtle" size="sm" />
               <span class="font-medium">{{ b.name }}</span>
               <span class="text-xs text-(--ink-soft)">{{ where(b, s.key) }}</span>
             </div>

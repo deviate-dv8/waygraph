@@ -24,7 +24,7 @@ export function layoutTree(
   // Laid out along two axes: across (siblings side by side) and down (one depth after another).
   const across = direction === 'LR' ? box.height : box.width
   const deep = direction === 'LR' ? box.width : box.height
-  const gap = direction === 'LR' ? { across: 28, deep: 120 } : { across: 36, deep: 110 }
+  const gap = direction === 'LR' ? { across: 28, deep: 170 } : { across: 36, deep: 130 }
   const at = new Map<string, { across: number; depth: number }>()
   let next = 0
   const leaf = (id: string) => (childrenOf.get(id) ?? []).every((c) => at.has(c) || c === id)

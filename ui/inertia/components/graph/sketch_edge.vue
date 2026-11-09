@@ -8,11 +8,13 @@ import {
   type EdgeProps,
 } from '@vue-flow/core'
 import { sketchPath, seedOf } from '~/lib/sketch'
+import { kindColor } from '~/lib/kinds'
 
 /** A hand-drawn arrow between two pages, labelled with the Blocks that make that move. */
 const props = defineProps<
   EdgeProps<{
-    label: string
+    /** Plain text on the line (a line with Blocks shows them as badges instead). */
+    label?: string
     highlighted?: boolean
     status?: 'passed' | 'failed'
     /** A page's place in its site (the site map), not a move. */
@@ -21,6 +23,8 @@ const props = defineProps<
     squared?: boolean
     /** Which of several squared lines from the same place this is: each bends at its own distance, so none overlap. */
     lane?: number
+    /** The Blocks that make this move, each shown whole as a badge in its kind's colour (instead of `label`). */
+    blocks?: { name: string; kind: string; description: string }[]
   }>
 >()
 
@@ -46,6 +50,10 @@ const geometry = computed<[string, number, number]>(() => {
       ...(!across && props.sourcePosition === Position.Right ? { centerX: sx + spread } : {}),
       ...(!across && props.sourcePosition === Position.Bottom ? { centerY: sy + spread } : {}),
     })
+    // A line into the next column (or row) carries its label at its end, just before its arrowhead: in the gap before its
+    // target, not over a box its middle might pass.
+    if (!across && props.sourcePosition === Position.Right) return [path, tx - 16, ty]
+    if (!across && props.sourcePosition === Position.Bottom) return [path, tx, ty - 16]
     return [path, labelX, labelY]
   }
   // Only a move left to right gets routed around boxes; a tree edge (top to bottom) curves straight in.
@@ -77,6 +85,19 @@ const geometry = computed<[string, number, number]>(() => {
     targetPosition: props.targetPosition,
   })
   return [path, labelX, labelY]
+})
+
+/**
+ * How a label sits on its point: a line into the next column ends its labels at the arrowhead (right-aligned, left of
+ * the point), into the next row above it; any other line centres them on its middle.
+ */
+const anchor = computed(() => {
+  const straight = props.data?.squared && props.sourcePosition !== props.targetPosition
+  if (straight && props.sourcePosition === Position.Right)
+    return { shift: 'translate(-100%, -50%)', align: 'items-end' }
+  if (straight && props.sourcePosition === Position.Bottom)
+    return { shift: 'translate(-50%, -100%)', align: 'items-center' }
+  return { shift: 'translate(-50%, -50%)', align: 'items-center' }
 })
 
 const color = computed(() =>
@@ -151,7 +172,24 @@ const head = computed(() => {
   </g>
   <EdgeLabelRenderer>
     <div
-      v-if="props.data?.label"
+      v-if="props.data?.blocks?.length"
+      class="nodrag nopan absolute flex flex-col gap-0.5"
+      :class="anchor.align"
+      :style="{ transform: `${anchor.shift} translate(${geometry[1]}px, ${geometry[2]}px)` }"
+    >
+      <UBadge
+        v-for="b in props.data.blocks"
+        :key="b.name"
+        :label="b.name"
+        :color="kindColor(b.kind)"
+        variant="subtle"
+        size="sm"
+        class="bg-(--paper) font-mono whitespace-nowrap"
+        :title="`${b.kind}${b.description ? ': ' + b.description : ''}`"
+      />
+    </div>
+    <div
+      v-else-if="props.data?.label"
       class="nodrag nopan font-hand absolute max-w-48 truncate rounded px-1 text-xs"
       :style="{
         transform: `translate(-50%, -50%) translate(${geometry[1]}px, ${geometry[2]}px)`,

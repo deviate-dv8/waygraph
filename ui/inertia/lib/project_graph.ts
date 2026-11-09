@@ -73,14 +73,6 @@ export function pageSummary(
   }
 }
 
-/** "nav-cart, add-to-cart +2": an edge's label. */
-export function edgeLabel(blocks: ManifestBlock[]): string {
-  const names = blocks.map((b) => b.name)
-  return names.length > 2
-    ? `${names.slice(0, 2).join(', ')} +${names.length - 2}`
-    : names.join(', ')
-}
-
 /** A site the project's pages live on: its origin and how the map names it. */
 export interface Site {
   id: string

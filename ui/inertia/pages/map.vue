@@ -8,8 +8,9 @@ import SketchEdge from '~/components/graph/sketch_edge.vue'
 import PagePanel from '~/components/map/page_panel.vue'
 import { useStorage } from '@vueuse/core'
 import { layoutTree, type TreeDirection } from '~/lib/layout'
-import { SITE, edgeLabel, mapEdges, pageSummary, siteMap } from '~/lib/project_graph'
+import { SITE, mapEdges, pageSummary, siteMap } from '~/lib/project_graph'
 import { count } from '~/lib/format'
+import { MOVE_KINDS, kindColor } from '~/lib/kinds'
 import { urlFor } from '~/client'
 import type { ManifestBlock, ManifestReadBlock } from '#types/project'
 
@@ -150,7 +151,7 @@ const edges = computed<Edge[]>(() => {
       sourceHandle: direction.value === 'LR' ? 'out' : 'down',
       targetHandle: direction.value === 'LR' ? 'in' : 'up',
       data: {
-        label: edgeLabel(e.blocks),
+        blocks: e.blocks.map((b) => ({ name: b.name, kind: b.kind, description: b.description })),
         dashed: true,
         squared: true,
         lane: siteLanes[i],
@@ -172,7 +173,7 @@ const edges = computed<Edge[]>(() => {
         sourceHandle: lr ? 'out' : 'down',
         targetHandle: deeper ? (lr ? 'in' : 'up') : lr ? 'back' : 'under',
         data: {
-          label: edgeLabel(e.blocks),
+          blocks: e.blocks.map((b) => ({ name: b.name, kind: b.kind, description: b.description })),
           squared: true,
           lane: moveLanes[i],
           highlighted: selected.value === e.source || selected.value === e.target,
@@ -244,6 +245,17 @@ const page = computed(() =>
           @click="direction = direction === 'LR' ? 'TB' : 'LR'"
         />
       </UTooltip>
+      <span class="flex items-center gap-1" aria-label="Block kinds">
+        <UBadge
+          v-for="k in MOVE_KINDS"
+          :key="k"
+          :label="k"
+          :color="kindColor(k)"
+          variant="subtle"
+          size="sm"
+          class="font-mono"
+        />
+      </span>
       <span>{{ count(props.checkpoints.length, 'page') }}</span>
       <span>{{ count(props.blocks.length, 'Block') }}</span>
       <span>{{ count(props.flows.length, 'flow') }}</span>

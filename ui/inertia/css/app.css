@@ -97,3 +97,8 @@ body {
 .vue-flow__background pattern circle {
   fill: var(--dot);
 }
+
+/* A line's labels sit above the boxes: a page box (opaque, so lines pass behind it) never hides one. */
+.vue-flow__edge-labels {
+  z-index: 1001;
+}
