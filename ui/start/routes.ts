@@ -13,6 +13,7 @@ import router from '@adonisjs/core/services/router'
 router.get('/', [controllers.Workspaces, 'show']).as('map')
 router.get('/flows', [controllers.Flows, 'index']).as('flows.index')
 router.get('/flows/:name', [controllers.Flows, 'show']).as('flows.show')
+router.get('/blocks', [controllers.Blocks, 'index']).as('blocks.index')
 router.get('/runs', [controllers.Runs, 'index']).as('runs.index')
 router.get('/runs/:id', [controllers.Runs, 'show']).as('runs.show')
 router

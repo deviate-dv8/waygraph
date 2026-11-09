@@ -47,6 +47,19 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/flows_controller').default['show']>>>
     }
   }
+  'blocks.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/blocks'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/blocks_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/blocks_controller').default['index']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/blocks_controller').default['index']>>>
+    }
+  }
   'runs.index': {
     methods: ["GET","HEAD"]
     pattern: '/runs'
@@ -142,13 +155,13 @@ export interface Registry {
     methods: ["POST"]
     pattern: '/playwright'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/playwright').playwrightValidator)>>
       paramsTuple: []
       params: {}
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/playwright').playwrightValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/playwright_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playwright_controller').default['store']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/playwright_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/playwright_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/playwright_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'playwright.destroy': {

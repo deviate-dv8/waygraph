@@ -7,6 +7,7 @@ export type ScannedRoutes = {
     'map': { paramsTuple?: []; params?: {} }
     'flows.index': { paramsTuple?: []; params?: {} }
     'flows.show': { paramsTuple: [ParamValue]; params: {'name': ParamValue} }
+    'blocks.index': { paramsTuple?: []; params?: {} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }
@@ -22,6 +23,7 @@ export type ScannedRoutes = {
     'map': { paramsTuple?: []; params?: {} }
     'flows.index': { paramsTuple?: []; params?: {} }
     'flows.show': { paramsTuple: [ParamValue]; params: {'name': ParamValue} }
+    'blocks.index': { paramsTuple?: []; params?: {} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }
@@ -33,6 +35,7 @@ export type ScannedRoutes = {
     'map': { paramsTuple?: []; params?: {} }
     'flows.index': { paramsTuple?: []; params?: {} }
     'flows.show': { paramsTuple: [ParamValue]; params: {'name': ParamValue} }
+    'blocks.index': { paramsTuple?: []; params?: {} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }

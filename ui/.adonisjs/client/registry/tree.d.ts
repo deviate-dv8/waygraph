@@ -7,6 +7,9 @@ export interface ApiDefinition {
     index: typeof routes['flows.index']
     show: typeof routes['flows.show']
   }
+  blocks: {
+    index: typeof routes['blocks.index']
+  }
   runs: {
     index: typeof routes['runs.index']
     show: typeof routes['runs.show']

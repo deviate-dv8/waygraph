@@ -169,3 +169,16 @@ export type SiteMap = {
   paths: Record<string, string>
   edges: (MapEdge & { site: true })[]
 }
+
+/** What a Block's runs say: how often it ran and how, and what it did to the address. */
+export type BlockStats = {
+  runs: number
+  passed: number
+  failed: number
+  /** Its mean time, in ms. */
+  ms: number | null
+  /** The paths it went from and to, when its step ended on another path than the page it started on. */
+  moves: { from: string; to: string; count: number }[]
+  /** How often it stayed on its page but changed the address (the query or hash: a tab, a filter). */
+  addressOnly: number
+}

@@ -4,6 +4,7 @@
  */
 
 export const controllers = {
+  Blocks: () => import('#controllers/blocks_controller'),
   Flows: () => import('#controllers/flows_controller'),
   Plays: () => import('#controllers/plays_controller'),
   Playwright: () => import('#controllers/playwright_controller'),

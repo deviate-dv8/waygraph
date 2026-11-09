@@ -26,6 +26,12 @@ const routes = {
     tokens: [[0,"flows"],[1,"name"]],
     types: placeholder as Registry['flows.show']['types'],
   },
+  'blocks.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/blocks',
+    tokens: [[0,"blocks"]],
+    types: placeholder as Registry['blocks.index']['types'],
+  },
   'runs.index': {
     methods: ["GET","HEAD"],
     pattern: '/runs',

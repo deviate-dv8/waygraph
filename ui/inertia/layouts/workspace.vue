@@ -31,6 +31,12 @@ const sections = computed(() => [
     active: page.url.startsWith('/flows'),
   },
   {
+    label: 'Blocks',
+    icon: 'i-lucide-boxes',
+    to: urlFor('blocks.index'),
+    active: page.url.startsWith('/blocks'),
+  },
+  {
     label: 'Runs',
     icon: 'i-lucide-history',
     to: urlFor('runs.index'),
