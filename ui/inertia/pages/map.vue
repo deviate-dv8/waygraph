@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { VueFlow, type Edge, type Node, type VueFlowStore } from '@vue-flow/core'
+import { VueFlow, useVueFlow, type Edge, type Node, type VueFlowStore } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import PageNode from '~/components/graph/page_node.vue'
@@ -161,16 +161,67 @@ const labels = computed(() =>
   planLabels([...shownSiteEdges.value, ...shownMoves.value], columns.value, direction.value)
 )
 
+/** What each page shows (its Read Blocks' fields) by namespace; a yes/no field is a state the page can be in. */
+const shows = computed(() => {
+  const by = new Map<string, { namespace: string; fields: { name: string; state: boolean }[] }[]>()
+  for (const id of props.checkpoints) {
+    const groups = new Map<string, { name: string; state: boolean }[]>()
+    for (const read of pageSummary(id, props.blocks, props.readBlocks).reads) {
+      for (const [key, shape] of Object.entries(read.fields)) {
+        const dot = key.indexOf('.')
+        const [ns, name] = dot > 0 ? [key.slice(0, dot), key.slice(dot + 1)] : ['', key]
+        groups.set(ns, [...(groups.get(ns) ?? []), { name, state: shape === 'boolean' }])
+      }
+    }
+    by.set(
+      id,
+      [...groups].map(([namespace, fields]) => ({ namespace, fields }))
+    )
+  }
+  return by
+})
+
+/** A page box's height: its name, address and counts (and its screenshot), then the rows its shown fields wrap to. */
+const BOX = { width: 200, base: 84, shot: 106 } as const
+// The canvas's nodes as drawn (with their measured sizes), readable before the canvas reports it's ready.
+const { getNodes } = useVueFlow()
+/** Each page box's size as drawn (measured once it rendered): the layout's sizes, so no box runs into the next. */
+const measured = ref(new Map<string, number>())
+const boxHeight = (id: string): number => {
+  const drawn = measured.value.get(id)
+  if (drawn) return drawn
+  const base = BOX.base + (props.shots[id] ? BOX.shot : 0)
+  const groups = shows.value.get(id) ?? []
+  if (!groups.length) return base
+  // Chips wrap in the box's inner width; a chip is its monospace name and its padding.
+  const inner = BOX.width - 32
+  const rows = groups.reduce((total, group) => {
+    let row = 1
+    let used = group.namespace.length * 6 + 4
+    for (const f of group.fields) {
+      const w = f.name.length * 6 + 12
+      if (used + w > inner) {
+        row++
+        used = 0
+      }
+      used += w
+    }
+    return total + row
+  }, 0)
+  return base + 14 + rows * 20
+}
+
 /** Where every shown node sits: the site map's tree, laid out in the chosen direction, with room for the labels. */
 const placed = computed(() => {
-  // Pages with a screenshot are taller: every box in a row gets the same height.
-  const hasShots = Object.keys(props.shots).length > 0
+  // A page's box is as tall as what it holds (its screenshot, what it shows); the layout gives each its own height.
   return layoutTree(
     shownTree.value.roots,
     shownTree.value.childrenOf,
-    { width: 200, height: hasShots ? 190 : 84 },
+    { width: BOX.width, height: BOX.base },
     direction.value,
     {
+      size: (id) =>
+        props.checkpoints.includes(id) ? { width: BOX.width, height: boxHeight(id) } : undefined,
       across: (id) => labels.value.across.get(id) ?? 0,
       gapAfter: (column) => labels.value.gapAfter.get(column) ?? 0,
     }
@@ -215,6 +266,7 @@ const nodes = computed<Node[]>(() => {
           actions: page.actions.length,
           expects: page.expects.length,
           reads: page.reads.length,
+          shows: shows.value.get(id) ?? [],
           flows: props.pageFlows[id]?.length ?? 0,
           failing: props.pageFlows[id]?.filter((f) => f.ok === false).length ?? 0,
         },
@@ -234,6 +286,25 @@ function lanes<E extends { source: string }>(edges: E[]): number[] {
 }
 
 let flow: VueFlowStore | null = null
+/**
+ * Once the boxes are drawn: keep their real heights (a long name or many fields wrap more than estimated), which lays
+ * the map out again where one differs; then fit the whole map in view.
+ */
+function measure() {
+  const heights = new Map(measured.value)
+  let changed = false
+  for (const node of getNodes.value) {
+    const height = Math.round(node.dimensions.height)
+    if (!height || !props.checkpoints.includes(node.id)) continue
+    if (Math.abs((heights.get(node.id) ?? 0) - height) > 1) {
+      heights.set(node.id, height)
+      changed = true
+    }
+  }
+  if (changed) measured.value = heights
+  fit()
+}
+
 /** Fit the whole map in view once its nodes are measured (and again when the layout changes). */
 function fit() {
   void flow?.fitView({ padding: 0.15, duration: 200 })
@@ -321,7 +392,7 @@ const page = computed(() =>
         :min-zoom="0.2"
         class="h-full w-full"
         @pane-ready="ready"
-        @nodes-initialized="fit"
+        @nodes-initialized="measure"
         @node-click="({ node }) => (selected = node.id === selected ? null : node.id)"
         @pane-click="selected = null"
       >

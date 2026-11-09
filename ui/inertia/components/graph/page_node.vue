@@ -21,6 +21,8 @@ const props = defineProps<{
     /** How many flows pass through it, and how many of those failed their newest run. */
     flows: number
     failing: number
+    /** What it shows (its Read Blocks' fields), by namespace; a yes/no field is a state the page can be in. */
+    shows?: { namespace: string; fields: { name: string; state: boolean }[] }[]
   }
 }>()
 </script>
@@ -41,8 +43,8 @@ const props = defineProps<{
     class="cursor-pointer bg-(--paper)"
   >
     <div
-      class="flex min-w-36 flex-col items-center py-3 text-center"
-      :class="props.data.start ? 'px-9' : 'px-5'"
+      class="flex flex-col items-center py-3 text-center"
+      :class="props.data.start ? 'min-w-36 px-9' : 'w-[200px] px-4'"
     >
       <img
         v-if="props.data.image"
@@ -51,10 +53,12 @@ const props = defineProps<{
         class="mb-2 h-24 w-44 rounded border border-(--island-line) object-cover object-top"
         loading="lazy"
       />
-      <span class="font-hand text-lg leading-tight text-(--ink)">{{ props.data.label }}</span>
+      <span class="font-hand text-lg leading-tight break-all text-(--ink)">{{
+        props.data.label
+      }}</span>
       <span
         v-if="props.data.url && !props.data.start"
-        class="mt-0.5 max-w-52 truncate font-mono text-[11px] text-(--color-sketch-600) dark:text-(--color-sketch-300)"
+        class="mt-0.5 max-w-full truncate font-mono text-[11px] text-(--color-sketch-600) dark:text-(--color-sketch-300)"
         :title="props.data.url"
       >
         {{ props.data.url }}
@@ -62,7 +66,6 @@ const props = defineProps<{
       <span v-if="!props.data.start" class="mt-1 flex gap-2 text-xs text-(--ink-soft)">
         <span v-if="props.data.actions">{{ props.data.actions }} do</span>
         <span v-if="props.data.expects">{{ props.data.expects }} expect</span>
-        <span v-if="props.data.reads">reads</span>
       </span>
       <span
         v-if="props.data.flows"
@@ -75,6 +78,34 @@ const props = defineProps<{
           >· {{ props.data.failing }} failing</span
         >
       </span>
+      <div
+        v-if="props.data.shows?.length"
+        class="mt-2 w-full space-y-1 border-t border-dashed border-(--island-line) pt-1.5 text-left"
+      >
+        <div
+          v-for="group in props.data.shows"
+          :key="group.namespace"
+          class="flex flex-wrap items-center gap-1"
+        >
+          <span class="font-mono text-[10px] text-(--ink-soft)">{{ group.namespace }}</span>
+          <span
+            v-for="f in group.fields"
+            :key="f.name"
+            class="rounded border px-1 font-mono text-[10px] leading-4"
+            :class="
+              f.state
+                ? 'border-(--color-sketch-300) bg-(--color-sketch-50) text-(--color-sketch-700) dark:border-(--color-sketch-700) dark:bg-(--color-sketch-950) dark:text-(--color-sketch-200)'
+                : 'border-(--island-line) text-(--ink-soft)'
+            "
+            :title="
+              f.state
+                ? `${group.namespace}.${f.name}: a state the page can be in (yes / no)`
+                : `${group.namespace}.${f.name}`
+            "
+            >{{ f.name }}</span
+          >
+        </div>
+      </div>
     </div>
     <!-- Moves come in on the left and leave on the right; the site map's tree runs top to bottom. -->
     <Handle id="in" type="target" :position="Position.Left" class="opacity-0" />
