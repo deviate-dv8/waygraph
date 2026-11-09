@@ -5,7 +5,7 @@ import { ProjectService, waygraphCommand } from '#services/project_service'
 import type { Play, PlayMode } from '#types/project'
 
 /** What this app set for itself from its own `.env`: not the project's to see. */
-const APP_ENV = [
+export const APP_ENV = [
   'PORT',
   'HOST',
   'NODE_ENV',
@@ -43,7 +43,11 @@ export class PlayerService {
   }
 
   /** Starts `waygraph <mode> <flow>`; throws while another play is still going. */
-  start(flow: string, mode: PlayMode, options: { noExpect?: boolean; replay?: string } = {}): Play {
+  start(
+    flow: string,
+    mode: PlayMode,
+    options: { noExpect?: boolean; replay?: string; autoNext?: boolean } = {}
+  ): Play {
     if (PlayerService.job && PlayerService.job.exitCode === null) {
       throw new Error(`Still playing ${PlayerService.job.flow}: stop it first.`)
     }
@@ -53,6 +57,9 @@ export class PlayerService {
     const args = [mode, flow, dir]
     if (options.noExpect) args.push('--no-expect')
     if (options.replay) args.push('--replay', options.replay)
+    // A demo moves on by itself, or waits for Next on every step (the Settings page).
+    if (mode === 'demo' && options.autoNext !== undefined)
+      args.push(options.autoNext ? '--auto-next' : '--no-auto-next')
     const [cmd, cmdArgs] = waygraphCommand(dir, args)
     const env: NodeJS.ProcessEnv = { ...process.env, FORCE_COLOR: '0' }
     for (const key of APP_ENV) delete env[key]

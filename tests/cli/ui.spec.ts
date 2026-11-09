@@ -45,3 +45,29 @@ test("waygraph ui finds the project it's run in and serves its map", async ({ pa
     await exited;
   }
 });
+
+test("a stop sent to waygraph alone (kill <pid>) stops the UI's server too", async () => {
+  test.setTimeout(90_000);
+  const port = PORT + 1;
+  const ui = spawn(process.execPath, [join(root, "bin", "waygraph"), "ui", join(root, "examples", "saucedemo"), "--port", String(port)], {
+    detached: true,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  try {
+    await waitForLine(ui, /http:\/\/localhost:\d+/);
+    await expect.poll(async () => (await fetch(`http://localhost:${port}/`).catch(() => null))?.status ?? 0, { timeout: 30_000 }).toBe(200);
+    const exited = new Promise<void>((res) => ui.on("exit", () => res()));
+    ui.kill("SIGTERM");
+    await exited;
+    // Nothing answers on its port any more: the server went with it.
+    await expect.poll(async () => (await fetch(`http://localhost:${port}/`).catch(() => null)) === null, { timeout: 10_000 }).toBe(true);
+  } finally {
+    if (ui.pid) {
+      try {
+        process.kill(-ui.pid, "SIGINT");
+      } catch {
+        // Already gone.
+      }
+    }
+  }
+});

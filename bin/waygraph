@@ -39,6 +39,10 @@ child.on("error", (err) => {
   console.error(`waygraph: failed to start CLI: ${err.message}`);
   process.exit(1);
 });
+// A stop sent to this launcher alone (a process manager, CI, `kill <pid>`) reaches the CLI, so what it started (a
+// server, a browser) stops with it. Ctrl-C reaches the CLI from the terminal already: wait for it to finish instead.
+for (const signal of ["SIGTERM", "SIGHUP"]) process.on(signal, () => child.kill(signal));
+process.on("SIGINT", () => {});
 child.on("exit", (code, signal) => {
   if (signal) {
     process.kill(process.pid, signal);

@@ -112,7 +112,10 @@ test.group('pageFlows', () => {
       ({
         flows: [],
         ok,
-        stepsList: [...blocks.map((block) => ({ block, parent: null, cleanup: false })), ...extra],
+        stepsList: [
+          ...blocks.map((name) => ({ block: name, parent: null, cleanup: false })),
+          ...extra,
+        ],
       }) as unknown as RunDetail
     // Steps inside a composed Block, and cleanup, aren't the flow's own.
     assert.equal(

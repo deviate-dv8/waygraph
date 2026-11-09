@@ -21,3 +21,7 @@ router
 router.get('/screenshots/runs/:id/:file', [controllers.Screenshots, 'step']).as('screenshots.step')
 router.post('/plays', [controllers.Plays, 'store']).as('plays.store')
 router.delete('/plays', [controllers.Plays, 'destroy']).as('plays.destroy')
+router.get('/playwright', [controllers.Playwright, 'show']).as('playwright.show')
+router.post('/playwright', [controllers.Playwright, 'store']).as('playwright.store')
+router.delete('/playwright', [controllers.Playwright, 'destroy']).as('playwright.destroy')
+router.get('/settings', [controllers.Settings, 'show']).as('settings')

@@ -125,3 +125,11 @@ export type Play = {
   exitCode: number | null
   output: string[]
 }
+
+/** Playwright's UI mode over the project's flows: where it listens once it started, and what it printed. */
+export type PlaywrightUi = {
+  url: string | null
+  /** Null while it runs. */
+  exitCode: number | null
+  output: string[]
+}

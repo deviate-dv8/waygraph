@@ -13,6 +13,10 @@ export type ScannedRoutes = {
     'screenshots.step': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
     'plays.store': { paramsTuple?: []; params?: {} }
     'plays.destroy': { paramsTuple?: []; params?: {} }
+    'playwright.show': { paramsTuple?: []; params?: {} }
+    'playwright.store': { paramsTuple?: []; params?: {} }
+    'playwright.destroy': { paramsTuple?: []; params?: {} }
+    'settings': { paramsTuple?: []; params?: {} }
   }
   GET: {
     'map': { paramsTuple?: []; params?: {} }
@@ -22,6 +26,8 @@ export type ScannedRoutes = {
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }
     'screenshots.step': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
+    'playwright.show': { paramsTuple?: []; params?: {} }
+    'settings': { paramsTuple?: []; params?: {} }
   }
   HEAD: {
     'map': { paramsTuple?: []; params?: {} }
@@ -31,12 +37,16 @@ export type ScannedRoutes = {
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }
     'screenshots.step': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
+    'playwright.show': { paramsTuple?: []; params?: {} }
+    'settings': { paramsTuple?: []; params?: {} }
   }
   POST: {
     'plays.store': { paramsTuple?: []; params?: {} }
+    'playwright.store': { paramsTuple?: []; params?: {} }
   }
   DELETE: {
     'plays.destroy': { paramsTuple?: []; params?: {} }
+    'playwright.destroy': { paramsTuple?: []; params?: {} }
   }
 }
 declare module '@adonisjs/core/types/http' {

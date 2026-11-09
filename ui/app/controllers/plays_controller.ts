@@ -18,13 +18,13 @@ export default class PlaysController {
 
   /** Starts the flow and opens its run once its log begins; a play that takes longer shows on every page. */
   async store({ request, response, session }: HttpContext) {
-    const { flow, mode, noExpect, replay } = await request.validateUsing(playValidator)
+    const { flow, mode, noExpect, replay, autoNext } = await request.validateUsing(playValidator)
     const manifest = await this.project.manifest()
     if (!manifest.flows.some((f) => f.exportName === flow)) {
       return response.notFound(`No flow named ${flow}`)
     }
     try {
-      this.player.start(flow, mode, { noExpect, replay })
+      this.player.start(flow, mode, { noExpect, replay, autoNext })
     } catch (error) {
       session.flash('error', (error as Error).message)
       return response.redirect().back()

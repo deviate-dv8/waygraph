@@ -29,6 +29,7 @@ The project is the folder you name, or the one the current folder is in: the nea
 | **Map** | a site map: each site at the top (the base url's host, and every other site a page's address names: a payment provider, a mail catcher), its pages below by their addresses, dashed lines labelled with the Navs that open them, each with its newest [screenshot](./blocks#screenshots) when one was taken. Every move between pages is an arrow labelled with the Blocks that make it. Each Block on a line is a badge with its whole name, in its kind's colour (Nav blue, Method grey, Effect amber, API green; the key is in the map's bottom bar). Each page says how many flows pass through it, and how many of those failed their newest run. Click a page: its screenshot, its addresses, its flows (each one that lands there, may land there (a step with several outcomes that ends the flow) or does something there, with its newest run's outcome; a run with no flow named, a test calling `flow.run`, counts for the flow whose steps it played), the ways in, what you can do there, its Expect Blocks, where it leads, what it promises on arrival, and what its [Read Block](./reads) reads |
 | **Flows** | every flow as a card; open one for its steps on a canvas, each with what it [expects](./checks#expect-what-the-scenario-expects), and its recent runs |
 | **Runs** | every run from the [run log](../reference/run-log): each step passed or failed, how long it took, the address it ended on, its screenshot when one was taken, what the flow expected after it; a failed step opens with what its check wanted and what it saw |
+| **Playwright** | Playwright's UI mode over your flows (`waygraph test --flows --ui`), inside the app: **Open Playwright UI** starts it, every flow is a test you can run, watch and step through (its trace, actions and page snapshots); **Stop** ends it and its browsers |
 
 The map reads left to right by default (each depth a column, a long run of pages in a grid); the switch in its bottom
 bar lays it out top down, and your browser remembers the choice. Its shapes follow flowchart's: a site is a terminator
@@ -50,6 +51,14 @@ The run's page follows it step by step; a step that fails opens as it happens. E
 **Stop**, which ends the flow and its browser. One flow plays at a time.
 
 It plays with the project's own waygraph, the same as you would from a terminal, and writes the same run log.
+
+## Settings
+
+The gear at the bottom of the sidebar. Kept in your browser.
+
+| Setting | Default | Does |
+|---|---|---|
+| Demo: Auto-advance | on | a demo started here moves on from each step by itself (`--auto-next`); off, it waits for Next (`--no-auto-next`). The step panel's own switch still changes it while the demo plays |
 
 ## What it reads
 

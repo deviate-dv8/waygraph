@@ -11,8 +11,8 @@ against a real consumer.
 
 ## Next
 
-- **Waygraph UI** - `waygraph ui` (the app in `ui/`). Next: starting `test` from it, live sessions through the session
-  protocol, a form over `config/waygraph.config.ts`. Each expectation's result in the run log (today only the one that
+- **Waygraph UI** - `waygraph ui` (the app in `ui/`); tests run in its Playwright page. Next: live sessions through the
+  session protocol, a form over `config/waygraph.config.ts`, more settings (kept in the browser today). Each expectation's result in the run log (today only the one that
   failed is logged) would let it show every expectation a step met.
 - **Event Blocks** - Blocks that move the world instead of the page (a webhook, a clock, a second user), through
   `ctx.world.*`, next to `ctx.ui.*` (stubs) and `ctx.page.*` (Read Blocks).

@@ -11,10 +11,14 @@ for the stack are in `.claude/skills/` (adonisjs, nuxt-ui, vue-*, vite, vitest; 
   own process group (Stop kills the browser too; `providers/player_provider.ts` stops it on shutdown). The run is found
   by its log's name (the moment it started). Every page gets it as the shared `play` prop (`inertia/lib/play.ts`) and
   reloads each second while it plays.
-- `app/controllers/`: one per page (map, flows, runs) and plays (start, stop); `start/routes.ts`.
+- `app/services/playwright_ui_service.ts`: Playwright's UI mode over the project's flows (`waygraph test --flows
+  --ui-port=0`), shown in a frame on the Playwright page; in its own process group, stopped on shutdown too.
+- `app/controllers/`: one per page (map, flows, runs, playwright, settings) and plays (start, stop); `start/routes.ts`.
+  A new route needs `node ace codegen` (the typed route names).
+- `inertia/lib/settings.ts`: the Settings page's values, kept in the browser (`useStorage`); plays read them.
 - `app/types/project.ts`: the shapes shared with the pages. `type` aliases with JSON values only (Inertia props must be
   JSON), imported as `#types/project` on both sides.
-- `inertia/pages/`: map, flows, runs, setup (no project set). `inertia/layouts/workspace.vue`: the canvas with its
+- `inertia/pages/`: map, flows, runs, playwright, settings, setup (no project set). `inertia/layouts/workspace.vue`: the canvas with its
   floating islands.
 - `inertia/lib/project_graph.ts`: the map's model: the site map (`siteMap`: sites, each page under the page or site its
   address hangs from) and the moves between pages (`mapEdges`); `inertia/lib/layout.ts` lays the tree out, top down.

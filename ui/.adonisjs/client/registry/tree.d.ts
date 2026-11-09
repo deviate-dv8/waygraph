@@ -19,4 +19,10 @@ export interface ApiDefinition {
     store: typeof routes['plays.store']
     destroy: typeof routes['plays.destroy']
   }
+  playwright: {
+    show: typeof routes['playwright.show']
+    store: typeof routes['playwright.store']
+    destroy: typeof routes['playwright.destroy']
+  }
+  settings: typeof routes['settings']
 }

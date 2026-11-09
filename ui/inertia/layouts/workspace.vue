@@ -36,6 +36,12 @@ const sections = computed(() => [
     to: urlFor('runs.index'),
     active: page.url.startsWith('/runs'),
   },
+  {
+    label: 'Playwright',
+    icon: 'i-lucide-flask-conical',
+    to: urlFor('playwright.show'),
+    active: page.url.startsWith('/playwright'),
+  },
 ])
 const fresh = computed(() => `${page.url.split('?')[0]}?fresh=1`)
 
@@ -102,6 +108,16 @@ watch(
               />
             </UTooltip>
             <UColorModeButton size="sm" />
+            <UTooltip text="Settings" :content="{ side: 'right' }">
+              <UButton
+                :to="urlFor('settings')"
+                icon="i-lucide-settings"
+                size="sm"
+                :color="page.url.startsWith('/settings') ? 'primary' : 'neutral'"
+                variant="ghost"
+                aria-label="Settings"
+              />
+            </UTooltip>
           </div>
         </nav>
       </aside>

@@ -62,6 +62,30 @@ const routes = {
     tokens: [[0,"plays"]],
     types: placeholder as Registry['plays.destroy']['types'],
   },
+  'playwright.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/playwright',
+    tokens: [[0,"playwright"]],
+    types: placeholder as Registry['playwright.show']['types'],
+  },
+  'playwright.store': {
+    methods: ["POST"],
+    pattern: '/playwright',
+    tokens: [[0,"playwright"]],
+    types: placeholder as Registry['playwright.store']['types'],
+  },
+  'playwright.destroy': {
+    methods: ["DELETE"],
+    pattern: '/playwright',
+    tokens: [[0,"playwright"]],
+    types: placeholder as Registry['playwright.destroy']['types'],
+  },
+  'settings': {
+    methods: ["GET","HEAD"],
+    pattern: '/settings',
+    tokens: [[0,"settings"]],
+    types: placeholder as Registry['settings']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }
