@@ -190,6 +190,20 @@ graph LR
 
 So a test run signs each account in once. `forgetSessions()` drops the kept sessions.
 
+When one sign-in flow serves several people (a magic link, by email), the account says who it is with `mem`: set right
+before it signs in, so a flow `as` it needs nothing more, and whoever an earlier flow signed in as doesn't matter.
+
+```ts
+const person = (email: string) => (mem: MemPage) => mem.set(AuthKeys.recipient, { email });
+
+export const PlanningOfficer = account("planning-officer", { signIn: loginPlanningOfficerFlow, mem: person("kat@jbtec.example") });
+export const Leadership = account("leadership", { signIn: loginLeadershipFlow, mem: person("cesar@jbtec.example") });
+```
+
+Waygraph loads `src/accounts/` itself (as it does mem stubs), so a sign-in flow that is one account's knows whose it is:
+`waygraph demo loginLeadershipFlow`, or Run in [Waygraph UI](./ui), signs in as Cesar with no `--data`. A value given
+with `--data` still wins.
+
 ## Episodes: nesting flows
 
 ```ts

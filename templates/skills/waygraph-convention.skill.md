@@ -161,6 +161,9 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
   `export const Planner = account("planner", { signIn: plannerSignInFlow })` in `src/accounts/`, then
   `engine.map({ as: Planner })`: the account signs in once per run and later flows reuse its session. A hand-made
   "saved session" Block, tokens passed through env variables, or a login repeated at the top of every flow is a smell.
+  When one sign-in flow serves several people (a magic link, by email), the account says who:
+  `account("leadership", { signIn: loginLeadershipFlow, mem: (m) => m.set(Keys.recipient, { email: "cesar@…" }) })`.
+  Waygraph loads `src/accounts/`, so the sign-in flow played on its own (a demo) signs in as that person too.
 - **`src/flows/` holds use cases and mirrors the front end's endpoints**: a folder per page (`flows/auth/login/`) with one
   file per scenario named for its outcome (`success.flow.ts`, `wrong-password.flow.ts`, `empty-fields.flow.ts`), and
   `(user-stories)/` (any `(group)`) for flows that cross pages. Export names are `<page><Outcome>Flow`. Not one file per

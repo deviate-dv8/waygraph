@@ -9,10 +9,11 @@ import type { PlayOptions } from "../options.js";
 import { findBlock, findFlow } from "./find.js";
 import { seedMemForBlock, seedMemForFlow } from "./seed-mem.js";
 import { parseChainSpec } from "./spec.js";
-import { loadMemStubs } from "../../manifest/project.js";
+import { loadAccounts, loadMemStubs } from "../../manifest/project.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { recordMem } from "../../engine/run/events.js";
+import { accountKeys, accountSigningIn } from "../../engine/flow/account.js";
 import { getMemStub, memStubIsConstant } from "../../engine/mem/mem-stub.js";
 import { readRunLog } from "../../runtime/run-log.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
@@ -36,6 +37,8 @@ export interface Plan {
 export async function planSteps(projectDir: string, spec: string, mem: MemPage, options: PlayOptions): Promise<Plan> {
   // A flow's keys may come from mem stubs: load them, whether or not a flow file imports them.
   await loadMemStubs(projectDir);
+  // Whose sign-in a flow is (src/accounts/): played on its own, it signs in as that person.
+  await loadAccounts(projectDir);
   const bareFlow = await findBareFlow(projectDir, spec);
   const inputs = options.input === undefined ? undefined : readInputs(projectDir, options.input, bareFlow, spec);
   const recorded = options.replay ? recordedMem(projectDir, options.replay) : undefined;
@@ -128,9 +131,13 @@ async function resolveSegment(projectDir: string, seg: { ref: string; json?: str
 function flowSegment(flow: Flow<Checkpoint<string>>, ref: string, json: string | undefined, mem: MemPage, options: PlayOptions, input?: unknown): Segment {
   // seeded when the segment starts, not now: two segments may give the same key different values
   const seedMem = () => {
-    // The flow's input (--input) is set first; the rest of its requires seed as usual.
+    // The flow's input (--input) is set first, and an account's sign-in flow played on its own signs in as its person;
+    // the rest of its requires seed as usual.
     if (flow.input && input !== undefined) mem.set(flow.input, input);
-    seedMemForFlow(mem, flow.blocks(), json, ref, flow.memStub === true || options.memStub, input !== undefined ? flow.input : undefined);
+    const person = accountSigningIn(flow);
+    person?.mem?.(mem);
+    const given = [...(input !== undefined && flow.input ? [flow.input] : []), ...(person ? accountKeys(person) : [])];
+    seedMemForFlow(mem, flow.blocks(), json, ref, flow.memStub === true || options.memStub, given);
   };
   return { flow, ref, named: true, seedMem };
 }

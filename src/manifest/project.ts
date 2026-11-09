@@ -1,6 +1,7 @@
 // Scans a project (and any injected Block libraries) into its Blocks and Flows, with each Block's route.
 import { messageOf } from "../engine/errors.js";
-import { relative } from "node:path";
+import { existsSync } from "node:fs";
+import { join, relative } from "node:path";
 import type { BlocksSelect } from "./select.js";
 import { matchBlocksSelect } from "./select.js";
 import { exploreRoots, injectTaggedFile } from "./roots.js";
@@ -83,6 +84,16 @@ export function reportImportError(relFile: string, err: unknown): void {
  */
 export async function loadMemStubs(projectDir: string): Promise<void> {
   for (const file of walkDir(projectDir, /\.mem-stubs?\.ts$/)) await importFresh(file).catch((err: unknown) => reportImportError(relative(projectDir, file), err));
+}
+
+/**
+ * Imports the project's accounts (`src/accounts/`): an account registers when its file is imported, so a sign-in flow
+ * played on its own knows whose it is (and signs in as that person) without a flow importing the file.
+ */
+export async function loadAccounts(projectDir: string): Promise<void> {
+  const folder = join(projectDir, "src", "accounts");
+  if (!existsSync(folder)) return;
+  for (const file of walkDir(folder, /\.ts$/)) await importFresh(file).catch((err: unknown) => reportImportError(relative(projectDir, file), err));
 }
 
 /** Imports every `*.block.ts` (and `*.flow.ts`) under the project and its injected roots. */

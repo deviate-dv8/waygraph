@@ -31,7 +31,8 @@ workflow on top of it, not a restatement of them.
 4. **Mem keys:** one `keys("ns")<{ ... }>()` namespace per area (`SaucedemoKeys.credentials`). Never rely on substring `"login"` defaults — email keys like `login-email` stay strings; credential objects use exact names such as `saucedemo.credentials` / `login-credentials`.
 5. Prefer `click` NavBlocks when the product has a real control; use `url` for deep links / email tokens.
 6. **People are accounts.** Each role that signs in (`planner`, `viewer`, ...) is an `account(name, { signIn })` in
-   `src/accounts/`; flows for that role say `map({ as: Planner })` and carry no login steps.
+   `src/accounts/`; flows for that role say `map({ as: Planner })` and carry no login steps. When one sign-in flow
+   serves several people (by email), the account says who with `mem` (`mem: (m) => m.set(Keys.recipient, { email })`).
 7. **One flow per scenario, not per data case.** Cases that run the same steps over different data are one flow with
    `map({ input })` and a list of inputs; steps only some cases need are `{ when }`.
 8. **Plan the second run.** A flow that creates something plans its `unique` test data and its `.finally(...)` cleanup;

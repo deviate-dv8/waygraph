@@ -131,6 +131,11 @@ export class MemPage {
     }
   }
 
+  /** The keys set, in the order they were first set. */
+  keys(): MemKey<unknown>[] {
+    return [...this.store.keys()];
+  }
+
   /**
    * An independent copy of every key currently set - a later `.set()` on either the original or the
    * clone never touches the other. For branch-session cloning (`runBranchRegression`): each explored

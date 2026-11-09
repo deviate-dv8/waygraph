@@ -11,6 +11,7 @@ import { MemPage } from "../../engine/mem/mem.js";
 import { seedMemStub } from "../../engine/mem/mem-stub.js";
 import { importFresh, isFlowLike, walkDir } from "../../manifest/scan.js";
 import { installRunLog } from "../../runtime/run-log.js";
+import { accountSigningIn } from "../../engine/flow/account.js";
 import { inRun } from "../../engine/run/events.js";
 
 /** The keys a flow needs that nothing will give it in a test (no mem stub): it is skipped, saying which. */
@@ -59,6 +60,8 @@ export async function registerFlowTests(exclusive: boolean): Promise<void> {
         const first = flow.blocks()[0];
         test.skip(!!first && !opensItsPage(first.block), `starts on a page it doesn't open (${first?.name}): it runs after another flow - chain it, or start it with a gotoPage`);
         const mem = new MemPage();
+        // An account's sign-in flow signs in as its person; the rest from stubs.
+        accountSigningIn(flow)?.mem?.(mem);
         if (flow.memStub) seedMemStub(mem, flow);
         const missing = unsupplied(flow, mem);
         test.skip(missing.length > 0, `needs ${missing.join(", ")}: register a mem stub (and map({ memStub: true })), or run it with --data`);
