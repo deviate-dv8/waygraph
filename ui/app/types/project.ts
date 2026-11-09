@@ -132,4 +132,6 @@ export type PlaywrightUi = {
   /** Null while it runs. */
   exitCode: number | null
   output: string[]
+  /** The one flow it shows (a flow's page opened it), or null for every flow. */
+  flow: string | null
 }

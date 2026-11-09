@@ -14,6 +14,7 @@ const props = defineProps<{
 const running = computed(() => props.server !== null && props.server.exitCode === null)
 const url = computed(() => (running.value ? props.server?.url : null) ?? null)
 const ended = computed(() => props.server !== null && props.server.exitCode !== null)
+/** Over every flow (a flow's page opens it over that flow). */
 const start = () => router.post(urlFor('playwright.store'))
 const stop = () => router.delete(urlFor('playwright.destroy'))
 </script>
@@ -27,11 +28,35 @@ const stop = () => router.delete(urlFor('playwright.destroy'))
           class="flex items-center justify-between gap-2 border-b border-(--island-line) px-3 py-2"
         >
           <p class="text-xs text-(--ink-soft)">
-            Playwright UI · every flow is a test ·
-            <a :href="url" target="_blank" rel="noreferrer" class="font-mono hover:underline">{{
-              url
-            }}</a>
+            Playwright UI ·
+            <template v-if="props.server?.flow">
+              only
+              <ULink
+                :to="urlFor('flows.show', { name: props.server.flow })"
+                class="font-medium hover:underline"
+                >{{ props.server.flow }}</ULink
+              >
+              ·
+            </template>
+            <template v-else>every flow is a test ·</template>
+            <a
+              :href="url"
+              target="_blank"
+              rel="noreferrer"
+              class="ml-1 font-mono hover:underline"
+              >{{ url }}</a
+            >
           </p>
+          <span class="flex-1" />
+          <UButton
+            v-if="props.server?.flow"
+            label="Show all flows"
+            icon="i-lucide-list"
+            size="xs"
+            color="neutral"
+            variant="outline"
+            @click="start()"
+          />
           <UButton
             label="Stop"
             icon="i-lucide-square"
@@ -52,7 +77,7 @@ const stop = () => router.delete(urlFor('playwright.destroy'))
           Every flow as a Playwright test (<span class="font-mono">waygraph test --flows --ui</span
           >): run them, watch them, and step through each one's trace, actions and page snapshots.
         </p>
-        <UButton label="Open Playwright UI" icon="i-lucide-flask-conical" @click="start" />
+        <UButton label="Open Playwright UI" icon="i-lucide-flask-conical" @click="start()" />
         <div v-if="ended && props.server?.output.length" class="text-left">
           <p class="mb-1 text-xs text-(--fail)">It stopped (exit {{ props.server.exitCode }}):</p>
           <pre

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { router } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import StepPipeline from '~/components/graph/step_pipeline.vue'
@@ -76,6 +77,16 @@ const noExpect = ref(false)
             variant="outline"
             :disabled="playing"
             @click="start(props.flow.exportName, 'demo', { noExpect })"
+          />
+        </UTooltip>
+        <UTooltip text="This flow as a Playwright test: run it, watch it, step through its trace">
+          <UButton
+            label="Playwright UI"
+            icon="i-lucide-flask-conical"
+            size="sm"
+            color="neutral"
+            variant="outline"
+            @click="router.post(urlFor('playwright.store'), { flow: props.flow.exportName })"
           />
         </UTooltip>
         <UCheckbox v-model="noExpect" label="verify only" size="sm" />

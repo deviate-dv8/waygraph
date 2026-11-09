@@ -21,19 +21,26 @@ export class PlaywrightUiService {
   get current(): PlaywrightUi | null {
     const server = PlaywrightUiService.server
     if (!server) return null
-    const { url, exitCode, output } = server
-    return { url, exitCode, output: [...output] }
+    const { url, exitCode, output, flow } = server
+    return { url, exitCode, output: [...output], flow }
   }
 
-  /** Starts it, unless it's running already; resolves once it says where it listens, or it ended without. */
-  async start(): Promise<PlaywrightUi> {
+  /**
+   * Starts it over every flow, or only `flow` (a flow's test is titled `<file> › <exportName>`); one running over other
+   * flows is stopped first. Resolves once it says where it listens, or it ended without.
+   */
+  async start(flow: string | null = null): Promise<PlaywrightUi> {
     const running = PlaywrightUiService.server
-    if (running && running.exitCode === null) return this.current as PlaywrightUi
+    if (running && running.exitCode === null) {
+      if (running.flow === flow) return this.current as PlaywrightUi
+      await this.stop()
+    }
     const dir = new ProjectService().dir
     if (!dir) throw new Error('No project is set.')
     const [cmd, args] = waygraphCommand(dir, [
       'test',
       '--flows',
+      ...(flow ? ['-g', `› ${flow}$`] : []),
       '--ui-port=0',
       '--ui-host=127.0.0.1',
     ])
@@ -46,7 +53,7 @@ export class PlaywrightUiService {
       detached: true,
       stdio: ['ignore', 'pipe', 'pipe'],
     })
-    const server: Server = { url: null, exitCode: null, output: [], child }
+    const server: Server = { url: null, exitCode: null, output: [], flow, child }
     PlaywrightUiService.server = server
     return new Promise((resolve) => {
       const done = () => resolve(this.current as PlaywrightUi)

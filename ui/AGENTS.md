@@ -12,7 +12,8 @@ for the stack are in `.claude/skills/` (adonisjs, nuxt-ui, vue-*, vite, vitest; 
   by its log's name (the moment it started). Every page gets it as the shared `play` prop (`inertia/lib/play.ts`) and
   reloads each second while it plays.
 - `app/services/playwright_ui_service.ts`: Playwright's UI mode over the project's flows (`waygraph test --flows
-  --ui-port=0`), shown in a frame on the Playwright page; in its own process group, stopped on shutdown too.
+  --ui-port=0`), shown in a frame on the Playwright page, over every flow or one (`-g`, from a flow's page); in its own process
+  group, stopped on shutdown too.
 - `app/controllers/`: one per page (map, flows, runs, playwright, settings) and plays (start, stop); `start/routes.ts`.
   A new route needs `node ace codegen` (the typed route names).
 - `inertia/lib/settings.ts`: the Settings page's values, kept in the browser (`useStorage`); plays read them.
