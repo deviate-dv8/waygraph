@@ -57,6 +57,14 @@ export function expectationsFor(block: SomeBlock, tag: string): readonly AnyExpe
   return list ? listFor(list, tag) : [];
 }
 
+/** The Blocks a Block's expectations name (Expect Blocks, or any Block used as one), for every outcome; not its Traits. */
+export function expectedBlocks(block: SomeBlock): SomeBlock[] {
+  const list = expectOf(block);
+  if (!list) return [];
+  const items = Array.isArray(list) ? list : Object.values(list as Readonly<Record<string, readonly AnyExpectation[] | undefined>>).flatMap((l) => l ?? []);
+  return items.filter((item): item is SomeBlock => !isTrait(item));
+}
+
 /** One expectation in words: an Expect Block's description (or name), a check's `wants` (or name). */
 const say = (item: AnyExpectation): string => (isTrait(item) ? (item.wants ?? item.name) : (item.description ?? item.name));
 

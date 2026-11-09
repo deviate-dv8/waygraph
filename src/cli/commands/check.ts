@@ -105,7 +105,7 @@ export async function checkCase(args: string[]): Promise<void> {
         printPracticeReport(proj, practiceWarnings);
       }
       for (const w of constantDataWarnings) {
-        console.warn(`waygraph check: ${relative(proj, w.file)} (${w.blockName}) requires ${w.key}, whose mem stub gives the same value every run - a second run may collide with the first; build it from ctx.unique: registerMemStub(key, ({ unique }) => ...)`);
+        console.warn(`waygraph check: ${relative(proj, w.file)} (${w.blockName}) makes something, but ${w.key} gives the same value every run and none of its keys is new every run - a second run may make the same thing again; build the name of what it makes from unique: registerMemStub(key, ({ unique }) => ...)`);
       }
       for (const p of unreadPages) {
         console.warn(`waygraph check: page ${p.checkpoint} has no Read Block - say what it shows (a _read.block.ts / <page>.read.block.ts next to ${relative(proj, p.file)}), so runs, agents and tests can read it`);

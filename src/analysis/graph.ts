@@ -3,6 +3,8 @@ import type { BlocksSelect } from "../manifest/select.js";
 import { scanProject } from "../manifest/project.js";
 import type { ProjectScan } from "../manifest/project.js";
 import type { BlockInfo } from "../engine/flow/flow.js";
+import { expectedBlocks } from "../engine/run/expect.js";
+import type { SomeBlock } from "../engine/block/some-block.js";
 
 /**
  * The state-machine shape `waygraph auto` discovers from a project's own
@@ -75,10 +77,19 @@ export function toMermaid(graph: WaygraphGraph): string {
 export async function findOrphanBlocks(projectDir: string): Promise<OrphanBlock[]> {
   const scan = await scanProject(projectDir, { maps: false });
   const used = new Set<string>();
+  // What a step expects is played too (an Expect Block, or any Block in an `expect: [...]`), and what that expects.
+  const noteExpected = (block: SomeBlock): void => {
+    for (const expected of expectedBlocks(block)) {
+      if (used.has(expected.name)) continue;
+      used.add(expected.name);
+      noteExpected(expected);
+    }
+  };
   // A fast-forward or composed step is one Block made of others: those are played too.
   const note = (infos: readonly BlockInfo[]): void => {
     for (const info of infos) {
       used.add(info.name);
+      noteExpected(info.block);
       for (const target of Object.values(info.routes ?? {})) if (target) used.add(target);
       const inner = (info.block as { steps?: () => readonly BlockInfo[] } | undefined)?.steps;
       if (typeof inner === "function") note(inner.call(info.block));

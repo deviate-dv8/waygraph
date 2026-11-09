@@ -86,8 +86,9 @@ registerMemStub(SignupKeys.email, ({ unique }) => `qa+${unique}@example.com`);
 registerMemStub(SignupKeys.username, ({ unique }) => `qa-${unique}`);
 ```
 
-`waygraph check` warns when a create-like Block (`create-`, `signup-`, `register-`, an API Block) requires a key whose
-stub returns the same value every time.
+`waygraph check` warns when a Block that makes something (named `create-`, `signup-`, `register-`, or an API Block
+that POSTs) requires only keys whose stubs return the same value every time. One key made from `unique` (the
+name of what it makes) is enough: a sign-in token next to it is the same every run by design.
 
 ## Rerun with the same data
 

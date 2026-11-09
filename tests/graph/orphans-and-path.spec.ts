@@ -106,3 +106,43 @@ test("findBlockPath walks discovered edges including nav from *", () => {
   };
   expect(findBlockPath(graph, "LoggedIn", "Done")).toEqual(["nav-cart", "checkout"]);
 });
+
+test("a Block named only in an expect list (a step's, or a Block's own, per outcome) is not an orphan", async () => {
+  const tmpDir = join(import.meta.dirname, ".tmp-orphans-expect");
+  await mkdir(join(tmpDir, "src/blocks"), { recursive: true });
+  await mkdir(join(tmpDir, "tests/qa"), { recursive: true });
+  await writeFile(
+    join(tmpDir, "src/blocks/home.block.ts"),
+    `
+import { checkpoint, defineExpectBlock, defineMethodBlock, Trait } from "waygraph";
+export const Home = checkpoint("Home");
+export const Saved = checkpoint("Saved");
+export const ExpectTitleBlock = defineExpectBlock({ name: "expect-title", checkpoint: Home, verify: [Trait.visible("h1")] });
+export const ExpectSavedBlock = defineExpectBlock({ name: "expect-saved", checkpoint: Saved, verify: [Trait.visible("#saved")] });
+export const ExpectUnusedBlock = defineExpectBlock({ name: "expect-unused", checkpoint: Home, verify: [Trait.visible("h2")] });
+export const AssertRowBlock = defineMethodBlock({ name: "assert-row", from: Home, to: Home, instruction: { async act() {} } });
+export const SaveBlock = defineMethodBlock({
+  name: "save",
+  from: Home,
+  to: [Home, Saved],
+  expect: { Saved: [ExpectSavedBlock] },
+  instruction: { async act() {}, resolve: () => Saved },
+});
+`,
+  );
+  // A flow outside src/ (a QA case's folder) counts like any other.
+  await writeFile(
+    join(tmpDir, "tests/qa/case.flow.ts"),
+    `
+import { Engine } from "waygraph";
+import { AssertRowBlock, ExpectTitleBlock, SaveBlock } from "../../src/blocks/home.block.js";
+export const caseFlow = new Engine().map().method(SaveBlock, { expect: [ExpectTitleBlock, AssertRowBlock] });
+`,
+  );
+  try {
+    const orphans = await findOrphanBlocks(tmpDir);
+    expect(orphans.map((o) => o.block)).toEqual(["expect-unused"]);
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+});

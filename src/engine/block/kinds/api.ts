@@ -128,6 +128,8 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
   mark(built, "__waygraphKind", "api");
   // Accepted by map().method(), like a Method: one step that lands on a Checkpoint.
   mark(built, "__waygraphSalt", "api");
+  // `waygraph check` tells a call that makes something (POST, PUT...) from one that only reads (GET).
+  if (options.method) mark(built, "__waygraphApiMethod", options.method.toUpperCase());
   return built;
 }
 

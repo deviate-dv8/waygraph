@@ -142,7 +142,7 @@ engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem, { expect: [HomeP
 ```
 
 `waygraph auto` groups a page's methods under it. A page's `nav`, methods and expectations never count as orphans,
-though no flow plays them. Name the Page Block after the page
+though no flow plays them; nor does a Block a flow names in an `expect: [...]` (a step's, or a Block's own). Name the Page Block after the page
 (`HomePage`): the Checkpoint already has the page's own name (`Home`).
 
 ## Screenshots

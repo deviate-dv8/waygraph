@@ -87,8 +87,18 @@ export interface UnreadPage {
   file: string;
 }
 
-/** A Block that creates something a second run would collide with: an API call, or one named like a create. */
+/** A Block named like a create. */
 const CREATES = /^(?:create|register|sign-?up|new|insert)-/;
+/**
+ * Whether a Block makes something a second run would collide with: one named like a create, or an API call that POSTs
+ * (one with no `method` counts: it may). A GET only reads; a PUT, PATCH or DELETE changes something that's already there.
+ */
+function creates(block: { name: string }): boolean {
+  if (CREATES.test(block.name)) return true;
+  if (blockKindOf(block) !== "api") return false;
+  const method = (block as { __waygraphApiMethod?: string }).__waygraphApiMethod;
+  return method === undefined || method === "POST";
+}
 
 /** A Block that creates something, requiring a key whose mem stub returns the same value every run. */
 export interface ConstantDataWarning {
@@ -141,9 +151,14 @@ export async function checkProject(
       if (fileCalls.some((c) => c.literalFirstArg && SELECTOR_TRAITS.has(c.callee))) {
         selWarnings.push({ file, blockName: exported.name, exportName });
       }
-      if (blockKindOf(exported) === "api" || CREATES.test(exported.name)) {
-        for (const key of (exported as { requires?: readonly MemKey<unknown>[] }).requires ?? []) {
-          if (memStubIsConstant(key)) constantDataWarnings.push({ file, blockName: exported.name, key: key.name });
+      // What it makes is named by a key that's new every run (from `unique`); its other keys (a sign-in token, an area)
+      // are the same every run by design. Only a Block whose every stubbed key is the same every run makes the same
+      // thing twice.
+      if (creates(exported)) {
+        const required = (exported as { requires?: readonly MemKey<unknown>[] }).requires ?? [];
+        const constant = required.filter((key) => memStubIsConstant(key) === true);
+        if (!required.some((key) => memStubIsConstant(key) === false)) {
+          for (const key of constant) constantDataWarnings.push({ file, blockName: exported.name, key: key.name });
         }
       }
     }
