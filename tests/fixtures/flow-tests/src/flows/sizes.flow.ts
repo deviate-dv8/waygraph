@@ -1,4 +1,5 @@
 import { Engine, checkpoint, defineNavBlock, definePageBlock, type Trait } from "waygraph";
+import { PageShows } from "../page.reads.js";
 
 const Page = checkpoint("Page");
 const width = (w: number): Trait => ({ name: `width-${w}`, wants: `${w}px wide`, async check(page) { const got = await page.evaluate(() => innerWidth); return { ok: got === w, saw: `${got}px` }; } });
@@ -18,3 +19,7 @@ export const fnUrlFlow = engine
 export const fnUrlPageFlow = engine
   .map()
   .gotoPage(definePageBlock({ name: "page-fn", checkpoint: Page, url: () => "data:text/html,<h1>ok</h1>" }).stubBefore(() => {}));
+/** Its verify checks what the page shows, through a Read Block no flow imports. */
+export const readFlow = engine
+  .map()
+  .gotoPage(open("open-read").withVerify([PageShows.title.is("ok")]));

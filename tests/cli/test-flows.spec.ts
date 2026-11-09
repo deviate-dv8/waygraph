@@ -33,6 +33,7 @@ test("every flow runs as a test; the exclusive one after the others; viewport ap
     ["fnUrlFlow", "passed"],
     ["fnUrlPageFlow", "passed"],
     ["otherFlow", "passed"],
+    ["readFlow", "passed"],
     ["wideFlow", "passed"],
   ]);
   const endOf = (r: Result) => Date.parse(r.startTime) + r.duration;
@@ -42,5 +43,5 @@ test("every flow runs as a test; the exclusive one after the others; viewport ap
     (await readdir(runLog)).filter((f) => f.endsWith(".jsonl")).map(async (f) => JSON.parse((await readFile(join(runLog, f), "utf8")).split("\n")[0]!).label as string),
   );
   await rm(runLog, { recursive: true, force: true });
-  expect(labels.sort()).toEqual(["aloneFlow", "fnUrlFlow", "fnUrlPageFlow", "otherFlow", "wideFlow"]);
+  expect(labels.sort()).toEqual(["aloneFlow", "fnUrlFlow", "fnUrlPageFlow", "otherFlow", "readFlow", "wideFlow"]);
 });
