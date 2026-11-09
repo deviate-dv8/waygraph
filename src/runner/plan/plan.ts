@@ -13,6 +13,7 @@ import { loadMemStubs } from "../../manifest/project.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { recordMem } from "../../engine/run/events.js";
+import { getMemStub, memStubIsConstant } from "../../engine/mem/mem-stub.js";
 import { readRunLog } from "../../runtime/run-log.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import type { SomeBlock } from "../../engine/block/some-block.js";
@@ -73,7 +74,9 @@ function recordedMem(projectDir: string, runId: string): Map<number, Record<stri
 
 /**
  * A segment's seeding, recorded: the values its Blocks' required keys end up with go into the run log (run:mem), so
- * `--replay <runId>` can set exactly them again - which it does here instead of seeding.
+ * `--replay <runId>` can set them again - which it does here instead of seeding. A value made new every run (its mem
+ * stub gives a different one each time: a name from `unique`, what the run creates) is made new again: replayed, the
+ * same machine or signup would be made twice, and the app would refuse the second.
  */
 function seeding(segment: Segment, index: number, mem: MemPage, recorded: Map<number, Record<string, unknown>> | undefined): () => void {
   const keys = [...new Map(segment.flow.blocks().flatMap((info) => info.block.requires ?? []).map((k) => [k.name, k])).values()];
@@ -82,7 +85,11 @@ function seeding(segment: Segment, index: number, mem: MemPage, recorded: Map<nu
     if (recorded) {
       const values = recorded.get(index);
       if (!values) throw new Error(`waygraph: --replay: that run recorded no mem for part ${index + 1} ("${segment.ref}") - is it the same spec?`);
-      for (const k of keys) if (k.name in values) mem.set(k, values[k.name]);
+      for (const k of keys) {
+        if (!(k.name in values)) continue;
+        const fresh = memStubIsConstant(k) === false ? getMemStub(k) : undefined;
+        mem.set(k, fresh ? fresh() : values[k.name]);
+      }
     } else {
       seed();
     }

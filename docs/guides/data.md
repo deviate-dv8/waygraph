@@ -98,6 +98,10 @@ there: `--data`, a stub, `unique`. Replay it:
 npx waygraph run signupFlow --replay 3f2a9c1e
 ```
 
+A value made new every run (its stub gives a different one each time, like one made from `unique`) is made new
+again: the signup or order it names was made by the first run, and the app would refuse the same one twice. Everything
+else (what `--data` gave, a stub that's always the same) is replayed as it was.
+
 ## One flow, many cases
 
 A flow that plays the same steps over different data declares its input instead of one export per case:

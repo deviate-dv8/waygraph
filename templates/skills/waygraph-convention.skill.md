@@ -68,7 +68,8 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
    Data a run creates is made from `unique` (`registerMemStub(Signup.email, ({ unique }) => \`qa+${unique}@x.test\`)`),
    never a constant or `Date.now()`; what a flow creates is deleted in `.finally(DeleteApiBlock)`; a create that can
    meet an earlier run's data resolves to `Created` / `AlreadyExists` instead of failing. A failure that depended on its
-   data reruns with `waygraph run <flow> --replay <runId>`.
+   data reruns with `waygraph run <flow> --replay <runId>` (a per-run value, from `unique`, is made new again; the
+   rest is replayed).
    Put those `registerMemStub` calls in a `*.mem-stubs.ts` file (`src/states/demo.mem-stubs.ts`): `run`, `demo`, `test`
    and the live sessions load every one themselves, so no flow or spec imports it. The scaffold's engine is
    `new Engine({ ...config, memStub: true })`: every flow fills missing keys from stubs, and `flow.run()` does it too, so a

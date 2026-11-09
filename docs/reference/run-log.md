@@ -16,7 +16,7 @@ graph LR
 | Event | Carries |
 |---|---|
 | `run:start` | the run's id and what it plays (`label`: the flow or chain; under `waygraph test --flows`, the flow's export name; none for a test that calls `flow.run` itself) |
-| `run:mem` | the mem each part of the run was seeded with, by key name (what `--replay <runId>` seeds again) |
+| `run:mem` | the mem each part of the run was seeded with, by key name (what `--replay <runId>` seeds again, a per-run value made new) |
 | `step:start` | the Block, its kind (`nav`, `page`, `method`, `effect`, `api`), where it starts; `parent` for a step inside a fast-forward unit, `cleanup: true` for a `.finally` step |
 | `step:read` | what the page showed after the step: `{ checkpoint, read, missing, notes, readBlocks }` ([Read Blocks](../guides/reads)) |
 | `step:end` | where it landed, how long it took, the page's address (`url`) |

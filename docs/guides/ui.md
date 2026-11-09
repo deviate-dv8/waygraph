@@ -46,7 +46,7 @@ cart) sits under the page whose move reaches it. Pages in a row follow the order
 
 On a flow: **Run** plays it in the background (`waygraph run`), **Demo** opens a browser with the step panel
 (`waygraph demo`), **Playwright UI** opens it as a Playwright test on the Playwright page. **verify only** skips the expectations (`--no-expect`). On a run of one flow, **Run again** or **Demo again** plays it
-with the mem that run was seeded with (`--replay`).
+with the mem that run was seeded with (`--replay`; what the run made new, a name from `unique`, is made new again).
 
 The run's page follows it step by step; a step that fails opens as it happens. Every page shows what's playing, with
 **Stop**, which ends the flow and its browser. One flow plays at a time.

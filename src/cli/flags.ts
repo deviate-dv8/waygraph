@@ -94,7 +94,7 @@ export const RUN_OPTIONS = {
   "mem-stub": { type: "boolean", help: "Fill any requires key --data didn't cover from registerMemStub's registry", for: ["demo", "run"] },
   "no-expect": { type: "boolean", help: "Skip every expectation (expect: [...]): each step's verify only", for: ["demo", "run"] },
   "input": { type: "string", value: "<json|@file>", help: "The flow's input (map({ input })): JSON or @file.json; an array plays the flow once per item", for: ["demo", "run"] },
-  "replay": { type: "string", value: "<runId>", help: "Seed mem with exactly what that run seeded (its run log), to rerun a failure with its data", for: ["demo", "run"] },
+  "replay": { type: "string", value: "<runId>", help: "Seed mem with what that run seeded (its run log), to rerun a failure with its data; a per-run value (from unique) is made new", for: ["demo", "run"] },
   "auto-next": { type: "boolean", help: "Auto-advance steps", for: ["demo"] },
   "no-auto-next": { type: "boolean", help: "Wait for Next on every step (the default)", for: ["demo"] },
   "fast": { type: "boolean", help: "Shorter auto-next / Next gates (keeps the smooth cursor)", for: ["demo"] },
