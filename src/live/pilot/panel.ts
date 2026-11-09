@@ -36,7 +36,7 @@ export async function updatePilotOverlay(page: Page, info: PilotOverlayInfo): Pr
   await page
     .evaluate(
       async ({ sessionId, snapshot, graph }) => {
-        // Block names, labels and descriptions can carry the page's own text (an Effect's instance label is read off
+        // Block names, labels and descriptions can carry the page's own text (a Method's row label is read off
         // the live DOM), so they go in as text nodes (__wgEl), never as markup.
         const badge = __wgById("wg-pilot-badge");
         const current = __wgById("wg-pilot-panel-current");

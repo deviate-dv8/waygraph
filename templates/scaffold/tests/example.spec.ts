@@ -8,7 +8,7 @@ test("example flow reaches Docs (home -> expect -> sibling docs/ page)", async (
   expect(result).toEqual(checkpoint("Docs"));
 });
 
-test("shop flow adds then clears (Effect + Method)", async ({ context }) => {
+test("shop flow adds then clears", async ({ context }) => {
   const result = await homeCartFlow.run(context, new MemPage());
   expect(result).toEqual(checkpoint("CartEmpty"));
 });

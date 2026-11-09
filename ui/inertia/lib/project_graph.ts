@@ -21,7 +21,7 @@ export interface MapEdge {
   blocks: ManifestBlock[]
 }
 
-const SELF = new Set(['method', 'effect', 'api', 'expect'])
+const SELF = new Set(['method', 'api', 'expect'])
 
 /**
  * The moves between pages: one edge per (from, to) pair, with every Block that makes it. Self-loops aren't edges, and

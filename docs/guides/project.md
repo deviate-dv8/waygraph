@@ -31,7 +31,7 @@ Every page folder uses the same file names, so you (or an agent) always know whe
 | `_sel.ts` | every selector this page uses | a plain object |
 | `_read.block.ts` | what the page shows, as data | `defineReadBlock` |
 | `_reads.ts` | the namespace that data is typed by | `reads("home")<{…}>()` |
-| `_methods/` | one action per file: fill, click, submit | `defineMethodBlock`, `defineEffectBlock` |
+| `_methods/` | one action per file: fill, click, submit | `defineMethodBlock` |
 | `_expect/` | what a scenario can expect on this page, one per file | `defineExpectBlock` |
 
 A leading `_` means "this page's own machinery". A folder name without one is a child page with its own URL segment.

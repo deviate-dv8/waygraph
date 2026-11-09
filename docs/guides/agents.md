@@ -21,7 +21,7 @@ graph LR
 | find a route from one Checkpoint to another, then play it | `npx waygraph auto --blocks LoginPage OrderComplete` |
 | try it on Sauce Demo, nothing written to your folder | `npx waygraph try auto` · `npx waygraph try auto:cli` |
 
-The menu has **Methods** for this page, **Also on this page** (one row per item an Effect can act on, plus Add all /
+The menu has **Methods** for this page, **Also on this page** (one row per item a Method lists in its `instanceOptions`, plus Add all /
 Remove all), **Navigate** and **Go back**. Keys a Block needs come from `--data`, else the project's mem stubs.
 
 ## For an agent: a session

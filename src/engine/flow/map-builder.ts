@@ -2,7 +2,6 @@
 // expectations ride on it (`expect: [...]`).
 import type { SomeBlock, SomeDefinedBlock } from "../block/some-block.js";
 import { fastForwardSteps } from "../block/compose.js";
-import type { EffectBlock } from "../block/kinds/effect.js";
 import type { MethodBlock } from "../block/kinds/method.js";
 import type { NavBlock } from "../block/kinds/nav.js";
 import type { PageBlock } from "../block/kinds/page.js";
@@ -137,7 +136,7 @@ export type WhenOpt<Out, NextOut> = [NextOut] extends [Out] ? { when?: (mem: Mem
  * comment for why this exists. Each step method is scoped to exactly the
  * Block kind its name promises, checked at RUNTIME against the
  * `__waygraphKind`/`__waygraphSalt` markers `defineNavBlock`/`definePageBlock`/
- * `defineExpectBlock`/`defineMethodBlock`/`defineEffectBlock` already set
+ * `defineExpectBlock`/`defineMethodBlock` already set
  * (the same markers `graph.ts` and `map-check.ts` trust) - not just a type
  * hint, since a hand-rolled object can satisfy the TypeScript `Block<In,Out>`
  * shape without ever going through a real factory. Each call also
@@ -276,20 +275,19 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
 
   /**
    * Appends a non-navigating page action (submit, upload, add/remove an
-   * instance) - requires a Block from `defineMethodBlock`/`defineActionBlock`/
-   * `defineEffectBlock`/`defineMemEffectBlock`.
-   * Compile-time: {@link MethodBlock} or {@link EffectBlock} only. Runtime also rejects an Expect Block (it carries
+   * instance) - requires a Block from `defineMethodBlock` (or `defineApiBlock`).
+   * Compile-time: {@link MethodBlock} only. Runtime also rejects an Expect Block (it carries
    * method salt from the factory internals): an expectation goes in a step's `expect: [...]`, not in a step of its own.
    * `{ ff: true }`: fast-forward this one step inline - see `appendStep`'s own comment.
    */
   method<NextOut extends Checkpoint<string>, Lands extends NextOut = NextOut>(
-    block: (MethodBlock<Out, NextOut> | EffectBlock<Out, NextOut>) & { name: string },
+    block: MethodBlock<Out, NextOut> & { name: string },
     opts?: Omit<MapStepOpts<Lands>, "when"> & WhenOpt<Out, NextOut>,
   ): MapBuilder<Lands> {
     if (mapKindOf(block) === "expect") {
       throw new WaygraphError("WG_MAP_WRONG_KIND", MSG_MAP_METHOD_GOT_EXPECT(block.name));
     }
-    assertMapSalt(block, ["method", "effect", "api"], "method");
+    assertMapSalt(block, ["method", "api"], "method");
     return this.appendStep(skippable(stepExpect(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.expect), opts?.when), opts?.ff);
   }
 
@@ -355,7 +353,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
    * @example engine.map().gotoPage(NavSignupBlock).method(SubmitSignupBlock).finally(DeleteTestUserApiBlock)
    */
   finally(block: SomeDefinedBlock): MapBuilder<Out> {
-    assertMapSalt(block, ["method", "effect", "api"], "finally");
+    assertMapSalt(block, ["method", "api"], "finally");
     return this.withCleanup([asCleanup(block)]);
   }
 

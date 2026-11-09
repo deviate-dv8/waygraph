@@ -59,7 +59,7 @@ snapshot's `mem` says where each value came from - `data` (start), `stub` or `st
 
 A credential that says `stub` signed in as the mem stub's user, not the one you meant.
 
-**`reach` and rows.** A step with one option per row (an Effect: add *this* item) runs when mem already says which
+**`reach` and rows.** A step with one option per row (a Method with `instanceOptions`: add *this* item) runs when mem already says which
 row: `--data`, an earlier pick, or the key's mem stub. Otherwise `reach` stops there and says to pick one with `send`.
 
 **`reach` limits.** A route through a Nav that's open from anywhere, whose page needs setup first (fields filled before

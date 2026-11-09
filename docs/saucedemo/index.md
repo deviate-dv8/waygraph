@@ -56,7 +56,7 @@ examples/saucedemo/
 | Page | `definePageBlock` | `nav-login` (deep-links `/`, the login form's methods hang off it); `page-inventory` (arrival-only, after sign-in) |
 | Nav | `defineNavClickBlock` / `defineMemNavBlock` | `nav-cart` clicks the cart icon; `nav-item-detail` opens the item named in Mem |
 | Method | `defineMethodBlock` | `fill-username`, `submit-login` (branches: `LoggedIn` or back to `LoginPage`), `finish-order` |
-| Effect | `defineEffectBlock` | `add-to-cart`: one auto-menu row per live "Add to cart" button |
+| Method (one row of many) | `defineMethodBlock` + `instanceOptions` | `add-to-cart`: one auto-menu row per live "Add to cart" button |
 | Read | `defineReadBlock` | `read-inventory`, `read-cart`, `read-header`: what the pages show, as JSON for `pilot read` ([Read Blocks](../guides/reads.md)) |
 | API | `defineApiBlock` | `api-demo.flow.ts`: a backend check resolved into a Checkpoint like a UI step |
 

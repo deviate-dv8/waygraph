@@ -256,7 +256,6 @@ export const MAP_KIND_FACTORY_HINT: Record<string, string> = {
 };
 export const MAP_SALT_FACTORY_HINT: Record<string, string> = {
   method: "defineMethodBlock",
-  effect: "defineEffectBlock",
   api: "defineApiBlock",
 };
 /** Per-step options for the map builder: `ff` fast-forwards the step, `pace` sets its demo pace. */

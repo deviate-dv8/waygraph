@@ -24,8 +24,7 @@ a wrong password keeps you on the login page) says so.
 |---|---|---|
 | Nav | goes to a page (a URL or a link) | `defineNavBlock` |
 | Page | "you have arrived" - lists what you can do here | `definePageBlock` |
-| Method | one action on the page: fill, click, submit | `defineMethodBlock` |
-| Effect | an action on one row of many (add *this* item) | `defineEffectBlock` |
+| Method | one action on the page: fill, click, submit; or on one row of many (add *this* item) | `defineMethodBlock` |
 | Expect | what a scenario expects: reads and judges, changes nothing | `defineExpectBlock` |
 | API | an HTTP call, no page | `defineApiBlock` |
 | Read | what the page **shows**, as data | `defineReadBlock` |

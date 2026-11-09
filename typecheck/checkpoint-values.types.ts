@@ -1,7 +1,6 @@
 import {
   checkpoint,
   defineExpectBlock,
-  defineEffectBlock,
   defineMethodBlock,
   defineNavBlock,
   definePageBlock,
@@ -40,7 +39,7 @@ export const Clear = defineMethodBlock({
   instruction: { async act() {}, resolve: () => CartEmpty },
 });
 
-export const AddEffect = defineEffectBlock({
+export const AddEffect = defineMethodBlock({
   name: "add-effect",
   from: Home,
   to: ItemInCart,

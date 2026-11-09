@@ -26,13 +26,13 @@ export const WAYGRAPH_ERRORS = {
   },
   WG_MAP_WRONG_KIND: {
     where: "engine/flow/map-builder.ts - MapBuilder.gotoPage/gotoExternal/method()",
-    means: "A Block passed to a MapBuilder step method doesn't carry the __waygraphKind a real defineNavBlock/definePageBlock/defineMethodBlock/defineEffectBlock stamps - either the wrong factory was used, or the object was hand-rolled instead of going through one.",
+    means: "A Block passed to a MapBuilder step method doesn't carry the __waygraphKind a real defineNavBlock/definePageBlock/defineMethodBlock stamps - either the wrong factory was used, or the object was hand-rolled instead of going through one.",
     fix: "Use the factory the error names, or move this Block to the matching .gotoPage()/.method() call (an Expect Block goes in expect: [...]).",
   },
   WG_MAP_WRONG_SALT: {
     where: "engine/flow/map-builder.ts - MapBuilder.method()",
-    means: "A Block passed to .method() isn't a real Method/Effect Block (missing __waygraphSalt).",
-    fix: "Build it with defineMethodBlock/defineEffectBlock; an Expect Block goes in a step's expect: [...], not in a step.",
+    means: "A Block passed to .method() isn't a real Method Block (missing __waygraphSalt).",
+    fix: "Build it with defineMethodBlock; an Expect Block goes in a step's expect: [...], not in a step.",
   },
   WG_MAP_NO_INPUT: {
     where: "engine/flow/map-builder.ts - .flow(sub, { input })",

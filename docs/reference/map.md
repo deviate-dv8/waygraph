@@ -138,4 +138,4 @@ filename pattern, never folder depth or naming.
 
 Once the folder structure is settled, build Flows over these Blocks with
 [`map()`](../guides/flows.md) - it can't silently accept a Block that isn't
-really a Nav/Page/Method/Effect from this package's own factories.
+really a Nav/Page/Method from this package's own factories.

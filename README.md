@@ -69,7 +69,7 @@ npm run auto                         # explore it by hand
 | **Flow** | Blocks in order. Run it, demo it, or let `auto` pick the route. |
 | **Mem** | Typed shared data for a run (`LoginCreds`, `SelectedItem`). |
 
-Block kinds: **Nav** (go to a page), **Method** (one action), **Effect** (act on one row of a
+Block kinds: **Nav** (go to a page), **Method** (one action, on the page or on one row of a
 list), **Expect** (what a scenario expects, e.g. a button is disabled: it only reads), **Page** (a page's hub).
 
 ## Where files go: the Map

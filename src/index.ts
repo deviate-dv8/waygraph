@@ -33,7 +33,6 @@ export { defineNavBlock, defineNavClickBlock, defineMemNavBlock } from "./engine
 export { defineMethodBlock } from "./engine/block/kinds/method.js";
 export { defineExpectBlock } from "./engine/block/kinds/expect.js";
 export { definePageBlock } from "./engine/block/kinds/page.js";
-export { defineEffectBlock } from "./engine/block/kinds/effect.js";
 export { defineApiBlock } from "./engine/block/kinds/api.js";
 export { locate } from "./engine/locate.js";
 export { composeBlock, fastForwardComposeBlock, isFastForwardBlock } from "./engine/block/compose.js";
@@ -68,7 +67,6 @@ export type { NavBlock, NavBlockOptions, NavClickBlock, NavClickBlockOptions, Me
 export type { MethodBlock } from "./engine/block/kinds/method.js";
 export type { Expectation, ExpectBlock, ExpectBlockOptions, ExpectList } from "./engine/block/kinds/expect.js";
 export type { PageBlock, PageBlockOptions, PageExpectEntry, PageMethodEntry, PageMethods } from "./engine/block/kinds/page.js";
-export type { EffectBlock } from "./engine/block/kinds/effect.js";
 export type { MapBuilderOptions } from "./engine/flow/map-builder.js";
 export type { ActionPage } from "./engine/block/action-page.js";
 export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./analysis/graph.js";
@@ -118,7 +116,6 @@ export type { ExtensionSpec } from "./engine/config.js";
 export type { WebServerConfig } from "./runtime/webserver.js";
 
 // Types the API above refers to (each is part of a public signature).
-export type { EffectExtras } from "./engine/block/kinds/effect.js";
 export type { BlockBase, RoutedBlockBase } from "./engine/checkpoint/route.js";
 export type { RunEventListener } from "./engine/run/events.js";
 export type { ScanOptions } from "./manifest/project.js";

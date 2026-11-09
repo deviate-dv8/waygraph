@@ -197,7 +197,9 @@ Also:
                                            methods, expects) are used through it: Page.nav,
                                            Page.do.x, Page.expects.y. --codemod expect: Assert
                                            Blocks -> Expect Blocks, .assert() steps -> the
-                                           expect: [...] of the step before.
+                                           expect: [...] of the step before. --codemod effect:
+                                           Effect Blocks -> Methods (defineMethodBlock, its
+                                           instanceOptions kept), *.effect.block.ts renamed.
   waygraph extensions install [project] [--update]
                                            Download the browser extensions listed in
                                            waygraph.config.* (extensions: ["hoppscotch"]) into

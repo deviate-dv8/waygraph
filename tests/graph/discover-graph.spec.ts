@@ -65,11 +65,11 @@ export const MysteryBlock = defineBlock({
 });
 `;
 
-const ADD_TO_CART_EFFECT_BLOCK = `
-import { defineEffectBlock } from "waygraph";
+const ADD_TO_CART_ROWS_BLOCK = `
+import { defineMethodBlock } from "waygraph";
 import { CartPage } from "../states.js";
 
-export const AddToCartBlock = defineEffectBlock({
+export const AddToCartBlock = defineMethodBlock({
   name: "add-to-cart",
   to: CartPage,
   requires: [],
@@ -141,14 +141,14 @@ test("discoverGraph: a Block with no `from` is reachable from anywhere ('*'), sa
   });
 });
 
-test("discoverGraph: an Effect Block is discovered like a Method", async () => {
-  await withFixtureProject("effect-salt", { "add-to-cart.effect.block.ts": ADD_TO_CART_EFFECT_BLOCK }, async (dir) => {
+test("discoverGraph: a Method on one row of many (instanceOptions) is discovered like any Method", async () => {
+  await withFixtureProject("row-method", { "add-to-cart.method.block.ts": ADD_TO_CART_ROWS_BLOCK }, async (dir) => {
     const graph = await discoverGraph(dir);
     expect(graph.skipped).toEqual([]);
     expect(graph.edges).toEqual([
       {
         block: "add-to-cart",
-        file: "src/blocks/add-to-cart.effect.block.ts",
+        file: "src/blocks/add-to-cart.method.block.ts",
         from: "*",
         to: "CartPage",
         kind: "action",

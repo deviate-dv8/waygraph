@@ -102,7 +102,7 @@ Page Block (`#map/(app)/login/_page.block`) and uses `LoginPage.nav` and `LoginP
   page count (e.g. via a scoped debug script) before assuming a plain `.first()` is safe
   long-term. A `.first()`-shaped Block is a legitimate STARTING point for a page that only
   ever has one real row to act on - promote it to a mem-driven `defineMemNavBlock` /
-  `defineEffectBlock` (see `--skill-convention`, and
+  a `defineMethodBlock` with `instanceOptions` (see `--skill-convention`, and
   `node_modules/waygraph/examples/saucedemo/src/blocks/saucedemo-web/inventory/` for the real pattern) once a second
   real row genuinely exists to pick between, not before.
 - **Prefer the real Pilot overlay over ad hoc status output** when driving a headful session

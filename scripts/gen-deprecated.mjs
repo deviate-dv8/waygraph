@@ -51,7 +51,7 @@ ${found.length ? `| Name | Kind | Use instead |\n| --- | --- | --- |\n${rows}` :
 | \`defineMethodBlock<In, Out>({ … })\` / \`defineEffectBlock<In, Out>({ … })\` | \`defineMethodBlock({ from: In, to: Out, … })\` (leave \`from\` out for "from anywhere") |
 | \`defineApiBlock\` without \`to\` | \`defineApiBlock({ to: Out, … })\` |
 | \`defineActionBlock\`, \`ActionBlock\` | \`defineMethodBlock\`, \`MethodBlock\` |
-| \`defineMemEffectBlock\`, \`MemEffectBlock\` | \`defineEffectBlock\`, \`EffectBlock\` |
+| \`defineMemEffectBlock\`, \`MemEffectBlock\` | \`defineMethodBlock\`, \`MethodBlock\` (its \`requires\` and \`instanceOptions\`) |
 | \`highlights: [...]\` on an instruction, a Nav or a Page Block; \`WaygraphHighlight\` | \`.stubAfter((ctx) => { ctx.ui.ring(…) })\` |
 | A stub written as \`(out) => ({ slot: … })\`, and per-slot \`todos\` | \`(ctx) => { ctx.ui.ring(…); ctx.ui.todos(…) }\` |
 | \`ctx.todos([...])\` with \`ctx.todoId\` / \`todoTitle\` / \`todoStyle\` / \`todoPos\` | \`ctx.ui.todos(id, items, { title, style, pos, index })\` (codemod \`flows\`) |
@@ -144,6 +144,18 @@ A stub paints through \`ctx.ui\`; \`ctx\` itself holds only what a stub reads (\
 | \`--autoplay\` / \`--no-autoplay\`, \`--stepper-mini\`, \`--no-ff\`, \`try auto --headed\` | \`--auto-next\` / \`--no-auto-next\`, \`--mini\`, \`--ff-disabled\`, \`try auto\` |
 | \`WAYGRAPH_TODO_UI=legacy\` / \`classic\` | \`WAYGRAPH_TODO_UI=full\` |
 | \`create-waygraph\` (npm) | \`npx waygraph init\` |
+
+## Removed in 0.16.16
+
+An Effect Block was a Method that also listed the rows it could act on; a Method lists them the same way.
+\`waygraph upgrade --codemod effect\` converts a project.
+
+| Removed | Use instead |
+| --- | --- |
+| \`defineEffectBlock\`, \`EffectBlock\` | \`defineMethodBlock\`, \`MethodBlock\`, with the same \`requires\` and \`instanceOptions\` |
+| \`EffectExtras\` | the Method's own \`requires\` and \`instanceOptions\` fields |
+| \`*.effect.block.ts\` files | \`*.method.block.ts\` (the codemod renames them and their imports) |
+| the \`effect\` kind (manifest, run log) | \`method\` |
 
 ## Removed in 0.16.11
 

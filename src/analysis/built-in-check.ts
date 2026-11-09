@@ -11,7 +11,7 @@ export interface BuiltInFinding {
   detail: string;
 }
 
-const OUTCOME_CAST = /^(?:MethodBlock|EffectBlock|NavBlock|PageBlock)</;
+const OUTCOME_CAST = /^(?:MethodBlock|NavBlock|PageBlock)</;
 
 /** `X as MethodBlock<A, B>`: narrowing a branching Block to one outcome by hand. */
 function castToOutcome(sf: SourceFile): string | undefined {

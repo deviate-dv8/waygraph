@@ -33,7 +33,7 @@ export const homeCartFlow = engine
   .map()
   .gotoPage(
     HomePage.nav.stubBefore((ctx) => {
-      ctx.ui.title("Scaffold: Shop (Effect + clear)");
+      ctx.ui.title("Scaffold: Shop (add + clear)");
     }),
   )
   .method(AddShown, { expect: [HomePage.expects.itemAdded] })

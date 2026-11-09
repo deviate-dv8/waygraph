@@ -1,6 +1,6 @@
 ---
 name: waygraph-author
-description: Author waygraph Nav/Page/Method/Effect blocks and flows from an approved plan. Use after planning, or when extending coverage for a named route.
+description: Author waygraph Nav/Page/Method blocks and flows from an approved plan. Use after planning, or when extending coverage for a named route.
 model: sonnet
 color: green
 tools:

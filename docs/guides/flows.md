@@ -33,7 +33,7 @@ and it throws, naming the factory to use.
 |---|---|
 | `.gotoPage(b)` | a Nav or Page Block on your app |
 | `.gotoExternal(b)` | a Nav Block on another site (a mail catcher, a REST client) |
-| `.method(b)` | a Method, Effect or API Block |
+| `.method(b)` | a Method or API Block |
 | `.set(key, value)` | sets a mem key for the steps after it: a value, or one worked out from mem |
 | `.steps(part)` | a part made with `steps()`: the same steps in several flows |
 | `.flow(sub, { reset, expect })` | another flow's steps, in the same page and mem; `expect` is checked once it's done |

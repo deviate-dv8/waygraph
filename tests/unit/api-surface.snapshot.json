@@ -51,7 +51,6 @@
   "defineApiBlock",
   "defineBlock",
   "defineConfig",
-  "defineEffectBlock",
   "defineExpectBlock",
   "defineMemNavBlock",
   "defineMethodBlock",

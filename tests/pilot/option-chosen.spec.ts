@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { MemPage, MemKey, registerMemStub, checkpoint, defineEffectBlock, type WaygraphInstanceOption } from "../../src/index.js";
+import { MemPage, MemKey, registerMemStub, checkpoint, defineMethodBlock, type WaygraphInstanceOption } from "../../src/index.js";
 import { optionChosen } from "../../src/live/auto/mem.js";
 import type { BlockEntry } from "../../src/manifest/project.js";
 
-// `reach` runs a per-row step (an Effect) only when mem already says which row.
+// `reach` runs a per-row step (a Method with instanceOptions) only when mem already says which row.
 
 const page = {} as import("@playwright/test").Page;
 const effect = (key: MemKey<string>) => ({
-  block: defineEffectBlock({
+  block: defineMethodBlock({
     name: "add-row",
     from: checkpoint("List"),
     to: checkpoint("List"),

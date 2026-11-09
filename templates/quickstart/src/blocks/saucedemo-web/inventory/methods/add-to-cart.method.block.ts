@@ -1,17 +1,17 @@
-import { defineEffectBlock, type WaygraphInstanceOption } from "waygraph";
+import { defineMethodBlock, type WaygraphInstanceOption } from "waygraph";
 import { ItemInCart } from "../../../../states/checkout.states.js";
 import { SaucedemoKeys } from "../../../../states/checkout.mem-keys.js";
 import { collectAddableItems, InventorySel } from "./inventory-items.js";
 
 /**
- * Kind: Effect
- * Helper: defineEffectBlock
+ * Kind: Method (one row of many)
+ * Helper: defineMethodBlock
  * Route: saucedemo-web/inventory/methods/  (= /inventory.html)
  *
  * Mutates cart for the mem-picked product. waygraph auto lists one
  * "Add ..." row per live Add button via instanceOptions.
  */
-export const AddToCartBlock = defineEffectBlock({
+export const AddToCartBlock = defineMethodBlock({
   name: "add-to-cart",
   description:
     "Adds the item named by mem (saucedemo.selectedItem) to the cart.",

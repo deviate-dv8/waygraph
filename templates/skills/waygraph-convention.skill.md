@@ -23,7 +23,7 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
    two fields or `.fill()`s and `.click()`s in one `act()` (`waygraph check`: `multi-input`,
    `combined-action`). Canonical shape: `node_modules/waygraph/examples/saucedemo/src/blocks/saucedemo-web/methods/`.
 2. **Navigation only inside Nav.** `page.goto` / NavBlock `click` live in
-   `defineNavBlock` / `defineNavClickBlock` only. Method/Effect `act` uses ActionPage
+   `defineNavBlock` / `defineNavClickBlock` only. A Method's `act` uses ActionPage
    (no goto) even when the app changes URL as a side effect of a button click.
    A Nav for a page that only exists after something else (every in-app page after sign-in)
    declares `from: [...]` with the Checkpoints it is valid from (a `SIGNED_IN` list in
@@ -91,7 +91,7 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
    `verify: []` placeholder (codegen's honest way of not guessing) is indistinguishable from
    a Block that was never given real verification at all, and it passes `check`/`typecheck`/
    the orphan scan/`tsc` silently unless something is actually looking for it. Something is:
-   `defineMethodBlock`/`defineEffectBlock` where `In`/`Out` genuinely differ (a transition,
+   `defineMethodBlock` where `In`/`Out` genuinely differ (a transition,
    not a self-loop) needs a non-empty `verify`, same for `defineExpectBlock`. Opt out only
    when the step's expectations are what actually confirm the transition - `// waygraph-ignore: empty-verify`.
 
@@ -240,11 +240,11 @@ export const SubmitLoginBlock = defineMethodBlock({
 });
 ```
 
-An Effect: one action on one row of many; `instanceOptions` lists the rows for `auto` / Pilot menus, each setting the
-key `act` reads.
+A Method on one row of many: `requires` names the row's key in mem, and `instanceOptions` lists the rows for `auto` /
+Pilot menus, each setting the key `act` reads.
 
 ```ts
-export const AddToCartBlock = defineEffectBlock({
+export const AddToCartBlock = defineMethodBlock({
   name: "add-to-cart",
   from: [Inventory, ItemInCart],                     // the list, before or after an item is in the cart
   to: ItemInCart,
@@ -336,13 +336,12 @@ Check an API Block's exact `call` signature and the helpers' options against the
 |------|------|--------|--------------|
 | Page | `*.page.block.ts` / `_page.block.ts` | `definePageBlock` | Optional deep-link |
 | Nav | `nav-*.block.ts` / `_nav.block.ts` | `defineNavBlock` / `defineNavClickBlock` | Yes (`url` XOR `click`) |
-| Effect | `*.effect.block.ts` in `methods/` / `_methods/` | `defineEffectBlock` | No |
-| Method | `*.method.block.ts` in `methods/` / `_methods/` | `defineMethodBlock` | No |
+| Method | `*.method.block.ts` in `methods/` / `_methods/` | `defineMethodBlock` (one row of many: `requires` + `instanceOptions`) | No |
 | Expect | `*.expect.block.ts` in `_expect/` (freeform: `expect/`) | `defineExpectBlock` (in an `expect: [...]`, never a step) | No |
 | Read | `<page>.read.block.ts` / `_read.block.ts` (namespace: `src/states/<area>.reads.ts` / `_reads.ts`) | `defineReadBlock({ from, instruction: { read } })` | No |
 | API | `*.api.block.ts` in `methods/` | `defineApiBlock({ from, to, call })` (a real HTTP request; `map().method(...)`) | No |
 
-Effects that appear in `waygraph auto` menus need `instanceOptions` that scan the live DOM
+Methods on one row of many, in `waygraph auto` menus, need `instanceOptions` that scan the live DOM
 (or mem) for labeled rows.
 
 ## Two layouts (same Block kinds)

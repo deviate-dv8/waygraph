@@ -249,7 +249,7 @@ async function runTryDemo(): Promise<void> {
       "Run again in that temp folder:\n" +
       `  cd ${destDir}\n` +
       "  npm run demo    # step-through, manual Next (--step --no-auto-next)\n" +
-      "  npm run auto    # interactive explore (Effect Add/Remove, MemNav Open details)\n" +
+      "  npm run auto    # interactive explore (Add/Remove a row, MemNav Open details)\n" +
       "  npm test        # playwright chained-flows test\n\n" +
       "Permanent full example in this package: examples/saucedemo\n" +
       "Keep a permanent scaffold in your tree: waygraph init my-app\n",

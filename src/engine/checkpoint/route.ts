@@ -21,7 +21,7 @@ export function markRoute(block: object, from: readonly string[], to: readonly s
 export type BlockBase<In extends Checkpoint<string>, Out extends Checkpoint<string>> = Parameters<typeof defineBlock<In, Out>>[0];
 
 /**
- * A Method or Effect that says where it runs: `from` (one Checkpoint value or a list; leave it out for "from anywhere") and
+ * A Method that says where it runs: `from` (one Checkpoint value or a list; leave it out for "from anywhere") and
  * `to`. `resolve` may be left out when `to` is one Checkpoint; it then always lands there.
  */
 import type { ExpectList } from "../block/kinds/expect.js";

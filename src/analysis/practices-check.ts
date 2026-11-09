@@ -90,7 +90,7 @@ function verifyOf(call: CallExpression): "none" | "empty" | "some" {
   return Node.isArrayLiteralExpression(init) && init.getElements().length === 0 ? "empty" : "some";
 }
 
-/** A Method/Effect's route as written (`from: LoginPage, to: LoggedIn`) - a transition when they differ. */
+/** A Method's route as written (`from: LoginPage, to: LoggedIn`) - a transition when they differ. */
 function routeOf(call: CallExpression): { from: string; to: string } | undefined {
   const options = call.getArguments()[0];
   if (!Node.isObjectLiteralExpression(options)) return undefined;
@@ -165,7 +165,7 @@ export function collectPracticeWarnings(
     const ignore = ignoredKindsForFile(sf.getFullText());
     const facts = factsOf(sf);
 
-    const methods = [...facts.defines("defineMethodBlock"), ...facts.defines("defineEffectBlock")];
+    const methods = facts.defines("defineMethodBlock");
     if (methods.length > 0) {
       const fills = facts.callsTo("fill");
       const clicks = facts.callsTo("click");
@@ -173,7 +173,7 @@ export function collectPracticeWarnings(
         warnings.push({
           kind: "multi-input",
           file: rel,
-          detail: `Method/Effect act() has ${fills} .fill() calls — one distinct input per Block (split into separate defineMethodBlock files, e.g. fill-username + fill-password + submit-login)`,
+          detail: `Method act() has ${fills} .fill() calls — one distinct input per Block (split into separate defineMethodBlock files, e.g. fill-username + fill-password + submit-login)`,
         });
       }
       if (!isIgnored("combined-action", ignore) && fills >= 1 && clicks >= 1) {
@@ -181,7 +181,7 @@ export function collectPracticeWarnings(
           kind: "combined-action",
           file: rel,
           detail:
-            "Method/Effect act() mixes .fill() and .click() — fill and submit must be separate Blocks (see examples/saucedemo login split)",
+            "Method act() mixes .fill() and .click() — fill and submit must be separate Blocks (see examples/saucedemo login split)",
         });
       }
       for (const call of methods) {

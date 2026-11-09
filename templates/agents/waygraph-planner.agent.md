@@ -1,6 +1,6 @@
 ---
 name: waygraph-planner
-description: Plan waygraph route coverage (page folders, Blocks, flows) for an existing web app. Use when diving into a product codebase to map URLs to Nav/Page/Method/Effect blocks before writing code.
+description: Plan waygraph route coverage (page folders, Blocks, flows) for an existing web app. Use when diving into a product codebase to map URLs to Nav/Page/Method blocks before writing code.
 model: sonnet
 color: blue
 tools:
@@ -27,7 +27,7 @@ workflow on top of it, not a restatement of them.
      button, a row's status); it only reads, and goes in a step's `expect: [...]` (or a Block's
      own `expect` when every use expects it), never as a step. Plan each case's expected results
      as these, next to the step they judge. Accepts `requires` for a mem-aware Trait's input.
-   - Effect — `defineEffectBlock` + `instanceOptions` for per-row auto menus (add/remove/toggle)
+   - A Method on one row of many — `defineMethodBlock` + `requires` + `instanceOptions` for per-row auto menus (add/remove/toggle)
 4. **Mem keys:** one `keys("ns")<{ ... }>()` namespace per area (`SaucedemoKeys.credentials`). Never rely on substring `"login"` defaults — email keys like `login-email` stay strings; credential objects use exact names such as `saucedemo.credentials` / `login-credentials`.
 5. Prefer `click` NavBlocks when the product has a real control; use `url` for deep links / email tokens.
 6. **People are accounts.** Each role that signs in (`planner`, `viewer`, ...) is an `account(name, { signIn })` in

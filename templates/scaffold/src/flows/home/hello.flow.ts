@@ -25,7 +25,7 @@ const HelloShown = HomePage.expects.hello
     });
     ctx.ui.ring("sub", { selector: DemoSel.sub, label: "Subcopy", duration: 1500 });
     ctx.ui.slides([
-      { caption: "Scaffold covers auto + narration", detail: "Page hub, Effect instanceOptions, stubs, YAP.", tag: "YAP", duration: true },
+      { caption: "Scaffold covers auto + narration", detail: "Page hub, a Method's instanceOptions, stubs, YAP.", tag: "YAP", duration: true },
     ]);
   })
   .stubOnError((ctx) => {

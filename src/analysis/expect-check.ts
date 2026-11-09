@@ -43,11 +43,11 @@ function verifyItems(call: CallExpression): Node[] | undefined {
 }
 
 /**
- * A Method or Effect whose verify reads a message (a toast, an alert, an error): what a scenario expects, not proof the
+ * A Method whose verify reads a message (a toast, an alert, an error): what a scenario expects, not proof the
  * step took effect. A text check on anything else (a count, a field) can be the Block's own contract.
  */
 function outcomeInVerify(sf: SourceFile): string | undefined {
-  for (const call of [...callsTo(sf, "defineMethodBlock"), ...callsTo(sf, "defineEffectBlock")]) {
+  for (const call of callsTo(sf, "defineMethodBlock")) {
     for (const item of verifyItems(call) ?? []) {
       if (!Node.isCallExpression(item) || !OUTCOME.has(item.getExpression().getText())) continue;
       if (MESSAGE.test(item.getArguments()[0]?.getText() ?? "")) return item.getText().slice(0, 80);

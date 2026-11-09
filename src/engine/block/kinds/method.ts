@@ -12,9 +12,10 @@ import type { RoutedBlockBase } from "../../checkpoint/route.js";
  * TypeScript salt over {@link defineBlock} for one-shot non-nav app steps
  * (submit, upload, finish, logout) - **methods** on a page. Same runtime Block;
  * marks `__waygraphSalt = "method"` so auto/docs can tell Method from bare
- * {@link defineBlock}. Does not force `instanceOptions` - use
- * {@link defineEffectBlock} when the auto menu should spawn one row per live
- * DOM instance. Prefer hanging methods off a {@link definePageBlock} hub.
+ * {@link defineBlock}. A Method on one row of many (add this item, remove that
+ * one) names the row in mem (`requires`) and lists the rows on the page
+ * (`instanceOptions`), so `waygraph auto` offers one menu row each. Prefer
+ * hanging methods off a {@link definePageBlock} hub.
  */
 export type MethodBlock<
   In extends Checkpoint<string>,

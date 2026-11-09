@@ -46,8 +46,7 @@ defineMethodBlock({ name: "sign-out", from: Dashboard, to: Start, instruction: {
 |---|---|---|---|
 | Nav | open a page by URL or by a link | `defineNavBlock` (`url`) · `defineNavClickBlock` (`click`) | to its `checkpoint` |
 | Page | say "you are here" and list what you can do | `definePageBlock` | no |
-| Method | do one thing: fill, click, submit | `defineMethodBlock` | `from` → `to` |
-| Effect | do one thing to one row of many | `defineEffectBlock` | `from` → `to` |
+| Method | do one thing: fill, click, submit (or to one row of many: [rows](#a-method-on-one-row-of-many)) | `defineMethodBlock` | `from` → `to` |
 | Expect | what a scenario expects on a page: reads and judges, changes nothing | `defineExpectBlock` | no (an expectation, not a step) |
 | API | make an HTTP call, no page | `defineApiBlock` | `from` → `to` |
 | Read | say what the page shows | `defineReadBlock` | never ([Read Blocks](./reads)) |
@@ -161,12 +160,13 @@ naming the step and the page), and the newest per page as `.waygraph/screenshots
 [Waygraph UI](./ui) shows a page's newest on its map, and each step's on the run. waygraph's own overlay (the demo's
 panel, rings, banner) is left out of the picture; a screenshot that can't be taken never fails the step.
 
-## Effect: one row of many
+## A Method on one row of many
 
-An Effect is a Method that also lists the rows it can act on, so `waygraph auto` shows "Add Alpha", "Add Beta"…:
+A Method that acts on one row of several (add *this* item) names the row in mem (`requires`) and lists the rows on the
+page (`instanceOptions`), so `waygraph auto` shows "Add Alpha", "Add Beta"…:
 
 ```ts
-defineEffectBlock({
+defineMethodBlock({
   name: "add-item",
   from: CanAddItem,
   to: ItemInCart,

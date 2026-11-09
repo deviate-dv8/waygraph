@@ -1,12 +1,12 @@
 import {
-  defineEffectBlock,
+  defineMethodBlock,
   type WaygraphInstanceOption,
 } from "waygraph";
 import { CartEmpty, ItemInCart } from "../../../../states/demo.states.js";
 import { DemoKeys } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
-export const RemoveItemBlock = defineEffectBlock({
+export const RemoveItemBlock = defineMethodBlock({
   name: "remove-item",
   description: "Removes the mem-selected catalog item from the cart.",
   from: ItemInCart,

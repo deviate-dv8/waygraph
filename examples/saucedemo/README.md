@@ -1,7 +1,7 @@
 # Sauce Demo
 
 A complete waygraph project against [saucedemo.com](https://www.saucedemo.com), in the freeform layout
-(`src/blocks/saucedemo-web/<page>/`): accounts, Read Blocks, per-row Effects, fast-forward steps, an API Block, demo
+(`src/blocks/saucedemo-web/<page>/`): accounts, Read Blocks, per-row Methods, fast-forward steps, an API Block, demo
 narration. `waygraph try demo` plays a copy of it (`templates/quickstart`, synced with `npm run sync:quickstart`).
 
 ```bash

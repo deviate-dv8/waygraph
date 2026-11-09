@@ -4,7 +4,7 @@ import type { Page, Locator } from "@playwright/test";
  * Kind: helper (not a Block)
  * Route: saucedemo-web/inventory/methods/  (= /inventory.html)
  *
- * DOM selectors + collectors for Effect / MemNav instanceOptions. Discovery
+ * DOM selectors + collectors for the instanceOptions of the cart Methods and MemNav. Discovery
  * ignores this file (no *.block.ts suffix). InventorySel = strings only;
  * collectors use Sel to spawn auto menu rows.
  */

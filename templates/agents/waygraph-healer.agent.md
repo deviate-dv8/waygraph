@@ -20,7 +20,7 @@ You are a waygraph healer. Fix failing Blocks/Flows with evidence — do not rew
 2. Confirm base URL / fixture server / env (`WAYGRAPH_BASE_URL`, Mailpit URL).
 3. Check Mem: wrong type for a key (object vs string) is a common auto bug — `login-email` must be a string address, not `{username,password}`.
 4. Nav vs Method: accidental `page.goto` outside NavBlock → move to `defineNavBlock`.
-5. Effect auto menus: `instanceOptions` must match live DOM; empty menu usually means wrong selector or not on the page yet.
+5. Row menus in auto (a Method's `instanceOptions`) must match live DOM; empty menu usually means wrong selector or not on the page yet.
 6. Mailpit: filter by the real recipient email in Mem; parallel runs sharing an inbox each take their own message with
    `claimOnce(...)` (the scaffold's `open-message` does).
 7. A flow that "lands elsewhere": a `{ lands: X }` step whose Block resolved to another outcome - the data is wrong, or

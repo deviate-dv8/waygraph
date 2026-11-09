@@ -1,5 +1,5 @@
 import {
-  defineEffectBlock,
+  defineMethodBlock,
   type WaygraphInstanceOption,
 } from "waygraph";
 import { CanAddItem, ItemInCart } from "../../../../states/demo.states.js";
@@ -7,7 +7,7 @@ import { DemoKeys } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
 
 /** `waygraph auto` lists one "Add …" row per live Add button via `instanceOptions`. */
-export const AddItemBlock = defineEffectBlock({
+export const AddItemBlock = defineMethodBlock({
   name: "add-item",
   description: "Adds the mem-selected catalog item to the cart.",
   from: CanAddItem,
