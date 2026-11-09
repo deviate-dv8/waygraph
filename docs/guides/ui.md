@@ -16,7 +16,7 @@ It comes with waygraph (0.16.13 and later) and needs Node 24 or newer, like the 
 install. In a project, `npx waygraph ui` runs the project's own waygraph; on an older one, update it first
 (`npm install waygraph@latest`).
 
-It prints the address (`http://localhost:3333`, or the next free port; `--port N` picks one). Ctrl-C stops it, and a
+It prints the address (`http://localhost:9294`, or the next free port; `--port N` picks one). Ctrl-C stops it, and a
 flow it's still playing, with its browser.
 
 The project is the folder you name, or the one the current folder is in: the nearest folder, here or above, with a

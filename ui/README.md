@@ -25,7 +25,7 @@ checkout's waygraph). Then in `ui/`:
 npm install
 cp .env.example .env        # WAYGRAPH_PROJECT_DIR: ../examples/saucedemo, or any waygraph project's folder
 node ace generate:key
-npm run dev                 # http://localhost:3333
+npm run dev                 # http://localhost:9294
 ```
 
 `npm run build` at the repo root builds it into `dist/ui` (`scripts/build-waygraph-ui.mjs`); `waygraph ui` starts that

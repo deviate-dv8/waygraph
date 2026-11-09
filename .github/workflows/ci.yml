@@ -108,12 +108,12 @@ jobs:
         working-directory: ui
     env:
       TZ: UTC
-      PORT: 3333
+      PORT: 9294
       HOST: localhost
       NODE_ENV: test
       LOG_LEVEL: info
       APP_KEY: ci-only-key-not-a-secret-0123456789
-      APP_URL: http://localhost:3333
+      APP_URL: http://localhost:9294
       SESSION_DRIVER: memory
     steps:
       - name: Checkout

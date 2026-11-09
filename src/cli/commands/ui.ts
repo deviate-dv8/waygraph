@@ -9,12 +9,12 @@ import { findProjectDir } from "../../runtime/waygraph-config.js";
 import { setEnv } from "../../engine/env.js";
 
 const OPTIONS = {
-  port: { type: "string", value: "N", help: "Serve on this port (default 3333, or the next free one)" },
+  port: { type: "string", value: "N", help: "Serve on this port (default 9294, or the next free one)" },
   help: { type: "boolean", help: "This help" },
 } as const;
 
-/** The port Waygraph UI asks for first. */
-const DEFAULT_PORT = 3333;
+/** The port Waygraph UI asks for first: "WAYG" on a phone keypad, and no common dev server's. */
+const DEFAULT_PORT = 9294;
 
 /**
  * `waygraph ui [project] [--port N]`: Waygraph UI on a project - its map, flows and runs, and playing a flow - at
