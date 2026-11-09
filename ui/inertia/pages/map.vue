@@ -4,15 +4,16 @@ import { VueFlow, type Edge, type Node, type VueFlowStore } from '@vue-flow/core
 import { Background } from '@vue-flow/background'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import PageNode from '~/components/graph/page_node.vue'
+import FolderNode from '~/components/graph/folder_node.vue'
 import SketchEdge from '~/components/graph/sketch_edge.vue'
 import PagePanel from '~/components/map/page_panel.vue'
 import { useStorage } from '@vueuse/core'
 import { layoutTree, type TreeDirection } from '~/lib/layout'
-import { SITE, mapEdges, pageSummary, siteMap } from '~/lib/project_graph'
+import { mapEdges, pageSummary } from '~/lib/project_graph'
 import { count } from '~/lib/format'
 import { MOVE_KINDS, kindColor } from '~/lib/kinds'
 import { urlFor } from '~/client'
-import type { ManifestBlock, ManifestReadBlock, PageFlow } from '#types/project'
+import type { ManifestBlock, ManifestReadBlock, PageFlow, SiteMap } from '#types/project'
 
 /**
  * The project's map, as a site map: each site at the root, its pages hung from it by their addresses (dashed), and every
@@ -24,6 +25,8 @@ const props = defineProps<{
   blocks: ManifestBlock[]
   readBlocks: ManifestReadBlock[]
   pageUrls: Record<string, string[]>
+  /** The site map: each site, the folders of its paths, and where each page hangs. */
+  site: SiteMap
   /** The pages in the order the project's flows reach them. */
   journey: string[]
   /** Each page's flows: those with a step that lands, may land or starts on it, and how each one's newest run went. */
@@ -38,8 +41,11 @@ const selected = ref<string | null>(null)
 /** Which way the site map grows: left to right by default; the viewer's pick is remembered in this browser. */
 const direction = useStorage<TreeDirection>('waygraph-map-direction', 'LR')
 const edgesData = computed(() => mapEdges(props.blocks))
-const site = computed(() =>
-  siteMap(props.checkpoints, props.pageUrls, props.project.baseUrl, props.blocks)
+/** The site map, from the server: the sites, the folders of their paths, each page under its place. */
+const site = computed(() => props.site)
+/** Sites and folders: nodes on the map that aren't pages, so there's no page panel to open. */
+const notPages = computed(
+  () => new Set([...props.site.sites.map((s) => s.id), ...props.site.folders.map((f) => f.id)])
 )
 
 /**
@@ -76,10 +82,24 @@ const placed = computed(() => {
     const parent = from ?? sites[0]?.id
     if (parent) parentOf.set(id, parent)
   }
+  // A page ranks by where the journey reaches it; a folder by the first of its pages the journey reaches.
+  const rank = new Map<string, number>(journey.value.map((id, i) => [id, i]))
+  const rankOf = (id: string): number => {
+    if (rank.has(id)) return rank.get(id)!
+    const under = site.value.edges.filter((e) => e.source === id).map((e) => rankOf(e.target))
+    rank.set(id, under.length ? Math.min(...under) : Number.MAX_SAFE_INTEGER)
+    return rank.get(id)!
+  }
   const childrenOf = new Map<string, string[]>()
-  for (const id of journey.value) {
+  for (const id of [...journey.value, ...site.value.folders.map((f) => f.id)]) {
     const parent = parentOf.get(id)
     if (parent) childrenOf.set(parent, [...(childrenOf.get(parent) ?? []), id])
+  }
+  for (const [parent, children] of childrenOf) {
+    childrenOf.set(
+      parent,
+      [...children].sort((a, b) => rankOf(a) - rankOf(b))
+    )
   }
   const roots = [...sites.map((s) => s.id), ...journey.value.filter((id) => !parentOf.has(id))]
   // Pages with a screenshot are taller: every box in a row gets the same height.
@@ -104,6 +124,12 @@ const nodes = computed<Node[]>(() => {
         flows: 0,
         failing: 0,
       },
+    })),
+    ...site.value.folders.map((f) => ({
+      id: f.id,
+      type: 'folder',
+      position: placed.value.get(f.id) ?? { x: 0, y: 0 },
+      data: { label: f.label, path: f.path },
     })),
     ...props.checkpoints.map((id) => {
       const page = pageSummary(id, props.blocks, props.readBlocks)
@@ -203,7 +229,7 @@ const shotUrl = (checkpoint: string): string | undefined =>
     : undefined
 
 const page = computed(() =>
-  selected.value && !selected.value.startsWith(SITE)
+  selected.value && !notPages.value.has(selected.value)
     ? pageSummary(selected.value, props.blocks, props.readBlocks)
     : null
 )
@@ -225,6 +251,9 @@ const page = computed(() =>
     >
       <template #node-page="nodeProps">
         <PageNode v-bind="nodeProps" />
+      </template>
+      <template #node-folder="nodeProps">
+        <FolderNode v-bind="nodeProps" />
       </template>
       <template #edge-sketch="edgeProps">
         <SketchEdge v-bind="edgeProps" />

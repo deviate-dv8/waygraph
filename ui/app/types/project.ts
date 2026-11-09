@@ -135,3 +135,37 @@ export type PlaywrightUi = {
   /** The one flow it shows (a flow's page opened it), or null for every flow. */
   flow: string | null
 }
+
+/** A move between pages on the map: one per (from, to) pair, with every Block that makes it. */
+export type MapEdge = {
+  id: string
+  source: string
+  target: string
+  blocks: ManifestBlock[]
+}
+
+/** A site the project's pages live on: its origin and how the map names it. */
+export type Site = {
+  id: string
+  origin: string
+  label: string
+}
+
+/** A path segment on the way to pages that's no page of its own: `/platform`, holding `/platform/plant`, `/platform/lines`... */
+export type Folder = {
+  id: string
+  origin: string
+  /** Its full path on its site. */
+  path: string
+  /** Its path past the folder or site it hangs from: `plant/` under `/platform`. */
+  label: string
+}
+
+/** Where each page sits in its site, and the dashed edges that hang it there. */
+export type SiteMap = {
+  sites: Site[]
+  folders: Folder[]
+  /** Each page's address (its first known one) as it reads on the map: a path on its site. */
+  paths: Record<string, string>
+  edges: (MapEdge & { site: true })[]
+}

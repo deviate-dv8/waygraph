@@ -21,8 +21,10 @@ for the stack are in `.claude/skills/` (adonisjs, nuxt-ui, vue-*, vite, vitest; 
   JSON), imported as `#types/project` on both sides.
 - `inertia/pages/`: map, flows, runs, playwright, settings, setup (no project set). `inertia/layouts/workspace.vue`: the canvas with its
   floating islands.
-- `inertia/lib/project_graph.ts`: the map's model: the site map (`siteMap`: sites, each page under the page or site its
-  address hangs from) and the moves between pages (`mapEdges`); `inertia/lib/layout.ts` lays the tree out, top down.
+- `app/services/site_map.ts`: the site map, worked out on the server and passed to the map page: sites, a folder for
+  each path segment no page has (`/platform`, `/platform/plant`), each page under the page, folder or site its address
+  hangs from. `inertia/lib/project_graph.ts`: the moves between pages (`mapEdges`) and a page's panel (`pageSummary`);
+  `inertia/lib/layout.ts` lays the tree out.
 - `inertia/components/graph/`: Vue Flow nodes and edges. `inertia/components/sketch/sketch_box.vue` and
   `inertia/lib/sketch.ts`: the hand-drawn shapes.
 

@@ -2,6 +2,7 @@ import { inject } from '@adonisjs/core'
 import type { HttpContext } from '@adonisjs/core/http'
 import { ProjectService } from '#services/project_service'
 import { flowOfRun, pageFlows } from '#services/page_flows'
+import { siteMap } from '#services/site_map'
 import type { Manifest, RunDetail } from '#types/project'
 
 /** The project's map: its pages (Checkpoints), the Blocks between them, what each page shows and can be expected. */
@@ -23,6 +24,12 @@ export default class WorkspacesController {
       blocks: manifest.blocks,
       readBlocks: manifest.readBlocks,
       pageUrls: manifest.pageUrls ?? {},
+      site: siteMap(
+        manifest.checkpoints,
+        manifest.pageUrls ?? {},
+        manifest.project.baseUrl,
+        manifest.blocks
+      ),
       journey,
       pageFlows: pageFlows(manifest, await this.newestRuns(manifest.flows)),
       shots: await this.project.pageShots(),
