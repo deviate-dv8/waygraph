@@ -5,6 +5,9 @@ import { Background } from '@vue-flow/background'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import PageNode from '~/components/graph/page_node.vue'
 import FolderNode from '~/components/graph/folder_node.vue'
+import MapTree from '~/components/map/map_tree.vue'
+import type { TreeLabel } from '~/components/map/map_tree_row.vue'
+import { everything, only, toggled, visibleTree, type MapTree as Tree } from '~/lib/map_filter'
 import SketchEdge from '~/components/graph/sketch_edge.vue'
 import PagePanel from '~/components/map/page_panel.vue'
 import { useStorage } from '@vueuse/core'
@@ -70,8 +73,8 @@ const journey = computed(() => {
   return order
 })
 
-/** Where every node sits: the site map's tree, laid out in the chosen direction. */
-const placed = computed(() => {
+/** The site map's tree: sites at the root, folders and pages under where their address hangs. */
+const tree = computed<Tree>(() => {
   const sites = site.value.sites
   // The site map's tree: a page under the page (or site) its address hangs from; a page with no known address under the
   // page whose move first reaches it, else under the first site. Children in journey order.
@@ -102,9 +105,55 @@ const placed = computed(() => {
     )
   }
   const roots = [...sites.map((s) => s.id), ...journey.value.filter((id) => !parentOf.has(id))]
+  return { roots, childrenOf, parentOf }
+})
+
+/** What the tree beside the map hides, kept in this browser for this project. */
+const hiddenList = useStorage<string[]>(`waygraph-map-hidden:${props.project.dir}`, [])
+const hidden = computed(() => new Set(hiddenList.value))
+const setHidden = (next: Set<string>) => (hiddenList.value = [...next])
+const showTree = useStorage('waygraph-map-tree', true)
+/** Each node of the tree as its row names it. */
+const treeLabels = computed<Record<string, TreeLabel>>(() => ({
+  ...Object.fromEntries(
+    site.value.sites.map((s) => [s.id, { kind: 'site' as const, label: s.label }])
+  ),
+  ...Object.fromEntries(
+    site.value.folders.map((f) => [f.id, { kind: 'folder' as const, label: f.label, sub: f.path }])
+  ),
+  ...Object.fromEntries(
+    props.checkpoints.map((id) => [
+      id,
+      {
+        kind: 'page' as const,
+        label: id,
+        ...(site.value.paths[id] ? { sub: site.value.paths[id] } : {}),
+      },
+    ])
+  ),
+}))
+/** The nodes on the map: what the tree doesn't hide. */
+const shownTree = computed(() => visibleTree(tree.value, hidden.value))
+const shown = computed(() => {
+  const ids = new Set<string>()
+  const walk = (id: string) => {
+    ids.add(id)
+    for (const child of shownTree.value.childrenOf.get(id) ?? []) walk(child)
+  }
+  shownTree.value.roots.forEach(walk)
+  return ids
+})
+
+/** Where every shown node sits: the site map's tree, laid out in the chosen direction. */
+const placed = computed(() => {
   // Pages with a screenshot are taller: every box in a row gets the same height.
   const hasShots = Object.keys(props.shots).length > 0
-  return layoutTree(roots, childrenOf, { width: 200, height: hasShots ? 190 : 84 }, direction.value)
+  return layoutTree(
+    shownTree.value.roots,
+    shownTree.value.childrenOf,
+    { width: 200, height: hasShots ? 190 : 84 },
+    direction.value
+  )
 })
 
 const nodes = computed<Node[]>(() => {
@@ -150,7 +199,7 @@ const nodes = computed<Node[]>(() => {
         },
       }
     }),
-  ]
+  ].filter((n) => shown.value.has(n.id))
 })
 
 /** Each edge's lane: its place among the edges that leave the same node the same way, so their lines run apart. */
@@ -172,16 +221,22 @@ function ready(instance: VueFlowStore) {
   flow = instance
   fit()
 }
-watch(direction, async () => {
+// A new layout (or a canvas resized by the tree) is measured a frame after it renders: fit then.
+watch([direction, hiddenList, showTree], async () => {
   await nextTick()
-  fit()
+  requestAnimationFrame(() => requestAnimationFrame(fit))
 })
 
 const edges = computed<Edge[]>(() => {
-  const siteLanes = lanes(site.value.edges)
-  const moveLanes = lanes(edgesData.value)
+  // Only what joins two shown nodes; lanes among those, so hidden lines leave no gaps.
+  const both = (e: { source: string; target: string }) =>
+    shown.value.has(e.source) && shown.value.has(e.target)
+  const siteEdges = site.value.edges.filter(both)
+  const moves = edgesData.value.filter(both)
+  const siteLanes = lanes(siteEdges)
+  const moveLanes = lanes(moves)
   return [
-    ...site.value.edges.map((e, i) => ({
+    ...siteEdges.map((e, i) => ({
       id: e.id,
       source: e.source,
       target: e.target,
@@ -197,7 +252,7 @@ const edges = computed<Edge[]>(() => {
         highlighted: selected.value === e.target,
       },
     })),
-    ...edgesData.value.map((e, i) => {
+    ...moves.map((e, i) => {
       // A move deeper into the tree runs along it; one to a page of the same depth (or back up) brackets out to the side
       // and back, past the boxes instead of through them.
       const from = placed.value.get(e.source)
@@ -237,29 +292,47 @@ const page = computed(() =>
 
 <template>
   <WorkspaceLayout :project="props.project">
-    <VueFlow
-      :nodes="nodes"
-      :edges="edges"
-      :nodes-draggable="true"
-      :nodes-connectable="false"
-      :min-zoom="0.2"
-      class="h-full w-full"
-      @pane-ready="ready"
-      @nodes-initialized="fit"
-      @node-click="({ node }) => (selected = node.id === selected ? null : node.id)"
-      @pane-click="selected = null"
-    >
-      <template #node-page="nodeProps">
-        <PageNode v-bind="nodeProps" />
-      </template>
-      <template #node-folder="nodeProps">
-        <FolderNode v-bind="nodeProps" />
-      </template>
-      <template #edge-sketch="edgeProps">
-        <SketchEdge v-bind="edgeProps" />
-      </template>
-      <Background variant="dots" :gap="22" :size="1.3" />
-    </VueFlow>
+    <!-- Beside the page tree when it's open, so the map fits where it can be seen. -->
+    <div class="absolute inset-y-0 right-0" :class="showTree ? 'left-80' : 'left-0'">
+      <VueFlow
+        :nodes="nodes"
+        :edges="edges"
+        :nodes-draggable="true"
+        :nodes-connectable="false"
+        :min-zoom="0.2"
+        class="h-full w-full"
+        @pane-ready="ready"
+        @nodes-initialized="fit"
+        @node-click="({ node }) => (selected = node.id === selected ? null : node.id)"
+        @pane-click="selected = null"
+      >
+        <template #node-page="nodeProps">
+          <PageNode v-bind="nodeProps" />
+        </template>
+        <template #node-folder="nodeProps">
+          <FolderNode v-bind="nodeProps" />
+        </template>
+        <template #edge-sketch="edgeProps">
+          <SketchEdge v-bind="edgeProps" />
+        </template>
+        <Background variant="dots" :gap="22" :size="1.3" />
+      </VueFlow>
+    </div>
+
+    <div v-if="showTree" class="pointer-events-none absolute top-16 bottom-16 left-3 flex">
+      <MapTree
+        class="pointer-events-auto"
+        :tree="tree"
+        :hidden="hidden"
+        :labels="treeLabels"
+        :selected="selected"
+        @toggle="setHidden(toggled(tree, hidden, $event))"
+        @only="setHidden(only(tree, $event))"
+        @all="setHidden(new Set())"
+        @none="setHidden(new Set(everything(tree)))"
+        @select="selected = $event"
+      />
+    </div>
 
     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-start p-3 pt-16">
       <PagePanel
@@ -276,6 +349,16 @@ const page = computed(() =>
     <div
       class="island absolute bottom-3 left-3 flex items-center gap-3 px-3 py-2 text-xs text-(--ink-soft)"
     >
+      <UTooltip :text="showTree ? 'Hide the page tree' : 'Show the page tree'">
+        <UButton
+          icon="i-lucide-list-tree"
+          size="xs"
+          :color="showTree ? 'primary' : 'neutral'"
+          variant="ghost"
+          :aria-label="showTree ? 'Hide the page tree' : 'Show the page tree'"
+          @click="showTree = !showTree"
+        />
+      </UTooltip>
       <UTooltip :text="direction === 'LR' ? 'Lay out top down' : 'Lay out left to right'">
         <UButton
           :icon="

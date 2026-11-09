@@ -5,6 +5,9 @@ import { flowOfRun, pageFlows } from '#services/page_flows'
 import { siteMap } from '#services/site_map'
 import type { Manifest, RunDetail } from '#types/project'
 
+/** waygraph's Start Checkpoint, as the manifest names it. */
+const START = '__start__'
+
 /** The project's map: its pages (Checkpoints), the Blocks between them, what each page shows and can be expected. */
 @inject()
 export default class WorkspacesController {
@@ -13,6 +16,8 @@ export default class WorkspacesController {
   async show({ inertia, request }: HttpContext) {
     if (!this.project.dir) return inertia.render('setup', { project: null })
     const manifest = await this.project.manifest({ fresh: request.input('fresh') !== undefined })
+    // waygraph's Start is where a flow begins, before its first page: not a page on the map.
+    const pages = manifest.checkpoints.filter((tag) => tag !== START)
     // The pages in the order the project's flows reach them: the journey a site map's rows follow.
     const landsOn = new Map(manifest.blocks.map((b) => [b.name, b.to]))
     const journey = [
@@ -20,16 +25,11 @@ export default class WorkspacesController {
     ].filter((tag) => tag !== '*')
     return inertia.render('map', {
       project: manifest.project,
-      checkpoints: manifest.checkpoints,
+      checkpoints: pages,
       blocks: manifest.blocks,
       readBlocks: manifest.readBlocks,
       pageUrls: manifest.pageUrls ?? {},
-      site: siteMap(
-        manifest.checkpoints,
-        manifest.pageUrls ?? {},
-        manifest.project.baseUrl,
-        manifest.blocks
-      ),
+      site: siteMap(pages, manifest.pageUrls ?? {}, manifest.project.baseUrl, manifest.blocks),
       journey,
       pageFlows: pageFlows(manifest, await this.newestRuns(manifest.flows)),
       shots: await this.project.pageShots(),
