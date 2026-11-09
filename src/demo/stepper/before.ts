@@ -9,7 +9,7 @@ import { runStubPhase } from "../narration/narration.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
 import { logBannerDom, probeBanner } from "./banner-log.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
-import { renderBeforeStep } from "./panel-before.js";
+import { renderBeforeStep, type BeforePanelInfo } from "./panel-before.js";
 import { showSlides } from "./slides.js";
 import { probeTodoDocksOnPage } from "./todo-advance.js";
 import type { StepperContext, StepView } from "./view.js";
@@ -17,7 +17,8 @@ import { forceCollapsed } from "./view.js";
 
 const quiet = () => envFlag("WAYGRAPH_JSON");
 
-export async function showBefore(ctx: StepperContext, view: StepView): Promise<void> {
+/** Shows the step's panel and returns it, so a page load while the step runs can paint it again. */
+export async function showBefore(ctx: StepperContext, view: StepView): Promise<BeforePanelInfo> {
   const { stage } = ctx;
   // What this step's checks look at and how its expectations go are collected while it runs; the demo shows them after.
   takeCheckedElements(ctx.page);
@@ -34,7 +35,7 @@ export async function showBefore(ctx: StepperContext, view: StepView): Promise<v
   view.overlayTodoPos = stage.state.lastTodoDock?.pos || phase.todoPos || undefined;
 
   const step = view.step;
-  await renderBeforeStep(ctx.page, {
+  const panel: BeforePanelInfo = {
     index: view.index,
     total: ctx.steps.length,
     blockName: step.block.name,
@@ -62,13 +63,15 @@ export async function showBefore(ctx: StepperContext, view: StepView): Promise<v
     todoSync: appliedTodo.sync,
     todoId: stage.state.lastTodoDock?.id,
     ...paceSpeak,
-  });
+  };
+  await renderBeforeStep(ctx.page, panel);
   // renderBeforeStep syncs the active dock; this repaints every dock so a replaced one is gone.
   await stage.syncAllTodoDocks({ parallel: !!phase.todoParallel });
   if (!quiet()) {
     await logDocks(ctx, "", !!stage.state.lastTodoDock);
     logBannerDom("before", await probeBanner(ctx.page));
   }
+  return panel;
 }
 
 /** Runs the Block's stubBefore and remembers its rings, so a fill/click inside the step can find its ring. */

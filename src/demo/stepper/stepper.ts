@@ -15,6 +15,7 @@ import { presentFailPanel } from "./step-panels.js";
 import { installGate } from "./gate.js";
 import { newPacing, paceStep } from "./pacing.js";
 import { showBefore } from "./before.js";
+import { renderBeforeStep, type BeforePanelInfo } from "./panel-before.js";
 import { showAfter } from "./after.js";
 import { showOutcomeCard } from "./outcome.js";
 import { takeExpectResults } from "../../engine/run/expect.js";
@@ -74,6 +75,16 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
   // The todo docks and the device are pieces of the page's overlay layer, painted from what the steps carry: a navigation
   // inside a step (a redirect, a login bounce, an external site) brings them back with the rest of the layer.
   const layer = overlayLayer(page);
+  // The running step's panel (collapsed, with the steps' progress): a page load inside the step paints it again. First,
+  // so the docks after it repaint over the panel's own todo sync.
+  let running: BeforePanelInfo | undefined;
+  layer.register(
+    new LivePiece("step-panel", async (p) => {
+      if (!running) return;
+      await renderBeforeStep(p, running);
+      await markStepRunning(p);
+    }),
+  );
   layer.register(
     new LivePiece("todos", async (p) => {
       const dock = refs.todoDock.current;
@@ -110,18 +121,21 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
     async before(index) {
       view = viewOf(ctx, index);
       paceStep(pacing, view.step, demoFast, options.fastBlocks);
-      await showBefore(ctx, view);
+      const panel = await showBefore(ctx, view);
       applyMemEdits(ctx, view, await gate.wait());
+      running = panel;
       await markStepRunning(page);
       await labelNavClick(page, view.step);
     },
 
     async after(_index, result) {
+      running = undefined;
       await stepRan(ctx);
       await showAfter(ctx, view, result);
     },
 
     async failed(index, failure) {
+      running = undefined;
       await stepRan(ctx);
       const step = view.step;
       // An expectation that didn't hold: the card shows which held and which didn't, next to the fail panel.

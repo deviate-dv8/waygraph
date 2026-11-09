@@ -27,7 +27,8 @@ The before-step panel lists what the step expects (`expect: [...]`). After it:
   page showed; under **Now shows**, what the page's [Read Block](./reads) reads that changed since the step before
   (`cart.count 0 > 1`; a list by its size). A failed step shows the card next to its fail panel.
 - The rings show what the step's checks looked at, labelled in words: an expectation's description, or what the check
-  looked for (`shows`, `reads "Saved"`; a custom Trait's `says`).
+  looked for (`shows`, `reads "Saved"`; a custom Trait's `says`). Something no longer on the page (a check made before
+  the step went to another page) gets no ring.
 - Its Expect Blocks' own narration plays: its slides, then its rings, a case's to-do marked, a caption.
 - The panel's **The page shows** section lists every value the page's Read Blocks read.
 
@@ -79,8 +80,9 @@ When the steps end, the overlay clears and a card says the demo is done and how 
 expected**, for a flow that's meant to fail), or **Stopped** with the step and the reason; the flow's title, and how
 many steps in how long. It stays a moment (a short one with `--fast`) before the page closes, so a recording ends on it.
 
-The banner, the caption, the checklist, the device and the outcome card stay through a navigation: a step that goes to
-another page or site (a redirect, a payment provider) shows them there as they were, until a stub changes them.
+The step panel, the banner, the caption, the checklist, the device and the outcome card stay through a navigation: a
+step that goes to another page or site (a redirect, a login, a payment provider) shows them there as they were, until a
+stub changes them.
 
 `tone` is `"info"`, `"success"`, `"warning"` or `"danger"`. Blue rings are yours; grey ones are waygraph showing what
 a step does on its own (a fill, a click, a check), so the blue stands out.

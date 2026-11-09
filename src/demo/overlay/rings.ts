@@ -203,27 +203,30 @@ export async function cycleHighlightRings(page: WgPage, highlights: readonly Res
   for (const [i, h] of list.entries()) {
     const ringStarted = Date.now();
     try {
+      // A ring on something no longer on the page (a check made before the step navigated away) is skipped at once:
+      // Playwright's locator calls would each wait 30s for it to come back.
+      const hLoc = page.locator(h.selector).first();
+      if (((await hLoc.count().catch(ignorePageGone)) ?? 0) === 0) {
+        demoHighlight(h, "SKIP not on the page");
+        continue;
+      }
       await ensureSelectorInView(page, h.selector);
       await applyHighlightZoom(page, h.selector, h.zoom, h.zoomOut);
       // Prefer live in-page rect (honors device-shell scale) over Playwright's own boundingBox() -
       // but resolve the element through Playwright's OWN locator (full selector engine: >>
       // piercing, :has-text(), :visible, ...), not a raw DOM querySelector, which only understands
-      // real CSS and silently fails to match any Playwright-specific selector syntax.
-      // count() gate: a real, caught regression - Locator.evaluate() has no timeout option and
-      // auto-waits (Playwright's default ~30s) for a match to appear, unlike the instant
-      // document.querySelector it replaced. count() alone never waits, so this stays an immediate
-      // "does it exist right now" check - ensureSelectorInView above already gave the page a real
-      // moment to settle.
-      const hLoc = page.locator(h.selector).first();
-      const box =
-        ((await hLoc.count().catch(ignorePageGone)) ?? 0) > 0
-          ? await hLoc
-              .evaluate((el: HTMLElement) => {
-                const r = el.getBoundingClientRect();
-                return { x: r.x, y: r.y, width: r.width, height: r.height };
-              })
-              .catch(ignorePageGone)
-          : null;
+      // real CSS and silently fails to match any Playwright-specific selector syntax. Through a
+      // handle with a short timeout: Locator.evaluate() has none and auto-waits ~30s for a match.
+      const handle = await hLoc.elementHandle({ timeout: 500 }).catch(ignoreTimeout);
+      const box = handle
+        ? await handle
+            .evaluate((el: Element) => {
+              const r = el.getBoundingClientRect();
+              return { x: r.x, y: r.y, width: r.width, height: r.height };
+            })
+            .catch(ignorePageGone)
+        : null;
+      await handle?.dispose().catch(ignorePageGone);
       if (box && box.width > 0 && box.height > 0) {
         await showRing(page, box, h.label, h.tone || "planned", {
           size: h.size,
