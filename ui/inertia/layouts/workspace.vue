@@ -6,6 +6,8 @@ import { useToast } from '@nuxt/ui/composables'
 import AppLogo from '~/components/app_logo.vue'
 import { urlFor } from '~/client'
 import { usePlay } from '~/lib/play'
+import { appPages } from '~/lib/pages'
+import { useSettings } from '~/lib/settings'
 
 /**
  * Every workspace page: a sidebar on the left (the pages, refresh, the colour mode), as n8n and Airflow have it, and
@@ -17,44 +19,13 @@ const props = defineProps<{
 }>()
 
 const page = usePage()
-const sections = computed(() => [
-  {
-    label: 'Map',
-    icon: 'i-lucide-map',
-    to: urlFor('map'),
-    active: page.url === '/' || page.url.startsWith('/?'),
-  },
-  {
-    label: 'Flows',
-    icon: 'i-lucide-route',
-    to: urlFor('flows.index'),
-    active: page.url.startsWith('/flows'),
-  },
-  {
-    label: 'Blocks',
-    icon: 'i-lucide-boxes',
-    to: urlFor('blocks.index'),
-    active: page.url.startsWith('/blocks'),
-  },
-  {
-    label: 'Runs',
-    icon: 'i-lucide-history',
-    to: urlFor('runs.index'),
-    active: page.url.startsWith('/runs'),
-  },
-  {
-    label: 'Project',
-    icon: 'i-lucide-folder-cog',
-    to: urlFor('project.show'),
-    active: page.url.startsWith('/project'),
-  },
-  {
-    label: 'Playwright',
-    icon: 'i-lucide-flask-conical',
-    to: urlFor('playwright.show'),
-    active: page.url.startsWith('/playwright'),
-  },
-])
+const settings = useSettings()
+/** The sidebar's pages, without the ones Settings hides; the page you're on shows anyway. */
+const sections = computed(() =>
+  appPages()
+    .filter((p) => !settings.value.hiddenPages.includes(p.id) || p.isAt(page.url))
+    .map((p) => ({ label: p.label, icon: p.icon, to: p.to, active: p.isAt(page.url) }))
+)
 const fresh = computed(() => `${page.url.split('?')[0]}?fresh=1`)
 
 const { play, playing, stop } = usePlay()

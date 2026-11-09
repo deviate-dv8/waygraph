@@ -1,12 +1,14 @@
 import { useStorage } from '@vueuse/core'
 
-/** How this app plays flows, kept in the viewer's browser (the Settings page). */
+/** How this app plays flows and what its sidebar shows, kept in the viewer's browser (the Settings page). */
 export type Settings = {
   /** A demo moves on from each step by itself (`--auto-next`), instead of waiting for Next. */
   autoNext: boolean
+  /** The sidebar's pages left out of it, by id (`blocks`, `playwright`...); they still open by their address. */
+  hiddenPages: string[]
 }
 
-const DEFAULTS: Settings = { autoNext: true }
+const DEFAULTS: Settings = { autoNext: true, hiddenPages: [] }
 
 /** The settings, saved as they change; a setting added later starts at its default. */
 export function useSettings() {

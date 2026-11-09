@@ -25,6 +25,8 @@ const props = defineProps<
     lane?: number
     /** The Blocks that make this move, each shown whole as a badge in its kind's colour (instead of `label`). */
     blocks?: { name: string; kind: string; description: string }[]
+    /** Where the map planned this line's badges: beside its target, before or after it, at an offset in their stack. */
+    place?: { side: 'before' | 'after'; offset: number } | undefined
   }>
 >()
 
@@ -85,6 +87,26 @@ const geometry = computed<[string, number, number]>(() => {
     targetPosition: props.targetPosition,
   })
   return [path, labelX, labelY]
+})
+
+/**
+ * Where the badges go, when the map planned it: beside the target at the planned side, in the planned place of the stack
+ * of labels there. Left to right, before is left of the page (ending at the arrowhead), after is right of it; top down,
+ * before is above (the stack growing up), after is below (growing down). The map left room there, so they cover nothing.
+ */
+const planned = computed(() => {
+  const place = props.data?.place
+  if (!place) return null
+  const { targetX: tx, targetY: ty } = props
+  const lr = props.sourcePosition === Position.Right
+  if (lr) {
+    return place.side === 'before'
+      ? { x: tx - 16, y: ty + place.offset, shift: 'translate(-100%, -50%)', align: 'items-end' }
+      : { x: tx + 16, y: ty + place.offset, shift: 'translate(0, -50%)', align: 'items-start' }
+  }
+  return place.side === 'before'
+    ? { x: tx, y: ty - 16 - place.offset, shift: 'translate(-50%, -100%)', align: 'items-center' }
+    : { x: tx, y: ty + 16 + place.offset, shift: 'translate(-50%, 0)', align: 'items-center' }
 })
 
 /**
@@ -174,8 +196,12 @@ const head = computed(() => {
     <div
       v-if="props.data?.blocks?.length"
       class="nodrag nopan absolute flex flex-col gap-0.5"
-      :class="anchor.align"
-      :style="{ transform: `${anchor.shift} translate(${geometry[1]}px, ${geometry[2]}px)` }"
+      :class="planned?.align ?? anchor.align"
+      :style="{
+        transform: planned
+          ? `translate(${planned.x}px, ${planned.y}px) ${planned.shift}`
+          : `${anchor.shift} translate(${geometry[1]}px, ${geometry[2]}px)`,
+      }"
     >
       <UBadge
         v-for="b in props.data.blocks"

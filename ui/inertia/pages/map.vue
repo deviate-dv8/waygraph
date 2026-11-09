@@ -11,7 +11,8 @@ import { everything, only, toggled, visibleTree, type MapTree as Tree } from '~/
 import SketchEdge from '~/components/graph/sketch_edge.vue'
 import PagePanel from '~/components/map/page_panel.vue'
 import { useStorage } from '@vueuse/core'
-import { layoutTree, type TreeDirection } from '~/lib/layout'
+import { layoutTree, treeColumns, type TreeDirection } from '~/lib/layout'
+import { planLabels } from '~/lib/edge_labels'
 import { mapEdges, pageSummary } from '~/lib/project_graph'
 import { count } from '~/lib/format'
 import { MOVE_KINDS, kindColor } from '~/lib/kinds'
@@ -144,7 +145,23 @@ const shown = computed(() => {
   return ids
 })
 
-/** Where every shown node sits: the site map's tree, laid out in the chosen direction. */
+/** The lines between shown nodes: where each page hangs in the site map, and the moves between pages. */
+const shownSiteEdges = computed(() =>
+  site.value.edges.filter((e) => shown.value.has(e.source) && shown.value.has(e.target))
+)
+const shownMoves = computed(() =>
+  edgesData.value.filter((e) => shown.value.has(e.source) && shown.value.has(e.target))
+)
+/** The column (or row) each shown node is in: from the tree alone, so labels are planned before the layout. */
+const columns = computed(() =>
+  treeColumns(shownTree.value.roots, shownTree.value.childrenOf, direction.value)
+)
+/** Where each line's label sits, and the room the layout makes for them so they push boxes aside instead of covering them. */
+const labels = computed(() =>
+  planLabels([...shownSiteEdges.value, ...shownMoves.value], columns.value, direction.value)
+)
+
+/** Where every shown node sits: the site map's tree, laid out in the chosen direction, with room for the labels. */
 const placed = computed(() => {
   // Pages with a screenshot are taller: every box in a row gets the same height.
   const hasShots = Object.keys(props.shots).length > 0
@@ -152,7 +169,11 @@ const placed = computed(() => {
     shownTree.value.roots,
     shownTree.value.childrenOf,
     { width: 200, height: hasShots ? 190 : 84 },
-    direction.value
+    direction.value,
+    {
+      across: (id) => labels.value.across.get(id) ?? 0,
+      gapAfter: (column) => labels.value.gapAfter.get(column) ?? 0,
+    }
   )
 })
 
@@ -229,10 +250,8 @@ watch([direction, hiddenList, showTree], async () => {
 
 const edges = computed<Edge[]>(() => {
   // Only what joins two shown nodes; lanes among those, so hidden lines leave no gaps.
-  const both = (e: { source: string; target: string }) =>
-    shown.value.has(e.source) && shown.value.has(e.target)
-  const siteEdges = site.value.edges.filter(both)
-  const moves = edgesData.value.filter(both)
+  const siteEdges = shownSiteEdges.value
+  const moves = shownMoves.value
   const siteLanes = lanes(siteEdges)
   const moveLanes = lanes(moves)
   return [
@@ -249,16 +268,15 @@ const edges = computed<Edge[]>(() => {
         dashed: true,
         squared: true,
         lane: siteLanes[i],
+        place: labels.value.places.get(e.id),
         highlighted: selected.value === e.target,
       },
     })),
     ...moves.map((e, i) => {
       // A move deeper into the tree runs along it; one to a page of the same depth (or back up) brackets out to the side
       // and back, past the boxes instead of through them.
-      const from = placed.value.get(e.source)
-      const to = placed.value.get(e.target)
       const lr = direction.value === 'LR'
-      const deeper = !!from && !!to && (lr ? to.x > from.x + 40 : to.y > from.y + 40)
+      const deeper = (columns.value.get(e.target) ?? 0) > (columns.value.get(e.source) ?? 0)
       return {
         id: e.id,
         source: e.source,
@@ -270,6 +288,7 @@ const edges = computed<Edge[]>(() => {
           blocks: e.blocks.map((b) => ({ name: b.name, kind: b.kind, description: b.description })),
           squared: true,
           lane: moveLanes[i],
+          place: labels.value.places.get(e.id),
           highlighted: selected.value === e.source || selected.value === e.target,
         },
       }

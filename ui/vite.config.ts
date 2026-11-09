@@ -10,8 +10,9 @@ export default defineConfig({
     ui({
       router: 'inertia',
       ui: { colors: { primary: 'sketch', neutral: 'stone' } },
-      // Icons are bundled from the installed collections (scanned in the source), never fetched at run time.
-      icon: { clientBundle: { scan: true } },
+      // Icons are bundled from the installed collections (scanned in the source: components and the .ts lists that name
+      // icons, like lib/pages.ts), never fetched at run time.
+      icon: { clientBundle: { scan: { globInclude: ['inertia/**/*.vue', 'inertia/**/*.ts'] } } },
     }),
     adonisjs({ entryPoints: ['inertia/app.ts'], reload: ['resources/views/**/*.edge'] }),
   ],
