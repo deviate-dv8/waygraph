@@ -95,7 +95,7 @@ names) still works and is fine for small projects, but the Map is where the tool
 | Run tests / UI mode / open last report | `waygraph test` / `waygraph test ui` / `waygraph test report` |
 | Run a flow | `waygraph run shopFlow --data '{...}'` (or `--mem-stub`) |
 | Watch a flow with narration | `waygraph demo shopFlow` |
-| See the project in the browser: map, flows, runs, play a flow | `waygraph ui` |
+| See the project in the browser: map, flows, runs, play a flow (beta) | `waygraph ui` |
 | Explore by picking Blocks | `waygraph auto` |
 | See the whole graph | `waygraph graph` |
 | Lint your Blocks and folders | `waygraph check` / `waygraph typecheck` / `waygraph map` |

@@ -49,6 +49,7 @@ graph LR
 ```sh
 npx waygraph try demo        # watch a checkout on saucedemo.com, nothing written to your folder
 npx waygraph init my-app     # a new project that passes offline
+npx waygraph ui              # in a project: its map, flows and runs in the browser (beta)
 ```
 
 ## Guides
@@ -57,5 +58,5 @@ npx waygraph init my-app     # a new project that passes offline
 |---|---|---|
 | [Quick start](/quickstart) | [Your project](/guides/project) · [Blocks](/guides/blocks) · [Flows](/guides/flows) | [CLI](/reference/cli) |
 | [What Waygraph is](/doctrine) · [How it works](/how-it-works) | [Read Blocks](/guides/reads) · [Data](/guides/data) · [Checks](/guides/checks) | [Config](/reference/config) |
-| [Sauce Demo](/saucedemo/) | [Demo](/guides/demo) · [Testing](/guides/testing) | [API](/api/) · [Environment](/env) |
+| [Sauce Demo](/saucedemo/) | [Demo](/guides/demo) · [Testing](/guides/testing) · [Waygraph UI](/guides/ui) (beta) | [API](/api/) · [Environment](/env) |
 | | [Agents](/guides/agents) · [Mail](/guides/mail) | [Deprecated](/deprecated) |

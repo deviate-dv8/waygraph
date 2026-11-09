@@ -3,10 +3,18 @@
 The project in the browser, drawn by hand: its pages and the Blocks between them, its flows step by step with what
 each step expects, its runs, and a button to play any flow.
 
+> [!WARNING]
+> **Beta.** What its pages show and where things sit can change from one version to the next. It only reads your
+> project and plays its flows; it never changes your files.
+
 ```sh
 npx waygraph ui            # in the project, or any folder inside it
 npx waygraph ui ../shop    # another project
 ```
+
+It comes with waygraph (0.16.13 and later) and needs Node 24 or newer, like the rest of waygraph: nothing else to
+install. In a project, `npx waygraph ui` runs the project's own waygraph; on an older one, update it first
+(`npm install waygraph@latest`).
 
 It prints the address (`http://localhost:3333`, or the next free port; `--port N` picks one). Ctrl-C stops it, and a
 flow it's still playing, with its browser.
@@ -38,4 +46,3 @@ It plays with the project's own waygraph, the same as you would from a terminal,
 Nothing it shows is stored anywhere else: the map and flows come from [`waygraph manifest`](../reference/run-log#the-manifest),
 read through the project's own install, and the runs from `.waygraph/runs/`. It never changes the project's files.
 
-Needs Node 24 or newer, like the rest of waygraph.

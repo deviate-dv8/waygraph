@@ -27,6 +27,7 @@ cd my-app
 npm install
 npx playwright install chromium
 npm test                 # passes offline straight away
+npx waygraph ui          # its map, flows and runs in the browser (beta)
 ```
 
 Then:
