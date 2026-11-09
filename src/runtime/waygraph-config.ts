@@ -179,6 +179,31 @@ export async function loadWaygraphConfig(projectDir: string): Promise<WaygraphCo
   return undefined;
 }
 
+/** The project's config file, the one {@link loadWaygraphConfig} reads (relative to the project); undefined without one. */
+export function configFileOf(projectDir: string): string | undefined {
+  for (const name of configCandidates()) {
+    const p = isAbsolute(name) ? name : join(projectDir, name);
+    if (existsSync(p)) return isAbsolute(name) ? p : name;
+  }
+  return undefined;
+}
+
+/** A config as plain JSON, to show it: a function, a pattern or a class instance becomes a word saying what it is. */
+export function configAsJson(value: unknown): unknown {
+  if (value === null || ["string", "number", "boolean"].includes(typeof value)) return value;
+  if (typeof value === "function") return `(function${value.name ? ` ${value.name}` : ""})`;
+  if (value instanceof RegExp) return String(value);
+  if (Array.isArray(value)) return value.map(configAsJson);
+  if (typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, configAsJson(v)]),
+    );
+  }
+  return value === undefined ? null : `(${(value as object).constructor?.name ?? typeof value})`;
+}
+
 /** Sets WAYGRAPH_BASE_URL from the project's config / .env, unless a flag or the shell already set it. */
 export async function useProjectBaseUrl(projectDir: string): Promise<void> {
   if (envString("WAYGRAPH_BASE_URL")) return;

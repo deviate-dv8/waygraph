@@ -68,6 +68,8 @@ export interface Manifest {
   version: number;
   /** `baseUrl`: the address relative urls start from (`WAYGRAPH_BASE_URL`, the config's `baseUrl`), when one is set. */
   project: { name: string; dir: string; waygraph: string; baseUrl?: string };
+  /** The project's config file and what it resolves to (as JSON: a function shows as a word), when it has one. */
+  config?: { file: string; values: unknown };
   checkpoints: string[];
   maps: string[];
   blocks: ManifestBlock[];
@@ -193,9 +195,12 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
 }
 
 /** Scans the project and returns its manifest. */
-export async function buildManifest(projectDir: string, opts: ScanOptions & { baseUrl?: string | undefined } = {}): Promise<Manifest> {
-  const { baseUrl, ...scanOpts } = opts;
+export async function buildManifest(
+  projectDir: string,
+  opts: ScanOptions & { baseUrl?: string | undefined; config?: Manifest["config"] } = {},
+): Promise<Manifest> {
+  const { baseUrl, config, ...scanOpts } = opts;
   const manifest = manifestFromScan(await scanProject(projectDir, scanOpts));
-  return baseUrl ? { ...manifest, project: { ...manifest.project, baseUrl } } : manifest;
+  return { ...manifest, ...(baseUrl ? { project: { ...manifest.project, baseUrl } } : {}), ...(config ? { config } : {}) };
 }
 

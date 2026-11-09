@@ -190,6 +190,45 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/settings_controller').default['show']>>>
     }
   }
+  'project.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/project'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_controller').default['show']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_controller').default['show']>>>
+    }
+  }
+  'project.commands.store': {
+    methods: ["POST"]
+    pattern: '/project/commands'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/command').commandValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/command').commandValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'project.commands.destroy': {
+    methods: ["DELETE"]
+    pattern: '/project/commands'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_controller').default['destroy']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_controller').default['destroy']>>>
+    }
+  }
 }
 
 export namespace Route {

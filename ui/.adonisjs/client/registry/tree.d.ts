@@ -28,4 +28,11 @@ export interface ApiDefinition {
     destroy: typeof routes['playwright.destroy']
   }
   settings: typeof routes['settings']
+  project: {
+    show: typeof routes['project.show']
+    commands: {
+      store: typeof routes['project.commands.store']
+      destroy: typeof routes['project.commands.destroy']
+    }
+  }
 }

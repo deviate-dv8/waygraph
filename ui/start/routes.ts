@@ -26,3 +26,6 @@ router.get('/playwright', [controllers.Playwright, 'show']).as('playwright.show'
 router.post('/playwright', [controllers.Playwright, 'store']).as('playwright.store')
 router.delete('/playwright', [controllers.Playwright, 'destroy']).as('playwright.destroy')
 router.get('/settings', [controllers.Settings, 'show']).as('settings')
+router.get('/project', [controllers.Project, 'show']).as('project.show')
+router.post('/project/commands', [controllers.Project, 'store']).as('project.commands.store')
+router.delete('/project/commands', [controllers.Project, 'destroy']).as('project.commands.destroy')

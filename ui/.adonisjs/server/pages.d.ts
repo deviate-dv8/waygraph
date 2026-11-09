@@ -16,6 +16,7 @@ declare module '@adonisjs/inertia/types' {
     'flows/show': ExtractProps<(typeof import('../../inertia/pages/flows/show.vue'))['default']>
     'map': ExtractProps<(typeof import('../../inertia/pages/map.vue'))['default']>
     'playwright': ExtractProps<(typeof import('../../inertia/pages/playwright.vue'))['default']>
+    'project': ExtractProps<(typeof import('../../inertia/pages/project.vue'))['default']>
     'runs/index': ExtractProps<(typeof import('../../inertia/pages/runs/index.vue'))['default']>
     'runs/show': ExtractProps<(typeof import('../../inertia/pages/runs/show.vue'))['default']>
     'settings': ExtractProps<(typeof import('../../inertia/pages/settings.vue'))['default']>

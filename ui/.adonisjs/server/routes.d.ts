@@ -18,6 +18,9 @@ export type ScannedRoutes = {
     'playwright.store': { paramsTuple?: []; params?: {} }
     'playwright.destroy': { paramsTuple?: []; params?: {} }
     'settings': { paramsTuple?: []; params?: {} }
+    'project.show': { paramsTuple?: []; params?: {} }
+    'project.commands.store': { paramsTuple?: []; params?: {} }
+    'project.commands.destroy': { paramsTuple?: []; params?: {} }
   }
   GET: {
     'map': { paramsTuple?: []; params?: {} }
@@ -30,6 +33,7 @@ export type ScannedRoutes = {
     'screenshots.step': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
     'playwright.show': { paramsTuple?: []; params?: {} }
     'settings': { paramsTuple?: []; params?: {} }
+    'project.show': { paramsTuple?: []; params?: {} }
   }
   HEAD: {
     'map': { paramsTuple?: []; params?: {} }
@@ -42,14 +46,17 @@ export type ScannedRoutes = {
     'screenshots.step': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
     'playwright.show': { paramsTuple?: []; params?: {} }
     'settings': { paramsTuple?: []; params?: {} }
+    'project.show': { paramsTuple?: []; params?: {} }
   }
   POST: {
     'plays.store': { paramsTuple?: []; params?: {} }
     'playwright.store': { paramsTuple?: []; params?: {} }
+    'project.commands.store': { paramsTuple?: []; params?: {} }
   }
   DELETE: {
     'plays.destroy': { paramsTuple?: []; params?: {} }
     'playwright.destroy': { paramsTuple?: []; params?: {} }
+    'project.commands.destroy': { paramsTuple?: []; params?: {} }
   }
 }
 declare module '@adonisjs/core/types/http' {

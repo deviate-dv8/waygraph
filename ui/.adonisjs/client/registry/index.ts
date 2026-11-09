@@ -92,6 +92,24 @@ const routes = {
     tokens: [[0,"settings"]],
     types: placeholder as Registry['settings']['types'],
   },
+  'project.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/project',
+    tokens: [[0,"project"]],
+    types: placeholder as Registry['project.show']['types'],
+  },
+  'project.commands.store': {
+    methods: ["POST"],
+    pattern: '/project/commands',
+    tokens: [[0,"project"],[0,"commands"]],
+    types: placeholder as Registry['project.commands.store']['types'],
+  },
+  'project.commands.destroy': {
+    methods: ["DELETE"],
+    pattern: '/project/commands',
+    tokens: [[0,"project"],[0,"commands"]],
+    types: placeholder as Registry['project.commands.destroy']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

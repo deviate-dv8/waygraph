@@ -8,6 +8,7 @@ export const controllers = {
   Flows: () => import('#controllers/flows_controller'),
   Plays: () => import('#controllers/plays_controller'),
   Playwright: () => import('#controllers/playwright_controller'),
+  Project: () => import('#controllers/project_controller'),
   Runs: () => import('#controllers/runs_controller'),
   Screenshots: () => import('#controllers/screenshots_controller'),
   Settings: () => import('#controllers/settings_controller'),

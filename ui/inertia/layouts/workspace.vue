@@ -43,6 +43,12 @@ const sections = computed(() => [
     active: page.url.startsWith('/runs'),
   },
   {
+    label: 'Project',
+    icon: 'i-lucide-folder-cog',
+    to: urlFor('project.show'),
+    active: page.url.startsWith('/project'),
+  },
+  {
     label: 'Playwright',
     icon: 'i-lucide-flask-conical',
     to: urlFor('playwright.show'),

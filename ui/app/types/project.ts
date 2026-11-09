@@ -46,6 +46,8 @@ export type ManifestReadBlock = {
 export type Manifest = {
   version: number
   project: { name: string; dir: string; waygraph: string; baseUrl?: string }
+  /** The config file and what it resolves to (a function shows as a word); missing before waygraph 0.16.18. */
+  config?: { file: string; values: Json }
   checkpoints: string[]
   /** The addresses each page is known by (its Navs' urls, the urls its Blocks verify); missing before waygraph 0.16.16. */
   pageUrls?: Record<string, string[]>
@@ -181,4 +183,26 @@ export type BlockStats = {
   moves: { from: string; to: string; count: number }[]
   /** How often it stayed on its page but changed the address (the query or hash: a tab, a filter). */
   addressOnly: number
+}
+
+/** One of the project's waygraph commands, as the Project page offers it. */
+export type CommandSpec = {
+  group: string
+  label: string
+  help: string
+  /** It changes the project's files: asked before it runs. */
+  writes?: boolean
+}
+
+/** A command run from the Project page: what it is, and what it printed. */
+export type CommandJob = {
+  name: string
+  command: string
+  startedAt: number
+  endedAt: number | null
+  /** Null while it runs. */
+  exitCode: number | null
+  /** Ended by Stop: its exit code doesn't say how it went. */
+  stopped: boolean
+  output: string[]
 }
