@@ -1,7 +1,7 @@
 import { engine } from "#config/waygraph.config";
 import { HomePage } from "#map/(app_base)/home/_page.block";
 import { DemoSel } from "#map/(app_base)/home/_sel";
-import { DocsPage } from "#map/(app_base)/docs/_page.block";
+import { TopBar } from "#map/(app_base)/_layout.block";
 
 const OpenHome = HomePage.nav
   .stubBefore((ctx) => {
@@ -32,8 +32,9 @@ const HelloShown = HomePage.expects.hello
     ctx.ui.ring("title", { selector: DemoSel.title, label: "Heading at failure", tag: "FAIL" });
   });
 
-/** Smoke: open home and expect the greeting (no mem), then the sibling docs/ page. Green offline. */
+/** Smoke: open home and expect the greeting (no mem), then the top bar to docs and back. Green offline. */
 export const homeHelloFlow = engine
   .map()
   .gotoPage(OpenHome, { expect: [HelloShown] })
-  .gotoPage(DocsPage.nav);
+  .gotoPage(TopBar.go.docs)
+  .gotoPage(TopBar.go.home);

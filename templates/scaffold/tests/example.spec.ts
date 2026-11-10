@@ -3,9 +3,9 @@ import { MemPage, checkpoint } from "waygraph";
 import { homeHelloFlow } from "../src/flows/home/hello.flow.js";
 import { homeCartFlow } from "../src/flows/home/cart.flow.js";
 
-test("example flow reaches Docs (home -> expect -> sibling docs/ page)", async ({ context }) => {
+test("example flow: home, then the top bar to docs and back", async ({ context }) => {
   const result = await homeHelloFlow.run(context, new MemPage());
-  expect(result).toEqual(checkpoint("Docs"));
+  expect(result).toEqual(checkpoint("Home"));
 });
 
 test("shop flow adds then clears", async ({ context }) => {

@@ -225,6 +225,12 @@ Waygraph loads `src/accounts/` itself (as it does mem stubs), so a sign-in flow 
 `waygraph demo loginLeadershipFlow`, or Run in [Waygraph UI](./ui), signs in as Cesar with no `--data`. A value given
 with `--data` still wins.
 
+### Who is given what: `for`
+
+`for: [accounts]` on a Page Block (who can open the page), a Method (who has its button) or a layout's link says who is
+given it; without it, everyone. `waygraph check` flags a flow `as` an account that uses something it isn't given, and
+`waygraph test --flows` checks each account's access. See [Layouts and access](./layouts#who-sees-what-for).
+
 ## Episodes: nesting flows
 
 ```ts

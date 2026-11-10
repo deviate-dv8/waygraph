@@ -45,7 +45,7 @@ export interface LayoutOptions<G extends Record<string, LayoutLink>, D extends R
 }
 
 /** A link's Nav: lands on its page, or on the page above for `to: "parent"`. */
-type LinkNav<L extends LayoutLink> = L["to"] extends Checkpoint<string> ? NavBlock<L["to"]> : NavBlock<Checkpoint<string>>;
+export type LinkNav<L extends LayoutLink> = L["to"] extends Checkpoint<string> ? NavBlock<L["to"]> : NavBlock<Checkpoint<string>>;
 
 export interface Layout<G extends Record<string, LayoutLink>, D extends Record<string, PageMethodEntry>> {
   readonly name: string;

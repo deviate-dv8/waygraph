@@ -44,9 +44,12 @@ npx waygraph manifest [project] [--out manifest.json]
 
 | Lists | With |
 |---|---|
-| every Block | `kind`, `description`, route `from` → `to`, `requires`, `file` and `source` (the lines that define it), its `map` group; a Nav or Page Block's `url` (a url built from mem as a pattern: `/requests/:id`); `checks`: its precondition and verify Traits as data (`name`, `wants`, `selector`; `"dynamic"` when a function builds them); `selectors`: the selector entries its definition reads (`LoginSel.submit` with its string, file and line) |
+| every Block | `kind`, `description`, route `from` → `to`, `requires`, `file` and `source` (the lines that define it), its `map` group; a Nav or Page Block's `url` (a url built from mem as a pattern: `/requests/:id`); `checks`: its precondition and verify Traits as data (`name`, `wants`, `selector`; `"dynamic"` when a function builds them); `selectors`: the selector entries its definition reads (`LoginSel.submit` with its string, file and line); `for`: the accounts it's given, when it says |
 | every selector entry | `selectors`: each entry of the project's selector files (`_sel.ts`, `*.sel.ts`): its name, its selector (or the code that builds one), file and line. Read from the source, so `LoginSel.x` reached through another variable isn't linked to its Block |
 | every page's addresses | `pageUrls`: by Checkpoint, its Navs' urls and the `Trait.url` its Blocks verify |
+| the site map | `siteTree`: its `sites`, the `folders` of their paths no page has, each page's path (`paths`) and each page's and folder's parent (`parents`) |
+| every layout | `layouts`: its name, `file`, the pages it `covers`, its `links` (the Block, where it leads or `"parent"`, its selector, its `for`), its `actions` and its Read Block ([Layouts](../guides/layouts)) |
+| every account | `accounts`: the names of the project's accounts (`src/accounts/`) |
 | the project | its name, folder, waygraph version, and `baseUrl` when one is set |
 | its config | `config`: the `waygraph.config.*` file and what it resolves to (after `.env`), as JSON: a function shows as `(function name)` |
 | every flow | its `useCase` (from `src/flows/<page>/<outcome>.flow.ts`), its steps in order, its settings, its `source` lines |

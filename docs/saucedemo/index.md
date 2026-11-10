@@ -36,7 +36,8 @@ examples/saucedemo/
       checkout.reads.ts       read namespaces
     blocks/saucedemo-web/     one folder per screen (its URL)
       nav-login.block.ts      Page: the login screen (/)
-      methods/                fill / submit login, logout
+      _layout.block.ts        the burger menu on every page after sign-in (all items, logout)
+      methods/                fill / submit login
       inventory/              the inventory Page, its methods/
       inventory-item/         item detail navigation
       cart/                   to the cart, to checkout

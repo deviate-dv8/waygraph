@@ -174,7 +174,7 @@ An Effect Block was a Method that also listed the rows it could act on; a Method
 | \`.assert(Block)\` step | \`{ expect: [Block] }\` on the step it judges (the codemod folds them in) |
 | \`.expect(key, want)\` step | \`{ expect: [key.is(want)] }\` / \`key.passes(test)\` on the step |
 | \`Trait.read(key, test, wants)\` | \`key.passes(test, wants)\` (and \`key.is(value)\`) |
-| \`defineLayout\`, \`EngineConfig.layouts\`, \`RunGraphOptions.layouts\` | an Expect Block (or a shared list of them) in the \`expect\` of each Block that lands on those pages: what runs is what the flow says |
+| \`defineLayout\` (a shared list of expectations), \`EngineConfig.layouts\`, \`RunGraphOptions.layouts\` | an Expect Block (or a shared list of them) in the \`expect\` of each Block that lands on those pages: what runs is what the flow says. Since 0.16.21 \`defineLayout\` is the UI many pages share ([Layouts](./guides/layouts)) |
 
 ## Style
 

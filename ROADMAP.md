@@ -20,6 +20,9 @@ against a real consumer.
 
 ## Open
 
+- **`Trait.visible` waits as long as Playwright lets it** - it waits for the element with Playwright's own default, which
+  is unbounded inside a test, so a page that never shows it fails only at the test's timeout. It should wait at most the
+  Trait's time (5 s, or its `timeoutMs`), like the other Traits; the access tests cap their page's waits meanwhile.
 - **Soft expectations** - a step already reports every expectation it didn't meet; a flow-level `soft` mode would go on
   to the next steps and fail the run at the end, so one QA case reports every expected result it checks.
 
@@ -33,7 +36,12 @@ against a real consumer.
   folding each `_read.block.ts` into its Page Block, the convention skill, the reads guide and `waygraph check`.
 - **Selectors per device** - a `_sel.ts` entry with one selector per device (`menu: { desktop: "nav .menu", mobile:
   "button[aria-label=Menu]" }`), picked by the device the flow plays on; kept as plain data so other drivers can use
-  it. The manifest and Waygraph UI list the variants; `waygraph check` warns about a device an entry has none for.
+  it. The manifest and Waygraph UI list the variants; `waygraph check` warns about a device an entry has none for. A
+  layout's links would use it too (a sidebar on desktop, a burger menu on a phone).
+- **Layouts, next** - the access tests check a layout's links (each has a selector) and the pages an account can't
+  open; a Method's button has no selector to look for, so its `for` is checked by `waygraph check` only. A Method could
+  name its button (`shows: Sel.archive`) for the access test to look for. Layouts that change by device (a sidebar that
+  becomes a burger menu) wait on selectors per device. Disabled-but-visible links (`disabledFor`) aren't covered.
 - **Split `requires`** - say which keys the caller must supply (credentials, config) and which another Block produces,
   so a failed preflight can suggest the Block that would produce the missing key.
 - **Demo text matchable by the page's selectors** - the overlay is an open shadow root, and Playwright's text engines

@@ -149,6 +149,15 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   tools load Block, Page and stub files themselves. A Page Block's `expects: { saved: () => ExpectSavedBlock }` names what
   can be checked on the page, so `HomePage.expects.saved` comes from the same import. An older project moves onto pages
   with `waygraph upgrade --codemod pages` once each Page Block has its `nav` and `methods` / `expects` records.
+- **UI on many pages is a layout, declared once.** A sidebar, top bar, user menu or breadcrumbs go in a
+  `_layout.block.ts` (`defineLayout({ name, go: { plan: { to: ProductionPlan, click: SidebarSel.plan } }, do, read })`)
+  in the folder of the pages they wrap: it covers every page in that folder and below, so a flow writes
+  `.gotoPage(Sidebar.go.plan)` from any of them. `on: [Pages]` only when the app's layout doesn't follow its folders;
+  `to: "parent"` for a link up, and `Trait.breadcrumbs(sel)` to check the trail. Never the same Nav or Method on each
+  page, and never a list of pages on a Nav.
+- **Who sees what is `for: [accounts]`** on the layout's link, the Method or the Page Block, beside what it's about. A
+  role is the accounts that share a `for`; `waygraph test --flows` adds each account's access test, and `waygraph
+  check` flags a flow `as` an account using what it isn't given. Never a role check written in a flow.
 - **`screenshot: true` on a Page Block** takes the page's picture whenever a step lands there (on any other Block: once
   its step is done). Waygraph UI shows each page's newest on its map and each step's on the run; put it on the pages a
   reader would want to see, not on every Block.

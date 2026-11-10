@@ -61,6 +61,20 @@ the manifest and Waygraph UI's Flows page show them. `waygraph check` warns abou
 | has `map({ exclusive: true })` | runs alone, after all the others (it changes data the rest read) |
 | has `map({ expectedFailure })` | passes when it fails |
 
+## Access tests
+
+When the project says who's given what (`for`, on [layouts](./layouts)' links, Methods and Page Blocks), `waygraph test
+--flows` adds one test per account after the flows: `access › planner`, tagged `@access @planner` (so `--grep @access`
+runs only them). Signed in as the account, it opens a page each layout covers, by its address, and checks that the
+layout shows exactly the links the account is given: a link it's given that isn't showing fails it, and so does one it
+isn't given that shows (a menu that hides its links is opened first). Then it opens each page the account isn't given
+and expects it not to open. An account that can't sign in is skipped, saying why.
+
+```
+access as planner:
+  sidebar › reports shows, and planner isn't given it (#reports): add planner to its for, or hide it
+```
+
 ## The world a flow runs in
 
 A flow can set its time zone and network, and gets them put back when it ends, pass or fail, so an outage test doesn't

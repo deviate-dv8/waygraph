@@ -53,12 +53,14 @@
 
 ## 5. Examples, docs and skills
 
-- [ ] 5.1 saucedemo: the burger menu (all items, logout, reset app state) as `(app_base)/_layout.block.ts`, its flows
-      using `Menu.go.*` / `Menu.do.*`; the quickstart synced
-- [ ] 5.2 The scaffold: a root layout with its top bar, so a new project starts with the shape
-- [ ] 5.3 Docs: a Layouts guide page (coverage, nesting, `on`, breadcrumbs, what belongs in a page vs a layout), `for`
+- [x] 5.1 saucedemo: the burger menu (all items, logout, reset app state) as `(app_base)/_layout.block.ts`, its flows
+      using `Menu.go.*` / `Menu.do.*`; the quickstart synced (done as `blocks/saucedemo-web/_layout.block.ts` with `on`:
+      saucedemo's login page shares the folder and has no menu; all items and logout; reset app state is no move and no
+      flow needs it)
+- [x] 5.2 The scaffold: a root layout with its top bar, so a new project starts with the shape
+- [x] 5.3 Docs: a Layouts guide page (coverage, nesting, `on`, breadcrumbs, what belongs in a page vs a layout), `for`
       and access tests in the accounts and testing guides, the manifest reference, the deprecated page's
       `defineLayout` row
-- [ ] 5.4 Convention skill and planner agent: a piece of UI on many pages is a layout; who sees it is `for`; never a
+- [x] 5.4 Convention skill and planner agent: a piece of UI on many pages is a layout; who sees it is `for`; never a
       list of pages on each Nav
-- [ ] 5.5 ROADMAP; full verify (tsc, build, structure, knip, unit, Playwright, saucedemo, ui)
+- [x] 5.5 ROADMAP; full verify (tsc, build, structure, knip, unit, Playwright, saucedemo, ui)
