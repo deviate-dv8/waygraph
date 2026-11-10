@@ -14,6 +14,7 @@ import { showSlides } from "./slides.js";
 import { probeTodoDocksOnPage } from "./todo-advance.js";
 import type { StepperContext, StepView } from "./view.js";
 import { forceCollapsed } from "./view.js";
+import { voiceOf } from "../voice-over.js";
 
 const quiet = () => envFlag("WAYGRAPH_JSON");
 
@@ -25,6 +26,9 @@ export async function showBefore(ctx: StepperContext, view: StepView): Promise<B
   takeExpectResults(ctx.page);
   // The step before's outcome card goes as this one starts.
   await outcomePiece(ctx.page).set(ctx.page, undefined);
+  // A voice that speaks steps says what this one does as its panel comes up.
+  const voice = voiceOf(ctx.page);
+  if (voice?.steps && view.step.block.description) await voice.say(view.step.block.description);
   const phase = await narrateBefore(ctx, view);
   const { appliedTodo } = await stage.applyPhase(phase, { reapplyDeviceOnKeep: true });
   const paceSpeak = paceSpeakFields(ctx.pacing.demoPace, ctx.gate.autoplayMs);

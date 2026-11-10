@@ -16,6 +16,9 @@ workflow on top of it, not a restatement of them.
 
 ## Hard conventions
 
+Plan only waygraph pieces: Blocks, flows, accounts, Read and Expect Blocks, the config. A plan that needs a script,
+runner or helper beside them names what waygraph lacks instead (the skill's "Agents work through waygraph").
+
 1. **Route folders = app URL folders.** A folder gets a nav block iff the app has a real page at that URL. Do not invent `landing/`, `root/`, or shell folders that are not routes.
 2. **Namespaces by origin:** `<app>-web/` for the product FE; `<app>-external/` for Mailpit/MailHog, Studio, probes (never mix).
 3. **Block kinds:**

@@ -24,6 +24,8 @@ interface RunFlags {
   title?: string;
   /** Set when --video present; empty string = default dir under project. */
   video?: string;
+  /** Record without the config's voice-over (--no-voice). */
+  noVoice?: boolean;
   /** Recording viewport, e.g. 1920x1080 (--video-viewport). */
   videoViewport?: string;
   /** Global Mem seed JSON (--data). */
@@ -112,6 +114,7 @@ export const RUN_OPTIONS = {
   "auto-play-video": { type: "boolean", help: "Unattended + recorded: --auto-next + --video (+ step); headless", for: ["demo"] },
   "auto-play-video-head": { type: "boolean", help: "Same, but keep the browser visible (--non-headless)", for: ["demo"] },
   "video": { type: "string", value: "[dir]", help: "Record .webm (default ~/Downloads/waygraph-videos/<project>, video.dir, WAYGRAPH_VIDEO_DIR)", for: ["demo", "run"] },
+  "no-voice": { type: "boolean", help: "Record without the config's voice-over (demo.voice)", for: ["demo"] },
   "video-viewport": { type: "string", value: "WxH", help: "Recording size (demo 1920x1080, run 1280x720)", for: ["demo", "run"] },
   "step": { type: "boolean", help: "Step through with the overlay", for: ["run"] },
   "no-step": { type: "boolean", help: "No step overlay (demo: plain run with narration off)", for: ["demo"] },
@@ -210,6 +213,7 @@ export function parseRunFlags(argv: string[], command: string): RunFlags {
   if (v["shared-session"]) out.sharedSession = true;
   if (v.video !== undefined) out.video = v.video;
   if (v["video-viewport"] !== undefined) out.videoViewport = v["video-viewport"];
+  if (v["no-voice"]) out.noVoice = true;
   return out;
 }
 
@@ -290,6 +294,9 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
   }
   if (flags.replay !== undefined) {
     setEnv("WAYGRAPH_REPLAY", flags.replay);
+  }
+  if (flags.noVoice) {
+    setEnv("WAYGRAPH_VOICE", "0");
   }
   if (flags.freshSessions) {
     setEnv("WAYGRAPH_FRESH_SESSIONS", "1");

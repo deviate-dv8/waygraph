@@ -11,6 +11,7 @@ import { installCore } from "./inpage/core.js";
 import { installSwipeZoom } from "./inpage/swipe-zoom.js";
 import { installBanner } from "./inpage/banner.js";
 import { showCaption, hideCaption } from "./inpage/caption.js";
+import { voiceOf } from "../voice-over.js";
 import { installStamp } from "./inpage/stamp.js";
 import { installPanelChrome } from "./inpage/panel-chrome.js";
 import { installTodos } from "./inpage/todos.js";
@@ -105,8 +106,13 @@ export async function installOverlay(page: WgPage, title?: string, ui?: BannerUi
   await page.evaluate(installPanelChrome, args).catch(ignorePageGone);
   await page.evaluate(installTodos, args).catch(ignorePageGone);
   await page.evaluate(installDevice, args).catch(ignorePageGone);
-  // `undefined` leaves the caption as it is (on a new page: what it last said); "" takes it away.
-  if (caption !== undefined) await captionPiece(page).set(page, caption === "" ? undefined : caption);
+  // `undefined` leaves the caption as it is (on a new page: what it last said); "" takes it away. A new caption is
+  // spoken (a recorded demo with a voice), shown as its line starts.
+  if (caption !== undefined) {
+    const piece = captionPiece(page);
+    if (caption && caption !== piece.current) await voiceOf(page)?.say(caption);
+    await piece.set(page, caption === "" ? undefined : caption);
+  }
   // Navigations wipe #wg-device-shell - rebuild when video stage + device are live.
   // If we already shuttered to desktop-flat, re-apply FLAT (never re-add bezel).
   if (

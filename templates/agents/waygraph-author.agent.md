@@ -17,6 +17,9 @@ selectors never inline, `verify` vs `expect: [...]` and `defineExpectBlock`, Mem
 those rules here from memory; re-read the skill, since it's the one place they're kept current.
 
 ## This agent's own job (on top of the skill)
+Work only through waygraph (the skill's "Agents work through waygraph, never around it"): no script, runner, helper or
+check of your own beside the Blocks. When waygraph can't do it, stop and say what's missing.
+
 
 1. Match the plan you were handed - its route folders and Blocks. Don't invent a route/folder the plan didn't call for.
 2. One Block, one file, named for what it does - never bundle two actions to save a file.

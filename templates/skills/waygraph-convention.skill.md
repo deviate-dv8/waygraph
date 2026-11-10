@@ -15,6 +15,35 @@ read like scenarios a QA who doesn't write code can follow. When two ways of wri
 that makes the flow read more like the scenario and the Block more reusable. Demos, sessions and automation reuse the
 same Blocks; they never justify a Block or flow that is harder to read as a test.
 
+## Agents work through waygraph, never around it
+
+Everything an agent adds to a waygraph project is waygraph: Blocks in the map, flows in `src/flows/`, accounts, mem
+stubs, Read Blocks, Expect Blocks, the config. No workarounds next to it: no script of your own that drives a browser,
+no helper that pokes the page outside a Block, no runner of your own, no checks of your own with their own retries.
+A workaround works today and is invisible tomorrow: `waygraph check`, the map, the demo, Waygraph UI and the next agent
+can't see it, so it rots, and the project slowly becomes a Playwright project with waygraph on the side.
+
+A person may do things by hand (a one-off script, poking the app, a quick fix to get unblocked); that's their call,
+and it isn't a pattern to copy. Code that's already there and isn't waygraph isn't permission either: don't extend it,
+and when you touch it, move it to the convention or say it should be.
+
+| A workaround | The waygraph way |
+|---|---|
+| A sign-in script (`chromium.launch()`, fill, click, read the cookie), a "saved session" Block, tokens in env | `account(name, { signIn, mem, ttl })` in `src/accounts/`, flows `map({ as })`; `ttl` keeps the session between runs |
+| A runner of your own (`npx tsx run.ts`) that starts the app, loops over cases, runs them in parallel, retries | `waygraph test --flows` (`--workers`, `--retries`, `-g`), `webServer` in the config, `map({ input })` for cases |
+| A check written as a function over `page` (`page.locator(...).textContent()` and compare) | The page's Read Block reads it; the check is `Key.is(...)` / `Key.passes(...)`, or an Expect Block in the page's `_expects/` |
+| A retry or polling helper (`settles`, `waitUntil`, a loop with `sleep`) | Nothing: verify retries every Trait; `{ settle: true }` on a step whose page keeps changing |
+| A helper that drives the page outside a Block (`clickClear(page, sel)`, `pasteInto`, `setDateTime`) | A Method Block, one action, in the page's `_methods/`; a field that needs a special way of typing is that Block's `act` |
+| Selectors in a check file or a test | The page's `_sel.ts` |
+| Evidence written by hand (a `.log`, a results `.md`, screenshots copied around) | The run log (`.waygraph/runs/`), `screenshot: true` on a step, `--video`, Waygraph UI, `--reporter` |
+| A cast or a function over `MapBuilder` to share steps (`as MethodBlock<...>`, `(m: MapBuilder) => m...`) | `{ lands: X }` for a branch; `steps(Checkpoint, (m) => m...)` played with `.steps(part)` |
+| Talking to the API with `fetch` in a test or a helper | An API Block (`defineApiBlock`) in `src/map/(api)/` |
+| Waiting for an email with your own polling | The Mailpit / MailHog Blocks (`(external)/`) and `claimOnce` for a shared inbox |
+
+When waygraph can't do what the task needs, stop and say so: what you needed, what waygraph lacks, and the smallest
+thing that would let a Block or a flow do it (a new `ctx.ui` piece, a Trait, a setting). Don't build around it; a gap
+reported is fixed once in waygraph, a gap worked around is copied into every project.
+
 ## Hard rules (not style preferences)
 
 1. **One distinct action per Block.** Fill and submit are two Blocks. A login form is
@@ -179,6 +208,9 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
 - **The demo already says how each step went**, with no stub: its outcome card ticks each expectation (an Expect Block's
   `description`, so give every Expect Block one a QA reader understands) and lists what the Read Block reads that
   changed. Narrate what that doesn't say; don't repeat it in a caption.
+- **Captions and slides are spoken** in a recorded demo with a voice (`demo.voice` in the config): write them as a
+  person would say them (a sentence, not a key name or a selector), and give each Block a `description` that reads
+  aloud too (`steps: true` speaks it). Never add a second, spoken copy of a caption by hand.
 - **Reading a value into `mem` happens in `act`** (`mem.set(Key, value)`), like Mailpit's `extract-email-link`.
   `observe` is only for a Block that branches (it feeds `resolve`); an empty `act(){}` plus an `observe` that
   writes `mem` is a misuse.

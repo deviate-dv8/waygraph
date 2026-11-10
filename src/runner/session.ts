@@ -1,6 +1,12 @@
 // The browser a run plays in: launched with the project's extensions, sized for the mode and an optional video.
 import { setTimeout as sleep } from "node:timers/promises";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { envString } from "../engine/env.js";
+import { messageOf } from "../engine/errors.js";
+import { loadWaygraphConfig } from "../runtime/waygraph-config.js";
+import { addVoiceOver, hasFfmpeg, subtitlesOf } from "../runtime/voice.js";
+import { VoiceOver } from "../demo/voice-over.js";
 import { recordArtifact } from "../engine/run/events.js";
 import type { MemPage } from "../engine/mem/mem.js";
 import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../runtime/browser.js";
@@ -48,22 +54,56 @@ export async function openSession(projectDir: string, options: PlayOptions, mem:
     extensions: extensionPathsFromEnv(),
   });
   const page = (await context.newPage()) as WgPage;
+  // The recording starts with the page: a voice-over line's place on it counts from here.
+  const recordingStartedAt = Date.now();
   if (videoSize) page.__wgVideoViewport = videoSize;
+  if (videoDir && options.mode === "demo") page.__wgVoice = await voiceOverFor(projectDir, recordingStartedAt);
   // The first step's panel shows over the real app, not a blank page.
   if (options.baseURL) await page.goto(options.baseURL).catch(ignorePageGone);
 
   const close = async (): Promise<void> => {
-    // A recording's last moment (a ring, the network panel) would be cut off mid-fade without a little room.
+    const voice = page.__wgVoice;
+    // The last line is heard to its end; a recording's last moment (a ring, the network panel) would be cut off
+    // mid-fade without a little room.
+    await voice?.settle();
     if (videoDir && !page.isClosed()) await sleep(1800);
     await context.close();
     const video = await page.video()?.path().catch(() => null);
     if (video) {
+      if (voice?.lines.length) await voiceOverOnto(video, voice);
       console.log("waygraph: video saved to " + video);
       recordArtifact("video", video);
     }
     await closeBrowser();
   };
   return { session: { context, page, mem, baseURL: options.baseURL }, close };
+}
+
+/**
+ * The voice-over for a recorded demo, when the config gives the demo a voice (`demo.voice`) and `--no-voice` doesn't
+ * turn it off. Needs ffmpeg: without it the demo is recorded silent, saying so.
+ */
+async function voiceOverFor(projectDir: string, startedAt: number): Promise<VoiceOver | undefined> {
+  if (envString("WAYGRAPH_VOICE") === "0") return undefined;
+  const voice = (await loadWaygraphConfig(projectDir))?.demo?.voice;
+  if (!voice) return undefined;
+  if (!(await hasFfmpeg())) {
+    console.error("waygraph voice: ffmpeg and ffprobe aren't on the PATH; recording without the voice-over (install ffmpeg to add it)");
+    return undefined;
+  }
+  return new VoiceOver(voice.speaker, join(projectDir, ".waygraph", "voice"), startedAt, voice.steps === true);
+}
+
+/** Puts the voice-over's lines on the saved video, and writes them beside it as subtitles (`<video>.vtt`). */
+async function voiceOverOnto(video: string, voice: VoiceOver): Promise<void> {
+  const subtitles = video.replace(/\.\w+$/, ".vtt");
+  writeFileSync(subtitles, subtitlesOf(voice.lines));
+  try {
+    await addVoiceOver(video, voice.lines);
+    console.log(`waygraph: voice-over: ${voice.lines.length} lines, subtitles ${subtitles}`);
+  } catch (err) {
+    console.error(`waygraph voice: the video stays silent (ffmpeg failed: ${messageOf(err)}); subtitles ${subtitles}`);
+  }
 }
 
 /** A fresh session between episodes: no cookies, no storage, back on the base URL (so the page itself looks fresh too). */

@@ -51,6 +51,7 @@ Config values are defaults: a flag, a shell variable or a `.env` value beats the
 | `slowMo` | waygraph's pause after each action (in `run`, `slowMo` is Playwright's) |
 | `autoNext`, `fast` | as the `--auto-next` / `--fast` flags |
 | `appearance` | `"light"` or `"dark"` overlay, so recordings match whichever machine makes them |
+| `voice` | a voice-over for recorded demos: `{ speaker, steps? }` ([Voice-over](../guides/demo#voice-over)) |
 
 ## Environments and `.env`
 

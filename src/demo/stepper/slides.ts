@@ -10,6 +10,7 @@ import { demoLog, demoPaceKind } from "./demo-log.js";
 import { envFlag, envNumber, envString } from "../../engine/env.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
 import type { StepperContext, StepView } from "./view.js";
+import { voiceOf } from "../voice-over.js";
 
 /** Where the slides sit (title, Block, episode) and how fast they advance. */
 export interface SlidesOptions {
@@ -54,6 +55,11 @@ export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide
     const isLast = i === slides.length - 1;
     const dwellMs = resolveFixtureDwellMs(s, { gatesFast, pace: demoPace });
     await installOverlay(page, title);
+    // A recorded demo with a voice says the slide as it shows; auto-advance waits for the line to end.
+    const voice = voiceOf(page);
+    await voice?.say([s.caption, s.detail].filter(Boolean).join(". "));
+    let spoken = !voice;
+    if (voice) void voice.settle().then(() => (spoken = true));
     if (s.selector) {
       try {
         await ensureSelectorInView(page, s.selector);
@@ -230,7 +236,7 @@ export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide
           }
         })
         .catch(() => false);
-      if (auto && Date.now() - started >= autoWaitMs) break;
+      if (auto && spoken && Date.now() - started >= autoWaitMs) break;
       await sleep(100);
     }
   }

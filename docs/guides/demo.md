@@ -123,6 +123,50 @@ other side when a ring would sit under it, and dims while a ring is up.
 Paces are `"blitz"`, `"fast"`, `"normal"`, `"slow"`, or a number (`0.5` = twice as fast; above `20` it's milliseconds).
 `--ff-disabled` opens every fast-forward group up into its steps, to see which one broke.
 
+## Voice-over
+
+A recorded demo (`--video`) can speak its narration. Give the demo a voice in the config, and each caption and slide is
+spoken as it shows; the recording gets the speech as its audio track and its subtitles beside it (`<video>.vtt`):
+
+```ts
+// config/waygraph.config.ts
+import { commandVoice, defineConfig, Engine } from "waygraph";
+
+const config = defineConfig({
+  baseUrl: "https://www.saucedemo.com",
+  demo: {
+    voice: {
+      speaker: commandVoice("piper --model en_US-amy-medium.onnx --output_file {out}"),
+      steps: true, // also each step's description
+    },
+  },
+});
+```
+
+```sh
+npx waygraph demo checkoutFlow --auto-play-video
+# waygraph: voice-over: 14 lines, subtitles .../page@8c26....vtt
+```
+
+| Speaker | |
+|---|---|
+| `commandVoice("piper --model x.onnx --output_file {out}")` | a local text-to-speech command: `{out}` is the file it writes, `{text}` the line (without `{text}`, the line goes to its stdin). [piper](https://github.com/OHF-Voice/piper1-gpl) sounds natural and runs offline; `espeak-ng -w {out} {text}` is on most Linux machines; on macOS, `say -o {out} --data-format=LEI16@22050 {text}` |
+| `openAIVoice({ voice: "nova", instructions: "Calm and clear." })` | an OpenAI-compatible speech API (`OPENAI_API_KEY`, or `apiKey`; `baseURL` for another server that speaks the same API, a local one too) |
+| your own | `{ id, ext, synthesize(text, out) }`: write `text`, spoken, to the file `out` |
+
+- **What's spoken:** a new caption (`ctx.ui.caption`) as it shows, each slide (its caption, then its detail) and, with
+  `steps: true`, each step's description as its panel comes up. A caption painted again unchanged isn't spoken again.
+  Arrows and separators are read as words (`Cart -> info` is "Cart to info"); the screen shows them as written.
+- **Timing:** lines are spoken one at a time, never over each other, and auto-advance waits for a line to end before
+  moving on, so the voice is never cut off. A slow voice makes a longer video, not a clipped one.
+- **Cache:** each line is made once per voice and text, in `.waygraph/voice/`; a second recording of the same flow
+  doesn't call the voice again.
+- **Needs ffmpeg** (and ffprobe) on the PATH. Without it the demo records silent and says why. A line the voice fails
+  on is left out, naming it; the rest are kept.
+
+Only a recorded demo speaks: `waygraph run` shows no narration, and a demo without `--video` has nothing to put the
+speech on. `--no-voice` records without it.
+
 ## Flags
 
 | Flag | Does |
@@ -133,6 +177,7 @@ Paces are `"blitz"`, `"fast"`, `"normal"`, `"slow"`, or a number (`0.5` = twice 
 | `--video [dir]` | records a `.webm` (default `~/Downloads/waygraph-videos/<project>`) |
 | `--auto-play-video` | `--auto-next --video`, headless |
 | `--auto-play-video-head` | the same, with the browser visible |
+| `--no-voice` | records without the config's voice-over |
 | `--data` / `--input` / `--replay` | the flow's data ([Data](./data)) |
 
 `waygraph demo --help` prints every flag; [environment variables](../env) lists what each one sets.

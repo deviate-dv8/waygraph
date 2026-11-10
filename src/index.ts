@@ -108,7 +108,9 @@ export type { AutoSessionInit, SessionSnapshot, SessionSnapshotEdge, SessionSnap
 export { pilotStart } from "./live/pilot/pilot.js";
 export type { PilotStartResult } from "./live/pilot/pilot.js";
 export { defineConfig, resolveBaseUrl } from "./runtime/waygraph-config.js";
-export type { WaygraphConfig, ConfigContext, VideoSettings, RunSettings, DemoSettings } from "./runtime/waygraph-config.js";
+export type { WaygraphConfig, ConfigContext, VideoSettings, RunSettings, DemoSettings, VoiceSettings } from "./runtime/waygraph-config.js";
+export { commandVoice, openAIVoice } from "./runtime/voice.js";
+export type { Voice, OpenAIVoiceOptions } from "./runtime/voice.js";
 export { withWebServer } from "./runtime/webserver.js";
 export { chromiumExecutablePath } from "./runtime/browser.js";
 export { resolveExtension, KNOWN_EXTENSIONS } from "./runtime/extensions.js";

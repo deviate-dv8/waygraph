@@ -51,7 +51,8 @@ against a real consumer.
 - **`npm create waygraph`** - the modern entry point next to `npx waygraph init`. (Packing an existing project's pages
   for reuse is `waygraph map pack`.)
 - **A freeform scaffold** - a second `init` template in the freeform layout, for projects that don't use `src/map/`.
-- **Narrated videos (1.0.x)** - captions timed from the narration flows already have (`ctx.ui.caption`, slides), a
-  `waygraph clip` command (capture, render, mux), and a pluggable voice-over, like `EngineConfig.browsers`.
+- **Narrated videos** - a recorded demo speaks its captions and slides (`demo.voice`, done). Next: hearing the voice
+  live in a headed demo, a `ctx.ui.say(...)` for a line that's spoken but not shown, and a `waygraph clip` command
+  that renders a flow's video with its voice-over in one go.
 - **Separate packages** - whether the engine, demo, sessions and traverse become separate npm packages or stay one
   package with clear internal layers (`src/ARCHITECTURE.md`) is undecided.

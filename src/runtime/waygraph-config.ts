@@ -16,6 +16,7 @@ import type { DemoPace } from "../engine/stub/pace.js";
 import { envString, setEnv } from "../engine/env.js";
 import type { WaygraphEnvName } from "../engine/env.js";
 import { takeGlobalFlag } from "./global-flag.js";
+import type { Voice } from "./voice.js";
 
 /** Where `--video` recordings are saved and at what size. */
 export interface VideoSettings {
@@ -55,6 +56,19 @@ export interface DemoSettings extends RunSettings {
   fast?: boolean;
   /** The overlay in light or dark; by default it follows the system's setting. Pin one so every recording matches. */
   appearance?: "light" | "dark";
+  /**
+   * A voice-over for recorded demos (`--video`): each caption and slide is spoken by `speaker`, timed to the recording,
+   * and the video gets it as its audio track (ffmpeg), with subtitles beside it (`.vtt`). `steps: true` also speaks each
+   * step's description. `--no-voice` records without it.
+   * @example voice: { speaker: commandVoice("piper --model en_US-amy-medium.onnx --output_file {out}"), steps: true }
+   */
+  voice?: VoiceSettings;
+}
+
+/** A recorded demo's voice-over: who speaks, and whether each step's description is spoken too. */
+export interface VoiceSettings {
+  speaker: Voice;
+  steps?: boolean;
 }
 
 /** The project config in `config/waygraph.config.ts`: base URL, extensions, run and demo settings, web server and the Playwright block. */

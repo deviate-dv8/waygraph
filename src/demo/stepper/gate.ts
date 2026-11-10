@@ -5,6 +5,7 @@ import { demoPaceGateMs } from "../narration/demo-pace.js";
 import type { Pacing } from "./pacing.js";
 import { envFlag, envNumber, envString } from "../../engine/env.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
+import { voiceOf } from "../voice-over.js";
 
 export interface Gate {
   /** Resolves with the mem edits typed into the panel (or `{}` when auto-advance moved on). */
@@ -77,6 +78,13 @@ export async function installGate(page: WgPage, pacing: Pacing, demoFast: boolea
     const next = waitForNext();
     // A step that skips the theater (WAYGRAPH_FAST_BLOCKS, fast-forward) blows past its gates too.
     const ms = demoPaceGateMs(pacing.skipTheater ? "blitz" : pacing.demoPace, autoplayMs);
+    // Auto-advance also waits for the voice-over's line to end (a Next click doesn't).
+    let spoken = true;
+    const voice = voiceOf(page);
+    if (voice) {
+      spoken = false;
+      void voice.settle().then(() => (spoken = true));
+    }
     let elapsed = 0;
     for (;;) {
       const auto = await autoplayOn();
@@ -88,7 +96,7 @@ export async function installGate(page: WgPage, pacing: Pacing, demoFast: boolea
       if (winner.clicked) return winner.edits;
       if (!auto) continue;
       elapsed += slice;
-      if (elapsed >= ms) return {};
+      if (elapsed >= ms && spoken) return {};
     }
   };
   return { wait, syncAutoplay, autoplayMs };

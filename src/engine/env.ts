@@ -45,6 +45,7 @@ export const WAYGRAPH_ENV = {
   WAYGRAPH_FF_DISABLED: "1 expands fast-forward units and keeps their blitz pace (--ff-disabled)",
   WAYGRAPH_CLEAR_SESSION: "1 clears the session before every step after the first",
   WAYGRAPH_VIDEO: "Record a video: the folder, or 1 for the default (--video)",
+  WAYGRAPH_VOICE: "0 records a demo without the config's voice-over (--no-voice)",
   WAYGRAPH_VIDEO_DIR: "Default video folder",
   WAYGRAPH_VIDEO_VIEWPORT: "Recording size, e.g. 1920x1080 (--video-viewport)",
   WAYGRAPH_RUN_LOG: "Run log: 0 turns it off, or a folder (the config's runLog)",
