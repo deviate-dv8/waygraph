@@ -29,6 +29,18 @@ test("a key no Read Block reads fails, saying so", async ({ page }) => {
   await expect(runVerify([{ ...Nothing.x.passes(() => true), timeoutMs: 0 }], Done, page, new MemPage(), "x")).rejects.toThrow(/no value for traitReadNothing\.x/);
 });
 
+test("a key the page doesn't show fails with what the page shows instead", async ({ page }) => {
+  const Form = reads("traitReadForm")<{ sent: string; error: string }>();
+  defineReadBlock({
+    name: "read-trait-read-form",
+    instruction: { read: (ctx) => Form({ sent: ctx.page.text("#sent"), error: ctx.page.text("#error") }) },
+  });
+  await page.setContent(`<p id="error">Could not send the link</p>`);
+  await expect(runVerify([{ ...Form.sent.passes(() => true), timeoutMs: 0 }], Done, page, new MemPage(), "submit")).rejects.toThrow(
+    'no value for traitReadForm.sent; the page shows traitReadForm.error "Could not send the link"',
+  );
+});
+
 test("Key.passes' test gets mem: what the page shows against what the flow did", async ({ page }) => {
   const Picked = keys("traitReadPicked")<{ item: string }>();
   const mem = new MemPage();

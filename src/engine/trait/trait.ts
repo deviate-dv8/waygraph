@@ -226,8 +226,11 @@ export function readEquals<T>(key: ReadKey<T>, test: (value: T, mem: MemPage) =>
     wants: wants ?? `${key.path} to pass its check`,
     async check(page, mem) {
       const at = readKeySelector(mem, key);
-      const value = await readKeyNow(page, mem, key);
-      if (value === undefined) return { ok: false, saw: `no value for ${key.path} (is there a Read Block for it, and does the page show it?)` };
+      const { value, shown } = await readKeyNow(page, mem, key);
+      if (value === undefined) {
+        const instead = Object.entries(shown).map(([path, v]) => `${path} ${JSON.stringify(v)}`).join(", ");
+        return { ok: false, saw: instead ? `no value for ${key.path}; the page shows ${instead.length > 200 ? instead.slice(0, 197) + "..." : instead}` : `no value for ${key.path} (is there a Read Block for it, and does the page show it?)` };
+      }
       const saw = JSON.stringify(value);
       return { ok: test(value, mem), saw: saw.length > 120 ? saw.slice(0, 117) + "..." : saw, ...(at ? { at } : {}) };
     },

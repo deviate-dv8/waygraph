@@ -105,9 +105,11 @@ export async function readCheckpoint(page: Page, mem: MemPage, checkpoint: strin
 
 /**
  * Reads one key now, wherever the page is: runs only the Read Blocks whose read fills that key's namespace (any
- * Checkpoint - a check doesn't know which it is on). Undefined when no Read Block reads it, or the page doesn't show it.
+ * Checkpoint - a check doesn't know which it is on). `value` is undefined when no Read Block reads it, or the page
+ * doesn't show it; `shown` is what else the page showed in that namespace (by path), so a check that found nothing can
+ * say what was there instead (an error message where a confirmation was wanted).
  */
-export async function readKeyNow<T>(page: Page, mem: MemPage, key: ReadKey<T>): Promise<T | undefined> {
+export async function readKeyNow<T>(page: Page, mem: MemPage, key: ReadKey<T>): Promise<{ value: T | undefined; shown: Record<string, unknown> }> {
   const namespace = key.path.split(".")[0];
   const specs: ReadSpec[] = [];
   for (const block of registry.values()) {
@@ -115,10 +117,11 @@ export async function readKeyNow<T>(page: Page, mem: MemPage, key: ReadKey<T>): 
     const got = block.instruction.read(createReadCtx(mem));
     for (const spec of Array.isArray(got) ? got : [got as ReadSpec]) if (spec.namespace === namespace) specs.push(spec);
   }
-  if (specs.length === 0) return undefined;
+  if (specs.length === 0) return { value: undefined, shown: {} };
   const { values, notes } = await runReadSpecs(page, mem, specs);
   const read = new ReadPage(values, notes);
-  return read.has(key) ? read.get(key) : undefined;
+  const shown = Object.fromEntries([...values].filter(([path, v]) => path !== key.path && v !== null && v !== undefined && v !== "" && v !== false));
+  return { value: read.has(key) ? read.get(key) : undefined, shown };
 }
 
 /**
