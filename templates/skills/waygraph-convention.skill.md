@@ -164,6 +164,9 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
   When one sign-in flow serves several people (a magic link, by email), the account says who:
   `account("leadership", { signIn: loginLeadershipFlow, mem: (m) => m.set(Keys.recipient, { email: "cesar@…" }) })`.
   Waygraph loads `src/accounts/`, so the sign-in flow played on its own (a demo) signs in as that person too.
+  When the app signs people out after a while, give the account a `ttl` a little under it (`ttl: "15m"`): an older
+  session signs in again, and a good one is saved so later runs and test workers reuse it. Never save a session by
+  hand (`storageState` files, cookies in fixtures).
 - **`src/flows/` holds use cases and mirrors the front end's endpoints**: a folder per page (`flows/auth/login/`) with one
   file per scenario named for its outcome (`success.flow.ts`, `wrong-password.flow.ts`, `empty-fields.flow.ts`), and
   `(user-stories)/` (any `(group)`) for flows that cross pages. Export names are `<page><Outcome>Flow`. Not one file per

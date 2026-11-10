@@ -181,14 +181,35 @@ export const cartAsAccountFlow = engine
 
 ```mermaid
 graph LR
-  F[flow as StandardUser] --> Q{signed in before<br/>in this process?}
+  F[flow as StandardUser] --> Q{a session still good?<br/>kept in this process,<br/>or saved, with a ttl}
   Q -->|no| S[run loginFlow,<br/>keep cookies + storage]
-  Q -->|yes| R[restore the kept session]
+  Q -->|yes| R[restore it]
   S --> N[the flow's first step]
   R --> N
 ```
 
 So a test run signs each account in once. `forgetSessions()` drops the kept sessions.
+
+### How long a session lasts: `ttl`
+
+An app signs people out after a while. Say how long, and the account signs in again once its session is older:
+
+```ts
+export const StandardUser = account("standard-user", { signIn: loginFlow, ttl: "15m" }); // "30s", "2h", "1d", or ms
+```
+
+An account with a `ttl` also saves its session (`.waygraph/sessions/`), so the next run and every test worker start
+signed in too, until it runs out, instead of each signing in again (a sign-in by emailed link is slow, and often
+rate-limited). Without a `ttl` the session lasts as long as the process and is never saved: nothing says how long the
+app keeps it.
+
+- A saved session is the account's for one site and one person: a different base url, or a different person in its
+  `mem`, signs in again (and saves its own).
+- The files hold cookies: `.waygraph/` is in the scaffold's `.gitignore`, and each file is readable only by you.
+- `--fresh-sessions` (run, demo, test) signs every account in again and saves the new sessions; `WAYGRAPH_SESSIONS=0`
+  turns saving off, or names another folder.
+- Count from when the app signs the person in, a little under its real timeout: a session the app ended early fails
+  the flow's first step (which says what the page showed).
 
 When one sign-in flow serves several people (a magic link, by email), the account says who it is with `mem`: set right
 before it signs in, so a flow `as` it needs nothing more, and whoever an earlier flow signed in as doesn't matter.

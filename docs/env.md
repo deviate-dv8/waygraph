@@ -53,6 +53,8 @@ This page is generated from `src/engine/env.ts` (`npm run docs:api`).
 | `WAYGRAPH_VIDEO_DIR` | Default video folder |
 | `WAYGRAPH_VIDEO_VIEWPORT` | Recording size, e.g. 1920x1080 (--video-viewport) |
 | `WAYGRAPH_RUN_LOG` | Run log: 0 turns it off, or a folder (the config's runLog) |
+| `WAYGRAPH_SESSIONS` | Where accounts with a ttl save their sessions for later runs (default .waygraph/sessions); 0 turns saving off |
+| `WAYGRAPH_FRESH_SESSIONS` | 1 signs every account in again, ignoring saved sessions, and saves the new ones (--fresh-sessions) |
 | `WAYGRAPH_EXTENSIONS` | Unpacked browser extension folders, path-separated (overrides the config's extensions) |
 | `WAYGRAPH_CACHE_DIR` | Where downloaded extensions are cached |
 | `WAYGRAPH_PROVE_SHOT` | Demo self-check: screenshot path for the overlay proof |

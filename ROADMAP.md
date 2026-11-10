@@ -23,6 +23,9 @@ against a real consumer.
 - **Soft expectations** - a step already reports every expectation it didn't meet; a flow-level `soft` mode would go on
   to the next steps and fail the run at the end, so one QA case reports every expected result it checks.
 
+- **A session the app ended early** - an account's `ttl` says how long a session lasts; an account could also say how
+  to tell it's still signed in (a check after restoring it), and sign in again when it isn't, instead of failing the
+  flow's first step.
 - **Split `requires`** - say which keys the caller must supply (credentials, config) and which another Block produces,
   so a failed preflight can suggest the Block that would produce the missing key.
 - **Demo text matchable by the page's selectors** - the overlay is an open shadow root, and Playwright's text engines

@@ -1,5 +1,5 @@
 import { configuredExtensions } from "../runtime/waygraph-config.js";
-import { defaultRunLogDir } from "../runtime/run-log.js";
+import { defaultRunLogDir, defaultSessionsDir } from "../runtime/run-log.js";
 import { expandSpecFlowFiles } from "./flags.js";
 import { resolveBaseUrl, useProjectBaseUrl } from "../runtime/waygraph-config.js";
 import { discoverGraph, findBlockPath, findOrphanBlocks } from "../analysis/graph.js";
@@ -54,6 +54,7 @@ export async function runChain(projectDir: string, spec: string): Promise<void> 
   }
   const extensions = await configuredExtensions(projectDir);
   if (envString("WAYGRAPH_RUN_LOG") === undefined) setEnv("WAYGRAPH_RUN_LOG", defaultRunLogDir(projectDir));
+  if (envString("WAYGRAPH_SESSIONS") === undefined) setEnv("WAYGRAPH_SESSIONS", defaultSessionsDir(projectDir));
   if (extensions.length > 0) setEnv("WAYGRAPH_EXTENSIONS", extensions.join(","));
   const tsxEsm = import.meta.resolve("tsx/esm");
   const scriptPath = join(projectDir, `.waygraph-chain-${process.pid}.mjs`);

@@ -1,5 +1,5 @@
 import { configuredExtensions } from "../../runtime/waygraph-config.js";
-import { defaultRunLogDir } from "../../runtime/run-log.js";
+import { defaultRunLogDir, defaultSessionsDir } from "../../runtime/run-log.js";
 import { runInherited } from "../util.js";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
@@ -36,8 +36,15 @@ export async function testCase(args: string[]): Promise<void> {
         rest.splice(flowsAt, 1);
         setEnv("WAYGRAPH_FLOW_TESTS", "1");
       }
+      // --fresh-sessions: every account signs in again (its saved session isn't used), and saves the new one.
+      const freshAt = rest.indexOf("--fresh-sessions");
+      if (freshAt >= 0) {
+        rest.splice(freshAt, 1);
+        setEnv("WAYGRAPH_FRESH_SESSIONS", "1");
+      }
       const extensions = await configuredExtensions(proj);
       if (envString("WAYGRAPH_RUN_LOG") === undefined) setEnv("WAYGRAPH_RUN_LOG", defaultRunLogDir(proj));
+      if (envString("WAYGRAPH_SESSIONS") === undefined) setEnv("WAYGRAPH_SESSIONS", defaultSessionsDir(proj));
       if (extensions.length > 0) setEnv("WAYGRAPH_EXTENSIONS", extensions.join(","));
 
       // The Playwright config is built from config/waygraph.config.ts; a project has none of its own.

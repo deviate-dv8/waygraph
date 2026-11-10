@@ -66,3 +66,73 @@ test("forgetSessions makes the next flow sign in again", async ({ browser }) => 
   }
   expect(signIns).toBe(2);
 });
+
+const signInFlow = engine.map().gotoPage(NavLogin).method(SubmitLogin);
+
+/** Plays `flow` in a fresh browser, as another worker or a later run would. */
+async function playIn(browser: import("@playwright/test").Browser, flow: typeof homeAsPlanner): Promise<void> {
+  const context = await browser.newContext();
+  await serveApp(context);
+  await flow.run(context, new MemPage(), { page: await context.newPage() });
+  await context.close();
+}
+
+test("an account with a ttl signs in again once its session is older than that", async ({ browser }) => {
+  const Brief = account("brief", { signIn: signInFlow, ttl: 2000 });
+  const home = engine.map({ as: Brief }).gotoPage(NavHome);
+  await playIn(browser, home);
+  await playIn(browser, home);
+  expect(signIns).toBe(1);
+  await new Promise((r) => setTimeout(r, 2100));
+  await playIn(browser, home);
+  expect(signIns).toBe(2);
+});
+
+test.describe("saved sessions", () => {
+  test.describe.configure({ mode: "serial" });
+  let dir = "";
+  test.beforeEach(async () => {
+    const { mkdtempSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    dir = mkdtempSync(`${tmpdir()}/waygraph-sessions-`);
+    process.env.WAYGRAPH_SESSIONS = dir;
+  });
+  test.afterEach(async () => {
+    delete process.env.WAYGRAPH_SESSIONS;
+    delete process.env.WAYGRAPH_FRESH_SESSIONS;
+    const { rmSync } = await import("node:fs");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test("an account with a ttl saves its session for a later run, readable only by its owner", async ({ browser }) => {
+    const { readdirSync, statSync } = await import("node:fs");
+    const Saved = account("saved", { signIn: signInFlow, ttl: "15m" });
+    const home = engine.map({ as: Saved }).gotoPage(NavHome);
+    await playIn(browser, home);
+    forgetSessions(); // a new process: nothing kept in memory
+    await playIn(browser, home);
+    expect(signIns).toBe(1);
+    const [file] = readdirSync(dir);
+    expect(file).toMatch(/^saved-[0-9a-f]{12}\.json$/);
+    expect(statSync(`${dir}/${file}`).mode & 0o777).toBe(0o600);
+  });
+
+  test("--fresh-sessions signs in again and saves the new session; an account without a ttl saves nothing", async ({ browser }) => {
+    const { readdirSync } = await import("node:fs");
+    const Saved = account("saved", { signIn: signInFlow, ttl: "15m" });
+    const home = engine.map({ as: Saved }).gotoPage(NavHome);
+    await playIn(browser, home);
+    forgetSessions();
+    process.env.WAYGRAPH_FRESH_SESSIONS = "1";
+    await playIn(browser, home);
+    expect(signIns).toBe(2);
+    await playIn(browser, homeAsPlanner); // Planner has no ttl
+    expect(readdirSync(dir)).toEqual([expect.stringMatching(/^saved-/)]);
+  });
+});
+
+test("a ttl is ms or a number of s, m, h or d", () => {
+  expect(() => account("bad", { signIn: signInFlow, ttl: "15 minutes" as "15m" })).toThrow(/a ttl is a number of ms or "30s"/);
+  expect(account("hours", { signIn: signInFlow, ttl: "2h" }).ttlMs).toBe(7_200_000);
+  expect(account("ms", { signIn: signInFlow, ttl: 1500 }).ttlMs).toBe(1500);
+});

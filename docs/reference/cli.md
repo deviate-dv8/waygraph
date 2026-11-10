@@ -21,6 +21,7 @@ command's flags, from the same table the CLI parses, so an unknown flag stops wi
 | `--data '{"saucedemo.credentials":{…}}'` | seeds mem by key name |
 | `--input '{…}'` · `--input @cases.json` | the flow's input; an array plays it once per item |
 | `--replay <runId>` | the mem a past run was seeded with (a per-run value, from `unique`, made new) |
+| `--fresh-sessions` | every account signs in again: a saved session (an account with a `ttl`) isn't used, and the new one is saved (also on `waygraph test`) |
 | `--mem-stub` | fill missing keys from mem stubs, opted in or not |
 | `--no-expect` | run each step's `verify` only, none of the expectations (`expect: [...]`) |
 | `--env <mode>` · `--config <name>` | which `.env` / config file ([Config](./config)) |

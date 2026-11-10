@@ -65,6 +65,11 @@ export function defaultRunLogDir(projectDir: string): string {
   return join(projectDir, ".waygraph", "runs");
 }
 
+/** Where accounts with a ttl save their sessions, unless WAYGRAPH_SESSIONS says otherwise. */
+export function defaultSessionsDir(projectDir: string): string {
+  return join(projectDir, ".waygraph", "sessions");
+}
+
 /** A recorded run's events, from the project's run log (where WAYGRAPH_RUN_LOG points, else the default folder). */
 export function readRunLog(projectDir: string, runId: string): RunEvent[] {
   const dir = envString("WAYGRAPH_RUN_LOG");

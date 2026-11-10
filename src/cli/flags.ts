@@ -33,6 +33,8 @@ interface RunFlags {
   noExpect?: boolean;
   /** Seed mem with what a recorded run seeded (--replay <runId>). */
   replay?: string;
+  /** Every account signs in again, ignoring saved sessions (--fresh-sessions). */
+  freshSessions?: boolean;
   /** The flow's input: JSON or @file (--input). */
   input?: string;
   /** run only: explore every .branch() path (runBranchRegression), cloning the session at each branch point. */
@@ -94,6 +96,7 @@ export const RUN_OPTIONS = {
   "mem-stub": { type: "boolean", help: "Fill any requires key --data didn't cover from registerMemStub's registry", for: ["demo", "run"] },
   "no-expect": { type: "boolean", help: "Skip every expectation (expect: [...]): each step's verify only", for: ["demo", "run"] },
   "input": { type: "string", value: "<json|@file>", help: "The flow's input (map({ input })): JSON or @file.json; an array plays the flow once per item", for: ["demo", "run"] },
+  "fresh-sessions": { type: "boolean", help: "Sign every account in again: an account with a ttl doesn't use its saved session (and saves the new one)", for: ["demo", "run"] },
   "replay": { type: "string", value: "<runId>", help: "Seed mem with what that run seeded (its run log), to rerun a failure with its data; a per-run value (from unique) is made new", for: ["demo", "run"] },
   "auto-next": { type: "boolean", help: "Auto-advance steps", for: ["demo"] },
   "no-auto-next": { type: "boolean", help: "Wait for Next on every step (the default)", for: ["demo"] },
@@ -201,6 +204,7 @@ export function parseRunFlags(argv: string[], command: string): RunFlags {
   if (v["mem-stub"]) out.memStub = true;
   if (v["no-expect"]) out.noExpect = true;
   if (v.replay !== undefined) out.replay = v.replay;
+  if (v["fresh-sessions"]) out.freshSessions = true;
   if (v.input !== undefined) out.input = v.input;
   if (v["all-branches"]) out.allBranches = true;
   if (v["shared-session"]) out.sharedSession = true;
@@ -286,6 +290,9 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
   }
   if (flags.replay !== undefined) {
     setEnv("WAYGRAPH_REPLAY", flags.replay);
+  }
+  if (flags.freshSessions) {
+    setEnv("WAYGRAPH_FRESH_SESSIONS", "1");
   }
   if (flags.input !== undefined) {
     setEnv("WAYGRAPH_INPUT", flags.input);
