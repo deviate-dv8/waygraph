@@ -100,8 +100,9 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
       if (refs.device.current) await applyDeviceToPage(p, refs.device.current, "set");
     }),
   );
-  // A recorded demo on the config's device (a phone, a tablet, turned): its stage shows the device from the first step.
-  const device = page.__wgVideoViewport ? configuredDevice() : undefined;
+  // A demo on the config's device (a phone, a tablet, turned): its stage (the recording, or the window) shows the
+  // device from the first step.
+  const device = configuredDevice();
   if (device) {
     refs.device.current = {
       preset: device.preset,

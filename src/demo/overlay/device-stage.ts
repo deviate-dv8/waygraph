@@ -268,10 +268,16 @@ export async function applyDeviceToPage(page: WgPage, device: DeviceState | null
   // only really resized that one time, to establish a stable stage; every device switch after that
   // paints the animated shell inside it instead of resizing the window again).
   let establishingHeadedStage = false;
+  // A watched demo's window has no fixed viewport (it fills the screen, viewport null): its stage is the window's own
+  // inner size, measured, and the window is left as it is - the device shell is drawn inside the page, so neither the
+  // window nor the viewport has to change (fixing them to a default size shrank the window to 1280x720).
+  const windowSized = !videoStage && !(from && from.width > 0 && from.height > 0);
   if (!videoStage && !page.__wgHeadedStage) {
-    page.__wgHeadedStage =
-      from && from.width > 0 && from.height > 0 ? { width: from.width, height: from.height } : { width: 1280, height: 720 };
-    establishingHeadedStage = true;
+    const inner = windowSized
+      ? await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight })).catch(() => null)
+      : from;
+    page.__wgHeadedStage = inner && inner.width > 0 && inner.height > 0 ? { width: inner.width, height: inner.height } : { width: 1280, height: 720 };
+    establishingHeadedStage = !windowSized;
   }
   const stage = videoStage || page.__wgHeadedStage;
   const announce = mode === "set" || mode === "clear";
@@ -317,7 +323,8 @@ export async function applyDeviceToPage(page: WgPage, device: DeviceState | null
     if (!videoStage && establishingHeadedStage) {
       await fitWindowToDeviceViewport(page, stage, { maximize: false }).catch(ignorePageGone);
     }
-    await realSet(stage).catch(ignorePageGone);
+    // A window-sized page keeps following its window; a fixed viewport is held at the stage.
+    if (!windowSized) await realSet(stage).catch(ignorePageGone);
     const shellFrom = page.__wgDeviceShell || target;
     if (toDesktop) {
       // Zoom already cleared above. Full-bleed desktop shell (no matte frame).
@@ -332,7 +339,7 @@ export async function applyDeviceToPage(page: WgPage, device: DeviceState | null
         shutterOut: true,
         desktopFlat: true,
       });
-      await realSet(stage).catch(ignorePageGone);
+      if (!windowSized) await realSet(stage).catch(ignorePageGone);
     } else {
       // Lerp shell size when switching mobile <-> tablet mid-run.
       const firstDevice = !page.__wgDeviceShell;
@@ -349,8 +356,8 @@ export async function applyDeviceToPage(page: WgPage, device: DeviceState | null
         });
       }
       page.__wgDeviceShell = { ...target };
-      // Re-assert stage size after any prior fitWindow.
-      await realSet(stage).catch(ignorePageGone);
+      // Re-assert stage size after any prior fitWindow (a fixed viewport only).
+      if (!windowSized) await realSet(stage).catch(ignorePageGone);
     }
   } else {
     // Unmaximize + center early so the lerp does not sit in the corner of a

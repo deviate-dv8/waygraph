@@ -26,13 +26,15 @@ type Size = { width: number; height: number };
  * A demo window fills the screen (viewport null, maximized). A video is a fixed 16:9 capture (1920x1080 for a demo,
  * 1280x720 for a run) with the device scale locked, so the recording keeps that size on HiDPI hosts. The config's
  * device (a phone, a tablet, turned) is the browser's size, layout and touch; a recorded demo keeps its 16:9 stage and
- * shows the device in it (the stepper's device shell).
+ * shows the device in it (the stepper's device shell); a watched demo does too, in its window.
  */
 function viewportFor(options: PlayOptions, videoSize: Size | null, device: ResolvedDevice | undefined): Record<string, unknown> {
   const kind = device ? { isMobile: device.isMobile, hasTouch: device.hasTouch } : {};
   if (videoSize) return { viewport: videoSize, deviceScaleFactor: 1, ...(options.mode === "demo" ? {} : kind) };
+  // A watched demo keeps its window and shows the device in it (the stepper's device shell), as a recording does.
+  if (options.mode === "demo") return { viewport: null };
   if (device) return { viewport: device.viewport, deviceScaleFactor: device.deviceScaleFactor, ...kind };
-  return options.mode === "demo" ? { viewport: null } : { viewport: { width: 1280, height: 720 } };
+  return { viewport: { width: 1280, height: 720 } };
 }
 
 
