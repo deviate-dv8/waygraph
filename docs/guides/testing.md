@@ -54,7 +54,7 @@ the manifest and Waygraph UI's Flows page show them. `waygraph check` warns abou
 
 | A flow that... | Gets |
 |---|---|
-| has `map({ viewport })` | that browser size |
+| has `map({ device })` | that device's size (the config's `device` sets every test's browser: size, phone layout, touch) |
 | needs a key a mem stub supplies | the stub's value |
 | needs a key nothing supplies | skipped, with the key named |
 | starts on a page it doesn't open (an episode meant to follow another) | skipped, with the reason |

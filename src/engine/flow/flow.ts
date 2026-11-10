@@ -16,6 +16,7 @@ import type { HighlightStyleDefaults } from "../stub/ring.js";
 import { ignorePageGone } from "../page-gone.js";
 import { seedMemStub } from "../mem/mem-stub.js";
 import type { SomeBlock } from "../block/some-block.js";
+import { resolveDevice, type Device, type ResolvedDevice } from "./device.js";
 
 /**
  * A composed, runnable flow. Always begins from `Start`, same as
@@ -115,8 +116,8 @@ export interface Flow<Out extends Checkpoint<string>> {
    * a mem stub, or `.flow(sub, { input })`.
    */
   readonly input?: MemKey<unknown> | undefined;
-  /** `map({ viewport })`: the browser size this flow plays at (`waygraph run`, `demo`, `test --flows`). */
-  readonly viewport?: { width: number; height: number } | undefined;
+  /** `map({ device })`: the device this flow plays on (`waygraph run`, `demo`, `test --flows`). */
+  readonly device?: ResolvedDevice | undefined;
   /** `map({ exclusive: true })`: under `waygraph test --flows` it runs alone, after every other flow. */
   readonly exclusive?: boolean | undefined;
   /**
@@ -284,7 +285,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
 export interface FlowSettings {
   /** The flow's input key (`map({ input })`). */
   input?: MemKey<unknown>;
-  viewport?: { width: number; height: number };
+  device?: Device;
   exclusive?: boolean;
   /** Read when a map() chain is built into its flow (the first step sets them, a cleanup step puts them back). */
   timezone?: string;
@@ -309,7 +310,7 @@ export function withSettings<Out extends Checkpoint<string>>(flow: Flow<Out>, se
     ...(settings.sessionReset ? { resetSession: true } : {}),
     ...(settings.memStub ? { memStub: true } : {}),
     ...(settings.input ? { input: settings.input } : {}),
-    ...(settings.viewport ? { viewport: settings.viewport } : {}),
+    ...(settings.device ? { device: resolveDevice(settings.device) } : {}),
     ...(settings.exclusive ? { exclusive: true } : {}),
     ...(settings.expectedFailure !== undefined ? { expectedFailureReason: settings.expectedFailure } : {}),
     ...(settings.demoPace ? { demoPace: settings.demoPace } : {}),

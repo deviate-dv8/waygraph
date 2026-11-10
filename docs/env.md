@@ -52,6 +52,7 @@ This page is generated from `src/engine/env.ts` (`npm run docs:api`).
 | `WAYGRAPH_VIDEO` | Record a video: the folder, or 1 for the default (--video) |
 | `WAYGRAPH_OVERLAY_HIDE` | The parts of the demo overlay to leave out, comma-separated: banner, panel, checks, todos (the config's demo.overlay) |
 | `WAYGRAPH_OVERLAY_TRACE` | 1 logs each piece of the demo overlay showing and going, and how often each blinked |
+| `WAYGRAPH_DEVICE` | The device run and demo start their browser as: a name or its parts, as JSON (the config's device) |
 | `WAYGRAPH_VOICE` | 0 records a demo without the config's voice-over (--no-voice) |
 | `WAYGRAPH_VIDEO_DIR` | Default video folder |
 | `WAYGRAPH_VIDEO_VIEWPORT` | Recording size, e.g. 1920x1080 (--video-viewport) |

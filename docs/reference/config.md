@@ -33,6 +33,7 @@ graph LR
 | `baseUrl` | where relative URLs go (`WAYGRAPH_BASE_URL` overrides it) |
 | `webServer` | `{ command, port }`, started before and stopped after |
 | `extensions` | browser extensions ([below](#browser-extensions)) |
+| `device` | the device flows play on: `"desktop"` (default), `"tablet"`, `"mobile"`, or its parts (`{ preset: "mobile", orientation: "landscape" }`, `{ width: 1600, height: 900 }`). `run`, `demo` and `waygraph test` start their browser as it (size, phone layout, touch); a recorded demo shows it in its stage; a flow's `map({ device })` changes the size for that flow |
 | `labels` | groups of flows to run on their own: `{ auth: ["src/flows/auth/**", "logoutFlow"] }`, each a glob over flow files or a flow's export name (`waygraph test --flows --label auth`, [Labels](../guides/testing#labels)) |
 | `testDir` | where `waygraph test` looks for specs (default `tests`) |
 | `playwright` | Playwright's own config, merged over the defaults: `fullyParallel`, `list` + `html` reporters, `trace: "retain-on-failure"`, `use.baseURL` from `baseUrl` |

@@ -17,6 +17,7 @@ import { envString, setEnv } from "../engine/env.js";
 import type { WaygraphEnvName } from "../engine/env.js";
 import { takeGlobalFlag } from "./global-flag.js";
 import type { Voice } from "./voice.js";
+import type { Device } from "../engine/flow/device.js";
 
 /** Where `--video` recordings are saved and at what size. */
 export interface VideoSettings {
@@ -97,6 +98,12 @@ export interface WaygraphConfig {
   extensions?: ExtensionSpec[];
   /** Recording with `--video` (`waygraph run` / `demo`); `run` and `demo` below can override it. */
   video?: VideoSettings;
+  /**
+   * The device flows play on: `"desktop"` (the default), `"tablet"`, `"mobile"`, or its parts (`{ preset: "mobile",
+   * orientation: "landscape" }`, `{ width: 1600, height: 900 }`). `run`, `demo` and `waygraph test` start their browser
+   * as it (its size, phone layout and touch); a flow's `map({ device })` changes the size for that flow.
+   */
+  device?: Device;
   /** Default for `run` and `demo`: milliseconds to pause around each browser action, so a run is watchable. */
   slowMo?: number;
   /** Default for `run` and `demo`: show the browser window. Without it `demo` and `auto` are headed and `run` is headless. */
@@ -299,6 +306,7 @@ export function applyConfigEnv(config: WaygraphConfig | undefined, command: stri
   set("WAYGRAPH_VIDEO_DIR", video.dir);
   set("WAYGRAPH_VIDEO_VIEWPORT", video.viewport);
   set("WAYGRAPH_SLOWMO", slowMo === undefined ? undefined : String(slowMo));
+  set("WAYGRAPH_DEVICE", config.device === undefined ? undefined : JSON.stringify(config.device));
   set("WAYGRAPH_HEADED", flag(section?.headed ?? config.headed));
   if (isDemo) {
     set("WAYGRAPH_AUTOPLAY", flag(config.demo?.autoNext));

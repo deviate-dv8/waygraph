@@ -70,7 +70,7 @@ export async function registerFlowTests(exclusive: boolean): Promise<void> {
         if (flow.memStub) seedMemStub(mem, flow);
         const missing = unsupplied(flow, mem);
         test.skip(missing.length > 0, `needs ${missing.join(", ")}: register a mem stub (and map({ memStub: true })), or run it with --data`);
-        if (flow.viewport) await page.setViewportSize(flow.viewport);
+        if (flow.device) await page.setViewportSize(flow.device.viewport);
         // The run log names the flow: a flow doesn't know its own export name, its file does.
         const play = () => inRun(exportName, () => flow.run(context, mem, { page }));
         if (flow.expectedFailureReason) {

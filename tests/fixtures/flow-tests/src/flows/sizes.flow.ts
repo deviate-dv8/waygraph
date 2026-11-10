@@ -7,7 +7,7 @@ const open = (name: string) => defineNavBlock({ name, checkpoint: Page, url: "da
 const engine = new Engine();
 
 /** Plays at its own size. */
-export const wideFlow = engine.map({ viewport: { width: 1500, height: 800 } }).gotoPage(open("open-wide").withVerify([width(1500)]));
+export const wideFlow = engine.map({ device: { width: 1500, height: 800 } }).gotoPage(open("open-wide").withVerify([width(1500)]));
 /** Plays alone, after the others. */
 export const aloneFlow = engine.map({ exclusive: true }).gotoPage(open("open-alone"));
 export const otherFlow = engine.map().gotoPage(open("open-other"));

@@ -32,6 +32,7 @@ import { buildBranchedFlow } from "./map-branch.js";
 import { signInStep, type Account } from "./account.js";
 import { inWorld, restoreWorld, type World } from "./world.js";
 import { asCleanup, settling, requiring, withoutRequire, settingInput, settingKey, stepExpect, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
+import type { Device } from "./device.js";
 
 
 /**
@@ -81,11 +82,13 @@ export interface MapBuilderOptions {
    */
   input?: MemKey<unknown>;
   /**
-   * The browser size this flow plays at: a responsive layout, a page that needs room. `run` and `demo` resize to it when
-   * the flow starts; `waygraph test --flows` runs it at that size.
-   * @example engine.map({ viewport: { width: 1600, height: 900 } })
+   * The device this flow plays on, over the config's `device` (default desktop): `"mobile"`, `"tablet"`, or its parts
+   * (`{ preset: "mobile", orientation: "landscape" }`, `{ width: 1600, height: 900 }`). `run`, `demo` and `waygraph test
+   * --flows` play it at that size; a phone or tablet layout and touch come from the browser the run started with (the
+   * config's `device`), since a browser can't switch them midway.
+   * @example engine.map({ device: { preset: "tablet", orientation: "landscape" } })
    */
-  viewport?: { width: number; height: number };
+  device?: Device;
   /**
    * Under `waygraph test --flows`, run this flow alone, after every other flow: it changes data others read (a bulk
    * delete, a settings change), or it needs the app to itself.
@@ -451,8 +454,8 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
   get input(): Flow<Out>["input"] {
     return this.finished().input;
   }
-  get viewport(): Flow<Out>["viewport"] {
-    return this.finished().viewport;
+  get device(): Flow<Out>["device"] {
+    return this.finished().device;
   }
   get exclusive(): boolean | undefined {
     return this.finished().exclusive;

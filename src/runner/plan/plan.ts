@@ -181,7 +181,7 @@ function stepsOf(segments: readonly Segment[], options: PlayOptions, { episodes 
       seedMem: i === 0 ? segment.seedMem : undefined,
       expectedFailureReason: i === last ? segment.flow.expectedFailureReason : undefined,
       segment: segmentIndex,
-      ...(i === 0 && segment.flow.viewport ? { viewport: segment.flow.viewport } : {}),
+      ...(i === 0 && segment.flow.device ? { viewport: segment.flow.device.viewport } : {}),
       ...(info.cleanup ? { cleanup: true } : {}),
       demoPace: segment.flow.demoPace,
       highlightStyle: segment.flow.highlightStyle,

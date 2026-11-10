@@ -163,7 +163,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
 - **Setup is steps, cleanup is `.finally`.** Data a flow needs is made first (`.flow(seedFlow)` of API Blocks), not taken
   from whatever the database holds; what it made is deleted in `.finally(DeleteApiBlock)`.
 - **Flows are the tests.** `waygraph test --flows` runs every flow as a Playwright test (workers, retries, video,
-  reports); `map({ viewport })` sizes one, `map({ exclusive: true })` runs one alone and last. A project-written batch
+  reports); `map({ device })` plays one on a device (`"mobile"`, `{ preset: "tablet", orientation: "landscape" }`; the config's `device` is every flow's default), `map({ exclusive: true })` runs one alone and last. A project-written batch
   runner (parallelism, retries, "run these alone", a verdict file) is a smell. Write a spec only for what a flow can't say.
 - **Every page has a Read Block.** A page's Blocks say what you can do there; its Read Block says what it shows, as
   typed data: in the run log after every step that lands there, from `waygraph auto read` for an agent, and for a test

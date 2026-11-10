@@ -1,11 +1,12 @@
 import type { DeviceOrientation, DevicePreset, DeviceState, DeviceViewport } from "../../engine/stub/viewport.js";
 import { choice } from "../../engine/stub/choice.js";
+import { DEVICES } from "../../engine/flow/device.js";
 
 /** Built-in preset sizes (CSS pixels) — stored in portrait for mobile/tablet. */
 export const DEVICE_PRESETS: Record<DevicePreset, Omit<DeviceState, "touchMode"> & { touchMode?: boolean }> = {
   mobile: {
     preset: "mobile",
-    viewport: { width: 390, height: 844, deviceScaleFactor: 2 },
+    viewport: { ...DEVICES.mobile.viewport, deviceScaleFactor: DEVICES.mobile.deviceScaleFactor },
     isMobile: true,
     hasTouch: true,
     touchMode: true,
@@ -13,7 +14,7 @@ export const DEVICE_PRESETS: Record<DevicePreset, Omit<DeviceState, "touchMode">
   },
   tablet: {
     preset: "tablet",
-    viewport: { width: 768, height: 1024, deviceScaleFactor: 2 },
+    viewport: { ...DEVICES.tablet.viewport, deviceScaleFactor: DEVICES.tablet.deviceScaleFactor },
     isMobile: true,
     hasTouch: true,
     touchMode: true,
@@ -21,7 +22,7 @@ export const DEVICE_PRESETS: Record<DevicePreset, Omit<DeviceState, "touchMode">
   },
   desktop: {
     preset: "desktop",
-    viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
+    viewport: { ...DEVICES.desktop.viewport, deviceScaleFactor: DEVICES.desktop.deviceScaleFactor },
     isMobile: false,
     hasTouch: false,
     touchMode: false,

@@ -3,6 +3,8 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { envString } from "../engine/env.js";
+import type { ResolvedDevice } from "../engine/flow/device.js";
+import { configuredDevice } from "../demo/overlay/device-config.js";
 import { messageOf } from "../engine/errors.js";
 import { loadWaygraphConfig } from "../runtime/waygraph-config.js";
 import { addVoiceOver, hasFfmpeg, subtitlesOf } from "../runtime/voice.js";
@@ -22,18 +24,26 @@ type Size = { width: number; height: number };
 
 /**
  * A demo window fills the screen (viewport null, maximized). A video is a fixed 16:9 capture (1920x1080 for a demo,
- * 1280x720 for a run) with the device scale locked, so the recording keeps that size on HiDPI hosts.
+ * 1280x720 for a run) with the device scale locked, so the recording keeps that size on HiDPI hosts. The config's
+ * device (a phone, a tablet, turned) is the browser's size, layout and touch; a recorded demo keeps its 16:9 stage and
+ * shows the device in it (the stepper's device shell).
  */
-function viewportFor(options: PlayOptions, videoSize: Size | null): Record<string, unknown> {
-  if (videoSize) return { viewport: videoSize, deviceScaleFactor: 1 };
+function viewportFor(options: PlayOptions, videoSize: Size | null, device: ResolvedDevice | undefined): Record<string, unknown> {
+  const kind = device ? { isMobile: device.isMobile, hasTouch: device.hasTouch } : {};
+  if (videoSize) return { viewport: videoSize, deviceScaleFactor: 1, ...(options.mode === "demo" ? {} : kind) };
+  if (device) return { viewport: device.viewport, deviceScaleFactor: device.deviceScaleFactor, ...kind };
   return options.mode === "demo" ? { viewport: null } : { viewport: { width: 1280, height: 720 } };
 }
+
 
 export async function openSession(projectDir: string, options: PlayOptions, mem: MemPage, launchSlowMo: number | undefined): Promise<{ session: PlaySession; close: () => Promise<void> }> {
   const videoDir = options.video ? (options.video === "1" ? await resolveVideoDir(projectDir) : options.video) : null;
   if (videoDir) mkdirSync(videoDir, { recursive: true });
+  const device = configuredDevice();
+  // A run records the device's own screen; a demo records its 16:9 stage with the device shown in it.
   const videoSize = videoDir
-    ? (parseViewport(options.videoViewport) ?? (options.mode === "demo" ? { width: 1920, height: 1080 } : { width: 1280, height: 720 }))
+    ? (parseViewport(options.videoViewport) ??
+      (options.mode === "demo" ? { width: 1920, height: 1080 } : (device?.viewport ?? { width: 1280, height: 720 })))
     : null;
   const { chromium } = await import("@playwright/test");
   const executablePath = chromiumExecutablePath();
@@ -48,7 +58,7 @@ export async function openSession(projectDir: string, options: PlayOptions, mem:
     context: {
       ...(options.baseURL ? { baseURL: options.baseURL } : {}),
       hasTouch: true,
-      ...viewportFor(options, videoSize),
+      ...viewportFor(options, videoSize, device),
       ...(videoDir ? { recordVideo: videoSize ? { dir: videoDir, size: videoSize } : { dir: videoDir } } : {}),
     },
     extensions: extensionPathsFromEnv(),

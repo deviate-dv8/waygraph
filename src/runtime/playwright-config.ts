@@ -2,6 +2,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { PlaywrightTestConfig } from "@playwright/test";
 import type { WaygraphConfig } from "./waygraph-config.js";
+import { resolveDevice, type Device } from "../engine/flow/device.js";
 
 /** Where `waygraph test --flows` finds its two spec files (cli/flow-tests/, next to this file's folder in dist). */
 const FLOW_TESTS = join(dirname(fileURLToPath(import.meta.url)), "..", "cli", "flow-tests");
@@ -29,6 +30,14 @@ export function playwrightConfigFrom(config: WaygraphConfig, projectDir: string,
           ],
         }
       : {}),
-    use: { baseURL, trace: "retain-on-failure", ...use },
+    // The config's device (desktop unless it says otherwise): every test's browser, under its own playwright.use.
+    use: { baseURL, trace: "retain-on-failure", ...deviceUse(config.device), ...use },
   };
+}
+
+/** A device as Playwright's test options: size, pixel ratio, phone layout, touch. Nothing for the default (desktop). */
+function deviceUse(device: Device | undefined): Record<string, unknown> {
+  if (device === undefined) return {};
+  const d = resolveDevice(device);
+  return { viewport: d.viewport, deviceScaleFactor: d.deviceScaleFactor, isMobile: d.isMobile, hasTouch: d.hasTouch };
 }

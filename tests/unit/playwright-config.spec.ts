@@ -22,4 +22,15 @@ describe("playwrightConfigFrom", () => {
     const c = playwrightConfigFrom({ webServer: { command: "npm start", port: 3000, cwd: "app" } }, "/p", undefined);
     assert.deepEqual(c.webServer, [{ command: "npm start", port: 3000, cwd: "/p/app" }]);
   });
+
+  it("the config's device is every test's browser: its size, pixel ratio, phone layout and touch", () => {
+    const c = playwrightConfigFrom({ device: { preset: "mobile", orientation: "landscape" } }, "/proj", undefined);
+    assert.deepEqual(
+      { viewport: c.use?.viewport, deviceScaleFactor: c.use?.deviceScaleFactor, isMobile: c.use?.isMobile, hasTouch: c.use?.hasTouch },
+      { viewport: { width: 844, height: 390 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
+    );
+    // Its own playwright.use still wins.
+    assert.deepEqual(playwrightConfigFrom({ device: "tablet", playwright: { use: { viewport: { width: 1, height: 2 } } } }, "/proj", undefined).use?.viewport, { width: 1, height: 2 });
+    assert.equal(playwrightConfigFrom({}, "/proj", undefined).use?.viewport, undefined);
+  });
 });

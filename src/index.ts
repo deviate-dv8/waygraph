@@ -59,6 +59,7 @@ export type { WaygraphTodoItem, WaygraphTodoInput, WaygraphTodoGroup, WaygraphTo
 export type { BannerPos, BannerUiOpts, HighlightStubPhaseName, StubCtx, StubLifecycleFn, StubPhaseResult, StubPhaseFixtures, StubUi } from "./engine/stub/stub.js";
 export type { DemoPace, DemoPaceName } from "./engine/stub/pace.js";
 export type { DevicePreset, DeviceViewport, DeviceState, DeviceOrientation } from "./engine/stub/viewport.js";
+export type { Device, DeviceName, DeviceOptions } from "./engine/flow/device.js";
 export type { Flow, BlockInfo } from "./engine/flow/flow.js";
 export type { EngineConfig } from "./engine/config.js";
 export type { ComposedBlock, FastForwardComposedBlock, SomeComposedBlock, SomeFastForwardBlock } from "./engine/block/compose.js";

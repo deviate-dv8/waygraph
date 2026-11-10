@@ -156,7 +156,7 @@ engine.map()
 | `memStub: true` | fills keys nothing else supplies from their mem stubs ([Data](./data)); `new Engine({ memStub: true })` does it for every flow |
 | `as: Account` | starts signed in as that account ([below](#accounts)) |
 | `input: Key` | the flow takes this key as its input, once per case ([Data](./data#one-flow-many-cases)) |
-| `viewport: { width, height }` | the browser size it plays at |
+| `device: "mobile"`, `{ preset: "tablet", orientation: "landscape" }`, `{ width, height }` | the device it plays on, over the config's `device` ([Config](../reference/config#the-fields)) |
 | `timezone` / `network` | the world it runs in ([Testing](./testing#the-world-a-flow-runs-in)) |
 | `exclusive: true` | `test --flows` runs it alone, after the others |
 | `sessionReset: true` | starts with fresh cookies and storage when it follows another flow |

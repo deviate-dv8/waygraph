@@ -28,6 +28,7 @@ import { showFinish, type FinishCard } from "../overlay/inpage/finish.js";
 import { ensureShadowRoot } from "../overlay/ui/shadow.js";
 import { demoLog } from "./demo-log.js";
 import { blinksOf, traceOverlay } from "../overlay/trace.js";
+import { configuredDevice } from "../overlay/device-config.js";
 
 export interface Stepper {
   /** After the page was reset between episodes: storage was wiped, so the auto-advance setting is put back. */
@@ -99,6 +100,19 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
       if (refs.device.current) await applyDeviceToPage(p, refs.device.current, "set");
     }),
   );
+  // A recorded demo on the config's device (a phone, a tablet, turned): its stage shows the device from the first step.
+  const device = page.__wgVideoViewport ? configuredDevice() : undefined;
+  if (device) {
+    refs.device.current = {
+      preset: device.preset,
+      viewport: { ...device.viewport, deviceScaleFactor: device.deviceScaleFactor },
+      isMobile: device.isMobile,
+      hasTouch: device.hasTouch,
+      touchMode: device.hasTouch,
+      orientation: device.orientation,
+    };
+    await applyDeviceToPage(page, refs.device.current, "set");
+  }
   keepOverlayOnNavigation(page, () => restoreTheaterAfterNavigation(page, refs.stubBefore));
   keepWindowSize(page);
   const gate = await installGate(page, pacing, demoFast);
@@ -116,6 +130,8 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
     stickyTitle: undefined,
     allEpisodes: episodesOf(steps),
   };
+  // The steps keep the config's device until one sets another (ctx.ui.device).
+  if (refs.device.current) ctx.stage.state.lastDevice = refs.device.current;
   let view: StepView;
 
   return {

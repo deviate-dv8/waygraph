@@ -149,6 +149,7 @@ A stub paints through \`ctx.ui\`; \`ctx\` itself holds only what a stub reads (\
 
 | Removed | Use instead |
 | --- | --- |
+| \`map({ viewport: { width, height } })\` | \`map({ device: { width, height } })\`, or a device by name and orientation: \`map({ device: { preset: "tablet", orientation: "landscape" } })\` |
 | \`waygraph extensions install\` | \`waygraph install\`: the extensions, and everything else the config requires (browsers, the demo's voice, \`.env\` entries) |
 
 ## Removed in 0.16.16

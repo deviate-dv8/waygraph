@@ -26,7 +26,7 @@ export interface PlayStep {
   expectedFailureReason?: string | undefined;
   demoPace?: DemoPace | undefined;
   highlightStyle?: HighlightStyleDefaults | undefined;
-  /** The browser size its flow plays at (`map({ viewport })`); set on a segment's first step. */
+  /** The browser size its flow plays at (`map({ device })`); set on a segment's first step. */
   viewport?: { width: number; height: number } | undefined;
   /** Which flow of the chain this step belongs to (its cleanup runs when that flow ends). */
   segment: number;
