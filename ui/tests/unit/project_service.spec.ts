@@ -48,6 +48,7 @@ test.group('ProjectService', (group) => {
       lastStep: 'submit-login',
       failedAt: 'submit-login',
       error: 'wanted /inventory.html',
+      videos: [],
     })
   })
 

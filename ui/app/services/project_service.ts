@@ -239,6 +239,9 @@ function summarize(id: string, events: RunEvent[]): RunSummary {
     lastStep: starts.length ? String(starts[starts.length - 1]?.block) : null,
     failedAt: failed ? String(failed.block) : null,
     error: end && typeof end.error === 'string' ? end.error : failed ? String(failed.error) : null,
+    videos: events
+      .filter((e) => e.type === 'run:artifact')
+      .flatMap((e, index) => (e.kind === 'video' ? [index] : [])),
   }
 }
 

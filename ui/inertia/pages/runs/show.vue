@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import StepPipeline from '~/components/graph/step_pipeline.vue'
 import RunStatus from '~/components/run_status.vue'
+import PlayOptions from '~/components/play_options.vue'
 import { urlFor } from '~/client'
 import { ago, count, duration, hostOf, shortUrl } from '~/lib/format'
 import { runTitle } from '~/lib/runs'
@@ -189,6 +190,7 @@ const watching = ref(false)
           </template>
         </UPopover>
       </div>
+      <PlayOptions v-if="again" class="pt-1" />
     </div>
 
     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-start p-3 pt-16">

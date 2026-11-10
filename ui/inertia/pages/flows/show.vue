@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import StepPipeline from '~/components/graph/step_pipeline.vue'
 import RunStatus from '~/components/run_status.vue'
+import PlayOptions from '~/components/play_options.vue'
 import { urlFor } from '~/client'
 import { ago, count, duration } from '~/lib/format'
 import { usePlay } from '~/lib/play'
@@ -91,6 +92,7 @@ const noExpect = ref(false)
         </UTooltip>
         <UCheckbox v-model="noExpect" label="verify only" size="sm" />
       </div>
+      <PlayOptions class="pt-1" />
     </div>
 
     <div
@@ -143,16 +145,27 @@ const noExpect = ref(false)
         <p class="mb-2 text-sm font-semibold">Recent runs</p>
         <p v-if="!props.runs.length" class="text-xs text-(--ink-soft)">Not run yet.</p>
         <ul class="space-y-1">
-          <li v-for="r in props.runs.slice(0, 8)" :key="r.id">
+          <li v-for="r in props.runs.slice(0, 8)" :key="r.id" class="flex items-center gap-1">
             <ULink
               :to="urlFor('runs.show', { id: r.id })"
-              class="flex items-center justify-between gap-2 rounded px-1 py-0.5 text-sm hover:bg-(--island-line)"
+              class="flex flex-1 items-center justify-between gap-2 rounded px-1 py-0.5 text-sm hover:bg-(--island-line)"
             >
               <span class="flex items-center gap-2"
                 ><RunStatus :id="r.id" :ok="r.ok" /> {{ ago(r.startedAt) }}</span
               >
               <span class="text-xs text-(--ink-soft)">{{ duration(r.ms) }}</span>
             </ULink>
+            <UTooltip v-for="v in r.videos" :key="v" text="Download its video">
+              <UButton
+                :href="`${urlFor('runs.artifact', { id: r.id, index: v })}?download`"
+                external
+                icon="i-lucide-download"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                aria-label="Download its video"
+              />
+            </UTooltip>
           </li>
         </ul>
       </aside>

@@ -46,7 +46,13 @@ export class PlayerService {
   start(
     flow: string,
     mode: PlayMode,
-    options: { noExpect?: boolean; replay?: string; autoNext?: boolean; video?: boolean } = {}
+    options: {
+      noExpect?: boolean
+      replay?: string
+      autoNext?: boolean
+      video?: boolean
+      headed?: boolean
+    } = {}
   ): Play {
     if (PlayerService.job && PlayerService.job.exitCode === null) {
       throw new Error(`Still playing ${PlayerService.job.flow}: stop it first.`)
@@ -64,8 +70,8 @@ export class PlayerService {
     const [cmd, cmdArgs] = waygraphCommand(dir, args)
     const env: NodeJS.ProcessEnv = { ...process.env, FORCE_COLOR: '0' }
     for (const key of APP_ENV) delete env[key]
-    // A run plays in the background; a demo opens its browser to be watched.
-    env.WAYGRAPH_HEADED = mode === 'demo' ? '1' : '0'
+    // The browser shows when asked (the switch next to Run and Demo); unsaid, a run is headless and a demo is watched.
+    env.WAYGRAPH_HEADED = (options.headed ?? mode === 'demo') ? '1' : '0'
     // Its own process group: stopping it stops the browser it started too.
     const child = spawn(cmd, cmdArgs, {
       cwd: dir,

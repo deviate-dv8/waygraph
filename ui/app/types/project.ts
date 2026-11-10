@@ -127,6 +127,8 @@ export type RunSummary = {
   lastStep: string | null
   failedAt: string | null
   error: string | null
+  /** Its videos, by their place among the run's artifacts (`runs.artifact` serves them). */
+  videos: number[]
 }
 
 /** One step of a run, its events folded together. */
