@@ -161,6 +161,8 @@ ${optionHelp("run")}
                  test show-trace <file>    Open one trace.zip in the trace viewer
                  <any other args>          Forwarded verbatim (--grep, a spec path, --headed, …)
                                            Scaffolds ship trace: "retain-on-failure" + the
+                                           --flows --label auth[,smoke]: only the flows with a
+                                           label (the config's labels; tagged @auth).
                                            html reporter, so a failed waygraph test already
                                            has a trace - test report opens it.
 
@@ -241,7 +243,7 @@ Skills (print packaged skill markdown to stdout - for agents / paste):
   waygraph --skill-convention              Block/Map authoring conventions
 
 Examples:
-  waygraph list                                          # file → export map
+  waygraph list [--label auth]                           # file → export map, with each flow's labels
   waygraph run src/flows/shop.flow.ts --data '{...}'
   waygraph run --blocks shopFlow --non-headless --video
   waygraph demo --blocks src/flows/cart-bulk.flow.ts --auto-next --fast

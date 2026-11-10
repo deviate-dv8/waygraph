@@ -107,6 +107,12 @@ export interface WaygraphConfig {
   demo?: DemoSettings;
   /** Write each run's events to `.waygraph/runs/<runId>.jsonl` (the history Waygraph UI shows), or to this folder. Default true. */
   runLog?: boolean | string;
+  /**
+   * Labels for flows, to run a group of them (`waygraph test --flows --label auth`): each label names its flows, by a
+   * glob over their files (`"src/flows/auth/**"`) or by a flow's export name (`"loginFlow"`). A flow can have several.
+   * @example labels: { auth: ["src/flows/auth/**", "logoutFlow"], smoke: ["loginFlow", "checkoutFlow"] }
+   */
+  labels?: Record<string, string[]>;
   /** Folder of test files, relative to the project. Default `"tests"`. */
   testDir?: string;
   /** App to start around `waygraph test`, `run`, `demo` and `auto` (same fields as Playwright's `webServer`). */

@@ -14,6 +14,13 @@ const props = defineProps<{
 }>()
 
 const query = ref('')
+/** The config's labels, by how many flows have each; picking one shows only its flows. */
+const label = ref<string | null>(null)
+const labelCounts = computed(() => {
+  const counts = new Map<string, number>()
+  for (const f of props.flows) for (const l of f.labels) counts.set(l, (counts.get(l) ?? 0) + 1)
+  return [...counts]
+})
 const status = ref<'all' | 'failing' | 'passing' | 'never'>('all')
 const statusOf = (f: FlowRow) =>
   !f.lastRun ? 'never' : f.lastRun.ok === false ? 'failing' : f.lastRun.ok ? 'passing' : 'never'
@@ -33,6 +40,7 @@ const shown = computed(() => {
   return props.flows.filter(
     (f) =>
       (status.value === 'all' || statusOf(f) === status.value) &&
+      (!label.value || f.labels.includes(label.value)) &&
       (!q || `${f.name} ${f.file} ${f.stepNames}`.toLowerCase().includes(q))
   )
 })
@@ -67,7 +75,19 @@ const groups = computed(() => {
         class="w-72"
       />
     </div>
-    <UTabs v-model="status" :items="filters" :content="false" size="sm" class="mb-5" />
+    <UTabs v-model="status" :items="filters" :content="false" size="sm" class="mb-3" />
+    <div v-if="labelCounts.length" class="mb-5 flex flex-wrap items-center gap-1.5">
+      <UIcon name="i-lucide-tag" class="size-4 text-(--ink-soft)" />
+      <UButton
+        v-for="[l, n] in labelCounts"
+        :key="l"
+        :label="`${l} ${n}`"
+        size="xs"
+        :color="label === l ? 'primary' : 'neutral'"
+        variant="soft"
+        @click="label = label === l ? null : l"
+      />
+    </div>
 
     <section v-for="g in groups" :key="g.group" class="mb-5">
       <h2 class="mb-2 flex items-center gap-2 font-mono text-sm text-(--ink-soft)">
@@ -94,6 +114,15 @@ const groups = computed(() => {
                 {{ f.file }}
               </p>
             </div>
+            <UBadge
+              v-for="l in f.labels"
+              :key="l"
+              :label="l"
+              icon="i-lucide-tag"
+              color="primary"
+              variant="subtle"
+              size="sm"
+            />
             <UBadge :label="count(f.steps, 'step')" color="neutral" variant="outline" size="sm" />
             <UBadge
               v-if="f.expectations"

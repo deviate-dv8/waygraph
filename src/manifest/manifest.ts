@@ -14,6 +14,7 @@ import type { SomeBlock } from "../engine/block/some-block.js";
 import type { Trait } from "../engine/trait/trait.js";
 import { walkDir } from "./scan.js";
 import { forgetSources, selectorEntries, selectorFilesUnder, selectorsUsed, spanOf, type SelectorEntry, type SourceSpan } from "./selectors.js";
+import { labelsOf, type Labels } from "./labels.js";
 
 export const MANIFEST_VERSION = 2;
 
@@ -55,6 +56,8 @@ export interface ManifestFlow {
   exportName: string;
   file: string;
   source?: SourceSpan;
+  /** Its labels, from the config's `labels` (`waygraph test --flows --label auth`). */
+  labels: string[];
   /** The folders under `src/flows/` (the page or `(user-story)` it belongs to) and the file's name (the outcome). */
   useCase: { path: string[]; outcome: string };
   /** Block names in run order, nested flows flattened. */
@@ -141,7 +144,7 @@ function useCaseOf(file: string): ManifestFlow["useCase"] {
 }
 
 /** Builds the manifest from a scan. */
-export function manifestFromScan(scan: ProjectScan): Manifest {
+export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
   const checkpoints = new Set<string>();
   const maps = new Set<string>();
   forgetSources();
@@ -184,6 +187,7 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
       exportName: f.exportName,
       file: f.file,
       ...(source ? { source } : {}),
+      labels: labelsOf(labels, f.file, f.exportName),
       useCase: useCaseOf(f.file),
       steps: flow.blocks().map((s) => s.name),
       stepExpects: flow.blocks().map((s) => describeExpectations(s.block)),
@@ -234,10 +238,10 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
 /** Scans the project and returns its manifest. */
 export async function buildManifest(
   projectDir: string,
-  opts: ScanOptions & { baseUrl?: string | undefined; config?: Manifest["config"] } = {},
+  opts: ScanOptions & { baseUrl?: string | undefined; config?: Manifest["config"]; labels?: Labels | undefined } = {},
 ): Promise<Manifest> {
-  const { baseUrl, config, ...scanOpts } = opts;
-  const manifest = manifestFromScan(await scanProject(projectDir, scanOpts));
+  const { baseUrl, config, labels, ...scanOpts } = opts;
+  const manifest = manifestFromScan(await scanProject(projectDir, scanOpts), labels);
   return { ...manifest, ...(baseUrl ? { project: { ...manifest.project, baseUrl } } : {}), ...(config ? { config } : {}) };
 }
 

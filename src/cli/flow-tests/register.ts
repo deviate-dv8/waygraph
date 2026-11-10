@@ -13,6 +13,8 @@ import { importFresh, isFlowLike, walkDir } from "../../manifest/scan.js";
 import { installRunLog } from "../../runtime/run-log.js";
 import { accountSigningIn } from "../../engine/flow/account.js";
 import { inRun } from "../../engine/run/events.js";
+import { labelsOf } from "../../manifest/labels.js";
+import { loadWaygraphConfig } from "../../runtime/waygraph-config.js";
 
 /** The keys a flow needs that nothing will give it in a test (no mem stub): it is skipped, saying which. */
 function unsupplied(flow: Flow<Checkpoint<string>>, mem: MemPage): string[] {
@@ -50,13 +52,16 @@ function isFlow(value: unknown): value is Flow<Checkpoint<string>> {
 export async function registerFlowTests(exclusive: boolean): Promise<void> {
   installRunLog();
   const projectDir = envString("WAYGRAPH_PROJECT_DIR") ?? process.cwd();
+  const labels = (await loadWaygraphConfig(projectDir))?.labels;
   for (const file of walkDir(projectDir, /\.flow\.ts$/)) {
     const mod = await importFresh(file);
     for (const [exportName, value] of Object.entries(mod)) {
       if (!isFlow(value)) continue;
       const flow = value;
       if ((flow.exclusive === true) !== exclusive) continue;
-      test(`${relative(projectDir, file)} › ${exportName}`, async ({ page, context }) => {
+      // Its labels are its tags (@auth): --label picks them, and Playwright's UI and reports filter by them.
+      const tag = labelsOf(labels, relative(projectDir, file), exportName).map((label) => `@${label}`);
+      test(`${relative(projectDir, file)} › ${exportName}`, { tag }, async ({ page, context }) => {
         const first = flow.blocks()[0];
         test.skip(!!first && !opensItsPage(first.block), `starts on a page it doesn't open (${first?.name}): it runs after another flow - chain it, or start it with a gotoPage`);
         const mem = new MemPage();

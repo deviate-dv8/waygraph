@@ -52,6 +52,8 @@ export type ManifestFlow = {
   file: string
   useCase: { path: string[]; outcome: string }
   source?: SourceSpan
+  /** Its labels (the config's labels); missing before waygraph 0.16.20. */
+  labels?: string[]
   steps: string[]
   stepExpects: string[][]
   settings: Record<string, Json>
@@ -104,6 +106,7 @@ export type FlowRow = {
   name: string
   file: string
   group: string
+  labels: string[]
   steps: number
   expectations: number
   /** Every step's name, to find a flow by a step. */

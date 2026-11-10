@@ -10,8 +10,9 @@ export async function manifestCase(args: string[]): Promise<void> {
   const out = values.out;
   const proj = resolve(positional[0] ?? process.cwd());
   const file = configFileOf(proj);
-  const config = file ? { file, values: configAsJson(await loadWaygraphConfig(proj)) } : undefined;
-  const manifest = await buildManifest(proj, { baseUrl: await resolveBaseUrl(proj), config });
+  const loaded = await loadWaygraphConfig(proj);
+  const config = file ? { file, values: configAsJson(loaded) } : undefined;
+  const manifest = await buildManifest(proj, { baseUrl: await resolveBaseUrl(proj), config, labels: loaded?.labels });
   const json = JSON.stringify(manifest, null, 2) + "\n";
   if (!out) {
     process.stdout.write(json);

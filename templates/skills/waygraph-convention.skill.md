@@ -186,6 +186,10 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   `map({ input: CaseKey })` and is given `--input <json | @file>` (an array plays it once per item) or
   `.flow(sub, { input })`; a step only some cases need takes `{ when: (mem) => … }`. Exports like `r0`, `r0b`,
   `r1` … that differ by data, or data read from an env variable at load time, are a smell.
+- **Groups of flows are labels in the config** (`labels: { auth: ["src/flows/auth/**", "logoutFlow"] }`), run with
+  `waygraph test --flows --label auth`. A new flow in a labelled folder joins its label; one elsewhere that belongs to a
+  group gets its export name added to that label. Never keep a list of flows of your own (a script, a spec that imports
+  them, a grep pattern in package.json).
 - **A flow that starts signed in runs `as` an account, never re-implementing the login or injecting cookies.**
   `export const Planner = account("planner", { signIn: plannerSignInFlow })` in `src/accounts/`, then
   `engine.map({ as: Planner })`: the account signs in once per run and later flows reuse its session. A hand-made

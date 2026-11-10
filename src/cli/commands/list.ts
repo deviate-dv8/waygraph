@@ -3,21 +3,33 @@ import { walkDir } from "../../manifest/scan.js";
 import { exportedNames, parseSource } from "../../manifest/source.js";
 import { relative, resolve } from "node:path";
 import { projectDirOf } from "../util.js";
+import { parseCommand } from "../args.js";
+import { labelsOf } from "../../manifest/labels.js";
+import { loadWaygraphConfig } from "../../runtime/waygraph-config.js";
 
 // ---------------------------------------------------------------------------
 // `list`
 // ---------------------------------------------------------------------------
 
-function listCommand(projectDir: string): void {
+/** Every flow, with its labels (the config's); `label` keeps only the flows with it. */
+async function listCommand(projectDir: string, label: string | undefined): Promise<void> {
   const files = walkDir(projectDir, /\.flow\.ts$/);
   if (files.length === 0) {
     console.log(`waygraph: no flows found under ${projectDir}`);
     return;
   }
+  const labels = (await loadWaygraphConfig(projectDir))?.labels;
+  if (label && !labels?.[label]) {
+    console.error(`waygraph list: ${label} isn't a label; the config's labels: ${Object.keys(labels ?? {}).join(", ") || "none"}`);
+    process.exitCode = 1;
+    return;
+  }
   for (const file of files) {
     const rel = relative(projectDir, file);
     for (const name of extractFlowNames(file)) {
-      console.log(`${rel}  ${name}`);
+      const its = labelsOf(labels, rel, name);
+      if (label && !its.includes(label)) continue;
+      console.log(`${rel}  ${name}${its.length ? `  [${its.join(", ")}]` : ""}`);
     }
   }
 }
@@ -58,9 +70,8 @@ function navCommand(projectDir: string, flowName: string | undefined): void {
 }
 
 export async function listCase(args: string[]): Promise<void> {
-      const proj = projectDirOf("list", args[1]);
-      listCommand(proj);
-      return;
+  const { values, positionals } = parseCommand("list", { label: { type: "string", help: "Only the flows with this label" } }, args.slice(1));
+  await listCommand(projectDirOf("list", positionals[0]), values.label);
 }
 
 export async function navCase(args: string[]): Promise<void> {

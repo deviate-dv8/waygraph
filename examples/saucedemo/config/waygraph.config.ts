@@ -4,6 +4,11 @@ const config = defineConfig({
   baseUrl: "https://www.saucedemo.com",
   // A recorded demo (--video) speaks its captions, slides and steps; `waygraph install` sets the voice up.
   demo: { voice: { speaker: kokoroVoice(), steps: true } },
+  // Groups of flows to run on their own: waygraph test --flows --label auth
+  labels: {
+    auth: ["src/flows/login.flow.ts", "viewerBlockedFlow", "catalogLogoutFlow"],
+    checkout: ["src/flows/checkout*.flow.ts"],
+  },
   playwright: {
     workers: 1,
     fullyParallel: false,

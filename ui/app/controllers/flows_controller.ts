@@ -22,6 +22,7 @@ export default class FlowsController {
         name: f.exportName,
         file: f.file,
         group: f.useCase.path.length ? f.useCase.path.join(' / ') : 'flows',
+        labels: f.labels ?? [],
         steps: f.steps.length,
         expectations: f.stepExpects.flat().length,
         stepNames: f.steps.join(' '),

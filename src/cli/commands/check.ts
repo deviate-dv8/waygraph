@@ -7,6 +7,8 @@ import { parseRunFlags } from "../flags.js";
 import { walkDir } from "../../manifest/scan.js";
 import { collectPracticeWarnings, practiceKindLabel } from "../../analysis/practices-check.js";
 import type { PracticeWarning } from "../../analysis/practices-check.js";
+import { emptyLabels } from "../../manifest/labels.js";
+import { loadWaygraphConfig } from "../../runtime/waygraph-config.js";
 
 function printOrphanReport(projectDir: string, orphans: Awaited<ReturnType<typeof findOrphanBlocks>>): void {
   if (orphans.length === 0) {
@@ -119,7 +121,8 @@ export async function checkCase(args: string[]): Promise<void> {
         console.warn(`waygraph check: ${relative(proj, p.file)} imports "${p.spec}" from outside map group ${p.group} - a group imports only waygraph and its own files, so it can be packed`);
       }
       if (groupProblems.length > 0) console.log(`waygraph check: ${groupProblems.length} map group import warning${groupProblems.length === 1 ? "" : "s"}`);
-      const statePages = findStatePages(await buildManifest(proj));
+      const manifest = await buildManifest(proj);
+      const statePages = findStatePages(manifest);
       for (const s of statePages) {
         const why = s.sharesWith
           ? `has ${s.sharesWith.page}'s address (${s.sharesWith.address})`
@@ -127,6 +130,10 @@ export async function checkCase(args: string[]): Promise<void> {
         console.warn(`waygraph check: Checkpoint ${s.checkpoint} ${why}, and nothing starts from it - a state of a page, not a page: keep the page's Checkpoint and say what changed in its Read Block (a field the step's verify or expect checks)`);
       }
       if (statePages.length > 0) console.log(`waygraph check: ${statePages.length} Checkpoint${statePages.length === 1 ? "" : "s"} that ${statePages.length === 1 ? "is a state" : "are states"} of a page`);
+      const labels = (await loadWaygraphConfig(proj))?.labels;
+      for (const label of emptyLabels(labels, manifest.flows)) {
+        console.warn(`waygraph check: label ${label} covers no flow (${(labels?.[label] ?? []).join(", ") || "no patterns"}) - a glob over flow files (src/flows/auth/**) or a flow's export name`);
+      }
       const orphans = await findOrphanBlocks(proj);
       printOrphanReport(proj, orphans);
       // Warnings only - never fail exit code. Orphans are reported for

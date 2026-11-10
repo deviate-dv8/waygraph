@@ -18,6 +18,7 @@ graph LR
 |---|---|
 | every flow as a test | `npx waygraph test --flows` |
 | some of them | `npx waygraph test --flows -g checkout` (matches file or export name) |
+| a group of them | `npx waygraph test --flows --label auth` (the config's [labels](#labels); `--label auth,smoke` for either) |
 | in parallel, with retries | `npx waygraph test --flows --workers 4 --retries 2` |
 | your own specs too | `npx waygraph test` (anything after it goes to `playwright test`) |
 | Playwright's UI mode | `npx waygraph test ui` |
@@ -27,6 +28,27 @@ graph LR
 
 Traces are kept for failures and the HTML report is on by default. Settings come from `config/waygraph.config.ts`
 (`playwright: { workers, timeout, use }`): [Config](../reference/config).
+
+## Labels
+
+A label groups flows, so a group runs on its own. The config names each label and the flows it covers, by a glob over
+their files or by a flow's export name; a flow can have several:
+
+```ts
+// config/waygraph.config.ts
+labels: {
+  auth: ["src/flows/auth/**", "logoutFlow"],
+  smoke: ["loginFlow", "checkoutFlow"],
+},
+```
+
+```sh
+npx waygraph test --flows --label auth   # the auth flows
+npx waygraph list --label auth           # which ones they are
+```
+
+Each flow's test is tagged with its labels (`@auth`), so Playwright's UI mode and its reports filter by them too, and
+the manifest and Waygraph UI's Flows page show them. `waygraph check` warns about a label that covers no flow.
 
 ## Which flows run, and how
 
