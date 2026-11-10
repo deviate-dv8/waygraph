@@ -69,7 +69,7 @@ while it plays. So the run log holds three record types:
 ```jsonl
 {"type":"span:start","traceId":"…","spanId":"…","parentSpanId":"…","name":"submit-login","kind":"step","at":1730879000123,"attributes":{"waygraph.block":"submit-login","waygraph.block.kind":"method","code.filepath":"src/map/login/_methods/submit-login.method.block.ts","code.lineno":12}}
 {"type":"span:event","spanId":"…","at":1730879000301,"name":"console","attributes":{"level":"error","text":"Invalid token","url":"https://…/app.js","line":88}}
-{"type":"span:end","spanId":"…","at":1730879000412,"status":"ok","attributes":{"waygraph.checkpoint.to":"LoggedIn"}}
+{"type":"span:end","spanId":"…","at":1730879000412,"status":"ok","attributes":{"waygraph.checkpoint.to":"InventoryPage"}}
 ```
 
 `waygraph trace --otlp` folds these into OTLP/JSON. Attribute names use OpenTelemetry's semantic conventions where one

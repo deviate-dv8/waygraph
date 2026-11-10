@@ -3,8 +3,8 @@
     "CartPage",
     "CheckoutInfoPage",
     "CheckoutOverviewPage",
-    "ItemDetailPage",
     "InventoryPage",
+    "ItemDetailPage",
     "LoginPage",
     "OrderComplete"
   ],

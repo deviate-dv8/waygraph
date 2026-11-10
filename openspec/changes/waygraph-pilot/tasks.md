@@ -160,7 +160,7 @@ report success while sitting on the wrong page. Fixed two ways: (a) `findBlockPa
 (new, in `src/graph.ts`, alongside the unmodified `findBlockPath`) returns each hop's specific
 edge (block name *and* the Checkpoint it targets), not just a block-name list - needed because
 a union-Out Block (e.g. `add-all-to-cart`, which has both an `ItemInCart`-targeting and a
-`LoggedIn`-targeting edge) can have several edges sharing one name with different `to` tags;
+`InventoryPage`-targeting edge) can have several edges sharing one name with different `to` tags;
 re-deriving "the expected `to`" by name after the fact can silently grab the wrong one. (b)
 `applyPath` verifies `this.here` against that specific edge's `to` after every step, not only
 once at the end, failing loud (naming the step and where it actually landed) rather than
@@ -187,7 +187,7 @@ graph model to encode real DOM preconditions is real, separate, unscoped future 
       sequence before responding, a legitimately slow single request, not a hang).
 - [x] M5.4 Real tests against live saucedemo.com: reaching an already-current Checkpoint
       returns immediately (`path: []`); a real multi-step route with no setup-step
-      requirement (`LoggedIn -> CartPage` via `nav-cart`) runs correctly in one call; a route
+      requirement (`InventoryPage -> CartPage` via `nav-cart`) runs correctly in one call; a route
       crossing a wildcard edge whose real precondition isn't met fails loud within a bounded
       time, not a hang, and leaves the session alive and usable afterward; an unknown target
       Checkpoint is reported clearly. Both library-level (`tests/pilot/pilot.spec.ts`) and
