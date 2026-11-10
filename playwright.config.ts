@@ -35,7 +35,9 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined,
   reporter: [["list"], ["html", { open: "never" }]],
   projects: [
-    { name: "local", testIgnore: LIVE },
+    // A project's testIgnore replaces the one above: name tests/unit again, or its node:test files are imported and run
+    // inside the workers (one of them points HOME elsewhere, and later tests can't find the browser).
+    { name: "local", testIgnore: [...LIVE, "**/tests/unit/**"] },
     { name: "live", testMatch: LIVE, workers: 2 },
   ],
   use: {
