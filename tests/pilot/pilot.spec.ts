@@ -41,7 +41,7 @@ test.describe("pilotStart (real spawnDetachedSession + discoverGraph, real sauce
       // gets steps-ahead planning context, not a scoped-down menu.
       const checkpointNames = result.graph.nodes.map((n) => n.checkpoint);
       expect(checkpointNames).toEqual(
-        expect.arrayContaining(["LoginPage", "LoggedIn", "CartPage", "CheckoutInfoPage", "OrderComplete"]),
+        expect.arrayContaining(["LoginPage", "InventoryPage", "CartPage", "CheckoutInfoPage", "OrderComplete"]),
       );
       expect(result.graph.edges.some((e) => e.block === "finish-order")).toBe(true);
 
@@ -104,7 +104,7 @@ test.describe("Pilot overlay (real on-page badge/panel, real saucedemo.com)", ()
       await session.applyPick(String(snapshot.sections.flatMap((s) => s.edges).find((e) => e.block === "submit-login")!.index));
 
       const badgeAfter = await session.inspectDom({ mode: "full", selector: "#wg-pilot-badge" });
-      if (badgeAfter.ok) expect(JSON.stringify(badgeAfter.snapshot.tree)).toContain("LoggedIn");
+      if (badgeAfter.ok) expect(JSON.stringify(badgeAfter.snapshot.tree)).toContain("InventoryPage");
     } finally {
       await session.close();
     }
@@ -207,7 +207,7 @@ test.describe("resync (real re-detection, real saucedemo.com)", () => {
       // Real re-detection after a real transition, not a stale/cached read.
       const afterLogin = await session.resync();
       expect(afterLogin.ok).toBe(true);
-      if (afterLogin.ok) expect(afterLogin.snapshot.here).toBe("LoggedIn");
+      if (afterLogin.ok) expect(afterLogin.snapshot.here).toBe("InventoryPage");
     } finally {
       await session.close();
     }
@@ -246,7 +246,7 @@ test.describe("applyPath / auto reach (real multi-step routing, real saucedemo.c
       expect(loginResult.ok).toBe(true);
 
       // Now the actual proof: one applyPath call reaches CartPage from
-      // LoggedIn via the real "nav-cart" wildcard edge, whose precondition
+      // InventoryPage via the real "nav-cart" wildcard edge, whose precondition
       // (being logged in) is genuinely met here - real click, real
       // navigation, one round trip instead of a hand-picked index.
       const result = await session.applyPath("CartPage");
@@ -269,7 +269,7 @@ test.describe("applyPath / auto reach (real multi-step routing, real saucedemo.c
       // only really clickable once actually on the cart page with items) -
       // findBlockPathDetailed has no live-page access and can't know its
       // real precondition isn't met yet from here. Deterministic (confirmed
-      // by direct reproduction, unlike a LoginPage->LoggedIn target, which
+      // by direct reproduction, unlike a LoginPage->InventoryPage target, which
       // depends on saucedemo.com's own live login behavior): the step's own
       // click/wait times out and throws - a real, bounded failure (~30s,
       // Playwright's own default click timeout, since "#checkout" doesn't

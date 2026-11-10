@@ -239,7 +239,7 @@ test("full non-interactive sequence: detach, drive login + add-to-cart, status, 
 
   const afterSubmit = await pickByBlockName("submit-login");
   expect(afterSubmit.ok).toBe(true);
-  expect((afterSubmit.snapshot as { here: string }).here).toBe("LoggedIn");
+  expect((afterSubmit.snapshot as { here: string }).here).toBe("InventoryPage");
 
   // trace: a Checkpoint/Block-level record of the login sequence, in order,
   // not raw clicks.
@@ -248,14 +248,14 @@ test("full non-interactive sequence: detach, drive login + add-to-cart, status, 
   const steps = traceRes.trace as { block: string; from: string | null; to?: string }[];
   expect(steps.map((s) => s.block)).toEqual(["fill-username", "fill-password", "submit-login"]);
   expect(steps[0]!.from).toBe("LoginPage");
-  expect(steps[2]!.to).toBe("LoggedIn");
+  expect(steps[2]!.to).toBe("InventoryPage");
   // The invalid pick from earlier never ran a Block, so it added no step.
   expect(steps.length).toBe(3);
 
   const afterAdd = await pickByBlockName("add-to-cart");
   expect(afterAdd.ok).toBe(true);
   // The page stays the inventory; the cart is what it shows.
-  expect((afterAdd.snapshot as { here: string }).here).toBe("LoggedIn");
+  expect((afterAdd.snapshot as { here: string }).here).toBe("InventoryPage");
 
   // dom --mode full on the real inventory page (much larger DOM than the
   // login form) actually hits the node/depth caps and reports truncated.
@@ -396,7 +396,7 @@ test("auto reach: runs a real multi-step route to a Checkpoint in one call, agai
   const loginRes = await send(sessionId, String(flat.find((e) => e.block === "submit-login")!.index));
   expect(loginRes.ok).toBe(true);
 
-  // One real CLI call reaches CartPage from LoggedIn via the live "nav-cart"
+  // One real CLI call reaches CartPage from InventoryPage via the live "nav-cart"
   // wildcard edge - not a hand-picked index, the actual proof this exists for.
   const reachRes = await reach(sessionId, "CartPage");
   expect(reachRes.ok).toBe(true);
@@ -459,7 +459,7 @@ test("Read Blocks: send replies carry the page's read; `read <path>` narrows it"
   expect(snap.missing).toEqual([]);
 
   const narrowed = JSON.parse((await runCli(["pilot", "read", sessionId, "header.cartCount"], { cwd: sauceRoot })).trim());
-  expect(narrowed).toMatchObject({ ok: true, page: "LoggedIn", read: { header: { cartCount: 1 } } });
+  expect(narrowed).toMatchObject({ ok: true, page: "InventoryPage", read: { header: { cartCount: 1 } } });
   expect(narrowed.read.catalog).toBeUndefined();
 
   // A list at a path: --where keeps the rows a field matches, --rows slices them.

@@ -1,5 +1,5 @@
 import { defineMethodBlock } from "waygraph";
-import { LoggedIn } from "../../../../states/checkout.states.js";
+import { InventoryPage } from "../../../../states/checkout.states.js";
 import { Catalog } from "../../../../states/checkout.reads.js";
 import { collectRemovableItems, InventorySel } from "./inventory-items.js";
 
@@ -15,7 +15,7 @@ import { collectRemovableItems, InventorySel } from "./inventory-items.js";
 export const RemoveAllFromCartBlock = defineMethodBlock({
   name: "remove-all-from-cart",
   description: "Removes every product still showing Remove on this page.",
-  to: LoggedIn,
+  to: InventoryPage,
   instruction: {
     async act(page) {
       const items = await collectRemovableItems(page);

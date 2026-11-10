@@ -8,7 +8,7 @@ import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
 // instead of url: "/inventory.html" - if the generated act() were somehow
 // still doing a goto() under the hood, this page never actually holds a
 // "Back Home" button to click, so the flow would throw instead of reaching
-// LoggedIn a second time.
+// InventoryPage a second time.
 test("checkoutThenBrowseAgainFlow: a click-based NavBlock lands back on inventory for real", async () => {
   const mem = new MemPage();
   mem.set(SaucedemoKeys.credentials, { username: "standard_user", password: "secret_sauce" });
@@ -16,5 +16,5 @@ test("checkoutThenBrowseAgainFlow: a click-based NavBlock lands back on inventor
 
   const result = await checkoutThenBrowseAgainFlow.run(mem);
 
-  expect(result).toEqual(checkpoint("LoggedIn"));
+  expect(result).toEqual(checkpoint("InventoryPage"));
 });

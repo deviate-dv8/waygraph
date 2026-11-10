@@ -1,5 +1,5 @@
 import { defineReadBlock } from "waygraph";
-import { LoggedIn } from "../../../states/checkout.states.js";
+import { InventoryPage } from "../../../states/checkout.states.js";
 import { Catalog } from "../../../states/checkout.reads.js";
 import { InventorySel } from "./methods/inventory-items.js";
 
@@ -13,7 +13,7 @@ import { InventorySel } from "./methods/inventory-items.js";
 export const InventoryReadBlock = defineReadBlock({
   name: "read-inventory",
   description: "Every product, its price and whether it is in the cart; the sort order.",
-  from: [LoggedIn],
+  from: [InventoryPage],
   instruction: {
     read: (ctx) =>
       Catalog({

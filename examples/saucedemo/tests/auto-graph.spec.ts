@@ -14,7 +14,7 @@ test("waygraph auto discovers the decomposed saucedemo graph, with no Block skip
       "CheckoutInfoPage",
       "CheckoutOverviewPage",
       "ItemDetailPage",
-      "LoggedIn",
+      "InventoryPage",
       "LoginPage",
       "OrderComplete",
     ].sort(),
@@ -24,7 +24,7 @@ test("waygraph auto discovers the decomposed saucedemo graph, with no Block skip
   // starts signed in); the cart's Methods each stay on the inventory (what's in the cart is what it shows).
   expect(graph.edges.length).toBe(22);
   const removeEdges = graph.edges.filter((e) => e.block === "remove-from-cart");
-  expect(removeEdges).toEqual([expect.objectContaining({ from: "*", to: "LoggedIn", kind: "action" })]);
+  expect(removeEdges).toEqual([expect.objectContaining({ from: "*", to: "InventoryPage", kind: "action" })]);
 
   const loginFail = graph.edges.find((e) => e.block === "submit-login" && e.to === "LoginPage");
   expect(loginFail).toMatchObject({ from: "LoginPage", to: "LoginPage", kind: "action" });
@@ -33,5 +33,5 @@ test("waygraph auto discovers the decomposed saucedemo graph, with no Block skip
   expect(graph.skipped).toEqual([]);
 
   const logout = graph.edges.find((e) => e.block === "submit-logout");
-  expect(logout).toMatchObject({ from: "LoggedIn", to: "LoginPage", kind: "action" });
+  expect(logout).toMatchObject({ from: "InventoryPage", to: "LoginPage", kind: "action" });
 });

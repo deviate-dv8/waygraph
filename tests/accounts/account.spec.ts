@@ -2,7 +2,7 @@ import { test, expect, type BrowserContext } from "@playwright/test";
 import { account, checkpoint, defineMethodBlock, defineNavBlock, Engine, forgetSessions, MemPage } from "../../src/index.js";
 
 const LoginPage = checkpoint("LoginPage");
-const LoggedIn = checkpoint("LoggedIn");
+const InventoryPage = checkpoint("InventoryPage");
 const Home = checkpoint("Home");
 
 /** A fake app on https://app.test: any path serves a page that shows whether the visitor has a session. */
@@ -20,7 +20,7 @@ const NavLogin = defineNavBlock({ name: "nav-login", checkpoint: LoginPage, url:
 const SubmitLogin = defineMethodBlock({
   name: "submit-login",
   from: LoginPage,
-  to: LoggedIn,
+  to: InventoryPage,
   instruction: {
     async act(page) {
       signIns++;

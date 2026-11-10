@@ -6,11 +6,11 @@ follow. The same Blocks also record demo videos, navigate deterministically and 
 [What Waygraph is](https://deviate-dv8.github.io/waygraph/doctrine).
 
 ```typescript
-// One Block = one action.  It says: start on LoginPage, end on LoggedIn, and prove it.
+// One Block = one action.  It says: start on LoginPage, end on InventoryPage, and prove it.
 export const SubmitLoginBlock = defineMethodBlock({
   name: "submit-login",
   from: LoginPage,
-  to: LoggedIn,
+  to: InventoryPage,
   instruction: {
     async act(page) { await page.locator(LoginSel.button).click(); },
     verify: [Trait.url({ pathname: "/inventory.html" })],
@@ -63,7 +63,7 @@ npm run auto                         # explore it by hand
 
 | Word | Meaning |
 |---|---|
-| **Checkpoint** | A named place the app can be: `LoginPage`, `LoggedIn`, `OrderComplete`. |
+| **Checkpoint** | A named place the app can be: `LoginPage`, `InventoryPage`, `OrderComplete`. |
 | **Block** | One action from one Checkpoint to another, with a `verify` that confirms it. |
 | **Flow** | Blocks in order. Run it, demo it, or let `auto` pick the route. |
 | **Mem** | Typed shared data for a run (`LoginCreds`, `SelectedItem`). |

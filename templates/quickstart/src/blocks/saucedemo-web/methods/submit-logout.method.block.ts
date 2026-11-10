@@ -1,5 +1,5 @@
 import { defineMethodBlock, Trait } from "waygraph";
-import { LoggedIn, LoginPage } from "../../../states/checkout.states.js";
+import { InventoryPage, LoginPage } from "../../../states/checkout.states.js";
 import { LoginSel } from "./login.sel.js";
 
 /**
@@ -12,7 +12,7 @@ import { LoginSel } from "./login.sel.js";
 export const SubmitLogoutBlock = defineMethodBlock({
   name: "submit-logout",
   description: "Opens the burger menu and logs out.",
-  from: LoggedIn,
+  from: InventoryPage,
   to: LoginPage,
   instruction: {
     async act(page) {

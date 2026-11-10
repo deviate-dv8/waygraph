@@ -103,11 +103,11 @@ When a Block can land in more than one place, `to` is a list and `resolve` picks
 defineMethodBlock({
   name: "submit-login",
   from: LoginPage,
-  to: [LoggedIn, LoginPage],                        // a wrong password stays here
+  to: [InventoryPage, LoginPage],                        // a wrong password stays here
   instruction: {
     async act(page) { await page.locator(LoginSel.submit).click(); },
     async observe(page) { return page.url().includes("/inventory") ? "in" : "out"; },
-    resolve: (seen) => (seen === "in" ? LoggedIn : LoginPage),
+    resolve: (seen) => (seen === "in" ? InventoryPage : LoginPage),
   },
 });
 ```
@@ -198,7 +198,7 @@ export const ExpectSubmitGatedBlock = defineExpectBlock({
 
 export const CheckOrderCreatedBlock = defineApiBlock({
   name: "check-order-created",
-  from: LoggedIn,
+  from: InventoryPage,
   to: [OrderConfirmed, OrderFailed],
   method: "GET",                                          // shown in the demo's network tab
   call: ({ request }) => request.get("/api/orders/latest"), // shares the browser's cookies

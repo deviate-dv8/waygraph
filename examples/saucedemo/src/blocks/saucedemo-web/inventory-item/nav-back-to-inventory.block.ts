@@ -1,5 +1,5 @@
 import { defineNavClickBlock, Trait } from "waygraph";
-import { LoggedIn } from "../../../states/checkout.states.js";
+import { InventoryPage } from "../../../states/checkout.states.js";
 import { ItemDetailSel } from "./item-detail.sel.js";
 
 /**
@@ -13,7 +13,7 @@ import { ItemDetailSel } from "./item-detail.sel.js";
 export const NavBackToInventoryBlock = defineNavClickBlock({
   name: "nav-back-to-inventory",
   description: "Clicks 'Back to products' on the item detail page.",
-  checkpoint: LoggedIn,
+  checkpoint: InventoryPage,
   click: ItemDetailSel.backToProductsBtn,
   verify: [Trait.url({ pathname: "/inventory.html" })],
 });

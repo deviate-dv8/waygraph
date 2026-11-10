@@ -1,5 +1,5 @@
 import { definePageBlock, Trait } from "waygraph";
-import { LoggedIn } from "../../../states/checkout.states.js";
+import { InventoryPage } from "../../../states/checkout.states.js";
 import { AddToCartBlock } from "./methods/add-to-cart.method.block.js";
 import { RemoveFromCartBlock } from "./methods/remove-from-cart.method.block.js";
 import { AddAllToCartBlock } from "./methods/add-all-to-cart.method.block.js";
@@ -24,7 +24,7 @@ export const Inventory = definePageBlock({
   name: "page-inventory",
   description:
     "Inventory catalog hub - per-item and bulk add/remove, open item detail.",
-  checkpoint: LoggedIn,
+  checkpoint: InventoryPage,
   nav: NavInventoryBlock,
   verify: [
     Trait.url({ pathname: "/inventory.html" }),

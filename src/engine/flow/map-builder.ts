@@ -375,7 +375,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
    * @example
    * map({ homeOrigin }).gotoPage(NavCartBlock).branch({
    *   ItemInCart: (m) => m.method(RemoveFromCartBlock),
-   *   LoggedIn: (m) => m.method(AddToCartBlock),
+   *   InventoryPage: (m) => m.method(AddToCartBlock),
    * });
    */
   branch<

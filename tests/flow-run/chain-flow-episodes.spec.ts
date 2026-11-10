@@ -26,7 +26,7 @@ import { buildFlow, withSettings } from "../../src/engine/flow/flow.js";
 // same login with an account saucedemo.com itself genuinely blocks.
 
 type LoginPage = Checkpoint<"LoginPage">;
-type LoggedIn = Checkpoint<"LoggedIn">;
+type InventoryPage = Checkpoint<"InventoryPage">;
 type ItemInCart = Checkpoint<"ItemInCart">;
 
 const ExampleKeys = keys("example")<{
@@ -47,7 +47,7 @@ const navLogin = defineNavBlock({
 });
 
 function makeSubmitLogin(name: string, credsKey: MemKey<{ username: string; password: string }>) {
-  return defineBlock<LoginPage, LoggedIn>({
+  return defineBlock<LoginPage, InventoryPage>({
     name,
     requires: [credsKey],
     instruction: {
@@ -57,7 +57,7 @@ function makeSubmitLogin(name: string, credsKey: MemKey<{ username: string; pass
         await page.locator("#password").fill(password);
         await page.locator("#login-button").click();
       },
-      resolve: () => checkpoint("LoggedIn"),
+      resolve: () => checkpoint("InventoryPage"),
       verify: [Trait.url({ pathname: "/inventory.html" })],
     },
   });
@@ -83,7 +83,7 @@ const viewerLoginAttempt = makeSubmitLogin("viewer-login", ExampleKeys.viewerCre
   },
 ]);
 
-const addToCart = defineBlock<LoggedIn, ItemInCart>({
+const addToCart = defineBlock<InventoryPage, ItemInCart>({
   name: "add-to-cart",
   instruction: {
     async act(page) {
@@ -105,7 +105,7 @@ const navCart = defineNavBlock({
 // Click-based, not url - the cart page's own real "Continue Shopping" button.
 const navContinueShopping = defineNavBlock({
   name: "nav-continue-shopping",
-  checkpoint: checkpoint("LoggedIn"),
+  checkpoint: checkpoint("InventoryPage"),
   click: "#continue-shopping",
   verify: [Trait.url({ pathname: "/inventory.html" })],
 });
@@ -122,7 +122,7 @@ test.describe("nested flows - a real 2-episode example (saucedemo.com)", () => {
 
     const result = await ownerFlow.run(mem);
 
-    expect(result).toEqual(checkpoint("LoggedIn"));
+    expect(result).toEqual(checkpoint("InventoryPage"));
   });
 
   test("episode 2 alone: a locked-out Viewer's identical login attempt genuinely fails", async () => {

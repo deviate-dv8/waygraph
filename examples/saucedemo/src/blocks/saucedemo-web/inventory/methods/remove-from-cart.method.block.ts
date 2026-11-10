@@ -1,5 +1,5 @@
 import { defineMethodBlock, type WaygraphInstanceOption } from "waygraph";
-import { LoggedIn } from "../../../../states/checkout.states.js";
+import { InventoryPage } from "../../../../states/checkout.states.js";
 import { Catalog } from "../../../../states/checkout.reads.js";
 import { SaucedemoKeys } from "../../../../states/checkout.mem-keys.js";
 import { collectRemovableItems, InventorySel } from "./inventory-items.js";
@@ -16,7 +16,7 @@ import { collectRemovableItems, InventorySel } from "./inventory-items.js";
 export const RemoveFromCartBlock = defineMethodBlock({
   name: "remove-from-cart",
   description: "Removes the item named by mem (saucedemo.selectedItem) from the cart.",
-  to: LoggedIn,
+  to: InventoryPage,
   requires: [SaucedemoKeys.selectedItem],
   instruction: {
     async act(page, _input, mem) {

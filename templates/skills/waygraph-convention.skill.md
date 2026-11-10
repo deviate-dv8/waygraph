@@ -218,8 +218,8 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
 - **Reading a value into `mem` happens in `act`** (`mem.set(Key, value)`), like Mailpit's `extract-email-link`.
   `observe` is only for a Block that branches (it feeds `resolve`); an empty `act(){}` plus an `observe` that
   writes `mem` is a misuse.
-- **A flow about one outcome says so with `lands`, never a cast.** `.method(SubmitLoginBlock, { lands: LoggedIn })`
-  types the flow from `LoggedIn` and fails the run if the Block lands elsewhere; `Block as unknown as MethodBlock<A, B>`
+- **A flow about one outcome says so with `lands`, never a cast.** `.method(SubmitLoginBlock, { lands: InventoryPage })`
+  types the flow from `InventoryPage` and fails the run if the Block lands elsewhere; `Block as unknown as MethodBlock<A, B>`
   (a `*-for-flow.ts` alias) hides the other outcome and never checks it (`waygraph upgrade --codemod lands` converts
   them). To follow every outcome, `.branch()`.
 - **Fast-forward several steps with `.ffStart()` … `.ffEnd()`**, one step with `{ ff: true }`.
@@ -271,7 +271,7 @@ export const SubmitLoginBlock = defineMethodBlock({
   name: "submit-login",
   description: "Submits the form; a wrong password stays on the login page.",
   from: LoginPage,
-  to: [LoggedIn, LoginPage],
+  to: [InventoryPage, LoginPage],
   instruction: {
     async act(page) {
       await page.locator(LoginSel.submit).click();
@@ -279,8 +279,8 @@ export const SubmitLoginBlock = defineMethodBlock({
     async observe(page) {
       return (await page.locator(LoginSel.error).isVisible()) ? "refused" : "in";
     },
-    resolve: (seen) => (seen === "in" ? LoggedIn : LoginPage),
-    verify: (out) => (out.__state === "LoggedIn" ? [Trait.url({ pathname: "/inventory.html" })] : [Trait.visible(LoginSel.error)]),
+    resolve: (seen) => (seen === "in" ? InventoryPage : LoginPage),
+    verify: (out) => (out.__state === "InventoryPage" ? [Trait.url({ pathname: "/inventory.html" })] : [Trait.visible(LoginSel.error)]),
   },
 });
 ```

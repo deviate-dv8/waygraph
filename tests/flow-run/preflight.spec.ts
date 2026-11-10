@@ -3,7 +3,7 @@ import type { Checkpoint, Block } from "../../src/index.js";
 import { connect, runGraph, preflight, MemPage, keys, checkpoint } from "../../src/index.js";
 
 type Start = Checkpoint<"__start__">;
-type LoggedIn = Checkpoint<"LoggedIn">;
+type InventoryPage = Checkpoint<"InventoryPage">;
 type Done = Checkpoint<"Done">;
 
 const { username: UsernameKey, password: PasswordKey } = keys("login")<{ username: string; password: string }>();
@@ -18,14 +18,14 @@ test.describe("preflight", () => {
       },
     } as any;
 
-    const login: Block<Start, LoggedIn> = {
+    const login: Block<Start, InventoryPage> = {
       name: "login",
       instruction: {
         async act(page, _input, mem) {
           await page.goto("/"); // never reached
           void mem.get(UsernameKey);
         },
-        resolve: () => checkpoint("LoggedIn"),
+        resolve: () => checkpoint("InventoryPage"),
       },
       requires: [UsernameKey, PasswordKey],
     };
@@ -33,7 +33,7 @@ test.describe("preflight", () => {
     const mem = new MemPage(); // neither key set
 
     await expect(
-      runGraph<LoggedIn>(login, undefined, contextThatShouldNeverBeUsed, mem),
+      runGraph<InventoryPage>(login, undefined, contextThatShouldNeverBeUsed, mem),
     ).rejects.toThrow(/"login\.username".*"login\.password"|"login\.password".*"login\.username"/);
 
     expect(openedTab).toBe(false);
@@ -43,26 +43,26 @@ test.describe("preflight", () => {
     const fakePage = { close: async () => {} } as any;
     const fakeContext = { newPage: async () => fakePage } as any;
 
-    const login: Block<Start, LoggedIn> = {
+    const login: Block<Start, InventoryPage> = {
       name: "login",
-      instruction: { async act() {}, resolve: () => checkpoint("LoggedIn") },
+      instruction: { async act() {}, resolve: () => checkpoint("InventoryPage") },
       requires: [UsernameKey, PasswordKey],
     };
 
     const mem = new MemPage();
     mem.setAll([UsernameKey, "alice"], [PasswordKey, "hunter2"]);
 
-    const result = await runGraph<LoggedIn>(login, undefined, fakeContext, mem);
-    expect(result).toEqual(checkpoint("LoggedIn"));
+    const result = await runGraph<InventoryPage>(login, undefined, fakeContext, mem);
+    expect(result).toEqual(checkpoint("InventoryPage"));
   });
 
   test("connect() unions requires from both Blocks into the composed Block", () => {
-    const a: Block<Start, LoggedIn> = {
+    const a: Block<Start, InventoryPage> = {
       name: "a",
-      instruction: { async act() {}, resolve: () => checkpoint("LoggedIn") },
+      instruction: { async act() {}, resolve: () => checkpoint("InventoryPage") },
       requires: [UsernameKey],
     };
-    const b: Block<LoggedIn, Done> = {
+    const b: Block<InventoryPage, Done> = {
       name: "b",
       instruction: { async act() {}, resolve: () => checkpoint("Done") },
       requires: [PasswordKey],
@@ -74,9 +74,9 @@ test.describe("preflight", () => {
   });
 
   test("preflight() called directly reports missing keys without running anything", () => {
-    const needsBoth: Block<Start, LoggedIn> = {
+    const needsBoth: Block<Start, InventoryPage> = {
       name: "needs-both",
-      instruction: { async act() {}, resolve: () => checkpoint("LoggedIn") },
+      instruction: { async act() {}, resolve: () => checkpoint("InventoryPage") },
       requires: [UsernameKey, PasswordKey],
     };
 

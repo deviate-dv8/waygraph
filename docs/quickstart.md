@@ -51,8 +51,8 @@ import { Engine, MemPage, keys, checkpoint, defineNavBlock, defineMethodBlock, T
 
 const LoginForm = checkpoint("LoginForm");
 type LoginForm = typeof LoginForm;
-const LoggedIn = checkpoint("LoggedIn");
-type LoggedIn = typeof LoggedIn;
+const InventoryPage = checkpoint("InventoryPage");
+type InventoryPage = typeof InventoryPage;
 
 const LoginKeys = keys("login")<{ username: string }>();
 
@@ -65,7 +65,7 @@ const NavLogin = defineNavBlock({
 const SubmitLogin = defineMethodBlock({
   name: "submit-login",
   from: LoginForm,
-  to: LoggedIn,
+  to: InventoryPage,
   requires: [LoginKeys.username],
   instruction: {
     async act(page, _input, mem) {
@@ -85,7 +85,7 @@ await flow.run(mem);                    // inside a Playwright test: await flow.
 
 ```mermaid
 graph LR
-  S((start)) -->|nav-login| L[LoginForm] -->|submit-login| D[LoggedIn]
+  S((start)) -->|nav-login| L[LoginForm] -->|submit-login| D[InventoryPage]
 ```
 
 In a project the pieces go in their own files (`src/states/`, the page folder, `src/flows/`), and the flow imports

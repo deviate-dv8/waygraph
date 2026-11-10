@@ -8,7 +8,7 @@ test("the manifest lists every Block with its route, every flow with its steps",
   const m = await buildManifest(join(examples, "saucedemo"));
   expect(m.version).toBe(2);
   const submit = m.blocks.find((b) => b.name === "submit-login")!;
-  expect(submit).toMatchObject({ kind: "method", from: ["LoginPage"], to: ["LoggedIn", "LoginPage"] });
+  expect(submit).toMatchObject({ kind: "method", from: ["LoginPage"], to: ["InventoryPage", "LoginPage"] });
   expect(m.blocks.find((b) => b.name === "nav-cart")).toMatchObject({ kind: "nav", from: ["*"], to: ["CartPage"] });
   expect(m.checkpoints).toContain("OrderComplete");
   const shop = m.flows.find((f) => f.exportName === "shopFlow")!;
@@ -21,7 +21,7 @@ test("the manifest lists every Block with its route, every flow with its steps",
 test("the manifest lists each Read Block with the Checkpoints it reads and the shape of what it returns", async () => {
   const m = await buildManifest(join(examples, "saucedemo"));
   expect(m.readBlocks.find((r) => r.name === "read-inventory")).toMatchObject({
-    from: ["LoggedIn"],
+    from: ["InventoryPage"],
     fields: { "catalog.items": [{ name: "string", price: "number", inCart: "boolean" }], "catalog.sort": "string" },
     file: "src/blocks/saucedemo-web/inventory/inventory.read.block.ts",
   });

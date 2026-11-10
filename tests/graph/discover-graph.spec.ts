@@ -7,7 +7,7 @@ const STATES_FILE = `
 import { checkpoint } from "waygraph";
 
 export const LoginPage = checkpoint("LoginPage");
-export const LoggedIn = checkpoint("LoggedIn");
+export const InventoryPage = checkpoint("InventoryPage");
 export const CartPage = checkpoint("CartPage");
 export const Dashboard = checkpoint("Dashboard");
 export const Settings = checkpoint("Settings");

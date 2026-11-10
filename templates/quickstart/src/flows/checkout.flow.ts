@@ -1,6 +1,6 @@
 import { engine } from "../../config/waygraph.config.js";
 import { Login } from "../blocks/saucedemo-web/nav-login.block.js";
-import { LoggedIn } from "../states/checkout.states.js";
+import { InventoryPage } from "../states/checkout.states.js";
 import { orderPlacedYap, placingOrder } from "../stubs/finish-order.js";
 import { LoginSel } from "../blocks/saucedemo-web/methods/login.sel.js";
 import { Inventory } from "../blocks/saucedemo-web/inventory/inventory.page.block.js";
@@ -48,7 +48,7 @@ export const checkoutFlow = engine
         weight: "bold",
       });
     }),
-    { lands: LoggedIn },
+    { lands: InventoryPage },
   )
   .ffEnd()
   .method(Inventory.do.addToCart.stubBefore((ctx) => ctx.ui.title("Owner: Full Checkout")))

@@ -41,7 +41,7 @@ test.describe("stubOnError", () => {
         ctx.ui.ring("error", { selector: '[data-test="error"]', label: "Error" });
       },
     });
-    expect(hasAuthoredStubAfter(block, { __state: "LoggedIn" })).toBe(true);
+    expect(hasAuthoredStubAfter(block, { __state: "InventoryPage" })).toBe(true);
     expect(resolveHighlightSlots(block, "stubAfter")).toHaveLength(1);
     expect(resolveHighlightSlots(block, "stubOnError")).toHaveLength(1);
     expect(resolveHighlightSlots(block, "stubAfter")[0]!.label).toBe("Inventory");

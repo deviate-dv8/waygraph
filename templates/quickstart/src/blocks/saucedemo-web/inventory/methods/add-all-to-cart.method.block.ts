@@ -1,5 +1,5 @@
 import { defineMethodBlock } from "waygraph";
-import { LoggedIn } from "../../../../states/checkout.states.js";
+import { InventoryPage } from "../../../../states/checkout.states.js";
 import { Catalog } from "../../../../states/checkout.reads.js";
 import { collectAddableItems, InventorySel } from "./inventory-items.js";
 
@@ -16,7 +16,7 @@ import { collectAddableItems, InventorySel } from "./inventory-items.js";
 export const AddAllToCartBlock = defineMethodBlock({
   name: "add-all-to-cart",
   description: "Adds every product still showing Add to cart on this page.",
-  to: LoggedIn,
+  to: InventoryPage,
   instruction: {
     async act(page) {
       const items = await collectAddableItems(page);

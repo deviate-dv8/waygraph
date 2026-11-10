@@ -34,7 +34,7 @@ test("auto menu on inventory shows per-item + bulk add/remove", async () => {
   await page.locator("#login-button").click();
   await page.waitForURL(/inventory\.html/);
 
-  const menu1 = await buildExploreMenu(page, graph, library, "LoggedIn");
+  const menu1 = await buildExploreMenu(page, graph, library, "InventoryPage");
   console.log("\n=== AFTER LOGIN (cart empty) ===");
   for (const sec of menu1.sections) {
     console.log(`\n[${sec.title}]`);
@@ -51,7 +51,7 @@ test("auto menu on inventory shows per-item + bulk add/remove", async () => {
   // Add bike light via DOM so Remove rows appear (same as picking that auto row).
   await page.locator('[data-test="add-to-cart-sauce-labs-bike-light"]').click();
 
-  const menu2 = await buildExploreMenu(page, graph, library, "LoggedIn");
+  const menu2 = await buildExploreMenu(page, graph, library, "InventoryPage");
   console.log("\n=== AFTER ADD BIKE LIGHT (mixed) ===");
   for (const sec of menu2.sections) {
     console.log(`\n[${sec.title}]`);

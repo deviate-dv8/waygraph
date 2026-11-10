@@ -19,7 +19,7 @@ test("submit-login: wrong password branches to LoginPage with error banner", asy
   expect(result.__state).toBe("LoginPage");
 });
 
-test("submit-login: good password branches to LoggedIn", async () => {
+test("submit-login: good password branches to InventoryPage", async () => {
   const mem = new MemPage();
   mem.set(SaucedemoKeys.credentials, { username: "standard_user", password: "secret_sauce" });
 
@@ -31,5 +31,5 @@ test("submit-login: good password branches to LoggedIn", async () => {
     .method(Login.do.submitLogin);
   const result = await flow.run(mem);
 
-  expect(result.__state).toBe("LoggedIn");
+  expect(result.__state).toBe("InventoryPage");
 });

@@ -3,11 +3,11 @@ import { buildExploreMenu } from "../../src/live/auto/explore.js";
 import type { WaygraphGraph } from "../../src/analysis/graph.js";
 
 const sample: WaygraphGraph = {
-  nodes: [{ checkpoint: "LoginPage" }, { checkpoint: "LoggedIn" }],
+  nodes: [{ checkpoint: "LoginPage" }, { checkpoint: "InventoryPage" }],
   edges: [
     { block: "nav-login", file: "a", from: "*", to: "LoginPage", kind: "nav" },
-    { block: "submit-login", file: "b", from: "LoginPage", to: "LoggedIn", kind: "action" },
-    { block: "add-to-cart", file: "c", from: "LoggedIn", to: "ItemInCart", kind: "action" },
+    { block: "submit-login", file: "b", from: "LoginPage", to: "InventoryPage", kind: "action" },
+    { block: "add-to-cart", file: "c", from: "InventoryPage", to: "ItemInCart", kind: "action" },
   ],
   skipped: [],
 };
@@ -47,11 +47,11 @@ test("buildExploreMenu at LoginPage groups forward actions", async ({ page }) =>
 test("buildExploreMenu at LoginPage hides url deep-link nav spam", async ({ page }) => {
   await page.setContent('<button id="login-button">Login</button>');
   const graph: WaygraphGraph = {
-    nodes: [{ checkpoint: "LoginPage" }, { checkpoint: "LoggedIn" }, { checkpoint: "ContactsList" }],
+    nodes: [{ checkpoint: "LoginPage" }, { checkpoint: "InventoryPage" }, { checkpoint: "ContactsList" }],
     edges: [
       { block: "nav-login", file: "a", from: "*", to: "LoginPage", kind: "nav" },
       { block: "nav-contacts", file: "c", from: "*", to: "ContactsList", kind: "nav" },
-      { block: "submit-login", file: "b", from: "LoginPage", to: "LoggedIn", kind: "action" },
+      { block: "submit-login", file: "b", from: "LoginPage", to: "InventoryPage", kind: "action" },
     ],
     skipped: [],
   };

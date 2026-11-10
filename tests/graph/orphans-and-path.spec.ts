@@ -97,14 +97,14 @@ export const BPage = definePageBlock({ name: "page-b", checkpoint: checkpoint("B
 
 test("findBlockPath walks discovered edges including nav from *", () => {
   const graph: WaygraphGraph = {
-    nodes: [{ checkpoint: "LoggedIn" }, { checkpoint: "Cart" }, { checkpoint: "Done" }],
+    nodes: [{ checkpoint: "InventoryPage" }, { checkpoint: "Cart" }, { checkpoint: "Done" }],
     edges: [
       { block: "nav-cart", file: "x", from: "*", to: "Cart", kind: "nav" },
       { block: "checkout", file: "y", from: "Cart", to: "Done", kind: "action" },
     ],
     skipped: [],
   };
-  expect(findBlockPath(graph, "LoggedIn", "Done")).toEqual(["nav-cart", "checkout"]);
+  expect(findBlockPath(graph, "InventoryPage", "Done")).toEqual(["nav-cart", "checkout"]);
 });
 
 test("a Block named only in an expect list (a step's, or a Block's own, per outcome) is not an orphan", async () => {

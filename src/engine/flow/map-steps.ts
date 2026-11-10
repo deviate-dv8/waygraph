@@ -271,7 +271,7 @@ export interface MapStepOpts<Lands extends Checkpoint<string> = Checkpoint<strin
   /**
    * Which of a branching Block's outcomes this flow continues from. The flow is typed from it, and a run where the Block
    * lands anywhere else fails at this step.
-   * @example map().method(SubmitLoginBlock, { lands: LoggedIn }).gotoPage(NavCartBlock)
+   * @example map().method(SubmitLoginBlock, { lands: InventoryPage }).gotoPage(NavCartBlock)
    */
   lands?: Lands;
   /**

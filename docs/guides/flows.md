@@ -50,14 +50,14 @@ The second argument tunes one step:
 | Option | Does | Example |
 |---|---|---|
 | `expect` | what the scenario expects after this step ([below](#what-the-scenario-expects-expect)) | `{ expect: [ExpectSavedToastBlock, Machine.status.is("Saved")] }` |
-| `lands` | the outcome this flow is about, when a Block can land in several | `.method(SubmitLoginBlock, { lands: LoggedIn })` |
+| `lands` | the outcome this flow is about, when a Block can land in several | `.method(SubmitLoginBlock, { lands: InventoryPage })` |
 | `settle` | waits for a page that keeps changing (a debounced search) | `{ settle: true }` or `{ settle: { quietMs: 600, maxMs: 8000 } }` |
 | `when` | plays the step only if it returns true (an optional field) | `{ when: (mem) => mem.get(Case.body) !== undefined }` |
 | `pace` | demo speed for this step | `{ pace: "blitz" }` |
 | `ff` | fast-forwards this one step in the demo; for several, `.ffStart()` … `.ffEnd()` | `{ ff: true }` |
 
 A run where the Block lands somewhere other than `lands` fails at that step:
-`"submit-login" landed on LoginPage, but this flow continues from LoggedIn`.
+`"submit-login" landed on LoginPage, but this flow continues from InventoryPage`.
 
 ## What the scenario expects: `expect`
 
@@ -129,7 +129,7 @@ engine.map({ as: Planner })
 
 ```mermaid
 graph LR
-  L[LoginPage] -->|submit-login| I[LoggedIn]
+  L[LoginPage] -->|submit-login| I[InventoryPage]
   L -->|submit-login| L2[LoginPage<br/>error shown]
   I --> N[nav-cart …]
   L2 --> A[expects the error]
@@ -140,7 +140,7 @@ engine.map()
   .gotoPage(NavLoginBlock)
   .method(SubmitLoginBlock, { expect: { LoginPage: [ExpectLoginErrorBlock] } })    // per outcome
   .branch({
-    LoggedIn: (m) => m.gotoPage(NavCartBlock),
+    InventoryPage: (m) => m.gotoPage(NavCartBlock),
     LoginPage: null,
   });
 ```

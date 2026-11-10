@@ -15,7 +15,7 @@ type LoginObserve = "success" | "failure";
  * Clicks Login only - never page.goto (nav-login Page hub owns that), never
  * fills fields (fill-username.method.block.ts / fill-password.method.block.ts
  * already did that). One Block, one action: submit.
- * Branches: good creds -> LoggedIn; bad/locked -> LoginPage with error banner.
+ * Branches: good creds -> InventoryPage; bad/locked -> LoginPage with error banner.
  */
 export const SubmitLoginBlock = defineMethodBlock({
   name: "submit-login",
@@ -46,9 +46,9 @@ export const SubmitLoginBlock = defineMethodBlock({
       }
     },
     resolve: (observed) =>
-      checkpoint(observed === "success" ? "LoggedIn" : "LoginPage"),
+      checkpoint(observed === "success" ? "InventoryPage" : "LoginPage"),
     verify: (out) =>
-      out.__state === "LoggedIn"
+      out.__state === "InventoryPage"
         ? [Trait.url({ pathname: "/inventory.html" })]
         : [Trait.visible(LoginSel.errorBanner)],
   },

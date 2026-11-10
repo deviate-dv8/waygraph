@@ -1,6 +1,6 @@
 import { engine } from "../../config/waygraph.config.js";
 import { Login } from "../blocks/saucedemo-web/nav-login.block.js";
-import { LoggedIn } from "../states/checkout.states.js";
+import { InventoryPage } from "../states/checkout.states.js";
 import { orderPlacedYap, placingOrder } from "../stubs/finish-order.js";
 import { Inventory } from "../blocks/saucedemo-web/inventory/inventory.page.block.js";
 import { Cart } from "../blocks/saucedemo-web/cart/cart.page.block.js";
@@ -20,7 +20,7 @@ export const checkoutThenBrowseAgainFlow = engine
   )
   .method(Login.do.fillUsername)
   .method(Login.do.fillPassword)
-  .method(Login.do.submitLogin, { lands: LoggedIn })
+  .method(Login.do.submitLogin, { lands: InventoryPage })
   .method(Inventory.do.addToCart)
   .gotoPage(Cart.nav)
   .gotoPage(CheckoutInfo.nav)

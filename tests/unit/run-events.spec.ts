@@ -55,8 +55,8 @@ describe("run events: one run per async call chain", () => {
       stepStarted("nav-login", "nav", "__start__");
       stepEnded("nav-login", "LoginPage");
       stepStarted("submit-login", "method", "LoginPage");
-      stepEnded("ff-1", "LoggedIn");
-      stepStarted("add-to-cart", "method", "LoggedIn");
+      stepEnded("ff-1", "InventoryPage");
+      stepStarted("add-to-cart", "method", "InventoryPage");
       stepFailed(new Error("no button"));
     });
     off();
@@ -66,8 +66,8 @@ describe("run events: one run per async call chain", () => {
       ["step:start", 1, "nav-login", 0],
       ["step:end", 1, "nav-login", "LoginPage"],
       ["step:start", 2, "submit-login", 0],
-      ["step:end", 2, "submit-login", "LoggedIn"],
-      ["step:end", 0, "ff-1", "LoggedIn"],
+      ["step:end", 2, "submit-login", "InventoryPage"],
+      ["step:end", 0, "ff-1", "InventoryPage"],
       ["step:start", 3, "add-to-cart", undefined],
       ["step:error", 3, "add-to-cart", undefined],
     ]);

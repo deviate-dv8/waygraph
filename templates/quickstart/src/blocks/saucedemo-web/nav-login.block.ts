@@ -13,7 +13,7 @@ import { LoginSel } from "./methods/login.sel.js";
  * Login screen hub. Deep-link via url; fill-username / fill-password /
  * submit-login hang off this page as three atomic Methods - fill-* are
  * self-loops (LoginPage -> LoginPage), submit-login owns the one real
- * transition (LoginPage -> LoggedIn|LoginPage). No single Block both fills
+ * transition (LoginPage -> InventoryPage|LoginPage). No single Block both fills
  * and submits. Name stays `nav-login` so existing flows / chain specs keep
  * working.
  */

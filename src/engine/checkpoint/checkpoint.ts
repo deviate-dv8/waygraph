@@ -8,7 +8,7 @@ export type Checkpoint<Tag extends string> = { readonly __state: Tag };
 
 /**
  * Builds a Checkpoint - spells `__state` for you so no call site does it by hand.
- * @example resolve: () => checkpoint("LoggedIn")
+ * @example resolve: () => checkpoint("InventoryPage")
  */
 export function checkpoint<Tag extends string>(tag: Tag): Checkpoint<Tag> {
   return { __state: tag };

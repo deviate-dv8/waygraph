@@ -1,5 +1,5 @@
 import { defineNavClickBlock, Trait } from "waygraph";
-import { LoggedIn } from "../../../states/checkout.states.js";
+import { InventoryPage } from "../../../states/checkout.states.js";
 import { ItemDetailSel } from "./item-detail.sel.js";
 
 /**
@@ -12,7 +12,7 @@ import { ItemDetailSel } from "./item-detail.sel.js";
 export const NavContinueShoppingBlock = defineNavClickBlock({
   name: "nav-continue-shopping",
   description: "Clicks 'Continue Shopping' on the cart page.",
-  checkpoint: LoggedIn,
+  checkpoint: InventoryPage,
   click: ItemDetailSel.continueShoppingBtn,
   verify: [Trait.url({ pathname: "/inventory.html" })],
 });

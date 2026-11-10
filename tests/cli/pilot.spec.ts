@@ -51,7 +51,7 @@ test("waygraph pilot start returns a real session id, socket path, and the whole
   expect(result.headless).toBe(false);
   expect(result.snapshot.here).toBe("LoginPage");
   const checkpointNames = result.graph.nodes.map((n: { checkpoint: string }) => n.checkpoint);
-  expect(checkpointNames).toEqual(expect.arrayContaining(["LoginPage", "LoggedIn", "OrderComplete"]));
+  expect(checkpointNames).toEqual(expect.arrayContaining(["LoginPage", "InventoryPage", "OrderComplete"]));
 
   await exec(node, [CLI, "auto", "send", result.sessionId, "q"], { cwd: sauceRoot }).catch(() => {});
 });

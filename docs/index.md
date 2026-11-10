@@ -23,7 +23,7 @@ hero:
 ```mermaid
 graph LR
   S((start)) -->|nav-login| L[LoginPage]
-  L -->|submit-login| I[LoggedIn]
+  L -->|submit-login| I[InventoryPage]
   I -->|add-to-cart| I
   I -->|nav-cart| P[CartPage]
 ```

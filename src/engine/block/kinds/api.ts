@@ -73,7 +73,7 @@ const API_RESULT_SCRATCH = new MemKey<ApiCallResult>("__wgApiBlockResult");
  * @example
  * const CheckOrderCreated = defineApiBlock({
  *   name: "check-order-created",
- *   from: LoggedIn,
+ *   from: InventoryPage,
  *   to: [OrderConfirmed, OrderFailed],
  *   call: ({ request }) => request.get("/api/orders/latest"),
  *   resolve: (r) => (r.ok ? OrderConfirmed : OrderFailed),

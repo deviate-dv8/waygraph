@@ -1,5 +1,5 @@
 import { defineNavBlock, Trait } from "waygraph";
-import { LoggedIn } from "../../../states/checkout.states.js";
+import { InventoryPage } from "../../../states/checkout.states.js";
 import { InventorySel } from "./methods/inventory-items.js";
 
 /**
@@ -12,7 +12,7 @@ import { InventorySel } from "./methods/inventory-items.js";
 export const NavInventoryBlock = defineNavBlock({
   name: "nav-inventory",
   description: "Opens the product catalogue (needs a signed-in session).",
-  checkpoint: LoggedIn,
+  checkpoint: InventoryPage,
   url: "/inventory.html",
   verify: [Trait.url({ pathname: "/inventory.html" }), Trait.visible(InventorySel.list)],
 });

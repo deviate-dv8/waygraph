@@ -57,7 +57,7 @@ defineMethodBlock({
 
 ```ts
 verify: (out) =>
-  out.__state === "LoggedIn" ? [Trait.url({ pathname: "/inventory.html" })] : [Trait.visible(LoginSel.errorBanner)],
+  out.__state === "InventoryPage" ? [Trait.url({ pathname: "/inventory.html" })] : [Trait.visible(LoginSel.errorBanner)],
 ```
 
 ## `expect`: what the scenario expects

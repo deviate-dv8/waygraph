@@ -13,11 +13,11 @@ test("toMermaid: a NavBlock's from:'*' renders as Mermaid's own [*] start marker
 
 test("toMermaid: one line per edge, in order, labeled with the Block's own name", () => {
   const graph: WaygraphGraph = {
-    nodes: [{ checkpoint: "LoginPage" }, { checkpoint: "LoggedIn" }, { checkpoint: "CartPage" }],
+    nodes: [{ checkpoint: "LoginPage" }, { checkpoint: "InventoryPage" }, { checkpoint: "CartPage" }],
     edges: [
       { block: "nav-login", file: "a.ts", from: "*", to: "LoginPage", kind: "nav" },
-      { block: "submit-login", file: "b.ts", from: "LoginPage", to: "LoggedIn", kind: "action" },
-      { block: "nav-cart", file: "c.ts", from: "LoggedIn", to: "CartPage", kind: "nav" },
+      { block: "submit-login", file: "b.ts", from: "LoginPage", to: "InventoryPage", kind: "action" },
+      { block: "nav-cart", file: "c.ts", from: "InventoryPage", to: "CartPage", kind: "nav" },
     ],
     skipped: [],
   };
@@ -26,8 +26,8 @@ test("toMermaid: one line per edge, in order, labeled with the Block's own name"
     [
       "stateDiagram-v2",
       "  [*] --> LoginPage : nav-login",
-      "  LoginPage --> LoggedIn : submit-login",
-      "  LoggedIn --> CartPage : nav-cart",
+      "  LoginPage --> InventoryPage : submit-login",
+      "  InventoryPage --> CartPage : nav-cart",
     ].join("\n"),
   );
 });

@@ -7,10 +7,10 @@ import { checkpoint } from "waygraph";
 
 export const LoginPage = checkpoint("LoginPage");
 export type LoginPage = typeof LoginPage;
-export const LoggedIn = checkpoint("LoggedIn");
-export type LoggedIn = typeof LoggedIn;
+export const InventoryPage = checkpoint("InventoryPage");
+export type InventoryPage = typeof InventoryPage;
 /** submit-login: inventory on success, login form + error banner on auth failure. */
-export const LoginSubmitOutcome = [LoggedIn, LoginPage] as const;
+export const LoginSubmitOutcome = [InventoryPage, LoginPage] as const;
 export type LoginSubmitOutcome = (typeof LoginSubmitOutcome)[number];
 export const CartPage = checkpoint("CartPage");
 export type CartPage = typeof CartPage;

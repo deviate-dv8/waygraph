@@ -90,7 +90,7 @@ function verifyOf(call: CallExpression): "none" | "empty" | "some" {
   return Node.isArrayLiteralExpression(init) && init.getElements().length === 0 ? "empty" : "some";
 }
 
-/** A Method's route as written (`from: LoginPage, to: LoggedIn`) - a transition when they differ. */
+/** A Method's route as written (`from: LoginPage, to: InventoryPage`) - a transition when they differ. */
 function routeOf(call: CallExpression): { from: string; to: string } | undefined {
   const options = call.getArguments()[0];
   if (!Node.isObjectLiteralExpression(options)) return undefined;
