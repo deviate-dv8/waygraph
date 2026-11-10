@@ -45,6 +45,7 @@ export default class BlocksController {
       mem: [...requiredBy]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, blocks]) => ({ key, requiredBy: blocks, example: seen.get(key) ?? null })),
+      selectors: manifest.selectors ?? null,
     })
   }
 }

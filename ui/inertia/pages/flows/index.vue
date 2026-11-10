@@ -1,42 +1,63 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WorkspaceLayout from '~/layouts/workspace.vue'
-import SketchBox from '~/components/sketch/sketch_box.vue'
 import RunStatus from '~/components/run_status.vue'
 import { urlFor } from '~/client'
+import { PREFETCH } from '~/lib/prefetch'
 import { ago, count } from '~/lib/format'
-import type { ManifestFlow, RunSummary } from '#types/project'
+import type { FlowRow } from '#types/project'
 
-/** Every flow in the project: the scenarios, by the page they're about, with how each last ran. */
+/** Every flow in the project: the scenarios, by the folder they're in, failing first, with how each last ran. */
 const props = defineProps<{
   project: { name: string; dir: string; waygraph: string }
-  flows: (ManifestFlow & { lastRun: RunSummary | null })[]
+  flows: FlowRow[]
 }>()
 
 const query = ref('')
+const status = ref<'all' | 'failing' | 'passing' | 'never'>('all')
+const statusOf = (f: FlowRow) =>
+  !f.lastRun ? 'never' : f.lastRun.ok === false ? 'failing' : f.lastRun.ok ? 'passing' : 'never'
+const tally = computed(() => ({
+  failing: props.flows.filter((f) => statusOf(f) === 'failing').length,
+  passing: props.flows.filter((f) => statusOf(f) === 'passing').length,
+  never: props.flows.filter((f) => statusOf(f) === 'never').length,
+}))
+const filters = computed(() => [
+  { label: `All ${props.flows.length}`, value: 'all' },
+  { label: `Failing ${tally.value.failing}`, value: 'failing' },
+  { label: `Passing ${tally.value.passing}`, value: 'passing' },
+  { label: `Not run ${tally.value.never}`, value: 'never' },
+])
 const shown = computed(() => {
   const q = query.value.trim().toLowerCase()
-  return q
-    ? props.flows.filter((f) =>
-        `${f.exportName} ${f.file} ${f.steps.join(' ')}`.toLowerCase().includes(q)
-      )
-    : props.flows
+  return props.flows.filter(
+    (f) =>
+      (status.value === 'all' || statusOf(f) === status.value) &&
+      (!q || `${f.name} ${f.file} ${f.stepNames}`.toLowerCase().includes(q))
+  )
 })
-const groupOf = (f: ManifestFlow) => (f.useCase.path.length ? f.useCase.path.join(' / ') : 'flows')
+/** Groups by folder; within one, failing flows first, then by name. */
 const groups = computed(() => {
-  const by = new Map<string, typeof shown.value>()
-  for (const f of shown.value) by.set(groupOf(f), [...(by.get(groupOf(f)) ?? []), f])
-  return [...by.entries()]
+  const by = new Map<string, FlowRow[]>()
+  for (const f of shown.value) by.set(f.group, [...(by.get(f.group) ?? []), f])
+  const rank = (f: FlowRow) => (statusOf(f) === 'failing' ? 0 : 1)
+  return [...by]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([group, list]) => ({
+      group,
+      failing: list.filter((f) => statusOf(f) === 'failing').length,
+      flows: [...list].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name)),
+    }))
 })
 </script>
 
 <template>
   <WorkspaceLayout :project="props.project" scroll>
-    <div class="mb-6 flex items-end justify-between gap-4">
+    <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1 class="font-hand text-4xl">Flows</h1>
         <p class="text-(--ink-soft)">
-          {{ props.flows.length }} scenarios, each a path through the app's pages.
+          {{ count(props.flows.length, 'scenario') }}, each a path through the app's pages.
         </p>
       </div>
       <UInput
@@ -46,37 +67,51 @@ const groups = computed(() => {
         class="w-72"
       />
     </div>
+    <UTabs v-model="status" :items="filters" :content="false" size="sm" class="mb-5" />
 
-    <section v-for="[group, inGroup] in groups" :key="group" class="mb-8">
-      <h2 class="mb-3 text-sm font-semibold tracking-wide text-(--ink-soft) uppercase">
-        {{ group }}
+    <section v-for="g in groups" :key="g.group" class="mb-5">
+      <h2 class="mb-2 flex items-center gap-2 font-mono text-sm text-(--ink-soft)">
+        <UIcon name="i-lucide-folder" class="size-4" /> {{ g.group }}
+        <UBadge :label="String(g.flows.length)" color="neutral" variant="subtle" size="sm" />
+        <UBadge
+          v-if="g.failing"
+          :label="`${g.failing} failing`"
+          color="error"
+          variant="subtle"
+          size="sm"
+        />
       </h2>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <ULink
-          v-for="f in inGroup"
-          :key="f.id"
-          :to="urlFor('flows.show', { name: f.exportName })"
-          class="block"
-        >
-          <SketchBox :seed="f.id" class="transition-transform hover:-translate-y-0.5">
-            <div class="space-y-2 p-4">
-              <div class="flex items-start justify-between gap-2">
-                <p class="font-hand text-xl leading-tight break-all">{{ f.exportName }}</p>
-                <RunStatus v-if="f.lastRun" :id="f.lastRun.id" :ok="f.lastRun.ok" />
-              </div>
-              <p class="truncate font-mono text-xs text-(--ink-soft)" :title="f.file">
+      <ul class="island divide-y divide-(--island-line)">
+        <li v-for="f in g.flows" :key="f.id">
+          <ULink
+            :to="urlFor('flows.show', { name: f.name })"
+            v-bind="PREFETCH"
+            class="flex items-center gap-3 px-4 py-2 hover:bg-(--island-line)"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="truncate font-medium" :title="f.name">{{ f.name }}</p>
+              <p class="truncate font-mono text-[11px] text-(--ink-soft)" :title="f.file">
                 {{ f.file }}
               </p>
-              <p class="text-xs text-(--ink-soft)">
-                {{ count(f.steps.length, 'step') }} ·
-                {{ count(f.stepExpects.flat().length, 'expectation') }} ·
-                {{ f.lastRun ? `last run ${ago(f.lastRun.startedAt)}` : 'never run' }}
-              </p>
             </div>
-          </SketchBox>
-        </ULink>
-      </div>
+            <UBadge :label="count(f.steps, 'step')" color="neutral" variant="outline" size="sm" />
+            <UBadge
+              v-if="f.expectations"
+              :label="count(f.expectations, 'expectation')"
+              color="primary"
+              variant="subtle"
+              size="sm"
+              class="hidden sm:inline-flex"
+            />
+            <span class="hidden w-28 shrink-0 text-right text-xs text-(--ink-soft) md:block">
+              {{ f.lastRun ? ago(f.lastRun.startedAt) : 'never run' }}
+            </span>
+            <RunStatus v-if="f.lastRun" :id="f.lastRun.id" :ok="f.lastRun.ok" />
+            <span v-else class="w-5" />
+          </ULink>
+        </li>
+      </ul>
     </section>
-    <p v-if="!shown.length" class="text-(--ink-soft)">No flow matches "{{ query }}".</p>
+    <p v-if="!shown.length" class="text-(--ink-soft)">No flow matches.</p>
   </WorkspaceLayout>
 </template>

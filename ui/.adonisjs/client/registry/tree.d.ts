@@ -13,6 +13,10 @@ export interface ApiDefinition {
   runs: {
     index: typeof routes['runs.index']
     show: typeof routes['runs.show']
+    artifact: typeof routes['runs.artifact']
+  }
+  sources: {
+    show: typeof routes['sources.show']
   }
   screenshots: {
     page: typeof routes['screenshots.page']

@@ -86,6 +86,32 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/runs_controller').default['show']>>>
     }
   }
+  'runs.artifact': {
+    methods: ["GET","HEAD"]
+    pattern: '/runs/:id/artifacts/:index'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; index: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/runs_controller').default['artifact']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/runs_controller').default['artifact']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/runs_controller').default['artifact']>>>
+    }
+  }
+  'sources.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/source'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/sources_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/sources_controller').default['show']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/sources_controller').default['show']>>>
+    }
+  }
   'screenshots.page': {
     methods: ["GET","HEAD"]
     pattern: '/screenshots/pages/:checkpoint'

@@ -33,6 +33,17 @@ const show = (id: string, shown: boolean) => {
       />
     </section>
 
+    <section class="island mb-4 space-y-4 p-5">
+      <h2 class="flex items-center gap-1.5 font-semibold">
+        <UIcon name="i-lucide-video" class="size-4 text-(--ink-soft)" /> Recording
+      </h2>
+      <USwitch
+        v-model="settings.video"
+        label="Record a video"
+        description="Runs and demos played from here record the browser (--video). The run's page plays it and saves it."
+      />
+    </section>
+
     <section class="island space-y-3 p-5">
       <h2 class="flex items-center gap-1.5 font-semibold">
         <UIcon name="i-lucide-panel-left" class="size-4 text-(--ink-soft)" /> Sidebar

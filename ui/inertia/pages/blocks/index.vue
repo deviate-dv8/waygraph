@@ -2,10 +2,16 @@
 import { computed, ref } from 'vue'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import ShapeTree from '~/components/map/shape_tree.vue'
-import { urlFor } from '~/client'
-import { count, duration } from '~/lib/format'
+import BlockDetail from '~/components/block_detail.vue'
+import { count } from '~/lib/format'
 import { kindColor } from '~/lib/kinds'
-import type { BlockStats, Json, ManifestBlock, ManifestReadBlock } from '#types/project'
+import type {
+  BlockStats,
+  Json,
+  ManifestBlock,
+  ManifestReadBlock,
+  SelectorEntry,
+} from '#types/project'
 
 /** Every Block of the project, by the folder it lives in, with what its runs say; its Read Blocks; its mem keys. */
 const props = defineProps<{
@@ -16,11 +22,14 @@ const props = defineProps<{
   stats: Record<string, BlockStats>
   runsRead: number
   mem: { key: string; requiredBy: string[]; example: Json }[]
+  /** Every selector file's entries; null when the project's waygraph doesn't list them. */
+  selectors: SelectorEntry[] | null
 }>()
 
 const tabs = [
   { label: 'Blocks', value: 'blocks', icon: 'i-lucide-boxes' },
   { label: 'Read Blocks', value: 'reads', icon: 'i-lucide-eye' },
+  { label: 'Selectors', value: 'selectors', icon: 'i-lucide-crosshair' },
   { label: 'Mem keys', value: 'mem', icon: 'i-lucide-key-round' },
 ]
 const tab = ref('blocks')
@@ -58,6 +67,23 @@ const reads = computed(() =>
 const keys = computed(() =>
   props.mem.filter((m) => !q.value || `${m.key} ${m.requiredBy}`.toLowerCase().includes(q.value))
 )
+/** Each selector file's entries, with the Blocks that read each. */
+const usersOf = computed(() => {
+  const users = new Map<string, string[]>()
+  for (const b of props.blocks)
+    for (const sel of b.selectors ?? [])
+      users.set(sel.name, [...(users.get(sel.name) ?? []), b.name])
+  return users
+})
+const selectorFiles = computed(() => {
+  const by = new Map<string, SelectorEntry[]>()
+  for (const sel of props.selectors ?? []) {
+    if (q.value && !`${sel.name} ${sel.selector} ${sel.file}`.toLowerCase().includes(q.value))
+      continue
+    by.set(sel.file, [...(by.get(sel.file) ?? []), sel])
+  }
+  return [...by]
+})
 const stat = (b: ManifestBlock): BlockStats | undefined => props.stats[b.name]
 const short = (value: Json) => {
   const text = JSON.stringify(value)
@@ -147,7 +173,7 @@ const short = (value: Json) => {
                     size="sm"
                   />
                 </p>
-                <p v-if="b.description" class="truncate text-xs text-(--ink-soft)">
+                <p v-if="b.description && open !== b.id" class="truncate text-xs text-(--ink-soft)">
                   {{ b.description }}
                 </p>
               </div>
@@ -161,74 +187,12 @@ const short = (value: Json) => {
                 <template v-else>not run</template>
               </span>
             </button>
-            <div v-if="open === b.id" class="space-y-3 bg-(--paper) px-4 pt-1 pb-4 text-sm">
-              <p class="font-mono text-xs break-all text-(--ink-soft)">
-                {{ b.file }} · {{ b.exportName }}
+            <div v-if="open === b.id" class="bg-(--paper) px-4 pt-1 pb-4">
+              <p class="mb-2 font-mono text-[11px] break-all text-(--ink-soft)">
+                {{ b.file }}<template v-if="b.source">:{{ b.source.line }}</template> ·
+                {{ b.exportName }}
               </p>
-              <p v-if="b.url" class="text-xs">
-                Opens <span class="font-mono">{{ b.url }}</span>
-              </p>
-              <div v-if="b.requires.length" class="flex flex-wrap items-center gap-1.5 text-xs">
-                <span class="text-(--ink-soft)">Requires</span>
-                <UBadge
-                  v-for="k in b.requires"
-                  :key="k"
-                  :label="k"
-                  color="neutral"
-                  variant="outline"
-                  size="sm"
-                  class="font-mono"
-                />
-              </div>
-              <div v-if="b.expect.length" class="flex flex-wrap items-center gap-1.5 text-xs">
-                <span class="text-(--ink-soft)">Expects</span>
-                <UBadge
-                  v-for="e in b.expect"
-                  :key="e"
-                  :label="e"
-                  color="primary"
-                  variant="subtle"
-                  size="sm"
-                />
-              </div>
-              <div v-if="stat(b)" class="space-y-1 text-xs">
-                <p>
-                  <span class="text-(--ink-soft)">In runs:</span> {{ stat(b)!.passed }} passed,
-                  {{ stat(b)!.failed }} failed<template v-if="stat(b)!.ms !== null"
-                    >, {{ duration(stat(b)!.ms!) }} on average</template
-                  >.
-                </p>
-                <p v-for="m in stat(b)!.moves" :key="`${m.from}>${m.to}`">
-                  <span class="text-(--ink-soft)">Went from</span>
-                  <span class="font-mono">{{ m.from }}</span>
-                  <span class="text-(--ink-soft)">to</span>
-                  <span class="font-mono">{{ m.to }}</span>
-                  <span class="text-(--ink-soft)">({{ count(m.count, 'time') }})</span>
-                </p>
-                <p v-if="stat(b)!.addressOnly">
-                  <span class="text-(--ink-soft)">Stayed on its page but changed the address</span>
-                  {{ count(stat(b)!.addressOnly, 'time') }} (a tab or a filter kept in the url).
-                </p>
-              </div>
-              <div
-                v-if="props.usedBy[b.name]?.length"
-                class="flex flex-wrap items-center gap-1.5 text-xs"
-              >
-                <span class="text-(--ink-soft)"
-                  >Used by {{ count(props.usedBy[b.name]!.length, 'flow') }}</span
-                >
-                <ULink
-                  v-for="f in props.usedBy[b.name]!.slice(0, 12)"
-                  :key="f"
-                  :to="urlFor('flows.show', { name: f })"
-                  class="font-mono hover:underline"
-                  >{{ f }}</ULink
-                >
-                <span v-if="props.usedBy[b.name]!.length > 12" class="text-(--ink-soft)"
-                  >+{{ props.usedBy[b.name]!.length - 12 }}</span
-                >
-              </div>
-              <p v-else class="text-xs text-(--ink-soft)">No flow uses it.</p>
+              <BlockDetail :block="b" :stat="stat(b)" :used-by="props.usedBy[b.name] ?? []" />
             </div>
           </li>
         </ul>
@@ -254,6 +218,43 @@ const short = (value: Json) => {
         </ul>
       </li>
     </ul>
+
+    <template v-else-if="tab === 'selectors'">
+      <p v-if="!props.selectors" class="text-(--ink-soft)">
+        The project's waygraph doesn't list selectors yet (0.16.19 or later does).
+      </p>
+      <p v-else-if="!selectorFiles.length" class="text-(--ink-soft)">No selector matches.</p>
+      <section v-for="[file, entries] in selectorFiles" :key="file" class="mb-5">
+        <h2 class="mb-2 flex items-center gap-1.5 font-mono text-sm text-(--ink-soft)">
+          <UIcon name="i-lucide-file-code" class="size-4" /> {{ file }}
+        </h2>
+        <ul class="island divide-y divide-(--island-line)">
+          <li v-for="sel in entries" :key="sel.name" class="flex items-start gap-3 px-4 py-2">
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium">{{ sel.name }}</p>
+              <code
+                class="block font-mono text-xs break-all"
+                :class="sel.literal ? 'text-(--code-str)' : 'text-(--ink-soft)'"
+                >{{ sel.selector }}</code
+              >
+            </div>
+            <div class="flex max-w-[45%] flex-wrap justify-end gap-1">
+              <UBadge
+                v-for="user in usersOf.get(sel.name) ?? []"
+                :key="user"
+                :label="user"
+                color="neutral"
+                variant="subtle"
+                size="sm"
+              />
+              <span v-if="!usersOf.has(sel.name)" class="text-xs text-(--ink-soft)"
+                >no Block reads it</span
+              >
+            </div>
+          </li>
+        </ul>
+      </section>
+    </template>
 
     <ul v-else class="island divide-y divide-(--island-line)">
       <li v-for="m in keys" :key="m.key" class="px-4 py-2.5 text-sm">

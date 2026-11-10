@@ -21,6 +21,7 @@ export function usePlay() {
         flow,
         mode,
         ...options,
+        video: settings.value.video,
         ...(mode === 'demo' ? { autoNext: settings.value.autoNext } : {}),
       }),
     stop: () => router.delete(urlFor('plays.destroy')),

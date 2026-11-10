@@ -31,4 +31,13 @@ export default class RunsController {
     })
     return inertia.render('runs/show', { project: manifest.project, run, expects })
   }
+
+  /** A run's video or trace, shown in the page or, with `download`, saved under its run's name. */
+  async artifact({ params, request, response }: HttpContext) {
+    const artifact = await this.project.artifact(params.id, Number(params.index))
+    if (!artifact) return response.notFound()
+    if (request.input('download') === undefined) return response.download(artifact.path)
+    const extension = artifact.path.split('.').pop() ?? 'bin'
+    return response.attachment(artifact.path, `${params.id}-${artifact.kind}.${extension}`)
+  }
 }

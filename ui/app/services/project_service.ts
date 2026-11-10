@@ -4,13 +4,16 @@ import { readdir, readFile, stat } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import env from '#start/env'
-import type { Json, Manifest, RunDetail, RunStep, RunSummary } from '#types/project'
+import type { Json, Manifest, RunDetail, RunStep, RunSummary, SourceLines } from '#types/project'
 
 const run = promisify(execFile)
 
 type RunEvent = { type: string; [k: string]: unknown }
 
-/** How long a manifest is reused before it's read again (reading imports every project file). */
+/**
+ * How long a manifest counts as current. Older, it's still served at once while a new one is read in the background
+ * (reading imports every project file, seconds on a big project): a click never waits for it.
+ */
 const MANIFEST_TTL_MS = 30_000
 
 /**
@@ -19,6 +22,10 @@ const MANIFEST_TTL_MS = 30_000
  */
 export class ProjectService {
   private static cached: { at: number; manifest: Manifest } | null = null
+  /** The manifest being read now: requests while it reads share it instead of starting another. */
+  private static reading: Promise<Manifest> | null = null
+  /** Each run log's events as last parsed, kept while the file's size and time are the same. */
+  private static logs = new Map<string, { size: number; mtimeMs: number; events: RunEvent[] }>()
 
   /** The project folder, or null when `WAYGRAPH_PROJECT_DIR` is unset or isn't a folder. */
   get dir(): string | null {
@@ -26,27 +33,71 @@ export class ProjectService {
     return dir && existsSync(dir) ? resolve(dir) : null
   }
 
-  /** The project's manifest, through its own installed waygraph so the versions always match. */
+  /**
+   * The project's manifest, through its own installed waygraph so the versions always match. A stale one is served
+   * while a new one is read; `fresh` waits for a new one.
+   */
   async manifest(options: { fresh?: boolean } = {}): Promise<Manifest> {
     const dir = this.requireDir()
     const cached = ProjectService.cached
-    if (
-      !options.fresh &&
-      cached &&
-      cached.manifest.project.dir === dir &&
-      Date.now() - cached.at < MANIFEST_TTL_MS
-    ) {
-      return cached.manifest
+    const current = cached && cached.manifest.project.dir === dir ? cached : null
+    if (!options.fresh && current) {
+      if (Date.now() - current.at >= MANIFEST_TTL_MS)
+        this.readManifest(dir).catch((err: unknown) =>
+          // The page keeps the manifest it has; the next request tries again.
+          console.error(`waygraph manifest: ${err instanceof Error ? err.message : String(err)}`)
+        )
+      return current.manifest
     }
-    const [cmd, args] = waygraphCommand(dir, ['manifest', dir])
-    const { stdout } = await run(cmd, args, {
-      cwd: dir,
-      maxBuffer: 64 * 1024 * 1024,
-      timeout: 120_000,
-    })
-    const manifest = JSON.parse(stdout) as Manifest
-    ProjectService.cached = { at: Date.now(), manifest }
-    return manifest
+    return this.readManifest(dir)
+  }
+
+  private readManifest(dir: string): Promise<Manifest> {
+    ProjectService.reading ??= (async () => {
+      try {
+        const [cmd, args] = waygraphCommand(dir, ['manifest', dir])
+        const { stdout } = await run(cmd, args, {
+          cwd: dir,
+          maxBuffer: 64 * 1024 * 1024,
+          timeout: 120_000,
+        })
+        const manifest = JSON.parse(stdout) as Manifest
+        ProjectService.cached = { at: Date.now(), manifest }
+        return manifest
+      } finally {
+        ProjectService.reading = null
+      }
+    })()
+    return ProjectService.reading
+  }
+
+  /**
+   * Lines `from` to `to` of a file the manifest names (a Block's, a flow's, a selector file's): nothing else in the
+   * project is read. Null when the manifest doesn't name it.
+   */
+  async source(file: string, from: number, to: number): Promise<SourceLines | null> {
+    const manifest = await this.manifest()
+    const named = new Set([
+      ...manifest.blocks.map((b) => b.file),
+      ...manifest.readBlocks.map((r) => r.file),
+      ...manifest.flows.map((f) => f.file),
+      ...(manifest.selectors ?? []).map((s) => s.file),
+    ])
+    if (!named.has(file)) return null
+    const path = join(this.requireDir(), file)
+    if (!existsSync(path)) return null
+    const text = await readFile(path, 'utf8')
+    const all = text.split('\n')
+    const start = Math.max(1, from)
+    return { file, from: start, lines: all.slice(start - 1, Math.max(start, to)) }
+  }
+
+  /** A run's video or trace, by its place among the run's artifacts: only a file its log names. */
+  async artifact(id: string, index: number): Promise<{ kind: string; path: string } | null> {
+    const detail = await this.run(id)
+    const artifact = detail?.artifacts[index]
+    if (!artifact || (artifact.kind !== 'video' && artifact.kind !== 'trace')) return null
+    return existsSync(artifact.path) ? artifact : null
   }
 
   /** The newest runs first, from `.waygraph/runs/*.jsonl`. */
@@ -60,7 +111,7 @@ export class ProjectService {
       .reverse()
       .slice(0, limit)
     return Promise.all(
-      files.map(async (f) => summarize(basename(f, '.jsonl'), await readEvents(join(folder, f))))
+      files.map(async (f) => summarize(basename(f, '.jsonl'), await this.events(join(folder, f))))
     )
   }
 
@@ -72,7 +123,7 @@ export class ProjectService {
     if (!existsSync(file)) return null
     const info = await stat(file)
     if (!info.isFile()) return null
-    const events = await readEvents(file)
+    const events = await this.events(file)
     return {
       ...summarize(id, events),
       stepsList: foldSteps(events),
@@ -115,6 +166,16 @@ export class ProjectService {
           where.file.endsWith('.png') &&
           join(this.runsDir(), where.run, where.file)
     return path && existsSync(path) ? path : null
+  }
+
+  /** A run log's events, parsed again only when the file changed (a run still playing grows). */
+  private async events(file: string): Promise<RunEvent[]> {
+    const info = await stat(file)
+    const kept = ProjectService.logs.get(file)
+    if (kept && kept.size === info.size && kept.mtimeMs === info.mtimeMs) return kept.events
+    const events = await readEvents(file)
+    ProjectService.logs.set(file, { size: info.size, mtimeMs: info.mtimeMs, events })
+    return events
   }
 
   private requireDir(): string {

@@ -12,5 +12,6 @@ export const controllers = {
   Runs: () => import('#controllers/runs_controller'),
   Screenshots: () => import('#controllers/screenshots_controller'),
   Settings: () => import('#controllers/settings_controller'),
+  Sources: () => import('#controllers/sources_controller'),
   Workspaces: () => import('#controllers/workspaces_controller'),
 }

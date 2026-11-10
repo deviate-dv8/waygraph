@@ -35,3 +35,17 @@ test("Blocks under src/map/ carry their map group", async () => {
   expect(m.maps.length).toBeGreaterThan(0);
   expect(m.blocks.every((b) => b.map !== undefined)).toBe(true);
 });
+
+test("each Block carries the lines that define it, its checks as data and the selector entries it reads", async () => {
+  const m = await buildManifest(join(examples, "saucedemo"));
+  const nav = m.blocks.find((b) => b.name === "nav-cart")!;
+  expect(nav.source).toEqual({ line: 5, endLine: 18 });
+  expect(nav.checks).toEqual({ precondition: [], verify: [{ name: 'url-matches({"pathname":"/cart.html"})' }] });
+  expect(nav.selectors).toEqual([
+    { name: "CartSel.cartLink", selector: ".shopping_cart_link", literal: true, file: "src/blocks/saucedemo-web/cart/cart.sel.ts", line: 7 },
+  ]);
+  expect(m.flows.every((f) => f.source)).toBe(true);
+  expect(m.readBlocks.every((r) => r.source)).toBe(true);
+  // Every selector file's entries, used or not
+  expect(m.selectors).toContainEqual(expect.objectContaining({ name: "CartSel.checkoutBtn", selector: "#checkout" }));
+});

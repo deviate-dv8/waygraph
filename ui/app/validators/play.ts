@@ -6,6 +6,7 @@ export const playValidator = vine.create({
   mode: vine.enum(['run', 'demo']),
   noExpect: vine.boolean().optional(),
   autoNext: vine.boolean().optional(),
+  video: vine.boolean().optional(),
   replay: vine
     .string()
     .regex(/^[\w.-]+$/)

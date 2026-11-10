@@ -5,6 +5,7 @@ import { useIntervalFn } from '@vueuse/core'
 import { useToast } from '@nuxt/ui/composables'
 import AppLogo from '~/components/app_logo.vue'
 import { urlFor } from '~/client'
+import { PREFETCH } from '~/lib/prefetch'
 import { usePlay } from '~/lib/play'
 import { appPages } from '~/lib/pages'
 import { useSettings } from '~/lib/settings'
@@ -68,6 +69,7 @@ watch(
             v-for="section in sections"
             :key="section.label"
             :to="section.to"
+            v-bind="PREFETCH"
             class="flex w-13 flex-col items-center gap-0.5 rounded-md py-1.5 text-[11px]"
             :class="
               section.active

@@ -50,6 +50,7 @@ export interface ScannedReadBlock {
   block: ReadBlock;
   exportName: string;
   file: string;
+  absFile: string;
   map?: string;
 }
 
@@ -115,7 +116,7 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
     }
     for (const [exportName, exported] of Object.entries(mod)) {
       if (isReadBlockLike(exported)) {
-        readBlocks.push({ block: exported, exportName, file, ...(map ? { map } : {}) });
+        readBlocks.push({ block: exported, exportName, file, absFile, ...(map ? { map } : {}) });
         continue;
       }
       if (!isBlockLike(exported)) continue;

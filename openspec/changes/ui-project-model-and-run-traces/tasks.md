@@ -44,10 +44,12 @@
 
 ## 5. Manifest version 3
 
-- [ ] 5.1 Source positions for Blocks, Read Blocks, flows and each flow step's chain call (ts-morph)
+- [ ] 5.1 Source positions for Blocks, Read Blocks, flows and each flow step's chain call (ts-morph) (done: Blocks,
+      Read Blocks, flows as `source`; left: each step's chain call)
 - [ ] 5.2 Checks as data: verify / precondition Traits, `"dynamic"` for function verify; expectations as Expect Block
-      names plus Traits and read checks, per outcome
-- [ ] 5.3 Selector objects from `*_sel.ts` (members, strings or `"function"`, lines) and each Block's referenced members
+      names plus Traits and read checks, per outcome (done: `checks.precondition` / `checks.verify`; left: expectations
+      as data)
+- [x] 5.3 Selector objects from `*_sel.ts` (members, strings or `"function"`, lines) and each Block's referenced members
 - [ ] 5.4 Flow steps: narration flags, `when` / `ff` / `finally` / `expect: false`
 - [ ] 5.5 `version: 3`; version 2 fields unchanged; tests on `examples/saucedemo` and the scaffold
 
@@ -73,6 +75,7 @@
 - [ ] 7.4 Detail panel: step (Block, source, from / to), check (wanted / saw / tries / selector), events (console, errors,
       requests, navigations, dialogs, screenshots), read
 - [ ] 7.5 Block details on the map and flows: checks, expectations, selectors, `file:line`, editor link (`ui.editor`)
+      (done on the map's page panel and the Blocks page, with the Block's code; left: flows, editor link)
 - [ ] 7.6 Legacy runs listed and opened on the old step list
 - [ ] 7.7 Look at it light and dark; the UI's own tests; the `waygraph ui` spec extended to a live run
 

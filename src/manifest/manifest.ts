@@ -11,6 +11,9 @@ import { readBlockShape, type ReadShape } from "../engine/read/read-block.js";
 import { pageUrls, urlOf } from "./urls.js";
 import { describeExpectations } from "../engine/run/expect.js";
 import type { SomeBlock } from "../engine/block/some-block.js";
+import type { Trait } from "../engine/trait/trait.js";
+import { walkDir } from "./scan.js";
+import { forgetSources, selectorEntries, selectorFilesUnder, selectorsUsed, spanOf, type SelectorEntry, type SourceSpan } from "./selectors.js";
 
 export const MANIFEST_VERSION = 2;
 
@@ -31,6 +34,19 @@ export interface ManifestBlock {
   map?: string;
   /** Where a Nav or Page Block goes by url: the url, or the pattern a url built from mem makes (`/requests/:id`). */
   url?: string;
+  /** The lines of `file` that define it. */
+  source?: SourceSpan;
+  /** What it checks before acting and on arrival: each Trait as data, or `"dynamic"` when a function builds them. */
+  checks: { precondition: ManifestCheck[] | "dynamic"; verify: ManifestCheck[] | "dynamic" };
+  /** The selector entries its definition reads (`LoginSel.submit`), from the project's selector files. */
+  selectors: SelectorEntry[];
+}
+
+/** A Trait as data: its name, what it wants, and the element it looks at. */
+export interface ManifestCheck {
+  name: string;
+  wants?: string;
+  selector?: string;
 }
 
 export interface ManifestFlow {
@@ -38,6 +54,7 @@ export interface ManifestFlow {
   id: string;
   exportName: string;
   file: string;
+  source?: SourceSpan;
   /** The folders under `src/flows/` (the page or `(user-story)` it belongs to) and the file's name (the outcome). */
   useCase: { path: string[]; outcome: string };
   /** Block names in run order, nested flows flattened. */
@@ -62,6 +79,7 @@ export interface ManifestReadBlock {
   fieldsError?: string;
   file: string;
   map?: string;
+  source?: SourceSpan;
 }
 
 export interface Manifest {
@@ -78,7 +96,15 @@ export interface Manifest {
   /** What each Checkpoint's page shows, from its Read Blocks (version 2+). */
   readBlocks: ManifestReadBlock[];
   flows: ManifestFlow[];
+  /** Every entry of the project's selector files (`_sel.ts`, `*.sel.ts`), file by file. */
+  selectors: SelectorEntry[];
   skipped: ProjectScan["skipped"];
+}
+
+/** A Block's precondition or verify as data. */
+function checksOf(list: Trait[] | ((input: never) => Trait[]) | undefined): ManifestCheck[] | "dynamic" {
+  if (typeof list === "function") return "dynamic";
+  return (list ?? []).map((t) => ({ name: t.name, ...(t.wants ? { wants: t.wants } : {}), ...(t.selector ? { selector: t.selector } : {}) }));
 }
 
 function packageVersion(): string {
@@ -118,11 +144,14 @@ function useCaseOf(file: string): ManifestFlow["useCase"] {
 export function manifestFromScan(scan: ProjectScan): Manifest {
   const checkpoints = new Set<string>();
   const maps = new Set<string>();
+  forgetSources();
   const blocks: ManifestBlock[] = scan.blocks.map((b) => {
     for (const t of [...b.from, ...b.to]) if (t !== "*") checkpoints.add(t);
     const map = b.map ?? mapGroupOf(b.file);
     const url = urlOf(b.block);
     if (map) maps.add(map);
+    const source = spanOf(b.absFile, b.exportName);
+    const instruction = (b.block as { instruction?: { precondition?: Trait[] | ((i: never) => Trait[]); verify?: Trait[] | ((o: never) => Trait[]) } }).instruction;
     return {
       id: `${b.file}#${b.exportName}`,
       name: b.name,
@@ -136,6 +165,9 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
       file: b.file,
       ...(map ? { map } : {}),
       ...(url ? { url } : {}),
+      ...(source ? { source } : {}),
+      checks: { precondition: checksOf(instruction?.precondition), verify: checksOf(instruction?.verify) },
+      selectors: selectorsUsed(b.absFile, b.exportName, scan.projectDir),
     };
   });
   const flows: ManifestFlow[] = scan.flows.map((f) => {
@@ -146,10 +178,12 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
       resetSession?: boolean;
       demoPace?: unknown;
     };
+    const source = spanOf(f.absFile, f.exportName);
     return {
       id: `${f.file}#${f.exportName}`,
       exportName: f.exportName,
       file: f.file,
+      ...(source ? { source } : {}),
       useCase: useCaseOf(f.file),
       steps: flow.blocks().map((s) => s.name),
       stepExpects: flow.blocks().map((s) => describeExpectations(s.block)),
@@ -169,6 +203,7 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
       shape = { fieldsError: messageOf(err) };
     }
     for (const t of r.block.from) if (t !== "*") checkpoints.add(t);
+    const source = spanOf(r.absFile, r.exportName);
     return {
       id: `${r.file}#${r.exportName}`,
       name: r.block.name,
@@ -179,6 +214,7 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
       ...shape,
       file: r.file,
       ...(r.map ? { map: r.map } : {}),
+      ...(source ? { source } : {}),
     };
   });
   return {
@@ -190,6 +226,7 @@ export function manifestFromScan(scan: ProjectScan): Manifest {
     pageUrls: pageUrls(scan.blocks),
     readBlocks,
     flows,
+    selectors: selectorFilesUnder(scan.projectDir, walkDir).flatMap((file) => selectorEntries(join(scan.projectDir, file), file)),
     skipped: scan.skipped,
   };
 }

@@ -20,13 +20,38 @@ export type ManifestBlock = {
   map?: string
   /** Where a Nav or Page Block goes by url (`/requests/:id` for one built from mem). */
   url?: string
+  /** The lines of `file` that define it; missing before waygraph 0.16.19 (so are `checks` and `selectors`). */
+  source?: SourceSpan
+  /** What it checks before acting and on arrival; `"dynamic"`: a function builds the checks. */
+  checks?: { precondition: ManifestCheck[] | 'dynamic'; verify: ManifestCheck[] | 'dynamic' }
+  /** The selector entries its definition reads. */
+  selectors?: SelectorEntry[]
 }
+
+/** The lines a definition spans in its file (1-based, inclusive). */
+export type SourceSpan = { line: number; endLine: number }
+
+/** A Trait as the manifest lists it. */
+export type ManifestCheck = { name: string; wants?: string; selector?: string }
+
+/** One entry of a selector file (`LoginSel.submit`): its selector, or the code that builds one. */
+export type SelectorEntry = {
+  name: string
+  selector: string
+  literal: boolean
+  file: string
+  line: number
+}
+
+/** Lines of a project file, from `from`. */
+export type SourceLines = { file: string; from: number; lines: string[] }
 
 export type ManifestFlow = {
   id: string
   exportName: string
   file: string
   useCase: { path: string[]; outcome: string }
+  source?: SourceSpan
   steps: string[]
   stepExpects: string[][]
   settings: Record<string, Json>
@@ -40,6 +65,7 @@ export type ManifestReadBlock = {
   from: string[]
   fields: Record<string, Json>
   file: string
+  source?: SourceSpan
 }
 
 /** What `waygraph manifest` prints: everything a project defines, without running it. */
@@ -54,6 +80,8 @@ export type Manifest = {
   blocks: ManifestBlock[]
   readBlocks: ManifestReadBlock[]
   flows: ManifestFlow[]
+  /** Every entry of the project's selector files; missing before waygraph 0.16.19. */
+  selectors?: SelectorEntry[]
   skipped: { file: string; error: string }[]
 }
 
@@ -68,6 +96,19 @@ export type PageFlow = {
   /** Its newest run's outcome (null: it never ended); no run yet: no runId. */
   ok: boolean | null
   runId: string | null
+}
+
+/** A flow as the Flows page lists it: what a row shows, nothing more (a project can have hundreds). */
+export type FlowRow = {
+  id: string
+  name: string
+  file: string
+  group: string
+  steps: number
+  expectations: number
+  /** Every step's name, to find a flow by a step. */
+  stepNames: string
+  lastRun: { id: string; ok: boolean | null; startedAt: number } | null
 }
 
 /** One run, from its log, in a line. */

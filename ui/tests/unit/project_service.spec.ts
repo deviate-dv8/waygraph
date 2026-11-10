@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from '@japa/runner'
@@ -63,6 +63,38 @@ test.group('ProjectService', (group) => {
     assert.deepEqual(run?.stepsList[0]?.read, { login: { error: null } })
     assert.equal(run?.stepsList[1]?.check?.saw, '/')
     assert.deepEqual(run?.mem, [{ flow: 'loginFlow', values: { user: 'standard_user' } }])
+  })
+
+  test('reads a run again when its log grows', async ({ assert }) => {
+    const project = new ProjectService()
+    assert.equal((await project.run('run-1'))?.stepsList.length, 2)
+    const file = join(dir, '.waygraph', 'runs', 'run-1.jsonl')
+    await appendFile(
+      file,
+      `\n${JSON.stringify({ type: 'step:start', index: 2, block: 'cleanup', kind: 'method', from: 'LoginPage' })}\n`
+    )
+    assert.equal((await project.run('run-1'))?.stepsList.length, 3)
+  })
+
+  test("gives a run's video only when its log names it and the file is there", async ({
+    assert,
+  }) => {
+    const video = join(dir, 'page.webm')
+    await writeFile(video, 'webm')
+    const file = join(dir, '.waygraph', 'runs', 'run-2.jsonl')
+    const artifacts = [
+      { type: 'run:start', at: 1 },
+      { type: 'run:artifact', kind: 'screenshot', path: join(dir, 'shot.png') },
+      { type: 'run:artifact', kind: 'video', path: video },
+      { type: 'run:artifact', kind: 'video', path: join(dir, 'gone.webm') },
+    ]
+    await writeFile(file, artifacts.map((e) => JSON.stringify(e)).join('\n'))
+    const project = new ProjectService()
+    assert.deepEqual(await project.artifact('run-2', 1), { kind: 'video', path: video })
+    // A screenshot isn't served this way, nor a video that isn't there, nor one the log doesn't name.
+    assert.isNull(await project.artifact('run-2', 0))
+    assert.isNull(await project.artifact('run-2', 2))
+    assert.isNull(await project.artifact('run-2', 7))
   })
 
   test('reads only files in the runs folder', async ({ assert }) => {

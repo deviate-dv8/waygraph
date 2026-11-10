@@ -45,6 +45,15 @@ const { play, playing, isPlaying, start } = usePlay()
 const output = computed(() => (play.value?.runId === props.run.id ? play.value.output : []))
 /** A run of one flow can be played again, as a run or a demo, with the mem it was seeded with. */
 const again = computed(() => (props.run.flows.length === 1 ? props.run.flows[0] : null))
+/** Its videos and traces, by their place among the run's artifacts (how the server finds them). */
+const recordings = computed(() =>
+  props.run.artifacts
+    .map((a, index) => ({ ...a, index, url: urlFor('runs.artifact', { id: props.run.id, index }) }))
+    .filter((a) => a.kind === 'video' || a.kind === 'trace')
+)
+const videos = computed(() => recordings.value.filter((a) => a.kind === 'video'))
+const traces = computed(() => recordings.value.filter((a) => a.kind === 'trace'))
+const watching = ref(false)
 </script>
 
 <template>
@@ -75,7 +84,10 @@ const again = computed(() => (props.run.flows.length === 1 ? props.run.flows[0] 
         <template v-if="props.run.ms !== null">{{ duration(props.run.ms) }} ·</template>
         {{ count(props.run.steps, 'step') }} · <span class="font-mono">{{ props.run.id }}</span>
       </p>
-      <div v-if="props.run.flows.length" class="flex gap-1 pt-1">
+      <div
+        v-if="props.run.flows.length || recordings.length || output.length"
+        class="flex flex-wrap gap-1 pt-1"
+      >
         <UButton
           v-for="f in props.run.flows"
           :key="f"
@@ -108,6 +120,60 @@ const again = computed(() => (props.run.flows.length === 1 ? props.run.flows[0] 
             />
           </UTooltip>
         </template>
+        <UModal
+          v-if="videos.length"
+          v-model:open="watching"
+          :title="`Video of ${runTitle(props.run)}`"
+          :ui="{ content: 'max-w-5xl' }"
+        >
+          <UButton
+            label="Video"
+            icon="i-lucide-video"
+            size="xs"
+            color="neutral"
+            variant="outline"
+          />
+          <template #body>
+            <div class="space-y-3">
+              <video
+                v-for="v in videos"
+                :key="v.index"
+                :src="v.url"
+                controls
+                autoplay
+                class="w-full rounded border border-(--island-line) bg-black"
+              />
+            </div>
+          </template>
+          <template #footer>
+            <div class="flex w-full justify-end gap-2">
+              <UButton
+                v-for="(v, i) in videos"
+                :key="v.index"
+                :href="`${v.url}?download`"
+                external
+                :label="videos.length > 1 ? `Download video ${i + 1}` : 'Download video'"
+                icon="i-lucide-download"
+                size="sm"
+              />
+            </div>
+          </template>
+        </UModal>
+        <UTooltip
+          v-for="t in traces"
+          :key="t.index"
+          text="Playwright's trace: open it with npx playwright show-trace"
+        >
+          <UButton
+            :href="`${t.url}?download`"
+            external
+            label="Trace"
+            icon="i-lucide-download"
+            size="xs"
+            color="neutral"
+            variant="outline"
+          />
+        </UTooltip>
         <UPopover v-if="output.length">
           <UButton
             label="Output"

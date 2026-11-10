@@ -43,6 +43,13 @@
   /* A shape's hatching: the start of the map, the selected page or step. */
   --hatch-start: var(--color-sketch-200);
   --hatch-selected: var(--color-sketch-300);
+  /* Code: keywords, strings, comments, names, numbers. */
+  --code-kwd: #a626a4;
+  --code-str: #2f7d32;
+  --code-cmnt: #8a8a94;
+  --code-func: #3d5afe;
+  --code-num: #b35c00;
+  --code-type: #00838f;
 }
 
 .dark {
@@ -57,6 +64,12 @@
   --run: #ffa94d;
   --hatch-start: color-mix(in srgb, var(--color-sketch-400) 45%, transparent);
   --hatch-selected: color-mix(in srgb, var(--color-sketch-400) 70%, transparent);
+  --code-kwd: #d48ee8;
+  --code-str: #9ad18b;
+  --code-cmnt: #7c7c88;
+  --code-func: #8fa8ff;
+  --code-num: #f0b46a;
+  --code-type: #6fd3dc;
 }
 
 html,

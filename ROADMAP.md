@@ -13,7 +13,8 @@ against a real consumer.
 
 - **Waygraph UI** - `waygraph ui` (the app in `ui/`); tests run in its Playwright page. Next: live sessions (`auto`, `browser`, `pilot`) through the
   session protocol, editing `config/waygraph.config.ts` from it (it shows it today), more settings (kept in the browser today). Each expectation's result in the run log (today only the one that
-  failed is logged) would let it show every expectation a step met.
+  failed is logged) would let it show every expectation a step met. Live updates: a project host that watches the files and the run logs and pushes changes to the
+  open pages (the `ui-project-model-and-run-traces` change), instead of reading them on each request.
 - **Event Blocks** - Blocks that move the world instead of the page (a webhook, a clock, a second user), through
   `ctx.world.*`, next to `ctx.ui.*` (stubs) and `ctx.page.*` (Read Blocks).
 

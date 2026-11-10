@@ -44,6 +44,18 @@ const routes = {
     tokens: [[0,"runs"],[1,"id"]],
     types: placeholder as Registry['runs.show']['types'],
   },
+  'runs.artifact': {
+    methods: ["GET","HEAD"],
+    pattern: '/runs/:id/artifacts/:index',
+    tokens: [[0,"runs"],[1,"id"],[0,"artifacts"],[1,"index"]],
+    types: placeholder as Registry['runs.artifact']['types'],
+  },
+  'sources.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/source',
+    tokens: [[0,"source"]],
+    types: placeholder as Registry['sources.show']['types'],
+  },
   'screenshots.page': {
     methods: ["GET","HEAD"],
     pattern: '/screenshots/pages/:checkpoint',

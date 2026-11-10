@@ -10,6 +10,8 @@ export type ScannedRoutes = {
     'blocks.index': { paramsTuple?: []; params?: {} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'runs.artifact': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'index': ParamValue} }
+    'sources.show': { paramsTuple?: []; params?: {} }
     'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }
     'screenshots.step': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
     'plays.store': { paramsTuple?: []; params?: {} }
@@ -29,6 +31,8 @@ export type ScannedRoutes = {
     'blocks.index': { paramsTuple?: []; params?: {} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'runs.artifact': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'index': ParamValue} }
+    'sources.show': { paramsTuple?: []; params?: {} }
     'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }
     'screenshots.step': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
     'playwright.show': { paramsTuple?: []; params?: {} }
@@ -42,6 +46,8 @@ export type ScannedRoutes = {
     'blocks.index': { paramsTuple?: []; params?: {} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'runs.artifact': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'index': ParamValue} }
+    'sources.show': { paramsTuple?: []; params?: {} }
     'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }
     'screenshots.step': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
     'playwright.show': { paramsTuple?: []; params?: {} }

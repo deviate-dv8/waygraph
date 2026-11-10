@@ -46,7 +46,7 @@ export class PlayerService {
   start(
     flow: string,
     mode: PlayMode,
-    options: { noExpect?: boolean; replay?: string; autoNext?: boolean } = {}
+    options: { noExpect?: boolean; replay?: string; autoNext?: boolean; video?: boolean } = {}
   ): Play {
     if (PlayerService.job && PlayerService.job.exitCode === null) {
       throw new Error(`Still playing ${PlayerService.job.flow}: stop it first.`)
@@ -57,6 +57,7 @@ export class PlayerService {
     const args = [mode, flow, dir]
     if (options.noExpect) args.push('--no-expect')
     if (options.replay) args.push('--replay', options.replay)
+    if (options.video) args.push('--video')
     // A demo moves on by itself, or waits for Next on every step (the Settings page).
     if (mode === 'demo' && options.autoNext !== undefined)
       args.push(options.autoNext ? '--auto-next' : '--no-auto-next')

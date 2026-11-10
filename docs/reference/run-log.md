@@ -44,13 +44,14 @@ npx waygraph manifest [project] [--out manifest.json]
 
 | Lists | With |
 |---|---|
-| every Block | `kind`, `description`, route `from` → `to`, `requires`, `file`, its `map` group; a Nav or Page Block's `url` (a url built from mem as a pattern: `/requests/:id`) |
+| every Block | `kind`, `description`, route `from` → `to`, `requires`, `file` and `source` (the lines that define it), its `map` group; a Nav or Page Block's `url` (a url built from mem as a pattern: `/requests/:id`); `checks`: its precondition and verify Traits as data (`name`, `wants`, `selector`; `"dynamic"` when a function builds them); `selectors`: the selector entries its definition reads (`LoginSel.submit` with its string, file and line) |
+| every selector entry | `selectors`: each entry of the project's selector files (`_sel.ts`, `*.sel.ts`): its name, its selector (or the code that builds one), file and line. Read from the source, so `LoginSel.x` reached through another variable isn't linked to its Block |
 | every page's addresses | `pageUrls`: by Checkpoint, its Navs' urls and the `Trait.url` its Blocks verify |
 | the project | its name, folder, waygraph version, and `baseUrl` when one is set |
 | its config | `config`: the `waygraph.config.*` file and what it resolves to (after `.env`), as JSON: a function shows as `(function name)` |
-| every flow | its `useCase` (from `src/flows/<page>/<outcome>.flow.ts`), its steps in order, its settings |
+| every flow | its `useCase` (from `src/flows/<page>/<outcome>.flow.ts`), its steps in order, its settings, its `source` lines |
 | every Checkpoint | its tag |
-| every Read Block | the Checkpoints it reads and the shape of its fields: `"catalog.items": [{ "name": "string", "price": "number" }]` |
+| every Read Block | the Checkpoints it reads and the shape of its fields: `"catalog.items": [{ "name": "string", "price": "number" }]`; its `source` lines |
 
 It's read from the Blocks themselves (the same scan `graph`, `check`, `auto` and the runner use), so it can't go
 stale. Blocks from installed [map packages](./map#map-packages) are included, with the package name as their `map`.
