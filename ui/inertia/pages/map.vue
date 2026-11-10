@@ -114,6 +114,9 @@ const hiddenList = useStorage<string[]>(`waygraph-map-hidden:${props.project.dir
 const hidden = computed(() => new Set(hiddenList.value))
 const setHidden = (next: Set<string>) => (hiddenList.value = [...next])
 const showTree = useStorage('waygraph-map-tree', true)
+/** How many pages the map shows, of all of them: on the minimized Pages button. */
+const allPages = computed(() => props.checkpoints.length)
+const shownPages = computed(() => props.checkpoints.filter((id) => !hidden.value.has(id)).length)
 /** Each node of the tree as its row names it. */
 const treeLabels = computed<Record<string, TreeLabel>>(() => ({
   ...Object.fromEntries(
@@ -421,7 +424,25 @@ const page = computed(() =>
         @all="setHidden(new Set())"
         @none="setHidden(new Set(everything(tree)))"
         @select="selected = $event"
+        @minimize="showTree = false"
       />
+    </div>
+    <!-- Minimized: the pages come back from where they were. -->
+    <div v-else class="absolute top-16 left-3">
+      <UButton
+        label="Pages"
+        icon="i-lucide-panel-left-open"
+        size="sm"
+        color="neutral"
+        variant="outline"
+        class="island"
+        aria-label="Show the pages"
+        @click="showTree = true"
+      >
+        <template #trailing>
+          <span class="text-xs text-(--ink-soft)">{{ shownPages }}/{{ allPages }}</span>
+        </template>
+      </UButton>
     </div>
 
     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-start p-3 pt-16">

@@ -19,6 +19,7 @@ const emit = defineEmits<{
   all: []
   none: []
   select: [id: string]
+  minimize: []
 }>()
 
 const query = ref('')
@@ -36,6 +37,16 @@ const shown = computed(() => pages.value.filter(([id]) => !props.hidden.has(id))
         <span class="flex-1" />
         <UButton label="All" size="xs" color="neutral" variant="ghost" @click="emit('all')" />
         <UButton label="None" size="xs" color="neutral" variant="ghost" @click="emit('none')" />
+        <UTooltip text="Minimize">
+          <UButton
+            icon="i-lucide-panel-left-close"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            aria-label="Minimize the pages"
+            @click="emit('minimize')"
+          />
+        </UTooltip>
       </div>
       <UInput
         v-model="query"

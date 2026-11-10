@@ -98,6 +98,30 @@ body {
     0 7px 14px rgb(0 0 0 / 0.05);
 }
 
+/*
+ * What can be clicked shows the hand: Tailwind v4's base styles give buttons the arrow, and Nuxt UI's controls keep it.
+ * Every button, tab, switch, checkbox, accordion trigger and menu item, ours or Nuxt UI's; a disabled one shows it can't.
+ */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='tab']:not([aria-disabled='true']),
+  [role='switch']:not([aria-disabled='true']),
+  [role='checkbox']:not([aria-disabled='true']),
+  [role='menuitem']:not([aria-disabled='true']),
+  [role='option']:not([aria-disabled='true']),
+  summary,
+  label:has(input:not(:disabled)),
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled='true'],
+  select:disabled {
+    cursor: not-allowed;
+  }
+}
+
 /* Vue Flow on paper: no default node chrome, the hand-drawn shapes are the nodes. */
 .vue-flow__node {
   border: none;

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useStorage } from '@vueuse/core'
 import type { PageSummary } from '~/lib/project_graph'
 import { kindColor } from '~/lib/kinds'
 import ShapeTree from '~/components/map/shape_tree.vue'
@@ -102,6 +103,8 @@ const sections = computed<Section[]>(() =>
   ].map((s) => ({ ...s, disabled: s.count === 0 }))
 )
 const open = ref(['shows', 'actions'])
+/** Wide, for reading a Block's code: kept in this browser. */
+const wide = useStorage('waygraph-page-panel-wide', false)
 const blockLists = ['actions', 'waysIn', 'leadsTo'] as const
 type BlockList = (typeof blockLists)[number]
 const isBlockList = (value: string): value is BlockList =>
@@ -122,7 +125,10 @@ const where = (b: ManifestBlock, list: BlockList) =>
 </script>
 
 <template>
-  <aside class="island flex max-h-full w-[24rem] flex-col overflow-hidden">
+  <aside
+    class="island flex max-h-full flex-col overflow-hidden transition-[width] duration-200"
+    :class="wide ? 'w-[min(60vw,60rem)]' : 'w-[26rem]'"
+  >
     <div class="flex items-start gap-3 border-b border-(--island-line) p-4">
       <a
         v-if="props.image"
@@ -183,14 +189,26 @@ const where = (b: ManifestBlock, list: BlockList) =>
           />
         </div>
       </div>
-      <UButton
-        icon="i-lucide-x"
-        size="xs"
-        color="neutral"
-        variant="ghost"
-        aria-label="Close"
-        @click="$emit('close')"
-      />
+      <div class="flex shrink-0 items-center">
+        <UTooltip :text="wide ? 'Narrower' : 'Wider, to read code'">
+          <UButton
+            :icon="wide ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            :aria-label="wide ? 'Make the panel narrower' : 'Make the panel wider'"
+            @click="wide = !wide"
+          />
+        </UTooltip>
+        <UButton
+          icon="i-lucide-x"
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          aria-label="Close"
+          @click="$emit('close')"
+        />
+      </div>
     </div>
 
     <div class="flex-1 overflow-y-auto px-4 pb-4">
