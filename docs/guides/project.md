@@ -101,10 +101,34 @@ A page's folder shows every way a user can go through that page.
 3. Rename `(app_base)/` and its folders to match your app's URLs.
 4. Run `waygraph map`: it lists every folder that doesn't match.
 
+## A new machine, a new teammate
+
+The config is the list of what the project needs on a machine. After `npm install`, one command sets it all up:
+
+```sh
+npm install
+npx waygraph install
+```
+
+| From the config | `waygraph install` |
+|---|---|
+| always | Chromium, with the project's own Playwright (the version its tests run) |
+| `playwright.use.browserName`, `playwright.projects` | each browser they name |
+| `extensions` | the browser extensions, into waygraph's cache |
+| `demo.voice` | the voice's model (`kokoroVoice()`: a Python environment and ~350 MB, once per machine) |
+| what those read | listed in `.env.example` and `.env`, blank and commented (`# OPENAI_API_KEY=`) |
+
+What it can't install, it checks and names at the end (ffmpeg for a voice-over, a voice whose setup failed) and exits
+1; the rest is still set up. It does only what's missing, so run it again whenever the config changes or after
+`npm install waygraph@latest`; `--update` fetches everything again, and `--with-deps` also installs the browsers'
+system packages (Linux CI). Downloads are shared by every project on the machine (`~/.cache/waygraph`,
+`~/.cache/ms-playwright`), and installing one project's browsers never removes another's.
+
 ## Keeping it up to date
 
 ```sh
 npm install waygraph@latest
+npx waygraph install                                  # what the new version needs (a newer browser, voice model)
 npx waygraph upgrade                                  # dry run: lists new and changed scaffold files
 npx waygraph upgrade "src/map/(external)/hoppscotch" --apply
 npx waygraph upgrade --skills                         # refresh .agents/skills

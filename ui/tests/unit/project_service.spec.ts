@@ -67,13 +67,15 @@ test.group('ProjectService', (group) => {
 
   test('reads a run again when its log grows', async ({ assert }) => {
     const project = new ProjectService()
-    assert.equal((await project.run('run-1'))?.stepsList.length, 2)
+    const before = await project.run('run-1')
+    assert.equal(before?.stepsList.length, 2)
     const file = join(dir, '.waygraph', 'runs', 'run-1.jsonl')
     await appendFile(
       file,
       `\n${JSON.stringify({ type: 'step:start', index: 2, block: 'cleanup', kind: 'method', from: 'LoginPage' })}\n`
     )
-    assert.equal((await project.run('run-1'))?.stepsList.length, 3)
+    const after = await project.run('run-1')
+    assert.equal(after?.stepsList.length, 3)
   })
 
   test("gives a run's video only when its log names it and the file is there", async ({

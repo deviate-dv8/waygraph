@@ -145,6 +145,12 @@ A stub paints through \`ctx.ui\`; \`ctx\` itself holds only what a stub reads (\
 | \`WAYGRAPH_TODO_UI=legacy\` / \`classic\` | \`WAYGRAPH_TODO_UI=full\` |
 | \`create-waygraph\` (npm) | \`npx waygraph init\` |
 
+## Removed in 0.16.19
+
+| Removed | Use instead |
+| --- | --- |
+| \`waygraph extensions install\` | \`waygraph install\`: the extensions, and everything else the config requires (browsers, the demo's voice, \`.env\` entries) |
+
 ## Removed in 0.16.16
 
 An Effect Block was a Method that also listed the rows it could act on; a Method lists them the same way.

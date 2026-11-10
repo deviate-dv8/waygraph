@@ -25,7 +25,7 @@ Needs Node 24+ and `@playwright/test` 1.40+ (a peer dependency: you bring your o
 npx waygraph init my-app
 cd my-app
 npm install
-npx playwright install chromium
+npx waygraph install     # what the config requires on this machine: the browser, and anything else it names
 npm test                 # passes offline straight away
 npx waygraph ui          # its map, flows and runs in the browser (beta)
 ```
@@ -100,9 +100,9 @@ accounts, Read Blocks. It uses the waygraph checkout it lives in, so build that 
 git clone https://github.com/deviate-dv8/waygraph.git
 cd waygraph
 npm install && npm run build
-npx playwright install chromium
 cd examples/saucedemo
 npm install
+npx waygraph install     # the browser, and the demo's voice (Kokoro, ~350 MB; it says if it can't)
 npm test                 # 15 tests against the live site
 npm run demo             # sign in, then shop
 npm run auto             # pick Blocks by hand

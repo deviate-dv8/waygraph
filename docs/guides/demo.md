@@ -144,25 +144,25 @@ const config = defineConfig({
 ```
 
 ```sh
-npx waygraph extensions install        # once per machine: Kokoro and its model (~350 MB, in waygraph's cache)
+npx waygraph install        # once per machine: Kokoro and its model (~350 MB, in waygraph's cache)
 npx waygraph demo checkoutFlow --auto-play-video
 # waygraph: voice-over: 14 lines, subtitles .../page@8c26....vtt
 ```
 
 The voice is heavy (a model), so it isn't part of waygraph's install, and the waygraph package stays as it was:
-`waygraph extensions install` sets it up for every project on the machine, next to the browser extensions, the same
+`waygraph install` sets it up for every project on the machine, next to the browser extensions, the same
 way: named in the config, fetched by one command, `--update` to fetch it again.
 
 | | |
 |---|---|
 | Where | `~/.cache/waygraph/voices/kokoro/` (`WAYGRAPH_CACHE_DIR` moves it): a Python environment (`venv/`, ~150 MB), the model (`kokoro-v1.0.onnx`, 326 MB), its voices (`voices-v1.0.bin`, 28 MB), and `installed.json`, what was set up. One copy for every project |
-| `.env` | `waygraph extensions install` lists what the voice reads in `.env.example` and `.env`, blank and commented: `# OPENAI_API_KEY=` for `openAIVoice()`, `# WAYGRAPH_CACHE_DIR=` for Kokoro |
-| Not set up yet | `waygraph demo --video` records without the voice-over and says, once, `recording without the voice-over: Kokoro isn't set up on this machine: run waygraph extensions install`. Nothing fails; only `--video` demos ever speak |
-| A new waygraph, a new Kokoro | Each waygraph pins the Kokoro it speaks with (the package version and the model release). After an upgrade that moves it, a recording says `the Kokoro on this machine is another version than this waygraph uses`; `waygraph extensions install` replaces it (the environment again, a new model downloaded, the old one removed). Lines already spoken are cached by voice and model, so a new model makes them again |
+| `.env` | `waygraph install` lists what the voice reads in `.env.example` and `.env`, blank and commented: `# OPENAI_API_KEY=` for `openAIVoice()`, `# WAYGRAPH_CACHE_DIR=` for Kokoro |
+| Not set up yet | `waygraph demo --video` records without the voice-over and says, once, `recording without the voice-over: Kokoro isn't set up on this machine: run waygraph install`. Nothing fails; only `--video` demos ever speak |
+| A new waygraph, a new Kokoro | Each waygraph pins the Kokoro it speaks with (the package version and the model release). After an upgrade that moves it, a recording says `the Kokoro on this machine is another version than this waygraph uses`; `waygraph install` replaces it (the environment again, a new model downloaded, the old one removed). Lines already spoken are cached by voice and model, so a new model makes them again |
 
 | Speaker | |
 |---|---|
-| `kokoroVoice()` | [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), natural and local (CPU is enough). Its model is loaded once and kept for the recording. `waygraph extensions install` sets it up (a Python environment through [uv](https://docs.astral.sh/uv/) when there is one, and the model); or name your own `python`, `model` and `voices`. Voices: `af_heart` (default), `af_bella`, `am_michael`, `bf_emma`... |
+| `kokoroVoice()` | [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), natural and local (CPU is enough). Its model is loaded once and kept for the recording. `waygraph install` sets it up (a Python environment through [uv](https://docs.astral.sh/uv/) when there is one, and the model); or name your own `python`, `model` and `voices`. Voices: `af_heart` (default), `af_bella`, `am_michael`, `bf_emma`... |
 | `commandVoice("piper --model x.onnx --output_file {out}")` | a local text-to-speech command: `{out}` is the file it writes, `{text}` the line (without `{text}`, the line goes to its stdin). [piper](https://github.com/OHF-Voice/piper1-gpl) sounds natural and runs offline; `espeak-ng -w {out} {text}` is on most Linux machines; on macOS, `say -o {out} --data-format=LEI16@22050 {text}` |
 | `openAIVoice({ voice: "nova", instructions: "Calm and clear." })` | an OpenAI-compatible speech API (`OPENAI_API_KEY`, or `apiKey`; `baseURL` for another server that speaks the same API, a local one too) |
 | your own | `{ id, ext, synthesize(text, out) }`: write `text`, spoken, to the file `out` |

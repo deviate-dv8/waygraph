@@ -15,7 +15,7 @@ Or from a checkout of the repo:
 
 ```sh
 cd examples/saucedemo
-npm install && npx playwright install chromium
+npm install && npx waygraph install
 npm run demo            # loginFlow then shopFlow, narrated
 npm run demo:checkout   # rings, captions, slides
 npm run demo:device     # phone, tablet, landscape

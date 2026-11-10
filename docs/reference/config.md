@@ -59,7 +59,7 @@ Config values are defaults: a flag, a shell variable or a `.env` value beats the
 one before. The mode is `--env <mode>` (any command) or `WAYGRAPH_ENV`, else `NODE_ENV`, else `development`. A
 variable already exported in the shell always wins over the files. A new project (`waygraph init`) has a
 `.env.example` listing what it reads (`BASE_URL`, `WAYGRAPH_MAIL_URL`, `OPENAI_API_KEY` for a voice); copy it to `.env`.
-Its `.gitignore` keeps every `.env` file but that one out of git. `waygraph extensions install` adds what the things
+Its `.gitignore` keeps every `.env` file but that one out of git. `waygraph install` adds what the things
 it sets up can read (an API key, `WAYGRAPH_CACHE_DIR`) to `.env.example` and `.env` (made when missing), blank and
 commented under a header, so they're there to fill in; a variable a file already names is left as it is.
 
@@ -126,7 +126,7 @@ export default defineConfig({
 Each entry is a known name (`hoppscotch`), a Chrome Web Store id, a path to an unpacked extension,
 or `{ id, sha256 }` to pin the download. Store extensions are fetched on first use into
 `$WAYGRAPH_CACHE_DIR` (default `~/.cache/waygraph/extensions`) and never replaced silently;
-`waygraph extensions install [--update]` fetches or refreshes them ahead of time.
+`waygraph install [--update]` fetches or refreshes them ahead of time.
 `WAYGRAPH_EXTENSIONS` (comma-separated unpacked directories) overrides the config.
 
 Limits, because Chromium only loads extensions into a persistent profile:
@@ -136,7 +136,7 @@ Limits, because Chromium only loads extensions into a persistent profile:
 - A store extension keeps its store id (waygraph pins the `.crx`'s key in the manifest), so its requests carry a
   stable `Origin`, e.g. `chrome-extension://amknoiejhlmhancpahfcfcfhllgkpbld` for Hoppscotch. An API that checks
   `Origin` on writes (better-auth's `trustedOrigins`) can allow that one origin. Extensions cached by an older
-  waygraph have a path-derived id; `waygraph extensions install --update` refetches them.
+  waygraph have a path-derived id; `waygraph install --update` refetches them.
 - An extension runs with its manifest permissions on every page of the run (Hoppscotch's asks for
   `<all_urls>` and cookies). Only list ones you trust, and pin `sha256` in shared configs.
 

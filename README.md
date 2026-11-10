@@ -37,7 +37,7 @@ npx waygraph try demo      # watch a full Sauce Demo checkout, step by step (not
 ```bash
 npx waygraph init my-app
 cd my-app
-npm install && npx playwright install chromium
+npm install && npx waygraph install   # what the config requires: the browser, and anything else it names
 npm test                   # green immediately, fully offline
 npm run test:ui            # same tests in Playwright's interactive UI
 npm run auto               # explore the app by picking Blocks in a browser
@@ -53,8 +53,7 @@ The full example (`examples/saucedemo`) is a real project against saucedemo.com.
 git clone https://github.com/deviate-dv8/waygraph.git
 cd waygraph
 npm install && npm run build         # the example uses this checkout of waygraph
-npx playwright install chromium
-cd examples/saucedemo && npm install
+cd examples/saucedemo && npm install && npx waygraph install
 npm test                             # 15 tests against the live site
 npm run demo                         # watch the checkout flow with the step overlay
 npm run auto                         # explore it by hand

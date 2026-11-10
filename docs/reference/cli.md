@@ -82,7 +82,7 @@ More: [Testing](../guides/testing).
 | update scaffold files | `waygraph upgrade [paths] [--apply] [--overwrite] [--diff]` |
 | refresh agent skills | `waygraph upgrade --skills` |
 | rewrite removed code | `waygraph upgrade --codemod keys` (also `flows`, `checkpoints`, `lands`, `ff`, `chain`, `pages`, `expect`) |
-| fetch browser extensions, and the demo's voice (`kokoroVoice()`) | `waygraph extensions install [--update]` |
+| set up what the config requires on this machine (browsers, extensions, the demo's voice, `.env` entries) | `waygraph install [--update] [--with-deps]` |
 | coding-agent files | `waygraph agent-dive --loop claude` (also `opencode`, `cursor`, `vscode`) |
 | print a skill | `waygraph --skill` · `--skill-pilot` · `--skill-pilot-blind` · `--skill-convention` |
 

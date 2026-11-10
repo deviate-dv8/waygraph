@@ -21,11 +21,11 @@ export interface Voice {
   synthesize(text: string, out: string): Promise<void>;
   /** Stops what the voice keeps running between lines (a model loaded once), when the recording is done. */
   close?(): Promise<void>;
-  /** The variables it reads (an API key): `waygraph extensions install` lists them in the project's .env files. */
+  /** The variables it reads (an API key): `waygraph install` lists them in the project's .env files. */
   readonly env?: readonly EnvVariable[];
   /** Why the voice can't speak on this machine yet (not installed), or undefined when it can. */
   missing?(): string | undefined;
-  /** Downloads what the voice needs (a model), once per machine: `waygraph extensions install` calls it. */
+  /** Downloads what the voice needs (a model), once per machine: `waygraph install` calls it. */
   install?(opts: { update?: boolean; log: (line: string) => void }): Promise<void>;
 }
 
@@ -69,7 +69,7 @@ export function commandVoice(command: string, opts: { ext?: string } = {}): Voic
   };
 }
 
-/** Settings for {@link kokoroVoice}. Without `python`, `model` and `voices`, the copy `waygraph extensions install` made. */
+/** Settings for {@link kokoroVoice}. Without `python`, `model` and `voices`, the copy `waygraph install` made. */
 export interface KokoroVoiceOptions {
   /** A Python with `kokoro-onnx` and `soundfile` installed. */
   python?: string;
@@ -104,7 +104,7 @@ for line in sys.stdin:
 
 /**
  * The Kokoro this waygraph sets up: the package (pinned, so every machine speaks the same) and the model release. A
- * waygraph that moves to another changes this, and `waygraph extensions install` replaces what's there.
+ * waygraph that moves to another changes this, and `waygraph install` replaces what's there.
  */
 const KOKORO = {
   packages: ["kokoro-onnx==0.6.1", "soundfile==0.14.0"],
@@ -114,7 +114,7 @@ const KOKORO = {
 } as const;
 const KOKORO_STAMP = JSON.stringify({ packages: KOKORO.packages, model: KOKORO.model, voices: KOKORO.voices });
 
-/** Where `waygraph extensions install` puts Kokoro: a Python environment with it, and its model. */
+/** Where `waygraph install` puts Kokoro: a Python environment with it, and its model. */
 function kokoroHome(): { dir: string; python: string; model: string; voices: string; stamp: string } {
   const dir = join(waygraphCacheDir(), "voices", "kokoro");
   const python = process.platform === "win32" ? join(dir, "venv", "Scripts", "python.exe") : join(dir, "venv", "bin", "python");
@@ -193,9 +193,9 @@ async function installKokoro(opts: { update?: boolean; log: (line: string) => vo
 
 /**
  * A voice from Kokoro, a natural-sounding local model (82M parameters, CPU is enough): the model is loaded once, in one
- * Python process kept for the recording, and each line is a request to it. `waygraph extensions install` sets it up
+ * Python process kept for the recording, and each line is a request to it. `waygraph install` sets it up
  * once per machine (about 350 MB); or point it at your own Python and model.
- * @example kokoroVoice()                         // the copy `waygraph extensions install` made
+ * @example kokoroVoice()                         // the copy `waygraph install` made
  * @example kokoroVoice({ voice: "am_michael", speed: 0.95 })
  */
 export function kokoroVoice(given: KokoroVoiceOptions = {}): Voice {
@@ -215,7 +215,7 @@ export function kokoroVoice(given: KokoroVoiceOptions = {}): Voice {
     });
   const start = async (): Promise<NonNullable<typeof worker>> => {
     if (worker && worker.child.exitCode === null) return worker;
-    if (own && !kokoroCurrent(home)) throw new Error("waygraph voice: Kokoro isn't set up on this machine (or is another version): run waygraph extensions install");
+    if (own && !kokoroCurrent(home)) throw new Error("waygraph voice: Kokoro isn't set up on this machine (or is another version): run waygraph install");
     const child = spawn(opts.python, ["-u", "-c", KOKORO_WORKER, opts.model, opts.voices], { stdio: ["pipe", "pipe", "pipe"] });
     let stderr = "";
     let buffered = "";
@@ -272,8 +272,8 @@ export function kokoroVoice(given: KokoroVoiceOptions = {}): Voice {
       }
       if (kokoroCurrent(home)) return undefined;
       return existsSync(home.stamp)
-        ? "the Kokoro on this machine is another version than this waygraph uses: run waygraph extensions install"
-        : "Kokoro isn't set up on this machine: run waygraph extensions install";
+        ? "the Kokoro on this machine is another version than this waygraph uses: run waygraph install"
+        : "Kokoro isn't set up on this machine: run waygraph install";
     },
     // Only the copy in waygraph's cache is waygraph's to install; a Python and model you named are yours.
     ...(own ? { install: installKokoro, env: [CACHE_VARIABLE] } : {}),

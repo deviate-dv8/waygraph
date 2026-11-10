@@ -102,11 +102,11 @@ describe("voice", () => {
     const saved = process.env.WAYGRAPH_CACHE_DIR;
     process.env.WAYGRAPH_CACHE_DIR = join(dir, "no-cache");
     try {
-      assert.match(kokoroVoice().missing?.() ?? "", /isn't set up on this machine: run waygraph extensions install/);
+      assert.match(kokoroVoice().missing?.() ?? "", /isn't set up on this machine: run waygraph install/);
       const home = join(dir, "no-cache", "voices", "kokoro");
       mkdirSync(home, { recursive: true });
       writeFileSync(join(home, "installed.json"), JSON.stringify({ packages: ["kokoro-onnx==0.1.0"] }));
-      assert.match(kokoroVoice().missing?.() ?? "", /another version than this waygraph uses: run waygraph extensions install/);
+      assert.match(kokoroVoice().missing?.() ?? "", /another version than this waygraph uses: run waygraph install/);
     } finally {
       if (saved === undefined) delete process.env.WAYGRAPH_CACHE_DIR;
       else process.env.WAYGRAPH_CACHE_DIR = saved;
@@ -119,7 +119,7 @@ describe("voice", () => {
     await assert.rejects(kokoroVoice({ python: "python3", model: "m.onnx", voices: "v.bin" }).synthesize("x", out), /Kokoro stopped \(exit 1\): .*Error/);
   });
 
-  it("a Kokoro voice speaks with the model loaded once (the one waygraph extensions install set up)", async (t) => {
+  it("a Kokoro voice speaks with the model loaded once (the one waygraph install set up)", async (t) => {
     const voice = kokoroVoice();
     if (!ffmpeg || voice.missing?.()) return t.skip("no Kokoro set up on this machine");
     try {

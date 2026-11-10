@@ -87,7 +87,8 @@ async function main(): Promise<void> {
     // Waygraph UI on the project: map, flows, runs, playing a flow.
     case "ui": await (await import("./commands/ui.js")).uiCase(args); break;
 
-    case "extensions": await (await import("./commands/extensions.js")).extensionsCase(args); break;
+    // What the project's config requires, set up on this machine: browsers, extensions, the demo's voice, .env entries.
+    case "install": await (await import("./commands/install.js")).installCase(args); break;
 
     default:
       console.error(`waygraph: unknown command "${command}"`);

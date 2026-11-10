@@ -83,11 +83,11 @@ export const COMMANDS: Record<string, CommandSpec & { args: string[] }> = {
     args: ['upgrade', '.', '--skills'],
     writes: true,
   },
-  'extensions': {
+  'install': {
     group: 'Upgrade',
-    label: 'extensions install',
-    help: 'Download the browser extensions the config lists',
-    args: ['extensions', 'install', '.'],
+    label: 'install',
+    help: 'Set up what the config requires on this machine: browsers, extensions, the demo voice, .env entries',
+    args: ['install', '.'],
   },
   ...Object.fromEntries(
     (

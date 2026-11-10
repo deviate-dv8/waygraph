@@ -200,12 +200,14 @@ Also:
                                            expect: [...] of the step before. --codemod effect:
                                            Effect Blocks -> Methods (defineMethodBlock, its
                                            instanceOptions kept), *.effect.block.ts renamed.
-  waygraph extensions install [project] [--update]
-                                           Download the browser extensions listed in
-                                           waygraph.config.* (extensions: ["hoppscotch"]) into
-                                           the user cache; runs also fetch them on first use.
-                                           Also sets up the demo's voice (demo.voice:
-                                           kokoroVoice()): its Python environment and model.
+  waygraph install [project] [--update] [--with-deps]
+                                           Set up what the project's waygraph.config.* requires,
+                                           on this machine (after npm install): the browsers its
+                                           tests use (the project's Playwright), its extensions,
+                                           its demo's voice (kokoroVoice(): Python env + model),
+                                           and what those read, listed in .env.example and .env.
+                                           Names what it can't install (ffmpeg). Run it again any
+                                           time: it does only what's missing.
   waygraph list | nav | validate | check | typecheck | graph | init <name>
                  check/typecheck --no-practices  Skip bad-practice warnings
   waygraph map   [project]                 Waygraph Map convention enforcement: every static

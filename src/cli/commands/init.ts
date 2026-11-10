@@ -78,7 +78,7 @@ function initCommand(projectName: string): void {
   console.log("");
   console.log(`  cd ${relative(process.cwd(), targetDir) || pkgName}`);
   console.log("  npm install");
-  console.log("  npx playwright install chromium");
+  console.log("  npx waygraph install   # what the config requires: the browser, and anything else it names");
   console.log("  npm test");
   console.log("  waygraph list        # .flow.ts → export map");
   console.log("  waygraph check       # nav hygiene + inline selectors + bad practices + orphan Blocks");

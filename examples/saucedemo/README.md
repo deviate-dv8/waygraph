@@ -6,7 +6,7 @@ narration. `waygraph try demo` plays a copy of it (`templates/quickstart`, synce
 
 ```bash
 # from the waygraph root, after npm install && npm run build
-cd examples/saucedemo && npm install && npx playwright install chromium
+cd examples/saucedemo && npm install && npx waygraph install
 npm test              # the suite, against the live site
 npm run demo          # sign in, then shop
 npm run auto          # pick Blocks by hand

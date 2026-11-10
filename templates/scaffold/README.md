@@ -5,7 +5,7 @@ one flow per use case in `src/flows/`. It runs offline: the demo pages open from
 
 ```bash
 npm install
-npx playwright install chromium
+npx waygraph install   # what config/waygraph.config.ts requires, on this machine (the browser first)
 npm test              # every test
 npm run demo          # watch a flow, step by step
 npm run auto          # pick Blocks by hand

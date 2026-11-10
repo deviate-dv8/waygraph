@@ -146,7 +146,7 @@ async function download(id: string, sha256: string | undefined): Promise<Buffer>
 
 /**
  * Returns an unpacked directory for one config entry, downloading it on first use. An installed
- * extension is never silently replaced - pass `update: true` (`waygraph extensions install --update`) to refetch.
+ * extension is never silently replaced - pass `update: true` (`waygraph install --update`) to refetch.
  */
 export async function resolveExtension(spec: ExtensionSpec, projectDir: string, opts: { update?: boolean } = {}): Promise<string> {
   const entry = typeof spec === "string" ? (spec.startsWith(".") || spec.includes("/") ? { path: spec } : { id: spec }) : spec;

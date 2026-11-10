@@ -88,7 +88,7 @@ test("checkout", async ({ context }) => {
 ## In CI
 
 ```yaml
-- run: npm ci && npx playwright install --with-deps chromium
+- run: npm ci && npx waygraph install --with-deps   # what the config requires, with the browsers' system packages
 - run: npx waygraph check         # warnings only
 - run: npx waygraph map           # exits 1 when a folder doesn't match its URL
 - run: npx waygraph test --flows --workers 4 --reporter=html,json
