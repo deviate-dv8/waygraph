@@ -26,6 +26,14 @@ against a real consumer.
 - **A session the app ended early** - an account's `ttl` says how long a session lasts; an account could also say how
   to tell it's still signed in (a check after restoring it), and sign in again when it isn't, instead of failing the
   flow's first step.
+- **A page's read in its Page Block** - `definePageBlock({ read: (ctx) => ... })` instead of a `_read.block.ts` beside it
+  (pia: 32 files fewer, one per page): the Page Block becomes the whole page object (nav, do, expects, read). The read
+  keys stay in `_reads.ts` (methods' verify uses them, and the Page Block imports the methods: keys in it would be an
+  import cycle). Reads on every page (a header) stay Read Blocks. Needs: loading Page Blocks for their reads, a codemod
+  folding each `_read.block.ts` into its Page Block, the convention skill, the reads guide and `waygraph check`.
+- **Selectors per device** - a `_sel.ts` entry with one selector per device (`menu: { desktop: "nav .menu", mobile:
+  "button[aria-label=Menu]" }`), picked by the device the flow plays on; kept as plain data so other drivers can use
+  it. The manifest and Waygraph UI list the variants; `waygraph check` warns about a device an entry has none for.
 - **Split `requires`** - say which keys the caller must supply (credentials, config) and which another Block produces,
   so a failed preflight can suggest the Block that would produce the missing key.
 - **Demo text matchable by the page's selectors** - the overlay is an open shadow root, and Playwright's text engines
