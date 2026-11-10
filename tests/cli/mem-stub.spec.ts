@@ -21,7 +21,7 @@ const { CHROME_PATH: _c, CHROMIUM_PATH: _cc, ...cleanEnv } = process.env;
 test("a flow built with map({ memStub: true }), with its key registered, runs with zero --data", async () => {
   const { stdout, stderr } = await exec(
     node,
-    [CLI, "run", "src/flows/mem-stub-demo.flow.ts", "--mem-stub"],
+    [CLI, "run", "src/flows/(showcase)/mem-stub-demo.flow.ts", "--mem-stub"],
     { cwd: saucedemo, env: cleanEnv },
   );
   expect(stderr).toBe("");
@@ -31,7 +31,7 @@ test("a flow built with map({ memStub: true }), with its key registered, runs wi
 test("map({ memStub: true }) alone (no --mem-stub flag) is enough - the flow's own opt-in doesn't need the CLI override", async () => {
   const { stdout, stderr } = await exec(
     node,
-    [CLI, "run", "src/flows/mem-stub-demo.flow.ts"],
+    [CLI, "run", "src/flows/(showcase)/mem-stub-demo.flow.ts"],
     { cwd: saucedemo, env: cleanEnv },
   );
   expect(stderr).toBe("");
@@ -40,7 +40,7 @@ test("map({ memStub: true }) alone (no --mem-stub flag) is enough - the flow's o
 
 test("a flow that does not opt into memStub, with no --data, still fails exactly as before - regression", async () => {
   await expect(
-    exec(node, [CLI, "run", "src/flows/viewer-blocked.flow.ts"], { cwd: saucedemo, env: cleanEnv }),
+    exec(node, [CLI, "run", "src/flows/auth/viewer-blocked.flow.ts"], { cwd: saucedemo, env: cleanEnv }),
   ).rejects.toMatchObject({
     stderr: expect.stringMatching(/--data|WAYGRAPH_DATA|requires/),
   });

@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { MemPage, checkpoint } from "waygraph";
 import { engine } from "../config/waygraph.config.js";
-import { loginFlow } from "../src/flows/login.flow.js";
-import { shopFlow } from "../src/flows/shop.flow.js";
+import { loginFlow } from "../src/flows/auth/login.flow.js";
+import { shopFlow } from "../src/flows/cart/shop.flow.js";
 import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
 
 // Proves the 2-episode nested-flow scenario the step-mode CLI demo shows

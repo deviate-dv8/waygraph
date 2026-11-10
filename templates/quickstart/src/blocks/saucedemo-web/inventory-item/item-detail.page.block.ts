@@ -8,6 +8,7 @@ export const ItemDetail = definePageBlock({
   name: "page-item-detail",
   description: "One product's detail page.",
   checkpoint: ItemDetailPage,
+  screenshot: true,
   nav: NavItemDetailBlock,
   verify: [Trait.url({ pathname: "/inventory-item.html" })],
   methods: {

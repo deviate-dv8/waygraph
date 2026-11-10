@@ -35,11 +35,33 @@ export function chainSegments(spec: string): ChainSegment[] {
     .map((p) => p.trim())
     .filter((p) => p.length > 0)
     .map((part) => {
-      const open = part.indexOf("(");
-      if (open === -1) return { ref: part };
-      if (!part.endsWith(")")) throw new Error(`waygraph run --blocks: segment "${part}" opens "(" but doesn't end with ")"`);
+      // The payload is the `( … )` that ends the segment, matched from its end: a path's own `(group)` folder
+      // (`src/flows/(user-stories)/signup.flow.ts`) is part of the name.
+      if (!part.endsWith(")")) return { ref: part };
+      const open = openingParen(part);
+      if (open === undefined) throw new Error(`waygraph run --blocks: segment "${part}" ends with ")" but never opens it`);
       return { ref: part.slice(0, open).trim(), payload: part.slice(open + 1, -1).trim() };
     });
+}
+
+/** Where the `(` that the segment's last `)` closes is, skipping quoted strings; undefined when none does. */
+function openingParen(part: string): number | undefined {
+  let depth = 0;
+  let quote: string | undefined;
+  // Quotes are found from the start (a string can hold a paren); the matching `(` is the last one at depth zero.
+  let candidate: number | undefined;
+  for (let i = 0; i < part.length; i++) {
+    const c = part[i];
+    if (quote) {
+      if (c === "\\") i++;
+      else if (c === quote) quote = undefined;
+    } else if (c === '"' || c === "'") quote = c;
+    else if (c === "(") {
+      if (depth === 0) candidate = i;
+      depth++;
+    } else if (c === ")") depth--;
+  }
+  return depth === 0 ? candidate : undefined;
 }
 
 /** Splits a spec into segments, each a Block or Flow name with optional inline JSON for its mem. */

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { MemPage, checkpoint } from "waygraph";
-import { checkoutFlow } from "../src/flows/checkout.flow.js";
+import { checkoutFlow } from "../src/flows/checkout/checkout.flow.js";
 import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
 
 // Thin on purpose - specs/ only ever seed MemPage and call a flow. All real logic

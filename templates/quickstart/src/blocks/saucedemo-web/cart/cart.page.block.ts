@@ -8,6 +8,7 @@ export const Cart = definePageBlock({
   name: "page-cart",
   description: "The cart - what's in it, back to shopping, on to checkout.",
   checkpoint: CartPage,
+  screenshot: true,
   nav: NavCartBlock,
   verify: [Trait.url({ pathname: "/cart.html" })],
   methods: {

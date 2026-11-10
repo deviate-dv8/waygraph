@@ -6,8 +6,8 @@ const config = defineConfig({
   demo: { voice: { speaker: kokoroVoice(), steps: true } },
   // Groups of flows to run on their own: waygraph test --flows --label auth
   labels: {
-    auth: ["src/flows/login.flow.ts", "viewerBlockedFlow", "catalogLogoutFlow"],
-    checkout: ["src/flows/checkout*.flow.ts"],
+    auth: ["src/flows/auth/**"],
+    checkout: ["src/flows/checkout/**"],
   },
   playwright: {
     workers: 1,

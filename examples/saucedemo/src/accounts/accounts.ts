@@ -1,5 +1,5 @@
 import { account } from "waygraph";
-import { loginFlow } from "../flows/login.flow.js";
+import { loginFlow } from "../flows/auth/login.flow.js";
 
 /**
  * The standard shopper. A flow `as` it starts signed in: the login runs once and its session is reused, by later runs

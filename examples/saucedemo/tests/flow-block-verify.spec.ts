@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { MemPage, checkpoint, Trait } from "waygraph";
-import { checkoutFlow } from "../src/flows/checkout.flow.js";
+import { checkoutFlow } from "../src/flows/checkout/checkout.flow.js";
 import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
 
 // checkoutFlow.withBlockVerify/modBlockVerify - a spec that only imports the

@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { MemPage, checkpoint } from "waygraph";
 import { engine } from "../config/waygraph.config.js";
-import { loginFlow } from "../src/flows/login.flow.js";
-import { shopFlow } from "../src/flows/shop.flow.js";
-import { viewerBlockedFlow } from "../src/flows/viewer-blocked.flow.js";
+import { loginFlow } from "../src/flows/auth/login.flow.js";
+import { shopFlow } from "../src/flows/cart/shop.flow.js";
+import { viewerBlockedFlow } from "../src/flows/auth/viewer-blocked.flow.js";
 import { LoginCreds, SelectedItem } from "../src/states/checkout.mem-keys.js";
 
 const BACKPACK = SelectedItem({ id: "sauce-labs-backpack", name: "Sauce Labs Backpack" });

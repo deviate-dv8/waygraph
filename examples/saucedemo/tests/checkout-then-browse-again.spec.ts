@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { MemPage, checkpoint } from "waygraph";
-import { checkoutThenBrowseAgainFlow } from "../src/flows/checkout-then-browse-again.flow.js";
+import { checkoutThenBrowseAgainFlow } from "../src/flows/checkout/checkout-then-browse-again.flow.js";
 import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
 
 // Proves the click-based nav-* convention for real, not just that it

@@ -89,7 +89,7 @@ A fault answers matching requests instead of the server (`status`, `body`), fail
 ```ts
 import { test } from "@playwright/test";
 import { MemPage } from "waygraph";
-import { checkoutFlow } from "../src/flows/checkout.flow.js";
+import { checkoutFlow } from "../src/flows/checkout/checkout.flow.js";
 import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
 
 test("checkout", async ({ context }) => {

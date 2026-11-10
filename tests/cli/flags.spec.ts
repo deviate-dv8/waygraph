@@ -66,7 +66,7 @@ test("run resolves .flow.ts path to export name before chain", async () => {
   const saucedemo = join(import.meta.dirname, "..", "..", "examples", "saucedemo");
   // Dry: missing --data should fail after resolving viewer-blocked.flow.ts → viewerBlockedFlow (not parse-path error)
   await expect(
-    exec(node, [CLI, "run", "src/flows/viewer-blocked.flow.ts"], { cwd: saucedemo, env: { ...process.env } }),
+    exec(node, [CLI, "run", "src/flows/auth/viewer-blocked.flow.ts"], { cwd: saucedemo, env: { ...process.env } }),
   ).rejects.toMatchObject({
     stderr: expect.not.stringMatching(/could not parse segment.*viewer-blocked\.flow\.ts/),
   });
@@ -75,7 +75,7 @@ test("run resolves .flow.ts path to export name before chain", async () => {
 test("run bare flow asks for --data (not silent empty Mem)", async () => {
   const saucedemo = join(import.meta.dirname, "..", "..", "examples", "saucedemo");
   await expect(
-    exec(node, [CLI, "run", "src/flows/viewer-blocked.flow.ts"], { cwd: saucedemo, env: { ...process.env } }),
+    exec(node, [CLI, "run", "src/flows/auth/viewer-blocked.flow.ts"], { cwd: saucedemo, env: { ...process.env } }),
   ).rejects.toMatchObject({
     stderr: expect.stringMatching(/--data|WAYGRAPH_DATA|requires/),
   });
@@ -84,13 +84,13 @@ test("run bare flow asks for --data (not silent empty Mem)", async () => {
 test("auto .flow.ts runs the flow (not explore with 0 edges)", async () => {
   const saucedemo = join(import.meta.dirname, "..", "..", "examples", "saucedemo");
   await expect(
-    exec(node, [CLI, "auto", "src/flows/viewer-blocked.flow.ts"], { cwd: saucedemo, env: { ...process.env } }),
+    exec(node, [CLI, "auto", "src/flows/auth/viewer-blocked.flow.ts"], { cwd: saucedemo, env: { ...process.env } }),
   ).rejects.toMatchObject({
     // Must resolve to viewerBlockedFlow (not opted into memStub) + ask for mem — not "0 checkpoint(s)" explore
     stderr: expect.stringMatching(/--data|WAYGRAPH_DATA|requires/),
   });
   await expect(
-    exec(node, [CLI, "auto", "src/flows/viewer-blocked.flow.ts"], { cwd: saucedemo, env: { ...process.env } }),
+    exec(node, [CLI, "auto", "src/flows/auth/viewer-blocked.flow.ts"], { cwd: saucedemo, env: { ...process.env } }),
   ).rejects.toMatchObject({
     stderr: expect.not.stringMatching(/0 checkpoint/),
   });

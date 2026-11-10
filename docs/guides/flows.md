@@ -172,7 +172,7 @@ A flow that starts signed in says as whom. An account is a name and the flow tha
 // src/accounts/accounts.ts
 export const StandardUser = account("standard-user", { signIn: loginFlow });
 
-// src/flows/cart-as-account.flow.ts
+// src/flows/cart/cart-as-account.flow.ts
 export const cartAsAccountFlow = engine
   .map({ as: StandardUser })
   .gotoPage(NavInventoryBlock)

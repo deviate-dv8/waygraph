@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { MemPage } from "waygraph";
-import { viewerBlockedFlow } from "../src/flows/viewer-blocked.flow.js";
+import { viewerBlockedFlow } from "../src/flows/auth/viewer-blocked.flow.js";
 import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
 
 // locked_out_user attempts the same login checkoutFlow's Owner (standard_user)

@@ -25,6 +25,7 @@ export const Inventory = definePageBlock({
   description:
     "Inventory catalog hub - per-item and bulk add/remove, open item detail.",
   checkpoint: InventoryPage,
+  screenshot: true,
   nav: NavInventoryBlock,
   verify: [
     Trait.url({ pathname: "/inventory.html" }),

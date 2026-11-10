@@ -51,7 +51,7 @@ test("each Block carries the lines that define it, its checks as data and the se
 });
 
 test("each flow carries its labels from the config's labels", async () => {
-  const m = await buildManifest(join(examples, "saucedemo"), { labels: { auth: ["src/flows/login.flow.ts"], smoke: ["shopFlow"] } });
+  const m = await buildManifest(join(examples, "saucedemo"), { labels: { auth: ["src/flows/auth/login.flow.ts"], smoke: ["shopFlow"] } });
   expect(m.flows.find((f) => f.exportName === "loginFlow")?.labels).toEqual(["auth"]);
   expect(m.flows.find((f) => f.exportName === "shopFlow")?.labels).toEqual(["smoke"]);
   expect(m.flows.find((f) => f.exportName === "cartBulkFlow")?.labels).toEqual([]);

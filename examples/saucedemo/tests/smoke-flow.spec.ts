@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { MemPage, checkpoint } from "waygraph";
-import { smokeFlow } from "../src/flows/smoke.flow.js";
+import { smokeFlow } from "../src/flows/(showcase)/smoke.flow.js";
 import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
 
 test("smoke flow reuses login + add-to-cart with navigation-only confirmation, no DOM checks", async () => {

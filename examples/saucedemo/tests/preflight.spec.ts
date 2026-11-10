@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { MemPage } from "waygraph";
 import { engine } from "../config/waygraph.config.js";
-import { checkoutFlow } from "../src/flows/checkout.flow.js";
+import { checkoutFlow } from "../src/flows/checkout/checkout.flow.js";
 
 // Credentials deliberately never set, and no mem stubs (checkoutFlow itself has memStub: true, which would fill them) -
 // proves the flow fails before opening a tab or touching saucedemo.com at all, not deep inside submit-login's act.

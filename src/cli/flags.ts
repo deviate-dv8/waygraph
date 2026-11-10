@@ -377,7 +377,8 @@ export function resolveSpec(flags: RunFlags): string | undefined {
 
 /** `shop.flow.ts` / `src/flows/cart-bulk.flow.ts` / absolute path — not a Checkpoint or export id. */
 export function looksLikeFlowFileRef(ref: string): boolean {
-  if (!ref || ref.includes("then") || ref.includes("(")) return false;
+  // A segment's name, already split from the spec and its payload: a path may hold a (group) folder.
+  if (!ref || /\s/.test(ref)) return false;
   return /\.flow\.ts$/i.test(ref) || (/\.ts$/i.test(ref) && (ref.includes("/") || ref.includes("\\")));
 }
 
