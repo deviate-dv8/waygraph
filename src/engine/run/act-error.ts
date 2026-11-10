@@ -1,6 +1,6 @@
 // A failure inside a Block's act names its step, as a failed check does.
 import { WaygraphError, messageOf } from "../errors.js";
-import { TraitFailure } from "../trait/verify.js";
+import { NAMES_ITS_STEP } from "../trait/verify.js";
 
 /**
  * An error from a Block's act (a click that timed out, a page object's own failure) with the step it came from in its
@@ -8,8 +8,9 @@ import { TraitFailure } from "../trait/verify.js";
  * TimeoutError stays one); one that already names its step (a check, waygraph's own, an inner step's) is left as it is.
  */
 export function namingStep(err: unknown, block: string): unknown {
-  if (!(err instanceof Error) || err instanceof WaygraphError || err instanceof TraitFailure) return err;
-  if (err.message.includes('act of "') || err.message.includes('failed after "')) return err;
+  if (!(err instanceof Error) || err instanceof WaygraphError) return err;
+  // A failed check or expectation (from either copy of waygraph: src and dist), or an inner step's act, names its own.
+  if ((err as { [NAMES_ITS_STEP]?: boolean })[NAMES_ITS_STEP] || err.message.includes('act of "')) return err;
   Object.defineProperty(err, ACT_MESSAGE, { value: err.message, enumerable: false });
   err.message = `act of "${block}" failed: ${err.message}`;
   return err;

@@ -129,14 +129,18 @@ the element the value came from.
 They are Traits, so they also fit a Block's `verify` or an Expect Block's.
 
 ```text
-trait "read(catalog.items)" failed after "add-all-to-cart": wanted 6 products; saw [{"name":"Sauce Labs Backpack",...}]
+add-all-to-cart: check "read(catalog.items)" didn't pass
+  wanted  6 products
+  saw     [{"name":"Sauce Labs Backpack",...}]
 ```
 
 When the page doesn't show the key at all, the failure says what else its namespace showed: the error a form gave
 instead of the confirmation it was meant to show.
 
 ```text
-trait "read(login.sent)" failed after "submit-magic-link": wanted the confirmation; saw no value for login.sent; the page shows login.emailError "Could not send the link. Try again in a moment."
+submit-magic-link: check "read(login.sent)" didn't pass
+  wanted  the confirmation
+  saw     no value for login.sent; the page shows login.emailError "Could not send the link. Try again in a moment."
 ```
 
 ## In a session: `read`, and every reply

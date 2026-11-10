@@ -9,7 +9,7 @@ import { mark } from "../block/mark.js";
 import { copyWaygraphRuntime } from "../block/block.js";
 import type { MemPage } from "../mem/mem.js";
 import type { Trait } from "../trait/trait.js";
-import { settle, whereIs, type TraitCheckReport } from "../trait/verify.js";
+import { settle, whereIs, type TraitCheckReport, NAMES_ITS_STEP, labelled, pageLine, stepAndChain } from "../trait/verify.js";
 import { envFlag } from "../env.js";
 import { WaygraphError, MSG_EXPECT_SET_MEM } from "../errors.js";
 import { readOnlyWhile } from "./read-only.js";
@@ -154,10 +154,16 @@ function selectorsOf(item: AnyExpectation, out: Checkpoint<string>): string[] {
 export class ExpectFailure extends Error {
   readonly check: TraitCheckReport;
   constructor(readonly checks: readonly TraitCheckReport[]) {
-    const where = checks[0]?.url ? ` (on ${checks[0].url}${checks[0].heading ? ` "${checks[0].heading}"` : ""})` : "";
+    const first = checks[0];
+    const { step, chain } = stepAndChain(first?.block ?? "");
     const lines = checks.map((c) => `  - ${c.trait}: ${[c.wants && `wanted ${c.wants}`, c.saw && `saw ${c.saw}`].filter(Boolean).join("; ") || "didn't hold"}`);
-    super(`${checks.length === 1 ? "an expectation" : `${checks.length} expectations`} failed after "${checks[0]?.block}"${where}\n${lines.join("\n")}`);
+    const rows = labelled([
+      ["on", first ? pageLine(first) : undefined],
+      ["in", chain],
+    ]);
+    super(`${step}: ${checks.length === 1 ? "an expectation" : `${checks.length} expectations`} didn't hold\n${lines.join("\n")}${rows ? `\n${rows}` : ""}`);
     this.name = "ExpectFailure";
+    Object.defineProperty(this, NAMES_ITS_STEP, { value: true });
     this.check = checks[0] as TraitCheckReport;
   }
 }

@@ -7,14 +7,19 @@ import { relative } from "node:path";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import { envString } from "../../engine/env.js";
 import type { Flow } from "../../engine/flow/flow.js";
-import { MemPage } from "../../engine/mem/mem.js";
+import { MemPage, type MemKey } from "../../engine/mem/mem.js";
 import { seedMemStub } from "../../engine/mem/mem-stub.js";
 import { importFresh, isFlowLike, walkDir } from "../../manifest/scan.js";
 import { installRunLog } from "../../runtime/run-log.js";
 import { accountSigningIn } from "../../engine/flow/account.js";
-import { inRun } from "../../engine/run/events.js";
+import { inRun, recordMem } from "../../engine/run/events.js";
 import { labelsOf } from "../../manifest/labels.js";
 import { loadWaygraphConfig } from "../../runtime/waygraph-config.js";
+
+/** Every key a flow's Blocks require, each once. */
+function requiredKeys(flow: Flow<Checkpoint<string>>): MemKey<unknown>[] {
+  return [...new Map(flow.blocks().flatMap((info) => info.block.requires ?? []).map((k) => [k.name, k])).values()];
+}
 
 /** The keys a flow needs that nothing will give it in a test (no mem stub): it is skipped, saying which. */
 function unsupplied(flow: Flow<Checkpoint<string>>, mem: MemPage): string[] {
@@ -71,8 +76,14 @@ export async function registerFlowTests(exclusive: boolean): Promise<void> {
         const missing = unsupplied(flow, mem);
         test.skip(missing.length > 0, `needs ${missing.join(", ")}: register a mem stub (and map({ memStub: true })), or run it with --data`);
         if (flow.device) await page.setViewportSize(flow.device.viewport);
-        // The run log names the flow: a flow doesn't know its own export name, its file does.
-        const play = () => inRun(exportName, () => flow.run(context, mem, { page }));
+        // The run log names the flow (a flow doesn't know its own export name, its file does) and records the data it
+        // was seeded with, so Waygraph UI's Run again and --replay play it with the same.
+        const seeded = Object.fromEntries(requiredKeys(flow).filter((k) => mem.has(k)).map((k) => [k.name, mem.get(k)]));
+        const play = () =>
+          inRun(exportName, () => {
+            recordMem(0, exportName, seeded);
+            return flow.run(context, mem, { page });
+          });
         if (flow.expectedFailureReason) {
           // Meant to fail (map({ expectedFailure })): ending on its failure branch or throwing both pass.
           try {

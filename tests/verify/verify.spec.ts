@@ -41,7 +41,7 @@ test.describe("verify", () => {
     const fakeContext = { newPage: async () => fakePage } as any;
 
     await expect(runGraph<Done>(entry, undefined, fakeContext, mem)).rejects.toThrow(
-      /always-false.*entry-block/,
+      /^entry-block: check "always-false" didn't pass/,
     );
   });
 

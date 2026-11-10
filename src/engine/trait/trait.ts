@@ -20,7 +20,7 @@ import { mark } from "../block/mark.js";
  * way to redirect the run.
  */
 export interface Trait {
-  /** Shows up in the error a failed check throws: `trait "${name}" failed after "${blockName}"`. */
+  /** Shows up in the error a failed check throws: `${blockName}: check "${name}" didn't pass`. */
   name: string;
   /** What the check is looking for, in words (`"Saved" in .toast`): the failure says it. */
   wants?: string;

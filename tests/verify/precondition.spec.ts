@@ -44,7 +44,7 @@ test.describe("precondition", () => {
     const fakeContext = { newPage: async () => fakePage } as any;
 
     await expect(runGraph<Done>(entry, undefined, fakeContext, mem)).rejects.toThrow(
-      /page-changed-out-from-under-us.*entry-block/,
+      /^entry-block: check "page-changed-out-from-under-us" didn't pass before it acted/,
     );
     // The whole point: act() never ran at all, not just that it eventually
     // failed inside act() with a confusing "element not found."

@@ -22,13 +22,48 @@ export interface TraitCheckReport {
   heading?: string;
 }
 
-/** A Trait that didn't pass. `message` reads as a sentence; `check` is the same as data. */
+/** Marks an error that already names its step (a failed check, an expectation): an act error isn't wrapped around it. */
+export const NAMES_ITS_STEP = Symbol.for("waygraph.namesItsStep");
+
+/**
+ * The step a failure is about, and the chain it ran in: a Block built from several (`ff-1 -> add-to-cart -> ... ->
+ * finish-order`) failed at its last one; a long chain is shown by its ends.
+ */
+export function stepAndChain(block: string): { step: string; chain?: string } {
+  const parts = block.split(" -> ");
+  const step = parts[parts.length - 1] ?? block;
+  if (parts.length < 2) return { step };
+  const shown = parts.length > 4 ? [parts[0], parts[1], "…", step] : parts;
+  return { step, chain: `${shown.join(" → ")} (${parts.length} steps)` };
+}
+
+/** Where the page was, for a failure's `on` line: its address and first heading. */
+export function pageLine(check: Pick<TraitCheckReport, "url" | "heading">): string | undefined {
+  return check.url ? `${check.url}${check.heading ? ` ("${check.heading}")` : ""}` : undefined;
+}
+
+/** Lines of a failure, labelled and aligned: `  wanted  6 products`. */
+export function labelled(rows: readonly [string, string | undefined][]): string {
+  return rows.flatMap(([label, value]) => (value ? [`  ${label.padEnd(6)}  ${value}`] : [])).join("\n");
+}
+
+/**
+ * A Trait that didn't pass. `message` names the step first, then what the check wanted, what the page showed and where,
+ * one to a line; `check` is the same as data.
+ */
 export class TraitFailure extends Error {
   constructor(readonly check: TraitCheckReport) {
-    const where = check.url ? ` (on ${check.url}${check.heading ? ` "${check.heading}"` : ""})` : "";
-    const detail = [check.wants && `wanted ${check.wants}`, check.saw && `saw ${check.saw}`].filter(Boolean).join("; ");
-    super(`trait "${check.trait}" failed ${check.when} "${check.block}"${detail ? `: ${detail}` : ""}${where}`);
+    const { step, chain } = stepAndChain(check.block);
+    const when = check.when === "before" ? " before it acted" : "";
+    const rows = labelled([
+      ["wanted", check.wants],
+      ["saw", check.saw],
+      ["on", pageLine(check)],
+      ["in", chain],
+    ]);
+    super(`${step}: check "${check.trait}" didn't pass${when}${rows ? `\n${rows}` : ""}`);
     this.name = "TraitFailure";
+    Object.defineProperty(this, NAMES_ITS_STEP, { value: true });
   }
 }
 

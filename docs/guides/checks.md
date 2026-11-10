@@ -112,9 +112,10 @@ An expectation reads and judges; it never changes the page or mem. So a step's e
 costs its slowest check, not the sum, and a failing step reports **every** expectation it didn't meet:
 
 ```text
-2 expectations failed after "confirm-archive" (on /platform/plant/equipment "Equipment")
+confirm-archive: 2 expectations didn't hold
   - expect-archived-toast › text-equals(.toast, "Equipment archived"): wanted "Equipment archived" in .toast; saw "Saved"
   - read(machine.status): wanted machine.status = "Archived"; saw "Operational"
+  on      /platform/plant/equipment ("Equipment")
 ```
 
 While they run, the page is read-only: a click, a key press, a navigation or `mem.set` in an expectation stops the step,
@@ -123,8 +124,8 @@ Method step, and the expectation reads what it left.
 
 ### A failure names its step
 
-A failed check says which check, after which step, what it wanted and what the page showed:
-`trait "read(catalog.items)" failed after "add-to-cart": wanted the item in the cart; saw [...]`. A failure inside a
+A failed check names its step first, then the check, what it wanted and what the page showed:
+`add-to-cart: check "read(catalog.items)" didn't pass`, with `wanted`, `saw` and `on` lines under it. A failure inside a
 step's own action (a click that timed out, a page object's method that threw) names the step the same way, and stays
 the error it was (a Playwright `TimeoutError` is still one): `act of "sign-in" failed: locator.click: Timeout 10000ms
 exceeded.` The run log's `step:error` keeps the error's own text, beside the step's name.

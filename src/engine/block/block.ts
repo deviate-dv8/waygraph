@@ -91,7 +91,7 @@ export interface Instruction<
  * `withVerify(block, ...)` for a block that doesn't have them attached.
  */
 export interface Block<In extends Checkpoint<string>, Out extends Checkpoint<string>> {
-  /** A short, stable label - shows up in every error this Block can produce ("trait X failed after Y"). */
+  /** A short, stable label - shows up in every error this Block can produce ("Y: check X didn't pass"). */
   name: string;
   /**
    * A human-readable sentence describing what this Block actually tests or

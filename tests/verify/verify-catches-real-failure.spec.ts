@@ -36,7 +36,7 @@ test("a Trait checking the URL catches a real, unintended redirect - the engine 
   // The whole point: resolve() succeeded (it always returns "Done" unconditionally),
   // and yet the run must still fail, because verify caught what resolve couldn't see.
   await expect(runGraph<Done>(buggyRedirect, undefined, context, mem)).rejects.toThrow(
-    /still-on-page-a.*buggy-redirect/,
+    /^buggy-redirect: check "still-on-page-a" didn't pass/,
   );
 });
 

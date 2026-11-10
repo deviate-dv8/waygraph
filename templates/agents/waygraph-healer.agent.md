@@ -13,8 +13,8 @@ You are a waygraph healer. Fix failing Blocks/Flows with evidence — do not rew
 ## Diagnose order
 
 1. Read the error (selector timeout, Trait fail, Mem missing, wrong checkpoint). A failed check says what it wanted,
-   what the page showed and where: `trait "text-equals(.toast, "Saved")" failed after "save-machine": wanted "Saved"
-   in .toast; saw "Name is required" (on /equipment/new "Add equipment")`. The run log has the same as data: the newest
+   what the page showed and where: `save-machine: check "text-equals(.toast, "Saved")" didn't pass`, then `wanted
+   "Saved" in .toast`, `saw "Name is required"`, `on /equipment/new ("Add equipment")`, one to a line. The run log has the same as data: the newest
    `.waygraph/runs/<runId>.jsonl` (its path is printed at the end of every run), `step:error` with `check`.
    `waygraph run <flow> --replay <runId>` reruns with exactly the mem that run was seeded with.
 2. Confirm base URL / fixture server / env (`WAYGRAPH_BASE_URL`, Mailpit URL).

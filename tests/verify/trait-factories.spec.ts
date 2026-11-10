@@ -150,7 +150,7 @@ test("disabled fails loud, naming itself, when the element is actually enabled",
   };
 
   await expect(runGraph<Done>(block, undefined, context, new MemPage())).rejects.toThrow(
-    /disabled\(#cancel\).*failed after "load"/,
+    /^load: check "disabled\(#cancel\)" didn't pass/,
   );
 });
 
@@ -248,6 +248,6 @@ test("frameContains fails loud, naming itself, when the expected text is not in 
   };
 
   await expect(runGraph<Done>(block, undefined, context, new MemPage())).rejects.toThrow(
-    /frame-contains-text.*failed after "load"/,
+    /^load: check "frame-contains-text\(/,
   );
 });

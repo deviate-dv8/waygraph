@@ -13,14 +13,17 @@ test("a failed check says what it wanted, what the page showed, and where", asyn
   await page.setContent(`<h1>Equipment Registry</h1><div class="toast">Draft</div>`);
   const err = await runVerify([{ ...Trait.text(".toast", "Saved"), timeoutMs: 300 }], Saved, page, new MemPage(), "save-machine").catch((e: unknown) => e);
   expect(err).toBeInstanceOf(TraitFailure);
-  expect((err as Error).message).toBe('trait "text-equals(.toast, "Saved")" failed after "save-machine": wanted "Saved" in .toast; saw "Draft" (on about:blank "Equipment Registry")');
+  // The step first, then what the check wanted, what the page showed and where, one to a line.
+  expect((err as Error).message).toBe(
+    ['save-machine: check "text-equals(.toast, "Saved")" didn\'t pass', '  wanted  "Saved" in .toast', '  saw     "Draft"', '  on      about:blank ("Equipment Registry")'].join("\n"),
+  );
   expect((err as TraitFailure).check).toMatchObject({ trait: 'text-equals(.toast, "Saved")', block: "save-machine", when: "after", wants: '"Saved" in .toast', saw: '"Draft"', heading: "Equipment Registry" });
 });
 
 test("a custom check can say what it saw", async ({ page }) => {
   await page.setContent(`<table><tr><td>3</td></tr></table>`);
   const rows = { name: "five-rows", wants: "5 rows", timeoutMs: 200, async check(p: typeof page) { const n = await p.locator("tr").count(); return { ok: n === 5, saw: `${n} rows` }; } };
-  await expect(runVerify([rows], Saved, page, new MemPage(), "list")).rejects.toThrow('trait "five-rows" failed after "list": wanted 5 rows; saw 1 rows');
+  await expect(runVerify([rows], Saved, page, new MemPage(), "list")).rejects.toThrow('list: check "five-rows" didn\'t pass\n  wanted  5 rows\n  saw     1 rows');
 });
 
 test("the Traits for values, attributes, text inside, patterns and absence; expected values from mem", async ({ page }) => {
@@ -34,7 +37,7 @@ test("the Traits for values, attributes, text inside, patterns and absence; expe
     [Trait.value("#name", (m) => m.get(TestKeys.name)), Trait.attribute("#code", "readonly", ""), Trait.contains("#msg", (m) => m.get(TestKeys.name)), Trait.matches("#code-text", /^MCH-\d{4}$/), Trait.absent("[data-testid=archive]"), Trait.text("#code-text", "MCH-0042")],
     Saved, page, mem, "check-all",
   );
-  await expect(runVerify([{ ...Trait.absent("#name"), timeoutMs: 100 }], Saved, page, mem, "x")).rejects.toThrow("wanted no #name on the page; saw 1 of them");
+  await expect(runVerify([{ ...Trait.absent("#name"), timeoutMs: 100 }], Saved, page, mem, "x")).rejects.toThrow("  wanted  no #name on the page\n  saw     1 of them");
 });
 
 test("a run's step:error carries the failed check as data", async ({ page }) => {
@@ -66,4 +69,13 @@ test("a failure inside a step's act names the step, and stays the error it was",
   const err = await flow.run(context, new MemPage(), { page, closeOnFinish: false }).catch((e: unknown) => e);
   expect((err as Error).name).toBe("TimeoutError");
   expect((err as Error).message).toMatch(/^act of "click-archive" failed: locator\.\w+: Timeout 200ms exceeded/);
+});
+
+test("a check that failed in a chain of steps names the step, and the chain by its ends", async ({ page }) => {
+  await page.setContent(`<h1>Thank you</h1>`);
+  const chain = ["ff-1", "add-to-cart", "nav-cart", "nav-checkout-info", "finish-order"].join(" -> ");
+  const err = await runVerify([{ name: "order-number", wants: "an order number", timeoutMs: 100, async check() { return { ok: false, saw: "none" }; } }], Saved, page, new MemPage(), chain).catch((e: unknown) => e);
+  expect((err as Error).message).toBe(
+    ['finish-order: check "order-number" didn\'t pass', "  wanted  an order number", "  saw     none", '  on      about:blank ("Thank you")', "  in      ff-1 → add-to-cart → … → finish-order (5 steps)"].join("\n"),
+  );
 });

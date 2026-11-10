@@ -66,12 +66,17 @@ graph LR
 | verify | do the Block's checks hold? Retried until the page settles |
 | read | what does the page show now? (its Read Block) |
 
-When a check fails it says what it **wanted**, what the page **showed**, and **where**:
+When a check fails it names the **step** first, then what it **wanted**, what the page **showed**, and **where**:
 
 ```text
-trait "text-equals(.toast, "Saved")" failed after "save-machine":
-  wanted "Saved" in .toast; saw "Name is required" (on /equipment/new "Add equipment")
+save-machine: check "text-equals(.toast, "Saved")" didn't pass
+  wanted  "Saved" in .toast
+  saw     "Name is required"
+  on      /equipment/new ("Add equipment")
 ```
+
+A step played inside a chain (a fast-forward, a nested flow) is named by itself, and the chain by its ends:
+`in  ff-1 → add-to-cart → … → finish-order (9 steps)`.
 
 ## Three ways to play a flow
 

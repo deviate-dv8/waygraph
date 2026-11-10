@@ -112,7 +112,7 @@ test("an expectation may not change the page or mem", async ({ page }) => {
 
 test("each step in a flow runs its own expectations, not only the last", async ({ page }) => {
   const flow = engine.map().method(open, { expect: [ExpectDraft, Shown.status.is("Gone")] }).method(save, { lands: Form });
-  await expect(run(flow, page)).rejects.toThrow(/after "expect-open"[\s\S]*expectShown\.status = "Gone"/);
+  await expect(run(flow, page)).rejects.toThrow(/^expect-open: an expectation didn't hold[\s\S]*expectShown\.status = "Gone"/);
 });
 
 test("expectations are typed to where the Block lands", () => {
