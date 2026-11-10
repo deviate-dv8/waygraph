@@ -304,7 +304,8 @@ export function copyWaygraphRuntime(from: object, to: object): void {
 /**
  * A screenshot of the page once a Block's step is done (act, resolve, verify, its expectations, the page's read): `true`
  * for what's in view, `{ fullPage: true }` for the whole page. Kept with the run (`.waygraph/runs/<runId>/`), and as the
- * page's newest look (`.waygraph/screenshots/<Checkpoint>.png`), which Waygraph UI shows on its map.
+ * page's newest look (`.waygraph/screenshots/<Checkpoint>.png`), which Waygraph UI shows on its map. In a demo the page
+ * is taken as it is, overlay and all (hiding it would make it blink), and doesn't replace the page's look on the map.
  */
 export type StepScreenshot = true | { fullPage?: boolean };
 

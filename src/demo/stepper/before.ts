@@ -1,7 +1,6 @@
 // Before a demo step runs: play the Block's stubBefore narration (slides, rings, todos, device, title, caption) and show the
 // step's panel, then log what was painted so an agent without eyes can check it.
 import { describeExpectations, takeExpectResults } from "../../engine/run/expect.js";
-import { outcomePiece } from "./outcome.js";
 import { takeCheckedElements } from "../../engine/trait/verify.js";
 import { envFlag } from "../../engine/env.js";
 import type { StubPhaseResult } from "../../engine/stub/stub.js";
@@ -24,8 +23,6 @@ export async function showBefore(ctx: StepperContext, view: StepView): Promise<B
   // What this step's checks look at and how its expectations go are collected while it runs; the demo shows them after.
   takeCheckedElements(ctx.page);
   takeExpectResults(ctx.page);
-  // The step before's outcome card goes as this one starts.
-  await outcomePiece(ctx.page).set(ctx.page, undefined);
   // A voice that speaks steps says what this one does as its panel comes up.
   const voice = voiceOf(ctx.page);
   if (voice?.steps && view.step.block.description) await voice.say(view.step.block.description);

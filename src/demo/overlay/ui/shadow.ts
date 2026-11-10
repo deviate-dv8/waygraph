@@ -18,13 +18,13 @@ import { ignorePageGone } from "../../../engine/page-gone.js";
  * same on every surface; `icons` the overlay's icons (ui/icons.ts); `appearance` light / dark when the project pins
  * one. Passed in from Node, since in-page code can't read a file. Installed once per shadow root, before anything else.
  */
-export function installShadowRoot(args: [string?, Record<string, string>?, string?] = []): void {
+export function installShadowRoot(args: [string?, Record<string, string>?, string?, string?] = []): void {
   // As an init script it runs before the document has its <html>: install once it does.
   if (!document.documentElement) {
     document.addEventListener("DOMContentLoaded", () => installShadowRoot(args), { once: true });
     return;
   }
-  const [overlaySheet, icons, appearance] = args;
+  const [overlaySheet, icons, appearance, hide] = args;
   const w = window as unknown as Record<string, unknown> & { __wgCss?: (css: string, key: string) => void };
   if (w.__wgById) return;
   const root = (): ShadowRoot => {
@@ -73,6 +73,8 @@ export function installShadowRoot(args: [string?, Record<string, string>?, strin
     layer.id = "wg-ui";
     // light / dark pinned by the project (demo.appearance); otherwise theme.css follows the system.
     if (appearance === "light" || appearance === "dark") layer.dataset.appearance = appearance;
+    // The parts the demo leaves out (demo.overlay): layout.css hides them, on every page.
+    if (hide) layer.dataset.hide = hide.split(",").join(" ");
     const stage = document.createElement("div");
     stage.id = "wg-stage";
     const chrome = document.createElement("div");
@@ -90,6 +92,10 @@ export function installShadowRoot(args: [string?, Record<string, string>?, strin
     }
     layer.append(stage, chrome);
     r.appendChild(layer);
+    // A new document: what the overlay showed on the page before comes back as it was, without sliding or fading in
+    // again (a viewer would read that as something new). Its first moments paint without transitions.
+    layer.dataset.restoring = "";
+    setTimeout(() => delete layer.dataset.restoring, 600);
     // A data-pos change (banner click, a dock flipping away from a ring) moves the element to its new slot.
     new MutationObserver((records) => {
       for (const rec of records) if (rec.target instanceof Element && rec.target.parentElement?.classList.contains("wg-slot")) place(rec.target);
@@ -159,8 +165,8 @@ export function installShadowRoot(args: [string?, Record<string, string>?, strin
 }
 
 /** What installShadowRoot needs from Node: the stylesheet, the icons and the pinned appearance. */
-export function shadowRootArgs(): [string, Record<string, string>, string] {
-  return [getOverlaySheet(), ICONS, envString("WAYGRAPH_APPEARANCE") ?? ""];
+export function shadowRootArgs(): [string, Record<string, string>, string, string] {
+  return [getOverlaySheet(), ICONS, envString("WAYGRAPH_APPEARANCE") ?? "", envString("WAYGRAPH_OVERLAY_HIDE") ?? ""];
 }
 
 /** Idempotent; call before any overlay install on a page. Installs the shared stylesheet bundle. */

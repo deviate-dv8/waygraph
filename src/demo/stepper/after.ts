@@ -18,6 +18,7 @@ import { expectationsFor, takeExpectResults, type ExpectResult } from "../../eng
 import { takeCheckedElements } from "../../engine/trait/verify.js";
 import type { StepperContext, StepView } from "./view.js";
 import { forceCollapsed } from "./view.js";
+import { overlayHides } from "../overlay/hidden.js";
 
 const quiet = () => envFlag("WAYGRAPH_JSON");
 
@@ -29,7 +30,9 @@ export async function showAfter(ctx: StepperContext, view: StepView, result: Che
   const expectRings = await narrateExpectations(ctx, view, result);
   if (after) await showSlides(ctx, view, after.phase.slides);
   const applied = after ? await stage.applyPhase(after.phase) : { appliedTodo: { sync: "keep" as const }, appliedDevice: { sync: "keep" as const } };
-  await showOutcomeCard(ctx, expects, changes);
+  // A demo that leaves the checks out (demo.overlay.checks) shows neither the card nor rings on what was checked.
+  const checks = !overlayHides("checks");
+  if (checks) await showOutcomeCard(ctx, expects, changes);
 
   await renderAfterStep(ctx.page, {
     index: view.index,
@@ -37,7 +40,7 @@ export async function showAfter(ctx: StepperContext, view: StepView, result: Che
     blockName: view.step.block.name,
     result,
     resultTag: JSON.stringify(result),
-    highlights: [...(after?.highlights ?? checkedRings(ctx, view, expects, expectRings)), ...expectRings],
+    highlights: [...(after?.highlights ?? (checks ? checkedRings(ctx, view, expects, expectRings) : [])), ...expectRings],
     gatesFast: ctx.pacing.gatesFast,
     ...paceSpeakFields(ctx.pacing.demoPace, ctx.gate.autoplayMs),
     isLast: view.index === ctx.steps.length - 1,

@@ -4,13 +4,14 @@ import type { WgPage } from "../types.js";
 import { demoPaceGateMs, formatDemoPaceBadge, formatDemoPaceLabel, normalizeDemoPace, resolveFixtureDwellMs } from "../narration/demo-pace.js";
 import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeight, type WaygraphSlide } from "../../engine/stub/ring.js";
 import type { DemoPace } from "../../engine/stub/pace.js";
-import { installOverlay } from "../overlay/overlay.js";
+import { captionShown, installOverlay } from "../overlay/overlay.js";
 import { applyHighlightZoom, ensureSelectorInView, hideRing, showRing } from "../overlay/rings.js";
 import { demoLog, demoPaceKind } from "./demo-log.js";
 import { envFlag, envNumber, envString } from "../../engine/env.js";
 import { applyHighlightStyleDefaults, formatHighlightCaption } from "../narration/style.js";
 import type { StepperContext, StepView } from "./view.js";
 import { voiceOf } from "../voice-over.js";
+import { overlayHides } from "../overlay/hidden.js";
 
 /** Where the slides sit (title, Block, episode) and how fast they advance. */
 export interface SlidesOptions {
@@ -44,6 +45,8 @@ export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide
       ? Number(opts.autoplayMs)
       : (envNumber("WAYGRAPH_AUTOPLAY_MS") ?? 1800);
   const autoplayMs = demoPaceGateMs(demoPace, baseAutoplay);
+  // Without the step panel (demo.overlay.panel: false), each slide is a caption, held as long as it's read or spoken.
+  if (overlayHides("panel")) return captionSlides(page, slides, { gatesFast, pace: demoPace, autoplayMs, title });
   for (let i = 0; i < slides.length; i++) {
     const s = slides[i]!;
     const caption = formatHighlightCaption(s);
@@ -241,6 +244,25 @@ export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide
     }
   }
   await hideRing(page);
+}
+
+/** Slides as captions, one after another, then the caption that was up before them. */
+async function captionSlides(
+  page: WgPage,
+  slides: readonly WaygraphSlide[],
+  opts: { gatesFast: boolean; pace: ReturnType<typeof normalizeDemoPace>; autoplayMs: number; title: string },
+): Promise<void> {
+  const before = captionShown(page);
+  for (const s of slides) {
+    const text = [s.caption, s.detail].filter(Boolean).join(". ");
+    await installOverlay(page, opts.title, undefined, text);
+    const started = Date.now();
+    await voiceOf(page)?.settle();
+    const hold = resolveFixtureDwellMs(s, { gatesFast: opts.gatesFast, pace: opts.pace }) ?? opts.autoplayMs;
+    const left = hold - (Date.now() - started);
+    if (left > 0) await sleep(left);
+  }
+  await installOverlay(page, opts.title, undefined, before ?? "");
 }
 
 /** Plays a stub phase's `ctx.ui.slides(...)` for the step on screen, in the flow's highlight style. */

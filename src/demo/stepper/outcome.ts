@@ -21,7 +21,11 @@ export async function showOutcomeCard(ctx: StepperContext, expects: readonly Exp
     for (const e of expects) demoLog(`  expected ${e.ok ? "ok" : "FAILED"}: ${e.text}${e.ok || !e.saw ? "" : ` (saw ${e.saw})`}`);
     for (const c of changes) demoLog(`  now shows ${c.key}: ${c.from} -> ${c.to}`);
   }
-  if (expects.length === 0 && changes.length === 0) return;
+  // A step with nothing to say takes the last step's card away; one with something replaces it in place.
+  if (expects.length === 0 && changes.length === 0) {
+    await outcomePiece(ctx.page).set(ctx.page, undefined);
+    return;
+  }
   const card = {
     expects: expects.map((e) => ({ text: e.text, ok: e.ok, ...(e.saw ? { saw: e.saw } : {}) })),
     changes: changes.slice(0, MAX_CHANGES),
@@ -37,7 +41,7 @@ export async function showOutcomeCard(ctx: StepperContext, expects: readonly Exp
   }
 }
 
-/** The step's outcome card on this page, a piece of the overlay layer: it outlives a page load until the next step. */
+/** The latest outcome card on this page, a piece of the overlay layer: it stays (through a page load too) until a step replaces it. */
 export const outcomePiece = (page: WgPage): StoredPiece<OutcomeCard> =>
   overlayLayer(page).stored<OutcomeCard>(
     "outcome",

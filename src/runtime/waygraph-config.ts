@@ -63,6 +63,24 @@ export interface DemoSettings extends RunSettings {
    * @example voice: { speaker: commandVoice("piper --model en_US-amy-medium.onnx --output_file {out}"), steps: true }
    */
   voice?: VoiceSettings;
+  /**
+   * Which parts of waygraph's overlay a demo shows (each is on unless set to `false`). The cursor, the typing and the
+   * captions always show: `{ banner: false, panel: false, checks: false }` is a demo of just the app, the mouse, the
+   * keyboard and what the captions say.
+   */
+  overlay?: OverlaySettings;
+}
+
+/** The parts of a demo's overlay that can be left out. */
+export interface OverlaySettings {
+  /** The title at the top. */
+  banner?: boolean;
+  /** The step panel (the step, Next, the progress). Without it the demo moves on by itself, slides show as captions, and a failed step still shows its panel. */
+  panel?: boolean;
+  /** What each step checked: the rings on the elements its checks looked at, and the card of what was expected and what the page now shows. */
+  checks?: boolean;
+  /** The checklist docks (`ctx.ui.todos`). */
+  todos?: boolean;
 }
 
 /** A recorded demo's voice-over: who speaks, and whether each step's description is spoken too. */
@@ -283,5 +301,7 @@ export function applyConfigEnv(config: WaygraphConfig | undefined, command: stri
     set("WAYGRAPH_PACE_SPEEDS", config.demo?.speeds ? JSON.stringify(config.demo.speeds) : undefined);
     set("WAYGRAPH_TYPING_MS", config.demo?.typingMs === undefined ? undefined : String(config.demo.typingMs));
     set("WAYGRAPH_APPEARANCE", config.demo?.appearance);
+    const hidden = Object.entries(config.demo?.overlay ?? {}).filter(([, shown]) => shown === false).map(([part]) => part);
+    set("WAYGRAPH_OVERLAY_HIDE", hidden.length ? hidden.join(",") : undefined);
   }
 }

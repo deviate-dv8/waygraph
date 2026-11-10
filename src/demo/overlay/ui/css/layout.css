@@ -69,3 +69,19 @@
   .wg-row-bottom { grid-template-columns: minmax(0, 1fr); }
   .wg-slot[data-slot="bottom-center"] { align-items: stretch; }
 }
+
+/* A new page's overlay comes back as it was: no slide or fade while it repaints (shadow.ts, data-restoring). */
+#wg-ui[data-restoring] *,
+#wg-ui[data-restoring] *::before,
+#wg-ui[data-restoring] *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* The parts a demo leaves out (demo.overlay, data-hide on #wg-ui). A failed step's panel shows anyway. */
+#wg-ui[data-hide~="banner"] #wg-banner,
+#wg-ui[data-hide~="panel"] #wg-panel:not(.wg-error),
+#wg-ui[data-hide~="checks"] #wg-outcome,
+#wg-ui[data-hide~="todos"] .wg-todo-dock {
+  display: none !important;
+}

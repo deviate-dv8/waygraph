@@ -108,7 +108,7 @@ export type { AutoSessionInit, SessionSnapshot, SessionSnapshotEdge, SessionSnap
 export { pilotStart } from "./live/pilot/pilot.js";
 export type { PilotStartResult } from "./live/pilot/pilot.js";
 export { defineConfig, resolveBaseUrl } from "./runtime/waygraph-config.js";
-export type { WaygraphConfig, ConfigContext, VideoSettings, RunSettings, DemoSettings, VoiceSettings } from "./runtime/waygraph-config.js";
+export type { WaygraphConfig, ConfigContext, VideoSettings, RunSettings, DemoSettings, OverlaySettings, VoiceSettings } from "./runtime/waygraph-config.js";
 export { commandVoice, kokoroVoice, openAIVoice } from "./runtime/voice.js";
 export type { Voice, KokoroVoiceOptions, OpenAIVoiceOptions } from "./runtime/voice.js";
 export { withWebServer } from "./runtime/webserver.js";

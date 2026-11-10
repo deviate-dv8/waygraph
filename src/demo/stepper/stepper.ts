@@ -27,6 +27,7 @@ import { setActing } from "../overlay/acting.js";
 import { showFinish, type FinishCard } from "../overlay/inpage/finish.js";
 import { ensureShadowRoot } from "../overlay/ui/shadow.js";
 import { demoLog } from "./demo-log.js";
+import { blinksOf, traceOverlay } from "../overlay/trace.js";
 
 export interface Stepper {
   /** After the page was reset between episodes: storage was wiped, so the auto-advance setting is put back. */
@@ -75,6 +76,8 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
   // The todo docks and the device are pieces of the page's overlay layer, painted from what the steps carry: a navigation
   // inside a step (a redirect, a login bounce, an external site) brings them back with the rest of the layer.
   const layer = overlayLayer(page);
+  // WAYGRAPH_OVERLAY_TRACE: each piece of the overlay showing and going, in the demo log.
+  const traced = envFlag("WAYGRAPH_OVERLAY_TRACE") ? await traceOverlay(page, demoLog) : undefined;
   // The running step's panel (collapsed, with the steps' progress): a page load inside the step paints it again. First,
   // so the docks after it repaint over the panel's own todo sync.
   let running: BeforePanelInfo | undefined;
@@ -169,6 +172,10 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
     },
 
     async end(ended) {
+      if (traced) {
+        const blinks = Object.entries(blinksOf(traced()));
+        demoLog(`overlay blinks: ${blinks.length ? blinks.map(([piece, n]) => `${piece} ${n}`).join(", ") : "none"}`);
+      }
       await teardownOverlay(page);
       const card = finishCard(ended, ctx.stickyTitle || options.title || "waygraph demo", steps.length, Date.now() - startedAt);
       if (!envFlag("WAYGRAPH_JSON")) demoLog(`finished: ${card.status} · ${card.summary}${card.detail ? ` · ${card.detail}` : ""}`);

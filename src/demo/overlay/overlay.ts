@@ -69,6 +69,11 @@ const captionPiece = (page: WgPage): StoredPiece<string> =>
     (p) => p.evaluate(hideCaption),
   );
 
+/** The caption on the page now (ctx.ui.caption), if any. */
+export function captionShown(page: WgPage): string | undefined {
+  return captionPiece(page).current;
+}
+
 export async function installOverlay(page: WgPage, title?: string, ui?: BannerUiState | null, caption?: string, networkTabVisible?: boolean) {
   // ring/cursor/banner/dock come from the ONE shared bundle every surface installs (ui/css/*.css).
   await ensureShadowRoot(page);

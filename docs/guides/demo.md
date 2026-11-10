@@ -123,6 +123,32 @@ other side when a ring would sit under it, and dims while a ring is up.
 Paces are `"blitz"`, `"fast"`, `"normal"`, `"slow"`, or a number (`0.5` = twice as fast; above `20` it's milliseconds).
 `--ff-disabled` opens every fast-forward group up into its steps, to see which one broke.
 
+## What the overlay shows
+
+By default a demo shows everything: the title, the step panel, the rings on what each step checked and the card of what
+was expected and what the page now shows, the checklist. A demo for an audience that only needs the app, the mouse, the
+keyboard and the captions leaves the rest out:
+
+```ts
+demo: {
+  overlay: { banner: false, panel: false, checks: false },   // and todos: false; each is on unless set false
+},
+```
+
+| Part | Is |
+|---|---|
+| `banner` | the title at the top |
+| `panel` | the step panel (the step, Next, the progress). Without it the demo moves on by itself, slides show as captions (held as long as they're read or spoken), and a failed step still shows its panel |
+| `checks` | the rings on what each step's checks looked at, and the card of what was expected and what the page now shows |
+| `todos` | the checklist docks (`ctx.ui.todos`) |
+
+The cursor, the typing, the rings on what a step clicks or fills, and the captions always show.
+
+What stays on screen stays put between steps on one screen: the title, the panel, the caption and the card don't go and
+come back (which a viewer reads as "something new"), and a step that takes a screenshot (`screenshot: true`) takes it with
+the overlay in it rather than hiding it. A page load starts a new document, so the overlay paints again, at once and
+without sliding in. `WAYGRAPH_OVERLAY_TRACE=1` logs each part showing and going, and how often each one blinked.
+
 ## Voice-over
 
 A recorded demo (`--video`) can speak its narration. Give the demo a voice in the config, and each caption and slide is

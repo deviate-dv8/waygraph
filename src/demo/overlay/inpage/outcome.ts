@@ -12,7 +12,6 @@ export interface OutcomeCard {
 }
 
 export function showOutcome(card: OutcomeCard) {
-  __wgById("wg-outcome")?.remove();
   const section = (icon: IconName, title: string, ...rows: WgChild[]) =>
     __wgEl(
       "section",
@@ -64,7 +63,17 @@ export function showOutcome(card: OutcomeCard) {
         card.moreChanges > 0 ? __wgEl("div", { class: "text-2xs text-label-2 mt-0.5" }, "+" + card.moreChanges + " more in the step panel") : null,
       )
     : null;
-  if (!expects && !changes) return;
+  const had = __wgById("wg-outcome");
+  if (!expects && !changes) {
+    had?.remove();
+    return;
+  }
+  // The card already up (a step before on this screen) gets the new rows in place: it stays, it doesn't slide in again.
+  if (had) {
+    __wgSet(had, expects, changes);
+    had.classList.add("wg-in");
+    return;
+  }
   const el = __wgEl(
     "div",
     { id: "wg-outcome", class: "material rounded-panel px-3 py-2 flex flex-col gap-2 max-w-[min(440px,92vw)]", attrs: { "data-wg-ui": "1" } },

@@ -71,7 +71,7 @@ describe("defineConfig", () => {
 });
 
 describe("applyConfigEnv", () => {
-  const NAMES = ["WAYGRAPH_SLOWMO", "WAYGRAPH_HEADED", "WAYGRAPH_DEMO_PACE", "WAYGRAPH_TYPING_MS", "WAYGRAPH_AUTOPLAY", "WAYGRAPH_VIDEO_VIEWPORT"];
+  const NAMES = ["WAYGRAPH_SLOWMO", "WAYGRAPH_HEADED", "WAYGRAPH_DEMO_PACE", "WAYGRAPH_TYPING_MS", "WAYGRAPH_AUTOPLAY", "WAYGRAPH_VIDEO_VIEWPORT", "WAYGRAPH_OVERLAY_HIDE"];
   let before: Record<string, string | undefined>;
   beforeEach(() => {
     before = Object.fromEntries(NAMES.map((k) => [k, process.env[k]]));
@@ -159,5 +159,13 @@ describe("--config", () => {
     process.env.WAYGRAPH_CONFIG = "nope";
     await assert.rejects(loadWaygraphConfig(dir), /not found/);
     delete process.env.WAYGRAPH_CONFIG;
+  });
+
+  it("demo.overlay's parts set to false become WAYGRAPH_OVERLAY_HIDE, for a demo only", () => {
+    applyConfigEnv({ demo: { overlay: { banner: false, panel: false, checks: true } } }, "run");
+    assert.equal(process.env.WAYGRAPH_OVERLAY_HIDE, undefined);
+    applyConfigEnv({ demo: { overlay: { banner: false, panel: false, checks: true } } }, "demo");
+    assert.equal(process.env.WAYGRAPH_OVERLAY_HIDE, "banner,panel");
+    delete process.env.WAYGRAPH_OVERLAY_HIDE;
   });
 });
