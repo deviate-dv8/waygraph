@@ -1,5 +1,5 @@
 // A project's .env files, read the way Vite and Next read them (Node's own parser: the dotenv format).
-import { existsSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseEnv } from "node:util";
 import { envString, setEnv } from "../engine/env.js";
@@ -36,4 +36,31 @@ export function loadEnvFiles(projectDir: string, mode: string = envMode()): void
   for (const [key, value] of Object.entries(merged)) {
     if (process.env[key] === undefined) process.env[key] = value;
   }
+}
+
+/** A variable something in the project can read, to list in its .env files. */
+export interface EnvVariable {
+  name: string;
+  /** One line on what it does. */
+  about: string;
+}
+
+/**
+ * Lists `variables` in the project's `.env.example` and `.env` (made when missing), under a `# header` line, each
+ * commented out and blank (`# NAME=`) to fill in. A variable either file already names, set or commented, is left as it
+ * is. Returns the files it wrote to.
+ */
+export function listEnvVariables(projectDir: string, header: string, variables: readonly EnvVariable[]): string[] {
+  const written: string[] = [];
+  for (const name of [".env.example", ".env"]) {
+    const file = join(projectDir, name);
+    const text = existsSync(file) ? readFileSync(file, "utf-8") : "";
+    const named = (v: EnvVariable) => new RegExp(`^\\s*#?\\s*${v.name}\\s*=`, "m").test(text);
+    const missing = variables.filter((v) => !named(v));
+    if (!missing.length) continue;
+    const block = [`# ${header}`, ...missing.flatMap((v) => [`# ${v.about}`, `# ${v.name}=`])].join("\n");
+    appendFileSync(file, `${text && !text.endsWith("\n") ? "\n" : ""}${text ? "\n" : ""}${block}\n`);
+    written.push(name);
+  }
+  return written;
 }

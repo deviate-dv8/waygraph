@@ -8,6 +8,7 @@ import { inflateRawSync } from "node:zlib";
 /** A known name (`"hoppscotch"`), a Chrome Web Store id, a path to an unpacked extension, or `{ id, sha256 }`. */
 import type { ExtensionSpec } from "../engine/config.js";
 import { envString } from "../engine/env.js";
+import type { EnvVariable } from "./env-file.js";
 
 /** Names accepted in `extensions: [...]` mapped to their Chrome Web Store ids. */
 export const KNOWN_EXTENSIONS: Readonly<Record<string, string>> = {
@@ -15,6 +16,9 @@ export const KNOWN_EXTENSIONS: Readonly<Record<string, string>> = {
 };
 
 const STORE_ID = /^[a-p]{32}$/;
+
+/** The variable that moves waygraph's cache, as a project's .env files list it. */
+export const CACHE_VARIABLE: EnvVariable = { name: "WAYGRAPH_CACHE_DIR", about: "where waygraph keeps its downloads (default ~/.cache/waygraph)" };
 
 /** Where waygraph keeps what it downloads for every project on the machine (extensions, voices). */
 export function waygraphCacheDir(): string {

@@ -3,3 +3,6 @@ test-results/
 playwright-report/
 .waygraph-chain-*.mjs
 .waygraph/
+.env
+.env.*
+!.env.example

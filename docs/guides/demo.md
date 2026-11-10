@@ -156,6 +156,7 @@ way: named in the config, fetched by one command, `--update` to fetch it again.
 | | |
 |---|---|
 | Where | `~/.cache/waygraph/voices/kokoro/` (`WAYGRAPH_CACHE_DIR` moves it): a Python environment (`venv/`, ~150 MB), the model (`kokoro-v1.0.onnx`, 326 MB), its voices (`voices-v1.0.bin`, 28 MB), and `installed.json`, what was set up. One copy for every project |
+| `.env` | `waygraph extensions install` lists what the voice reads in `.env.example` and `.env`, blank and commented: `# OPENAI_API_KEY=` for `openAIVoice()`, `# WAYGRAPH_CACHE_DIR=` for Kokoro |
 | Not set up yet | `waygraph demo --video` records without the voice-over and says, once, `recording without the voice-over: Kokoro isn't set up on this machine: run waygraph extensions install`. Nothing fails; only `--video` demos ever speak |
 | A new waygraph, a new Kokoro | Each waygraph pins the Kokoro it speaks with (the package version and the model release). After an upgrade that moves it, a recording says `the Kokoro on this machine is another version than this waygraph uses`; `waygraph extensions install` replaces it (the environment again, a new model downloaded, the old one removed). Lines already spoken are cached by voice and model, so a new model makes them again |
 

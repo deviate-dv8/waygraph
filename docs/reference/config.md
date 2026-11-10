@@ -59,7 +59,9 @@ Config values are defaults: a flag, a shell variable or a `.env` value beats the
 one before. The mode is `--env <mode>` (any command) or `WAYGRAPH_ENV`, else `NODE_ENV`, else `development`. A
 variable already exported in the shell always wins over the files. A new project (`waygraph init`) has a
 `.env.example` listing what it reads (`BASE_URL`, `WAYGRAPH_MAIL_URL`, `OPENAI_API_KEY` for a voice); copy it to `.env`.
-Its `.gitignore` keeps every `.env` file but that one out of git.
+Its `.gitignore` keeps every `.env` file but that one out of git. `waygraph extensions install` adds what the things
+it sets up can read (an API key, `WAYGRAPH_CACHE_DIR`) to `.env.example` and `.env` (made when missing), blank and
+commented under a header, so they're there to fill in; a variable a file already names is left as it is.
 
 The config can be a function of them, so one project points at several environments:
 

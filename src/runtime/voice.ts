@@ -5,7 +5,8 @@ import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { waygraphCacheDir } from "./extensions.js";
+import { CACHE_VARIABLE, waygraphCacheDir } from "./extensions.js";
+import type { EnvVariable } from "./env-file.js";
 import { promisify } from "node:util";
 
 const run = promisify(execFile);
@@ -20,6 +21,8 @@ export interface Voice {
   synthesize(text: string, out: string): Promise<void>;
   /** Stops what the voice keeps running between lines (a model loaded once), when the recording is done. */
   close?(): Promise<void>;
+  /** The variables it reads (an API key): `waygraph extensions install` lists them in the project's .env files. */
+  readonly env?: readonly EnvVariable[];
   /** Why the voice can't speak on this machine yet (not installed), or undefined when it can. */
   missing?(): string | undefined;
   /** Downloads what the voice needs (a model), once per machine: `waygraph extensions install` calls it. */
@@ -273,7 +276,7 @@ export function kokoroVoice(given: KokoroVoiceOptions = {}): Voice {
         : "Kokoro isn't set up on this machine: run waygraph extensions install";
     },
     // Only the copy in waygraph's cache is waygraph's to install; a Python and model you named are yours.
-    ...(own ? { install: installKokoro } : {}),
+    ...(own ? { install: installKokoro, env: [CACHE_VARIABLE] } : {}),
   };
 }
 
@@ -303,6 +306,9 @@ export function openAIVoice(opts: OpenAIVoiceOptions = {}): Voice {
   return {
     id: `openai:${baseURL}:${model}:${voice}:${opts.instructions ?? ""}`,
     ext: "mp3",
+    env: [
+      ...(opts.apiKey ? [] : [{ name: "OPENAI_API_KEY", about: "the key the speech API takes (openAIVoice)" }]),
+    ],
     async synthesize(text, out) {
       const apiKey = opts.apiKey ?? process.env.OPENAI_API_KEY;
       const response = await fetch(`${baseURL}/audio/speech`, {
