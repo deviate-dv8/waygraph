@@ -14,6 +14,10 @@ test("init from a checkout depends on a packed local build, not the published ve
     expect(dep).toMatch(/^file:\.waygraph-local\/waygraph-.*\.tgz$/);
     expect(existsSync(join(proj, dep.slice("file:".length)))).toBe(true);
     expect(readFileSync(join(proj, ".gitignore"), "utf8")).toContain(".waygraph-local/");
+    // What the project reads from .env, listed; the real .env files stay out of git.
+    expect(readFileSync(join(proj, ".env.example"), "utf8")).toContain("BASE_URL=");
+    expect(existsSync(join(proj, "env.example"))).toBe(false);
+    expect(readFileSync(join(proj, ".gitignore"), "utf8")).toMatch(/^\.env$[\s\S]*^!\.env\.example$/m);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

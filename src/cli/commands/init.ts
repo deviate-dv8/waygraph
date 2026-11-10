@@ -51,10 +51,12 @@ function initCommand(projectName: string): void {
     process.exit(1);
   }
   cpSync(templateDir, targetDir, { recursive: true });
-  const gitignoreSrc = join(targetDir, "gitignore");
-  if (existsSync(gitignoreSrc)) {
-    writeFileSync(join(targetDir, ".gitignore"), readFileSync(gitignoreSrc, "utf-8"));
-    rmSync(gitignoreSrc);
+  // Kept without their dot in the template (npm treats some dotfiles as its own): named for the project here.
+  for (const [from, to] of [["gitignore", ".gitignore"], ["env.example", ".env.example"]] as const) {
+    const src = join(targetDir, from);
+    if (!existsSync(src)) continue;
+    writeFileSync(join(targetDir, to), readFileSync(src, "utf-8"));
+    rmSync(src);
   }
   // Demo pages open via file://; the absolute path is only known once copied, so it's filled in here.
   const appBaseUrl = pathToFileURL(join(targetDir, "src", "map", "(app_base)", "index.html")).href;

@@ -57,7 +57,9 @@ Config values are defaults: a flag, a shell variable or a `.env` value beats the
 
 `.env`, `.env.local`, `.env.<mode>` and `.env.<mode>.local` load from the project root, in that order, each over the
 one before. The mode is `--env <mode>` (any command) or `WAYGRAPH_ENV`, else `NODE_ENV`, else `development`. A
-variable already exported in the shell always wins over the files.
+variable already exported in the shell always wins over the files. A new project (`waygraph init`) has a
+`.env.example` listing what it reads (`BASE_URL`, `WAYGRAPH_MAIL_URL`, `OPENAI_API_KEY` for a voice); copy it to `.env`.
+Its `.gitignore` keeps every `.env` file but that one out of git.
 
 The config can be a function of them, so one project points at several environments:
 

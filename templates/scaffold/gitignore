@@ -4,3 +4,6 @@ test-results/
 playwright-report/
 .waygraph-videos/
 .waygraph/
+.env
+.env.*
+!.env.example
