@@ -6,6 +6,7 @@ import WorkspaceLayout from '~/layouts/workspace.vue'
 import PageNode from '~/components/graph/page_node.vue'
 import FolderNode from '~/components/graph/folder_node.vue'
 import MapTree from '~/components/map/map_tree.vue'
+import MapLegend from '~/components/map/map_legend.vue'
 import type { TreeLabel } from '~/components/map/map_tree_row.vue'
 import { everything, only, toggled, visibleTree, type MapTree as Tree } from '~/lib/map_filter'
 import SketchEdge from '~/components/graph/sketch_edge.vue'
@@ -15,7 +16,7 @@ import { layoutTree, treeColumns, type TreeDirection } from '~/lib/layout'
 import { planLabels } from '~/lib/edge_labels'
 import { mapEdges, pageSummary } from '~/lib/project_graph'
 import { count } from '~/lib/format'
-import { MOVE_KINDS, kindColor } from '~/lib/kinds'
+import { MOVE_KINDS, kindColor, kindIcon } from '~/lib/kinds'
 import { urlFor } from '~/client'
 import type { ManifestBlock, ManifestReadBlock, PageFlow, SiteMap } from '#types/project'
 
@@ -487,12 +488,19 @@ const page = computed(() =>
           v-for="k in MOVE_KINDS"
           :key="k"
           :label="k"
+          :icon="kindIcon(k)"
           :color="kindColor(k)"
           variant="subtle"
           size="sm"
           class="font-mono"
         />
       </span>
+      <UPopover>
+        <UButton icon="i-lucide-info" label="Legend" size="xs" color="neutral" variant="ghost" />
+        <template #content>
+          <MapLegend />
+        </template>
+      </UPopover>
       <span>{{ count(props.checkpoints.length, 'page') }}</span>
       <span>{{ count(props.blocks.length, 'Block') }}</span>
       <span>{{ count(props.flows.length, 'flow') }}</span>

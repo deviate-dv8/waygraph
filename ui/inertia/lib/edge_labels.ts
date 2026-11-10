@@ -19,7 +19,8 @@ export interface LabelPlace {
 }
 
 /** A badge's size: a line of monospace text and its padding. */
-const BADGE = { height: 22, gap: 2, char: 7.2, padding: 22 } as const
+/** The padding includes the kind's icon at the badge's start. */
+const BADGE = { height: 22, gap: 2, char: 7.2, padding: 40 } as const
 /** Between two lines' labels in one stack, and between labels and the boxes they sit beside. */
 const SPACE = { edges: 6, box: 16, margin: 24 } as const
 

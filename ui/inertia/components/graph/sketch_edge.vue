@@ -8,7 +8,7 @@ import {
   type EdgeProps,
 } from '@vue-flow/core'
 import { sketchPath, seedOf } from '~/lib/sketch'
-import { kindColor } from '~/lib/kinds'
+import { kindColor, kindIcon } from '~/lib/kinds'
 
 /** A hand-drawn arrow between two pages, labelled with the Blocks that make that move. */
 const props = defineProps<
@@ -207,6 +207,7 @@ const head = computed(() => {
         v-for="b in props.data.blocks"
         :key="b.name"
         :label="b.name"
+        :icon="kindIcon(b.kind)"
         :color="kindColor(b.kind)"
         variant="subtle"
         size="sm"
