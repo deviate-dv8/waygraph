@@ -16,9 +16,13 @@ export const KNOWN_EXTENSIONS: Readonly<Record<string, string>> = {
 
 const STORE_ID = /^[a-p]{32}$/;
 
+/** Where waygraph keeps what it downloads for every project on the machine (extensions, voices). */
+export function waygraphCacheDir(): string {
+  return envString("WAYGRAPH_CACHE_DIR") ?? join(process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache"), "waygraph");
+}
+
 function cacheDir(): string {
-  const base = envString("WAYGRAPH_CACHE_DIR") ?? join(process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache"), "waygraph");
-  return join(base, "extensions");
+  return join(waygraphCacheDir(), "extensions");
 }
 
 /** Reads the end-of-central-directory record and extracts every entry; rejects paths that escape `dest`. */

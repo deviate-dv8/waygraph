@@ -204,6 +204,8 @@ Also:
                                            Download the browser extensions listed in
                                            waygraph.config.* (extensions: ["hoppscotch"]) into
                                            the user cache; runs also fetch them on first use.
+                                           Also sets up the demo's voice (demo.voice:
+                                           kokoroVoice()): its Python environment and model.
   waygraph list | nav | validate | check | typecheck | graph | init <name>
                  check/typecheck --no-practices  Skip bad-practice warnings
   waygraph map   [project]                 Waygraph Map convention enforcement: every static

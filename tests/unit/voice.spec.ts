@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { addVoiceOver, commandVoice, hasFfmpeg, speak, spokenText, subtitlesOf, type Voice } from "../../src/runtime/voice.js";
+import { addVoiceOver, commandVoice, hasFfmpeg, kokoroVoice, speak, spokenText, subtitlesOf, type Voice } from "../../src/runtime/voice.js";
 import { VoiceOver } from "../../src/demo/voice-over.js";
 
 const exec = promisify(execFile);
@@ -73,7 +73,7 @@ describe("voice", () => {
     await over.settle();
     const [a, b] = over.lines;
     assert.equal(over.lines.length, 2);
-    assert.ok(a && b && b.atMs >= a.atMs + a.ms, "the second starts after the first ends");
+    assert.ok(a && b && b.atMs >= a.atMs + a.ms + 350, "the second starts after the first ends, and a breath");
     assert.ok(Date.now() - startedAt >= (b?.atMs ?? 0) + (b?.ms ?? 0), "settle waits for the end of the last line");
   });
 
@@ -86,5 +86,34 @@ describe("voice", () => {
     const { stdout } = await exec("ffprobe", ["-v", "error", "-show_entries", "stream=codec_type,codec_name", "-of", "csv=p=0", video]);
     assert.deepEqual(stdout.trim().split("\n").sort(), ["opus,audio", "vp8,video"]);
     assert.ok(readFileSync(video).length > 0);
+  });
+
+  it("a voice-over makes lines ahead once: saying one being made waits for it", async (t) => {
+    if (!ffmpeg) return t.skip("no ffmpeg");
+    const voice = toneVoice(200);
+    const over = new VoiceOver(voice, join(dir, "ahead"), Date.now(), true);
+    over.prepare(["Made ahead", "", "Also ahead"]);
+    await over.say("Made ahead");
+    await over.settle();
+    assert.deepEqual(voice.calls.filter((c) => c === "Made ahead"), ["Made ahead"]);
+  });
+
+  it("a Kokoro voice says what's wrong when Python or the package isn't there", async () => {
+    const out = join(dir, "k.wav");
+    await assert.rejects(kokoroVoice({ python: "/no/such/python", model: "m.onnx", voices: "v.bin" }).synthesize("x", out), /didn't start/);
+    await assert.rejects(kokoroVoice({ python: "python3", model: "m.onnx", voices: "v.bin" }).synthesize("x", out), /Kokoro stopped \(exit 1\): .*Error/);
+  });
+
+  it("a Kokoro voice speaks with the model loaded once (KOKORO_PYTHON, KOKORO_MODEL, KOKORO_VOICES)", async (t) => {
+    const { KOKORO_PYTHON: python, KOKORO_MODEL: model, KOKORO_VOICES: voices } = process.env;
+    if (!ffmpeg || !python || !model || !voices) return t.skip("no Kokoro set up");
+    const voice = kokoroVoice({ python, model, voices });
+    try {
+      const a = await speak(voice, "First line.", join(dir, "kokoro"));
+      const b = await speak(voice, "Second line, from the same model.", join(dir, "kokoro"));
+      assert.ok(a.ms > 300 && b.ms > a.ms, `${a.ms} ms, ${b.ms} ms`);
+    } finally {
+      await voice.close?.();
+    }
   });
 });

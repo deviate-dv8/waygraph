@@ -130,26 +130,32 @@ spoken as it shows; the recording gets the speech as its audio track and its sub
 
 ```ts
 // config/waygraph.config.ts
-import { commandVoice, defineConfig, Engine } from "waygraph";
+import { defineConfig, kokoroVoice } from "waygraph";
 
 const config = defineConfig({
   baseUrl: "https://www.saucedemo.com",
   demo: {
     voice: {
-      speaker: commandVoice("piper --model en_US-amy-medium.onnx --output_file {out}"),
-      steps: true, // also each step's description
+      speaker: kokoroVoice(), // af_heart; kokoroVoice({ voice: "am_michael", speed: 0.95 })
+      steps: true,            // also each step's description
     },
   },
 });
 ```
 
 ```sh
+npx waygraph extensions install        # once per machine: Kokoro and its model (~350 MB, in waygraph's cache)
 npx waygraph demo checkoutFlow --auto-play-video
 # waygraph: voice-over: 14 lines, subtitles .../page@8c26....vtt
 ```
 
+The voice is heavy (a model), so it isn't part of waygraph's install: `waygraph extensions install` sets it up for
+every project on the machine, next to the browser extensions (`WAYGRAPH_CACHE_DIR`, default `~/.cache/waygraph`), the
+same way: named in the config, fetched by one command, `--update` to fetch it again.
+
 | Speaker | |
 |---|---|
+| `kokoroVoice()` | [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), natural and local (CPU is enough). Its model is loaded once and kept for the recording. `waygraph extensions install` sets it up (a Python environment through [uv](https://docs.astral.sh/uv/) when there is one, and the model); or name your own `python`, `model` and `voices`. Voices: `af_heart` (default), `af_bella`, `am_michael`, `bf_emma`... |
 | `commandVoice("piper --model x.onnx --output_file {out}")` | a local text-to-speech command: `{out}` is the file it writes, `{text}` the line (without `{text}`, the line goes to its stdin). [piper](https://github.com/OHF-Voice/piper1-gpl) sounds natural and runs offline; `espeak-ng -w {out} {text}` is on most Linux machines; on macOS, `say -o {out} --data-format=LEI16@22050 {text}` |
 | `openAIVoice({ voice: "nova", instructions: "Calm and clear." })` | an OpenAI-compatible speech API (`OPENAI_API_KEY`, or `apiKey`; `baseURL` for another server that speaks the same API, a local one too) |
 | your own | `{ id, ext, synthesize(text, out) }`: write `text`, spoken, to the file `out` |
@@ -157,8 +163,10 @@ npx waygraph demo checkoutFlow --auto-play-video
 - **What's spoken:** a new caption (`ctx.ui.caption`) as it shows, each slide (its caption, then its detail) and, with
   `steps: true`, each step's description as its panel comes up. A caption painted again unchanged isn't spoken again.
   Arrows and separators are read as words (`Cart -> info` is "Cart to info"); the screen shows them as written.
-- **Timing:** lines are spoken one at a time, never over each other, and auto-advance waits for a line to end before
-  moving on, so the voice is never cut off. A slow voice makes a longer video, not a clipped one.
+- **Timing:** lines are spoken one at a time, never over each other, with a breath between them, and auto-advance waits
+  for a line to end before moving on, so the voice is never cut off. A slow voice makes a longer video, not a clipped
+  one. With `steps: true`, the steps' descriptions are made while the first steps play, so a first recording doesn't
+  stop to make them.
 - **Cache:** each line is made once per voice and text, in `.waygraph/voice/`; a second recording of the same flow
   doesn't call the voice again.
 - **Needs ffmpeg** (and ffprobe) on the PATH. Without it the demo records silent and says why. A line the voice fails

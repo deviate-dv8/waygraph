@@ -84,6 +84,7 @@
   "isFastForwardBlock",
   "isFileSelectToken",
   "keys",
+  "kokoroVoice",
   "locate",
   "map",
   "matchBlocksSelect",

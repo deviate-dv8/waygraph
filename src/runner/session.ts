@@ -66,6 +66,7 @@ export async function openSession(projectDir: string, options: PlayOptions, mem:
     // The last line is heard to its end; a recording's last moment (a ring, the network panel) would be cut off
     // mid-fade without a little room.
     await voice?.settle();
+    await voice?.close();
     if (videoDir && !page.isClosed()) await sleep(1800);
     await context.close();
     const video = await page.video()?.path().catch(() => null);
