@@ -1,7 +1,9 @@
-import { Engine, defineConfig } from "waygraph";
+import { Engine, defineConfig, kokoroVoice } from "waygraph";
 
 const config = defineConfig({
   baseUrl: "https://www.saucedemo.com",
+  // A recorded demo (--video) speaks its captions, slides and steps; `waygraph extensions install` sets the voice up.
+  demo: { voice: { speaker: kokoroVoice(), steps: true } },
   playwright: {
     workers: 1,
     fullyParallel: false,

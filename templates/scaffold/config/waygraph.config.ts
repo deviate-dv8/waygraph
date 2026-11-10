@@ -1,4 +1,4 @@
-import { Engine, defineConfig } from "waygraph";
+import { Engine, defineConfig } from "waygraph"; // kokoroVoice too, for demo.voice
 
 const config = defineConfig(({ env }) => ({
   // Where the app under test lives. BASE_URL comes from .env / .env.<mode>:  waygraph test --env staging
@@ -24,6 +24,7 @@ const config = defineConfig(({ env }) => ({
   //   autoNext: true,                       //   advance steps without clicking Next
   //   fast: false,                          //   shorter Next / auto-next gates
   //   video: { viewport: "1920x1080" },
+  //   voice: { speaker: kokoroVoice(), steps: true },   // a recording speaks its narration; `waygraph extensions install` sets it up
   // },
   // webServer: { command: "npm start", port: 3000 },   // started around test / run / demo / auto
   // runLog: false,                          // each run is logged to .waygraph/runs/ (what Waygraph UI shows)

@@ -3,7 +3,7 @@
 // subtitles (.vtt) beside it.
 import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { createWriteStream, existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { waygraphCacheDir } from "./extensions.js";
 import { promisify } from "node:util";
@@ -20,6 +20,8 @@ export interface Voice {
   synthesize(text: string, out: string): Promise<void>;
   /** Stops what the voice keeps running between lines (a model loaded once), when the recording is done. */
   close?(): Promise<void>;
+  /** Why the voice can't speak on this machine yet (not installed), or undefined when it can. */
+  missing?(): string | undefined;
   /** Downloads what the voice needs (a model), once per machine: `waygraph extensions install` calls it. */
   install?(opts: { update?: boolean; log: (line: string) => void }): Promise<void>;
 }
@@ -97,13 +99,32 @@ for line in sys.stdin:
         print(json.dumps({"error": str(err)}), flush=True)
 `;
 
-const KOKORO_RELEASE = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0";
+/**
+ * The Kokoro this waygraph sets up: the package (pinned, so every machine speaks the same) and the model release. A
+ * waygraph that moves to another changes this, and `waygraph extensions install` replaces what's there.
+ */
+const KOKORO = {
+  packages: ["kokoro-onnx==0.6.1", "soundfile==0.14.0"],
+  release: "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0",
+  model: "kokoro-v1.0.onnx",
+  voices: "voices-v1.0.bin",
+} as const;
+const KOKORO_STAMP = JSON.stringify({ packages: KOKORO.packages, model: KOKORO.model, voices: KOKORO.voices });
 
 /** Where `waygraph extensions install` puts Kokoro: a Python environment with it, and its model. */
-function kokoroHome(): { dir: string; python: string; model: string; voices: string } {
+function kokoroHome(): { dir: string; python: string; model: string; voices: string; stamp: string } {
   const dir = join(waygraphCacheDir(), "voices", "kokoro");
   const python = process.platform === "win32" ? join(dir, "venv", "Scripts", "python.exe") : join(dir, "venv", "bin", "python");
-  return { dir, python, model: join(dir, "kokoro-v1.0.onnx"), voices: join(dir, "voices-v1.0.bin") };
+  return { dir, python, model: join(dir, KOKORO.model), voices: join(dir, KOKORO.voices), stamp: join(dir, "installed.json") };
+}
+
+/** Whether the Kokoro in the cache is the one this waygraph sets up (an older install says what it was). */
+function kokoroCurrent(home: ReturnType<typeof kokoroHome>): boolean {
+  try {
+    return readFileSync(home.stamp, "utf8") === KOKORO_STAMP && [home.python, home.model, home.voices].every((f) => existsSync(f));
+  } catch {
+    return false;
+  }
 }
 
 /** Downloads `url` to `file` (whole, then moved into place), logging every tenth of the way. */
@@ -132,26 +153,38 @@ async function download(url: string, file: string, log: (line: string) => void):
 async function installKokoro(opts: { update?: boolean; log: (line: string) => void }): Promise<void> {
   const home = kokoroHome();
   mkdirSync(home.dir, { recursive: true });
-  if (opts.update || !existsSync(home.python)) {
+  if (!opts.update && kokoroCurrent(home)) {
+    opts.log(`waygraph voice: Kokoro is ready in ${home.dir}`);
+    return;
+  }
+  const stamped = existsSync(home.stamp) ? readFileSync(home.stamp, "utf8") : "";
+  // Another waygraph's Kokoro (other packages, another model): replaced whole.
+  const stale = stamped !== "" && stamped !== KOKORO_STAMP;
+  if (opts.update || stale || !existsSync(home.python)) {
     opts.log(`waygraph voice: a Python environment for Kokoro in ${home.dir}`);
     rmSync(join(home.dir, "venv"), { recursive: true, force: true });
     const uv = await run("uv", ["--version"]).then(() => true, () => false);
     // kokoro-onnx needs a Python onnxruntime supports; uv fetches one when the machine's is too new.
     if (uv) {
       await run("uv", ["venv", "--quiet", "--python", "3.12", join(home.dir, "venv")]);
-      await run("uv", ["pip", "install", "--quiet", "--python", home.python, "kokoro-onnx", "soundfile"], { maxBuffer: 16 * 1024 * 1024 });
+      await run("uv", ["pip", "install", "--quiet", "--python", home.python, ...KOKORO.packages], { maxBuffer: 16 * 1024 * 1024 });
     } else {
       await run("python3", ["-m", "venv", join(home.dir, "venv")]).catch((err: unknown) => {
         throw new Error(`waygraph voice: python3 -m venv failed (${err instanceof Error ? err.message.split("\n")[0] : String(err)}); install uv (https://docs.astral.sh/uv/) and run this again`);
       });
-      await run(home.python, ["-m", "pip", "install", "--quiet", "kokoro-onnx", "soundfile"], { maxBuffer: 16 * 1024 * 1024 });
+      await run(home.python, ["-m", "pip", "install", "--quiet", ...KOKORO.packages], { maxBuffer: 16 * 1024 * 1024 });
     }
   }
-  for (const [file, name] of [[home.model, "kokoro-v1.0.onnx"], [home.voices, "voices-v1.0.bin"]] as const) {
+  for (const [file, name] of [[home.model, KOKORO.model], [home.voices, KOKORO.voices]] as const) {
     if (!opts.update && existsSync(file)) continue;
     opts.log(`waygraph voice: downloading ${name}`);
-    await download(`${KOKORO_RELEASE}/${name}`, file, opts.log);
+    await download(`${KOKORO.release}/${name}`, file, opts.log);
   }
+  // An older model's files go: only this waygraph's are kept.
+  for (const name of readdirSync(home.dir)) {
+    if (/\.(onnx|bin)$/.test(name) && name !== KOKORO.model && name !== KOKORO.voices) rmSync(join(home.dir, name), { force: true });
+  }
+  writeFileSync(home.stamp, KOKORO_STAMP);
   opts.log(`waygraph voice: Kokoro is ready in ${home.dir}`);
 }
 
@@ -179,7 +212,7 @@ export function kokoroVoice(given: KokoroVoiceOptions = {}): Voice {
     });
   const start = async (): Promise<NonNullable<typeof worker>> => {
     if (worker && worker.child.exitCode === null) return worker;
-    if (own && !existsSync(opts.python)) throw new Error("waygraph voice: Kokoro isn't set up on this machine: run waygraph extensions install");
+    if (own && !kokoroCurrent(home)) throw new Error("waygraph voice: Kokoro isn't set up on this machine (or is another version): run waygraph extensions install");
     const child = spawn(opts.python, ["-u", "-c", KOKORO_WORKER, opts.model, opts.voices], { stdio: ["pipe", "pipe", "pipe"] });
     let stderr = "";
     let buffered = "";
@@ -228,6 +261,16 @@ export function kokoroVoice(given: KokoroVoiceOptions = {}): Voice {
     async close() {
       worker?.child.stdin?.end();
       worker = undefined;
+    },
+    missing: () => {
+      if (!own) {
+        const gone = [opts.python, opts.model, opts.voices].filter((f) => !existsSync(f));
+        return gone.length ? `Kokoro's files aren't all there (${gone.join(", ")})` : undefined;
+      }
+      if (kokoroCurrent(home)) return undefined;
+      return existsSync(home.stamp)
+        ? "the Kokoro on this machine is another version than this waygraph uses: run waygraph extensions install"
+        : "Kokoro isn't set up on this machine: run waygraph extensions install";
     },
     // Only the copy in waygraph's cache is waygraph's to install; a Python and model you named are yours.
     ...(own ? { install: installKokoro } : {}),

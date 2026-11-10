@@ -88,6 +88,11 @@ async function voiceOverFor(projectDir: string, startedAt: number): Promise<Voic
   if (envString("WAYGRAPH_VOICE") === "0") return undefined;
   const voice = (await loadWaygraphConfig(projectDir))?.demo?.voice;
   if (!voice) return undefined;
+  const missing = voice.speaker.missing?.();
+  if (missing) {
+    console.error(`waygraph voice: recording without the voice-over: ${missing}`);
+    return undefined;
+  }
   if (!(await hasFfmpeg())) {
     console.error("waygraph voice: ffmpeg and ffprobe aren't on the PATH; recording without the voice-over (install ffmpeg to add it)");
     return undefined;

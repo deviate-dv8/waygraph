@@ -1,7 +1,7 @@
 import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -98,16 +98,30 @@ describe("voice", () => {
     assert.deepEqual(voice.calls.filter((c) => c === "Made ahead"), ["Made ahead"]);
   });
 
+  it("kokoroVoice() says when this machine hasn't set it up, or has another version", () => {
+    const saved = process.env.WAYGRAPH_CACHE_DIR;
+    process.env.WAYGRAPH_CACHE_DIR = join(dir, "no-cache");
+    try {
+      assert.match(kokoroVoice().missing?.() ?? "", /isn't set up on this machine: run waygraph extensions install/);
+      const home = join(dir, "no-cache", "voices", "kokoro");
+      mkdirSync(home, { recursive: true });
+      writeFileSync(join(home, "installed.json"), JSON.stringify({ packages: ["kokoro-onnx==0.1.0"] }));
+      assert.match(kokoroVoice().missing?.() ?? "", /another version than this waygraph uses: run waygraph extensions install/);
+    } finally {
+      if (saved === undefined) delete process.env.WAYGRAPH_CACHE_DIR;
+      else process.env.WAYGRAPH_CACHE_DIR = saved;
+    }
+  });
+
   it("a Kokoro voice says what's wrong when Python or the package isn't there", async () => {
     const out = join(dir, "k.wav");
     await assert.rejects(kokoroVoice({ python: "/no/such/python", model: "m.onnx", voices: "v.bin" }).synthesize("x", out), /didn't start/);
     await assert.rejects(kokoroVoice({ python: "python3", model: "m.onnx", voices: "v.bin" }).synthesize("x", out), /Kokoro stopped \(exit 1\): .*Error/);
   });
 
-  it("a Kokoro voice speaks with the model loaded once (KOKORO_PYTHON, KOKORO_MODEL, KOKORO_VOICES)", async (t) => {
-    const { KOKORO_PYTHON: python, KOKORO_MODEL: model, KOKORO_VOICES: voices } = process.env;
-    if (!ffmpeg || !python || !model || !voices) return t.skip("no Kokoro set up");
-    const voice = kokoroVoice({ python, model, voices });
+  it("a Kokoro voice speaks with the model loaded once (the one waygraph extensions install set up)", async (t) => {
+    const voice = kokoroVoice();
+    if (!ffmpeg || voice.missing?.()) return t.skip("no Kokoro set up on this machine");
     try {
       const a = await speak(voice, "First line.", join(dir, "kokoro"));
       const b = await speak(voice, "Second line, from the same model.", join(dir, "kokoro"));
