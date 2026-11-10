@@ -7,6 +7,8 @@ import { defineBlock } from "../block.js";
 import { markRouteOf, routed } from "../../checkpoint/route.js";
 import { markExpect } from "../../run/expect.js";
 import type { RoutedBlockBase } from "../../checkpoint/route.js";
+import type { Account } from "../../flow/account.js";
+import { markFor } from "../access.js";
 
 /**
  * TypeScript salt over {@link defineBlock} for one-shot non-nav app steps
@@ -39,12 +41,20 @@ export type MethodBlock<
 };
 
 
+/** A Method's options: its route and instruction, and who has it. */
+export type MethodBlockOptions<In extends Checkpoint<string>, Out extends Checkpoint<string>> = RoutedBlockBase<In, Out> & {
+  /** The accounts that have it (its button shows for them); without it, every account. */
+  for?: readonly Account[];
+};
+
 /** Builds a Block for one page action (fill, submit, click) that does not navigate. */
 export function defineMethodBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
-  base: RoutedBlockBase<In, Out>,
+  options: MethodBlockOptions<In, Out>,
 ): MethodBlock<In, Out> {
+  const { for: given, ...base } = options;
   const built = defineBlock(routed(base)) as MethodBlock<In, Out>;
   markRouteOf(built, base);
+  markFor(built, given);
   markExpect(built, base.expect);
   mark(built, "__waygraphSalt", "method");
   return built;

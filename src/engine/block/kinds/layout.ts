@@ -3,6 +3,7 @@
 // like a Page Block, not a step of its own: its links are Navs, its actions Methods, what it shows a Read Block.
 import type { Page } from "@playwright/test";
 import { mark } from "../mark.js";
+import { markFor } from "../access.js";
 import { defineBlock } from "../block.js";
 import type { DefinedBlock } from "../block.js";
 import { checkpoint, type Checkpoint } from "../../checkpoint/checkpoint.js";
@@ -59,6 +60,8 @@ export interface Layout<G extends Record<string, LayoutLink>, D extends Record<s
   readonly access: Readonly<Record<string, readonly string[] | undefined>>;
   /** The pages it was given with `on`, if any. */
   readonly on: readonly string[] | undefined;
+  /** The button that shows its links, for a layout that hides them (`opens`). */
+  readonly opens: string | undefined;
 }
 
 /** What a layout knows once layouts are loaded: the pages it covers, and the page above each. Shared by name. */
@@ -109,7 +112,7 @@ function coveredOn(layout: string, link: string): (input: Checkpoint<string>) =>
  * Whether the link at `selector` is showing: visible and inside the window. A closed slide-out menu keeps its links
  * visible, off to the side.
  */
-async function showing(page: Page, selector: string): Promise<boolean> {
+export async function linkShowing(page: Page, selector: string): Promise<boolean> {
   const link = page.locator(selector).first();
   if (!(await link.isVisible())) return false;
   return link.evaluate((el) => {
@@ -139,7 +142,7 @@ function linkNav(layout: string, key: string, link: LayoutLink, opens: string | 
         }
         // A menu that hides its links: opened first when this one isn't showing.
         const selector = typeof link.click === "function" ? link.click(mem) : link.click;
-        if (opens && !(await showing(page, selector))) await page.locator(opens).click();
+        if (opens && !(await linkShowing(page, selector))) await page.locator(opens).click();
         await navigate(page, mem, { click: link.click });
       },
       ...(parent ? { observe: async (page: Page) => goingUp.get(page) } : {}),
@@ -166,6 +169,7 @@ function linkNav(layout: string, key: string, link: LayoutLink, opens: string | 
   mark(built, "__waygraphKind", "nav");
   mark(built, "__waygraphNavClick", link.click);
   mark(built, "__waygraphLayout", { layout, link: key, parent });
+  markFor(built, link.for);
   return built;
 }
 
@@ -216,6 +220,7 @@ export function defineLayout<G extends Record<string, LayoutLink> = Record<never
     read,
     access,
     on: options.on?.map((c) => c.__state),
+    opens: options.opens,
   };
   mark(layout, "__waygraphLayout", true);
   return layout as unknown as Layout<G, D>;

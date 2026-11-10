@@ -277,9 +277,13 @@ export function copyWaygraphRuntime(from: object, to: object): void {
     "__waygraphCleanup",
     "__waygraphMethods",
     "__waygraphExpect",
+    "__waygraphFor",
+    "__waygraphLayout",
   ] as const) {
     const desc = Object.getOwnPropertyDescriptor(from, key);
-    if (desc) mark(to, key, desc.value);
+    // A getter stays one (a layout link's pages are known once layouts load).
+    if (desc?.get) Object.defineProperty(to, key, desc);
+    else if (desc) mark(to, key, desc.value);
   }
   const ff = (from as { fastForward?: boolean }).fastForward;
   if (ff === true) {

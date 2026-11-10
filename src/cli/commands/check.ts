@@ -3,6 +3,7 @@ import { buildManifest } from "../../manifest/manifest.js";
 import { relative, resolve } from "node:path";
 import { findOrphanBlocks } from "../../analysis/graph.js";
 import { checkMapGroups, checkProject, validateFlows } from "../../analysis/check.js";
+import { checkAccess } from "../../analysis/access-check.js";
 import { parseRunFlags } from "../flags.js";
 import { walkDir } from "../../manifest/scan.js";
 import { collectPracticeWarnings, practiceKindLabel } from "../../analysis/practices-check.js";
@@ -134,6 +135,11 @@ export async function checkCase(args: string[]): Promise<void> {
       for (const label of emptyLabels(labels, manifest.flows)) {
         console.warn(`waygraph check: label ${label} covers no flow (${(labels?.[label] ?? []).join(", ") || "no patterns"}) - a glob over flow files (src/flows/auth/**) or a flow's export name`);
       }
+      const access = await checkAccess(proj);
+      for (const a of access) {
+        console.warn(`waygraph check: ${a.file} (${a.flow}) runs as ${a.account}, but ${a.what} is only for ${a.given.join(", ")} - run it as one of them, or give ${a.account} ${a.what} (its for)`);
+      }
+      if (access.length > 0) console.log(`waygraph check: ${access.length} step${access.length === 1 ? "" : "s"} an account isn't given`);
       const orphans = await findOrphanBlocks(proj);
       printOrphanReport(proj, orphans);
       // Warnings only - never fail exit code. Orphans are reported for

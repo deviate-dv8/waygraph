@@ -1,5 +1,7 @@
 // A Page Block: "you have arrived" - the hub other pages navigate to, verified by what the page shows.
 import { defineNavigating } from "./nav.js";
+import type { Account } from "../../flow/account.js";
+import { markFor } from "../access.js";
 import { mark } from "../mark.js";
 import type { Block, DefinedBlock, StepScreenshot } from "../block.js";
 import { screenshotPage } from "../../run/screenshot.js";
@@ -73,6 +75,12 @@ export type PageBlockOptions<
   /** Optional click-nav onto this page. XOR with `url`. */
   click?: string | ((mem: MemPage) => string);
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
+  /**
+   * The accounts that can open this page; without it, every account. The access tests try it as each other account
+   * and expect it not to open; `waygraph check` flags a flow as one of them that goes there.
+   * @example for: [PlantManager, Admin]
+   */
+  for?: readonly Account[];
 };
 
 
@@ -144,8 +152,9 @@ export function definePageBlock<
     );
   }
   const methodList = resolvePageMethods(options.methods);
-  const { nav, expects, ...rest } = options;
+  const { nav, expects, for: given, ...rest } = options;
   const built = defineNavigating(rest) as PageBlock<Out, M, Nav, E>;
+  markFor(built, given);
   // A page's screenshot is taken whenever a step lands on it, not only when this hub runs as a step.
   if (options.screenshot) screenshotPage(options.checkpoint.__state, options.screenshot === true ? {} : options.screenshot);
   const expectByName: Record<string, SomeDefinedBlock> = Object.fromEntries(

@@ -27,18 +27,21 @@
 
 ## 3. Access (`for`)
 
-- [ ] 3.1 `for?: Account[]` on layout links and actions, `definePageBlock` and `defineMethodBlock`
-- [ ] 3.2 `cli/flow-tests/register.ts`: one access test per account (`access › <account>`, `@access @<account>`): the
+- [x] 3.1 `for?: Account[]` on layout links and actions, `definePageBlock` and `defineMethodBlock` (an action's is its
+      Method's own `for`)
+- [x] 3.2 `cli/flow-tests/register.ts`: one access test per account (`access › <account>`, `@access @<account>`): the
       layouts' links and actions shown match what `for` gives it; pages it can't open don't open; an account that
-      can't sign in is skipped, saying why
-- [ ] 3.3 `analysis/`: a flow `map({ as: X })` using a link, action, Method or page X isn't given; and a page Block in
-      a layout folder whose Checkpoint can't be read statically
-- [ ] 3.4 Tests: access passes; a missing link and an extra link each fail naming it; a forbidden page that opens fails;
+      can't sign in is skipped, saying why (done in `cli/flow-tests/access.ts`; it checks the links, which have a
+      selector; a Method's button has none to look for, so a Method's `for` is checked by `waygraph check` only)
+- [x] 3.3 `analysis/`: a flow `map({ as: X })` using a link, action, Method or page X isn't given; and a page Block in
+      a layout folder whose Checkpoint can't be read statically (the second isn't needed: coverage is read from the
+      imported Blocks, so every Checkpoint is known)
+- [x] 3.4 Tests: access passes; a missing link and an extra link each fail naming it; a forbidden page that opens fails;
       the check rule on a fixture
 
 ## 4. Manifest, map and Waygraph UI
 
-- [ ] 4.1 Manifest: `layouts` (name, file, covered pages, links with destination / `parent` / selector / `for`, actions,
+- [x] 4.1 Manifest: `layouts` (name, file, covered pages, links with destination / `parent` / selector / `for`, actions,
       Read fields); `for` on Blocks and pages
 - [ ] 4.2 Map: a layout as one node with a line per destination, a mark on each covered page; link Navs not drawn page
       by page; the legend explains both

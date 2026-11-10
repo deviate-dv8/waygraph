@@ -17,6 +17,7 @@ import { forgetSources, selectorEntries, selectorFilesUnder, selectorsUsed, span
 import { labelsOf, type Labels } from "./labels.js";
 import { siteTree, type SiteTree } from "./site-map.js";
 import { loadLayouts, refreshLayoutRoutes } from "./layouts.js";
+import { givenTo } from "../engine/block/access.js";
 import { layoutState } from "../engine/block/kinds/layout.js";
 
 export const MANIFEST_VERSION = 2;
@@ -44,6 +45,8 @@ export interface ManifestBlock {
   checks: { precondition: ManifestCheck[] | "dynamic"; verify: ManifestCheck[] | "dynamic" };
   /** The selector entries its definition reads (`LoginSel.submit`), from the project's selector files. */
   selectors: SelectorEntry[];
+  /** The accounts it's given (`for`): who can open a page, who has a Method's button, who sees a layout's link. */
+  for?: string[];
 }
 
 /** A layout: the pages it covers and what it offers on them. */
@@ -177,6 +180,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
     const url = urlOf(b.block);
     if (map) maps.add(map);
     const source = spanOf(b.absFile, b.exportName);
+    const given = givenTo(b.block);
     const instruction = (b.block as { instruction?: { precondition?: Trait[] | ((i: never) => Trait[]); verify?: Trait[] | ((o: never) => Trait[]) } }).instruction;
     return {
       id: `${b.file}#${b.exportName}`,
@@ -194,6 +198,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       ...(source ? { source } : {}),
       checks: { precondition: checksOf(instruction?.precondition), verify: checksOf(instruction?.verify) },
       selectors: selectorsUsed(b.absFile, b.exportName, scan.projectDir),
+      ...(given ? { for: [...given] } : {}),
     };
   });
   const urls = pageUrls(scan.blocks);

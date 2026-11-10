@@ -58,6 +58,11 @@ export function account(name: string, opts: { signIn: Flow<Checkpoint<string>>; 
   return acc;
 }
 
+/** Every account declared so far (the project's `src/accounts/` once loaded), each once by name. */
+export function allAccounts(): Account[] {
+  return [...new Map([...signingIn.values()].flat().map((a) => [a.name, a])).values()];
+}
+
 /** The keys an account's `mem` sets: what a flow as it needn't be given. */
 export function accountKeys(acc: Account): MemKey<unknown>[] {
   if (!acc.mem) return [];
