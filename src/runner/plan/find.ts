@@ -3,6 +3,7 @@ import { relative } from "node:path";
 import { pathToFileURL } from "node:url";
 import { isBlockLike, isFlowLike, walkDir } from "../../manifest/scan.js";
 import type { AnyBlock } from "../../manifest/scan.js";
+import { isLayout } from "../../engine/block/kinds/layout.js";
 import type { Flow } from "../../engine/flow/flow.js";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 
@@ -35,7 +36,11 @@ export async function findBlock(projectDir: string, ref: string): Promise<FoundB
   const files = [...walkDir(projectDir, /\.block\.ts$/), ...installedMapPackages(projectDir).flatMap(mapPackageBlockFiles)];
   const byRuntimeName: FoundBlock[] = [];
   for await (const { file, mod } of importEach(projectDir, files)) {
-    for (const [exportName, exported] of Object.entries(mod)) {
+    // A layout's links are Blocks too, by their place (Menu.go.logout) or their name (menu-logout).
+    const candidates = Object.entries(mod).flatMap(([exportName, exported]): [string, unknown][] =>
+      isLayout(exported) ? Object.entries(exported.go).map(([key, nav]) => [`${exportName}.go.${key}`, nav]) : [[exportName, exported]],
+    );
+    for (const [exportName, exported] of candidates) {
       if (!isBlockLike(exported)) continue;
       if (exportName === ref) return { block: exported, exportName, file };
       if (exported.name === ref) byRuntimeName.push({ block: exported, exportName, file });

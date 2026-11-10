@@ -1,4 +1,4 @@
-import type { ManifestBlock, Folder, SiteMap } from '#types/project'
+import type { ManifestBlock, Folder, SiteMap, SiteTree } from '#types/project'
 
 /** A site's node on the map: `site:` and its origin (`site:https://shop.example.com`). */
 export const SITE = 'site:'
@@ -9,6 +9,8 @@ export const FOLDER = 'folder:'
 const APP = 'the app'
 
 /**
+ * For a project on a waygraph before 0.16.21, whose manifest has no `siteTree`: the same map, worked out here.
+ *
  * The pages as a site map: each site (the base url's origin, and every other origin a page's address names) at the root,
  * each page under the page whose path its own extends (`/registry/:code` under `/registry`), or under its site. Every
  * path segment no page has is a folder (`/auth`, `/platform`, then `/platform/plant`), so each level of the address is a
@@ -93,6 +95,21 @@ export function siteMap(
     }
   })
   return { sites, folders, paths: Object.fromEntries(located.map((p) => [p.tag, p.path])), edges }
+}
+
+/**
+ * The site map from the tree waygraph worked out (its manifest's `siteTree`, waygraph 0.16.21 and later): the edge into
+ * each page or folder, from its parent, carries the Navs that open the page by its address.
+ */
+export function siteMapFrom(tree: SiteTree, blocks: ManifestBlock[]): SiteMap {
+  const edges = Object.entries(tree.parents).map(([target, source]) => ({
+    id: `${source}=>${target}`,
+    source,
+    target,
+    blocks: blocks.filter((b) => b.url && b.to.includes(target) && b.kind !== 'expect'),
+    site: true as const,
+  }))
+  return { sites: tree.sites, folders: tree.folders, paths: tree.paths, edges }
 }
 
 /**

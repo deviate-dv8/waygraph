@@ -15,6 +15,9 @@ import type { Trait } from "../engine/trait/trait.js";
 import { walkDir } from "./scan.js";
 import { forgetSources, selectorEntries, selectorFilesUnder, selectorsUsed, spanOf, type SelectorEntry, type SourceSpan } from "./selectors.js";
 import { labelsOf, type Labels } from "./labels.js";
+import { siteTree, type SiteTree } from "./site-map.js";
+import { loadLayouts, refreshLayoutRoutes } from "./layouts.js";
+import { layoutState } from "../engine/block/kinds/layout.js";
 
 export const MANIFEST_VERSION = 2;
 
@@ -41,6 +44,22 @@ export interface ManifestBlock {
   checks: { precondition: ManifestCheck[] | "dynamic"; verify: ManifestCheck[] | "dynamic" };
   /** The selector entries its definition reads (`LoginSel.submit`), from the project's selector files. */
   selectors: SelectorEntry[];
+}
+
+/** A layout: the pages it covers and what it offers on them. */
+export interface ManifestLayout {
+  name: string;
+  /** `file#exportName`. */
+  id: string;
+  file: string;
+  /** The Checkpoints it covers (its folder's pages, or its `on`). */
+  covers: string[];
+  /** Its links: where each leads (a page, or `"parent"`), its selector, and who sees it (no `for`: everyone). */
+  links: { name: string; block: string; to: string; selector?: string; for?: string[] }[];
+  /** Its actions, by name, and the Method each is. */
+  actions: { name: string; block: string }[];
+  /** Its Read Block's name, when it says what it shows. */
+  read?: string;
 }
 
 /** A Trait as data: its name, what it wants, and the element it looks at. */
@@ -96,9 +115,13 @@ export interface Manifest {
   blocks: ManifestBlock[];
   /** The addresses each Checkpoint's page is known by: its Navs' urls and the urls its Blocks' verify checks. */
   pageUrls: Record<string, string[]>;
+  /** The site map: each page under the page or folder its address hangs from (what breadcrumbs follow). */
+  siteTree: SiteTree;
   /** What each Checkpoint's page shows, from its Read Blocks (version 2+). */
   readBlocks: ManifestReadBlock[];
   flows: ManifestFlow[];
+  /** The UI many pages share: each layout, what it covers and offers. */
+  layouts: ManifestLayout[];
   /** Every entry of the project's selector files (`_sel.ts`, `*.sel.ts`), file by file. */
   selectors: SelectorEntry[];
   skipped: ProjectScan["skipped"];
@@ -173,6 +196,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       selectors: selectorsUsed(b.absFile, b.exportName, scan.projectDir),
     };
   });
+  const urls = pageUrls(scan.blocks);
   const flows: ManifestFlow[] = scan.flows.map((f) => {
     const flow = f.flow as {
       blocks: () => { name: string; block: SomeBlock }[];
@@ -227,10 +251,30 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
     checkpoints: [...checkpoints].sort(),
     maps: [...maps].sort(),
     blocks,
-    pageUrls: pageUrls(scan.blocks),
+    pageUrls: urls,
+    siteTree: siteTree([...checkpoints].sort(), urls, undefined),
     readBlocks,
     flows,
     selectors: selectorFilesUnder(scan.projectDir, walkDir).flatMap((file) => selectorEntries(join(scan.projectDir, file), file)),
+    layouts: scan.layouts.map(({ layout, exportName, file }) => ({
+      name: layout.name,
+      id: `${file}#${exportName}`,
+      file,
+      covers: [...layoutState(layout.name).covers],
+      links: Object.entries(layout.go).map(([name, nav]) => {
+        const meta = nav as { __waygraphNavClick?: unknown; __waygraphLayout?: { parent?: boolean }; __waygraphTo?: string[] };
+        const allowed = layout.access[name];
+        return {
+          name,
+          block: nav.name,
+          to: meta.__waygraphLayout?.parent ? "parent" : (meta.__waygraphTo?.[0] ?? ""),
+          ...(typeof meta.__waygraphNavClick === "string" ? { selector: meta.__waygraphNavClick } : {}),
+          ...(allowed ? { for: [...allowed] } : {}),
+        };
+      }),
+      actions: Object.keys(layout.do).map((name) => ({ name, block: (layout.do as Record<string, { name: string }>)[name]?.name ?? name })),
+      ...(layout.read ? { read: layout.read.name } : {}),
+    })),
     skipped: scan.skipped,
   };
 }
@@ -241,7 +285,14 @@ export async function buildManifest(
   opts: ScanOptions & { baseUrl?: string | undefined; config?: Manifest["config"]; labels?: Labels | undefined } = {},
 ): Promise<Manifest> {
   const { baseUrl, config, labels, ...scanOpts } = opts;
-  const manifest = manifestFromScan(await scanProject(projectDir, scanOpts), labels);
-  return { ...manifest, ...(baseUrl ? { project: { ...manifest.project, baseUrl } } : {}), ...(config ? { config } : {}) };
+  const scan = await scanProject(projectDir, scanOpts);
+  // Layouts cover the pages under their folders: loaded with the site map the scan gives, before the manifest reads them.
+  const urls = pageUrls(scan.blocks);
+  await loadLayouts(projectDir, siteTree(Object.keys(urls), urls, baseUrl));
+  refreshLayoutRoutes(scan);
+  const manifest = manifestFromScan(scan, labels);
+  // The base url says which site a page's path is on.
+  const tree = baseUrl ? siteTree(manifest.checkpoints, manifest.pageUrls, baseUrl) : manifest.siteTree;
+  return { ...manifest, siteTree: tree, ...(baseUrl ? { project: { ...manifest.project, baseUrl } } : {}), ...(config ? { config } : {}) };
 }
 

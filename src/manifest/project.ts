@@ -10,6 +10,8 @@ import type { ReadBlock } from "../engine/read/read-block.js";
 import type { AnyBlock } from "./scan.js";
 import { installedMapPackages, mapPackageBlockFiles } from "./maps.js";
 import { blockKindOf, type BlockKind } from "../engine/block/kind.js";
+import { isLayout, type Layout, type LayoutLink } from "../engine/block/kinds/layout.js";
+import type { PageMethodEntry } from "../engine/block/kinds/page.js";
 
 
 export interface ScannedBlock {
@@ -54,9 +56,17 @@ export interface ScannedReadBlock {
   map?: string;
 }
 
+/** A layout found in a scanned file. */
+export interface ScannedLayout {
+  layout: Layout<Record<string, LayoutLink>, Record<string, PageMethodEntry>>;
+  exportName: string;
+  file: string;
+}
+
 export interface ProjectScan {
   projectDir: string;
   blocks: ScannedBlock[];
+  layouts: ScannedLayout[];
   readBlocks: ScannedReadBlock[];
   flows: ScannedFlow[];
   skipped: { block: string; file: string; reason: string }[];
@@ -103,6 +113,7 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
   const onError = opts.onImportError ?? reportImportError;
   const blocks: ScannedBlock[] = [];
   const readBlocks: ScannedReadBlock[] = [];
+  const layouts: ScannedLayout[] = [];
   const flows: ScannedFlow[] = [];
   const skipped: ProjectScan["skipped"] = [];
 
@@ -114,18 +125,13 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
       onError(rel, err);
       return;
     }
-    for (const [exportName, exported] of Object.entries(mod)) {
-      if (isReadBlockLike(exported)) {
-        readBlocks.push({ block: exported, exportName, file, absFile, ...(map ? { map } : {}) });
-        continue;
-      }
-      if (!isBlockLike(exported)) continue;
-      if (select && !matchBlocksSelect(select, { relFile: file, blockName: exported.name })) continue;
+    const addBlock = (exportName: string, exported: AnyBlock): void => {
+      if (select && !matchBlocksSelect(select, { relFile: file, blockName: exported.name })) return;
       const marked = exported as { __waygraphFrom?: string[]; __waygraphTo?: string[] };
       const from = marked.__waygraphFrom ?? [];
       const to = marked.__waygraphTo ?? [];
-      // Every factory records a route; only a bare defineBlock has none.
-      if (to.length === 0) skipped.push({ block: exported.name, file, reason: "no route: build it with a define*Block factory and Checkpoint values" });
+      // Every factory records a route; only a bare defineBlock has none (a layout's link up gets its route when layouts load).
+      if (to.length === 0 && !(exported as { __waygraphLayout?: unknown }).__waygraphLayout) skipped.push({ block: exported.name, file, reason: "no route: build it with a define*Block factory and Checkpoint values" });
       blocks.push({
         block: exported,
         name: exported.name,
@@ -139,6 +145,21 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
         absFile,
         ...(map ? { map } : {}),
       });
+    };
+    for (const [exportName, exported] of Object.entries(mod)) {
+      // A layout's links and what it shows are Blocks of its file, by their place in it (Sidebar.go.plan); its actions are
+      // Methods of their own files.
+      if (isLayout(exported)) {
+        layouts.push({ layout: exported, exportName, file });
+        if (exported.read) readBlocks.push({ block: exported.read, exportName: `${exportName}.read`, file, absFile, ...(map ? { map } : {}) });
+        for (const [key, nav] of Object.entries(exported.go)) addBlock(`${exportName}.go.${key}`, nav);
+        continue;
+      }
+      if (isReadBlockLike(exported)) {
+        readBlocks.push({ block: exported, exportName, file, absFile, ...(map ? { map } : {}) });
+        continue;
+      }
+      if (isBlockLike(exported)) addBlock(exportName, exported);
     }
   };
 
@@ -175,5 +196,5 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
       }
     }
   }
-  return { projectDir, blocks, readBlocks, flows, skipped };
+  return { projectDir, blocks, layouts, readBlocks, flows, skipped };
 }

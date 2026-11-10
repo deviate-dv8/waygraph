@@ -5,6 +5,7 @@ import { playwrightConfigFrom } from "./playwright-config.js";
 import { envFlag, envString } from "../engine/env.js";
 import { loadAccounts, loadMemStubs } from "../manifest/project.js";
 import { loadReadBlocks } from "../manifest/read-blocks.js";
+import { loadLayouts } from "../manifest/layouts.js";
 
 const projectDir = envString("WAYGRAPH_PROJECT_DIR") ?? process.cwd();
 // Every test process loads the config: the project's mem stubs, Read Blocks and accounts register here, for its own specs
@@ -13,6 +14,7 @@ const projectDir = envString("WAYGRAPH_PROJECT_DIR") ?? process.cwd();
 await loadMemStubs(projectDir);
 await loadReadBlocks(projectDir);
 await loadAccounts(projectDir);
+await loadLayouts(projectDir);
 
 export default defineConfig(
   playwrightConfigFrom((await loadWaygraphConfig(projectDir)) ?? {}, projectDir, await resolveBaseUrl(projectDir), envFlag("WAYGRAPH_FLOW_TESTS")),

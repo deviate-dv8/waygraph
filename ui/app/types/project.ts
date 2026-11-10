@@ -82,6 +82,8 @@ export type Manifest = {
   blocks: ManifestBlock[]
   readBlocks: ManifestReadBlock[]
   flows: ManifestFlow[]
+  /** The site map, worked out by waygraph; missing before waygraph 0.16.21. */
+  siteTree?: SiteTree
   /** Every entry of the project's selector files; missing before waygraph 0.16.19. */
   selectors?: SelectorEntry[]
   skipped: { file: string; error: string }[]
@@ -207,6 +209,14 @@ export type Folder = {
   path: string
   /** Its path past the folder or site it hangs from: `plant/` under `/platform`. */
   label: string
+}
+
+/** The site map as the manifest gives it: each page's and folder's parent (a page, a folder or a site). */
+export type SiteTree = {
+  sites: Site[]
+  folders: Folder[]
+  paths: Record<string, string>
+  parents: Record<string, string>
 }
 
 /** Where each page sits in its site, and the dashed edges that hang it there. */

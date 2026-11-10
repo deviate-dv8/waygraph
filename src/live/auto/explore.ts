@@ -48,8 +48,9 @@ function isUrlNav(entry: BlockEntry): boolean {
   return (entry.block as { __waygraphNavClick?: unknown }).__waygraphNavClick === undefined;
 }
 
-function isBackEdge(edge: WaygraphEdge): boolean {
-  return /^nav-back/.test(edge.block) || edge.block === "submit-logout";
+/** A way back, or out: a back link, or a layout's link (the same on every page it covers, so not this page's own move). */
+function isBackEdge(edge: WaygraphEdge, entry: BlockEntry): boolean {
+  return /^nav-back/.test(edge.block) || Boolean((entry.block as { __waygraphLayout?: unknown }).__waygraphLayout);
 }
 
 async function navRunnable(page: Page, entry: BlockEntry): Promise<boolean> {
@@ -175,9 +176,9 @@ export async function buildExploreMenu(
     if (edge.kind === "action") {
       if (here !== null && edge.from === here) {
         if (entry.block.instanceOptions) {
-          await pushOptions(isBackEdge(edge) ? back : forward, edge, entry);
+          await pushOptions(isBackEdge(edge, entry) ? back : forward, edge, entry);
         } else {
-          push(isBackEdge(edge) ? back : forward, edge);
+          push(isBackEdge(edge, entry) ? back : forward, edge);
         }
       } else if (here !== null && edge.from === "*") {
         if (entry.block.instanceOptions) {
@@ -200,7 +201,7 @@ export async function buildExploreMenu(
     if (here !== null && (edge.from === here || edge.from === "*") && edge.to !== here) {
       if (entry.block.instanceOptions) {
         const options = await loadInstanceOptions(entry);
-        const bucket = isBackEdge(edge) ? back : navigate;
+        const bucket = isBackEdge(edge, entry) ? back : navigate;
         for (const option of options) {
           const seenKey = `${edge.block}::${option.id}`;
           if (seen.has(seenKey)) continue;
@@ -231,7 +232,7 @@ export async function buildExploreMenu(
     // A url Nav that declares `from` is only an edge from those pages, so it IS a real move here.
     if (isUrlNav(entry) && edge.from === "*") continue;
 
-    if (isBackEdge(edge) && (edge.from === here || edge.from === "*")) {
+    if (isBackEdge(edge, entry) && (edge.from === here || edge.from === "*")) {
       push(back, edge);
     } else if (edge.from === here || edge.from === "*") {
       push(navigate, edge);

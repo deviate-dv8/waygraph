@@ -24,5 +24,5 @@ test("chain auto graph plans LoginPage to OrderComplete (shortest edge walk)", a
 test("chain auto graph plans InventoryPage to LoginPage through logout", async () => {
   const graph = await discoverGraph(projectDir);
   const path = findBlockPath(graph, "InventoryPage", "LoginPage");
-  expect(path).toEqual(["submit-logout"]);
+  expect(path).toEqual(["menu-logout"]);
 });

@@ -21,8 +21,9 @@ test("waygraph auto discovers the decomposed saucedemo graph, with no Block skip
   );
   // checkout-info split into fill-first-name/fill-last-name/fill-postal-code, the atomic login Blocks
   // (fill-username/fill-password/submit-login's 2 branches), nav-inventory (straight to the catalogue for a flow that
-  // starts signed in); the cart's Methods each stay on the inventory (what's in the cart is what it shows).
-  expect(graph.edges.length).toBe(22);
+  // starts signed in); the cart's Methods each stay on the inventory (what's in the cart is what it shows); the menu's two
+  // links, one edge from each page it covers.
+  expect(graph.edges.length).toBe(33);
   const removeEdges = graph.edges.filter((e) => e.block === "remove-from-cart");
   expect(removeEdges).toEqual([expect.objectContaining({ from: "*", to: "InventoryPage", kind: "action" })]);
 
@@ -32,6 +33,8 @@ test("waygraph auto discovers the decomposed saucedemo graph, with no Block skip
   // Every Block has a route, so nothing is skipped.
   expect(graph.skipped).toEqual([]);
 
-  const logout = graph.edges.find((e) => e.block === "submit-logout");
-  expect(logout).toMatchObject({ from: "InventoryPage", to: "LoginPage", kind: "action" });
+  // Logout is the menu layout's link: from every page the menu is on.
+  const logouts = graph.edges.filter((e) => e.block === "menu-logout");
+  expect(logouts.map((e) => e.from).sort()).toEqual(["CartPage", "CheckoutInfoPage", "CheckoutOverviewPage", "InventoryPage", "ItemDetailPage", "OrderComplete"]);
+  expect(logouts.every((e) => e.to === "LoginPage")).toBe(true);
 });

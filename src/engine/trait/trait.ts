@@ -13,6 +13,7 @@ import type { MemPage } from "../mem/mem.js";
 // than the native global on newer Node, and `instanceof` would then fail on those versions.
 import "urlpattern-polyfill";
 import { mark } from "../block/mark.js";
+import { trailOf } from "../block/kinds/layout.js";
 
 /**
  * A named, independently-reportable check. `check` never runs before `resolve` has
@@ -346,6 +347,35 @@ export function frameContainsText(frameSelector: string, innerSelector: string, 
 }
 
 /**
+ * Passes when the breadcrumbs (the links matching `links`, in order) lead to the pages above this one in the site map,
+ * by their addresses: none missing, none extra. Needs the project's layouts loaded (run, demo and test load them).
+ * @example verify: [Trait.breadcrumbs(CrumbsSel.link)]
+ */
+function breadcrumbs(links: string): Trait {
+  return {
+    name: `breadcrumbs(${links})`,
+    wants: "breadcrumbs to the pages above this one",
+    says: "breadcrumbs match the site map",
+    selector: links,
+    async check(page) {
+      const here = new URL(page.url()).pathname;
+      const want = trailOf(here);
+      if (!want) return { ok: false, saw: `no trail known for ${here} (are the project's layouts loaded?)` };
+      const shown = await page.locator(links).evaluateAll((as) => as.map((a) => new URL((a as HTMLAnchorElement).href, location.href).pathname));
+      const missing = want.filter((p) => !shown.includes(p));
+      const extra = shown.filter((p) => !want.includes(p) && p !== here);
+      const ok = !missing.length && !extra.length && want.every((p, i) => shown[i] === p);
+      const saw = ok
+        ? shown.join(" › ")
+        : [missing.length && `missing ${missing.join(", ")}`, extra.length && `extra ${extra.join(", ")}`, !missing.length && !extra.length && `out of order: ${shown.join(" › ")}`]
+            .filter(Boolean)
+            .join("; ");
+      return { ok, saw: saw || "(none)" };
+    },
+  };
+}
+
+/**
  * Discoverable entry point for the built-in Trait factories - type `Trait.` in
  * an editor to see `url`/`text`/`visible` offered, instead of needing to
  * already know `urlMatches`/`textEquals`/`visible` exist as free functions to
@@ -357,6 +387,7 @@ export function frameContainsText(frameSelector: string, innerSelector: string, 
  */
 export const Trait = {
   url: urlMatches,
+  breadcrumbs,
   text: textEquals,
   contains: containsText,
   matches: matchesText,

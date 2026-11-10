@@ -6,6 +6,7 @@ import { inRun } from "../engine/run/events.js";
 import { withWebServer } from "../runtime/webserver.js";
 import { installRunLog } from "../runtime/run-log.js";
 import { loadReadBlocks } from "../manifest/read-blocks.js";
+import { loadLayouts } from "../manifest/layouts.js";
 import { planSteps } from "./plan/plan.js";
 import { readOptions, slowMoFor } from "./options.js";
 import { openSession } from "./session.js";
@@ -21,6 +22,7 @@ export async function play(projectDir: string, spec: string): Promise<void> {
   const options = readOptions();
   const mem = new MemPage();
   await loadReadBlocks(projectDir);
+  await loadLayouts(projectDir);
   const { steps, flows } = await planSteps(projectDir, spec, mem, options);
   if (options.mode === "branches") return playBranches(flows, mem, options);
 

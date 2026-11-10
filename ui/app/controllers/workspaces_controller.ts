@@ -2,7 +2,7 @@ import { inject } from '@adonisjs/core'
 import type { HttpContext } from '@adonisjs/core/http'
 import { ProjectService } from '#services/project_service'
 import { flowOfRun, pageFlows } from '#services/page_flows'
-import { siteMap } from '#services/site_map'
+import { siteMap, siteMapFrom } from '#services/site_map'
 import type { Manifest, RunDetail } from '#types/project'
 
 /** waygraph's Start Checkpoint, as the manifest names it. */
@@ -29,7 +29,9 @@ export default class WorkspacesController {
       blocks: manifest.blocks,
       readBlocks: manifest.readBlocks,
       pageUrls: manifest.pageUrls ?? {},
-      site: siteMap(pages, manifest.pageUrls ?? {}, manifest.project.baseUrl, manifest.blocks),
+      site: manifest.siteTree
+        ? siteMapFrom(manifest.siteTree, manifest.blocks)
+        : siteMap(pages, manifest.pageUrls ?? {}, manifest.project.baseUrl, manifest.blocks),
       journey,
       pageFlows: pageFlows(manifest, await this.newestRuns(manifest.flows)),
       shots: await this.project.pageShots(),

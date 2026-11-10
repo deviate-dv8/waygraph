@@ -53,6 +53,7 @@
   "defineBlock",
   "defineConfig",
   "defineExpectBlock",
+  "defineLayout",
   "defineMemNavBlock",
   "defineMethodBlock",
   "defineNavBlock",

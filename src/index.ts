@@ -33,6 +33,8 @@ export { defineNavBlock, defineNavClickBlock, defineMemNavBlock } from "./engine
 export { defineMethodBlock } from "./engine/block/kinds/method.js";
 export { defineExpectBlock } from "./engine/block/kinds/expect.js";
 export { definePageBlock } from "./engine/block/kinds/page.js";
+export { defineLayout } from "./engine/block/kinds/layout.js";
+export type { Layout, LayoutLink, LayoutOptions } from "./engine/block/kinds/layout.js";
 export { defineApiBlock } from "./engine/block/kinds/api.js";
 export { locate } from "./engine/locate.js";
 export { composeBlock, fastForwardComposeBlock, isFastForwardBlock } from "./engine/block/compose.js";

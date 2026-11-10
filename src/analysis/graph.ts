@@ -5,6 +5,9 @@ import type { ProjectScan } from "../manifest/project.js";
 import type { BlockInfo } from "../engine/flow/flow.js";
 import { expectedBlocks } from "../engine/run/expect.js";
 import type { SomeBlock } from "../engine/block/some-block.js";
+import { loadLayouts, refreshLayoutRoutes } from "../manifest/layouts.js";
+import { pageUrls } from "../manifest/urls.js";
+import { siteTree } from "../manifest/site-map.js";
 
 /**
  * The state-machine shape `waygraph auto` discovers from a project's own
@@ -163,6 +166,10 @@ export async function discoverGraph(
   opts?: { blocksSelect?: BlocksSelect; inject?: string[] },
 ): Promise<WaygraphGraph> {
   const scan = await scanProject(projectDir, { blocksSelect: opts?.blocksSelect, inject: opts?.inject, flows: false });
+  // Layout links run from the pages their layout covers.
+  const urls = pageUrls(scan.blocks);
+  await loadLayouts(projectDir, siteTree(Object.keys(urls), urls, undefined));
+  refreshLayoutRoutes(scan);
   return graphFromScan(scan);
 }
 

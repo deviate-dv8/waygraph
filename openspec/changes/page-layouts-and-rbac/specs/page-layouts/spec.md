@@ -49,15 +49,18 @@ SHALL be a Read Block for every page it covers, and its keys SHALL be read after
 ### Requirement: Breadcrumbs follow the site map
 A layout link MAY set `to: "parent"`: it SHALL lead to the covered page's parent in the site map (the nearest page above
 it by address), so one declaration covers every page under the layout. A layout's Read MAY expose its trail; waygraph
-SHALL offer a check that the trail matches the page's ancestors in the site map, by their names or addresses.
+SHALL offer a check (`Trait.breadcrumbs(sel)`) that the trail's links lead to the page's ancestors in the site map, in
+order, by their addresses.
 
 #### Scenario: Up one level from any page
 - **WHEN** `Crumbs.go.up` has `to: "parent"` and a flow on `/platform/plant/equipment/new` steps `gotoPage(Crumbs.go.up)`
 - **THEN** the step SHALL land on the page at `/platform/plant/equipment`
 
 #### Scenario: The trail matches the map
-- **WHEN** a flow lands on `/platform/plant/equipment/new` and the breadcrumbs show `Platform › Plant › Equipment`
-- **THEN** the breadcrumb check SHALL pass; showing `Platform › Equipment` SHALL fail it, saying which crumb is missing
+- **WHEN** a flow lands on `/platform/plant/equipment/new` and its breadcrumbs link to `/platform`, `/platform/plant`
+  (when that's a page) and `/platform/plant/equipment`
+- **THEN** the breadcrumb check SHALL pass; a trail without `/platform/plant/equipment` SHALL fail it, saying that
+  crumb is missing
 
 ### Requirement: Layouts in the manifest, the map and Waygraph UI
 The manifest SHALL list each layout: its name, file, the pages it covers, its links (name, destination or `parent`,

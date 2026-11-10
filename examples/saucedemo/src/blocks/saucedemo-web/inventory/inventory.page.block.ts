@@ -6,7 +6,6 @@ import { AddAllToCartBlock } from "./methods/add-all-to-cart.method.block.js";
 import { RemoveAllFromCartBlock } from "./methods/remove-all-from-cart.method.block.js";
 import { NavItemDetailBlock } from "./nav-item-detail.block.js";
 import { NavInventoryBlock } from "./nav-inventory.block.js";
-import { SubmitLogoutBlock } from "../methods/submit-logout.method.block.js";
 import { InventorySel } from "./methods/inventory-items.js";
 
 /**
@@ -37,6 +36,5 @@ export const Inventory = definePageBlock({
     addAllToCart: () => AddAllToCartBlock,
     removeAllFromCart: () => RemoveAllFromCartBlock,
     openDetail: () => NavItemDetailBlock,
-    logout: () => SubmitLogoutBlock,
   },
 });
