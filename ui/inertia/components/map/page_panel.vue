@@ -21,6 +21,10 @@ const props = defineProps<{
   image?: string | undefined
   /** The flows that pass through it, with how each one's newest run went. */
   flows: PageFlow[]
+  /** The layouts it's under. */
+  layouts?: string[]
+  /** The accounts that can open it (its Page Block's `for`); missing: everyone. */
+  given?: string[] | undefined
 }>()
 defineEmits<{ close: [] }>()
 
@@ -177,6 +181,25 @@ const where = (b: ManifestBlock, list: BlockList) =>
             color="neutral"
             variant="subtle"
             size="sm"
+          />
+          <UBadge
+            v-for="l in props.layouts ?? []"
+            :key="`layout-${l}`"
+            :label="l"
+            icon="i-lucide-panels-top-left"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            :title="`Under the ${l} layout`"
+          />
+          <UBadge
+            v-if="props.given"
+            :label="`only ${props.given.join(', ')}`"
+            icon="i-lucide-lock"
+            color="warning"
+            variant="subtle"
+            size="sm"
+            title="Who can open it (its Page Block's for)"
           />
           <UBadge
             v-for="h in props.page.hubs"

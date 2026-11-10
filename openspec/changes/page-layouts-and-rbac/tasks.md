@@ -43,12 +43,13 @@
 
 - [x] 4.1 Manifest: `layouts` (name, file, covered pages, links with destination / `parent` / selector / `for`, actions,
       Read fields); `for` on Blocks and pages
-- [ ] 4.2 Map: a layout as one node with a line per destination, a mark on each covered page; link Navs not drawn page
+- [x] 4.2 Map: a layout as one node with a line per destination, a mark on each covered page; link Navs not drawn page
       by page; the legend explains both
-- [ ] 4.3 A layout's panel (links, actions, Read, pages, who sees each); a page's panel lists its layouts and who can
+- [x] 4.3 A layout's panel (links, actions, Read, pages, who sees each); a page's panel lists its layouts and who can
       open it
-- [ ] 4.4 An account picker on the map: only what that account is given, and how much was left out
-- [ ] 4.5 UI tests; look at it light and dark
+- [x] 4.4 An account picker on the map: only what that account is given, and how much was left out (the map's address
+      says which, `?as=planner`, so a view can be shared; the manifest lists the project's accounts)
+- [x] 4.5 UI tests; look at it light and dark
 
 ## 5. Examples, docs and skills
 

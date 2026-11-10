@@ -26,6 +26,21 @@ export type ManifestBlock = {
   checks?: { precondition: ManifestCheck[] | 'dynamic'; verify: ManifestCheck[] | 'dynamic' }
   /** The selector entries its definition reads. */
   selectors?: SelectorEntry[]
+  /** The accounts it's given (`for`): who opens a page, has a Method, sees a layout's link; missing: everyone. */
+  for?: string[]
+}
+
+/** A layout: the UI many pages share (a menu, a sidebar), the pages it covers, its links and actions. */
+export type ManifestLayout = {
+  name: string
+  id: string
+  file: string
+  covers: string[]
+  /** Each link: the Block it is, where it leads (`parent`: the page above each page), its selector, who sees it. */
+  links: { name: string; block: string; to: string; selector?: string; for?: string[] }[]
+  actions: { name: string; block: string }[]
+  /** Its Read Block's name, when it says what it shows. */
+  read?: string
 }
 
 /** The lines a definition spans in its file (1-based, inclusive). */
@@ -86,6 +101,10 @@ export type Manifest = {
   siteTree?: SiteTree
   /** Every entry of the project's selector files; missing before waygraph 0.16.19. */
   selectors?: SelectorEntry[]
+  /** The project's accounts, by name; missing before waygraph 0.16.21. */
+  accounts?: string[]
+  /** The project's layouts; missing before waygraph 0.16.21. */
+  layouts?: ManifestLayout[]
   skipped: { file: string; error: string }[]
 }
 
@@ -192,6 +211,28 @@ export type MapEdge = {
   source: string
   target: string
   blocks: ManifestBlock[]
+}
+
+/** The map's layouts and accounts, as one account sees the project (or everyone). */
+export type MapAccess = {
+  /** The project's accounts: who the map can be shown as. */
+  accounts: string[]
+  /** The account the map shows; null: everyone. */
+  account: string | null
+  /** Each layout, with its node's id on the map; only the links and pages the account is given. */
+  layouts: (ManifestLayout & { node: string })[]
+  /** Each layout's lines: one to each page its links lead to. */
+  lines: MapEdge[]
+  /** The layouts each page is under. */
+  pageLayouts: Record<string, string[]>
+  /** The Blocks that are layouts' links: drawn from their layout, not from each page. */
+  links: string[]
+  /** The pages the account can't open. */
+  closed: string[]
+  /** How many Blocks the account isn't given. */
+  leftOut: number
+  /** Who can open each page that says (its Page Block's `for`). */
+  pageGiven: Record<string, string[]>
 }
 
 /** A site the project's pages live on: its origin and how the map names it. */

@@ -3,7 +3,7 @@
 import { messageOf } from "../engine/errors.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { scanProject } from "./project.js";
+import { loadAccounts, scanProject } from "./project.js";
 import type { BlockKind } from "../engine/block/kind.js";
 import type { ProjectScan, ScanOptions } from "./project.js";
 import { MemPage } from "../engine/mem/mem.js";
@@ -18,6 +18,7 @@ import { labelsOf, type Labels } from "./labels.js";
 import { siteTree, type SiteTree } from "./site-map.js";
 import { loadLayouts, refreshLayoutRoutes } from "./layouts.js";
 import { givenTo } from "../engine/block/access.js";
+import { allAccounts } from "../engine/flow/account.js";
 import { layoutState } from "../engine/block/kinds/layout.js";
 
 export const MANIFEST_VERSION = 2;
@@ -125,6 +126,8 @@ export interface Manifest {
   flows: ManifestFlow[];
   /** The UI many pages share: each layout, what it covers and offers. */
   layouts: ManifestLayout[];
+  /** The project's accounts (`src/accounts/`), by name: who a flow can run as, and who `for` gives things to. */
+  accounts: string[];
   /** Every entry of the project's selector files (`_sel.ts`, `*.sel.ts`), file by file. */
   selectors: SelectorEntry[];
   skipped: ProjectScan["skipped"];
@@ -261,6 +264,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
     readBlocks,
     flows,
     selectors: selectorFilesUnder(scan.projectDir, walkDir).flatMap((file) => selectorEntries(join(scan.projectDir, file), file)),
+    accounts: allAccounts().map((a) => a.name).sort(),
     layouts: scan.layouts.map(({ layout, exportName, file }) => ({
       name: layout.name,
       id: `${file}#${exportName}`,
@@ -295,6 +299,7 @@ export async function buildManifest(
   const urls = pageUrls(scan.blocks);
   await loadLayouts(projectDir, siteTree(Object.keys(urls), urls, baseUrl));
   refreshLayoutRoutes(scan);
+  await loadAccounts(projectDir);
   const manifest = manifestFromScan(scan, labels);
   // The base url says which site a page's path is on.
   const tree = baseUrl ? siteTree(manifest.checkpoints, manifest.pageUrls, baseUrl) : manifest.siteTree;

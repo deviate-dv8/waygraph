@@ -29,6 +29,25 @@ import { KIND_MEANING, MOVE_KINDS, kindColor, kindIcon } from '~/lib/kinds'
         >
         <span>A page (a Checkpoint): where a flow can be</span>
       </div>
+      <div class="flex items-center gap-3">
+        <span
+          class="font-hand flex shrink-0 items-center gap-1 border-x-4 border-y-2 border-double border-(--ink) px-3 py-1 text-base italic"
+        >
+          <UIcon name="i-lucide-panels-top-left" class="size-4" /> menu
+        </span>
+        <span
+          >A layout: UI many pages share (a menu, a sidebar). Its lines go where its links lead,
+          from every page marked with its name</span
+        >
+      </div>
+      <div class="flex items-center gap-3">
+        <span
+          class="flex shrink-0 items-center gap-1 rounded border border-(--island-line) px-2 py-0.5 text-xs"
+        >
+          <UIcon name="i-lucide-user-round" class="size-3.5" /> As planner
+        </span>
+        <span>Only what one account is given (for): what it can't open or see is left out</span>
+      </div>
     </section>
 
     <section class="space-y-2">

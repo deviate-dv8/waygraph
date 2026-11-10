@@ -3,8 +3,8 @@ import { computed, ref } from 'vue'
 import MapTreeRow from '~/components/map/map_tree_row.vue'
 import { checkState, subtree, type MapTree } from '~/lib/map_filter'
 
-/** What a row in the map's tree shows: a site, a folder of its paths, or a page with its address. */
-export type TreeLabel = { kind: 'site' | 'folder' | 'page'; label: string; sub?: string }
+/** What a row in the map's tree shows: a site, a folder of its paths, a page with its address, or a layout. */
+export type TreeLabel = { kind: 'site' | 'folder' | 'page' | 'layout'; label: string; sub?: string }
 
 /** One node of the map's tree with a box to show or hide it (and what's under it), and its children below. */
 const props = defineProps<{
@@ -19,7 +19,12 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ toggle: [id: string]; only: [id: string]; select: [id: string] }>()
 
-const ICON = { site: 'i-lucide-globe', folder: 'i-lucide-folder', page: 'i-lucide-file' } as const
+const ICON = {
+  site: 'i-lucide-globe',
+  folder: 'i-lucide-folder',
+  page: 'i-lucide-file',
+  layout: 'i-lucide-panels-top-left',
+} as const
 const label = computed(() => props.labels[props.id] ?? { kind: 'page' as const, label: props.id })
 const children = computed(() => props.tree.childrenOf.get(props.id) ?? [])
 const state = computed(() => checkState(props.tree, props.hidden, props.id))

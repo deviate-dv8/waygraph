@@ -3,6 +3,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import { ProjectService } from '#services/project_service'
 import { flowOfRun, pageFlows } from '#services/page_flows'
 import { siteMap, siteMapFrom } from '#services/site_map'
+import { mapAccess } from '#services/layouts'
 import type { Manifest, RunDetail } from '#types/project'
 
 /** waygraph's Start Checkpoint, as the manifest names it. */
@@ -23,11 +24,20 @@ export default class WorkspacesController {
     const journey = [
       ...new Set(manifest.flows.flatMap((f) => f.steps.flatMap((step) => landsOn.get(step) ?? []))),
     ].filter((tag) => tag !== '*')
+    // The map as one account sees it (`?as=planner`): only what it's given.
+    const { blocks, access } = mapAccess(
+      request.input('as') ?? null,
+      manifest.blocks,
+      manifest.layouts ?? [],
+      manifest.accounts
+    )
+    const closed = new Set(access.closed)
     return inertia.render('map', {
       project: manifest.project,
-      checkpoints: pages,
-      blocks: manifest.blocks,
+      checkpoints: pages.filter((tag) => !closed.has(tag)),
+      blocks,
       readBlocks: manifest.readBlocks,
+      access,
       pageUrls: manifest.pageUrls ?? {},
       site: manifest.siteTree
         ? siteMapFrom(manifest.siteTree, manifest.blocks)

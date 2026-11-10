@@ -21,6 +21,8 @@ const props = defineProps<{
     /** How many flows pass through it, and how many of those failed their newest run. */
     flows: number
     failing: number
+    /** The layouts it's under (a menu, a sidebar): what it shares with other pages. */
+    layouts?: string[]
     /** What it shows (its Read Blocks' fields), by namespace; a yes/no field is a state the page can be in. */
     shows?: { namespace: string; fields: { name: string; state: boolean }[] }[]
   }
@@ -77,6 +79,16 @@ const props = defineProps<{
         <span v-if="props.data.failing" class="text-(--fail)"
           >· {{ props.data.failing }} failing</span
         >
+      </span>
+      <span v-if="props.data.layouts?.length" class="mt-1 flex flex-wrap justify-center gap-1">
+        <span
+          v-for="l in props.data.layouts"
+          :key="l"
+          class="flex items-center gap-0.5 rounded border border-dashed border-(--island-line) px-1 font-mono text-[10px] leading-4 text-(--ink-soft)"
+          :title="`Under the ${l} layout: its links and actions are here too`"
+        >
+          <UIcon name="i-lucide-panels-top-left" class="size-2.5" />{{ l }}
+        </span>
       </span>
       <div
         v-if="props.data.shows?.length"

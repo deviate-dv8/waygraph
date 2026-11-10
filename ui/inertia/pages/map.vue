@@ -5,6 +5,8 @@ import { Background } from '@vue-flow/background'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import PageNode from '~/components/graph/page_node.vue'
 import FolderNode from '~/components/graph/folder_node.vue'
+import LayoutNode from '~/components/graph/layout_node.vue'
+import LayoutPanel from '~/components/map/layout_panel.vue'
 import MapTree from '~/components/map/map_tree.vue'
 import MapLegend from '~/components/map/map_legend.vue'
 import type { TreeLabel } from '~/components/map/map_tree_row.vue'
@@ -18,7 +20,8 @@ import { mapEdges, pageSummary } from '~/lib/project_graph'
 import { count } from '~/lib/format'
 import { MOVE_KINDS, kindColor, kindIcon } from '~/lib/kinds'
 import { urlFor } from '~/client'
-import type { ManifestBlock, ManifestReadBlock, PageFlow, SiteMap } from '#types/project'
+import { router } from '@inertiajs/vue3'
+import type { ManifestBlock, ManifestReadBlock, MapAccess, PageFlow, SiteMap } from '#types/project'
 
 /**
  * The project's map, as a site map: each site at the root, its pages hung from it by their addresses (dashed), and every
@@ -29,6 +32,11 @@ const props = defineProps<{
   checkpoints: string[]
   blocks: ManifestBlock[]
   readBlocks: ManifestReadBlock[]
+  /**
+   * The UI many pages share (a menu, a sidebar), each drawn once with a line to each page its links lead to, and the
+   * accounts the map can be shown as (`?as=`). The pages and Blocks above are what that account is given.
+   */
+  access: MapAccess
   pageUrls: Record<string, string[]>
   /** The site map: each site, the folders of its paths, and where each page hangs. */
   site: SiteMap
@@ -45,12 +53,33 @@ const props = defineProps<{
 const selected = ref<string | null>(null)
 /** Which way the site map grows: left to right by default; the viewer's pick is remembered in this browser. */
 const direction = useStorage<TreeDirection>('waygraph-map-direction', 'LR')
-const edgesData = computed(() => mapEdges(props.blocks))
+/** The pages on the map: those the account (if one is picked) can open. */
+const checkpoints = computed(() => props.checkpoints)
+/** The Blocks of pages, not layouts: a layout's links are drawn once, from it. */
+const pageBlocks = computed(() => {
+  const links = new Set(props.access.links)
+  return props.blocks.filter((b) => !links.has(b.name))
+})
+const layoutIds = computed(() => props.access.layouts.map((l) => l.node))
+const edgesData = computed(() => mapEdges(pageBlocks.value))
+const layoutLines = computed(() => props.access.lines)
+/** Shows the map as `account` sees it (null: everyone): the server leaves out what it isn't given. */
+function showAs(account: string | null) {
+  router.get(urlFor('map'), account ? { as: account } : {}, {
+    preserveState: true,
+    preserveScroll: true,
+  })
+}
 /** The site map, from the server: the sites, the folders of their paths, each page under its place. */
 const site = computed(() => props.site)
 /** Sites and folders: nodes on the map that aren't pages, so there's no page panel to open. */
 const notPages = computed(
-  () => new Set([...props.site.sites.map((s) => s.id), ...props.site.folders.map((f) => f.id)])
+  () =>
+    new Set([
+      ...props.site.sites.map((s) => s.id),
+      ...props.site.folders.map((f) => f.id),
+      ...layoutIds.value,
+    ])
 )
 
 /**
@@ -60,14 +89,14 @@ const notPages = computed(
 const journey = computed(() => {
   const next = new Map<string, string[]>()
   for (const e of edgesData.value) next.set(e.source, [...(next.get(e.source) ?? []), e.target])
-  const byAddress = [...props.checkpoints].sort(
+  const byAddress = [...checkpoints.value].sort(
     (a, b) =>
       (site.value.paths[a] ?? '~').length - (site.value.paths[b] ?? '~').length ||
       (site.value.paths[a] ?? '~').localeCompare(site.value.paths[b] ?? '~')
   )
   const order: string[] = []
   const visit = (id: string) => {
-    if (order.includes(id) || !props.checkpoints.includes(id)) return
+    if (order.includes(id) || !checkpoints.value.includes(id)) return
     order.push(id)
     for (const to of next.get(id) ?? []) visit(to)
   }
@@ -106,7 +135,12 @@ const tree = computed<Tree>(() => {
       [...children].sort((a, b) => rankOf(a) - rankOf(b))
     )
   }
-  const roots = [...sites.map((s) => s.id), ...journey.value.filter((id) => !parentOf.has(id))]
+  // Layouts first, above the sites: each its own root, its lines reaching down into the tree.
+  const roots = [
+    ...layoutIds.value,
+    ...sites.map((s) => s.id),
+    ...journey.value.filter((id) => !parentOf.has(id)),
+  ]
   return { roots, childrenOf, parentOf }
 })
 
@@ -116,8 +150,8 @@ const hidden = computed(() => new Set(hiddenList.value))
 const setHidden = (next: Set<string>) => (hiddenList.value = [...next])
 const showTree = useStorage('waygraph-map-tree', true)
 /** How many pages the map shows, of all of them: on the minimized Pages button. */
-const allPages = computed(() => props.checkpoints.length)
-const shownPages = computed(() => props.checkpoints.filter((id) => !hidden.value.has(id)).length)
+const allPages = computed(() => checkpoints.value.length)
+const shownPages = computed(() => checkpoints.value.filter((id) => !hidden.value.has(id)).length)
 /** Each node of the tree as its row names it. */
 const treeLabels = computed<Record<string, TreeLabel>>(() => ({
   ...Object.fromEntries(
@@ -127,7 +161,13 @@ const treeLabels = computed<Record<string, TreeLabel>>(() => ({
     site.value.folders.map((f) => [f.id, { kind: 'folder' as const, label: f.label, sub: f.path }])
   ),
   ...Object.fromEntries(
-    props.checkpoints.map((id) => [
+    props.access.layouts.map((l) => [
+      l.node,
+      { kind: 'layout' as const, label: l.name, sub: `${l.covers.length} pages` },
+    ])
+  ),
+  ...Object.fromEntries(
+    checkpoints.value.map((id) => [
       id,
       {
         kind: 'page' as const,
@@ -156,21 +196,28 @@ const shownSiteEdges = computed(() =>
 const shownMoves = computed(() =>
   edgesData.value.filter((e) => shown.value.has(e.source) && shown.value.has(e.target))
 )
+const shownLayoutLines = computed(() =>
+  layoutLines.value.filter((e) => shown.value.has(e.source) && shown.value.has(e.target))
+)
 /** The column (or row) each shown node is in: from the tree alone, so labels are planned before the layout. */
 const columns = computed(() =>
   treeColumns(shownTree.value.roots, shownTree.value.childrenOf, direction.value)
 )
 /** Where each line's label sits, and the room the layout makes for them so they push boxes aside instead of covering them. */
 const labels = computed(() =>
-  planLabels([...shownSiteEdges.value, ...shownMoves.value], columns.value, direction.value)
+  planLabels(
+    [...shownSiteEdges.value, ...shownMoves.value, ...shownLayoutLines.value],
+    columns.value,
+    direction.value
+  )
 )
 
 /** What each page shows (its Read Blocks' fields) by namespace; a yes/no field is a state the page can be in. */
 const shows = computed(() => {
   const by = new Map<string, { namespace: string; fields: { name: string; state: boolean }[] }[]>()
-  for (const id of props.checkpoints) {
+  for (const id of checkpoints.value) {
     const groups = new Map<string, { name: string; state: boolean }[]>()
-    for (const read of pageSummary(id, props.blocks, props.readBlocks).reads) {
+    for (const read of pageSummary(id, pageBlocks.value, props.readBlocks).reads) {
       for (const [key, shape] of Object.entries(read.fields)) {
         const dot = key.indexOf('.')
         const [ns, name] = dot > 0 ? [key.slice(0, dot), key.slice(dot + 1)] : ['', key]
@@ -225,7 +272,7 @@ const placed = computed(() => {
     direction.value,
     {
       size: (id) =>
-        props.checkpoints.includes(id) ? { width: BOX.width, height: boxHeight(id) } : undefined,
+        checkpoints.value.includes(id) ? { width: BOX.width, height: boxHeight(id) } : undefined,
       across: (id) => labels.value.across.get(id) ?? 0,
       gapAfter: (column) => labels.value.gapAfter.get(column) ?? 0,
     }
@@ -250,14 +297,25 @@ const nodes = computed<Node[]>(() => {
         failing: 0,
       },
     })),
+    ...props.access.layouts.map((l) => ({
+      id: l.node,
+      type: 'layout',
+      position: placed.value.get(l.node) ?? { x: 0, y: 0 },
+      data: {
+        label: l.name,
+        links: l.links.length,
+        covers: l.covers.length,
+        selected: selected.value === l.node,
+      },
+    })),
     ...site.value.folders.map((f) => ({
       id: f.id,
       type: 'folder',
       position: placed.value.get(f.id) ?? { x: 0, y: 0 },
       data: { label: f.label, path: f.path },
     })),
-    ...props.checkpoints.map((id) => {
-      const page = pageSummary(id, props.blocks, props.readBlocks)
+    ...checkpoints.value.map((id) => {
+      const page = pageSummary(id, pageBlocks.value, props.readBlocks)
       return {
         id,
         type: 'page',
@@ -270,6 +328,7 @@ const nodes = computed<Node[]>(() => {
           actions: page.actions.length,
           expects: page.expects.length,
           reads: page.reads.length,
+          layouts: props.access.pageLayouts[id] ?? [],
           shows: shows.value.get(id) ?? [],
           flows: props.pageFlows[id]?.length ?? 0,
           failing: props.pageFlows[id]?.filter((f) => f.ok === false).length ?? 0,
@@ -289,6 +348,9 @@ function lanes<E extends { source: string }>(edges: E[]): number[] {
   })
 }
 
+/** The account picker's value for everyone (a select's value can't be null). */
+const EVERYONE = '__everyone__'
+
 let flow: VueFlowStore | null = null
 /**
  * Once the boxes are drawn: keep their real heights (a long name or many fields wrap more than estimated), which lays
@@ -299,7 +361,7 @@ function measure() {
   let changed = false
   for (const node of getNodes.value) {
     const height = Math.round(node.dimensions.height)
-    if (!height || !props.checkpoints.includes(node.id)) continue
+    if (!height || !checkpoints.value.includes(node.id)) continue
     if (Math.abs((heights.get(node.id) ?? 0) - height) > 1) {
       heights.set(node.id, height)
       changed = true
@@ -318,7 +380,7 @@ function ready(instance: VueFlowStore) {
   fit()
 }
 // A new layout (or a canvas resized by the tree) is measured a frame after it renders: fit then.
-watch([direction, hiddenList, showTree], async () => {
+watch([direction, hiddenList, showTree, () => props.access.account], async () => {
   await nextTick()
   requestAnimationFrame(() => requestAnimationFrame(fit))
 })
@@ -329,6 +391,7 @@ const edges = computed<Edge[]>(() => {
   const moves = shownMoves.value
   const siteLanes = lanes(siteEdges)
   const moveLanes = lanes(moves)
+  const layoutLanes = lanes(shownLayoutLines.value)
   return [
     ...siteEdges.map((e, i) => ({
       id: e.id,
@@ -368,6 +431,22 @@ const edges = computed<Edge[]>(() => {
         },
       }
     }),
+    // A layout's lines: from its node to each page its links lead to.
+    ...shownLayoutLines.value.map((e, i) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      type: 'sketch',
+      sourceHandle: direction.value === 'LR' ? 'out' : 'down',
+      targetHandle: direction.value === 'LR' ? 'in' : 'up',
+      data: {
+        blocks: e.blocks.map((b) => ({ name: b.name, kind: b.kind, description: b.description })),
+        squared: true,
+        lane: layoutLanes[i],
+        place: labels.value.places.get(e.id),
+        highlighted: selected.value === e.source || selected.value === e.target,
+      },
+    })),
   ]
 })
 
@@ -377,9 +456,12 @@ const shotUrl = (checkpoint: string): string | undefined =>
     ? `${urlFor('screenshots.page', { checkpoint })}?v=${Math.round(props.shots[checkpoint])}`
     : undefined
 
+/** The selected layout, when a layout's node is selected. */
+const layout = computed(() => props.access.layouts.find((l) => l.node === selected.value))
+
 const page = computed(() =>
   selected.value && !notPages.value.has(selected.value)
-    ? pageSummary(selected.value, props.blocks, props.readBlocks)
+    ? pageSummary(selected.value, pageBlocks.value, props.readBlocks)
     : null
 )
 </script>
@@ -402,6 +484,9 @@ const page = computed(() =>
       >
         <template #node-page="nodeProps">
           <PageNode v-bind="nodeProps" />
+        </template>
+        <template #node-layout="nodeProps">
+          <LayoutNode v-bind="nodeProps" />
         </template>
         <template #node-folder="nodeProps">
           <FolderNode v-bind="nodeProps" />
@@ -454,7 +539,16 @@ const page = computed(() =>
         :urls="props.pageUrls[page.checkpoint] ?? []"
         :image="shotUrl(page.checkpoint)"
         :flows="props.pageFlows[page.checkpoint] ?? []"
+        :layouts="props.access.pageLayouts[page.checkpoint] ?? []"
+        :given="props.access.pageGiven[page.checkpoint]"
         @close="selected = null"
+      />
+      <LayoutPanel
+        v-else-if="layout"
+        class="pointer-events-auto"
+        :layout="layout"
+        @close="selected = null"
+        @select="selected = $event"
       />
     </div>
 
@@ -495,13 +589,36 @@ const page = computed(() =>
           class="font-mono"
         />
       </span>
+      <!-- The map as one account sees it: only what it's given (for). -->
+      <USelect
+        v-if="props.access.accounts.length"
+        :model-value="props.access.account ?? EVERYONE"
+        :items="[
+          { label: 'Everyone', value: EVERYONE },
+          ...props.access.accounts.map((a) => ({ label: `As ${a}`, value: a })),
+        ]"
+        icon="i-lucide-user-round"
+        size="xs"
+        variant="ghost"
+        class="w-36"
+        aria-label="Show the map as one account sees it"
+        @update:model-value="showAs($event === EVERYONE ? null : String($event))"
+      />
+      <span
+        v-if="props.access.leftOut || props.access.closed.length"
+        class="text-(--warning)"
+        :title="`What ${props.access.account} isn't given (for)`"
+      >
+        {{ count(props.access.closed.length, 'page') }},
+        {{ count(props.access.leftOut, 'Block') }} left out
+      </span>
       <UPopover>
         <UButton icon="i-lucide-info" label="Legend" size="xs" color="neutral" variant="ghost" />
         <template #content>
           <MapLegend />
         </template>
       </UPopover>
-      <span>{{ count(props.checkpoints.length, 'page') }}</span>
+      <span>{{ count(checkpoints.length, 'page') }}</span>
       <span>{{ count(props.blocks.length, 'Block') }}</span>
       <span>{{ count(props.flows.length, 'flow') }}</span>
       <span>waygraph {{ props.project.waygraph }}</span>
