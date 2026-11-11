@@ -52,11 +52,13 @@ export const Admin = account("admin", { signIn: map().gotoPage(SignInAs("admin")
   );
   await writeFile(
     join(dir, "src", "flows", "app.flow.ts"),
-    `import { map } from "waygraph";
+    `import { map, pane } from "waygraph";
 import { NavApp, OpenAdmin } from "../map/app/app.block.js";
 export const viewFlow = map().gotoPage(NavApp).gotoPage(NavApp);
 export const adminFlow = map().gotoPage(NavApp).method(OpenAdmin).gotoPage(NavApp);
-export const panesFlow = map({ panes: { main: {}, side: { with: "main" } } }).in("main").gotoPage(NavApp).in("side").gotoPage(NavApp).in("main").close("side");
+const Main = pane("main");
+const Side = pane("side", { with: Main });
+export const panesFlow = map({ panes: [Main, Side] }).in(Main).gotoPage(NavApp).in(Side).gotoPage(NavApp).in(Main).close(Side);
 `,
   );
 });

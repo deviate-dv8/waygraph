@@ -42,12 +42,14 @@ export const StillEmpty = defineMethodBlock({ name: "still-empty", from: Form, t
   );
   await writeFile(
     join(dir, "src", "flows", "split.flow.ts"),
-    `import { map } from "waygraph";
+    `import { map, pane } from "waygraph";
 import { FillName, NavForm, StillEmpty } from "../map/form/form.block.js";
-export const splitFlow = map({ panes: { left: {}, right: {} } })
-  .in("left").gotoPage(NavForm).method(FillName)
-  .in("right").gotoPage(NavForm).method(StillEmpty)
-  .in("left").method(FillName);
+const Left = pane("left");
+const Right = pane("right");
+export const splitFlow = map({ panes: [Left, Right] })
+  .in(Left).gotoPage(NavForm).method(FillName)
+  .in(Right).gotoPage(NavForm).method(StillEmpty)
+  .in(Left).method(FillName);
 `,
   );
 });

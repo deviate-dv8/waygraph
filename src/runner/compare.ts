@@ -3,7 +3,7 @@
 // says where they differ (where each landed, whether it passed, what the page read). A side that fails stops; the other
 // plays on. Differences go in the run log (`compare:diff`) and in a summary at the end; only failures fail the run.
 import { allAccounts } from "../engine/flow/account.js";
-import { inPane, installPanes, type PaneOptions, type Panes } from "../engine/flow/panes.js";
+import { inPane, installPanes, type PaneConfig, type Panes } from "../engine/flow/panes.js";
 import { closesPane, closingStep } from "../engine/flow/map-steps.js";
 import { onRunEvent, recordDiff, type StepDiff } from "../engine/run/events.js";
 import { paneName, paneOf } from "../engine/run/pane-page.js";
@@ -16,7 +16,7 @@ import type { PlayOptions } from "./options.js";
 type Compare = NonNullable<PlayOptions["compare"]>;
 
 /** One side of the comparison, as a pane. */
-async function sideOf(projectDir: string, compare: Compare, value: string): Promise<PaneOptions> {
+async function sideOf(projectDir: string, compare: Compare, value: string): Promise<PaneConfig> {
   if (compare.by === "device") return { device: value as Device };
   if (compare.by === "config") {
     const baseUrl = (await readNamedConfig(projectDir, value)).baseUrl;

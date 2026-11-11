@@ -104,6 +104,7 @@
   "onRunEvent",
   "openAIVoice",
   "orientationFromViewport",
+  "pane",
   "parseBlocksSelect",
   "parseMinEdgeCoverage",
   "pilotStart",

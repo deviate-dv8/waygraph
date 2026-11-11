@@ -18,20 +18,50 @@ import { signInStep, type Account } from "./account.js";
 import { clearSessionState } from "./flow.js";
 import { ignorePageGone } from "../page-gone.js";
 
-/** One pane of a flow. */
+/**
+ * A pane of a flow: a value, like an account or a page, declared once (`const Guest = pane("guest", { as: ProblemUser })`)
+ * and named in `map({ panes: [Main, Guest] })`, `.in(Guest)` and `.close(Guest)`: renamed and found everywhere at once,
+ * and shared between flows.
+ */
+export interface Pane<N extends string = string> {
+  readonly name: N;
+  readonly options: PaneOptions;
+}
+
+/** Declares a pane: a name (how the demo and the run log call it) and where and as whom it plays. */
+export function pane<N extends string>(name: N, options: PaneOptions = {}): Pane<N> {
+  return { name, options };
+}
+
+/** How a pane plays. */
 export interface PaneOptions {
   /** Who is signed in here: the account's session, kept or new, before the pane's first step. */
   as?: Account;
   /** The device this pane plays on (a pane with its own context is that device: its size, layout and touch). */
   device?: Device;
   /** Another pane whose context this one shares: one person, a second page (the app and the mail catcher). */
-  with?: string;
+  with?: Pane;
   /** The site this pane's relative addresses are on, when it isn't the run's (another environment: staging and prod). */
   baseUrl?: string;
 }
 
+/** A pane as the run holds it: `with` by name. */
+export interface PaneConfig extends Omit<PaneOptions, "with"> {
+  with?: string;
+}
+
 /** A flow's panes, by name. */
-export type Panes = Readonly<Record<string, PaneOptions>>;
+export type Panes = Readonly<Record<string, PaneConfig>>;
+
+/** The panes of `map({ panes })` as the run holds them. */
+export function panesRecord(list: readonly Pane[]): Panes {
+  const record: Record<string, PaneConfig> = {};
+  for (const { name, options } of list) {
+    const { with: shared, ...rest } = options;
+    record[name] = shared ? { ...rest, with: shared.name } : rest;
+  }
+  return record;
+}
 
 /** The panes of one run: each pane's page, where it last landed, and the contexts the run opened for them. */
 interface PaneTable {

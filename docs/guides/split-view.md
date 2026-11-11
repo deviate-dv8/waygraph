@@ -5,25 +5,29 @@ another receives it, someone signs up while the mail catcher receives the link. 
 story, in order, with both screens side by side.
 
 ```ts
+// src/panes.ts: a pane is a value, like an account or a page
+export const PlannerPane = pane("planner", { as: Planner });
+export const AdminPane = pane("admin", { as: Admin });
+
 export const approvalFlow = engine
-  .map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })
-  .in("planner").gotoPage(Registry.nav).method(Registry.do.requestRepair)
-  .in("admin").gotoPage(Requests.nav).method(Requests.do.approve)
-  .in("planner").gotoPage(Registry.nav, { expect: [Machine.status.is("Approved")] });
+  .map({ panes: [PlannerPane, AdminPane] })
+  .in(PlannerPane).gotoPage(Registry.nav).method(Registry.do.requestRepair)
+  .in(AdminPane).gotoPage(Requests.nav).method(Requests.do.approve)
+  .in(PlannerPane).gotoPage(Registry.nav, { expect: [Machine.status.is("Approved")] });
 ```
 
 > The planner requests a repair. The admin approves it. Back with the planner, the machine reads Approved.
 
 ## Panes
 
-`map({ panes })` names the flow's panes. Each is a page in its own browser context: its own cookies, its own signed-in
+`map({ panes: [...] })` names the flow's panes, each declared once with `pane(name, options)` and used as a value: `.in(PlannerPane)`, `.close(AdminPane)`, `with: AppPane`: found and renamed everywhere at once, shared between flows. Each is a page in its own browser context: its own cookies, its own signed-in
 person, its own device.
 
 | A pane's option | Means |
 |---|---|
 | `as: Planner` | signed in as that account before its first step (the kept session, as `map({ as })` does) |
 | `device: "mobile"` | it plays on that device: its size, its phone layout, touch |
-| `with: "app"` | another page in the `app` pane's context: the same person, a second tab (the app and the mail catcher) |
+| `with: AppPane` | another page in the `app` pane's context: the same person, a second tab (the app and the mail catcher) |
 | `baseUrl: "https://staging.example.com"` | its relative addresses are on another site |
 
 `.in(pane)` says which pane the next steps act in, until the next `.in()`; a flow with panes names one before its first
@@ -44,10 +48,10 @@ in: back to one screen. `.in()` it again later and it opens afresh, signed in ag
 
 ```ts
 engine
-  .map({ memStub: true, panes: { standard: { as: StandardUser }, problem: { as: ProblemUser } } })
-  .in("standard").gotoPage(Inventory.nav).method(Inventory.do.addToCart)      // one screen
-  .in("problem").gotoPage(Inventory.nav).gotoPage(Cart.nav)                  // two, side by side
-  .in("standard").gotoPage(Cart.nav).close("problem")                        // one again
+  .map({ memStub: true, panes: [Standard, Problem] })
+  .in(Standard).gotoPage(Inventory.nav).method(Inventory.do.addToCart)        // one screen
+  .in(Problem).gotoPage(Inventory.nav).gotoPage(Cart.nav)                    // two, side by side
+  .in(Standard).gotoPage(Cart.nav).close(Problem)                            // one again
   .gotoPage(Inventory.nav);
 ```
 

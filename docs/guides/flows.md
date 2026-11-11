@@ -228,8 +228,8 @@ with `--data` still wins.
 ### Two people in one flow: panes
 
 A scenario with two sides (one person requests, another approves) is one flow with panes, each signed in as its own
-account, side by side in a demo: `map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })`, then
-`.in("admin")` before the admin's steps. Not two flows, and not a sign-out in the middle. See
+account, side by side in a demo: `map({ panes: [PlannerPane, AdminPane] })` (each `pane("admin", { as: Admin })`), then
+`.in(AdminPane)` before the admin's steps. Not two flows, and not a sign-out in the middle. See
 [Split view](./split-view).
 
 ### Who is given what: `for`

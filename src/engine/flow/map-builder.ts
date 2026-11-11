@@ -31,7 +31,7 @@ import { signInStep } from "./account.js";
 import { inWorld, restoreWorld, type World } from "./world.js";
 import { asCleanup, settling, requiring, withoutRequire, settingInput, settingKey, stepExpect, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore, closingStep } from "./map-steps.js";
 import type { MapFlowOpts } from "./map-options.js";
-import { checkPanes, inPane, installPanes } from "./panes.js";
+import { checkPanes, inPane, installPanes, type Pane } from "./panes.js";
 import { paneOf } from "../run/pane-page.js";
 
 
@@ -119,14 +119,16 @@ export class MapBuilder<
   /**
    * The steps after it act in `pane` (one of `map({ panes })`), until the next `.in()`: on that pane's page, from where
    * it last landed. Each pane keeps its own page, so a step is checked against where its pane is.
-   * @example engine.map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })
-   *   .in("planner").gotoPage(Registry.nav).method(Registry.do.requestRepair)
-   *   .in("admin").gotoPage(Requests.nav).method(Requests.do.approve)
+   * @example const Planner_ = pane("planner", { as: Planner }); const Admin_ = pane("admin", { as: Admin });
+   *   engine.map({ panes: [Planner_, Admin_] })
+   *   .in(Planner_).gotoPage(Registry.nav).method(Registry.do.requestRepair)
+   *   .in(Admin_).gotoPage(Requests.nav).method(Requests.do.approve)
    */
-  in<K extends Names>(pane: K): MapBuilder<K extends keyof P ? P[K] : Start, Names, Omit<P, A> & Record<A, Out>, K> {
+  in<K extends Names>(given: Pane<K>): MapBuilder<K extends keyof P ? P[K] : Start, Names, Omit<P, A> & Record<A, Out>, K> {
     const panes = this.at.settings.panes;
+    const pane = given.name;
     if (!panes?.[pane]) {
-      throw new WaygraphError("WG_PANES", `.in("${pane}"): ${panes ? `this flow's panes are ${Object.keys(panes).join(", ")}` : "this flow has no panes: declare them with map({ panes })"}`);
+      throw new WaygraphError("WG_PANES", `.in(${pane}): ${panes ? `this flow's panes are ${Object.keys(panes).join(", ")}` : "this flow has no panes: declare them with map({ panes: [...] })"}`);
     }
     return new MapBuilder({ ...this.at, pane });
   }
@@ -202,14 +204,15 @@ export class MapBuilder<
    * Closes another pane: its page (and its browser context, with every pane sharing it) goes, and the flow goes on in
    * the pane it's in; on a demo's stage the others take its room, from two side by side back to one screen. `.in()` it
    * again later and it opens afresh (signed in again).
-   * @example .in("admin").method(Requests.do.approve).in("planner").close("admin").gotoPage(Registry.nav)
+   * @example .in(Admin_).method(Requests.do.approve).in(Planner_).close(Admin_).gotoPage(Registry.nav)
    */
-  close<K extends Exclude<Names, A>>(pane: K): MapBuilder<Out, Names, Omit<P, K>, A> {
+  close<K extends Exclude<Names, A>>(given: Pane<K>): MapBuilder<Out, Names, Omit<P, K>, A> {
     const panes = this.at.settings.panes;
+    const pane = given.name;
     if (!panes?.[pane]) {
-      throw new WaygraphError("WG_PANES", `.close("${pane}"): ${panes ? `this flow's panes are ${Object.keys(panes).join(", ")}` : "this flow has no panes"}`);
+      throw new WaygraphError("WG_PANES", `.close(${pane}): ${panes ? `this flow's panes are ${Object.keys(panes).join(", ")}` : "this flow has no panes"}`);
     }
-    if (pane === this.at.pane) throw new WaygraphError("WG_PANES", `.close("${pane}"): it's the pane the flow is in; .in() another first`);
+    if (pane === this.at.pane) throw new WaygraphError("WG_PANES", `.close(${pane}): it's the pane the flow is in; .in() another first`);
     return this.appendStep<Out>(closingStep(pane));
   }
 

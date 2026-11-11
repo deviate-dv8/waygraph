@@ -33,6 +33,9 @@
 
 ## Decisions
 
+### D1a. Panes are values
+`pane(name, options)` declares a pane once, like `account(...)`; `map({ panes: [A, B] })`, `.in(A)`, `.close(A)` and `with: A` take it, so a rename or go-to-definition reaches every flow and nothing is a string. Names stay (the demo and run log call a pane by its name).
+
 ### D1. A pane is a page in a context; the flow names panes
 `map({ panes: { planner: { as: Planner }, admin: { as: Admin, device: "iphone-15" } } })`. A pane with `with: "app"` is
 another page in the app pane's context (one person: the app and the mail catcher). Panes are opened when first used and

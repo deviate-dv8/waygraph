@@ -5,7 +5,7 @@ import type { MemKey } from "../mem/mem.js";
 import type { Account } from "./account.js";
 import type { World } from "./world.js";
 import type { Device } from "./device.js";
-import type { Panes } from "./panes.js";
+import type { Pane } from "./panes.js";
 
 /** Flow-level settings for `engine.map({ … })`: `memStub`, `sessionReset`, `expectedFailure`, `demoPace`, `highlightStyle`, `homeOrigin`. */
 export interface MapBuilderOptions {
@@ -76,10 +76,10 @@ export interface MapBuilderOptions {
   /**
    * The flow's panes: pages side by side, each in its own browser context (its own account and device) or sharing
    * another's (`with`). `.in(pane)` says which one the next steps act in; panes share the flow's mem.
-   * @example engine.map({ panes: { planner: { as: Planner }, admin: { as: Admin, device: "tablet" } } })
-   * @example engine.map({ panes: { app: { as: Planner }, mail: { with: "app" } } })
+   * @example engine.map({ panes: [Planner_, Admin_] })   // const Admin_ = pane("admin", { as: Admin, device: "tablet" })
+   * @example engine.map({ panes: [App, Mail] })           // const Mail = pane("mail", { with: App })
    */
-  panes?: Panes;
+  panes?: readonly Pane[];
 }
 
 /** What `.flow()` takes for the sub-flow it runs inline. */

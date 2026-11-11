@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { Engine, MemPage, Trait, account, checkpoint, defineMethodBlock, defineNavBlock, forgetSessions, keys } from "../../src/index.js";
+import { Engine, MemPage, Trait, account, checkpoint, pane, defineMethodBlock, defineNavBlock, forgetSessions, keys } from "../../src/index.js";
 import { inRun, onRunEvent } from "../../src/engine/run/events.js";
 
 /**
@@ -39,6 +39,12 @@ const engine = new Engine();
 const signIn = (user: string) => engine.map().gotoPage(defineNavBlock({ name: `login-${user}`, checkpoint: Who, url: () => `${base}/login?user=${user}` }));
 const Planner = account("planner", { signIn: signIn("planner") });
 const Admin = account("admin", { signIn: signIn("admin") });
+const PlannerPane = pane("planner", { as: Planner });
+const AdminPane = pane("admin", { as: Admin });
+const AppPane = pane("app", { as: Planner });
+const MailPane = pane("mail", { with: AppPane });
+const APane = pane("a");
+const BPane = pane("b");
 
 const whoIs = (user: string) => Trait.text("#who", user);
 const NavWho = defineNavBlock({ name: "nav-who", checkpoint: Who, url: () => `${base}/whoami` });
@@ -69,11 +75,11 @@ const Noop = defineMethodBlock({ name: "noop", from: Who, to: Who, instruction: 
 
 test("two people side by side: each pane signed in as its account; what one takes, the other gets", async ({ context, page }) => {
   const flow = engine
-    .map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })
-    .in("planner").gotoPage(NavTicket.withVerify([whoIs("planner")])).method(TakeTicket)
-    .in("admin").gotoPage(NavWho.withVerify([whoIs("admin")])).method(WriteTicket)
+    .map({ panes: [PlannerPane, AdminPane] })
+    .in(PlannerPane).gotoPage(NavTicket.withVerify([whoIs("planner")])).method(TakeTicket)
+    .in(AdminPane).gotoPage(NavWho.withVerify([whoIs("admin")])).method(WriteTicket)
     // Back in the planner's pane: still the planner, still on the ticket page.
-    .in("planner").method(TakeTicket.withVerify([whoIs("planner")]));
+    .in(PlannerPane).method(TakeTicket.withVerify([whoIs("planner")]));
   const mem = new MemPage();
   expect(await flow.run(context, mem, { page })).toEqual(Ticket);
   expect(mem.get(TicketKey)).toMatch(/^T-\d+$/);
@@ -84,18 +90,18 @@ test("two people side by side: each pane signed in as its account; what one take
 
 test("one person, two pages: a pane with another's context shares its cookies", async ({ context, page }) => {
   const flow = engine
-    .map({ panes: { app: { as: Planner }, mail: { with: "app" } } })
-    .in("app").gotoPage(NavWho.withVerify([whoIs("planner")]))
-    .in("mail").gotoPage(NavWho.withVerify([whoIs("planner")]));
+    .map({ panes: [AppPane, MailPane] })
+    .in(AppPane).gotoPage(NavWho.withVerify([whoIs("planner")]))
+    .in(MailPane).gotoPage(NavWho.withVerify([whoIs("planner")]));
   await flow.run(context, new MemPage(), { page });
   expect(context.pages().length).toBe(2);
 });
 
 test("a step's failure names its pane and who is signed in there", async ({ context, page }) => {
   const flow = engine
-    .map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })
-    .in("planner").gotoPage(NavWho)
-    .in("admin").gotoPage(NavWho).method(Noop.withVerify([whoIs("planner")]));
+    .map({ panes: [PlannerPane, AdminPane] })
+    .in(PlannerPane).gotoPage(NavWho)
+    .in(AdminPane).gotoPage(NavWho).method(Noop.withVerify([whoIs("planner")]));
   const error = await flow.run(context, new MemPage(), { page }).catch((err: unknown) => String(err));
   expect(error).toContain("noop (in admin, as admin)");
 });
@@ -105,9 +111,9 @@ test("the run log says each step's pane", async ({ context, page }) => {
   const off = onRunEvent((e) => events.push(e as never));
   try {
     const flow = engine
-      .map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })
-      .in("planner").gotoPage(NavWho)
-      .in("admin").gotoPage(NavWho);
+      .map({ panes: [PlannerPane, AdminPane] })
+      .in(PlannerPane).gotoPage(NavWho)
+      .in(AdminPane).gotoPage(NavWho);
     await inRun("panes", () => flow.run(context, new MemPage(), { page }));
   } finally {
     off();
@@ -125,21 +131,21 @@ test("the run log says each step's pane", async ({ context, page }) => {
 
 test("fast-forwarded steps play in their pane", async ({ context, page }) => {
   const flow = engine
-    .map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })
-    .in("planner").gotoPage(NavWho.withVerify([whoIs("planner")]))
-    .in("admin").gotoPage(NavWho, { ff: true }).method(Noop.withVerify([whoIs("admin")]), { ff: true })
-    .in("planner").method(Noop.withVerify([whoIs("planner")]));
+    .map({ panes: [PlannerPane, AdminPane] })
+    .in(PlannerPane).gotoPage(NavWho.withVerify([whoIs("planner")]))
+    .in(AdminPane).gotoPage(NavWho, { ff: true }).method(Noop.withVerify([whoIs("admin")]), { ff: true })
+    .in(PlannerPane).method(Noop.withVerify([whoIs("planner")]));
   expect(await flow.run(context, new MemPage(), { page })).toEqual(Who);
 });
 
 test("from two screens back to one: .close(pane) closes it, and it opens afresh when used again", async ({ context, page }) => {
   const flow = engine
-    .map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })
-    .in("planner").gotoPage(NavWho)
-    .in("admin").gotoPage(NavWho.withVerify([whoIs("admin")]))
-    .in("planner").close("admin").method(Noop.withVerify([whoIs("planner")]))
+    .map({ panes: [PlannerPane, AdminPane] })
+    .in(PlannerPane).gotoPage(NavWho)
+    .in(AdminPane).gotoPage(NavWho.withVerify([whoIs("admin")]))
+    .in(PlannerPane).close(AdminPane).method(Noop.withVerify([whoIs("planner")]))
     // Opened again, signed in again.
-    .in("admin").gotoPage(NavWho.withVerify([whoIs("admin")]));
+    .in(AdminPane).gotoPage(NavWho.withVerify([whoIs("admin")]));
   const contexts: number[] = [];
   const { onRunEvent } = await import("../../src/engine/run/events.js");
   const off = onRunEvent((e) => {
@@ -157,20 +163,20 @@ test("from two screens back to one: .close(pane) closes it, and it opens afresh 
 
 test("the first pane closes too: its person leaves the run's page, and it opens afresh when used again", async ({ context, page }) => {
   const flow = engine
-    .map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })
-    .in("planner").gotoPage(NavWho.withVerify([whoIs("planner")]))
-    .in("admin").gotoPage(NavWho.withVerify([whoIs("admin")]))
-    .close("planner")
-    .in("planner").gotoPage(NavWho.withVerify([whoIs("planner")]));
+    .map({ panes: [PlannerPane, AdminPane] })
+    .in(PlannerPane).gotoPage(NavWho.withVerify([whoIs("planner")]))
+    .in(AdminPane).gotoPage(NavWho.withVerify([whoIs("admin")]))
+    .close(PlannerPane)
+    .in(PlannerPane).gotoPage(NavWho.withVerify([whoIs("planner")]));
   expect(await flow.run(context, new MemPage(), { page })).toEqual(Who);
   // Reopened on the run's own page, signed in again.
   await expect(page.locator("#who")).toHaveText("planner");
 });
 
 test("a flow with panes says which pane a step acts in; panes are checked when the flow is built", () => {
-  const flow = engine.map({ panes: { a: {}, b: {} } });
+  const flow = engine.map({ panes: [APane, BPane] });
   expect(() => flow.gotoPage(NavWho)).toThrow(/say which one the step acts in with \.in\(pane\)/);
-  expect(() => engine.map({ panes: { a: {}, b: { with: "c" } } })).toThrow(/isn't one of this flow's panes/);
-  expect(() => engine.map({ panes: { a: {}, b: { with: "a", as: Admin } } })).toThrow(/drop its as/);
-  expect(() => engine.map({ as: Admin, panes: { a: {} } })).toThrow(/each pane says who is signed in there/);
+  expect(() => engine.map({ panes: [APane, pane("b", { with: pane("c") })] })).toThrow(/isn't one of this flow's panes/);
+  expect(() => engine.map({ panes: [APane, pane("b", { with: APane, as: Admin })] })).toThrow(/drop its as/);
+  expect(() => engine.map({ as: Admin, panes: [APane] })).toThrow(/each pane says who is signed in there/);
 });

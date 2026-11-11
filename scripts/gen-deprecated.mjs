@@ -145,11 +145,12 @@ A stub paints through \`ctx.ui\`; \`ctx\` itself holds only what a stub reads (\
 | \`WAYGRAPH_TODO_UI=legacy\` / \`classic\` | \`WAYGRAPH_TODO_UI=full\` |
 | \`create-waygraph\` (npm) | \`npx waygraph init\` |
 
-## Removed in 0.16.22
+## Removed in 0.17.0
 
 | Removed | Use instead |
 | --- | --- |
 | \`waygraph ui\` (Waygraph UI) | \`waygraph studio\` (Waygraph Studio): the same app, renamed; the repo's \`ui/\` is \`studio/\`, \`npm run ui\` is \`npm run studio\` |
+| \`map({ panes: { name: {…} } })\`, \`.in("name")\`, \`.close("name")\`, \`with: "name"\` (panes by string, the split view's first form) | a pane is a value: \`const Guest = pane("guest", { as: ProblemUser })\`, then \`map({ panes: [Main, Guest] })\`, \`.in(Guest)\`, \`.close(Guest)\`, \`with: Main\` |
 
 ## Removed in 0.16.19
 
