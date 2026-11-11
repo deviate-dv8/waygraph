@@ -6,7 +6,8 @@ import { installedMapPackages, mapPackageBlockFiles } from "./maps.js";
 import { reportImportError } from "./project.js";
 import { walkDir } from "./scan.js";
 
-const READ_BLOCK = /(?:^|[\\/.])_?read\.block\.ts$/;
+// A page's read is in its own file (`<page>.page.block.ts`, with `read:`), so those load too.
+const READ_BLOCK = /(?:^|[\\/.])(?:_?read|page)\.block\.ts$/;
 
 /** Imports every Read Block file of the project; returns how many loaded. */
 export async function loadReadBlocks(projectDir: string): Promise<number> {

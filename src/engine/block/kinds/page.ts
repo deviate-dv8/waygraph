@@ -13,6 +13,9 @@ import { markRoute } from "../../checkpoint/route.js";
 import type { SomeDefinedBlock } from "../some-block.js";
 import type { NavBlock } from "./nav.js";
 import type { ExpectList } from "./expect.js";
+import { defineReadBlock, type ReadBlock } from "../../read/read-block.js";
+import { ReadKey } from "../../read/read-key.js";
+import type { ReadCtx, Reader } from "../../read/readers.js";
 
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */
 export type PageMethodEntry =
@@ -26,12 +29,35 @@ export type PageMethodEntry =
  * state an action on the page leads to (an item in the cart), and each entry keeps its own exact type in `expects`, so
  * a step's `expect` still checks it against where the step lands.
  */
-export type PageExpectEntry = PageMethodEntry;
+export type PageExpectEntry = PageMethodEntry | Trait;
+
+/**
+ * What a page's `read` returns: a reader per field (`ctx.page.text(sel)`, `.number`, `.list(...)`), or nested fields. The
+ * page's field types are inferred from it: nothing is declared twice.
+ */
+export type PageRead = { readonly [field: string]: Reader<unknown> | PageRead };
+
+/** The keys of a page's read, typed by what each field reads: `Page.read.sort.is("az")`, `Page.read.items.passes(...)`. */
+export type PageReadKeys<R> = {
+  readonly [K in keyof R & string]: R[K] extends Reader<infer T> ? ReadKey<T> : R[K] extends object ? PageReadKeys<R[K]> : never;
+};
+
+/**
+ * What `do` and `expects` are given: the page itself, as far as it's defined: its read keys, to build checks from
+ * (`page.read.modalOpen.is(true)`), and its nav.
+ */
+export interface PageSelf<Out extends Checkpoint<string>, R, Nav> {
+  readonly checkpoint: Out;
+  readonly read: PageReadKeys<R>;
+  readonly nav: Nav;
+}
 
 export type PageBlockOptions<
   Out extends Checkpoint<string>,
   M extends Record<string, PageMethodEntry> = Record<string, PageMethodEntry>,
   E extends Record<string, PageExpectEntry> = Record<string, PageExpectEntry>,
+  R extends PageRead = PageRead,
+  Nav = undefined,
 > = {
   name: string;
   description?: string;
@@ -57,11 +83,26 @@ export type PageBlockOptions<
    */
   methods?: readonly PageMethodEntry[] | M;
   /**
-   * What a scenario can expect on this page, by name: Expect Blocks (or `() => Block` factories). The page's `expects`,
-   * typed, for a step's `expect: [...]`: what you can do here is `do`, what you can check here is `expects`.
-   * @example expects: { itemAdded: () => ExpectItemAddedBlock } · .method(HomePage.do.addItem, { expect: [HomePage.expects.itemAdded] })
+   * What the page shows: its fields, read after a step lands here (the run log, the demo, Waygraph Studio and checks
+   * read them). Field types are inferred. Write it before `do` and `expects`, which build on it.
+   * @example read: (ctx) => ({ sort: ctx.page.value(Sel.sort), modalOpen: ctx.page.visible(Sel.modal) })
    */
-  expects?: E;
+  read?: (ctx: ReadCtx) => R;
+  /** The namespace of its fields in the run log (`sort` is `inventory.sort`). Default: the Checkpoint's name, lower-cased first. */
+  readAs?: string;
+  /**
+   * What you can do here: the page's moves by name, from a function of the page, called the first time the page's `do`
+   * is used (after every file is loaded, so the page and its Methods can import each other).
+   * @example do: () => ({ addToCart: AddToCart, openModal: OpenModal })
+   */
+  do?: (page: PageSelf<Out, R, Nav>) => M;
+  /**
+   * What a scenario can expect on this page, by name: Expect Blocks, Traits (`page.read.modalOpen.is(true)`), or
+   * `() => Block` factories; as a record, or a function of the page (called the first time it's used). The page's
+   * `expects`, typed, for a step's `expect: [...]`.
+   * @example expects: (page) => ({ modalShown: page.read.modalOpen.is(true), saved: SavedExpectBlock })
+   */
+  expects?: E | ((page: PageSelf<Out, R, Nav>) => E);
   /**
    * The Nav Block that opens this page (its `_nav.block.ts`): the page's `nav`, so a flow imports the page alone.
    * @example definePageBlock({ ..., nav: NavLoginBlock }) · map().gotoPage(LoginPage.nav).method(LoginPage.do.fillUsername)
@@ -97,6 +138,7 @@ export type PageBlock<
   M extends Record<string, PageMethodEntry> = Record<string, PageMethodEntry>,
   Nav = undefined,
   E extends Record<string, PageExpectEntry> = Record<never, never>,
+  R = Record<never, never>,
 > = Omit<
   DefinedBlock<Checkpoint<string>, Out>,
   "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
@@ -111,33 +153,67 @@ export type PageBlock<
   readonly do: PageMethods<M>;
   /** The Nav Block that opens this page (`nav` in `definePageBlock`). */
   readonly nav: Nav;
-  /** The page's Expect Blocks by name, each its own Block type: what a step here can expect. */
+  /** The page's expectations by name (Expect Blocks and Traits): what a step here can expect. */
   readonly expects: PageMethods<E>;
+  /** What the page shows, as typed keys: `Inventory.read.sort.is("az")`. */
+  readonly read: PageReadKeys<R>;
   withVerify(
     verify: Trait[] | ((out: Out) => Trait[]),
-  ): PageBlock<Out, M, Nav, E>;
+  ): PageBlock<Out, M, Nav, E, R>;
   modVerify(
     nameOrIndex: string | number,
     newCheck: Trait["check"] | Trait,
-  ): PageBlock<Out, M, Nav, E>;
-  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav, E>;
-  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E>;
-  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E>;
-  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E>;
+  ): PageBlock<Out, M, Nav, E, R>;
+  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav, E, R>;
+  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R>;
+  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R>;
+  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R>;
 };
 
 
 /** A record of page methods with each `() => Block` factory resolved to its Block. */
 export type PageMethods<M> = { readonly [K in keyof M]: M[K] extends () => infer B ? B : M[K] };
 
-function resolvePageMethods(
-  methods?: readonly PageMethodEntry[] | Record<string, PageMethodEntry>,
-): SomeDefinedBlock[] {
-  if (!methods) return [];
-  const entries = Array.isArray(methods) ? methods : Object.values(methods);
-  return entries.map((entry) => (typeof entry === "function" ? entry() : entry));
+/** The keys of a page's read, built as they're asked for: `Page.read.sort` is the key `<namespace>.sort`, nested like the object. */
+function readKeys(namespace: string): unknown {
+  const keyAt = (path: string): unknown => {
+    const key = new ReadKey<unknown>(path);
+    const children = new Map<string, unknown>();
+    // A key is also the object a nested field hangs from: its own members win, anything else is a child.
+    return new Proxy(key, {
+      get(target, prop) {
+        if (typeof prop !== "string" || prop in target) return Reflect.get(target, prop);
+        let child = children.get(prop);
+        if (!child) {
+          child = keyAt(`${path}.${prop}`);
+          children.set(prop, child);
+        }
+        return child;
+      },
+    });
+  };
+  // The namespace itself isn't a key: only its fields are.
+  const roots = new Map<string, unknown>();
+  return new Proxy({}, {
+    get(_target, prop) {
+      if (typeof prop !== "string" || prop === "then" || prop === "toJSON") return undefined;
+      let key = roots.get(prop);
+      if (!key) {
+        key = keyAt(`${namespace}.${prop}`);
+        roots.set(prop, key);
+      }
+      return key;
+    },
+  });
 }
 
+/** A Checkpoint's name as a read namespace: `SettingsSignatures` -> `settingsSignatures`. */
+const namespaceOf = (checkpointName: string): string => checkpointName.charAt(0).toLowerCase() + checkpointName.slice(1);
+
+/** Whether `entry` is a Block (it has an instruction): the entries of `do` and `expects` can also be Traits. */
+const isBlockEntry = (entry: unknown): entry is SomeDefinedBlock => typeof entry === "object" && entry !== null && "instruction" in entry;
+
+const resolveEntry = (entry: unknown) => (typeof entry === "function" ? (entry as () => unknown)() : entry);
 
 /** @see {@link PageBlockOptions} */
 export function definePageBlock<
@@ -145,42 +221,72 @@ export function definePageBlock<
   M extends Record<string, PageMethodEntry> = Record<never, never>,
   Nav extends NavBlock<Out> | undefined = undefined,
   E extends Record<string, PageExpectEntry> = Record<never, never>,
->(options: PageBlockOptions<Out, M, E> & { nav?: Nav }): PageBlock<Out, M, Nav, E> {
+  R extends PageRead = Record<never, never>,
+>(options: PageBlockOptions<Out, M, E, R, Nav> & { nav?: Nav }): PageBlock<Out, M, Nav, E, R> {
   if (options.url !== undefined && options.click !== undefined) {
     throw new Error(
       `definePageBlock("${options.name}"): pass url XOR click (or neither for arrival-only hub)`,
     );
   }
-  const methodList = resolvePageMethods(options.methods);
-  const { nav, expects, for: given, ...rest } = options;
-  const built = defineNavigating(rest) as PageBlock<Out, M, Nav, E>;
+  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, ...rest } = options;
+  const built = defineNavigating(rest) as unknown as PageBlock<Out, M, Nav, E, R>;
   markFor(built, given);
   // A page's screenshot is taken whenever a step lands on it, not only when this hub runs as a step.
   if (options.screenshot) screenshotPage(options.checkpoint.__state, options.screenshot === true ? {} : options.screenshot);
-  const expectByName: Record<string, SomeDefinedBlock> = Object.fromEntries(
-    Object.entries(expects ?? {}).map(([k, entry]) => [k, typeof entry === "function" ? entry() : entry]),
+
+  // What the page shows: a Read Block of its own, read where the page's step lands, and the keys to check it by.
+  const namespace = readAs ?? namespaceOf(options.checkpoint.__state);
+  let readBlock: ReadBlock | undefined;
+  if (readOf) {
+    readBlock = defineReadBlock({
+      name: `read-${options.name.replace(/^page-/, "")}`,
+      description: options.description ?? "",
+      from: options.checkpoint,
+      instruction: { read: (ctx) => ({ namespace, fields: readOf(ctx) }) },
+    });
+  }
+
+  // `do` and `expects` as functions of the page are called the first time they're used: by then every file is loaded, so a
+  // page and its Methods can import each other. The page they're given has what's defined so far (its read and nav).
+  const self = { checkpoint: options.checkpoint, read: readKeys(namespace), nav } as PageSelf<Out, R, Nav>;
+  const once = <T,>(make: () => T): (() => T) => {
+    let value: T | undefined;
+    let made = false;
+    return () => {
+      if (!made) {
+        value = make();
+        made = true;
+      }
+      return value as T;
+    };
+  };
+  const doRecord = once(() => Object.freeze(Object.fromEntries(Object.entries(doOf ? doOf(self) : (methods && !Array.isArray(methods) ? methods : {})).map(([k, entry]) => [k, resolveEntry(entry)]))));
+  const expectRecord = once(() =>
+    Object.freeze(Object.fromEntries(Object.entries(typeof expects === "function" ? expects(self) : (expects ?? {})).map(([k, entry]) => [k, resolveEntry(entry)]))),
   );
+  const methodList = once(() => {
+    const named = Object.values(doRecord()).filter(isBlockEntry);
+    const listed = Array.isArray(methods) ? methods.map(resolveEntry).filter(isBlockEntry) : [];
+    return Object.freeze([...named, ...listed]) as readonly SomeDefinedBlock[];
+  });
 
   markRoute(built, ["*"], [options.checkpoint.__state]);
   mark(built, "__waygraphKind", "page");
   mark(built, "__waygraphSalt", "page");
-  Object.defineProperty(built, "methods", {
-    value: Object.freeze([...methodList]),
-    enumerable: true,
-    configurable: false,
-    writable: false,
-  });
+  if (readBlock) mark(built, "__waygraphReadBlock", readBlock);
   // Every Block the page names (its nav, its methods and its expectations) counts as used: none is an orphan.
-  mark(built, "__waygraphMethods", [
-    ...(nav ? [nav.name] : []),
-    ...methodList.map((m) => m.name),
-    ...Object.values(expectByName).map((b) => b.name),
-  ]);
-  // By name, for flows: `Page.do.fillUsername`. Plain fields like `methods`, so a decorated copy (withVerify) keeps them.
-  const byName = options.methods && !Array.isArray(options.methods) ? Object.fromEntries(Object.keys(options.methods).map((k, i) => [k, methodList[i]])) : {};
-  Object.defineProperty(built, "do", { value: Object.freeze(byName), enumerable: true });
-  Object.defineProperty(built, "nav", { value: nav, enumerable: true });
-  Object.defineProperty(built, "expects", { value: Object.freeze(expectByName), enumerable: true });
+  Object.defineProperty(built, "__waygraphMethods", {
+    get: () => [...(nav ? [nav.name] : []), ...methodList().map((m) => m.name), ...Object.values(expectRecord()).filter(isBlockEntry).map((b) => b.name)],
+    enumerable: false,
+    configurable: true,
+  });
+  // Fields a decorated copy (withVerify, stubBefore) keeps by descriptor (see PAGE_FIELDS): not enumerable, so a copy made
+  // by spreading doesn't call them early.
+  Object.defineProperty(built, "methods", { get: methodList, enumerable: false, configurable: true });
+  Object.defineProperty(built, "do", { get: doRecord, enumerable: false, configurable: true });
+  Object.defineProperty(built, "expects", { get: expectRecord, enumerable: false, configurable: true });
+  Object.defineProperty(built, "read", { value: self.read, enumerable: false, configurable: true });
+  Object.defineProperty(built, "nav", { value: nav, enumerable: false, configurable: true });
   // Same marker `defineNavBlock` sets, same reason - a page hub with a
   // `url` (deep-link) is exactly as "known, coverable" as a plain
   // `defineNavBlock`, and in practice most real projects' own nav Blocks

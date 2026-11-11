@@ -159,7 +159,12 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
         readBlocks.push({ block: exported, exportName, file, absFile, ...(map ? { map } : {}) });
         continue;
       }
-      if (isBlockLike(exported)) addBlock(exportName, exported);
+      if (isBlockLike(exported)) {
+        addBlock(exportName, exported);
+        // A page's own read is a Read Block of its file, by its place in it (CartPage.read).
+        const own = (exported as { __waygraphReadBlock?: ReadBlock }).__waygraphReadBlock;
+        if (own) readBlocks.push({ block: own, exportName: `${exportName}.read`, file, absFile, ...(map ? { map } : {}) });
+      }
     }
   };
 
