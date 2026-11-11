@@ -67,7 +67,12 @@ export interface Mode {
   afterReset?(): Promise<void>;
   before?(index: number): Promise<void>;
   after?(index: number, result: Checkpoint<string>, ms: number): Promise<void>;
-  /** A step failed (or reached its expected failure): retry its episode, or stop. Without the hook: stop. */
-  failed?(index: number, failure: StepFailure, ms: number): Promise<"retry" | "stop">;
+  /**
+   * A step failed (or reached its expected failure): retry its episode, stop, or go on with the next step (the run still
+   * fails at the end). Without the hook: stop.
+   */
+  failed?(index: number, failure: StepFailure, ms: number): Promise<"retry" | "stop" | "continue">;
+  /** Whether to leave step `index` out (a compared side that already failed). */
+  skip?(index: number): boolean;
   end?(outcome: PlayOutcome): Promise<void>;
 }

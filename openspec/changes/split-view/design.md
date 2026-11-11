@@ -73,7 +73,7 @@ credentials) is set again when the flow switches to its pane, so steps read thei
 ### D6. Compare is a play mode, not a flow option
 `--compare as=a,b | device=a,b | config=a,b` plays the flow twice as two panes of one run, `left` and `right`, each step
 on both before the next. After each step it compares the landing Checkpoint, each check's outcome and the Read fields;
-differences go in the run log (`step:diff`) and the end of the run prints them. A side that fails stops; the other plays
+differences go in the run log (`compare:diff`) and the end of the run prints them. A side that fails stops; the other plays
 on. The exit code follows failures, not differences.
 
 ### D7. Chromium first

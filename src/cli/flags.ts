@@ -32,6 +32,8 @@ interface RunFlags {
   split?: string;
   /** Also record each pane of a flow with panes (--video-panes). */
   videoPanes?: boolean;
+  /** Play the flow twice, side by side, and say where they differ (--compare as=a,b). */
+  compare?: string;
   /** Global Mem seed JSON (--data). */
   data?: string;
   /** Fill any requires key with no --data coverage from registerMemStub's registry (--mem-stub). */
@@ -121,6 +123,7 @@ export const RUN_OPTIONS = {
   "no-voice": { type: "boolean", help: "Record without the config's voice-over (demo.voice)", for: ["demo"] },
   "video-viewport": { type: "string", value: "WxH", help: "Recording size (demo 1920x1080, run 1280x720)", for: ["demo", "run"] },
   "split": { type: "string", value: "stage|windows", help: "A flow with panes: side by side on one stage (default), or in windows side by side", for: ["demo", "run"] },
+  "compare": { type: "string", value: "as=a,b|device=a,b|config=a,b", help: "Play the flow twice side by side, step by step, and say where the two differ", for: ["demo", "run"] },
   "video-panes": { type: "boolean", help: "A flow with panes: also record each pane, at full frame rate", for: ["demo", "run"] },
   "step": { type: "boolean", help: "Step through with the overlay", for: ["run"] },
   "no-step": { type: "boolean", help: "No step overlay (demo: plain run with narration off)", for: ["demo"] },
@@ -221,6 +224,7 @@ export function parseRunFlags(argv: string[], command: string): RunFlags {
   if (v["video-viewport"] !== undefined) out.videoViewport = v["video-viewport"];
   if (v.split !== undefined) out.split = v.split;
   if (v["video-panes"]) out.videoPanes = true;
+  if (v.compare !== undefined) out.compare = v.compare;
   if (v["no-voice"]) out.noVoice = true;
   return out;
 }
@@ -299,6 +303,13 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
     setEnv("WAYGRAPH_SPLIT", flags.split);
   }
   if (flags.videoPanes) setEnv("WAYGRAPH_VIDEO_PANES", "1");
+  if (flags.compare !== undefined) {
+    if (!/^(as|device|config)=[^,]+,[^,]+$/.test(flags.compare)) {
+      console.error('waygraph: --compare is as=<account>,<account>, device=<device>,<device> or config=<config>,<config>');
+      process.exit(1);
+    }
+    setEnv("WAYGRAPH_COMPARE", flags.compare);
+  }
   if (flags.data !== undefined) {
     setEnv("WAYGRAPH_DATA", flags.data);
   }

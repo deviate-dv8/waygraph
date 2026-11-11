@@ -39,10 +39,12 @@
 
 ## 4. Compare two runs
 
-- [ ] 4.1 `--compare as=a,b | device=a,b | config=a,b` on run and demo: the flow twice as `left` and `right`, in step
-- [ ] 4.2 Differences per step (landing, each check, Read fields) as `step:diff` events; the summary at the end; a side
+- [x] 4.1 `--compare as=a,b | device=a,b | config=a,b` on run and demo: the flow twice as `left` and `right`, in step
+      (done as two panes named for the sides, `planner` and `admin`; a config side is a pane with that config's
+      `baseUrl`; signing in isn't compared)
+- [x] 4.2 Differences per step (landing, each check, Read fields) as `compare:diff` events; the summary at the end; a side
       that fails stops, the other plays on; exit code from failures only
-- [ ] 4.3 Tests: two devices passing with a field that differs; two accounts where one side fails a step
+- [x] 4.3 Tests: two devices passing with a field that differs; two accounts where one side fails a step
 
 ## 5. Waygraph UI
 

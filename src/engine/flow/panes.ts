@@ -24,6 +24,8 @@ export interface PaneOptions {
   device?: Device;
   /** Another pane whose context this one shares: one person, a second page (the app and the mail catcher). */
   with?: string;
+  /** The site this pane's relative addresses are on, when it isn't the run's (another environment: staging and prod). */
+  baseUrl?: string;
 }
 
 /** A flow's panes, by name. */
@@ -86,7 +88,7 @@ async function open(table: PaneTable, name: string, home: Page, mem: MemPage): P
       throw new WaygraphError("WG_PANES", `pane "${name}" needs a browser context of its own, and this run's browser can't make one (a persistent context, as with extensions): give it with: "<pane>" to share one`);
     }
     const device = pane.device ? resolveDevice(pane.device) : undefined;
-    const baseURL = envString("WAYGRAPH_BASE_URL");
+    const baseURL = pane.baseUrl ?? envString("WAYGRAPH_BASE_URL");
     const context = await browser.newContext({
       ...(baseURL ? { baseURL } : {}),
       ...(device
@@ -120,7 +122,8 @@ function labelOf(panes: Panes, name: string): string {
   const pane = panes[name];
   const owner = pane?.with !== undefined ? panes[pane.with] : pane;
   const parts = [owner?.as ? `as ${owner.as.name}` : "", pane?.device !== undefined || owner?.device !== undefined ? resolveDevice((pane?.device ?? owner?.device) as Device).preset : ""];
-  return parts.filter(Boolean).join(" · ");
+  // A pane named for what it is (a compared device) doesn't say it twice.
+  return parts.filter((part) => part && part !== name && part !== `as ${name}`).join(" · ");
 }
 
 async function pageOf(table: PaneTable, name: string, home: Page, mem: MemPage): Promise<Page> {

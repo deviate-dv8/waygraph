@@ -176,8 +176,7 @@ function dependsOnWaygraph(dir: string): boolean {
  * Which config file(s) to try. `--config <file>` / `WAYGRAPH_CONFIG` picks one: a path (`config/staging.ts`), or a short name
  * (`staging` -> `config/waygraph.staging.config.ts`, also tried in the project root). Without it, `waygraph.config.*`.
  */
-function configCandidates(): string[] {
-  const chosen = envString("WAYGRAPH_CONFIG");
+function configCandidates(chosen = envString("WAYGRAPH_CONFIG")): string[] {
   if (!chosen) return CONFIG_FILENAMES;
   if (/[\\/]/.test(chosen) || /\.[cm]?[jt]s$/.test(chosen)) return [chosen];
   const names = ["ts", "mts", "mjs", "js", "cjs"].map((e) => `waygraph.${chosen}.config.${e}`);
@@ -199,6 +198,20 @@ export function takeConfigFlag(argv: string[]): string[] {
  * file - silently swallowing it would make a missing `baseUrl` look like "nobody configured
  * anything" instead of "your config file has a bug."
  */
+/**
+ * Another of the project's configs, by name (`staging`: `config/waygraph.staging.config.ts`), read without setting
+ * anything from it: what `--compare config=a,b` compares.
+ */
+export async function readNamedConfig(projectDir: string, name: string): Promise<WaygraphConfig> {
+  for (const file of name === "default" ? CONFIG_FILENAMES : configCandidates(name)) {
+    const p = isAbsolute(file) ? file : join(projectDir, file);
+    if (!existsSync(p)) continue;
+    const mod = (await import(pathToFileURL(p).href)) as { default?: WaygraphConfig } & WaygraphConfig;
+    return mod.default ?? mod;
+  }
+  throw new Error(`waygraph: no config "${name}" (looked for ${configCandidates(name).join(", ")})`);
+}
+
 export async function loadWaygraphConfig(projectDir: string): Promise<WaygraphConfig | undefined> {
   loadEnvFiles(projectDir);
   for (const name of configCandidates()) {

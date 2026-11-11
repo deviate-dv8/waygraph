@@ -15,6 +15,7 @@ import { playBranches } from "./modes/branches.js";
 import { runMode } from "./modes/run.js";
 import { demoMode, splitDemoMode } from "./modes/demo.js";
 import { openSplit } from "./split.js";
+import { compareSteps, comparing } from "./compare.js";
 import { reportMode } from "./modes/report.js";
 import type { Mode, PlayOutcome, PlaySession, PlayStep } from "./mode.js";
 import type { PlayOptions } from "./options.js";
@@ -24,7 +25,10 @@ export async function play(projectDir: string, spec: string): Promise<void> {
   const mem = new MemPage();
   await loadReadBlocks(projectDir);
   await loadLayouts(projectDir);
-  const { steps, flows } = await planSteps(projectDir, spec, mem, options);
+  const planned = await planSteps(projectDir, spec, mem, options);
+  const { flows } = planned;
+  // --compare: the flow twice, side by side.
+  const steps = options.compare ? await compareSteps(projectDir, planned.steps, options.compare) : planned.steps;
   if (options.mode === "branches") return playBranches(flows, mem, options);
 
   const slowMo = slowMoFor(options, steps);
@@ -34,7 +38,8 @@ export async function play(projectDir: string, spec: string): Promise<void> {
     // A flow with panes, played to be seen: the session's page is their stage.
     const split = await openSplit(projectDir, session, steps, options);
     try {
-      const mode = await pickMode(options, session, steps, slowMo.demoBeat, split !== undefined);
+      const picked = await pickMode(options, session, steps, slowMo.demoBeat, split !== undefined);
+      const mode = options.compare ? comparing(picked, steps, options.compare) : picked;
       outcome = await playSteps(steps, session, mode, options.clearSession);
     } finally {
       await split?.close();

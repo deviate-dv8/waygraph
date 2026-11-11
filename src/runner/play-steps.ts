@@ -43,8 +43,11 @@ export async function playSteps(steps: readonly PlayStep[], session: PlaySession
   const cleanUpAfter = async (i: number): Promise<void> => {
     for (let j = i + 1; j < steps.length; j++) if (steps[j]!.cleanup && steps[j]!.segment === steps[i]!.segment) await cleanUp(j);
   };
+  // The first failure a mode played on past (a compared side that failed while the other went on): the run's outcome.
+  let failedOn: PlayOutcome["failedAt"];
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i]!;
+    if (mode.skip?.(i)) continue;
     if (step.cleanup) {
       await cleanUp(i);
       continue;
@@ -64,7 +67,12 @@ export async function playSteps(steps: readonly PlayStep[], session: PlaySession
     try {
       result = await runStep(step, session, at);
     } catch (error) {
-      if ((await mode.failed?.(i, { error }, Date.now() - startedAt)) === "retry") {
+      const next = await mode.failed?.(i, { error }, Date.now() - startedAt);
+      if (next === "continue") {
+        failedOn ??= { index: i, step, error };
+        continue;
+      }
+      if (next === "retry") {
         await resetPage(session);
         await mode.afterReset?.();
         at = Start;
@@ -95,6 +103,7 @@ export async function playSteps(steps: readonly PlayStep[], session: PlaySession
     }
     await mode.after?.(i, result, Date.now() - startedAt);
   }
+  if (failedOn && outcome.ok) outcome = { ok: false, failedAt: failedOn };
   if (cleanupFailures.length) outcome = { ...outcome, cleanupFailures };
   await closePanes(session.page);
   await mode.end?.(outcome);

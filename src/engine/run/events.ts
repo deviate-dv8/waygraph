@@ -16,8 +16,18 @@ export type RunEvent =
   | { type: "step:error"; runId: string; at: number; index: number; block: string; kind: BlockKind; error: string; ms: number; check?: TraitCheckReport }
   | ({ type: "step:read"; runId: string; at: number; index: number; block: string; kind: BlockKind; checkpoint: string } & StepRead)
   | { type: "run:end"; runId: string; at: number; ok: boolean; result?: string; error?: string; ms: number }
+  /** A compared run (`--compare`): where its two sides differed after step `block` (the `step`-th of each). */
+  | { type: "compare:diff"; runId: string; at: number; step: number; block: string; sides: [string, string]; diffs: StepDiff[] }
   /** `index`, `block`, `checkpoint`: the step a screenshot ends, and where the page was. */
   | { type: "run:artifact"; runId: string; at: number; kind: "video" | "trace" | "screenshot"; path: string; index?: number; block?: string; checkpoint?: string };
+
+/** One way two compared sides differed after a step: where they landed, whether it passed, or what a page field read. */
+export interface StepDiff {
+  what: "landed" | "outcome" | "read";
+  /** The field (`cart.total`) for a read. */
+  key?: string;
+  values: [unknown, unknown];
+}
 
 /** What the page showed after a step, from the Read Blocks for the Checkpoint it landed on. */
 export interface StepRead {
@@ -151,6 +161,13 @@ export function stepFailed(error: unknown): void {
   for (const { index, block, kind, startedAt } of open.open.splice(0).reverse()) {
     emit({ type: "step:error", runId: open.runId, at, index, block, kind, error: message, ms: at - startedAt, ...(check ? { check } : {}) });
   }
+}
+
+/** Records where the two sides of a compared run differed after a step. */
+export function recordDiff(step: number, block: string, sides: [string, string], diffs: StepDiff[]): void {
+  const open = scope.getStore();
+  if (!open) return;
+  emit({ type: "compare:diff", runId: open.runId, at: Date.now(), step, block, sides, diffs });
 }
 
 /** Records the mem a segment of this run was seeded with, keyed by MemKey name. */

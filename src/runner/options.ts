@@ -20,6 +20,8 @@ export interface PlayOptions {
   split: "stage" | "windows";
   /** Also record each pane (--video-panes). */
   videoPanes: boolean;
+  /** Play the flow twice, side by side, by account, device or config (--compare). */
+  compare: { by: "as" | "device" | "config"; sides: [string, string] } | undefined;
   /** Expand fast-forward units into their inner steps (--ff-expand / --ff-disabled). */
   ffExpand: boolean;
   ffDisabled: boolean;
@@ -33,6 +35,12 @@ export interface PlayOptions {
   input: string | undefined;
 }
 
+
+/** `as=planner,admin` as what's compared and its two sides. */
+function compareOf(spec: string | undefined): PlayOptions["compare"] {
+  const match = spec ? /^(as|device|config)=([^,]+),([^,]+)$/.exec(spec) : null;
+  return match ? { by: match[1] as "as" | "device" | "config", sides: [match[2]!, match[3]!] } : undefined;
+}
 
 function readMode(): ModeName {
   if (envFlag("WAYGRAPH_ALL_BRANCHES")) return "branches";
@@ -54,6 +62,7 @@ export function readOptions(): PlayOptions {
     videoViewport: envString("WAYGRAPH_VIDEO_VIEWPORT"),
     split: envString("WAYGRAPH_SPLIT") === "windows" ? "windows" : "stage",
     videoPanes: envFlag("WAYGRAPH_VIDEO_PANES"),
+    compare: compareOf(envString("WAYGRAPH_COMPARE")),
     ffExpand: envFlag("WAYGRAPH_FF_EXPAND") || envFlag("WAYGRAPH_FF_DISABLED"),
     ffDisabled: envFlag("WAYGRAPH_FF_DISABLED"),
     memStub: envFlag("WAYGRAPH_MEM_STUB"),
