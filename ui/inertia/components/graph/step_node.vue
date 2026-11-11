@@ -15,6 +15,8 @@ const props = defineProps<{
     status?: 'passed' | 'failed' | 'running' | 'skipped'
     ms?: number | null
     selected?: boolean
+    pane?: string | null
+    diffs?: string[]
   }
 }>()
 
@@ -61,7 +63,10 @@ const stroke = () =>
   >
     <div class="w-56 py-3" :class="padding()">
       <div class="flex items-center justify-between gap-2 text-xs text-(--ink-soft)">
-        <span>step {{ props.data.index + 1 }} · {{ props.data.kind }}</span>
+        <span
+          >step {{ props.data.index + 1 }} · {{ props.data.kind
+          }}<template v-if="props.data.pane"> · in {{ props.data.pane }}</template></span
+        >
         <span v-if="props.data.ms != null">{{ props.data.ms }} ms</span>
       </div>
       <p class="font-hand mt-0.5 text-lg leading-tight break-words">
@@ -84,6 +89,15 @@ const stroke = () =>
         <li v-for="(e, i) in props.data.expects" :key="i" class="flex gap-1 text-xs">
           <span class="text-(--color-sketch-500)">expects</span>
           <span class="line-clamp-2">{{ e }}</span>
+        </li>
+      </ul>
+      <ul
+        v-if="props.data.diffs?.length"
+        class="mt-2 space-y-0.5 border-t border-dashed border-(--island-line) pt-2"
+      >
+        <li v-for="(d, i) in props.data.diffs" :key="i" class="flex gap-1 text-xs">
+          <span class="text-(--run)">differs</span>
+          <span class="line-clamp-2">{{ d }}</span>
         </li>
       </ul>
     </div>

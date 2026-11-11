@@ -72,6 +72,10 @@ export type ManifestFlow = {
   steps: string[]
   stepExpects: string[][]
   settings: Record<string, Json>
+  /** Its panes, when it plays on pages side by side; missing before waygraph 0.16.21. */
+  panes?: { name: string; as?: string; device?: Json; with?: string }[]
+  /** The pane each step plays in. */
+  stepPanes?: (string | null)[]
 }
 
 export type ManifestReadBlock = {
@@ -171,6 +175,10 @@ export type RunStep = {
   parent: number | null
   /** Its screenshot's file name in the run's folder, when its Block took one (`screenshot: true`). */
   screenshot: string | null
+  /** The pane it played in, in a flow with panes or a compared run. */
+  pane: string | null
+  /** In a compared run (`--compare`): where the two sides differed after this step, in words. */
+  diffs: string[]
 }
 
 export type RunDetail = RunSummary & {

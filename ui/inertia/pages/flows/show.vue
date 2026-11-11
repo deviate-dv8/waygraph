@@ -20,7 +20,8 @@ const props = defineProps<{
 
 const selected = ref<number | null>(null)
 const pipeline = computed(() =>
-  props.steps.map((s) => ({
+  props.steps.map((s, i) => ({
+    pane: props.flow.stepPanes?.[i] ?? null,
     name: s.name,
     kind: s.block?.kind ?? 'step',
     description: s.block?.description ?? '',

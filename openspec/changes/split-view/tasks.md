@@ -48,8 +48,8 @@
 
 ## 5. Waygraph UI
 
-- [ ] 5.1 A split flow and its runs as lanes, one per pane
-- [ ] 5.2 A compared run: both sides as lanes, each difference beside its step
+- [x] 5.1 A split flow and its runs as lanes, one per pane
+- [x] 5.2 A compared run: both sides as lanes, each difference beside its step
 - [ ] 5.3 UI tests; light and dark; the guide's screenshots (`npm run docs:ui-shots`)
 
 ## 6. Examples, docs and skills

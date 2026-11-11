@@ -100,6 +100,41 @@ test.group('ProjectService', (group) => {
     assert.isNull(await project.artifact('run-2', 7))
   })
 
+  test("a compared run's steps say their pane, and where the two sides differed", async ({
+    assert,
+  }) => {
+    const step = (index: number, pane: string, block: string) => [
+      { type: 'step:start', index, block, kind: 'nav', from: 'Start', pane },
+      { type: 'step:end', index, block, kind: 'nav', to: 'App', ms: 5 },
+    ]
+    const events = [
+      { type: 'run:start', at: 1 },
+      ...step(0, 'desktop', 'nav-app'),
+      ...step(1, 'mobile', 'nav-app'),
+      {
+        type: 'compare:diff',
+        step: 1,
+        block: 'nav-app',
+        sides: ['desktop', 'mobile'],
+        indexes: [0, 1],
+        diffs: [{ what: 'read', key: 'screen.width', values: [1280, 980] }],
+      },
+      { type: 'run:end', ok: true, ms: 10 },
+    ]
+    await writeFile(
+      join(dir, '.waygraph', 'runs', 'run-3.jsonl'),
+      events.map((e) => JSON.stringify(e)).join('\n')
+    )
+    const run = await new ProjectService().run('run-3')
+    assert.deepEqual(
+      run?.stepsList.map((s) => [s.pane, s.diffs]),
+      [
+        ['desktop', ['screen.width: desktop 1280, mobile 980']],
+        ['mobile', ['screen.width: desktop 1280, mobile 980']],
+      ]
+    )
+  })
+
   test('reads only files in the runs folder', async ({ assert }) => {
     assert.isNull(await new ProjectService().run('../run-1'))
     assert.isNull(await new ProjectService().run('missing'))

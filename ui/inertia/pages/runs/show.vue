@@ -35,6 +35,8 @@ const pipeline = computed(() =>
     expects: props.expects[i] ?? [],
     status: s.status,
     ms: s.ms,
+    pane: s.pane ?? null,
+    diffs: s.diffs ?? [],
   }))
 )
 const step = computed(() =>

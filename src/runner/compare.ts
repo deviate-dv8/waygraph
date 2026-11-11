@@ -96,11 +96,14 @@ export function comparing(mode: Mode, steps: readonly PlayStep[], compare: Compa
   const now = new Map<string, Side>();
   const found: { step: number; block: string; diffs: StepDiff[] }[] = [];
   let acting = "";
+  // Each side's last step in the run log (its index there), for the differences to point at.
+  const logged = new Map<string, number>();
   // What each side's page read after its step, and where it landed, from the run's own events.
   const off = onRunEvent((event) => {
     // A side's step starts afresh: what it reads is this step's.
     if (event.type === "step:start" && event.pane) {
       acting = event.pane;
+      if (event.parent === undefined) logged.set(event.pane, event.index);
       now.set(acting, { read: {} });
     }
     if (event.type === "step:read" && acting) now.set(acting, { ...(now.get(acting) ?? { read: {} }), read: event.read });
@@ -119,7 +122,8 @@ export function comparing(mode: Mode, steps: readonly PlayStep[], compare: Compa
     const diffs = differences(now.get(sides[0]) ?? { read: {} }, now.get(sides[1]) ?? { read: {} });
     if (diffs.length) {
       found.push({ step, block, diffs });
-      recordDiff(step, block, sides, diffs);
+      const at = sides.map((s) => logged.get(s));
+      recordDiff(step, block, sides, diffs, at[0] !== undefined && at[1] !== undefined ? [at[0], at[1]] : undefined);
     }
   };
   return {

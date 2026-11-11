@@ -606,7 +606,7 @@ const page = computed(() =>
       />
       <span
         v-if="props.access.leftOut || props.access.closed.length"
-        class="text-(--warning)"
+        class="text-(--run)"
         :title="`What ${props.access.account} isn't given (for)`"
       >
         {{ count(props.access.closed.length, 'page') }},

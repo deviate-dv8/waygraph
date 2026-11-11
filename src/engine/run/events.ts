@@ -17,7 +17,7 @@ export type RunEvent =
   | ({ type: "step:read"; runId: string; at: number; index: number; block: string; kind: BlockKind; checkpoint: string } & StepRead)
   | { type: "run:end"; runId: string; at: number; ok: boolean; result?: string; error?: string; ms: number }
   /** A compared run (`--compare`): where its two sides differed after step `block` (the `step`-th of each). */
-  | { type: "compare:diff"; runId: string; at: number; step: number; block: string; sides: [string, string]; diffs: StepDiff[] }
+  | { type: "compare:diff"; runId: string; at: number; step: number; block: string; sides: [string, string]; diffs: StepDiff[]; indexes?: [number, number] }
   /** `index`, `block`, `checkpoint`: the step a screenshot ends, and where the page was. */
   | { type: "run:artifact"; runId: string; at: number; kind: "video" | "trace" | "screenshot"; path: string; index?: number; block?: string; checkpoint?: string };
 
@@ -164,10 +164,10 @@ export function stepFailed(error: unknown): void {
 }
 
 /** Records where the two sides of a compared run differed after a step. */
-export function recordDiff(step: number, block: string, sides: [string, string], diffs: StepDiff[]): void {
+export function recordDiff(step: number, block: string, sides: [string, string], diffs: StepDiff[], indexes?: [number, number]): void {
   const open = scope.getStore();
   if (!open) return;
-  emit({ type: "compare:diff", runId: open.runId, at: Date.now(), step, block, sides, diffs });
+  emit({ type: "compare:diff", runId: open.runId, at: Date.now(), step, block, sides, diffs, ...(indexes ? { indexes } : {}) });
 }
 
 /** Records the mem a segment of this run was seeded with, keyed by MemKey name. */

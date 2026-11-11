@@ -245,6 +245,13 @@ function summarize(id: string, events: RunEvent[]): RunSummary {
   }
 }
 
+/** A value of a compared field, short. */
+function show(value: Json | undefined): string {
+  const text =
+    value === undefined ? 'nothing' : typeof value === 'string' ? value : JSON.stringify(value)
+  return text.length > 60 ? `${text.slice(0, 57)}...` : text
+}
+
 function foldSteps(events: RunEvent[]): RunStep[] {
   const steps: RunStep[] = []
   for (const e of events) {
@@ -264,7 +271,19 @@ function foldSteps(events: RunEvent[]): RunStep[] {
         read: null,
         cleanup: e.cleanup === true,
         parent: typeof e.parent === 'number' ? e.parent : null,
+        pane: typeof e.pane === 'string' ? e.pane : null,
+        diffs: [],
       })
+      continue
+    }
+    // A compared run's differences, on both sides' steps.
+    if (e.type === 'compare:diff' && Array.isArray(e.indexes)) {
+      const sides = (e.sides ?? []) as string[]
+      for (const d of (e.diffs ?? []) as { what: string; key?: string; values: Json[] }[]) {
+        const line = `${d.what === 'read' ? d.key : d.what}: ${sides[0]} ${show(d.values[0])}, ${sides[1]} ${show(d.values[1])}`
+        for (const index of e.indexes as number[])
+          steps.find((s) => s.index === index)?.diffs.push(line)
+      }
       continue
     }
     const step = [...steps]
