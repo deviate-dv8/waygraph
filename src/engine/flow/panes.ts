@@ -15,6 +15,8 @@ import { paneHostOf, setPaneResolver, type PaneMark, type PaneResolver } from ".
 import { stepEnded, stepStarted } from "../run/events.js";
 import { resolveDevice, type Device } from "./device.js";
 import { signInStep, type Account } from "./account.js";
+import { clearSessionState } from "./flow.js";
+import { ignorePageGone } from "../page-gone.js";
 
 /** One pane of a flow. */
 export interface PaneOptions {
@@ -80,8 +82,9 @@ async function open(table: PaneTable, name: string, home: Page, mem: MemPage): P
     page = await (await pageOf(table, pane.with, home, mem)).context().newPage();
     const device = table.panes[pane.with]?.device;
     if (host) await page.setViewportSize(device ? resolveDevice(device).viewport : host.viewport(name));
-  } else if (table.pages.size === 0 && !host) {
-    // The first pane a step acts in plays on the page the run was given (with a host, that page is the stage).
+  } else if (!host && ![...table.pages.values()].includes(home)) {
+    // A pane plays on the page the run was given when no other does (the first to open; one that opens after it closed).
+    // With a host, that page is the stage.
     page = home;
     if (pane.device) await page.setViewportSize(resolveDevice(pane.device).viewport);
   } else {
@@ -169,9 +172,6 @@ const resolver: PaneResolver = {
     const table = tables.get(page);
     const open = table?.pages.get(name);
     if (!table || !open) return;
-    if (open === table.home) {
-      throw new WaygraphError("WG_PANES", `.close("${name}"): ${name} plays on the run's own page, which stays open; close another pane, or start the flow in the one that closes last`);
-    }
     // Its own context goes, with every pane sharing it; a pane sharing another's loses its page only.
     const sharing = [name, ...Object.entries(table.panes).filter(([, p]) => p.with === name).map(([other]) => other)];
     const host = paneHostOf(table.home);
@@ -180,8 +180,15 @@ const resolver: PaneResolver = {
       if (!p) continue;
       table.pages.delete(pane);
       table.last.delete(pane);
-      tables.delete(p);
-      if (!table.own.has(pane)) await p.close();
+      if (p === table.home) {
+        // The run's own page stays open: the pane's person leaves it (cookies and storage cleared), as a closed context
+        // would, and it's free for the next pane to open.
+        await clearSessionState(p.context(), p);
+        await p.goto("about:blank").catch(ignorePageGone);
+      } else {
+        tables.delete(p);
+        if (!table.own.has(pane)) await p.close();
+      }
       if (table.active === pane) table.active = undefined;
       host?.closed?.(pane);
     }

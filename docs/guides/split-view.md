@@ -51,19 +51,19 @@ engine
   .gotoPage(Inventory.nav);
 ```
 
-Outside a demo the first pane plays on the run's own page, which stays open: close another pane.
+Any pane closes, the first one too, in a run, a test or a demo alike.
 
 ## Seeing it
 
 | | Panes |
 |---|---|
 | `waygraph run`, `waygraph test` | play with no stage, headless unless asked |
-| `waygraph demo`, `--video` | side by side on a **stage**: one window, one video. Each pane is labelled (its name, who is signed in, its device), the one acting is outlined, and each has the demo's UI (rings, captions, its step panel) on its own page. Only open panes show: one fills the stage, a second splits it. The stage is watched, not clicked, so the demo moves on by itself |
+| `waygraph demo`, `--video` | side by side on a **stage**: one window, one video. Each pane is labelled (its name, who is signed in, its device), the one acting is outlined, and each has the demo's UI (rings, captions, its step panel, the voice-over) on its own page. Only open panes show: one fills the stage, a second splits it, more share it as a grid. What you do on the stage goes to the pane under the pointer (a click on Next, a scroll, a key), so a demo with panes is driven as one on a single page |
 | `--split windows` | each pane in a real browser window, side by side across the screen, for watching live and clicking into |
 | `--video-panes` | with `--video`, also one video per pane, at its full frame rate |
 
-The stage shows each pane live from its screencast (Chromium): smooth enough to follow, a little stepped next to a
-pane's own video.
+The stage shows each pane live from its screencast, as Playwright's own UI shows a test: smooth enough to follow, a
+little stepped next to a pane's own video (`--video-panes`).
 
 ## Compare two runs
 
@@ -81,6 +81,10 @@ npx waygraph run checkoutFlow --compare config=staging,default
 | `device=a,b` | plays on that device |
 | `config=a,b` | plays on that config's `baseUrl` (`config/waygraph.<name>.config.ts`; `default` is `waygraph.config.ts`) |
 
+A flow with panes compares the same way: each of its panes plays once per side (`planner (desktop)`, `planner
+(mobile)`), each side's with that side's device or config; compared by account, the pane the flow starts in (its main
+person) is the one signed in as each side's account. `.close(pane)` closes that pane on each side.
+
 After each step it compares where each side landed, whether it passed, and each field its page reads (signing in isn't
 compared). The differences go in the run log (`compare:diff`) and print at the end:
 
@@ -95,9 +99,3 @@ A side that fails stops; the other plays on to the end. Only failures fail the r
 
 A flow with panes, and its runs, show as lanes: one per pane, each step at its place in the flow, so the arrows read in
 order across them. A compared run marks each step where the two sides differed. See [Waygraph UI](./ui).
-
-## Limits
-
-- Two panes on the stage at a time read best; more share it in narrower columns.
-- Steps play in the flow's order: two people acting at the same moment (a race) isn't covered.
-- The stage and windows need Chromium; Firefox and WebKit play flows with panes under `waygraph test`.

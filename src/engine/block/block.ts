@@ -280,6 +280,7 @@ export function copyWaygraphRuntime(from: object, to: object): void {
     "__waygraphFor",
     "__waygraphLayout",
     "__waygraphPane",
+    "__waygraphCloses",
   ] as const) {
     const desc = Object.getOwnPropertyDescriptor(from, key);
     // A getter stays one (a layout link's pages are known once layouts load).

@@ -29,18 +29,19 @@ export async function demoMode(session: PlaySession, steps: readonly PlayStep[],
 }
 
 /**
- * `waygraph demo` of a flow with panes: each pane has its own waygraph UI (its panel, rings and captions), on its own
- * page. On the stage it's watched, not clicked, so the demo moves on by itself; in windows, Next works as usual.
+ * `waygraph demo` of a flow with panes: each pane has the demo's UI (its panel, rings and captions) on its own page, and
+ * the run's voice; on the stage or in windows, Next works as on one page.
  */
 export async function splitDemoMode(session: PlaySession, steps: readonly PlayStep[], options: PlayOptions, beat: number): Promise<Mode> {
-  const autoAdvance = options.split === "stage";
+  const voice = voiceOf(session.page);
+  if (voice?.steps) voice.prepare(steps.map((s) => s.block.description ?? ""));
   const steppers = new Map<Page, Promise<Stepper>>();
   /** The UI of the pane step `index` acts in, made when the pane first acts. */
   const stepperFor = async (index: number): Promise<Stepper> => {
     const page = await stepPage(steps[index]!.block, session.page, session.mem);
     let stepper = steppers.get(page);
     if (!stepper) {
-      stepper = createStepper(page, session.mem, steps, { title: options.title, fastBlocks: options.fastBlocks, beat, autoAdvance });
+      stepper = createStepper(page, session.mem, steps, { title: options.title, fastBlocks: options.fastBlocks, beat });
       steppers.set(page, stepper);
     }
     return stepper;

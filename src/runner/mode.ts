@@ -32,6 +32,8 @@ export interface PlayStep {
   segment: number;
   /** A cleanup step (`.finally(Block)`): played when its flow ends, pass or fail; a failure is reported, not fatal. */
   cleanup?: boolean | undefined;
+  /** The side of a compared run (`--compare`) it plays on. */
+  compareSide?: string | undefined;
   /** An inner step of an expanded fast-forward unit (`--ff-expand`). */
   wasFastForward?: boolean | undefined;
   ffSource?: string | undefined;

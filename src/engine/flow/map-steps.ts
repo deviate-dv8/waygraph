@@ -14,6 +14,7 @@ import { MSG_MAP_LANDED_ELSEWHERE, MSG_MAP_LANDS_NOT_AN_OUTCOME, MSG_MAP_WRONG_K
 import { MemPage } from "../mem/mem.js";
 import type { DemoPace } from "../stub/pace.js";
 import { clearSessionState } from "./flow.js";
+import { closePane } from "../run/pane-page.js";
 
 
 /** The same Block, but it clears cookies and storage before it acts. Keeps the runtime markers. */
@@ -128,7 +129,7 @@ export function skippable(block: SomeBlock, when: ((mem: MemPage) => boolean) | 
  * A step that ends where it started, doing `act` without touching the page's position: setting a key, checking what the
  * page shows. Its route is `*` -> where it was, so it fits after any step.
  */
-export function stayingStep(name: string, description: string, act: (page: Page, mem: MemPage) => Promise<void> | void, verify?: Trait[]): SomeBlock {
+function stayingStep(name: string, description: string, act: (page: Page, mem: MemPage) => Promise<void> | void, verify?: Trait[]): SomeBlock {
   const at = new WeakMap<MemPage, Checkpoint<string>>();
   return defineMethodBlock<Checkpoint<string>, Checkpoint<string>>({
     name,
@@ -159,6 +160,18 @@ export function settingInput(key: MemKey<unknown>, value: unknown, flowName: str
 }
 
 /** `.set(key, value)`: a step that sets `key` (a value, or one worked out from mem when the step runs). */
+/** The step `.close(pane)` adds: closes `pane`, and says which (`__waygraphCloses`), so a compared run closes each side's. */
+export function closingStep(pane: string): SomeBlock {
+  const step = stayingStep(`close-${pane}`, `Closes the ${pane} pane.`, (page) => closePane(page, pane));
+  mark(step, "__waygraphCloses", pane);
+  return step;
+}
+
+/** The pane a `.close(pane)` step closes. */
+export function closesPane(block: object): string | undefined {
+  return (block as { __waygraphCloses?: string }).__waygraphCloses;
+}
+
 export function settingKey<T>(key: MemKey<T>, value: Expected<T>): SomeBlock {
   return stayingStep(`set-${key.name}`, `Sets ${key.name}.`, (_page, mem) => void mem.set(key, expectedValue(value, mem)));
 }

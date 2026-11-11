@@ -17,7 +17,7 @@ export interface Gate {
   autoplayMs: number;
 }
 
-export async function installGate(page: WgPage, pacing: Pacing, demoFast: boolean, autoAdvance = false): Promise<Gate> {
+export async function installGate(page: WgPage, pacing: Pacing, demoFast: boolean): Promise<Gate> {
   const autoplayMs = envNumber("WAYGRAPH_AUTOPLAY_MS") ?? (demoFast ? 450 : 1800);
 
   // installOverlay only seeds the checkbox when unset (so a mid-run click survives navigation); the CLI flag must
@@ -63,9 +63,8 @@ export async function installGate(page: WgPage, pacing: Pacing, demoFast: boolea
   // starts on) has no storage: then the command's own --auto-next decides, or the demo would wait for a click forever.
   const fromFlag = envString("WAYGRAPH_AUTOPLAY") === undefined ? false : envFlag("WAYGRAPH_AUTOPLAY");
   const autoplayOn = async (): Promise<boolean> => {
-    // Without the panel (demo.overlay.panel: false), or on a split view's stage, there's no Next to click: the demo moves
-    // on by itself.
-    if (autoAdvance || overlayHides("panel")) return true;
+    // Without the panel (demo.overlay.panel: false) there's no Next to click: the demo moves on by itself.
+    if (overlayHides("panel")) return true;
     const stored = await page
       .evaluate(() => {
         try {

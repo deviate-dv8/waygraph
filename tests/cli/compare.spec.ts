@@ -56,6 +56,7 @@ export const Admin = account("admin", { signIn: map().gotoPage(SignInAs("admin")
 import { NavApp, OpenAdmin } from "../map/app/app.block.js";
 export const viewFlow = map().gotoPage(NavApp).gotoPage(NavApp);
 export const adminFlow = map().gotoPage(NavApp).method(OpenAdmin).gotoPage(NavApp);
+export const panesFlow = map({ panes: { main: {}, side: { with: "main" } } }).in("main").gotoPage(NavApp).in("side").gotoPage(NavApp).in("main").close("side");
 `,
   );
 });
@@ -97,5 +98,22 @@ test("two accounts: a step only one can take fails that side; the other plays on
     "planner:open-admin",
     "admin:open-admin",
     "admin:nav-app",
+  ]);
+});
+
+test("a flow with panes compares too: each pane once per side", async () => {
+  test.setTimeout(100_000);
+  const { code, stdout } = await run(["panesFlow", "--compare", "device=desktop,mobile"]);
+  expect(code).toBe(0);
+  expect(stdout).toContain("step 1 nav-app: screen.width: 1280 | 980");
+  const log = (await readdir(join(dir, "runs"))).filter((f) => f.endsWith(".jsonl")).sort().at(-1)!;
+  const starts = (await readFile(join(dir, "runs", log), "utf8")).split("\n").filter(Boolean).map((l) => JSON.parse(l)).filter((e) => e.type === "step:start" && e.pane);
+  expect(starts.map((e) => `${e.pane}:${e.block}`)).toEqual([
+    "main (desktop):nav-app",
+    "main (mobile):nav-app",
+    "side (desktop):nav-app",
+    "side (mobile):nav-app",
+    "main (desktop):close-side (desktop)",
+    "main (mobile):close-side (mobile)",
   ]);
 });

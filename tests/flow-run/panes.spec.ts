@@ -155,14 +155,16 @@ test("from two screens back to one: .close(pane) closes it, and it opens afresh 
   expect(context.browser()?.contexts().length).toBe(1);
 });
 
-test("the pane on the run's own page doesn't close", async ({ context, page }) => {
+test("the first pane closes too: its person leaves the run's page, and it opens afresh when used again", async ({ context, page }) => {
   const flow = engine
-    .map({ panes: { planner: {}, admin: {} } })
-    .in("planner").gotoPage(NavWho)
-    .in("admin").gotoPage(NavWho)
-    .close("planner");
-  const error = await flow.run(context, new MemPage(), { page }).catch((err: unknown) => String(err));
-  expect(error).toContain(`.close("planner"): planner plays on the run's own page`);
+    .map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })
+    .in("planner").gotoPage(NavWho.withVerify([whoIs("planner")]))
+    .in("admin").gotoPage(NavWho.withVerify([whoIs("admin")]))
+    .close("planner")
+    .in("planner").gotoPage(NavWho.withVerify([whoIs("planner")]));
+  expect(await flow.run(context, new MemPage(), { page })).toEqual(Who);
+  // Reopened on the run's own page, signed in again.
+  await expect(page.locator("#who")).toHaveText("planner");
 });
 
 test("a flow with panes says which pane a step acts in; panes are checked when the flow is built", () => {

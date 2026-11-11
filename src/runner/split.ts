@@ -2,6 +2,7 @@
 // window (demo/split/stage.ts) or in windows of their own (`--split windows`). The panes play in a browser of their own;
 // `--video-panes` also records each. Played only to pass or fail (`waygraph run`, a test), a flow's panes need neither.
 import type { Page } from "@playwright/test";
+import type { WgPage } from "../demo/types.js";
 import { paneOf, setPaneHost, type PaneHost } from "../engine/run/pane-page.js";
 import { recordArtifact } from "../engine/run/events.js";
 import { openStage } from "../demo/split/stage.js";
@@ -31,6 +32,9 @@ export async function openSplit(projectDir: string, session: PlaySession, steps:
     contextOptions: (pane) => ({ ...shown.contextOptions?.(pane), ...(videoDir ? { recordVideo: { dir: videoDir, size: shown.viewport(pane) } } : {}) }),
     async opened(pane, page, label) {
       pages.push([pane, page]);
+      // The run's voice-over speaks for every pane (one recording, one voice).
+      const voice = (session.page as WgPage).__wgVoice;
+      if (voice) (page as WgPage).__wgVoice = voice;
       await shown.opened(pane, page, label);
     },
   };

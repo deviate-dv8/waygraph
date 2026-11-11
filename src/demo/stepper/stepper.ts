@@ -53,11 +53,6 @@ export interface StepperOptions {
   fastBlocks: Set<string>;
   /** Waygraph's own beat after each action, in ms. */
   beat: number;
-  /**
-   * Move on from each step by itself, whatever the panel's switch says: a pane on the split view's stage is seen, not
-   * clicked.
-   */
-  autoAdvance?: boolean;
 }
 
 /** The finish card: how the demo ended, its title, and how many steps it played in how long. */
@@ -121,7 +116,7 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
   }
   keepOverlayOnNavigation(page, () => restoreTheaterAfterNavigation(page, refs.stubBefore));
   keepWindowSize(page);
-  const gate = await installGate(page, pacing, demoFast, options.autoAdvance === true);
+  const gate = await installGate(page, pacing, demoFast);
   await gate.syncAutoplay();
   const ctx: StepperContext = {
     page,
