@@ -12,7 +12,11 @@ when the step passed. Calls to other origins SHALL be left out unless `demo.netw
 
 #### Scenario: A failed call is marked though the step passed
 - **WHEN** a step's verify passes, but a request it made to the app was answered 500
-- **THEN** the step's card SHALL show that call as failed, with "500 Server error"
+- **THEN** the step's card SHALL show that call as failed, with "500 Server error", and the step SHALL still pass
+
+#### Scenario: In a flow with panes
+- **WHEN** a step in the `admin` pane makes a call
+- **THEN** the call SHALL show in that step's card in the admin pane, and in the run log with that step
 
 ### Requirement: Calls have names
 `demo.network.names` SHALL name calls by method and route (a route may have `:params`); a call without a name SHALL read

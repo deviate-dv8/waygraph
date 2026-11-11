@@ -52,6 +52,11 @@ memory only, as today.
   `authorization`) show masked; headers stay in the developer detail only.
 - **Busy pages** (dozens of calls a step) → the card lists the first five and a count; the panel has them all.
 
-## Open Questions
+### D7. A failed call never fails its step
+What passes or fails a step stays what it is today: its verify and its expectations. A failed call is marked, never a
+failure of its own, and there is no option to make it one: a project's results don't change when it upgrades, and a
+call that matters is checked like anything else (an API Block's checks, a step's `expect`).
 
-- Should a failed call fail the step (an opt-in `failOnFailedCalls`)? Proposed: no in this change; the card marks it.
+### D8. The same with one page and with panes
+Everything here works the same in a flow on one page and in a flow with panes (each pane's calls with its steps, in
+its own card), in run, demo, video, the run log and the UI: nothing in the docs is "not available with panes".
