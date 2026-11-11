@@ -39,8 +39,8 @@ page whose `for` doesn't include X, naming the flow, the step and the account.
 - **WHEN** `engine.map({ as: Leadership }).gotoPage(Sidebar.go.equipment)` and the link is for PlantManager only
 - **THEN** `waygraph check` SHALL warn: the flow uses `sidebar → equipment`, which Leadership isn't given
 
-### Requirement: One account's view in Waygraph UI
-Waygraph UI's map SHALL let a person pick an account and then show only what that account is given: the pages it can
+### Requirement: One account's view in Waygraph Studio
+Waygraph Studio's map SHALL let a person pick an account and then show only what that account is given: the pages it can
 open, the layout links and the Methods it sees. A page's panel SHALL say which accounts can open it.
 
 #### Scenario: Leadership's map

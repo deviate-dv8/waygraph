@@ -1,7 +1,7 @@
 ## 1. Site map in the shared layer
 
 - [x] 1.1 Move the site map's tree (sites, folders, each page under its parent by address) from
-      `ui/app/services/site_map.ts` to `manifest/site-map.ts`; the UI imports it from the package; tests move with it
+      `studio/app/services/site_map.ts` to `manifest/site-map.ts`; the UI imports it from the package; tests move with it
       (done as: the manifest carries `siteTree` and the UI reads it; the UI keeps its own copy only for a project on an
       older waygraph, whose manifest has none, since the UI is built apart from the package's code)
 - [x] 1.2 `parentOf(checkpoint)` and `ancestorsOf(checkpoint)` on the tree
@@ -39,7 +39,7 @@
 - [x] 3.4 Tests: access passes; a missing link and an extra link each fail naming it; a forbidden page that opens fails;
       the check rule on a fixture
 
-## 4. Manifest, map and Waygraph UI
+## 4. Manifest, map and Waygraph Studio
 
 - [x] 4.1 Manifest: `layouts` (name, file, covered pages, links with destination / `parent` / selector / `for`, actions,
       Read fields); `for` on Blocks and pages

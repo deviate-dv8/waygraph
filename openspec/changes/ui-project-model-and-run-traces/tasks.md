@@ -64,9 +64,9 @@
 - [ ] 6.4 Tests: an edit to `_sel.ts` appears in the next manifest; a syntax error keeps the last manifest and reports
       the file; a run started separately streams in; the host exits with its parent
 
-## 7. Waygraph UI
+## 7. Waygraph Studio
 
-- [ ] 7.1 `waygraph ui` starts the host and passes its pipe to the UI server; `ProjectService` and the runs list read
+- [ ] 7.1 `waygraph studio` starts the host and passes its pipe to the UI server; `ProjectService` and the runs list read
       through it; remove the `waygraph manifest` spawn and the per-request log parsing
 - [ ] 7.2 `/events` server-sent events endpoint fanning out the host's updates; pages patch their props instead of
       reloading every second; the map and flows update on edits
@@ -77,7 +77,7 @@
 - [ ] 7.5 Block details on the map and flows: checks, expectations, selectors, `file:line`, editor link (`ui.editor`)
       (done on the map's page panel and the Blocks page, with the Block's code; left: flows, editor link)
 - [ ] 7.6 Legacy runs listed and opened on the old step list
-- [ ] 7.7 Look at it light and dark; the UI's own tests; the `waygraph ui` spec extended to a live run
+- [ ] 7.7 Look at it light and dark; the UI's own tests; the `waygraph studio` spec extended to a live run
 
 ## 8. Docs and release
 

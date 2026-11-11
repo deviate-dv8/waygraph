@@ -66,6 +66,6 @@ Because an app is described once, as pages and the actions between them, the sam
 Next, on the same foundation ([ROADMAP](https://github.com/deviate-dv8/waygraph/blob/main/ROADMAP.md)):
 
 - **Virtual users** that use the app like a person would, through an MCP server over a live session.
-- **Waygraph UI**, further: the project's map, flows and runs are in it today ([Waygraph UI](./guides/ui)); next, live
+- **Waygraph Studio**, further: the project's map, flows and runs are in it today ([Waygraph Studio](./guides/studio)); next, live
   sessions and reading data out of pages (scraping) with Read Blocks.
 - **More drivers.** Playwright only, until it is mastered.

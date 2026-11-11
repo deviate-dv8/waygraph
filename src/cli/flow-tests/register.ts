@@ -77,7 +77,7 @@ export async function registerFlowTests(exclusive: boolean): Promise<void> {
         test.skip(missing.length > 0, `needs ${missing.join(", ")}: register a mem stub (and map({ memStub: true })), or run it with --data`);
         if (flow.device) await page.setViewportSize(flow.device.viewport);
         // The run log names the flow (a flow doesn't know its own export name, its file does) and records the data it
-        // was seeded with, so Waygraph UI's Run again and --replay play it with the same.
+        // was seeded with, so Waygraph Studio's Run again and --replay play it with the same.
         const seeded = Object.fromEntries(requiredKeys(flow).filter((k) => mem.has(k)).map((k) => [k.name, mem.get(k)]));
         const play = () =>
           inRun(exportName, () => {

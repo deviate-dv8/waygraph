@@ -85,7 +85,7 @@ A visible session shows a badge in the bottom-right corner (`Waygraph Pilot - se
 it lists the menu. Bottom-left toasts say what's running: `Running (Block): …` or `Running (no Block): …` for raw
 `click` / `type` / `goto`. Both survive navigation.
 
-## The session protocol (for clients such as Waygraph UI)
+## The session protocol (for clients such as Waygraph Studio)
 
 A live session (`browser start`, `pilot start`) is a process listening on a Unix socket. Requests and replies are
 newline-delimited JSON; the types are exported: `SessionRequest`, `SessionResponse`, `SessionStreamMessage`,

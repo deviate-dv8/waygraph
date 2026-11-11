@@ -1,4 +1,4 @@
-// Where each page lives: the addresses the manifest gives its Blocks and Checkpoints, for Waygraph UI's site map. A Nav or
+// Where each page lives: the addresses the manifest gives its Blocks and Checkpoints, for Waygraph Studio's site map. A Nav or
 // Page Block with a `url` has one (a url built from mem reads as a pattern: `/requests/:id`); a Block whose verify checks
 // `Trait.url({ pathname })` names the address of the page it lands on.
 import { Node, Project, SyntaxKind } from "ts-morph";

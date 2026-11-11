@@ -75,7 +75,7 @@ export type NavBlockOptions<Out extends Checkpoint<string>> = {
    * @example expect: [ExpectArchivedToastBlock] · expect: { EquipmentDetail: [ExpectSavedBlock], EquipmentAdd: [ExpectNameRequiredBlock] }
    */
   expect?: ExpectList<Out>;
-  /** A screenshot of the page once the step is done (`true`, or `{ fullPage: true }`): Waygraph UI shows it on the map. */
+  /** A screenshot of the page once the step is done (`true`, or `{ fullPage: true }`): Waygraph Studio shows it on the map. */
   screenshot?: StepScreenshot;
   /**
    * Live per-instance menu rows for `waygraph auto` (see {@link Block.instanceOptions}).
@@ -223,7 +223,7 @@ export type NavClickBlockOptions<Out extends Checkpoint<string>> = {
   verify?: Trait[] | ((out: Out) => Trait[]);
   /** What this Block promises wherever it's used (see `NavBlockOptions.expect`). */
   expect?: ExpectList<Out>;
-  /** A screenshot of the page once the step is done (`true`, or `{ fullPage: true }`): Waygraph UI shows it on the map. */
+  /** A screenshot of the page once the step is done (`true`, or `{ fullPage: true }`): Waygraph Studio shows it on the map. */
   screenshot?: StepScreenshot;
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
 };

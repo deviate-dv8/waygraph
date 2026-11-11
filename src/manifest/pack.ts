@@ -1,5 +1,5 @@
 // `waygraph map pack <group>`: compiles one map group with the project's own TypeScript into an installable package
-// (JavaScript + types, an index re-exporting everything, and `waygraph.map.json` for the scanner and Waygraph UI).
+// (JavaScript + types, an index re-exporting everything, and `waygraph.map.json` for the scanner and Waygraph Studio).
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";

@@ -158,7 +158,7 @@ export const CartPage = definePageBlock({ name: "page-cart", checkpoint: CartPag
 
 Each is kept with its run (`.waygraph/runs/<runId>/<step>-<block>.png`, a `run:artifact` in the [run log](../reference/run-log)
 naming the step and the page), and the newest per page as `.waygraph/screenshots/<Checkpoint>.png`.
-[Waygraph UI](./ui) shows a page's newest on its map, and each step's on the run. waygraph's own overlay (the demo's
+[Waygraph Studio](./studio) shows a page's newest on its map, and each step's on the run. waygraph's own overlay (the demo's
 panel, rings, banner) is left out of the picture; a screenshot that can't be taken never fails the step.
 
 ## A Method on one row of many

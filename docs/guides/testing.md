@@ -48,7 +48,7 @@ npx waygraph list --label auth           # which ones they are
 ```
 
 Each flow's test is tagged with its labels (`@auth`), so Playwright's UI mode and its reports filter by them too, and
-the manifest and Waygraph UI's Flows page show them. `waygraph check` warns about a label that covers no flow.
+the manifest and Waygraph Studio's Flows page show them. `waygraph check` warns about a label that covers no flow.
 
 ## Which flows run, and how
 

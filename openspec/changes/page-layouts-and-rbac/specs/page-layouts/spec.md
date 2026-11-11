@@ -62,10 +62,10 @@ order, by their addresses.
 - **THEN** the breadcrumb check SHALL pass; a trail without `/platform/plant/equipment` SHALL fail it, saying that
   crumb is missing
 
-### Requirement: Layouts in the manifest, the map and Waygraph UI
+### Requirement: Layouts in the manifest, the map and Waygraph Studio
 The manifest SHALL list each layout: its name, file, the pages it covers, its links (name, destination or `parent`,
 selector, `for`), actions and Read fields. The map SHALL draw a layout as one node with one line per link destination
-and mark each page it covers, instead of a line from every covered page. Waygraph UI SHALL show a layout's links,
+and mark each page it covers, instead of a line from every covered page. Waygraph Studio SHALL show a layout's links,
 actions, Read and pages when it is clicked, and a page's panel SHALL list the layouts covering it.
 
 #### Scenario: Ten links on thirty pages

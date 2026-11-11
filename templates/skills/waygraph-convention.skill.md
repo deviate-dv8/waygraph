@@ -20,7 +20,7 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
 Everything an agent adds to a waygraph project is waygraph: Blocks in the map, flows in `src/flows/`, accounts, mem
 stubs, Read Blocks, Expect Blocks, the config. No workarounds next to it: no script of your own that drives a browser,
 no helper that pokes the page outside a Block, no runner of your own, no checks of your own with their own retries.
-A workaround works today and is invisible tomorrow: `waygraph check`, the map, the demo, Waygraph UI and the next agent
+A workaround works today and is invisible tomorrow: `waygraph check`, the map, the demo, Waygraph Studio and the next agent
 can't see it, so it rots, and the project slowly becomes a Playwright project with waygraph on the side.
 
 A person may do things by hand (a one-off script, poking the app, a quick fix to get unblocked); that's their call,
@@ -35,7 +35,7 @@ and when you touch it, move it to the convention or say it should be.
 | A retry or polling helper (`settles`, `waitUntil`, a loop with `sleep`) | Nothing: verify retries every Trait; `{ settle: true }` on a step whose page keeps changing |
 | A helper that drives the page outside a Block (`clickClear(page, sel)`, `pasteInto`, `setDateTime`) | A Method Block, one action, in the page's `_methods/`; a field that needs a special way of typing is that Block's `act` |
 | Selectors in a check file or a test | The page's `_sel.ts` |
-| Evidence written by hand (a `.log`, a results `.md`, screenshots copied around) | The run log (`.waygraph/runs/`), `screenshot: true` on a step, `--video`, Waygraph UI, `--reporter` |
+| Evidence written by hand (a `.log`, a results `.md`, screenshots copied around) | The run log (`.waygraph/runs/`), `screenshot: true` on a step, `--video`, Waygraph Studio, `--reporter` |
 | A cast or a function over `MapBuilder` to share steps (`as MethodBlock<...>`, `(m: MapBuilder) => m...`) | `{ lands: X }` for a branch; `steps(Checkpoint, (m) => m...)` played with `.steps(part)` |
 | Talking to the API with `fetch` in a test or a helper | An API Block (`defineApiBlock`) in `src/map/(api)/` |
 | Waiting for an email with your own polling | The Mailpit / MailHog Blocks (`(external)/`) and `claimOnce` for a shared inbox |
@@ -164,7 +164,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   role is the accounts that share a `for`; `waygraph test --flows` adds each account's access test, and `waygraph
   check` flags a flow `as` an account using what it isn't given. Never a role check written in a flow.
 - **`screenshot: true` on a Page Block** takes the page's picture whenever a step lands there (on any other Block: once
-  its step is done). Waygraph UI shows each page's newest on its map and each step's on the run; put it on the pages a
+  its step is done). Waygraph Studio shows each page's newest on its map and each step's on the run; put it on the pages a
   reader would want to see, not on every Block.
 - **What a step's scenario expects goes on the step:** `.method(Detail.do.confirmArchive, { expect: [Registry.expects.archivedToast,
   Machine.status.is("Archived")] })`. A check on one value is `Key.is(value)` inline, not an Expect Block per value;
@@ -460,7 +460,7 @@ npx waygraph map .            # exit 1 if src/map/ folder path != real static ur
 npx waygraph validate .       # every .flow.ts loads
 npx waygraph graph .          # nodes/edges/skipped/orphans - counts should make sense
 npx waygraph manifest .       # JSON of every Block (kind, from/to, requires), Flow and Checkpoint
-npx waygraph ui               # the same in the browser (map, flows, runs), for a person to look at
+npx waygraph studio               # the same in the browser (map, flows, runs), for a person to look at
 npx waygraph map pack <group> # a src/map/ group with its own _states.ts/_keys.ts -> installable package
 npm run typecheck             # when the consumer has it
 ```

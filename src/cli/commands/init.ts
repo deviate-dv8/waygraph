@@ -87,7 +87,7 @@ function initCommand(projectName: string): void {
   console.log("  waygraph auto --cli  # same menus in the terminal");
   console.log("  waygraph demo --blocks homeHelloFlow");
   console.log("  waygraph graph       # static state graph JSON");
-  console.log("  waygraph ui          # map, flows and runs in the browser, play a flow (beta)");
+  console.log("  waygraph studio          # map, flows and runs in the browser, play a flow (beta)");
   console.log("  .agents/skills/      # waygraph skills for coding agents (waygraph agent-dive adds agent personas)");
   console.log("");
   console.log("  Layout: https://deviate-dv8.github.io/waygraph/guides/project");

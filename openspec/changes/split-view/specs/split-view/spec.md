@@ -45,10 +45,10 @@ each pane in a real window, side by side. A failure SHALL name the pane it happe
 - **WHEN** a step in `admin` fails its verify
 - **THEN** the error SHALL say the step, the pane (`admin`, as Admin) and the page it was on
 
-### Requirement: The run log and Waygraph UI show panes
-Each step in the run log SHALL record its pane; the manifest SHALL list a flow's panes. Waygraph UI SHALL show a split
+### Requirement: The run log and Waygraph Studio show panes
+Each step in the run log SHALL record its pane; the manifest SHALL list a flow's panes. Waygraph Studio SHALL show a split
 flow and its runs as lanes, one per pane, steps in order across them.
 
 #### Scenario: Lanes on a run
-- **WHEN** a run of a two-pane flow is opened in Waygraph UI
+- **WHEN** a run of a two-pane flow is opened in Waygraph Studio
 - **THEN** its steps SHALL show in two lanes, named for the panes, in the order they played

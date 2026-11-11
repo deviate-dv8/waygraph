@@ -25,7 +25,7 @@ What the fixed parts buy, past the page object:
   `_methods/*.method.block.ts`, `_sel.ts`, `_read.block.ts`): nothing to decide, nothing to name twice. `waygraph check`
   says when something isn't where it goes.
 - **The same Blocks do more than test.** The [demo](./guides/demo) plays a flow for a person to watch; `waygraph auto`
-  and Pilot let an agent explore the app with them; [Waygraph UI](./guides/ui) draws the site map from them.
+  and Pilot let an agent explore the app with them; [Waygraph Studio](./guides/studio) draws the site map from them.
 
 ## Side by side
 

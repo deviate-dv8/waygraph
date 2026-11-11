@@ -9,9 +9,9 @@ held to `docs/doctrine.md`: does it make flows read more like the scenario, and 
 - `src/ARCHITECTURE.md`: where the code starts, one line per folder, the layers, where new code goes.
 - `docs/guides/` for how each feature works (one topic per page), `docs/reference/` for every command and setting; `docs/env.md` for every `WAYGRAPH_*` variable; `docs/deprecated.md` for what 0.16.0
   removed and what replaces it.
-- `ui/` is Waygraph UI (`waygraph ui`), an AdonisJS app over a project's manifest and run logs: `ui/AGENTS.md`. It has
-  its own package.json and checks (knip and check:structure skip it); `npm run build` builds it into `dist/ui`, which
-  ships, and its runtime packages are waygraph's dependencies. Install it once per checkout: `npm ci --prefix ui`.
+- `ui/` is Waygraph Studio (`waygraph studio`), an AdonisJS app over a project's manifest and run logs: `studio/AGENTS.md`. It has
+  its own package.json and checks (knip and check:structure skip it); `npm run build` builds it into `dist/studio`, which
+  ships, and its runtime packages are waygraph's dependencies. Install it once per checkout: `npm ci --prefix studio`.
 
 ## Rules the tooling enforces (`npm run check:structure`)
 
@@ -39,13 +39,13 @@ are `__wgIcon`, never glyphs; no `.catch(() => {})` (`ignorePageGone` / `ignoreT
 
 ```bash
 npm run examples:link   # once per checkout: examples/*/node_modules/waygraph -> this repo (CI does the same)
-npm ci --prefix ui      # once per checkout: the build builds Waygraph UI
-npm run ui              # this checkout's Waygraph UI on examples/saucedemo (npm run ui:dev: the UI's hot-reload server)
+npm ci --prefix studio      # once per checkout: the build builds Waygraph Studio
+npm run studio              # this checkout's Waygraph Studio on examples/saucedemo (npm run studio:dev: the UI's hot-reload server)
 npx tsc --noEmit && npm run build && npm run check:structure && npm run knip && npm run test:unit
 WAYGRAPH_HEADED=0 npx playwright test --grep-invert non-headless
 npm run test:offscreen   # Linux with xvfb: the whole suite, headed tests included, on a hidden display
 npm run storybook:build   # overlay changes: also look at the piece in `npm run storybook`, light and dark
-npm run docs:ui-shots     # Waygraph UI changes: the UI guide's screenshots, from examples/saucedemo
+npm run docs:studio-shots     # Waygraph Studio changes: the UI guide's screenshots, from examples/saucedemo
 (cd examples/saucedemo && WAYGRAPH_HEADED=0 node ../../bin/waygraph test)
-(cd ui && npm run typecheck && npm run lint && node ace test)   # UI changes; ui/AGENTS.md
+(cd studio && npm run typecheck && npm run lint && node ace test)   # UI changes; studio/AGENTS.md
 ```

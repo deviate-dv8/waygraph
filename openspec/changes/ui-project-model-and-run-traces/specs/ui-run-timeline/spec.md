@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: A run's page is a timeline
-A run's page in Waygraph UI SHALL show its trace as a timeline: one row per span, indented by depth, steps expanded and
+A run's page in Waygraph Studio SHALL show its trace as a timeline: one row per span, indented by depth, steps expanded and
 phases and checks collapsed by default, each row a bar on a time axis shared by the whole run and coloured by status
 (passed, failed, skipped, running). A failed span and its ancestors SHALL be expanded when the page opens.
 

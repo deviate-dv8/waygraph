@@ -95,7 +95,7 @@ waygraph compare (as planner | admin): 1 step differs
 
 A side that fails stops; the other plays on to the end. Only failures fail the run; differences alone don't.
 
-## In Waygraph UI
+## In Waygraph Studio
 
 A flow with panes, and its runs, show as lanes: one per pane, each step at its place in the flow, so the arrows read in
-order across them. A compared run marks each step where the two sides differed. See [Waygraph UI](./ui).
+order across them. A compared run marks each step where the two sides differed. See [Waygraph Studio](./studio).

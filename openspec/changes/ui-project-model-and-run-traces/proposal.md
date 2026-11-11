@@ -1,6 +1,6 @@
 ## Why
 
-Waygraph UI is moving from alpha toward stable, and two things it stands on were built for a terminal, not for a UI.
+Waygraph Studio is moving from alpha toward stable, and two things it stands on were built for a terminal, not for a UI.
 
 **Reading the project.** The UI runs `waygraph manifest` in a new process every 30 seconds, and each run imports every
 project file. So an edit shows up late or after a manual refresh, every read costs a full import, and the manifest says
@@ -19,7 +19,7 @@ can then show it as a timeline (Dagster's run view, Airflow's Gantt chart) and d
 
 - **Project host.** A long-lived waygraph process holds one project: it scans it once, watches its files, rescans after
   a change (in a fresh process, so a changed `_sel.ts` is seen through every Block that imports it), and pushes the new
-  manifest, or the error that stopped the scan, to whoever is connected. `waygraph ui` starts one per project; the UI
+  manifest, or the error that stopped the scan, to whoever is connected. `waygraph studio` starts one per project; the UI
   reads the project through it instead of spawning `waygraph manifest`. `waygraph manifest` stays and prints the same
   shape.
 - **Manifest metadata** (manifest version 3). Each Block gains its source position (file, line, column); its checks as
@@ -39,7 +39,7 @@ can then show it as a timeline (Dagster's run view, Airflow's Gantt chart) and d
 - `waygraph trace <runId> [--otlp <file>]` prints a run's trace as a tree, or writes it as OTLP/JSON for any
   OpenTelemetry viewer (Jaeger, Grafana Tempo).
 - Every reader of the old events moves to spans: `--replay` (the run's mem), the demo's after-step panel (the step's
-  read), the session `subscribe` feed (`SESSION_PROTOCOL_VERSION` bumps), `WAYGRAPH_JSON`, and Waygraph UI.
+  read), the session `subscribe` feed (`SESSION_PROTOCOL_VERSION` bumps), `WAYGRAPH_JSON`, and Waygraph Studio.
 - **UI: run timeline.** A run's page becomes a timeline: one row per span, nested and collapsible, bars on a shared time
   axis, coloured by status. Selecting a span opens its details on the right: checks (wanted / saw), console, network,
   screenshot, the page's read, and the Block's source position. A run in progress streams in live from the host
@@ -55,10 +55,10 @@ can then show it as a timeline (Dagster's run view, Airflow's Gantt chart) and d
 - `manifest-metadata`: manifest version 3: source positions, checks as data, selectors, step details.
 - `run-traces`: runs recorded as spans (OpenTelemetry's model), every check and the page's console, errors and requests
   attributed to the step that caused them, `onTrace`, `waygraph trace`, OTLP export.
-- `ui-run-timeline`: Waygraph UI's run timeline, live updates, and links from Blocks to their checks and source.
+- `ui-run-timeline`: Waygraph Studio's run timeline, live updates, and links from Blocks to their checks and source.
 
 ### Modified Capabilities
-<!-- No existing spec covers the run log, the manifest or Waygraph UI. -->
+<!-- No existing spec covers the run log, the manifest or Waygraph Studio. -->
 
 ## Impact
 
@@ -74,7 +74,7 @@ can then show it as a timeline (Dagster's run view, Airflow's Gantt chart) and d
 - **New:** the host (`waygraph host`, an internal command like `__auto-serve`) and `waygraph trace`.
 - **Live sessions:** `subscribe` streams span records; the protocol version bumps.
 - **Demo:** the after-step panel reads the step span's read.
-- **Waygraph UI (`ui/`):** the project and player services move onto the host; new run timeline and detail panel; live
+- **Waygraph Studio (`ui/`):** the project and player services move onto the host; new run timeline and detail panel; live
   updates over server-sent events.
 - **Docs:** run log and manifest reference (rewritten), a traces guide, the UI guide, CLI, env, skills, ROADMAP,
   deprecated rows.
@@ -89,5 +89,5 @@ can then show it as a timeline (Dagster's run view, Airflow's Gantt chart) and d
   bodies are never recorded, only method, URL (query string included), status and timing.
 - **Network scope.** Proposed: record XHR / fetch requests, plus any request that fails or returns 4xx / 5xx; skip
   successful images, fonts, stylesheets and scripts.
-- **The host beyond the UI.** Proposed: only `waygraph ui` uses it at first; `pilot` / `auto` could share it later (not
+- **The host beyond the UI.** Proposed: only `waygraph studio` uses it at first; `pilot` / `auto` could share it later (not
   in this change).

@@ -21,7 +21,7 @@
   ],
   "ignore": [
     "tests/fixtures/**",
-    "ui/**",
+    "studio/**",
     "scripts/build-ui-css.d.mts"
   ],
   "ignoreDependencies": [

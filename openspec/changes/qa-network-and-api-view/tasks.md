@@ -15,10 +15,10 @@
 - [ ] 2.4 Overlay tokens, Storybook stories, light and dark; recordings readable at 1920×1080
 - [ ] 2.5 Tests: the card on a page that makes failing and third-party calls; the API card
 
-## 3. Config, run log and Waygraph UI
+## 3. Config, run log and Waygraph Studio
 
 - [ ] 3.1 `demo.network` in the config (`show`, `names`, `apis`), typed and in the config reference
-- [ ] 3.2 Waygraph UI: a run's step lists its calls (name, words, ms, failed)
+- [ ] 3.2 Waygraph Studio: a run's step lists its calls (name, words, ms, failed)
 - [ ] 3.3 UI tests
 
 ## 4. Docs and examples

@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
 // A Block with `screenshot: true` leaves a picture of the page once its step is done: with the run, and as the page's
-// newest look for Waygraph UI's map. On a Page Block it's the page's: any step that lands there takes one. A Block
+// newest look for Waygraph Studio's map. On a Page Block it's the page's: any step that lands there takes one. A Block
 // without one leaves none.
 const exec = promisify(execFile);
 const CLI = join(import.meta.dirname, "..", "..", "bin", "waygraph");

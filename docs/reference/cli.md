@@ -73,7 +73,7 @@ More: [Testing](../guides/testing).
 | pack a map group | `waygraph map pack <group> [--out dir] [--name pkg] [--version x.y.z]` |
 | the graph | `waygraph graph [--mermaid]` |
 | everything as JSON | `waygraph manifest [--out file]` ([Run log and manifest](./run-log)) |
-| the project in the browser: map, flows, runs, play a flow | `waygraph ui [project] [--port N]` ([Waygraph UI](../guides/ui)) |
+| the project in the browser: map, flows, runs, play a flow | `waygraph studio [project] [--port N]` ([Waygraph Studio](../guides/studio)) |
 
 ## Set up and update
 

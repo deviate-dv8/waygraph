@@ -1,6 +1,6 @@
 ## Context
 
-- **Reading the project.** Waygraph UI (`ui/`, an AdonisJS app started by `waygraph ui`) reads a project through
+- **Reading the project.** Waygraph Studio (`ui/`, an AdonisJS app started by `waygraph studio`) reads a project through
   `ProjectService`. That service runs the project's own `waygraph manifest` as a child process and caches the result for
   30 s. It reads runs by parsing `.waygraph/runs/*.jsonl` on every request, and while a flow plays it reloads the whole
   page every second.
@@ -11,7 +11,7 @@
   `AsyncLocalStorage` and have a step counter and a stack of open steps (fast-forward steps nest).
 - **Readers of those events:** the run log (`runtime/run-log.ts`), `--replay` (`runner/plan/plan.ts`, reading
   `run:mem`), the demo's after-step panel (`demo/stepper/last-read.ts`, reading `step:read`), the live session feed
-  (`live/auto-session/feed.ts`) and Waygraph UI.
+  (`live/auto-session/feed.ts`) and Waygraph Studio.
 - **Checks.** They run in `engine/trait/verify.ts`, retrying every 200 ms up to 5 s. Expectations run in
   `engine/run/expect.ts`, in parallel, on a read-only page. Only a failure leaves a record (`step:error.check`).
 - **Browser activity.** Nothing records the page's console, errors or network during a run. Live sessions have their own
@@ -41,7 +41,7 @@
 ### D1. The host is a waygraph child process, not code inside the UI's server
 The UI server is AdonisJS. Scanning a project means importing its TypeScript through waygraph's loader (`tsx`) and the
 project's own install, and a process that has loaded one Playwright can't load a second (the "Requiring @playwright/test
-second time" rule). So `waygraph ui` starts `waygraph host <project>` (internal, like `__auto-serve`) and hands its stdio
+second time" rule). So `waygraph studio` starts `waygraph host <project>` (internal, like `__auto-serve`) and hands its stdio
 pipe to the UI server. The protocol is newline-delimited JSON with request ids, like the session protocol.
 - *Alternative:* a socket per host, as sessions use. Rejected for now: one client (the UI) and stdio make the host's
   lifetime follow the UI's for free.
@@ -119,7 +119,7 @@ the old step list. They are never converted.
   old event to its span.
 - **Static selector detection misses indirection** (`const s = LoginSel; s.username`) → the manifest says the list is
   what the source references directly; it's a guide, not a guarantee.
-- **The host and the UI drift apart** → both come from the same package (`dist/ui` ships in waygraph), and the host
+- **The host and the UI drift apart** → both come from the same package (`dist/studio` ships in waygraph), and the host
   reports its version in its first message.
 
 ## Migration Plan

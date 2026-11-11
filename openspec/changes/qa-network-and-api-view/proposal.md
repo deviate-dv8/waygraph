@@ -26,13 +26,13 @@ backend, whether that went well, or what came back:
 - **The full list, readable.** The network panel, opened from the step's card, lists the step's calls first, each row
   in words, its detail as tables (headers, query, body), with copy-as-cURL kept for developers. `demo.network.show:
   "all"` includes third-party traffic.
-- **In the run log and Waygraph UI.** Each step's calls (method, route, status, time, name) go in the run log; a run's
-  step shows them in Waygraph UI, so a QA reads them after the fact too.
+- **In the run log and Waygraph Studio.** Each step's calls (method, route, status, time, name) go in the run log; a run's
+  step shows them in Waygraph Studio, so a QA reads them after the fact too.
 
 ## Capabilities
 
 ### New Capabilities
-- `qa-network-view`: what the demo, the run log and Waygraph UI say about the calls a step made (filtered to the app,
+- `qa-network-view`: what the demo, the run log and Waygraph Studio say about the calls a step made (filtered to the app,
   named, in words, tied to the step), and an API step's card.
 
 ### Modified Capabilities
@@ -45,5 +45,5 @@ backend, whether that went well, or what came back:
   Storybook stories, light and dark.
 - **Engine:** `defineApiBlock` records what it sent and got (already captured for the panel) as run events.
 - **Config:** `demo.network` (`show`, `names`, `apis`: other origins that count as the app's).
-- **Run log and UI:** a `step:call` event; Waygraph UI's run step lists its calls.
+- **Run log and UI:** a `step:call` event; Waygraph Studio's run step lists its calls.
 - **Docs:** the demo guide's network section, the config reference, the run log reference.

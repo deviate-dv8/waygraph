@@ -1,4 +1,4 @@
-// The session protocol: what a client (the CLI, an agent, Waygraph UI) sends a live session and gets back. Newline-
+// The session protocol: what a client (the CLI, an agent, Waygraph Studio) sends a live session and gets back. Newline-
 // delimited JSON over the session's socket; `hello` names the version, `subscribe` keeps the socket open as a live feed.
 import type { PilotHighlightFixtures } from "../../demo/overlay/pilot/fixtures.js";
 import type { RunEvent } from "../../engine/run/events.js";

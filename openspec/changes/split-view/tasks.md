@@ -46,11 +46,11 @@
       that fails stops, the other plays on; exit code from failures only
 - [x] 4.3 Tests: two devices passing with a field that differs; two accounts where one side fails a step
 
-## 5. Waygraph UI
+## 5. Waygraph Studio
 
 - [x] 5.1 A split flow and its runs as lanes, one per pane
 - [x] 5.2 A compared run: both sides as lanes, each difference beside its step
-- [x] 5.3 UI tests; light and dark; the guide's screenshots (`npm run docs:ui-shots`) (the lanes are described in the
+- [x] 5.3 UI tests; light and dark; the guide's screenshots (`npm run docs:studio-shots`) (the lanes are described in the
       UI guide; its screenshots stay on the single-page flows)
 
 ## 7. One screen, then split, then one again

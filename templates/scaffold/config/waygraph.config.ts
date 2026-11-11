@@ -27,7 +27,7 @@ const config = defineConfig(({ env }) => ({
   //   voice: { speaker: kokoroVoice(), steps: true },   // a recording speaks its narration; `waygraph install` sets it up
   // },
   // webServer: { command: "npm start", port: 3000 },   // started around test / run / demo / auto
-  // runLog: false,                          // each run is logged to .waygraph/runs/ (what Waygraph UI shows)
+  // runLog: false,                          // each run is logged to .waygraph/runs/ (what Waygraph Studio shows)
 
   // Another config for another environment: config/waygraph.staging.config.ts, chosen with `waygraph test --config staging`.
 

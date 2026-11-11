@@ -1,5 +1,5 @@
 // Run events: what happened, step by step, during a run. Core emits them; subscribers (the run log, the demo overlay,
-// reports, Waygraph UI) listen. Emitting never throws into the run.
+// reports, Waygraph Studio) listen. Emitting never throws into the run.
 import { stepMessageOf } from "./act-error.js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { BlockKind } from "../block/kind.js";

@@ -27,7 +27,7 @@ cd my-app
 npm install
 npx waygraph install     # what the config requires on this machine: the browser, and anything else it names
 npm test                 # passes offline straight away
-npx waygraph ui          # its map, flows and runs in the browser (beta)
+npx waygraph studio          # its map, flows and runs in the browser (beta)
 ```
 
 Then:

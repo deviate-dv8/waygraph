@@ -222,7 +222,7 @@ export const Leadership = account("leadership", { signIn: loginLeadershipFlow, m
 ```
 
 Waygraph loads `src/accounts/` itself (as it does mem stubs), so a sign-in flow that is one account's knows whose it is:
-`waygraph demo loginLeadershipFlow`, or Run in [Waygraph UI](./ui), signs in as Cesar with no `--data`. A value given
+`waygraph demo loginLeadershipFlow`, or Run in [Waygraph Studio](./studio), signs in as Cesar with no `--data`. A value given
 with `--data` still wins.
 
 ### Two people in one flow: panes

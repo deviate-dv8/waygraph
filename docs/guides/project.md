@@ -62,7 +62,7 @@ segment. `_layout.block.ts` is the one file that isn't about one page: it's abou
 |---|---|---|
 | **Folders under `src/map/` are the app's addresses.** `/platform/equipment` lives in `map/(app_base)/platform/equipment/`; `(group)` folders only organise. | The tree is the site map: nothing to keep in sync, and anyone who knows the app's URLs finds the page. | `waygraph map` fails on a folder that doesn't match its page's address |
 | **A Checkpoint is a page**, a place with its own address. An item in the cart is what the page shows, not another Checkpoint. | Fewer, truer Checkpoints; flows check the state with `Key.is` | `waygraph check` names a Checkpoint that is a state of a page |
-| **Every page has a Read Block.** | Runs, agents, tests and Waygraph UI read the page as data, not by parsing the DOM | `waygraph check` lists the pages no Read Block reads |
+| **Every page has a Read Block.** | Runs, agents, tests and Waygraph Studio read the page as data, not by parsing the DOM | `waygraph check` lists the pages no Read Block reads |
 | **One action per Block, its selectors in `_sel.ts`.** | One Block, reused by every flow that needs it; a changed selector is changed once | `waygraph check`: a fill and a click in one Block, several inputs in one Block, an inline selector when a `_sel.ts` is there |
 | **Navigation happens in Navs.** | The map knows every way between pages; a Method that navigates is a hidden edge | `waygraph check` warns on `page.goto` outside a Nav |
 | **What every page shares is a layout**, in the folder of the pages it wraps. Never the same Nav on each page, never a list of pages on a Nav. | Declared once, where front-end developers look for it | a layout link from a page it doesn't cover fails before clicking |
@@ -103,7 +103,7 @@ import { TopBar } from "#map/(app_base)/_layout.block";
 | `flows/auth/login/wrong-password.flow.ts` | the same page, another outcome | `loginWrongPasswordFlow` |
 | `flows/(user-stories)/checkout.flow.ts` | a story across pages | `checkoutFlow` |
 
-A page's folder shows every way a user can go through that page; the manifest and Waygraph UI read the use case from
+A page's folder shows every way a user can go through that page; the manifest and Waygraph Studio read the use case from
 the path (the page, then the outcome).
 
 ```ts
@@ -111,7 +111,7 @@ the path (the page, then the outcome).
 labels: { auth: ["src/flows/auth/**"], checkout: ["src/flows/checkout/**", "checkoutFlow"] }
 ```
 
-`waygraph test --label auth` runs a feature; a flow's labels are its tags in Playwright's reports and in Waygraph UI.
+`waygraph test --label auth` runs a feature; a flow's labels are its tags in Playwright's reports and in Waygraph Studio.
 
 ## What to do where
 
@@ -127,7 +127,7 @@ labels: { auth: ["src/flows/auth/**"], checkout: ["src/flows/checkout/**", "chec
 | string steps together | a file in `src/flows/<page>/`, named for its outcome ([Flows](./flows)) |
 | give a flow data | a mem key and a mem stub in `src/states/` ([Data](./data)) |
 | run a feature's flows | a label in the config, then `waygraph test --label <it>` ([Testing](./testing#labels)) |
-| see all of it | `waygraph ui` ([Waygraph UI](./ui)) |
+| see all of it | `waygraph studio` ([Waygraph Studio](./studio)) |
 | keep folders honest | `waygraph map` |
 | reuse a tool's pages in another project | `waygraph map pack <group>` ([The Map](../reference/map#map-packages)) |
 

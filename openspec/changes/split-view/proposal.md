@@ -37,14 +37,14 @@ refuse to be framed.
 - **Compare two runs.** `waygraph demo checkoutFlow --compare as=planner,admin` (or `device=desktop,phone`,
   `config=staging,prod`) plays one flow twice, side by side, step by step together, and says where they differ: a step
   that lands somewhere else, a check that passed on one side only, a field that reads differently.
-- **The run log and Waygraph UI.** Each step records its pane; a split flow and its runs show as lanes, one per pane; a
+- **The run log and Waygraph Studio.** Each step records its pane; a split flow and its runs show as lanes, one per pane; a
   compared run shows its differences.
 
 ## Capabilities
 
 ### New Capabilities
 - `split-view`: panes in a flow (`panes`, `.in()`, shared or own context, accounts and devices per pane), playing them
-  in run, test and demo, the stage and tiled windows, the run log's pane per step, and Waygraph UI's lanes.
+  in run, test and demo, the stage and tiled windows, the run log's pane per step, and Waygraph Studio's lanes.
 - `compare-runs`: playing one flow twice side by side (`--compare` by account, device or config), in step, and the
   differences it reports.
 
@@ -58,7 +58,7 @@ refuse to be framed.
 - **Runner and demo:** the stage (`demo/split/`: screencasts, the stage page, labels, the acting pane), `--split
   windows`, `--compare`, the video of the stage; the overlay's ties to "the page" become per pane.
 - **Run log and manifest:** a step's `pane`; a flow's panes; a compared run's two sides and its differences.
-- **Waygraph UI:** lanes on a flow and a run; a compared run's differences.
+- **Waygraph Studio:** lanes on a flow and a run; a compared run's differences.
 - **Docs and skills:** a Split view guide page, flows and demo guides, the CLI reference, the convention skill (two
   people in one scenario are panes, not two flows or a sign-out in the middle).
 - **Limits:** Chromium only at first (the stage needs CDP screencasts; tiled windows need CDP window bounds); Firefox and

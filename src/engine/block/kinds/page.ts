@@ -47,7 +47,7 @@ export type PageBlockOptions<
   expect?: ExpectList<Out>;
   /**
    * A screenshot of this page whenever a step lands on it (`true`, or `{ fullPage: true }`): kept with the run, and the
-   * newest one shows on Waygraph UI's map.
+   * newest one shows on Waygraph Studio's map.
    */
   screenshot?: StepScreenshot;
   requires?: readonly MemKey<unknown>[];

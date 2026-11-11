@@ -79,7 +79,7 @@ export default withMermaid(defineConfig({
             { text: "Data", link: "/guides/data" },
             { text: "Checks", link: "/guides/checks" },
             { text: "Demo", link: "/guides/demo" },
-            { text: "Waygraph UI (beta)", link: "/guides/ui" },
+            { text: "Waygraph Studio (beta)", link: "/guides/studio" },
             { text: "Testing", link: "/guides/testing" },
             { text: "Agents and exploring", link: "/guides/agents" },
             { text: "Mail", link: "/guides/mail" },

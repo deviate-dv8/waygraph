@@ -60,4 +60,4 @@ npx waygraph manifest [project] [--out manifest.json]
 
 It's read from the Blocks themselves (the same scan `graph`, `check`, `auto` and the runner use), so it can't go
 stale. Blocks from installed [map packages](./map#map-packages) are included, with the package name as their `map`.
-In code: `buildManifest(projectDir)`. [Waygraph UI](../guides/ui) (`waygraph ui`) draws it, with the runs.
+In code: `buildManifest(projectDir)`. [Waygraph Studio](../guides/studio) (`waygraph studio`) draws it, with the runs.

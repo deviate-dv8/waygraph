@@ -20,7 +20,7 @@ when the step passed. Calls to other origins SHALL be left out unless `demo.netw
 
 ### Requirement: Calls have names
 `demo.network.names` SHALL name calls by method and route (a route may have `:params`); a call without a name SHALL read
-as its method and the route's last named segments. The name SHALL be used in the demo, the run log and Waygraph UI.
+as its method and the route's last named segments. The name SHALL be used in the demo, the run log and Waygraph Studio.
 
 #### Scenario: A named call
 - **WHEN** `demo.network.names` has `"POST /api/machines": "Saved the machine"` and a step posts to `/api/machines`
@@ -36,8 +36,8 @@ the response (status in words, body as a table of fields, long values folded) an
 
 ### Requirement: The calls are kept
 Each call a step made SHALL be recorded in the run log with the step (method, route, status, time, name, and whether
-it failed), and Waygraph UI SHALL list them on the run's step.
+it failed), and Waygraph Studio SHALL list them on the run's step.
 
 #### Scenario: Reading a run afterwards
 - **WHEN** a run's step made two calls, one of them failed
-- **THEN** the step in Waygraph UI SHALL list both by name and mark the failed one
+- **THEN** the step in Waygraph Studio SHALL list both by name and mark the failed one

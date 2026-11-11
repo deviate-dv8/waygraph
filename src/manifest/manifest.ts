@@ -1,4 +1,4 @@
-// The manifest: everything a project defines, as plain JSON. `waygraph manifest` prints it; Waygraph UI and map packages
+// The manifest: everything a project defines, as plain JSON. `waygraph manifest` prints it; Waygraph Studio and map packages
 // read it instead of importing the project.
 import { messageOf } from "../engine/errors.js";
 import { readFileSync } from "node:fs";

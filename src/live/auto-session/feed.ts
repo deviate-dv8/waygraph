@@ -1,5 +1,5 @@
 // A session's live feed (`subscribe`): every run event in the session (steps, reads) and the snapshot after each change,
-// as JSON lines to every subscribed socket. Waygraph UI watches a session through it; `pilot watch <id>` prints it.
+// as JSON lines to every subscribed socket. Waygraph Studio watches a session through it; `pilot watch <id>` prints it.
 import { connect, type Socket } from "node:net";
 import { createInterface as readLines } from "node:readline";
 import { onRunEvent } from "../../engine/run/events.js";

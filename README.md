@@ -94,7 +94,7 @@ names) still works and is fine for small projects, but the Map is where the tool
 | Run tests / UI mode / open last report | `waygraph test` / `waygraph test ui` / `waygraph test report` |
 | Run a flow | `waygraph run shopFlow --data '{...}'` (or `--mem-stub`) |
 | Watch a flow with narration | `waygraph demo shopFlow` |
-| See the project in the browser: map, flows, runs, play a flow (beta) | `waygraph ui` |
+| See the project in the browser: map, flows, runs, play a flow (beta) | `waygraph studio` |
 | Explore by picking Blocks | `waygraph auto` |
 | See the whole graph | `waygraph graph` |
 | Lint your Blocks and folders | `waygraph check` / `waygraph typecheck` / `waygraph map` |
@@ -119,8 +119,8 @@ names) still works and is fine for small projects, but the Map is where the tool
 
 ```bash
 git clone https://github.com/deviate-dv8/waygraph.git && cd waygraph
-npm install && npm ci --prefix ui && npm run build
-npm run ui                           # Waygraph UI on the Sauce Demo example, from this checkout
+npm install && npm ci --prefix studio && npm run build
+npm run studio                           # Waygraph Studio on the Sauce Demo example, from this checkout
 npm run typecheck && npm test        # unit + Playwright suites
 ```
 

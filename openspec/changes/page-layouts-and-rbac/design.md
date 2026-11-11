@@ -7,7 +7,7 @@
   flow's steps against each Block's `from`/`to` Checkpoint types, so a flow can't skip between pages.
 - **Folders.** `src/map/` mirrors the app's addresses, with route groups (`(app_base)`) and `_`-folders for parts of a
   page that aren't addresses (`_methods/`, `_expects/`). The site map (each page under the page or folder its address
-  hangs from) is built in Waygraph UI (`ui/app/services/site_map.ts`) from the manifest's `pageUrls`.
+  hangs from) is built in Waygraph Studio (`studio/app/services/site_map.ts`) from the manifest's `pageUrls`.
 - **Accounts.** `account(name, { signIn, mem, ttl })` in `src/accounts/`; flows run `map({ as })`. waygraph loads
   `src/accounts/` for runs, demos and tests (`loadAccounts`).
 - **Flow tests.** `cli/flow-tests/register.ts` registers one Playwright test per exported flow, tagged with its labels.
@@ -75,7 +75,7 @@ then try each page the account can't open by its Nav and expect not to land on i
 
 ### D6. The map draws layouts, and can show one account's view
 The manifest gains `layouts` (name, file, covered pages, links with destination/`parent`/selector/`for`, actions, Read
-fields) and `for` on Blocks and pages. Waygraph UI draws a layout as one node, with its links' lines to their
+fields) and `for` on Blocks and pages. Waygraph Studio draws a layout as one node, with its links' lines to their
 destinations, and marks each covered page with the layout's icon; edges from link Navs aren't drawn page by page. An
 account picker filters pages, links and Methods by `for`.
 

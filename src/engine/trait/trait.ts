@@ -88,7 +88,7 @@ const shown = (text: string | undefined): string => (text === undefined ? "nothi
  */
 export function urlMatches(pattern: URLPatternInit): Trait {
   const urlPattern = new URLPattern(pattern);
-  // The pattern itself rides along out of sight: the manifest reads it as the page's address (Waygraph UI's site map).
+  // The pattern itself rides along out of sight: the manifest reads it as the page's address (Waygraph Studio's site map).
   const trait: Trait = {
     name: `url-matches(${JSON.stringify(pattern)})`,
     says: `on ${pattern.pathname ?? pattern.hostname ?? "the expected page"}`,

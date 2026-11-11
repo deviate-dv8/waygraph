@@ -7,7 +7,7 @@ export const WAYGRAPH_ENV = {
   WAYGRAPH_CONFIG: "Which config file to load (--config <name|file>)",
   WAYGRAPH_ENV: "Env mode: loads .env.<mode> on top of .env (--env)",
   WAYGRAPH_COMMAND: "The command running (run / demo / test), so the config's per-command section applies",
-  WAYGRAPH_PROJECT_DIR: "The project a command works on when it runs as its own process: waygraph test's Playwright, waygraph ui's server",
+  WAYGRAPH_PROJECT_DIR: "The project a command works on when it runs as its own process: waygraph test's Playwright, waygraph studio's server",
   WAYGRAPH_HEADED: "1 shows the browser, 0 hides it (--non-headless; demo default 1)",
   WAYGRAPH_STEP: "1 plays steps through the demo stepper (demo, run --step)",
   WAYGRAPH_JSON: "1 prints a JSON report instead of the demo log",

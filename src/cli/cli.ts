@@ -22,6 +22,9 @@ import { takeEnvFlag } from "../runtime/env-file.js";
 import { takeConfigFlag } from "../runtime/waygraph-config.js";
 import { usage } from "./usage.js";
 import { setEnv } from "../engine/env.js";
+
+/** Commands that were renamed, and their names now. */
+const RENAMED: Readonly<Record<string, string>> = { ui: "studio" };
 // Each command is imported when it runs, not up front: some load Playwright, and a CLI that has loaded it can't then
 // load a project's config whose own install brings a second copy (Playwright refuses two) - `waygraph try` does that.
 
@@ -84,14 +87,15 @@ async function main(): Promise<void> {
     case "upgrade": await (await import("./commands/upgrade.js")).upgradeCase(args); break;
 
     case "manifest": await (await import("./commands/manifest.js")).manifestCase(args); break;
-    // Waygraph UI on the project: map, flows, runs, playing a flow.
-    case "ui": await (await import("./commands/ui.js")).uiCase(args); break;
+    // Waygraph Studio on the project: map, flows, runs, playing a flow.
+    case "studio": await (await import("./commands/studio.js")).studioCase(args); break;
 
     // What the project's config requires, set up on this machine: browsers, extensions, the demo's voice, .env entries.
     case "install": await (await import("./commands/install.js")).installCase(args); break;
 
     default:
-      console.error(`waygraph: unknown command "${command}"`);
+      // A command that was renamed says what it is now (docs/deprecated.md lists every one).
+      console.error(`waygraph: unknown command "${command}"${RENAMED[command ?? ""] ? `; it's \`waygraph ${RENAMED[command ?? ""]}\` now` : ""}`);
       process.exit(1);
   }
 }

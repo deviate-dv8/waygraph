@@ -39,8 +39,8 @@ written.
 - **WHEN** a UI is subscribed and `waygraph run loginFlow` is started from a terminal in the same project
 - **THEN** the UI SHALL receive the run's `span:start` records while it plays
 
-### Requirement: Waygraph UI reads the project through the host
-`waygraph ui` SHALL start a host for the project and the UI SHALL read the manifest, runs and traces through it. The UI
+### Requirement: Waygraph Studio reads the project through the host
+`waygraph studio` SHALL start a host for the project and the UI SHALL read the manifest, runs and traces through it. The UI
 SHALL NOT spawn `waygraph manifest` or re-read the run log folder per request.
 
 #### Scenario: An edit appears without a refresh

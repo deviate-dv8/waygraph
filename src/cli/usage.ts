@@ -167,14 +167,14 @@ ${optionHelp("run")}
                                            has a trace - test report opens it.
 
 Also:
-  waygraph ui [project] [--port N]         Waygraph UI in the browser: the project's map, flows
+  waygraph studio [project] [--port N]         Waygraph Studio in the browser: the project's map, flows
                                            and runs, and playing a flow (run, demo, replay).
                                            The project is the folder given, or the one the
                                            current folder is in. http://localhost:9294
   waygraph manifest [project] [--out <file>]
                                            Every Block (kind, route from -> to, requires, map
                                            group), Flow (use case, steps, settings) and
-                                           Checkpoint of the project, as JSON - what Waygraph UI
+                                           Checkpoint of the project, as JSON - what Waygraph Studio
                                            and map packages read.
   --config <name|file>   (any command) use another config instead of waygraph.config.ts, e.g.
                  waygraph test --config staging   (config/waygraph.staging.config.ts)

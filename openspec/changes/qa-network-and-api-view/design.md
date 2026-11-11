@@ -12,7 +12,7 @@
 ## Goals / Non-Goals
 
 **Goals:** a QA reads, at each step, what it asked the backend and whether that went well, in words; noise is left out
-by default; an API step reads as clearly as a UI step; the same is in the run log and Waygraph UI.
+by default; an API step reads as clearly as a UI step; the same is in the run log and Waygraph Studio.
 
 **Non-Goals:** mocking responses (ROADMAP: network tab mocking); a full developer inspector (the panel keeps cURL and the
 raw detail, but isn't DevTools); WebSockets and server-sent events.

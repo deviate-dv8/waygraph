@@ -24,10 +24,10 @@ fails; differences alone SHALL NOT fail it.
 - **WHEN** both sides pass every step but `cart.total` reads `$29.99` on one and `$32.39` on the other
 - **THEN** the report SHALL list `cart.total` under that step, with both values
 
-### Requirement: Compared runs in the run log and Waygraph UI
-A compared run SHALL be one run log with both sides (each step marked with its side) and its differences. Waygraph UI
+### Requirement: Compared runs in the run log and Waygraph Studio
+A compared run SHALL be one run log with both sides (each step marked with its side) and its differences. Waygraph Studio
 SHALL show it as two lanes and list the differences beside the steps they're on.
 
 #### Scenario: Opening a compared run
-- **WHEN** a compared run is opened in Waygraph UI
+- **WHEN** a compared run is opened in Waygraph Studio
 - **THEN** it SHALL show both sides' steps and mark each step where they differ

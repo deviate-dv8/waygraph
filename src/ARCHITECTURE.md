@@ -107,7 +107,7 @@ the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by 
 | A practice warning | `analysis/practices-check.ts` + a fixture in `tests/fixtures/practices-check/` |
 | An engine error | `engine/errors.ts`: a `WG_<AREA>_<WHAT>` code with its where / means / fix; never reuse a shipped code |
 
-## What a viewer (Waygraph UI) reads
+## What a viewer (Waygraph Studio) reads
 
 Three sources, all public and typed; a viewer never reaches into internals:
 

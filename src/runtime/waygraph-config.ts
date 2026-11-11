@@ -112,7 +112,7 @@ export interface WaygraphConfig {
   run?: RunSettings;
   /** Settings for `waygraph demo` only. They override the shared ones above. */
   demo?: DemoSettings;
-  /** Write each run's events to `.waygraph/runs/<runId>.jsonl` (the history Waygraph UI shows), or to this folder. Default true. */
+  /** Write each run's events to `.waygraph/runs/<runId>.jsonl` (the history Waygraph Studio shows), or to this folder. Default true. */
   runLog?: boolean | string;
   /**
    * Labels for flows, to run a group of them (`waygraph test --flows --label auth`): each label names its flows, by a

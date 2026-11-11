@@ -1,5 +1,5 @@
 // Writes every run event to `<dir>/<runId>.jsonl` when WAYGRAPH_RUN_LOG names a folder (the CLI sets it to the project's
-// `.waygraph/runs`; `runLog: false` in the config turns it off). This is the run history Waygraph UI reads.
+// `.waygraph/runs`; `runLog: false` in the config turns it off). This is the run history Waygraph Studio reads.
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
@@ -24,7 +24,7 @@ export function installRunLog(): void {
     if (event.type === "run:end" && !envFlag("WAYGRAPH_JSON")) console.log(`waygraph: run log ${file}`);
   });
   // A Block's screenshot (`screenshot: true`): kept with its run (`<runId>/<step>-<block>.png`, recorded as an artifact of
-  // that step), and as its page's newest look (`../screenshots/<Checkpoint>.png`, what Waygraph UI's map shows).
+  // that step), and as its page's newest look (`../screenshots/<Checkpoint>.png`, what Waygraph Studio's map shows).
   keepScreenshots(async (shot) => {
     const dir = envString("WAYGRAPH_RUN_LOG");
     const step = currentStep();

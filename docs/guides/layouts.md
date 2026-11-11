@@ -90,8 +90,8 @@ export const AddMachineBlock = defineMethodBlock({ name: "add-machine", from: Eq
   [Testing](./testing#access-tests).
 - `waygraph check` flags a flow that runs as an account (`map({ as })`) and uses a link, Method or page that account
   isn't given.
-- Waygraph UI draws a layout once, with a line to each page its links lead to, and can show the map as one account sees
-  it. See [Waygraph UI](./ui).
+- Waygraph Studio draws a layout once, with a line to each page its links lead to, and can show the map as one account sees
+  it. See [Waygraph Studio](./studio).
 
 ## In a page or in a layout?
 

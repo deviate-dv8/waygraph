@@ -28,8 +28,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Waygraph UI dependencies (the build builds it into dist/ui)
-        run: npm ci --prefix ui
+      - name: Install Waygraph Studio dependencies (the build builds it into dist/studio)
+        run: npm ci --prefix studio
 
       - name: Build
         run: npm run build
@@ -85,8 +85,8 @@ jobs:
       - name: Install waygraph dependencies
         run: npm ci
 
-      - name: Install Waygraph UI dependencies (the build builds it into dist/ui)
-        run: npm ci --prefix ui
+      - name: Install Waygraph Studio dependencies (the build builds it into dist/studio)
+        run: npm ci --prefix studio
 
       - name: Build waygraph
         run: npm run build
@@ -101,7 +101,7 @@ jobs:
         run: node bin/waygraph list examples/saucedemo
 
   ui:
-    # Waygraph UI (ui/): its own app and dependencies, on the Node it needs (AdonisJS 7: 24+).
+    # Waygraph Studio (ui/): its own app and dependencies, on the Node it needs (AdonisJS 7: 24+).
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -124,7 +124,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: ui/package-lock.json
+          cache-dependency-path: studio/package-lock.json
 
       - name: Install dependencies
         run: npm ci

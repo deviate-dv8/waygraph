@@ -36,7 +36,7 @@ concept a front-end developer has to learn.
   - `waygraph test --flows` adds an access test per account: every layout it sees shows exactly that account's links
     and actions, and a page it can't open doesn't open.
   - `waygraph check` reports a flow `as: X` that uses a link, action or page X isn't given.
-- **Manifest, map and Waygraph UI.** The manifest lists layouts (folder, covered pages, members, `for`) and each Block's
+- **Manifest, map and Waygraph Studio.** The manifest lists layouts (folder, covered pages, members, `for`) and each Block's
   and page's `for`. The map draws a layout as one node with a line per destination and marks the pages it covers,
   instead of a line from every page; a page's panel lists its layouts and who can open it; the map can show one
   account's view.
@@ -47,7 +47,7 @@ concept a front-end developer has to learn.
 
 ### New Capabilities
 - `page-layouts`: layouts by folder (`_layout.block.ts`, nesting, the `on` override), their members (`go`, `do`, `read`,
-  `_sel.ts`), parent links and the breadcrumb check, and how the manifest, map and Waygraph UI show them.
+  `_sel.ts`), parent links and the breadcrumb check, and how the manifest, map and Waygraph Studio show them.
 - `access-rules`: `for` on layout links and actions, Page Blocks and Methods; the access tests `waygraph test --flows`
   generates per account; the `waygraph check` rule for a flow using what its account isn't given.
 
@@ -57,7 +57,7 @@ concept a front-end developer has to learn.
 ## Impact
 
 - **Engine:** `engine/block/kinds/layout.ts` (new, beside `page.ts`), `for` on Page and Method Blocks, a parent-link
-  resolver that needs the site map's tree (built from Checkpoints' addresses, today in `ui/app/services/site_map.ts`;
+  resolver that needs the site map's tree (built from Checkpoints' addresses, today in `studio/app/services/site_map.ts`;
   moves to `manifest/` so the engine-side scan and the UI share it).
 - **Scan and manifest:** `_layout.block.ts` discovery and coverage by folder; manifest fields for layouts and `for`.
 - **Tests:** `cli/flow-tests/register.ts` registers the per-account access tests; `analysis/` gains the access rule.

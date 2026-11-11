@@ -145,6 +145,12 @@ A stub paints through \`ctx.ui\`; \`ctx\` itself holds only what a stub reads (\
 | \`WAYGRAPH_TODO_UI=legacy\` / \`classic\` | \`WAYGRAPH_TODO_UI=full\` |
 | \`create-waygraph\` (npm) | \`npx waygraph init\` |
 
+## Removed in 0.16.22
+
+| Removed | Use instead |
+| --- | --- |
+| \`waygraph ui\` (Waygraph UI) | \`waygraph studio\` (Waygraph Studio): the same app, renamed; the repo's \`ui/\` is \`studio/\`, \`npm run ui\` is \`npm run studio\` |
+
 ## Removed in 0.16.19
 
 | Removed | Use instead |
