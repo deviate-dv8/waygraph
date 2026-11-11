@@ -42,6 +42,12 @@
    the banner over a button must never take the click (demo/overlay/acting.ts, locator-theater.ts). */
 #wg-ui:is([data-acting], [data-clicking]) #wg-chrome .wg-slot * { pointer-events: none; }
 
+/* A demo's lock: a shield over the page, under the chrome; it lets everything through while a step acts, a click is being
+   made, or the person unlocked the page (the chip). */
+#wg-lock { position: absolute; inset: 0; pointer-events: auto; cursor: not-allowed; z-index: var(--wg-z-focus); }
+#wg-ui:is([data-unlocked], [data-acting], [data-clicking]) #wg-lock { pointer-events: none; }
+.wg-lock-chip { cursor: pointer; }
+
 /* Order inside a shared slot: what is being typed, what the narration says, how the step went, then the controls. */
 #wg-typing-badge { order: 1; }
 #wg-caption-bar { order: 2; }

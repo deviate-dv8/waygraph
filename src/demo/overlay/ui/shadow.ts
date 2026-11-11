@@ -51,6 +51,7 @@ export function installShadowRoot(args: [string?, Record<string, string>?, strin
     "wg-auto-panel": "bottom-center",
     "wg-network-log": "bottom-left",
     "wg-pilot-activity": "bottom-left",
+    "wg-lock-chip": "bottom-left",
     "wg-zoom-badge": "bottom-right",
     "wg-pilot-fx-zoom": "bottom-right",
     "wg-pilot-overlay": "bottom-right",
@@ -90,8 +91,38 @@ export function installShadowRoot(args: [string?, Record<string, string>?, strin
       }
       chrome.appendChild(rowEl);
     }
-    layer.append(stage, chrome);
-    r.appendChild(layer);
+    // A demo locks the page against the person watching it: a shield over the page, below the chrome (so the panel's
+    // Next still works), out of the way while a step acts. A chip toggles it. Pilot and auto sessions never set it.
+    const lockable = (window as unknown as { __wgDemoLock?: boolean }).__wgDemoLock === true;
+    if (lockable) {
+      let unlocked = false;
+      try { unlocked = sessionStorage.getItem("wg-unlocked") === "1"; } catch { /* a page with no storage (a file) */ }
+      if (unlocked) layer.dataset.unlocked = "";
+      const shield = document.createElement("div");
+      shield.id = "wg-lock";
+      const chip = document.createElement("button");
+      chip.id = "wg-lock-chip";
+      chip.type = "button";
+      const paint = () => {
+        const open = "unlocked" in layer.dataset;
+        chip.title = open ? "Unlocked: you can use the page. Click to lock it" : "Locked: the demo is playing. Click to use the page";
+        chip.replaceChildren(window.__wgIcon(open ? "unlock" : "lock", "text-label-2"), document.createTextNode(open ? "unlocked" : "locked"));
+      };
+      chip.className = "wg-lock-chip flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] text-label-2 bg-fill";
+      chip.addEventListener("click", () => {
+        if ("unlocked" in layer.dataset) delete layer.dataset.unlocked;
+        else layer.dataset.unlocked = "";
+        try { sessionStorage.setItem("wg-unlocked", "unlocked" in layer.dataset ? "1" : "0"); } catch { /* blocked */ }
+        paint();
+      });
+      paint();
+      layer.append(shield, stage, chrome);
+      r.appendChild(layer);
+      layer.querySelector('.wg-slot[data-slot="bottom-left"]')?.appendChild(chip);
+    } else {
+      layer.append(stage, chrome);
+      r.appendChild(layer);
+    }
     // A new document: what the overlay showed on the page before comes back as it was, without sliding or fading in
     // again (a viewer would read that as something new). Its first moments paint without transitions.
     layer.dataset.restoring = "";

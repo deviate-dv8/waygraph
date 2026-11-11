@@ -1,5 +1,6 @@
 // `waygraph demo`: the same steps, with the waygraph UI around each one (src/demo/stepper/).
 import type { Page } from "@playwright/test";
+import { ignorePageGone } from "../../engine/page-gone.js";
 import { createStepper, type Stepper } from "../../demo/stepper/stepper.js";
 import { stepPage } from "../../engine/run/pane-page.js";
 import { messageOf } from "../../engine/errors.js";
@@ -52,8 +53,8 @@ export async function splitDemoMode(session: PlaySession, steps: readonly PlaySt
     if (showing === page) return;
     const was = showing;
     showing = page;
-    await was?.evaluate(() => { const p = window.__wgById?.("wg-panel"); if (p) p.style.display = "none"; }).catch(() => undefined);
-    await page.evaluate(() => { const p = window.__wgById?.("wg-panel"); if (p) p.style.display = ""; }).catch(() => undefined);
+    await was?.evaluate(() => { const p = window.__wgById?.("wg-panel"); if (p) p.style.display = "none"; }).catch(ignorePageGone);
+    await page.evaluate(() => { const p = window.__wgById?.("wg-panel"); if (p) p.style.display = ""; }).catch(ignorePageGone);
   };
   return {
     name: "demo",

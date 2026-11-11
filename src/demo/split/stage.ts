@@ -48,7 +48,7 @@ export async function openStage(stage: Page, panes: readonly string[], browser: 
     const { columns, rows } = gridFor(count);
     return {
       width: Math.floor((size.width - PAD * 2 - GAP * (columns - 1)) / columns),
-      height: Math.floor((size.height - PAD * 2 - GAP * (rows - 1)) / rows - LABEL),
+      height: Math.floor((size.height - PAD * 2 - GAP * (rows - 1)) / rows - (count > 1 ? LABEL : 0)),
     };
   };
   await stage.evaluate(
@@ -61,7 +61,7 @@ export async function openStage(stage: Page, panes: readonly string[], browser: 
       const mark = document.createElement("div");
       mark.id = "wg-split-mark";
       mark.textContent = "split view";
-      Object.assign(mark.style, { position: "fixed", right: "6px", bottom: "6px", zIndex: "9", padding: "1px 8px", borderRadius: "999px", fontSize: "10px", color: "#e8e8ee", background: "rgba(38,38,44,.85)", pointerEvents: "none" });
+      Object.assign(mark.style, { position: "fixed", left: "50%", transform: "translateX(-50%)", top: "2px", zIndex: "9", padding: "1px 8px", borderRadius: "999px", fontSize: "10px", color: "#e8e8ee", background: "rgba(38,38,44,.85)", pointerEvents: "none" });
       body.append(mark);
     },
     { pad: PAD, gap: GAP },
@@ -80,8 +80,12 @@ export async function openStage(stage: Page, panes: readonly string[], browser: 
   const relayout = async () => {
     const room = roomFor(shown.size);
     const { columns } = gridFor(shown.size);
+    // One pane alone has no header: it looks like the page itself (the corner mark says it's split view).
     await stage
-      .evaluate((columns) => (document.body.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`), columns)
+      .evaluate(([columns, labelled]) => {
+        document.body.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+        for (const head of document.querySelectorAll<HTMLElement>("section[data-pane] > header")) head.style.display = labelled ? "flex" : "none";
+      }, [columns, shown.size > 1] as const)
       .catch(ignorePageGone);
     for (const { page, fitted } of shown.values()) {
       if (!fitted) continue;

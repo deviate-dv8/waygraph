@@ -27,6 +27,8 @@ const ICONS = {
   error: "fill/x-circle",
   info: "fill/info",
   zoom: "regular/magnifying-glass-plus",
+  lock: "regular/lock-simple",
+  unlock: "regular/lock-simple-open",
   mobile: "regular/device-mobile",
   tablet: "regular/device-tablet",
   desktop: "regular/desktop",

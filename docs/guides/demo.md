@@ -111,6 +111,12 @@ other side when a ring would sit under it, and dims while a ring is up.
 | one, for one step | `ctx.ui.todoDockUi({ compact: false, collision: false, behindRing: false })` |
 | pin a side | `--todo-left` / `--todo-right` |
 
+## Locked while it plays
+
+A demo locks the page against the person watching it, so a stray click can't change what the steps expect. A small
+**locked** chip in the bottom-left corner says so; click it to unlock the page (it says **unlocked**) and again to lock it.
+The step panel's Next, Retry and Stop always work. Waygraph's own steps act through the lock.
+
 ## Pace
 
 | Setting | Where |

@@ -72,6 +72,9 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
   const pacing = newPacing(demoFast);
   // The after-step panel shows what the page shows (its step:read).
   trackReads();
+  // The person watching can't use the page while the demo plays; the chip in the corner unlocks it.
+  await page.addInitScript(() => ((window as unknown as { __wgDemoLock?: boolean }).__wgDemoLock = true)).catch(ignorePageGone);
+  await page.evaluate(() => ((window as unknown as { __wgDemoLock?: boolean }).__wgDemoLock = true)).catch(ignorePageGone);
   const refs: StepperRefs = { stubBefore: { current: [] }, todoDock: { current: undefined }, device: { current: undefined } };
   instrumentInteractionHighlighting(page, mem, options.beat, pacing, refs.stubBefore, refs.todoDock, refs.device);
   // The todo docks and the device are pieces of the page's overlay layer, painted from what the steps carry: a navigation
