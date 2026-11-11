@@ -1,17 +1,21 @@
 // Loads a project's Read Blocks (`<page>.read.block.ts`, or `_read.block.ts` in a Map page folder; its own and its installed map packages'): importing one registers it,
 // so every run can read the pages it lands on. Sessions get them from the full project scan; a run by flow name does not.
+import { readFileSync } from "node:fs";
 import { relative } from "node:path";
 import { pathToFileURL } from "node:url";
 import { installedMapPackages, mapPackageBlockFiles } from "./maps.js";
 import { reportImportError } from "./project.js";
 import { walkDir } from "./scan.js";
 
-// A page's read is in its own file (`<page>.page.block.ts`, with `read:`), so those load too.
-const READ_BLOCK = /(?:^|[\\/.])(?:_?read|page)\.block\.ts$/;
+const READ_BLOCK = /(?:^|[\\/.])_?read\.block\.ts$/;
+// A page's own `read:` registers when its file is imported: the files that define pages load too.
+const PAGE_BLOCK = /(?:^|[\\/.])[\w-]*\.block\.ts$/;
 
 /** Imports every Read Block file of the project; returns how many loaded. */
 export async function loadReadBlocks(projectDir: string): Promise<number> {
-  const files = [...walkDir(projectDir, READ_BLOCK), ...installedMapPackages(projectDir).flatMap(mapPackageBlockFiles).filter((f) => READ_BLOCK.test(f))];
+  const hasPage = (f: string) => PAGE_BLOCK.test(f) && /\bdefinePageBlock\s*\(/.test(readFileSync(f, "utf8"));
+  const all = [...walkDir(projectDir, /\.block\.ts$/), ...installedMapPackages(projectDir).flatMap(mapPackageBlockFiles)];
+  const files = [...new Set(all.filter((f) => READ_BLOCK.test(f) || hasPage(f)))];
   let loaded = 0;
   for (const file of files) {
     try {

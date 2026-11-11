@@ -39,8 +39,11 @@ export type PageRead = { readonly [field: string]: Reader<unknown> | PageRead };
 
 /** The keys of a page's read, typed by what each field reads: `Page.read.sort.is("az")`, `Page.read.items.passes(...)`. */
 export type PageReadKeys<R> = {
-  readonly [K in keyof R & string]: R[K] extends Reader<infer T> ? ReadKey<T> : R[K] extends object ? PageReadKeys<R[K]> : never;
+  readonly [K in keyof R & string]: R[K] extends Reader<infer T> ? ReadKey<T> : R[K] extends object ? ReadKey<PageReadValue<R[K]>> & PageReadKeys<R[K]> : never;
 };
+
+/** What a nested read gives as a whole: each field's value, as an object. */
+export type PageReadValue<R> = { [K in keyof R]: R[K] extends Reader<infer T> ? T : PageReadValue<R[K]> };
 
 /**
  * What `do` and `expects` are given: the page itself, as far as it's defined: its read keys, to build checks from

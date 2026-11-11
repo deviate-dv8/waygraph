@@ -139,6 +139,9 @@ export async function checkProject(
     for (const [exportName, exported] of Object.entries(mod)) {
       if (isReadBlockLike(exported)) for (const tag of exported.from) read.add(tag);
       if (!isBlockLike(exported)) continue;
+      // A page's own `read:` is a Read Block of the page.
+      const own = (exported as { __waygraphReadBlock?: { from: readonly string[] } }).__waygraphReadBlock;
+      if (own) for (const tag of own.from) read.add(tag);
       const kind = blockKindOf(exported);
       if (kind === "nav" || kind === "page") {
         for (const tag of (exported as { __waygraphTo?: readonly string[] }).__waygraphTo ?? []) if (!pages.has(tag)) pages.set(tag, file);

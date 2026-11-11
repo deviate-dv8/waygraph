@@ -11,6 +11,7 @@ import { codemodKeys } from "./codemod-keys.js";
 import { codemodChain, codemodFf, codemodLands, codemodPages } from "./codemod-steps.js";
 import { codemodExpect } from "./codemod-expect.js";
 import { codemodEffect } from "./codemod-effect.js";
+import { codemodPageObject } from "./codemod-page-object.js";
 import { parseCommand } from "../args.js";
 import type { OptionTable } from "../args.js";
 
@@ -36,7 +37,7 @@ const OPTIONS = {
   overwrite: { type: "boolean", help: "Also replace files that differ from the scaffold" },
   diff: { type: "boolean", help: "Show what differs" },
   skills: { type: "boolean", help: "Refresh .agents/skills to this waygraph's" },
-  codemod: { type: "string", value: "flows|checkpoints|keys|lands|ff|chain|pages|expect|effect", help: "Rewrite the project's source onto the current API" },
+  codemod: { type: "string", value: "flows|checkpoints|keys|lands|ff|chain|pages|expect|effect|page-object", help: "Rewrite the project's source onto the current API" },
 } as const satisfies OptionTable;
 
 /**
@@ -58,7 +59,7 @@ export async function upgradeCase(args: string[]): Promise<void> {
       if (problems.length) process.exitCode = 1;
       return;
     }
-    const plain = new Map([["keys", codemodKeys], ["lands", codemodLands], ["ff", codemodFf], ["chain", codemodChain], ["pages", codemodPages], ["expect", codemodExpect], ["effect", codemodEffect]]).get(what);
+    const plain = new Map([["keys", codemodKeys], ["lands", codemodLands], ["ff", codemodFf], ["chain", codemodChain], ["pages", codemodPages], ["expect", codemodExpect], ["effect", codemodEffect], ["page-object", codemodPageObject]]).get(what);
     if (plain) {
       const { changed, problems } = plain(dir);
       for (const f of changed) console.log(`  rewrote     ${f}`);
@@ -68,7 +69,7 @@ export async function upgradeCase(args: string[]): Promise<void> {
       return;
     }
     if (what !== "checkpoints") {
-      console.error("waygraph upgrade --codemod: known codemods: checkpoints, flows, keys, lands, ff, chain, pages, expect, effect");
+      console.error("waygraph upgrade --codemod: known codemods: checkpoints, flows, keys, lands, ff, chain, pages, expect, effect, page-object");
       process.exit(1);
     }
     const { changed, skipped } = codemodCheckpoints(dir);
