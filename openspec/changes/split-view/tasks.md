@@ -52,6 +52,16 @@
 - [x] 5.2 A compared run: both sides as lanes, each difference beside its step
 - [ ] 5.3 UI tests; light and dark; the guide's screenshots (`npm run docs:ui-shots`)
 
+## 7. One screen, then split, then one again
+
+- [x] 7.1 `.close(pane)`: closes another pane (its context, and the panes sharing it); the flow goes on in the pane it's
+      in; `.in()` it again later and it opens afresh. Types: the closed pane's page is forgotten; the pane the flow is
+      in can't be closed. The pane on the run's own page (outside a demo) doesn't close, saying so
+- [x] 7.2 The stage shows only open panes: one fills it, a second opening splits it, one closing gives the room back;
+      the panes the stage sizes are resized (through the demo's own resize, which a Block's can't use)
+- [x] 7.3 Tests: closing and reopening, the run's own page refusing to close, the types; saucedemo's twoShoppersFlow
+      goes from one to two to one
+
 ## 6. Examples, docs and skills
 
 - [ ] 6.1 saucedemo: a two-person flow (two users, each their own cart) and a compare on two devices; the quickstart

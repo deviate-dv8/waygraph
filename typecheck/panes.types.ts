@@ -31,3 +31,10 @@ map({ panes }).in("viewer");
 // A flow without panes has no pane to name.
 // @ts-expect-error - no panes declared
 map().in("planner");
+
+// A flow closes another pane, not the one it's in.
+map({ panes })
+  .in("planner").gotoPage(NavRegistry)
+  // @ts-expect-error - the flow is in the planner's pane
+  .close("planner");
+map({ panes }).in("planner").gotoPage(NavRegistry).close("admin").method(RequestRepair);

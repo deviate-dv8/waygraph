@@ -21,6 +21,8 @@ export interface PaneResolver {
   landed(pane: PaneMark, page: Page, at: Checkpoint<string>): void;
   /** Closes the panes the run on `page` opened. */
   close(page: Page): Promise<void>;
+  /** Closes one pane of the run on `page` (`.close(pane)`): the flow goes on in the others. */
+  closeOne(pane: string, page: Page): Promise<void>;
 }
 
 /**
@@ -36,6 +38,8 @@ export interface PaneHost {
   opened(pane: string, page: Page, label: string): Promise<void>;
   /** The pane the next step acts in. */
   acting(pane: string): void;
+  /** A pane closed (`.close(pane)`): the others have the room. */
+  closed?(pane: string): void;
   /** More options for a pane's own context (a video of it; a window-sized page). */
   contextOptions?(pane: string): Record<string, unknown>;
 }
@@ -80,6 +84,11 @@ export function stepInput(block: object, page: Page, given: Checkpoint<string>):
 export function stepLanded(block: object, page: Page, at: Checkpoint<string>): void {
   const pane = paneOf(block);
   if (pane && slot.resolver) slot.resolver.landed(pane, page, at);
+}
+
+/** Closes one pane of the run on `page`. */
+export async function closePane(page: Page, pane: string): Promise<void> {
+  await slot.resolver?.closeOne(pane, page);
 }
 
 /** Closes the panes a run opened, if any. */

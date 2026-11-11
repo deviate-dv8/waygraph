@@ -64,7 +64,8 @@ test("a flow with panes lists them, and each step's pane", async () => {
     { name: "standard", as: "standard-user" },
     { name: "problem", as: "problem-user" },
   ]);
-  expect(two.stepPanes).toEqual(["standard", "standard", "problem", "standard"]);
+  expect(two.steps).toEqual(["nav-inventory", "add-to-cart", "nav-inventory", "nav-cart", "nav-cart", "close-problem", "nav-inventory"]);
+  expect(two.stepPanes).toEqual(["standard", "standard", "problem", "problem", "standard", "standard", "standard"]);
   expect(m.accounts).toEqual(expect.arrayContaining(["problem-user", "standard-user"]));
   expect(m.flows.find((f) => f.exportName === "shopFlow")!.panes).toBeUndefined();
 });

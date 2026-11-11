@@ -29,10 +29,10 @@ import type { EngineConfig } from "../config.js";
 import { buildBranchedFlow } from "./map-branch.js";
 import { signInStep } from "./account.js";
 import { inWorld, restoreWorld, type World } from "./world.js";
-import { asCleanup, settling, requiring, withoutRequire, settingInput, settingKey, stepExpect, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
+import { asCleanup, settling, requiring, withoutRequire, settingInput, settingKey, stepExpect, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore, stayingStep } from "./map-steps.js";
 import type { MapFlowOpts } from "./map-options.js";
 import { checkPanes, inPane, installPanes } from "./panes.js";
-import { paneOf } from "../run/pane-page.js";
+import { closePane, paneOf } from "../run/pane-page.js";
 
 
 /**
@@ -196,6 +196,21 @@ export class MapBuilder<
     // An explicit .ffStart() window still open absorbs a plain step too.
     if (ffWin) return this.next({ ff: { ...ffWin, buffer: [...ffWin.buffer, block] } });
     return this.next({ chain: [...this.at.chain, block] });
+  }
+
+  /**
+   * Closes another pane: its page (and its browser context, with every pane sharing it) goes, and the flow goes on in
+   * the pane it's in. On a demo's stage the others take its room: from two side by side back to one screen. `.in()` it
+   * again later and it opens afresh (signed in again).
+   * @example .in("admin").method(Requests.do.approve).in("planner").close("admin").gotoPage(Registry.nav)
+   */
+  close<K extends Exclude<Names, A>>(pane: K): MapBuilder<Out, Names, Omit<P, K>, A> {
+    const panes = this.at.settings.panes;
+    if (!panes?.[pane]) {
+      throw new WaygraphError("WG_PANES", `.close("${pane}"): ${panes ? `this flow's panes are ${Object.keys(panes).join(", ")}` : "this flow has no panes"}`);
+    }
+    if (pane === this.at.pane) throw new WaygraphError("WG_PANES", `.close("${pane}"): it's the pane the flow is in; .in() another first`);
+    return this.appendStep<Out>(stayingStep(`close-${pane}`, `Closes the ${pane} pane.`, (page) => closePane(page, pane)));
   }
 
   /** In a flow with panes, the step plays in the pane `.in()` named (a sub-flow's steps that have their own stay there). */

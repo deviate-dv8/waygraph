@@ -39,6 +39,8 @@ interface PaneTable {
   readonly pages: Map<string, Page>;
   readonly last: Map<string, Checkpoint<string>>;
   readonly contexts: BrowserContext[];
+  /** The context each pane with its own was given, by pane. */
+  readonly own: Map<string, BrowserContext>;
   active: string | undefined;
   /** A pane's sign-in is playing: its own flow ends without closing the panes it plays in. */
   signingIn: boolean;
@@ -97,6 +99,7 @@ async function open(table: PaneTable, name: string, home: Page, mem: MemPage): P
       ...host?.contextOptions?.(name),
     });
     table.contexts.push(context);
+    table.own.set(name, context);
     page = await context.newPage();
   }
   if (host) await host.opened(name, page, labelOf(table.panes, name));
@@ -142,7 +145,7 @@ const resolver: PaneResolver = {
     // Another flow's panes on this page (a chain of flows on one page) end where that flow did.
     if (table && table.panes !== panes) await resolver.close(page);
     if (!table || table.panes !== panes) {
-      table = { panes, home: page, pages: new Map(), last: new Map(), contexts: [], active: undefined, signingIn: false };
+      table = { panes, home: page, pages: new Map(), last: new Map(), contexts: [], own: new Map(), active: undefined, signingIn: false };
       tables.set(page, table);
     }
     const target = await pageOf(table, pane.name, page, mem);
@@ -161,6 +164,33 @@ const resolver: PaneResolver = {
   },
   landed(pane, page, at) {
     tables.get(page)?.last.set(pane.name, at);
+  },
+  async closeOne(name, page) {
+    const table = tables.get(page);
+    const open = table?.pages.get(name);
+    if (!table || !open) return;
+    if (open === table.home) {
+      throw new WaygraphError("WG_PANES", `.close("${name}"): ${name} plays on the run's own page, which stays open; close another pane, or start the flow in the one that closes last`);
+    }
+    // Its own context goes, with every pane sharing it; a pane sharing another's loses its page only.
+    const sharing = [name, ...Object.entries(table.panes).filter(([, p]) => p.with === name).map(([other]) => other)];
+    const host = paneHostOf(table.home);
+    for (const pane of sharing) {
+      const p = table.pages.get(pane);
+      if (!p) continue;
+      table.pages.delete(pane);
+      table.last.delete(pane);
+      tables.delete(p);
+      if (!table.own.has(pane)) await p.close();
+      if (table.active === pane) table.active = undefined;
+      host?.closed?.(pane);
+    }
+    const context = table.own.get(name);
+    if (context) {
+      table.own.delete(name);
+      table.contexts.splice(table.contexts.indexOf(context), 1);
+      await context.close();
+    }
   },
   async close(page) {
     const table = tables.get(page);

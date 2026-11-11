@@ -128,7 +128,7 @@ export function skippable(block: SomeBlock, when: ((mem: MemPage) => boolean) | 
  * A step that ends where it started, doing `act` without touching the page's position: setting a key, checking what the
  * page shows. Its route is `*` -> where it was, so it fits after any step.
  */
-function stayingStep(name: string, description: string, act: (page: Page, mem: MemPage) => Promise<void> | void, verify?: Trait[]): SomeBlock {
+export function stayingStep(name: string, description: string, act: (page: Page, mem: MemPage) => Promise<void> | void, verify?: Trait[]): SomeBlock {
   const at = new WeakMap<MemPage, Checkpoint<string>>();
   return defineMethodBlock<Checkpoint<string>, Checkpoint<string>>({
     name,

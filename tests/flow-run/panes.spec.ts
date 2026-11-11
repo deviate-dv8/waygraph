@@ -132,6 +132,39 @@ test("fast-forwarded steps play in their pane", async ({ context, page }) => {
   expect(await flow.run(context, new MemPage(), { page })).toEqual(Who);
 });
 
+test("from two screens back to one: .close(pane) closes it, and it opens afresh when used again", async ({ context, page }) => {
+  const flow = engine
+    .map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })
+    .in("planner").gotoPage(NavWho)
+    .in("admin").gotoPage(NavWho.withVerify([whoIs("admin")]))
+    .in("planner").close("admin").method(Noop.withVerify([whoIs("planner")]))
+    // Opened again, signed in again.
+    .in("admin").gotoPage(NavWho.withVerify([whoIs("admin")]));
+  const contexts: number[] = [];
+  const { onRunEvent } = await import("../../src/engine/run/events.js");
+  const off = onRunEvent((e) => {
+    if (e.type === "step:end") contexts.push(context.browser()?.contexts().length ?? 0);
+  });
+  try {
+    expect(await flow.run(context, new MemPage(), { page })).toEqual(Who);
+  } finally {
+    off();
+  }
+  // After the close step, one context (the planner's) until the admin's opens again.
+  expect(contexts).toContain(1);
+  expect(context.browser()?.contexts().length).toBe(1);
+});
+
+test("the pane on the run's own page doesn't close", async ({ context, page }) => {
+  const flow = engine
+    .map({ panes: { planner: {}, admin: {} } })
+    .in("planner").gotoPage(NavWho)
+    .in("admin").gotoPage(NavWho)
+    .close("planner");
+  const error = await flow.run(context, new MemPage(), { page }).catch((err: unknown) => String(err));
+  expect(error).toContain(`.close("planner"): planner plays on the run's own page`);
+});
+
 test("a flow with panes says which pane a step acts in; panes are checked when the flow is built", () => {
   const flow = engine.map({ panes: { a: {}, b: {} } });
   expect(() => flow.gotoPage(NavWho)).toThrow(/say which one the step acts in with \.in\(pane\)/);
