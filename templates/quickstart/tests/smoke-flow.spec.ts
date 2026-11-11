@@ -1,0 +1,14 @@
+import { test, expect } from "@playwright/test";
+import { MemPage, checkpoint } from "waygraph";
+import { smokeFlow } from "../src/flows/(showcase)/smoke.flow.js";
+import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
+
+test("smoke flow reuses login + add-to-cart with navigation-only confirmation, no DOM checks", async () => {
+  const mem = new MemPage();
+  mem.set(SaucedemoKeys.credentials, { username: "standard_user", password: "secret_sauce" });
+  mem.set(SaucedemoKeys.selectedItem, { id: "sauce-labs-backpack", name: "Sauce Labs Backpack" });
+
+  const result = await smokeFlow.run(mem, { headless: true });
+
+  expect(result).toEqual(checkpoint("InventoryPage"));
+});

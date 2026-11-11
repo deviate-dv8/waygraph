@@ -17,10 +17,10 @@
     "demo": "waygraph demo --blocks \"loginFlow then shopFlow\"",
     "demo:auto-next": "waygraph demo --blocks \"loginFlow then shopFlow\" --auto-next",
     "demo:checkout": "waygraph demo --blocks checkoutFlow --auto-next",
-    "demo:device": "waygraph demo --blocks deviceShowcaseFlow --auto-next",
+    "demo:showcase": "waygraph demo --blocks allFeaturesShowcaseFlow --auto-next",
     "demo:bulk": "waygraph demo --blocks cartBulkFlow --auto-next",
     "demo:api": "waygraph demo --blocks apiDemoFlow --auto-next",
-    "demo:video": "waygraph demo --blocks deviceShowcaseFlow --auto-play-video",
+    "demo:video": "waygraph demo --blocks allFeaturesShowcaseFlow --auto-play-video",
     "record": "waygraph run --blocks \"loginFlow then shopFlow\" --video --no-step",
     "traverse": "waygraph traverse --max-steps 40"
   },

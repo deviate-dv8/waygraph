@@ -35,7 +35,7 @@ function checklist(done: number, index: number) {
 }
 
 /** Narration for the device showcase flow: phone login, tablet shelf, landscape cart. Each is a stub to chain on its Block. */
-export const deviceShowcase = {
+export const allFeaturesShowcase = {
   username: {
     before: (ctx: StubCtx) => {
       ctx.ui.title("Signing in · mobile");

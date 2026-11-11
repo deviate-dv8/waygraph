@@ -225,16 +225,16 @@ async function runTryDemo(): Promise<void> {
   if (process.exitCode) return;
 
   console.log("\nwaygraph try demo: running headless chained-flows test ...");
-  const testCode = await runInherited("npm", ["test"], destDir);
+  const testCode = await runInherited("npm", ["test", "--", "tests/chain-flow-episodes.spec.ts"], destDir);
   if (testCode !== 0) {
     process.exitCode = testCode;
     return;
   }
 
-  const testFile = join(destDir, "tests", "chain-flow.spec.ts");
-  const loginFlowFile = join(destDir, "src", "flows", "login.flow.ts");
-  const shopFlowFile = join(destDir, "src", "flows", "shop.flow.ts");
-  const viewerBlockedFlowFile = join(destDir, "src", "flows", "viewer-blocked.flow.ts");
+  const testFile = join(destDir, "tests", "chain-flow-episodes.spec.ts");
+  const loginFlowFile = join(destDir, "src", "flows", "auth", "login.flow.ts");
+  const shopFlowFile = join(destDir, "src", "flows", "cart", "shop.flow.ts");
+  const viewerBlockedFlowFile = join(destDir, "src", "flows", "auth", "viewer-blocked.flow.ts");
 
   console.log(
     "\nwaygraph try demo: done.\n\n" +

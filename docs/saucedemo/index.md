@@ -72,7 +72,7 @@ Blocks carry behaviour only (act, observe, resolve, verify). They have no narrat
 | `checkoutFlow` | The whole checkout with narration on every step |
 | `cartBulkFlow` | Add every item, then remove them all |
 | `checkoutThenBrowseAgainFlow` | Checkout, then back to the catalogue |
-| `deviceShowcaseFlow` | Phone, tablet and landscape, with zoom and the todo dock |
+| `allFeaturesShowcaseFlow` | Every feature in one demo: phone, tablet and landscape, zoom, the todo dock, then split view |
 | `viewerBlockedFlow` | `locked_out_user` is refused; needs `.flow(viewerBlockedFlow, { reset: true })` after another flow |
 | `stubOnErrorFlow` | A forced failure, with `stubOnError` ringing the error banner |
 | `memStubDemoFlow` | `map({ memStub: true })`: credentials are never supplied |

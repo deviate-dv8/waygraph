@@ -1,8 +1,8 @@
 // Copies examples/saucedemo into templates/quickstart (the project `waygraph try demo` runs), keeping the quickstart's own
-// package.json, README, tests and docs.
+// package.json, README and docs. Its tests are saucedemo's, which the repo's own runs keep current.
 import { cpSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 
-for (const dir of ["src", "config"]) {
+for (const dir of ["src", "config", "tests"]) {
   rmSync(`templates/quickstart/${dir}`, { recursive: true, force: true });
   cpSync(`examples/saucedemo/${dir}`, `templates/quickstart/${dir}`, { recursive: true });
 }

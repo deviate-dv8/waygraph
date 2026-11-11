@@ -1,13 +1,18 @@
 import { engine } from "../../../config/waygraph.config.js";
 import { Login } from "../../blocks/saucedemo-web/nav-login.block.js";
 import { InventoryPage } from "../../states/checkout.states.js";
-import { deviceShowcase as d } from "../../stubs/device-showcase.js";
+import { allFeaturesShowcase as d } from "../../stubs/all-features-showcase.js";
 import { Inventory } from "../../blocks/saucedemo-web/inventory/inventory.page.block.js";
+import { ProblemUser } from "../../accounts/accounts.js";
 import { Cart } from "../../blocks/saucedemo-web/cart/cart.page.block.js";
 
-/** Sign in on a phone, shop on a tablet, open the cart in landscape: the device and zoom narration in src/stubs/device-showcase.ts. */
-export const deviceShowcaseFlow = engine
-  .map({ memStub: true })
+/**
+ * Every waygraph feature in one demo: a phone, a tablet and landscape with zoom and the todo dock (narration in
+ * src/stubs/all-features-showcase.ts), then split view: a second shopper's pane opens beside the first, and closes.
+ */
+export const allFeaturesShowcaseFlow = engine
+  .map({ memStub: true, panes: { main: {}, guest: { as: ProblemUser } } })
+  .in("main")
   .gotoPage(Login)
   .method(
     Login.do.fillUsername.stubBefore(d.username.before).stubAfter(d.username.after),
@@ -24,4 +29,8 @@ export const deviceShowcaseFlow = engine
   )
   .gotoPage(
     Cart.nav.stubBefore(d.openCart.before).stubAfter(d.openCart.after),
-  );
+  )
+  .in("guest")
+  .gotoPage(Cart.nav)
+  .in("main")
+  .close("guest");
