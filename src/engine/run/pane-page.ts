@@ -40,6 +40,11 @@ export interface PaneHost {
   acting(pane: string): void;
   /** A pane closed (`.close(pane)`): the others have the room. */
   closed?(pane: string): void;
+  /**
+   * Makes a pane's own context itself, when `browser.newContext()` isn't enough (extensions load only in a persistent
+   * context, one per pane). It also gives how to close it with the run.
+   */
+  newContext?(pane: string, options: Record<string, unknown>): Promise<import("@playwright/test").BrowserContext>;
   /** More options for a pane's own context (a video of it; a window-sized page). */
   contextOptions?(pane: string): Record<string, unknown>;
 }

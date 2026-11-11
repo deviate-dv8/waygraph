@@ -124,13 +124,14 @@ async function open(table: PaneTable, name: string, home: Page, mem: MemPage): P
     }
     const device = pane.device ? resolveDevice(pane.device) : undefined;
     const baseURL = pane.baseUrl ?? envString("WAYGRAPH_BASE_URL");
-    const context = await browser.newContext({
+    const options = {
       ...(baseURL ? { baseURL } : {}),
       ...(device
         ? { viewport: device.viewport, deviceScaleFactor: device.deviceScaleFactor, isMobile: device.isMobile, hasTouch: device.hasTouch }
         : { viewport: host?.viewport(name) ?? home.viewportSize() ?? { width: 1280, height: 720 } }),
       ...host?.contextOptions?.(name),
-    });
+    };
+    const context = host?.newContext ? await host.newContext(name, options) : await browser.newContext(options);
     table.contexts.push(context);
     table.own.set(name, context);
     page = await context.newPage();

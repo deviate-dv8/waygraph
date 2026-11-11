@@ -7,7 +7,8 @@ import { paneOf, setPaneHost, type PaneHost } from "../engine/run/pane-page.js";
 import { recordArtifact } from "../engine/run/events.js";
 import { openStage } from "../demo/split/stage.js";
 import { windowsHost } from "../demo/split/windows.js";
-import { chromiumExecutablePath } from "../runtime/browser.js";
+import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../runtime/browser.js";
+import { ignorePageGone } from "../engine/page-gone.js";
 import { resolveVideoDir } from "../runtime/video-dir.js";
 import type { PlaySession, PlayStep } from "./mode.js";
 import type { PlayOptions } from "./options.js";
@@ -27,8 +28,25 @@ export async function openSplit(projectDir: string, session: PlaySession, steps:
   // Each pane's own video, beside the stage's: --video-panes.
   const videoDir = options.videoPanes ? (options.video && options.video !== "1" ? options.video : await resolveVideoDir(projectDir)) : undefined;
   const pages: [string, Page][] = [];
+  // Extensions load only in a persistent context: each pane with its own gets one, with the extensions.
+  const extensions = extensionPathsFromEnv();
+  const persistent: { close(): Promise<void> }[] = [];
   const host: PaneHost = {
     ...shown,
+    ...(extensions.length
+      ? {
+          async newContext(_pane, contextOptions) {
+            const { context, close } = await launchContext({
+              launcher: chromium,
+              launch: { headless: windows ? !options.headed : true, ...(executablePath ? { executablePath } : {}) },
+              context: contextOptions,
+              extensions,
+            });
+            persistent.push({ close });
+            return context;
+          },
+        }
+      : {}),
     contextOptions: (pane) => ({ ...shown.contextOptions?.(pane), ...(videoDir ? { recordVideo: { dir: videoDir, size: shown.viewport(pane) } } : {}) }),
     async opened(pane, page, label) {
       pages.push([pane, page]);
@@ -42,6 +60,7 @@ export async function openSplit(projectDir: string, session: PlaySession, steps:
   return {
     async close() {
       await stage?.close();
+      for (const open of persistent) await open.close().catch(ignorePageGone);
       await browser.close();
       // A pane's video is written when its context closes, with the flow.
       for (const [pane, page] of pages) {
