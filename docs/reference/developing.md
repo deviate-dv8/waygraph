@@ -93,3 +93,7 @@ commit it was published from (`git tag`, or the repository's Releases page). It 
 `npm run docs:dev` serves the site with hot reload, `npm run docs:build` builds it (and fails on a dead link),
 `npm run docs:preview` serves the build. A push to `main` touching `docs/` deploys it to GitHub Pages
 (`.github/workflows/pages.yml`).
+
+The Waygraph UI guide's screenshots (`docs/public/ui/`) come from `npm run docs:ui-shots` (after `npm run build`): it
+copies `examples/saucedemo`, plays a few flows into a clean run log, then shoots each page of the UI. Run it after a
+change to what the UI shows; it needs the network, and leaves no server or browser running.

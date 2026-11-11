@@ -44,6 +44,23 @@ graph LR
 | show it | `npx waygraph demo checkoutFlow` | step by step, with rings and captions |
 | test it | `npx waygraph test --flows` | every flow as a Playwright test |
 
+## See the whole project
+
+`npx waygraph ui` draws the project by hand: every page by its address, the Blocks between them, each flow step by
+step, and every run with what it checked. Play any flow from it. [Waygraph UI](/guides/ui)
+
+[![The Sauce Demo example in Waygraph UI: its pages by address, the menu layout, and the moves between them](/ui/map.jpg)](/guides/ui)
+
+| A run, step by step | A failure says why |
+|---|---|
+| [![A passing checkout run](/ui/run.jpg)](/guides/ui#runs) | [![A failed step: what its check wanted and what it saw](/ui/run-failed.jpg)](/guides/ui#runs) |
+
+## One shape for every project
+
+Every waygraph project puts the same things in the same places: folders that are the app's addresses, one folder per
+page with the same file names, flows that are the tests. Each opinion says why, and what holds you to it.
+[Your project](/guides/project)
+
 ## Try it
 
 ```sh
@@ -56,7 +73,7 @@ npx waygraph ui              # in a project: its map, flows and runs in the brow
 
 | Start | Guides | Reference |
 |---|---|---|
-| [Quick start](/quickstart) | [Your project](/guides/project) · [Blocks](/guides/blocks) · [Flows](/guides/flows) | [CLI](/reference/cli) |
+| [Quick start](/quickstart) | [Your project](/guides/project) · [Layouts and access](/guides/layouts) · [Blocks](/guides/blocks) · [Flows](/guides/flows) | [CLI](/reference/cli) |
 | [What Waygraph is](/doctrine) · [How it works](/how-it-works) | [Read Blocks](/guides/reads) · [Data](/guides/data) · [Checks](/guides/checks) | [Config](/reference/config) |
 | [Sauce Demo](/saucedemo/) | [Demo](/guides/demo) · [Testing](/guides/testing) · [Waygraph UI](/guides/ui) (beta) | [API](/api/) · [Environment](/env) |
 | | [Agents](/guides/agents) · [Mail](/guides/mail) | [Deprecated](/deprecated) |

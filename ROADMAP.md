@@ -38,6 +38,10 @@ against a real consumer.
   "button[aria-label=Menu]" }`), picked by the device the flow plays on; kept as plain data so other drivers can use
   it. The manifest and Waygraph UI list the variants; `waygraph check` warns about a device an entry has none for. A
   layout's links would use it too (a sidebar on desktop, a burger menu on a phone).
+- **Sauce Demo in the project's shape** - the example is freeform (`src/blocks/saucedemo-web/`, flows by feature, its
+  menu layout by `on`); the shape [Your project](docs/guides/project.md) defines is `src/map/` by address, a page folder
+  each, flows a folder per page. Moving it makes the example the reference it's used as, and `waygraph map` holds it
+  there. The scaffold already has the shape.
 - **Layouts, next** - the access tests check a layout's links (each has a selector) and the pages an account can't
   open; a Method's button has no selector to look for, so its `for` is checked by `waygraph check` only. A Method could
   name its button (`shows: Sel.archive`) for the access test to look for. Layouts that change by device (a sidebar that

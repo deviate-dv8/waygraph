@@ -3,6 +3,8 @@
 The project in the browser, drawn by hand: its pages and the Blocks between them, its flows step by step with what
 each step expects, its runs, and a button to play any flow.
 
+![The Sauce Demo example's map: the menu layout and the site above, each page by its address, the moves between them](/ui/map.jpg)
+
 > [!WARNING]
 > **Beta.** What its pages show and where things sit can change from one version to the next. It only reads your
 > project and plays its flows; it never changes your files.
@@ -14,46 +16,164 @@ npx waygraph ui ../shop    # another project
 
 It comes with waygraph (0.16.13 and later) and needs Node 24 or newer, like the rest of waygraph: nothing else to
 install. In a project, `npx waygraph ui` runs the project's own waygraph; on an older one, update it first
-(`npm install waygraph@latest`). The map's addresses (a site map, one level per part of the address) and page
-screenshots need 0.16.16 or later in the project; on an older one the pages hang from where flows reach them.
-
-It prints the address (`http://localhost:9294`, or the next free port; `--port N` picks one). Ctrl-C stops it, and a
-flow it's still playing, with its browser.
+(`npm install waygraph@latest`). It prints the address (`http://localhost:9294`, or the next free port; `--port N`
+picks one). Ctrl-C stops it, and a flow it's still playing, with its browser.
 
 The project is the folder you name, or the one the current folder is in: the nearest folder, here or above, with a
 `waygraph.config.*` (in it or in `config/`) or a `package.json` that depends on waygraph.
 
-## What it shows
+## How it works
 
-| Page | Shows |
-|---|---|
-| **Map** | a site map: each site at the top (the base url's host, and every other site a page's address names: a payment provider, a mail catcher), its pages below by their addresses, one level per part of the address (a folder for each part no page has: `auth/`, `platform/`, then `plant/`, so `/platform/plant/lines` sits three levels in), dashed lines labelled with the Navs that open them, each with its newest [screenshot](./blocks#screenshots) when one was taken. Every move between pages is an arrow labelled with the Blocks that make it. Each Block on a line is a badge with its whole name, beside the page the line goes into (labels meeting at one page stack, and the map leaves room for them: a label never covers a box), in its kind's colour and with its icon (Nav blue, Method grey, API green; the key is in the map's bottom bar, and **Legend** there explains every shape, line and badge, and what's in a page's box). Beside it, the site map as a folder tree: uncheck a site, a folder or a page to leave it off the map, or keep one branch with **only** (say, just `platform/plant/equipment`); your browser remembers the choice for the project. The tree minimizes to a **Pages** button (with how many pages the map shows), and back. Each page says how many flows pass through it, and how many of those failed their newest run, and lists what it shows: the fields its [Read Blocks](./reads) read, by namespace, the yes/no ones highlighted as the states the page can be in (`login.linkSent`, `login.canSubmit`), which flows check with `Key.is` instead of a Checkpoint of their own; each box is as tall as its list, and the layout makes room for it. A [layout](./layouts) (a menu, a sidebar) is one box beside the sites, with a line to each page its links lead to, and each page it covers carries its name; click it for its links (who sees each), actions and pages. When the project has accounts, the bottom bar shows the map as one of them (**As planner**): pages it can't open and Blocks it isn't given are left out, and it says how many; the address keeps the choice (`?as=planner`), so the view can be shared. Click a page: its screenshot, addresses and how its flows' newest runs went (failing, passing, not run), its layouts and who can open it (its Page Block's `for`), then, most telling first, what it shows (its [Read Blocks](./reads)' fields, the yes/no states first), what you can do there, the ways in, where it leads, what's expected there (its Expect Blocks, what's promised on arrival), the selectors its Blocks read, and its flows last (each one that lands there, may land there (a step with several outcomes that ends the flow) or does something there, failing first; a run with no flow named, a test calling `flow.run`, counts for the flow whose steps it played). Open a Block in a list for its checks, its selectors and its code; the panel widens (the arrows in its corner) to read code |
-| **Flows** | every flow by its folder, failing first, with its steps, expectations and newest run; filter by failing, passing or not run, or find one by a step; open one for its steps on a canvas, each with what it [expects](./checks#expect-what-the-scenario-expects), and its recent runs |
-| **Blocks** | every Block by the folder it lives in, with its kind, route (`from` → `to`) and what it requires; open one for what it checks (before acting and on arrival, and what it promises wherever it's used), the selector entries it reads, its code (the lines that define it, from its file), and the flows that use it; and from the newest runs, how often it ran and failed, how long it takes, and what it did to the address: **navigates** (its step ended on another path: a submit that redirects, a click a single-page app routes) or **changes the address** (it stayed on its page but changed the query or hash: a tab or a filter kept in the url). Also its Read Blocks (each field and its type), its selectors (every entry of its selector files, with the Blocks that read each) and its mem keys (who requires each, and the value the newest run used). Checks, selectors and code need waygraph 0.16.19 or later in the project |
-| **Runs** | every run from the [run log](../reference/run-log): each step passed or failed, how long it took, the address it ended on, its screenshot when one was taken, what the flow expected after it; a failed step opens with what its check wanted and what it saw. Next to **Run** and **Demo** on a flow, **Record video** and **Show the browser** (off: headless) say how it plays, kept in your browser; its recent runs have a download for each video. A run recorded with `--video` has **Video**: it plays in the page, and **Download video** saves it; a run with a Playwright trace has **Trace** to download (open it with `npx playwright show-trace`) |
-| **Project** | the project's waygraph commands as buttons, run with its own waygraph from its folder, one at a time, with their output (check, validate, typecheck, map, graph, list, nav, manifest, test, test --flows, upgrade, install; the ones that change files, `upgrade --skills` and the codemods, ask first); **Stop** ends one and what it started. And its [config](../reference/config): what it resolves to, or the file as written (waygraph 0.16.18 or later in the project) |
-| **Playwright** | Playwright's UI mode over your flows (`waygraph test --flows --ui`), inside the app: **Open Playwright UI** starts it, every flow is a test you can run, watch and step through (its trace, actions and page snapshots); **Stop** ends it and its browsers. On a flow, **Playwright UI** opens it with only that flow (**Show all flows** goes back to every one) |
+```mermaid
+graph LR
+  P[your project<br/>Blocks, flows, config] -->|waygraph manifest| M[the manifest<br/>pages, Blocks, flows, layouts]
+  P -->|every run writes| R[.waygraph/runs/*.jsonl<br/>steps, checks, screenshots, videos]
+  M --> U[Waygraph UI]
+  R --> U
+  U -->|Run, Demo| W[waygraph run / demo<br/>the project's own install]
+  W --> R
+  U -->|Playwright UI| T[waygraph test --flows --ui]
+```
 
-The map reads left to right by default (each depth a column, a long run of pages in a grid); the switch in its bottom
-bar lays it out top down, and your browser remembers the choice. Its shapes follow flowchart's: a site is a terminator
-(round ends), a page a process (a rectangle). On a flow or a run, a step that goes to a page (a Nav or Page step) is a
-terminator, an API call an input / output (a parallelogram), a fast-forward a predefined process (a box with side
-bars), any other step a process.
+- **It reads; it never writes.** The map and the flows come from [`waygraph manifest`](../reference/run-log#the-manifest),
+  read through the project's own install, and the runs from `.waygraph/runs/`. Nothing it shows is stored anywhere else.
+- **It plays with your waygraph.** **Run** and **Demo** start the project's own `waygraph run` / `waygraph demo`, the
+  same as you would from a terminal, so a run from the UI writes the same run log as any other.
+- **It stays quick.** A manifest older than 30 seconds is still shown at once while a new one is read (the refresh
+  button in the sidebar waits for the new one), and a page loads when you point at its link.
+
+## The map
+
+The project as a site map: each site at the top (the base url's host, and every other site a page's address names: a
+payment provider, a mail catcher), its pages below by their addresses, one level per part of the address. A part no
+page has is a folder (`auth/`, `platform/`, then `plant/`, so `/platform/plant/lines` sits three levels in).
+
+- **Dashed lines** hang each page from its site, labelled with the Navs that open it by address.
+- **Arrows** are the moves between pages, labelled with the Blocks that make them: a badge per Block, with its whole
+  name, in its kind's colour and with its icon (Nav blue, Method grey, API green). Labels meeting at one page stack, and
+  the map makes room for them: a label never covers a box.
+- **A page's box** has its newest [screenshot](./blocks#screenshots) (when a Block took one), its address, how much you
+  can do there, how many flows pass through it and how many failed their newest run, and what it shows: the fields
+  its [Read Blocks](./reads) read, by namespace, the yes/no ones highlighted as the states the page can be in
+  (`login.linkSent`), which flows check with `Key.is` instead of a Checkpoint of their own.
+- **A [layout](./layouts)** (a menu, a sidebar) is one box beside the sites, with a line to each page its links lead
+  to; each page it covers carries its name. Its links aren't drawn again from every page.
 
 A page's address comes from the Navs that open it (a url built from mem shows as a pattern: `/requests/:id`) and from
-the `Trait.url` its Blocks verify on arrival. A page with no address of its own (a state of another page: an item in the
-cart) sits under the page whose move reaches it. Pages in a row follow the order your flows visit them.
+the `Trait.url` its Blocks verify on arrival. A page with no address of its own sits under the page whose move reaches
+it. Pages in a row follow the order your flows visit them.
 
-## Playing a flow
+The **bottom bar** holds the key (the Block kinds), **Legend** (every shape, line and badge, and what's in a page's
+box), the switch between left to right and top down (remembered), and the counts.
 
-On a flow: **Run** plays it in the background (`waygraph run`), **Demo** opens a browser with the step panel
-(`waygraph demo`), **Playwright UI** opens it as a Playwright test on the Playwright page. **verify only** skips the expectations (`--no-expect`). On a run of one flow, **Run again** or **Demo again** plays it
-with the mem that run was seeded with (`--replay`; what the run made new, a name from `unique`, is made new again).
+![The legend: shapes, lines, the Blocks on a line, and what's in a page's box](/ui/map-legend.jpg)
 
-The run's page follows it step by step; a step that fails opens as it happens. Every page shows what's playing, with
-**Stop**, which ends the flow and its browser. One flow plays at a time.
+Beside the map, the site map as a folder tree: uncheck a site, a folder or a page to leave it off the map, or keep one
+branch with **only** (say, just `platform/plant/equipment`); your browser remembers the choice for the project. The
+tree minimizes to a **Pages** button, with how many pages the map shows.
 
-It plays with the project's own waygraph, the same as you would from a terminal, and writes the same run log.
+### A page
+
+Click a page for everything about it, most telling first:
+
+![InventoryPage's panel: what it shows, what you can do there, the ways in, and more](/ui/map-page.jpg)
+
+1. Its screenshot, addresses, how its flows' newest runs went (failing, passing, not run), its layouts and who can open
+   it (its Page Block's `for`).
+2. **Shows**: its Read Blocks' fields, the yes/no states first.
+3. **Do here**, **Ways in**, **Leads to**: its Blocks. Open one for its checks, the selectors it reads and its code; the
+   arrows in the panel's corner widen it to read code.
+4. **Expected here**: its Expect Blocks, and what Blocks promise on arrival.
+5. **Selectors** its Blocks read, and **Flows** last: each one that lands there, may land there (a step with several
+   outcomes that ends the flow) or does something there, failing first.
+
+### A layout
+
+Click a layout for its links (where each leads, its selector, who sees it), its actions, what it shows and the pages it
+covers; click a page there to go to it.
+
+![The menu layout's panel: two links, each for everyone, on six pages](/ui/map-layout.jpg)
+
+### As one account
+
+When the project has [accounts](./flows#accounts), the bottom bar shows the map as one of them (**As planner**): the
+pages it can't open and the Blocks it isn't given (`for`) are left out, and it says how many. The address keeps the
+choice (`?as=planner`), so a view can be shared.
+
+### In the dark
+
+The map, and every page, follow your system's light or dark theme.
+
+![The map in the dark](/ui/map-dark.jpg)
+
+## Flows
+
+Every flow by its folder, failing first, with its steps, expectations and newest run; filter by failing, passing or not
+run, or find one by a step.
+
+![The flows of Sauce Demo, by folder](/ui/flows.jpg)
+
+Open one for its steps on a canvas, each with what it [expects](./checks#expect-what-the-scenario-expects), and its
+recent runs (a download for each video). Its shapes follow flowchart's: a step that goes to a page (a Nav or Page step)
+is a terminator, an API call an input / output, a fast-forward a predefined process, any other step a process.
+
+![checkoutFlow: nine steps, and its newest run](/ui/flow.jpg)
+
+### Playing a flow
+
+- **Run** plays it in the background (`waygraph run`); **Demo** opens a browser with the step panel (`waygraph demo`);
+  **Playwright UI** opens it as a Playwright test on the Playwright page.
+- **verify only** skips the expectations (`--no-expect`). **Record video** and **Show the browser** (off: headless) say
+  how it plays, kept in your browser.
+- The run's page follows it step by step; a step that fails opens as it happens. Every page shows what's playing, with
+  **Stop**, which ends the flow and its browser. One flow plays at a time.
+
+## Runs
+
+Every run from the [run log](../reference/run-log), newest first, and each run step by step: whether it passed, how long
+it took, the address it ended on, its screenshot when one was taken, and what the flow expected after it.
+
+![A passing checkout, step by step: each step's time, address and the pages it went between](/ui/run.jpg)
+
+A failed step opens with what its check wanted and what it saw, and the mem the run was given:
+
+![A run that failed on purpose: the menu isn't on the login page, and the check says so before clicking](/ui/run-failed.jpg)
+
+- **Run again** or **Demo again** plays a run of one flow with the mem it was seeded with (`--replay`; what the run made
+  new, a name from `unique`, is made new again).
+- A run recorded with `--video` has **Video**: it plays in the page, and **Download video** saves it. A run with a
+  Playwright trace has **Trace** to download (open it with `npx playwright show-trace`).
+- A run with no flow named (a test calling `flow.run`) counts for the flow whose steps it played.
+
+## Blocks
+
+Every Block by the folder it lives in, with its kind, route (`from` → `to`), what it requires and how its newest runs
+went.
+
+![Sauce Demo's Blocks by folder, with their routes and runs](/ui/blocks.jpg)
+
+Open one for what it checks (before acting and on arrival, and what it promises wherever it's used), the selector
+entries it reads, its code (the lines that define it), the flows that use it, and from the newest runs how often it ran
+and failed, how long it takes, and what it did to the address: **navigates** (its step ended on another path: a submit
+that redirects, a click a single-page app routes) or **changes the address** (it stayed on its page but changed the
+query or hash: a tab or a filter kept in the url). The tabs beside it list the Read Blocks (each field and its type),
+the selectors (every entry of the selector files, with the Blocks that read each) and the mem keys (who requires each,
+and the value the newest run used). Checks, selectors and code need waygraph 0.16.19 or later in the project.
+
+## Project
+
+The project's waygraph commands as buttons, run with its own waygraph from its folder, one at a time, with their
+output: check, validate, typecheck, map, graph, list, nav, manifest, test, test --flows, upgrade, install. The ones
+that change files (`upgrade --skills`, the codemods) ask first; **Stop** ends one and what it started. Below, its
+[config](../reference/config): what it resolves to (after `.env`), or the file as written.
+
+![The Project page: commands by group, and the config](/ui/project.jpg)
+
+## Playwright
+
+Playwright's UI mode over your flows (`waygraph test --flows --ui`), inside the app: **Open Playwright UI** starts it,
+and every flow is a test you can run, watch and step through (its trace, actions and page snapshots). **Stop** ends it
+and its browsers. On a flow, **Playwright UI** opens it with only that flow (**Show all flows** goes back to every one).
 
 ## Settings
 
@@ -64,10 +184,11 @@ The gear at the bottom of the sidebar. Kept in your browser.
 | Sidebar | every page | which pages the sidebar shows (a hidden one still opens by its address) |
 | Demo: Auto-advance | on | a demo started here moves on from each step by itself (`--auto-next`); off, it waits for Next (`--no-auto-next`). The step panel's own switch still changes it while the demo plays |
 
-## What it reads
+## Versions
 
-Nothing it shows is stored anywhere else: the map and flows come from [`waygraph manifest`](../reference/run-log#the-manifest),
-read through the project's own install, and the runs from `.waygraph/runs/`. It never changes the project's files. A
-manifest older than 30 seconds is still shown at once while a new one is read (the refresh button in the sidebar waits
-for a new one), and a page loads when you point at its link, so moving between pages doesn't wait on either.
+What it can show depends on the waygraph in the project: the site map and page screenshots need 0.16.16 or later (on
+an older one the pages hang from where flows reach them), checks, selectors and code 0.16.19, the config 0.16.18, labels
+0.16.20, layouts and accounts 0.16.21.
 
+The screenshots on this page are made with `npm run docs:ui-shots` in the waygraph repo, from the
+[Sauce Demo example](../saucedemo/).

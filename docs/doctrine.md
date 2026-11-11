@@ -47,6 +47,9 @@ the wrong shape for it. Find another shape.
 - **Data is named, never hidden.** What a run needs is a typed mem key; fake values come from mem stubs; what a page
   shows is a Read Block.
 - **The flows are the tests.** `waygraph test` runs every flow; a spec file is only for what a flow can't say.
+- **One shape for every project.** Folders are the app's addresses, every page folder has the same files, and what
+  many pages share is a layout in their folder: [Your project](./guides/project) lists each rule, why, and what holds
+  you to it.
 - **One way to write each thing.** No aliases, no old forms kept next to new ones; a codemod moves projects forward.
 
 ## What the same Blocks also give you
@@ -63,6 +66,6 @@ Because an app is described once, as pages and the actions between them, the sam
 Next, on the same foundation ([ROADMAP](https://github.com/deviate-dv8/waygraph/blob/main/ROADMAP.md)):
 
 - **Virtual users** that use the app like a person would, through an MCP server over a live session.
-- **Waygraph GUI**: the project's map, flows and runs in one app, including reading data out of pages (scraping) with
-  Read Blocks.
+- **Waygraph UI**, further: the project's map, flows and runs are in it today ([Waygraph UI](./guides/ui)); next, live
+  sessions and reading data out of pages (scraping) with Read Blocks.
 - **More drivers.** Playwright only, until it is mastered.
