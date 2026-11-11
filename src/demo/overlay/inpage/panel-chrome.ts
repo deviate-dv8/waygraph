@@ -135,7 +135,7 @@ export function installPanelChrome() {
           } else {
             panel.classList.add("wg-in");
           }
-          window.__wgWirePanelChrome?.(panel, "wg-panel-hidden", "waygraph demo", {
+          window.__wgWirePanelChrome?.(panel, "wg-panel-hidden", "waygraph stepper", {
             stepLabel: info.stepLabel || "",
             forceCollapsed: info.forceCollapsed === true ? true : undefined,
             fastForward: !!info.fastForward,
@@ -188,7 +188,7 @@ export function installPanelChrome() {
                 __wgEl(
                   "div",
                   { class: "wg-chrome flex items-center justify-between gap-2 h-7" },
-                  __wgEl("span", { class: "wg-chrome-title flex flex-1 items-center gap-1.5 min-w-0 truncate text-xs font-semibold text-label-2" }, chromeTitle || "waygraph demo"),
+                  __wgEl("span", { class: "wg-chrome-title flex flex-1 items-center gap-1.5 min-w-0 truncate text-xs font-semibold text-label-2" }, chromeTitle || "waygraph stepper"),
                   __wgEl(
                     "div",
                     { class: "wg-chrome-actions flex flex-none items-center gap-1" },
@@ -257,8 +257,8 @@ export function installPanelChrome() {
             const isApi = panel.dataset.wgIsApi === "1";
             if (titleEl) {
               const text = hidden
-                ? (label || chromeTitle || "waygraph demo")
-                : (chromeTitle || "waygraph demo");
+                ? (label || chromeTitle || "waygraph stepper")
+                : (chromeTitle || "waygraph stepper");
               titleEl.textContent = "";
               if (hidden && isFf) titleEl.appendChild(buildFfIcon());
               if (hidden && isApi) titleEl.appendChild(buildApiIcon());

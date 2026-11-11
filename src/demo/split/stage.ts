@@ -106,7 +106,12 @@ export async function openStage(stage: Page, panes: readonly string[], browser: 
     const y = (input.y ?? 0) * (box?.height ?? 0);
     const button = input.button ?? "left";
     try {
-      if (input.kind === "move") await page.mouse.move(x, y);
+      if (input.kind === "move") {
+        await page.mouse.move(x, y);
+        // The screencast has no pointer: the stage shows the one the page would (a hand over a link, a text bar over a field).
+        const cursor = await page.evaluate(([x, y]) => (document.elementFromPoint(x as number, y as number) ? getComputedStyle(document.elementFromPoint(x as number, y as number)!).cursor : "default"), [x, y]).catch(() => "default");
+        await stage.evaluate((cursor) => (document.body.style.cursor = cursor === "auto" ? "default" : cursor), cursor).catch(ignorePageGone);
+      }
       else if (input.kind === "down") {
         await page.mouse.move(x, y);
         await page.mouse.down({ button });

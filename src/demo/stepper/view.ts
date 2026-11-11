@@ -72,7 +72,7 @@ export function viewOf(ctx: StepperContext, index: number): StepView {
     moduleDescriptions: indices.map((i) => ctx.steps[i]!.block.description || ""),
     moduleIndex,
     justEnteredEpisode: moduleIndex === 0 && step.episodeNumber !== undefined,
-    overlayTitle: ctx.title || "waygraph demo",
+    overlayTitle: ctx.title || "waygraph stepper",
     overlayTodoPos: undefined,
   };
 }

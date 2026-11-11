@@ -194,7 +194,7 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
         demoLog(`overlay blinks: ${blinks.length ? blinks.map(([piece, n]) => `${piece} ${n}`).join(", ") : "none"}`);
       }
       await teardownOverlay(page);
-      const card = finishCard(ended, ctx.stickyTitle || options.title || "waygraph demo", steps.length, Date.now() - startedAt);
+      const card = finishCard(ended, ctx.stickyTitle || options.title || "waygraph stepper", steps.length, Date.now() - startedAt);
       if (!envFlag("WAYGRAPH_JSON")) demoLog(`finished: ${card.status} · ${card.summary}${card.detail ? ` · ${card.detail}` : ""}`);
       await ensureShadowRoot(page).catch(ignorePageGone);
       await page.evaluate(showFinish, card).catch(ignorePageGone);

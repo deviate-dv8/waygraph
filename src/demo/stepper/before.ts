@@ -32,7 +32,7 @@ export async function showBefore(ctx: StepperContext, view: StepView): Promise<B
   if (!quiet()) logBefore(ctx, view, phase, appliedTodo.sync, paceSpeak.paceLabel);
   await showSlides(ctx, view, phase.slides);
   if (phase.title && String(phase.title).trim()) ctx.stickyTitle = String(phase.title).trim();
-  view.overlayTitle = ctx.stickyTitle || (view.step.episodeTitle && String(view.step.episodeTitle).trim()) || ctx.title || "waygraph demo";
+  view.overlayTitle = ctx.stickyTitle || (view.step.episodeTitle && String(view.step.episodeTitle).trim()) || ctx.title || "waygraph stepper";
   view.overlayTodoPos = stage.state.lastTodoDock?.pos || phase.todoPos || undefined;
 
   const step = view.step;

@@ -34,7 +34,7 @@ export interface SlidesOptions {
  * doing nothing. In-page data-wg-acked + autoplay poll is the source of truth.
  */
 export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide[], opts?: SlidesOptions) {
-  const title = (opts && opts.title) || "waygraph demo";
+  const title = (opts && opts.title) || "waygraph stepper";
   const blockName = (opts && opts.blockName) || "";
   const episodeNumber = opts && opts.episodeNumber;
   const episodeTitle = (opts && opts.episodeTitle) || "";
@@ -131,7 +131,7 @@ export async function presentSlides(page: WgPage, slides: readonly WaygraphSlide
           requestAnimationFrame(() => panel.classList.add("wg-in"));
         }
         if (window.__wgWirePanelChrome) {
-          window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph demo", {
+          window.__wgWirePanelChrome(panel, "wg-panel-hidden", "waygraph stepper", {
             stepLabel:
               (info.episodeNumber !== undefined && info.episodeNumber !== null
                 ? "Ep " + info.episodeNumber + " \u00b7 "

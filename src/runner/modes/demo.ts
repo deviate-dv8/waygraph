@@ -46,11 +46,24 @@ export async function splitDemoMode(session: PlaySession, steps: readonly PlaySt
     }
     return stepper;
   };
+  /** One stepper panel for the whole flow: the pane acting shows it, the others' are put away. */
+  let showing: Page | undefined;
+  const sharePanel = async (page: Page) => {
+    if (showing === page) return;
+    const was = showing;
+    showing = page;
+    await was?.evaluate(() => { const p = window.__wgById?.("wg-panel"); if (p) p.style.display = "none"; }).catch(() => undefined);
+    await page.evaluate(() => { const p = window.__wgById?.("wg-panel"); if (p) p.style.display = ""; }).catch(() => undefined);
+  };
   return {
     name: "demo",
     // A reset closes the panes; the next episode opens its own, with their own UI.
     afterReset: async () => steppers.clear(),
-    before: async (index) => (await stepperFor(index)).before(index),
+    before: async (index) => {
+      const stepper = await stepperFor(index);
+      await sharePanel(await stepPage(steps[index]!.block, session.page, session.mem));
+      return stepper.before(index);
+    },
     after: async (index, result) => (await stepperFor(index)).after(index, result),
     failed: async (index, failure) => (await stepperFor(index)).failed(index, failure),
     end: async (outcome) => {
