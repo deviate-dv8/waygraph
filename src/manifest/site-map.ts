@@ -27,6 +27,9 @@ export function siteTree(checkpoints: readonly string[], pageUrls: Readonly<Reco
     if (!url) return [];
     const absolute = originOf(url);
     const path = absolute ? url.slice(absolute.length) || "/" : url;
+    // An address that isn't a path on a site (a template like `file://:HOST_DIR/x.html`, `:url/review`) has no place in
+    // the site map: the map puts the page where its moves reach it.
+    if (!path.startsWith("/")) return [];
     return [{ tag, origin: absolute ?? base, path }];
   });
   const origins = [...new Set(located.map((p) => p.origin))].sort((a, b) => (a === base ? -1 : b === base ? 1 : a.localeCompare(b)));

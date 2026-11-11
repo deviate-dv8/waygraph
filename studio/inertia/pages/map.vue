@@ -61,7 +61,32 @@ const pageBlocks = computed(() => {
   return props.blocks.filter((b) => !links.has(b.name))
 })
 const layoutIds = computed(() => props.access.layouts.map((l) => l.node))
+/** Every move between pages (the tree and the journey read these). */
 const edgesData = computed(() => mapEdges(pageBlocks.value))
+/**
+ * A link valid from many pages (a sidebar, a menu) is one line from each: a web. Those are drawn only for the page
+ * selected (its own lines), and counted in the bar.
+ */
+const MANY_FROM = 5
+const sharedMoves = computed(() =>
+  edgesData.value.filter(
+    (e) => e.blocks.length > 0 && e.blocks.every((b) => b.from.length > MANY_FROM)
+  )
+)
+/** The other sites a project's pages live on sit together under one `external` node, apart from the app itself. */
+const EXTERNAL = 'group:external'
+const externalSites = computed(() => site.value.sites.slice(1))
+/** The site map's lines, with the external node's own: external -> each other site. */
+const siteLines = computed(() => [
+  ...site.value.edges,
+  ...externalSites.value.map((s) => ({
+    id: `${EXTERNAL}->${s.id}`,
+    source: EXTERNAL,
+    target: s.id,
+    blocks: [],
+    site: true as const,
+  })),
+])
 const layoutLines = computed(() => props.access.lines)
 /** Shows the map as `account` sees it (null: everyone): the server leaves out what it isn't given. */
 function showAs(account: string | null) {
@@ -79,6 +104,7 @@ const notPages = computed(
       ...props.site.sites.map((s) => s.id),
       ...props.site.folders.map((f) => f.id),
       ...layoutIds.value,
+      ...(externalSites.value.length ? [EXTERNAL] : []),
     ])
 )
 
@@ -109,7 +135,7 @@ const tree = computed<Tree>(() => {
   const sites = site.value.sites
   // The site map's tree: a page under the page (or site) its address hangs from; a page with no known address under the
   // page whose move first reaches it, else under the first site. Children in journey order.
-  const parentOf = new Map<string, string>(site.value.edges.map((e) => [e.target, e.source]))
+  const parentOf = new Map<string, string>(siteLines.value.map((e) => [e.target, e.source]))
   for (const id of journey.value) {
     if (parentOf.has(id)) continue
     const from = edgesData.value.find((e) => e.target === id && e.source !== id)?.source
@@ -120,11 +146,16 @@ const tree = computed<Tree>(() => {
   const rank = new Map<string, number>(journey.value.map((id, i) => [id, i]))
   const rankOf = (id: string): number => {
     if (rank.has(id)) return rank.get(id)!
-    const under = site.value.edges.filter((e) => e.source === id).map((e) => rankOf(e.target))
+    const under = siteLines.value.filter((e) => e.source === id).map((e) => rankOf(e.target))
     rank.set(id, under.length ? Math.min(...under) : Number.MAX_SAFE_INTEGER)
     return rank.get(id)!
   }
   const childrenOf = new Map<string, string[]>()
+  if (externalSites.value.length)
+    childrenOf.set(
+      EXTERNAL,
+      externalSites.value.map((s) => s.id)
+    )
   for (const id of [...journey.value, ...site.value.folders.map((f) => f.id)]) {
     const parent = parentOf.get(id)
     if (parent) childrenOf.set(parent, [...(childrenOf.get(parent) ?? []), id])
@@ -138,7 +169,8 @@ const tree = computed<Tree>(() => {
   // Layouts first, above the sites: each its own root, its lines reaching down into the tree.
   const roots = [
     ...layoutIds.value,
-    ...sites.map((s) => s.id),
+    ...sites.slice(0, 1).map((s) => s.id),
+    ...(externalSites.value.length ? [EXTERNAL] : []),
     ...journey.value.filter((id) => !parentOf.has(id)),
   ]
   return { roots, childrenOf, parentOf }
@@ -157,6 +189,9 @@ const treeLabels = computed<Record<string, TreeLabel>>(() => ({
   ...Object.fromEntries(
     site.value.sites.map((s) => [s.id, { kind: 'site' as const, label: s.label }])
   ),
+  ...(externalSites.value.length
+    ? { [EXTERNAL]: { kind: 'folder' as const, label: 'external', sub: 'other sites' } }
+    : {}),
   ...Object.fromEntries(
     site.value.folders.map((f) => [f.id, { kind: 'folder' as const, label: f.label, sub: f.path }])
   ),
@@ -191,10 +226,20 @@ const shown = computed(() => {
 
 /** The lines between shown nodes: where each page hangs in the site map, and the moves between pages. */
 const shownSiteEdges = computed(() =>
-  site.value.edges.filter((e) => shown.value.has(e.source) && shown.value.has(e.target))
+  siteLines.value.filter((e) => shown.value.has(e.source) && shown.value.has(e.target))
 )
+const hiddenShared = computed(() => {
+  const hide = new Set(
+    sharedMoves.value
+      .filter((e) => selected.value !== e.source && selected.value !== e.target)
+      .map((e) => e.id)
+  )
+  return hide
+})
 const shownMoves = computed(() =>
-  edgesData.value.filter((e) => shown.value.has(e.source) && shown.value.has(e.target))
+  edgesData.value.filter(
+    (e) => shown.value.has(e.source) && shown.value.has(e.target) && !hiddenShared.value.has(e.id)
+  )
 )
 const shownLayoutLines = computed(() =>
   layoutLines.value.filter((e) => shown.value.has(e.source) && shown.value.has(e.target))
@@ -297,6 +342,16 @@ const nodes = computed<Node[]>(() => {
         failing: 0,
       },
     })),
+    ...(externalSites.value.length
+      ? [
+          {
+            id: EXTERNAL,
+            type: 'folder',
+            position: placed.value.get(EXTERNAL) ?? { x: 0, y: 0 },
+            data: { label: 'external', path: 'other sites' },
+          },
+        ]
+      : []),
     ...props.access.layouts.map((l) => ({
       id: l.node,
       type: 'layout',
@@ -618,6 +673,12 @@ const page = computed(() =>
           <MapLegend />
         </template>
       </UPopover>
+      <span
+        v-if="hiddenShared.size"
+        :title="'Links valid from many pages (a menu, a sidebar) draw their lines when you select the page they lead to or start from'"
+        class="text-(--ink-soft)"
+        >{{ count(hiddenShared.size, 'shared link') }} hidden</span
+      >
       <span>{{ count(checkpoints.length, 'page') }}</span>
       <span>{{ count(props.blocks.length, 'Block') }}</span>
       <span>{{ count(props.flows.length, 'flow') }}</span>

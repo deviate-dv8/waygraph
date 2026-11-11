@@ -102,14 +102,38 @@ export function siteMap(
  * each page or folder, from its parent, carries the Navs that open the page by its address.
  */
 export function siteMapFrom(tree: SiteTree, blocks: ManifestBlock[]): SiteMap {
-  const edges = Object.entries(tree.parents).map(([target, source]) => ({
+  // A page whose address isn't a path on a site (a template like `file://:HOST_DIR/x.html` or `:url/review`) has no
+  // place in the site map: it sits where its moves reach it (the map page places it), not under invented folders.
+  const unaddressed = new Set(
+    Object.entries(tree.paths)
+      .filter(([, path]) => !path.startsWith('/'))
+      .map(([page]) => page)
+  )
+  let parents = Object.entries(tree.parents).filter(([target]) => !unaddressed.has(target))
+  // A folder only those pages hung from goes too.
+  for (let changed = true; changed;) {
+    const held = new Set(parents.map(([, parent]) => parent))
+    const kept = parents.filter(([target]) => !target.startsWith('folder:') || held.has(target))
+    changed = kept.length !== parents.length
+    parents = kept
+  }
+  const folderIds = new Set(parents.map(([target]) => target))
+  const paths = Object.fromEntries(
+    Object.entries(tree.paths).filter(([page]) => !unaddressed.has(page))
+  )
+  const edges = parents.map(([target, source]) => ({
     id: `${source}=>${target}`,
     source,
     target,
     blocks: blocks.filter((b) => b.url && b.to.includes(target) && b.kind !== 'expect'),
     site: true as const,
   }))
-  return { sites: tree.sites, folders: tree.folders, paths: tree.paths, edges }
+  return {
+    sites: tree.sites,
+    folders: tree.folders.filter((f) => folderIds.has(f.id)),
+    paths,
+    edges,
+  }
 }
 
 /**
