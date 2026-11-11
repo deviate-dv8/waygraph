@@ -42,6 +42,9 @@ export async function splitDemoMode(session: PlaySession, steps: readonly PlaySt
     const page = await stepPage(steps[index]!.block, session.page, session.mem);
     let stepper = steppers.get(page);
     if (!stepper) {
+      // The banner's icon says this is the split view.
+      await page.addInitScript(() => ((window as unknown as { __wgSplit?: boolean }).__wgSplit = true)).catch(ignorePageGone);
+      await page.evaluate(() => ((window as unknown as { __wgSplit?: boolean }).__wgSplit = true)).catch(ignorePageGone);
       stepper = createStepper(page, session.mem, steps, { title: options.title, fastBlocks: options.fastBlocks, beat });
       steppers.set(page, stepper);
     }

@@ -28,6 +28,8 @@ const ICONS = {
   info: "fill/info",
   zoom: "regular/magnifying-glass-plus",
   lock: "regular/lock-simple",
+  window: "regular/browser",
+  split: "regular/columns",
   unlock: "regular/lock-simple-open",
   mobile: "regular/device-mobile",
   tablet: "regular/device-tablet",

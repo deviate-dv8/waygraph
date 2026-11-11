@@ -35,7 +35,13 @@ export function installBanner({ title, favicon, bannerPos, bannerUi, tag: banner
               applyPos(banner!, POSITIONS[(i + 1) % POSITIONS.length]!);
             });
             banner.append(
-              __wgEl("span", { class: "wg-banner-tag text-xs font-medium text-label-2" }, bannerTag || "waygraph demo"),
+              // The tag says where the demo is: a window for one page, columns for the split view.
+              __wgEl(
+                "span",
+                { class: "wg-banner-tag flex items-center gap-1 text-xs font-medium text-label-2", title: window.__wgSplit ? "Split view" : "One page" },
+                __wgIcon(window.__wgSplit ? "split" : "window", "text-label-2"),
+                bannerTag || "waygraph demo",
+              ),
               __wgEl("span", { class: "wg-banner-text text-base font-semibold tracking-tight" }, title),
             );
             __wgAdd(banner);

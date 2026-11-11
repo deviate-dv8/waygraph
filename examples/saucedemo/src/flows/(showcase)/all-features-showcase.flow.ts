@@ -31,6 +31,7 @@ export const allFeaturesShowcaseFlow = engine
     Cart.nav.stubBefore(d.openCart.before).stubAfter(d.openCart.after),
   )
   .in("guest")
+  .gotoPage(Inventory.nav)
   .gotoPage(Cart.nav)
   .in("main")
   .close("guest");
