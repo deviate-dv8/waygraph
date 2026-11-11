@@ -21,6 +21,8 @@ const props = defineProps<{
     /** How many flows pass through it, and how many of those failed their newest run. */
     flows: number
     failing: number
+    /** How many links valid from several pages lead here (a menu, a sidebar): counted, drawn when it's selected. */
+    shared?: number
     /** The layouts it's under (a menu, a sidebar): what it shares with other pages. */
     layouts?: string[]
     /** What it shows (its Read Blocks' fields), by namespace; a yes/no field is a state the page can be in. */
@@ -80,6 +82,12 @@ const props = defineProps<{
           >· {{ props.data.failing }} failing</span
         >
       </span>
+      <span
+        v-if="props.data.shared"
+        class="mt-0.5 text-[11px] text-(--ink-soft)"
+        title="Links valid from several pages lead here; select the page to draw them"
+        >{{ props.data.shared }} shared {{ props.data.shared === 1 ? 'link' : 'links' }} in</span
+      >
       <span v-if="props.data.layouts?.length" class="mt-1 flex flex-wrap justify-center gap-1">
         <span
           v-for="l in props.data.layouts"

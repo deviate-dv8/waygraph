@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, provide, ref, watch } from 'vue'
 import { VueFlow, useVueFlow, type Edge, type Node, type VueFlowStore } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import WorkspaceLayout from '~/layouts/workspace.vue'
@@ -13,6 +13,7 @@ import type { TreeLabel } from '~/components/map/map_tree_row.vue'
 import { everything, only, toggled, visibleTree, type MapTree as Tree } from '~/lib/map_filter'
 import SketchEdge from '~/components/graph/sketch_edge.vue'
 import PagePanel from '~/components/map/page_panel.vue'
+import BlockPanel from '~/components/map/block_panel.vue'
 import { useStorage } from '@vueuse/core'
 import { layoutTree, treeColumns, type TreeDirection } from '~/lib/layout'
 import { planLabels } from '~/lib/edge_labels'
@@ -51,6 +52,16 @@ const props = defineProps<{
 }>()
 
 const selected = ref<string | null>(null)
+/** A Block opened from a badge on a line (a move's Nav, Method, API call): its panel, like a page's. */
+const selectedBlock = ref<string | null>(null)
+provide('selectBlock', (id: string) => {
+  selected.value = null
+  selectedBlock.value = id
+})
+const blockPanel = computed(() => props.blocks.find((b) => b.id === selectedBlock.value))
+watch(selected, (id) => {
+  if (id) selectedBlock.value = null
+})
 /** Which way the site map grows: left to right by default; the viewer's pick is remembered in this browser. */
 const direction = useStorage<TreeDirection>('waygraph-map-direction', 'LR')
 /** The pages on the map: those the account (if one is picked) can open. */
@@ -64,13 +75,13 @@ const layoutIds = computed(() => props.access.layouts.map((l) => l.node))
 /** Every move between pages (the tree and the journey read these). */
 const edgesData = computed(() => mapEdges(pageBlocks.value))
 /**
- * A link valid from many pages (a sidebar, a menu) is one line from each: a web. Those are drawn only for the page
- * selected (its own lines), and counted in the bar.
+ * A link valid from several pages (a sidebar, a menu) is one line from each: a web. Those are counted on the page they
+ * lead to, and drawn only for the page selected.
  */
-const MANY_FROM = 5
 const sharedMoves = computed(() =>
   edgesData.value.filter(
-    (e) => e.blocks.length > 0 && e.blocks.every((b) => b.from.length > MANY_FROM)
+    (e) =>
+      e.blocks.length > 0 && e.blocks.every((b) => b.from.filter((from) => from !== '*').length > 1)
   )
 )
 /** The other sites a project's pages live on sit together under one `external` node, apart from the app itself. */
@@ -236,6 +247,12 @@ const hiddenShared = computed(() => {
   )
   return hide
 })
+/** How many shared links lead to each page: shown on its box, so they're counted, not lost. */
+const sharedIn = computed(() => {
+  const by = new Map<string, number>()
+  for (const e of sharedMoves.value) by.set(e.target, (by.get(e.target) ?? 0) + e.blocks.length)
+  return by
+})
 const shownMoves = computed(() =>
   edgesData.value.filter(
     (e) => shown.value.has(e.source) && shown.value.has(e.target) && !hiddenShared.value.has(e.id)
@@ -384,6 +401,7 @@ const nodes = computed<Node[]>(() => {
           expects: page.expects.length,
           reads: page.reads.length,
           layouts: props.access.pageLayouts[id] ?? [],
+          shared: sharedIn.value.get(id) ?? 0,
           shows: shows.value.get(id) ?? [],
           flows: props.pageFlows[id]?.length ?? 0,
           failing: props.pageFlows[id]?.filter((f) => f.ok === false).length ?? 0,
@@ -457,7 +475,12 @@ const edges = computed<Edge[]>(() => {
       sourceHandle: direction.value === 'LR' ? 'out' : 'down',
       targetHandle: direction.value === 'LR' ? 'in' : 'up',
       data: {
-        blocks: e.blocks.map((b) => ({ name: b.name, kind: b.kind, description: b.description })),
+        blocks: e.blocks.map((b) => ({
+          id: b.id,
+          name: b.name,
+          kind: b.kind,
+          description: b.description,
+        })),
         dashed: true,
         squared: true,
         lane: siteLanes[i],
@@ -478,7 +501,12 @@ const edges = computed<Edge[]>(() => {
         sourceHandle: lr ? 'out' : 'down',
         targetHandle: deeper ? (lr ? 'in' : 'up') : lr ? 'back' : 'under',
         data: {
-          blocks: e.blocks.map((b) => ({ name: b.name, kind: b.kind, description: b.description })),
+          blocks: e.blocks.map((b) => ({
+            id: b.id,
+            name: b.name,
+            kind: b.kind,
+            description: b.description,
+          })),
           squared: true,
           lane: moveLanes[i],
           place: labels.value.places.get(e.id),
@@ -495,7 +523,12 @@ const edges = computed<Edge[]>(() => {
       sourceHandle: direction.value === 'LR' ? 'out' : 'down',
       targetHandle: direction.value === 'LR' ? 'in' : 'up',
       data: {
-        blocks: e.blocks.map((b) => ({ name: b.name, kind: b.kind, description: b.description })),
+        blocks: e.blocks.map((b) => ({
+          id: b.id,
+          name: b.name,
+          kind: b.kind,
+          description: b.description,
+        })),
         squared: true,
         lane: layoutLanes[i],
         place: labels.value.places.get(e.id),
@@ -597,6 +630,12 @@ const page = computed(() =>
         :layouts="props.access.pageLayouts[page.checkpoint] ?? []"
         :given="props.access.pageGiven[page.checkpoint]"
         @close="selected = null"
+      />
+      <BlockPanel
+        v-else-if="blockPanel"
+        class="pointer-events-auto"
+        :block="blockPanel"
+        @close="selectedBlock = null"
       />
       <LayoutPanel
         v-else-if="layout"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { inject } from 'vue'
 import { computed } from 'vue'
 import {
   EdgeLabelRenderer,
@@ -11,6 +12,8 @@ import { sketchPath, seedOf } from '~/lib/sketch'
 import { kindColor, kindIcon } from '~/lib/kinds'
 
 /** A hand-drawn arrow between two pages, labelled with the Blocks that make that move. */
+/** Opens a Block's panel: the map provides it, so a badge on a line opens its Block like a page's list does. */
+const selectBlock = inject<((id: string) => void) | undefined>('selectBlock', undefined)
 const props = defineProps<
   EdgeProps<{
     /** Plain text on the line (a line with Blocks shows them as badges instead). */
@@ -24,7 +27,7 @@ const props = defineProps<
     /** Which of several squared lines from the same place this is: each bends at its own distance, so none overlap. */
     lane?: number
     /** The Blocks that make this move, each shown whole as a badge in its kind's colour (instead of `label`). */
-    blocks?: { name: string; kind: string; description: string }[]
+    blocks?: { id?: string; name: string; kind: string; description: string }[]
     /** Where the map planned this line's badges: beside its target, before or after it, at an offset in their stack. */
     place?: { side: 'before' | 'after'; offset: number } | undefined
   }>
@@ -195,7 +198,7 @@ const head = computed(() => {
   <EdgeLabelRenderer>
     <div
       v-if="props.data?.blocks?.length"
-      class="nodrag nopan absolute flex flex-col gap-0.5"
+      class="nodrag nopan pointer-events-auto absolute flex flex-col gap-0.5"
       :class="planned?.align ?? anchor.align"
       :style="{
         transform: planned
@@ -211,8 +214,9 @@ const head = computed(() => {
         :color="kindColor(b.kind)"
         variant="subtle"
         size="sm"
-        class="bg-(--paper) font-mono whitespace-nowrap"
+        class="cursor-pointer bg-(--paper) font-mono whitespace-nowrap"
         :title="`${b.kind}${b.description ? ': ' + b.description : ''}`"
+        @click.stop="b.id && selectBlock?.(b.id)"
       />
     </div>
     <div
