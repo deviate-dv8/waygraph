@@ -1,5 +1,8 @@
 # Split view
 
+> [!WARNING]
+> **Experimental.** Panes, the stage and `--compare` are new in 0.17: their syntax and look can change in a minor version.
+
 Some scenarios have two sides: a planner requests a repair and an admin approves it, one person sends a message and
 another receives it, someone signs up while the mail catcher receives the link. A flow with **panes** plays them as one
 story, in order, with both screens side by side.
