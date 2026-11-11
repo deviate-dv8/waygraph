@@ -10,6 +10,7 @@ npm run build && npm run examples:link   # the specs scan examples/; this links 
 npm run typecheck   # waygraph typecheck . (tsc --noEmit + practice warnings)
 npm run test        # node --test tests/unit + playwright test
 npm run test:ui     # playwright test --ui
+npm run test:offscreen   # Linux: the Playwright suite on a hidden display (xvfb-run), headed tests included; needs xvfb
 npm run build       # tsc -p tsconfig.build.json, emits dist/ (+ the overlay's stylesheet, scripts/build-ui-css.mjs)
 npm run storybook   # every overlay piece in light and dark, painted by the real builders (stories/), on :6006
 npm run icons       # regenerate src/demo/overlay/ui/icons.ts after adding a Phosphor icon to scripts/gen-icons.mjs

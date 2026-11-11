@@ -43,6 +43,7 @@ npm ci --prefix ui      # once per checkout: the build builds Waygraph UI
 npm run ui              # this checkout's Waygraph UI on examples/saucedemo (npm run ui:dev: the UI's hot-reload server)
 npx tsc --noEmit && npm run build && npm run check:structure && npm run knip && npm run test:unit
 WAYGRAPH_HEADED=0 npx playwright test --grep-invert non-headless
+npm run test:offscreen   # Linux with xvfb: the whole suite, headed tests included, on a hidden display
 npm run storybook:build   # overlay changes: also look at the piece in `npm run storybook`, light and dark
 npm run docs:ui-shots     # Waygraph UI changes: the UI guide's screenshots, from examples/saucedemo
 (cd examples/saucedemo && WAYGRAPH_HEADED=0 node ../../bin/waygraph test)

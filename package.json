@@ -57,6 +57,7 @@
     "typecheck": "node bin/waygraph typecheck .",
     "test": "npm run check:structure && npm run knip && npm run test:unit && playwright test",
     "test:ui": "playwright test --ui",
+    "test:offscreen": "env -u WAYLAND_DISPLAY xvfb-run -a playwright test",
     "test:unit": "node --import tsx/esm --test tests/unit/*.spec.ts",
     "example:saucedemo:install": "npm --prefix examples/saucedemo install",
     "examples:link": "node scripts/link-examples.mjs",
