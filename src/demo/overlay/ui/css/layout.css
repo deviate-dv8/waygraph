@@ -84,6 +84,10 @@
   animation: none !important;
 }
 
+/* In a split view only the pane acting shows the chrome (banner, panel, todos, caption, outcome, chips): the others show
+   their page and the rings on it, so the stage has one overlay, not one per pane. */
+#wg-ui[data-passive] #wg-chrome { display: none; }
+
 /* The parts a demo leaves out (demo.overlay, data-hide on #wg-ui). A failed step's panel shows anyway. */
 #wg-ui[data-hide~="banner"] #wg-banner,
 #wg-ui[data-hide~="panel"] #wg-panel:not(.wg-error),

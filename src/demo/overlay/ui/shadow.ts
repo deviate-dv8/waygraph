@@ -76,6 +76,8 @@ export function installShadowRoot(args: [string?, Record<string, string>?, strin
     if (appearance === "light" || appearance === "dark") layer.dataset.appearance = appearance;
     // The parts the demo leaves out (demo.overlay): layout.css hides them, on every page.
     if (hide) layer.dataset.hide = hide.split(",").join(" ");
+    // A pane that isn't acting in a split view (set by the stage before its page loads, and kept across loads).
+    if ((window as unknown as { __wgPassive?: boolean }).__wgPassive === true) layer.dataset.passive = "";
     const stage = document.createElement("div");
     stage.id = "wg-stage";
     const chrome = document.createElement("div");

@@ -50,14 +50,28 @@ export async function splitDemoMode(session: PlaySession, steps: readonly PlaySt
     }
     return stepper;
   };
-  /** One stepper panel for the whole flow: the pane acting shows it, the others' are put away. */
-  let showing: Page | undefined;
+  /**
+   * One overlay for the whole stage: the pane acting shows the chrome (banner, panel, todos, caption, outcome); the
+   * others show their page with its rings (`data-passive` on their overlay layer), kept across page loads.
+   */
+  const panes = new Set<Page>();
+  let acting: Page | undefined;
+  const setPassive = (page: Page, passive: boolean) =>
+    Promise.all([
+      page.addInitScript((p) => ((window as unknown as { __wgPassive?: boolean }).__wgPassive = p), passive).catch(ignorePageGone),
+      page
+        .evaluate((p) => {
+          (window as unknown as { __wgPassive?: boolean }).__wgPassive = p;
+          const layer = document.getElementById("wg-root")?.shadowRoot?.getElementById("wg-ui");
+          if (layer) layer.toggleAttribute("data-passive", p);
+        }, passive)
+        .catch(ignorePageGone),
+    ]);
   const sharePanel = async (page: Page) => {
-    if (showing === page) return;
-    const was = showing;
-    showing = page;
-    await was?.evaluate(() => { const p = window.__wgById?.("wg-panel"); if (p) p.style.display = "none"; }).catch(ignorePageGone);
-    await page.evaluate(() => { const p = window.__wgById?.("wg-panel"); if (p) p.style.display = ""; }).catch(ignorePageGone);
+    panes.add(page);
+    if (acting === page) return;
+    acting = page;
+    await Promise.all([...panes].map((p) => setPassive(p, p !== page)));
   };
   return {
     name: "demo",

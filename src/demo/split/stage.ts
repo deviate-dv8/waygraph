@@ -194,7 +194,7 @@ export async function openStage(stage: Page, panes: readonly string[], browser: 
             head.append(title, who);
             const img = document.createElement("img");
             img.alt = pane;
-            Object.assign(img.style, { flex: "1", minHeight: "0", width: "100%", objectFit: "contain", background: "#000" });
+            Object.assign(img.style, { flex: "1", minHeight: "0", width: "100%", objectFit: "contain", objectPosition: "top left", background: "#000" });
             box.append(head, img);
             document.body.append(box);
           },
