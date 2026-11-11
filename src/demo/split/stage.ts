@@ -10,9 +10,9 @@ import { ignorePageGone } from "../../engine/page-gone.js";
 import type { WgPage } from "../types.js";
 
 /** Space around and between the panes, and each pane's label row, in CSS pixels. */
-const PAD = 12;
-const GAP = 12;
-const LABEL = 30;
+const PAD = 0;
+const GAP = 2;
+const LABEL = 20;
 /** Each pane's frames: JPEG, every frame the page paints. */
 const SCREENCAST = { format: "jpeg", quality: 80, everyNthFrame: 1 } as const;
 
@@ -57,6 +57,12 @@ export async function openStage(stage: Page, panes: readonly string[], browser: 
       const body = document.body;
       body.replaceChildren();
       Object.assign(body.style, { margin: "0", height: "100vh", display: "grid", gap: `${gap}px`, padding: `${pad}px`, boxSizing: "border-box", background: "#16161a", fontFamily: "system-ui, sans-serif" });
+      // A small mark that this is the split view, always there (a stage looks like the page it shows).
+      const mark = document.createElement("div");
+      mark.id = "wg-split-mark";
+      mark.textContent = "split view";
+      Object.assign(mark.style, { position: "fixed", right: "6px", bottom: "6px", zIndex: "9", padding: "1px 8px", borderRadius: "999px", fontSize: "10px", color: "#e8e8ee", background: "rgba(38,38,44,.85)", pointerEvents: "none" });
+      body.append(mark);
     },
     { pad: PAD, gap: GAP },
   );
@@ -174,9 +180,9 @@ export async function openStage(stage: Page, panes: readonly string[], browser: 
             const box = document.createElement("section");
             box.dataset["pane"] = pane;
             box.style.order = String(order);
-            Object.assign(box.style, { minHeight: "0", display: "flex", flexDirection: "column", minWidth: "0", borderRadius: "10px", overflow: "hidden", outline: "2px solid transparent", transition: "outline-color 200ms", background: "#000" });
+            Object.assign(box.style, { minHeight: "0", display: "flex", flexDirection: "column", minWidth: "0", overflow: "hidden", outline: "2px solid transparent", outlineOffset: "-2px", transition: "outline-color 200ms", background: "#000" });
             const head = document.createElement("header");
-            Object.assign(head.style, { height: `${labelHeight}px`, display: "flex", alignItems: "center", gap: "8px", padding: "0 12px", color: "#e8e8ee", background: "#26262c", fontSize: "13px" });
+            Object.assign(head.style, { height: `${labelHeight}px`, display: "flex", alignItems: "center", gap: "8px", padding: "0 8px", color: "#e8e8ee", background: "#26262c", fontSize: "11px" });
             const title = document.createElement("strong");
             title.textContent = pane;
             const who = document.createElement("span");

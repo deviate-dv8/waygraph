@@ -42,6 +42,7 @@ against a real consumer.
   menu layout by `on`); the shape [Your project](docs/guides/project.md) defines is `src/map/` by address, a page folder
   each, flows a folder per page. Moving it makes the example the reference it's used as, and `waygraph map` holds it
   there. The scaffold already has the shape.
+- **A virtual address bar** - the stage's panes (and a single page, in a recording) show the page's url in a slim header, since a demo's window has no browser chrome: where each pane is, at a glance. Next for the stage.
 - **Split view, next** - two people acting at the same moment (a race: both click at once) instead of in the flow's
   order; panes for `waygraph auto` and Pilot (an agent acting as two people); composing each pane's full-rate video into
   one (today the stage's video follows the screencast's frame rate).
