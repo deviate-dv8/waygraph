@@ -42,6 +42,10 @@ against a real consumer.
   menu layout by `on`); the shape [Your project](docs/guides/project.md) defines is `src/map/` by address, a page folder
   each, flows a folder per page. Moving it makes the example the reference it's used as, and `waygraph map` holds it
   there. The scaffold already has the shape.
+- **Split view, next** - two people acting at the same moment (a race: both click at once) instead of in the flow's
+  order; a stage for three or more panes laid out as a grid; panes for `waygraph auto` and Pilot (an agent acting as two
+  people); a demo's voice-over across panes (today each pane's UI is its own, without the run's voice); composing each
+  pane's full-rate video into one (today the stage's video follows the screencast's frame rate).
 - **Layouts, next** - the access tests check a layout's links (each has a selector) and the pages an account can't
   open; a Method's button has no selector to look for, so its `for` is checked by `waygraph check` only. A Method could
   name its button (`shows: Sel.archive`) for the access test to look for. Layouts that change by device (a sidebar that

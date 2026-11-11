@@ -155,6 +155,11 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   `.gotoPage(Sidebar.go.plan)` from any of them. `on: [Pages]` only when the app's layout doesn't follow its folders;
   `to: "parent"` for a link up, and `Trait.breadcrumbs(sel)` to check the trail. Never the same Nav or Method on each
   page, and never a list of pages on a Nav.
+- **Two people (or the app and a helper) in one scenario are panes, one flow.** `map({ panes: { planner: { as: Planner },
+  admin: { as: Admin } } })`, then `.in("admin")` before the admin's steps and `.in("planner")` to come back; `with:
+  "app"` for a second page of the same person (the mail catcher); `.close(pane)` to go back to one screen. Never two
+  flows for one story, never a sign-out and sign-in in the middle. The same flow two ways (two accounts, devices or
+  environments) is `--compare`, not a copy of the flow.
 - **Who sees what is `for: [accounts]`** on the layout's link, the Method or the Page Block, beside what it's about. A
   role is the accounts that share a `for`; `waygraph test --flows` adds each account's access test, and `waygraph
   check` flags a flow `as` an account using what it isn't given. Never a role check written in a flow.

@@ -225,6 +225,13 @@ Waygraph loads `src/accounts/` itself (as it does mem stubs), so a sign-in flow 
 `waygraph demo loginLeadershipFlow`, or Run in [Waygraph UI](./ui), signs in as Cesar with no `--data`. A value given
 with `--data` still wins.
 
+### Two people in one flow: panes
+
+A scenario with two sides (one person requests, another approves) is one flow with panes, each signed in as its own
+account, side by side in a demo: `map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })`, then
+`.in("admin")` before the admin's steps. Not two flows, and not a sign-out in the middle. See
+[Split view](./split-view).
+
 ### Who is given what: `for`
 
 `for: [accounts]` on a Page Block (who can open the page), a Method (who has its button) or a layout's link says who is

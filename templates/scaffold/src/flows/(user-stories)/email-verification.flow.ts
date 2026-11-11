@@ -13,10 +13,16 @@ const LinkFound = MailpitInboxPage.do.extractEmailLink.stubAfter((ctx) => {
   ctx.ui.ring("note", { selector: MailpitSel.previewIframe, label: "AC · link found", detail: "Read from the message preview iframe.", tag: "AC" });
 });
 
-/** Needs a Mailpit at WAYGRAPH_MAIL_URL (default http://127.0.0.1:8025); tests/mail-verify.spec.ts starts one. */
+/**
+ * The mail catcher and the app side by side, one person (the app shares the mail pane's browser): the email arrives,
+ * its link opens the app. Needs a Mailpit at WAYGRAPH_MAIL_URL (default http://127.0.0.1:8025); tests/mail-verify.spec.ts
+ * starts one.
+ */
 export const emailVerificationFlow = engine
-  .map()
+  .map({ panes: { mail: {}, app: { with: "mail" } } })
+  .in("mail")
   .gotoExternal(MailpitInboxPage.nav.stubBefore((ctx) => ctx.ui.title("Scaffold: Cross-origin mail verification (QA-rich)")), { expect: [Arrived] })
   .method(MailpitInboxPage.do.openMessage, { expect: [ContentMatches] })
   .method(LinkFound)
+  .in("app")
   .gotoPage(NavVerificationLinkBlock);

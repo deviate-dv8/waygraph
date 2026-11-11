@@ -50,7 +50,8 @@
 
 - [x] 5.1 A split flow and its runs as lanes, one per pane
 - [x] 5.2 A compared run: both sides as lanes, each difference beside its step
-- [ ] 5.3 UI tests; light and dark; the guide's screenshots (`npm run docs:ui-shots`)
+- [x] 5.3 UI tests; light and dark; the guide's screenshots (`npm run docs:ui-shots`) (the lanes are described in the
+      UI guide; its screenshots stay on the single-page flows)
 
 ## 7. One screen, then split, then one again
 
@@ -64,11 +65,11 @@
 
 ## 6. Examples, docs and skills
 
-- [ ] 6.1 saucedemo: a two-person flow (two users, each their own cart) and a compare on two devices; the quickstart
-      synced
-- [ ] 6.2 The scaffold: the mail catcher beside the app as a pane in its email verification flow
-- [ ] 6.3 Docs: a Split view guide page (panes, `.in()`, `with`, the stage, windows, compare), the flows and demo guides,
+- [x] 6.1 saucedemo: a two-person flow (two users, each their own cart) and a compare on two devices; the quickstart
+      synced (the compare needs no flow of its own: `--compare device=desktop,mobile` on any flow)
+- [x] 6.2 The scaffold: the mail catcher beside the app as a pane in its email verification flow
+- [x] 6.3 Docs: a Split view guide page (panes, `.in()`, `with`, the stage, windows, compare), the flows and demo guides,
       the CLI reference, the run log reference
-- [ ] 6.4 Convention skill: two people in one scenario are panes, not two flows or a sign-out in the middle; the planner
+- [x] 6.4 Convention skill: two people in one scenario are panes, not two flows or a sign-out in the middle; the planner
       agent
-- [ ] 6.5 ROADMAP; full verify (tsc, build, structure, knip, unit, Playwright offscreen, saucedemo, ui)
+- [x] 6.5 ROADMAP; full verify (tsc, build, structure, knip, unit, Playwright offscreen, saucedemo, ui)

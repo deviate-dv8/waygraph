@@ -75,6 +75,7 @@ export default withMermaid(defineConfig({
             { text: "Flows", link: "/guides/flows" },
             { text: "Read Blocks", link: "/guides/reads" },
             { text: "Layouts and access", link: "/guides/layouts" },
+            { text: "Split view", link: "/guides/split-view" },
             { text: "Data", link: "/guides/data" },
             { text: "Checks", link: "/guides/checks" },
             { text: "Demo", link: "/guides/demo" },

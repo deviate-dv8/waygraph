@@ -219,6 +219,9 @@ speech on. `--no-voice` records without it.
 | `--auto-play-video` | `--auto-next --video`, headless |
 | `--auto-play-video-head` | the same, with the browser visible |
 | `--no-voice` | records without the config's voice-over |
+| `--split windows` | a flow with panes in windows side by side, instead of on one stage ([Split view](./split-view)) |
+| `--video-panes` | a flow with panes: also a video of each pane |
+| `--compare as=a,b` | the flow twice, side by side, and where the two differ (`device=…`, `config=…` too) |
 | `--data` / `--input` / `--replay` | the flow's data ([Data](./data)) |
 
 `waygraph demo --help` prints every flag; [environment variables](../env) lists what each one sets.

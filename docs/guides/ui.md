@@ -119,6 +119,9 @@ is a terminator, an API call an input / output, a fast-forward a predefined proc
 
 ![checkoutFlow: nine steps, and its newest run](/ui/flow.jpg)
 
+A flow with [panes](./split-view), and its runs, are lanes: one per pane, each step at its place in the flow so the
+arrows read in order across them; a compared run (`--compare`) marks each step where the two sides differed.
+
 ### Playing a flow
 
 - **Run** plays it in the background (`waygraph run`); **Demo** opens a browser with the step panel (`waygraph demo`);

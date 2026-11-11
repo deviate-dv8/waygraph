@@ -14,6 +14,8 @@ command's flags, from the same table the CLI parses, so an unknown flag stops wi
 | watch it step by step | `waygraph demo checkoutFlow` ([flags](../guides/demo#flags)) |
 | show the browser, record it | `waygraph run checkoutFlow --non-headless --video` |
 | every `.branch()` path | `waygraph run checkoutFlow --all-branches` |
+| the same flow two ways, side by side | `waygraph run checkoutFlow --compare device=desktop,mobile` (`as=a,b`, `config=a,b`; [Split view](../guides/split-view#compare-two-runs)) |
+| a flow with panes in windows, a video per pane | `waygraph demo approvalFlow --split windows` · `--video --video-panes` |
 | a JSON report | `WAYGRAPH_JSON=1 waygraph run checkoutFlow` |
 
 | Data flag | Does |
