@@ -16,6 +16,10 @@ export interface PlayOptions {
   /** Record a video: the folder, or "1" for the default one. */
   video: string | undefined;
   videoViewport: string | undefined;
+  /** How a flow with panes is shown in a demo or video (--split). */
+  split: "stage" | "windows";
+  /** Also record each pane (--video-panes). */
+  videoPanes: boolean;
   /** Expand fast-forward units into their inner steps (--ff-expand / --ff-disabled). */
   ffExpand: boolean;
   ffDisabled: boolean;
@@ -48,6 +52,8 @@ export function readOptions(): PlayOptions {
     clearSession: envFlag("WAYGRAPH_CLEAR_SESSION"),
     video: envString("WAYGRAPH_VIDEO"),
     videoViewport: envString("WAYGRAPH_VIDEO_VIEWPORT"),
+    split: envString("WAYGRAPH_SPLIT") === "windows" ? "windows" : "stage",
+    videoPanes: envFlag("WAYGRAPH_VIDEO_PANES"),
     ffExpand: envFlag("WAYGRAPH_FF_EXPAND") || envFlag("WAYGRAPH_FF_DISABLED"),
     ffDisabled: envFlag("WAYGRAPH_FF_DISABLED"),
     memStub: envFlag("WAYGRAPH_MEM_STUB"),

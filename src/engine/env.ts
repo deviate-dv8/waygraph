@@ -27,6 +27,8 @@ export const WAYGRAPH_ENV = {
   WAYGRAPH_DEMO_PACE: "Default pace for every demo step (the config's demo.pace)",
   WAYGRAPH_PACE_SPEEDS: "JSON of pace multipliers, e.g. {\"fast\":0.5}",
   WAYGRAPH_FAST_BLOCKS: "Comma-separated Block names that skip the demo's added dwell",
+  WAYGRAPH_SPLIT: "How a flow with panes is shown in a demo or video: stage (side by side in one window, the default) or windows (--split)",
+  WAYGRAPH_VIDEO_PANES: "1 also records each pane of a flow with panes, at full frame rate (--video-panes)",
   WAYGRAPH_SLOWMO: "Playwright slowMo / the demo's beat after each action, ms",
   WAYGRAPH_TYPING_MS: "Demo typing delay per character, ms (default 30)",
   WAYGRAPH_APPEARANCE: "The overlay's appearance: light | dark (default: the system's)",

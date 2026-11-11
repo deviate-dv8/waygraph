@@ -8,5 +8,5 @@ import { Cart as CartShows } from "../../states/checkout.reads.js";
 export const twoShoppersFlow = engine
   .map({ memStub: true, panes: { standard: { as: StandardUser }, problem: { as: ProblemUser } } })
   .in("standard").gotoPage(Inventory.nav).method(Inventory.do.addToCart)
-  .in("problem").gotoPage(Cart.nav, { expect: [CartShows.lines.passes((lines) => lines.length === 0, "an empty cart")] })
+  .in("problem").gotoPage(Inventory.nav).gotoPage(Cart.nav, { expect: [CartShows.lines.passes((lines) => lines.length === 0, "an empty cart")] })
   .in("standard").gotoPage(Cart.nav, { expect: [CartShows.lines.passes((lines) => lines.length === 1, "one item")] });

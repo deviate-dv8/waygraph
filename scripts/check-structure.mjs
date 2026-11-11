@@ -156,13 +156,15 @@ for (const f of overlayFiles) {
 }
 // --- the overlay's look comes from its tokens ---
 // Colours live in ui/css/theme.css (and host.css, which styles the page itself). A few SVG constants keep their own
-// fills: the pointer and fingertip, the favicon, the device stage's matte, the pilot graph's "here" stroke.
+// fills: the pointer and fingertip, the favicon, the device stage's matte, the split view's stage (a blank page of its
+// own, with no overlay theme), the pilot graph's "here" stroke.
 const COLOR_RE = /#[0-9a-fA-F]{3,8}\b|\brgba?\(\s*\d/;
 const COLOR_ALLOWED = new Set([
   "demo/overlay/inpage/core.ts",
   "demo/overlay/inpage/device-chip.ts",
   "demo/overlay/overlay.ts",
   "demo/overlay/device-stage.ts",
+  "demo/split/stage.ts",
   "live/pilot/panel.ts",
   "demo/overlay/ui/css/theme.css",
   "demo/overlay/ui/css/host.css",

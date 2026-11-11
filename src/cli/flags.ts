@@ -28,6 +28,10 @@ interface RunFlags {
   noVoice?: boolean;
   /** Recording viewport, e.g. 1920x1080 (--video-viewport). */
   videoViewport?: string;
+  /** How a flow with panes is shown: on one stage, or in windows side by side (--split). */
+  split?: string;
+  /** Also record each pane of a flow with panes (--video-panes). */
+  videoPanes?: boolean;
   /** Global Mem seed JSON (--data). */
   data?: string;
   /** Fill any requires key with no --data coverage from registerMemStub's registry (--mem-stub). */
@@ -116,6 +120,8 @@ export const RUN_OPTIONS = {
   "video": { type: "string", value: "[dir]", help: "Record .webm (default ~/Downloads/waygraph-videos/<project>, video.dir, WAYGRAPH_VIDEO_DIR)", for: ["demo", "run"] },
   "no-voice": { type: "boolean", help: "Record without the config's voice-over (demo.voice)", for: ["demo"] },
   "video-viewport": { type: "string", value: "WxH", help: "Recording size (demo 1920x1080, run 1280x720)", for: ["demo", "run"] },
+  "split": { type: "string", value: "stage|windows", help: "A flow with panes: side by side on one stage (default), or in windows side by side", for: ["demo", "run"] },
+  "video-panes": { type: "boolean", help: "A flow with panes: also record each pane, at full frame rate", for: ["demo", "run"] },
   "step": { type: "boolean", help: "Step through with the overlay", for: ["run"] },
   "no-step": { type: "boolean", help: "No step overlay (demo: plain run with narration off)", for: ["demo"] },
   "all-branches": { type: "boolean", help: "Bare Flow ref only: explore every branch() path, cloning the session at each", for: ["run"] },
@@ -213,6 +219,8 @@ export function parseRunFlags(argv: string[], command: string): RunFlags {
   if (v["shared-session"]) out.sharedSession = true;
   if (v.video !== undefined) out.video = v.video;
   if (v["video-viewport"] !== undefined) out.videoViewport = v["video-viewport"];
+  if (v.split !== undefined) out.split = v.split;
+  if (v["video-panes"]) out.videoPanes = true;
   if (v["no-voice"]) out.noVoice = true;
   return out;
 }
@@ -283,6 +291,14 @@ export function applyRunFlags(flags: RunFlags, opts?: { allowAutoPlayVideo?: boo
     }
     setEnv("WAYGRAPH_VIDEO_VIEWPORT", flags.videoViewport);
   }
+  if (flags.split !== undefined) {
+    if (flags.split !== "stage" && flags.split !== "windows") {
+      console.error('waygraph: --split is "stage" or "windows"');
+      process.exit(1);
+    }
+    setEnv("WAYGRAPH_SPLIT", flags.split);
+  }
+  if (flags.videoPanes) setEnv("WAYGRAPH_VIDEO_PANES", "1");
   if (flags.data !== undefined) {
     setEnv("WAYGRAPH_DATA", flags.data);
   }

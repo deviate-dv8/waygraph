@@ -24,14 +24,17 @@
 
 ## 3. The stage and tiled windows
 
-- [ ] 3.1 `demo/split/stage.ts`: a stage page streaming each pane's screencast side by side, labels (pane, account,
+- [x] 3.1 `demo/split/stage.ts`: a stage page streaming each pane's screencast side by side, labels (pane, account,
       device), the acting pane marked; it keeps the window's size
-- [ ] 3.2 The overlay with panes: the stage holds the step panel and todos; each pane keeps its rings, captions and
-      outcome card
-- [ ] 3.3 `--video` records the stage; `--video-panes` also records each pane
-- [ ] 3.4 `--split windows`: each pane in a real window, placed side by side (`Browser.setWindowBounds`)
-- [ ] 3.5 Not Chromium: the demo plays without a stage and says why
-- [ ] 3.6 Tests: a demo of a split flow (headless, on the hidden display) shows both panes and records one video; tiled
+- [x] 3.2 The overlay with panes: the stage holds the step panel and todos; each pane keeps its rings, captions and
+      outcome card (done as: each pane has the whole demo UI on its own page, seen through the stage, since a step's
+      narration and rings are painted on the page it acts on; on the stage the demo moves on by itself, in windows
+      Next works as usual)
+- [x] 3.3 `--video` records the stage; `--video-panes` also records each pane
+- [x] 3.4 `--split windows`: each pane in a real window, placed side by side (`Browser.setWindowBounds`)
+- [x] 3.5 Not Chromium: the demo plays without a stage and says why (nothing to do: `run` and `demo` always play in
+      Chromium; Firefox and WebKit play split flows only under `waygraph test`, where there's no stage)
+- [x] 3.6 Tests: a demo of a split flow (headless, on the hidden display) shows both panes and records one video; tiled
       windows land where placed
 
 ## 4. Compare two runs

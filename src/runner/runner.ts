@@ -13,7 +13,8 @@ import { openSession } from "./session.js";
 import { playSteps } from "./play-steps.js";
 import { playBranches } from "./modes/branches.js";
 import { runMode } from "./modes/run.js";
-import { demoMode } from "./modes/demo.js";
+import { demoMode, splitDemoMode } from "./modes/demo.js";
+import { openSplit } from "./split.js";
 import { reportMode } from "./modes/report.js";
 import type { Mode, PlayOutcome, PlaySession, PlayStep } from "./mode.js";
 import type { PlayOptions } from "./options.js";
@@ -30,16 +31,22 @@ export async function play(projectDir: string, spec: string): Promise<void> {
   const { session, close } = await openSession(projectDir, options, mem, slowMo.launch);
   let outcome: PlayOutcome;
   try {
-    const mode = await pickMode(options, session, steps, slowMo.demoBeat);
-    outcome = await playSteps(steps, session, mode, options.clearSession);
+    // A flow with panes, played to be seen: the session's page is their stage.
+    const split = await openSplit(projectDir, session, steps, options);
+    try {
+      const mode = await pickMode(options, session, steps, slowMo.demoBeat, split !== undefined);
+      outcome = await playSteps(steps, session, mode, options.clearSession);
+    } finally {
+      await split?.close();
+    }
   } finally {
     await close();
   }
   if (options.mode !== "report") finish(outcome);
 }
 
-function pickMode(options: PlayOptions, session: PlaySession, steps: readonly PlayStep[], demoBeat: number): Mode | Promise<Mode> {
-  if (options.mode === "demo") return demoMode(session, steps, options, demoBeat);
+function pickMode(options: PlayOptions, session: PlaySession, steps: readonly PlayStep[], demoBeat: number, split: boolean): Mode | Promise<Mode> {
+  if (options.mode === "demo") return split ? splitDemoMode(session, steps, options, demoBeat) : demoMode(session, steps, options, demoBeat);
   if (options.mode === "report") return reportMode(session);
   return runMode();
 }

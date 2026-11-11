@@ -11,7 +11,7 @@ import { copyWaygraphRuntime } from "../block/block.js";
 import type { SomeBlock } from "../block/some-block.js";
 import type { MemPage } from "../mem/mem.js";
 import { WaygraphError } from "../errors.js";
-import { setPaneResolver, type PaneMark, type PaneResolver } from "../run/pane-page.js";
+import { paneHostOf, setPaneResolver, type PaneMark, type PaneResolver } from "../run/pane-page.js";
 import { stepEnded, stepStarted } from "../run/events.js";
 import { resolveDevice, type Device } from "./device.js";
 import { signInStep, type Account } from "./account.js";
@@ -32,6 +32,8 @@ export type Panes = Readonly<Record<string, PaneOptions>>;
 /** The panes of one run: each pane's page, where it last landed, and the contexts the run opened for them. */
 interface PaneTable {
   readonly panes: Panes;
+  /** The page the run was given: the first pane's, or, with a host, the stage. */
+  readonly home: Page;
   readonly pages: Map<string, Page>;
   readonly last: Map<string, Checkpoint<string>>;
   readonly contexts: BrowserContext[];
@@ -68,15 +70,18 @@ export function inPane(block: SomeBlock, pane: string, panes: Panes): SomeBlock 
 async function open(table: PaneTable, name: string, home: Page, mem: MemPage): Promise<Page> {
   const pane = table.panes[name];
   if (!pane) throw new WaygraphError("WG_PANES", `no pane "${name}" in this flow (${Object.keys(table.panes).join(", ")})`);
+  const host = paneHostOf(table.home);
   let page: Page;
   if (pane.with !== undefined) {
     page = await (await pageOf(table, pane.with, home, mem)).context().newPage();
-  } else if (table.pages.size === 0) {
-    // The first pane a step acts in plays on the page the run was given.
+    const device = table.panes[pane.with]?.device;
+    if (host) await page.setViewportSize(device ? resolveDevice(device).viewport : host.viewport(name));
+  } else if (table.pages.size === 0 && !host) {
+    // The first pane a step acts in plays on the page the run was given (with a host, that page is the stage).
     page = home;
     if (pane.device) await page.setViewportSize(resolveDevice(pane.device).viewport);
   } else {
-    const browser = home.context().browser();
+    const browser = host?.browser ?? home.context().browser();
     if (!browser) {
       throw new WaygraphError("WG_PANES", `pane "${name}" needs a browser context of its own, and this run's browser can't make one (a persistent context, as with extensions): give it with: "<pane>" to share one`);
     }
@@ -86,11 +91,13 @@ async function open(table: PaneTable, name: string, home: Page, mem: MemPage): P
       ...(baseURL ? { baseURL } : {}),
       ...(device
         ? { viewport: device.viewport, deviceScaleFactor: device.deviceScaleFactor, isMobile: device.isMobile, hasTouch: device.hasTouch }
-        : { viewport: home.viewportSize() ?? { width: 1280, height: 720 } }),
+        : { viewport: host?.viewport(name) ?? home.viewportSize() ?? { width: 1280, height: 720 } }),
+      ...host?.contextOptions?.(name),
     });
     table.contexts.push(context);
     page = await context.newPage();
   }
+  if (host) await host.opened(name, page, labelOf(table.panes, name));
   table.pages.set(name, page);
   tables.set(page, table);
   if (pane.as) {
@@ -106,6 +113,14 @@ async function open(table: PaneTable, name: string, home: Page, mem: MemPage): P
     stepEnded(step.name, Start.__state, page.url());
   }
   return page;
+}
+
+/** Who is in a pane and on what, for the stage: `as planner · phone`. */
+function labelOf(panes: Panes, name: string): string {
+  const pane = panes[name];
+  const owner = pane?.with !== undefined ? panes[pane.with] : pane;
+  const parts = [owner?.as ? `as ${owner.as.name}` : "", pane?.device !== undefined || owner?.device !== undefined ? resolveDevice((pane?.device ?? owner?.device) as Device).preset : ""];
+  return parts.filter(Boolean).join(" · ");
 }
 
 async function pageOf(table: PaneTable, name: string, home: Page, mem: MemPage): Promise<Page> {
@@ -124,13 +139,14 @@ const resolver: PaneResolver = {
     // Another flow's panes on this page (a chain of flows on one page) end where that flow did.
     if (table && table.panes !== panes) await resolver.close(page);
     if (!table || table.panes !== panes) {
-      table = { panes, pages: new Map(), last: new Map(), contexts: [], active: undefined, signingIn: false };
+      table = { panes, home: page, pages: new Map(), last: new Map(), contexts: [], active: undefined, signingIn: false };
       tables.set(page, table);
     }
     const target = await pageOf(table, pane.name, page, mem);
     // Back in a pane: its person's own data again (their email, their credentials), over the other pane's.
     if (table.active !== pane.name) {
       table.active = pane.name;
+      paneHostOf(table.home)?.acting(pane.name);
       panes[pane.name]?.as?.mem?.(mem);
     }
     return target;
