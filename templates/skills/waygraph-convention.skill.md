@@ -18,7 +18,7 @@ same Blocks; they never justify a Block or flow that is harder to read as a test
 ## Agents work through waygraph, never around it
 
 Everything an agent adds to a waygraph project is waygraph: Blocks in the map, flows in `src/flows/`, accounts, mem
-stubs, Read Blocks, Expect Blocks, the config. No workarounds next to it: no script of your own that drives a browser,
+stubs, a page's read, Expect Blocks, the config. No workarounds next to it: no script of your own that drives a browser,
 no helper that pokes the page outside a Block, no runner of your own, no checks of your own with their own retries.
 A workaround works today and is invisible tomorrow: `waygraph check`, the map, the demo, Waygraph Studio and the next agent
 can't see it, so it rots, and the project slowly becomes a Playwright project with waygraph on the side.
@@ -31,7 +31,7 @@ and when you touch it, move it to the convention or say it should be.
 |---|---|
 | A sign-in script (`chromium.launch()`, fill, click, read the cookie), a "saved session" Block, tokens in env | `account(name, { signIn, mem, ttl })` in `src/accounts/`, flows `map({ as })`; `ttl` keeps the session between runs |
 | A runner of your own (`npx tsx run.ts`) that starts the app, loops over cases, runs them in parallel, retries | `waygraph test --flows` (`--workers`, `--retries`, `-g`), `webServer` in the config, `map({ input })` for cases |
-| A check written as a function over `page` (`page.locator(...).textContent()` and compare) | The page's Read Block reads it; the check is `Key.is(...)` / `Key.passes(...)`, or an Expect Block in the page's `_expects/` |
+| A check written as a function over `page` (`page.locator(...).textContent()` and compare) | The page's `read` gives it; the check is `Page.read.x.is(...)` / `.passes(...)`, or an Expect Block in the page's `_expects/` |
 | A retry or polling helper (`settles`, `waitUntil`, a loop with `sleep`) | Nothing: verify retries every Trait; `{ settle: true }` on a step whose page keeps changing |
 | A helper that drives the page outside a Block (`clickClear(page, sel)`, `pasteInto`, `setDateTime`) | A Method Block, one action, in the page's `_methods/`; a field that needs a special way of typing is that Block's `act` |
 | Selectors in a check file or a test | The page's `_sel.ts` |
@@ -103,7 +103,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
    and the live sessions load every one themselves, so no flow or spec imports it. The scaffold's engine is
    `new Engine({ ...config, memStub: true })`: every flow fills missing keys from stubs, and `flow.run()` does it too, so a
    spec never calls `seedMemStub`.
-6. **A Checkpoint is a page**, with its own address; what changed on it is a Read Block field, not another
+6. **A Checkpoint is a page**, with its own address; what changed on it is a field of its `read`, not another
    Checkpoint (`waygraph check` names one that only Methods reach with no address, or that has another page's).
    **Checkpoints are values.** Where every flow begins is `Start` (`import { Start } from "waygraph"`): a Block
    that leads off a flow is `from: Start`, a sign-out goes `to: Start`; never write its tag. Declare the rest once in
@@ -142,7 +142,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   and the chain itself is the flow: there is no closing call. The flow's title is `ctx.ui.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
   `defineFlow`, `chainFlow` and the `with*` flow wrappers were removed in 0.16.0; `waygraph upgrade --codemod flows` converts them.
 - **A flow imports one thing per page it visits: the page's Page Block.** `definePageBlock({ checkpoint: Home, nav:
-  NavHomeBlock, methods: { addItem: () => AddItemBlock } })` exported as `HomePage`; the flow writes
+  NavHomeBlock, read: (ctx) => ({ ... }), do: () => ({ addItem: AddItemBlock }) })` exported as `HomePage`; the flow writes
   `.gotoPage(HomePage.nav).method(HomePage.do.addItem)`, each typed as its own Block. Imports use the project's
   `#config/`, `#map/`, `#states/` names (`import { HomePage } from "#map/(app_base)/home/_page.block"`), never a chain of
   `../`. No file is imported for its side effect (`import ".../_page.block.js"`, `import ".../x.mem-stubs.js"`): the
@@ -177,10 +177,10 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
 - **Flows are the tests.** `waygraph test --flows` runs every flow as a Playwright test (workers, retries, video,
   reports); `map({ device })` plays one on a device (`"mobile"`, `{ preset: "tablet", orientation: "landscape" }`; the config's `device` is every flow's default), `map({ exclusive: true })` runs one alone and last. A project-written batch
   runner (parallelism, retries, "run these alone", a verdict file) is a smell. Write a spec only for what a flow can't say.
-- **Every page has a Read Block.** A page's Blocks say what you can do there; its Read Block says what it shows, as
+- **Every page has a `read`.** A page's `do` says what you can do there; its `read` says what it shows, as
   typed data: in the run log after every step that lands there, from `waygraph auto read` for an agent, and for a test
-  without DOM queries. It lives with the page (`_read.block.ts` beside `_sel.ts`, its namespace in `_reads.ts`; freeform:
-  `<page>.read.block.ts`, namespaces in `src/states/<area>.reads.ts`), never with mem stubs: mem is what a flow is
+  without DOM queries. It lives on the page's `definePageBlock` (`read: (ctx) => ({ title: ctx.page.text(Sel.title) })`, types
+  inferred, keys `Page.read.title`; what every page of a layout shows is the layout's `read`), never with mem stubs: mem is what a flow is
   given, a read is what the page shows. `waygraph check` lists pages without one. A check on what a page shows is
   `Catalog.items.passes((items) => items.length === 6)` or `Header.cartCount.is(1)`, not a selector count; its test
   also gets mem: `(items, mem) => items.some((i) => i.name === mem.get(Keys.item).name)` checks the page shows what the
@@ -222,7 +222,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   is never a slot map. A Block used twice gets one `const AddShown = AddItemBlock.stubAfter(...)`. A stub that throws
   fails its step in the demo, named.
 - **The demo already says how each step went**, with no stub: its outcome card ticks each expectation (an Expect Block's
-  `description`, so give every Expect Block one a QA reader understands) and lists what the Read Block reads that
+  `description`, so give every Expect Block one a QA reader understands) and lists what the page's `read` gives that
   changed. Narrate what that doesn't say; don't repeat it in a caption.
 - **Captions and slides are spoken** in a recorded demo with a voice (`demo.voice` in the config): write them as a
   person would say them (a sentence, not a key name or a selector), and give each Block a `description` that reads
@@ -315,14 +315,14 @@ export const AddToCartBlock = defineMethodBlock({
     ],
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
-    // { id, name } per live Add button; name as the Read Block reads it, so verify can find the row
+    // { id, name } per live Add button; name as the page's `read` reads it, so verify can find the row
     const items = await collectAddableItems(page);
     return items.map((item) => ({ id: item.id, label: `Add ${item.name}`, key: ShopKeys.selectedItem, value: item, highlight: InventorySel.addBtn(item.id) }));
   },
 });
 ```
 
-An Expect Block, an API Block, and a Read Block:
+An Expect Block, an API Block, and a page with a `read`:
 
 ```ts
 // src/map/(app_base)/cart/_expect/checkout-gated.expect.block.ts - listed on CartPage's `expects`
@@ -341,22 +341,23 @@ export const DeleteTestUserApiBlock = defineApiBlock({
   call: ({ request, mem }) => request.delete(`/api/users/${encodeURIComponent(mem.get(SignupKeys.email))}`),
 });
 
-// _reads.ts: export const Catalog = reads("catalog")<{ items: { name: string; price: number; inCart: boolean }[] }>();
-export const InventoryReadBlock = defineReadBlock({
-  name: "read-inventory",
-  description: "Every product, its price and whether it is in the cart.",
-  from: [Inventory],
-  instruction: {
-    read: (ctx) =>
-      Catalog({
-        items: ctx.page.list(InventorySel.card, (row) => ({
-          name: row.text(InventorySel.name),
-          price: row.number(InventorySel.price),
-          inCart: row.visible(InventorySel.removeBtn),
-        })),
-      }),
-  },
+// _page.block.ts: the page says what it shows, and the keys of it exist as soon as it does
+export const Inventory = definePageBlock({
+  name: "page-inventory",
+  checkpoint: InventoryPage,
+  nav: NavInventoryBlock,
+  read: (ctx) => ({
+    items: ctx.page.list(InventorySel.card, (row) => ({
+      name: row.text(InventorySel.name),
+      price: row.number(InventorySel.price),
+      inCart: row.visible(InventorySel.removeBtn),
+    })),
+  }),
+  do: () => ({ addToCart: AddToCartBlock }),
+  expects: (page) => ({ cartHasItems: page.read.items.passes((items) => items.some((i) => i.inCart), "an item in the cart") }),
 });
+// A Method that checks the page it belongs to writes verify as a function, so the two files can import each other:
+//   verify: (): Trait[] => [Inventory.read.items.passes((items) => items.length > 0)]
 ```
 
 Readers: `text`, `texts`, `number` (`"$1,299.00"` -> 1299), `attr`, `value`, `visible`, `count`,
@@ -372,7 +373,6 @@ import { ShopKeys } from "#states/shop.mem-keys";
 import { InventoryPage } from "#map/(app_base)/inventory/_page.block";
 import { CartPage } from "#map/(app_base)/cart/_page.block";
 import { HeaderSel } from "#map/(app_base)/inventory/_sel";
-import { Cart } from "#map/(app_base)/cart/_reads";
 import { EmptyCartApiBlock } from "#map/(api)/cart/empty.api.block";
 
 const AddShown = InventoryPage.do.addToCart.stubAfter((ctx) => ctx.ui.ring("cart", { selector: HeaderSel.cart, label: "Item in cart", tag: "AC" }));
@@ -398,7 +398,6 @@ Check an API Block's exact `call` signature and the helpers' options against the
 | Nav | `nav-*.block.ts` / `_nav.block.ts` | `defineNavBlock` / `defineNavClickBlock` | Yes (`url` XOR `click`) |
 | Method | `*.method.block.ts` in `methods/` / `_methods/` | `defineMethodBlock` (one row of many: `requires` + `instanceOptions`) | No |
 | Expect | `*.expect.block.ts` in `_expect/` (freeform: `expect/`) | `defineExpectBlock` (in an `expect: [...]`, never a step) | No |
-| Read | `<page>.read.block.ts` / `_read.block.ts` (namespace: `src/states/<area>.reads.ts` / `_reads.ts`) | `defineReadBlock({ from, instruction: { read } })` | No |
 | API | `*.api.block.ts` in `methods/` | `defineApiBlock({ from, to, call })` (a real HTTP request; `map().method(...)`) | No |
 
 Methods on one row of many, in `waygraph auto` menus, need `instanceOptions` that scan the live DOM
@@ -430,8 +429,6 @@ src/map/
       _page.block.ts
       _nav.block.ts
       _sel.ts
-      _read.block.ts               # what the page shows, as data
-      _reads.ts                    # its namespace
       _methods/click-widget.block.ts
   (external)/                      # cross-origin (mailpit, etc.) - same shape
     docs/
@@ -496,5 +493,5 @@ npx waygraph --skill-convention      # this file
 ```
 
 Worked freeform example: `node_modules/waygraph/examples/saucedemo` (`src/blocks/saucedemo-web/`); every Block kind,
-accounts, Read Blocks and narration, against saucedemo.com. Docs: https://deviate-dv8.github.io/waygraph/guides/blocks
+accounts, reads and narration, against saucedemo.com. Docs: https://deviate-dv8.github.io/waygraph/guides/blocks
 Agent personas (author/planner/healer): `npx waygraph agent-dive --loop claude`.

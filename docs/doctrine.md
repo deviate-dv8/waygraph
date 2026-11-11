@@ -36,7 +36,7 @@ the wrong shape for it. Find another shape.
 - **One action per Block.** Fill, click, submit: separate Blocks. A Block says where it starts and where it lands
   (Checkpoints), and TypeScript checks that a flow never skips between unrelated pages.
 - **A Checkpoint is a page.** A place the app can be, with its own address. What changed on a page (an item in the
-  cart, a link sent, an alert) is what the page shows: a Read Block's field, checked in `verify` or expected, not
+  cart, a link sent, an alert) is what the page shows: a field of its `read`, checked in `verify` or expected, not
   another Checkpoint. `waygraph check` names a Checkpoint that is a state of a page.
 - **Pages are namespaces.** A page's Page Block names how to get there (`nav`) and what you can do there (`do`); a
   flow imports pages, not Blocks.
@@ -45,7 +45,7 @@ the wrong shape for it. Find another shape.
   on the Block when every use expects it, on the step when only this scenario does. An expectation only reads and
   judges; it never changes the page, so a step's expectations run together and report every failure.
 - **Data is named, never hidden.** What a run needs is a typed mem key; fake values come from mem stubs; what a page
-  shows is a Read Block.
+  shows is its `read`.
 - **The flows are the tests.** `waygraph test` runs every flow; a spec file is only for what a flow can't say.
 - **One shape for every project.** Folders are the app's addresses, every page folder has the same files, and what
   many pages share is a layout in their folder: [Your project](./guides/project) lists each rule, why, and what holds
@@ -67,5 +67,5 @@ Next, on the same foundation ([ROADMAP](https://github.com/deviate-dv8/waygraph/
 
 - **Virtual users** that use the app like a person would, through an MCP server over a live session.
 - **Waygraph Studio**, further: the project's map, flows and runs are in it today ([Waygraph Studio](./guides/studio)); next, live
-  sessions and reading data out of pages (scraping) with Read Blocks.
+  sessions and reading data out of pages (scraping) with a page's `read`.
 - **More drivers.** Playwright only, until it is mastered.

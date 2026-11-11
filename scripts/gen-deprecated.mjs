@@ -145,6 +145,18 @@ A stub paints through \`ctx.ui\`; \`ctx\` itself holds only what a stub reads (\
 | \`WAYGRAPH_TODO_UI=legacy\` / \`classic\` | \`WAYGRAPH_TODO_UI=full\` |
 | \`create-waygraph\` (npm) | \`npx waygraph init\` |
 
+## Moved in 0.17.3
+
+A page is one object: what it shows (\`read\`), what you can do (\`do\`), what you can expect (\`expects\`). The old forms still
+run; \`waygraph upgrade --codemod page-object\` moves a project (it was tried on two real projects of 70 and 35 pages).
+
+| Before | Now |
+| --- | --- |
+| a page's Read Block (\`defineReadBlock\` in \`_read.block.ts\`) and its \`reads("ns")<T>()\` namespace in \`_reads.ts\` | \`read: (ctx) => ({ ... })\` on the page, its types inferred; keys are \`Page.read.field\` (\`readAs\` keeps the name a recorded run used) |
+| a Read Block with no \`from\` (a header, the user menu) | \`read\` on the layout over its folder: \`Layout.read.field\` |
+| \`methods: { addItem: () => AddItem }\` | \`do: () => ({ addItem: AddItem })\`; \`expects: (page) => ({ ... })\` is a function of the page too |
+| a Method's \`verify: [Ns.field.is(1)]\` on a page its page imports | \`verify: (): Trait[] => [Page.read.field.is(1)]\`: a function, so the page and the Method can import each other |
+
 ## Removed in 0.17.0
 
 | Removed | Use instead |

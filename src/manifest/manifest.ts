@@ -261,7 +261,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       shape = { fieldsError: messageOf(err) };
     }
     for (const t of r.block.from) if (t !== "*") checkpoints.add(t);
-    const source = spanOf(r.absFile, r.exportName);
+    const source = spanOf(r.absFile, r.exportName.split(".")[0]!);
     return {
       id: `${r.file}#${r.exportName}`,
       name: r.block.name,

@@ -99,7 +99,7 @@ names) still works and is fine for small projects, but the Map is where the tool
 | See the whole graph | `waygraph graph` |
 | Lint your Blocks and folders | `waygraph check` / `waygraph typecheck` / `waygraph map` |
 | Open a persistent browser for an agent | `waygraph browser start` |
-| Read what the page shows, as JSON (beta: Read Blocks) | `waygraph pilot read <id> [path]` |
+| Read what the page shows, as JSON (beta: a page's `read`) | `waygraph pilot read <id> [path]` |
 | Highlight things on the live page | `waygraph browser highlight <id> "#login\|Login button\|warning"` |
 | Set up coding-agent skills | `waygraph agent-dive --loop claude` |
 
@@ -108,7 +108,7 @@ names) still works and is fine for small projects, but the Map is where the tool
 ## Learn more
 
 - **[Docs site](https://deviate-dv8.github.io/waygraph/)** - guides and walkthroughs
-- **[Guides](https://deviate-dv8.github.io/waygraph/guides/project)** - one topic per page: Blocks, flows, Read Blocks, data, checks, demo, testing, agents
+- **[Guides](https://deviate-dv8.github.io/waygraph/guides/project)** - one topic per page: Blocks, flows, what a page shows, data, checks, demo, testing, agents
 - **[Reference](https://deviate-dv8.github.io/waygraph/reference/)** - every command, setting and variable
 - **[Page objects and waygraph](https://deviate-dv8.github.io/waygraph/page-objects)** - what waygraph adds to a page object model, measured side by side, and how to adopt it one flow at a time
 - **[Environment variables](./docs/env.md)** - every `WAYGRAPH_*` variable · **[Removed in 0.16.0](./docs/deprecated.md)** - each old form and what replaces it (`waygraph upgrade --codemod flows|checkpoints|keys` converts a project)

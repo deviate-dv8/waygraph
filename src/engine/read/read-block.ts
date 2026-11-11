@@ -46,6 +46,8 @@ const registry = new Map<string, ReadBlock>();
  *     read: (ctx) => Post({ title: ctx.page.text("h1"), likes: ctx.page.number(".likes") }),
  *   },
  * });
+ *
+ * @deprecated A page's what-it-shows is its `read:` (`definePageBlock({ read: (ctx) => ({ ... }) })`), keys as `Page.read.x`; a layout's is `defineLayout({ read })`. `waygraph upgrade --codemod page-object` moves a project.
  */
 export function defineReadBlock(options: ReadBlockOptions): ReadBlock {
   const from = options.from === undefined ? ["*"] : (Array.isArray(options.from) ? options.from : [options.from]).map((c: Checkpoint<string>) => c.__state);

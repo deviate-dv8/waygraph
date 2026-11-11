@@ -54,7 +54,7 @@ page has is a folder (`auth/`, `platform/`, then `plant/`, so `/platform/plant/l
   the map makes room for them: a label never covers a box.
 - **A page's box** has its newest [screenshot](./blocks#screenshots) (when a Block took one), its address, how much you
   can do there, how many flows pass through it and how many failed their newest run, and what it shows: the fields
-  its [Read Blocks](./reads) read, by namespace, the yes/no ones highlighted as the states the page can be in
+  its [read](./reads) gives, by namespace, the yes/no ones highlighted as the states the page can be in
   (`login.linkSent`), which flows check with `Key.is` instead of a Checkpoint of their own.
 - **A [layout](./layouts)** (a menu, a sidebar) is one box beside the sites, with a line to each page its links lead
   to; each page it covers carries its name. Its links aren't drawn again from every page.
@@ -80,7 +80,7 @@ Click a page for everything about it, most telling first:
 
 1. Its screenshot, addresses, how its flows' newest runs went (failing, passing, not run), its layouts and who can open
    it (its Page Block's `for`).
-2. **Shows**: its Read Blocks' fields, the yes/no states first.
+2. **Shows**: its `read` fields, the yes/no states first.
 3. **Do here**, **Ways in**, **Leads to**: its Blocks. Open one for its checks, the selectors it reads and its code; the
    arrows in the panel's corner widen it to read code.
 4. **Expected here**: its Expect Blocks, and what Blocks promise on arrival.
@@ -159,7 +159,7 @@ Open one for what it checks (before acting and on arrival, and what it promises 
 entries it reads, its code (the lines that define it), the flows that use it, and from the newest runs how often it ran
 and failed, how long it takes, and what it did to the address: **navigates** (its step ended on another path: a submit
 that redirects, a click a single-page app routes) or **changes the address** (it stayed on its page but changed the
-query or hash: a tab or a filter kept in the url). The tabs beside it list the Read Blocks (each field and its type),
+query or hash: a tab or a filter kept in the url). The tabs beside it list the page's read (each field and its type),
 the selectors (every entry of the selector files, with the Blocks that read each) and the mem keys (who requires each,
 and the value the newest run used). Checks, selectors and code need waygraph 0.16.19 or later in the project.
 

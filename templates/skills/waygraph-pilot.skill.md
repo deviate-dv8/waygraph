@@ -100,7 +100,7 @@ Every `status` / `send` / `reach` reply is `{ "ok": true, "snapshot": { ... } }`
 | `sections[].edges[]` | the menu: `index` (1-based, what you pick), `block`, `kind` (`nav` / `action`), `to` (where it lands), `label` (one row of a per-row Block: "Add Sauce Labs Backpack"), `description` |
 | `done` | nothing runnable from here |
 | `lastRunNote` | `"<block> -> <Checkpoint>"`, or `"<block> failed"` |
-| `read` / `missing` / `readNotes` | what the page shows, from its Read Blocks (lists cut to 20 rows; `pilot read <id> <path>` gets them all) |
+| `read` / `missing` / `readNotes` | what the page shows, from its page's `read` (lists cut to 20 rows; `pilot read <id> <path>` gets them all) |
 | `mem` | where each mem value came from (above) |
 
 Picking: `send <id> 3` (the index), `send <id> submit-login` (the Block's name - an ambiguous name is refused, not
@@ -157,7 +157,7 @@ the project's syntax trees (Blocks, flows, helpers, specs) and flag:
 | `outcome-in-verify` | a Method's `verify` reading a message (toast, alert, error) - that's an expectation (`expect: [...]`) |
 | `start-tag` | `"__start__"` written by hand - `import { Start } from "waygraph"` |
 
-plus navigation outside Nav Blocks, orphans, and pages no Read Block reads. Opt out per file only on purpose:
+plus navigation outside Nav Blocks, orphans, and pages with no `read`. Opt out per file only on purpose:
 `// waygraph-ignore: <kind>, <kind>` (or `// waygraph-ignore-practices`). The rules behind them: `--skill-convention`.
 
 ## Coverage gaps on the live page (`auto console`)
@@ -248,10 +248,9 @@ properly (mirroring a sibling Block's shape) and `auto reload` it in rather than
 past the gap.
 
 To know what the page shows, read the `read` field every `status`/`send`/`reach` reply
-carries (or `pilot read <id> [path]` for one part, uncut; `--where field=value` / `--rows 20:40` narrow a list): it comes from the project's Read
-Blocks (`*.read.block.ts`) as typed JSON. Reach for `auto dom` only when `read` is empty
-(no Read Block covers the page) or misses what you need - and then consider writing the Read
-Block. `pilot watch <id>` streams every step, read and snapshot as JSON lines if you need to
+carries (or `pilot read <id> [path]` for one part, uncut; `--where field=value` / `--rows 20:40` narrow a list): it comes from the pages' `read` as typed JSON. Reach for `auto dom` only when `read` is empty
+(no `read` covers the page) or misses what you need - and then consider writing the page's
+`read`. `pilot watch <id>` streams every step, read and snapshot as JSON lines if you need to
 follow changes you did not cause (another user, a server push).
 
 The one legitimate exception: `auto dom` to resolve a real ambiguity the menu's own labels

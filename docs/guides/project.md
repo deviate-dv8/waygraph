@@ -45,10 +45,8 @@ Every page folder uses the same file names:
 | File | Holds | Made with |
 |---|---|---|
 | `_nav.block.ts` | how to get to this page | `defineNavBlock` |
-| `_page.block.ts` | the page: its `nav`, what you can do (`do`), what you can expect (`expects`), who can open it (`for`) | `definePageBlock` |
+| `_page.block.ts` | the page: its `nav`, what it shows (`read`), what you can do (`do`), what you can expect (`expects`), who can open it (`for`) | `definePageBlock` |
 | `_sel.ts` | every selector this page uses | a plain object |
-| `_read.block.ts` | what the page shows, as data | `defineReadBlock` |
-| `_reads.ts` | the namespace that data is typed by | `reads("home")<{…}>()` |
 | `_methods/` | one action per file: fill, click, submit | `defineMethodBlock` |
 | `_expect/` | what a scenario can expect on this page, one per file | `defineExpectBlock` |
 
@@ -62,7 +60,7 @@ segment. `_layout.block.ts` is the one file that isn't about one page: it's abou
 |---|---|---|
 | **Folders under `src/map/` are the app's addresses.** `/platform/equipment` lives in `map/(app_base)/platform/equipment/`; `(group)` folders only organise. | The tree is the site map: nothing to keep in sync, and anyone who knows the app's URLs finds the page. | `waygraph map` fails on a folder that doesn't match its page's address |
 | **A Checkpoint is a page**, a place with its own address. An item in the cart is what the page shows, not another Checkpoint. | Fewer, truer Checkpoints; flows check the state with `Key.is` | `waygraph check` names a Checkpoint that is a state of a page |
-| **Every page has a Read Block.** | Runs, agents, tests and Waygraph Studio read the page as data, not by parsing the DOM | `waygraph check` lists the pages no Read Block reads |
+| **Every page has a `read`.** | Runs, agents, tests and Waygraph Studio read the page as data, not by parsing the DOM | `waygraph check` lists the pages with no `read` |
 | **One action per Block, its selectors in `_sel.ts`.** | One Block, reused by every flow that needs it; a changed selector is changed once | `waygraph check`: a fill and a click in one Block, several inputs in one Block, an inline selector when a `_sel.ts` is there |
 | **Navigation happens in Navs.** | The map knows every way between pages; a Method that navigates is a hidden edge | `waygraph check` warns on `page.goto` outside a Nav |
 | **What every page shares is a layout**, in the folder of the pages it wraps. Never the same Nav on each page, never a list of pages on a Nav. | Declared once, where front-end developers look for it | a layout link from a page it doesn't cover fails before clicking |
@@ -121,8 +119,8 @@ labels: { auth: ["src/flows/auth/**"], checkout: ["src/flows/checkout/**", "chec
 | add an action | one file in that page's `_methods/` |
 | add something every page has (a menu, a sidebar) | a `_layout.block.ts` in the folder of the pages it wraps ([Layouts](./layouts)) |
 | say only some people see it | `for: [Planner]` on it ([Layouts and access](./layouts#who-sees-what-for)) |
-| check a state (disabled button, error shown) | `Key.is` on the page's Read Block, or an Expect Block in `_expect/`, in a step's `expect` ([Checks](./checks)) |
-| say what a page shows | its `_read.block.ts` ([Read Blocks](./reads)) |
+| check a state (disabled button, error shown) | `Page.read.x.is` on the page, or an Expect Block in `_expect/`, in a step's `expect` ([Checks](./checks)) |
+| say what a page shows | its `read` ([What a page shows](./reads)) |
 | sign in as someone | an account in `src/accounts/`, then `map({ as: Planner })` ([Flows](./flows#accounts)) |
 | string steps together | a file in `src/flows/<page>/`, named for its outcome ([Flows](./flows)) |
 | give a flow data | a mem key and a mem stub in `src/states/` ([Data](./data)) |

@@ -39,7 +39,7 @@ waygraph browser stop <id>               # or --all
 | `status <id>` | the snapshot: where it is, the menu, what the page shows. No side effects |
 | `send <id> "<pick>" [--data '{...}']` | runs one Block (menu index or name), answers with the new snapshot |
 | `reach <id> <Checkpoint> [--data '{...}']` | finds the route and plays it, checking each step lands where its edge says |
-| `read <id> [path] [--where f=v] [--rows a:b]` | what the page shows ([Read Blocks](../guides/reads)) |
+| `read <id> [path] [--where f=v] [--rows a:b]` | what the page shows ([What a page shows](../guides/reads)) |
 | `dom <id> [--mode full] [--selector s] [--depth n]` | the accessibility tree (default, small), or a bounded DOM (`truncated: true` when cut) |
 | `trace <id>` | the last 500 Blocks run: name, Checkpoint before and after, their narration |
 | `console <id>` | console and network errors, and coverage gaps (below) |
@@ -95,7 +95,7 @@ does not bump it).
 | Op | Answers |
 |---|---|
 | `hello` | `{ protocol, waygraph, sessionId, here }`. Cheap, never waits behind a running step |
-| `status`, `send`, `reach`, `resync`, raw actions | the snapshot: `here`, the menu, and `read` / `missing` where Read Blocks cover the page |
+| `status`, `send`, `reach`, `resync`, raw actions | the snapshot: `here`, the menu, and `read` / `missing` where the page has a `read` |
 | `read`, `dom`, `trace`, `console`, `storage` | what the page / session shows, without changing anything |
 | `subscribe` | keeps the socket open: one line per run event (`step:start`, `step:read`, `step:end`, ...) and one `{ type: "snapshot" }` after each change |
 

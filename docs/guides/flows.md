@@ -62,7 +62,7 @@ A run where the Block lands somewhere other than `lands` fails at that step:
 ## What the scenario expects: `expect`
 
 After a step, the flow says what the scenario expects: Expect Blocks, Traits, and what the page shows
-(`Key.is(value)`, `Key.passes(test)`, read through the page's [Read Block](./reads)):
+(`Key.is(value)`, `Key.passes(test)`, read through the page's [`read`](./reads)):
 
 ```ts
 engine.map({ as: Planner })

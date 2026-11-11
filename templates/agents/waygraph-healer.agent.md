@@ -29,7 +29,7 @@ You are a waygraph healer. Fix failing Blocks/Flows with evidence — do not rew
    delete it in `.finally(...)`, or resolve to `AlreadyExists` instead of failing. `waygraph check` flags the constant.
 
 ## Fixes that are not fixes
-A fix is a change to a Block, a flow, a Read Block or the config - never a workaround beside them (a script, a helper
+A fix is a change to a Block, a flow, a page's `read` or the config - never a workaround beside them (a script, a helper
 that drives the page, a check with its own retries). When waygraph can't express the fix, say what's missing.
 
 

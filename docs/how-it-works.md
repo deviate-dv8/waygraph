@@ -27,7 +27,6 @@ a wrong password keeps you on the login page) says so.
 | Method | one action on the page: fill, click, submit; or on one row of many (add *this* item) | `defineMethodBlock` |
 | Expect | what a scenario expects: reads and judges, changes nothing | `defineExpectBlock` |
 | API | an HTTP call, no page | `defineApiBlock` |
-| Read | what the page **shows**, as data | `defineReadBlock` |
 
 ## A flow is a path
 
@@ -64,7 +63,7 @@ graph LR
 | observe | what happened? (only a Block that can land in more than one place) |
 | resolve | which Checkpoint are we on now? |
 | verify | do the Block's checks hold? Retried until the page settles |
-| read | what does the page show now? (its Read Block) |
+| read | what does the page show now? (its page's `read`) |
 
 When a check fails it names the **step** first, then what it **wanted**, what the page **showed**, and **where**:
 
@@ -103,11 +102,11 @@ Every run writes `.waygraph/runs/<runId>.jsonl`, one event per line. Its path is
 |---|---|
 | `run:mem` | the data the run was seeded with (rerun with it: `--replay <runId>`) |
 | `step:start` / `step:end` | each Block, where it started and landed, how long it took |
-| `step:read` | what the page showed after the step (from its Read Block) |
+| `step:read` | what the page showed after the step (from its page's `read`) |
 | `step:error` | the failure, with what the check wanted and saw |
 
 ## Next
 
 - [Quick start](./quickstart): see it run in two minutes
 - [Your project](./guides/project): where each file goes
-- [Blocks](./guides/blocks), [Flows](./guides/flows), [Read Blocks](./guides/reads), [Data](./guides/data)
+- [Blocks](./guides/blocks), [Flows](./guides/flows), [What a page shows](./guides/reads), [Data](./guides/data)

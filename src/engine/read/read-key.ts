@@ -56,6 +56,8 @@ const NOT_KEYS = new Set(["then", "toJSON", "constructor", "prototype", "name", 
  * export const Post = reads("post")<{ title: string; likes: number; comments: { author: string; body: string }[] }>();
  * Post.likes;                                 // ReadKey<number>, path "post.likes"
  * Post({ title: ctx.page.text("h1") });            // the spec a Read Block returns
+ *
+ * @deprecated A page's read declares its keys as it reads: `definePageBlock({ read: (ctx) => ({ title: ctx.page.text("h1") }) })`, then `Page.read.title`. `waygraph upgrade --codemod page-object` moves a project.
  */
 export function reads(namespace: string): <T extends object>() => ReadNamespace<T> {
   return <T extends object>() => {

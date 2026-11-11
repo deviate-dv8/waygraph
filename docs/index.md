@@ -33,7 +33,7 @@ graph LR
 | **Checkpoint** | a page the app can be on: `LoginPage`, `CartPage` |
 | **Block** | one action from one Checkpoint to another, with checks that prove it |
 | **Flow** | Blocks in order. TypeScript checks each step starts where the last one ended |
-| **Read Block** | what a page shows, as typed data |
+| **`read`** | what a page shows, as typed data (on the Page Block) |
 | **Mem** | the data a run carries: credentials, the item being added |
 
 ## One flow, three ways to play it
@@ -74,6 +74,6 @@ npx waygraph studio              # in a project: its map, flows and runs in the 
 | Start | Guides | Reference |
 |---|---|---|
 | [Quick start](/quickstart) | [Your project](/guides/project) · [Layouts and access](/guides/layouts) · [Blocks](/guides/blocks) · [Flows](/guides/flows) | [CLI](/reference/cli) |
-| [What Waygraph is](/doctrine) · [How it works](/how-it-works) | [Read Blocks](/guides/reads) · [Data](/guides/data) · [Checks](/guides/checks) | [Config](/reference/config) |
+| [What Waygraph is](/doctrine) · [How it works](/how-it-works) | [What a page shows](/guides/reads) · [Data](/guides/data) · [Checks](/guides/checks) | [Config](/reference/config) |
 | [Sauce Demo](/saucedemo/) | [Demo](/guides/demo) · [Testing](/guides/testing) · [Waygraph Studio](/guides/studio) (beta) | [API](/api/) · [Environment](/env) |
 | | [Agents](/guides/agents) · [Mail](/guides/mail) | [Deprecated](/deprecated) |

@@ -53,10 +53,9 @@ In the Map layout (`src/map/(app)/<url segments>/`, the folder path = the page's
 |------|-------|
 | `_sel.ts` | `export const LoginSel = { username: "#user-name", submit: "[data-test=login]" } as const` - every selector the page's Blocks use |
 | `_nav.block.ts` | `defineNavBlock({ name: "nav-login", checkpoint: LoginPage, url: "/login", verify: [Trait.visible(LoginSel.submit)] })` |
-| `_page.block.ts` | `export const LoginPage = definePageBlock({ name: "page-login", checkpoint: Login, nav: NavLoginBlock, verify: [...], methods: { fillUsername: () => FillUsernameBlock } })` - the page's namespace: a flow writes `.gotoPage(LoginPage.nav).method(LoginPage.do.fillUsername)` |
+| `_page.block.ts` | `export const LoginPage = definePageBlock({ name: "page-login", checkpoint: Login, nav: NavLoginBlock, verify: [...], read: (ctx) => ({ error: ctx.page.text(LoginSel.error) }), do: () => ({ fillUsername: FillUsernameBlock }) })` - the page's namespace: a flow writes `.gotoPage(LoginPage.nav).method(LoginPage.do.fillUsername)` |
 | `_methods/<action>.method.block.ts` | one action each: `defineMethodBlock({ name, from, to, requires, instruction: { act, verify } })` |
 | `_expect/<what>.expect.block.ts` | what a scenario can expect here: `defineExpectBlock({ name, description, checkpoint, verify })`, listed on the Page Block's `expects` and used as `{ expect: [LoginPage.expects.error] }` on a step. Reads only |
-| `_read.block.ts` + `_reads.ts` | what the page shows: `reads("login")<{ error: string }>()` and `defineReadBlock({ name, from: [LoginPage], instruction: { read: (ctx) => LoginRead({ error: ctx.page.text(LoginSel.error) }) } })` |
 
 Shared across pages, in `src/states/`:
 
@@ -67,8 +66,7 @@ Shared across pages, in `src/states/`:
   session uses it for any key `--data` didn't give, so a Block with `requires` runs. Say whose account it is, and
   remember a session run without `--data` signs in as it. Nothing imports this file: the tools load it.
 
-A freeform project (`src/blocks/<site>/<page>/`, `nav-*.block.ts`, `methods/`, `<page>.sel.ts`,
-`<page>.read.block.ts`) keeps its layout; don't switch layouts partway. Full rules and complete files:
+A freeform project (`src/blocks/<site>/<page>/`, `nav-*.block.ts`, `methods/`, `<page>.sel.ts`) keeps its layout; don't switch layouts partway. Full rules and complete files:
 `--skill-convention`.
 
 ## Prove each Block before the next
@@ -76,7 +74,7 @@ A freeform project (`src/blocks/<site>/<page>/`, `nav-*.block.ts`, `methods/`, `
 ```
 waygraph browser reload <id>                 # loads the new files
 waygraph browser send <id> nav-login         # runs it: the reply's here, read and lastRunNote say what happened
-waygraph browser read <id>                   # the page's Read Block, if you wrote one
+waygraph browser read <id>                   # the page's `read`, if you wrote one
 npx waygraph check . && npx waygraph map .   # no warnings, folders match URLs
 ```
 

@@ -24,13 +24,13 @@ The before-step panel lists what the step expects (`expect: [...]`). After it:
 
 - The **outcome card** (above the step panel, shown whether the panel is open or not) says how the step went: under
   **Expected**, each expectation in words (an Expect Block's description), ticked in turn, or crossed with what the
-  page showed; under **Now shows**, what the page's [Read Block](./reads) reads that changed since the step before
+  page showed; under **Now shows**, what the page's [read](./reads) gives that changed since the step before
   (`cart.count 0 > 1`; a list by its size). A failed step shows the card next to its fail panel.
 - The rings show what the step's checks looked at, labelled in words: an expectation's description, or what the check
   looked for (`shows`, `reads "Saved"`; a custom Trait's `says`). Something no longer on the page (a check made before
   the step went to another page) gets no ring.
 - Its Expect Blocks' own narration plays: its slides, then its rings, a case's to-do marked, a caption.
-- The panel's **The page shows** section lists every value the page's Read Blocks read.
+- The panel's **The page shows** section lists every value the page's read gave.
 
 ## Narration lives in the flow
 

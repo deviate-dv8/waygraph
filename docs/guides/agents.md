@@ -33,14 +33,14 @@ npx waygraph pilot start [--data '{...}']      # browser + the whole graph + whe
 npx waygraph pilot status  <id>                # the menu, no side effects
 npx waygraph pilot send    <id> submit-login   # run one Block (a menu index or a name); --data '{...}' sets keys first
 npx waygraph pilot reach   <id> OrderComplete  # find the route and play it, checking every step
-npx waygraph pilot read    <id> catalog.items  # what the page shows (Read Blocks)
+npx waygraph pilot read    <id> catalog.items  # what the page shows (a page's `read`)
 npx waygraph browser stop  <id>                # done
 ```
 
 | Command | Answers |
 |---|---|
 | `status`, `send`, `reach` | the Checkpoint, the menu, `read` for the page it landed on, and `mem`: where each key's value came from (`data`, `stub`, `step`) |
-| `read [path] [--where f=v] [--rows a:b]` | what the page shows, all of it or one part ([Read Blocks](./reads)) |
+| `read [path] [--where f=v] [--rows a:b]` | what the page shows, all of it or one part ([What a page shows](./reads)) |
 | `dom [--mode full] [--selector s]` | the accessibility tree (small), or the DOM (bounded) |
 | `trace` | the Blocks this session ran and where each landed |
 | `console` | console and network errors, and links or buttons no Block covers yet |

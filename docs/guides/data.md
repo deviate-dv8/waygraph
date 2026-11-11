@@ -139,7 +139,7 @@ on `Created` or `AlreadyExists`, and the flow follows the one it's about.
 ## Mem is not what the page shows
 
 Mem is what a flow is **given** or carries forward. What the page **shows** (the cart count, the rows of a table) is
-a [Read Block](./reads): read from the page each time, never stored as a stub.
+the page's [`read`](./reads): read from the page each time, never stored as a stub.
 
 ## Upgrading from `key()`
 

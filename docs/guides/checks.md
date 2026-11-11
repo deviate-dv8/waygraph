@@ -32,7 +32,7 @@ The checks themselves are **Traits**: one named thing that holds or doesn't. Bot
 | `Trait.attribute(sel, "aria-pressed", "true")` | an attribute equals |
 | `Trait.disabled(sel)` / `Trait.enabled(sel)` | the control is disabled / enabled |
 | `Trait.frameVisible` / `frameText` / `frameContains` | the same, inside an iframe |
-| `Key.is(value)` / `Key.passes((value, mem) => …)` | what the page's [Read Block](./reads) reads for that key equals the value, or passes the test |
+| `Key.is(value)` / `Key.passes((value, mem) => …)` | what the page's [read](./reads) gives for that key (`Page.read.x.is(…)`) equals the value, or passes the test |
 
 An expected value can come from mem: `Trait.text("#code", (mem) => mem.get(MachineKeys.code))`.
 

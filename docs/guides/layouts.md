@@ -36,8 +36,8 @@ export const Sidebar = defineLayout({
 A layout is a hub like a Page Block, not a step of its own:
 
 - `Sidebar.go.<name>` are Navs: `.gotoPage(Sidebar.go.equipment)`.
-- `Sidebar.do.<name>` are Methods (`() => Block`, lazy, as a page's `methods` are): `.method(Sidebar.do.signOut)`.
-- `read` is a Read Block that reads every page the layout covers.
+- `Sidebar.do.<name>` are Methods (`() => Block`, lazy, as a page's `do` is): `.method(Sidebar.do.signOut)`.
+- `read` is what the layout shows on every page it covers (a reader per field, as a page's `read`); `Sidebar.read.links` is its typed key. `readAs` names it in the run log; the layout's name by default.
 
 ## What it covers
 
@@ -95,6 +95,6 @@ export const AddMachineBlock = defineMethodBlock({ name: "add-machine", from: Eq
 
 ## In a page or in a layout?
 
-- On one page: the page's Page Block (`do`, `nav`, its Read Block).
+- On one page: the page's Page Block (`do`, `nav`, its `read`).
 - On many pages, the same: a layout. Never a list of pages on each Nav, and never the same Method on each page.
 - Who sees it: `for`, beside what it's about. A role is the accounts that share a `for`.

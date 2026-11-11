@@ -28,7 +28,7 @@ export type HomeOrDocs = (typeof HomeOrDocs)[number];
 ```
 
 What changes on a page is not another Checkpoint. Adding an item to the cart leaves you on `Home`; what changed is
-what Home shows, its [Read Block](./reads)'s `home.cartCount` and each item's `inCart`, which the Block's `verify`
+what Home shows, its [read](./reads)'s `home.cartCount` and each item's `inCart`, which the Block's `verify`
 checks. A link sent, an alert shown, a banner up: the same. `waygraph check` names a Checkpoint that is a state of a
 page (only Methods land on it and it has no address of its own, or it has another page's).
 
@@ -46,11 +46,10 @@ defineMethodBlock({ name: "sign-out", from: Dashboard, to: Start, instruction: {
 | Kind | Use it to | Made with | Moves? |
 |---|---|---|---|
 | Nav | open a page by URL or by a link | `defineNavBlock` (`url`) · `defineNavClickBlock` (`click`) | to its `checkpoint` |
-| Page | say "you are here" and list what you can do | `definePageBlock` | no |
+| Page | say "you are here": what you can do (`do`), what it shows (`read`), what a scenario can expect (`expects`) | `definePageBlock` | no |
 | Method | do one thing: fill, click, submit (or to one row of many: [rows](#a-method-on-one-row-of-many)) | `defineMethodBlock` | `from` → `to` |
 | Expect | what a scenario expects on a page: reads and judges, changes nothing | `defineExpectBlock` | no (an expectation, not a step) |
 | API | make an HTTP call, no page | `defineApiBlock` | `from` → `to` |
-| Read | say what the page shows | `defineReadBlock` | never ([Read Blocks](./reads)) |
 
 All of them are plain Blocks when the flow runs; the kind is what `map()` and `waygraph check` hold you to.
 
@@ -89,7 +88,7 @@ export const ClearCartBlock = defineMethodBlock({
     async act(page) {
       await page.locator(DemoSel.clear).click();
     },
-    verify: [HomeRead.cartCount.is(0)],   // what the page shows now: no item in the cart
+    verify: (): Trait[] => [HomePage.read.cartCount.is(0)],   // what the page shows now: no item in the cart
   },
 });
 ```
@@ -127,19 +126,20 @@ export const HomePage = definePageBlock({
   checkpoint: Home,
   nav: NavHomeBlock,                                 // its _nav.block.ts
   verify: [Trait.visible(DemoSel.catalog)],
-  methods: {
-    addItem: () => AddItemBlock,
-    clearCart: () => ClearCartBlock,
-  },
+  read: (ctx) => ({ cartCount: ctx.page.number(DemoSel.cartCount), items: ctx.page.list(DemoSel.item, (row) => ({ name: row.text(DemoSel.name), inCart: row.visible(DemoSel.remove) })) }),
+  do: () => ({ addItem: AddItemBlock, clearCart: ClearCartBlock }),
+  expects: (page) => ({ empty: page.read.cartCount.is(0) }),
 });
 ```
 
-A Page Block is the page's namespace: `HomePage.nav` opens it, `HomePage.do.addItem` is the Add Item Block, typed as
-itself, and `HomePage.expects.hello` an Expect Block for the page (`expects: { hello: () => ExpectHelloBlock }`).
+A Page Block is the page's namespace: `HomePage.nav` opens it, `HomePage.read.cartCount` is a typed key of what it shows
+([What a page shows](./reads)), `HomePage.do.addItem` is the Add Item Block, typed as itself, and `HomePage.expects.empty`
+a check a scenario can expect there. `do` and `expects` are functions of the page, called the first time they're used, so
+the page and its Methods can import each other ([Lifecycle](./lifecycle#why-do-and-expects-are-functions)).
 A flow imports the page, not each Block:
 
 ```ts
-engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem, { expect: [HomeRead.cartCount.is(1)] });
+engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem, { expect: [HomePage.read.cartCount.is(1)] });
 ```
 
 `waygraph auto` groups a page's methods under it. A page's `nav`, methods and expectations never count as orphans,
@@ -176,8 +176,8 @@ defineMethodBlock({
     async act(page, _input, mem) {
       await page.locator(DemoSel.addBtn(mem.get(DemoKeys.selectedItem).id)).click();
     },
-    verify: [
-      HomeRead.items.passes((items, mem) => items.some((i) => i.name === mem.get(DemoKeys.selectedItem).name && i.inCart), "the item in the cart"),
+    verify: (): Trait[] => [
+      HomePage.read.items.passes((items, mem) => items.some((i) => i.name === mem.get(DemoKeys.selectedItem).name && i.inCart), "the item in the cart"),
     ],
   },
   async instanceOptions(page) {
@@ -234,7 +234,7 @@ A selector written inline in a Block, or a regex / XPath selector, is a `waygrap
 ## Lint it
 
 ```sh
-npx waygraph check        # navigation outside Nav Blocks, inline selectors, empty verify, orphans, pages no Read Block reads,
+npx waygraph check        # navigation outside Nav Blocks, inline selectors, empty verify, orphans, pages with no `read`,
                           # Checkpoints that are a state of a page (no address of their own, or another page's)
 npx waygraph typecheck    # tsc --noEmit, then the same checks
 ```

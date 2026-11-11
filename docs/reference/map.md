@@ -12,8 +12,6 @@ src/map/
       _page.block.ts         # arrival hub (definePageBlock) - fixed name, every folder
       _nav.block.ts           # navigation (defineNavBlock) - fixed name, every folder
       _sel.ts                  # selectors for this Checkpoint - fixed name, every folder
-      _read.block.ts            # what the page shows, as data (defineReadBlock) - every page
-      _reads.ts                 # its typed namespace (reads("dashboard")<{...}>())
       _expect/                  # what a scenario can expect on this page (Expect Blocks) - fixed name
       _methods/                 # this Checkpoint's own action Blocks - fixed name, every
         click-widget.block.ts    # folder. Contents keep their own descriptive names -
@@ -22,8 +20,6 @@ src/map/
       _page.block.ts
       _nav.block.ts
       _sel.ts
-      _read.block.ts
-      _reads.ts
 ```
 
 **Not just a naming preference - a forced convention.** Folder nesting under `map/(group)/`

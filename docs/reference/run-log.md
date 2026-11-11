@@ -18,7 +18,7 @@ graph LR
 | `run:start` | the run's id and what it plays (`label`: the flow or chain; under `waygraph test --flows`, the flow's export name; none for a test that calls `flow.run` itself) |
 | `run:mem` | the mem each part of the run was seeded with, by key name (what `--replay <runId>` seeds again, a per-run value made new) |
 | `step:start` | the Block, its kind (`nav`, `page`, `method`, `effect`, `api`), where it starts; `parent` for a step inside a fast-forward unit, `cleanup: true` for a `.finally` step, `pane` for a step in a flow with panes ([Split view](../guides/split-view)) |
-| `step:read` | what the page showed after the step: `{ checkpoint, read, missing, notes, readBlocks }` ([Read Blocks](../guides/reads)) |
+| `step:read` | what the page showed after the step: `{ checkpoint, read, missing, notes, readBlocks }` ([What a page shows](../guides/reads)) |
 | `step:end` | where it landed, how long it took, the page's address (`url`) |
 | `step:error` | the failure; for a failed check, `check: { trait, block, wants, saw, url, heading }` |
 | `run:artifact` | a saved video or screenshot; a Block's screenshot (`screenshot: true`) also names its step (`index`, `block`) and the page (`checkpoint`) |
@@ -56,7 +56,7 @@ npx waygraph manifest [project] [--out manifest.json]
 | its config | `config`: the `waygraph.config.*` file and what it resolves to (after `.env`), as JSON: a function shows as `(function name)` |
 | every flow | its `useCase` (from `src/flows/<page>/<outcome>.flow.ts`), its steps in order, its settings, its `source` lines |
 | every Checkpoint | its tag |
-| every Read Block | the Checkpoints it reads and the shape of its fields: `"catalog.items": [{ "name": "string", "price": "number" }]`; its `source` lines |
+| every page's `read` (and layout's) | the Checkpoints it reads and the shape of its fields: `"catalog.items": [{ "name": "string", "price": "number" }]`; its `source` lines |
 
 It's read from the Blocks themselves (the same scan `graph`, `check`, `auto` and the runner use), so it can't go
 stale. Blocks from installed [map packages](./map#map-packages) are included, with the package name as their `map`.

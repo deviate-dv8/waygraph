@@ -69,6 +69,7 @@ export type PageBlockOptions<
   /**
    * Methods available on this page: a record of Blocks (or `() => Block` factories, lazy so the page object can colocate
    * method definitions), or an array. A record's Blocks are also the page's `do`, by name, typed.
+   * @deprecated Name them in `do: () => ({ addItem: AddItemBlock })`. `waygraph upgrade --codemod page-object` converts a project.
    */
   methods?: readonly PageMethodEntry[] | M;
   /**

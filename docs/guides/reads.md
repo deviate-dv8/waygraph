@@ -1,75 +1,64 @@
-# Read Blocks
+# What a page shows: `read`
 
-A page Block lists what you can **do** on a page (its methods). A **Read Block** says what you can **know** there:
-a typed object of what the page shows. An agent in a session gets it as JSON after every step, without parsing the
-DOM; a test gets it as typed values.
+A page lists what you can **do** on it (`do`) and what it **shows** (`read`): a typed object of what the page shows. An
+agent in a session gets it as JSON after every step, without parsing the DOM; a test gets it as typed values.
 
 ```mermaid
 graph LR
-  S[a step lands on<br/>InventoryPage] --> R[its Read Blocks read<br/>the page]
+  S[a step lands on<br/>InventoryPage] --> R[the page's read<br/>reads the page]
   R --> J["{ catalog: { items: […] },<br/>header: { cartCount: 1 } }"]
   J --> L[run log<br/>step:read]
   J --> P[pilot replies]
   J --> D[demo panel]
-  J --> T[Key.is / Key.passes]
+  J --> T[Page.read.x.is / .passes]
 ```
 
-Every page should have one: `waygraph check` lists the pages no Read Block reads.
+Every page should have one: `waygraph check` lists the pages with no `read`.
 
-## Declare the keys: one namespace, one type
+## Write it on the page
 
-```ts
-// src/states/checkout.reads.ts
-import { reads } from "waygraph";
-
-export const Catalog = reads("catalog")<{
-  items: { name: string; price: number; inCart: boolean }[];
-  sort: string;
-}>();
-export const Header = reads("header")<{ title: string; cartCount: number }>();
-```
-
-Property names become key paths: `Catalog.items` is a `ReadKey` named `catalog.items`. No `const` per key.
-
-## Write the Read Block
-
-It sits next to the page, shaped like a Method, with one instruction phase: `read`.
+`read` is a function of the run's context that returns a reader per field. The fields' types come from the readers, so
+nothing is declared twice, and the page's keys exist as soon as it does: `Inventory.read.items`, typed.
 
 ```ts
-// src/blocks/saucedemo-web/inventory/inventory.read.block.ts  (in the Map layout: the page folder's _read.block.ts)
-import { defineReadBlock } from "waygraph";
+// src/blocks/saucedemo-web/inventory/inventory.page.block.ts
+import { definePageBlock } from "waygraph";
 
-export const InventoryReadBlock = defineReadBlock({
-  name: "read-inventory",
-  description: "Every product, its price and whether it is in the cart; the sort order.",
-  from: [InventoryPage],
-  instruction: {
-    read: (ctx) =>
-      Catalog({
-        items: ctx.page.list(InventorySel.card, (row) => ({
-          name: row.text(InventorySel.name),
-          price: row.number(".inventory_item_price"),
-          inCart: row.visible(InventorySel.removeBtnPrefix),
-        })),
-        sort: ctx.page.value(".product_sort_container"),
-      }),
-  },
+export const Inventory = definePageBlock({
+  name: "page-inventory",
+  checkpoint: InventoryPage,
+  url: "/inventory.html",
+  read: (ctx) => ({
+    items: ctx.page.list(InventorySel.card, (row) => ({
+      name: row.text(InventorySel.name),
+      price: row.number(".inventory_item_price"),
+      inCart: row.visible(InventorySel.removeBtnPrefix),
+    })),
+    sort: ctx.page.value(".product_sort_container"),
+  }),
+  do: () => ({ addToCart: AddToCart, removeFromCart: RemoveFromCart }),
 });
+
+Inventory.read.items;   // a ReadKey of { name: string; price: number; inCart: boolean }[], named "inventoryPage.items"
 ```
 
-- **`from`**: the Checkpoint(s) whose page this reads. Leave it out to read on every page (a header, the signed-in
-  user).
-- **Type-checked:** a reader of the wrong type doesn't compile (`price: row.text(...)` when `price` is a `number`).
-  A page may read part of a namespace.
-- **Several namespaces:** `read` can return an array (`[Catalog({...}), Header({...})]`).
-- **Nested objects:** pass an object of readers (`author: { name: ctx.page.text(".a"), url: ctx.page.attr(".a", "href") }`).
-- **`requires`:** a Read Block that needs Mem (`ctx.mem.get(...)`) declares it. Without it set, the Read Block is
-  skipped and the reply says why.
+- **The name of what it reads** is the page's Checkpoint, lower-cased first (`inventoryPage.items` in the run log and
+  `pilot read`). `readAs: "catalog"` names it otherwise: the name a project's recorded runs already use.
+- **Nested objects:** return an object of readers (`author: { name: ctx.page.text(".a"), url: ctx.page.attr(".a", "href") }`).
+  `Page.read.author` is the whole object and `Page.read.author.name` one field of it.
+- **What every page of a layout shows** (a header, the signed-in user) is the layout's `read`, `Layout.read.cartCount`
+  ([Layouts](./layouts)).
+- **Mem:** `ctx.mem.get(key)` reads what the flow carried; a read that needs a key not set is skipped, and the reply says
+  why.
 
-A Read Block never acts, navigates or appears in a flow, and nothing imports it: `run`, `demo`, `test` and the live
-sessions load every `*.read.block.ts` / `_read.block.ts` themselves. After a step lands on a Checkpoint, every Read
-Block for it (plus the every-page ones) is read and merged. Two Read Blocks reading the same key on one page fail with
-`WG_READ_DUPLICATE`.
+A page's read never acts, navigates or appears in a flow. `run`, `demo`, `test` and the live sessions load it with the
+page. After a step lands on a Checkpoint, its page's read (and its layout's) is read and merged. Two reads of the same
+key on one page fail with `WG_READ_DUPLICATE`.
+
+::: details Coming from Read Blocks?
+A page's reads used to live in a `defineReadBlock` file with a `reads("ns")<T>()` namespace beside it (deprecated now: the
+same job in three files). `waygraph upgrade --codemod page-object` moves each into its page (see [Removed](/deprecated)).
+:::
 
 ## Readers
 
@@ -103,25 +92,25 @@ belongs in a Method.
 import { readCheckpoint } from "waygraph";
 
 const { read } = await readCheckpoint(page, mem, "InventoryPage");
-read.get(Header.cartCount);   // number - throws WG_READ_MISSING (naming the key) when the page didn't show it
-read.has(Catalog.sort);       // false when missing
+read.get(Menu.read.cartCount);   // number - throws WG_READ_MISSING (naming the key) when the page didn't show it
+read.has(Inventory.read.sort);       // false when missing
 read.missing;                 // ["header.title", ...]
 read.toJSON();                // { catalog: { items: [...], sort: "az" }, header: { ... } }
 ```
 
 ## In a check: `Key.is` and `Key.passes`
 
-A check in the page's own terms instead of selectors: it reads the key now, through the Read Blocks that fill its
+A check in the page's own terms instead of selectors: it reads the key now, through the read that fills its
 namespace. Retried like every Trait until the page settles; on failure it says what the page showed, and the demo rings
 the element the value came from.
 
 ```ts
 .method(InventoryPage.do.addAllToCart, {
   expect: [
-    Catalog.items.passes((items) => items.length === 6, "6 products"),
-    Header.cartCount.is(6),                                           // equal (deep, for lists and objects)
+    Inventory.read.items.passes((items) => items.length === 6, "6 products"),
+    Menu.read.cartCount.is(6),                                           // equal (deep, for lists and objects)
     // the test also gets mem: what the page shows against what the flow did
-    Catalog.items.passes((items, mem) => items.some((i) => i.inCart && i.name === mem.get(ShopKeys.selectedItem).name), "the selected item in the cart"),
+    Inventory.read.items.passes((items, mem) => items.some((i) => i.inCart && i.name === mem.get(ShopKeys.selectedItem).name), "the selected item in the cart"),
   ],
 })
 ```
@@ -171,7 +160,7 @@ can pass before a client-side route renders) and emits a `step:read` run event: 
 readBlocks }`. So `waygraph run`, `traverse` and sessions all log what each node showed to `.waygraph/runs/*.jsonl`. A
 Read Block that fails (two reading one key) is reported on the event and never fails the run.
 
-`waygraph manifest` lists every Read Block with the Checkpoints it reads and the shape of its fields, without running
+`waygraph manifest` lists every page's read with the Checkpoint it reads and the shape of its fields, without running
 anything:
 
 ```json
@@ -181,7 +170,7 @@ anything:
 
 ## In the demo
 
-The panel after each step has a **The page shows** section: every value its Read Blocks read, one line each.
+The panel after each step has a **The page shows** section: every value its page's read gave, one line each.
 
 Mem keys are declared the same way, with `keys("checkout")<{ credentials: Creds; selectedItem: Item }>()`: mem is
 what a flow is given, a read is what the page shows ([Data](./data)).

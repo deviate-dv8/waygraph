@@ -18,14 +18,15 @@ test("the manifest lists every Block with its route, every flow with its steps",
   expect(JSON.parse(JSON.stringify(m))).toEqual(m);
 });
 
-test("the manifest lists each Read Block with the Checkpoints it reads and the shape of what it returns", async () => {
+test("the manifest lists each page's read with the Checkpoint it reads and the shape of what it returns", async () => {
   const m = await buildManifest(join(examples, "saucedemo"));
-  expect(m.readBlocks.find((r) => r.name === "read-inventory")).toMatchObject({
+  expect(m.readBlocks.find((r) => r.name === "read-page-inventory" || r.name === "read-inventory")).toMatchObject({
     from: ["InventoryPage"],
     fields: { "catalog.items": [{ name: "string", price: "number", inCart: "boolean" }], "catalog.sort": "string" },
-    file: "src/blocks/saucedemo-web/inventory/inventory.read.block.ts",
+    file: "src/blocks/saucedemo-web/inventory/inventory.page.block.ts",
   });
-  expect(m.readBlocks.find((r) => r.name === "read-header")).toMatchObject({ from: ["*"], fields: { "header.title": "string", "header.cartCount": "unknown" } });
+  // What every page of the layout shows is the layout's read.
+  expect(m.readBlocks.find((r) => r.name === "read-menu")).toMatchObject({ fields: { "header.title": "string", "header.cartCount": "unknown" } });
   // Read Blocks are not graph steps
   expect(m.blocks.some((b) => b.name.startsWith("read-"))).toBe(false);
 });

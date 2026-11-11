@@ -94,7 +94,7 @@ In a project the pieces go in their own files (`src/states/`, the page folder, `
 ## The Sauce Demo example {#saucedemo}
 
 `examples/saucedemo` is a complete project against [saucedemo.com](https://www.saucedemo.com): live tests, demos,
-accounts, Read Blocks. It uses the waygraph checkout it lives in, so build that first:
+accounts, reads. It uses the waygraph checkout it lives in, so build that first:
 
 ```sh
 git clone https://github.com/deviate-dv8/waygraph.git
@@ -114,5 +114,5 @@ Changed waygraph's source? `npm run build` at the root again; the example picks 
 ## Next
 
 - [How it works](./how-it-works): Checkpoints, Blocks, flows, one step's phases
-- [Blocks](./guides/blocks) · [Flows](./guides/flows) · [Read Blocks](./guides/reads) · [Data](./guides/data)
+- [Blocks](./guides/blocks) · [Flows](./guides/flows) · [What a page shows](./guides/reads) · [Data](./guides/data)
 - [Demo](./guides/demo): narrate a flow for people to watch

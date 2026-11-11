@@ -70,12 +70,15 @@ A step's `stubBefore` / `stubAfter` (the demo's narration) wrap it in a demo and
 | `waygraph test --flows` | every flow as a Playwright test, in its own worker and browser; loading happens in each worker |
 | Waygraph Studio | reads the manifest (a scan: *imports* every file, runs no step) and the run logs |
 
-## Why `() => Block` (lazy)
+## Why `do` and `expects` are functions
 
-A Page Block lists its Methods, and a Method's `verify` may read the page (`Page.read.x`). Two files that import each
-other at the top level break (an import cycle: one sees `undefined` at import time). A lazy entry, `do: { addToCart: () => AddToCart }`,
-is *only called when someone first uses it*, after every file has finished importing, so the cycle never bites. The cost
-is that a mistake inside a lazy entry shows up when the entry is first used, not at import.
+A Page Block lists its Methods, and a Method's `verify` may check the page (`Page.read.x`). Two files that import each
+other at the top level break (an import cycle: one sees `undefined` at import time). `do: () => ({ addToCart: AddToCart })`
+and `expects: (page) => ({ ... })` are *only called when someone first uses them*, after every file has finished
+importing, so the cycle never bites. A mistake inside shows up when it is first used, not at import.
 
-**Rule of thumb:** write `() => Block` for the Methods and Expects a Page Block names (waygraph does it for you in the
-scaffold); write plain values everywhere else.
+Two things stay at the top level, because TypeScript needs them there: a Method's `verify` that reads the page is written
+as a function (`verify: (): Trait[] => [Page.read.x.is(1)]`), which is called when the Method runs, and `read` is a
+function the page calls when a step lands on it. Both are lazy for the same reason.
+
+**Rule of thumb:** `do` and `expects` are functions of the page; everything else is a plain value.
