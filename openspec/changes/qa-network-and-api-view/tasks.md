@@ -8,6 +8,9 @@
 
 ## 2. In the demo
 
+- [ ] 2.0 A live calls card on the page while a step runs: each call by name with running / good / bad, its words and
+      time; a burst as one row with counts; calls alongside a browser step beside it; the verdict in words at the end
+
 - [ ] 2.1 The step's after card lists its calls (name, status in words, ms; failed marked; "N more", "N left out")
 - [ ] 2.2 An API step's card (request, response as field tables, checks); secrets masked
 - [ ] 2.3 The network panel rebuilt: the step's calls first, rows in words, the detail as tables, cURL kept;

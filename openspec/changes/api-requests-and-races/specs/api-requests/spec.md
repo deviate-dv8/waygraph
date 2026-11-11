@@ -26,6 +26,18 @@ SHALL NOT fail the step; what the app did is for the step's `expect`.
 - **WHEN** `.method(SubmitOrder, { alongside: [CancelOrder] })` plays
 - **THEN** the submit and the cancel call SHALL start together, and the step SHALL expect-check the outcome once both are done
 
+### Requirement: A viewer can see what ran and how it went
+In a demo (and its video), every API call SHALL show while it runs and when it finishes, on the page: a live **calls
+card** listing each call by name with a state mark (running, good, bad), its status in words and time. A burst SHALL
+show as one row with counts ("20 calls: 1 OK, 19 Conflict"), and a call alongside a browser step SHALL show beside that
+step so the viewer sees both started together. When the step's expectations are judged, the card SHALL say whether the
+outcome is **good or bad** in words ("Exactly one order was kept"), using the same pass/fail colours as the outcome card.
+
+#### Scenario: A race on screen
+- **WHEN** a demo plays a submit with a cancel call alongside
+- **THEN** the card SHALL show "Submit order" and "Cancel order" running together, then each call's result and, after the
+  step, whether the outcome was as expected
+
 ### Requirement: Results are data
 Each call's result (status, body, time, its place in a burst, the client) SHALL be recorded in the run log with its step
 and readable by expectations; the demo and Waygraph Studio SHALL show them.
