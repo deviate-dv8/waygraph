@@ -7,6 +7,7 @@ import { preflight, runSteps } from "../run/run.js";
 import type { RunGraphOptions } from "../run/run.js";
 import type { EngineConfig } from "../config.js";
 import type { BrowserContext, Page } from "@playwright/test";
+import { closePanes } from "../run/pane-page.js";
 import { MemPage, type MemKey } from "../mem/mem.js";
 import type { Trait } from "../trait/trait.js";
 import { replaceBlock, modVerify, withVerify } from "../block/block.js";
@@ -240,8 +241,13 @@ export function buildFlow<Out extends Checkpoint<string>>(
         ...(options?.from ? { from: options.from } : {}),
       })) as Out;
     } finally {
-      // Cleanup runs whether the steps passed or failed; its own failures don't replace theirs.
-      await runCleanup(cleanup, context, mem, page, engineConfig);
+      // Cleanup runs whether the steps passed or failed; its own failures don't replace theirs. Then the panes the flow
+      // opened close.
+      try {
+        await runCleanup(cleanup, context, mem, page, engineConfig);
+      } finally {
+        if (!options?.keepPanes) await closePanes(page);
+      }
     }
     if (closeOnFinish) {
       await page.close();
@@ -294,6 +300,8 @@ export interface FlowSettings {
   finally?: readonly SomeBlock[];
   /** Read by map() when it begins (the sign-in step); the Flow itself keeps nothing of it. */
   as?: import("./account.js").Account;
+  /** Read by map() as it adds each step (the pane it acts in). */
+  panes?: import("./panes.js").Panes;
   memStub?: boolean;
   /** `map({ expect: false })`: read by map() as it adds each step. */
   expect?: false;

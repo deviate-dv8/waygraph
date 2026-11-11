@@ -14,9 +14,10 @@ Account`) and which device it plays on (`device`). A flow without `panes` SHALL 
 - **THEN** the mail pane SHALL be a second page in the app pane's context
 
 ### Requirement: Steps act in the pane the flow names
-`.in(pane)` SHALL make the steps after it act in that pane, until the next `.in()`; the first steps act in the first
-pane declared. Each pane SHALL keep its own current page: TypeScript SHALL check a step against the page its pane is
-on, not the page another pane is on. A Block SHALL NOT need to change to be used in a pane.
+`.in(pane)` SHALL make the steps after it act in that pane, until the next `.in()`; a flow with panes SHALL name the
+pane before its first step (TypeScript can't know which pane an object lists first). Each pane SHALL keep its own
+current page: TypeScript SHALL check a step against the page its pane is on, not the page another pane is on. A Block
+SHALL NOT need to change to be used in a pane.
 
 #### Scenario: Back to a pane where it left off
 - **WHEN** a flow steps in `planner` to `RequestSent`, then in `admin` through two pages, then `.in("planner")`

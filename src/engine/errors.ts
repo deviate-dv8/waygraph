@@ -44,6 +44,11 @@ export const WAYGRAPH_ERRORS = {
     means: "A step said which of its Block's outcomes the flow continues from (`lands`), and the Block resolved to another one - or `lands` names a Checkpoint the Block never resolves to.",
     fix: "If the other outcome is a real case, write a flow (or a .branch()) for it; otherwise fix the step before it (wrong data) or the Block's resolve.",
   },
+  WG_PANES: {
+    where: "engine/flow/panes.ts - map({ panes }), .in(pane)",
+    means: "A flow's panes don't fit: a pane `with` one that isn't there (or that shares another's), an `as` on a pane that shares a context, a step in a pane the flow doesn't declare, or a pane that needs a context of its own in a browser that can't make one.",
+    fix: "Name panes the flow declares; give `as` only to a pane with its own context; share a context with `with` where the browser has only one (a persistent context, as with extensions).",
+  },
   WG_MAP_WRONG_ORIGIN: {
     where: "engine/flow/map-builder.ts - MapBuilder.gotoPage/gotoExternal()",
     means: "A Block's static `url` origin doesn't match what .gotoPage() (same-origin) or .gotoExternal() (cross-origin) expects, given this map()'s homeOrigin.",

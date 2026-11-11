@@ -40,14 +40,15 @@ closed with the flow.
 - *Alternative:* two flows played together, synchronized by events. Rejected: the scenario is one story; splitting it
   hides the order and the data passing between the sides.
 
-### D2. `.in(pane)` wraps each step; `runGraph` stays one chain
-A step after `.in("admin")` is wrapped (`inPane(block, "admin")`, beside `resetBefore` and `landsOn`): its instruction
-ignores the page `runGraph` passes and uses the admin pane's page, and its input is the admin pane's last Checkpoint,
-not the previous step's. The run keeps each pane's page and last Checkpoint in a run-scoped table (looked up from the
-page `runGraph` was given). So `runGraph`, the run log's events and every Block stay as they are; the step carries its
-pane as a marker (`__waygraphPane`), and the run log writes it.
-- *Alternative:* a page per step inside `runGraph`. Rejected: every part that reads "the page" (verify, expect, reads,
-  screenshots, the demo hooks) would need a pane parameter.
+### D2. `.in(pane)` marks each step; the run asks which page a step gets
+A step after `.in("admin")` carries its pane (`__waygraphPane`, set by `inPane` beside `resetBefore` and `landsOn`; a
+joined or fast-forwarded step carries its last step's). Wherever a step uses its page (act, precondition, observe,
+verify, expect, reads, screenshot, the address in the run log), the run loop and joined steps ask `run/pane-page.ts`
+for it: the pane's page, opened on first use, and the pane's last Checkpoint as input (`Start` the first time). The
+panes themselves (`flow/panes.ts`) install that answer when a flow declares panes, so a flow without panes never loads
+them. Every Block stays as it is; the run log's `step:start` carries `pane`.
+- *Alternative:* wrapping each step's instruction to swap the page. Rejected: verify, expect, reads and screenshots run
+  outside the instruction, on the page the loop holds.
 
 ### D3. Typing: a current page per pane
 `MapBuilder<Out, Panes, Active>`: `Panes` maps each pane to the page it's on, `Active` the pane acting. `.in<P>(p)`

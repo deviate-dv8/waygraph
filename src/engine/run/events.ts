@@ -10,7 +10,7 @@ export type RunEvent =
   | { type: "run:start"; runId: string; at: number; label?: string }
   /** The mem a segment of the run was seeded with (`--data`, mem stubs): what `--replay <runId>` sets again. */
   | { type: "run:mem"; runId: string; at: number; segment: number; flow: string; values: Record<string, unknown> }
-  | { type: "step:start"; runId: string; at: number; index: number; block: string; kind: BlockKind; from: string; parent?: number; cleanup?: true }
+  | { type: "step:start"; runId: string; at: number; index: number; block: string; kind: BlockKind; from: string; parent?: number; cleanup?: true; pane?: string }
   /** `url`: the page's address when the step ended (where it navigated to). */
   | { type: "step:end"; runId: string; at: number; index: number; block: string; kind: BlockKind; to: string; ms: number; url?: string }
   | { type: "step:error"; runId: string; at: number; index: number; block: string; kind: BlockKind; error: string; ms: number; check?: TraitCheckReport }
@@ -101,14 +101,14 @@ export async function inRun<T>(label: string | undefined, body: () => Promise<T>
   }
 }
 
-export function stepStarted(block: string, kind: BlockKind, from: string, cleanup?: boolean): void {
+export function stepStarted(block: string, kind: BlockKind, from: string, cleanup?: boolean, pane?: string): void {
   const open = scope.getStore();
   if (!open) return;
   const at = Date.now();
   const parent = open.open.at(-1)?.index;
   const step = { index: open.index++, block, kind, startedAt: at };
   open.open.push(step);
-  emit({ type: "step:start", runId: open.runId, at, index: step.index, block, kind, from, ...(parent !== undefined ? { parent } : {}), ...(cleanup ? { cleanup: true as const } : {}) });
+  emit({ type: "step:start", runId: open.runId, at, index: step.index, block, kind, from, ...(parent !== undefined ? { parent } : {}), ...(cleanup ? { cleanup: true as const } : {}), ...(pane ? { pane } : {}) });
 }
 
 /** The page's address now, for a step's end; a stand-in page with no `url()` (a test's) has none. */

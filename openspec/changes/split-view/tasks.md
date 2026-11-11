@@ -1,25 +1,26 @@
 ## 1. Panes in the engine
 
-- [ ] 1.1 `map({ panes })` options: each pane's `as`, `device`, `with`; validated when the flow is built (an unknown
+- [x] 1.1 `map({ panes })` options: each pane's `as`, `device`, `with`; validated when the flow is built (an unknown
       `with`, a pane `with` itself, `as` on a pane that shares a context)
-- [ ] 1.2 The run's pane table (each pane's page and last Checkpoint), opened on first use, closed with the flow; panes
+- [x] 1.2 The run's pane table (each pane's page and last Checkpoint), opened on first use, closed with the flow; panes
       with their own context get the config's options and their device
-- [ ] 1.3 `inPane(block, pane)`: the step acts on its pane's page with its pane's last Checkpoint as input; marker
-      `__waygraphPane`; works with `resetBefore`, `landsOn`, `withExpect`, stubs and `{ ff }`
-- [ ] 1.4 `.in(pane)` on the builder, and the types: a current page per pane (`MapBuilder<Out, Panes, Active>`), defaults
+- [x] 1.3 `inPane(block, pane)`: the step acts on its pane's page with its pane's last Checkpoint as input; marker
+      `__waygraphPane`; works with `resetBefore`, `landsOn`, `withExpect`, stubs and `{ ff }` (done as a marker the run loop and joined
+      steps read through `run/pane-page.ts`: every part that uses the step's page gets its pane's)
+- [x] 1.4 `.in(pane)` on the builder, and the types: a current page per pane (`MapBuilder<Out, Panes, Active>`), defaults
       keeping single-pane flows as today; `typecheck/` cases (a step checked against its pane's page; a wrong one fails)
-- [ ] 1.5 Accounts per pane: each pane with `as` signs in (kept sessions as today); switching pane sets its account's
+- [x] 1.5 Accounts per pane: each pane with `as` signs in (kept sessions as today); switching pane sets its account's
       mem again
-- [ ] 1.6 Errors name the pane (`admin, as Admin`); the run log's step events carry `pane`
-- [ ] 1.7 Tests: two people on a local fixture app (each sees its own session, data passes between them), one person
+- [x] 1.6 Errors name the pane (`admin, as Admin`); the run log's step events carry `pane`
+- [x] 1.7 Tests: two people on a local fixture app (each sees its own session, data passes between them), one person
       with two pages (`with`), a step typed against its pane's page, a failure naming its pane
 
 ## 2. Run, test and the manifest
 
-- [ ] 2.1 `waygraph run` and `waygraph test --flows` play split flows (headless, no stage); `--blocks` chains keep one
+- [x] 2.1 `waygraph run` and `waygraph test --flows` play split flows (headless, no stage); `--blocks` chains keep one
       pane
-- [ ] 2.2 Manifest: a flow's `panes` (name, account, device, `with`) and each step's pane
-- [ ] 2.3 Tests: a split flow as a flow test; the manifest's panes
+- [x] 2.2 Manifest: a flow's `panes` (name, account, device, `with`) and each step's pane
+- [x] 2.3 Tests: a split flow as a flow test; the manifest's panes
 
 ## 3. The stage and tiled windows
 

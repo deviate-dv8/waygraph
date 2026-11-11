@@ -10,6 +10,7 @@ import { screenshotStep } from "./screenshot.js";
 import { addressOf, isConnected, lastLeaf, stepEnded, stepStarted } from "./events.js";
 import { blockKindOf } from "../block/kind.js";
 import { expectOf, runExpect } from "./expect.js";
+import { paneName, paneOf, stepInput, stepLabel, stepLanded, stepPage } from "./pane-page.js";
 
 /**
  * Composes two Blocks into one, typechecked so this only compiles when A's output
@@ -43,37 +44,49 @@ export function joinSteps(a: SomeBlock, b: SomeBlock): SomeBlock {
     ...(requires.length > 0 ? { requires } : {}),
     instruction: {
       async act(page, input, mem) {
-        if (!isConnected(a)) stepStarted(a.name, blockKindOf(a), input.__state);
-        await runPrecondition(a.instruction.precondition, input, page, mem, a.name);
+        // A step in a pane acts on its pane's page, from where that pane last landed; a joined step picks for its own.
+        const aPage = isConnected(a) ? page : await stepPage(a, page, mem);
+        const aInput = isConnected(a) ? input : stepInput(a, page, input);
+        if (!isConnected(a)) stepStarted(a.name, blockKindOf(a), aInput.__state, undefined, paneName(a));
+        await runPrecondition(a.instruction.precondition, aInput, aPage, mem, stepLabel(a));
         try {
-          await a.instruction.act(page, input, mem);
+          await a.instruction.act(aPage, aInput, mem);
         } catch (err) {
-          throw namingStep(err, a.name);
+          throw namingStep(err, stepLabel(a));
         }
+        // Where A landed is its last step's page.
+        const aLeaf = await stepPage(a, page, mem);
         const aObserved = a.instruction.observe
-          ? await a.instruction.observe(page, mem)
+          ? await a.instruction.observe(aLeaf, mem)
           : undefined;
         const mid = await a.instruction.resolve(aObserved);
-        await runVerify(a.instruction.verify, mid, page, mem, a.name);
-        await runExpect(a, mid, page, mem, lastLeaf(a));
-        await screenshotStep(page, a, mid.__state, lastLeaf(a));
-        stepEnded(lastLeaf(a), mid.__state, addressOf(page));
-        if (!isConnected(b)) stepStarted(b.name, blockKindOf(b), mid.__state);
-        await runPrecondition(b.instruction.precondition, mid, page, mem, b.name);
+        stepLanded(a, page, mid);
+        await runVerify(a.instruction.verify, mid, aLeaf, mem, stepLabel(a));
+        await runExpect(a, mid, aLeaf, mem, lastLeaf(a));
+        await screenshotStep(aLeaf, a, mid.__state, lastLeaf(a));
+        stepEnded(lastLeaf(a), mid.__state, addressOf(aLeaf));
+        const bPage = isConnected(b) ? page : await stepPage(b, page, mem);
+        const bInput = isConnected(b) ? mid : stepInput(b, page, mid);
+        if (!isConnected(b)) stepStarted(b.name, blockKindOf(b), bInput.__state, undefined, paneName(b));
+        await runPrecondition(b.instruction.precondition, bInput, bPage, mem, stepLabel(b));
         try {
-          await b.instruction.act(page, mid, mem);
+          await b.instruction.act(bPage, bInput, mem);
         } catch (err) {
-          throw namingStep(err, b.name);
+          throw namingStep(err, stepLabel(b));
         }
       },
       resolve: (observed) => b.instruction.resolve(observed),
       // Only attach optional fields when B actually has them - exactOptionalPropertyTypes
-      // forbids assigning `undefined` to an optional property directly.
-      ...(bObserve ? { observe: (page, mem) => bObserve(page, mem) } : {}),
+      // forbids assigning `undefined` to an optional property directly. The run loop passes the pages it plays on; B
+      // observes on its pane's.
+      ...(bObserve ? { observe: async (page, mem) => bObserve(await stepPage(b, page, mem), mem) } : {}),
       ...(bVerify ? { verify: bVerify } : {}),
     },
   };
   mark(connected, "__wgLastLeaf", lastLeaf(b));
+  // The joined step lands where B does: in B's pane.
+  const bPane = paneOf(b);
+  if (bPane) mark(connected, "__waygraphPane", bPane);
   const bExpect = expectOf(b);
   if (bExpect) mark(connected, "__waygraphExpect", bExpect);
   return connected;

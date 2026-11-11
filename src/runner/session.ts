@@ -1,4 +1,5 @@
 // The browser a run plays in: launched with the project's extensions, sized for the mode and an optional video.
+import { closePanes } from "../engine/run/pane-page.js";
 import { setTimeout as sleep } from "node:timers/promises";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -126,6 +127,8 @@ async function voiceOverOnto(video: string, voice: VoiceOver): Promise<void> {
 
 /** A fresh session between episodes: no cookies, no storage, back on the base URL (so the page itself looks fresh too). */
 export async function resetPage(session: PlaySession): Promise<void> {
+  // A flow's panes go with its session: the next episode opens its own.
+  await closePanes(session.page);
   await session.context.clearCookies().catch(ignorePageGone);
   await session.page
     .evaluate(() => {

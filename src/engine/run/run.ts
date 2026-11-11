@@ -12,6 +12,7 @@ import { readBlocksFor, readCheckpoint } from "../read/read-block.js";
 import { blockKindOf } from "../block/kind.js";
 import { runPrecondition, runVerify } from "../trait/verify.js";
 import { namingStep } from "./act-error.js";
+import { paneName, stepInput, stepLabel, stepLanded, stepPage } from "./pane-page.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { SomeBlock } from "../block/some-block.js";
 
@@ -100,24 +101,30 @@ async function playGraph(
         throw new WaygraphError("WG_RUNGRAPH_MAX_STEPS", MSG_RUNGRAPH_MAX_STEPS(maxSteps));
       }
 
-      if (!isConnected(current)) stepStarted(current.name, blockKindOf(current), input.__state, (current as { __waygraphCleanup?: boolean }).__waygraphCleanup);
-      await runPrecondition(current.instruction.precondition, input, page, mem, current.name);
+      // A step in a pane plays on its pane's page, from where that pane last landed; a joined step picks for its own.
+      const actPage = isConnected(current) ? page : await stepPage(current, page, mem);
+      const actInput = isConnected(current) ? input : stepInput(current, page, input);
+      if (!isConnected(current)) stepStarted(current.name, blockKindOf(current), actInput.__state, (current as { __waygraphCleanup?: boolean }).__waygraphCleanup, paneName(current));
+      await runPrecondition(current.instruction.precondition, actInput, actPage, mem, stepLabel(current));
       try {
-        await current.instruction.act(page, input, mem);
+        await current.instruction.act(actPage, actInput, mem);
       } catch (err) {
         throw namingStep(err, current.name);
       }
+      // It lands on its last step's page: observe, verify, expect, read and picture that one.
+      const landedPage = await stepPage(current, page, mem);
       const observed = current.instruction.observe
-        ? await current.instruction.observe(page, mem)
+        ? await current.instruction.observe(landedPage, mem)
         : undefined;
       const checkpoint = await current.instruction.resolve(observed);
+      stepLanded(current, page, checkpoint);
 
-      await runVerify(current.instruction.verify, checkpoint, page, mem, current.name);
-      await runExpect(current, checkpoint, page, mem, lastLeaf(current));
-      await readLanding(page, mem, checkpoint.__state);
+      await runVerify(current.instruction.verify, checkpoint, landedPage, mem, stepLabel(current));
+      await runExpect(current, checkpoint, landedPage, mem, lastLeaf(current));
+      await readLanding(landedPage, mem, checkpoint.__state);
       // Last in the step: what the page looks like once it's done, when the Block asks.
-      await screenshotStep(page, current, checkpoint.__state, lastLeaf(current));
-      stepEnded(lastLeaf(current), checkpoint.__state, addressOf(page));
+      await screenshotStep(landedPage, current, checkpoint.__state, lastLeaf(current));
+      stepEnded(lastLeaf(current), checkpoint.__state, addressOf(landedPage));
 
       const next = current.next?.(checkpoint);
       if (!next) {
@@ -166,6 +173,11 @@ export interface RunGraphOptions {
    * there, not at the start.
    */
   from?: Checkpoint<string>;
+  /**
+   * Leave the flow's panes open when it ends: a runner that plays a flow one step at a time closes them itself, when the
+   * flow is done.
+   */
+  keepPanes?: boolean;
 }
 
 

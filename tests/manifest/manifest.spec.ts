@@ -56,3 +56,15 @@ test("each flow carries its labels from the config's labels", async () => {
   expect(m.flows.find((f) => f.exportName === "shopFlow")?.labels).toEqual(["smoke"]);
   expect(m.flows.find((f) => f.exportName === "cartBulkFlow")?.labels).toEqual([]);
 });
+
+test("a flow with panes lists them, and each step's pane", async () => {
+  const m = await buildManifest(join(examples, "saucedemo"));
+  const two = m.flows.find((f) => f.exportName === "twoShoppersFlow")!;
+  expect(two.panes).toEqual([
+    { name: "standard", as: "standard-user" },
+    { name: "problem", as: "problem-user" },
+  ]);
+  expect(two.stepPanes).toEqual(["standard", "standard", "problem", "standard"]);
+  expect(m.accounts).toEqual(expect.arrayContaining(["problem-user", "standard-user"]));
+  expect(m.flows.find((f) => f.exportName === "shopFlow")!.panes).toBeUndefined();
+});

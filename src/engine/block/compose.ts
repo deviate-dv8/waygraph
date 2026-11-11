@@ -1,4 +1,6 @@
 // Several Blocks as one: composeBlock groups steps; fastForwardComposeBlock plays a group at blitz speed in a demo.
+import { paneOf } from "../run/pane-page.js";
+import { mark } from "./mark.js";
 import type { BlockInfo } from "../flow/flow.js";
 import { joinSteps } from "../run/connect.js";
 import type { Block } from "./block.js";
@@ -134,7 +136,7 @@ export function composeSteps(name: string, steps: readonly SomeBlock[]): SomeCom
     throw new WaygraphError("WG_COMPOSE_EMPTY", MSG_COMPOSE_EMPTY(name));
   }
   const chain = steps.reduce((a, b) => joinSteps(a, b));
-  return {
+  const composed: SomeComposedBlock = {
     ...chain,
     name,
     steps: () => steps.map((b) => ({ name: b.name, block: b, ...(b.routes ? { routes: b.routes } : {}) })),
@@ -145,6 +147,10 @@ export function composeSteps(name: string, steps: readonly SomeBlock[]): SomeCom
       return composeSteps(name, replaceBlock(steps, step, (b) => modVerify(b, nameOrIndex, newCheck)));
     },
   };
+  // It lands where its last step does: in that step's pane, when the flow has panes.
+  const pane = paneOf(chain);
+  if (pane) mark(composed, "__waygraphPane", pane);
+  return composed;
 }
 
 
@@ -284,5 +290,7 @@ export function fastForwardSteps(name: string, steps: readonly SomeBlock[]): Som
       return fastForwardSteps(name, replaceBlock(steps, step, (b) => modVerify(b, nameOrIndex, newCheck)));
     },
   };
+  const pane = paneOf(base);
+  if (pane) mark(ff, "__waygraphPane", pane);
   return ff;
 }

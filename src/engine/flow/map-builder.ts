@@ -20,8 +20,6 @@ import {
 } from "../errors.js";
 import type { MemKey, MemPage } from "../mem/mem.js";
 import type { Expected } from "../trait/trait.js";
-import type { DemoPace } from "../stub/pace.js";
-import type { HighlightStyleDefaults } from "../stub/ring.js";
 import type { Flow, FlowSettings } from "./flow.js";
 import type { Steps } from "./map-part.js";
 import type { ExpectList } from "../block/kinds/expect.js";
@@ -29,10 +27,12 @@ import type { BrowserContext, Page } from "@playwright/test";
 import type { RunGraphOptions } from "../run/run.js";
 import type { EngineConfig } from "../config.js";
 import { buildBranchedFlow } from "./map-branch.js";
-import { signInStep, type Account } from "./account.js";
+import { signInStep } from "./account.js";
 import { inWorld, restoreWorld, type World } from "./world.js";
 import { asCleanup, settling, requiring, withoutRequire, settingInput, settingKey, stepExpect, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore } from "./map-steps.js";
-import type { Device } from "./device.js";
+import type { MapFlowOpts } from "./map-options.js";
+import { checkPanes, inPane, installPanes } from "./panes.js";
+import { paneOf } from "../run/pane-page.js";
 
 
 /**
@@ -40,82 +40,6 @@ import type { Device } from "./device.js";
  * function, not the Engine class, so engine.ts and map-builder.ts don't import each other.
  */
 export type BuildFlowFn = (steps: readonly SomeBlock[], settings: FlowSettings) => Flow<Checkpoint<string>>;
-
-/** Flow-level settings for `engine.map({ … })`: `memStub`, `sessionReset`, `expectedFailure`, `demoPace`, `highlightStyle`, `homeOrigin`. */
-export interface MapBuilderOptions {
-  /**
-   * This project's own origin (e.g. `"https://app.example.com"`) - enables
-   * `.gotoPage()`/`.gotoExternal()`'s origin check against a Block's static
-   * `url`. Omit to skip that check entirely (still fully kind-checked either
-   * way; only the internal/external origin distinction is opt-in).
-   */
-  homeOrigin?: string;
-  /** Fill missing `requires` keys from `registerMemStub` when the flow runs. */
-  memStub?: boolean;
-  /**
-   * `false`: run each step's `verify` but none of its expectations (the Blocks' `expect` and the steps'): a setup flow
-   * nobody is judging. `--no-expect` does the same for one run.
-   */
-  expect?: false;
-  /**
-   * This flow wants a fresh browser session (cookies and storage cleared) when it runs after another one, in a CLI chain
-   * (`waygraph run "a then b"`) or nested with `.flow(sub)`: a second user signing in, a logged-out check.
-   */
-  sessionReset?: boolean;
-  /** Marks a flow that is supposed to throw, with the reason shown in the demo. */
-  expectedFailure?: string;
-  /** Default demo pace for the whole flow. */
-  demoPace?: DemoPace;
-  /** Default ring tone, size and weight for the whole flow. */
-  highlightStyle?: HighlightStyleDefaults;
-  /**
-   * Run as this account (`account(name, { signIn })`): the flow starts signed in, from the session kept since the
-   * account's first sign-in in this process, or by signing in now.
-   * @example engine.map({ as: Planner }).gotoPage(NavEquipmentBlock)
-   */
-  as?: Account;
-  /**
-   * The MemKey this flow takes as its input: one flow for many cases. Its first step requires it; `--input`
-   * (JSON or `@file`) gives it on the command line - an array plays the flow once per item - as do `--data`, a mem stub
-   * and `.flow(sub, { input })`.
-   * @example engine.map({ input: ApiCase }).gotoExternal(NavHoppscotchRestBlock).method(LoadCaseBlock)…
-   */
-  input?: MemKey<unknown>;
-  /**
-   * The device this flow plays on, over the config's `device` (default desktop): `"mobile"`, `"tablet"`, or its parts
-   * (`{ preset: "mobile", orientation: "landscape" }`, `{ width: 1600, height: 900 }`). `run`, `demo` and `waygraph test
-   * --flows` play it at that size; a phone or tablet layout and touch come from the browser the run started with (the
-   * config's `device`), since a browser can't switch them midway.
-   * @example engine.map({ device: { preset: "tablet", orientation: "landscape" } })
-   */
-  device?: Device;
-  /**
-   * Under `waygraph test --flows`, run this flow alone, after every other flow: it changes data others read (a bulk
-   * delete, a settings change), or it needs the app to itself.
-   */
-  exclusive?: boolean;
-  /**
-   * The time zone the flow runs in (an IANA name): the page's clock and dates follow it; put back when the flow ends.
-   * Chromium.
-   * @example engine.map({ timezone: "Asia/Tokyo" })
-   */
-  timezone?: string;
-  /**
-   * The network the flow runs on: `throttle` (`"offline"`, `"slow-3g"`, `"fast-3g"`, or latency and throughput;
-   * Chromium) and `faults` (requests that fail or are slow on purpose). Applied when the flow starts, put back when it
-   * ends, pass or fail.
-   * @example engine.map({ network: { faults: [{ url: "**\/api/orders", status: 500 }] } })
-   */
-  network?: World["network"];
-}
-
-/** What `.flow()` takes for the sub-flow it runs inline. */
-export interface MapFlowOpts {
-  /** Clear cookies and storage right before the sub-flow, e.g. to start a second user fresh. Defaults to the sub-flow's own `sessionReset`. */
-  reset?: boolean;
-  /** The sub-flow's input (it declares `map({ input })`): set right before its first step. */
-  input?: unknown;
-}
 
 /** What a MapBuilder holds: its steps so far, an open fast-forward window, and the keys a `.set()` gave. */
 interface BuilderState {
@@ -128,7 +52,12 @@ interface BuilderState {
   // next non-flagged step (or where the flow ends, or at .branch()) instead of demanding a matching .ffEnd().
   readonly ff: { readonly name: string; readonly buffer: readonly SomeBlock[]; readonly auto: boolean } | null;
   readonly provided: readonly MemKey<unknown>[];
+  /** The pane the next steps act in (`.in()`), in a flow with panes. */
+  readonly pane?: string | undefined;
 }
+
+/** Where each pane of a flow is, by name: what `.in()` checks the steps after it against. */
+export type PaneAt = { readonly [pane: string]: Checkpoint<string> };
 
 /** `when` only on a step that stays on its Checkpoint: a skipped step ends where it started. */
 export type WhenOpt<Out, NextOut> = [NextOut] extends [Out] ? { when?: (mem: MemPage) => boolean } : { when?: never };
@@ -151,7 +80,12 @@ export type WhenOpt<Out, NextOut> = [NextOut] extends [Out] ? { when?: (mem: Mem
  * The chain is the flow: there is no closing call. A MapBuilder runs, lists its Blocks, nests (`.flow(sub)`) and
  * branches as a {@link Flow}, built from its steps the first time it's used that way.
  */
-export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
+export class MapBuilder<
+  Out extends Checkpoint<string>,
+  Names extends string = never,
+  P extends PaneAt = Record<never, never>,
+  A extends string = never,
+> implements Flow<Out> {
   // The Flow these steps make, built the first time it's used: the chain is immutable, so it is built once.
   private built: Flow<Out> | undefined;
 
@@ -159,6 +93,11 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
 
   /** @internal - use `engine.map()` or the standalone `map()` export. */
   static begin(build: BuildFlowFn, settings: FlowSettings, homeOrigin: string | undefined): MapBuilder<Start> {
+    if (settings.panes) {
+      checkPanes(settings.panes);
+      installPanes();
+      if (settings.as) throw new WaygraphError("WG_PANES", "map({ as, panes }): each pane says who is signed in there (panes: { name: { as } }), not the flow");
+    }
     // A flow as an account starts signed in: its first step restores (or makes) that account's session.
     return new MapBuilder<Start>({ build, settings, chain: settings.as ? [signInStep(settings.as)] : [], homeOrigin, ff: null, provided: [] });
   }
@@ -173,8 +112,23 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
     return { blocks: done.at.chain, cleanup: done.at.settings.finally ?? [], provided: done.at.provided };
   }
 
-  private next<Next extends Checkpoint<string>>(change: Partial<BuilderState>): MapBuilder<Next> {
-    return new MapBuilder<Next>({ ...this.at, ...change });
+  private next<Next extends Checkpoint<string>>(change: Partial<BuilderState>): MapBuilder<Next, Names, P, A> {
+    return new MapBuilder<Next, Names, P, A>({ ...this.at, ...change });
+  }
+
+  /**
+   * The steps after it act in `pane` (one of `map({ panes })`), until the next `.in()`: on that pane's page, from where
+   * it last landed. Each pane keeps its own page, so a step is checked against where its pane is.
+   * @example engine.map({ panes: { planner: { as: Planner }, admin: { as: Admin } } })
+   *   .in("planner").gotoPage(Registry.nav).method(Registry.do.requestRepair)
+   *   .in("admin").gotoPage(Requests.nav).method(Requests.do.approve)
+   */
+  in<K extends Names>(pane: K): MapBuilder<K extends keyof P ? P[K] : Start, Names, Omit<P, A> & Record<A, Out>, K> {
+    const panes = this.at.settings.panes;
+    if (!panes?.[pane]) {
+      throw new WaygraphError("WG_PANES", `.in("${pane}"): ${panes ? `this flow's panes are ${Object.keys(panes).join(", ")}` : "this flow has no panes: declare them with map({ panes })"}`);
+    }
+    return new MapBuilder({ ...this.at, pane });
   }
 
   /**
@@ -182,7 +136,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
    * opaque `fastForwardComposeBlock` (blitz theater). Kind/salt checks still
    * run on each inner step as it is added.
    */
-  ffStart(name?: string): MapBuilder<Out> {
+  ffStart(name?: string): MapBuilder<Out, Names, P, A> {
     if (this.at.ff) {
       throw new WaygraphError("WG_MAP_FF_ALREADY_OPEN", MSG_MAP_FF_ALREADY_OPEN(this.at.ff.name));
     }
@@ -194,7 +148,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
    * Close the current fast-forward window and append one FFCompose step.
    * Throws if empty or if {@link ffStart} was never opened.
    */
-  ffEnd(): MapBuilder<Out> {
+  ffEnd(): MapBuilder<Out, Names, P, A> {
     if (!this.at.ff) {
       throw new WaygraphError("WG_MAP_FF_NOT_OPEN", MSG_MAP_FF_NOT_OPEN);
     }
@@ -202,7 +156,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
   }
 
   /** Shared by the explicit {@link ffEnd} and the implicit close a `{ ff: true }` step flag triggers. */
-  private closeFf(): MapBuilder<Out> {
+  private closeFf(): MapBuilder<Out, Names, P, A> {
     const ff = this.at.ff;
     if (!ff) return this;
     if (ff.buffer.length === 0) {
@@ -213,7 +167,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
   }
 
   /** The chain with an auto-opened `{ ff: true }` window closed; an explicit `.ffStart()` left open throws. */
-  private closed(): MapBuilder<Out> {
+  private closed(): MapBuilder<Out, Names, P, A> {
     if (this.at.ff && !this.at.ff.auto) {
       throw new WaygraphError("WG_MAP_FF_NOT_CLOSED", MSG_MAP_FF_NOT_CLOSED(this.at.ff.name));
     }
@@ -229,8 +183,8 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
    * (stays open until its own `.ffEnd()`, regardless of whether a step passed `{ ff: true }`).
    * A key an earlier `.set()` gave is no longer one this step requires from the run.
    */
-  private appendStep<NextOut extends Checkpoint<string>>(given: SomeBlock, ff?: boolean): MapBuilder<NextOut> {
-    const keyed = this.at.provided.reduce((b, key) => withoutRequire(b, key), given);
+  private appendStep<NextOut extends Checkpoint<string>>(given: SomeBlock, ff?: boolean): MapBuilder<NextOut, Names, P, A> {
+    const keyed = this.inItsPane(this.at.provided.reduce((b, key) => withoutRequire(b, key), given));
     // map({ expect: false }): every step's verify, none of its expectations.
     const block = this.at.settings.expect === false ? stepExpect(keyed, false) : keyed;
     const ffWin = this.at.ff;
@@ -244,6 +198,16 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
     return this.next({ chain: [...this.at.chain, block] });
   }
 
+  /** In a flow with panes, the step plays in the pane `.in()` named (a sub-flow's steps that have their own stay there). */
+  private inItsPane(block: SomeBlock): SomeBlock {
+    const panes = this.at.settings.panes;
+    if (!panes || paneOf(block)) return block;
+    if (!this.at.pane) {
+      throw new WaygraphError("WG_PANES", `${block.name}: this flow has panes (${Object.keys(panes).join(", ")}); say which one the step acts in with .in(pane) first`);
+    }
+    return inPane(block, this.at.pane, panes);
+  }
+
   /**
    * Appends an internal navigation/page-arrival step - requires a Block from
    * `defineNavBlock`/`defineMemNavBlock`/`definePageBlock`. Throws if given
@@ -254,7 +218,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
   gotoPage<NextOut extends Checkpoint<string>, Lands extends NextOut = NextOut>(
     block: (NavBlock<NextOut> | PageBlock<NextOut>) & { name: string },
     opts?: MapStepOpts<Lands>,
-  ): MapBuilder<Lands> {
+  ): MapBuilder<Lands, Names, P, A> {
     assertMapKind(block, ["nav", "page"], "gotoPage");
     assertMapOrigin(block, this.at.homeOrigin, "internal", "gotoPage");
     return this.appendStep(stepExpect(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.expect), opts?.ff);
@@ -270,7 +234,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
   gotoExternal<NextOut extends Checkpoint<string>, Lands extends NextOut = NextOut>(
     block: (NavBlock<NextOut> | PageBlock<NextOut>) & { name: string },
     opts?: MapStepOpts<Lands>,
-  ): MapBuilder<Lands> {
+  ): MapBuilder<Lands, Names, P, A> {
     assertMapKind(block, ["nav", "page"], "gotoExternal");
     assertMapOrigin(block, this.at.homeOrigin, "external", "gotoExternal");
     return this.appendStep(stepExpect(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.expect), opts?.ff);
@@ -286,7 +250,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
   method<NextOut extends Checkpoint<string>, Lands extends NextOut = NextOut>(
     block: MethodBlock<Out, NextOut> & { name: string },
     opts?: Omit<MapStepOpts<Lands>, "when"> & WhenOpt<Out, NextOut>,
-  ): MapBuilder<Lands> {
+  ): MapBuilder<Lands, Names, P, A> {
     if (mapKindOf(block) === "expect") {
       throw new WaygraphError("WG_MAP_WRONG_KIND", MSG_MAP_METHOD_GOT_EXPECT(block.name));
     }
@@ -300,7 +264,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
    * longer one the run must supply.
    * @example .set(ShopKeys.search, (mem) => mem.get(ShopKeys.selectedItem).name).method(TypeSearchBlock)
    */
-  set<T>(key: MemKey<T>, value: Expected<T>): MapBuilder<Out> {
+  set<T>(key: MemKey<T>, value: Expected<T>): MapBuilder<Out, Names, P, A> {
     const next = this.appendStep<Out>(settingKey(key, value));
     return next.next({ provided: [...next.at.provided.filter((k) => k !== key), key] });
   }
@@ -310,7 +274,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
    * step - a part from another Checkpoint doesn't fit.
    * @example const addToCart = steps(Inventory, (m) => m.method(AddItemBlock, { expect: [ExpectBadgeBlock] })); map().gotoPage(NavInventoryBlock).steps(addToCart)
    */
-  steps<NextOut extends Checkpoint<string>>(part: Steps<Out, NextOut>): MapBuilder<NextOut> {
+  steps<NextOut extends Checkpoint<string>>(part: Steps<Out, NextOut>): MapBuilder<NextOut, Names, P, A> {
     let next = this.appendStep<NextOut>(part.blocks[0] as SomeBlock);
     for (const block of part.blocks.slice(1)) next = next.appendStep<NextOut>(block);
     next = next.next({ provided: [...new Set([...next.at.provided, ...part.provided])] });
@@ -323,7 +287,7 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
    * right before the sub-flow's first step; `expect: [...]` is what this flow expects once the sub-flow is done (on its
    * last step).
    */
-  flow<NextOut extends Checkpoint<string>>(sub: Flow<NextOut>, opts?: MapFlowOpts & { expect?: ExpectList<NextOut> }): MapBuilder<NextOut> {
+  flow<NextOut extends Checkpoint<string>>(sub: Flow<NextOut>, opts?: MapFlowOpts & { expect?: ExpectList<NextOut> }): MapBuilder<NextOut, Names, P, A> {
     // `sub` was checked step by step when it was built, so its steps play here as they are, ending on its NextOut.
     const steps: SomeBlock[] = [];
     if (opts && "input" in opts) {
@@ -355,12 +319,12 @@ export class MapBuilder<Out extends Checkpoint<string>> implements Flow<Out> {
    * given. Doesn't move the flow: the next step still starts where the last one landed.
    * @example engine.map().gotoPage(NavSignupBlock).method(SubmitSignupBlock).finally(DeleteTestUserApiBlock)
    */
-  finally(block: SomeDefinedBlock): MapBuilder<Out> {
+  finally(block: SomeDefinedBlock): MapBuilder<Out, Names, P, A> {
     assertMapSalt(block, ["method", "api"], "finally");
     return this.withCleanup([asCleanup(block)]);
   }
 
-  private withCleanup<Next extends Checkpoint<string>>(cleanup: readonly SomeBlock[]): MapBuilder<Next> {
+  private withCleanup<Next extends Checkpoint<string>>(cleanup: readonly SomeBlock[]): MapBuilder<Next, Names, P, A> {
     return this.next({ settings: { ...this.at.settings, finally: [...(this.at.settings.finally ?? []), ...cleanup] } });
   }
 

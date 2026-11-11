@@ -89,7 +89,7 @@ the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by 
 | Something the demo shows before / after a step | `demo/stepper/before.ts` / `after.ts`, called from `stepper.ts` |
 | A CLI subcommand | `cli/commands/<name>.ts` exporting `<name>Case(args)` with its flags in an option table read by `parseCommand` (`cli/args.ts`), one `case` in `cli/cli.ts`, its lines in `cli/usage.ts` |
 | A CLI flag for run / demo | a row in `RUN_OPTIONS` (`cli/flags.ts`: parsed and printed in the help from there), the variable it sets in `engine/env.ts`'s registry, and `runner/options.ts` reads it |
-| A flow setting (`map({ … })`) | `MapBuilderOptions` in `engine/flow/map-builder.ts`, `FlowSettings` / `withSettings` in `engine/flow/flow.ts`, the field on `Flow` |
+| A flow setting (`map({ … })`) | `MapBuilderOptions` in `engine/flow/map-options.ts`, `FlowSettings` / `withSettings` in `engine/flow/flow.ts`, the field on `Flow` |
 | A `define*Block` helper | `engine/block/kinds/<kind>.ts`; its step method in `map-builder.ts` if it can appear in a flow |
 | A `Trait` | `engine/trait/trait.ts` (+ the `Trait` object + an `index.ts` export) |
 | A session command (`send`, `highlight`, ...) | `cli/commands/session-ops.ts` + `live/auto-session/auto-session.ts` + an IPC op in `live/auto-session/ipc.ts` |

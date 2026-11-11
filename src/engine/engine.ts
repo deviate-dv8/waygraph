@@ -5,7 +5,8 @@ import type { Start } from "./checkpoint/checkpoint.js";
 import type { EngineConfig } from "./config.js";
 import { buildFlow, withSettings } from "./flow/flow.js";
 import { MapBuilder } from "./flow/map-builder.js";
-import type { MapBuilderOptions } from "./flow/map-builder.js";
+import type { MapBuilderOptions } from "./flow/map-options.js";
+import type { PaneOptions } from "./flow/panes.js";
 
 /**
  * Holds engine-level configuration shared across every flow defined from it -
@@ -34,6 +35,8 @@ export class Engine {
    *   .gotoPage(NavHomeBlock)
    *   .gotoExternal(NavMailpitBlock)
    */
+  map<N extends string>(options: MapBuilderOptions & { panes: { readonly [K in N]: PaneOptions } }): MapBuilder<Start, N>;
+  map(options?: MapBuilderOptions): MapBuilder<Start>;
   map(options?: MapBuilderOptions): MapBuilder<Start> {
     // The engine's memStub is every flow's default; a map() may still turn it off.
     const { homeOrigin, ...settings } = { ...(this.config.memStub ? { memStub: true } : {}), ...options };
@@ -47,6 +50,8 @@ export class Engine {
  * shared `headless`/`slowMo` across several flows).
  * @example const flow = map({ homeOrigin: "https://app.example.com" }).gotoPage(NavHomeBlock);
  */
+export function map<N extends string>(options: MapBuilderOptions & EngineConfig & { panes: { readonly [K in N]: PaneOptions } }): MapBuilder<Start, N>;
+export function map(options?: MapBuilderOptions & EngineConfig): MapBuilder<Start>;
 export function map(options?: MapBuilderOptions & EngineConfig): MapBuilder<Start> {
   return new Engine(options).map(options);
 }

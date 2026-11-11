@@ -1,6 +1,7 @@
 // The one loop every mode plays: each step goes through the engine, with the mode's hooks around it.
 import { Start, type Checkpoint } from "../engine/checkpoint/checkpoint.js";
 import { buildFlow } from "../engine/flow/flow.js";
+import { closePanes } from "../engine/run/pane-page.js";
 import { resetPage } from "./session.js";
 import type { Mode, PlayOutcome, PlaySession, PlayStep } from "./mode.js";
 
@@ -13,7 +14,8 @@ function episodeStart(steps: readonly PlayStep[], index: number): number {
 /** Runs one Block through the engine, on the session's page, with its own flow's config, from where the last step landed. */
 async function runStep(step: PlayStep, session: PlaySession, from: Checkpoint<string>): Promise<Checkpoint<string>> {
   const flow = buildFlow([step.block], step.config);
-  const { result } = await flow.run(session.context, session.mem, { page: session.page, closeOnFinish: false, from });
+  // The flow's panes stay open between its steps; they close when the run resets or ends.
+  const { result } = await flow.run(session.context, session.mem, { page: session.page, closeOnFinish: false, from, keepPanes: true });
   return result;
 }
 
@@ -94,6 +96,7 @@ export async function playSteps(steps: readonly PlayStep[], session: PlaySession
     await mode.after?.(i, result, Date.now() - startedAt);
   }
   if (cleanupFailures.length) outcome = { ...outcome, cleanupFailures };
+  await closePanes(session.page);
   await mode.end?.(outcome);
   return outcome;
 }

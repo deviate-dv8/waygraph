@@ -19,6 +19,8 @@ import { siteTree, type SiteTree } from "./site-map.js";
 import { loadLayouts, refreshLayoutRoutes } from "./layouts.js";
 import { givenTo } from "../engine/block/access.js";
 import { allAccounts } from "../engine/flow/account.js";
+import { paneOf } from "../engine/run/pane-page.js";
+import type { Panes } from "../engine/flow/panes.js";
 import { layoutState } from "../engine/block/kinds/layout.js";
 
 export const MANIFEST_VERSION = 2;
@@ -88,6 +90,10 @@ export interface ManifestFlow {
   /** What each step expects (the Block's and the step's own), in words: one list per entry of `steps`. */
   stepExpects: string[][];
   settings: { memStub?: true; expectedFailure?: string; sessionReset?: true; demoPace?: unknown };
+  /** Its panes (`map({ panes })`): who is signed in in each, its device, the pane whose context it shares. */
+  panes?: { name: string; as?: string; device?: unknown; with?: string }[];
+  /** The pane each entry of `steps` plays in, in a flow with panes. */
+  stepPanes?: (string | null)[];
 }
 
 /** A Read Block: which Checkpoints it reads and the shape of what it returns. */
@@ -172,6 +178,21 @@ function useCaseOf(file: string): ManifestFlow["useCase"] {
   return { path: folders, outcome: parts[parts.length - 1]!.replace(/\.flow\.ts$/, "") };
 }
 
+/** A flow's panes and each step's pane, when it has panes. */
+function panesOf(steps: { block: SomeBlock }[]): Pick<ManifestFlow, "panes" | "stepPanes"> {
+  const panes = steps.map((s) => paneOf(s.block)).find(Boolean)?.panes as Panes | undefined;
+  if (!panes) return {};
+  return {
+    panes: Object.entries(panes).map(([name, p]) => ({
+      name,
+      ...(p.as ? { as: p.as.name } : {}),
+      ...(p.device !== undefined ? { device: p.device } : {}),
+      ...(p.with !== undefined ? { with: p.with } : {}),
+    })),
+    stepPanes: steps.map((s) => paneOf(s.block)?.name ?? null),
+  };
+}
+
 /** Builds the manifest from a scan. */
 export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
   const checkpoints = new Set<string>();
@@ -223,6 +244,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       useCase: useCaseOf(f.file),
       steps: flow.blocks().map((s) => s.name),
       stepExpects: flow.blocks().map((s) => describeExpectations(s.block)),
+      ...panesOf(flow.blocks()),
       settings: {
         ...(flow.memStub ? { memStub: true as const } : {}),
         ...(flow.expectedFailureReason ? { expectedFailure: flow.expectedFailureReason } : {}),
