@@ -11,6 +11,7 @@ import { markRoute } from "../../checkpoint/route.js";
 import type { Trait } from "../../trait/trait.js";
 import type { MemPage } from "../../mem/mem.js";
 import { defineReadBlock, type ReadBlock } from "../../read/read-block.js";
+import { registerInterrupts } from "../../run/interrupts.js";
 import type { ReadCtx } from "../../read/readers.js";
 import { readKeys, type PageRead, type PageReadKeys } from "../../read/read-keys.js";
 import type { Account } from "../../flow/account.js";
@@ -39,6 +40,13 @@ export interface LayoutOptions<G extends Record<string, LayoutLink>, D extends R
   read?: (ctx: ReadCtx) => R;
   /** The name run logs and `waygraph pilot read` give what it reads (`sidebar.links`); the layout's name unless given. */
   readAs?: string;
+  /**
+   * What can appear on any page it covers and get in the way (a cookie banner, a session warning), each handled where it
+   * shows up: `when` is the selector that shows it, `do` what to do. Whichever step is running isn't blocked, the run log
+   * says it fired, and the demo shows it.
+   * @example interrupts: { cookies: { when: "#cookie-banner", do: (page) => page.getByRole("button", { name: "Accept" }).click() } }
+   */
+  interrupts?: Record<string, { when: string; do: (page: Page) => Promise<void> }>;
   /** The pages it covers, when they aren't the ones under its folder (an app whose layout doesn't follow its addresses). */
   on?: readonly Checkpoint<string>[];
   /**
@@ -69,6 +77,8 @@ export interface Layout<G extends Record<string, LayoutLink>, D extends Record<s
   readonly on: readonly string[] | undefined;
   /** The button that shows its links, for a layout that hides them (`opens`). */
   readonly opens: string | undefined;
+  /** The names of its interrupts. */
+  readonly interrupts: readonly string[];
 }
 
 /** What a layout knows once layouts are loaded: the pages it covers, and the page above each. Shared by name. */
@@ -219,6 +229,15 @@ export function defineLayout<G extends Record<string, LayoutLink> = Record<never
     Object.entries(options.go ?? {}).map(([key, link]) => [key, accounts(link.for)]),
   );
   const state = layoutState(options.name);
+  registerInterrupts(
+    Object.entries(options.interrupts ?? {}).map(([name, i]) => ({
+      layout: options.name,
+      name,
+      when: i.when,
+      run: i.do,
+      covers: (checkpoint: string) => !state.loaded || state.covers.includes(checkpoint),
+    })),
+  );
   // Its Read reads the pages it covers once layouts are loaded (every page until then), for every copy of the layout.
   if (read) Object.defineProperty(read, "from", { get: () => (state.loaded ? state.covers : ["*"]), enumerable: true, configurable: true });
   const layout = {
@@ -231,6 +250,7 @@ export function defineLayout<G extends Record<string, LayoutLink> = Record<never
     access,
     on: options.on?.map((c) => c.__state),
     opens: options.opens,
+    interrupts: Object.keys(options.interrupts ?? {}),
   };
   mark(layout, "__waygraphLayout", true);
   return layout as unknown as Layout<G, D, R>;

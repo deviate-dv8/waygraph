@@ -11,7 +11,7 @@ import { logBannerDom, probeBanner } from "./banner-log.js";
 import { logDocks } from "./before.js";
 import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summarizeDevice } from "./demo-log.js";
 import { renderAfterStep } from "./panel-after.js";
-import { lastRead, takeReadChanges } from "./last-read.js";
+import { lastRead, takeInterrupts, takeReadChanges } from "./last-read.js";
 import { showOutcomeCard } from "./outcome.js";
 import { showSlides } from "./slides.js";
 import { expectationsFor, takeExpectResults, type ExpectResult } from "../../engine/run/expect.js";
@@ -32,7 +32,7 @@ export async function showAfter(ctx: StepperContext, view: StepView, result: Che
   const applied = after ? await stage.applyPhase(after.phase) : { appliedTodo: { sync: "keep" as const }, appliedDevice: { sync: "keep" as const } };
   // A demo that leaves the checks out (demo.overlay.checks) shows neither the card nor rings on what was checked.
   const checks = !overlayHides("checks");
-  if (checks) await showOutcomeCard(ctx, expects, changes);
+  if (checks) await showOutcomeCard(ctx, expects, changes, takeInterrupts());
 
   await renderAfterStep(ctx.page, {
     index: view.index,

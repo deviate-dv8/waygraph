@@ -9,6 +9,8 @@ export interface OutcomeCard {
   changes: { key: string; from: string; to: string }[];
   /** Changes left out to keep the card short. */
   moreChanges: number;
+  /** What a layout handled while the step ran (a cookie banner closed). */
+  interrupts: string[];
 }
 
 export function showOutcome(card: OutcomeCard) {
@@ -63,14 +65,17 @@ export function showOutcome(card: OutcomeCard) {
         card.moreChanges > 0 ? __wgEl("div", { class: "text-2xs text-label-2 mt-0.5" }, "+" + card.moreChanges + " more in the step panel") : null,
       )
     : null;
+  const handled = card.interrupts.length
+    ? section("info", "Handled on the way", __wgEl("ul", { class: "flex flex-col gap-0.5 text-xs" }, card.interrupts.map((i) => __wgEl("li", {}, i))))
+    : null;
   const had = __wgById("wg-outcome");
-  if (!expects && !changes) {
+  if (!expects && !changes && !handled) {
     had?.remove();
     return;
   }
   // The card already up (a step before on this screen) gets the new rows in place: it stays, it doesn't slide in again.
   if (had) {
-    __wgSet(had, expects, changes);
+    __wgSet(had, expects, changes, handled);
     had.classList.add("wg-in");
     return;
   }
@@ -79,6 +84,7 @@ export function showOutcome(card: OutcomeCard) {
     { id: "wg-outcome", class: "material rounded-panel px-3 py-2 flex flex-col gap-2 max-w-[min(440px,92vw)]", attrs: { "data-wg-ui": "1" } },
     expects,
     changes,
+    handled,
   );
   __wgAdd(el);
   requestAnimationFrame(() => el.classList.add("wg-in"));

@@ -177,6 +177,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
 - **Flows are the tests.** `waygraph test --flows` runs every flow as a Playwright test (workers, retries, video,
   reports); `map({ device })` plays one on a device (`"mobile"`, `{ preset: "tablet", orientation: "landscape" }`; the config's `device` is every flow's default), `map({ exclusive: true })` runs one alone and last. A project-written batch
   runner (parallelism, retries, "run these alone", a verdict file) is a smell. Write a spec only for what a flow can't say.
+- **What can pop up on any page is a layout's interrupt**, never a step in a flow: `defineLayout({ interrupts: { cookies: { when: "#cookie-banner", do: (page) => page.getByRole("button", { name: "Accept" }).click() } } })`. It is handled wherever it shows up while a step runs; the run log and the demo say so.
 - **Every page has a `read`.** A page's `do` says what you can do there; its `read` says what it shows, as
   typed data: in the run log after every step that lands there, from `waygraph auto read` for an agent, and for a test
   without DOM queries. It lives on the page's `definePageBlock` (`read: (ctx) => ({ title: ctx.page.text(Sel.title) })`, types

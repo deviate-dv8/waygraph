@@ -16,13 +16,14 @@ const quiet = () => envFlag("WAYGRAPH_JSON");
 const MAX_CHANGES = 5;
 
 /** How the step went, on a card that shows whether the panel is open: its expectations ticked in turn, then what changed. */
-export async function showOutcomeCard(ctx: StepperContext, expects: readonly ExpectResult[], changes: readonly ReadChange[]): Promise<void> {
+export async function showOutcomeCard(ctx: StepperContext, expects: readonly ExpectResult[], changes: readonly ReadChange[], interrupts: readonly string[] = []): Promise<void> {
   if (!quiet()) {
     for (const e of expects) demoLog(`  expected ${e.ok ? "ok" : "FAILED"}: ${e.text}${e.ok || !e.saw ? "" : ` (saw ${e.saw})`}`);
+    for (const i of interrupts) demoLog(`  handled ${i}`);
     for (const c of changes) demoLog(`  now shows ${c.key}: ${c.from} -> ${c.to}`);
   }
   // A step with nothing to say takes the last step's card away; one with something replaces it in place.
-  if (expects.length === 0 && changes.length === 0) {
+  if (expects.length === 0 && changes.length === 0 && interrupts.length === 0) {
     await outcomePiece(ctx.page).set(ctx.page, undefined);
     return;
   }
@@ -30,6 +31,7 @@ export async function showOutcomeCard(ctx: StepperContext, expects: readonly Exp
     expects: expects.map((e) => ({ text: e.text, ok: e.ok, ...(e.saw ? { saw: e.saw } : {}) })),
     changes: changes.slice(0, MAX_CHANGES),
     moreChanges: Math.max(0, changes.length - MAX_CHANGES),
+    interrupts: [...interrupts],
   };
   await ctx.page.evaluate(showOutcome, card).catch(ignorePageGone);
   // A page load before the next step brings it back, every row ticked.

@@ -13,6 +13,7 @@ import { blockKindOf } from "../block/kind.js";
 import { runPrecondition, runVerify } from "../trait/verify.js";
 import { namingStep } from "./act-error.js";
 import { paneName, stepInput, stepLabel, stepLanded, stepPage } from "./pane-page.js";
+import { syncInterrupts } from "./interrupts.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { SomeBlock } from "../block/some-block.js";
 
@@ -105,6 +106,7 @@ async function playGraph(
       const actPage = isConnected(current) ? page : await stepPage(current, page, mem);
       const actInput = isConnected(current) ? input : stepInput(current, page, input);
       if (!isConnected(current)) stepStarted(current.name, blockKindOf(current), actInput.__state, (current as { __waygraphCleanup?: boolean }).__waygraphCleanup, paneName(current));
+      await syncInterrupts(actPage, actInput.__state);
       await runPrecondition(current.instruction.precondition, actInput, actPage, mem, stepLabel(current));
       try {
         await current.instruction.act(actPage, actInput, mem);

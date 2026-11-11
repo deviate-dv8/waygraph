@@ -39,6 +39,24 @@ A layout is a hub like a Page Block, not a step of its own:
 - `Sidebar.do.<name>` are Methods (`() => Block`, lazy, as a page's `do` is): `.method(Sidebar.do.signOut)`.
 - `read` is what the layout shows on every page it covers (a reader per field, as a page's `read`); `Sidebar.read.links` is its typed key. `readAs` names it in the run log; the layout's name by default.
 
+## Interrupts: what appears and gets in the way
+
+A cookie banner, a "your session expires" warning, a survey: they show up on any page of the layout, at any moment, and
+cover what a step is about to click. A layout names each and what to do about it:
+
+```ts
+export const Shell = defineLayout({
+  name: "shell",
+  interrupts: {
+    cookies: { when: "#cookie-banner", do: (page) => page.getByRole("button", { name: "Accept" }).click() },
+  },
+});
+```
+
+While a step runs on a page the layout covers, whichever step is running isn't blocked: when `when` shows, `do` runs and
+the step goes on (Playwright's locator handlers, installed per page). The run log gets an `interrupt` event, and the demo's
+card after the step says "Handled on the way: shell: cookies". It is not a step and not a failure; a flow never mentions it.
+
 ## What it covers
 
 A layout covers the pages whose Nav or Page Block is in its folder or below: the same pages the framework's layout

@@ -16,6 +16,8 @@ export type RunEvent =
   | { type: "step:error"; runId: string; at: number; index: number; block: string; kind: BlockKind; error: string; ms: number; check?: TraitCheckReport }
   | ({ type: "step:read"; runId: string; at: number; index: number; block: string; kind: BlockKind; checkpoint: string } & StepRead)
   | { type: "run:end"; runId: string; at: number; ok: boolean; result?: string; error?: string; ms: number }
+  /** A layout's interrupt (a cookie banner, a session warning) showed up while a step ran, and was handled. */
+  | { type: "interrupt"; runId: string; at: number; layout: string; name: string; index?: number }
   /** A compared run (`--compare`): where its two sides differed after step `block` (the `step`-th of each). */
   | { type: "compare:diff"; runId: string; at: number; step: number; block: string; sides: [string, string]; diffs: StepDiff[]; indexes?: [number, number] }
   /** `index`, `block`, `checkpoint`: the step a screenshot ends, and where the page was. */
@@ -161,6 +163,11 @@ export function stepFailed(error: unknown): void {
   for (const { index, block, kind, startedAt } of open.open.splice(0).reverse()) {
     emit({ type: "step:error", runId: open.runId, at, index, block, kind, error: message, ms: at - startedAt, ...(check ? { check } : {}) });
   }
+}
+
+/** A layout's interrupt `name` fired and was handled; `runId` is the run it was installed in (a handler runs outside the step's call chain). */
+export function interruptFired(layout: string, name: string, runId: string | undefined, step?: { index: number }): void {
+  if (runId) emit({ type: "interrupt", runId, at: Date.now(), layout, name, ...(step ?? {}) });
 }
 
 /** Records where the two sides of a compared run differed after a step. */

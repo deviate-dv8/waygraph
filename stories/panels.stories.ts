@@ -108,6 +108,7 @@ export const Outcome: Story = overlayStory(async (page) => {
       { key: "equipment.lastAdded", from: "Mixer 1", to: "Mixer 2" },
     ],
     moreChanges: 0,
+    interrupts: ["shell: cookies"],
   });
   await page.evaluate(tickOutcome, 0);
   await page.evaluate(tickOutcome, 1);

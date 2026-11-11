@@ -3,13 +3,18 @@
 import { onRunEvent, type StepRead } from "../../engine/run/events.js";
 
 let last: StepRead | undefined;
+/** Interrupts that fired since the current step began (a cookie banner closed by a layout). */
+let interrupted: string[] = [];
 let off: (() => void) | undefined;
 
 /** Starts keeping the latest read; a second call does nothing. */
 export function trackReads(): void {
   off ??= onRunEvent((event) => {
-    if (event.type === "step:start" && event.parent === undefined) last = undefined;
-    else if (event.type === "step:read") last = event;
+    if (event.type === "step:start" && event.parent === undefined) {
+      last = undefined;
+      interrupted = [];
+    } else if (event.type === "step:read") last = event;
+    else if (event.type === "interrupt") interrupted.push(`${event.layout}: ${event.name}`);
   });
 }
 
@@ -64,4 +69,9 @@ function short(value: unknown): string {
   if (Array.isArray(value)) return `${value.length} ${value.length === 1 ? "item" : "items"}`;
   const text = typeof value === "string" ? value : JSON.stringify(value);
   return text.length > 40 ? `${text.slice(0, 39)}…` : text;
+}
+
+/** The interrupts handled while the current step ran, once each. */
+export function takeInterrupts(): string[] {
+  return [...new Set(interrupted)];
 }

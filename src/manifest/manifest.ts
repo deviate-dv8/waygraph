@@ -66,6 +66,8 @@ export interface ManifestLayout {
   actions: { name: string; block: string }[];
   /** Its Read Block's name, when it says what it shows. */
   read?: string;
+  /** The names of what it handles wherever it shows up (a cookie banner). */
+  interrupts?: string[];
 }
 
 /** A Trait as data: its name, what it wants, and the element it looks at. */
@@ -305,6 +307,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       }),
       actions: Object.keys(layout.do).map((name) => ({ name, block: (layout.do as Record<string, { name: string }>)[name]?.name ?? name })),
       ...(layout.readBlock ? { read: layout.readBlock.name } : {}),
+      ...(layout.interrupts.length ? { interrupts: [...layout.interrupts] } : {}),
     })),
     skipped: scan.skipped,
   };
