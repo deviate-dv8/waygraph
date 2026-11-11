@@ -10,4 +10,5 @@ export const DocsPage = definePageBlock({
   screenshot: true,
   nav: NavDocsBlock,
   verify: [Trait.visible(DocsSel.heading)],
+  read: (ctx) => ({ heading: ctx.page.text(DocsSel.heading) })
 });

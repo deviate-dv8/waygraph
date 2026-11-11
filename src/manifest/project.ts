@@ -151,7 +151,7 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
       // Methods of their own files.
       if (isLayout(exported)) {
         layouts.push({ layout: exported, exportName, file });
-        if (exported.read) readBlocks.push({ block: exported.read, exportName: `${exportName}.read`, file, absFile, ...(map ? { map } : {}) });
+        if (exported.readBlock) readBlocks.push({ block: exported.readBlock, exportName: `${exportName}.read`, file, absFile, ...(map ? { map } : {}) });
         for (const [key, nav] of Object.entries(exported.go)) addBlock(`${exportName}.go.${key}`, nav);
         continue;
       }

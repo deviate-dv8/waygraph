@@ -24,9 +24,7 @@ export const Login = definePageBlock({
   screenshot: true,
   url: "/",
   verify: [Trait.visible(LoginSel.loginButton)],
-  methods: {
-    fillUsername: () => FillUsernameBlock,
-    fillPassword: () => FillPasswordBlock,
-    submitLogin: () => SubmitLoginBlock,
-  },
+  do: () => ({ fillUsername: FillUsernameBlock, fillPassword: FillPasswordBlock, submitLogin: SubmitLoginBlock }),
+  read: (ctx) => ({ error: ctx.page.text(LoginSel.errorBanner) }),
+  readAs: "login"
 });

@@ -16,7 +16,5 @@ export const DashboardPageBlock = definePageBlock({
   description: "Dashboard hub - the routed-demo example's (app_base) group.",
   checkpoint: Dashboard,
   verify: [Trait.visible(DashboardSel.heading)],
-  methods: {
-    clickWidget: () => ClickWidgetBlock,
-  },
+  do: () => ({ clickWidget: ClickWidgetBlock }),
 });

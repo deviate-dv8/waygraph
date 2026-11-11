@@ -14,12 +14,15 @@ export const HomePage = definePageBlock({
   screenshot: true,
   nav: NavHomeBlock,
   verify: [Trait.visible(DemoSel.catalog)],
-  methods: {
-    addItem: () => AddItemBlock,
-    removeItem: () => RemoveItemBlock,
-    clearCart: () => ClearCartBlock,
-  },
-  expects: {
-    hello: () => ExpectHelloBlock,
-  },
+  do: () => ({ addItem: AddItemBlock, removeItem: RemoveItemBlock, clearCart: ClearCartBlock }),
+  expects: () => ({ hello: ExpectHelloBlock }),
+  read: (ctx) => ({
+    title: ctx.page.text(DemoSel.title),
+    cartCount: ctx.page.number(DemoSel.cartCount),
+    items: ctx.page.list(`${DemoSel.catalog} li.item`, (row) => ({
+      name: row.text(".name"),
+      inCart: row.visible("button.remove"),
+    })),
+    verified: ctx.page.visible(DemoSel.verifiedBanner),
+  })
 });

@@ -1,11 +1,11 @@
 import {
   defineMethodBlock,
-  type WaygraphInstanceOption,
-} from "waygraph";
+  type WaygraphInstanceOption, type Trait } from "waygraph";
 import { Home } from "../../../../states/demo.states.js";
-import { HomeRead } from "../_reads.js";
+import { } from "../_reads.js";
 import { DemoKeys } from "../../../../states/demo.mem-keys.js";
 import { DemoSel } from "../_sel.js";
+import { HomePage } from "../_page.block.js";
 
 /**
  * The page stays the home page; its Read Block shows the item in the cart. `waygraph auto` lists one "Add …" row per
@@ -22,12 +22,12 @@ export const AddItemBlock = defineMethodBlock({
       const { id } = mem.get(DemoKeys.selectedItem);
       await page.locator(DemoSel.addBtn(id)).click();
     },
-    verify: [
-      HomeRead.items.passes(
-        (items, mem) => items.some((item) => item.name === mem.get(DemoKeys.selectedItem).name && item.inCart),
-        "the item in the cart",
-      ),
-    ],
+    verify: (): Trait[] => [
+          HomePage.read.items.passes(
+            (items, mem) => items.some((item) => item.name === mem.get(DemoKeys.selectedItem).name && item.inCart),
+            "the item in the cart",
+          ),
+        ],
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     const buttons = page.locator(DemoSel.addButtons);

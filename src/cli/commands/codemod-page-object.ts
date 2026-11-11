@@ -36,6 +36,9 @@ interface PageDecl {
   exportName: string;
   options: ObjectLiteralExpression;
   checkpoint: string;
+  /** What the read's namespace is called when it isn't given: the Checkpoint's name, or the layout's. */
+  defaultNs: string;
+  layout?: boolean;
 }
 
 function parse(project: Project, file: string): SourceFile {
@@ -207,7 +210,7 @@ function pageFromRead(r: ReadDecl, used: Set<string>): PageDecl | undefined {
     if (!waygraph.getNamedImports().some((n) => n.getName() === "definePageBlock")) waygraph.addNamedImport("definePageBlock");
   } else sf.addImportDeclaration({ moduleSpecifier: "waygraph", namedImports: ["definePageBlock"] });
   void index;
-  return { file: sf.getFilePath(), exportName, options: created.getInitializerOrThrow().asKindOrThrow(SyntaxKind.CallExpression).getArguments()[0] as ObjectLiteralExpression, checkpoint: r.checkpoint };
+  return { file: sf.getFilePath(), exportName, options: created.getInitializerOrThrow().asKindOrThrow(SyntaxKind.CallExpression).getArguments()[0] as ObjectLiteralExpression, checkpoint: r.checkpoint, defaultNs: lowerFirst(r.checkpoint) };
 }
 
 /** Runs the codemod over a project's TypeScript (`src/`, `tests/`, `config/`). */
@@ -223,6 +226,7 @@ export function codemodPageObject(dir: string): { changed: string[]; problems: s
   const namespaces = new Map<string, Namespace>();
   const reads: ReadDecl[] = [];
   const pages: PageDecl[] = [];
+  const layouts: PageDecl[] = [];
   const js = [...sfs.values()].some((sf) => sf.getImportDeclarations().some((i) => i.getModuleSpecifierValue().endsWith(".js")));
 
   for (const [file, sf] of sfs) {
@@ -240,14 +244,19 @@ export function codemodPageObject(dir: string): { changed: string[]; problems: s
       if (!Node.isObjectLiteralExpression(options)) continue;
       if (callee === "definePageBlock") {
         const cp = propertyOf(options, "checkpoint");
-        if (Node.isIdentifier(cp)) pages.push({ file, exportName: decl.getName(), options, checkpoint: cp.getText() });
+        if (Node.isIdentifier(cp)) pages.push({ file, exportName: decl.getName(), options, checkpoint: cp.getText(), defaultNs: lowerFirst(cp.getText()) });
+      }
+      if (callee === "defineLayout") {
+        const layoutName = propertyOf(options, "name");
+        if (Node.isStringLiteral(layoutName)) layouts.push({ file, exportName: decl.getName(), options, checkpoint: "*", defaultNs: layoutName.getLiteralValue(), layout: true });
       }
       if (callee !== "defineReadBlock") continue;
       const name = propertyOf(options, "name")?.getText() ?? decl.getName();
       let from = propertyOf(options, "from");
       if (Node.isArrayLiteralExpression(from) && from.getElements().length === 1) from = from.getElements()[0];
-      if (!Node.isIdentifier(from)) {
-        problems.push(`${shown(file)}: ${name} reads every page or several: move what it reads into the layout's or each page's read by hand`);
+      const everywhere = from === undefined;
+      if (!everywhere && !Node.isIdentifier(from)) {
+        problems.push(`${shown(file)}: ${name} reads several pages: move what it reads into each page's read by hand`);
         continue;
       }
       if (options.getProperty("requires")) {
@@ -265,7 +274,7 @@ export function codemodPageObject(dir: string): { changed: string[]; problems: s
         problems.push(`${shown(file)}: ${name} doesn't return one namespace's fields (Ns({ ... })): fold it into the page's read by hand`);
         continue;
       }
-      reads.push({ file, decl, checkpoint: from.getText(), namespace, fields, ctx: read.getParameters()[0]?.getText() ?? "ctx", options });
+      reads.push({ file, decl, checkpoint: everywhere ? "*" : from!.getText(), namespace, fields, ctx: read.getParameters()[0]?.getText() ?? "ctx", options });
     }
   }
   if (reads.length === 0 && pages.length === 0) return { changed: [], problems: ["no Page Block or Read Block found"] };
@@ -275,6 +284,18 @@ export function codemodPageObject(dir: string): { changed: string[]; problems: s
   const perPage = new Map<PageDecl, ReadDecl[]>();
   const used = new Set([...sfs.values()].flatMap((sf) => sf.getVariableDeclarations().map((d) => d.getName())));
   for (const r of reads) {
+    // A Read Block for every page goes to the layout over its folder.
+    if (r.checkpoint === "*") {
+      const over = layouts.filter((l) => dirname(r.file).startsWith(dirname(l.file)));
+      const nearest = over.length ? Math.max(...over.map((l) => dirname(l.file).length)) : -1;
+      const here = over.filter((l) => dirname(l.file).length === nearest);
+      if (here.length !== 1 || here[0]!.options.getProperty("read")) {
+        problems.push(`${shown(r.file)}: ${r.decl.getName()} reads every page, and ${here.length === 1 ? "its layout has a read already" : `there are ${here.length} layouts over it`}: put it in a layout's read by hand`);
+        continue;
+      }
+      perPage.set(here[0]!, [...(perPage.get(here[0]!) ?? []), r]);
+      continue;
+    }
     const candidates = pages.filter((p) => p.checkpoint === r.checkpoint);
     // A Checkpoint with a Read Block and no Page Block: the Read Block becomes the page, with the same file and place.
     if (candidates.length === 0 && reads.filter((o) => o.checkpoint === r.checkpoint).length === 1) {
@@ -322,7 +343,7 @@ export function codemodPageObject(dir: string): { changed: string[]; problems: s
     const ctx = r.ctx;
     const added = page.options.addPropertyAssignment({ name: "read", initializer: `(${ctx}) => (${reindented(r.fields.getText(), "")})` });
     added.getInitializerOrThrow().formatText();
-    if (r.namespace.ns !== lowerFirst(page.checkpoint)) page.options.addPropertyAssignment({ name: "readAs", initializer: JSON.stringify(r.namespace.ns) });
+    if (r.namespace.ns !== page.defaultNs) page.options.addPropertyAssignment({ name: "readAs", initializer: JSON.stringify(r.namespace.ns) });
     converted.set(`${r.namespace.file}#${r.namespace.name}`, page);
     r.decl.getVariableStatement()?.remove();
     touched.add(page.file);

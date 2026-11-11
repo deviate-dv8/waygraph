@@ -1,7 +1,8 @@
-import { defineMethodBlock } from "waygraph";
+import { defineMethodBlock, type Trait } from "waygraph";
 import { InventoryPage } from "../../../../states/checkout.states.js";
-import { Catalog } from "../../../../states/checkout.reads.js";
+import { } from "../../../../states/checkout.reads.js";
 import { collectRemovableItems, InventorySel } from "./inventory-items.js";
+import { Inventory } from "../inventory.page.block.js";
 
 /**
  * Kind: Method
@@ -23,6 +24,6 @@ export const RemoveAllFromCartBlock = defineMethodBlock({
         await page.locator(InventorySel.removeBtn(item.id)).click();
       }
     },
-    verify: [Catalog.items.passes((items) => items.every((item) => !item.inCart), "nothing in the cart")],
+    verify: (): Trait[] => [Inventory.read.items.passes((items) => items.every((item) => !item.inCart), "nothing in the cart")],
   },
 });

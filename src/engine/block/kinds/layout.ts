@@ -10,7 +10,9 @@ import { checkpoint, type Checkpoint } from "../../checkpoint/checkpoint.js";
 import { markRoute } from "../../checkpoint/route.js";
 import type { Trait } from "../../trait/trait.js";
 import type { MemPage } from "../../mem/mem.js";
-import { defineReadBlock, type ReadBlock, type ReadBlockOptions } from "../../read/read-block.js";
+import { defineReadBlock, type ReadBlock } from "../../read/read-block.js";
+import type { ReadCtx } from "../../read/readers.js";
+import { readKeys, type PageRead, type PageReadKeys } from "../../read/read-keys.js";
 import type { Account } from "../../flow/account.js";
 import { navigate, type NavBlock } from "./nav.js";
 import type { PageMethodEntry, PageMethods } from "./page.js";
@@ -26,15 +28,17 @@ export interface LayoutLink {
   verify?: Trait[];
 }
 
-export interface LayoutOptions<G extends Record<string, LayoutLink>, D extends Record<string, PageMethodEntry>> {
+export interface LayoutOptions<G extends Record<string, LayoutLink>, D extends Record<string, PageMethodEntry>, R extends PageRead = PageRead> {
   name: string;
   description?: string;
   /** Its links, by name: `Layout.go.<name>`, Navs valid on every page it covers. */
   go?: G;
   /** Its actions, by name: `Layout.do.<name>`, Methods (or `() => Method`, lazy) valid on every page it covers. */
   do?: D;
-  /** What it shows, read on every page it covers. */
-  read?: ReadBlockOptions["instruction"]["read"];
+  /** What it shows, read on every page it covers: a reader per field, like a page's `read`. Its keys are `Layout.read.<field>`. */
+  read?: (ctx: ReadCtx) => R;
+  /** The name run logs and `waygraph pilot read` give what it reads (`sidebar.links`); the layout's name unless given. */
+  readAs?: string;
   /** The pages it covers, when they aren't the ones under its folder (an app whose layout doesn't follow its addresses). */
   on?: readonly Checkpoint<string>[];
   /**
@@ -47,7 +51,7 @@ export interface LayoutOptions<G extends Record<string, LayoutLink>, D extends R
 /** A link's Nav: lands on its page, or on the page above for `to: "parent"`. */
 export type LinkNav<L extends LayoutLink> = L["to"] extends Checkpoint<string> ? NavBlock<L["to"]> : NavBlock<Checkpoint<string>>;
 
-export interface Layout<G extends Record<string, LayoutLink>, D extends Record<string, PageMethodEntry>> {
+export interface Layout<G extends Record<string, LayoutLink>, D extends Record<string, PageMethodEntry>, R extends PageRead = Record<never, never>> {
   readonly name: string;
   readonly description: string;
   /** Its links as Navs, by name: `gotoPage(Sidebar.go.equipment)`. */
@@ -55,7 +59,10 @@ export interface Layout<G extends Record<string, LayoutLink>, D extends Record<s
   /** Its actions as Methods, by name: `.method(TopBar.do.signOut)`. */
   readonly do: PageMethods<D>;
   /** What it shows, when it says. */
-  readonly read: ReadBlock | undefined;
+  /** The keys of what it shows, to check by: `Layout.read.links.is([...])`. */
+  readonly read: PageReadKeys<R>;
+  /** The Read Block that reads it. */
+  readonly readBlock: ReadBlock | undefined;
   /** Who's given each link (`for`), by name: what the access tests and `waygraph check` read. An action's is its Method's. */
   readonly access: Readonly<Record<string, readonly string[] | undefined>>;
   /** The pages it was given with `on`, if any. */
@@ -183,13 +190,13 @@ function linkNav(layout: string, key: string, link: LayoutLink, opens: string | 
  *     plan: { to: ProductionPlan, click: SidebarSel.plan },
  *     equipment: { to: EquipmentRegistry, click: SidebarSel.equipment, for: [PlantManager] },
  *   },
- *   read: (ctx) => SidebarShows({ links: ctx.page.texts(SidebarSel.link) }),
+ *   read: (ctx) => ({ links: ctx.page.texts(SidebarSel.link) }),
  * });
  * engine.map({ as: PlantManager }).gotoPage(Sidebar.go.equipment)
  */
-export function defineLayout<G extends Record<string, LayoutLink> = Record<never, never>, D extends Record<string, PageMethodEntry> = Record<never, never>>(
-  options: LayoutOptions<G, D>,
-): Layout<G, D> {
+export function defineLayout<G extends Record<string, LayoutLink> = Record<never, never>, D extends Record<string, PageMethodEntry> = Record<never, never>, R extends PageRead = Record<never, never>>(
+  options: LayoutOptions<G, D, R>,
+): Layout<G, D, R> {
   const go = Object.fromEntries(Object.entries(options.go ?? {}).map(([key, link]) => [key, linkNav(options.name, key, link, options.opens)]));
   // Actions resolve when first used: a Method file may import its layout.
   const actions = options.do ?? ({} as D);
@@ -197,12 +204,14 @@ export function defineLayout<G extends Record<string, LayoutLink> = Record<never
   for (const [key, entry] of Object.entries(actions)) {
     Object.defineProperty(doRecord, key, { enumerable: true, get: () => (typeof entry === "function" ? entry() : entry) });
   }
-  const read = options.read
+  const namespace = options.readAs ?? options.name;
+  const readOf = options.read;
+  const read = readOf
     ? defineReadBlock({
         name: `read-${options.name}`,
         description: `What ${options.name} shows, on every page it covers.`,
         // Read on every page until loading says which it covers.
-        instruction: { read: options.read },
+        instruction: { read: (ctx) => ({ namespace, fields: readOf(ctx) }) },
       })
     : undefined;
   const accounts = (list: readonly Account[] | undefined) => list?.map((a) => a.name);
@@ -217,35 +226,17 @@ export function defineLayout<G extends Record<string, LayoutLink> = Record<never
     description: options.description ?? "",
     go,
     do: doRecord,
-    read,
+    read: readKeys(namespace),
+    readBlock: read,
     access,
     on: options.on?.map((c) => c.__state),
     opens: options.opens,
   };
   mark(layout, "__waygraphLayout", true);
-  return layout as unknown as Layout<G, D>;
+  return layout as unknown as Layout<G, D, R>;
 }
 
 /** Whether `value` is a layout `defineLayout` made. */
 export function isLayout(value: unknown): value is Layout<Record<string, LayoutLink>, Record<string, PageMethodEntry>> {
   return typeof value === "object" && value !== null && (value as { __waygraphLayout?: unknown }).__waygraphLayout === true;
-}
-
-/**
- * Each page's breadcrumb trail, by its address: the addresses of the pages above it in the site map, outermost first.
- * Set when layouts load; `Trait.breadcrumbs` reads it. On globalThis, like the layouts' state.
- */
-const trails: Map<string, string[]> = ((globalThis as { [k: symbol]: Map<string, string[]> | undefined })[
-  Symbol.for("waygraph.breadcrumbTrails")
-] ??= new Map());
-
-/** Sets every page's trail (its address -> the addresses of the pages above it). */
-export function setTrails(byPath: Readonly<Record<string, readonly string[]>>): void {
-  trails.clear();
-  for (const [path, up] of Object.entries(byPath)) trails.set(path, [...up]);
-}
-
-/** The trail for the page at `path`, when layouts were loaded and it's a known page. */
-export function trailOf(path: string): string[] | undefined {
-  return trails.get(path);
 }

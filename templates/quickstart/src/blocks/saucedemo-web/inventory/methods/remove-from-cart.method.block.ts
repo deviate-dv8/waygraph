@@ -1,8 +1,9 @@
-import { defineMethodBlock, type WaygraphInstanceOption } from "waygraph";
+import { defineMethodBlock, type WaygraphInstanceOption, type Trait } from "waygraph";
 import { InventoryPage } from "../../../../states/checkout.states.js";
-import { Catalog } from "../../../../states/checkout.reads.js";
+import { } from "../../../../states/checkout.reads.js";
 import { SaucedemoKeys } from "../../../../states/checkout.mem-keys.js";
 import { collectRemovableItems, InventorySel } from "./inventory-items.js";
+import { Inventory } from "../inventory.page.block.js";
 
 /**
  * Kind: Method (one row of many)
@@ -23,12 +24,12 @@ export const RemoveFromCartBlock = defineMethodBlock({
       const { id } = mem.get(SaucedemoKeys.selectedItem);
       await page.locator(InventorySel.removeBtn(id)).click();
     },
-    verify: [
-      Catalog.items.passes(
-        (items, mem) => !items.some((item) => item.name === mem.get(SaucedemoKeys.selectedItem).name && item.inCart),
-        "the item out of the cart",
-      ),
-    ],
+    verify: (): Trait[] => [
+          Inventory.read.items.passes(
+            (items, mem) => !items.some((item) => item.name === mem.get(SaucedemoKeys.selectedItem).name && item.inCart),
+            "the item out of the cart",
+          ),
+        ],
   },
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     const items = await collectRemovableItems(page);

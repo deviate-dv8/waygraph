@@ -21,20 +21,8 @@ export const HoppscotchRestPage = definePageBlock({
   checkpoint: HoppscotchRest,
   nav: NavHoppscotchRestBlock,
   verify: [Trait.visible(HoppscotchSel.send)],
-  methods: {
-    setMethod: () => SetMethodBlock,
-    setUrl: () => SetUrlBlock,
-    setHeaders: () => SetHeadersBlock,
-    setQueryParams: () => SetQueryParamsBlock,
-    setBearerToken: () => SetBearerTokenBlock,
-    setJsonBody: () => SetJsonBodyBlock,
-    sendRequest: () => SendRequestBlock,
-    readResponseHeaders: () => ReadResponseHeadersBlock,
-    readResponseBody: () => ReadResponseBodyBlock,
-  },
-  expects: {
-    responseBody: () => ExpectResponseBodyBlock,
-    responseHeader: () => ExpectResponseHeaderBlock,
-    status: () => ExpectStatusBlock,
-  },
+  do: () => ({ setMethod: SetMethodBlock, setUrl: SetUrlBlock, setHeaders: SetHeadersBlock, setQueryParams: SetQueryParamsBlock, setBearerToken: SetBearerTokenBlock, setJsonBody: SetJsonBodyBlock, sendRequest: SendRequestBlock, readResponseHeaders: ReadResponseHeadersBlock, readResponseBody: ReadResponseBodyBlock }),
+  expects: () => ({ responseBody: ExpectResponseBodyBlock, responseHeader: ExpectResponseHeaderBlock, status: ExpectStatusBlock }),
+  read: (ctx) => ({ status: ctx.page.text(HoppscotchSel.status), body: ctx.page.text(HoppscotchSel.responseEditor) }),
+  readAs: "hoppscotch"
 });

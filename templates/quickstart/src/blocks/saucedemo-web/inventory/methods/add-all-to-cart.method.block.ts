@@ -1,7 +1,8 @@
-import { defineMethodBlock } from "waygraph";
+import { defineMethodBlock, type Trait } from "waygraph";
 import { InventoryPage } from "../../../../states/checkout.states.js";
-import { Catalog } from "../../../../states/checkout.reads.js";
+import { } from "../../../../states/checkout.reads.js";
 import { collectAddableItems, InventorySel } from "./inventory-items.js";
+import { Inventory } from "../inventory.page.block.js";
 
 /**
  * Kind: Method
@@ -24,6 +25,6 @@ export const AddAllToCartBlock = defineMethodBlock({
         await page.locator(InventorySel.addBtn(item.id)).click();
       }
     },
-    verify: [Catalog.items.passes((items) => items.every((item) => item.inCart), "every item in the cart")],
+    verify: (): Trait[] => [Inventory.read.items.passes((items) => items.every((item) => item.inCart), "every item in the cart")],
   },
 });

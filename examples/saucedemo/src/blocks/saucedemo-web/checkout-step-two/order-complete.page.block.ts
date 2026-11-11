@@ -1,6 +1,7 @@
 import { definePageBlock, Trait } from "waygraph";
 import { OrderComplete } from "../../../states/checkout.states.js";
 import { NavBackToProductsBlock } from "../inventory-item/nav-back-to-products.block.js";
+import { CheckoutOverviewSel } from "./methods/checkout-overview.sel.js";
 
 /** The order confirmation: "Back Home" returns to the inventory. */
 export const Confirmation = definePageBlock({
@@ -9,7 +10,7 @@ export const Confirmation = definePageBlock({
   checkpoint: OrderComplete,
   screenshot: true,
   verify: [Trait.url({ pathname: "/checkout-complete.html" })],
-  methods: {
-    backHome: () => NavBackToProductsBlock,
-  },
+  do: () => ({ backHome: NavBackToProductsBlock }),
+  read: (ctx) => ({ header: ctx.page.text(CheckoutOverviewSel.completeHeader) }),
+  readAs: "orderDone"
 });

@@ -4,7 +4,8 @@
 import { dirname, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 import { envString } from "../engine/env.js";
-import { isLayout, layoutState, setTrails } from "../engine/block/kinds/layout.js";
+import { isLayout, layoutState } from "../engine/block/kinds/layout.js";
+import { setTrails } from "../engine/trait/trails.js";
 import { reportImportError, scanProject } from "./project.js";
 import { walkDir } from "./scan.js";
 import { pageUrls } from "./urls.js";

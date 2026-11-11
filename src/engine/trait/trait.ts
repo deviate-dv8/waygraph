@@ -13,7 +13,7 @@ import type { MemPage } from "../mem/mem.js";
 // than the native global on newer Node, and `instanceof` would then fail on those versions.
 import "urlpattern-polyfill";
 import { mark } from "../block/mark.js";
-import { trailOf } from "../block/kinds/layout.js";
+import { trailOf } from "./trails.js";
 
 /**
  * A named, independently-reportable check. `check` never runs before `resolve` has

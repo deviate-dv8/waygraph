@@ -304,7 +304,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
         };
       }),
       actions: Object.keys(layout.do).map((name) => ({ name, block: (layout.do as Record<string, { name: string }>)[name]?.name ?? name })),
-      ...(layout.read ? { read: layout.read.name } : {}),
+      ...(layout.readBlock ? { read: layout.readBlock.name } : {}),
     })),
     skipped: scan.skipped,
   };

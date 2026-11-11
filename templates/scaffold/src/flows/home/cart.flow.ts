@@ -1,7 +1,7 @@
 import { engine } from "#config/waygraph.config";
 import { HomePage } from "#map/(app_base)/home/_page.block";
 import { DemoSel } from "#map/(app_base)/home/_sel";
-import { HomeRead } from "#map/(app_base)/home/_reads";
+import { } from "#map/(app_base)/home/_reads";
 
 // SelectedItem (alpha) comes from src/states/demo.mem-stubs.ts; --data overrides it.
 const AddShown = HomePage.do.addItem.stubBefore((ctx) => {
@@ -37,7 +37,7 @@ export const homeCartFlow = engine
       ctx.ui.title("Scaffold: Shop (add + clear)");
     }),
   )
-  .method(AddShown, { expect: [HomeRead.cartCount.is(1)] })
+  .method(AddShown, { expect: [HomePage.read.cartCount.is(1)] })
   .method(RemoveShown)
   .method(AddShown)
   .method(ClearShown);
