@@ -72,6 +72,7 @@ export default withMermaid(defineConfig({
           items: [
             { text: "Your project", link: "/guides/project" },
             { text: "Blocks", link: "/guides/blocks" },
+            { text: "How a run works", link: "/guides/lifecycle" },
             { text: "Flows", link: "/guides/flows" },
             { text: "Read Blocks", link: "/guides/reads" },
             { text: "Layouts and access", link: "/guides/layouts" },
