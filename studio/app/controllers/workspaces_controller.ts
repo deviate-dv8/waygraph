@@ -50,6 +50,8 @@ export default class WorkspacesController {
         name: f.exportName,
         file: f.file,
         steps: f.steps.length,
+        labels: f.labels ?? [],
+        stepNames: f.steps,
       })),
       skipped: manifest.skipped,
     })

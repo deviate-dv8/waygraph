@@ -47,7 +47,14 @@ const props = defineProps<{
   pageFlows: Record<string, PageFlow[]>
   /** Each page's newest screenshot (a Block's `screenshot: true`), by Checkpoint: when it was taken. */
   shots: Record<string, number>
-  flows: { id: string; name: string; file: string; steps: number }[]
+  flows: {
+    id: string
+    name: string
+    file: string
+    steps: number
+    labels: string[]
+    stepNames: string[]
+  }[]
   skipped: { file: string; error: string }[]
 }>()
 
@@ -67,9 +74,43 @@ const direction = useStorage<TreeDirection>('waygraph-map-direction', 'LR')
 /** The pages on the map: those the account (if one is picked) can open. */
 const checkpoints = computed(() => props.checkpoints)
 /** The Blocks of pages, not layouts: a layout's links are drawn once, from it. */
+/** The map shows only what some flows use: picked by label (`auth`) or by name; none picked, everything. */
+const flowPick = useStorage<string[]>(`waygraph-map-flows:${props.project.dir}`, [])
+const pickedFlows = computed(() =>
+  flowPick.value.length
+    ? props.flows.filter(
+        (f) =>
+          flowPick.value.includes(f.name) ||
+          f.labels.some((l) => flowPick.value.includes(`label:${l}`))
+      )
+    : null
+)
+/** The Blocks those flows play, and the pages they pass through. */
+const pickedBlocks = computed(
+  () => pickedFlows.value && new Set(pickedFlows.value.flatMap((f) => f.stepNames))
+)
+const pickedPages = computed(() => {
+  if (!pickedFlows.value) return null
+  const names = new Set(pickedFlows.value.map((f) => f.name))
+  return new Set(
+    Object.entries(props.pageFlows)
+      // Where a flow lands, not every page a shared link could start from.
+      .filter(([, flows]) => flows.some((f) => names.has(f.name) && f.reach !== 'acts'))
+      .map(([page]) => page)
+  )
+})
+const flowItems = computed(() => [
+  ...[...new Set(props.flows.flatMap((f) => f.labels))]
+    .sort()
+    .map((l) => ({ label: `label: ${l}`, value: `label:${l}` })),
+  ...props.flows.map((f) => ({ label: f.name, value: f.name })),
+])
 const pageBlocks = computed(() => {
   const links = new Set(props.access.links)
-  return props.blocks.filter((b) => !links.has(b.name))
+  const picked = pickedBlocks.value
+  return props.blocks.filter(
+    (b) => !links.has(b.name) && (!picked || picked.has(b.name) || b.kind === 'page')
+  )
 })
 const layoutIds = computed(() => props.access.layouts.map((l) => l.node))
 /** Every move between pages (the tree and the journey read these). */
@@ -189,7 +230,15 @@ const tree = computed<Tree>(() => {
 
 /** What the tree beside the map hides, kept in this browser for this project. */
 const hiddenList = useStorage<string[]>(`waygraph-map-hidden:${props.project.dir}`, [])
-const hidden = computed(() => new Set(hiddenList.value))
+/** What the tree hides, and, with flows picked, every page they don't pass through. */
+/** What the person hid in the tree (kept for the project). */
+const hiddenByYou = computed(() => new Set(hiddenList.value))
+const hidden = computed(() => {
+  const out = new Set(hiddenList.value)
+  const keep = pickedPages.value
+  if (keep) for (const id of props.checkpoints) if (!keep.has(id)) out.add(id)
+  return out
+})
 const setHidden = (next: Set<string>) => (hiddenList.value = [...next])
 const showTree = useStorage('waygraph-map-tree', true)
 /** How many pages the map shows, of all of them: on the minimized Pages button. */
@@ -253,11 +302,31 @@ const sharedIn = computed(() => {
   for (const e of sharedMoves.value) by.set(e.target, (by.get(e.target) ?? 0) + e.blocks.length)
   return by
 })
-const shownMoves = computed(() =>
-  edgesData.value.filter(
+const shownMoves = computed(() => {
+  const drawn = edgesData.value.filter(
     (e) => shown.value.has(e.source) && shown.value.has(e.target) && !hiddenShared.value.has(e.id)
   )
-)
+  // A shared link drawn from many pages shows its badge once, with how many lines it has: `nav-x (33)`.
+  const shared = new Set(sharedMoves.value.map((e) => e.id))
+  const lines = new Map<string, number>()
+  for (const e of drawn) {
+    if (!shared.has(e.id)) continue
+    for (const b of e.blocks)
+      lines.set(`${b.id}|${e.target}`, (lines.get(`${b.id}|${e.target}`) ?? 0) + 1)
+  }
+  const labelled = new Set<string>()
+  return drawn.map((e) => {
+    if (!shared.has(e.id)) return e
+    const blocks = e.blocks.flatMap((b) => {
+      const key = `${b.id}|${e.target}`
+      if (labelled.has(key)) return []
+      labelled.add(key)
+      const n = lines.get(key) ?? 1
+      return [n > 1 ? { ...b, name: `${b.name} (${n})` } : b]
+    })
+    return { ...e, blocks }
+  })
+})
 const shownLayoutLines = computed(() =>
   layoutLines.value.filter((e) => shown.value.has(e.source) && shown.value.has(e.target))
 )
@@ -590,10 +659,10 @@ const page = computed(() =>
       <MapTree
         class="pointer-events-auto"
         :tree="tree"
-        :hidden="hidden"
+        :hidden="hiddenByYou"
         :labels="treeLabels"
         :selected="selected"
-        @toggle="setHidden(toggled(tree, hidden, $event))"
+        @toggle="setHidden(toggled(tree, hiddenByYou, $event))"
         @only="setHidden(only(tree, $event))"
         @all="setHidden(new Set())"
         @none="setHidden(new Set(everything(tree)))"
@@ -683,6 +752,19 @@ const page = computed(() =>
           class="font-mono"
         />
       </span>
+      <!-- Only what some flows use: by label or by name. -->
+      <USelectMenu
+        v-model="flowPick"
+        :items="flowItems"
+        value-key="value"
+        multiple
+        icon="i-lucide-route"
+        size="xs"
+        variant="ghost"
+        class="w-40"
+        placeholder="All flows"
+        aria-label="Show only what some flows use"
+      />
       <!-- The map as one account sees it: only what it's given (for). -->
       <USelect
         v-if="props.access.accounts.length"
