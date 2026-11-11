@@ -19,6 +19,8 @@ export const WAYGRAPH_ENV = {
   WAYGRAPH_MEM_STUB: "1 fills missing requires from registerMemStub (--mem-stub)",
   WAYGRAPH_NO_EXPECT: "1 skips every Block's and step's expectations: verify only (--no-expect)",
   WAYGRAPH_REPLAY: "A run id: seed mem with what that run recorded (--replay)",
+  WAYGRAPH_TEST_GREP: "waygraph test --flows: the tests to run (--grep, --label), set on each flows project so a dependency is filtered too",
+  WAYGRAPH_TEST_GREP_INVERT: "waygraph test --flows: the tests to leave out (--grep-invert), set on each flows project",
   WAYGRAPH_FLOW_TESTS: "1 makes waygraph test run every flow as a test (--flows)",
   WAYGRAPH_INPUT: "A flow's input: JSON or @file; an array plays the flow once per item (--input)",
   WAYGRAPH_AUTOPLAY: "1 advances demo steps on their own (--auto-next)",

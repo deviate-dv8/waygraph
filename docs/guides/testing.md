@@ -58,7 +58,7 @@ the manifest and Waygraph UI's Flows page show them. `waygraph check` warns abou
 | needs a key a mem stub supplies | the stub's value |
 | needs a key nothing supplies | skipped, with the key named |
 | starts on a page it doesn't open (an episode meant to follow another) | skipped, with the reason |
-| has `map({ exclusive: true })` | runs alone, after all the others (it changes data the rest read) |
+| has `map({ exclusive: true })` | runs alone, after all the others (it changes data the rest read); `--label`, `--grep` and `--grep-invert` pick among them too, without running the others first |
 | has `map({ expectedFailure })` | passes when it fails |
 
 ## Access tests

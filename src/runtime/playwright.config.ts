@@ -17,5 +17,8 @@ await loadAccounts(projectDir);
 await loadLayouts(projectDir);
 
 export default defineConfig(
-  playwrightConfigFrom((await loadWaygraphConfig(projectDir)) ?? {}, projectDir, await resolveBaseUrl(projectDir), envFlag("WAYGRAPH_FLOW_TESTS")),
+  playwrightConfigFrom((await loadWaygraphConfig(projectDir)) ?? {}, projectDir, await resolveBaseUrl(projectDir), envFlag("WAYGRAPH_FLOW_TESTS"), {
+    grep: envString("WAYGRAPH_TEST_GREP"),
+    grepInvert: envString("WAYGRAPH_TEST_GREP_INVERT"),
+  }),
 );

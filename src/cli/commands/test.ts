@@ -54,6 +54,14 @@ export async function testCase(args: string[]): Promise<void> {
         }
         rest.push("--grep", wanted.map((l) => `@${l}\\b`).join("|"));
       }
+      // Playing flows, the filters go on the flows projects (runtime/playwright-config.ts), not the command line: the
+      // exclusive flows' project depends on the rest, and Playwright runs a dependency unfiltered.
+      if (flowsAt >= 0) {
+        const grep = takeOption(rest, ["--grep", "-g"]);
+        const grepInvert = takeOption(rest, ["--grep-invert"]);
+        if (grep !== undefined) setEnv("WAYGRAPH_TEST_GREP", grep);
+        if (grepInvert !== undefined) setEnv("WAYGRAPH_TEST_GREP_INVERT", grepInvert);
+      }
       // --fresh-sessions: every account signs in again (its saved session isn't used), and saves the new one.
       const freshAt = rest.indexOf("--fresh-sessions");
       if (freshAt >= 0) {
@@ -77,4 +85,19 @@ export async function testCase(args: string[]): Promise<void> {
           : ["test", ...configArgs, ...forwarded];
       process.exitCode = await runPw(pwArgs);
       return;
+}
+
+/** Takes `--name value` or `--name=value` (any of `names`) out of `args`, and returns its value. */
+function takeOption(args: string[], names: readonly string[]): string | undefined {
+  const at = args.findIndex((a) => names.includes(a) || names.some((n) => a.startsWith(`${n}=`)));
+  if (at < 0) return undefined;
+  const arg = args[at]!;
+  const eq = arg.indexOf("=");
+  if (eq >= 0) {
+    args.splice(at, 1);
+    return arg.slice(eq + 1);
+  }
+  const value = args[at + 1];
+  args.splice(at, 2);
+  return value;
 }

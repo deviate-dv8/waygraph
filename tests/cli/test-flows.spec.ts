@@ -11,6 +11,8 @@ const exec = promisify(execFile);
 const CLI = join(import.meta.dirname, "..", "..", "bin", "waygraph");
 const project = join(import.meta.dirname, "..", "fixtures", "flow-tests");
 const { CHROME_PATH: _c, CHROMIUM_PATH: _cc, ...env } = process.env;
+// Both tests run the fixture project: one at a time.
+test.describe.configure({ mode: "serial" });
 
 interface Result { title: string; status: string; startTime: string; duration: number }
 
@@ -44,4 +46,24 @@ test("every flow runs as a test; the exclusive one after the others; viewport ap
   );
   await rm(runLog, { recursive: true, force: true });
   expect(labels.sort()).toEqual(["aloneFlow", "fnUrlFlow", "fnUrlPageFlow", "otherFlow", "readFlow", "wideFlow"]);
+});
+
+test("a filter that picks an exclusive flow runs just it, not every flow before it; --grep-invert leaves flows out", async () => {
+  // The exclusive flows' project depends on the rest, and Playwright runs a dependency unfiltered: the filter goes on
+  // both projects instead.
+  const titles = async (args: string[]) => {
+    const { stdout } = await exec(process.execPath, [CLI, "test", "--flows", "--reporter=json", ...args], {
+      cwd: project,
+      env: { ...env, WAYGRAPH_HEADED: "0", WAYGRAPH_RUN_LOG: "0" },
+    });
+    const names: string[] = [];
+    const walk = (suite: { specs?: { title: string; tests: { results: unknown[] }[] }[]; suites?: unknown[] }) => {
+      for (const spec of suite.specs ?? []) if (spec.tests.some((t) => t.results.length)) names.push(spec.title.split(" › ").pop()!);
+      for (const s of suite.suites ?? []) walk(s as never);
+    };
+    for (const s of (JSON.parse(stdout) as { suites: unknown[] }).suites) walk(s as never);
+    return names.sort();
+  };
+  expect(await titles(["-g", "aloneFlow"])).toEqual(["aloneFlow"]);
+  expect(await titles(["--grep-invert", "otherFlow"])).toEqual(["aloneFlow", "fnUrlFlow", "fnUrlPageFlow", "readFlow", "wideFlow"]);
 });
