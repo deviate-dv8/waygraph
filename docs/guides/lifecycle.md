@@ -18,7 +18,7 @@ graph LR
    `device`, the demo's settings). Flags beat it.
 2. **The web server** the config names starts, if any.
 3. **Loading.** `waygraph` imports, by scanning the project: Read Blocks, layouts (`_layout.block.ts`, which works out
-   which pages each covers), then, while planning, mem stubs (`*.mem-stubs.ts`) and accounts (`src/accounts/`). Nothing
+   which pages each covers), then, while planning, mem stubs (on the keys, `*.mem-keys.ts`) and accounts (`src/accounts/`). Nothing
    imports these for their side effect: they register themselves when imported, and waygraph imports them.
 4. **Planning** finds the flow (an export of a `*.flow.ts`, a file, or a chain `a then b`), turns it into steps, and
    seeds mem from `--data`, mem stubs or a replay.

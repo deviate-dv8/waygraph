@@ -90,11 +90,11 @@ export function reportImportError(relFile: string, err: unknown): void {
 }
 
 /**
- * Imports every `*.mem-stubs.ts` in the project: a stub registers when its file is imported, so a run, a demo, a test
+ * Imports every `*.mem-stubs.ts` and `*.mem-keys.ts` (where keys carry their stubs) in the project: a stub registers when its file is imported, so a run, a demo, a test
  * or a session that needs one never depends on a flow importing the file.
  */
 export async function loadMemStubs(projectDir: string): Promise<void> {
-  for (const file of walkDir(projectDir, /\.mem-stubs?\.ts$/)) await importFresh(file).catch((err: unknown) => reportImportError(relative(projectDir, file), err));
+  for (const file of walkDir(projectDir, /(\.mem-stubs?|\.mem-keys|_keys|\.keys)\.ts$/)) await importFresh(file).catch((err: unknown) => reportImportError(relative(projectDir, file), err));
 }
 
 /**

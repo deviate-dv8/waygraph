@@ -21,18 +21,35 @@ export type KeyNamespace<T> = { readonly [K in keyof T & string]: MemKey<T[K]> }
 /** Names that must not mint a key: awaiting, printing or inspecting a namespace reads these. */
 const NOT_KEYS = new Set(["then", "toJSON", "constructor", "prototype", "valueOf", "toString", "inspect"]);
 
+/** The fake values a namespace's keys give when a run isn't handed them (`map({ memStub: true })`, `--mem-stub`). */
+export type KeyStubs<T> = { [K in keyof T]?: (ctx: { unique: string }) => T[K] };
+
+/** The registered mem stubs: shared on globalThis with `registerMemStub` (a project's waygraph can be another copy than the CLI's). */
+const stubRegistry: Map<MemKey<unknown>, (ctx: { unique: string }) => unknown> = ((globalThis as { [k: symbol]: Map<MemKey<unknown>, (ctx: { unique: string }) => unknown> | undefined })[
+  Symbol.for("waygraph.memStubs")
+] ??= new Map());
+
 /**
  * Declares the Mem keys of one namespace in one line: a type, whose property names become the keys
  * (`"<namespace>.<field>"`, the name `--data` and the run log use). Each property is one key, the same object every
- * time it is read - Mem stores values by key.
+ * time it is read - Mem stores values by key. A key can carry the fake value a run gets when none is given: `unique` is
+ * a token new every run, so what a run creates doesn't collide with an earlier run's.
  * @example
- * export const SaucedemoKeys = keys("saucedemo")<{ credentials: { username: string; password: string } }>();
+ * export const SaucedemoKeys = keys("saucedemo")<{ credentials: { username: string; password: string } }>({
+ *   credentials: () => ({ username: "standard_user", password: "secret_sauce" }),
+ * });
  * mem.set(SaucedemoKeys.credentials, { username: "standard_user", password: "secret_sauce" });
  * requires: [SaucedemoKeys.credentials]
  */
-export function keys(namespace: string): <T extends object>() => KeyNamespace<T> {
-  return <T extends object>() => {
+export function keys(namespace: string): <T extends object>(stubs?: KeyStubs<T>) => KeyNamespace<T> {
+  return <T extends object>(stubs?: KeyStubs<T>) => {
     const cache = new Map<string, MemKey<unknown>>();
+    // A key with a stub exists as soon as its namespace does, so the stub is registered when the file loads.
+    for (const [field, stub] of Object.entries((stubs ?? {}) as Record<string, (ctx: { unique: string }) => unknown>)) {
+      const k = new MemKey<unknown>(`${namespace}.${field}`);
+      cache.set(field, k);
+      stubRegistry.set(k, stub);
+    }
     return new Proxy({} as KeyNamespace<T>, {
       get(target, prop) {
         if (typeof prop !== "string" || NOT_KEYS.has(prop)) return Reflect.get(target, prop);

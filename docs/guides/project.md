@@ -15,7 +15,7 @@ my-app/
 │   └── waygraph.config.ts          # baseUrl, webServer, device, labels, demo; exports `engine`
 ├── src/
 │   ├── accounts/                   # the people the app knows: account("planner", { signIn, mem, ttl })
-│   ├── states/                     # Checkpoints (*.states.ts), mem keys (*.mem-keys.ts), mem stubs (*.mem-stubs.ts)
+│   ├── states/                     # Checkpoints (*.states.ts), mem keys with their stubs (*.mem-keys.ts)
 │   ├── map/                        # the app, page by page: folders are its addresses
 │   │   ├── (app_base)/             # your app (a group: not part of any address)
 │   │   │   ├── _layout.block.ts    # what every page in here shares: the top bar, the sidebar

@@ -54,6 +54,7 @@ function uniqueToken(): string {
  * a run creates (a signup, an order) from colliding with an earlier run's or a parallel worker's.
  * @example registerMemStub(LoginCreds.key, () => ({ username: "standard_user", password: "secret_sauce" }));
  * @example registerMemStub(Signup.email, ({ unique }) => `qa+${unique}@example.com`);
+ * @deprecated Put the fake value on the key where it is declared: `keys("signup")<{ email: string }>({ email: ({ unique }) => \`qa+${unique}@example.com\` })`. `waygraph upgrade --codemod mem-stubs` converts a project.
  */
 export function registerMemStub<T>(key: MemKey<T>, fake: (ctx: MemStubContext) => T): void {
   registry.set(key, fake);

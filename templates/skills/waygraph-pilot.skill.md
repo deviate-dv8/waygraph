@@ -62,7 +62,7 @@ here - plan several steps ahead from it before you start sending picks.
 A Block's `requires` (credentials, the row to act on) come from mem, and a session fills mem **once, when it starts**:
 
 1. a key given in `pilot start --data '{"<namespace>.<field>": ...}'` (or `WAYGRAPH_DATA` in the shell), else
-2. that key's **mem stub** (`registerMemStub` in a `*.mem-stubs.ts`): the project's default user, a fake email.
+2. that key's **mem stub** (the fake on the key in `*.mem-keys.ts`): the project's default user, a fake email.
 
 So a session started without `--data` signs in as **the mem stub's user**, whoever that is. Every reply's
 `snapshot.mem` says where each key's value came from, never the value itself:

@@ -61,9 +61,7 @@ Shared across pages, in `src/states/`:
 - `<area>.states.ts`: the Checkpoints, as values - `export const Login = checkpoint("Login"); export type Login = typeof Login;`
   (where a flow begins is waygraph's own `Start`: `from: Start`, `to: Start`)
 - `<area>.mem-keys.ts`: `export const AppKeys = keys("app")<{ credentials: { username: string; password: string } }>();`
-- `<area>.mem-stubs.ts`: `registerMemStub(AppKeys.credentials, () => ({ username: "...", password: "..." }))` - the
-  session uses it for any key `--data` didn't give, so a Block with `requires` runs. Say whose account it is, and
-  remember a session run without `--data` signs in as it. Nothing imports this file: the tools load it.
+- the fake values of mem keys live on the keys (`keys("app")<{...}>({ credentials: () => ({ ... }) })` in `<area>.mem-keys.ts`).
 
 A freeform project (`src/blocks/<site>/<page>/`, `nav-*.block.ts`, `methods/`, `<page>.sel.ts`) keeps its layout; don't switch layouts partway. Full rules and complete files:
 `--skill-convention`.

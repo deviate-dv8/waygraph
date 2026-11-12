@@ -91,10 +91,10 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
 5. **`requires` = externally supplied.** A key an earlier Block in the same chain produces
    is never listed under `requires` - preflight checks the whole chain up front. For a
    genuinely arbitrary key (a username, an email) that a demo/dev run shouldn't need
-   hand-supplied every time, `registerMemStub(key, fake)` + `memStub: true` on the flow (or
+   hand-supplied every time, the fake on the key (`keys("ns")<T>({ field: () => value })`) + `memStub: true` on the flow (or
    `--mem-stub`) fills it from a registry instead - a key with no registration still fails
    preflight exactly as before, so this narrows what needs real input, never removes the guard.
-   Data a run creates is made from `unique` (`registerMemStub(Signup.email, ({ unique }) => \`qa+${unique}@x.test\`)`),
+   Data a run creates is made from `unique` (`keys("signup")<{ email: string }>({ email: ({ unique }) => \`qa+${unique}@x.test\` })`),
    never a constant or `Date.now()`; what a flow creates is deleted in `.finally(DeleteApiBlock)`; a create that can
    meet an earlier run's data resolves to `Created` / `AlreadyExists` instead of failing. A failure that depended on its
    data reruns with `waygraph run <flow> --replay <runId>` (a per-run value, from `unique`, is made new again; the

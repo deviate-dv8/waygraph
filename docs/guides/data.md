@@ -55,7 +55,7 @@ the run before that step could write it.
 | the command line | `--data '{"saucedemo.credentials":{"username":"standard_user","password":"secret_sauce"}}'` |
 | a flow's input | `--input '{…}'` or `--input @cases.json` |
 | a past run | `--replay <runId>` |
-| a mem stub | `registerMemStub(key, fake)` in a `*.mem-stubs.ts` file |
+| a mem stub | the fake value on the key, where it's declared |
 | the flow itself | `.set(key, value)` before the step that reads it ([Flows](./flows#one-block-several-inputs-set)) |
 | code | `new MemPage().set(a, 1).set(b, 2)` before `flow.run(context, mem)` |
 
@@ -64,17 +64,16 @@ the run before that step could write it.
 ## Mem stubs: fake values
 
 ```ts
-// src/states/checkout.mem-stubs.ts
-import { registerMemStub } from "waygraph";
-import { SaucedemoKeys } from "./checkout.mem-keys.js";
-
-registerMemStub(SaucedemoKeys.credentials, () => ({ username: "standard_user", password: "secret_sauce" }));
+// src/states/checkout.mem-keys.ts
+export const SaucedemoKeys = keys("saucedemo")<{ credentials: { username: string; password: string } }>({
+  credentials: () => ({ username: "standard_user", password: "secret_sauce" }),
+});
 ```
 
 A flow opts in with `map({ memStub: true })`, every flow from an Engine with `new Engine({ memStub: true })` (the
 scaffold's), or one command with `--mem-stub`. A stub fills only what nothing else supplied, and `flow.run()` fills
 them itself, so a spec of your own needs no `seedMemStub`. `run`, `demo`, `test`, `auto`, `pilot` and `traverse` load
-every `*.mem-stubs.ts` themselves: no flow imports one.
+every `*.mem-keys.ts` themselves: no flow imports one.
 
 ## Different every run: `unique`
 
@@ -82,8 +81,10 @@ A flow that creates something (a signup, an order) has to pass the second time t
 different every run and in every parallel worker, the same for every stub within one run:
 
 ```ts
-registerMemStub(SignupKeys.email, ({ unique }) => `qa+${unique}@example.com`);
-registerMemStub(SignupKeys.username, ({ unique }) => `qa-${unique}`);
+keys("signup")<{ email: string; username: string }>({
+  email: ({ unique }) => `qa+${unique}@example.com`,
+  username: ({ unique }) => `qa-${unique}`,
+});
 ```
 
 `waygraph check` warns when a Block that makes something (named `create-`, `signup-`, `register-`, or an API Block

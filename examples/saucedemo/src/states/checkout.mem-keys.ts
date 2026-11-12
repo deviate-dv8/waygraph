@@ -10,4 +10,13 @@ export const SaucedemoKeys = keys("saucedemo")<{
    * `instanceOptions`) - a hand-written flow sets it explicitly instead.
    */
   selectedItem: { id: string; name: string };
-}>();
+}>({
+  credentials: () => ({
+    username: "standard_user",
+    password: "secret_sauce",
+  }),
+  selectedItem: () => ({
+    id: "sauce-labs-backpack",
+    name: "Sauce Labs Backpack",
+  })
+});
