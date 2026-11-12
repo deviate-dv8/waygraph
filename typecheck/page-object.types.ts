@@ -1,5 +1,6 @@
 // The page object: `read` first, then `do` and `expects` as functions of the page, which sees the read's keys typed.
 import { definePageBlock } from "../src/engine/block/kinds/page.js";
+import { Trait } from "../src/engine/trait/trait.js";
 import { defineMethodBlock } from "../src/engine/block/kinds/method.js";
 import { checkpoint, type Checkpoint } from "../src/engine/checkpoint/checkpoint.js";
 
@@ -62,3 +63,16 @@ Account.do.save;
 const signIn = (page: import("../src/engine/block/kinds/page.js").PageHandle<"PoSignIn">) => page.method({ to: "PoHome", async act() {} });
 export const SignInPage = definePageBlock({ name: "page-po-sign-in", checkpoint: "PoSignIn", do: (page) => ({ signIn: signIn(page) }) });
 SignInPage.do.signIn;
+
+// An expectation written in the page: description + checks, no Expect Block file.
+export const Shelf = definePageBlock({
+  name: "page-po-shelf",
+  checkpoint: "PoShelf",
+  read: (ctx) => ({ rows: ctx.page.texts("li") }),
+  expects: (page) => ({
+    listed: page.expect({ description: "Rows are listed.", verify: [Trait.visible("li")] }),
+    some: page.read.rows.passes((r) => r.length > 0, "rows"),
+  }),
+});
+Shelf.expects.listed;
+Shelf.expects.some;

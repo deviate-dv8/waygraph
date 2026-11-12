@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { checkpoint, definePageBlock, defineMethodBlock, Engine, MemPage } from "../../src/index.js";
+import { checkpoint, definePageBlock, defineMethodBlock, Engine, MemPage, Trait } from "../../src/index.js";
 import { runVerify } from "../../src/engine/trait/verify.js";
 import { readBlocksFor } from "../../src/engine/read/read-block.js";
 
@@ -57,4 +57,16 @@ test("a page that is its own Checkpoint writes its Methods inline: named by key,
   expect(Own.methods.map((m) => m.name)).toEqual(["po-own-fill-name", "po-own-go-away"]);
   expect(await new Engine().map().gotoPage(Own).method(Own.do.fillName).run(context, new MemPage(), { page })).toEqual({ __state: "PoOwn" });
   expect(await new Engine().map().gotoPage(Own).method(Own.do.goAway).run(context, new MemPage(), { page })).toEqual({ __state: "PoElsewhere" });
+});
+
+test("page.expect writes an expectation in the page: a Block named for the page and key, judging the page", async ({ context, page }) => {
+  const Shelf = definePageBlock({
+    name: "page-po-shelf",
+    checkpoint: "PoShelf",
+    do: (p) => ({ nothing: p.method({ async act(pg) { await pg.setContent(`<ul><li>a</li></ul>`); } }) }),
+    expects: (p) => ({ listed: p.expect({ description: "A row is listed.", verify: [Trait.visible("li")] }) }),
+  });
+  expect(Shelf.expects.listed.name).toBe("expect-po-shelf-listed");
+  expect(Shelf.expects.listed.description).toBe("A row is listed.");
+  await new Engine().map().gotoPage(Shelf).method(Shelf.do.nothing, { expect: [Shelf.expects.listed] }).run(context, new MemPage(), { page });
 });

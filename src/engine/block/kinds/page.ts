@@ -1,6 +1,7 @@
 // A Page Block: "you have arrived" - the hub other pages navigate to, verified by what the page shows.
 import { defineNavigating } from "./nav.js";
 import { defineMethodBlock, type MethodBlock } from "./method.js";
+import { defineExpectBlock, type ExpectBlock, type ExpectBlockOptions } from "./expect.js";
 import type { Page } from "@playwright/test";
 import type { Account } from "../../flow/account.js";
 import { markFor } from "../access.js";
@@ -44,6 +45,8 @@ type CpOfLands<T> = T extends string ? Checkpoint<T> : T extends Checkpoint<stri
 
 /** A Method written inside its page's `do`: the page is its `from` and, unless `to` says otherwise, its `to`. */
 export interface InlineMethod<Out extends Checkpoint<string>, To extends LandsOn> {
+  /** Its name in run logs and the manifest; by default the page's and the key (`login-fill-email`). */
+  name?: string;
   description?: string;
   /** Where it lands, when it isn't the page it's on: a page's name, so no import of it is needed. Several: `lands` says which. */
   to?: To | readonly To[];
@@ -60,6 +63,11 @@ export interface InlineMethod<Out extends Checkpoint<string>, To extends LandsOn
 }
 
 export interface PageSelf<Out extends Checkpoint<string>, R, Nav> {
+  /**
+   * An expectation of this page, written right here: `expects: (page) => ({ saved: page.expect({ description, verify: [...] }) })`.
+   * What a scenario expects on the page, in its words: the demo and Waygraph Studio show the description.
+   */
+  expect(spec: Omit<ExpectBlockOptions<Out>, "checkpoint" | "name"> & { name?: string }): ExpectBlock<Out>;
   /**
    * A Method of this page, written right here: `do: (page) => ({ fill: page.method({ async act(p) { ... } }) })`. Its name
    * is the key (`login-fill`), it starts and, unless `to` names another page, ends on this page.
@@ -333,9 +341,14 @@ export function definePageBlock<
   // page and its Methods can import each other. The page they're given has what's defined so far (its read and nav).
   const slug = options.name.replace(/^page-/, "");
   const inline = (spec: unknown) => ({ __inlineMethod: spec });
-  const self = { checkpoint: cp, read: readKeys(namespace), nav, method: inline } as unknown as PageSelf<Out, R, Nav>;
+  const inlineExpect = (spec: unknown) => ({ __inlineExpect: spec });
+  const self = { checkpoint: cp, read: readKeys(namespace), nav, method: inline, expect: inlineExpect } as unknown as PageSelf<Out, R, Nav>;
   /** An inline Method becomes a real one, named for its key. */
   const toBlock = (key: string, entry: unknown): unknown => {
+    if (typeof entry === "object" && entry !== null && "__inlineExpect" in entry) {
+      const spec = (entry as { __inlineExpect: Omit<ExpectBlockOptions<Out>, "checkpoint" | "name"> & { name?: string } }).__inlineExpect;
+      return defineExpectBlock({ name: `expect-${slug}-${key.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()}`, ...spec, checkpoint: cp } as ExpectBlockOptions<Out>);
+    }
     if (typeof entry !== "object" || entry === null || !("__inlineMethod" in entry)) return resolveEntry(entry);
     const spec = (entry as { __inlineMethod: InlineMethod<Out, LandsOn> }).__inlineMethod;
     const targets = (spec.to === undefined ? [cp] : Array.isArray(spec.to) ? spec.to : [spec.to]).map((t) => (typeof t === "string" ? makeCheckpoint(t) : t)) as Checkpoint<string>[];
@@ -360,7 +373,7 @@ export function definePageBlock<
   };
   const doRecord = once(() => Object.freeze(Object.fromEntries(Object.entries(doOf ? doOf(self) : (methods && !Array.isArray(methods) ? methods : {})).map(([k, entry]) => [k, toBlock(k, entry)]))));
   const expectRecord = once(() =>
-    Object.freeze(Object.fromEntries(Object.entries(typeof expects === "function" ? expects(self) : (expects ?? {})).map(([k, entry]) => [k, resolveEntry(entry)]))),
+    Object.freeze(Object.fromEntries(Object.entries(typeof expects === "function" ? expects(self) : (expects ?? {})).map(([k, entry]) => [k, toBlock(k, entry)]))),
   );
   const methodList = once(() => {
     const named = Object.values(doRecord()).filter(isBlockEntry);
