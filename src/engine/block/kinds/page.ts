@@ -50,6 +50,7 @@ export type PageBlockOptions<
   Nav = undefined,
   U extends string = string,
   Q extends string = never,
+  F extends "folder" | undefined = undefined,
 > = {
   name: string;
   description?: string;
@@ -120,6 +121,11 @@ export type PageBlockOptions<
    * @example query: ["tab", "filter"]
    */
   query?: readonly Q[];
+  /**
+   * `"folder"`: the page's address is its folder under `src/map/` (`requests/[id]/` is `/requests/[id]`), as in Next.js and
+   * Nuxt; no `url` to write, and it can't disagree with where the page lives. `Page.go({ id })` fills the `[id]`.
+   */
+  route?: F;
   /** Optional click-nav onto this page. XOR with `url`. */
   click?: string | ((mem: MemPage) => string);
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
@@ -148,6 +154,7 @@ export type PageBlock<
   R = Record<never, never>,
   U extends string = string,
   Q extends string = never,
+  F extends "folder" | undefined = undefined,
 > = Omit<
   DefinedBlock<Checkpoint<string>, Out>,
   "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
@@ -168,16 +175,16 @@ export type PageBlock<
   readonly read: PageReadKeys<R>;
   withVerify(
     verify: Trait[] | ((out: Out) => Trait[]),
-  ): PageBlock<Out, M, Nav, E, R, U, Q>;
+  ): PageBlock<Out, M, Nav, E, R, U, Q, F>;
   modVerify(
     nameOrIndex: string | number,
     newCheck: Trait["check"] | Trait,
-  ): PageBlock<Out, M, Nav, E, R, U, Q>;
-  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav, E, R, U, Q>;
-  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q>;
-  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q>;
-  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q>;
-} & PageGo<Out, U, Q>;
+  ): PageBlock<Out, M, Nav, E, R, U, Q, F>;
+  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav, E, R, U, Q, F>;
+  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F>;
+  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F>;
+  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F>;
+} & PageGo<Out, U, Q> & PageFolderGo<Out, F>;
 
 
 /** The params of a page's address: `/requests/:id` and `/requests/[id]` have `id`; none: `never`. */
@@ -204,8 +211,26 @@ export type PageGo<Out extends Checkpoint<string>, U extends string, Q extends s
   : { readonly go: (params: Params<U, Q>) => DefinedBlock<Checkpoint<string>, Out> }) &
   ([Q] extends [never] ? unknown : { readonly setQuery: (values: { [K in Q]?: string | number }) => DefinedBlock<Out, Out> });
 
+/** A page whose address is its folder: `go` takes its params by name (a `[id]` folder), untyped, as the folder isn't visible to types. */
+export type PageFolderGo<Out extends Checkpoint<string>, F> = F extends "folder"
+  ? { readonly go: (params: Record<string, string | number>) => DefinedBlock<Checkpoint<string>, Out> }
+  : unknown;
+
 /** A record of page methods with each `() => Block` factory resolved to its Block. */
 export type PageMethods<M> = { readonly [K in keyof M]: M[K] extends () => infer B ? B : M[K] };
+
+/**
+ * The address a page's folder gives it: `src/map/(app)/requests/[id]/_page.block.ts` is `/requests/[id]`. `(group)` and
+ * `_private` folders aren't part of it. Read from where `definePageBlock` was called, so it needs no path from the page.
+ */
+function addressFromFolder(name: string): string {
+  const frames = (new Error().stack ?? "").split("\n").map((l) => /(?:file:\/\/)?(\/.+?\.[cm]?[jt]s):\d+:\d+/.exec(l)?.[1]).filter((f): f is string => !!f);
+  const file = frames.map((f) => decodeURIComponent(f.replace(/^file:\/\//, ""))).find((f) => /\/src\/map\//.test(f));
+  if (!file) throw new Error(`definePageBlock("${name}"): route: "folder" needs the page to be defined under src/map/`);
+  const rel = file.slice(file.lastIndexOf("/src/map/") + "/src/map/".length).split("/").slice(0, -1);
+  const segments = rel.filter((seg) => !/^\(.*\)$/.test(seg) && !seg.startsWith("_"));
+  return "/" + segments.join("/");
+}
 
 /** Whether `entry` is a Block (it has an instruction): the entries of `do` and `expects` can also be Traits. */
 const isBlockEntry = (entry: unknown): entry is SomeDefinedBlock => typeof entry === "object" && entry !== null && "instruction" in entry;
@@ -221,14 +246,21 @@ export function definePageBlock<
   R extends PageRead = Record<never, never>,
   const U extends string = string,
   const Q extends string = never,
->(options: PageBlockOptions<Out, M, E, R, Nav, U, Q> & { nav?: Nav }): PageBlock<Out, M, Nav, E, R, U, Q> {
+  F extends "folder" | undefined = undefined,
+>(options: PageBlockOptions<Out, M, E, R, Nav, U, Q, F> & { nav?: Nav }): PageBlock<Out, M, Nav, E, R, U, Q, F> {
   if (options.url !== undefined && options.click !== undefined) {
     throw new Error(
       `definePageBlock("${options.name}"): pass url XOR click (or neither for arrival-only hub)`,
     );
   }
-  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, from: opensFrom, query, ...rest } = options;
-  const built = defineNavigating(rest) as unknown as PageBlock<Out, M, Nav, E, R, U, Q>;
+  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, from: opensFrom, query, route, ...restOptions } = options;
+  if (route === "folder" && (options.url !== undefined || options.click !== undefined)) {
+    throw new Error(`definePageBlock("${options.name}"): route: "folder" gives the address; drop url/click`);
+  }
+  const folderUrl = route === "folder" ? addressFromFolder(options.name) : undefined;
+  const rest = folderUrl ? { ...restOptions, url: folderUrl } : restOptions;
+  const pageUrl = folderUrl ?? options.url;
+  const built = defineNavigating(rest) as unknown as PageBlock<Out, M, Nav, E, R, U, Q, F>;
   markFor(built, given);
   // A page's screenshot is taken whenever a step lands on it, not only when this hub runs as a step.
   if (options.screenshot) screenshotPage(options.checkpoint.__state, options.screenshot === true ? {} : options.screenshot);
@@ -293,13 +325,13 @@ export function definePageBlock<
   // saucedemo fixture this whole package tests against uses definePageBlock
   // for every one of its own nav-* Blocks. Missing this here meant the
   // marker existed but was never actually set on any real project's Blocks.
-  if (typeof options.url === "string") {
-    mark(built, "__waygraphNavUrl", options.url);
-  } else if (typeof options.url === "function") {
+  if (typeof pageUrl === "string") {
+    mark(built, "__waygraphNavUrl", pageUrl);
+  } else if (typeof pageUrl === "function") {
     // A url built from mem: the manifest reads its source for the pattern it makes (`/requests/:id`).
-    mark(built, "__waygraphNavUrlFn", options.url);
+    mark(built, "__waygraphNavUrlFn", pageUrl);
   }
-  if (options.url !== undefined || options.click !== undefined) {
+  if (pageUrl !== undefined || options.click !== undefined) {
     mark(built, "__waygraphPageDeepLink", true);
   }
   if (options.click !== undefined) {
@@ -307,9 +339,9 @@ export function definePageBlock<
   }
   if (query?.length) mark(built, "__waygraphQuery", [...query]);
   // `Page.go({ id, tab })`: the same page opened at one address of its pattern, its query params in the address.
-  const pathParams = typeof options.url === "string" && /\/:\w+|\[\w+\]/.test(options.url);
-  if (typeof options.url === "string" && (pathParams || query?.length)) {
-    const pattern = options.url;
+  const pathParams = typeof pageUrl === "string" && /\/:\w+|\[\w+\]/.test(pageUrl);
+  if (typeof pageUrl === "string" && (pathParams || query?.length)) {
+    const pattern = pageUrl;
     const queryNames = new Set<string>(query ?? []);
     Object.defineProperty(built, "go", {
       enumerable: false,
