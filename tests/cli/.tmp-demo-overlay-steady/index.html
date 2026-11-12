@@ -1,0 +1,4 @@
+<h1 id="title">Form</h1><input id="first"><input id="last"><p>Filled: <span id="count">0</span></p>
+<script>for (const id of ["first", "last"]) document.getElementById(id).addEventListener("input", () => {
+  document.getElementById("count").textContent = String([...document.querySelectorAll("input")].filter((i) => i.value).length);
+});</script>

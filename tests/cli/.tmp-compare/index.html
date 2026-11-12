@@ -1,0 +1,5 @@
+<h1 id="title">App</h1><p>Width: <span id="width"></span></p><button id="admin" hidden>Admin</button>
+<script>const role = new URLSearchParams(location.search).get("role");
+if (role) localStorage.setItem("role", role);
+document.getElementById("width").textContent = String(innerWidth);
+document.getElementById("admin").hidden = localStorage.getItem("role") !== "admin";</script>

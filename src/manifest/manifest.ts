@@ -199,6 +199,8 @@ function panesOf(steps: { block: SomeBlock }[]): Pick<ManifestFlow, "panes" | "s
   };
 }
 
+const queryOf = (block: object): string[] | undefined => (block as { __waygraphQuery?: readonly string[] }).__waygraphQuery?.slice();
+
 /** Builds the manifest from a scan. */
 export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
   const checkpoints = new Set<string>();
@@ -225,7 +227,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       file: b.file,
       ...(map ? { map } : {}),
       ...(url ? { url } : {}),
-      ...((b.block as { __waygraphQuery?: string[] }).__waygraphQuery ? { query: [...(b.block as { __waygraphQuery: string[] }).__waygraphQuery] } : {}),
+      ...(queryOf(b.block) ? { query: queryOf(b.block) } : {}),
       ...((b.block as { __waygraphPageDeepLink?: boolean }).__waygraphPageDeepLink ? { opens: true as const } : {}),
       ...(source ? { source } : {}),
       checks: { precondition: checksOf(instruction?.precondition), verify: checksOf(instruction?.verify) },
