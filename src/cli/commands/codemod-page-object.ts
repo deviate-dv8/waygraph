@@ -254,10 +254,17 @@ export function codemodPageObject(dir: string): { changed: string[]; problems: s
     if (r.namespace.ns !== page.defaultNs) page.options.addPropertyAssignment({ name: "readAs", initializer: JSON.stringify(r.namespace.ns) });
     converted.set(`${r.namespace.file}#${r.namespace.name}`, page);
     r.decl.getVariableStatement()?.remove();
-    for (const helper of helpers) {
-      const own = Node.isVariableStatement(helper) ? helper.getDeclarations().map((d) => d.getName()) : [(helper as import("ts-morph").FunctionDeclaration).getName() ?? ""];
-      const used = rsf.getDescendantsOfKind(SyntaxKind.Identifier).some((id) => own.includes(id.getText()) && !helper.containsRange(id.getStart(), id.getEnd()));
-      if (!used) helper.remove();
+    for (let again = true; again; ) {
+      again = false;
+      for (const helper of helpers) {
+        if (helper.wasForgotten()) continue;
+        const own = Node.isVariableStatement(helper) ? helper.getDeclarations().map((d) => d.getName()) : [(helper as import("ts-morph").FunctionDeclaration).getName() ?? ""];
+        const used = rsf.getDescendantsOfKind(SyntaxKind.Identifier).some((id) => own.includes(id.getText()) && !helper.containsRange(id.getStart(), id.getEnd()));
+        if (!used) {
+          helper.remove();
+          again = true;
+        }
+      }
     }
     touched.add(page.file);
     touched.add(r.file);

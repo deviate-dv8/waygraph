@@ -90,10 +90,18 @@ export function codemodMemStubs(dir: string): { changed: string[]; problems: str
       else declared.addArgument(`{ ${field}: ${stubText} }`);
       (arg ?? declared.getArguments()[0])?.formatText();
       statement.remove();
-      for (const helper of helpers) {
-        const ids = Node.isVariableStatement(helper) ? helper.getDeclarations().map((d) => d.getName()) : [(helper as import("ts-morph").FunctionDeclaration).getName() ?? ""];
-        const still = sf.getDescendantsOfKind(SyntaxKind.Identifier).some((id) => ids.includes(id.getText()) && !helper.containsRange(id.getStart(), id.getEnd()));
-        if (!still) helper.remove();
+      // The helpers nothing uses any more go, the ones the others used last.
+      for (let again = true; again; ) {
+        again = false;
+        for (const helper of helpers) {
+          if (helper.wasForgotten()) continue;
+          const ids = Node.isVariableStatement(helper) ? helper.getDeclarations().map((d) => d.getName()) : [(helper as import("ts-morph").FunctionDeclaration).getName() ?? ""];
+          const still = sf.getDescendantsOfKind(SyntaxKind.Identifier).some((id) => ids.includes(id.getText()) && !helper.containsRange(id.getStart(), id.getEnd()));
+          if (!still) {
+            helper.remove();
+            again = true;
+          }
+        }
       }
       touched.add(file);
       touched.add(keysFile);
