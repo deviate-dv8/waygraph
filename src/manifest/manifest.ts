@@ -227,7 +227,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       file: b.file,
       ...(map ? { map } : {}),
       ...(url ? { url } : {}),
-      ...(queryOf(b.block) ? { query: queryOf(b.block) } : {}),
+      ...((): { query?: string[] } => { const q = queryOf(b.block); return q ? { query: q } : {}; })(),
       ...((b.block as { __waygraphPageDeepLink?: boolean }).__waygraphPageDeepLink ? { opens: true as const } : {}),
       ...(source ? { source } : {}),
       checks: { precondition: checksOf(instruction?.precondition), verify: checksOf(instruction?.verify) },
