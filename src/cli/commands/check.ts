@@ -1,5 +1,6 @@
 import { findStatePages } from "../../analysis/state-pages.js";
 import { buildManifest } from "../../manifest/manifest.js";
+import { readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { findOrphanBlocks } from "../../analysis/graph.js";
 import { checkMapGroups, checkProject, validateFlows } from "../../analysis/check.js";
@@ -112,6 +113,14 @@ export async function checkCase(args: string[]): Promise<void> {
       if (!flags.noPractices) {
         printPracticeReport(proj, practiceWarnings);
       }
+      // Selectors `waygraph gen` wrote and nobody has filled in.
+      const unfinished = walkDir(proj, /(?:^|[\\/.])_?sel\.ts$/).flatMap((file) =>
+        readFileSync(file, "utf8")
+          .split("\n")
+          .flatMap((line, i) => (/:\s*"TODO"/.test(line) ? [`${relative(proj, file)}:${i + 1}  ${line.trim()}`] : [])),
+      );
+      for (const u of unfinished) console.warn(`waygraph check: unfinished selector ${u}`);
+      if (unfinished.length) console.log(`waygraph check: ${unfinished.length} selector${unfinished.length === 1 ? "" : "s"} still "TODO" (from waygraph gen)`);
       for (const w of constantDataWarnings) {
         console.warn(`waygraph check: ${relative(proj, w.file)} (${w.blockName}) makes something, but ${w.key} gives the same value every run and none of its keys is new every run - a second run may make the same thing again; build the name of what it makes from unique: registerMemStub(key, ({ unique }) => ...)`);
       }

@@ -12,7 +12,7 @@ import { checkpoint as makeCheckpoint, type Checkpoint } from "../../checkpoint/
 import type { Trait } from "../../trait/trait.js";
 import { MemPage } from "../../mem/mem.js";
 import type { MemKey } from "../../mem/mem.js";
-import { addressFromFolder, type CpOfLands, type InlineLink, type LandsOn, type PageFolderGo, type PageGo, type PageLinks, type PageName } from "./page-parts.js";
+import { addressFromFolder, type CpOfLands, type InlineLink, type LandsOn, type PageFolderGo, type PageGo, type PageLinks, type PageName, tagOf } from "./page-parts.js";
 import { registerFrame } from "../../run/frame.js";
 import { defineLayout, layoutState } from "./layout.js";
 import { markRoute } from "../../checkpoint/route.js";
@@ -168,7 +168,7 @@ export type PageBlockOptions<
    * after something else (every in-app page after sign-in), so route finding goes through the sign-in steps.
    * @example from: SIGNED_IN
    */
-  from?: readonly Checkpoint<string>[];
+  from?: readonly (PageName | Checkpoint<string>)[];
   /**
    * Optional deep-link onto this page (`goto`). XOR with `click`. Omit when the
    * hub is arrival-only (previous Block already resolved here).
@@ -404,7 +404,7 @@ export function definePageBlock<
   if (frame) mark(built, "__waygraphFrame", frame);
   if (covers !== undefined) mark(built, "__waygraphCovers", covers);
   if (route === "folder") mark(built, "__waygraphRoute", "folder");
-  markRoute(built, opensFrom?.map((c) => c.__state) ?? ["*"], [cp.__state]);
+  markRoute(built, opensFrom?.map(tagOf) ?? ["*"], [cp.__state]);
   mark(built, "__waygraphKind", "page");
   mark(built, "__waygraphSalt", "page");
   if (readBlock) mark(built, "__waygraphReadBlock", readBlock);
@@ -452,7 +452,7 @@ export function definePageBlock<
           : [];
         const own = Array.isArray(rest.verify) ? rest.verify : undefined;
         const at = defineNavigating({ ...rest, ...(own ? { verify: [...own, ...arrives] } : {}), name: `${options.name}(${Object.values(params).join(", ")})`, url });
-        markRoute(at, opensFrom?.map((c) => c.__state) ?? ["*"], [cp.__state]);
+        markRoute(at, opensFrom?.map(tagOf) ?? ["*"], [cp.__state]);
         mark(at, "__waygraphKind", "page");
         mark(at, "__waygraphSalt", "page");
         mark(at, "__waygraphNavUrl", url);
@@ -493,6 +493,6 @@ export function definePageBlock<
       },
     });
   }
-  if (opensFrom?.length) mark(built, "__waygraphNavFrom", opensFrom.map((c) => c.__state));
+  if (opensFrom?.length) mark(built, "__waygraphNavFrom", opensFrom.map(tagOf));
   return built;
 }

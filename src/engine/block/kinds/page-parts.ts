@@ -81,3 +81,6 @@ export function addressFromFolder(name: string): string {
   return "/" + segments.join("/");
 }
 
+
+/** The tag of a page named by its name or its Checkpoint. */
+export const tagOf = (page: string | Checkpoint<string>): string => (typeof page === "string" ? page : page.__state);

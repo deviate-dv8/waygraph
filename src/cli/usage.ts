@@ -171,6 +171,10 @@ Also:
                                            and runs, and playing a flow (run, demo, replay).
                                            The project is the folder given, or the one the
                                            current folder is in. http://localhost:9294
+  waygraph gen <page|method|flow|keys|account> <name> [--read a,b] [--do a,b] [--shell] [--inline] [--dry]
+                                           Files from the convention: a page (its _page.block.ts, _sel.ts and a
+                                           _methods/ file per Method), a Method of a page, a flow, mem keys, an
+                                           account. Never overwrites; waygraph gen page requests/[id] --do fillName,save
   waygraph types [project]                 Write the names of the project's pages (src/waygraph-pages.d.ts), so
                                            to: and covers: complete and a typo is an error; typecheck and
                                            check rewrite it.
