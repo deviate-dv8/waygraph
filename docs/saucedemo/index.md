@@ -77,6 +77,7 @@ Blocks carry behaviour only (act, observe, resolve, verify). They have no narrat
 | `stubOnErrorFlow` | A forced failure, with `stubOnError` ringing the error banner |
 | `memStubDemoFlow` | `map({ memStub: true })`: credentials are never supplied |
 | `apiDemoFlow` | UI and API Blocks in one flow |
+| `hybridSeedingFlow` | An API step seeds a note, the shopper adds an item in the browser, an API step checks: each call shows its request and response in the demo |
 
 ## Narration
 

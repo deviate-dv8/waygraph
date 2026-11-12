@@ -4,7 +4,7 @@ import { InventoryPage } from "../../states/checkout.states.js";
 
 /** Standard user signs in. Credentials come from the memStub in src/states/checkout.mem-stubs.ts unless --data / mem set them. */
 export const loginFlow = engine
-  .map({ memStub: true })
+  .map({ title: "Sign in", description: "A standard user signs in and lands on the inventory.", labels: ["auth", "smoke"], memStub: true })
   .gotoPage(Login.stubBefore((ctx) => ctx.ui.title("Sign In")))
   .method(Login.do.fillUsername)
   .method(Login.do.fillPassword)
