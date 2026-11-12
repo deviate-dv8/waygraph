@@ -84,9 +84,25 @@ export async function typecheckCase(args: string[]): Promise<void> {
       return;
 }
 
+/** `waygraph check --network <run|latest>`: what the run's calls say about its pages. */
+async function networkReport(proj: string, which: string): Promise<void> {
+  const { defaultRunLogDir, readRunLog } = await import("../../runtime/run-log.js");
+  const { readdirSync } = await import("node:fs");
+  const { networkFindings } = await import("../../analysis/network-check.js");
+  const dir = defaultRunLogDir(proj);
+  const id = which === "latest" || which === "" ? readdirSync(dir).filter((f) => f.endsWith(".jsonl")).sort().at(-1) : which;
+  if (!id) return void console.error(`waygraph check: no run logs in ${dir}`);
+  const events = readRunLog(proj, id);
+  const calls = events.filter((e) => e.type === "step:call").length;
+  const findings = networkFindings(events);
+  for (const f of findings) console.warn(`waygraph check: ${f.page} (step ${f.step + 1}) ${f.kind}: ${f.what} - ${f.detail}`);
+  console.log(`waygraph check: ${calls} call${calls === 1 ? "" : "s"} in ${id.replace(/\.jsonl$/, "")}, ${findings.length} finding${findings.length === 1 ? "" : "s"}`);
+}
+
 export async function checkCase(args: string[]): Promise<void> {
       const flags = parseRunFlags(args.slice(1), args[0] ?? "check");
       const proj = resolve(flags.positionals[0] ?? process.cwd());
+      if (flags.network !== undefined) return networkReport(proj, flags.network);
       await (await import("./types.js")).writePageTypes(proj).catch((err: unknown) => console.warn(`waygraph types: ${String(err)}`));
       const { navWarnings, selWarnings, practiceWarnings, constantDataWarnings, unreadPages } = await checkProject(
         proj,

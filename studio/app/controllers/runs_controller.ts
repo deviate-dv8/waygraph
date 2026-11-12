@@ -33,6 +33,11 @@ export default class RunsController {
   }
 
   /** A run's video or trace, shown in the page or, with `download`, saved under its run's name. */
+  async call({ params, response }: HttpContext) {
+    const file = this.project.callFile(params.id, params.file)
+    return file ? response.download(file) : response.notFound()
+  }
+
   async artifact({ params, request, response }: HttpContext) {
     const artifact = await this.project.artifact(params.id, Number(params.index))
     if (!artifact) return response.notFound()

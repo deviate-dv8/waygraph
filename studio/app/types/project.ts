@@ -219,7 +219,23 @@ export type RunSummary = {
 }
 
 /** One step of a run, its events folded together. */
+/** An HTTP call a step made, from the run log's `step:call`. `body`: the file in the run's `calls/` folder holding its request and response. */
+export type StepCall = {
+  source: 'page' | 'api'
+  method: string
+  url: string
+  route: string
+  status: number
+  ms: number
+  size: number | null
+  failed: boolean
+  external: boolean
+  body: string | null
+}
+
 export type RunStep = {
+  /** The calls it made, in order. */
+  calls: StepCall[]
   index: number
   block: string
   kind: string

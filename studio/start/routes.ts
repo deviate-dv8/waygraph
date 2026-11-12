@@ -16,6 +16,7 @@ router.get('/flows/:name', [controllers.Flows, 'show']).as('flows.show')
 router.get('/blocks', [controllers.Blocks, 'index']).as('blocks.index')
 router.get('/runs', [controllers.Runs, 'index']).as('runs.index')
 router.get('/runs/:id', [controllers.Runs, 'show']).as('runs.show')
+router.get('/runs/:id/calls/:file', [controllers.Runs, 'call']).as('runs.call')
 router.get('/runs/:id/artifacts/:index', [controllers.Runs, 'artifact']).as('runs.artifact')
 router.get('/source', [controllers.Sources, 'show']).as('sources.show')
 router

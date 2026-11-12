@@ -68,6 +68,7 @@ More: [Testing](../guides/testing).
 | Want | Command |
 |---|---|
 | lint Blocks | `waygraph check` (warnings only) |
+| what a run's HTTP calls say about its pages | `waygraph check --network <runId\|latest>`: the same GET twice, one route with many ids (N+1), slow (> 1 s), large (> 100 KB), uncached, failed calls, too many at once |
 | `tsc --noEmit`, then the lint | `waygraph typecheck [--no-practices]` |
 | folders match URLs | `waygraph map` (exits 1 on a mismatch) |
 | pack a map group | `waygraph map pack <group> [--out dir] [--name pkg] [--version x.y.z]` |

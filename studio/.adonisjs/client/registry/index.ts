@@ -44,6 +44,12 @@ const routes = {
     tokens: [[0,"runs"],[1,"id"]],
     types: placeholder as Registry['runs.show']['types'],
   },
+  'runs.call': {
+    methods: ["GET","HEAD"],
+    pattern: '/runs/:id/calls/:file',
+    tokens: [[0,"runs"],[1,"id"],[0,"calls"],[1,"file"]],
+    types: placeholder as Registry['runs.call']['types'],
+  },
   'runs.artifact': {
     methods: ["GET","HEAD"],
     pattern: '/runs/:id/artifacts/:index',

@@ -470,6 +470,7 @@ the site's `*-web/` tree. Browser-driven (DOM / iframe Traits), not the catcher'
 npx waygraph check .          # orphans + nav-escape + inline-selector + bad-practice warnings
 npx waygraph typecheck .      # tsc --noEmit + bad-practice warnings (npm run typecheck)
 npx waygraph check --no-practices .   # skip bad-practice scan only
+npx waygraph check --network latest   # a run's HTTP calls: duplicates, N+1, slow, large, failed (the run log's step:call)
 npx waygraph map .            # exit 1 if src/map/ folder path != real static url
 npx waygraph validate .       # every .flow.ts loads
 npx waygraph graph .          # nodes/edges/skipped/orphans - counts should make sense

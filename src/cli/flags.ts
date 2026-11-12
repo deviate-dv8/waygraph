@@ -86,6 +86,8 @@ interface RunFlags {
   json?: boolean;
   /** check/typecheck: skip bad-practice warnings. */
   noPractices?: boolean;
+  /** check: the run (or `latest`) whose calls to analyse. */
+  network?: string;
   /** __auto-serve (the detached session child): its session id. */
   sessionId?: string;
 }
@@ -140,6 +142,7 @@ export const RUN_OPTIONS = {
   "json": { type: "boolean", help: "Machine-readable JSON", for: ["session"] },
   "mermaid": { type: "boolean", help: "Print the graph as Mermaid" },
   "map": { type: "boolean", help: "Print the map" },
+  "network": { type: "string", value: "RUN|latest", help: "check: what a run's HTTP calls say about its pages (duplicates, N+1, slow, large, failed)" },
   "no-practices": { type: "boolean", help: "check / typecheck: skip bad-practice warnings" },
   "session-id": { type: "string", help: "Internal: the id a detached session child serves (set by browser start)" },
 } as const satisfies Record<string, OptionSpec & { for?: readonly HelpFor[] }>;
@@ -203,6 +206,7 @@ export function parseRunFlags(argv: string[], command: string): RunFlags {
   if (v.headless) out.headlessBrowser = true;
   if (v.json) out.json = true;
   if (v["no-practices"]) out.noPractices = true;
+  if (v.network !== undefined) out.network = v.network;
   if (v["session-id"] !== undefined) out.sessionId = v["session-id"];
   if (v.blank) out.blank = true;
   if (v.goto !== undefined) out.goto = v.goto;

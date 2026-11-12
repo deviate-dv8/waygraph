@@ -20,6 +20,7 @@ const step = (block: string, status: RunStep['status'], ms: number): RunStep =>
     screenshot: null,
     pane: null,
     diffs: [],
+    calls: [],
   }) as RunStep
 const run = (id: string, startedAt: number, steps: RunStep[]) =>
   ({ id, startedAt, stepsList: steps }) as unknown as RunDetail

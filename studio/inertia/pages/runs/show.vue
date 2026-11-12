@@ -8,7 +8,7 @@ import { urlFor } from '~/client'
 import { ago, count, duration, hostOf, shortUrl } from '~/lib/format'
 import { runTitle } from '~/lib/runs'
 import { usePlay } from '~/lib/play'
-import type { RunDetail } from '#types/project'
+import type { RunDetail, StepCall } from '#types/project'
 
 /** One run: its steps on the canvas, coloured by how each went, and the failure, the page's data and the mem it used. */
 const props = defineProps<{
@@ -17,6 +17,46 @@ const props = defineProps<{
   /** What the flow expects after each step, when the run is of one flow. */
   expects: string[][]
 }>()
+
+/** The call opened in the step panel, with what it sent and got back (fetched from the run's call file). */
+const openCall = ref<{
+  call: StepCall
+  data: {
+    request: { headers?: Record<string, string>; body?: unknown }
+    response: { headers?: Record<string, string>; body?: unknown }
+  } | null
+} | null>(null)
+async function showCall(run: string, call: StepCall) {
+  if (openCall.value?.call === call) return void (openCall.value = null)
+  openCall.value = { call, data: null }
+  if (!call.body) return
+  try {
+    const res = await fetch(urlFor('runs.call', { id: run, file: call.body }))
+    if (res.ok && openCall.value?.call === call) openCall.value.data = await res.json()
+  } catch {
+    /* the file is gone: the summary is still there */
+  }
+}
+const pretty = (value: unknown) =>
+  value === undefined ? '' : typeof value === 'string' ? value : JSON.stringify(value, null, 2)
+const words: Record<number, string> = {
+  200: 'OK',
+  201: 'Created',
+  204: 'No Content',
+  304: 'Not Modified',
+  400: 'Bad Request',
+  401: 'Unauthorized',
+  403: 'Forbidden',
+  404: 'Not Found',
+  409: 'Conflict',
+  422: 'Unprocessable Entity',
+  429: 'Too Many Requests',
+  500: 'Internal Server Error',
+  502: 'Bad Gateway',
+  503: 'Service Unavailable',
+}
+const statusText = (s: number) =>
+  s === 0 ? 'No response' : words[s] ? `${s} ${words[s]}` : String(s)
 
 /** The site the run started on: a step on it shows only its path. */
 const home = computed(() => hostOf(props.run.stepsList.find((s) => s.url)?.url))
@@ -243,6 +283,47 @@ const watching = ref(false)
               >{{ step.url }}</a
             >
           </p>
+          <div v-if="step.calls.length" class="space-y-1">
+            <p class="text-xs font-semibold text-(--ink-soft) uppercase">API calls</p>
+            <template v-for="(call, i) in step.calls" :key="i">
+              <button
+                type="button"
+                class="flex w-full items-baseline gap-2 rounded px-1 py-0.5 text-left text-xs hover:bg-(--island-line)"
+                :class="call.external ? 'opacity-60' : ''"
+                @click="showCall(props.run.id, call)"
+              >
+                <span class="w-11 shrink-0 font-mono font-semibold">{{ call.method }}</span>
+                <span class="min-w-0 flex-1 truncate font-mono" :title="call.url">{{
+                  call.route
+                }}</span>
+                <span :class="call.failed ? 'text-(--fail)' : ''" class="shrink-0 font-semibold">{{
+                  statusText(call.status)
+                }}</span>
+                <span class="shrink-0 text-(--ink-soft)">{{ call.ms }} ms</span>
+              </button>
+              <div
+                v-if="openCall?.call === call"
+                class="space-y-2 rounded border border-(--island-line) p-2 text-xs"
+              >
+                <p class="font-mono break-all">{{ call.method }} {{ call.url }}</p>
+                <p v-if="!openCall.data" class="text-(--ink-soft)">
+                  {{ call.body ? 'Loading…' : 'No bodies were kept for this call.' }}
+                </p>
+                <template v-else>
+                  <p class="font-semibold">Request</p>
+                  <pre
+                    v-if="pretty(openCall.data.request.body)"
+                    class="max-h-48 overflow-auto whitespace-pre-wrap break-all font-mono"
+                    >{{ pretty(openCall.data.request.body) }}</pre>
+                  <p v-else class="text-(--ink-soft)">No body</p>
+                  <p class="font-semibold">Response</p>
+                  <pre class="max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono">{{
+                    pretty(openCall.data.response.body) || 'No body'
+                  }}</pre>
+                </template>
+              </div>
+            </template>
+          </div>
           <div
             v-if="step.status === 'failed'"
             class="space-y-2 rounded-lg border border-(--fail) p-3"

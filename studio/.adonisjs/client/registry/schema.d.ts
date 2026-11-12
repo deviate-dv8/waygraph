@@ -86,6 +86,19 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/runs_controller').default['show']>>>
     }
   }
+  'runs.call': {
+    methods: ["GET","HEAD"]
+    pattern: '/runs/:id/calls/:file'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; file: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/runs_controller').default['call']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/runs_controller').default['call']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/runs_controller').default['call']>>>
+    }
+  }
   'runs.artifact': {
     methods: ["GET","HEAD"]
     pattern: '/runs/:id/artifacts/:index'

@@ -10,6 +10,7 @@ export type ScannedRoutes = {
     'blocks.index': { paramsTuple?: []; params?: {} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'runs.call': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
     'runs.artifact': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'index': ParamValue} }
     'sources.show': { paramsTuple?: []; params?: {} }
     'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }
@@ -31,6 +32,7 @@ export type ScannedRoutes = {
     'blocks.index': { paramsTuple?: []; params?: {} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'runs.call': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
     'runs.artifact': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'index': ParamValue} }
     'sources.show': { paramsTuple?: []; params?: {} }
     'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }
@@ -46,6 +48,7 @@ export type ScannedRoutes = {
     'blocks.index': { paramsTuple?: []; params?: {} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'runs.call': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
     'runs.artifact': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'index': ParamValue} }
     'sources.show': { paramsTuple?: []; params?: {} }
     'screenshots.page': { paramsTuple: [ParamValue]; params: {'checkpoint': ParamValue} }

@@ -13,6 +13,7 @@ export interface ApiDefinition {
   runs: {
     index: typeof routes['runs.index']
     show: typeof routes['runs.show']
+    call: typeof routes['runs.call']
     artifact: typeof routes['runs.artifact']
   }
   sources: {

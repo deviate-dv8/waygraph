@@ -168,6 +168,14 @@ export class ProjectService {
     return path && existsSync(path) ? path : null
   }
 
+  /** The request and response of a call (`calls/<step>-<n>.json` in the run's folder). */
+  callFile(runId: string, file: string): string | null {
+    const plain = (name: string) => /^[\w.-]+$/.test(name)
+    if (!plain(runId) || !plain(file) || !file.endsWith('.json')) return null
+    const path = join(this.runsDir(), runId, 'calls', file)
+    return existsSync(path) ? path : null
+  }
+
   /** A run log's events, parsed again only when the file changed (a run still playing grows). */
   private async events(file: string): Promise<RunEvent[]> {
     const info = await stat(file)
@@ -273,6 +281,7 @@ function foldSteps(events: RunEvent[]): RunStep[] {
         parent: typeof e.parent === 'number' ? e.parent : null,
         pane: typeof e.pane === 'string' ? e.pane : null,
         diffs: [],
+        calls: [],
       })
       continue
     }
@@ -284,6 +293,23 @@ function foldSteps(events: RunEvent[]): RunStep[] {
         for (const index of e.indexes as number[])
           steps.find((s) => s.index === index)?.diffs.push(line)
       }
+      continue
+    }
+    if (e.type === 'step:call') {
+      steps
+        .find((s) => s.index === Number(e.index))
+        ?.calls.push({
+          source: e.source === 'api' ? 'api' : 'page',
+          method: String(e.method),
+          url: String(e.url),
+          route: String(e.route),
+          status: Number(e.status),
+          ms: Number(e.ms),
+          size: typeof e.size === 'number' ? e.size : null,
+          failed: e.failed === true,
+          external: e.external === true,
+          body: typeof e.body === 'string' ? basename(e.body) : null,
+        })
       continue
     }
     const step = [...steps]
