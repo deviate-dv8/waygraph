@@ -24,3 +24,11 @@ CartPage.read.count.is("three");
 CartPage.read.nothing;
 CartPage.do.clear;
 CartPage.expects.empty;
+
+// A page with params in its address: go({ id }) is typed by them; one without has no go.
+export const RequestPage = definePageBlock({ name: "page-request", checkpoint: checkpoint("PoRequest"), url: "/requests/:id/tab/[tab]" });
+RequestPage.go({ id: 1, tab: "files" });
+// @ts-expect-error - tab is missing
+RequestPage.go({ id: 1 });
+// @ts-expect-error - a page without params has no go
+CartPage.go;

@@ -35,3 +35,10 @@ test("a decorated copy of the page keeps its read, do and expects", () => {
   expect(copy.do.empty).toBe(Empty);
   expect(copy.read.count.path).toBe("poBasket.count");
 });
+
+test("Page.go opens a page with params at one address", () => {
+  const Req = definePageBlock({ name: "page-po-req", checkpoint: checkpoint("PoReq"), url: "/requests/:id" });
+  const go = Req.go({ id: 42 });
+  expect(go.name).toBe("page-po-req(42)");
+  expect((go as unknown as { __waygraphNavUrl: string }).__waygraphNavUrl).toBe("/requests/42");
+});

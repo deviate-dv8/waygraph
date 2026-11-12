@@ -136,6 +136,9 @@ A Page Block is the page's namespace: `HomePage` opens it, `HomePage.read.cartCo
 ([What a page shows](./reads)), `HomePage.do.addItem` is the Add Item Block, typed as itself, and `HomePage.expects.empty`
 a check a scenario can expect there. `do` and `expects` are functions of the page, called the first time they're used, so
 the page and its Methods can import each other ([Lifecycle](./lifecycle#why-do-and-expects-are-functions)).
+A page whose address has a param (`url: "/requests/:id"`, or `[id]` as in Next and Nuxt) has `go`, typed by the params:
+`.gotoPage(Request.go({ id: 42 }))` opens `/requests/42`; leaving one out doesn't compile.
+
 A flow imports the page, not each Block:
 
 ```ts

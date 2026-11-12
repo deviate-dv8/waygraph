@@ -47,6 +47,7 @@ export type PageBlockOptions<
   E extends Record<string, PageExpectEntry> = Record<string, PageExpectEntry>,
   R extends PageRead = PageRead,
   Nav = undefined,
+  U extends string = string,
 > = {
   name: string;
   description?: string;
@@ -110,7 +111,7 @@ export type PageBlockOptions<
    * Optional deep-link onto this page (`goto`). XOR with `click`. Omit when the
    * hub is arrival-only (previous Block already resolved here).
    */
-  url?: string | ((mem: MemPage) => string);
+  url?: U | ((mem: MemPage) => string);
   /** Optional click-nav onto this page. XOR with `url`. */
   click?: string | ((mem: MemPage) => string);
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
@@ -137,6 +138,7 @@ export type PageBlock<
   Nav = undefined,
   E extends Record<string, PageExpectEntry> = Record<never, never>,
   R = Record<never, never>,
+  U extends string = string,
 > = Omit<
   DefinedBlock<Checkpoint<string>, Out>,
   "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
@@ -157,17 +159,33 @@ export type PageBlock<
   readonly read: PageReadKeys<R>;
   withVerify(
     verify: Trait[] | ((out: Out) => Trait[]),
-  ): PageBlock<Out, M, Nav, E, R>;
+  ): PageBlock<Out, M, Nav, E, R, U>;
   modVerify(
     nameOrIndex: string | number,
     newCheck: Trait["check"] | Trait,
-  ): PageBlock<Out, M, Nav, E, R>;
-  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav, E, R>;
-  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R>;
-  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R>;
-  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R>;
-};
+  ): PageBlock<Out, M, Nav, E, R, U>;
+  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav, E, R, U>;
+  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U>;
+  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U>;
+  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U>;
+} & PageGo<Out, U>;
 
+
+/** The params of a page's address: `/requests/:id` and `/requests/[id]` have `id`; none: `never`. */
+export type UrlParams<U extends string> = string extends U
+  ? never
+  : U extends `${string}:${infer P}/${infer Rest}`
+    ? P | UrlParams<`/${Rest}`>
+    : U extends `${string}:${infer P}`
+      ? P
+      : U extends `${string}[${infer P}]${infer Rest}`
+        ? P | UrlParams<Rest>
+        : never;
+
+/** `Page.go({ id })`: the page opened at one address of its pattern. Present when the address has params. */
+export type PageGo<Out extends Checkpoint<string>, U extends string> = [UrlParams<U>] extends [never]
+  ? unknown
+  : { readonly go: (params: { [K in UrlParams<U>]: string | number }) => DefinedBlock<Checkpoint<string>, Out> };
 
 /** A record of page methods with each `() => Block` factory resolved to its Block. */
 export type PageMethods<M> = { readonly [K in keyof M]: M[K] extends () => infer B ? B : M[K] };
@@ -184,14 +202,15 @@ export function definePageBlock<
   Nav extends NavBlock<Out> | undefined = undefined,
   E extends Record<string, PageExpectEntry> = Record<never, never>,
   R extends PageRead = Record<never, never>,
->(options: PageBlockOptions<Out, M, E, R, Nav> & { nav?: Nav }): PageBlock<Out, M, Nav, E, R> {
+  const U extends string = string,
+>(options: PageBlockOptions<Out, M, E, R, Nav, U> & { nav?: Nav }): PageBlock<Out, M, Nav, E, R, U> {
   if (options.url !== undefined && options.click !== undefined) {
     throw new Error(
       `definePageBlock("${options.name}"): pass url XOR click (or neither for arrival-only hub)`,
     );
   }
   const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, from: opensFrom, ...rest } = options;
-  const built = defineNavigating(rest) as unknown as PageBlock<Out, M, Nav, E, R>;
+  const built = defineNavigating(rest) as unknown as PageBlock<Out, M, Nav, E, R, U>;
   markFor(built, given);
   // A page's screenshot is taken whenever a step lands on it, not only when this hub runs as a step.
   if (options.screenshot) screenshotPage(options.checkpoint.__state, options.screenshot === true ? {} : options.screenshot);
@@ -267,6 +286,23 @@ export function definePageBlock<
   }
   if (options.click !== undefined) {
     mark(built, "__waygraphNavClick", options.click);
+  }
+  // `Page.go({ id })`: the same page opened at one address of its pattern.
+  if (typeof options.url === "string" && /:\w+|\[\w+\]/.test(options.url)) {
+    const pattern = options.url;
+    Object.defineProperty(built, "go", {
+      enumerable: false,
+      value: (params: Record<string, string | number>) => {
+        const url = pattern.replace(/:(\w+)|\[(\w+)\]/g, (_m, a: string | undefined, b: string | undefined) => encodeURIComponent(String(params[(a ?? b) as string])));
+        const at = defineNavigating({ ...rest, name: `${options.name}(${Object.values(params).join(", ")})`, url });
+        markRoute(at, opensFrom?.map((c) => c.__state) ?? ["*"], [options.checkpoint.__state]);
+        mark(at, "__waygraphKind", "page");
+        mark(at, "__waygraphSalt", "page");
+        mark(at, "__waygraphNavUrl", url);
+        mark(at, "__waygraphPageDeepLink", true);
+        return at;
+      },
+    });
   }
   if (opensFrom?.length) mark(built, "__waygraphNavFrom", opensFrom.map((c) => c.__state));
   return built;
