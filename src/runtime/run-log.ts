@@ -1,9 +1,10 @@
 // Writes every run event to `<dir>/<runId>.jsonl` when WAYGRAPH_RUN_LOG names a folder (the CLI sets it to the project's
 // `.waygraph/runs`; `runLog: false` in the config turns it off). This is the run history Waygraph Studio reads.
-import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
 import { currentStep, onRunEvent, recordArtifact, type RunEvent } from "../engine/run/events.js";
+import { keepCalls } from "../engine/run/calls.js";
 import { keepScreenshots } from "../engine/run/screenshot.js";
 import { envFlag, envString } from "../engine/env.js";
 
@@ -22,6 +23,16 @@ export function installRunLog(): void {
     // Where a tool finds the run's result as data (each step, a failed check's wanted / saw), instead of reading output.
     // On stdout, next to "chain finished" (a clean run keeps stderr empty); JSON mode's stdout is the report alone.
     if (event.type === "run:end" && !envFlag("WAYGRAPH_JSON")) console.log(`waygraph: run log ${file}`);
+  });
+  // A call's request and response (credentials masked): `<runId>/calls/<step>-<n>.json`, an artifact of its step.
+  keepCalls(async ({ runId, step }, n, bodies) => {
+    const dir = envString("WAYGRAPH_RUN_LOG");
+    if (!dir || dir === "0") return undefined;
+    const file = join(dir, runId, "calls", `${String(step).padStart(2, "0")}-${n}.json`);
+    mkdirSync(join(dir, runId, "calls"), { recursive: true });
+    writeFileSync(file, JSON.stringify(bodies, null, 2));
+    recordArtifact("call", file, runId, { index: step, block: "", checkpoint: "" });
+    return file;
   });
   // A Block's screenshot (`screenshot: true`): kept with its run (`<runId>/<step>-<block>.png`, recorded as an artifact of
   // that step), and as its page's newest look (`../screenshots/<Checkpoint>.png`, what Waygraph Studio's map shows).

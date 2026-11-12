@@ -4,6 +4,7 @@
 // (APIRequestContext) - no shell-out to curl, no second HTTP client to depend on.
 import { mark } from "../mark.js";
 import { recordApiCall } from "../../run/hooks.js";
+import { recordApiCallOf } from "../../run/calls.js";
 import { checkpoint } from "../../checkpoint/checkpoint.js";
 import type { ExpectList } from "./expect.js";
 import { markExpect } from "../../run/expect.js";
@@ -92,7 +93,8 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
     instruction: {
       async act(page, _input, mem) {
         const startedAt = Date.now();
-        const response = await options.call({ request: page.request, mem });
+        const sent: { method?: string; headers?: Record<string, string>; body?: string } = {};
+        const response = await options.call({ request: recording(page.request, sent), mem });
         const ms = Date.now() - startedAt;
         let body: unknown;
         try {
@@ -101,6 +103,24 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
           body = await response.text().catch(ignorePageGone);
         }
         mem.set(API_RESULT_SCRATCH, { status: response.status(), ok: response.ok(), body });
+        const resText = typeof body === "string" ? body : body !== undefined ? JSON.stringify(body) : undefined;
+        // The run's own record of the call: what was asked and answered, with the step it ran in (the demo's panel is below).
+        try {
+          await recordApiCallOf({
+            method: options.method || sent.method || "GET",
+            url: response.url(),
+            status: response.status(),
+            ok: response.ok(),
+            ms,
+            ...(resText !== undefined ? { size: Buffer.byteLength(resText) } : {}),
+            ...(sent.headers ? { reqHeaders: sent.headers } : {}),
+            ...(sent.body !== undefined ? { reqBody: sent.body } : {}),
+            resHeaders: response.headers(),
+            ...(resText !== undefined ? { resBody: resText } : {}),
+          });
+        } catch {
+          /* recording is not this Block's job to fail on */
+        }
         // Shown in the demo's network panel when a demo layer registered a recorder; never fails the Block.
         try {
           await recordApiCall(page, {
@@ -133,6 +153,23 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
   return built;
 }
 
+
+/** `request`, remembering what its call sent (method, headers, body) so the run log can show the request too. */
+function recording(request: APIRequestContext, sent: { method?: string; headers?: Record<string, string>; body?: string }): APIRequestContext {
+  return new Proxy(request, {
+    get(target, prop) {
+      const value = Reflect.get(target, prop, target) as unknown;
+      if (typeof value !== "function" || typeof prop !== "string" || !/^(get|post|put|patch|delete|head|fetch)$/.test(prop)) return typeof value === "function" ? value.bind(target) : value;
+      return (url: unknown, opts?: { method?: string; headers?: Record<string, string>; data?: unknown; form?: Record<string, unknown> }) => {
+        sent.method = prop === "fetch" ? (opts?.method ?? "GET").toUpperCase() : prop.toUpperCase();
+        if (opts?.headers) sent.headers = opts.headers;
+        const data = opts?.data ?? opts?.form;
+        if (data !== undefined) sent.body = typeof data === "string" ? data : JSON.stringify(data);
+        return (value as (...a: unknown[]) => unknown).call(target, url, opts);
+      };
+    },
+  });
+}
 
 /** The resolve of an API Block that lands on one Checkpoint; one that lands on several must pick with its own. */
 function onlyTarget<Out extends Checkpoint<string>>(name: string, targets: readonly string[]): () => Out {

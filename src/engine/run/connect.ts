@@ -9,6 +9,7 @@ import { runVerify, runPrecondition } from "../trait/verify.js";
 import { syncInterrupts } from "./interrupts.js";
 import { inFrameOf } from "./frame.js";
 import { screenshotStep } from "./screenshot.js";
+import { watchCalls } from "./calls.js";
 import { addressOf, isConnected, lastLeaf, stepEnded, stepStarted } from "./events.js";
 import { blockKindOf } from "../block/kind.js";
 import { expectOf, runExpect } from "./expect.js";
@@ -50,6 +51,7 @@ export function joinSteps(a: SomeBlock, b: SomeBlock): SomeBlock {
         const aPage = isConnected(a) ? page : await stepPage(a, page, mem);
         const aInput = isConnected(a) ? input : stepInput(a, page, input);
         if (!isConnected(a)) stepStarted(a.name, blockKindOf(a), aInput.__state, undefined, paneName(a));
+        watchCalls(aPage, paneName(a));
         await syncInterrupts(aPage, aInput.__state);
         const aScoped = inFrameOf(aPage, aInput.__state);
         await runPrecondition(a.instruction.precondition, aInput, aScoped, mem, stepLabel(a));
@@ -73,6 +75,7 @@ export function joinSteps(a: SomeBlock, b: SomeBlock): SomeBlock {
         const bPage = isConnected(b) ? page : await stepPage(b, page, mem);
         const bInput = isConnected(b) ? mid : stepInput(b, page, mid);
         if (!isConnected(b)) stepStarted(b.name, blockKindOf(b), bInput.__state, undefined, paneName(b));
+        watchCalls(bPage, paneName(b));
         await syncInterrupts(bPage, bInput.__state);
         const bScoped = inFrameOf(bPage, bInput.__state);
         await runPrecondition(b.instruction.precondition, bInput, bScoped, mem, stepLabel(b));

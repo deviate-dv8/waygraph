@@ -47,7 +47,7 @@ test("every step event says what kind of Block ran (page, method, ...), as the m
   const home = definePageBlock({ name: "page-a", checkpoint: A });
   const flow = new Engine().map().gotoPage(home as never).method(ab as never);
   const events = await collect(() => flow.run(fakeContext, new MemPage()));
-  const steps = events.filter((e): e is Extract<RunEvent, { type: `step:${string}` }> => e.type.startsWith("step:"));
+  const steps = events.filter((e): e is Exclude<Extract<RunEvent, { type: `step:${string}` }>, { type: "step:call" }> => e.type.startsWith("step:") && e.type !== "step:call");
   expect(steps.map((e) => [e.type, e.block, e.kind])).toEqual([
     ["step:start", "page-a", "page"],
     ["step:end", "page-a", "page"],

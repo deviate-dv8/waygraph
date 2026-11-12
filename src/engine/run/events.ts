@@ -22,7 +22,30 @@ export type RunEvent =
   /** A compared run (`--compare`): where its two sides differed after step `block` (the `step`-th of each). */
   | { type: "compare:diff"; runId: string; at: number; step: number; block: string; sides: [string, string]; diffs: StepDiff[]; indexes?: [number, number] }
   /** `index`, `block`, `checkpoint`: the step a screenshot ends, and where the page was. */
-  | { type: "run:artifact"; runId: string; at: number; kind: "video" | "trace" | "screenshot"; path: string; index?: number; block?: string; checkpoint?: string };
+  | { type: "run:artifact"; runId: string; at: number; kind: "video" | "trace" | "screenshot" | "call"; path: string; index?: number; block?: string; checkpoint?: string }
+  /** An HTTP call made during step `index`, by the page or by an API Block: what it was and how it went (the bodies are the `call` artifact `body`). */
+  | ({ type: "step:call"; runId: string; at: number; index: number } & CallSummary);
+
+/** One HTTP call as the run log keeps it. `body` is the artifact with its request and response (secrets masked). */
+export interface CallSummary {
+  /** `page`: the browser made it. `api`: an API Block did. */
+  source: "page" | "api";
+  method: string;
+  url: string;
+  /** The path with its ids folded: `/posts/:id`. */
+  route: string;
+  /** 0: it never got an answer. */
+  status: number;
+  ms: number;
+  size?: number;
+  failed: boolean;
+  /** Another origin than the app's (an analytics beacon, a CDN). */
+  external?: true;
+  /** The response was served from a cache, or carried the headers that let it be. */
+  cacheable?: boolean;
+  pane?: string;
+  body?: string;
+}
 
 /** One way two compared sides differed after a step: where they landed, whether it passed, or what a page field read. */
 export interface StepDiff {
@@ -68,6 +91,8 @@ interface OpenRun {
   index: number;
   /** Steps started and not yet ended, innermost last: a fast-forward step holds the inner steps it plays. */
   open: OpenStep[];
+  /** The step started last, still the one a late call belongs to once it has ended. */
+  latest: number;
 }
 
 interface OpenStep {
@@ -90,7 +115,7 @@ const scope = new AsyncLocalStorage<OpenRun>();
 export async function inRun<T>(label: string | undefined, body: () => Promise<T>, resultOf?: (value: T) => string | undefined): Promise<T> {
   if (scope.getStore()) return body();
   const at = Date.now();
-  const run: OpenRun = { runId: `${new Date(at).toISOString().replace(/[:.]/g, "-")}-${crypto.randomUUID().slice(0, 8)}`, startedAt: at, index: 0, open: [] };
+  const run: OpenRun = { runId: `${new Date(at).toISOString().replace(/[:.]/g, "-")}-${crypto.randomUUID().slice(0, 8)}`, startedAt: at, index: 0, open: [], latest: 0 };
   emit({ type: "run:start", runId: run.runId, at, ...(label ? { label } : {}) });
   const end = (outcome: { result?: string | undefined; error?: unknown }): void => {
     const done = Date.now();
@@ -121,6 +146,7 @@ export function stepStarted(block: string, kind: BlockKind, from: string, cleanu
   const parent = open.open.at(-1)?.index;
   const step = { index: open.index++, block, kind, startedAt: at };
   open.open.push(step);
+  open.latest = step.index;
   emit({ type: "step:start", runId: open.runId, at, index: step.index, block, kind, from, ...(parent !== undefined ? { parent } : {}), ...(cleanup ? { cleanup: true as const } : {}), ...(pane ? { pane } : {}) });
 }
 
@@ -191,12 +217,26 @@ export function currentRunId(): string | undefined {
 }
 
 export function recordArtifact(
-  kind: "video" | "trace" | "screenshot",
+  kind: "video" | "trace" | "screenshot" | "call",
   path: string,
   runId = scope.getStore()?.runId,
   step?: { index: number; block: string; checkpoint: string },
 ): void {
   if (runId) emit({ type: "run:artifact", runId, at: Date.now(), kind, path, ...(step ?? {}) });
+}
+
+/**
+ * The run open right now, for what listens outside its call chain (a page's request events): the run's id and which step
+ * is the newest, whenever it's asked.
+ */
+export function runHandle(): { runId: string; step: () => number } | undefined {
+  const run = scope.getStore();
+  return run ? { runId: run.runId, step: () => run.latest } : undefined;
+}
+
+/** A call of step `index` in run `runId`. */
+export function recordCall(runId: string, index: number, call: CallSummary): void {
+  emit({ type: "step:call", runId, at: Date.now(), index, ...call });
 }
 
 /** The run and the step open right now (the innermost one), if any. */

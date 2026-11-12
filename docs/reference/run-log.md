@@ -20,9 +20,10 @@ graph LR
 | `step:start` | the Block, its kind (`nav`, `page`, `method`, `effect`, `api`), where it starts; `parent` for a step inside a fast-forward unit, `cleanup: true` for a `.finally` step, `pane` for a step in a flow with panes ([Split view](../guides/split-view)) |
 | `interrupt` | a layout's interrupt showed up and was handled: `{ layout, name, index? }` ([Layouts](../guides/layouts#interrupts-what-appears-and-gets-in-the-way)) |
 | `step:read` | what the page showed after the step: `{ checkpoint, read, missing, notes, readBlocks }` ([What a page shows](../guides/reads)) |
+| `step:call` | an HTTP call the step made, by the page (`fetch`/XHR) or by an API Block: `{ index, source, method, url, route, status, ms, size, failed, external?, cacheable?, pane?, body }`. `route` has its ids folded (`/posts/:id`); `external` marks another origin than the app's; `body` is the call's artifact |
 | `step:end` | where it landed, how long it took, the page's address (`url`) |
 | `step:error` | the failure; for a failed check, `check: { trait, block, wants, saw, url, heading }` |
-| `run:artifact` | a saved video or screenshot; a Block's screenshot (`screenshot: true`) also names its step (`index`, `block`) and the page (`checkpoint`) |
+| `run:artifact` | a saved video, screenshot or call (`kind: "call"`: `<runId>/calls/<step>-<n>.json`, the request and the response, with `authorization`, cookies and fields named like a password or token masked); a Block's screenshot (`screenshot: true`) also names its step (`index`, `block`) and the page (`checkpoint`) |
 | `compare:diff` | a compared run (`--compare`): after its `step`-th step (`block`), where the two `sides` differed (`diffs`: what landed, the outcome, a read field `key`, with both `values`) and the two steps in the log (`indexes`) |
 | `run:end` | ok, the result or the error |
 

@@ -7,6 +7,7 @@ import type { Block } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { runExpect } from "./expect.js";
 import { screenshotStep } from "./screenshot.js";
+import { watchCalls } from "./calls.js";
 import { addressOf, inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepRead, stepStarted } from "./events.js";
 import { readBlocksFor, readCheckpoint } from "../read/read-block.js";
 import { blockKindOf } from "../block/kind.js";
@@ -107,6 +108,7 @@ async function playGraph(
       const actPage = isConnected(current) ? page : await stepPage(current, page, mem);
       const actInput = isConnected(current) ? input : stepInput(current, page, input);
       if (!isConnected(current)) stepStarted(current.name, blockKindOf(current), actInput.__state, (current as { __waygraphCleanup?: boolean }).__waygraphCleanup, paneName(current));
+      watchCalls(actPage, paneName(current));
       await syncInterrupts(actPage, actInput.__state);
       // A page in an iframe: its Blocks see locators scoped to the frame (the page's own checks and read, below, too).
       const scoped = inFrameOf(actPage, actInput.__state);
