@@ -191,6 +191,8 @@ function linkNav(layout: string, key: string, link: LayoutLink, opens: string | 
 }
 
 /**
+ * @deprecated A page covers pages: `definePageBlock({ covers: "children", links: (self) => ({ docs: self.link({ to: "Docs", click }) }) })`; no separate layout kind.
+ *
  * A layout: the UI many pages share. In `src/map/<folder>/_layout.block.ts` it covers every page in that folder and
  * below (nested layouts stack); `on` names the pages instead.
  * @example

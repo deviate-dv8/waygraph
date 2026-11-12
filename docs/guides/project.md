@@ -18,11 +18,9 @@ my-app/
 │   ├── states/                     # mem keys with their stubs (*.mem-keys.ts); a page is its own Checkpoint
 │   ├── map/                        # the app, page by page: folders are its addresses
 │   │   ├── (app_base)/             # your app (a group: not part of any address)
-│   │   │   ├── _layout.block.ts    # what every page in here shares: the top bar, the sidebar
 │   │   │   ├── _sel.ts             # the layout's selectors
 │   │   │   ├── home/               # the page at /home
 │   │   │   └── platform/
-│   │   │       ├── _layout.block.ts    # nested: what /platform/* pages also share
 │   │   │       └── equipment/          # the page at /platform/equipment
 │   │   └── (external)/             # other sites a flow visits: a mail catcher, a REST client
 │   └── flows/                      # use cases: a folder per page, like src/map/
@@ -50,8 +48,7 @@ Every page folder uses the same file names:
 | `_expect/` | what a scenario can expect on this page, one per file | `defineExpectBlock` |
 
 A leading `_` means "this page's own machinery". A folder name without one is a child page with its own address
-segment. `_layout.block.ts` is the one file that isn't about one page: it's about every page under its folder
-([Layouts](./layouts)).
+segment. A page that `covers` its children is the shell of every page under its folder ([Layouts](./layouts)).
 
 ## The opinions
 
@@ -87,7 +84,7 @@ too):
 ```ts
 import { engine } from "#config/waygraph.config";
 import { HomePage } from "#map/(app_base)/home/_page.block";
-import { TopBar } from "#map/(app_base)/_layout.block";
+import { TopBar } from "#map/(app_base)/_page.block";
 ```
 
 ## Flows are use cases
@@ -116,7 +113,7 @@ labels: { auth: ["src/flows/auth/**"], checkout: ["src/flows/checkout/**", "chec
 |---|---|
 | add a page | copy a page folder, keep the `_` names, match the address |
 | add an action | one file in that page's `_methods/` |
-| add something every page has (a menu, a sidebar) | a `_layout.block.ts` in the folder of the pages it wraps ([Layouts](./layouts)) |
+| add something every page has (a menu, a sidebar) | `covers` and `links` on the `_page.block.ts` of the folder it wraps ([Layouts](./layouts)) |
 | say only some people see it | `for: [Planner]` on it ([Layouts and access](./layouts#who-sees-what-for)) |
 | check a state (disabled button, error shown) | `Page.read.x.is` on the page, or an Expect Block in `_expect/`, in a step's `expect` ([Checks](./checks)) |
 | say what a page shows | its `read` ([What a page shows](./reads)) |

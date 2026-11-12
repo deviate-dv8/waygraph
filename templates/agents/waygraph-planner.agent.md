@@ -31,7 +31,7 @@ runner or helper beside them names what waygraph lacks instead (the skill's "Age
      own `expect` when every use expects it), never as a step. Plan each case's expected results
      as these, next to the step they judge. Accepts `requires` for a mem-aware Trait's input.
    - A scenario with two people (or the app and a mail catcher) — one flow with panes (`map({ panes })`, `.in(pane)`), not two flows
-   - UI on many pages (a sidebar, a menu, breadcrumbs) — one `_layout.block.ts` (`defineLayout`) in their folder, with `for: [accounts]` on what only some accounts see; never a Nav per page
+   - UI on many pages (a sidebar, a menu, breadcrumbs) — the `_page.block.ts` of their folder with `covers: "children"` and `links`, with `for: [accounts]` on what only some accounts see; never a Nav per page
    - A Method on one row of many — `defineMethodBlock` + `requires` + `instanceOptions` for per-row auto menus (add/remove/toggle)
 4. **Mem keys:** one `keys("ns")<{ ... }>()` namespace per area (`SaucedemoKeys.credentials`). Never rely on substring `"login"` defaults — email keys like `login-email` stay strings; credential objects use exact names such as `saucedemo.credentials` / `login-credentials`.
 5. Prefer `click` NavBlocks when the product has a real control; use `url` for deep links / email tokens.

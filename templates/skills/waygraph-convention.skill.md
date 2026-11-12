@@ -35,7 +35,7 @@ and when you touch it, move it to the convention or say it should be.
 | A retry or polling helper (`settles`, `waitUntil`, a loop with `sleep`) | Nothing: verify retries every Trait; `{ settle: true }` on a step whose page keeps changing |
 | A helper that drives the page outside a Block (`clickClear(page, sel)`, `pasteInto`, `setDateTime`) | A Method Block, one action, in the page's `_methods/`; a field that needs a special way of typing is that Block's `act` |
 | A selector prefix for a page in an iframe (`framed(Sel)`, `internal:control=enter-frame >> …`) | `frame: "#embed"` on the Page Block: its Blocks, checks and `read` see locators inside the frame |
-| A step that dismisses a modal, banner or prompt that appears on any page (a sound prompt, cookies) | `interrupts` on the layout: handled wherever it shows up, logged, never a step in a flow |
+| A step that dismisses a modal, banner or prompt that appears on any page (a sound prompt, cookies) | `interrupts` on the page that covers it: handled wherever it shows up, logged, never a step in a flow |
 | A `fn` reader that fetches the app's API with the page's token | `ctx.page.api(path, pick)`, with `new Engine({ api: { baseUrl, headers } })` once |
 | A Method made for one scenario (`fill-email-for-lockout`, a click that also checks a banner) | The general Method, the scenario's value in mem, the check in the step's `expect`; the page's `do` lists only actions a user has |
 | A states file, or a `checkpoint()` + `export type` pair per page | `checkpoint: "Home"` on the Page Block; `to: "Dashboard"` names another page |
@@ -162,12 +162,13 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   tools load Block, Page and stub files themselves. A Page Block's `expects: { saved: () => ExpectSavedBlock }` names what
   can be checked on the page, so `HomePage.expects.saved` comes from the same import. An older project moves onto pages
   with `waygraph upgrade --codemod pages` once each Page Block has its `url` and `do` / `expects`.
-- **UI on many pages is a layout, declared once.** A sidebar, top bar, user menu or breadcrumbs go in a
-  `_layout.block.ts` (`defineLayout({ name, go: { plan: { to: ProductionPlan, click: SidebarSel.plan } }, do, read })`)
-  in the folder of the pages they wrap: it covers every page in that folder and below, so a flow writes
-  `.gotoPage(Sidebar.go.plan)` from any of them. `on: [Pages]` only when the app's layout doesn't follow its folders;
-  `to: "parent"` for a link up, and `Trait.breadcrumbs(sel)` to check the trail. Never the same Nav or Method on each
-  page, and never a list of pages on a Nav.
+- **UI on many pages is a page that covers them, declared once.** A sidebar, top bar, user menu or breadcrumbs go on the
+  Page Block of the folder they wrap: `definePageBlock({ name, checkpoint: "Dashboard", covers: "children", links: (self) => ({
+  plan: self.link({ to: "Plan", click: SidebarSel.plan }) }), read, interrupts, opens })`. Everything it declares is
+  valid on every covered page, so a flow writes `.gotoPage(Dashboard.links.plan)` from any of them. `covers: ["A", "B"]`
+  names pages when the app's shell doesn't follow its folders; leave out `checkpoint` for a shell that is no page;
+  `to: "parent"` for a link up, and `Trait.breadcrumbs(sel)` to check the trail. There is no separate layout kind
+  (`defineLayout` is deprecated). Never the same Nav or Method on each page, and never a list of pages on a Nav.
 - **Two people (or the app and a helper) in one scenario are panes, one flow.** Declare each pane once as a value (`export const AdminPane = pane("admin", { as: Admin })`), then `map({ panes: [PlannerPane, AdminPane] })`, `.in(AdminPane)` before the admin's steps and `.in(PlannerPane)` to come back; `with: AppPane` for a second page of the same person (the mail catcher); `.close(pane)` to go back to one screen. Never two
   flows for one story, never a sign-out and sign-in in the middle. The same flow two ways (two accounts, devices or
   environments) is `--compare`, not a copy of the flow.
@@ -190,11 +191,11 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
 - **Flows are the tests.** `waygraph test --flows` runs every flow as a Playwright test (workers, retries, video,
   reports); `map({ device })` plays one on a device (`"mobile"`, `{ preset: "tablet", orientation: "landscape" }`; the config's `device` is every flow's default), `map({ exclusive: true })` runs one alone and last. A project-written batch
   runner (parallelism, retries, "run these alone", a verdict file) is a smell. Write a spec only for what a flow can't say.
-- **What can pop up on any page is a layout's interrupt**, never a step in a flow: `defineLayout({ interrupts: { cookies: { when: "#cookie-banner", do: (page) => page.getByRole("button", { name: "Accept" }).click() } } })`. It is handled wherever it shows up while a step runs; the run log and the demo say so.
+- **What can pop up on any page is an interrupt of the page that covers it**, never a step in a flow: `definePageBlock({ covers: "children", interrupts: { cookies: { when: "#cookie-banner", do: (page) => page.getByRole("button", { name: "Accept" }).click() } } })`. It is handled wherever it shows up while a step runs; the run log and the demo say so.
 - **Every page has a `read`.** A page's `do` says what you can do there; its `read` says what it shows, as
   typed data: in the run log after every step that lands there, from `waygraph auto read` for an agent, and for a test
   without DOM queries. It lives on the page's `definePageBlock` (`read: (ctx) => ({ title: ctx.page.text(Sel.title) })`, types
-  inferred, keys `Page.read.title`; what every page of a layout shows is the layout's `read`), never with mem stubs: mem is what a flow is
+  inferred, keys `Page.read.title`; what every page a shell covers shows is the shell's `read`), never with mem stubs: mem is what a flow is
   given, a read is what the page shows. `waygraph check` lists pages without one. A check on what a page shows is
   `Catalog.items.passes((items) => items.length === 6)` or `Header.cartCount.is(1)`, not a selector count; its test
   also gets mem: `(items, mem) => items.some((i) => i.name === mem.get(Keys.item).name)` checks the page shows what the

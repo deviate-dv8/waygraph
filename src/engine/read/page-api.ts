@@ -23,5 +23,10 @@ export async function getFromApi(page: Page, path: string | ((url: URL) => strin
   if (!api) throw new Error('ctx.page.api needs the API: new Engine({ api: { baseUrl: "…" } })');
   const target = typeof path === "function" ? path(new URL(page.url())) : path;
   const response = await page.request.get(api.baseUrl + target, { headers: (await api.headers?.(page)) ?? {} });
-  return response.ok() ? ((await response.json().catch(() => undefined)) as unknown) : undefined;
+  if (!response.ok()) return undefined;
+  try {
+    return (await response.json()) as unknown;
+  } catch {
+    return undefined;
+  }
 }

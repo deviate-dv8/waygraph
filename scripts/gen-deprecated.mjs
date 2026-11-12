@@ -159,6 +159,7 @@ run; \`waygraph upgrade --codemod page-object\` moves a project (it was tried on
 | \`defineMethodBlock({ instruction: { act, verify, observe, resolve } })\` | \`defineMethodBlock({ act, verify, lands })\`: the parts on the Method itself; \`observe\` and \`resolve\` become one optional \`lands(page, mem)\` that returns the Checkpoint (\`waygraph upgrade --codemod instructions\`) |
 | a page's Nav Block in \`_nav.block.ts\` (\`nav: NavHomeBlock\`, \`Home.nav\`) | the page opens itself: \`url\` (or \`click\`) and \`from\` on its \`definePageBlock\`, and \`map().gotoPage(Home)\` (\`waygraph upgrade --codemod nav\`) |
 | \`registerMemStub(key, fake)\` in a \`*.mem-stubs.ts\` file | the fake on the key: \`keys("ns")<{…}>({ field: () => value })\` (\`waygraph upgrade --codemod mem-stubs\`) |
+| \`defineLayout\` in a \`_layout.block.ts\` | a page that covers pages: \`definePageBlock({ covers: "children", links: (self) => ({ … self.link({ to, click }) }), read, interrupts })\`; \`Layout.go.x\` is \`Page.links.x\` |
 
 ## Removed in 0.17.0
 

@@ -1,7 +1,7 @@
 import { engine } from "#config/waygraph.config";
 import { HomePage } from "#map/(app_base)/home/_page.block";
 import { DemoSel } from "#map/(app_base)/home/_sel";
-import { TopBar } from "#map/(app_base)/_layout.block";
+import { TopBar } from "#map/(app_base)/_page.block";
 
 const OpenHome = HomePage
   .stubBefore((ctx) => {
@@ -36,5 +36,5 @@ const HelloShown = HomePage.expects.hello
 export const homeHelloFlow = engine
   .map()
   .gotoPage(OpenHome, { expect: [HelloShown] })
-  .gotoPage(TopBar.go.docs)
-  .gotoPage(TopBar.go.home);
+  .gotoPage(TopBar.links.docs)
+  .gotoPage(TopBar.links.home);

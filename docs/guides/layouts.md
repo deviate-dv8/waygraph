@@ -1,81 +1,50 @@
-# Layouts
+# Layouts: a page that covers pages
 
-Most apps wrap their pages in shared UI: a sidebar, a top bar, a user menu, breadcrumbs. Front-end frameworks declare it
-once, in a layout file beside the pages it wraps. waygraph does the same: a **layout** is declared once, in a
-`_layout.block.ts`, and its links and actions are there on every page it covers.
+Most apps wrap their pages in shared UI: a sidebar, a top bar, a user menu, a cookie banner. Waygraph has no separate
+layout kind for it. A Page Block can **cover** other pages, as a superstate does in a statechart: what it declares is valid
+on every page it covers, and the map draws it as one box around them.
 
 ```mermaid
 graph LR
-  L[_layout.block.ts<br/>Sidebar] -->|go.plan| P[ProductionPlan]
-  L -->|go.equipment| E[EquipmentRegistry]
-  P -.covered.- L
-  E -.covered.- L
+  S[Dashboard<br/>covers: children] -->|links.documents| D[Documents]
+  S -->|links.templates| T[Templates]
+  D -.covered.- S
+  T -.covered.- S
 ```
 
 ## Declare it
 
 ```ts
-// src/map/(app_base)/platform/_layout.block.ts
-import { defineLayout, Trait } from "waygraph";
-import { Admin, Planner } from "../../../accounts/accounts.js";
-import { EquipmentRegistry, ProductionPlan } from "../../../states/app.states.js";
-import { SidebarSel } from "./_sel.js";
+// src/map/(app_base)/dashboard/_page.block.ts: the dashboard is a page, and the shell of everything below it
+export const Dashboard = definePageBlock({
+  name: "page-dashboard",
+  checkpoint: "Dashboard",
+  route: "folder",
+  covers: "children",
 
-export const Sidebar = defineLayout({
-  name: "sidebar",
-  go: {
-    plan: { to: ProductionPlan, click: SidebarSel.plan },
-    equipment: { to: EquipmentRegistry, click: SidebarSel.equipment, for: [Admin], verify: [Trait.visible(SidebarSel.heading)] },
-    up: { to: "parent", click: SidebarSel.backCrumb },
-  },
-  do: { signOut: () => SignOutBlock },
-  read: (ctx) => SidebarShows({ links: ctx.page.list(SidebarSel.link, (link) => link.text()) }),
+  // links valid on every covered page: one declaration instead of a Nav per page
+  links: (self) => ({
+    documents: self.link({ to: "Documents", click: Sel.documents }),
+    templates: self.link({ to: "Templates", click: Sel.templates, for: [Admin] }),   // who sees it
+    up: self.link({ to: "parent", click: Sel.backCrumb }),                           // the page above, in the site map
+  }),
+  // what every covered page shows
+  read: (ctx) => ({ user: ctx.page.text(Sel.userMenu) }),
+  // what can appear on any of them
+  interrupts: { sound: { when: Sel.soundModal, do: (page) => page.locator(Sel.notNow).click() } },
 });
 ```
 
-A layout is a hub like a Page Block, not a step of its own:
+- `Dashboard.links.documents` is a Nav: `.gotoPage(Dashboard.links.documents)` from any covered page, typed, with
+  autocomplete on the link names.
+- `covers: "children"` is every page under the folder (nested shells stack). `covers: ["Documents", "Templates"]` names
+  pages wherever they live (saucedemo's burger menu is on every page but the login page, which shares its folder).
+- A shell with no page of its own leaves out `checkpoint`: `definePageBlock({ name: "menu", covers: [...], links })`.
+- `opens: Sel.menuButton` is the button of a menu that hides its links: a link clicks it first when it isn't in the window.
+- `read` is read on every covered page; its keys are `Dashboard.read.user`, `readAs` names it in the run log.
 
-- `Sidebar.go.<name>` are Navs: `.gotoPage(Sidebar.go.equipment)`.
-- `Sidebar.do.<name>` are Methods (`() => Block`, lazy, as a page's `do` is): `.method(Sidebar.do.signOut)`.
-- `read` is what the layout shows on every page it covers (a reader per field, as a page's `read`); `Sidebar.read.links` is its typed key. `readAs` names it in the run log; the layout's name by default.
-
-## Interrupts: what appears and gets in the way
-
-A cookie banner, a "your session expires" warning, a survey: they show up on any page of the layout, at any moment, and
-cover what a step is about to click. A layout names each and what to do about it:
-
-```ts
-export const Shell = defineLayout({
-  name: "shell",
-  interrupts: {
-    cookies: { when: "#cookie-banner", do: (page) => page.getByRole("button", { name: "Accept" }).click() },
-  },
-});
-```
-
-While a step runs on a page the layout covers, whichever step is running isn't blocked: when `when` shows, `do` runs and
-the step goes on (Playwright's locator handlers, installed per page). The run log gets an `interrupt` event, and the demo's
-card after the step says "Handled on the way: shell: cookies". It is not a step and not a failure; a flow never mentions it.
-
-A layout can also hold the shell of an embedded page: a page in an iframe says `frame` on its own Page Block (see
-[Blocks](./blocks#page-blocks)), not on the layout.
-
-## What it covers
-
-A layout covers the pages whose Nav or Page Block is in its folder or below: the same pages the framework's layout
-wraps. A nested layout (`platform/plant/_layout.block.ts`) covers its own folder, and its pages are under both.
-
-When an app's layout doesn't follow its addresses (saucedemo's burger menu is on every page but the login page, and they
-all share one folder), `on` names the pages instead:
-
-```ts
-export const Menu = defineLayout({ name: "menu", on: [InventoryPage, CartPage /* … */], opens: MenuSel.button, go: { /* … */ } });
-```
-
-`opens` is the button that shows a menu that hides its links: a link clicks it first when the link isn't in the window.
-
-A link type-checks from any page. When it runs, it checks first that the page the flow is on is one the layout covers,
-and fails before clicking, naming the layout and the page:
+A link type-checks from any page. When it runs, it checks first that the page the flow is on is one the shell covers, and
+fails before clicking, naming both:
 
 ```
 menu-logout: check "on-menu" didn't pass before it acted
@@ -85,9 +54,19 @@ menu-logout: check "on-menu" didn't pass before it acted
 
 Route finding (`waygraph auto`, chains, the graph) plans with the pages each link runs from.
 
+## Interrupts: what appears and gets in the way
+
+A cookie banner, a "your session expires" warning, a survey: they show up on any covered page, at any moment, and cover
+what a step is about to click. `interrupts` on the shell names each and what to do about it. While a step runs on a
+covered page, whichever step is running isn't blocked: when `when` shows, `do` runs and the step goes on (Playwright's
+locator handlers, installed per page). The run log gets an `interrupt` event, and the demo's card after the step says
+"Handled on the way: shell: cookies". It is not a step and not a failure; a flow never mentions it.
+
+A page in an iframe says `frame` on its own Page Block (see [Blocks](./blocks#page-blocks)), not on the shell.
+
 ## Breadcrumbs
 
-A link with `to: "parent"` goes to the page above the one it starts on, in the site map (the nearest page whose address
+A link with `to: "parent"` (`self.link({ to: "parent", … })`) goes to the page above the one it starts on, in the site map (the nearest page whose address
 this page's extends): one declaration for every page the layout covers. `Trait.breadcrumbs(sel)` checks that the crumbs
 lead to the pages above this one, in order, by their addresses, and names a missing or extra one:
 
@@ -102,7 +81,7 @@ verify: [Trait.breadcrumbs(CrumbsSel.link)]
 the button) and on Page Blocks (who can open the page). It takes `account(...)` values, so a typo is a type error.
 
 ```ts
-export const EquipmentRegistryPage = definePageBlock({ name: "equipment-registry", checkpoint: EquipmentRegistry, url: "/equipment", for: [Admin] });
+export const EquipmentRegistryPage = definePageBlock({ name: "equipment-registry", checkpoint: "EquipmentRegistry", url: "/equipment", for: [Admin] });
 export const AddMachineBlock = defineMethodBlock({ name: "add-machine", from: EquipmentRegistry, to: EquipmentRegistry, for: [Admin], async act(page) { /* … */ } });
 ```
 
@@ -111,11 +90,11 @@ export const AddMachineBlock = defineMethodBlock({ name: "add-machine", from: Eq
   [Testing](./testing#access-tests).
 - `waygraph check` flags a flow that runs as an account (`map({ as })`) and uses a link, Method or page that account
   isn't given.
-- Waygraph Studio draws a layout once, with a line to each page its links lead to, and can show the map as one account sees
+- Waygraph Studio draws a shell once, with a line to each page its links lead to, and can show the map as one account sees
   it. See [Waygraph Studio](./studio).
 
-## In a page or in a layout?
+## In a page or in a shell?
 
-- On one page: the page's Page Block (`do`, `nav`, its `read`).
-- On many pages, the same: a layout. Never a list of pages on each Nav, and never the same Method on each page.
+- On one page: the page's own Page Block (`do`, `read`, `expects`).
+- On many pages, the same: a page that covers them. Never a list of pages on each Nav, and never the same link on each page.
 - Who sees it: `for`, beside what it's about. A role is the accounts that share a `for`.

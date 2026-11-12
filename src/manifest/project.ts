@@ -166,6 +166,18 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
         continue;
       }
       if (isBlockLike(exported)) {
+        // A page that covers others is a layout too: its links are Blocks of its file (Shell.links.docs).
+        const shell = (exported as { __waygraphCoverLayout?: Parameters<typeof layouts.push>[0]["layout"] }).__waygraphCoverLayout;
+        if (shell) {
+          layouts.push({ layout: shell, exportName, file });
+          for (const [key, nav] of Object.entries(shell.go)) addBlock(`${exportName}.links.${key}`, nav);
+        }
+        // A bare shell (no Checkpoint) is no page and no step: only its links, read and interrupts count.
+        if ((exported as { __waygraphBare?: boolean }).__waygraphBare) {
+          const bareRead = (exported as { __waygraphReadBlock?: ReadBlock }).__waygraphReadBlock;
+          if (bareRead) readBlocks.push({ block: bareRead, exportName: `${exportName}.read`, file, absFile, ...(map ? { map } : {}) });
+          continue;
+        }
         addBlock(exportName, exported);
         // The Methods and expectations a page holds are its Blocks, by their place in it (Login.do.submit).
         const held = exported as { do?: Record<string, unknown>; expects?: Record<string, unknown> };

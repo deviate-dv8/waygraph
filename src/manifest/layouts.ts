@@ -4,7 +4,7 @@
 import { dirname, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 import { envString } from "../engine/env.js";
-import { isLayout, layoutState } from "../engine/block/kinds/layout.js";
+import { isLayout, layoutState, type defineLayout } from "../engine/block/kinds/layout.js";
 import { setTrails } from "../engine/trait/trails.js";
 import { reportImportError, scanProject } from "./project.js";
 import { walkDir } from "./scan.js";
@@ -12,6 +12,8 @@ import { pageUrls } from "./urls.js";
 import { ancestorPages, parentPage, siteTree, type SiteTree } from "./site-map.js";
 
 const LAYOUT_FILE = /^_layout\.block\.ts$/;
+/** Where a page that covers others can be: any Page Block file. */
+const SHELL_FILE = /(?:^|[\\/.])(?:_?layout|_?page)\.block\.ts$/;
 
 /** A layout as loading found it: what it covers, from where. */
 export interface LoadedLayout {
@@ -35,16 +37,21 @@ async function pagesUnder(dir: string, projectDir: string): Promise<string[]> {
     for (const value of Object.values(mod)) {
       const block = value as { __waygraphKind?: string; __waygraphTo?: string[]; __waygraphLayout?: unknown } | null;
       if (!block || typeof block !== "object" || block.__waygraphLayout) continue;
-      if (block.__waygraphKind === "nav" || block.__waygraphKind === "page") for (const tag of block.__waygraphTo ?? []) pages.add(tag);
+      if (block.__waygraphKind === "nav" || block.__waygraphKind === "page") for (const tag of block.__waygraphTo ?? []) if (tag !== "*") pages.add(tag);
     }
   }
   return [...pages].sort();
 }
 
+/** The layout a page that covers others holds (it declares `covers`, `links` or `interrupts`). */
+function coverLayoutOf(value: unknown): ReturnType<typeof defineLayout> | undefined {
+  return typeof value === "object" && value !== null ? (value as { __waygraphCoverLayout?: ReturnType<typeof defineLayout> }).__waygraphCoverLayout : undefined;
+}
+
 /** Imports every layout of the project and sets what each covers; returns them. */
 export async function loadLayouts(projectDir: string, known?: SiteTree): Promise<LoadedLayout[]> {
   const loaded: LoadedLayout[] = [];
-  const files = walkDir(projectDir, LAYOUT_FILE);
+  const files = walkDir(projectDir, SHELL_FILE);
   // A project with layouts gets its site map once (or is given it): breadcrumbs follow it (`to: "parent"`,
   // `Trait.breadcrumbs`).
   const tree = files.length ? (known ?? (await siteMapOf(projectDir))) : undefined;
@@ -59,7 +66,7 @@ export async function loadLayouts(projectDir: string, known?: SiteTree): Promise
       reportImportError(relative(projectDir, file), err);
       continue;
     }
-    for (const layout of Object.values(mod).filter(isLayout)) {
+    for (const layout of Object.values(mod).flatMap((v) => (isLayout(v) ? [v] : coverLayoutOf(v) ? [coverLayoutOf(v) as ReturnType<typeof defineLayout>] : []))) {
       const covers = layout.on ? [...layout.on] : await pagesUnder(dirname(file), projectDir);
       const state = layoutState(layout.name);
       state.covers = covers;

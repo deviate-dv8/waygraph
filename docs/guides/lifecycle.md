@@ -17,7 +17,7 @@ graph LR
 1. **The config** (`config/waygraph.config.ts`) is read first, and what it resolves to becomes environment (`baseUrl`,
    `device`, the demo's settings). Flags beat it.
 2. **The web server** the config names starts, if any.
-3. **Loading.** `waygraph` imports, by scanning the project: Read Blocks, layouts (`_layout.block.ts`, which works out
+3. **Loading.** `waygraph` imports, by scanning the project: pages with their reads, the pages that cover others (which works out
    which pages each covers), then, while planning, mem stubs (on the keys, `*.mem-keys.ts`) and accounts (`src/accounts/`). Nothing
    imports these for their side effect: they register themselves when imported, and waygraph imports them.
 4. **Planning** finds the flow (an export of a `*.flow.ts`, a file, or a chain `a then b`), turns it into steps, and

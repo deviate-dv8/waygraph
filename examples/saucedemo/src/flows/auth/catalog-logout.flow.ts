@@ -1,6 +1,6 @@
 import { engine } from "../../../config/waygraph.config.js";
 import { ItemDetail } from "../../blocks/saucedemo-web/inventory-item/item-detail.page.block.js";
-import { Menu } from "../../blocks/saucedemo-web/_layout.block.js";
+import { Menu } from "../../blocks/saucedemo-web/menu.page.block.js";
 
 export const catalogLogoutFlow = engine
   .map()
@@ -11,5 +11,5 @@ export const catalogLogoutFlow = engine
   )
   .gotoPage(ItemDetail.do.backToProducts)
   .gotoPage(ItemDetail.nav)
-  .gotoPage(Menu.go.allItems)
-  .gotoPage(Menu.go.logout);
+  .gotoPage(Menu.links.allItems)
+  .gotoPage(Menu.links.logout);

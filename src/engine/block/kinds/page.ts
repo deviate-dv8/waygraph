@@ -12,7 +12,9 @@ import { checkpoint as makeCheckpoint, type Checkpoint } from "../../checkpoint/
 import type { Trait } from "../../trait/trait.js";
 import { MemPage } from "../../mem/mem.js";
 import type { MemKey } from "../../mem/mem.js";
+import { addressFromFolder, type CpOfLands, type InlineLink, type LandsOn, type PageFolderGo, type PageGo, type PageLinks } from "./page-parts.js";
 import { registerFrame } from "../../run/frame.js";
+import { defineLayout, layoutState } from "./layout.js";
 import { markRoute } from "../../checkpoint/route.js";
 import type { SomeDefinedBlock } from "../some-block.js";
 import type { NavBlock } from "./nav.js";
@@ -39,10 +41,6 @@ export type PageExpectEntry = PageMethodEntry | Trait;
  * What `do` and `expects` are given: the page itself, as far as it's defined: its read keys, to build checks from
  * (`page.read.modalOpen.is(true)`), and its nav.
  */
-/** Where an inline Method lands, if not on its page: a page's name (`"Dashboard"`) or a Checkpoint; a list when it can land on several. */
-export type LandsOn = string | Checkpoint<string>;
-type CpOfLands<T> = T extends string ? Checkpoint<T> : T extends Checkpoint<string> ? T : never;
-
 /** A Method written inside its page's `do`: the page is its `from` and, unless `to` says otherwise, its `to`. */
 export interface InlineMethod<Out extends Checkpoint<string>, L extends Checkpoint<string>> {
   /** Its name in run logs and the manifest; by default the page's and the key (`login-fill-email`). */
@@ -72,6 +70,8 @@ export interface PageSelf<Out extends Checkpoint<string>, R, Nav> {
    * A Method of this page, written right here: `do: (page) => ({ fill: page.method({ async act(p) { ... } }) })`. Its name
    * is the key (`login-fill`), it starts and, unless `to` names another page, ends on this page.
    */
+  /** A link of this shell, for `links`: a Nav valid from every page it covers. */
+  link<const To extends string | Checkpoint<string>>(spec: InlineLink<To>): NavBlock<To extends "parent" ? Checkpoint<string> : To extends string ? Checkpoint<To> : To extends Checkpoint<string> ? To : never>;
   method(spec: InlineMethod<Out, Out> & { to?: undefined }): MethodBlock<Out, Out>;
   method<const To extends LandsOn>(spec: InlineMethod<Out, CpOfLands<To>> & { to: To | readonly To[] }): MethodBlock<Out, CpOfLands<To>>;
   readonly checkpoint: Out;
@@ -98,14 +98,16 @@ export type PageBlockOptions<
   Q extends string = never,
   F extends "folder" | undefined = undefined,
   C extends Checkpoint<string> | string = Out,
+  Lk extends Record<string, unknown> = Record<never, never>,
 > = {
   name: string;
   description?: string;
   /**
    * The Checkpoint this page confirms. A name makes it (`checkpoint: "Home"`): the page is its own Checkpoint, with nothing to
    * declare beforehand; `Home.checkpoint` is the value, for what must name it (`lands`, a flow's `from`).
+   * Left out, the Block is a bare shell: it covers pages (`covers`) but is no page itself.
    */
-  checkpoint: C;
+  checkpoint?: C;
   verify?: Trait[] | ((out: Out) => Trait[]);
   /**
    * What this Block promises wherever it's used, checked after its verify: Expect Blocks, Traits, `Key.is(...)`. A
@@ -182,6 +184,26 @@ export type PageBlockOptions<
    * @example frame: "#zsign-embed"
    */
   frame?: string;
+  /**
+   * The page covers other pages, as a shell does (a sidebar, a top bar): `"children"` is every page under its folder
+   * (nested shells stack), a list of names is those pages wherever they live. What the shell declares (`links`,
+   * `interrupts`, and its `read`) applies on every covered page, and the map draws it as one box around them.
+   * @example covers: "children" · covers: ["Documents", "Templates"]
+   */
+  covers?: "children" | readonly string[];
+  /**
+   * The links every covered page has (a sidebar's): `Shell.links.documents`, each a Nav valid from any covered page, so a
+   * flow writes `.gotoPage(Shell.links.documents)` once instead of a Nav per page.
+   * @example links: (self) => ({ documents: self.link({ to: "Documents", click: Sel.documents }) })
+   */
+  links?: (self: PageSelf<CheckpointOf<C>, R, Nav>) => Lk;
+  /** A menu that hides its links until opened (a burger, a user dropdown): the selector of what opens it; a link clicks it first. */
+  opens?: string;
+  /**
+   * What can appear on any covered page and get in the way (a cookie banner, a sound prompt), each handled where it
+   * shows up: `when` is the selector that shows it, `do` what to do. Logged, and shown in the demo; never a step.
+   */
+  interrupts?: Record<string, { when: string; do: (page: Page) => Promise<void> }>;
   /** Optional click-nav onto this page. XOR with `url`. */
   click?: string | ((mem: MemPage) => string);
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
@@ -211,6 +233,7 @@ export type PageBlock<
   U extends string = string,
   Q extends string = never,
   F extends "folder" | undefined = undefined,
+  Lk extends Record<string, unknown> = Record<never, never>,
 > = Omit<
   DefinedBlock<Checkpoint<string>, Out>,
   "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
@@ -233,62 +256,20 @@ export type PageBlock<
   readonly read: PageReadKeys<R>;
   withVerify(
     verify: Trait[] | ((out: Out) => Trait[]),
-  ): PageBlock<Out, M, Nav, E, R, U, Q, F>;
+  ): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
   modVerify(
     nameOrIndex: string | number,
     newCheck: Trait["check"] | Trait,
-  ): PageBlock<Out, M, Nav, E, R, U, Q, F>;
-  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav, E, R, U, Q, F>;
-  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F>;
-  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F>;
-  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F>;
-} & PageGo<Out, U, Q> & PageFolderGo<Out, F>;
+  ): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
+  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
+  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
+  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
+  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
+} & PageGo<Out, U, Q> & PageFolderGo<Out, F> & PageLinks<Lk>;
 
-
-/** The params of a page's address: `/requests/:id` and `/requests/[id]` have `id`; none: `never`. */
-export type UrlParams<U extends string> = string extends U
-  ? never
-  : U extends `${string}/:${infer P}/${infer Rest}`
-    ? P | UrlParams<`/${Rest}`>
-    : U extends `${string}/:${infer P}`
-      ? P
-      : U extends `${string}[${infer P}]${infer Rest}`
-        ? P | UrlParams<Rest>
-        : never;
-
-type Params<U extends string, Q extends string> = { [K in UrlParams<U>]: string | number } & { [K in Q]?: string | number };
-
-/**
- * `Page.go({ id, tab })`: the page opened at one address of its pattern (path params are required, `query` ones optional),
- * and `Page.setQuery({ tab })`: a Method that changes the query on the page it's on. Each present when it applies.
- */
-export type PageGo<Out extends Checkpoint<string>, U extends string, Q extends string> = ([UrlParams<U>] extends [never]
-  ? [Q] extends [never]
-    ? unknown
-    : { readonly go: (params: Params<U, Q>) => DefinedBlock<Checkpoint<string>, Out> }
-  : { readonly go: (params: Params<U, Q>) => DefinedBlock<Checkpoint<string>, Out> }) &
-  ([Q] extends [never] ? unknown : { readonly setQuery: (values: { [K in Q]?: string | number }) => DefinedBlock<Out, Out> });
-
-/** A page whose address is its folder: `go` takes its params by name (a `[id]` folder), untyped, as the folder isn't visible to types. */
-export type PageFolderGo<Out extends Checkpoint<string>, F> = F extends "folder"
-  ? { readonly go: (params: Record<string, string | number>) => DefinedBlock<Checkpoint<string>, Out> }
-  : unknown;
 
 /** A record of page methods with each `() => Block` factory resolved to its Block. */
 export type PageMethods<M> = { readonly [K in keyof M]: M[K] extends () => infer B ? B : M[K] };
-
-/**
- * The address a page's folder gives it: `src/map/(app)/requests/[id]/_page.block.ts` is `/requests/[id]`. `(group)` and
- * `_private` folders aren't part of it. Read from where `definePageBlock` was called, so it needs no path from the page.
- */
-function addressFromFolder(name: string): string {
-  const frames = (new Error().stack ?? "").split("\n").map((l) => /(?:file:\/\/)?(\/.+?\.[cm]?[jt]s):\d+:\d+/.exec(l)?.[1]).filter((f): f is string => !!f);
-  const file = frames.map((f) => decodeURIComponent(f.replace(/^file:\/\//, ""))).find((f) => /\/src\/map\//.test(f));
-  if (!file) throw new Error(`definePageBlock("${name}"): route: "folder" needs the page to be defined under src/map/`);
-  const rel = file.slice(file.lastIndexOf("/src/map/") + "/src/map/".length).split("/").slice(0, -1);
-  const segments = rel.filter((seg) => !/^\(.*\)$/.test(seg) && !seg.startsWith("_"));
-  return "/" + segments.join("/");
-}
 
 /** Whether `entry` is a Block (it has an instruction): the entries of `do` and `expects` can also be Traits. */
 const isBlockEntry = (entry: unknown): entry is SomeDefinedBlock => typeof entry === "object" && entry !== null && "instruction" in entry;
@@ -305,15 +286,16 @@ export function definePageBlock<
   const U extends string = string,
   const Q extends string = never,
   F extends "folder" | undefined = undefined,
->(options: PageBlockOptions<CheckpointOf<C>, M, E, R, Nav, U, Q, F, C> & { nav?: Nav }): PageBlock<CheckpointOf<C>, M, Nav, E, R, U, Q, F> {
+  Lk extends Record<string, unknown> = Record<never, never>,
+>(options: PageBlockOptions<CheckpointOf<C>, M, E, R, Nav, U, Q, F, C, Lk> & { nav?: Nav }): PageBlock<CheckpointOf<C>, M, Nav, E, R, U, Q, F, Lk> {
   type Out = CheckpointOf<C>;
-  const cp = (typeof options.checkpoint === "string" ? makeCheckpoint(options.checkpoint) : options.checkpoint) as Out;
+  const cp = (typeof options.checkpoint === "string" ? makeCheckpoint(options.checkpoint) : (options.checkpoint ?? makeCheckpoint("*"))) as Out;
   if (options.url !== undefined && options.click !== undefined) {
     throw new Error(
       `definePageBlock("${options.name}"): pass url XOR click (or neither for arrival-only hub)`,
     );
   }
-  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, from: opensFrom, query, route, frame, ...restOptions } = options;
+  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, from: opensFrom, query, route, frame, covers, links: linksOf, opens: opensBy, interrupts, ...restOptions } = options;
   if (frame) registerFrame(options.checkpoint === undefined ? "" : typeof options.checkpoint === "string" ? options.checkpoint : options.checkpoint.__state, frame);
   if (route === "folder" && (options.url !== undefined || options.click !== undefined)) {
     throw new Error(`definePageBlock("${options.name}"): route: "folder" gives the address; drop url/click`);
@@ -321,7 +303,7 @@ export function definePageBlock<
   const folderUrl = route === "folder" ? addressFromFolder(options.name) : undefined;
   const rest = { ...restOptions, checkpoint: cp, ...(folderUrl ? { url: folderUrl } : {}) };
   const pageUrl = folderUrl ?? options.url;
-  const built = defineNavigating(rest) as unknown as PageBlock<Out, M, Nav, E, R, U, Q, F>;
+  const built = defineNavigating(rest) as unknown as PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
   markFor(built, given);
   // A page's screenshot is taken whenever a step lands on it, not only when this hub runs as a step.
   if (options.screenshot) screenshotPage(cp.__state, options.screenshot === true ? {} : options.screenshot);
@@ -343,7 +325,7 @@ export function definePageBlock<
   const slug = options.name.replace(/^page-/, "");
   const inline = (spec: unknown) => ({ __inlineMethod: spec });
   const inlineExpect = (spec: unknown) => ({ __inlineExpect: spec });
-  const self = { checkpoint: cp, read: readKeys(namespace), nav, method: inline, expect: inlineExpect } as unknown as PageSelf<Out, R, Nav>;
+  const self = { checkpoint: cp, read: readKeys(namespace), nav, method: inline, expect: inlineExpect, link: (spec: unknown) => ({ __inlineLink: spec }) } as unknown as PageSelf<Out, R, Nav>;
   /** An inline Method becomes a real one, named for its key. */
   const toBlock = (key: string, entry: unknown): unknown => {
     if (typeof entry === "object" && entry !== null && "__inlineExpect" in entry) {
@@ -382,6 +364,31 @@ export function definePageBlock<
     return Object.freeze([...named, ...listed]) as readonly SomeDefinedBlock[];
   });
 
+  // A page that covers others is a layout too: what it declares applies on every page it covers.
+  if (covers !== undefined || linksOf || interrupts) {
+    let layout: ReturnType<typeof defineLayout> | undefined;
+    const coverLayout = () =>
+      (layout ??= defineLayout({
+        name: slug,
+        ...(options.description ? { description: options.description } : {}),
+        go: Object.fromEntries(
+          Object.entries(linksOf ? (linksOf(self) as Record<string, { __inlineLink: InlineLink<string | Checkpoint<string>> }>) : {}).map(([key, entry]) => [
+            key,
+            { ...entry.__inlineLink, to: entry.__inlineLink.to === "parent" ? "parent" : typeof entry.__inlineLink.to === "string" ? makeCheckpoint(entry.__inlineLink.to) : entry.__inlineLink.to },
+          ]),
+        ) as never,
+        ...(Array.isArray(covers) ? { on: (covers as readonly string[]).map((n) => makeCheckpoint(n)) } : {}),
+        ...(opensBy ? { opens: opensBy } : {}),
+        ...(interrupts ? { interrupts } : {}),
+      }));
+    Object.defineProperty(built, "__waygraphCoverLayout", { get: coverLayout, enumerable: false, configurable: true });
+    Object.defineProperty(built, "links", { get: () => coverLayout().go, enumerable: false, configurable: true });
+    // What the shell reads is read on every page it covers.
+    if (readBlock && covers !== undefined) {
+      Object.defineProperty(readBlock, "from", { get: () => (layoutState(slug).loaded ? layoutState(slug).covers : [cp.__state]), enumerable: true, configurable: true });
+    }
+  }
+  if (options.checkpoint === undefined) mark(built, "__waygraphBare", true);
   markRoute(built, opensFrom?.map((c) => c.__state) ?? ["*"], [cp.__state]);
   mark(built, "__waygraphKind", "page");
   mark(built, "__waygraphSalt", "page");
