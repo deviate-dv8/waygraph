@@ -139,6 +139,10 @@ the page and its Methods can import each other ([Lifecycle](./lifecycle#why-do-a
 A page whose address has a param (`url: "/requests/:id"`, or `[id]` as in Next and Nuxt) has `go`, typed by the params:
 `.gotoPage(Request.go({ id: 42 }))` opens `/requests/42`; leaving one out doesn't compile.
 
+A tab or a filter kept in the address (`?tab=files`) is state of the page, not a page of its own: `query: ["tab"]` on the
+page, then `Page.go({ id: 42, tab: "files" })` opens with it, `Page.setQuery({ tab: "signers" })` is a step that changes it,
+and both check the address says so.
+
 A flow imports the page, not each Block:
 
 ```ts

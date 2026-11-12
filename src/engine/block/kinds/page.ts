@@ -1,5 +1,6 @@
 // A Page Block: "you have arrived" - the hub other pages navigate to, verified by what the page shows.
 import { defineNavigating } from "./nav.js";
+import { defineMethodBlock } from "./method.js";
 import type { Account } from "../../flow/account.js";
 import { markFor } from "../access.js";
 import { mark } from "../mark.js";
@@ -48,6 +49,7 @@ export type PageBlockOptions<
   R extends PageRead = PageRead,
   Nav = undefined,
   U extends string = string,
+  Q extends string = never,
 > = {
   name: string;
   description?: string;
@@ -112,6 +114,12 @@ export type PageBlockOptions<
    * hub is arrival-only (previous Block already resolved here).
    */
   url?: U | ((mem: MemPage) => string);
+  /**
+   * The query params the page keeps in its address (`?tab=files`): state of the page, not a page of its own. `Page.go({ id, tab })`
+   * opens with them, `Page.setQuery({ tab })` changes them, and arrival checks them.
+   * @example query: ["tab", "filter"]
+   */
+  query?: readonly Q[];
   /** Optional click-nav onto this page. XOR with `url`. */
   click?: string | ((mem: MemPage) => string);
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
@@ -139,6 +147,7 @@ export type PageBlock<
   E extends Record<string, PageExpectEntry> = Record<never, never>,
   R = Record<never, never>,
   U extends string = string,
+  Q extends string = never,
 > = Omit<
   DefinedBlock<Checkpoint<string>, Out>,
   "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
@@ -159,33 +168,41 @@ export type PageBlock<
   readonly read: PageReadKeys<R>;
   withVerify(
     verify: Trait[] | ((out: Out) => Trait[]),
-  ): PageBlock<Out, M, Nav, E, R, U>;
+  ): PageBlock<Out, M, Nav, E, R, U, Q>;
   modVerify(
     nameOrIndex: string | number,
     newCheck: Trait["check"] | Trait,
-  ): PageBlock<Out, M, Nav, E, R, U>;
-  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav, E, R, U>;
-  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U>;
-  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U>;
-  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U>;
-} & PageGo<Out, U>;
+  ): PageBlock<Out, M, Nav, E, R, U, Q>;
+  modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav, E, R, U, Q>;
+  stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q>;
+  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q>;
+  stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q>;
+} & PageGo<Out, U, Q>;
 
 
 /** The params of a page's address: `/requests/:id` and `/requests/[id]` have `id`; none: `never`. */
 export type UrlParams<U extends string> = string extends U
   ? never
-  : U extends `${string}:${infer P}/${infer Rest}`
+  : U extends `${string}/:${infer P}/${infer Rest}`
     ? P | UrlParams<`/${Rest}`>
-    : U extends `${string}:${infer P}`
+    : U extends `${string}/:${infer P}`
       ? P
       : U extends `${string}[${infer P}]${infer Rest}`
         ? P | UrlParams<Rest>
         : never;
 
-/** `Page.go({ id })`: the page opened at one address of its pattern. Present when the address has params. */
-export type PageGo<Out extends Checkpoint<string>, U extends string> = [UrlParams<U>] extends [never]
-  ? unknown
-  : { readonly go: (params: { [K in UrlParams<U>]: string | number }) => DefinedBlock<Checkpoint<string>, Out> };
+type Params<U extends string, Q extends string> = { [K in UrlParams<U>]: string | number } & { [K in Q]?: string | number };
+
+/**
+ * `Page.go({ id, tab })`: the page opened at one address of its pattern (path params are required, `query` ones optional),
+ * and `Page.setQuery({ tab })`: a Method that changes the query on the page it's on. Each present when it applies.
+ */
+export type PageGo<Out extends Checkpoint<string>, U extends string, Q extends string> = ([UrlParams<U>] extends [never]
+  ? [Q] extends [never]
+    ? unknown
+    : { readonly go: (params: Params<U, Q>) => DefinedBlock<Checkpoint<string>, Out> }
+  : { readonly go: (params: Params<U, Q>) => DefinedBlock<Checkpoint<string>, Out> }) &
+  ([Q] extends [never] ? unknown : { readonly setQuery: (values: { [K in Q]?: string | number }) => DefinedBlock<Out, Out> });
 
 /** A record of page methods with each `() => Block` factory resolved to its Block. */
 export type PageMethods<M> = { readonly [K in keyof M]: M[K] extends () => infer B ? B : M[K] };
@@ -203,14 +220,15 @@ export function definePageBlock<
   E extends Record<string, PageExpectEntry> = Record<never, never>,
   R extends PageRead = Record<never, never>,
   const U extends string = string,
->(options: PageBlockOptions<Out, M, E, R, Nav, U> & { nav?: Nav }): PageBlock<Out, M, Nav, E, R, U> {
+  const Q extends string = never,
+>(options: PageBlockOptions<Out, M, E, R, Nav, U, Q> & { nav?: Nav }): PageBlock<Out, M, Nav, E, R, U, Q> {
   if (options.url !== undefined && options.click !== undefined) {
     throw new Error(
       `definePageBlock("${options.name}"): pass url XOR click (or neither for arrival-only hub)`,
     );
   }
-  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, from: opensFrom, ...rest } = options;
-  const built = defineNavigating(rest) as unknown as PageBlock<Out, M, Nav, E, R, U>;
+  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, from: opensFrom, query, ...rest } = options;
+  const built = defineNavigating(rest) as unknown as PageBlock<Out, M, Nav, E, R, U, Q>;
   markFor(built, given);
   // A page's screenshot is taken whenever a step lands on it, not only when this hub runs as a step.
   if (options.screenshot) screenshotPage(options.checkpoint.__state, options.screenshot === true ? {} : options.screenshot);
@@ -287,20 +305,62 @@ export function definePageBlock<
   if (options.click !== undefined) {
     mark(built, "__waygraphNavClick", options.click);
   }
-  // `Page.go({ id })`: the same page opened at one address of its pattern.
-  if (typeof options.url === "string" && /:\w+|\[\w+\]/.test(options.url)) {
+  if (query?.length) mark(built, "__waygraphQuery", [...query]);
+  // `Page.go({ id, tab })`: the same page opened at one address of its pattern, its query params in the address.
+  const pathParams = typeof options.url === "string" && /\/:\w+|\[\w+\]/.test(options.url);
+  if (typeof options.url === "string" && (pathParams || query?.length)) {
     const pattern = options.url;
+    const queryNames = new Set<string>(query ?? []);
     Object.defineProperty(built, "go", {
       enumerable: false,
       value: (params: Record<string, string | number>) => {
-        const url = pattern.replace(/:(\w+)|\[(\w+)\]/g, (_m, a: string | undefined, b: string | undefined) => encodeURIComponent(String(params[(a ?? b) as string])));
-        const at = defineNavigating({ ...rest, name: `${options.name}(${Object.values(params).join(", ")})`, url });
+        const path = pattern.replace(/(?<=\/):(\w+)|\[(\w+)\]/g, (_m, a: string | undefined, b: string | undefined) => encodeURIComponent(String(params[(a ?? b) as string])));
+        const search = new URLSearchParams(Object.entries(params).filter(([k, v]) => queryNames.has(k) && v !== undefined).map(([k, v]) => [k, String(v)]));
+        const url = search.size ? `${path}?${search}` : path;
+        const wanted = [...search.entries()];
+        const arrives: Trait[] = wanted.length
+          ? [{ name: `query(${search})`, says: `the address has ?${search}`, async check(page) { const have = new URL(page.url()).searchParams; return wanted.every(([k, v]) => have.get(k) === v) ? true : { ok: false, saw: `?${have}` }; } }]
+          : [];
+        const own = Array.isArray(rest.verify) ? rest.verify : undefined;
+        const at = defineNavigating({ ...rest, ...(own ? { verify: [...own, ...arrives] } : {}), name: `${options.name}(${Object.values(params).join(", ")})`, url });
         markRoute(at, opensFrom?.map((c) => c.__state) ?? ["*"], [options.checkpoint.__state]);
         mark(at, "__waygraphKind", "page");
         mark(at, "__waygraphSalt", "page");
         mark(at, "__waygraphNavUrl", url);
         mark(at, "__waygraphPageDeepLink", true);
         return at;
+      },
+    });
+  }
+  // `Page.setQuery({ tab })`: changes the query of the page it's on, stays on the page, and proves the address says so.
+  if (query?.length) {
+    const queryNames = new Set<string>(query);
+    Object.defineProperty(built, "setQuery", {
+      enumerable: false,
+      value: (values: Record<string, string | number | undefined>) => {
+        const given = Object.entries(values).filter(([k, v]) => queryNames.has(k) && v !== undefined);
+        const label = given.map(([k, v]) => `${k}=${v}`).join("&");
+        return defineMethodBlock({
+          name: `${options.name}-set-query(${label})`,
+          from: options.checkpoint,
+          to: options.checkpoint,
+          async act(page) {
+            const url = new URL(page.url());
+            for (const [k, v] of given) url.searchParams.set(k, String(v));
+            await page.goto(url.toString());
+          },
+          verify: [
+            {
+              name: `query(${label})`,
+              says: `the address has ${label}`,
+              async check(page) {
+                const have = new URL(page.url()).searchParams;
+                const wrong = given.filter(([k, v]) => have.get(k) !== String(v));
+                return wrong.length ? { ok: false, saw: `?${have}` } : true;
+              },
+            },
+          ],
+        });
       },
     });
   }

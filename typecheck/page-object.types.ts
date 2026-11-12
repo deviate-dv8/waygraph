@@ -32,3 +32,13 @@ RequestPage.go({ id: 1, tab: "files" });
 RequestPage.go({ id: 1 });
 // @ts-expect-error - a page without params has no go
 CartPage.go;
+
+// Query params are page state: optional in go, changed by setQuery.
+export const TabsPage = definePageBlock({ name: "page-tabs", checkpoint: checkpoint("PoTabs"), url: "/docs/:id", query: ["tab", "filter"] });
+TabsPage.go({ id: 1 });
+TabsPage.go({ id: 1, tab: "files" });
+TabsPage.setQuery({ tab: "signers" });
+// @ts-expect-error - not a query param of this page
+TabsPage.setQuery({ nope: 1 });
+// @ts-expect-error - a page without query has no setQuery
+RequestPage.setQuery;

@@ -22,6 +22,8 @@ export type ManifestBlock = {
   url?: string
   /** A Page Block that opens itself (a `url` or `click`): a way in, as a Nav is; missing before waygraph 0.17.3. */
   opens?: true
+  /** The query params a Page Block keeps in its address: state of the page; missing before waygraph 0.18. */
+  query?: string[]
   /** The lines of `file` that define it; missing before waygraph 0.16.19 (so are `checks` and `selectors`). */
   source?: SourceSpan
   /** What it checks before acting and on arrival; `"dynamic"`: a function builds the checks. */

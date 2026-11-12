@@ -13,9 +13,8 @@ against a real consumer.
 
 - **Page object, the rest** - a page is one object (`url`/`from`, `read`, `do`, `expects`), a layout has `interrupts`, a
   Method is written flat; four codemods (`page-object`, `nav`, `instructions`, `mem-stubs`) move a project. Still to do:
-  a typed `[id]` param on `url` and `Page.go({ id })`, `query` as page state with `setQuery`, Expect Blocks as plain
-  `expects` entries (one check concept), and Studio's page panel mirroring the object (state, moves, checks, last
-  results). Then the planned `qa-network-and-api-view`, `api-requests-and-races` and `block-capabilities` changes.
+  Expect Blocks as plain `expects` entries (one check concept), and each check's last result in Studio's page panel.
+  Then the planned `qa-network-and-api-view`, `api-requests-and-races` and `block-capabilities` changes.
 - **Waygraph Studio** - `waygraph studio` (the app in `ui/`); tests run in its Playwright page. Next: live sessions (`auto`, `browser`, `pilot`) through the
   session protocol, editing `config/waygraph.config.ts` from it (it shows it today), more settings (kept in the browser today). Each expectation's result in the run log (today only the one that
   failed is logged) would let it show every expectation a step met. Live updates: a project host that watches the files and the run logs and pushes changes to the

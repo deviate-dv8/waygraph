@@ -285,6 +285,7 @@ export function copyWaygraphRuntime(from: object, to: object): void {
     "__waygraphPane",
     "__waygraphCloses",
     "__waygraphReadBlock",
+    "__waygraphQuery",
     ...PAGE_FIELDS,
   ] as const) {
     const desc = Object.getOwnPropertyDescriptor(from, key);

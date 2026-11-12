@@ -58,6 +58,16 @@ const selectors = computed(() => {
   return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name))
 })
 
+/** The page's own state in its address (`?tab=`), from its Page Block. */
+const queryNames = computed(() => [...new Set(props.page.hubs.flatMap((h) => h.query ?? []))])
+/** What must be true on arrival, from its Page Block's `verify`: how the page proves it is this page. */
+const arrival = computed(() =>
+  props.page.hubs.flatMap((h) => {
+    const v = h.checks?.verify
+    return v && v !== 'dynamic' ? v.map((c) => ({ ...c, block: h.name })) : []
+  })
+)
+
 const REACH_ORDER: PageFlow['reach'][] = ['lands', 'may land', 'acts']
 /** Failing flows first (what needs looking at), then by how they reach the page, then by name. */
 const sortedFlows = computed(() =>
@@ -77,7 +87,18 @@ const tally = computed(() => ({
 type Section = { value: string; label: string; icon: string; count: number }
 const sections = computed<Section[]>(() =>
   [
-    { value: 'shows', label: 'Shows', icon: 'i-lucide-eye', count: fieldCount.value },
+    {
+      value: 'shows',
+      label: 'Shows',
+      icon: 'i-lucide-eye',
+      count: fieldCount.value + queryNames.value.length,
+    },
+    {
+      value: 'arrival',
+      label: 'Arrives when',
+      icon: 'i-lucide-map-pin-check',
+      count: arrival.value.length,
+    },
     {
       value: 'actions',
       label: 'Do here',
@@ -248,6 +269,18 @@ const where = (b: ManifestBlock, list: BlockList) =>
         <template #body="{ item }">
           <!-- What the page shows: by namespace, the states it can be in (yes / no) first. -->
           <div v-if="item.value === 'shows'" class="space-y-3">
+            <p v-if="queryNames.length" class="flex flex-wrap items-center gap-1 text-xs">
+              <span class="text-(--ink-soft)">In the address:</span>
+              <UBadge
+                v-for="q in queryNames"
+                :key="q"
+                :label="`?${q}`"
+                color="neutral"
+                variant="subtle"
+                size="sm"
+                class="font-mono"
+              />
+            </p>
             <div v-for="r in props.page.reads" :key="r.id">
               <div v-for="[ns, fields] in byNamespace(r.fields ?? {})" :key="ns" class="mb-2">
                 <p class="font-hand text-base leading-tight">
@@ -264,6 +297,17 @@ const where = (b: ManifestBlock, list: BlockList) =>
               </div>
             </div>
           </div>
+
+          <ul v-else-if="item.value === 'arrival'" class="space-y-1">
+            <li
+              v-for="(c, i) in arrival"
+              :key="i"
+              class="rounded-md border border-(--island-line) px-2 py-1 text-xs"
+            >
+              {{ c.wants ?? c.name }}
+              <code v-if="c.selector" class="text-(--ink-soft)">{{ c.selector }}</code>
+            </li>
+          </ul>
 
           <ul v-else-if="isBlockList(item.value)" class="space-y-1">
             <li v-for="b in blocksIn(item.value)" :key="b.id">

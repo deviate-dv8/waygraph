@@ -83,7 +83,8 @@ Click a page for everything about it, most telling first:
 
 1. Its screenshot, addresses, how its flows' newest runs went (failing, passing, not run), its layouts and who can open
    it (its Page Block's `for`).
-2. **Shows**: its `read` fields, the yes/no states first.
+2. **Shows**: its `read` fields, the yes/no states first, and the query params it keeps in its address (`?tab`).
+   **Arrives when**: the checks that prove the browser is on this page.
 3. **Do here**, **Ways in**, **Leads to**: its Blocks. Open one for its checks, the selectors it reads and its code; the
    arrows in the panel's corner widen it to read code.
 4. **Expected here**: its Expect Blocks, and what Blocks promise on arrival.
