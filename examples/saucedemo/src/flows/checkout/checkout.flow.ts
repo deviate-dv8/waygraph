@@ -9,7 +9,7 @@ import { CheckoutInfo } from "../../blocks/saucedemo-web/checkout-step-one/check
 import { CheckoutOverview } from "../../blocks/saucedemo-web/checkout-step-two/checkout-overview.page.block.js";
 
 export const checkoutFlow = engine
-  .map({ memStub: true })
+  .map({ title: "Check out", description: "A signed-in user buys an item and sees the order confirmed.", labels: ["checkout"], memStub: true })
   .ffStart()
   .gotoPage(Login)
   .method(

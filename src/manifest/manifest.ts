@@ -14,7 +14,7 @@ import type { SomeBlock } from "../engine/block/some-block.js";
 import type { Trait } from "../engine/trait/trait.js";
 import { walkDir } from "./scan.js";
 import { forgetSources, selectorEntries, selectorFilesUnder, selectorsUsed, spanOf, type SelectorEntry, type SourceSpan } from "./selectors.js";
-import { labelsOf, type Labels } from "./labels.js";
+import { flowLabels, type Labels } from "./labels.js";
 import { siteTree, type SiteTree } from "./site-map.js";
 import { loadLayouts, refreshLayoutRoutes } from "./layouts.js";
 import { givenTo } from "../engine/block/access.js";
@@ -100,6 +100,11 @@ export interface ManifestFlow {
   steps: string[];
   /** What each step expects (the Block's and the step's own), in words: one list per entry of `steps`. */
   stepExpects: string[][];
+  /** What the flow says about itself (`map({ title, description, ticket, owner })`). */
+  title?: string;
+  description?: string;
+  ticket?: string;
+  owner?: string;
   settings: { memStub?: true; expectedFailure?: string; sessionReset?: true; demoPace?: unknown };
   /** Its panes (`map({ panes })`): who is signed in in each, its device, the pane whose context it shares. */
   panes?: { name: string; as?: string; device?: unknown; with?: string }[];
@@ -255,6 +260,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       blocks: () => { name: string; block: SomeBlock }[];
       memStub?: boolean;
       expectedFailureReason?: string;
+      meta?: import("../engine/flow/map-options.js").FlowMeta;
       resetSession?: boolean;
       demoPace?: unknown;
     };
@@ -264,7 +270,11 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       exportName: f.exportName,
       file: f.file,
       ...(source ? { source } : {}),
-      labels: labelsOf(labels, f.file, f.exportName),
+      labels: flowLabels(flow.meta?.labels, labels, f.file, f.exportName),
+      ...(flow.meta?.title ? { title: flow.meta.title } : {}),
+      ...(flow.meta?.description ? { description: flow.meta.description } : {}),
+      ...(flow.meta?.ticket ? { ticket: flow.meta.ticket } : {}),
+      ...(flow.meta?.owner ? { owner: flow.meta.owner } : {}),
       useCase: useCaseOf(f.file),
       steps: flow.blocks().map((s) => s.name),
       stepExpects: flow.blocks().map((s) => describeExpectations(s.block)),

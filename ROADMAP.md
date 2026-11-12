@@ -11,6 +11,7 @@ against a real consumer.
 
 ## Next
 
+- **Flow meta, calls as data** - a flow has `title`/`description`/`labels` (done). Next: each step's API calls (request, response, why) in the demo card and a modal, per-page network findings (duplicates, N+1, slow), and a hybrid UI+API saucedemo flow with a seeding step; an offline API console after.
 - **Page object, the rest** - a page is one object (`url`/`from`, `read`, `do`, `expects`), a layout has `interrupts`, a
   Method is written flat; four codemods (`page-object`, `nav`, `instructions`, `mem-stubs`) move a project. A page is its own Checkpoint with inline Methods, `route: "folder"`, `frame`
   and `ctx.page.api` are in too. Still to do: Expect Blocks as plain `expects` entries (one check concept), each check's

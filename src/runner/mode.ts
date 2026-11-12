@@ -18,6 +18,9 @@ export interface PlayStep {
   /** Set on a named flow's steps; ad hoc Block chains have no episodes. */
   episodeNumber?: number | undefined;
   episodeTitle?: string | undefined;
+  /** On a flow's first step: what it says about itself (`map({ title, description })`); the demo opens with them. */
+  flowTitle?: string | undefined;
+  flowDescription?: string | undefined;
   /** Clear cookies and storage before this step (a flow with `sessionReset`, chained after another). */
   resetSession: boolean;
   /** Seeds this segment's `--data` into mem; set on a segment's first step. */

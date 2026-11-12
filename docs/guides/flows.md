@@ -147,6 +147,22 @@ engine.map()
 
 `.branch()` must name every outcome (`null` ends that one there). Use `lands` when the flow is only about one.
 
+## What a flow says about itself
+
+```ts
+export const loginFlow = engine.map({
+  title: "Sign in",
+  description: "A standard user signs in and lands on the inventory.",
+  labels: ["auth", "smoke"],
+  ticket: "QA-12", // optional
+  owner: "web",    // optional
+});
+```
+
+The title names the test and the demo's first slide, the description is its caption, and the labels group the flow (they
+join the config's [labels](./testing#labels)). `waygraph list`, the manifest and Waygraph Studio show all of them;
+`waygraph check` names the flows still without a description.
+
 ## Flow settings
 
 `map({ … })` sets the flow up before its first step:

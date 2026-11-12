@@ -5,7 +5,7 @@ import { Inventory } from "../../blocks/saucedemo-web/inventory/inventory.page.b
 
 /** Smoke: the happy path with the Blocks' own verify lists switched off where a later step already proves the outcome. */
 export const smokeFlow = engine
-  .map()
+  .map({ title: "Smoke", description: "Sign in and add an item: the shortest path through the shop.", labels: ["smoke"] })
   .gotoPage(Login.withVerify([]))
   .method(Login.do.fillUsername)
   .method(Login.do.fillPassword)

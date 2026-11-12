@@ -73,7 +73,7 @@ export type { NavBlock, NavBlockOptions, NavClickBlock, NavClickBlockOptions, Me
 export type { MethodBlock, MethodBlockOptions } from "./engine/block/kinds/method.js";
 export type { Expectation, ExpectBlock, ExpectBlockOptions, ExpectList } from "./engine/block/kinds/expect.js";
 export type { PageBlock, PageBlockOptions, PageHandle, InlineMethod, PageExpectEntry, PageMethodEntry, PageMethods } from "./engine/block/kinds/page.js";
-export type { MapBuilderOptions } from "./engine/flow/map-options.js";
+export type { FlowMeta, MapBuilderOptions } from "./engine/flow/map-options.js";
 export type { ActionPage } from "./engine/block/action-page.js";
 export { discoverGraph, toMermaid, findOrphanBlocks, findBlockPath } from "./analysis/graph.js";
 export { buildManifest } from "./manifest/manifest.js";

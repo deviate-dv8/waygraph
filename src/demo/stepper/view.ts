@@ -14,6 +14,8 @@ export interface StepperStep {
   block: SomeBlock & { description?: string; fastForward?: boolean; demoPace?: DemoPace; __waygraphKind?: string; __waygraphNavClick?: unknown };
   episodeNumber?: number | undefined;
   episodeTitle?: string | undefined;
+  flowTitle?: string | undefined;
+  flowDescription?: string | undefined;
   expectedFailureReason?: string | undefined;
   demoPace?: DemoPace | undefined;
   highlightStyle?: HighlightStyleDefaults | undefined;

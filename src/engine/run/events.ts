@@ -5,11 +5,12 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { BlockKind } from "../block/kind.js";
 import type { TraitCheckReport } from "../trait/verify.js";
 import type { Page } from "@playwright/test";
+import type { FlowMeta } from "../flow/map-options.js";
 
 export type RunEvent =
   | { type: "run:start"; runId: string; at: number; label?: string }
   /** The mem a segment of the run was seeded with (`--data`, mem stubs): what `--replay <runId>` sets again. */
-  | { type: "run:mem"; runId: string; at: number; segment: number; flow: string; values: Record<string, unknown> }
+  | { type: "run:mem"; runId: string; at: number; segment: number; flow: string; values: Record<string, unknown>; meta?: FlowMeta }
   | { type: "step:start"; runId: string; at: number; index: number; block: string; kind: BlockKind; from: string; parent?: number; cleanup?: true; pane?: string }
   /** `url`: the page's address when the step ended (where it navigated to). */
   | { type: "step:end"; runId: string; at: number; index: number; block: string; kind: BlockKind; to: string; ms: number; url?: string }
@@ -178,10 +179,10 @@ export function recordDiff(step: number, block: string, sides: [string, string],
 }
 
 /** Records the mem a segment of this run was seeded with, keyed by MemKey name. */
-export function recordMem(segment: number, flow: string, values: Record<string, unknown>): void {
+export function recordMem(segment: number, flow: string, values: Record<string, unknown>, meta?: FlowMeta): void {
   const open = scope.getStore();
   if (!open) return;
-  emit({ type: "run:mem", runId: open.runId, at: Date.now(), segment, flow, values });
+  emit({ type: "run:mem", runId: open.runId, at: Date.now(), segment, flow, values, ...(meta ? { meta } : {}) });
 }
 
 /** The id of the run open right now, if any. */

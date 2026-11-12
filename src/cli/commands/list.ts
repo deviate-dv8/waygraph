@@ -4,7 +4,8 @@ import { exportedNames, parseSource } from "../../manifest/source.js";
 import { relative, resolve } from "node:path";
 import { projectDirOf } from "../util.js";
 import { parseCommand } from "../args.js";
-import { labelsOf } from "../../manifest/labels.js";
+import { flowLabels } from "../../manifest/labels.js";
+import { importFresh, isFlowLike } from "../../manifest/scan.js";
 import { loadWaygraphConfig } from "../../runtime/waygraph-config.js";
 
 // ---------------------------------------------------------------------------
@@ -19,18 +20,32 @@ async function listCommand(projectDir: string, label: string | undefined): Promi
     return;
   }
   const labels = (await loadWaygraphConfig(projectDir))?.labels;
-  if (label && !labels?.[label]) {
-    console.error(`waygraph list: ${label} isn't a label; the config's labels: ${Object.keys(labels ?? {}).join(", ") || "none"}`);
+  const rows: { rel: string; name: string; its: string[]; title?: string }[] = [];
+  for (const file of files) {
+    const rel = relative(projectDir, file);
+    let mod: Record<string, unknown>;
+    try {
+      mod = await importFresh(file);
+    } catch {
+      // A file that doesn't load still lists its flows, by name.
+      for (const name of extractFlowNames(file)) rows.push({ rel, name, its: flowLabels(undefined, labels, rel, name) });
+      continue;
+    }
+    for (const [name, value] of Object.entries(mod)) {
+      if (!isFlowLike(value)) continue;
+      const meta = (value as { meta?: { labels?: readonly string[]; title?: string } }).meta;
+      rows.push({ rel, name, its: flowLabels(meta?.labels, labels, rel, name), ...(meta?.title ? { title: meta.title } : {}) });
+    }
+  }
+  const known = [...new Set(rows.flatMap((r) => r.its))].sort();
+  if (label && !known.includes(label)) {
+    console.error(`waygraph list: ${label} isn't a label; the labels: ${known.join(", ") || "none"}`);
     process.exitCode = 1;
     return;
   }
-  for (const file of files) {
-    const rel = relative(projectDir, file);
-    for (const name of extractFlowNames(file)) {
-      const its = labelsOf(labels, rel, name);
-      if (label && !its.includes(label)) continue;
-      console.log(`${rel}  ${name}${its.length ? `  [${its.join(", ")}]` : ""}`);
-    }
+  for (const r of rows) {
+    if (label && !r.its.includes(label)) continue;
+    console.log(`${r.rel}  ${r.name}${r.its.length ? `  [${r.its.join(", ")}]` : ""}${r.title ? `  ${r.title}` : ""}`);
   }
 }
 

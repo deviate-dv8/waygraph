@@ -47,8 +47,43 @@ const noExpect = ref(false)
     <StepPipeline :steps="pipeline" :selected="selected" @select="selected = $event" />
 
     <div class="island absolute bottom-3 left-3 max-w-md space-y-1 px-4 py-3">
-      <p class="font-hand text-2xl leading-tight">{{ props.flow.exportName }}</p>
-      <p class="font-mono text-xs text-(--ink-soft)">{{ props.flow.file }}</p>
+      <p class="font-hand text-2xl leading-tight">
+        {{ props.flow.title ?? props.flow.exportName }}
+      </p>
+      <p v-if="props.flow.description" class="text-sm">{{ props.flow.description }}</p>
+      <p class="font-mono text-xs text-(--ink-soft)">
+        {{ props.flow.exportName }} · {{ props.flow.file }}
+      </p>
+      <div
+        v-if="props.flow.labels?.length || props.flow.ticket || props.flow.owner"
+        class="flex flex-wrap gap-1"
+      >
+        <UBadge
+          v-for="l in props.flow.labels ?? []"
+          :key="l"
+          :label="l"
+          icon="i-lucide-tag"
+          color="primary"
+          variant="subtle"
+          size="sm"
+        />
+        <UBadge
+          v-if="props.flow.ticket"
+          :label="props.flow.ticket"
+          icon="i-lucide-ticket"
+          color="neutral"
+          variant="outline"
+          size="sm"
+        />
+        <UBadge
+          v-if="props.flow.owner"
+          :label="props.flow.owner"
+          icon="i-lucide-user"
+          color="neutral"
+          variant="outline"
+          size="sm"
+        />
+      </div>
       <div class="flex flex-wrap gap-1 pt-1">
         <UBadge
           v-for="[k, v] in settings"

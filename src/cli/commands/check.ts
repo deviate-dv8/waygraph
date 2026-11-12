@@ -143,6 +143,11 @@ export async function checkCase(args: string[]): Promise<void> {
         console.warn(`waygraph check: Checkpoint ${s.checkpoint} ${why}, and nothing starts from it - a state of a page, not a page: keep the page's Checkpoint and say what changed in its Read Block (a field the step's verify or expect checks)`);
       }
       if (statePages.length > 0) console.log(`waygraph check: ${statePages.length} Checkpoint${statePages.length === 1 ? "" : "s"} that ${statePages.length === 1 ? "is a state" : "are states"} of a page`);
+      // A flow with no description doesn't say what it proves: not to a QA reading the list, not to the demo's opening.
+      const undescribed = manifest.flows.filter((f) => !f.description);
+      if (undescribed.length && undescribed.length < manifest.flows.length) {
+        console.log(`waygraph check: ${undescribed.length} flow${undescribed.length === 1 ? "" : "s"} without a description (map({ title, description, labels })): ${undescribed.slice(0, 5).map((f) => f.exportName).join(", ")}${undescribed.length > 5 ? ", …" : ""}`);
+      }
       const labels = (await loadWaygraphConfig(proj))?.labels;
       for (const label of emptyLabels(labels, manifest.flows)) {
         console.warn(`waygraph check: label ${label} covers no flow (${(labels?.[label] ?? []).join(", ") || "no patterns"}) - a glob over flow files (src/flows/auth/**) or a flow's export name`);

@@ -91,7 +91,7 @@ function seeding(segment: Segment, index: number, mem: MemPage, recorded: Map<nu
         // A run that recorded no data for this part (an older run, or another spec): nothing to replay; it plays as new.
         console.error(`waygraph: --replay: that run recorded no data for part ${index + 1} ("${segment.ref}"); playing it with new data`);
         seed();
-        recordMem(index, segment.ref, Object.fromEntries(keys.filter((k) => mem.has(k)).map((k) => [k.name, mem.get(k)])));
+        recordMem(index, segment.ref, Object.fromEntries(keys.filter((k) => mem.has(k)).map((k) => [k.name, mem.get(k)])), segment.flow.meta);
         return;
       }
       for (const k of keys) {
@@ -102,7 +102,7 @@ function seeding(segment: Segment, index: number, mem: MemPage, recorded: Map<nu
     } else {
       seed();
     }
-    recordMem(index, segment.ref, Object.fromEntries(keys.filter((k) => mem.has(k)).map((k) => [k.name, mem.get(k)])));
+    recordMem(index, segment.ref, Object.fromEntries(keys.filter((k) => mem.has(k)).map((k) => [k.name, mem.get(k)])), segment.flow.meta);
   };
 }
 
@@ -182,7 +182,9 @@ function stepsOf(segments: readonly Segment[], options: PlayOptions, { episodes 
       exportName: info.name,
       config: segment.flow.config,
       episodeNumber,
-      episodeTitle: episodeNumber === undefined ? undefined : segment.ref,
+      episodeTitle: episodeNumber === undefined ? undefined : (segment.flow.meta?.title ?? segment.ref),
+      ...(i === 0 && segment.flow.meta?.title ? { flowTitle: segment.flow.meta.title } : {}),
+      ...(i === 0 && segment.flow.meta?.description ? { flowDescription: segment.flow.meta.description } : {}),
       resetSession: i === 0 && startsFresh(segment.flow, segmentIndex),
       seedMem: i === 0 ? segment.seedMem : undefined,
       expectedFailureReason: i === last ? segment.flow.expectedFailureReason : undefined,

@@ -32,7 +32,7 @@ export async function showBefore(ctx: StepperContext, view: StepView): Promise<B
   if (!quiet()) logBefore(ctx, view, phase, appliedTodo.sync, paceSpeak.paceLabel);
   await showSlides(ctx, view, phase.slides);
   if (phase.title && String(phase.title).trim()) ctx.stickyTitle = String(phase.title).trim();
-  view.overlayTitle = ctx.stickyTitle || (view.step.episodeTitle && String(view.step.episodeTitle).trim()) || ctx.title || "waygraph stepper";
+  view.overlayTitle = ctx.stickyTitle || (view.step.episodeTitle && String(view.step.episodeTitle).trim()) || view.step.flowTitle || ctx.title || "waygraph stepper";
   view.overlayTodoPos = stage.state.lastTodoDock?.pos || phase.todoPos || undefined;
 
   const step = view.step;
@@ -50,7 +50,8 @@ export async function showBefore(ctx: StepperContext, view: StepView): Promise<B
     justEnteredEpisode: view.justEnteredEpisode,
     title: view.overlayTitle,
     bannerUi: stage.state.lastBannerUi,
-    caption: phase.caption,
+    // The flow's own words open its demo when no stub speaks first.
+    caption: phase.caption ?? view.step.flowDescription,
     networkTabVisible: phase.networkTabVisible,
     fastForward: !!step.block.fastForward,
     isApi: step.block.__waygraphKind === "api",

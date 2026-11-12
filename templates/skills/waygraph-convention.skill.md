@@ -222,6 +222,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   `map({ input: CaseKey })` and is given `--input <json | @file>` (an array plays it once per item) or
   `.flow(sub, { input })`; a step only some cases need takes `{ when: (mem) => … }`. Exports like `r0`, `r0b`,
   `r1` … that differ by data, or data read from an env variable at load time, are a smell.
+- **A flow says what it is**: `engine.map({ title, description, labels: ["smoke"] })`; `waygraph check` names flows without a description.
 - **Groups of flows are labels in the config** (`labels: { auth: ["src/flows/auth/**", "logoutFlow"] }`), run with
   `waygraph test --flows --label auth`. A new flow in a labelled folder joins its label; one elsewhere that belongs to a
   group gets its export name added to that label. Never keep a list of flows of your own (a script, a spec that imports

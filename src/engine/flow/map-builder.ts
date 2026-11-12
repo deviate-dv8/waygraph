@@ -427,6 +427,9 @@ export class MapBuilder<
   get demoPace(): Flow<Out>["demoPace"] {
     return this.finished().demoPace;
   }
+  get meta(): Flow<Out>["meta"] {
+    return this.finished().meta;
+  }
   get highlightStyle(): Flow<Out>["highlightStyle"] {
     return this.finished().highlightStyle;
   }

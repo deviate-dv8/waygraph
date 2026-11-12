@@ -47,6 +47,7 @@ export function buildBranchedFlow<Out extends Checkpoint<string>>(
     config: before.config,
     ...(before.expectedFailureReason !== undefined ? { expectedFailureReason: before.expectedFailureReason } : {}),
     ...(before.demoPace !== undefined ? { demoPace: before.demoPace } : {}),
+    ...(before.meta !== undefined ? { meta: before.meta } : {}),
     ...(before.highlightStyle !== undefined ? { highlightStyle: before.highlightStyle } : {}),
     ...(before.memStub !== undefined ? { memStub: before.memStub } : {}),
     // Read by branchRoutes()/branchInfo() (branch-regression.ts) - real, ORDINARY (enumerable)

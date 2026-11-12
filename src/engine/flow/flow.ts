@@ -96,6 +96,8 @@ export interface Flow<Out extends Checkpoint<string>> {
    * alarming one indistinguishable from a real break.
    */
   readonly expectedFailureReason?: string | undefined;
+  /** What the flow says about itself (`map({ title, description, labels, ticket, owner })`). */
+  readonly meta?: import("./map-options.js").FlowMeta | undefined;
   /**
    * Demo pacing for this Flow's episode (`map({ demoPace })`).
    * `run()` ignores; step/demo applies per Block in the episode.
@@ -309,6 +311,18 @@ export interface FlowSettings {
   expectedFailure?: string;
   demoPace?: DemoPace;
   highlightStyle?: HighlightStyleDefaults;
+  title?: string;
+  description?: string;
+  labels?: readonly string[];
+  ticket?: string;
+  owner?: string;
+}
+
+/** The meta a flow's settings carry, when it has any. */
+function metaOf(settings: FlowSettings): import("./map-options.js").FlowMeta | undefined {
+  const { title, description, labels, ticket, owner } = settings;
+  const meta = { ...(title ? { title } : {}), ...(description ? { description } : {}), ...(labels?.length ? { labels } : {}), ...(ticket ? { ticket } : {}), ...(owner ? { owner } : {}) };
+  return Object.keys(meta).length ? meta : undefined;
 }
 
 /** The Flow with its `map()` settings set; they survive `withBlockVerify`/`modBlockVerify` patches. */
@@ -322,6 +336,7 @@ export function withSettings<Out extends Checkpoint<string>>(flow: Flow<Out>, se
     ...(settings.exclusive ? { exclusive: true } : {}),
     ...(settings.expectedFailure !== undefined ? { expectedFailureReason: settings.expectedFailure } : {}),
     ...(settings.demoPace ? { demoPace: settings.demoPace } : {}),
+    ...(metaOf(settings) ? { meta: metaOf(settings) } : {}),
     ...(style
       ? {
           highlightStyle: {

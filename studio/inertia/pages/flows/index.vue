@@ -41,7 +41,10 @@ const shown = computed(() => {
     (f) =>
       (status.value === 'all' || statusOf(f) === status.value) &&
       (!label.value || f.labels.includes(label.value)) &&
-      (!q || `${f.name} ${f.file} ${f.stepNames}`.toLowerCase().includes(q))
+      (!q ||
+        `${f.name} ${f.title ?? ''} ${f.description ?? ''} ${f.ticket ?? ''} ${f.file} ${f.stepNames}`
+          .toLowerCase()
+          .includes(q))
   )
 })
 /** Groups by folder; within one, failing flows first, then by name. */
@@ -109,7 +112,14 @@ const groups = computed(() => {
             class="flex items-center gap-3 px-4 py-2 hover:bg-(--island-line)"
           >
             <div class="min-w-0 flex-1">
-              <p class="truncate font-medium" :title="f.name">{{ f.name }}</p>
+              <p class="truncate font-medium" :title="f.name">{{ f.title ?? f.name }}</p>
+              <p
+                v-if="f.description"
+                class="truncate text-xs text-(--ink-soft)"
+                :title="f.description"
+              >
+                {{ f.description }}
+              </p>
               <p class="truncate font-mono text-[11px] text-(--ink-soft)" :title="f.file">
                 {{ f.file }}
               </p>
@@ -121,6 +131,14 @@ const groups = computed(() => {
               icon="i-lucide-tag"
               color="primary"
               variant="subtle"
+              size="sm"
+            />
+            <UBadge
+              v-if="f.ticket"
+              :label="f.ticket"
+              icon="i-lucide-ticket"
+              color="neutral"
+              variant="outline"
               size="sm"
             />
             <UBadge :label="count(f.steps, 'step')" color="neutral" variant="outline" size="sm" />

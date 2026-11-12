@@ -13,7 +13,7 @@ import { importFresh, isFlowLike, walkDir } from "../../manifest/scan.js";
 import { installRunLog } from "../../runtime/run-log.js";
 import { accountSigningIn } from "../../engine/flow/account.js";
 import { inRun, recordMem } from "../../engine/run/events.js";
-import { labelsOf } from "../../manifest/labels.js";
+import { flowLabels } from "../../manifest/labels.js";
 import { loadWaygraphConfig } from "../../runtime/waygraph-config.js";
 
 /** Every key a flow's Blocks require, each once. */
@@ -65,7 +65,7 @@ export async function registerFlowTests(exclusive: boolean): Promise<void> {
       const flow = value;
       if ((flow.exclusive === true) !== exclusive) continue;
       // Its labels are its tags (@auth): --label picks them, and Playwright's UI and reports filter by them.
-      const tag = labelsOf(labels, relative(projectDir, file), exportName).map((label) => `@${label}`);
+      const tag = flowLabels(flow.meta?.labels, labels, relative(projectDir, file), exportName).map((label) => `@${label}`);
       test(`${relative(projectDir, file)} › ${exportName}`, { tag }, async ({ page, context }) => {
         const first = flow.blocks()[0];
         test.skip(!!first && !opensItsPage(first.block), `starts on a page it doesn't open (${first?.name}): it runs after another flow - chain it, or start it with a gotoPage`);
@@ -81,7 +81,7 @@ export async function registerFlowTests(exclusive: boolean): Promise<void> {
         const seeded = Object.fromEntries(requiredKeys(flow).filter((k) => mem.has(k)).map((k) => [k.name, mem.get(k)]));
         const play = () =>
           inRun(exportName, () => {
-            recordMem(0, exportName, seeded);
+            recordMem(0, exportName, seeded, flow.meta);
             return flow.run(context, mem, { page });
           });
         if (flow.expectedFailureReason) {

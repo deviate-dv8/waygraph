@@ -34,7 +34,7 @@ graph LR
 | `webServer` | `{ command, port }`, started before and stopped after |
 | `extensions` | browser extensions ([below](#browser-extensions)) |
 | `device` | the device flows play on: `"desktop"` (default), `"tablet"`, `"mobile"`, or its parts (`{ preset: "mobile", orientation: "landscape" }`, `{ width: 1600, height: 900 }`). `run`, `demo` and `waygraph test` start their browser as it (size, phone layout, touch); a demo keeps its window (or its recording's 16:9 stage) and shows the device in it, so the window never changes size; a flow's `map({ device })` changes the size for that flow |
-| `labels` | groups of flows to run on their own: `{ auth: ["src/flows/auth/**", "logoutFlow"] }`, each a glob over flow files or a flow's export name (`waygraph test --flows --label auth`, [Labels](../guides/testing#labels)) |
+| `labels` | groups of flows to run on their own: `{ auth: ["src/flows/auth/**", "logoutFlow"] }`, each a glob over flow files or a flow's export name (`waygraph test --flows --label auth`, [Labels](../guides/testing#labels)); a flow's own `map({ labels })` join them |
 | `testDir` | where `waygraph test` looks for specs (default `tests`) |
 | `playwright` | Playwright's own config, merged over the defaults: `fullyParallel`, `list` + `html` reporters, `trace: "retain-on-failure"`, `use.baseURL` from `baseUrl` |
 | `slowMo`, `headed`, `video: { dir, viewport }` | run settings shared by `run` and `demo` |

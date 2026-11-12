@@ -21,6 +21,11 @@ export function labelsOf(labels: Labels | undefined, file: string, exportName: s
     .map(([label]) => label);
 }
 
+/** All of a flow's labels: the ones it names itself (`map({ labels })`), then the config's that cover it. */
+export function flowLabels(own: readonly string[] | undefined, labels: Labels | undefined, file: string, exportName: string): string[] {
+  return [...new Set([...(own ?? []), ...labelsOf(labels, file, exportName)])];
+}
+
 /** The labels whose patterns cover none of `flows`: a typo, or flows that moved. */
 export function emptyLabels(labels: Labels | undefined, flows: readonly { file: string; exportName: string }[]): string[] {
   return Object.keys(labels ?? {}).filter((label) => !flows.some((f) => labelsOf({ [label]: labels?.[label] ?? [] }, f.file, f.exportName).length));
