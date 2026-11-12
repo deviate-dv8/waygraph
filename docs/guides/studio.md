@@ -56,10 +56,11 @@ page has is a folder (`auth/`, `platform/`, then `plant/`, so `/platform/plant/l
   can do there, how many flows pass through it and how many failed their newest run, and what it shows: the fields
   its [read](./reads) gives, by namespace, the yes/no ones highlighted as the states the page can be in
   (`login.linkSent`), which flows check with `Key.is` instead of a Checkpoint of their own.
-- **A [shell](./layouts)** (a page that covers pages: a menu, a sidebar) is one box beside the sites, with a line to each page its links lead
-  to; each page it covers carries its name. Its links aren't drawn again from every page.
+- **A [shell](./layouts)** (a page that covers pages: a menu, a sidebar) is a dashed halo behind each page it covers, with its tag above the
+  first: its links as chips (click one to go to its page) and its interrupts as badges. Its links aren't drawn from every
+  page, so there is no web of lines; each page it covers carries its name.
 
-A page's address comes from the Navs that open it (a url built from mem shows as a pattern: `/requests/:id`) and from
+A page's address comes from its own `url` (or its folder, or a Nav) that opens it (a url built from mem shows as a pattern: `/requests/:id`) and from
 the `Trait.url` its Blocks verify on arrival. A page with no address of its own sits under the page whose move reaches
 it. Pages in a row follow the order your flows visit them.
 
@@ -93,9 +94,9 @@ Click a page for everything about it, most telling first:
 5. **Selectors** its Blocks read, and **Flows** last: each one that lands there, may land there (a step with several
    outcomes that ends the flow) or does something there, failing first.
 
-### A layout
+### A shell
 
-Click a layout for its links (where each leads, its selector, who sees it), its actions, what it shows, what it handles when it
+Click a shell's name for its links (where each leads, its selector, who sees it), its actions, what it shows, what it handles when it
 shows up (its [interrupts](./layouts#interrupts-what-appears-and-gets-in-the-way)) and the pages it covers; click a page there to go to it.
 
 ![The menu layout's panel: two links, each for everyone, on six pages](/studio/map-layout.jpg)
