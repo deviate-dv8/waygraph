@@ -3,7 +3,7 @@ import { Handle, Position } from '@vue-flow/core'
 import SketchBox from '~/components/sketch/sketch_box.vue'
 
 /**
- * A layout on the map: the UI many pages share (a menu, a sidebar), as flowchart's predefined process (a subroutine
+ * A shell on the map: a page that covers pages (a menu, a sidebar), as flowchart's predefined process (a subroutine
  * box), once, with a line to each page its links lead to. The pages it covers carry its mark.
  */
 const props = defineProps<{

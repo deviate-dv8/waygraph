@@ -56,7 +56,7 @@ page has is a folder (`auth/`, `platform/`, then `plant/`, so `/platform/plant/l
   can do there, how many flows pass through it and how many failed their newest run, and what it shows: the fields
   its [read](./reads) gives, by namespace, the yes/no ones highlighted as the states the page can be in
   (`login.linkSent`), which flows check with `Key.is` instead of a Checkpoint of their own.
-- **A [layout](./layouts)** (a menu, a sidebar) is one box beside the sites, with a line to each page its links lead
+- **A [shell](./layouts)** (a page that covers pages: a menu, a sidebar) is one box beside the sites, with a line to each page its links lead
   to; each page it covers carries its name. Its links aren't drawn again from every page.
 
 A page's address comes from the Navs that open it (a url built from mem shows as a pattern: `/requests/:id`) and from
@@ -83,9 +83,9 @@ Click a page for everything about it, most telling first:
 
 1. Its screenshot, addresses, how its flows' newest runs went (failing, passing, not run), its layouts and who can open
    it (its Page Block's `for`).
-2. **Shows**: its `read` fields, the yes/no states first, and the query params it keeps in its address (`?tab`).
+2. **Shows (read)**: its `read` fields, the yes/no states first, and the query params it keeps in its address (`?tab`).
    **Arrives when**: the checks that prove the browser is on this page.
-3. **Do here**, **Ways in**, **Leads to**: its Blocks. Open one for its checks, the selectors it reads and its code; the
+3. **Opens from**, **Do**, **Leads to**: its Blocks (a Method written in the page shows by its key). Open one for its checks, the selectors it reads and its code; the
    arrows in the panel's corner widen it to read code.
 4. **Expected here**: its Expect Blocks, and what Blocks promise on arrival.
 5. **Selectors** its Blocks read, and **Flows** last: each one that lands there, may land there (a step with several

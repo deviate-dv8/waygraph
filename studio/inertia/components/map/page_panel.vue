@@ -21,7 +21,7 @@ const props = defineProps<{
   image?: string | undefined
   /** The flows that pass through it, with how each one's newest run went. */
   flows: PageFlow[]
-  /** The layouts it's under. */
+  /** The shells it's under. */
   layouts?: string[]
   /** The accounts that can open it (its Page Block's `for`); missing: everyone. */
   given?: string[] | undefined
@@ -86,12 +86,13 @@ const tally = computed(() => ({
 
 type Section = { value: string; label: string; icon: string; count: number }
 const sections = computed<Section[]>(() =>
+  // In the order of the page object: how it opens, how it proves it's there, what it shows, what you can do, what's expected.
   [
     {
-      value: 'shows',
-      label: 'Shows',
-      icon: 'i-lucide-eye',
-      count: fieldCount.value + queryNames.value.length,
+      value: 'waysIn',
+      label: 'Opens from',
+      icon: 'i-lucide-log-in',
+      count: props.page.waysIn.length,
     },
     {
       value: 'arrival',
@@ -100,23 +101,28 @@ const sections = computed<Section[]>(() =>
       count: arrival.value.length,
     },
     {
+      value: 'shows',
+      label: 'Shows (read)',
+      icon: 'i-lucide-eye',
+      count: fieldCount.value + queryNames.value.length,
+    },
+    {
       value: 'actions',
-      label: 'Do here',
+      label: 'Do',
       icon: 'i-lucide-mouse-pointer-click',
       count: props.page.actions.length,
     },
-    { value: 'waysIn', label: 'Ways in', icon: 'i-lucide-log-in', count: props.page.waysIn.length },
+    {
+      value: 'expects',
+      label: 'Expects',
+      icon: 'i-lucide-badge-check',
+      count: props.page.expects.length + props.page.promised.length,
+    },
     {
       value: 'leadsTo',
       label: 'Leads to',
       icon: 'i-lucide-log-out',
       count: props.page.leadsTo.length,
-    },
-    {
-      value: 'expects',
-      label: 'Expected here',
-      icon: 'i-lucide-badge-check',
-      count: props.page.expects.length + props.page.promised.length,
     },
     {
       value: 'selectors',
@@ -127,7 +133,7 @@ const sections = computed<Section[]>(() =>
     { value: 'flows', label: 'Flows', icon: 'i-lucide-route', count: props.flows.length },
   ].map((s) => ({ ...s, disabled: s.count === 0 }))
 )
-const open = ref(['shows', 'actions'])
+const open = ref(['arrival', 'shows', 'actions'])
 /** Wide, for reading a Block's code: kept in this browser. */
 const wide = useStorage('waygraph-page-panel-wide', false)
 const blockLists = ['actions', 'waysIn', 'leadsTo'] as const
@@ -211,7 +217,7 @@ const where = (b: ManifestBlock, list: BlockList) =>
             color="neutral"
             variant="outline"
             size="sm"
-            :title="`Under the ${l} layout`"
+            :title="`Under the ${l} shell`"
           />
           <UBadge
             v-if="props.given"

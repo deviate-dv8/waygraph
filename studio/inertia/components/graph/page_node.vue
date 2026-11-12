@@ -23,7 +23,7 @@ const props = defineProps<{
     failing: number
     /** How many links valid from several pages lead here (a menu, a sidebar): counted, drawn when it's selected. */
     shared?: number
-    /** The layouts it's under (a menu, a sidebar): what it shares with other pages. */
+    /** The shells it's under (a menu, a sidebar): what it shares with other pages. */
     layouts?: string[]
     /** What it shows (its Read Blocks' fields), by namespace; a yes/no field is a state the page can be in. */
     shows?: { namespace: string; fields: { name: string; state: boolean }[] }[]
@@ -93,7 +93,7 @@ const props = defineProps<{
           v-for="l in props.data.layouts"
           :key="l"
           class="flex items-center gap-0.5 rounded border border-dashed border-(--island-line) px-1 font-mono text-[10px] leading-4 text-(--ink-soft)"
-          :title="`Under the ${l} layout: its links and actions are here too`"
+          :title="`Under the ${l} shell: its links and interrupts are here too`"
         >
           <UIcon name="i-lucide-panels-top-left" class="size-2.5" />{{ l }}
         </span>

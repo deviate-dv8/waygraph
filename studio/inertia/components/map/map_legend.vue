@@ -36,8 +36,8 @@ import { KIND_MEANING, MOVE_KINDS, kindColor, kindIcon } from '~/lib/kinds'
           <UIcon name="i-lucide-panels-top-left" class="size-4" /> menu
         </span>
         <span
-          >A layout: UI many pages share (a menu, a sidebar). Its lines go where its links lead,
-          from every page marked with its name</span
+          >A shell: a page that covers pages (UI they share) (a menu, a sidebar). Its lines go where
+          its links lead, from every page marked with its name</span
         >
       </div>
       <div class="flex items-center gap-3">

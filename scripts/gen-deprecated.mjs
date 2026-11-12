@@ -145,7 +145,7 @@ A stub paints through \`ctx.ui\`; \`ctx\` itself holds only what a stub reads (\
 | \`WAYGRAPH_TODO_UI=legacy\` / \`classic\` | \`WAYGRAPH_TODO_UI=full\` |
 | \`create-waygraph\` (npm) | \`npx waygraph init\` |
 
-## Moved in 0.17.3
+## Moved in 0.18.0
 
 A page is one object: how it opens (\`url\`, \`from\`), what it shows (\`read\`), what you can do (\`do\`), what you can expect (\`expects\`). The old forms still
 run; \`waygraph upgrade --codemod page-object\` moves a project (it was tried on two real projects of 70 and 35 pages).

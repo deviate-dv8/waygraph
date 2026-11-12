@@ -2,7 +2,7 @@
 import type { ManifestLayout } from '#types/project'
 
 /**
- * The selected layout: the UI its pages share. Its links (where each leads, its selector, who sees it), its actions,
+ * The selected shell: a page that covers pages (the UI they share). Its links (where each leads, its selector, who sees it), its actions,
  * what it shows, and the pages it covers.
  */
 const props = defineProps<{ layout: ManifestLayout }>()
@@ -22,7 +22,7 @@ const destination = (to: string) => (to === 'parent' ? 'the page above' : to)
           {{ props.layout.file }}
         </p>
         <p class="mt-1 text-xs text-(--ink-soft)">
-          On every page it covers: its links and actions are there too.
+          On every page it covers: its links are there, and what pops up on them is handled.
         </p>
       </div>
       <UButton

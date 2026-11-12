@@ -20,7 +20,7 @@ export type ManifestBlock = {
   map?: string
   /** Where a Nav or Page Block goes by url (`/requests/:id` for one built from mem). */
   url?: string
-  /** A Page Block that opens itself (a `url` or `click`): a way in, as a Nav is; missing before waygraph 0.17.3. */
+  /** A Page Block that opens itself (a `url` or `click`): a way in, as a Nav is; missing before waygraph 0.18.0. */
   opens?: true
   /** The query params a Page Block keeps in its address: state of the page; missing before waygraph 0.18. */
   query?: string[]
@@ -45,7 +45,7 @@ export type ManifestLayout = {
   actions: { name: string; block: string }[]
   /** Its Read Block's name, when it says what it shows. */
   read?: string
-  /** What it handles wherever it shows up (a cookie banner), by name; missing before waygraph 0.17.3. */
+  /** What it handles wherever it shows up (a cookie banner), by name; missing before waygraph 0.18.0. */
   interrupts?: string[]
 }
 
