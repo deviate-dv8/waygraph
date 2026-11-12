@@ -7,6 +7,7 @@ import { buildFlow, withSettings } from "./flow/flow.js";
 import { MapBuilder } from "./flow/map-builder.js";
 import type { MapBuilderOptions } from "./flow/map-options.js";
 import { panesRecord, type Pane } from "./flow/panes.js";
+import { setPageApi } from "./read/page-api.js";
 
 /**
  * Holds engine-level configuration shared across every flow defined from it -
@@ -17,7 +18,9 @@ import { panesRecord, type Pane } from "./flow/panes.js";
  */
 export class Engine {
   /** How flows from this engine launch their own browser, and the defaults its flows take (memStub). */
-  constructor(readonly config: EngineConfig = {}) {}
+  constructor(readonly config: EngineConfig = {}) {
+    setPageApi(config.api);
+  }
 
   /**
    * Builds a flow, one kind-checked step at a time - see {@link MapBuilder}. Real, direct request this responds to: pia/zsign's

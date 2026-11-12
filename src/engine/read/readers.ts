@@ -2,6 +2,7 @@
 // can read a whole list or table in one round trip to the page instead of one call per cell.
 import type { Page } from "@playwright/test";
 import type { MemPage } from "../mem/mem.js";
+import { getFromApi } from "./page-api.js";
 
 /** What to take from the matched element(s). */
 export type FieldKind = "text" | "texts" | "number" | "attr" | "value" | "visible" | "count";
@@ -89,6 +90,13 @@ export interface PageReaders {
   table<C extends string>(selector: string, columns: Readonly<Record<C, string>>): Reader<Record<C, string>[]>;
   /** Anything the helpers don't cover; `null` or `undefined` is reported as missing. */
   fn<T>(read: (page: Page, mem: MemPage) => T | Promise<T>): Reader<Awaited<T>>;
+  /**
+   * What the app's API says (GET, as the page's own session; `new Engine({ api })` says where it is and how a request is
+   * signed): for what the page only shows after a reload. `pick` takes the JSON to the value; an API that answers
+   * "not ok" reads as missing. `path` can be made from the page's address.
+   * @example ctx.page.api((url) => `/signature-requests/${url.pathname.split("/").pop()}`, (r) => (r as { requestStatus: string }).requestStatus)
+   */
+  api<T>(path: string | ((url: URL) => string), pick: (json: unknown) => T): Reader<T>;
 }
 
 function fieldReaders(): RowCtx {
@@ -125,6 +133,14 @@ export function createReadCtx(mem: MemPage): ReadCtx {
       },
       table: (selector, columns) => new Reader({ kind: "table", selector, columns: { ...columns } }),
       fn: (read) => new Reader({ kind: "fn", fn: read }),
+      api: (path, pick) =>
+        new Reader({
+          kind: "fn",
+          fn: async (page) => {
+            const json = await getFromApi(page, path);
+            return json === undefined ? undefined : pick(json);
+          },
+        }),
     },
   };
 }

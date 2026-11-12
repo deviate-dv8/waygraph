@@ -1,5 +1,6 @@
 // EngineConfig: which browser a flow launches when it opens its own, and how.
 import type { BrowserType } from "@playwright/test";
+import type { PageApi } from "./read/page-api.js";
 
 
 /**
@@ -60,6 +61,12 @@ export interface EngineConfig {
    * @example new Engine({ memStub: true })
    */
   memStub?: boolean;
+  /**
+   * The app's API, for what a page's `read` asks it (`ctx.page.api(path, pick)`): where it is and how a request is signed
+   * from the page's own session.
+   * @example new Engine({ api: { baseUrl: "http://localhost:3091", headers: async (page) => ({ authorization: `Bearer ${await page.evaluate(() => localStorage.getItem("accessToken"))}` }) } })
+   */
+  api?: PageApi;
   /** Resolves relative `url`s in Nav Blocks when the Engine launches its own browser. Default `WAYGRAPH_BASE_URL`. */
   baseUrl?: string;
 }

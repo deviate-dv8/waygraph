@@ -14,6 +14,7 @@ import { runPrecondition, runVerify } from "../trait/verify.js";
 import { namingStep } from "./act-error.js";
 import { paneName, stepInput, stepLabel, stepLanded, stepPage } from "./pane-page.js";
 import { syncInterrupts } from "./interrupts.js";
+import { inFrameOf } from "./frame.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { SomeBlock } from "../block/some-block.js";
 
@@ -107,23 +108,26 @@ async function playGraph(
       const actInput = isConnected(current) ? input : stepInput(current, page, input);
       if (!isConnected(current)) stepStarted(current.name, blockKindOf(current), actInput.__state, (current as { __waygraphCleanup?: boolean }).__waygraphCleanup, paneName(current));
       await syncInterrupts(actPage, actInput.__state);
-      await runPrecondition(current.instruction.precondition, actInput, actPage, mem, stepLabel(current));
+      // A page in an iframe: its Blocks see locators scoped to the frame (the page's own checks and read, below, too).
+      const scoped = inFrameOf(actPage, actInput.__state);
+      await runPrecondition(current.instruction.precondition, actInput, scoped, mem, stepLabel(current));
       try {
-        await current.instruction.act(actPage, actInput, mem);
+        await current.instruction.act(scoped, actInput, mem);
       } catch (err) {
         throw namingStep(err, current.name);
       }
       // It lands on its last step's page: observe, verify, expect, read and picture that one.
       const landedPage = await stepPage(current, page, mem);
       const observed = current.instruction.observe
-        ? await current.instruction.observe(landedPage, mem)
+        ? await current.instruction.observe(inFrameOf(landedPage, actInput.__state), mem)
         : undefined;
       const checkpoint = await current.instruction.resolve(observed);
       stepLanded(current, page, checkpoint);
 
-      await runVerify(current.instruction.verify, checkpoint, landedPage, mem, stepLabel(current));
-      await runExpect(current, checkpoint, landedPage, mem, lastLeaf(current));
-      await readLanding(landedPage, mem, checkpoint.__state);
+      const landedIn = inFrameOf(landedPage, checkpoint.__state);
+      await runVerify(current.instruction.verify, checkpoint, landedIn, mem, stepLabel(current));
+      await runExpect(current, checkpoint, landedIn, mem, lastLeaf(current));
+      await readLanding(landedIn, mem, checkpoint.__state);
       // Last in the step: what the page looks like once it's done, when the Block asks.
       await screenshotStep(landedPage, current, checkpoint.__state, lastLeaf(current));
       stepEnded(lastLeaf(current), checkpoint.__state, addressOf(landedPage));

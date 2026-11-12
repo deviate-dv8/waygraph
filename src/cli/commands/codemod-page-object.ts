@@ -339,7 +339,7 @@ export function codemodPageObject(dir: string): { changed: string[]; problems: s
     const sf = sfs.get(file)!;
     pruneImports(sf);
     const onlyImports = sf.getStatements().every((s) => Node.isImportDeclaration(s));
-    if (onlyImports && reads.some((r) => r.file === file)) {
+    if (onlyImports && (reads.some((r) => r.file === file) || [...converted.keys()].some((k) => k.startsWith(`${file}#`)))) {
       // A Read Block file with nothing left: other files import nothing from it (its Block was never exported by name).
       const imported = [...sfs.entries()].some(([other, osf]) => other !== file && osf.getImportDeclarations().some((i) => resolveImport(other, i.getModuleSpecifierValue()) === file));
       if (!imported) {

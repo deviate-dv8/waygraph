@@ -134,6 +134,7 @@ export type { PilotFixtureRing, PilotHighlightFixtures } from "./demo/overlay/pi
 
 // Read Blocks: what a page shows, as data (defineReadBlock, reads, ReadPage).
 export { reads, ReadKey } from "./engine/read/read-key.js";
+export type { PageApi } from "./engine/read/page-api.js";
 export type { ReadNamespace, ReadSpec, ReadFieldsOf } from "./engine/read/read-key.js";
 export type { FieldKind, FieldPlan, PageReaders, Reader, ReaderPlan, ReadCtx, ReadFields, RowCtx } from "./engine/read/readers.js";
 export { ReadPage } from "./engine/read/read-page.js";

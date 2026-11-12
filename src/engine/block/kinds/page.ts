@@ -11,6 +11,7 @@ import { checkpoint as makeCheckpoint, type Checkpoint } from "../../checkpoint/
 import type { Trait } from "../../trait/trait.js";
 import { MemPage } from "../../mem/mem.js";
 import type { MemKey } from "../../mem/mem.js";
+import { registerFrame } from "../../run/frame.js";
 import { markRoute } from "../../checkpoint/route.js";
 import type { SomeDefinedBlock } from "../some-block.js";
 import type { NavBlock } from "./nav.js";
@@ -166,6 +167,12 @@ export type PageBlockOptions<
    * Nuxt; no `url` to write, and it can't disagree with where the page lives. `Page.go({ id })` fills the `[id]`.
    */
   route?: F;
+  /**
+   * The page lives in an iframe on another page (an embedded widget): its Blocks, checks and read see the page with every
+   * locator inside this frame, so no selector carries a prefix.
+   * @example frame: "#zsign-embed"
+   */
+  frame?: string;
   /** Optional click-nav onto this page. XOR with `url`. */
   click?: string | ((mem: MemPage) => string);
   instanceOptions?: Block<Checkpoint<string>, Out>["instanceOptions"];
@@ -297,7 +304,8 @@ export function definePageBlock<
       `definePageBlock("${options.name}"): pass url XOR click (or neither for arrival-only hub)`,
     );
   }
-  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, from: opensFrom, query, route, ...restOptions } = options;
+  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, from: opensFrom, query, route, frame, ...restOptions } = options;
+  if (frame) registerFrame(options.checkpoint === undefined ? "" : typeof options.checkpoint === "string" ? options.checkpoint : options.checkpoint.__state, frame);
   if (route === "folder" && (options.url !== undefined || options.click !== undefined)) {
     throw new Error(`definePageBlock("${options.name}"): route: "folder" gives the address; drop url/click`);
   }

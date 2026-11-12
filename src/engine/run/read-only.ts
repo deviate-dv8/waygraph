@@ -4,6 +4,7 @@
 // the page's own keyboard and mouse are guarded while it is read-only.
 import type { Page } from "@playwright/test";
 import { WaygraphError, MSG_EXPECT_CHANGED_PAGE } from "../errors.js";
+import { realPage } from "./frame.js";
 
 /** Pages whose expectations are running, and the step they belong to. On globalThis: src and dist can share a page. */
 const readOnly: WeakMap<Page, string> = ((globalThis as { [k: symbol]: WeakMap<Page, string> | undefined })[
@@ -25,7 +26,7 @@ function guard(proto: Patchable, names: readonly string[], pageOf: (self: unknow
     if (typeof original !== "function") continue;
     proto[name] = function (this: unknown, ...args: unknown[]) {
       const page = pageOf(this);
-      const step = page && readOnly.get(page);
+      const step = page && readOnly.get(realPage(page));
       if (step !== undefined) throw new WaygraphError("WG_EXPECT_CHANGED_PAGE", MSG_EXPECT_CHANGED_PAGE(`${what}.${name}()`, step));
       return (original as (...a: unknown[]) => unknown).apply(this, args);
     };
@@ -60,7 +61,7 @@ function guardInput(page: Page, step: string): () => void {
 /** Runs `fn` with `page` read-only: an action on it throws, saying it came from an expectation of `step`. */
 export async function readOnlyWhile<T>(page: Page, step: string, fn: () => Promise<T>): Promise<T> {
   install(page);
-  readOnly.set(page, step);
+  readOnly.set(realPage(page), step);
   const restoreInput = guardInput(page, step);
   try {
     return await fn();

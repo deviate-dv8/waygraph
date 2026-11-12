@@ -13,6 +13,7 @@ import { settle, whereIs, type TraitCheckReport, NAMES_ITS_STEP, labelled, pageL
 import { envFlag } from "../env.js";
 import { WaygraphError, MSG_EXPECT_SET_MEM } from "../errors.js";
 import { readOnlyWhile } from "./read-only.js";
+import { realPage } from "./frame.js";
 
 /** One expectation as the engine sees it: a Trait, or an Expect Block (any Block: its act waits, its verify judges). */
 type AnyExpectation = Trait | SomeBlock;
@@ -137,7 +138,7 @@ const results: WeakMap<Page, ExpectResult[]> = ((globalThis as { [k: symbol]: We
 
 /** How the page's last step's expectations went (the demo's checklist), once: taking them clears them. */
 export function takeExpectResults(page: Page): ExpectResult[] {
-  const list = results.get(page) ?? [];
+  const list = results.get(realPage(page)) ?? [];
   results.delete(page);
   return list;
 }
@@ -185,7 +186,7 @@ export async function runExpect(block: SomeBlock, out: Checkpoint<string>, page:
     return Promise.all(items.map((item) => check(item, out, page, guarded)));
   });
   results.set(
-    page,
+    realPage(page),
     items.map((item, i) => {
       const misses = perItem[i] ?? [];
       const saw = misses[0]?.saw;

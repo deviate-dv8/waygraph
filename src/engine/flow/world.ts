@@ -7,6 +7,7 @@ import type { SomeBlock } from "../block/some-block.js";
 import { copyWaygraphRuntime } from "../block/block.js";
 import { defineMethodBlock } from "../block/kinds/method.js";
 import { checkpoint, type Checkpoint } from "../checkpoint/checkpoint.js";
+import { realPage } from "../run/frame.js";
 
 /** Network speed: a preset, or latency and throughput. */
 export type Throttle = "offline" | "slow-3g" | "fast-3g" | { latencyMs: number; downloadKbps: number; uploadKbps: number };
@@ -46,14 +47,14 @@ const NORMAL = { offline: false, latency: 0, downloadThroughput: -1, uploadThrou
  */
 const sessions = new WeakMap<Page, CDPSession>();
 async function devtools(page: Page, what: string): Promise<CDPSession> {
-  let cdp = sessions.get(page);
+  let cdp = sessions.get(realPage(page));
   if (cdp) return cdp;
   try {
     cdp = await page.context().newCDPSession(page);
   } catch {
     throw new Error(`waygraph: map({ ${what} }) needs Chromium (it uses the DevTools protocol)`);
   }
-  sessions.set(page, cdp);
+  sessions.set(realPage(page), cdp);
   return cdp;
 }
 
@@ -86,17 +87,17 @@ async function apply(page: Page, world: World): Promise<void> {
     await page.route(fault.url, handler);
     added.push({ url: fault.url, handler });
   }
-  routes.set(page, added);
+  routes.set(realPage(page), added);
 }
 
 async function undo(page: Page, world: World): Promise<void> {
-  for (const { url, handler } of routes.get(page) ?? []) await page.unroute(url, handler);
+  for (const { url, handler } of routes.get(realPage(page)) ?? []) await page.unroute(url, handler);
   routes.delete(page);
   if (world.network?.throttle === "offline") await page.context().setOffline(false);
   else if (world.network?.throttle) await (await devtools(page, "network: { throttle }")).send("Network.emulateNetworkConditions", NORMAL);
   if (world.timezone) await (await devtools(page, "timezone")).send("Emulation.setTimezoneOverride", { timezoneId: "" });
   // Detaching ends whatever the session still overrides.
-  await sessions.get(page)?.detach();
+  await sessions.get(realPage(page))?.detach();
   sessions.delete(page);
 }
 

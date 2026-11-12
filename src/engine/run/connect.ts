@@ -6,6 +6,8 @@ import type { Block } from "../block/block.js";
 import type { SomeBlock } from "../block/some-block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { runVerify, runPrecondition } from "../trait/verify.js";
+import { syncInterrupts } from "./interrupts.js";
+import { inFrameOf } from "./frame.js";
 import { screenshotStep } from "./screenshot.js";
 import { addressOf, isConnected, lastLeaf, stepEnded, stepStarted } from "./events.js";
 import { blockKindOf } from "../block/kind.js";
@@ -48,29 +50,34 @@ export function joinSteps(a: SomeBlock, b: SomeBlock): SomeBlock {
         const aPage = isConnected(a) ? page : await stepPage(a, page, mem);
         const aInput = isConnected(a) ? input : stepInput(a, page, input);
         if (!isConnected(a)) stepStarted(a.name, blockKindOf(a), aInput.__state, undefined, paneName(a));
-        await runPrecondition(a.instruction.precondition, aInput, aPage, mem, stepLabel(a));
+        await syncInterrupts(aPage, aInput.__state);
+        const aScoped = inFrameOf(aPage, aInput.__state);
+        await runPrecondition(a.instruction.precondition, aInput, aScoped, mem, stepLabel(a));
         try {
-          await a.instruction.act(aPage, aInput, mem);
+          await a.instruction.act(aScoped, aInput, mem);
         } catch (err) {
           throw namingStep(err, stepLabel(a));
         }
         // Where A landed is its last step's page.
         const aLeaf = await stepPage(a, page, mem);
         const aObserved = a.instruction.observe
-          ? await a.instruction.observe(aLeaf, mem)
+          ? await a.instruction.observe(inFrameOf(aLeaf, aInput.__state), mem)
           : undefined;
         const mid = await a.instruction.resolve(aObserved);
         stepLanded(a, page, mid);
-        await runVerify(a.instruction.verify, mid, aLeaf, mem, stepLabel(a));
-        await runExpect(a, mid, aLeaf, mem, lastLeaf(a));
+        const aLanded = inFrameOf(aLeaf, mid.__state);
+        await runVerify(a.instruction.verify, mid, aLanded, mem, stepLabel(a));
+        await runExpect(a, mid, aLanded, mem, lastLeaf(a));
         await screenshotStep(aLeaf, a, mid.__state, lastLeaf(a));
         stepEnded(lastLeaf(a), mid.__state, addressOf(aLeaf));
         const bPage = isConnected(b) ? page : await stepPage(b, page, mem);
         const bInput = isConnected(b) ? mid : stepInput(b, page, mid);
         if (!isConnected(b)) stepStarted(b.name, blockKindOf(b), bInput.__state, undefined, paneName(b));
-        await runPrecondition(b.instruction.precondition, bInput, bPage, mem, stepLabel(b));
+        await syncInterrupts(bPage, bInput.__state);
+        const bScoped = inFrameOf(bPage, bInput.__state);
+        await runPrecondition(b.instruction.precondition, bInput, bScoped, mem, stepLabel(b));
         try {
-          await b.instruction.act(bPage, bInput, mem);
+          await b.instruction.act(bScoped, bInput, mem);
         } catch (err) {
           throw namingStep(err, stepLabel(b));
         }

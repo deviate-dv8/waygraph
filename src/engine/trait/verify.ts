@@ -5,6 +5,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import type { Page } from "@playwright/test";
 import type { MemPage } from "../mem/mem.js";
 import type { Trait, TraitResult } from "./trait.js";
+import { realPage } from "../run/frame.js";
 
 /** How long verify keeps retrying a check that doesn't pass, unless the Trait says otherwise. */
 const DEFAULT_TIMEOUT_MS = 5000;
@@ -104,7 +105,7 @@ const checked: WeakMap<Page, CheckedElement[]> = ((globalThis as { [k: symbol]: 
 
 /** The elements the page's passing checks looked at since the last call (the demo rings them after a step). */
 export function takeCheckedElements(page: Page): CheckedElement[] {
-  const list = checked.get(page) ?? [];
+  const list = checked.get(realPage(page)) ?? [];
   checked.delete(page);
   return list;
 }
@@ -122,7 +123,7 @@ export async function settle(trait: Trait, page: Page, mem: MemPage): Promise<Tr
     if (result.ok) {
       const selector = result.at ?? trait.selector;
       const says = trait.says ?? trait.wants;
-      if (selector) checked.set(page, [...(checked.get(page) ?? []), { check: trait.name, selector, ...(says ? { says } : {}) }]);
+      if (selector) checked.set(realPage(page), [...(checked.get(realPage(page)) ?? []), { check: trait.name, selector, ...(says ? { says } : {}) }]);
     }
     if (result.ok || Date.now() >= until) return result;
     await sleep(RETRY_EVERY_MS);
