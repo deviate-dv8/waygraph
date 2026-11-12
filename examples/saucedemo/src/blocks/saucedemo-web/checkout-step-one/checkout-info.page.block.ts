@@ -2,6 +2,10 @@ import { definePageBlock, Trait } from "waygraph";
 import { CheckoutInfoPage } from "../../../states/checkout.states.js";
 import { CheckoutInfoSel } from "./methods/checkout-info.sel.js";
 import { CartSel } from "../cart/cart.sel.js";
+import { fillFirstName } from "./_methods/fill-first-name.method.block.js";
+import { fillLastName } from "./_methods/fill-last-name.method.block.js";
+import { fillPostalCode } from "./_methods/fill-postal-code.method.block.js";
+import { submit } from "./_methods/submit.method.block.js";
 
 /** Checkout step one: who and where the order goes. */
 export const CheckoutInfo = definePageBlock({
@@ -19,35 +23,9 @@ export const CheckoutInfo = definePageBlock({
     }),
   readAs: "checkoutInfo",
   do: (self) => ({
-  fillFirstName: self.method({
-  name: "fill-first-name",
-  description: "Fills the first name field on the shipping info form.",
-  async act(page) {
-      await page.locator(CheckoutInfoSel.firstName).fill("Ada");
-    },
-  }),
-  fillLastName: self.method({
-  name: "fill-last-name",
-  description: "Fills the last name field on the shipping info form.",
-  async act(page) {
-      await page.locator(CheckoutInfoSel.lastName).fill("Lovelace");
-    },
-  }),
-  fillPostalCode: self.method({
-  name: "fill-postal-code",
-  description: "Fills the postal code field on the shipping info form.",
-  async act(page) {
-      await page.locator(CheckoutInfoSel.postalCode).fill("1000");
-    },
-  }),
-  submit: self.method({
-  to: "CheckoutOverviewPage",
-  name: "submit-checkout-info",
-  description: "Continues from the shipping info form to the order overview.",
-  async act(page) {
-      await page.locator(CheckoutInfoSel.continueBtn).click();
-    },
-  verify: [Trait.url({ pathname: "/checkout-step-two.html" })],
-  }),
+    fillFirstName: fillFirstName(self),
+    fillLastName: fillLastName(self),
+    fillPostalCode: fillPostalCode(self),
+    submit: submit(self),
   })
 });

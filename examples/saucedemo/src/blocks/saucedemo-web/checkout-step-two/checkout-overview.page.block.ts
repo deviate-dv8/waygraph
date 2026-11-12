@@ -1,6 +1,7 @@
 import { definePageBlock, Trait } from "waygraph";
 import { CheckoutOverviewPage } from "../../../states/checkout.states.js";
 import { CheckoutOverviewSel } from "./methods/checkout-overview.sel.js";
+import { finishOrder } from "./_methods/finish-order.method.block.js";
 
 /** Checkout step two: the order's summary, reached by submitting step one. */
 export const CheckoutOverview = definePageBlock({
@@ -18,21 +19,6 @@ export const CheckoutOverview = definePageBlock({
     }),
   readAs: "checkoutOverview",
   do: (self) => ({
-  finishOrder: self.method({
-  to: "OrderComplete",
-  name: "finish-order",
-  description:
-      "Places the order and confirms the 'Thank you for your order!' completion page.",
-  async act(page) {
-      const finishButton = page.locator(CheckoutOverviewSel.finishBtn);
-      await finishButton.click();
-    },
-  verify: [
-      Trait.text(
-        CheckoutOverviewSel.completeHeader,
-        "Thank you for your order!",
-      ),
-    ],
-  }),
+    finishOrder: finishOrder(self),
   })
 });
