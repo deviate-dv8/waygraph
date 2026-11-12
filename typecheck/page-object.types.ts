@@ -76,3 +76,16 @@ export const Shelf = definePageBlock({
 });
 Shelf.expects.listed;
 Shelf.expects.some;
+
+// A Method with params: typed arguments, a Block per call.
+interface PoPoint { x: number; y: number }
+export const Board = definePageBlock({
+  name: "page-po-board",
+  checkpoint: "PoBoard",
+  do: (page) => ({
+    drag: page.method((from: PoPoint, to: PoPoint) => ({ async act(p) { await p.mouse.move(from.x, from.y); await p.mouse.move(to.x, to.y); } })),
+  }),
+});
+Board.do.drag({ x: 1, y: 2 }, { x: 3, y: 4 });
+// @ts-expect-error - to is missing
+Board.do.drag({ x: 1, y: 2 });

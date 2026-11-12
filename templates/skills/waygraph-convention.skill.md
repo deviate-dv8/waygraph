@@ -52,6 +52,8 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
 
 ## Hard rules (not style preferences)
 
+0a. **Values the scenario chooses and no mem key fits are Method params**: `self.method((from, to) => ({ async act(p) { … } }))`, called
+   `Board.do.drag(a, b)` in the flow. A value the page's size decides is computed inside `act` from the page, not a param.
 0. **No method pollution: a Method is something a user can do on the page, not a step of one test.** A page's `do` is its
    menu: `waygraph auto`, Pilot and (later) an MCP server list it to whoever drives the page, so every Method there
    should make sense to someone who has never read your scenario. Never add a Method for the sake of a test: not

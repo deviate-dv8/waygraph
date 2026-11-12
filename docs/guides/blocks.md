@@ -144,6 +144,12 @@ A Method can be written inside the page's `do`: `page.method({ async act(p) { �
 picks one when it can land on several. A Method long enough for a file of its own takes `(page: PageHandle<"Home">)`
 and imports only that type, so the page and the file never import each other.
 
+A Method can take params, for what the scenario chooses and no mem key fits (a drag from here to there):
+`do: (self) => ({ drag: self.method((from: Point, to: Point) => ({ async act(p) { … } })) })`, used as
+`.method(Board.do.drag({ x: 40, y: 80 }, { x: 320, y: 80 }))`. The arguments are typed, and the Block's name carries the
+values (`board-drag({"x":40…})`) in the run log. A Method with params isn't listed in `waygraph auto` or Pilot menus,
+which can't run it without values: they list the page's actions that need none.
+
 A page that lives in an iframe on another page says `frame: "#embed"`: its Blocks, checks and `read` see every locator
 inside the frame, so selectors carry no prefix and the page's twin outside a frame shares the same `_sel.ts`.
 

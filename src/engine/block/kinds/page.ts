@@ -26,7 +26,9 @@ import { namespaceOf, readKeys, type PageRead, type PageReadKeys } from "../../r
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */
 export type PageMethodEntry =
   | SomeDefinedBlock
-  | (() => SomeDefinedBlock);
+  | (() => SomeDefinedBlock)
+  /** A Method with params (`self.method((from, to) => ({ ... }))`): called with real values where a flow uses it. */
+  | ((...args: never[]) => SomeDefinedBlock);
 
 
 /** Options for `definePageBlock`: the Checkpoint a page hub confirms and the Methods that hang off it. */
@@ -72,6 +74,12 @@ export interface PageSelf<Out extends Checkpoint<string>, R, Nav> {
    */
   /** A link of this shell, for `links`: a Nav valid from every page it covers. */
   link<const To extends string | Checkpoint<string>>(spec: InlineLink<To>): NavBlock<To extends "parent" ? Checkpoint<string> : To extends string ? Checkpoint<To> : To extends Checkpoint<string> ? To : never>;
+  /**
+   * A Method with params: a function of them returning the Method, for what the scenario chooses (a drag from here to there)
+   * and no mem key fits. `Page.do.drag({ x: 1, y: 2 }, { x: 9, y: 2 })` is the Block; its name carries the values.
+   * @example drag: self.method((from: Point, to: Point) => ({ async act(p) { await p.mouse.move(from.x, from.y); … } }))
+   */
+  method<A extends unknown[]>(make: (...args: A) => InlineMethod<Out, Out> & { to?: undefined }): (...args: A) => MethodBlock<Out, Out>;
   method(spec: InlineMethod<Out, Out> & { to?: undefined }): MethodBlock<Out, Out>;
   method<const To extends LandsOn>(spec: InlineMethod<Out, CpOfLands<To>> & { to: To | readonly To[] }): MethodBlock<Out, CpOfLands<To>>;
   readonly checkpoint: Out;
@@ -333,11 +341,18 @@ export function definePageBlock<
       return defineExpectBlock({ name: `expect-${slug}-${key.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()}`, ...spec, checkpoint: cp } as ExpectBlockOptions<Out>);
     }
     if (typeof entry !== "object" || entry === null || !("__inlineMethod" in entry)) return resolveEntry(entry);
-    const spec = (entry as { __inlineMethod: InlineMethod<Out, Out> }).__inlineMethod;
+    const given = (entry as { __inlineMethod: InlineMethod<Out, Out> | ((...args: unknown[]) => InlineMethod<Out, Out>) }).__inlineMethod;
+    // A Method with params is a function of them: each call is the Block for those values.
+    if (typeof given === "function") {
+      return (...args: unknown[]) => build(key, given(...args), args.length ? `(${args.map((a) => JSON.stringify(a)).join(", ")})` : "");
+    }
+    return build(key, given, "");
+  };
+  const build = (key: string, spec: InlineMethod<Out, Out>, suffix: string): unknown => {
     const targets = (spec.to === undefined ? [cp] : Array.isArray(spec.to) ? spec.to : [spec.to]).map((t) => (typeof t === "string" ? makeCheckpoint(t) : t)) as Checkpoint<string>[];
     const { to: _to, ...flat } = spec;
     return defineMethodBlock({
-      name: `${slug}-${key.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()}`,
+      name: `${slug}-${key.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()}${suffix}`,
       from: cp,
       to: targets.length === 1 ? (targets[0] as Checkpoint<string>) : targets,
       ...flat,

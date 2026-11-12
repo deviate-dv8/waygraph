@@ -70,3 +70,19 @@ test("page.expect writes an expectation in the page: a Block named for the page 
   expect(Shelf.expects.listed.description).toBe("A row is listed.");
   await new Engine().map().gotoPage(Shelf).method(Shelf.do.nothing, { expect: [Shelf.expects.listed] }).run(context, new MemPage(), { page });
 });
+
+test("a Method with params is a function of them: a Block per call, its name carrying the values", async ({ context, page }) => {
+  const Board = definePageBlock({
+    name: "page-po-board",
+    checkpoint: "PoBoard",
+    do: (p) => ({
+      type: p.method((text: string, times: number) => ({
+        async act(pg) { await pg.setContent(`<input id="i">`); await pg.locator("#i").fill(text.repeat(times)); },
+        verify: [Trait.value("#i", text.repeat(times))],
+      })),
+    }),
+  });
+  const block = Board.do.type("ab", 2);
+  expect(block.name).toBe('po-board-type("ab", 2)');
+  await new Engine().map().gotoPage(Board).method(block).run(context, new MemPage(), { page });
+});
