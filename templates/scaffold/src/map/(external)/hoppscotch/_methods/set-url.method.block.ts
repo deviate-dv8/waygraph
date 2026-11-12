@@ -9,11 +9,9 @@ export const SetUrlBlock = defineMethodBlock({
   from: HoppscotchRest,
   to: HoppscotchRest,
   requires: [HoppscotchKeys.requestUrl],
-  instruction: {
-    async act(page, _in, mem) {
-      await page.locator(HoppscotchSel.urlInput).first().click();
-      await page.keyboard.press("Control+A");
-      await page.keyboard.type(mem.get(HoppscotchKeys.requestUrl));
-    },
+  async act(page, _in, mem) {
+    await page.locator(HoppscotchSel.urlInput).first().click();
+    await page.keyboard.press("Control+A");
+    await page.keyboard.type(mem.get(HoppscotchKeys.requestUrl));
   },
 });

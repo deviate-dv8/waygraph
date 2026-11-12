@@ -13,18 +13,16 @@ export const RemoveItemBlock = defineMethodBlock({
   from: Home,
   to: Home,
   requires: [DemoKeys.selectedItem],
-  instruction: {
-    async act(page, _input, mem) {
-      const { id } = mem.get(DemoKeys.selectedItem);
-      await page.locator(DemoSel.removeBtn(id)).click();
-    },
-    verify: (): Trait[] => [
-          HomePage.read.items.passes(
-            (items, mem) => !items.some((item) => item.name === mem.get(DemoKeys.selectedItem).name && item.inCart),
-            "the item out of the cart",
-          ),
-        ],
+  async act(page, _input, mem) {
+    const { id } = mem.get(DemoKeys.selectedItem);
+    await page.locator(DemoSel.removeBtn(id)).click();
   },
+  verify: (): Trait[] => [
+    HomePage.read.items.passes(
+      (items, mem) => !items.some((item) => item.name === mem.get(DemoKeys.selectedItem).name && item.inCart),
+      "the item out of the cart",
+    ),
+  ],
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     const buttons = page.locator(DemoSel.removeButtons);
     const n = await buttons.count();

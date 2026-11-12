@@ -38,7 +38,7 @@ flow starts `from: Start`; one that sends the run back to the beginning (signing
 ```ts
 import { Start } from "waygraph";
 
-defineMethodBlock({ name: "sign-out", from: Dashboard, to: Start, instruction: { … } });
+defineMethodBlock({ name: "sign-out", from: Dashboard, to: Start, async act(page) { … } });
 ```
 
 ## The kinds
@@ -84,38 +84,34 @@ export const ClearCartBlock = defineMethodBlock({
   description: "Clears every item via the Clear cart control.",
   from: Home,
   to: Home,
-  instruction: {
-    async act(page) {
-      await page.locator(DemoSel.clear).click();
-    },
-    verify: (): Trait[] => [HomePage.read.cartCount.is(0)],   // what the page shows now: no item in the cart
+  async act(page) {
+    await page.locator(DemoSel.clear).click();
   },
+  verify: (): Trait[] => [HomePage.read.cartCount.is(0)],   // what the page shows now: no item in the cart
 });
 ```
 
 **One action per Block.** A login form is `fill-username`, `fill-password` and `submit-login`: three Blocks, never
 one. `waygraph check` warns on a Method that fills more than once or fills and clicks.
 
-When a Block can land in more than one place, `to` is a list and `resolve` picks the one it reached:
+When a Block can land in more than one place, `to` is a list and `lands` says which one it reached:
 
 ```ts
 defineMethodBlock({
   name: "submit-login",
   from: LoginPage,
   to: [InventoryPage, LoginPage],                        // a wrong password stays here
-  instruction: {
-    async act(page) { await page.locator(LoginSel.submit).click(); },
-    async observe(page) { return page.url().includes("/inventory") ? "in" : "out"; },
-    resolve: (seen) => (seen === "in" ? InventoryPage : LoginPage),
-  },
+  async act(page) { await page.locator(LoginSel.submit).click(); },
+  async lands(page) { return page.url().includes("/inventory") ? InventoryPage : LoginPage; },
 });
 ```
 
-| Phase | Does | May touch |
+| Part | Does | May touch |
 |---|---|---|
+| `precondition` | checks the page is where the Method assumes, before it acts | the page |
 | `act` | the action | the page, mem |
-| `observe` | looks at what happened (only when `to` is a list) | the page, mem |
-| `resolve` | names the Checkpoint | nothing: it gets only what `observe` returned |
+| `lands` | looks at what happened and names the Checkpoint (only when `to` is a list) | the page, mem |
+| `verify` | proves it took effect | the page |
 | `verify` | checks the page is what `resolve` said ([Checks](./checks)) | reads only |
 
 ## Page: the hub {#page-blocks}
@@ -172,14 +168,12 @@ defineMethodBlock({
   from: Home,
   to: Home,
   requires: [DemoKeys.selectedItem],
-  instruction: {
-    async act(page, _input, mem) {
-      await page.locator(DemoSel.addBtn(mem.get(DemoKeys.selectedItem).id)).click();
-    },
-    verify: (): Trait[] => [
-      HomePage.read.items.passes((items, mem) => items.some((i) => i.name === mem.get(DemoKeys.selectedItem).name && i.inCart), "the item in the cart"),
-    ],
+  async act(page, _input, mem) {
+    await page.locator(DemoSel.addBtn(mem.get(DemoKeys.selectedItem).id)).click();
   },
+  verify: (): Trait[] => [
+    HomePage.read.items.passes((items, mem) => items.some((i) => i.name === mem.get(DemoKeys.selectedItem).name && i.inCart), "the item in the cart"),
+  ],
   async instanceOptions(page) {
     // one { id, label, key: DemoKeys.selectedItem, value, highlight } per Add button on the page
   },

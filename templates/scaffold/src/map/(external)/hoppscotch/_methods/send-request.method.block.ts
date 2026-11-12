@@ -7,10 +7,8 @@ export const SendRequestBlock = defineMethodBlock({
   description: "Sends the request and waits for the response status to appear.",
   from: HoppscotchRest,
   to: HoppscotchRest,
-  instruction: {
-    async act(page) {
-      await page.locator(HoppscotchSel.send).click();
-      await page.locator(HoppscotchSel.status).waitFor({ timeout: 20_000 });
-    },
+  async act(page) {
+    await page.locator(HoppscotchSel.send).click();
+    await page.locator(HoppscotchSel.status).waitFor({ timeout: 20_000 });
   },
 });

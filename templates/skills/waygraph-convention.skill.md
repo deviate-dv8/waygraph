@@ -219,7 +219,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   Block chain, not a flat folder of unrelated flows.
 - **Blocks carry no stubs; the flow does.** Demo highlights are ctx stubs chained on the Block where the flow uses it:
   `AddItemBlock.stubAfter((ctx) => { ctx.ui.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart" }); })`.
-  That chained function is the only form: a Block's definition (its options or `instruction`) takes no stub, and a stub
+  That chained function is the only form: a Block's definition (its options) takes no stub, and a stub
   is never a slot map. A Block used twice gets one `const AddShown = AddItemBlock.stubAfter(...)`. A stub that throws
   fails its step in the demo, named.
 - **The demo already says how each step went**, with no stub: its outcome card ticks each expectation (an Expect Block's
@@ -285,16 +285,13 @@ export const SubmitLoginBlock = defineMethodBlock({
   description: "Submits the form; a wrong password stays on the login page.",
   from: LoginPage,
   to: [InventoryPage, LoginPage],
-  instruction: {
-    async act(page) {
-      await page.locator(LoginSel.submit).click();
-    },
-    async observe(page) {
-      return (await page.locator(LoginSel.error).isVisible()) ? "refused" : "in";
-    },
-    resolve: (seen) => (seen === "in" ? InventoryPage : LoginPage),
-    verify: (out) => (out.__state === "InventoryPage" ? [Trait.url({ pathname: "/inventory.html" })] : [Trait.visible(LoginSel.error)]),
+  async act(page) {
+    await page.locator(LoginSel.submit).click();
   },
+  async lands(page) {
+    return (await page.locator(LoginSel.error).isVisible()) ? LoginPage : InventoryPage;
+  },
+  verify: (out) => (out.__state === "InventoryPage" ? [Trait.url({ pathname: "/inventory.html" })] : [Trait.visible(LoginSel.error)]),
 });
 ```
 
@@ -307,14 +304,12 @@ export const AddToCartBlock = defineMethodBlock({
   from: Inventory,
   to: Inventory,                                     // the page stays the list; what changed is what it shows
   requires: [ShopKeys.selectedItem],
-  instruction: {
-    async act(page, _input, mem) {
-      await page.locator(InventorySel.addBtn(mem.get(ShopKeys.selectedItem).id)).click();
-    },
-    verify: [
-      Catalog.items.passes((items, mem) => items.some((i) => i.name === mem.get(ShopKeys.selectedItem).name && i.inCart), "the item in the cart"),
-    ],
+  async act(page, _input, mem) {
+    await page.locator(InventorySel.addBtn(mem.get(ShopKeys.selectedItem).id)).click();
   },
+  verify: (): Trait[] => [
+    Inventory.read.items.passes((items, mem) => items.some((i) => i.name === mem.get(ShopKeys.selectedItem).name && i.inCart), "the item in the cart"),
+  ],
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     // { id, name } per live Add button; name as the page's `read` reads it, so verify can find the row
     const items = await collectAddableItems(page);

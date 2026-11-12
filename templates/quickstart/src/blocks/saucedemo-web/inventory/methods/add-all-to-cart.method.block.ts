@@ -18,13 +18,11 @@ export const AddAllToCartBlock = defineMethodBlock({
   name: "add-all-to-cart",
   description: "Adds every product still showing Add to cart on this page.",
   to: InventoryPage,
-  instruction: {
-    async act(page) {
-      const items = await collectAddableItems(page);
-      for (const item of items) {
-        await page.locator(InventorySel.addBtn(item.id)).click();
-      }
-    },
-    verify: (): Trait[] => [Inventory.read.items.passes((items) => items.every((item) => item.inCart), "every item in the cart")],
+  async act(page) {
+    const items = await collectAddableItems(page);
+    for (const item of items) {
+      await page.locator(InventorySel.addBtn(item.id)).click();
+    }
   },
+  verify: (): Trait[] => [Inventory.read.items.passes((items) => items.every((item) => item.inCart), "every item in the cart")],
 });

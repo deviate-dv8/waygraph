@@ -19,18 +19,16 @@ export const RemoveFromCartBlock = defineMethodBlock({
   description: "Removes the item named by mem (saucedemo.selectedItem) from the cart.",
   to: InventoryPage,
   requires: [SaucedemoKeys.selectedItem],
-  instruction: {
-    async act(page, _input, mem) {
-      const { id } = mem.get(SaucedemoKeys.selectedItem);
-      await page.locator(InventorySel.removeBtn(id)).click();
-    },
-    verify: (): Trait[] => [
-          Inventory.read.items.passes(
-            (items, mem) => !items.some((item) => item.name === mem.get(SaucedemoKeys.selectedItem).name && item.inCart),
-            "the item out of the cart",
-          ),
-        ],
+  async act(page, _input, mem) {
+    const { id } = mem.get(SaucedemoKeys.selectedItem);
+    await page.locator(InventorySel.removeBtn(id)).click();
   },
+  verify: (): Trait[] => [
+    Inventory.read.items.passes(
+      (items, mem) => !items.some((item) => item.name === mem.get(SaucedemoKeys.selectedItem).name && item.inCart),
+      "the item out of the cart",
+    ),
+  ],
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     const items = await collectRemovableItems(page);
     return items.map((item) => ({

@@ -22,34 +22,31 @@ export const SubmitLoginBlock = defineMethodBlock({
   description: "Submits the login form; stays on LoginPage when auth fails.",
   from: LoginPage,
   to: LoginSubmitOutcome,
-  instruction: {
-    async act(page) {
-      // noWaitAfter: observe owns the inventory URL wait. Default click
-      // navigation-wait can hang under waygraph auto's demo cursor patch.
-      await page.locator(LoginSel.loginButton).click({ noWaitAfter: true });
-    },
-    async observe(page): Promise<LoginObserve> {
-      // Race inventory nav vs error banner - locked_out / wrong password show
-      // Epic sadface immediately; do not burn the full inventory timeout.
-      const inventory = page
-        .waitForURL(/\/inventory\.html/, { timeout: 8_000 })
-        .then(() => "success" as const);
-      const errorBanner = page
-        .locator(LoginSel.errorBanner)
-        .first()
-        .waitFor({ state: "visible", timeout: 8_000 })
-        .then(() => "failure" as const);
-      try {
-        return await Promise.race([inventory, errorBanner]);
-      } catch {
-        return "failure";
-      }
-    },
-    resolve: (observed) =>
-      checkpoint(observed === "success" ? "InventoryPage" : "LoginPage"),
-    verify: (out) =>
-      out.__state === "InventoryPage"
-        ? [Trait.url({ pathname: "/inventory.html" })]
-        : [Trait.visible(LoginSel.errorBanner)],
+  async act(page) {
+    // noWaitAfter: observe owns the inventory URL wait. Default click
+    // navigation-wait can hang under waygraph auto's demo cursor patch.
+    await page.locator(LoginSel.loginButton).click({ noWaitAfter: true });
+  },
+  verify: (out) =>
+    out.__state === "InventoryPage"
+      ? [Trait.url({ pathname: "/inventory.html" })]
+      : [Trait.visible(LoginSel.errorBanner)],
+  async lands(page) {
+    const resolve = (observed: LoginObserve) => checkpoint(observed === "success" ? "InventoryPage" : "LoginPage");
+    // Race inventory nav vs error banner - locked_out / wrong password show
+    // Epic sadface immediately; do not burn the full inventory timeout.
+    const inventory = page
+      .waitForURL(/\/inventory\.html/, { timeout: 8_000 })
+      .then(() => "success" as const);
+    const errorBanner = page
+      .locator(LoginSel.errorBanner)
+      .first()
+      .waitFor({ state: "visible", timeout: 8_000 })
+      .then(() => "failure" as const);
+    try {
+      return resolve(await Promise.race([inventory, errorBanner]));
+    } catch {
+      return resolve("failure");
+    }
   },
 });

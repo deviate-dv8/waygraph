@@ -8,6 +8,8 @@ import { markRouteOf, routed } from "../../checkpoint/route.js";
 import { markExpect } from "../../run/expect.js";
 import type { RoutedBlockBase } from "../../checkpoint/route.js";
 import type { Account } from "../../flow/account.js";
+import type { Page } from "@playwright/test";
+import type { MemPage } from "../../mem/mem.js";
 import { markFor } from "../access.js";
 
 /**
@@ -41,18 +43,50 @@ export type MethodBlock<
 };
 
 
-/** A Method's options: its route and instruction, and who has it. */
-export type MethodBlockOptions<In extends Checkpoint<string>, Out extends Checkpoint<string>> = RoutedBlockBase<In, Out> & {
+/** What every Method has: its route, name and who has it. */
+type MethodBase<In extends Checkpoint<string>, Out extends Checkpoint<string>> = Omit<RoutedBlockBase<In, Out>, "instruction"> & {
   /** The accounts that have it (its button shows for them); without it, every account. */
   for?: readonly Account[];
 };
+
+/** A Method written flat: what it does, what must be true before, what it proves after, and where it lands. */
+interface FlatMethod<In extends Checkpoint<string>, Out extends Checkpoint<string>> {
+  /** Does the one thing: fill, click, submit. This tab only. */
+  act(page: Page, input: In, mem: MemPage): Promise<void>;
+  /** Checks before `act` that the page is where this Method assumes. */
+  precondition?: Trait[] | ((input: In) => Trait[]);
+  /** Proves, after it landed, that it took effect. */
+  verify?: Trait[] | ((out: Out) => Trait[]);
+  /** Where it landed, for a Method with more than one `to`: look at the page and say which (the others need no `lands`). */
+  lands?(page: Page, mem: MemPage): Out | Promise<Out>;
+  instruction?: never;
+}
+
+/** The nested form, deprecated: `instruction: { act, verify, ... }`. */
+interface NestedMethod<In extends Checkpoint<string>, Out extends Checkpoint<string>> {
+  /** @deprecated Write `act`, `verify`, `precondition` and `lands` on the Method itself. `waygraph upgrade --codemod instructions` converts a project. */
+  instruction: RoutedBlockBase<In, Out>["instruction"];
+  act?: never;
+  precondition?: never;
+  verify?: never;
+  lands?: never;
+}
+
+/** A Method's options: its route, what it does and proves, and who has it. */
+export type MethodBlockOptions<In extends Checkpoint<string>, Out extends Checkpoint<string>> = MethodBase<In, Out> & (FlatMethod<In, Out> | NestedMethod<In, Out>);
 
 /** Builds a Block for one page action (fill, submit, click) that does not navigate. */
 export function defineMethodBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   options: MethodBlockOptions<In, Out>,
 ): MethodBlock<In, Out> {
-  const { for: given, ...base } = options;
-  const built = defineBlock(routed(base)) as MethodBlock<In, Out>;
+  const { for: given, act, precondition, verify, lands, instruction, ...base } = options as unknown as MethodBase<In, Out> & Partial<Omit<FlatMethod<In, Out>, "instruction">> & { instruction?: RoutedBlockBase<In, Out>["instruction"] };
+  const nested = instruction ?? {
+    act: act as FlatMethod<In, Out>["act"],
+    ...(precondition ? { precondition } : {}),
+    ...(verify ? { verify } : {}),
+    ...(lands ? { observe: async (page: Page, mem: MemPage) => lands(page, mem), resolve: (landed: Out) => landed } : {}),
+  };
+  const built = defineBlock(routed({ ...base, instruction: nested } as RoutedBlockBase<In, Out>)) as MethodBlock<In, Out>;
   markRouteOf(built, base);
   markFor(built, given);
   markExpect(built, base.expect);

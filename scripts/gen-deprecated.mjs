@@ -156,6 +156,7 @@ run; \`waygraph upgrade --codemod page-object\` moves a project (it was tried on
 | a Read Block with no \`from\` (a header, the user menu) | \`read\` on the layout over its folder: \`Layout.read.field\` |
 | \`methods: { addItem: () => AddItem }\` | \`do: () => ({ addItem: AddItem })\`; \`expects: (page) => ({ ... })\` is a function of the page too |
 | a Method's \`verify: [Ns.field.is(1)]\` on a page its page imports | \`verify: (): Trait[] => [Page.read.field.is(1)]\`: a function, so the page and the Method can import each other |
+| \`defineMethodBlock({ instruction: { act, verify, observe, resolve } })\` | \`defineMethodBlock({ act, verify, lands })\`: the parts on the Method itself; \`observe\` and \`resolve\` become one optional \`lands(page, mem)\` that returns the Checkpoint (\`waygraph upgrade --codemod instructions\`) |
 
 ## Removed in 0.17.0
 

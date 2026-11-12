@@ -57,10 +57,8 @@ export const SignInBlock = defineMethodBlock({
   name: "sign-in",
   from: SignIn,
   to: Products,
-  instruction: {
-    act: (page) => new LoginPage(page).login("standard_user", "secret_sauce"),
-    verify: [Trait.url({ pathname: "/inventory.html" })],
-  },
+  act: (page) => new LoginPage(page).login("standard_user", "secret_sauce"),
+  verify: [Trait.url({ pathname: "/inventory.html" })],
 });
 ```
 

@@ -18,16 +18,14 @@ export const FinishOrderBlock = defineMethodBlock({
     "Places the order and confirms the 'Thank you for your order!' completion page.",
   from: CheckoutOverviewPage,
   to: OrderComplete,
-  instruction: {
-    async act(page) {
-      const finishButton = page.locator(CheckoutOverviewSel.finishBtn);
-      await finishButton.click();
-    },
-    verify: [
-      Trait.text(
-        CheckoutOverviewSel.completeHeader,
-        "Thank you for your order!",
-      ),
-    ],
+  async act(page) {
+    const finishButton = page.locator(CheckoutOverviewSel.finishBtn);
+    await finishButton.click();
   },
+  verify: [
+    Trait.text(
+      CheckoutOverviewSel.completeHeader,
+      "Thank you for your order!",
+    ),
+  ],
 });

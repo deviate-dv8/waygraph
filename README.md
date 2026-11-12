@@ -11,10 +11,8 @@ export const SubmitLoginBlock = defineMethodBlock({
   name: "submit-login",
   from: LoginPage,
   to: InventoryPage,
-  instruction: {
-    async act(page) { await page.locator(LoginSel.button).click(); },
-    verify: [Trait.url({ pathname: "/inventory.html" })],
-  },
+  async act(page) { await page.locator(LoginSel.button).click(); },
+  verify: [Trait.url({ pathname: "/inventory.html" })],
 });
 
 // A Flow = Blocks in order.

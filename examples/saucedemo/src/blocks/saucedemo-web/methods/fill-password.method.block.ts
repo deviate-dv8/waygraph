@@ -17,10 +17,8 @@ export const FillPasswordBlock = defineMethodBlock({
   from: LoginPage,
   to: LoginPage,
   requires: [SaucedemoKeys.credentials],
-  instruction: {
-    async act(page, _input, mem) {
-      const { password } = mem.get(SaucedemoKeys.credentials);
-      await page.locator(LoginSel.password).fill(password);
-    },
+  async act(page, _input, mem) {
+    const { password } = mem.get(SaucedemoKeys.credentials);
+    await page.locator(LoginSel.password).fill(password);
   },
 });

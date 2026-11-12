@@ -14,9 +14,7 @@ export const FillLastNameBlock = defineMethodBlock({
   description: "Fills the last name field on the shipping info form.",
   from: CheckoutInfoPage,
   to: CheckoutInfoPage,
-  instruction: {
-    async act(page) {
-      await page.locator(CheckoutInfoSel.lastName).fill("Lovelace");
-    },
+  async act(page) {
+    await page.locator(CheckoutInfoSel.lastName).fill("Lovelace");
   },
 });

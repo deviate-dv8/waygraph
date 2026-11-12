@@ -9,15 +9,13 @@ export const SetQueryParamsBlock = defineMethodBlock({
   from: HoppscotchRest,
   to: HoppscotchRest,
   requires: [HoppscotchKeys.requestParams],
-  instruction: {
-    async act(page, _in, mem) {
-      await page.locator(HoppscotchSel.tab("Parameters")).click();
-      for (const [i, [name, value]] of Object.entries(mem.get(HoppscotchKeys.requestParams)).entries()) {
-        await page.locator(HoppscotchSel.keyCell).nth(i).locator(HoppscotchSel.editor).click();
-        await page.keyboard.type(name);
-        await page.locator(HoppscotchSel.valueCell).nth(i).locator(HoppscotchSel.editor).click();
-        await page.keyboard.type(value);
-      }
-    },
+  async act(page, _in, mem) {
+    await page.locator(HoppscotchSel.tab("Parameters")).click();
+    for (const [i, [name, value]] of Object.entries(mem.get(HoppscotchKeys.requestParams)).entries()) {
+      await page.locator(HoppscotchSel.keyCell).nth(i).locator(HoppscotchSel.editor).click();
+      await page.keyboard.type(name);
+      await page.locator(HoppscotchSel.valueCell).nth(i).locator(HoppscotchSel.editor).click();
+      await page.keyboard.type(value);
+    }
   },
 });

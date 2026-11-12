@@ -54,7 +54,7 @@ In the Map layout (`src/map/(app)/<url segments>/`, the folder path = the page's
 | `_sel.ts` | `export const LoginSel = { username: "#user-name", submit: "[data-test=login]" } as const` - every selector the page's Blocks use |
 | `_nav.block.ts` | `defineNavBlock({ name: "nav-login", checkpoint: LoginPage, url: "/login", verify: [Trait.visible(LoginSel.submit)] })` |
 | `_page.block.ts` | `export const LoginPage = definePageBlock({ name: "page-login", checkpoint: Login, nav: NavLoginBlock, verify: [...], read: (ctx) => ({ error: ctx.page.text(LoginSel.error) }), do: () => ({ fillUsername: FillUsernameBlock }) })` - the page's namespace: a flow writes `.gotoPage(LoginPage.nav).method(LoginPage.do.fillUsername)` |
-| `_methods/<action>.method.block.ts` | one action each: `defineMethodBlock({ name, from, to, requires, instruction: { act, verify } })` |
+| `_methods/<action>.method.block.ts` | one action each: `defineMethodBlock({ name, from, to, requires, act, verify, lands })` - the action written on the Method itself (older projects nest it under `instruction`; `waygraph upgrade --codemod instructions` flattens it) |
 | `_expect/<what>.expect.block.ts` | what a scenario can expect here: `defineExpectBlock({ name, description, checkpoint, verify })`, listed on the Page Block's `expects` and used as `{ expect: [LoginPage.expects.error] }` on a step. Reads only |
 
 Shared across pages, in `src/states/`:

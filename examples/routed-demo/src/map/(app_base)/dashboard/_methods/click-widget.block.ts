@@ -15,10 +15,8 @@ export const ClickWidgetBlock = defineMethodBlock({
   description: "Clicks the dashboard's demo widget button.",
   from: Dashboard,
   to: Dashboard,
-  instruction: {
-    async act(page) {
-      await page.locator(DashboardSel.widgetBtn).click();
-    },
-    verify: [Trait.text(DashboardSel.widgetOut, "clicked")],
+  async act(page) {
+    await page.locator(DashboardSel.widgetBtn).click();
   },
+  verify: [Trait.text(DashboardSel.widgetOut, "clicked")],
 });

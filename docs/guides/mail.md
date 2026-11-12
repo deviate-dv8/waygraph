@@ -36,14 +36,12 @@ export const ExtractEmailLinkBlock = defineMethodBlock({
   from: MailpitMessageOpen,
   to: MailpitMessageOpen,
   requires: [MailpitKeys.expectedLinkPattern],
-  instruction: {
-    async act(page, _in, mem) {
-      const pattern = mem.get(MailpitKeys.expectedLinkPattern);
-      const link = page.frameLocator(MailpitSel.previewIframe).locator(`a[href*="${pattern}"]`).first();
-      const href = await link.getAttribute("href");
-      if (!href) throw new Error(`no link matching "${pattern}" in the message`);
-      mem.set(MailpitKeys.emailLink, { url: href });
-    },
+  async act(page, _in, mem) {
+    const pattern = mem.get(MailpitKeys.expectedLinkPattern);
+    const link = page.frameLocator(MailpitSel.previewIframe).locator(`a[href*="${pattern}"]`).first();
+    const href = await link.getAttribute("href");
+    if (!href) throw new Error(`no link matching "${pattern}" in the message`);
+    mem.set(MailpitKeys.emailLink, { url: href });
   },
 });
 

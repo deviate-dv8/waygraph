@@ -46,10 +46,8 @@ defineMethodBlock({
   name: "confirm-archive",
   from: ArchiveConfirm,
   to: Registry,
-  instruction: {
-    async act(page) { await page.locator(DetailSel.archiveConfirm).click(); },
-    verify: [Trait.url({ pathname: "/platform/plant/equipment" })],       // arrived on the list
-  },
+  async act(page) { await page.locator(DetailSel.archiveConfirm).click(); },
+  verify: [Trait.url({ pathname: "/platform/plant/equipment" })],       // arrived on the list
 });
 ```
 

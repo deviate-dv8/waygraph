@@ -17,21 +17,19 @@ export const SetJsonBodyBlock = defineMethodBlock({
   from: HoppscotchRest,
   to: HoppscotchRest,
   requires: [HoppscotchKeys.requestBody],
-  instruction: {
-    async act(page, _in, mem) {
-      await page.locator(HoppscotchSel.tab("Body")).click();
-      await page.locator(HoppscotchSel.contentTypeMenu).click();
-      await page.locator(HoppscotchSel.menuItem("application/json")).click();
-      const editor = page.locator(HoppscotchSel.visibleEditor).last();
-      await editor.click();
-      const body = mem.get(HoppscotchKeys.requestBody);
-      await page.keyboard.type(body);
-      if (!spansLines(body)) return;
-      // Prettify is the third toolbar button (Clear, Wrap lines, Prettify); typed JSON stays on one line otherwise.
-      await page.locator(HoppscotchSel.bodyToolbarButton).nth(2).click();
-      if ((await editor.locator(HoppscotchSel.bodyLine).count()) < 2) {
-        throw new Error("set-json-body: Hoppscotch's Prettify button was not found, so the body stayed on one line");
-      }
-    },
+  async act(page, _in, mem) {
+    await page.locator(HoppscotchSel.tab("Body")).click();
+    await page.locator(HoppscotchSel.contentTypeMenu).click();
+    await page.locator(HoppscotchSel.menuItem("application/json")).click();
+    const editor = page.locator(HoppscotchSel.visibleEditor).last();
+    await editor.click();
+    const body = mem.get(HoppscotchKeys.requestBody);
+    await page.keyboard.type(body);
+    if (!spansLines(body)) return;
+    // Prettify is the third toolbar button (Clear, Wrap lines, Prettify); typed JSON stays on one line otherwise.
+    await page.locator(HoppscotchSel.bodyToolbarButton).nth(2).click();
+    if ((await editor.locator(HoppscotchSel.bodyLine).count()) < 2) {
+      throw new Error("set-json-body: Hoppscotch's Prettify button was not found, so the body stayed on one line");
+    }
   },
 });

@@ -100,7 +100,7 @@ the button) and on Page Blocks (who can open the page). It takes `account(...)` 
 
 ```ts
 export const EquipmentRegistryPage = definePageBlock({ name: "equipment-registry", checkpoint: EquipmentRegistry, url: "/equipment", for: [Admin] });
-export const AddMachineBlock = defineMethodBlock({ name: "add-machine", from: EquipmentRegistry, to: EquipmentRegistry, for: [Admin], instruction: { /* … */ } });
+export const AddMachineBlock = defineMethodBlock({ name: "add-machine", from: EquipmentRegistry, to: EquipmentRegistry, for: [Admin], async act(page) { /* … */ } });
 ```
 
 - `waygraph test --flows` adds one **access test** per account (`access › planner`, tagged `@access @planner`): signed

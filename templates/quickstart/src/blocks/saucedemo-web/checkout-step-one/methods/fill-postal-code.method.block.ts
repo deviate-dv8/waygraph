@@ -14,9 +14,7 @@ export const FillPostalCodeBlock = defineMethodBlock({
   description: "Fills the postal code field on the shipping info form.",
   from: CheckoutInfoPage,
   to: CheckoutInfoPage,
-  instruction: {
-    async act(page) {
-      await page.locator(CheckoutInfoSel.postalCode).fill("1000");
-    },
+  async act(page) {
+    await page.locator(CheckoutInfoSel.postalCode).fill("1000");
   },
 });

@@ -19,10 +19,8 @@ export const FillUsernameBlock = defineMethodBlock({
   from: LoginPage,
   to: LoginPage,
   requires: [SaucedemoKeys.credentials],
-  instruction: {
-    async act(page, _input, mem) {
-      const { username } = mem.get(SaucedemoKeys.credentials);
-      await page.locator(LoginSel.username).fill(username);
-    },
+  async act(page, _input, mem) {
+    const { username } = mem.get(SaucedemoKeys.credentials);
+    await page.locator(LoginSel.username).fill(username);
   },
 });

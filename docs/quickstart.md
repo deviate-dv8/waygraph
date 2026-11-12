@@ -67,13 +67,11 @@ const SubmitLogin = defineMethodBlock({
   from: LoginForm,
   to: InventoryPage,
   requires: [LoginKeys.username],
-  instruction: {
-    async act(page, _input, mem) {
-      await page.getByLabel("Username").fill(mem.get(LoginKeys.username));
-      await page.getByRole("button", { name: "Sign in" }).click();
-    },
-    verify: [Trait.url({ pathname: "/dashboard" })],
+  async act(page, _input, mem) {
+    await page.getByLabel("Username").fill(mem.get(LoginKeys.username));
+    await page.getByRole("button", { name: "Sign in" }).click();
   },
+  verify: [Trait.url({ pathname: "/dashboard" })],
 });
 
 const mem = new MemPage();

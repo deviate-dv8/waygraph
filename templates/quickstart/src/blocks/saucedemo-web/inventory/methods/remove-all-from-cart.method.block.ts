@@ -17,13 +17,11 @@ export const RemoveAllFromCartBlock = defineMethodBlock({
   name: "remove-all-from-cart",
   description: "Removes every product still showing Remove on this page.",
   to: InventoryPage,
-  instruction: {
-    async act(page) {
-      const items = await collectRemovableItems(page);
-      for (const item of items) {
-        await page.locator(InventorySel.removeBtn(item.id)).click();
-      }
-    },
-    verify: (): Trait[] => [Inventory.read.items.passes((items) => items.every((item) => !item.inCart), "nothing in the cart")],
+  async act(page) {
+    const items = await collectRemovableItems(page);
+    for (const item of items) {
+      await page.locator(InventorySel.removeBtn(item.id)).click();
+    }
   },
+  verify: (): Trait[] => [Inventory.read.items.passes((items) => items.every((item) => !item.inCart), "nothing in the cart")],
 });

@@ -16,10 +16,8 @@ export const SubmitCheckoutInfoBlock = defineMethodBlock({
   description: "Continues from the shipping info form to the order overview.",
   from: CheckoutInfoPage,
   to: CheckoutOverviewPage,
-  instruction: {
-    async act(page) {
-      await page.locator(CheckoutInfoSel.continueBtn).click();
-    },
-    verify: [Trait.url({ pathname: "/checkout-step-two.html" })],
+  async act(page) {
+    await page.locator(CheckoutInfoSel.continueBtn).click();
   },
+  verify: [Trait.url({ pathname: "/checkout-step-two.html" })],
 });

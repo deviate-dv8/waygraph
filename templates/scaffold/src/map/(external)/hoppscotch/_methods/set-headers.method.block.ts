@@ -9,16 +9,14 @@ export const SetHeadersBlock = defineMethodBlock({
   from: HoppscotchRest,
   to: HoppscotchRest,
   requires: [HoppscotchKeys.requestHeaders],
-  instruction: {
-    async act(page, _in, mem) {
-      await page.locator(HoppscotchSel.tab("Headers")).click();
-      const headers = Object.entries(mem.get(HoppscotchKeys.requestHeaders));
-      for (const [i, [name, value]] of headers.entries()) {
-        await page.locator(HoppscotchSel.keyCell).nth(i).locator(HoppscotchSel.editor).click();
-        await page.keyboard.type(name);
-        await page.locator(HoppscotchSel.valueCell).nth(i).locator(HoppscotchSel.editor).click();
-        await page.keyboard.type(value);
-      }
-    },
+  async act(page, _in, mem) {
+    await page.locator(HoppscotchSel.tab("Headers")).click();
+    const headers = Object.entries(mem.get(HoppscotchKeys.requestHeaders));
+    for (const [i, [name, value]] of headers.entries()) {
+      await page.locator(HoppscotchSel.keyCell).nth(i).locator(HoppscotchSel.editor).click();
+      await page.keyboard.type(name);
+      await page.locator(HoppscotchSel.valueCell).nth(i).locator(HoppscotchSel.editor).click();
+      await page.keyboard.type(value);
+    }
   },
 });

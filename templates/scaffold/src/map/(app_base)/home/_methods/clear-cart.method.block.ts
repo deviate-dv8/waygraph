@@ -9,10 +9,8 @@ export const ClearCartBlock = defineMethodBlock({
   description: "Clears every item via the Clear cart control.",
   from: Home,
   to: Home,
-  instruction: {
-    async act(page) {
-      await page.locator(DemoSel.clear).click();
-    },
-    verify: (): Trait[] => [HomePage.read.cartCount.is(0)],
+  async act(page) {
+    await page.locator(DemoSel.clear).click();
   },
+  verify: (): Trait[] => [HomePage.read.cartCount.is(0)],
 });

@@ -9,10 +9,8 @@ export const SetMethodBlock = defineMethodBlock({
   from: HoppscotchRest,
   to: HoppscotchRest,
   requires: [HoppscotchKeys.requestMethod],
-  instruction: {
-    async act(page, _in, mem) {
-      await page.locator(HoppscotchSel.methodInput).click();
-      await page.locator(HoppscotchSel.menuItem(mem.get(HoppscotchKeys.requestMethod))).click();
-    },
+  async act(page, _in, mem) {
+    await page.locator(HoppscotchSel.methodInput).click();
+    await page.locator(HoppscotchSel.menuItem(mem.get(HoppscotchKeys.requestMethod))).click();
   },
 });
