@@ -30,7 +30,6 @@ export type PageMethodEntry =
   /** A Method with params (`self.method((from, to) => ({ ... }))`): called with real values where a flow uses it. */
   | ((...args: never[]) => SomeDefinedBlock);
 
-
 /** Options for `definePageBlock`: the Checkpoint a page hub confirms and the Methods that hang off it. */
 /**
  * One Expect Block (or lazy factory) a {@link PageBlock} names. Typed loosely here: an expectation often judges the
@@ -223,7 +222,6 @@ export type PageBlockOptions<
   for?: readonly Account[];
 };
 
-
 /**
  * Page hub Block: one Checkpoint = this screen; methods hang off the hub for
  * readability / auto grouping. Runtime is still a Block (`__waygraphKind = "page"`).
@@ -274,7 +272,6 @@ export type PageBlock<
   stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
   stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
 } & PageGo<Out, U, Q> & PageFolderGo<Out, F> & PageLinks<Lk>;
-
 
 /** A record of page methods with each `() => Block` factory resolved to its Block. */
 export type PageMethods<M> = { readonly [K in keyof M]: M[K] extends () => infer B ? B : M[K] };
@@ -404,7 +401,6 @@ export function definePageBlock<
     }
   }
   if (options.checkpoint === undefined) mark(built, "__waygraphBare", true);
-  // What Studio and the manifest show about the page itself.
   if (frame) mark(built, "__waygraphFrame", frame);
   if (covers !== undefined) mark(built, "__waygraphCovers", covers);
   if (route === "folder") mark(built, "__waygraphRoute", "folder");
@@ -412,14 +408,13 @@ export function definePageBlock<
   mark(built, "__waygraphKind", "page");
   mark(built, "__waygraphSalt", "page");
   if (readBlock) mark(built, "__waygraphReadBlock", readBlock);
-  // Every Block the page names (its nav, its methods and its expectations) counts as used: none is an orphan.
+  // Everything the page names counts as used: none is an orphan.
   Object.defineProperty(built, "__waygraphMethods", {
     get: () => [...(nav ? [nav.name] : []), ...methodList().map((m) => m.name), ...Object.values(expectRecord()).filter(isBlockEntry).map((b) => b.name)],
     enumerable: false,
     configurable: true,
   });
-  // Fields a decorated copy (withVerify, stubBefore) keeps by descriptor (see PAGE_FIELDS): not enumerable, so a copy made
-  // by spreading doesn't call them early.
+  // Not enumerable, so a copy made by spreading doesn't call them early; a decorated copy keeps them (PAGE_FIELDS).
   Object.defineProperty(built, "methods", { get: methodList, enumerable: false, configurable: true });
   Object.defineProperty(built, "do", { get: doRecord, enumerable: false, configurable: true });
   Object.defineProperty(built, "expects", { get: expectRecord, enumerable: false, configurable: true });
