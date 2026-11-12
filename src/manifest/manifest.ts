@@ -22,6 +22,7 @@ import { allAccounts } from "../engine/flow/account.js";
 import { paneOf } from "../engine/run/pane-page.js";
 import type { Panes } from "../engine/flow/panes.js";
 import { layoutState } from "../engine/block/kinds/layout.js";
+import { pagesFromScan, type ManifestPage } from "./pages.js";
 
 export const MANIFEST_VERSION = 2;
 
@@ -46,6 +47,10 @@ export interface ManifestBlock {
   opens?: true;
   /** The query params a Page Block keeps in its address (`?tab=`): state of the page. */
   query?: string[];
+  /** A Block written in a page: which group of it (`do`, `expects`, `links`), the page's id, and its key there. */
+  group?: "do" | "expects" | "links";
+  owner?: string;
+  key?: string;
   /** The lines of `file` that define it. */
   source?: SourceSpan;
   /** What it checks before acting and on arrival: each Trait as data, or `"dynamic"` when a function builds them. */
@@ -129,6 +134,8 @@ export interface Manifest {
   checkpoints: string[];
   maps: string[];
   blocks: ManifestBlock[];
+  /** Every Page Block, with what it holds (its moves, expectations and links by key) and what it covers. */
+  pages: ManifestPage[];
   /** The addresses each Checkpoint's page is known by: its Navs' urls and the urls its Blocks' verify checks. */
   pageUrls: Record<string, string[]>;
   /** The site map: each page under the page or folder its address hangs from (what breadcrumbs follow). */
@@ -201,6 +208,12 @@ function panesOf(steps: { block: SomeBlock }[]): Pick<ManifestFlow, "panes" | "s
 
 const queryOf = (block: object): string[] | undefined => (block as { __waygraphQuery?: readonly string[] }).__waygraphQuery?.slice();
 
+/** Where a Block written in a page sits: `Login.do.submit` is `do`, key `submit`, of the page `Login`. */
+function heldBy(exportName: string, file: string): Pick<ManifestBlock, "group" | "owner" | "key"> {
+  const [owner, group, key] = exportName.split(".");
+  return owner && key && (group === "do" || group === "expects" || group === "links") ? { group, owner: `${file}#${owner}`, key } : {};
+}
+
 /** Builds the manifest from a scan. */
 export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
   const checkpoints = new Set<string>();
@@ -211,7 +224,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
     const map = b.map ?? mapGroupOf(b.file);
     const url = urlOf(b.block);
     if (map) maps.add(map);
-    const source = spanOf(b.absFile, b.exportName.split(".")[0] as string);
+    const source = spanOf(b.absFile, b.exportName);
     const given = givenTo(b.block);
     const instruction = (b.block as { instruction?: { precondition?: Trait[] | ((i: never) => Trait[]); verify?: Trait[] | ((o: never) => Trait[]) } }).instruction;
     return {
@@ -227,6 +240,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       file: b.file,
       ...(map ? { map } : {}),
       ...(url ? { url } : {}),
+      ...heldBy(b.exportName, b.file),
       ...((): { query?: string[] } => { const q = queryOf(b.block); return q ? { query: q } : {}; })(),
       ...((b.block as { __waygraphPageDeepLink?: boolean }).__waygraphPageDeepLink ? { opens: true as const } : {}),
       ...(source ? { source } : {}),
@@ -291,6 +305,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
     checkpoints: [...checkpoints].sort(),
     maps: [...maps].sort(),
     blocks,
+    pages: pagesFromScan(scan),
     pageUrls: urls,
     siteTree: siteTree([...checkpoints].sort(), urls, undefined),
     readBlocks,

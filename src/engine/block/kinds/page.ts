@@ -404,6 +404,10 @@ export function definePageBlock<
     }
   }
   if (options.checkpoint === undefined) mark(built, "__waygraphBare", true);
+  // What Studio and the manifest show about the page itself.
+  if (frame) mark(built, "__waygraphFrame", frame);
+  if (covers !== undefined) mark(built, "__waygraphCovers", covers);
+  if (route === "folder") mark(built, "__waygraphRoute", "folder");
   markRoute(built, opensFrom?.map((c) => c.__state) ?? ["*"], [cp.__state]);
   mark(built, "__waygraphKind", "page");
   mark(built, "__waygraphSalt", "page");

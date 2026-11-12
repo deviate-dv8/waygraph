@@ -63,8 +63,18 @@ export interface ScannedLayout {
   file: string;
 }
 
+/** A Page Block as the scan found it (a bare shell included): what the manifest's `pages` is built from. */
+export interface ScannedPage {
+  block: AnyBlock;
+  exportName: string;
+  file: string;
+  absFile: string;
+  map?: string;
+}
+
 export interface ProjectScan {
   projectDir: string;
+  pages: ScannedPage[];
   blocks: ScannedBlock[];
   layouts: ScannedLayout[];
   readBlocks: ScannedReadBlock[];
@@ -114,6 +124,7 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
   const blocks: ScannedBlock[] = [];
   const readBlocks: ScannedReadBlock[] = [];
   const layouts: ScannedLayout[] = [];
+  const pages: ScannedPage[] = [];
   const flows: ScannedFlow[] = [];
   const skipped: ProjectScan["skipped"] = [];
 
@@ -172,6 +183,7 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
           layouts.push({ layout: shell, exportName, file });
           for (const [key, nav] of Object.entries(shell.go)) addBlock(`${exportName}.links.${key}`, nav);
         }
+        if ((exported as { __waygraphKind?: string }).__waygraphKind === "page") pages.push({ block: exported, exportName, file, absFile, ...(map ? { map } : {}) });
         // A bare shell (no Checkpoint) is no page and no step: only its links, read and interrupts count.
         if ((exported as { __waygraphBare?: boolean }).__waygraphBare) {
           const bareRead = (exported as { __waygraphReadBlock?: ReadBlock }).__waygraphReadBlock;
@@ -224,5 +236,5 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
       }
     }
   }
-  return { projectDir, blocks, layouts, readBlocks, flows, skipped };
+  return { projectDir, pages, blocks, layouts, readBlocks, flows, skipped };
 }

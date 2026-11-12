@@ -53,11 +53,32 @@ function definitionOf(sf: SourceFile, exportName: string): Node | undefined {
   return undefined;
 }
 
-/** Where `exportName` is defined in `absFile`, its doc comment included; undefined when the file or export isn't found. */
+/**
+ * The entry `key` of the page's `group` (`do`, `expects`, `links`): `definePageBlock({ do: (page) => ({ key: ... }) })`, found
+ * by its place in the options. Undefined when the page isn't written that way.
+ */
+function entryOf(statement: Node, group: string, key: string): Node | undefined {
+  const call = statement.getFirstDescendantByKind(SyntaxKind.CallExpression);
+  const options = call?.getArguments()[0];
+  if (!Node.isObjectLiteralExpression(options)) return undefined;
+  const prop = options.getProperty(group);
+  let body: Node | undefined = Node.isPropertyAssignment(prop) ? prop.getInitializer() : undefined;
+  if (Node.isArrowFunction(body)) body = body.getBody();
+  while (Node.isParenthesizedExpression(body)) body = body.getExpression();
+  return Node.isObjectLiteralExpression(body) ? body.getProperty(key) : undefined;
+}
+
+/**
+ * Where `exportName` is defined in `absFile`, its doc comment included; undefined when the file or export isn't found. A
+ * Method written in a page (`Page.do.key`) is the span of that entry, not the whole page.
+ */
 export function spanOf(absFile: string, exportName: string): SourceSpan | undefined {
   const sf = sourceOf(absFile);
-  const node = sf && definitionOf(sf, exportName);
-  return node ? { line: node.getStartLineNumber(true), endLine: node.getEndLineNumber() } : undefined;
+  const [name, group, key] = exportName.split(".");
+  const statement = sf && name && definitionOf(sf, name);
+  if (!statement) return undefined;
+  const node = group && key ? (entryOf(statement, group, key) ?? statement) : statement;
+  return { line: node.getStartLineNumber(true), endLine: node.getEndLineNumber() };
 }
 
 /** Every entry of the selector objects `absFile` exports (`export const LoginSel = { ... }`). */

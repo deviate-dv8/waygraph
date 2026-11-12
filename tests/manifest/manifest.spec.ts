@@ -70,3 +70,19 @@ test("a flow with panes lists them, and each step's pane", async () => {
   expect(m.accounts).toEqual(expect.arrayContaining(["problem-user", "standard-user"]));
   expect(m.flows.find((f) => f.exportName === "shopFlow")!.panes).toBeUndefined();
 });
+
+test("the manifest lists each page with what it holds: moves by key, what it covers, and a Block's place in its page", async () => {
+  const m = await buildManifest(join(examples, "saucedemo"));
+  const login = m.pages.find((p) => p.checkpoint === "LoginPage")!;
+  expect(login).toMatchObject({ opensBy: "url", read: "read-nav-login" });
+  expect(login.do.map((d) => d.key)).toEqual(["fillUsername", "fillPassword", "submitLogin"]);
+  const menu = m.pages.find((p) => p.name === "menu")!;
+  expect(menu).toMatchObject({ bare: true, links: [{ key: "allItems", to: "InventoryPage" }, { key: "logout", to: "LoginPage" }] });
+  expect(menu.coveredPages).toContain("CartPage");
+  expect(m.pages.find((p) => p.checkpoint === "CartPage")?.coveredBy).toEqual(["menu"]);
+  const fill = m.blocks.find((b) => b.name === "fill-username")!;
+  expect(fill).toMatchObject({ group: "do", key: "fillUsername", owner: expect.stringContaining("#Login") });
+  // The Block's own lines, not the whole page's.
+  expect(fill.source!.endLine - fill.source!.line).toBeLessThan(15);
+  expect(JSON.parse(JSON.stringify(m))).toEqual(m);
+});
