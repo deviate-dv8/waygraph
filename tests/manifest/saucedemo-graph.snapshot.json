@@ -36,12 +36,12 @@
     "nav menu-logout: OrderComplete -> LoginPage (src/blocks/saucedemo-web/_layout.block.ts)",
     "nav nav-back-to-inventory: * -> InventoryPage (src/blocks/saucedemo-web/inventory-item/nav-back-to-inventory.block.ts)",
     "nav nav-back-to-products: * -> InventoryPage (src/blocks/saucedemo-web/inventory-item/nav-back-to-products.block.ts)",
-    "nav nav-cart: * -> CartPage (src/blocks/saucedemo-web/cart/nav-cart.block.ts)",
-    "nav nav-checkout-info: * -> CheckoutInfoPage (src/blocks/saucedemo-web/cart/nav-checkout-info.block.ts)",
     "nav nav-continue-shopping: * -> InventoryPage (src/blocks/saucedemo-web/inventory-item/nav-continue-shopping.block.ts)",
-    "nav nav-inventory: * -> InventoryPage (src/blocks/saucedemo-web/inventory/nav-inventory.block.ts)",
     "nav nav-item-detail: * -> ItemDetailPage (src/blocks/saucedemo-web/inventory/nav-item-detail.block.ts)",
-    "nav nav-login: * -> LoginPage (src/blocks/saucedemo-web/nav-login.block.ts)"
+    "nav nav-login: * -> LoginPage (src/blocks/saucedemo-web/nav-login.block.ts)",
+    "nav page-cart: * -> CartPage (src/blocks/saucedemo-web/cart/cart.page.block.ts)",
+    "nav page-checkout-info: * -> CheckoutInfoPage (src/blocks/saucedemo-web/checkout-step-one/checkout-info.page.block.ts)",
+    "nav page-inventory: * -> InventoryPage (src/blocks/saucedemo-web/inventory/inventory.page.block.ts)"
   ],
   "skipped": []
 }

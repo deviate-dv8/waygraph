@@ -48,7 +48,7 @@ The project as a site map: each site at the top (the base url's host, and every 
 payment provider, a mail catcher), its pages below by their addresses, one level per part of the address. A part no
 page has is a folder (`auth/`, `platform/`, then `plant/`, so `/platform/plant/lines` sits three levels in).
 
-- **Dashed lines** hang each page from its site, labelled with the Navs that open it by address.
+- **Dashed lines** hang each page from its site, labelled with what opens it by address (a Page Block's `url`, or a Nav).
 - **Arrows** are the moves between pages, labelled with the Blocks that make them: a badge per Block, with its whole
   name, in its kind's colour and with its icon (Nav blue, Method grey, API green). Labels meeting at one page stack, and
   the map makes room for them: a label never covers a box.
@@ -62,6 +62,9 @@ page has is a folder (`auth/`, `platform/`, then `plant/`, so `/platform/plant/l
 A page's address comes from the Navs that open it (a url built from mem shows as a pattern: `/requests/:id`) and from
 the `Trait.url` its Blocks verify on arrival. A page with no address of its own sits under the page whose move reaches
 it. Pages in a row follow the order your flows visit them.
+
+**Find** (the button at the top, or `/`, or Ctrl/Cmd-K) finds a page, a flow or a Block by name: type a few letters, Enter, and
+the page or Block's panel opens (a flow opens its own page).
 
 The **bottom bar** holds the key (the Block kinds), **Legend** (every shape, line and badge, and what's in a page's
 box), the switch between left to right and top down (remembered), and the counts.
@@ -89,8 +92,8 @@ Click a page for everything about it, most telling first:
 
 ### A layout
 
-Click a layout for its links (where each leads, its selector, who sees it), its actions, what it shows and the pages it
-covers; click a page there to go to it.
+Click a layout for its links (where each leads, its selector, who sees it), its actions, what it shows, what it handles when it
+shows up (its [interrupts](./layouts#interrupts-what-appears-and-gets-in-the-way)) and the pages it covers; click a page there to go to it.
 
 ![The menu layout's panel: two links, each for everyone, on six pages](/studio/map-layout.jpg)
 

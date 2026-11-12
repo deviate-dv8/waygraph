@@ -9,6 +9,7 @@ import LayoutNode from '~/components/graph/layout_node.vue'
 import LayoutPanel from '~/components/map/layout_panel.vue'
 import MapTree from '~/components/map/map_tree.vue'
 import MapLegend from '~/components/map/map_legend.vue'
+import FindPalette from '~/components/map/find_palette.vue'
 import type { TreeLabel } from '~/components/map/map_tree_row.vue'
 import { everything, only, toggled, visibleTree, type MapTree as Tree } from '~/lib/map_filter'
 import SketchEdge from '~/components/graph/sketch_edge.vue'
@@ -61,13 +62,17 @@ const props = defineProps<{
 const selected = ref<string | null>(null)
 /** A Block opened from a badge on a line (a move's Nav, Method, API call): its panel, like a page's. */
 const selectedBlock = ref<string | null>(null)
-provide('selectBlock', (id: string) => {
+const openBlock = (id: string) => {
   selected.value = null
   selectedBlock.value = id
-})
+}
+provide('selectBlock', openBlock)
 const blockPanel = computed(() => props.blocks.find((b) => b.id === selectedBlock.value))
 watch(selected, (id) => {
-  if (id) selectedBlock.value = null
+  if (!id) return
+  selectedBlock.value = null
+  // A page picked (from the tree, a layout, Find) comes into view, large enough to read.
+  void flow?.fitView({ nodes: [id], padding: 1.5, maxZoom: 1, duration: 300 })
 })
 /** Which way the site map grows: left to right by default; the viewer's pick is remembered in this browser. */
 const direction = useStorage<TreeDirection>('waygraph-map-direction', 'LR')
@@ -655,6 +660,15 @@ const page = computed(() =>
       </VueFlow>
     </div>
 
+    <div class="absolute top-3 left-1/2 z-10 -translate-x-1/2">
+      <FindPalette
+        :pages="checkpoints"
+        :blocks="props.blocks"
+        :flows="props.flows"
+        @page="selected = $event"
+        @block="openBlock"
+      />
+    </div>
     <div v-if="showTree" class="pointer-events-none absolute top-16 bottom-16 left-3 flex">
       <MapTree
         class="pointer-events-auto"

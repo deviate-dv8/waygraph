@@ -22,7 +22,7 @@ export function mapEdges(blocks: ManifestBlock[]): MapEdge[] {
   const byPair = new Map<string, MapEdge>()
   for (const b of blocks) {
     // A Page Block names a page; it isn't a way to get there of its own (its nav is).
-    if (b.kind === 'page' || b.kind === 'expect') continue
+    if ((b.kind === 'page' && !b.opens) || b.kind === 'expect') continue
     for (const to of b.to) {
       if (to === '*') continue
       for (const source of b.from) {
@@ -50,7 +50,8 @@ export function pageSummary(
   return {
     checkpoint,
     waysIn: blocks.filter(
-      (b) => lands(b) && !selfLoop(b) && b.kind !== 'page' && b.kind !== 'expect'
+      (b) =>
+        lands(b) && !selfLoop(b) && (b.kind !== 'page' || b.opens === true) && b.kind !== 'expect'
     ),
     actions: blocks.filter((b) => selfLoop(b) && b.kind !== 'expect' && b.kind !== 'page'),
     expects: blocks.filter((b) => b.kind === 'expect' && lands(b)),

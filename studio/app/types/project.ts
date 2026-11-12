@@ -20,6 +20,8 @@ export type ManifestBlock = {
   map?: string
   /** Where a Nav or Page Block goes by url (`/requests/:id` for one built from mem). */
   url?: string
+  /** A Page Block that opens itself (a `url` or `click`): a way in, as a Nav is; missing before waygraph 0.17.3. */
+  opens?: true
   /** The lines of `file` that define it; missing before waygraph 0.16.19 (so are `checks` and `selectors`). */
   source?: SourceSpan
   /** What it checks before acting and on arrival; `"dynamic"`: a function builds the checks. */
@@ -41,6 +43,8 @@ export type ManifestLayout = {
   actions: { name: string; block: string }[]
   /** Its Read Block's name, when it says what it shows. */
   read?: string
+  /** What it handles wherever it shows up (a cookie banner), by name; missing before waygraph 0.17.3. */
+  interrupts?: string[]
 }
 
 /** The lines a definition spans in its file (1-based, inclusive). */

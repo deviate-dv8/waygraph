@@ -42,6 +42,8 @@ export interface ManifestBlock {
   map?: string;
   /** Where a Nav or Page Block goes by url: the url, or the pattern a url built from mem makes (`/requests/:id`). */
   url?: string;
+  /** A Page Block that opens itself (it has a `url` or a `click`): a way in, as a Nav is. */
+  opens?: true;
   /** The lines of `file` that define it. */
   source?: SourceSpan;
   /** What it checks before acting and on arrival: each Trait as data, or `"dynamic"` when a function builds them. */
@@ -221,6 +223,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       file: b.file,
       ...(map ? { map } : {}),
       ...(url ? { url } : {}),
+      ...((b.block as { __waygraphPageDeepLink?: boolean }).__waygraphPageDeepLink ? { opens: true as const } : {}),
       ...(source ? { source } : {}),
       checks: { precondition: checksOf(instruction?.precondition), verify: checksOf(instruction?.verify) },
       selectors: selectorsUsed(b.absFile, b.exportName, scan.projectDir),

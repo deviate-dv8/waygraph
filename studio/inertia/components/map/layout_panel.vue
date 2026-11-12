@@ -78,6 +78,21 @@ const destination = (to: string) => (to === 'parent' ? 'the page above' : to)
         </h3>
         <p class="font-mono text-xs">{{ props.layout.read }}</p>
       </section>
+      <section v-if="props.layout.interrupts?.length">
+        <h3 class="mb-1.5 flex items-center gap-1.5 font-medium">
+          <UIcon name="i-lucide-bell-ring" class="size-4" />Handles when it shows up
+        </h3>
+        <p class="flex flex-wrap gap-1">
+          <UBadge
+            v-for="name in props.layout.interrupts"
+            :key="name"
+            :label="name"
+            color="neutral"
+            variant="subtle"
+            size="sm"
+          />
+        </p>
+      </section>
       <section>
         <h3 class="mb-1.5 flex items-center gap-1.5 font-medium">
           <UIcon name="i-lucide-file" class="size-4" />Pages ({{ props.layout.covers.length }})
