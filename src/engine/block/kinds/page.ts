@@ -426,13 +426,7 @@ export function definePageBlock<
   Object.defineProperty(built, "checkpoint", { value: cp, enumerable: false, configurable: true });
   Object.defineProperty(built, "read", { value: self.read, enumerable: false, configurable: true });
   Object.defineProperty(built, "nav", { value: nav, enumerable: false, configurable: true });
-  // Same marker `defineNavBlock` sets, same reason - a page hub with a
-  // `url` (deep-link) is exactly as "known, coverable" as a plain
-  // `defineNavBlock`, and in practice most real projects' own nav Blocks
-  // ARE page hubs (methods hanging off them), not bare NavBlocks - the real
-  // saucedemo fixture this whole package tests against uses definePageBlock
-  // for every one of its own nav-* Blocks. Missing this here meant the
-  // marker existed but was never actually set on any real project's Blocks.
+  // The markers `defineNavBlock` sets: a page with a url or click is as known and coverable as a Nav.
   if (typeof pageUrl === "string") {
     mark(built, "__waygraphNavUrl", pageUrl);
   } else if (typeof pageUrl === "function") {
