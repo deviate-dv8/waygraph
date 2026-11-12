@@ -139,10 +139,23 @@ the page and its Methods can import each other ([Lifecycle](./lifecycle#why-do-a
 A page whose address has a param (`url: "/requests/:id"`, or `[id]` as in Next and Nuxt) has `go`, typed by the params:
 `.gotoPage(Request.go({ id: 42 }))` opens `/requests/42`; leaving one out doesn't compile.
 
-A Method can be written inside the page's `do`: `page.method({ async act(p) { … }, verify: […] })` has the page as its
-`from` and `to`, and the key as its name (`home-add-item`); `to: "Docs"` lands on another page by name, and `lands`
-picks one when it can land on several. A Method long enough for a file of its own takes `(page: PageHandle<"Home">)`
-and imports only that type, so the page and the file never import each other.
+**A Method lives in its own file in the page's `_methods/`**, one action per file, so a page stays small as the app grows
+and a person or an agent writes every Method the same way:
+
+```ts
+// _methods/fill-email.method.block.ts: a function of its page, importing only the page's type (so no import cycle)
+export const fillEmail = (self: PageHandle<"Login">) =>
+  self.method({ async act(page) { await page.locator(LoginSel.email).fill("…"); } });
+
+// _page.block.ts: one line to list it
+do: (self) => ({ fillEmail: fillEmail(self), submit: submit(self) }),
+```
+
+The page is its `from` and `to`, the key is its name (`login-fill-email`), `to: "Docs"` lands on another page by name, and
+`lands` picks one when it can land on several. A one-line Method can be written in the page's `do` instead
+(`fillEmail: self.method({ … })`); a Method shared by several pages is a plain `defineMethodBlock` with its `from` and `to`.
+`waygraph gen page login --do fillEmail,submit` writes the page, its `_sel.ts` and a `_methods/` file for each, and
+`waygraph gen method login fillPassword` adds one.
 
 A Method can take params, for what the scenario chooses and no mem key fits (a drag from here to there):
 `do: (self) => ({ drag: self.method((from: Point, to: Point) => ({ async act(p) { … } })) })`, used as

@@ -38,17 +38,36 @@ There is no `playwright.config.ts`: `waygraph test` builds it from `config/waygr
 
 ## One page folder
 
-Every page folder uses the same file names:
+Every page folder uses the same file names. Start one with `waygraph gen page <path> --do a,b` ([Generate](#generate)), then fill in the selectors:
 
 | File | Holds | Made with |
 |---|---|---|
 | `_page.block.ts` | the page: how it opens (`url`, `from`), what it shows (`read`), what you can do (`do`), what you can expect (`expects`), who can open it (`for`) | `definePageBlock` |
 | `_sel.ts` | every selector this page uses | a plain object |
-| `_methods/` | one action per file: fill, click, submit | `defineMethodBlock` |
+| `_methods/` | one action per file: fill, click, submit: a function of its page, `(self: PageHandle<"Home">) => self.method({ … })`, listed in the page's `do` | `page.method` |
 | `_expect/` | what a scenario can expect on this page, one per file | `defineExpectBlock` |
 
 A leading `_` means "this page's own machinery". A folder name without one is a child page with its own address
 segment. A page that `covers` its children is the shell of every page under its folder ([Layouts](./layouts)).
+
+## Generate
+
+`waygraph gen` writes files from the convention, so every page, Method and flow starts the same shape, whoever writes it. It never
+overwrites a file, and ends by writing the page names so what it made completes.
+
+```sh
+npx waygraph gen page login --read error --do fillEmail,submit   # _page.block.ts, _sel.ts, _methods/fill-email…, _methods/submit…
+npx waygraph gen page "requests/[id]" --query tab --from Dashboard # a page with a [id] (Page.go({ id })), opened from Dashboard
+npx waygraph gen page dashboard --shell                          # a page that covers its children (a sidebar, a top bar)
+npx waygraph gen method login fillPassword                       # one more Method: its file, its entry in do, its selector
+npx waygraph gen flow login/success                              # src/flows/login/success.flow.ts over the page's moves
+npx waygraph gen keys signup email,name                          # src/states/signup.mem-keys.ts
+npx waygraph gen account owner                                   # src/accounts/owner.ts
+```
+
+Every selector it writes is `"TODO"`: fill them in, and `waygraph check` lists the ones left. `--inline` writes Methods in the
+page instead of `_methods/`, `--group "(external)"` picks the map group, `--name RequestDetail` names a page whose path's
+name is awkward (`requests/[id]` is `RequestsId`), `--dry` prints what it would write.
 
 ## The opinions
 

@@ -54,6 +54,13 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
 
 0a. **Values the scenario chooses and no mem key fits are Method params**: `self.method((from, to) => ({ async act(p) { … } }))`, called
    `Board.do.drag(a, b)` in the flow. A value the page's size decides is computed inside `act` from the page, not a param.
+00. **Start from `waygraph gen`, then fill in the TODOs.** `waygraph gen page <path> --read a,b --do x,y` writes the page, its
+   `_sel.ts` (every selector `"TODO"`) and one `_methods/<key>.method.block.ts` per Method; `gen method <page> <key>` adds
+   one (file, entry in the page's `do`, selector); `gen flow <page>/<name>`, `gen keys <ns> a,b`, `gen account <name>` the
+   rest; `--shell` makes a page that covers its children. It never overwrites. `waygraph check` lists every selector still
+   `"TODO"`. Write by hand only what gen can't, and in the same shape: a Method is **one file in `_methods/`**, a function of
+   its page (`(self: PageHandle<"Login">) => self.method({ … })`) listed in the page's `do` (`fillEmail: fillEmail(self)`);
+   inline `self.method` only for a one-liner.
 0. **No method pollution: a Method is something a user can do on the page, not a step of one test.** A page's `do` is its
    menu: `waygraph auto`, Pilot and (later) an MCP server list it to whoever drives the page, so every Method there
    should make sense to someone who has never read your scenario. Never add a Method for the sake of a test: not
