@@ -84,7 +84,7 @@ try {
   await shoot("map", "/");
   await shoot("map-dark", "/", { scheme: "dark" });
   await shoot("map-page", "/", { before: (p) => p.locator(".vue-flow__node-page", { hasText: "InventoryPage" }).click() });
-  await shoot("map-layout", "/", { before: (p) => p.locator(".vue-flow__node-layout").first().click() });
+  await shoot("map-layout", "/", { before: (p) => p.locator(".vue-flow__node-shell button").first().click() });
   await shoot("map-legend", "/", { before: (p) => p.getByRole("button", { name: "Legend" }).click() });
   await shoot("flows", "/flows");
   await shoot("flow", "/flows/checkoutFlow");
