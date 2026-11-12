@@ -37,6 +37,7 @@ and when you touch it, move it to the convention or say it should be.
 | A selector prefix for a page in an iframe (`framed(Sel)`, `internal:control=enter-frame >> …`) | `frame: "#embed"` on the Page Block: its Blocks, checks and `read` see locators inside the frame |
 | A step that dismisses a modal, banner or prompt that appears on any page (a sound prompt, cookies) | `interrupts` on the layout: handled wherever it shows up, logged, never a step in a flow |
 | A `fn` reader that fetches the app's API with the page's token | `ctx.page.api(path, pick)`, with `new Engine({ api: { baseUrl, headers } })` once |
+| A Method made for one scenario (`fill-email-for-lockout`, a click that also checks a banner) | The general Method, the scenario's value in mem, the check in the step's `expect`; the page's `do` lists only actions a user has |
 | A states file, or a `checkpoint()` + `export type` pair per page | `checkpoint: "Home"` on the Page Block; `to: "Dashboard"` names another page |
 | A second copy of a page's selectors for its twin (embed / non-embed) | One `_sel.ts`; the twin is the same page with `frame` set |
 | Selectors in a check file or a test | The page's `_sel.ts` |
@@ -50,6 +51,16 @@ thing that would let a Block or a flow do it (a new `ctx.ui` piece, a Trait, a s
 reported is fixed once in waygraph, a gap worked around is copied into every project.
 
 ## Hard rules (not style preferences)
+
+0. **No method pollution: a Method is something a user can do on the page, not a step of one test.** A page's `do` is its
+   menu: `waygraph auto`, Pilot and (later) an MCP server list it to whoever drives the page, so every Method there
+   should make sense to someone who has never read your scenario. Never add a Method for the sake of a test: not
+   `fill-email-for-lockout-case`, not `click-save-then-check-banner`, not one used by a single flow because that flow
+   needed an odd shortcut. Write the general Method (`fill-email`, taking its value from mem), vary the scenario with
+   mem (`--data`, `.set(key, value)`) and with the step's `expect`, and keep the scenario's own wording in the flow, in
+   `description`s and in `stubBefore`/`stubAfter`. A Method used by exactly one flow and no other is a smell: ask
+   whether the page really offers that action, or whether the flow wants a mem value, a `lands` or an `expect`
+   instead. If it really is a new action the page offers (a button nobody clicked yet), it is a Method.
 
 1. **One distinct action per Block.** Fill and submit are two Blocks. A login form is
    `fill-username` (self-loop) + `fill-password` (self-loop) + `submit-login` (transition),

@@ -1,9 +1,5 @@
 import { definePageBlock, Trait } from "waygraph";
 import { CheckoutInfoPage } from "../../../states/checkout.states.js";
-import { FillFirstNameBlock } from "./methods/fill-first-name.method.block.js";
-import { FillLastNameBlock } from "./methods/fill-last-name.method.block.js";
-import { FillPostalCodeBlock } from "./methods/fill-postal-code.method.block.js";
-import { SubmitCheckoutInfoBlock } from "./methods/submit-checkout-info.method.block.js";
 import { CheckoutInfoSel } from "./methods/checkout-info.sel.js";
 import { CartSel } from "../cart/cart.sel.js";
 
@@ -15,7 +11,38 @@ export const CheckoutInfo = definePageBlock({
   screenshot: true,
   click: CartSel.checkoutBtn,
   verify: [Trait.url({ pathname: "/checkout-step-one.html" })],
-  do: () => ({ fillFirstName: FillFirstNameBlock, fillLastName: FillLastNameBlock, fillPostalCode: FillPostalCodeBlock, submit: SubmitCheckoutInfoBlock }),
+  do: (page) => ({
+  fillFirstName: page.method({
+  name: "fill-first-name",
+  description: "Fills the first name field on the shipping info form.",
+  async act(page) {
+      await page.locator(CheckoutInfoSel.firstName).fill("Ada");
+    },
+  }),
+  fillLastName: page.method({
+  name: "fill-last-name",
+  description: "Fills the last name field on the shipping info form.",
+  async act(page) {
+      await page.locator(CheckoutInfoSel.lastName).fill("Lovelace");
+    },
+  }),
+  fillPostalCode: page.method({
+  name: "fill-postal-code",
+  description: "Fills the postal code field on the shipping info form.",
+  async act(page) {
+      await page.locator(CheckoutInfoSel.postalCode).fill("1000");
+    },
+  }),
+  submit: page.method({
+  to: "CheckoutOverviewPage",
+  name: "submit-checkout-info",
+  description: "Continues from the shipping info form to the order overview.",
+  async act(page) {
+      await page.locator(CheckoutInfoSel.continueBtn).click();
+    },
+  verify: [Trait.url({ pathname: "/checkout-step-two.html" })],
+  }),
+  }),
   read: (ctx) => ({
     firstName: ctx.page.value(CheckoutInfoSel.firstName),
     lastName: ctx.page.value(CheckoutInfoSel.lastName),

@@ -1,4 +1,6 @@
-// `waygraph upgrade --codemod inline-methods`: a page's Methods are written in the page. A Method in its own file that only
+// `waygraph upgrade --codemod inline-methods`: a page's Methods and expectations are written in the page (an Expect Block
+// in its own file becomes `expects: (page) => ({ saved: page.expect({ name, description, verify }) })`, the same way).
+// A page's Methods are written in the page. A Method in its own file that only
 // its page uses (`do: () => ({ fillEmail: FillEmailBlock })`, the Method `from` that page) becomes
 // `do: (page) => ({ fillEmail: page.method({ name, act, verify, ... }) })`; the Method keeps its name, so run logs and
 // the manifest don't change. `from` goes (the page is it), a `to` on the same page goes, and another page's Checkpoint
@@ -9,10 +11,10 @@ import { relative } from "node:path";
 import { Node, Project, SyntaxKind } from "ts-morph";
 import type { ArrowFunction, ObjectLiteralExpression, SourceFile } from "ts-morph";
 import { walkDir } from "../../manifest/scan.js";
-import { addImport, importedFrom, loadAliases, parse, propertyOf, pruneImports, resolveImport } from "./codemod-support.js";
+import { addImport, importGraph, reaches, importedFrom, loadAliases, parse, propertyOf, pruneImports, resolveImport } from "./codemod-support.js";
 
 /** The tag a Checkpoint identifier stands for: `const Login = checkpoint("Login")` -> `Login`; a name used as is when unknown. */
-function tagOf(sfs: ReadonlyMap<string, SourceFile>, from: SourceFile, name: string): string {
+function tagOf(sfs: ReadonlyMap<string, SourceFile>, from: SourceFile, name: string): string | undefined {
   const origin = importedFrom(from, name);
   const sf = origin ? sfs.get(origin.file) : from;
   const init = sf?.getVariableDeclaration(origin?.name ?? name)?.getInitializer();
@@ -20,7 +22,7 @@ function tagOf(sfs: ReadonlyMap<string, SourceFile>, from: SourceFile, name: str
     const arg = init.getArguments()[0];
     if (Node.isStringLiteral(arg)) return arg.getLiteralValue();
   }
-  return name;
+  return undefined;
 }
 
 /** The Checkpoint(s) of a `from`/`to` value as source text: one identifier, or an array of them. */
@@ -40,6 +42,7 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
   const js = [...sfs.values()].some((sf) => sf.getImportDeclarations().some((i) => i.getModuleSpecifierValue().endsWith(".js")));
   const problems: string[] = [];
   const touched = new Set<string>();
+  const graph = importGraph(sfs);
   const removed = new Set<string>();
   const shown = (f: string) => relative(dir, f);
 
@@ -56,7 +59,8 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
       const options = call.getArguments()[0];
       if (!Node.isObjectLiteralExpression(options)) continue;
       const checkpointText = propertyOf(options, "checkpoint")?.getText();
-      const doProp = options.getProperty("do");
+    for (const kind of [{ prop: "do", factory: "defineMethodBlock", builder: "method" }, { prop: "expects", factory: "defineExpectBlock", builder: "expect" }] as const) {
+      const doProp = options.getProperty(kind.prop);
       const arrow = Node.isPropertyAssignment(doProp) ? doProp.getInitializer() : undefined;
       if (!Node.isArrowFunction(arrow) || !checkpointText) continue;
       let record: Node | undefined = arrow.getBody();
@@ -64,6 +68,7 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
       if (!Node.isObjectLiteralExpression(record)) continue;
       // The page's own tag, to know `to` is the page itself.
       const pageTag = /^["']/.test(checkpointText) ? checkpointText.slice(1, -1) : tagOf(sfs, psf, checkpointText);
+      if (!pageTag) continue;
       const entries: string[] = [];
       let converted = 0;
       for (const prop of record.getProperties()) {
@@ -82,7 +87,7 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
         }
         const method = msf.getVariableDeclaration(origin.name);
         const mcall = method?.getInitializer();
-        if (!Node.isCallExpression(mcall) || mcall.getExpression().getText() !== "defineMethodBlock" || !Node.isObjectLiteralExpression(mcall.getArguments()[0])) {
+        if (!Node.isCallExpression(mcall) || mcall.getExpression().getText() !== kind.factory || !Node.isObjectLiteralExpression(mcall.getArguments()[0])) {
           keep();
           continue;
         }
@@ -92,22 +97,30 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
           keep();
           continue;
         }
-        const from = checkpointsOf(mo.getProperty("from") && Node.isPropertyAssignment(mo.getProperty("from")) ? (mo.getProperty("from") as import("ts-morph").PropertyAssignment).getInitializer() : undefined);
-        const to = checkpointsOf(mo.getProperty("to") && Node.isPropertyAssignment(mo.getProperty("to")) ? (mo.getProperty("to") as import("ts-morph").PropertyAssignment).getInitializer() : undefined);
+        const valueOf = (name: string) => {
+          const found = mo.getProperty(name);
+          return Node.isPropertyAssignment(found) ? found.getInitializer() : undefined;
+        };
+        // A Method starts on the page; an expectation judges it.
+        const from = checkpointsOf(kind.prop === "do" ? valueOf("from") : valueOf("checkpoint"));
+        const to = kind.prop === "do" ? checkpointsOf(valueOf("to")) : [];
         if (!from || !to || from.length !== 1 || tagOf(sfs, msf, from[0] as string) !== pageTag) {
           problems.push(`${where}: ${origin.name} doesn't start on this page: left in its file`);
           keep();
           continue;
         }
-        if (usersOf(origin.file, origin.name, pageFile).length || msf.getExportedDeclarations().size > 1) {
-          problems.push(`${where}: ${origin.name} is used elsewhere, or its file has more than the Method: left in its file`);
+        const users = usersOf(origin.file, origin.name, pageFile);
+        // A flow or another Block that names it names it through the page now, unless the page imports that file.
+        const blocked = users.find((u) => reaches(graph, pageFile, u));
+        if (blocked || msf.getExportedDeclarations().size > 1) {
+          problems.push(`${where}: ${origin.name} is used by ${blocked ? shown(blocked) + ", which the page imports" : "something else"}, or its file has more than the Block: left in its file`);
           keep();
           continue;
         }
         // What the Method uses, besides the page's own imports: moved into the page's file with it.
         const names = new Set(mo.getDescendantsOfKind(SyntaxKind.Identifier).map((id) => id.getText()));
         const isHelper = (st: Node) =>
-          (Node.isVariableStatement(st) && !st.isExported() && st.getDeclarations().some((d) => names.has(d.getName()))) || (Node.isFunctionDeclaration(st) && !st.isExported() && names.has(st.getName() ?? ""));
+          (Node.isVariableStatement(st) && !st.isExported() && st.getDeclarations().some((d) => names.has(d.getName()))) || (Node.isFunctionDeclaration(st) && !st.isExported() && names.has(st.getName() ?? "")) || ((Node.isTypeAliasDeclaration(st) || Node.isInterfaceDeclaration(st)) && !st.isExported() && names.has(st.getName()));
         let helpers = msf.getStatements().filter(isHelper);
         for (let size = -1; size !== helpers.length; ) {
           size = helpers.length;
@@ -116,7 +129,7 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
         }
         for (const h of helpers) {
           const own = Node.isVariableStatement(h) ? h.getDeclarations().map((d) => d.getName()) : [(h as import("ts-morph").FunctionDeclaration).getName() ?? ""];
-          if (!own.some((n) => psf.getVariableDeclaration(n) || psf.getFunction(n))) psf.insertStatements(decl.getVariableStatementOrThrow().getChildIndex(), `${h.getText()}\n`);
+          if (!own.some((n) => psf.getVariableDeclaration(n) || psf.getFunction(n) || psf.getTypeAlias(n) || psf.getInterface(n))) psf.insertStatements(decl.getVariableStatementOrThrow().getChildIndex(), `${h.getText()}\n`);
         }
         for (const imp of msf.getImportDeclarations()) {
           const target = resolveImport(origin.file, imp.getModuleSpecifierValue());
@@ -131,11 +144,31 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
         // The Method as `page.method({ ... })`: its own members, without from; `to` as names unless it's the page.
         const members = mo
           .getProperties()
-          .filter((m) => !(Node.isPropertyAssignment(m) && ["from", "to"].includes(m.getName())))
+          .filter((m) => !(Node.isPropertyAssignment(m) && ["from", "to", "checkpoint"].includes(m.getName())))
           .map((m) => m.getText());
         const lands = to.map((t) => tagOf(sfs, msf, t));
-        if (!(lands.length === 1 && lands[0] === pageTag)) members.unshift(`to: ${lands.length === 1 ? JSON.stringify(lands[0]) : `[${lands.map((l) => JSON.stringify(l)).join(", ")}]`}`);
-        entries.push(`${prop.getName()}: page.method({\n${members.join(",\n")},\n})`);
+        if (lands.some((l) => l === undefined)) {
+          problems.push(`${where}: ${origin.name} lands on something that isn't one Checkpoint by name (a union list?): left in its file`);
+          keep();
+          continue;
+        }
+        if (kind.prop === "do" && !(lands.length === 1 && lands[0] === pageTag)) members.unshift(`to: ${lands.length === 1 ? JSON.stringify(lands[0]) : `[${lands.map((l) => JSON.stringify(l)).join(", ")}]`}`);
+        for (const user of users) {
+          const usf = sfs.get(user) as SourceFile;
+          for (let again = true; again; ) {
+            again = false;
+            for (const id of usf.getDescendantsOfKind(SyntaxKind.Identifier)) {
+              if (id.getFirstAncestorByKind(SyntaxKind.ImportDeclaration) || id.getText() !== ident && importedFrom(usf, id.getText())?.name !== origin.name) continue;
+              if (importedFrom(usf, id.getText())?.file !== origin.file) continue;
+              id.replaceWithText(`${decl.getName()}.${kind.prop}.${prop.getName()}`);
+              again = true;
+              break;
+            }
+          }
+          addImport(usf, decl.getName(), pageFile, js);
+          touched.add(user);
+        }
+        entries.push(`${prop.getName()}: page.${kind.builder}({\n${members.join(",\n")},\n})`);
         converted += 1;
         removed.add(origin.file);
         touched.add(origin.file);
@@ -149,6 +182,7 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
       record.replaceWithText(`{\n${entries.join(",\n")},\n}`);
       // The record sits in parentheses in `() => ({ ... })`; replacing the object keeps them.
       touched.add(pageFile);
+    }
     }
   }
 

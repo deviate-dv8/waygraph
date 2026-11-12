@@ -94,6 +94,10 @@ export const ClearCartBlock = defineMethodBlock({
 **One action per Block.** A login form is `fill-username`, `fill-password` and `submit-login`: three Blocks, never
 one. `waygraph check` warns on a Method that fills more than once or fills and clicks.
 
+**No method pollution.** A page's `do` is its menu of actions a user can take: `waygraph auto`, Pilot and any agent driving the page
+list it. A Method written for one scenario (`fill-email-for-lockout`) shows up there for everyone, so write the general
+Method and vary the scenario with mem and the step's `expect`. A Method only one flow uses is a smell.
+
 When a Block can land in more than one place, `to` is a list and `lands` says which one it reached:
 
 ```ts
