@@ -1,12 +1,13 @@
 // A Page Block: "you have arrived" - the hub other pages navigate to, verified by what the page shows.
 import { defineNavigating } from "./nav.js";
-import { defineMethodBlock } from "./method.js";
+import { defineMethodBlock, type MethodBlock } from "./method.js";
+import type { Page } from "@playwright/test";
 import type { Account } from "../../flow/account.js";
 import { markFor } from "../access.js";
 import { mark } from "../mark.js";
 import type { Block, DefinedBlock, StepScreenshot } from "../block.js";
 import { screenshotPage } from "../../run/screenshot.js";
-import type { Checkpoint } from "../../checkpoint/checkpoint.js";
+import { checkpoint as makeCheckpoint, type Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { Trait } from "../../trait/trait.js";
 import { MemPage } from "../../mem/mem.js";
 import type { MemKey } from "../../mem/mem.js";
@@ -36,11 +37,46 @@ export type PageExpectEntry = PageMethodEntry | Trait;
  * What `do` and `expects` are given: the page itself, as far as it's defined: its read keys, to build checks from
  * (`page.read.modalOpen.is(true)`), and its nav.
  */
+/** Where an inline Method lands, if not on its page: a page's name (`"Dashboard"`) or a Checkpoint; a list when it can land on several. */
+export type LandsOn = string | Checkpoint<string>;
+type CpOfLands<T> = T extends string ? Checkpoint<T> : T extends Checkpoint<string> ? T : never;
+
+/** A Method written inside its page's `do`: the page is its `from` and, unless `to` says otherwise, its `to`. */
+export interface InlineMethod<Out extends Checkpoint<string>, To extends LandsOn> {
+  description?: string;
+  /** Where it lands, when it isn't the page it's on: a page's name, so no import of it is needed. Several: `lands` says which. */
+  to?: To | readonly To[];
+  /** Mem keys it needs set before it runs. */
+  requires?: readonly MemKey<unknown>[];
+  /** Who has it (its button shows for them). */
+  for?: readonly Account[];
+  precondition?: Trait[] | ((input: Out) => Trait[]);
+  act(page: Page, input: Out, mem: MemPage): Promise<void>;
+  verify?: Trait[] | ((out: CpOfLands<To> extends never ? Out : CpOfLands<To>) => Trait[]);
+  lands?(page: Page, mem: MemPage): CpOfLands<To> | Promise<CpOfLands<To>>;
+  expect?: ExpectList<Out>;
+  instanceOptions?: Block<Out, Out>["instanceOptions"];
+}
+
 export interface PageSelf<Out extends Checkpoint<string>, R, Nav> {
+  /**
+   * A Method of this page, written right here: `do: (page) => ({ fill: page.method({ async act(p) { ... } }) })`. Its name
+   * is the key (`login-fill`), it starts and, unless `to` names another page, ends on this page.
+   */
+  method<To extends LandsOn = Out>(spec: InlineMethod<Out, To>): MethodBlock<Out, [To] extends [Out] ? Out : CpOfLands<To>>;
   readonly checkpoint: Out;
   readonly read: PageReadKeys<R>;
   readonly nav: Nav;
 }
+
+/** A page's Checkpoint: the value given, or one made from a name (`checkpoint: "Login"`). */
+export type CheckpointOf<C> = C extends string ? Checkpoint<C> : C extends Checkpoint<string> ? C : never;
+
+/**
+ * What a Method kept in its own file takes: the page's name, so the file imports only this type (not the page, which
+ * imports the Method). `export const signIn = (page: PageHandle<"Login">) => page.method({ async act(p) { ... } })`.
+ */
+export type PageHandle<Name extends string> = Pick<PageSelf<Checkpoint<Name>, Record<never, never>, undefined>, "method" | "checkpoint">;
 
 export type PageBlockOptions<
   Out extends Checkpoint<string>,
@@ -51,11 +87,15 @@ export type PageBlockOptions<
   U extends string = string,
   Q extends string = never,
   F extends "folder" | undefined = undefined,
+  C extends Checkpoint<string> | string = Out,
 > = {
   name: string;
   description?: string;
-  /** The Checkpoint this page hub confirms: its value (`Home`). */
-  checkpoint: Out;
+  /**
+   * The Checkpoint this page confirms. A name makes it (`checkpoint: "Home"`): the page is its own Checkpoint, with nothing to
+   * declare beforehand; `Home.checkpoint` is the value, for what must name it (`lands`, a flow's `from`).
+   */
+  checkpoint: C;
   verify?: Trait[] | ((out: Out) => Trait[]);
   /**
    * What this Block promises wherever it's used, checked after its verify: Expect Blocks, Traits, `Key.is(...)`. A
@@ -169,6 +209,8 @@ export type PageBlock<
   readonly do: PageMethods<M>;
   /** The Nav Block that opens this page (`nav` in `definePageBlock`). */
   readonly nav: Nav;
+  /** The page's Checkpoint, as a value: for `lands`, a Method's `from`/`to`, a flow's start. */
+  readonly checkpoint: Out;
   /** The page's expectations by name (Expect Blocks and Traits): what a step here can expect. */
   readonly expects: PageMethods<E>;
   /** What the page shows, as typed keys: `Inventory.read.sort.is("az")`. */
@@ -239,15 +281,17 @@ const resolveEntry = (entry: unknown) => (typeof entry === "function" ? (entry a
 
 /** @see {@link PageBlockOptions} */
 export function definePageBlock<
-  Out extends Checkpoint<string>,
+  const C extends Checkpoint<string> | string,
   M extends Record<string, PageMethodEntry> = Record<never, never>,
-  Nav extends NavBlock<Out> | undefined = undefined,
+  Nav extends NavBlock<CheckpointOf<C>> | undefined = undefined,
   E extends Record<string, PageExpectEntry> = Record<never, never>,
   R extends PageRead = Record<never, never>,
   const U extends string = string,
   const Q extends string = never,
   F extends "folder" | undefined = undefined,
->(options: PageBlockOptions<Out, M, E, R, Nav, U, Q, F> & { nav?: Nav }): PageBlock<Out, M, Nav, E, R, U, Q, F> {
+>(options: PageBlockOptions<CheckpointOf<C>, M, E, R, Nav, U, Q, F, C> & { nav?: Nav }): PageBlock<CheckpointOf<C>, M, Nav, E, R, U, Q, F> {
+  type Out = CheckpointOf<C>;
+  const cp = (typeof options.checkpoint === "string" ? makeCheckpoint(options.checkpoint) : options.checkpoint) as Out;
   if (options.url !== undefined && options.click !== undefined) {
     throw new Error(
       `definePageBlock("${options.name}"): pass url XOR click (or neither for arrival-only hub)`,
@@ -258,28 +302,43 @@ export function definePageBlock<
     throw new Error(`definePageBlock("${options.name}"): route: "folder" gives the address; drop url/click`);
   }
   const folderUrl = route === "folder" ? addressFromFolder(options.name) : undefined;
-  const rest = folderUrl ? { ...restOptions, url: folderUrl } : restOptions;
+  const rest = { ...restOptions, checkpoint: cp, ...(folderUrl ? { url: folderUrl } : {}) };
   const pageUrl = folderUrl ?? options.url;
   const built = defineNavigating(rest) as unknown as PageBlock<Out, M, Nav, E, R, U, Q, F>;
   markFor(built, given);
   // A page's screenshot is taken whenever a step lands on it, not only when this hub runs as a step.
-  if (options.screenshot) screenshotPage(options.checkpoint.__state, options.screenshot === true ? {} : options.screenshot);
+  if (options.screenshot) screenshotPage(cp.__state, options.screenshot === true ? {} : options.screenshot);
 
   // What the page shows: a Read Block of its own, read where the page's step lands, and the keys to check it by.
-  const namespace = readAs ?? namespaceOf(options.checkpoint.__state);
+  const namespace = readAs ?? namespaceOf(cp.__state);
   let readBlock: ReadBlock | undefined;
   if (readOf) {
     readBlock = defineReadBlock({
       name: `read-${options.name.replace(/^page-/, "")}`,
       description: options.description ?? "",
-      from: options.checkpoint,
+      from: cp,
       instruction: { read: (ctx) => ({ namespace, fields: readOf(ctx) }) },
     });
   }
 
   // `do` and `expects` as functions of the page are called the first time they're used: by then every file is loaded, so a
   // page and its Methods can import each other. The page they're given has what's defined so far (its read and nav).
-  const self = { checkpoint: options.checkpoint, read: readKeys(namespace), nav } as PageSelf<Out, R, Nav>;
+  const slug = options.name.replace(/^page-/, "");
+  const inline = (spec: unknown) => ({ __inlineMethod: spec });
+  const self = { checkpoint: cp, read: readKeys(namespace), nav, method: inline } as unknown as PageSelf<Out, R, Nav>;
+  /** An inline Method becomes a real one, named for its key. */
+  const toBlock = (key: string, entry: unknown): unknown => {
+    if (typeof entry !== "object" || entry === null || !("__inlineMethod" in entry)) return resolveEntry(entry);
+    const spec = (entry as { __inlineMethod: InlineMethod<Out, LandsOn> }).__inlineMethod;
+    const targets = (spec.to === undefined ? [cp] : Array.isArray(spec.to) ? spec.to : [spec.to]).map((t) => (typeof t === "string" ? makeCheckpoint(t) : t)) as Checkpoint<string>[];
+    const { to: _to, ...flat } = spec;
+    return defineMethodBlock({
+      name: `${slug}-${key.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()}`,
+      from: cp,
+      to: targets.length === 1 ? (targets[0] as Checkpoint<string>) : targets,
+      ...flat,
+    } as never);
+  };
   const once = <T,>(make: () => T): (() => T) => {
     let value: T | undefined;
     let made = false;
@@ -291,7 +350,7 @@ export function definePageBlock<
       return value as T;
     };
   };
-  const doRecord = once(() => Object.freeze(Object.fromEntries(Object.entries(doOf ? doOf(self) : (methods && !Array.isArray(methods) ? methods : {})).map(([k, entry]) => [k, resolveEntry(entry)]))));
+  const doRecord = once(() => Object.freeze(Object.fromEntries(Object.entries(doOf ? doOf(self) : (methods && !Array.isArray(methods) ? methods : {})).map(([k, entry]) => [k, toBlock(k, entry)]))));
   const expectRecord = once(() =>
     Object.freeze(Object.fromEntries(Object.entries(typeof expects === "function" ? expects(self) : (expects ?? {})).map(([k, entry]) => [k, resolveEntry(entry)]))),
   );
@@ -301,7 +360,7 @@ export function definePageBlock<
     return Object.freeze([...named, ...listed]) as readonly SomeDefinedBlock[];
   });
 
-  markRoute(built, opensFrom?.map((c) => c.__state) ?? ["*"], [options.checkpoint.__state]);
+  markRoute(built, opensFrom?.map((c) => c.__state) ?? ["*"], [cp.__state]);
   mark(built, "__waygraphKind", "page");
   mark(built, "__waygraphSalt", "page");
   if (readBlock) mark(built, "__waygraphReadBlock", readBlock);
@@ -316,6 +375,7 @@ export function definePageBlock<
   Object.defineProperty(built, "methods", { get: methodList, enumerable: false, configurable: true });
   Object.defineProperty(built, "do", { get: doRecord, enumerable: false, configurable: true });
   Object.defineProperty(built, "expects", { get: expectRecord, enumerable: false, configurable: true });
+  Object.defineProperty(built, "checkpoint", { value: cp, enumerable: false, configurable: true });
   Object.defineProperty(built, "read", { value: self.read, enumerable: false, configurable: true });
   Object.defineProperty(built, "nav", { value: nav, enumerable: false, configurable: true });
   // Same marker `defineNavBlock` sets, same reason - a page hub with a
@@ -355,7 +415,7 @@ export function definePageBlock<
           : [];
         const own = Array.isArray(rest.verify) ? rest.verify : undefined;
         const at = defineNavigating({ ...rest, ...(own ? { verify: [...own, ...arrives] } : {}), name: `${options.name}(${Object.values(params).join(", ")})`, url });
-        markRoute(at, opensFrom?.map((c) => c.__state) ?? ["*"], [options.checkpoint.__state]);
+        markRoute(at, opensFrom?.map((c) => c.__state) ?? ["*"], [cp.__state]);
         mark(at, "__waygraphKind", "page");
         mark(at, "__waygraphSalt", "page");
         mark(at, "__waygraphNavUrl", url);
@@ -374,8 +434,8 @@ export function definePageBlock<
         const label = given.map(([k, v]) => `${k}=${v}`).join("&");
         return defineMethodBlock({
           name: `${options.name}-set-query(${label})`,
-          from: options.checkpoint,
-          to: options.checkpoint,
+          from: cp,
+          to: cp,
           async act(page) {
             const url = new URL(page.url());
             for (const [k, v] of given) url.searchParams.set(k, String(v));

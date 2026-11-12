@@ -261,7 +261,7 @@ export function stripMethods<In extends Checkpoint<string>, Out extends Checkpoi
 
 
 /** What a page carries beyond a Block, as accessors (not enumerable): a decorated copy takes them by descriptor. */
-const PAGE_FIELDS = ["methods", "do", "expects", "read", "nav", "__waygraphMethods"] as const;
+const PAGE_FIELDS = ["methods", "do", "expects", "read", "nav", "checkpoint", "__waygraphMethods"] as const;
 
 /** Copy non-enumerable waygraph markers so decorate/withVerify keep map() kind checks. */
 export function copyWaygraphRuntime(from: object, to: object): void {

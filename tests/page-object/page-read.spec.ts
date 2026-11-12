@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { checkpoint, definePageBlock, defineMethodBlock, MemPage } from "../../src/index.js";
+import { checkpoint, definePageBlock, defineMethodBlock, Engine, MemPage } from "../../src/index.js";
 import { runVerify } from "../../src/engine/trait/verify.js";
 import { readBlocksFor } from "../../src/engine/read/read-block.js";
 
@@ -41,4 +41,20 @@ test("Page.go opens a page with params at one address", () => {
   const go = Req.go({ id: 42 });
   expect(go.name).toBe("page-po-req(42)");
   expect((go as unknown as { __waygraphNavUrl: string }).__waygraphNavUrl).toBe("/requests/42");
+});
+
+test("a page that is its own Checkpoint writes its Methods inline: named by key, from/to default to the page", async ({ context, page }) => {
+  const Own = definePageBlock({
+    name: "page-po-own",
+    checkpoint: "PoOwn",
+    do: (p) => ({
+      fillName: p.method({ async act(pg) { await pg.setContent(`<input id="n"><p id="r"></p>`); await pg.locator("#n").fill("x"); } }),
+      goAway: p.method({ to: "PoElsewhere", async act() {} }),
+    }),
+  });
+  expect(Own.checkpoint).toEqual({ __state: "PoOwn" });
+  expect(Own.do.fillName.name).toBe("po-own-fill-name");
+  expect(Own.methods.map((m) => m.name)).toEqual(["po-own-fill-name", "po-own-go-away"]);
+  expect(await new Engine().map().gotoPage(Own).method(Own.do.fillName).run(context, new MemPage(), { page })).toEqual({ __state: "PoOwn" });
+  expect(await new Engine().map().gotoPage(Own).method(Own.do.goAway).run(context, new MemPage(), { page })).toEqual({ __state: "PoElsewhere" });
 });

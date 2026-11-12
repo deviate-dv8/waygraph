@@ -1,7 +1,7 @@
 // The page object: `read` first, then `do` and `expects` as functions of the page, which sees the read's keys typed.
 import { definePageBlock } from "../src/engine/block/kinds/page.js";
 import { defineMethodBlock } from "../src/engine/block/kinds/method.js";
-import { checkpoint } from "../src/engine/checkpoint/checkpoint.js";
+import { checkpoint, type Checkpoint } from "../src/engine/checkpoint/checkpoint.js";
 
 const Cart = checkpoint("Cart");
 const Clear = defineMethodBlock({ name: "clear", from: Cart, to: Cart, instruction: { async act() {} } });
@@ -42,3 +42,23 @@ TabsPage.setQuery({ tab: "signers" });
 TabsPage.setQuery({ nope: 1 });
 // @ts-expect-error - a page without query has no setQuery
 RequestPage.setQuery;
+
+// A page that is its own Checkpoint, with Methods written inline: no states file, no from/to.
+export const Account = definePageBlock({
+  name: "page-account",
+  checkpoint: "PoAccount",
+  url: "/account",
+  do: (page) => ({
+    save: page.method({ async act() {} }),
+    signOut: page.method({ to: "PoLoggedOut", async act() {} }),
+    submit: page.method({ to: ["PoAccount", "PoErrored"], async act() {}, async lands() { return Math.random() > 0.5 ? ({ __state: "PoAccount" } as const) : ({ __state: "PoErrored" } as const); } }),
+  }),
+});
+const _typed: Checkpoint<"PoAccount"> = Account.checkpoint;
+void _typed;
+Account.do.save;
+
+// A Method in its own file takes the page's name only.
+const signIn = (page: import("../src/engine/block/kinds/page.js").PageHandle<"PoSignIn">) => page.method({ to: "PoHome", async act() {} });
+export const SignInPage = definePageBlock({ name: "page-po-sign-in", checkpoint: "PoSignIn", do: (page) => ({ signIn: signIn(page) }) });
+SignInPage.do.signIn;
