@@ -27,6 +27,9 @@ for the stack are in `.claude/skills/` (adonisjs, nuxt-ui, vue-*, vite, vitest; 
   each path segment no page has (`/platform`, `/platform/plant`), each page under the page, folder or site its address
   hangs from. `inertia/lib/project_graph.ts`: the moves between pages (`mapEdges`) and a page's panel (`pageSummary`);
   `inertia/lib/layout.ts` lays the tree out.
+- The manifest's `pages` (one record per Page Block: its moves, expectations and links by key, what it covers) is what the map,
+  its panel and the Pages tab read; `app/services/results.ts` says how each Block last went. A shell is drawn as halos
+  (`shell_halo.vue`) and a tag (`shell_region.vue`) in `pages/map.vue`, not as a node with lines.
 - `inertia/components/graph/`: Vue Flow nodes and edges. `inertia/components/sketch/sketch_box.vue` and
   `inertia/lib/sketch.ts`: the hand-drawn shapes.
 

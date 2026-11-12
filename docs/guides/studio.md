@@ -83,7 +83,9 @@ Click a page for everything about it, most telling first:
 
 1. Its screenshot, addresses, how its flows' newest runs went (failing, passing, not run), its layouts and who can open
    it (its Page Block's `for`).
-2. **Shows (read)**: its `read` fields, the yes/no states first, and the query params it keeps in its address (`?tab`).
+2. Each move and expectation has a dot: how it last went in the runs the app has read (green passed, red failed, grey not
+   run). A move with params says so: a flow gives it values, so the auto and Pilot menus don't list it.
+3. **Shows (read)**: its `read` fields, the yes/no states first, and the query params it keeps in its address (`?tab`).
    **Arrives when**: the checks that prove the browser is on this page.
 3. **Opens from**, **Do**, **Leads to**: its Blocks (a Method written in the page shows by its key). Open one for its checks, the selectors it reads and its code; the
    arrows in the panel's corner widen it to read code.

@@ -5,6 +5,8 @@ export const KIND_COLOR: Record<string, 'primary' | 'neutral' | 'success' | 'war
   method: 'neutral',
   api: 'success',
   expect: 'primary',
+  move: 'neutral',
+  link: 'info',
 }
 
 /** The kinds that make moves on the map, in the order its key lists them. */

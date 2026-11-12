@@ -7,6 +7,9 @@
 
 ## Next
 
+- A shell's own moves (`do`) valid on the pages it covers; Studio shows its links and interrupts only.
+- Pages tab: sort by failing, filter by shell.
+
 - Start `waygraph test` (every flow, or one) from the UI, and show its runs as one group.
 - While a run plays, show the flow's remaining steps faded on its canvas, not only the steps played so far.
 - A step's expectations as results: the run log records only the one that failed (`step:error` with `when: "expect"`);

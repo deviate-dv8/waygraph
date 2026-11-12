@@ -38,6 +38,7 @@ export default class BlocksController {
     return inertia.render('blocks/index', {
       project: manifest.project,
       blocks: manifest.blocks,
+      pages: manifest.pages ?? [],
       readBlocks: manifest.readBlocks,
       usedBy,
       stats: blockStats(runs),

@@ -23,7 +23,10 @@ const pipeline = computed(() =>
   props.steps.map((s, i) => ({
     pane: props.flow.stepPanes?.[i] ?? null,
     name: s.name,
-    kind: s.block?.kind ?? 'step',
+    // A Block written in a page is its page's move, expectation or link.
+    kind: s.block?.group
+      ? { do: 'move', expects: 'expect', links: 'link' }[s.block.group]
+      : (s.block?.kind ?? 'step'),
     description: s.block?.description ?? '',
     ...(s.block?.url ? { url: s.block.url } : {}),
     expects: s.expects,

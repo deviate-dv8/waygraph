@@ -8,7 +8,14 @@ import BlockDetail from '~/components/block_detail.vue'
 import RunStatus from '~/components/run_status.vue'
 import { urlFor } from '~/client'
 import { PREFETCH } from '~/lib/prefetch'
-import type { Json, ManifestBlock, PageFlow, SelectorEntry } from '#types/project'
+import type {
+  Json,
+  LastResult,
+  ManifestBlock,
+  ManifestPage,
+  PageFlow,
+  SelectorEntry,
+} from '#types/project'
 
 /**
  * The selected page, what matters first: what it is (its addresses, how it last looked), what it shows (the states it
@@ -23,6 +30,10 @@ const props = defineProps<{
   flows: PageFlow[]
   /** The shells it's under. */
   layouts?: string[]
+  /** The Page Block itself, with its moves and expectations by key (waygraph 0.18.0+). */
+  object?: ManifestPage | undefined
+  /** How each Block last went, by name. */
+  results?: Record<string, LastResult>
   /** The accounts that can open it (its Page Block's `for`); missing: everyone. */
   given?: string[] | undefined
 }>()
@@ -57,6 +68,15 @@ const selectors = computed(() => {
     for (const s of b.selectors ?? []) seen.set(s.name, s)
   return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name))
 })
+
+/** Moves that take params (a function of values): listed, but not runnable without them. */
+const paramMoves = computed(() => (props.object?.do ?? []).filter((d) => d.params))
+const result = (block: string): LastResult | undefined => props.results?.[block]
+/** How a Block last went, in words. */
+const said = (r: LastResult | undefined) =>
+  !r
+    ? 'not run yet'
+    : `${r.ok ? 'passed' : 'failed'} in its last run${r.ms !== null ? ` (${r.ms} ms)` : ''}`
 
 /** The page's own state in its address (`?tab=`), from its Page Block. */
 const queryNames = computed(() => [...new Set(props.page.hubs.flatMap((h) => h.query ?? []))])
@@ -229,6 +249,23 @@ const where = (b: ManifestBlock, list: BlockList) =>
             title="Who can open it (its Page Block's for)"
           />
           <UBadge
+            v-if="props.object?.opensBy"
+            :label="`opens by ${props.object.opensBy}`"
+            icon="i-lucide-log-in"
+            color="neutral"
+            variant="outline"
+            size="sm"
+          />
+          <UBadge
+            v-if="props.object?.frame"
+            :label="`in ${props.object.frame}`"
+            icon="i-lucide-frame"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            title="Lives in an iframe: its selectors are inside it"
+          />
+          <UBadge
             v-for="h in props.page.hubs"
             :key="h.id"
             :label="h.exportName"
@@ -316,6 +353,18 @@ const where = (b: ManifestBlock, list: BlockList) =>
           </ul>
 
           <ul v-else-if="isBlockList(item.value)" class="space-y-1">
+            <li
+              v-for="m in item.value === 'actions' ? paramMoves : []"
+              :key="`param-${m.key}`"
+              class="flex items-center gap-1.5 px-1.5 py-1 text-sm"
+              title="A move with params: a flow calls it with values, so it isn't in the auto and Pilot menus"
+            >
+              <UBadge label="params" color="neutral" variant="outline" size="sm" />
+              <span class="font-medium">{{ m.key }}</span>
+              <span class="truncate font-mono text-xs text-(--ink-soft)"
+                >({{ m.params?.join(', ') }})</span
+              >
+            </li>
             <li v-for="b in blocksIn(item.value)" :key="b.id">
               <button
                 type="button"
@@ -325,6 +374,17 @@ const where = (b: ManifestBlock, list: BlockList) =>
                   openBlock = openBlock === `${item.value}:${b.id}` ? null : `${item.value}:${b.id}`
                 "
               >
+                <span
+                  class="size-2 shrink-0 rounded-full"
+                  :class="
+                    result(b.name)
+                      ? result(b.name)?.ok
+                        ? 'bg-(--pass)'
+                        : 'bg-(--fail)'
+                      : 'bg-(--island-line)'
+                  "
+                  :title="said(result(b.name))"
+                />
                 <UBadge :label="b.kind" :color="kindColor(b.kind)" variant="subtle" size="sm" />
                 <span class="min-w-0 truncate font-medium" :title="b.name">{{ b.name }}</span>
                 <span class="ms-auto shrink-0 truncate text-xs text-(--ink-soft)">{{
@@ -354,8 +414,21 @@ const where = (b: ManifestBlock, list: BlockList) =>
               :key="b.id"
               class="flex items-center gap-1.5 text-sm"
             >
-              <UBadge :label="b.kind" :color="kindColor(b.kind)" variant="subtle" size="sm" />
+              <span
+                class="size-2 shrink-0 rounded-full"
+                :class="
+                  result(b.name)
+                    ? result(b.name)?.ok
+                      ? 'bg-(--pass)'
+                      : 'bg-(--fail)'
+                    : 'bg-(--island-line)'
+                "
+                :title="said(result(b.name))"
+              />
               <span class="font-medium">{{ b.name }}</span>
+              <span v-if="b.description" class="truncate text-xs text-(--ink-soft)">{{
+                b.description
+              }}</span>
             </div>
             <div v-if="props.page.promised.length">
               <p class="mb-1 text-xs font-medium text-(--ink-soft)">Promised on arrival</p>

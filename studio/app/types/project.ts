@@ -24,6 +24,10 @@ export type ManifestBlock = {
   opens?: true
   /** The query params a Page Block keeps in its address: state of the page; missing before waygraph 0.18. */
   query?: string[]
+  /** A Block written in a page: its group in it, the page's id and its key; missing before waygraph 0.18.0. */
+  group?: 'do' | 'expects' | 'links'
+  owner?: string
+  key?: string
   /** The lines of `file` that define it; missing before waygraph 0.16.19 (so are `checks` and `selectors`). */
   source?: SourceSpan
   /** What it checks before acting and on arrival; `"dynamic"`: a function builds the checks. */
@@ -33,6 +37,47 @@ export type ManifestBlock = {
   /** The accounts it's given (`for`): who opens a page, has a Method, sees a layout's link; missing: everyone. */
   for?: string[]
 }
+
+/** One named thing a page holds: a move, an expectation or a link (waygraph 0.18.0+). */
+export type ManifestPageEntry = {
+  key: string
+  /** The Block it is; missing for a move with params (a function of them). */
+  block?: string
+  params?: string[]
+  description?: string
+  to?: string
+  selector?: string
+  for?: string[]
+}
+
+/** A Page Block, with what it holds (waygraph 0.18.0+): how it opens, what it shows, its moves and expectations by key. */
+export type ManifestPage = {
+  id: string
+  name: string
+  exportName: string
+  file: string
+  source?: SourceSpan
+  /** Missing for a bare shell. */
+  checkpoint?: string
+  description: string
+  opensBy?: 'url' | 'click' | 'folder'
+  from: string[]
+  query: string[]
+  frame?: string
+  for?: string[]
+  read?: string
+  do: ManifestPageEntry[]
+  expects: ManifestPageEntry[]
+  covers?: 'children' | string[]
+  coveredPages: string[]
+  coveredBy: string[]
+  links: ManifestPageEntry[]
+  interrupts: string[]
+  bare?: true
+}
+
+/** How a Block last went in the runs the UI knows: for the dot beside a move or an expectation. */
+export type LastResult = { ok: boolean | null; runId: string; ms: number | null }
 
 /** A layout: the UI many pages share (a menu, a sidebar), the pages it covers, its links and actions. */
 export type ManifestLayout = {
@@ -105,6 +150,8 @@ export type Manifest = {
   /** The addresses each page is known by (its Navs' urls, the urls its Blocks verify); missing before waygraph 0.16.16. */
   pageUrls?: Record<string, string[]>
   blocks: ManifestBlock[]
+  /** Every Page Block (waygraph 0.18.0+); an older manifest has none. */
+  pages?: ManifestPage[]
   readBlocks: ManifestReadBlock[]
   flows: ManifestFlow[]
   /** The site map, worked out by waygraph; missing before waygraph 0.16.21. */

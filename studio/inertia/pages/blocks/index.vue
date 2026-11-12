@@ -9,6 +9,7 @@ import type {
   BlockStats,
   Json,
   ManifestBlock,
+  ManifestPage,
   ManifestReadBlock,
   SelectorEntry,
 } from '#types/project'
@@ -17,6 +18,8 @@ import type {
 const props = defineProps<{
   project: { name: string; dir: string; waygraph: string }
   blocks: ManifestBlock[]
+  /** Every Page Block (waygraph 0.18.0+). */
+  pages: ManifestPage[]
   readBlocks: ManifestReadBlock[]
   usedBy: Record<string, string[]>
   stats: Record<string, BlockStats>
@@ -27,14 +30,33 @@ const props = defineProps<{
 }>()
 
 const tabs = [
+  { label: 'Pages', value: 'pages', icon: 'i-lucide-file-text' },
   { label: 'Blocks', value: 'blocks', icon: 'i-lucide-boxes' },
-  { label: 'Read Blocks', value: 'reads', icon: 'i-lucide-eye' },
+  { label: 'Reads', value: 'reads', icon: 'i-lucide-eye' },
   { label: 'Selectors', value: 'selectors', icon: 'i-lucide-crosshair' },
   { label: 'Mem keys', value: 'mem', icon: 'i-lucide-key-round' },
 ]
-const tab = ref('blocks')
+const tab = ref(props.pages.length ? 'pages' : 'blocks')
 const query = ref('')
 const q = computed(() => query.value.trim().toLowerCase())
+/** The pages (and shells), by the query, each with how its moves and expectations went in the runs read. */
+const pageRows = computed(() =>
+  props.pages
+    .filter(
+      (p) =>
+        !q.value ||
+        `${p.name} ${p.checkpoint ?? ''} ${p.file} ${p.do.map((d) => d.key)}`
+          .toLowerCase()
+          .includes(q.value)
+    )
+    .map((p) => {
+      const names = [...p.do, ...p.expects].flatMap((e) => (e.block ? [e.block] : []))
+      const failed = names.filter((n) => (props.stats[n]?.failed ?? 0) > 0).length
+      const ran = names.filter((n) => (props.stats[n]?.runs ?? 0) > 0).length
+      return { page: p, failed, ran, total: names.length }
+    })
+    .sort((a, b) => a.page.file.localeCompare(b.page.file))
+)
 const kinds = computed(() => [...new Set(props.blocks.map((b) => b.kind))].sort())
 const kind = ref<string | null>(null)
 const open = ref<string | null>(null)
@@ -95,9 +117,9 @@ const short = (value: Json) => {
   <WorkspaceLayout :project="props.project" scroll>
     <div class="mb-4 flex items-end justify-between gap-4">
       <div>
-        <h1 class="font-hand text-4xl">Blocks</h1>
+        <h1 class="font-hand text-4xl">{{ props.pages.length ? 'Pages' : 'Blocks' }}</h1>
         <p class="text-(--ink-soft)">
-          {{ count(props.blocks.length, 'Block') }},
+          {{ count(props.pages.length, 'page') }}, {{ count(props.blocks.length, 'Block') }},
           {{ count(props.readBlocks.length, 'Read Block') }},
           {{ count(props.mem.length, 'mem key') }}. What runs did: the newest
           {{ count(props.runsRead, 'run') }}.
@@ -111,6 +133,86 @@ const short = (value: Json) => {
       />
     </div>
     <UTabs v-model="tab" :items="tabs" :content="false" class="mb-4" />
+
+    <template v-if="tab === 'pages'">
+      <ul class="island divide-y divide-(--island-line)">
+        <li v-for="r in pageRows" :key="r.page.id" class="px-4 py-2.5">
+          <button
+            type="button"
+            class="flex w-full items-start gap-2 text-left"
+            @click="open = open === r.page.id ? null : r.page.id"
+          >
+            <UIcon
+              :name="r.page.bare ? 'i-lucide-panels-top-left' : 'i-lucide-file-text'"
+              class="mt-0.5 size-4 shrink-0"
+            />
+            <div class="min-w-0 flex-1">
+              <p class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span class="font-medium">{{ r.page.checkpoint ?? r.page.name }}</span>
+                <UBadge
+                  v-if="r.page.bare"
+                  label="shell"
+                  color="neutral"
+                  variant="outline"
+                  size="sm"
+                />
+                <UBadge
+                  v-if="r.page.covers"
+                  :label="`covers ${count(r.page.coveredPages.length, 'page')}`"
+                  color="neutral"
+                  variant="outline"
+                  size="sm"
+                />
+                <span class="text-xs text-(--ink-soft)">{{ r.page.file }}</span>
+              </p>
+              <p class="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-(--ink-soft)">
+                <span v-if="r.page.opensBy">opens by {{ r.page.opensBy }}</span>
+                <span>{{ count(r.page.do.length, 'move') }}</span>
+                <span>{{ count(r.page.expects.length, 'expectation') }}</span>
+                <span v-if="r.page.links.length">{{ count(r.page.links.length, 'link') }}</span>
+                <span v-if="r.page.interrupts.length">{{
+                  count(r.page.interrupts.length, 'interrupt')
+                }}</span>
+                <span v-if="r.page.coveredBy.length">under {{ r.page.coveredBy.join(', ') }}</span>
+              </p>
+            </div>
+            <UBadge
+              v-if="r.failed"
+              :label="`${r.failed} failing`"
+              color="error"
+              variant="subtle"
+              size="sm"
+            />
+            <UBadge
+              v-else-if="r.ran"
+              :label="`${r.ran}/${r.total} run`"
+              color="success"
+              variant="subtle"
+              size="sm"
+            />
+          </button>
+          <div
+            v-if="open === r.page.id"
+            class="mt-2 ml-6 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2"
+          >
+            <div>
+              <p class="mb-1 text-xs font-medium text-(--ink-soft)">Moves</p>
+              <p v-for="d in r.page.do" :key="d.key" class="font-mono text-xs">
+                {{ d.key
+                }}<span v-if="d.params" class="text-(--ink-soft)">({{ d.params.join(', ') }})</span>
+              </p>
+            </div>
+            <div>
+              <p class="mb-1 text-xs font-medium text-(--ink-soft)">Expects</p>
+              <p v-for="e in r.page.expects" :key="e.key" class="text-xs">
+                <span class="font-mono">{{ e.key }}</span>
+                <span v-if="e.description" class="text-(--ink-soft)"> · {{ e.description }}</span>
+              </p>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </template>
 
     <template v-if="tab === 'blocks'">
       <div class="mb-4 flex flex-wrap items-center gap-1.5">

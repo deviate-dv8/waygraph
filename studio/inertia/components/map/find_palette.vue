@@ -4,7 +4,7 @@ import { useEventListener } from '@vueuse/core'
 import { router } from '@inertiajs/vue3'
 import { urlFor } from '~/client'
 import { kindIcon } from '~/lib/kinds'
-import type { ManifestBlock } from '#types/project'
+import type { ManifestBlock, ManifestPage } from '#types/project'
 
 /**
  * Find anything by name: a page, a Block, a flow. Opens with `/` or Ctrl/Cmd-K (or the button), so a project of hundreds
@@ -13,6 +13,8 @@ import type { ManifestBlock } from '#types/project'
 const props = defineProps<{
   pages: string[]
   blocks: ManifestBlock[]
+  /** Each Page Block: its moves and expectations are found as `Page › key`. */
+  objects?: ManifestPage[]
   flows: { name: string; steps: number }[]
 }>()
 const emit = defineEmits<{ page: [checkpoint: string]; block: [id: string] }>()
@@ -46,6 +48,33 @@ const groups = computed(() => [
       icon: 'i-lucide-file-text',
       onSelect: choose(() => emit('page', p)),
     })),
+  },
+  {
+    id: 'moves',
+    label: 'Moves and expectations',
+    items: (props.objects ?? []).flatMap((p) =>
+      p.checkpoint
+        ? [
+            ...p.do.map((d) => ({
+              key: d.key,
+              kind: 'move',
+              icon: 'i-lucide-mouse-pointer-click',
+              p,
+            })),
+            ...p.expects.map((e) => ({
+              key: e.key,
+              kind: 'expects',
+              icon: 'i-lucide-badge-check',
+              p,
+            })),
+          ].map((m) => ({
+            label: `${p.checkpoint} › ${m.key}`,
+            suffix: m.kind,
+            icon: m.icon,
+            onSelect: choose(() => emit('page', p.checkpoint as string)),
+          }))
+        : []
+    ),
   },
   {
     id: 'flows',

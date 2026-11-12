@@ -4,6 +4,7 @@ import { ProjectService } from '#services/project_service'
 import { flowOfRun, pageFlows } from '#services/page_flows'
 import { siteMap, siteMapFrom } from '#services/site_map'
 import { mapAccess } from '#services/layouts'
+import { lastResults } from '#services/results'
 import type { Manifest, RunDetail } from '#types/project'
 
 /** waygraph's Start Checkpoint, as the manifest names it. */
@@ -32,18 +33,21 @@ export default class WorkspacesController {
       manifest.accounts
     )
     const closed = new Set(access.closed)
+    const newest = await this.newestRuns(manifest.flows)
     return inertia.render('map', {
       project: manifest.project,
       checkpoints: pages.filter((tag) => !closed.has(tag)),
       blocks,
       readBlocks: manifest.readBlocks,
+      pages: (manifest.pages ?? []).filter((p) => !p.checkpoint || !closed.has(p.checkpoint)),
+      results: lastResults(newest.values()),
       access,
       pageUrls: manifest.pageUrls ?? {},
       site: manifest.siteTree
         ? siteMapFrom(manifest.siteTree, manifest.blocks)
         : siteMap(pages, manifest.pageUrls ?? {}, manifest.project.baseUrl, manifest.blocks),
       journey,
-      pageFlows: pageFlows(manifest, await this.newestRuns(manifest.flows)),
+      pageFlows: pageFlows(manifest, newest),
       shots: await this.project.pageShots(),
       flows: manifest.flows.map((f) => ({
         id: f.id,

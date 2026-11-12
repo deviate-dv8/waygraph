@@ -5,7 +5,8 @@ import { Background } from '@vue-flow/background'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import PageNode from '~/components/graph/page_node.vue'
 import FolderNode from '~/components/graph/folder_node.vue'
-import LayoutNode from '~/components/graph/layout_node.vue'
+import ShellRegion from '~/components/graph/shell_region.vue'
+import ShellHalo from '~/components/graph/shell_halo.vue'
 import LayoutPanel from '~/components/map/layout_panel.vue'
 import MapTree from '~/components/map/map_tree.vue'
 import MapLegend from '~/components/map/map_legend.vue'
@@ -23,7 +24,15 @@ import { count } from '~/lib/format'
 import { MOVE_KINDS, kindColor, kindIcon } from '~/lib/kinds'
 import { urlFor } from '~/client'
 import { router } from '@inertiajs/vue3'
-import type { ManifestBlock, ManifestReadBlock, MapAccess, PageFlow, SiteMap } from '#types/project'
+import type {
+  LastResult,
+  ManifestBlock,
+  ManifestPage,
+  ManifestReadBlock,
+  MapAccess,
+  PageFlow,
+  SiteMap,
+} from '#types/project'
 
 /**
  * The project's map, as a site map: each site at the root, its pages hung from it by their addresses (dashed), and every
@@ -34,6 +43,10 @@ const props = defineProps<{
   checkpoints: string[]
   blocks: ManifestBlock[]
   readBlocks: ManifestReadBlock[]
+  /** Every Page Block with what it holds (waygraph 0.18.0+; none from an older project). */
+  pages: ManifestPage[]
+  /** How each Block last went, by name: the dot beside a move or an expectation. */
+  results: Record<string, LastResult>
   /**
    * The UI many pages share (a menu, a sidebar), each drawn once with a line to each page its links lead to, and the
    * accounts the map can be shown as (`?as=`). The pages and Blocks above are what that account is given.
@@ -67,6 +80,8 @@ const openBlock = (id: string) => {
   selectedBlock.value = id
 }
 provide('selectBlock', openBlock)
+provide('selectPage', (id: string) => (selected.value = id))
+provide('selectShell', (id: string) => (selected.value = id))
 const blockPanel = computed(() => props.blocks.find((b) => b.id === selectedBlock.value))
 watch(selected, (id) => {
   if (!id) return
@@ -144,7 +159,6 @@ const siteLines = computed(() => [
     site: true as const,
   })),
 ])
-const layoutLines = computed(() => props.access.lines)
 /** Shows the map as `account` sees it (null: everyone): the server leaves out what it isn't given. */
 function showAs(account: string | null) {
   router.get(urlFor('map'), account ? { as: account } : {}, {
@@ -225,7 +239,6 @@ const tree = computed<Tree>(() => {
   }
   // Layouts first, above the sites: each its own root, its lines reaching down into the tree.
   const roots = [
-    ...layoutIds.value,
     ...sites.slice(0, 1).map((s) => s.id),
     ...(externalSites.value.length ? [EXTERNAL] : []),
     ...journey.value.filter((id) => !parentOf.has(id)),
@@ -332,20 +345,13 @@ const shownMoves = computed(() => {
     return { ...e, blocks }
   })
 })
-const shownLayoutLines = computed(() =>
-  layoutLines.value.filter((e) => shown.value.has(e.source) && shown.value.has(e.target))
-)
 /** The column (or row) each shown node is in: from the tree alone, so labels are planned before the layout. */
 const columns = computed(() =>
   treeColumns(shownTree.value.roots, shownTree.value.childrenOf, direction.value)
 )
 /** Where each line's label sits, and the room the layout makes for them so they push boxes aside instead of covering them. */
 const labels = computed(() =>
-  planLabels(
-    [...shownSiteEdges.value, ...shownMoves.value, ...shownLayoutLines.value],
-    columns.value,
-    direction.value
-  )
+  planLabels([...shownSiteEdges.value, ...shownMoves.value], columns.value, direction.value)
 )
 
 /** What each page shows (its Read Blocks' fields) by namespace; a yes/no field is a state the page can be in. */
@@ -415,6 +421,54 @@ const placed = computed(() => {
   )
 })
 
+/**
+ * A shell as a halo behind each page it covers (merging where they touch) and its tag above the first of them: its links as
+ * chips, its interrupts as badges. A statechart's superstate, without needing the covered pages to sit together on the
+ * map; and no line from every page to every link.
+ */
+const regions = computed<Node[]>(() => {
+  const PAD = 14
+  const TAG = 34
+  const box = (id: string) => {
+    const at = placed.value.get(id) ?? { x: 0, y: 0 }
+    return { id, x: at.x, y: at.y, w: BOX.width, h: boxHeight(id) }
+  }
+  const pages = checkpoints.value.filter((id) => shown.value.has(id))
+  return props.access.layouts.flatMap((l, rank) => {
+    const inside = l.covers.filter((id) => pages.includes(id)).map(box)
+    const first = [...inside].sort((a, b) => a.y - b.y || a.x - b.x)[0]
+    if (!first) return []
+    // Bigger shells behind smaller ones (a shell inside a shell).
+    const behind = -(inside.length + 1)
+    return [
+      ...inside.map((b) => ({
+        id: `${l.node}::${b.id}`,
+        type: 'shell-halo',
+        position: { x: b.x - PAD, y: b.y - PAD },
+        zIndex: behind,
+        draggable: false,
+        selectable: false,
+        data: { width: b.w + PAD * 2, height: b.h + PAD * 2, selected: selected.value === l.node },
+      })),
+      {
+        id: l.node,
+        type: 'shell',
+        position: { x: first.x - PAD, y: first.y - PAD - TAG - rank * 0 },
+        zIndex: behind + 1,
+        draggable: false,
+        selectable: false,
+        data: {
+          label: l.name,
+          node: l.node,
+          links: l.links.map((link) => ({ name: link.name, to: link.to })),
+          interrupts: l.interrupts ?? [],
+          selected: selected.value === l.node,
+        },
+      },
+    ]
+  })
+})
+
 const nodes = computed<Node[]>(() => {
   const sites = site.value.sites
   return [
@@ -443,17 +497,7 @@ const nodes = computed<Node[]>(() => {
           },
         ]
       : []),
-    ...props.access.layouts.map((l) => ({
-      id: l.node,
-      type: 'layout',
-      position: placed.value.get(l.node) ?? { x: 0, y: 0 },
-      data: {
-        label: l.name,
-        links: l.links.length,
-        covers: l.covers.length,
-        selected: selected.value === l.node,
-      },
-    })),
+    ...regions.value,
     ...site.value.folders.map((f) => ({
       id: f.id,
       type: 'folder',
@@ -482,7 +526,7 @@ const nodes = computed<Node[]>(() => {
         },
       }
     }),
-  ].filter((n) => shown.value.has(n.id))
+  ].filter((n) => n.type === 'shell' || n.type === 'shell-halo' || shown.value.has(n.id))
 })
 
 /** Each edge's lane: its place among the edges that leave the same node the same way, so their lines run apart. */
@@ -538,7 +582,6 @@ const edges = computed<Edge[]>(() => {
   const moves = shownMoves.value
   const siteLanes = lanes(siteEdges)
   const moveLanes = lanes(moves)
-  const layoutLanes = lanes(shownLayoutLines.value)
   return [
     ...siteEdges.map((e, i) => ({
       id: e.id,
@@ -588,27 +631,6 @@ const edges = computed<Edge[]>(() => {
         },
       }
     }),
-    // A layout's lines: from its node to each page its links lead to.
-    ...shownLayoutLines.value.map((e, i) => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
-      type: 'sketch',
-      sourceHandle: direction.value === 'LR' ? 'out' : 'down',
-      targetHandle: direction.value === 'LR' ? 'in' : 'up',
-      data: {
-        blocks: e.blocks.map((b) => ({
-          id: b.id,
-          name: b.name,
-          kind: b.kind,
-          description: b.description,
-        })),
-        squared: true,
-        lane: layoutLanes[i],
-        place: labels.value.places.get(e.id),
-        highlighted: selected.value === e.source || selected.value === e.target,
-      },
-    })),
   ]
 })
 
@@ -619,6 +641,8 @@ const shotUrl = (checkpoint: string): string | undefined =>
     : undefined
 
 /** The selected layout, when a layout's node is selected. */
+/** The selected page's Page Block, with what it holds. */
+const pageObject = computed(() => props.pages.find((p) => p.checkpoint === selected.value))
 const layout = computed(() => props.access.layouts.find((l) => l.node === selected.value))
 
 const page = computed(() =>
@@ -647,8 +671,11 @@ const page = computed(() =>
         <template #node-page="nodeProps">
           <PageNode v-bind="nodeProps" />
         </template>
-        <template #node-layout="nodeProps">
-          <LayoutNode v-bind="nodeProps" />
+        <template #node-shell="nodeProps">
+          <ShellRegion v-bind="nodeProps" />
+        </template>
+        <template #node-shell-halo="nodeProps">
+          <ShellHalo v-bind="nodeProps" />
         </template>
         <template #node-folder="nodeProps">
           <FolderNode v-bind="nodeProps" />
@@ -664,6 +691,7 @@ const page = computed(() =>
       <FindPalette
         :pages="checkpoints"
         :blocks="props.blocks"
+        :objects="props.pages"
         :flows="props.flows"
         @page="selected = $event"
         @block="openBlock"
@@ -709,6 +737,8 @@ const page = computed(() =>
         :page="page"
         :urls="props.pageUrls[page.checkpoint] ?? []"
         :image="shotUrl(page.checkpoint)"
+        :object="pageObject"
+        :results="props.results"
         :flows="props.pageFlows[page.checkpoint] ?? []"
         :layouts="props.access.pageLayouts[page.checkpoint] ?? []"
         :given="props.access.pageGiven[page.checkpoint]"
