@@ -26,14 +26,14 @@ export const Inventory = definePageBlock({
   screenshot: true,
   url: "/inventory.html",
   verify: [Trait.url({ pathname: "/inventory.html" }), Trait.visible(InventorySel.list)],
-  do: () => ({ addToCart: AddToCartBlock, removeFromCart: RemoveFromCartBlock, addAllToCart: AddAllToCartBlock, removeAllFromCart: RemoveAllFromCartBlock, openDetail: NavItemDetailBlock }),
   read: (ctx) => ({
-    items: ctx.page.list(InventorySel.card, (row) => ({
-      name: row.text(InventorySel.name),
-      price: row.number(".inventory_item_price"),
-      inCart: row.visible(InventorySel.removeBtnPrefix),
-    })),
-    sort: ctx.page.value(".product_sort_container"),
-  }),
-  readAs: "catalog"
+      items: ctx.page.list(InventorySel.card, (row) => ({
+        name: row.text(InventorySel.name),
+        price: row.number(".inventory_item_price"),
+        inCart: row.visible(InventorySel.removeBtnPrefix),
+      })),
+      sort: ctx.page.value(".product_sort_container"),
+    }),
+  readAs: "catalog",
+  do: () => ({ addToCart: AddToCartBlock, removeFromCart: RemoveFromCartBlock, addAllToCart: AddAllToCartBlock, removeAllFromCart: RemoveAllFromCartBlock, openDetail: NavItemDetailBlock })
 });

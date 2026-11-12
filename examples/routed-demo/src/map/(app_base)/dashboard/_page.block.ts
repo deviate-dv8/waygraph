@@ -1,8 +1,6 @@
 import { definePageBlock, Trait } from "waygraph";
 import { Dashboard } from "../../../states/routed-demo.states.js";
 import { DashboardSel, DASHBOARD_URL } from "./_sel.js";
-import { ClickWidgetBlock } from "./_methods/click-widget.block.js";
-
 /**
  * Kind: Page
  * Route: (app_base)/dashboard/
@@ -16,6 +14,15 @@ export const DashboardPageBlock = definePageBlock({
   description: "Dashboard hub - the routed-demo example's (app_base) group.",
   checkpoint: Dashboard,
   verify: [Trait.visible(DashboardSel.heading)],
-  do: () => ({ clickWidget: ClickWidgetBlock }),
+  do: (self) => ({
+  clickWidget: self.method({
+  name: "click-widget",
+  description: "Clicks the dashboard's demo widget button.",
+  async act(page) {
+      await page.locator(DashboardSel.widgetBtn).click();
+    },
+  verify: [Trait.text(DashboardSel.widgetOut, "clicked")],
+  }),
+  }),
   url: DASHBOARD_URL
 });

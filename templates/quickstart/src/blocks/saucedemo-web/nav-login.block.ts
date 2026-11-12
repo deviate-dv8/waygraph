@@ -1,9 +1,8 @@
 import { definePageBlock, Trait } from "waygraph";
 import { LoginPage } from "../../states/checkout.states.js";
-import { FillUsernameBlock } from "./methods/fill-username.method.block.js";
-import { FillPasswordBlock } from "./methods/fill-password.method.block.js";
 import { SubmitLoginBlock } from "./methods/submit-login.method.block.js";
 import { LoginSel } from "./methods/login.sel.js";
+import { SaucedemoKeys } from "../../states/checkout.mem-keys.js";
 
 /**
  * Kind: Page
@@ -24,7 +23,27 @@ export const Login = definePageBlock({
   screenshot: true,
   url: "/",
   verify: [Trait.visible(LoginSel.loginButton)],
-  do: () => ({ fillUsername: FillUsernameBlock, fillPassword: FillPasswordBlock, submitLogin: SubmitLoginBlock }),
   read: (ctx) => ({ error: ctx.page.text(LoginSel.errorBanner) }),
-  readAs: "login"
+  readAs: "login",
+  do: (self) => ({
+  fillUsername: self.method({
+  name: "fill-username",
+  description: "Fills the username field on the login form.",
+  requires: [SaucedemoKeys.credentials],
+  async act(page, _input, mem) {
+      const { username } = mem.get(SaucedemoKeys.credentials);
+      await page.locator(LoginSel.username).fill(username);
+    },
+  }),
+  fillPassword: self.method({
+  name: "fill-password",
+  description: "Fills the password field on the login form.",
+  requires: [SaucedemoKeys.credentials],
+  async act(page, _input, mem) {
+      const { password } = mem.get(SaucedemoKeys.credentials);
+      await page.locator(LoginSel.password).fill(password);
+    },
+  }),
+  submitLogin: SubmitLoginBlock,
+  })
 });

@@ -9,8 +9,16 @@ export const CheckoutOverview = definePageBlock({
   checkpoint: CheckoutOverviewPage,
   screenshot: true,
   verify: [Trait.url({ pathname: "/checkout-step-two.html" })],
-  do: (page) => ({
-  finishOrder: page.method({
+  read: (ctx) => ({
+      items: ctx.page.list(CheckoutOverviewSel.item, (row) => ({
+        name: row.text(CheckoutOverviewSel.itemName),
+        price: row.number(CheckoutOverviewSel.itemPrice),
+      })),
+      total: ctx.page.number(CheckoutOverviewSel.total),
+    }),
+  readAs: "checkoutOverview",
+  do: (self) => ({
+  finishOrder: self.method({
   to: "OrderComplete",
   name: "finish-order",
   description:
@@ -26,13 +34,5 @@ export const CheckoutOverview = definePageBlock({
       ),
     ],
   }),
-  }),
-  read: (ctx) => ({
-    items: ctx.page.list(CheckoutOverviewSel.item, (row) => ({
-      name: row.text(CheckoutOverviewSel.itemName),
-      price: row.number(CheckoutOverviewSel.itemPrice),
-    })),
-    total: ctx.page.number(CheckoutOverviewSel.total),
-  }),
-  readAs: "checkoutOverview"
+  })
 });

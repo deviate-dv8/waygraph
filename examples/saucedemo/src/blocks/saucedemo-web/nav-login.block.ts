@@ -3,10 +3,6 @@ import { LoginPage } from "../../states/checkout.states.js";
 import { SubmitLoginBlock } from "./methods/submit-login.method.block.js";
 import { LoginSel } from "./methods/login.sel.js";
 import { SaucedemoKeys } from "../../states/checkout.mem-keys.js";
-import { checkpoint } from "waygraph";
-
-type LoginObserve = "success" | "failure";
-
 
 /**
  * Kind: Page
@@ -27,8 +23,10 @@ export const Login = definePageBlock({
   screenshot: true,
   url: "/",
   verify: [Trait.visible(LoginSel.loginButton)],
-  do: (page) => ({
-  fillUsername: page.method({
+  read: (ctx) => ({ error: ctx.page.text(LoginSel.errorBanner) }),
+  readAs: "login",
+  do: (self) => ({
+  fillUsername: self.method({
   name: "fill-username",
   description: "Fills the username field on the login form.",
   requires: [SaucedemoKeys.credentials],
@@ -37,7 +35,7 @@ export const Login = definePageBlock({
       await page.locator(LoginSel.username).fill(username);
     },
   }),
-  fillPassword: page.method({
+  fillPassword: self.method({
   name: "fill-password",
   description: "Fills the password field on the login form.",
   requires: [SaucedemoKeys.credentials],
@@ -47,7 +45,5 @@ export const Login = definePageBlock({
     },
   }),
   submitLogin: SubmitLoginBlock,
-  }),
-  read: (ctx) => ({ error: ctx.page.text(LoginSel.errorBanner) }),
-  readAs: "login"
+  })
 });

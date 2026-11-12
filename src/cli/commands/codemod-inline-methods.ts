@@ -104,8 +104,15 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
         // A Method starts on the page; an expectation judges it.
         const from = checkpointsOf(kind.prop === "do" ? valueOf("from") : valueOf("checkpoint"));
         const to = kind.prop === "do" ? checkpointsOf(valueOf("to")) : [];
-        if (!from || !to || from.length !== 1 || tagOf(sfs, msf, from[0] as string) !== pageTag) {
+        // No `from` means "from anywhere": a page's own Method starts on the page, so that one stays in its file.
+        if (!from || !to || from.length !== (kind.prop === "do" ? 1 : 1) || tagOf(sfs, msf, from[0] as string) !== pageTag) {
           problems.push(`${where}: ${origin.name} doesn't start on this page: left in its file`);
+          keep();
+          continue;
+        }
+        const lands = to.map((t) => tagOf(sfs, msf, t));
+        if (lands.some((l) => l === undefined)) {
+          problems.push(`${where}: ${origin.name} lands on something that isn't one Checkpoint by name (a union list?): left in its file`);
           keep();
           continue;
         }
@@ -133,6 +140,8 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
         }
         for (const imp of msf.getImportDeclarations()) {
           const target = resolveImport(origin.file, imp.getModuleSpecifierValue());
+          // The Method imported its page; written in the page, it names the page itself.
+          if (target === pageFile) continue;
           for (const n of imp.getNamedImports()) {
             const alias = n.getAliasNode()?.getText();
             const local = alias ?? n.getName();
@@ -142,16 +151,12 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
           }
         }
         // The Method as `page.method({ ... })`: its own members, without from; `to` as names unless it's the page.
+        // The page's own name inside its Methods is `self`: referring to the const being defined would make its type circular.
+        const selfRef = new RegExp(`\\b${decl.getName()}\\.(read|checkpoint)\\b`, "g");
         const members = mo
           .getProperties()
           .filter((m) => !(Node.isPropertyAssignment(m) && ["from", "to", "checkpoint"].includes(m.getName())))
-          .map((m) => m.getText());
-        const lands = to.map((t) => tagOf(sfs, msf, t));
-        if (lands.some((l) => l === undefined)) {
-          problems.push(`${where}: ${origin.name} lands on something that isn't one Checkpoint by name (a union list?): left in its file`);
-          keep();
-          continue;
-        }
+          .map((m) => m.getText().replace(selfRef, "self.$1"));
         if (kind.prop === "do" && !(lands.length === 1 && lands[0] === pageTag)) members.unshift(`to: ${lands.length === 1 ? JSON.stringify(lands[0]) : `[${lands.map((l) => JSON.stringify(l)).join(", ")}]`}`);
         for (const user of users) {
           const usf = sfs.get(user) as SourceFile;
@@ -168,7 +173,7 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
           addImport(usf, decl.getName(), pageFile, js);
           touched.add(user);
         }
-        entries.push(`${prop.getName()}: page.${kind.builder}({\n${members.join(",\n")},\n})`);
+        entries.push(`${prop.getName()}: self.${kind.builder}({\n${members.join(",\n")},\n})`);
         converted += 1;
         removed.add(origin.file);
         touched.add(origin.file);
@@ -178,11 +183,30 @@ export function codemodInlineMethods(dir: string): { changed: string[]; problems
       if (converted === 0) continue;
       const params = arrow.getParameters();
       const asFunction = arrow as ArrowFunction;
-      if (!params.length) asFunction.addParameter({ name: "page" });
+      if (!params.length) asFunction.addParameter({ name: "self" });
+      else if (params[0]?.getName() !== "self") params[0]?.rename("self");
       record.replaceWithText(`{\n${entries.join(",\n")},\n}`);
       // The record sits in parentheses in `() => ({ ... })`; replacing the object keeps them.
       touched.add(pageFile);
     }
+    }
+  }
+
+  // `read` is written before `do` and `expects`: TypeScript takes the page's field types from it in that order.
+  for (const [pageFile, psf] of sfs) {
+    for (const decl of psf.getVariableDeclarations()) {
+      const call = decl.getInitializer();
+      if (!Node.isCallExpression(call) || call.getExpression().getText() !== "definePageBlock") continue;
+      const options = call.getArguments()[0];
+      if (!Node.isObjectLiteralExpression(options)) continue;
+      const props = options.getProperties();
+      const first = props.findIndex((p) => Node.isPropertyAssignment(p) && ["do", "expects"].includes(p.getName()));
+      const reads = props.filter((p) => Node.isPropertyAssignment(p) && ["read", "readAs"].includes(p.getName()));
+      if (first < 0 || !reads.length || props.indexOf(reads[0] as never) < first) continue;
+      const texts = reads.map((r) => r.getText());
+      for (const r of reads) (r as import("ts-morph").PropertyAssignment).remove();
+      options.insertProperties(first, texts);
+      touched.add(pageFile);
     }
   }
 

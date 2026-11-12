@@ -44,20 +44,20 @@ export type LandsOn = string | Checkpoint<string>;
 type CpOfLands<T> = T extends string ? Checkpoint<T> : T extends Checkpoint<string> ? T : never;
 
 /** A Method written inside its page's `do`: the page is its `from` and, unless `to` says otherwise, its `to`. */
-export interface InlineMethod<Out extends Checkpoint<string>, To extends LandsOn> {
+export interface InlineMethod<Out extends Checkpoint<string>, L extends Checkpoint<string>> {
   /** Its name in run logs and the manifest; by default the page's and the key (`login-fill-email`). */
   name?: string;
   description?: string;
   /** Where it lands, when it isn't the page it's on: a page's name, so no import of it is needed. Several: `lands` says which. */
-  to?: To | readonly To[];
+  to?: LandsOn | readonly LandsOn[];
   /** Mem keys it needs set before it runs. */
   requires?: readonly MemKey<unknown>[];
   /** Who has it (its button shows for them). */
   for?: readonly Account[];
   precondition?: Trait[] | ((input: Out) => Trait[]);
   act(page: Page, input: Out, mem: MemPage): Promise<void>;
-  verify?: Trait[] | ((out: CpOfLands<To> extends never ? Out : CpOfLands<To>) => Trait[]);
-  lands?(page: Page, mem: MemPage): CpOfLands<To> | Promise<CpOfLands<To>>;
+  verify?: Trait[] | ((out: L) => Trait[]);
+  lands?(page: Page, mem: MemPage): L | Promise<L>;
   expect?: ExpectList<Out>;
   instanceOptions?: Block<Out, Out>["instanceOptions"];
 }
@@ -72,7 +72,8 @@ export interface PageSelf<Out extends Checkpoint<string>, R, Nav> {
    * A Method of this page, written right here: `do: (page) => ({ fill: page.method({ async act(p) { ... } }) })`. Its name
    * is the key (`login-fill`), it starts and, unless `to` names another page, ends on this page.
    */
-  method<To extends LandsOn = Out>(spec: InlineMethod<Out, To>): MethodBlock<Out, [To] extends [Out] ? Out : CpOfLands<To>>;
+  method(spec: InlineMethod<Out, Out> & { to?: undefined }): MethodBlock<Out, Out>;
+  method<const To extends LandsOn>(spec: InlineMethod<Out, CpOfLands<To>> & { to: To | readonly To[] }): MethodBlock<Out, CpOfLands<To>>;
   readonly checkpoint: Out;
   readonly read: PageReadKeys<R>;
   readonly nav: Nav;
@@ -350,7 +351,7 @@ export function definePageBlock<
       return defineExpectBlock({ name: `expect-${slug}-${key.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()}`, ...spec, checkpoint: cp } as ExpectBlockOptions<Out>);
     }
     if (typeof entry !== "object" || entry === null || !("__inlineMethod" in entry)) return resolveEntry(entry);
-    const spec = (entry as { __inlineMethod: InlineMethod<Out, LandsOn> }).__inlineMethod;
+    const spec = (entry as { __inlineMethod: InlineMethod<Out, Out> }).__inlineMethod;
     const targets = (spec.to === undefined ? [cp] : Array.isArray(spec.to) ? spec.to : [spec.to]).map((t) => (typeof t === "string" ? makeCheckpoint(t) : t)) as Checkpoint<string>[];
     const { to: _to, ...flat } = spec;
     return defineMethodBlock({

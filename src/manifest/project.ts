@@ -127,6 +127,12 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
     }
     const addBlock = (exportName: string, exported: AnyBlock): void => {
       if (select && !matchBlocksSelect(select, { relFile: file, blockName: exported.name })) return;
+      // A Method written in a page and the same Method in a file of its own are one Block: the file's own wins.
+      const seen = blocks.findIndex((b) => b.name === exported.name);
+      if (seen >= 0) {
+        if (/\.(do|expects)\./.test(blocks[seen]?.exportName ?? "") && !/\.(do|expects)\./.test(exportName)) blocks.splice(seen, 1);
+        else return;
+      }
       const marked = exported as { __waygraphFrom?: string[]; __waygraphTo?: string[] };
       const from = marked.__waygraphFrom ?? [];
       const to = marked.__waygraphTo ?? [];
@@ -161,6 +167,11 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
       }
       if (isBlockLike(exported)) {
         addBlock(exportName, exported);
+        // The Methods and expectations a page holds are its Blocks, by their place in it (Login.do.submit).
+        const held = exported as { do?: Record<string, unknown>; expects?: Record<string, unknown> };
+        for (const group of ["do", "expects"] as const) {
+          for (const [key, entry] of Object.entries(held[group] ?? {})) if (isBlockLike(entry)) addBlock(`${exportName}.${group}.${key}`, entry);
+        }
         // A page's own read is a Read Block of its file, by its place in it (CartPage.read).
         const own = (exported as { __waygraphReadBlock?: ReadBlock }).__waygraphReadBlock;
         if (own) readBlocks.push({ block: own, exportName: `${exportName}.read`, file, absFile, ...(map ? { map } : {}) });

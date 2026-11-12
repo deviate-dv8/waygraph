@@ -11,13 +11,13 @@ export const Cart = definePageBlock({
   screenshot: true,
   click: CartSel.cartLink,
   verify: [Trait.url({ pathname: "/cart.html" })],
-  do: () => ({ continueShopping: NavContinueShoppingBlock }),
   read: (ctx) => ({
-    lines: ctx.page.list(".cart_item", (row) => ({
-      name: row.text(".inventory_item_name"),
-      qty: row.number(".cart_quantity"),
-      price: row.number(".inventory_item_price"),
-    })),
-  }),
-  readAs: "cart"
+      lines: ctx.page.list(".cart_item", (row) => ({
+        name: row.text(".inventory_item_name"),
+        qty: row.number(".cart_quantity"),
+        price: row.number(".inventory_item_price"),
+      })),
+    }),
+  readAs: "cart",
+  do: () => ({ continueShopping: NavContinueShoppingBlock })
 });

@@ -211,7 +211,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
     const map = b.map ?? mapGroupOf(b.file);
     const url = urlOf(b.block);
     if (map) maps.add(map);
-    const source = spanOf(b.absFile, b.exportName);
+    const source = spanOf(b.absFile, b.exportName.split(".")[0] as string);
     const given = givenTo(b.block);
     const instruction = (b.block as { instruction?: { precondition?: Trait[] | ((i: never) => Trait[]); verify?: Trait[] | ((o: never) => Trait[]) } }).instruction;
     return {

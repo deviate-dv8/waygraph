@@ -1,5 +1,4 @@
 import { engine } from "../../config/waygraph.config.js";
-import { ClickWidgetBlock } from "../map/(app_base)/dashboard/_methods/click-widget.block.js";
 import { DashboardPageBlock } from "../map/(app_base)/dashboard/_page.block.js";
 import { DocsPageBlock } from "../map/(external)/docs/_page.block.js";
 
@@ -27,5 +26,5 @@ const homeOrigin = process.env.WAYGRAPH_BASE_URL || "http://127.0.0.1:4277";
 export const routedDemoMapFlow = engine
   .map({ homeOrigin })
   .gotoPage(DashboardPageBlock)
-  .method(ClickWidgetBlock)
+  .method(DashboardPageBlock.do.clickWidget)
   .gotoPage(DocsPageBlock);

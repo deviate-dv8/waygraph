@@ -12,12 +12,12 @@ export const ItemDetail = definePageBlock({
   screenshot: true,
   nav: NavItemDetailBlock,
   verify: [Trait.url({ pathname: "/inventory-item.html" })],
-  do: () => ({ backToProducts: NavBackToInventoryBlock }),
   read: (ctx) => ({
-    name: ctx.page.text(ItemDetailSel.name),
-    price: ctx.page.number(ItemDetailSel.price),
-    description: ctx.page.text(ItemDetailSel.description),
-    inCart: ctx.page.visible(ItemDetailSel.removeBtn),
-  }),
-  readAs: "itemDetail"
+      name: ctx.page.text(ItemDetailSel.name),
+      price: ctx.page.number(ItemDetailSel.price),
+      description: ctx.page.text(ItemDetailSel.description),
+      inCart: ctx.page.visible(ItemDetailSel.removeBtn),
+    }),
+  readAs: "itemDetail",
+  do: () => ({ backToProducts: NavBackToInventoryBlock })
 });

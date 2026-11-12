@@ -10,7 +10,7 @@ export const Confirmation = definePageBlock({
   checkpoint: OrderComplete,
   screenshot: true,
   verify: [Trait.url({ pathname: "/checkout-complete.html" })],
-  do: () => ({ backHome: NavBackToProductsBlock }),
   read: (ctx) => ({ header: ctx.page.text(CheckoutOverviewSel.completeHeader) }),
-  readAs: "orderDone"
+  readAs: "orderDone",
+  do: () => ({ backHome: NavBackToProductsBlock })
 });
