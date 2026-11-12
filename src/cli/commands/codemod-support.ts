@@ -101,7 +101,11 @@ export function pruneImports(sf: SourceFile): void {
   );
   for (const imp of sf.getImportDeclarations()) {
     const named = imp.getNamedImports();
-    if (!named.length) continue;
+    // `import {} from "x"`: what it imported is gone.
+    if (!named.length) {
+      if (!imp.getDefaultImport() && !imp.getNamespaceImport() && /\{\s*\}/.test(imp.getText())) imp.remove();
+      continue;
+    }
     for (const n of named) if (!used.has(n.getAliasNode()?.getText() ?? n.getName())) n.remove();
     if (!imp.getNamedImports().length && !imp.getDefaultImport() && !imp.getNamespaceImport()) imp.remove();
   }

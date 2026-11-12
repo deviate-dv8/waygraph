@@ -57,6 +57,9 @@ While a step runs on a page the layout covers, whichever step is running isn't b
 the step goes on (Playwright's locator handlers, installed per page). The run log gets an `interrupt` event, and the demo's
 card after the step says "Handled on the way: shell: cookies". It is not a step and not a failure; a flow never mentions it.
 
+A layout can also hold the shell of an embedded page: a page in an iframe says `frame` on its own Page Block (see
+[Blocks](./blocks#page-blocks)), not on the layout.
+
 ## What it covers
 
 A layout covers the pages whose Nav or Page Block is in its folder or below: the same pages the framework's layout

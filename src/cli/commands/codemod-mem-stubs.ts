@@ -52,10 +52,19 @@ export function codemodMemStubs(dir: string): { changed: string[]; problems: str
       const stubText = stub.getText();
       // What the stub uses must come from imports, so it can go to the keys' file.
       const names = new Set(stub.getDescendantsOfKind(SyntaxKind.Identifier).map((id) => id.getText()));
-      const local = sf.getVariableDeclarations().filter((d) => names.has(d.getName()));
-      if (local.length) {
-        problems.push(`${shown(file)}: the stub of ${key.getText()} uses ${local.map((d) => d.getName()).join(", ")}, declared in its own file: move it by hand`);
-        continue;
+      // A helper the stub uses, declared in the stubs file (not exported), goes with it to the keys' file.
+      const isHelper = (st: Node) => (Node.isVariableStatement(st) && !st.isExported() && st.getDeclarations().some((d) => names.has(d.getName()))) || (Node.isFunctionDeclaration(st) && !st.isExported() && names.has(st.getName() ?? ""));
+      let helpers = sf.getStatements().filter(isHelper);
+      // What a helper uses is a helper too, until nothing new is found.
+      for (let size = -1; size !== helpers.length; ) {
+        size = helpers.length;
+        for (const helper of helpers) for (const id of helper.getDescendantsOfKind(SyntaxKind.Identifier)) names.add(id.getText());
+        helpers = sf.getStatements().filter(isHelper);
+      }
+      for (const helper of helpers) {
+        const helperNames = Node.isVariableStatement(helper) ? helper.getDeclarations().map((d) => d.getName()) : [(helper as import("ts-morph").FunctionDeclaration).getName() ?? ""];
+        const exists = helperNames.some((n) => target.getVariableDeclaration(n) || target.getFunction(n));
+        if (!exists) target.insertStatements(declared.getFirstAncestorByKind(SyntaxKind.VariableStatement)?.getChildIndex() ?? 0, `${helper.getText()}\n`);
       }
       for (const imp of sf.getImportDeclarations()) {
         const from = resolveImport(file, imp.getModuleSpecifierValue());
@@ -81,6 +90,11 @@ export function codemodMemStubs(dir: string): { changed: string[]; problems: str
       else declared.addArgument(`{ ${field}: ${stubText} }`);
       (arg ?? declared.getArguments()[0])?.formatText();
       statement.remove();
+      for (const helper of helpers) {
+        const ids = Node.isVariableStatement(helper) ? helper.getDeclarations().map((d) => d.getName()) : [(helper as import("ts-morph").FunctionDeclaration).getName() ?? ""];
+        const still = sf.getDescendantsOfKind(SyntaxKind.Identifier).some((id) => ids.includes(id.getText()) && !helper.containsRange(id.getStart(), id.getEnd()));
+        if (!still) helper.remove();
+      }
       touched.add(file);
       touched.add(keysFile);
     }

@@ -12,9 +12,9 @@ against a real consumer.
 ## Next
 
 - **Page object, the rest** - a page is one object (`url`/`from`, `read`, `do`, `expects`), a layout has `interrupts`, a
-  Method is written flat; four codemods (`page-object`, `nav`, `instructions`, `mem-stubs`) move a project. Still to do:
-  Expect Blocks as plain `expects` entries (one check concept), and each check's last result in Studio's page panel.
-  Then the planned `qa-network-and-api-view`, `api-requests-and-races` and `block-capabilities` changes.
+  Method is written flat; four codemods (`page-object`, `nav`, `instructions`, `mem-stubs`) move a project. A page is its own Checkpoint with inline Methods, `route: "folder"`, `frame`
+  and `ctx.page.api` are in too. Still to do: Expect Blocks as plain `expects` entries (one check concept), each check's
+  last result in Studio's page panel, and a Studio page view built around the object. Then the planned `qa-network-and-api-view`, `api-requests-and-races` and `block-capabilities` changes.
 - **Waygraph Studio** - `waygraph studio` (the app in `ui/`); tests run in its Playwright page. Next: live sessions (`auto`, `browser`, `pilot`) through the
   session protocol, editing `config/waygraph.config.ts` from it (it shows it today), more settings (kept in the browser today). Each expectation's result in the run log (today only the one that
   failed is logged) would let it show every expectation a step met. Live updates: a project host that watches the files and the run logs and pushes changes to the

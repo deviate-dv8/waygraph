@@ -15,7 +15,7 @@ my-app/
 │   └── waygraph.config.ts          # baseUrl, webServer, device, labels, demo; exports `engine`
 ├── src/
 │   ├── accounts/                   # the people the app knows: account("planner", { signIn, mem, ttl })
-│   ├── states/                     # Checkpoints (*.states.ts), mem keys with their stubs (*.mem-keys.ts)
+│   ├── states/                     # mem keys with their stubs (*.mem-keys.ts); a page is its own Checkpoint
 │   ├── map/                        # the app, page by page: folders are its addresses
 │   │   ├── (app_base)/             # your app (a group: not part of any address)
 │   │   │   ├── _layout.block.ts    # what every page in here shares: the top bar, the sidebar
@@ -122,7 +122,7 @@ labels: { auth: ["src/flows/auth/**"], checkout: ["src/flows/checkout/**", "chec
 | say what a page shows | its `read` ([What a page shows](./reads)) |
 | sign in as someone | an account in `src/accounts/`, then `map({ as: Planner })` ([Flows](./flows#accounts)) |
 | string steps together | a file in `src/flows/<page>/`, named for its outcome ([Flows](./flows)) |
-| give a flow data | a mem key and a mem stub in `src/states/` ([Data](./data)) |
+| give a flow data | a mem key, with its fake value if it wants one, in `src/states/*.mem-keys.ts` ([Data](./data)) |
 | run a feature's flows | a label in the config, then `waygraph test --label <it>` ([Testing](./testing#labels)) |
 | see all of it | `waygraph studio` ([Waygraph Studio](./studio)) |
 | keep folders honest | `waygraph map` |

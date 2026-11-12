@@ -9,23 +9,19 @@ graph LR
   A -->|nav-docs| D[Docs]
 ```
 
-## Checkpoints first
+## Checkpoints: a page is its own
 
-A Checkpoint is a page: a place the app can be, with its own address. Each one is declared once, in `src/states/`,
-as a value and a type with the same name:
+A Checkpoint is a page: a place the app can be, with its own address. A Page Block makes its own, from a name:
 
 ```ts
-// src/states/demo.states.ts
-import { checkpoint } from "waygraph";
+export const HomePage = definePageBlock({ name: "page-home", checkpoint: "Home", url: "/home", ... });
 
-export const Home = checkpoint("Home");
-export type Home = typeof Home;
-export const Docs = checkpoint("Docs");
-export type Docs = typeof Docs;
-
-export const HomeOrDocs = [Home, Docs] as const;   // "any of these"
-export type HomeOrDocs = (typeof HomeOrDocs)[number];
+HomePage.checkpoint;                       // the value, for what must name it: { lands: HomePage.checkpoint }
+page.method({ to: "Docs", async act() {} }) // another page, by its name: no import, no cycle
 ```
+
+There is no states file and no `checkpoint()` plus `export type` pair per page. (Older projects declare them in
+`src/states/` and pass the value as `checkpoint: Home`; both work.) Where every flow begins is `Start`.
 
 What changes on a page is not another Checkpoint. Adding an item to the cart leaves you on `Home`; what changed is
 what Home shows, its [read](./reads)'s `home.cartCount` and each item's `inCart`, which the Block's `verify`
@@ -138,6 +134,18 @@ a check a scenario can expect there. `do` and `expects` are functions of the pag
 the page and its Methods can import each other ([Lifecycle](./lifecycle#why-do-and-expects-are-functions)).
 A page whose address has a param (`url: "/requests/:id"`, or `[id]` as in Next and Nuxt) has `go`, typed by the params:
 `.gotoPage(Request.go({ id: 42 }))` opens `/requests/42`; leaving one out doesn't compile.
+
+A Method can be written inside the page's `do`: `page.method({ async act(p) { … }, verify: […] })` has the page as its
+`from` and `to`, and the key as its name (`home-add-item`); `to: "Docs"` lands on another page by name, and `lands`
+picks one when it can land on several. A Method long enough for a file of its own takes `(page: PageHandle<"Home">)`
+and imports only that type, so the page and the file never import each other.
+
+A page that lives in an iframe on another page says `frame: "#embed"`: its Blocks, checks and `read` see every locator
+inside the frame, so selectors carry no prefix and the page's twin outside a frame shares the same `_sel.ts`.
+
+A page's `read` can ask the app's own API for what the page only shows after a reload (a status the backend already
+changed): `ctx.page.api((url) => `/requests/${id}`, (json) => json.status)`, with `new Engine({ api: { baseUrl, headers } })`
+saying where the API is and how a request is signed.
 
 A tab or a filter kept in the address (`?tab=files`) is state of the page, not a page of its own: `query: ["tab"]` on the
 page, then `Page.go({ id: 42, tab: "files" })` opens with it, `Page.setQuery({ tab: "signers" })` is a step that changes it,

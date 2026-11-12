@@ -34,6 +34,11 @@ and when you touch it, move it to the convention or say it should be.
 | A check written as a function over `page` (`page.locator(...).textContent()` and compare) | The page's `read` gives it; the check is `Page.read.x.is(...)` / `.passes(...)`, or an Expect Block in the page's `_expects/` |
 | A retry or polling helper (`settles`, `waitUntil`, a loop with `sleep`) | Nothing: verify retries every Trait; `{ settle: true }` on a step whose page keeps changing |
 | A helper that drives the page outside a Block (`clickClear(page, sel)`, `pasteInto`, `setDateTime`) | A Method Block, one action, in the page's `_methods/`; a field that needs a special way of typing is that Block's `act` |
+| A selector prefix for a page in an iframe (`framed(Sel)`, `internal:control=enter-frame >> …`) | `frame: "#embed"` on the Page Block: its Blocks, checks and `read` see locators inside the frame |
+| A step that dismisses a modal, banner or prompt that appears on any page (a sound prompt, cookies) | `interrupts` on the layout: handled wherever it shows up, logged, never a step in a flow |
+| A `fn` reader that fetches the app's API with the page's token | `ctx.page.api(path, pick)`, with `new Engine({ api: { baseUrl, headers } })` once |
+| A states file, or a `checkpoint()` + `export type` pair per page | `checkpoint: "Home"` on the Page Block; `to: "Dashboard"` names another page |
+| A second copy of a page's selectors for its twin (embed / non-embed) | One `_sel.ts`; the twin is the same page with `frame` set |
 | Selectors in a check file or a test | The page's `_sel.ts` |
 | Evidence written by hand (a `.log`, a results `.md`, screenshots copied around) | The run log (`.waygraph/runs/`), `screenshot: true` on a step, `--video`, Waygraph Studio, `--reporter` |
 | A cast or a function over `MapBuilder` to share steps (`as MethodBlock<...>`, `(m: MapBuilder) => m...`) | `{ lands: X }` for a branch; `steps(Checkpoint, (m) => m...)` played with `.steps(part)` |
@@ -51,12 +56,11 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
    never one Method that "fills and logs in." Same split for checkout fields: no Block `.fill()`s
    two fields or `.fill()`s and `.click()`s in one `act()` (`waygraph check`: `multi-input`,
    `combined-action`). Canonical shape: `node_modules/waygraph/examples/saucedemo/src/blocks/saucedemo-web/methods/`.
-2. **Navigation only inside Nav.** `page.goto` / NavBlock `click` live in
-   `defineNavBlock` / `defineNavClickBlock` only. A Method's `act` uses ActionPage
-   (no goto) even when the app changes URL as a side effect of a button click.
-   A Nav for a page that only exists after something else (every in-app page after sign-in)
-   declares `from: [...]` with the Checkpoints it is valid from (a `SIGNED_IN` list in
-   `src/states/`); without it, routing jumps there from anywhere, skipping sign-in.
+2. **Navigation only in a page's address or a Nav.** `page.goto` / `click` navigation live in a Page Block's `url`/`click`
+   (or `route: "folder"`, the address of its folder) and in `defineNavBlock` for a move that isn't a page's own address.
+   A Method's `act` uses ActionPage (no goto) even when the app changes URL as a side effect of a button click.
+   A page that only exists after something else (every in-app page after sign-in) declares `from: [...]` with the
+   Checkpoints it opens from (a `SIGNED_IN` list); without it, routing jumps there from anywhere, skipping sign-in.
 3. **Selectors in `*Sel`, never inline.** DOM strings live in a `*Sel` next to the page - `_sel.ts`
    in the Map layout (one per page folder, next to `_nav`/`_page`/`_methods`), `<name>.sel.ts` in a
    freeform layout (one per concern) - never a fresh file-naming convention per project (`_sel.ts`,
@@ -99,24 +103,21 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
    meet an earlier run's data resolves to `Created` / `AlreadyExists` instead of failing. A failure that depended on its
    data reruns with `waygraph run <flow> --replay <runId>` (a per-run value, from `unique`, is made new again; the
    rest is replayed).
-   Put those `registerMemStub` calls in a `*.mem-stubs.ts` file (`src/states/demo.mem-stubs.ts`): `run`, `demo`, `test`
-   and the live sessions load every one themselves, so no flow or spec imports it. The scaffold's engine is
+   Stubs sit on the keys (`keys("demo")<{ … }>({ credentials: () => … })` in `src/states/demo.mem-keys.ts`, one file, no
+   `*.mem-stubs.ts`): `run`, `demo`, `test` and the live sessions load every `*.mem-keys.ts` themselves, so no flow or
+   spec imports it. The scaffold's engine is
    `new Engine({ ...config, memStub: true })`: every flow fills missing keys from stubs, and `flow.run()` does it too, so a
    spec never calls `seedMemStub`.
-6. **A Checkpoint is a page**, with its own address; what changed on it is a field of its `read`, not another
+6. **A page is its own Checkpoint**, with its own address; what changed on it is a field of its `read`, not another
    Checkpoint (`waygraph check` names one that only Methods reach with no address, or that has another page's).
-   **Checkpoints are values.** Where every flow begins is `Start` (`import { Start } from "waygraph"`): a Block
-   that leads off a flow is `from: Start`, a sign-out goes `to: Start`; never write its tag. Declare the rest once in
-   `src/states/`: `export const Home = checkpoint("Home");
-   export type Home = typeof Home;` (a union: `export const HomeOrDocs = [Home, Docs] as const`). Blocks take
-   the values, never tag strings or `<In, Out>` type arguments: `defineNavBlock({ checkpoint: Home, … })`,
-   `defineExpectBlock({ checkpoint: Cart, … })`, `defineMethodBlock({ from: HomeOrDocs, to: Cart, … })`
-   (leave `from` out for "from anywhere"; `resolve` is implied when `to` is one Checkpoint). The Block then carries its
-   route at runtime, so `waygraph graph`, `auto` and the manifest read it exactly. Older projects:
-   `waygraph upgrade --codemod checkpoints`.
-   Mem keys likewise: one namespace per area, its type's fields the keys -
-   `export const SaucedemoKeys = keys("saucedemo")<{ credentials: Creds; selectedItem: Item }>();`, used as
-   `SaucedemoKeys.credentials` (`requires`, `mem.get`, `registerMemStub`). Older projects: `waygraph upgrade --codemod keys`.
+   `definePageBlock({ name: "page-home", checkpoint: "Home", ... })` makes it: no states file, no `checkpoint()` /
+   `export type` pair. `Home.checkpoint` is the value, for what must name it (a flow's `lands`, a Method in its own
+   file). Where every flow begins is `Start` (`import { Start } from "waygraph"`): a Method that leads off a flow is
+   `from: Start`, a sign-out goes `to: Start`; never write its tag. A Method written inside its page's `do` has the page
+   as `from` and, unless `to` names another page by its name (`to: "Dashboard"`), as `to`. Mem keys: one namespace per
+   area, its type's fields the keys, fake values as the optional second part -
+   `export const ShopKeys = keys("shop")<{ credentials: Creds; selectedItem: Item }>({ credentials: () => … });`, used
+   as `ShopKeys.credentials` (`requires`, `mem.get`). Older projects: `waygraph upgrade --codemod checkpoints`/`keys`.
 7. **A transition never ships with an empty `verify`.** A framework can enforce that a check
    *exists*; it can't author the semantic content of one - only whoever knows what "success"
    means for this app can write it. That's the right line to draw, but it means an unfilled
@@ -141,11 +142,12 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   `.gotoExternal` for another origin); it is the only way to build one. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`, `as`) go in `map({ … })` before the chain
   and the chain itself is the flow: there is no closing call. The flow's title is `ctx.ui.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
   `defineFlow`, `chainFlow` and the `with*` flow wrappers were removed in 0.16.0; `waygraph upgrade --codemod flows` converts them.
-- **A flow imports one thing per page it visits: the page's Page Block.** `definePageBlock({ checkpoint: Home, url:
-  "/home", read: (ctx) => ({ ... }), do: () => ({ addItem: AddItemBlock }) })` exported as `HomePage`; the flow writes
-  `.gotoPage(HomePage).method(HomePage.do.addItem)`, each typed as its own Block. Imports use the project's
+- **A flow imports one thing per page it visits: the page's Page Block.** `definePageBlock({ name: "page-home",
+  checkpoint: "Home", url: "/home", read: (ctx) => ({ ... }), do: (page) => ({ addItem: page.method({ async act(p) { ... } }) }) })`
+  exported as `HomePage`; the flow writes `.gotoPage(HomePage).method(HomePage.do.addItem)`, each typed as its own
+  Block. A Method long enough for a file of its own takes `(page: PageHandle<"Home">)`, importing only that type. Imports use the project's
   `#config/`, `#map/`, `#states/` names (`import { HomePage } from "#map/(app_base)/home/_page.block"`), never a chain of
-  `../`. No file is imported for its side effect (`import ".../_page.block.js"`, `import ".../x.mem-stubs.js"`): the
+  `../`. No file is imported for its side effect (`import ".../_page.block.js"`, `import ".../x.mem-keys.js"`): the
   tools load Block, Page and stub files themselves. A Page Block's `expects: { saved: () => ExpectSavedBlock }` names what
   can be checked on the page, so `HomePage.expects.saved` comes from the same import. An older project moves onto pages
   with `waygraph upgrade --codemod pages` once each Page Block has its `url` and `do` / `expects`.

@@ -219,10 +219,25 @@ export function codemodPageObject(dir: string): { changed: string[]; problems: s
     const rsf = sfs.get(r.file)!;
     // What the read uses, imported in the page's file.
     const names = new Set(r.fields.getDescendantsOfKind(SyntaxKind.Identifier).map((id) => id.getText()));
-    const local = rsf.getVariableDeclarations().filter((d) => names.has(d.getName()) && !namespaces.has(`${r.file}#${d.getName()}`));
-    if (local.length) {
-      problems.push(`${shown(r.file)}: ${r.decl.getName()} uses ${local.map((d) => d.getName()).join(", ")}, declared in its own file: move it by hand`);
+    // A helper the read uses, declared in its file and not exported, goes to the page's file with it.
+    const isHelper = (st: Node) =>
+      (Node.isVariableStatement(st) && !st.isExported() && !st.getDeclarations().some((d) => namespaces.has(`${r.file}#${d.getName()}`)) && st.getDeclarations().some((d) => names.has(d.getName()))) ||
+      (Node.isFunctionDeclaration(st) && !st.isExported() && names.has(st.getName() ?? ""));
+    let helpers = rsf.getStatements().filter(isHelper);
+    // What a helper uses is a helper too, until nothing new is found.
+    for (let size = -1; size !== helpers.length; ) {
+      size = helpers.length;
+      for (const helper of helpers) for (const id of helper.getDescendantsOfKind(SyntaxKind.Identifier)) names.add(id.getText());
+      helpers = rsf.getStatements().filter(isHelper);
+    }
+    const sharedLocal = rsf.getVariableDeclarations().filter((d) => names.has(d.getName()) && d.getVariableStatement()?.isExported() && !namespaces.has(`${r.file}#${d.getName()}`) && !helpers.includes(d.getVariableStatement()!));
+    if (sharedLocal.length) {
+      problems.push(`${shown(r.file)}: ${r.decl.getName()} uses ${sharedLocal.map((d) => d.getName()).join(", ")}, exported from its own file: move it by hand`);
       continue;
+    }
+    for (const helper of helpers) {
+      const own = Node.isVariableStatement(helper) ? helper.getDeclarations().map((d) => d.getName()) : [(helper as import("ts-morph").FunctionDeclaration).getName() ?? ""];
+      if (!own.some((n) => psf.getVariableDeclaration(n) || psf.getFunction(n))) psf.insertStatements(page.options.getFirstAncestorByKind(SyntaxKind.VariableStatement)?.getChildIndex() ?? psf.getStatements().length, `${helper.getText()}\n`);
     }
     for (const imp of rsf.getImportDeclarations()) {
       const target = resolveImport(r.file, imp.getModuleSpecifierValue());
@@ -239,6 +254,11 @@ export function codemodPageObject(dir: string): { changed: string[]; problems: s
     if (r.namespace.ns !== page.defaultNs) page.options.addPropertyAssignment({ name: "readAs", initializer: JSON.stringify(r.namespace.ns) });
     converted.set(`${r.namespace.file}#${r.namespace.name}`, page);
     r.decl.getVariableStatement()?.remove();
+    for (const helper of helpers) {
+      const own = Node.isVariableStatement(helper) ? helper.getDeclarations().map((d) => d.getName()) : [(helper as import("ts-morph").FunctionDeclaration).getName() ?? ""];
+      const used = rsf.getDescendantsOfKind(SyntaxKind.Identifier).some((id) => own.includes(id.getText()) && !helper.containsRange(id.getStart(), id.getEnd()));
+      if (!used) helper.remove();
+    }
     touched.add(page.file);
     touched.add(r.file);
   }
@@ -335,14 +355,17 @@ export function codemodPageObject(dir: string): { changed: string[]; problems: s
   }
 
   const changed: string[] = [];
-  for (const file of touched) {
+  const gone = new Set<string>();
+  for (const file of touched) pruneImports(sfs.get(file)!);
+  // Read Block files are processed first, so a namespace file isn't held by an import from one that is already gone.
+  for (const file of [...touched].sort((a, b) => Number(/reads?\.ts$/.test(a) && !/block/.test(a)) - Number(/reads?\.ts$/.test(b) && !/block/.test(b)))) {
     const sf = sfs.get(file)!;
-    pruneImports(sf);
     const onlyImports = sf.getStatements().every((s) => Node.isImportDeclaration(s));
     if (onlyImports && (reads.some((r) => r.file === file) || [...converted.keys()].some((k) => k.startsWith(`${file}#`)))) {
       // A Read Block file with nothing left: other files import nothing from it (its Block was never exported by name).
-      const imported = [...sfs.entries()].some(([other, osf]) => other !== file && osf.getImportDeclarations().some((i) => resolveImport(other, i.getModuleSpecifierValue()) === file));
+      const imported = [...sfs.entries()].some(([other, osf]) => other !== file && !gone.has(other) && osf.getImportDeclarations().some((i) => resolveImport(other, i.getModuleSpecifierValue()) === file));
       if (!imported) {
+        gone.add(file);
         unlinkSync(file);
         changed.push(shown(file) + " (removed)");
         continue;
