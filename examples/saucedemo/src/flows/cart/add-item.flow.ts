@@ -10,6 +10,6 @@ import { Cart } from "../../blocks/saucedemo-web/cart/cart.page.block.js";
  */
 export const addItemFlow = engine
   .map({ as: StandardUser, input: SaucedemoKeys.selectedItem, memStub: true })
-  .gotoPage(Inventory.nav)
+  .gotoPage(Inventory)
   .method(Inventory.do.addToCart)
-  .gotoPage(Cart.nav);
+  .gotoPage(Cart);

@@ -55,25 +55,29 @@ All of them are plain Blocks when the flow runs; the kind is what `map()` and `w
 
 ## Nav: getting to a page
 
+A page opens itself: give its Page Block a `url` (or a `click`, an element already on the page), and `gotoPage(Page)` in a
+flow goes there ([the page](#page-blocks)). A Nav Block is for a move that isn't a page's own address: a link one page has
+to another, a menu entry.
+
 ```ts
-export const NavHomeBlock = defineNavBlock({
-  name: "nav-home",
-  description: "Opens the catalog page.",
+export const NavContinueShoppingBlock = defineNavBlock({
+  name: "nav-continue-shopping",
   checkpoint: Home,
-  url: "/home",                                    // or (mem) => `/orders/${mem.get(OrderKeys.id)}`
-  verify: [Trait.text(DemoSel.title, "Hello Waygraph")],
+  click: CartSel.continueShopping,                 // or url: (mem) => `/orders/${mem.get(OrderKeys.id)}`
+  from: [Cart],
+  verify: [Trait.url({ pathname: "/home" })],
 });
 ```
 
-Only Nav Blocks navigate. In any other Block, `page.goto` / `reload` / `goBack` show as deprecated in the editor, and
-`waygraph check` warns about them.
+Only Nav Blocks and Page Blocks with a `url` or `click` navigate. In any other Block, `page.goto` / `reload` / `goBack`
+show as deprecated in the editor, and `waygraph check` warns about them.
 
-A Nav can be opened from anywhere by default. A page you can only reach after signing in says so with `from`, so route
+A page can be opened from anywhere by default. One you can only reach after signing in says so with `from`, so route
 finding (`auto`, `pilot reach`, `traverse`) signs in first:
 
 ```ts
 export const SIGNED_IN = [Dashboard, Settings] as const;
-defineNavBlock({ name: "nav-equipment", checkpoint: Equipment, url: "/equipment", from: SIGNED_IN });
+definePageBlock({ name: "page-equipment", checkpoint: Equipment, url: "/equipment", from: SIGNED_IN });
 ```
 
 ## Method: one action
@@ -120,7 +124,7 @@ defineMethodBlock({
 export const HomePage = definePageBlock({
   name: "page-home",
   checkpoint: Home,
-  nav: NavHomeBlock,                                 // its _nav.block.ts
+  url: "/home",                                       // how it opens; `from` lists where it opens from, none = anywhere
   verify: [Trait.visible(DemoSel.catalog)],
   read: (ctx) => ({ cartCount: ctx.page.number(DemoSel.cartCount), items: ctx.page.list(DemoSel.item, (row) => ({ name: row.text(DemoSel.name), inCart: row.visible(DemoSel.remove) })) }),
   do: () => ({ addItem: AddItemBlock, clearCart: ClearCartBlock }),
@@ -128,17 +132,17 @@ export const HomePage = definePageBlock({
 });
 ```
 
-A Page Block is the page's namespace: `HomePage.nav` opens it, `HomePage.read.cartCount` is a typed key of what it shows
+A Page Block is the page's namespace: `HomePage` opens it, `HomePage.read.cartCount` is a typed key of what it shows
 ([What a page shows](./reads)), `HomePage.do.addItem` is the Add Item Block, typed as itself, and `HomePage.expects.empty`
 a check a scenario can expect there. `do` and `expects` are functions of the page, called the first time they're used, so
 the page and its Methods can import each other ([Lifecycle](./lifecycle#why-do-and-expects-are-functions)).
 A flow imports the page, not each Block:
 
 ```ts
-engine.map().gotoPage(HomePage.nav).method(HomePage.do.addItem, { expect: [HomePage.read.cartCount.is(1)] });
+engine.map().gotoPage(HomePage).method(HomePage.do.addItem, { expect: [HomePage.read.cartCount.is(1)] });
 ```
 
-`waygraph auto` groups a page's methods under it. A page's `nav`, methods and expectations never count as orphans,
+`waygraph auto` groups a page's methods under it. A page's methods and expectations never count as orphans,
 though no flow plays them; nor does a Block a flow names in an `expect: [...]` (a step's, or a Block's own). Name the Page Block after the page
 (`HomePage`): the Checkpoint already has the page's own name (`Home`).
 

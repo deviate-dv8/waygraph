@@ -33,7 +33,7 @@ const ClearShown = HomePage.do.clearCart.stubBefore((ctx) => {
 export const homeCartFlow = engine
   .map()
   .gotoPage(
-    HomePage.nav.stubBefore((ctx) => {
+    HomePage.stubBefore((ctx) => {
       ctx.ui.title("Scaffold: Shop (add + clear)");
     }),
   )

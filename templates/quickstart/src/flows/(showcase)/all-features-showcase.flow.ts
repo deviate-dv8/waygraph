@@ -32,10 +32,10 @@ export const allFeaturesShowcaseFlow = engine
     Inventory.do.addToCart.stubBefore(d.addToCart.before).stubAfter(d.addToCart.after),
   )
   .gotoPage(
-    Cart.nav.stubBefore(d.openCart.before).stubAfter(d.openCart.after),
+    Cart.stubBefore(d.openCart.before).stubAfter(d.openCart.after),
   )
   .in(Guest)
-  .gotoPage(Inventory.nav)
-  .gotoPage(Cart.nav)
+  .gotoPage(Inventory)
+  .gotoPage(Cart)
   .in(Main)
   .close(Guest);

@@ -52,8 +52,8 @@ export const checkoutFlow = engine
   )
   .ffEnd()
   .method(Inventory.do.addToCart.stubBefore((ctx) => ctx.ui.title("Owner: Full Checkout")))
-  .gotoPage(Cart.nav)
-  .gotoPage(CheckoutInfo.nav)
+  .gotoPage(Cart)
+  .gotoPage(CheckoutInfo)
   .method(
     CheckoutInfo.do.fillFirstName.stubBefore((ctx) => {
       ctx.ui.caption("Enter the first name on the order");

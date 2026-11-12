@@ -1,5 +1,4 @@
 import { definePageBlock, Trait } from "waygraph";
-import { NavHoppscotchRestBlock } from "./_nav.block.js";
 import { HoppscotchRest } from "./_states.js";
 import { SetMethodBlock } from "./_methods/set-method.method.block.js";
 import { SetUrlBlock } from "./_methods/set-url.method.block.js";
@@ -19,7 +18,7 @@ export const HoppscotchRestPage = definePageBlock({
   name: "page-hoppscotch-rest",
   description: "Hoppscotch REST client - build a request, send it, check the response.",
   checkpoint: HoppscotchRest,
-  nav: NavHoppscotchRestBlock,
+  url: () => "https://hoppscotch.io/",
   verify: [Trait.visible(HoppscotchSel.send)],
   do: () => ({ setMethod: SetMethodBlock, setUrl: SetUrlBlock, setHeaders: SetHeadersBlock, setQueryParams: SetQueryParamsBlock, setBearerToken: SetBearerTokenBlock, setJsonBody: SetJsonBodyBlock, sendRequest: SendRequestBlock, readResponseHeaders: ReadResponseHeadersBlock, readResponseBody: ReadResponseBodyBlock }),
   expects: () => ({ responseBody: ExpectResponseBodyBlock, responseHeader: ExpectResponseHeaderBlock, status: ExpectStatusBlock }),

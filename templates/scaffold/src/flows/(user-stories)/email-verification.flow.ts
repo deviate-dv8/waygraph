@@ -25,7 +25,7 @@ const App = pane("app", { with: Mail });
 export const emailVerificationFlow = engine
   .map({ panes: [Mail, App] })
   .in(Mail)
-  .gotoExternal(MailpitInboxPage.nav.stubBefore((ctx) => ctx.ui.title("Scaffold: Cross-origin mail verification (QA-rich)")), { expect: [Arrived] })
+  .gotoExternal(MailpitInboxPage.stubBefore((ctx) => ctx.ui.title("Scaffold: Cross-origin mail verification (QA-rich)")), { expect: [Arrived] })
   .method(MailpitInboxPage.do.openMessage, { expect: [ContentMatches] })
   .method(LinkFound)
   .in(App)

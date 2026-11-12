@@ -6,6 +6,6 @@ import { Cart } from "../../blocks/saucedemo-web/cart/cart.page.block.js";
 /** The standard user, already signed in, puts an item in the cart: no login steps of its own. */
 export const cartAsAccountFlow = engine
   .map({ as: StandardUser, memStub: true })
-  .gotoPage(Inventory.nav)
+  .gotoPage(Inventory)
   .method(Inventory.do.addToCart)
-  .gotoPage(Cart.nav);
+  .gotoPage(Cart);

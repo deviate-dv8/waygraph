@@ -8,7 +8,7 @@ scenarios that a QA who doesn't write code can follow:
 
 ```ts
 engine.map({ as: Planner })
-  .gotoPage(Registry.nav)
+  .gotoPage(Registry)
   .method(Registry.do.searchFor)
   .method(Detail.do.archive)
   .method(Detail.do.confirmArchive, { expect: [Registry.expects.archivedToast, Machine.status.is("Archived")] });

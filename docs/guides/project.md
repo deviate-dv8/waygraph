@@ -44,8 +44,7 @@ Every page folder uses the same file names:
 
 | File | Holds | Made with |
 |---|---|---|
-| `_nav.block.ts` | how to get to this page | `defineNavBlock` |
-| `_page.block.ts` | the page: its `nav`, what it shows (`read`), what you can do (`do`), what you can expect (`expects`), who can open it (`for`) | `definePageBlock` |
+| `_page.block.ts` | the page: how it opens (`url`, `from`), what it shows (`read`), what you can do (`do`), what you can expect (`expects`), who can open it (`for`) | `definePageBlock` |
 | `_sel.ts` | every selector this page uses | a plain object |
 | `_methods/` | one action per file: fill, click, submit | `defineMethodBlock` |
 | `_expect/` | what a scenario can expect on this page, one per file | `defineExpectBlock` |
@@ -66,7 +65,7 @@ segment. `_layout.block.ts` is the one file that isn't about one page: it's abou
 | **What every page shares is a layout**, in the folder of the pages it wraps. Never the same Nav on each page, never a list of pages on a Nav. | Declared once, where front-end developers look for it | a layout link from a page it doesn't cover fails before clicking |
 | **Who sees what is `for: [accounts]`**, on the link, the Method or the page. | Access is written beside what it's about, and tested without a test | `waygraph test --flows` adds each account's access test; `waygraph check` flags a flow as an account using what it isn't given |
 | **A flow that starts signed in runs `as` an account.** Never a login copied into each flow, never cookies by hand. | One sign-in, kept and reused across flows and workers | the account's session is kept for you; a hand-saved session has no reason to exist |
-| **A flow imports pages, not Blocks**: `Page.nav`, `Page.do.x`, `Page.expects.y`. Imports use `#config/`, `#map/`, `#states/`. | A flow reads like the scenario; no `../../..` | TypeScript: a step must start where the last one ended |
+| **A flow imports pages, not Blocks**: `Page`, `Page.do.x`, `Page.expects.y`. Imports use `#config/`, `#map/`, `#states/`. | A flow reads like the scenario; no `../../..` | TypeScript: a step must start where the last one ended |
 | **`verify` is the Block's own check; `expect` is the scenario's.** Expectations only read. | A Block is true wherever it's used; a scenario says what it expects in one place | `waygraph check`: an arrival check in an Expect Block, an outcome in a Method's verify, an expectation that acts |
 | **Flows are the tests**: a folder per page (mirroring `src/map/`), one file per outcome, exported as `<page><Outcome>Flow`; stories across pages in a `(group)`; groups of flows are labels in the config. | A page's folder shows every way through it; nothing to write twice; `--label auth` runs a feature | `waygraph test --flows` runs every exported flow; `waygraph check` warns about a label that covers no flow |
 | **Data is named, never hidden**: a mem key per value, a mem stub for fake ones, `unique` for what must be new each run. | A run says what it was given and replays with it | `waygraph check` warns when a Block that creates something gets the same data every run |
@@ -132,7 +131,7 @@ labels: { auth: ["src/flows/auth/**"], checkout: ["src/flows/checkout/**", "chec
 ## Pointing it at your real app
 
 1. Set `baseUrl` in `config/waygraph.config.ts` (or `BASE_URL` in `.env`).
-2. Change each `_nav.block.ts`'s `url` to the real path.
+2. Change each `_page.block.ts`'s `url` to the real path.
 3. Rename `(app_base)/` and its folders to match your app's addresses.
 4. Run `waygraph map`: it lists every folder that doesn't match.
 
@@ -171,7 +170,7 @@ npx waygraph upgrade --codemod keys                   # rewrite code a release c
 npx waygraph upgrade --codemod lands                  # `Block as MethodBlock<A, B>` casts -> .method(Block, { lands: B })
 npx waygraph upgrade --codemod ff                     # { ff: true } on step after step -> .ffStart() ... .ffEnd()
 npx waygraph upgrade --codemod chain                  # drops .start() and .end(): the chain is the flow
-npx waygraph upgrade --codemod pages                  # a flow's Block imports -> its pages' Page.nav / Page.do.x
+npx waygraph upgrade --codemod pages                  # a flow's Block imports -> its pages' Page / Page.do.x
 npx waygraph upgrade --codemod expect                 # Assert Blocks and .assert() steps -> Expect Blocks in each step's expect: [...]
 ```
 

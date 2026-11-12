@@ -396,11 +396,11 @@ test("auto reach: runs a real multi-step route to a Checkpoint in one call, agai
   const loginRes = await send(sessionId, String(flat.find((e) => e.block === "submit-login")!.index));
   expect(loginRes.ok).toBe(true);
 
-  // One real CLI call reaches CartPage from InventoryPage via the live "nav-cart"
+  // One real CLI call reaches CartPage from InventoryPage via the live "page-cart"
   // wildcard edge - not a hand-picked index, the actual proof this exists for.
   const reachRes = await reach(sessionId, "CartPage");
   expect(reachRes.ok).toBe(true);
-  expect(reachRes.path).toEqual(["nav-cart"]);
+  expect(reachRes.path).toEqual(["page-cart"]);
   expect((reachRes.snapshot as { here: string }).here).toBe("CartPage");
 
   await send(sessionId, "q");

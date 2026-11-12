@@ -1,7 +1,7 @@
 import { definePageBlock, Trait } from "waygraph";
 import { CartPage } from "../../../states/checkout.states.js";
-import { NavCartBlock } from "./nav-cart.block.js";
 import { NavContinueShoppingBlock } from "../inventory-item/nav-continue-shopping.block.js";
+import { CartSel } from "./cart.sel.js";
 
 /** The cart: open it from the header, go back to shopping; checking out opens CheckoutInfo. */
 export const Cart = definePageBlock({
@@ -9,7 +9,7 @@ export const Cart = definePageBlock({
   description: "The cart - what's in it, back to shopping, on to checkout.",
   checkpoint: CartPage,
   screenshot: true,
-  nav: NavCartBlock,
+  click: CartSel.cartLink,
   verify: [Trait.url({ pathname: "/cart.html" })],
   do: () => ({ continueShopping: NavContinueShoppingBlock }),
   read: (ctx) => ({

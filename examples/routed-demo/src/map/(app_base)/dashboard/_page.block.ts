@@ -1,6 +1,6 @@
 import { definePageBlock, Trait } from "waygraph";
 import { Dashboard } from "../../../states/routed-demo.states.js";
-import { DashboardSel } from "./_sel.js";
+import { DashboardSel, DASHBOARD_URL } from "./_sel.js";
 import { ClickWidgetBlock } from "./_methods/click-widget.block.js";
 
 /**
@@ -17,4 +17,5 @@ export const DashboardPageBlock = definePageBlock({
   checkpoint: Dashboard,
   verify: [Trait.visible(DashboardSel.heading)],
   do: () => ({ clickWidget: ClickWidgetBlock }),
+  url: DASHBOARD_URL
 });

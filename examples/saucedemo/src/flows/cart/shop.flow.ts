@@ -9,8 +9,8 @@ import { CheckoutOverview } from "../../blocks/saucedemo-web/checkout-step-two/c
 export const shopFlow = engine
   .map({ memStub: true })
   .method(Inventory.do.addToCart.stubBefore((ctx) => ctx.ui.title("Shop & Checkout")))
-  .gotoPage(Cart.nav)
-  .gotoPage(CheckoutInfo.nav)
+  .gotoPage(Cart)
+  .gotoPage(CheckoutInfo)
   .method(CheckoutInfo.do.fillFirstName)
   .method(CheckoutInfo.do.fillLastName)
   .method(CheckoutInfo.do.fillPostalCode)

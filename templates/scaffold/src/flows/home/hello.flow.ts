@@ -3,7 +3,7 @@ import { HomePage } from "#map/(app_base)/home/_page.block";
 import { DemoSel } from "#map/(app_base)/home/_sel";
 import { TopBar } from "#map/(app_base)/_layout.block";
 
-const OpenHome = HomePage.nav
+const OpenHome = HomePage
   .stubBefore((ctx) => {
     ctx.ui.title("Scaffold: Hello Waygraph");
   })

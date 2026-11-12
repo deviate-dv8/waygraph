@@ -95,9 +95,17 @@ export type PageBlockOptions<
   expects?: E | ((page: PageSelf<Out, R, Nav>) => E);
   /**
    * The Nav Block that opens this page (its `_nav.block.ts`): the page's `nav`, so a flow imports the page alone.
+   * @deprecated Give the page its own `url` (or `click`) and `from`: the page opens itself, `map().gotoPage(LoginPage)`.
+   * `waygraph upgrade --codemod nav` converts a project.
    * @example definePageBlock({ ..., nav: NavLoginBlock }) · map().gotoPage(LoginPage.nav).method(LoginPage.do.fillUsername)
    */
   nav?: NavBlock<Out>;
+  /**
+   * The pages it can be opened from, with a `url` or `click`. Omit = from anywhere. Set it for a page that only exists
+   * after something else (every in-app page after sign-in), so route finding goes through the sign-in steps.
+   * @example from: SIGNED_IN
+   */
+  from?: readonly Checkpoint<string>[];
   /**
    * Optional deep-link onto this page (`goto`). XOR with `click`. Omit when the
    * hub is arrival-only (previous Block already resolved here).
@@ -182,7 +190,7 @@ export function definePageBlock<
       `definePageBlock("${options.name}"): pass url XOR click (or neither for arrival-only hub)`,
     );
   }
-  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, ...rest } = options;
+  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, from: opensFrom, ...rest } = options;
   const built = defineNavigating(rest) as unknown as PageBlock<Out, M, Nav, E, R>;
   markFor(built, given);
   // A page's screenshot is taken whenever a step lands on it, not only when this hub runs as a step.
@@ -224,7 +232,7 @@ export function definePageBlock<
     return Object.freeze([...named, ...listed]) as readonly SomeDefinedBlock[];
   });
 
-  markRoute(built, ["*"], [options.checkpoint.__state]);
+  markRoute(built, opensFrom?.map((c) => c.__state) ?? ["*"], [options.checkpoint.__state]);
   mark(built, "__waygraphKind", "page");
   mark(built, "__waygraphSalt", "page");
   if (readBlock) mark(built, "__waygraphReadBlock", readBlock);
@@ -260,5 +268,6 @@ export function definePageBlock<
   if (options.click !== undefined) {
     mark(built, "__waygraphNavClick", options.click);
   }
+  if (opensFrom?.length) mark(built, "__waygraphNavFrom", opensFrom.map((c) => c.__state));
   return built;
 }

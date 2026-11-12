@@ -75,7 +75,6 @@ Use the **Waygraph Map**. Folders under `src/map/` mirror your app's URLs, one f
 
 ```text
 src/map/(app)/checkout/
-  _nav.block.ts       how to get here
   _page.block.ts      "you've arrived"
   _sel.ts             every selector for this page
   _methods/           one action per file

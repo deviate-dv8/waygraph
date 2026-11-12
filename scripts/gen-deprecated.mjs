@@ -147,7 +147,7 @@ A stub paints through \`ctx.ui\`; \`ctx\` itself holds only what a stub reads (\
 
 ## Moved in 0.17.3
 
-A page is one object: what it shows (\`read\`), what you can do (\`do\`), what you can expect (\`expects\`). The old forms still
+A page is one object: how it opens (\`url\`, \`from\`), what it shows (\`read\`), what you can do (\`do\`), what you can expect (\`expects\`). The old forms still
 run; \`waygraph upgrade --codemod page-object\` moves a project (it was tried on two real projects of 70 and 35 pages).
 
 | Before | Now |
@@ -157,6 +157,7 @@ run; \`waygraph upgrade --codemod page-object\` moves a project (it was tried on
 | \`methods: { addItem: () => AddItem }\` | \`do: () => ({ addItem: AddItem })\`; \`expects: (page) => ({ ... })\` is a function of the page too |
 | a Method's \`verify: [Ns.field.is(1)]\` on a page its page imports | \`verify: (): Trait[] => [Page.read.field.is(1)]\`: a function, so the page and the Method can import each other |
 | \`defineMethodBlock({ instruction: { act, verify, observe, resolve } })\` | \`defineMethodBlock({ act, verify, lands })\`: the parts on the Method itself; \`observe\` and \`resolve\` become one optional \`lands(page, mem)\` that returns the Checkpoint (\`waygraph upgrade --codemod instructions\`) |
+| a page's Nav Block in \`_nav.block.ts\` (\`nav: NavHomeBlock\`, \`Home.nav\`) | the page opens itself: \`url\` (or \`click\`) and \`from\` on its \`definePageBlock\`, and \`map().gotoPage(Home)\` (\`waygraph upgrade --codemod nav\`) |
 
 ## Removed in 0.17.0
 

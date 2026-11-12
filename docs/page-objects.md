@@ -9,13 +9,13 @@ convention gives it, and an agent or a new teammate follows the same convention 
 
 | A page object suite has | Waygraph has |
 |---|---|
-| a class per page (`LoginPage`) | a [Page Block](./guides/blocks#page-blocks) per page: `LoginPage.nav` opens it, `LoginPage.do.*` is what you can do there, `LoginPage.expects.*` what a scenario can expect |
+| a class per page (`LoginPage`) | a [Page Block](./guides/blocks#page-blocks) per page: `LoginPage` opens it, `LoginPage.do.*` is what you can do there, `LoginPage.expects.*` what a scenario can expect |
 | methods on the class (`login(user, pass)`) | [Blocks](./guides/blocks), one action each (`fill-username`, `fill-password`, `submit-login`), in the page's folder |
 | locators in the class | a `_sel.ts` beside the page's Blocks |
 | assertions at the end of the test | `verify` on every Block (it arrived and took effect, in every flow), and `expect` on a step (what this scenario expects) |
 | test data in the test | typed [mem keys](./guides/data), with stubs for runs that don't care |
 | a test reads a value off the page | the page's [`read`](./guides/reads): what it shows, as typed data, read after every step |
-| the test is a function calling methods | a [flow](./guides/flows): `map().gotoPage(LoginPage.nav).method(LoginPage.do.submitLogin)…`, which TypeScript checks never skips between pages |
+| the test is a function calling methods | a [flow](./guides/flows): `map().gotoPage(LoginPage).method(LoginPage.do.submitLogin)…`, which TypeScript checks never skips between pages |
 
 What the fixed parts buy, past the page object:
 

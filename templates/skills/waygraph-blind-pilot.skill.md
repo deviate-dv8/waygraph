@@ -52,8 +52,7 @@ In the Map layout (`src/map/(app)/<url segments>/`, the folder path = the page's
 | File | Holds |
 |------|-------|
 | `_sel.ts` | `export const LoginSel = { username: "#user-name", submit: "[data-test=login]" } as const` - every selector the page's Blocks use |
-| `_nav.block.ts` | `defineNavBlock({ name: "nav-login", checkpoint: LoginPage, url: "/login", verify: [Trait.visible(LoginSel.submit)] })` |
-| `_page.block.ts` | `export const LoginPage = definePageBlock({ name: "page-login", checkpoint: Login, nav: NavLoginBlock, verify: [...], read: (ctx) => ({ error: ctx.page.text(LoginSel.error) }), do: () => ({ fillUsername: FillUsernameBlock }) })` - the page's namespace: a flow writes `.gotoPage(LoginPage.nav).method(LoginPage.do.fillUsername)` |
+| `_page.block.ts` | `export const LoginPage = definePageBlock({ name: "page-login", checkpoint: Login, url: "/login", verify: [...], read: (ctx) => ({ error: ctx.page.text(LoginSel.error) }), do: () => ({ fillUsername: FillUsernameBlock }) })` - the page's namespace: a flow writes `.gotoPage(LoginPage).method(LoginPage.do.fillUsername)` |
 | `_methods/<action>.method.block.ts` | one action each: `defineMethodBlock({ name, from, to, requires, act, verify, lands })` - the action written on the Method itself (older projects nest it under `instruction`; `waygraph upgrade --codemod instructions` flattens it) |
 | `_expect/<what>.expect.block.ts` | what a scenario can expect here: `defineExpectBlock({ name, description, checkpoint, verify })`, listed on the Page Block's `expects` and used as `{ expect: [LoginPage.expects.error] }` on a step. Reads only |
 
@@ -80,7 +79,7 @@ npx waygraph check . && npx waygraph map .   # no warnings, folders match URLs
 
 A Block that lands on the wrong Checkpoint or fails its `verify` is wrong now, not later - fix it before writing the
 next one. When a page is done, a flow that walks it (`src/flows/<page>/success.flow.ts`) turns it into a test: it imports the page's
-Page Block (`#map/(app)/login/_page.block`) and uses `LoginPage.nav` and `LoginPage.do.<method>`.
+Page Block (`#map/(app)/login/_page.block`) and uses `LoginPage` and `LoginPage.do.<method>`.
 
 ## Real gotchas specific to cold-start authoring
 

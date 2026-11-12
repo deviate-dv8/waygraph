@@ -246,13 +246,13 @@ test.describe("applyPath / auto reach (real multi-step routing, real saucedemo.c
       expect(loginResult.ok).toBe(true);
 
       // Now the actual proof: one applyPath call reaches CartPage from
-      // InventoryPage via the real "nav-cart" wildcard edge, whose precondition
+      // InventoryPage via the real "page-cart" wildcard edge, whose precondition
       // (being logged in) is genuinely met here - real click, real
       // navigation, one round trip instead of a hand-picked index.
       const result = await session.applyPath("CartPage");
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.path).toEqual(["nav-cart"]);
+        expect(result.path).toEqual(["page-cart"]);
         expect(result.snapshot.here).toBe("CartPage");
       }
     } finally {
@@ -265,7 +265,7 @@ test.describe("applyPath / auto reach (real multi-step routing, real saucedemo.c
     const session = await AutoSession.start({ projectDir: sauceRoot, headless: true });
     try {
       // From a fresh LoginPage, the shortest theoretical route to
-      // OrderComplete goes through "nav-checkout-info" (a `from: "*"` edge,
+      // OrderComplete goes through "page-checkout-info" (a `from: "*"` edge,
       // only really clickable once actually on the cart page with items) -
       // findBlockPathDetailed has no live-page access and can't know its
       // real precondition isn't met yet from here. Deterministic (confirmed

@@ -137,18 +137,18 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
 
 ## Flows, stubs and config (the scaffold's shape)
 
-- **Build flows with `map()`** (`engine.map().gotoPage(Page.nav).method(Page.do.b, { pace, expect: [Page.expects.a] })`;
+- **Build flows with `map()`** (`engine.map().gotoPage(Page).method(Page.do.b, { pace, expect: [Page.expects.a] })`;
   `.gotoExternal` for another origin); it is the only way to build one. Flow settings (`memStub`, `expectedFailure`, `demoPace`, `sessionReset`, `as`) go in `map({ … })` before the chain
   and the chain itself is the flow: there is no closing call. The flow's title is `ctx.ui.title(...)` in a stub. **Nest flows with `.flow(sub, { reset: true })`**.
   `defineFlow`, `chainFlow` and the `with*` flow wrappers were removed in 0.16.0; `waygraph upgrade --codemod flows` converts them.
-- **A flow imports one thing per page it visits: the page's Page Block.** `definePageBlock({ checkpoint: Home, nav:
-  NavHomeBlock, read: (ctx) => ({ ... }), do: () => ({ addItem: AddItemBlock }) })` exported as `HomePage`; the flow writes
-  `.gotoPage(HomePage.nav).method(HomePage.do.addItem)`, each typed as its own Block. Imports use the project's
+- **A flow imports one thing per page it visits: the page's Page Block.** `definePageBlock({ checkpoint: Home, url:
+  "/home", read: (ctx) => ({ ... }), do: () => ({ addItem: AddItemBlock }) })` exported as `HomePage`; the flow writes
+  `.gotoPage(HomePage).method(HomePage.do.addItem)`, each typed as its own Block. Imports use the project's
   `#config/`, `#map/`, `#states/` names (`import { HomePage } from "#map/(app_base)/home/_page.block"`), never a chain of
   `../`. No file is imported for its side effect (`import ".../_page.block.js"`, `import ".../x.mem-stubs.js"`): the
   tools load Block, Page and stub files themselves. A Page Block's `expects: { saved: () => ExpectSavedBlock }` names what
   can be checked on the page, so `HomePage.expects.saved` comes from the same import. An older project moves onto pages
-  with `waygraph upgrade --codemod pages` once each Page Block has its `nav` and `methods` / `expects` records.
+  with `waygraph upgrade --codemod pages` once each Page Block has its `url` and `do` / `expects`.
 - **UI on many pages is a layout, declared once.** A sidebar, top bar, user menu or breadcrumbs go in a
   `_layout.block.ts` (`defineLayout({ name, go: { plan: { to: ProductionPlan, click: SidebarSel.plan } }, do, read })`)
   in the folder of the pages they wrap: it covers every page in that folder and below, so a flow writes
@@ -258,26 +258,27 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
 
 ## Complete files (copy the shape, not the names)
 
-A Nav: where a page is, and how you know you're there.
+A page opens itself: where it is and how you know you're there. (A Nav Block is for a move that isn't a page's own address.)
 
 ```ts
-// src/map/(app)/inventory/_nav.block.ts
-import { defineNavBlock, Trait } from "waygraph";
+// src/map/(app)/inventory/_page.block.ts
+import { definePageBlock, Trait } from "waygraph";
 import { Inventory, SIGNED_IN } from "../../../states/shop.states.js";
 import { InventorySel } from "./_sel.js";
 
-export const NavInventoryBlock = defineNavBlock({
-  name: "nav-inventory",
-  description: "Opens the product list.",
+export const InventoryPage = definePageBlock({
+  name: "page-inventory",
+  description: "The product list.",
   checkpoint: Inventory,
-  url: "/inventory.html",          // or click: InventorySel.menuLink (defineNavClickBlock), or (mem) => `/item/${mem.get(ShopKeys.item).id}`
+  url: "/inventory.html",          // or click: InventorySel.menuLink, or (mem) => `/item/${mem.get(ShopKeys.item).id}`
   from: SIGNED_IN,                 // only reachable after sign-in; leave out for "from anywhere"
   verify: [Trait.url({ pathname: "/inventory.html" }), Trait.visible(InventorySel.list)],
+  // read, do and expects: below
 });
 ```
 
-A Method with two outcomes: `observe` looks, `resolve` names the Checkpoint from what `observe` returned (it gets no
-page and no mem), `verify` checks the outcome it landed on.
+A Method with two outcomes: `lands` looks at the page and names the Checkpoint it reached, `verify` checks the outcome it
+landed on.
 
 ```ts
 export const SubmitLoginBlock = defineMethodBlock({
@@ -341,7 +342,7 @@ export const DeleteTestUserApiBlock = defineApiBlock({
 export const Inventory = definePageBlock({
   name: "page-inventory",
   checkpoint: InventoryPage,
-  nav: NavInventoryBlock,
+  url: "/inventory",
   read: (ctx) => ({
     items: ctx.page.list(InventorySel.card, (row) => ({
       name: row.text(InventorySel.name),
@@ -375,9 +376,9 @@ const AddShown = InventoryPage.do.addToCart.stubAfter((ctx) => ctx.ui.ring("cart
 
 export const inventoryAddItemFlow = engine
   .map({ as: StandardUser, input: ShopKeys.selectedItem })
-  .gotoPage(InventoryPage.nav.stubBefore((ctx) => ctx.ui.title("Add an item")))
+  .gotoPage(InventoryPage.stubBefore((ctx) => ctx.ui.title("Add an item")))
   .method(AddShown)
-  .gotoPage(CartPage.nav, {
+  .gotoPage(CartPage, {
     expect: [Cart.items.passes((items, mem) => items.some((i) => i.name === mem.get(ShopKeys.selectedItem).name), "the item in the cart")],
   })
   .finally(EmptyCartApiBlock);
@@ -423,13 +424,11 @@ src/map/
   (app_base)/                      # organizational group only - never part of a Checkpoint tag
     dashboard/                     # must verbatim-match the real URL path (/dashboard)
       _page.block.ts
-      _nav.block.ts
       _sel.ts
       _methods/click-widget.block.ts
   (external)/                      # cross-origin (mailpit, etc.) - same shape
     docs/
       _page.block.ts
-      _nav.block.ts
       _sel.ts
 ```
 
@@ -460,7 +459,7 @@ Every `run`/`demo`/`test` also writes `.waygraph/runs/<runId>.jsonl` (step start
 newest one to see which Block failed and with what error, instead of re-running.
 
 `waygraph check` should report zero nav warnings. Orphan Blocks (not in any `.flow.ts`; a Page Block's
-`nav`, methods and expectations never are) are still runnable in Pilot's live menu - orphan status only blocks
+methods and expectations never are) are still runnable in Pilot's live menu - orphan status only blocks
 `auto --blocks <From> <To>` pathfinding.
 
 **Static tools above only find gaps in Blocks that already exist.** A real link/button on

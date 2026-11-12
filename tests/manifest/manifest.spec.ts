@@ -9,7 +9,7 @@ test("the manifest lists every Block with its route, every flow with its steps",
   expect(m.version).toBe(2);
   const submit = m.blocks.find((b) => b.name === "submit-login")!;
   expect(submit).toMatchObject({ kind: "method", from: ["LoginPage"], to: ["InventoryPage", "LoginPage"] });
-  expect(m.blocks.find((b) => b.name === "nav-cart")).toMatchObject({ kind: "nav", from: ["*"], to: ["CartPage"] });
+  expect(m.blocks.find((b) => b.name === "page-cart")).toMatchObject({ kind: "page", from: ["*"], to: ["CartPage"] });
   expect(m.checkpoints).toContain("OrderComplete");
   const shop = m.flows.find((f) => f.exportName === "shopFlow")!;
   expect(shop.steps[0]).toBe("add-to-cart");
@@ -39,8 +39,8 @@ test("Blocks under src/map/ carry their map group", async () => {
 
 test("each Block carries the lines that define it, its checks as data and the selector entries it reads", async () => {
   const m = await buildManifest(join(examples, "saucedemo"));
-  const nav = m.blocks.find((b) => b.name === "nav-cart")!;
-  expect(nav.source).toEqual({ line: 5, endLine: 18 });
+  const nav = m.blocks.find((b) => b.name === "page-cart")!;
+  expect(nav.source).toEqual({ line: 6, endLine: 23 });
   expect(nav.checks).toEqual({ precondition: [], verify: [{ name: 'url-matches({"pathname":"/cart.html"})' }] });
   expect(nav.selectors).toEqual([
     { name: "CartSel.cartLink", selector: ".shopping_cart_link", literal: true, file: "src/blocks/saucedemo-web/cart/cart.sel.ts", line: 7 },
@@ -65,7 +65,7 @@ test("a flow with panes lists them, and each step's pane", async () => {
     { name: "standard", as: "standard-user" },
     { name: "problem", as: "problem-user" },
   ]);
-  expect(two.steps).toEqual(["nav-inventory", "add-to-cart", "nav-inventory", "nav-cart", "nav-cart", "close-problem", "nav-inventory"]);
+  expect(two.steps).toEqual(["page-inventory", "add-to-cart", "page-inventory", "page-cart", "page-cart", "close-problem", "page-inventory"]);
   expect(two.stepPanes).toEqual(["standard", "standard", "problem", "problem", "standard", "standard", "standard"]);
   expect(m.accounts).toEqual(expect.arrayContaining(["problem-user", "standard-user"]));
   expect(m.flows.find((f) => f.exportName === "shopFlow")!.panes).toBeUndefined();

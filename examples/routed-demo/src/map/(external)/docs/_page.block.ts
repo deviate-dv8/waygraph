@@ -1,6 +1,6 @@
 import { definePageBlock, Trait } from "waygraph";
 import { Docs } from "../../../states/routed-demo.states.js";
-import { DocsSel } from "./_sel.js";
+import { DocsSel, DOCS_URL } from "./_sel.js";
 
 /**
  * Kind: Page
@@ -12,4 +12,5 @@ export const DocsPageBlock = definePageBlock({
   description: "Docs hub - the routed-demo example's (external) group.",
   checkpoint: Docs,
   verify: [Trait.visible(DocsSel.heading)],
+  url: DOCS_URL
 });

@@ -5,7 +5,6 @@ import { RemoveFromCartBlock } from "./methods/remove-from-cart.method.block.js"
 import { AddAllToCartBlock } from "./methods/add-all-to-cart.method.block.js";
 import { RemoveAllFromCartBlock } from "./methods/remove-all-from-cart.method.block.js";
 import { NavItemDetailBlock } from "./nav-item-detail.block.js";
-import { NavInventoryBlock } from "./nav-inventory.block.js";
 import { InventorySel } from "./methods/inventory-items.js";
 
 /**
@@ -25,11 +24,8 @@ export const Inventory = definePageBlock({
     "Inventory catalog hub - per-item and bulk add/remove, open item detail.",
   checkpoint: InventoryPage,
   screenshot: true,
-  nav: NavInventoryBlock,
-  verify: [
-    Trait.url({ pathname: "/inventory.html" }),
-    Trait.visible(InventorySel.list),
-  ],
+  url: "/inventory.html",
+  verify: [Trait.url({ pathname: "/inventory.html" }), Trait.visible(InventorySel.list)],
   do: () => ({ addToCart: AddToCartBlock, removeFromCart: RemoveFromCartBlock, addAllToCart: AddAllToCartBlock, removeAllFromCart: RemoveAllFromCartBlock, openDetail: NavItemDetailBlock }),
   read: (ctx) => ({
     items: ctx.page.list(InventorySel.card, (row) => ({

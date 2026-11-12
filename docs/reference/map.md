@@ -10,7 +10,6 @@ src/map/
   (app_base)/              # the landing/base group - purely organizational, never part of
     dashboard/              # any Checkpoint tag. One folder per Checkpoint - "Dashboard"
       _page.block.ts         # arrival hub (definePageBlock) - fixed name, every folder
-      _nav.block.ts           # navigation (defineNavBlock) - fixed name, every folder
       _sel.ts                  # selectors for this Checkpoint - fixed name, every folder
       _expect/                  # what a scenario can expect on this page (Expect Blocks) - fixed name
       _methods/                 # this Checkpoint's own action Blocks - fixed name, every
@@ -18,7 +17,6 @@ src/map/
   (external)/                     # only the folder itself is fixed.
     docs/                    # a genuinely cross-origin group, same shape - "Docs"
       _page.block.ts
-      _nav.block.ts
       _sel.ts
 ```
 
@@ -64,7 +62,7 @@ other. `waygraph check` warns on any import that leaves the group.
 src/map/(external)/hoppscotch/
   _states.ts          HoppscotchRest, HoppscotchSettings
   _keys.ts            hoppscotch.requestUrl, hoppscotch.expectedStatus, ...
-  _nav.block.ts  _page.block.ts  _sel.ts  _methods/  settings/
+  _page.block.ts  _sel.ts  _methods/  settings/
 ```
 
 ```bash

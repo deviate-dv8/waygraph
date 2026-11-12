@@ -18,7 +18,7 @@ import { HomeRead } from "#map/(app_base)/home/_reads";
 
 export const homeCartFlow = engine
   .map()
-  .gotoPage(HomePage.nav)
+  .gotoPage(HomePage)
   .method(HomePage.do.addItem, { expect: [HomeRead.cartCount.is(1)] })
   .method(HomePage.do.clearCart);
 ```
@@ -66,7 +66,7 @@ After a step, the flow says what the scenario expects: Expect Blocks, Traits, an
 
 ```ts
 engine.map({ as: Planner })
-  .gotoPage(Machine.nav, { expect: [Machine.expects.header] })
+  .gotoPage(Machine, { expect: [Machine.expects.header] })
   .method(Machine.do.confirmArchive, {
     expect: [
       ExpectArchivedToastBlock,                                                  // named, reusable
@@ -87,7 +87,7 @@ search instead of one Block per value:
 
 ```ts
 engine.map()
-  .gotoPage(RegistryPage.nav)
+  .gotoPage(RegistryPage)
   .set(Keys.search, "MCH-0111")
   .method(RegistryPage.do.fillSearch)
   .set(Keys.search, (mem) => mem.get(Keys.downMachine).code)                 // worked out when the step runs
@@ -104,9 +104,9 @@ export const logDisruption = steps(DisruptionLog, (m) =>
 );
 
 engine.map({ as: Planner })
-  .gotoPage(LogPage.nav)
+  .gotoPage(LogPage)
   .steps(logDisruption)
-  .gotoPage(LogPage.nav)
+  .gotoPage(LogPage)
   .steps(logDisruption);
 ```
 
@@ -121,7 +121,7 @@ database happens to hold; what it made goes away in `.finally()`, pass or fail:
 ```ts
 engine.map({ as: Planner })
   .flow(seedDownMachineFlow)          // API Blocks: create the machine, keep its code in mem
-  .gotoPage(RegistryPage.nav, { expect: [Registry.rows.passes((rows, mem) => rows.some((r) => r.code === mem.get(Keys.downMachine).code))] })
+  .gotoPage(RegistryPage, { expect: [Registry.rows.passes((rows, mem) => rows.some((r) => r.code === mem.get(Keys.downMachine).code))] })
   .finally(DeleteMachineApiBlock);
 ```
 

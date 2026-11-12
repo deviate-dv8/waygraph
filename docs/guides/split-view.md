@@ -14,9 +14,9 @@ export const AdminPane = pane("admin", { as: Admin });
 
 export const approvalFlow = engine
   .map({ panes: [PlannerPane, AdminPane] })
-  .in(PlannerPane).gotoPage(Registry.nav).method(Registry.do.requestRepair)
-  .in(AdminPane).gotoPage(Requests.nav).method(Requests.do.approve)
-  .in(PlannerPane).gotoPage(Registry.nav, { expect: [Machine.status.is("Approved")] });
+  .in(PlannerPane).gotoPage(Registry).method(Registry.do.requestRepair)
+  .in(AdminPane).gotoPage(Requests).method(Requests.do.approve)
+  .in(PlannerPane).gotoPage(Registry, { expect: [Machine.status.is("Approved")] });
 ```
 
 > The planner requests a repair. The admin approves it. Back with the planner, the machine reads Approved.
@@ -52,10 +52,10 @@ in: back to one screen. `.in()` it again later and it opens afresh, signed in ag
 ```ts
 engine
   .map({ memStub: true, panes: [Standard, Problem] })
-  .in(Standard).gotoPage(Inventory.nav).method(Inventory.do.addToCart)        // one screen
-  .in(Problem).gotoPage(Inventory.nav).gotoPage(Cart.nav)                    // two, side by side
-  .in(Standard).gotoPage(Cart.nav).close(Problem)                            // one again
-  .gotoPage(Inventory.nav);
+  .in(Standard).gotoPage(Inventory).method(Inventory.do.addToCart)        // one screen
+  .in(Problem).gotoPage(Inventory).gotoPage(Cart)                    // two, side by side
+  .in(Standard).gotoPage(Cart).close(Problem)                            // one again
+  .gotoPage(Inventory);
 ```
 
 Any pane closes, the first one too, in a run, a test or a demo alike.

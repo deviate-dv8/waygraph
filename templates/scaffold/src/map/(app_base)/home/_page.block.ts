@@ -1,7 +1,6 @@
 import { definePageBlock, Trait } from "waygraph";
-import { NavHomeBlock } from "./_nav.block.js";
 import { Home } from "../../../states/demo.states.js";
-import { DemoSel } from "./_sel.js";
+import { DemoSel, HOME_URL } from "./_sel.js";
 import { AddItemBlock } from "./_methods/add-item.method.block.js";
 import { RemoveItemBlock } from "./_methods/remove-item.method.block.js";
 import { ClearCartBlock } from "./_methods/clear-cart.method.block.js";
@@ -12,8 +11,8 @@ export const HomePage = definePageBlock({
   description: "Offline home hub - add/remove an item, clear the cart; expects hello.",
   checkpoint: Home,
   screenshot: true,
-  nav: NavHomeBlock,
-  verify: [Trait.visible(DemoSel.catalog)],
+  url: HOME_URL,
+  verify: [Trait.text(DemoSel.title, "Hello Waygraph"), Trait.visible(DemoSel.catalog)],
   do: () => ({ addItem: AddItemBlock, removeItem: RemoveItemBlock, clearCart: ClearCartBlock }),
   expects: () => ({ hello: ExpectHelloBlock }),
   read: (ctx) => ({

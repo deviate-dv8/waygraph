@@ -88,7 +88,7 @@ defineMethodBlock({
 
 ```ts
 engine.map({ as: Planner })
-  .gotoPage(Registry.nav, { expect: [Registry.expects.header] })
+  .gotoPage(Registry, { expect: [Registry.expects.header] })
   .method(Detail.do.confirmArchive, { expect: [ExpectArchivedToastBlock, Machine.status.is("Archived")] })
   .method(Registry.do.sortByName, { expect: [Registry.expects.archivedLast] });
 ```

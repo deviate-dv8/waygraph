@@ -26,7 +26,8 @@ export function registerInterrupts(list: readonly InterruptDef[]): void {
 
 /** Installs on `page` the interrupts of the layouts covering `checkpoint`, and removes those that no longer do. */
 export async function syncInterrupts(page: Page, checkpoint: string): Promise<void> {
-  if (defs.size === 0 && !installed.has(page)) return;
+  // A stand-in page (a test's) has no locator handlers.
+  if ((defs.size === 0 && !installed.has(page)) || typeof (page as { addLocatorHandler?: unknown }).addLocatorHandler !== "function") return;
   const has = installed.get(page) ?? new Map<string, () => Promise<void>>();
   installed.set(page, has);
   for (const [key, def] of defs) {
