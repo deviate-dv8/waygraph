@@ -13,7 +13,7 @@ auto, pilot). Storybook (`npm run storybook`, `stories/`) builds the same file o
   `button-primary`, `button-destructive`, `button-plain`, `field`, `segmented`, `switch`, `icon`.
 - `layout.css` - where everything goes: `#wg-ui`, its stage (anchored things) and its chrome slots.
 - `ring.css`, `cursor.css`, `fx.css`, `banner.css`, `caption.css`, `outcome.css`, `finish.css`, `chips.css`, `todos.css`, `panel.css`,
-  `network.css`, `pilot.css` - one component per file, holding only what utilities can't say: states (`.wg-in`,
+  `network.css`, `call-modal.css`, `pilot.css` - one component per file, holding only what utilities can't say: states (`.wg-in`,
   collapsed, behind a ring), keyframes, rules over content another file builds.
 - `host.css` - rules for the page itself (the device stage), outside the shadow root; plain CSS, not Tailwind.
 

@@ -25,7 +25,13 @@ The before-step panel lists what the step expects (`expect: [...]`). After it:
 - The **outcome card** (above the step panel, shown whether the panel is open or not) says how the step went: under
   **Expected**, each expectation in words (an Expect Block's description), ticked in turn, or crossed with what the
   page showed; under **Now shows**, what the page's [read](./reads) gives that changed since the step before
-  (`cart.count 0 > 1`; a list by its size). A failed step shows the card next to its fail panel.
+  (`cart.count 0 > 1`; a list by its size); under **API calls**, each HTTP call the step made (the page's `fetch`/XHR and an
+  API Block's request) as a row: the method, the route, the status in words (`201 Created`, `404 Not Found`) and the
+  time. Calls to other sites (analytics, a CDN) are counted and left out. A failed step shows the card next to its fail
+  panel.
+- A click on a call row opens the **call modal**: the request (method, address, headers, body) beside the response
+  (status and why, headers, body), and a *Copy as cURL*. Credentials (`authorization`, cookies, fields named like a
+  password or token) are masked. The same calls are in the [run log](../reference/run-log) (`step:call`).
 - The rings show what the step's checks looked at, labelled in words: an expectation's description, or what the check
   looked for (`shows`, `reads "Saved"`; a custom Trait's `says`). Something no longer on the page (a check made before
   the step went to another page) gets no ring.

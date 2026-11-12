@@ -26,6 +26,30 @@ const RELEVANT = new Set(["xhr", "fetch"]);
 const MAX_BODY = 200_000;
 const TEXTY = /json|text|xml|html|javascript|x-www-form-urlencoded/i;
 
+/** What a listener (the demo) sees of a call: the summary the log keeps and the bodies (masked) it doesn't. */
+export interface CallDetail {
+  runId: string;
+  step: number;
+  summary: CallSummary;
+  bodies: CallBodies;
+}
+const detailListeners = new Set<(detail: CallDetail) => void>();
+
+/** Subscribes to every call in this process, bodies included; returns the unsubscribe function. */
+export function onCallDetail(listener: (detail: CallDetail) => void): () => void {
+  detailListeners.add(listener);
+  return () => detailListeners.delete(listener);
+}
+
+/** Calls started and not yet recorded: a step's calls are all in once this is back to zero. */
+let inflight = 0;
+
+/** Resolves once no call is in flight, or after `ms`: the demo waits for a step's calls before it shows them. */
+export async function callsIdle(ms: number): Promise<void> {
+  const until = Date.now() + ms;
+  while (inflight > 0 && Date.now() < until) await new Promise((r) => setTimeout(r, 20));
+}
+
 const watched = new WeakSet<object>();
 const counts = new Map<string, number>();
 
@@ -39,17 +63,20 @@ export function watchCalls(page: Page, pane?: string): void {
   if (!run || typeof real.on !== "function" || watched.has(real)) return;
   watched.add(real);
   const startedAt = new WeakMap<Request, number>();
-  real.on("request", (req) => startedAt.set(req, Date.now()));
+  real.on("request", (req) => {
+    startedAt.set(req, Date.now());
+    if (RELEVANT.has(req.resourceType())) inflight++;
+  });
   real.on("requestfinished", (req) => {
     if (!RELEVANT.has(req.resourceType())) return;
-    void guarded(() => finish(req, startedAt.get(req), run, pane));
+    void guarded(() => finish(req, startedAt.get(req), run, pane)).finally(() => inflight--);
   });
   real.on("requestfailed", (req) => {
     if (!RELEVANT.has(req.resourceType())) return;
-    void settle(run, pane, req.url(), {
+    void guarded(() => settle(run, pane, req.url(), {
       source: "page", method: req.method(), url: req.url(), route: routeOf(req.url()), status: 0,
       ms: Date.now() - (startedAt.get(req) ?? Date.now()), failed: true,
-    }, { request: { headers: maskHeaders(req.headers()), body: maskBody(req.postData() ?? undefined, req.headers()["content-type"]) }, response: { status: 0, body: req.failure()?.errorText } });
+    }, { request: { headers: maskHeaders(req.headers()), body: maskBody(req.postData() ?? undefined, req.headers()["content-type"]) }, response: { status: 0, body: req.failure()?.errorText } })).finally(() => inflight--);
   });
 }
 
@@ -116,12 +143,20 @@ async function settle(run: { runId: string; step: () => number }, pane: string |
   } catch {
     /* a call that can't be kept is still a call */
   }
-  recordCall(run.runId, step, {
+  const logged: CallSummary = {
     ...summary,
     ...(summary.source === "page" && app && origin !== app ? { external: true as const } : {}),
     ...(pane ? { pane } : {}),
     ...(body ? { body } : {}),
-  });
+  };
+  recordCall(run.runId, step, logged);
+  for (const listener of detailListeners) {
+    try {
+      listener({ runId: run.runId, step, summary: logged, bodies });
+    } catch {
+      /* a broken listener never breaks a run */
+    }
+  }
 }
 
 const originOf = (url: string): string | undefined => {

@@ -1,0 +1,9 @@
+/* The call modal (#wg-call-modal, built in inpage/call-modal.ts): one HTTP call over the page, request beside response.
+   Its look is utilities there; here, the backdrop and how it comes in. */
+.wg-call-backdrop {
+  position: absolute; inset: 0; z-index: var(--wg-z-toast); display: flex; align-items: center; justify-content: center;
+  pointer-events: auto; background: var(--wg-fill-2); opacity: 0; transition: opacity .2s var(--ease-mac);
+}
+.wg-call-backdrop.wg-in { opacity: 1; }
+.wg-call-backdrop .wg-call-card { transform: translateY(8px) scale(.98); transition: transform .25s var(--ease-mac); }
+.wg-call-backdrop.wg-in .wg-call-card { transform: none; }

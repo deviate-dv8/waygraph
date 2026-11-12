@@ -18,6 +18,7 @@ import { showBefore } from "./before.js";
 import { renderBeforeStep, type BeforePanelInfo } from "./panel-before.js";
 import { showAfter } from "./after.js";
 import { showOutcomeCard } from "./outcome.js";
+import { startStepCalls, takeStepCalls } from "./step-calls.js";
 import { takeExpectResults } from "../../engine/run/expect.js";
 import { episodesOf, viewOf } from "./view.js";
 import type { StepperContext, StepperStep, StepView } from "./view.js";
@@ -146,6 +147,7 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
       paceStep(pacing, view.step, demoFast, options.fastBlocks);
       const panel = await showBefore(ctx, view);
       applyMemEdits(ctx, view, await gate.wait());
+      startStepCalls();
       running = panel;
       await markStepRunning(page);
       await labelNavClick(page, view.step);
@@ -162,7 +164,7 @@ export async function createStepper(page: WgPage, mem: MemPage, steps: readonly 
       await stepRan(ctx);
       const step = view.step;
       // An expectation that didn't hold: the card shows which held and which didn't, next to the fail panel.
-      await showOutcomeCard(ctx, takeExpectResults(page), []);
+      await showOutcomeCard(ctx, takeExpectResults(page), [], [], await takeStepCalls());
       const edits = await presentFailPanel(page, {
         block: step.block,
         highlightStyle: step.highlightStyle,

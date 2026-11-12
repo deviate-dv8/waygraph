@@ -3,12 +3,14 @@
 import { envFlag } from "../../engine/env.js";
 import { ignorePageGone } from "../../engine/page-gone.js";
 import type { ExpectResult } from "../../engine/run/expect.js";
+import { installCallModal } from "../overlay/inpage/call-modal.js";
 import { hideOutcome, showOutcome, tickOutcome, type OutcomeCard } from "../overlay/inpage/outcome.js";
 import { overlayLayer, type StoredPiece } from "../overlay/overlay-layer.js";
 import type { WgPage } from "../types.js";
 import { demoLog } from "./demo-log.js";
 import type { ReadChange } from "./last-read.js";
 import type { StepperContext } from "./view.js";
+import type { StepCalls } from "./step-calls.js";
 
 const quiet = () => envFlag("WAYGRAPH_JSON");
 
@@ -16,14 +18,14 @@ const quiet = () => envFlag("WAYGRAPH_JSON");
 const MAX_CHANGES = 5;
 
 /** How the step went, on a card that shows whether the panel is open: its expectations ticked in turn, then what changed. */
-export async function showOutcomeCard(ctx: StepperContext, expects: readonly ExpectResult[], changes: readonly ReadChange[], interrupts: readonly string[] = []): Promise<void> {
+export async function showOutcomeCard(ctx: StepperContext, expects: readonly ExpectResult[], changes: readonly ReadChange[], interrupts: readonly string[] = [], calls: StepCalls = { shown: [], leftOut: 0 }): Promise<void> {
   if (!quiet()) {
     for (const e of expects) demoLog(`  expected ${e.ok ? "ok" : "FAILED"}: ${e.text}${e.ok || !e.saw ? "" : ` (saw ${e.saw})`}`);
     for (const i of interrupts) demoLog(`  handled ${i}`);
     for (const c of changes) demoLog(`  now shows ${c.key}: ${c.from} -> ${c.to}`);
   }
   // A step with nothing to say takes the last step's card away; one with something replaces it in place.
-  if (expects.length === 0 && changes.length === 0 && interrupts.length === 0) {
+  if (expects.length === 0 && changes.length === 0 && interrupts.length === 0 && calls.shown.length === 0) {
     await outcomePiece(ctx.page).set(ctx.page, undefined);
     return;
   }
@@ -32,7 +34,10 @@ export async function showOutcomeCard(ctx: StepperContext, expects: readonly Exp
     changes: changes.slice(0, MAX_CHANGES),
     moreChanges: Math.max(0, changes.length - MAX_CHANGES),
     interrupts: [...interrupts],
+    ...(calls.shown.length ? { calls: calls.shown, callsLeftOut: calls.leftOut } : {}),
   };
+  for (const c of calls.shown) if (!quiet()) demoLog(`  called ${c.name} -> ${c.words} (${c.ms} ms)`);
+  await ctx.page.evaluate(installCallModal).catch(ignorePageGone);
   await ctx.page.evaluate(showOutcome, card).catch(ignorePageGone);
   // A page load before the next step brings it back, every row ticked.
   outcomePiece(ctx.page).remember(card);
@@ -48,6 +53,7 @@ export const outcomePiece = (page: WgPage): StoredPiece<OutcomeCard> =>
   overlayLayer(page).stored<OutcomeCard>(
     "outcome",
     async (p, card) => {
+      await p.evaluate(installCallModal);
       await p.evaluate(showOutcome, card);
       for (const [i] of card.expects.entries()) await p.evaluate(tickOutcome, i);
     },

@@ -14,6 +14,24 @@ export function statusWords(status: number): string {
   return WORDS[status] ? `${status} ${WORDS[status]}` : `${status}`;
 }
 
+/** What a status tells the reader about the call, the line a reader needs beside it. */
+export function statusWhy(status: number, method = "GET"): string {
+  if (status === 0) return "The request never got an answer (the server was down, the connection dropped, or the call was blocked).";
+  if (status === 401) return "The server doesn't know who is calling: the session or token is missing or expired.";
+  if (status === 403) return "The server knows who is calling, and that account isn't allowed to.";
+  if (status === 404) return "Nothing lives at this address (or the id in it doesn't exist).";
+  if (status === 409) return "The change collides with what the server already has.";
+  if (status === 422 || status === 400) return "The server rejected what was sent: see the request body against the response's message.";
+  if (status === 429) return "Too many calls in a short time: the server is rate limiting.";
+  if (status === 304) return "Nothing changed since the last time: the server told the client to reuse what it has.";
+  if (status === 201) return "The server made what was asked.";
+  if (status === 204) return `The ${method} worked and there is nothing to send back.`;
+  if (status >= 200 && status < 300) return "The call worked.";
+  if (status >= 300 && status < 400) return "The server pointed to another address.";
+  if (status >= 500) return "The server failed while handling a valid-looking request: a bug or an outage on their side.";
+  return "The server refused the call.";
+}
+
 /** The path of `url` with each id folded: `/posts/12` and `/users/3f2a…/orders` become `/posts/:id` and `/users/:id/orders`. */
 export function routeOf(url: string): string {
   let path: string;

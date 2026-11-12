@@ -22,6 +22,7 @@
 @import "./todos.css" layer(components);
 @import "./panel.css" layer(components);
 @import "./network.css" layer(components);
+@import "./call-modal.css" layer(components);
 @import "./pilot.css" layer(components);
 
 /* Utilities are generated for the classes the overlay's builders use (in-page code, pilot, the auto menu). */

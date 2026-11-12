@@ -2,6 +2,7 @@
 // A step's outcome card, after it: what the scenario expected (ticked in turn) and what the page now shows that changed.
 // In the bottom-centre slot, above the step panel, so it shows whether the panel is open or not.
 import type { IconName } from "../ui/icons.js";
+import type { CallView } from "./call-modal.js";
 
 /** What the card shows: the step's expectations (pending until ticked) and the read values that changed. */
 export interface OutcomeCard {
@@ -11,6 +12,10 @@ export interface OutcomeCard {
   moreChanges: number;
   /** What a layout handled while the step ran (a cookie banner closed). */
   interrupts?: string[];
+  /** The HTTP calls the step made (the app's own); a row opens the call modal. */
+  calls?: CallView[];
+  /** Calls to other origins, left out. */
+  callsLeftOut?: number;
 }
 
 export function showOutcome(card: OutcomeCard) {
@@ -68,14 +73,37 @@ export function showOutcome(card: OutcomeCard) {
   const handled = card.interrupts?.length
     ? section("info", "Handled on the way", __wgEl("ul", { class: "flex flex-col gap-0.5 text-xs" }, card.interrupts.map((i) => __wgEl("li", {}, i))))
     : null;
+  const calls = card.calls?.length
+    ? section(
+        "network",
+        "API calls",
+        __wgEl(
+          "ul",
+          { class: "flex flex-col gap-0.5" },
+          card.calls.map((c) => {
+            const row = __wgEl(
+              "li",
+              { class: "wg-call-row flex cursor-pointer items-baseline gap-2 rounded-control px-1 py-0.5 text-xs hover:bg-fill", attrs: { title: "Open the request and the response" } },
+              __wgEl("span", { class: "w-11 flex-none font-mono text-2xs font-semibold " + (c.method === "GET" ? "text-blue" : c.method === "DELETE" ? "text-red" : c.method === "POST" ? "text-green" : "text-orange") }, c.method),
+              __wgEl("span", { class: "min-w-0 flex-1 truncate font-mono" }, c.name.slice(c.method.length + 1)),
+              __wgEl("span", { class: "flex-none font-semibold " + (c.failed ? "text-red" : "text-green") }, c.words),
+              __wgEl("span", { class: "flex-none text-2xs tabular-nums text-label-3" }, c.ms + " ms"),
+            );
+            row.addEventListener("click", () => window.__wgOpenCall?.(c));
+            return row;
+          }),
+        ),
+        card.callsLeftOut ? __wgEl("div", { class: "text-2xs text-label-2 mt-0.5" }, card.callsLeftOut + " to other sites left out") : null,
+      )
+    : null;
   const had = __wgById("wg-outcome");
-  if (!expects && !changes && !handled) {
+  if (!expects && !changes && !handled && !calls) {
     had?.remove();
     return;
   }
   // The card already up (a step before on this screen) gets the new rows in place: it stays, it doesn't slide in again.
   if (had) {
-    __wgSet(had, expects, changes, handled);
+    __wgSet(had, expects, changes, handled, calls);
     had.classList.add("wg-in");
     return;
   }
@@ -85,6 +113,7 @@ export function showOutcome(card: OutcomeCard) {
     expects,
     changes,
     handled,
+    calls,
   );
   __wgAdd(el);
   requestAnimationFrame(() => el.classList.add("wg-in"));

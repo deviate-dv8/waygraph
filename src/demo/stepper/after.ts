@@ -13,6 +13,7 @@ import { demoLog, logStubPhaseFixtures, logTodoDockFull, paceSpeakFields, summar
 import { renderAfterStep } from "./panel-after.js";
 import { lastRead, takeInterrupts, takeReadChanges } from "./last-read.js";
 import { showOutcomeCard } from "./outcome.js";
+import { takeStepCalls } from "./step-calls.js";
 import { showSlides } from "./slides.js";
 import { expectationsFor, takeExpectResults, type ExpectResult } from "../../engine/run/expect.js";
 import { takeCheckedElements } from "../../engine/trait/verify.js";
@@ -32,7 +33,7 @@ export async function showAfter(ctx: StepperContext, view: StepView, result: Che
   const applied = after ? await stage.applyPhase(after.phase) : { appliedTodo: { sync: "keep" as const }, appliedDevice: { sync: "keep" as const } };
   // A demo that leaves the checks out (demo.overlay.checks) shows neither the card nor rings on what was checked.
   const checks = !overlayHides("checks");
-  if (checks) await showOutcomeCard(ctx, expects, changes, takeInterrupts());
+  if (checks) await showOutcomeCard(ctx, expects, changes, takeInterrupts(), await takeStepCalls());
 
   await renderAfterStep(ctx.page, {
     index: view.index,
