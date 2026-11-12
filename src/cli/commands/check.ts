@@ -43,6 +43,8 @@ function printPracticeReport(
 
 
 async function runTypecheckCommand(projectDir: string, noPractices: boolean): Promise<void> {
+  // The page names `to:` and `covers:` complete from, before tsc reads them.
+  await (await import("./types.js")).writePageTypes(projectDir).catch((err: unknown) => console.warn(`waygraph types: ${String(err)}`));
   const { spawnSync } = await import("node:child_process");
   const tsc = spawnSync("npx", ["tsc", "--noEmit"], {
     cwd: projectDir,
@@ -84,6 +86,7 @@ export async function typecheckCase(args: string[]): Promise<void> {
 export async function checkCase(args: string[]): Promise<void> {
       const flags = parseRunFlags(args.slice(1), args[0] ?? "check");
       const proj = resolve(flags.positionals[0] ?? process.cwd());
+      await (await import("./types.js")).writePageTypes(proj).catch((err: unknown) => console.warn(`waygraph types: ${String(err)}`));
       const { navWarnings, selWarnings, practiceWarnings, constantDataWarnings, unreadPages } = await checkProject(
         proj,
         flags.noPractices ? { noPractices: true } : undefined,

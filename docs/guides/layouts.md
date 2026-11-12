@@ -35,6 +35,10 @@ export const Dashboard = definePageBlock({
 });
 ```
 
+- **Names complete and typos are errors.** `to` and `covers` take the project's page names: `waygraph types` writes them to
+  `src/waygraph-pages.d.ts` (a global `WaygraphPages` interface, as a framework types its routes), and `waygraph typecheck` and
+  `check` rewrite it first. Commit it. Until it exists, any name is accepted. Add a page, run `waygraph typecheck`, and the
+  new name completes.
 - `Dashboard.links.documents` is a Nav: `.gotoPage(Dashboard.links.documents)` from any covered page, typed, with
   autocomplete on the link names.
 - `covers: "children"` is every page under the folder (nested shells stack). `covers: ["Documents", "Templates"]` names

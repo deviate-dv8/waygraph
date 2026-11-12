@@ -35,11 +35,23 @@ export type PageFolderGo<Out extends Checkpoint<string>, F> = F extends "folder"
   ? { readonly go: (params: Record<string, string | number>) => DefinedBlock<Checkpoint<string>, Out> }
   : unknown;
 
+declare global {
+  /**
+   * The names of the project's pages, for `to` and `covers` to complete and check. `waygraph types` fills it
+   * (`src/waygraph-pages.d.ts`, rewritten by `waygraph typecheck` and `check`); empty, any name is accepted.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface WaygraphPages {}
+}
+
+/** A page's name: one of the project's (completed, and a typo is an error), or any string until `waygraph types` has run. */
+export type PageName = [keyof WaygraphPages] extends [never] ? string : keyof WaygraphPages & string;
+
 /** `Shell.links.documents`: the links a covering page declares, present when it declares any. */
 export type PageLinks<Lk> = [keyof Lk] extends [never] ? unknown : { readonly links: Lk };
 
 /** A link of a covering page: where it leads (a page's name, or `"parent"`) and how it's clicked. */
-export interface InlineLink<To extends string | Checkpoint<string>> {
+export interface InlineLink<To extends PageName | "parent" | Checkpoint<string>> {
   /** A page's name, its Checkpoint, or `"parent"` (the page above, in the site map). */
   to: To;
   click: string | ((mem: MemPage) => string);
@@ -52,7 +64,7 @@ export interface InlineLink<To extends string | Checkpoint<string>> {
 
 
 /** Where an inline Method lands, if not on its page: a page's name (`"Dashboard"`) or a Checkpoint; a list when it can land on several. */
-export type LandsOn = string | Checkpoint<string>;
+export type LandsOn = PageName | Checkpoint<string>;
 export type CpOfLands<T> = T extends string ? Checkpoint<T> : T extends Checkpoint<string> ? T : never;
 
 

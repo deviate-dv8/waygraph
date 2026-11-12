@@ -72,6 +72,7 @@ More: [Testing](../guides/testing).
 | folders match URLs | `waygraph map` (exits 1 on a mismatch) |
 | pack a map group | `waygraph map pack <group> [--out dir] [--name pkg] [--version x.y.z]` |
 | the graph | `waygraph graph [--mermaid]` |
+| the page names, for `to:` and `covers:` to complete | `waygraph types` (written to `src/waygraph-pages.d.ts`; `typecheck` and `check` rewrite it first; commit it) |
 | everything as JSON | `waygraph manifest [--out file]` ([Run log and manifest](./run-log)) |
 | the project in the browser: map, flows, runs, play a flow | `waygraph studio [project] [--port N]` ([Waygraph Studio](../guides/studio)) |
 

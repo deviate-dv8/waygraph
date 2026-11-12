@@ -169,7 +169,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   plan: self.link({ to: "Plan", click: SidebarSel.plan }) }), read, interrupts, opens })`. Everything it declares is
   valid on every covered page, so a flow writes `.gotoPage(Dashboard.links.plan)` from any of them. `covers: ["A", "B"]`
   names pages when the app's shell doesn't follow its folders; leave out `checkpoint` for a shell that is no page;
-  `to: "parent"` for a link up, and `Trait.breadcrumbs(sel)` to check the trail. There is no separate layout kind
+  `to: "parent"` for a link up, and `Trait.breadcrumbs(sel)` to check the trail. Page names in `to` and `covers` complete from `src/waygraph-pages.d.ts` (`waygraph types`, rewritten by `typecheck`/`check`; commit it), so a typo is a compile error. There is no separate layout kind
   (`defineLayout` is deprecated). Never the same Nav or Method on each page, and never a list of pages on a Nav.
 - **Two people (or the app and a helper) in one scenario are panes, one flow.** Declare each pane once as a value (`export const AdminPane = pane("admin", { as: Admin })`), then `map({ panes: [PlannerPane, AdminPane] })`, `.in(AdminPane)` before the admin's steps and `.in(PlannerPane)` to come back; `with: AppPane` for a second page of the same person (the mail catcher); `.close(pane)` to go back to one screen. Never two
   flows for one story, never a sign-out and sign-in in the middle. The same flow two ways (two accounts, devices or

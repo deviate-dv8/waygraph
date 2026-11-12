@@ -12,7 +12,7 @@ import { checkpoint as makeCheckpoint, type Checkpoint } from "../../checkpoint/
 import type { Trait } from "../../trait/trait.js";
 import { MemPage } from "../../mem/mem.js";
 import type { MemKey } from "../../mem/mem.js";
-import { addressFromFolder, type CpOfLands, type InlineLink, type LandsOn, type PageFolderGo, type PageGo, type PageLinks } from "./page-parts.js";
+import { addressFromFolder, type CpOfLands, type InlineLink, type LandsOn, type PageFolderGo, type PageGo, type PageLinks, type PageName } from "./page-parts.js";
 import { registerFrame } from "../../run/frame.js";
 import { defineLayout, layoutState } from "./layout.js";
 import { markRoute } from "../../checkpoint/route.js";
@@ -72,7 +72,7 @@ export interface PageSelf<Out extends Checkpoint<string>, R, Nav> {
    * is the key (`login-fill`), it starts and, unless `to` names another page, ends on this page.
    */
   /** A link of this shell, for `links`: a Nav valid from every page it covers. */
-  link<const To extends string | Checkpoint<string>>(spec: InlineLink<To>): NavBlock<To extends "parent" ? Checkpoint<string> : To extends string ? Checkpoint<To> : To extends Checkpoint<string> ? To : never>;
+  link<const To extends PageName | "parent" | Checkpoint<string>>(spec: InlineLink<To>): NavBlock<To extends "parent" ? Checkpoint<string> : To extends string ? Checkpoint<To> : To extends Checkpoint<string> ? To : never>;
   /**
    * A Method with params: a function of them returning the Method, for what the scenario chooses (a drag from here to there)
    * and no mem key fits. `Page.do.drag({ x: 1, y: 2 }, { x: 9, y: 2 })` is the Block; its name carries the values.
@@ -197,7 +197,7 @@ export type PageBlockOptions<
    * `interrupts`, and its `read`) applies on every covered page, and the map draws it as one box around them.
    * @example covers: "children" · covers: ["Documents", "Templates"]
    */
-  covers?: "children" | readonly string[];
+  covers?: "children" | readonly PageName[];
   /**
    * The links every covered page has (a sidebar's): `Shell.links.documents`, each a Nav valid from any covered page, so a
    * flow writes `.gotoPage(Shell.links.documents)` once instead of a Nav per page.

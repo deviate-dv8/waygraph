@@ -1,6 +1,7 @@
 // Loads a project's layouts (`_layout.block.ts`) and works out what each covers: the pages whose Nav or Page Block lives
 // in its folder or below (or its `on`), the page above each (for `to: "parent"` links) and where its Read applies.
 // `run`, `demo`, `waygraph test` and the sessions load them, as they load Read Blocks and accounts.
+import { readFileSync } from "node:fs";
 import { dirname, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 import { envString } from "../engine/env.js";
@@ -51,7 +52,8 @@ function coverLayoutOf(value: unknown): ReturnType<typeof defineLayout> | undefi
 /** Imports every layout of the project and sets what each covers; returns them. */
 export async function loadLayouts(projectDir: string, known?: SiteTree): Promise<LoadedLayout[]> {
   const loaded: LoadedLayout[] = [];
-  const files = walkDir(projectDir, SHELL_FILE);
+  // Any file that says `covers:` is a shell, wherever it's named.
+  const files = walkDir(projectDir, /\.block\.ts$/).filter((f) => SHELL_FILE.test(f) || /\bcovers\s*:/.test(readFileSync(f, "utf8")));
   // A project with layouts gets its site map once (or is given it): breadcrumbs follow it (`to: "parent"`,
   // `Trait.breadcrumbs`).
   const tree = files.length ? (known ?? (await siteMapOf(projectDir))) : undefined;
