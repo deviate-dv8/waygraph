@@ -12,7 +12,7 @@ test("the manifest lists every Block with its route, every flow with its steps",
   expect(m.blocks.find((b) => b.name === "page-cart")).toMatchObject({ kind: "page", from: ["*"], to: ["CartPage"] });
   expect(m.checkpoints).toContain("OrderComplete");
   const shop = m.flows.find((f) => f.exportName === "shopFlow")!;
-  expect(shop.steps[0]).toBe("page-inventory");
+  expect(shop.steps.slice(0, 2)).toEqual(["sign-in-as-standard-user", "page-inventory"]);
   expect(shop.settings).toMatchObject({ memStub: true });
   // JSON-serializable: no Block objects or functions leak in
   expect(JSON.parse(JSON.stringify(m))).toEqual(m);
