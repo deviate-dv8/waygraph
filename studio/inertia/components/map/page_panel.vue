@@ -14,6 +14,7 @@ import type {
   ManifestBlock,
   ManifestPage,
   PageFlow,
+  PageNetwork,
   SelectorEntry,
 } from '#types/project'
 
@@ -28,6 +29,8 @@ const props = defineProps<{
   image?: string | undefined
   /** The flows that pass through it, with how each one's newest run went. */
   flows: PageFlow[]
+  /** Its calls in the newest runs, and the findings on them. */
+  network?: PageNetwork | undefined
   /** The shells it's under. */
   layouts?: string[]
   /** The Page Block itself, with its moves and expectations by key (waygraph 0.18.0+). */
@@ -149,6 +152,12 @@ const sections = computed<Section[]>(() =>
       label: 'Selectors',
       icon: 'i-lucide-crosshair',
       count: selectors.value.length,
+    },
+    {
+      value: 'network',
+      label: 'Network',
+      icon: 'i-lucide-network',
+      count: props.network?.calls.length ?? 0,
     },
     { value: 'flows', label: 'Flows', icon: 'i-lucide-route', count: props.flows.length },
   ].map((s) => ({ ...s, disabled: s.count === 0 }))
@@ -463,6 +472,26 @@ const where = (b: ManifestBlock, list: BlockList) =>
               >
             </li>
           </ul>
+
+          <div v-else-if="item.value === 'network' && props.network" class="space-y-2">
+            <ul v-if="props.network.findings.length" class="space-y-1">
+              <li
+                v-for="f in props.network.findings"
+                :key="f.kind + f.what"
+                class="text-xs text-(--fail)"
+              >
+                <span class="font-semibold">{{ f.kind }}</span> {{ f.what }}: {{ f.detail }}
+              </li>
+            </ul>
+            <ul class="space-y-0.5">
+              <li v-for="c in props.network.calls" :key="c.name" class="flex gap-2 text-xs">
+                <span class="min-w-0 flex-1 truncate font-mono" :title="c.name">{{ c.name }}</span>
+                <span v-if="c.count > 1" class="shrink-0">×{{ c.count }}</span>
+                <span class="shrink-0 text-(--ink-soft)">{{ c.ms }} ms</span>
+                <span class="shrink-0 font-semibold">{{ c.status || '—' }}</span>
+              </li>
+            </ul>
+          </div>
 
           <ul v-else-if="item.value === 'flows'" class="space-y-1">
             <li v-for="f in sortedFlows" :key="f.name" class="flex items-center gap-1.5 text-sm">

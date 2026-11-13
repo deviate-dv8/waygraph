@@ -233,6 +233,19 @@ export type StepCall = {
   body: string | null
 }
 
+/** A page's calls in the newest runs, and what is wrong with them. */
+export type PageNetwork = {
+  calls: {
+    name: string
+    count: number
+    ms: number
+    samples: number
+    status: number
+    size: number | null
+  }[]
+  findings: { kind: string; what: string; detail: string }[]
+}
+
 export type RunStep = {
   /** The calls it made, in order. */
   calls: StepCall[]

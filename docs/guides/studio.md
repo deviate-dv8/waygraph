@@ -91,7 +91,7 @@ Click a page for everything about it, most telling first:
 3. **Opens from**, **Do**, **Leads to**: its Blocks (a Method written in the page shows by its key). Open one for its checks, the selectors it reads and its code; the
    arrows in the panel's corner widen it to read code.
 4. **Expected here**: its Expect Blocks, and what Blocks promise on arrival.
-5. **Selectors** its Blocks read, and **Flows** last: each one that lands there, may land there (a step with several
+5. **Selectors** its Blocks read, then **Network**: the calls the flows' newest runs made on arrival (per route: how many, how long, the status), with findings on them (the same GET twice, one route asked with many ids, slow, large, failed; the same as `waygraph check --network`), and **Flows** last: each one that lands there, may land there (a step with several
    outcomes that ends the flow) or does something there, failing first.
 
 ### A shell

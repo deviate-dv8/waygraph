@@ -31,6 +31,7 @@ import type {
   ManifestReadBlock,
   MapAccess,
   PageFlow,
+  PageNetwork,
   SiteMap,
 } from '#types/project'
 
@@ -59,6 +60,8 @@ const props = defineProps<{
   journey: string[]
   /** Each page's flows: those with a step that lands, may land or starts on it, and how each one's newest run went. */
   pageFlows: Record<string, PageFlow[]>
+  /** Each page's calls in the flows' newest runs, and what is wrong with them. */
+  network: Record<string, PageNetwork>
   /** Each page's newest screenshot (a Block's `screenshot: true`), by Checkpoint: when it was taken. */
   shots: Record<string, number>
   flows: {
@@ -740,6 +743,7 @@ const page = computed(() =>
         :object="pageObject"
         :results="props.results"
         :flows="props.pageFlows[page.checkpoint] ?? []"
+        :network="props.network[page.checkpoint]"
         :layouts="props.access.pageLayouts[page.checkpoint] ?? []"
         :given="props.access.pageGiven[page.checkpoint]"
         @close="selected = null"
