@@ -12,7 +12,7 @@ against a real consumer.
 ## Next
 
 - **Flow meta, calls as data** - a flow has `title`/`description`/`labels` (done). Calls as data (run log `step:call`, demo card and modal, Studio run step, `check --network`) and the hybrid saucedemo flow are in. Studio's page panel has a Network section, `network` config names and judges calls, and Studio's API page is the offline console (send a recorded call again, copy it as cURL or an API Block).
-- **States, next** - `needs`/`sets` on pages, Methods and links are in (mem keys declared `state()`; the run checks them, Studio locks pages). Next: `waygraph check` walking a flow's steps against the guards before it runs, edges labelled `+signedIn` on the map, and enum states beside booleans.
+- **States, next** - `needs`/`sets` on pages, Methods and links are in (mem keys declared `state()`; the run checks them, Studio locks pages). `waygraph check` walks each flow against the guards and the map's moves read `+signedIn`. Next: enum states beside booleans, and states per pane (two people in one flow are one mem today, so `check` skips flows with panes).
 - **Session refactor** - `mem.trail` (what each step saw, typed by the page's read keys) is in. Replacing `(page, mem)` with one Session object in every hook, and Block kinds as classes, waits for 1.0.0: it breaks every Block for a model `mem` already gives.
 - **Page object, the rest** - a page is one object (`url`/`from`, `read`, `do`, `expects`), a layout has `interrupts`, a
   Method is written flat; four codemods (`page-object`, `nav`, `instructions`, `mem-stubs`) move a project. A page is its own Checkpoint with inline Methods, `route: "folder"`, `frame`

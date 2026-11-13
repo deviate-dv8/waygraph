@@ -159,7 +159,7 @@ self.link({ to: "LoginPage", click: MenuSel.logout, sets: [[SaucedemoKeys.signed
 
 An account sets the states it brings in its `mem` (`m.set(SaucedemoKeys.signedIn, true)`), because a flow `as` it skips the
 login steps. A run applies `sets` after the step lands, records each change as a `step:state` event, then checks the page it landed on:
-opening a page that needs `signedIn` while signed out fails the step, naming the state. The manifest lists `states`, each page's `needs`
+opening a page that needs `signedIn` while signed out fails the step, naming the state. `waygraph check` walks each flow's steps with the states they set and names a step that lands on a page whose state the flow isn't in, before anything runs (flows with panes are skipped: two people are one mem). The manifest lists `states`, each page's `needs`
 (its own and its shells') and each move's `sets`, and Waygraph Studio draws the lock on a page and a switch per state that dims what
 is out of reach.
 

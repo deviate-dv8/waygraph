@@ -27,7 +27,7 @@ const CheckBackendHealth = defineApiBlock({
   resolve: (result) => (result.ok ? BackendHealthy : BackendDown),
 });
 
-export const apiDemoEpisode = engine
+const apiDemoEpisode = engine
   .map({ title: "Backend health check", description: "A real HTTP request, no browser: resolves to healthy or down." })
   .method(
     CheckBackendHealth.stubBefore((ctx) => {

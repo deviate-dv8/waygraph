@@ -3,7 +3,7 @@ import { loginFlow } from "../auth/login.flow.js";
 import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
 
 /** Add every item, then remove them all (the bulk Methods). */
-export const cartBulkEpisode = engine
+const cartBulkEpisode = engine
   .map({ title: "Bulk add and remove", description: "Every Add clicked, then every Remove." })
   .gotoPage(Inventory.stubBefore((ctx) => ctx.ui.title("Cart bulk add/remove all")))
   .method(Inventory.do.addAllToCart)

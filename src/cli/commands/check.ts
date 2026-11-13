@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { findOrphanBlocks } from "../../analysis/graph.js";
 import { checkMapGroups, checkProject, validateFlows } from "../../analysis/check.js";
+import { checkStates } from "../../analysis/state-check.js";
 import { checkAccess } from "../../analysis/access-check.js";
 import { parseRunFlags } from "../flags.js";
 import { walkDir } from "../../manifest/scan.js";
@@ -173,6 +174,11 @@ export async function checkCase(args: string[]): Promise<void> {
         console.warn(`waygraph check: ${a.file} (${a.flow}) runs as ${a.account}, but ${a.what} is only for ${a.given.join(", ")} - run it as one of them, or give ${a.account} ${a.what} (its for)`);
       }
       if (access.length > 0) console.log(`waygraph check: ${access.length} step${access.length === 1 ? "" : "s"} an account isn't given`);
+      const stateWarnings = await checkStates(proj);
+      for (const w of stateWarnings) {
+        console.warn(`waygraph check: ${w.file} (${w.flow}) step ${w.step} lands on ${w.page}, which needs ${w.missing.join(", ")}: nothing before it sets ${w.missing.length === 1 ? "it" : "them"} (run as an account that has ${w.missing.length === 1 ? "it" : "them"}, or add a step with sets)`);
+      }
+      if (stateWarnings.length > 0) console.log(`waygraph check: ${stateWarnings.length} step${stateWarnings.length === 1 ? "" : "s"} landing on a page whose state the flow isn't in`);
       const orphans = await findOrphanBlocks(proj);
       printOrphanReport(proj, orphans);
       // Warnings only - never fail exit code. Orphans are reported for

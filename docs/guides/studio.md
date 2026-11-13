@@ -97,7 +97,7 @@ Click a page for everything about it, most telling first:
 ### States
 
 A project that declares states (`state()` mem keys, [States](./data#states-what-the-application-is)) gets one switch per state in the
-map's bottom bar. A page that needs a state shows a lock and the state's name, and is dimmed while the state is off: switch
+map's bottom bar. A page that needs a state shows a lock and the state's name, and is dimmed while the state is off: a move that changes a state says so on its line (`menu-logout -signedIn`); switch
 `signedIn` on and the signed-in pages come back. It answers "which pages can this user reach" without reading code.
 
 ### A live session

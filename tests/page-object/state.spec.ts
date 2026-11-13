@@ -43,3 +43,24 @@ test("the manifest lists the states, what a page needs and what a move sets", as
   const m = await buildManifest(new URL("../../examples/saucedemo", import.meta.url).pathname);
   expect(Array.isArray(m.states)).toBe(true);
 });
+
+test("waygraph check names a step that lands on a page whose state the flow isn't in", async () => {
+  const { checkStates } = await import("../../src/analysis/state-check.js");
+  const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const dir = mkdtempSync(join(tmpdir(), "wg-state-"));
+  mkdirSync(join(dir, "src", "flows"), { recursive: true });
+  writeFileSync(join(dir, "package.json"), '{"name":"s","type":"module"}');
+  writeFileSync(
+    join(dir, "src", "flows", "x.flow.ts"),
+    `import { definePageBlock, keys, map, state } from ${JSON.stringify(new URL("../../src/index.ts", import.meta.url).pathname)};
+const K = keys("chk")<{ on: boolean }>({ on: state(false) });
+const Gate = definePageBlock({ name: "page-chk-gate", checkpoint: "ChkGate", url: "/", do: (s) => ({ go: s.method({ to: "ChkIn", async act() {} }) }) });
+definePageBlock({ name: "page-chk-in", checkpoint: "ChkIn", needs: [K.on] });
+export const badFlow = map().gotoPage(Gate).method(Gate.do.go);
+`,
+  );
+  const warnings = await checkStates(dir);
+  expect(warnings.map((w) => [w.flow, w.page, w.missing])).toEqual([["badFlow", "ChkIn", ["chk.on"]]]);
+});

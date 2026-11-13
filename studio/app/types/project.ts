@@ -7,6 +7,8 @@ export type Json = string | number | boolean | null | Json[] | { [key: string]: 
 
 /** A Block as the manifest lists it. */
 export type ManifestBlock = {
+  /** The states it changes when it lands; `on` when that depends on where it lands (waygraph 0.18.0+). */
+  sets?: { key: string; value: boolean; on?: string }[]
   id: string
   name: string
   exportName: string

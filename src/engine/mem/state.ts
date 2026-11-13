@@ -62,6 +62,9 @@ export function describeSets(block: object, to: readonly string[]): { key: strin
   return to.flatMap((tag) => sets({ __state: tag } as Checkpoint<string>).map(([key, value]) => ({ key: key.name, value, on: tag })));
 }
 
+/** The states the page `tag` needs: its own and its shell's. */
+export const needsFor = (tag: string): MemKey<boolean>[] => [...(needsByPage.get(tag) ?? []), ...(needsByShell.get(tag) ?? [])];
+
 /** A copy of a Block keeps what it sets (markers aren't carried by a spread). */
 export function copyStates(from: object, to: object): void {
   markStates(to, { sets: (from as { __waygraphSets?: StateSets }).__waygraphSets });
@@ -93,6 +96,6 @@ export function applyStates(block: object, landed: Checkpoint<string>, mem: MemP
     mem.set(key, value);
     onSet?.(key.name, value);
   }
-  const missing = [...(needsByPage.get(landed.__state) ?? []), ...(needsByShell.get(landed.__state) ?? [])].filter((key) => !stateNow(mem, key));
+  const missing = needsFor(landed.__state).filter((key) => !stateNow(mem, key));
   if (missing.length) throw new WaygraphError("WG_STATE_NEEDED", `${landed.__state} needs ${missing.map((k) => k.name).join(", ")}, and the flow isn't in ${missing.length === 1 ? "that state" : "those states"}: sign in first (an account's mem, or a step that sets it)`);
 }

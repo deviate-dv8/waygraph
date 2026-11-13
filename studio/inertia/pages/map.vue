@@ -101,6 +101,11 @@ const toggleState = (key: string) => {
     : [...assumed.value, key]
 }
 const stateName = (key: string) => key.split('.').pop() ?? key
+/** What a move does to the states, after its name: `+signedIn`, `-signedIn`. */
+const setsText = (b: ManifestBlock) =>
+  (b.sets ?? []).length
+    ? ' ' + [...new Set(b.sets!.map((s) => (s.value ? '+' : '-') + stateName(s.key)))].join(' ')
+    : ''
 /** The states a page needs that aren't assumed on: while any, it is out of reach. */
 const lockedBy = (id: string) =>
   (props.pages.find((p) => p.checkpoint === id)?.needs ?? []).filter(
@@ -632,7 +637,7 @@ const edges = computed<Edge[]>(() => {
       data: {
         blocks: e.blocks.map((b) => ({
           id: b.id,
-          name: b.name,
+          name: b.name + setsText(b),
           kind: b.kind,
           description: b.description,
         })),
@@ -658,7 +663,7 @@ const edges = computed<Edge[]>(() => {
         data: {
           blocks: e.blocks.map((b) => ({
             id: b.id,
-            name: b.name,
+            name: b.name + setsText(b),
             kind: b.kind,
             description: b.description,
           })),
