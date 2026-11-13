@@ -124,6 +124,31 @@ engine.map()
 
 A key a `.set()` gives is no longer one the run must supply: `--data` and mem stubs aren't asked for it.
 
+## What earlier steps saw: `mem.trail`
+
+Every step's [read](./reads) is kept with the run's mem, so a later step, on another page, can ask what an earlier one
+showed: no mem key to declare, typed by the page's own read keys (autocomplete is `Page.read.x`):
+
+```ts
+engine.map()
+  .gotoPage(Machines)
+  .method(Machines.do.create("Mixer 2"))                       // step 4: something is made
+  .gotoPage(Report)
+  .method(Report.do.export, {
+    expect: [Report.check("lists what we made", ({ rows }, mem) => rows.includes(mem.trail.latest(Machines.read.lastCreated) ?? ""))],
+  });
+```
+
+| Ask | Gives |
+|---|---|
+| `mem.trail.latest(key)` / `first(key)` | the newest / the first value any step saw for that key (`undefined` when none did) |
+| `mem.trail.at(step, key)` | what it showed right after that step (its index in the run log) |
+| `mem.trail.all(key)` | every sighting: `{ step, block, page, pane?, value }` |
+| `mem.trail.changed(key)` | `{ from, to }` between the last two sightings |
+
+`mem` reaches every hook that has one: a Method's `act(page, input, mem)`, a Trait's `check(page, mem)`, `Page.check(why, (read, mem) => …)`,
+a stub's `ctx.mem`. In a flow with panes, `{ pane: "standard" }` as the last argument picks one pane's sightings.
+
 ## The same steps in several flows: `steps()`
 
 ```ts
