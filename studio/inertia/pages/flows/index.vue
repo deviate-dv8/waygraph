@@ -121,7 +121,7 @@ const groups = computed(() => {
                 {{ f.description }}
               </p>
               <p class="truncate font-mono text-[11px] text-(--ink-soft)" :title="f.file">
-                {{ f.file }}
+                {{ f.title ? `${f.name} · ` : '' }}{{ f.file }}
               </p>
             </div>
             <UBadge
