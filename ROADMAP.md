@@ -44,10 +44,6 @@ against a real consumer.
   "button[aria-label=Menu]" }`), picked by the device the flow plays on; kept as plain data so other drivers can use
   it. The manifest and Waygraph Studio list the variants; `waygraph check` warns about a device an entry has none for. A
   layout's links would use it too (a sidebar on desktop, a burger menu on a phone).
-- **Sauce Demo in the project's shape** - the example is freeform (`src/blocks/saucedemo-web/`, flows by feature, its
-  menu layout by `on`); the shape [Your project](docs/guides/project.md) defines is `src/map/` by address, a page folder
-  each, flows a folder per page. Moving it makes the example the reference it's used as, and `waygraph map` holds it
-  there. The scaffold already has the shape.
 - **A virtual address bar** - the stage's panes (and a single page, in a recording) show the page's url in a slim header, since a demo's window has no browser chrome: where each pane is, at a glance. Next for the stage.
 - **Split view, next** - two people acting at the same moment (a race: both click at once) instead of in the flow's
   order; panes for `waygraph auto` and Pilot (an agent acting as two people); composing each pane's full-rate video into

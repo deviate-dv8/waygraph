@@ -12,7 +12,7 @@ test("the manifest lists every Block with its route, every flow with its steps",
   expect(m.blocks.find((b) => b.name === "page-cart")).toMatchObject({ kind: "page", from: ["*"], to: ["CartPage"] });
   expect(m.checkpoints).toContain("OrderComplete");
   const shop = m.flows.find((f) => f.exportName === "shopFlow")!;
-  expect(shop.steps[0]).toBe("add-to-cart");
+  expect(shop.steps[0]).toBe("page-inventory");
   expect(shop.settings).toMatchObject({ memStub: true });
   // JSON-serializable: no Block objects or functions leak in
   expect(JSON.parse(JSON.stringify(m))).toEqual(m);
@@ -23,7 +23,7 @@ test("the manifest lists each page's read with the Checkpoint it reads and the s
   expect(m.readBlocks.find((r) => r.name === "read-page-inventory" || r.name === "read-inventory")).toMatchObject({
     from: ["InventoryPage"],
     fields: { "catalog.items": [{ name: "string", price: "number", inCart: "boolean" }], "catalog.sort": "string" },
-    file: "src/blocks/saucedemo-web/inventory/inventory.page.block.ts",
+    file: "src/map/(shop)/inventory.html/_page.block.ts",
   });
   // What every page of the layout shows is the layout's read.
   expect(m.readBlocks.find((r) => r.name === "read-menu")).toMatchObject({ fields: { "header.title": "string", "header.cartCount": "unknown" } });
@@ -40,10 +40,10 @@ test("Blocks under src/map/ carry their map group", async () => {
 test("each Block carries the lines that define it, its checks as data and the selector entries it reads", async () => {
   const m = await buildManifest(join(examples, "saucedemo"));
   const nav = m.blocks.find((b) => b.name === "page-cart")!;
-  expect(nav.source).toEqual({ line: 6, endLine: 23 });
+  expect(nav.source).toEqual({ line: 5, endLine: 22 });
   expect(nav.checks).toEqual({ precondition: [], verify: [{ name: 'url-matches({"pathname":"/cart.html"})' }] });
   expect(nav.selectors).toEqual([
-    { name: "CartSel.cartLink", selector: ".shopping_cart_link", literal: true, file: "src/blocks/saucedemo-web/cart/cart.sel.ts", line: 7 },
+    { name: "CartSel.cartLink", selector: ".shopping_cart_link", literal: true, file: "src/map/(shop)/cart.html/_sel.ts", line: 3 },
   ]);
   expect(m.flows.every((f) => f.source)).toBe(true);
   expect(m.readBlocks.every((r) => r.source)).toBe(true);
@@ -54,8 +54,8 @@ test("each Block carries the lines that define it, its checks as data and the se
 test("each flow carries its labels from the config's labels", async () => {
   const m = await buildManifest(join(examples, "saucedemo"), { labels: { auth: ["src/flows/auth/login.flow.ts"], smoke: ["shopFlow"] } });
   expect(m.flows.find((f) => f.exportName === "loginFlow")?.labels).toEqual(["auth", "smoke"]);
-  expect(m.flows.find((f) => f.exportName === "shopFlow")?.labels).toEqual(["smoke"]);
-  expect(m.flows.find((f) => f.exportName === "cartBulkFlow")?.labels).toEqual([]);
+  expect(m.flows.find((f) => f.exportName === "shopFlow")?.labels).toEqual(["cart", "checkout", "smoke"]);
+  expect(m.flows.find((f) => f.exportName === "cartBulkFlow")?.labels).toEqual(["cart"]);
 });
 
 test("a flow with panes lists them, and each step's pane", async () => {
@@ -74,7 +74,7 @@ test("a flow with panes lists them, and each step's pane", async () => {
 test("the manifest lists each page with what it holds: moves by key, what it covers, and a Block's place in its page", async () => {
   const m = await buildManifest(join(examples, "saucedemo"));
   const login = m.pages.find((p) => p.checkpoint === "LoginPage")!;
-  expect(login).toMatchObject({ opensBy: "url", read: "read-nav-login" });
+  expect(login).toMatchObject({ opensBy: "url", read: "read-login" });
   expect(login.do.map((d) => d.key)).toEqual(["fillUsername", "fillPassword", "submitLogin"]);
   const menu = m.pages.find((p) => p.name === "menu")!;
   expect(menu).toMatchObject({ bare: true, links: [{ key: "allItems", to: "InventoryPage" }, { key: "logout", to: "LoginPage" }] });

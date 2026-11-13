@@ -20,12 +20,11 @@ test("waygraph auto discovers the decomposed saucedemo graph, with no Block skip
     ].sort(),
   );
   // checkout-info split into fill-first-name/fill-last-name/fill-postal-code, the atomic login Blocks
-  // (fill-username/fill-password/submit-login's 2 branches), nav-inventory (straight to the catalogue for a flow that
-  // starts signed in); the cart's Methods each stay on the inventory (what's in the cart is what it shows); the menu's two
-  // links, one edge from each page it covers.
+  // (fill-username/fill-password/submit-login's 2 branches), the cart's Methods each stay on the inventory (what's in the cart is what it shows); the menu's two links, one edge from
+  // each page it covers.
   expect(graph.edges.length).toBe(33);
   const removeEdges = graph.edges.filter((e) => e.block === "remove-from-cart");
-  expect(removeEdges).toEqual([expect.objectContaining({ from: "*", to: "InventoryPage", kind: "action" })]);
+  expect(removeEdges).toEqual([expect.objectContaining({ from: "InventoryPage", to: "InventoryPage", kind: "action" })]);
 
   const loginFail = graph.edges.find((e) => e.block === "submit-login" && e.to === "LoginPage");
   expect(loginFail).toMatchObject({ from: "LoginPage", to: "LoginPage", kind: "action" });

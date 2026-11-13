@@ -44,9 +44,9 @@ test("auto menu on inventory shows per-item + bulk add/remove", async () => {
   }
 
   const labels1 = menu1.flat.map((e) => e.label ?? `${e.block} -> ${e.to}`);
-  expect(labels1).toContain("Add all to cart");
+  expect(labels1).toContain("add-all-to-cart -> InventoryPage");
   expect(labels1.filter((l) => /^Add "/.test(l ?? "")).length).toBeGreaterThanOrEqual(2);
-  expect(labels1).not.toContain("Remove all from cart");
+  expect(labels1).not.toContain("remove-all-from-cart -> InventoryPage");
 
   // Add bike light via DOM so Remove rows appear (same as picking that auto row).
   await page.locator('[data-test="add-to-cart-sauce-labs-bike-light"]').click();
@@ -61,8 +61,8 @@ test("auto menu on inventory shows per-item + bulk add/remove", async () => {
   }
 
   const labels2 = menu2.flat.map((e) => e.label ?? `${e.block} -> ${e.to}`);
-  expect(labels2).toContain("Remove all from cart");
-  expect(labels2).toContain("Add all to cart");
+  expect(labels2).toContain("remove-all-from-cart -> InventoryPage");
+  expect(labels2).toContain("add-all-to-cart -> InventoryPage");
   expect(labels2.some((l) => /Remove "Sauce Labs Bike Light"/i.test(l ?? ""))).toBeTruthy();
 
   void mem;

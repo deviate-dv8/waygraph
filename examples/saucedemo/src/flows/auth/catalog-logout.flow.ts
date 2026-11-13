@@ -1,15 +1,13 @@
 import { engine } from "../../../config/waygraph.config.js";
-import { ItemDetail } from "../../blocks/saucedemo-web/inventory-item/item-detail.page.block.js";
-import { Menu } from "../../blocks/saucedemo-web/menu.page.block.js";
+import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
+import { ItemDetail } from "../../map/(shop)/inventory-item.html/_page.block.js";
+import { Menu } from "../../map/(shop)/menu/_page.block.js";
 
+/** Browse a product and back, use the menu to see everything, then sign out. */
 export const catalogLogoutFlow = engine
-  .map()
-  .gotoPage(
-    ItemDetail.nav.stubBefore((ctx) =>
-      ctx.ui.title("Catalog browse then logout"),
-    ),
-  )
-  .gotoPage(ItemDetail.do.backToProducts)
-  .gotoPage(ItemDetail.nav)
+  .map({ title: "Browse, then sign out", description: "Open a product, go back, use the menu, and log out.", labels: ["auth"] })
+  .gotoPage(Inventory.stubBefore((ctx) => ctx.ui.title("Catalog browse then logout")))
+  .method(Inventory.do.openDetail)
+  .method(ItemDetail.do.backToProducts)
   .gotoPage(Menu.links.allItems)
   .gotoPage(Menu.links.logout);

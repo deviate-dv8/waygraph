@@ -70,7 +70,7 @@ A freeform project (`src/blocks/<site>/<page>/`, `nav-*.block.ts`, `methods/`, `
 
 ```
 waygraph browser reload <id>                 # loads the new files
-waygraph browser send <id> nav-login         # runs it: the reply's here, read and lastRunNote say what happened
+waygraph browser send <id> page-login         # runs it: the reply's here, read and lastRunNote say what happened
 waygraph browser read <id>                   # the page's `read`, if you wrote one
 npx waygraph check . && npx waygraph map .   # no warnings, folders match URLs
 ```
@@ -98,7 +98,7 @@ Page Block (`#map/(app)/login/_page.block`) and uses `LoginPage` and `LoginPage.
   long-term. A `.first()`-shaped Block is a legitimate STARTING point for a page that only
   ever has one real row to act on - promote it to a mem-driven `defineMemNavBlock` /
   a `defineMethodBlock` with `instanceOptions` (see `--skill-convention`, and
-  `node_modules/waygraph/examples/saucedemo/src/blocks/saucedemo-web/inventory/` for the real pattern) once a second
+  `node_modules/waygraph/examples/saucedemo/src/map/(shop)/inventory.html/` for the real pattern) once a second
   real row genuinely exists to pick between, not before.
 - **Prefer the real Pilot overlay over ad hoc status output** when driving a headful session
   someone might be watching - badge/panel on `about:blank` and after every navigation; raw

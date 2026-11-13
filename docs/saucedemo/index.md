@@ -25,43 +25,45 @@ npm test                # the Playwright suite, headless
 
 ## Layout
 
+One folder per screen, named for its URL (`waygraph map` checks they match), and in each a page object:
+
 ```
 examples/saucedemo/
-  config/waygraph.config.ts   base URL, the engine
+  config/waygraph.config.ts          base URL, the engine
   src/
-    states/
-      checkout.states.ts      every Checkpoint
-      checkout.mem-keys.ts    Mem keys (credentials, item)
-      checkout.mem-stubs.ts   default Mem values
-      checkout.reads.ts       read namespaces
-    blocks/saucedemo-web/     one folder per screen (its URL)
-      nav-login.block.ts      Page: the login screen (/)
-      _layout.block.ts        the burger menu on every page after sign-in (all items, logout)
-      methods/                fill / submit login
-      inventory/              the inventory Page, its methods/
-      inventory-item/         item detail navigation
-      cart/                   to the cart, to checkout
-      checkout-step-one/      the info form's methods/
-      checkout-step-two/      finish-order
-    flows/                    one file per story
-    stubs/                    narration several flows share
-  tests/                      Playwright specs running the flows
+    map/(shop)/
+      _page.block.ts                 the login page (/): its read and its Methods (fill, submit)
+      _sel.ts                        its selectors
+      _methods/                      one file per Method: fill-username, fill-password, submit
+      inventory.html/                the catalogue: _page.block.ts, _sel.ts, _items.ts, _methods/ (add, remove, all, open detail)
+      inventory-item.html/           one product: back to products
+      cart.html/                     the cart: continue shopping
+      checkout-step-one.html/        the info form: fill first name, last name, postal code, submit
+      checkout-step-two.html/        the summary: finish the order
+      checkout-complete.html/        the confirmation: back home
+      menu/                          the burger menu, a shell over every page after sign-in (all items, log out)
+    states/checkout.mem-keys.ts      Mem keys (credentials, the selected item), with their stubs
+    accounts/accounts.ts             the standard and problem shoppers
+    flows/                           one file per story, each with a title, a description and labels
+    stubs/                           narration several flows share
+  tests/                             Playwright specs running the flows
 ```
 
-`waygraph graph` prints what can be reached from each screen.
+`waygraph graph` prints what can be reached from each screen; `waygraph types` writes the page names
+(`src/waygraph-pages.d.ts`) that `to` and `covers` complete from.
 
 ## Blocks
 
-| Kind | Helper | In this example |
-|---|---|---|
-| Page | `definePageBlock` | `nav-login` (deep-links `/`, the login form's methods hang off it); `page-inventory` (arrival-only, after sign-in) |
-| Nav | `defineNavClickBlock` / `defineMemNavBlock` | `nav-cart` clicks the cart icon; `nav-item-detail` opens the item named in Mem |
-| Method | `defineMethodBlock` | `fill-username`, `submit-login` (branches: `InventoryPage` or back to `LoginPage`), `finish-order` |
-| Method (one row of many) | `defineMethodBlock` + `instanceOptions` | `add-to-cart`: one auto-menu row per live "Add to cart" button |
-| Read | `defineReadBlock` | `read-inventory`, `read-cart`, `read-header`: what the pages show, as JSON for `pilot read` ([Read Blocks](../guides/reads.md)) |
-| API | `defineApiBlock` | `api-demo.flow.ts`: a backend check resolved into a Checkpoint like a UI step |
+| Kind | In this example |
+|---|---|
+| Page (`definePageBlock`) | one per screen: its `url` (or the `click` that opens it, or the Methods that lead to it), its `verify`, what it shows (`read`) and what you can do there (`do`) |
+| Method (`self.method` in `_methods/`) | `fill-username`; `submit-login` (two outcomes: `InventoryPage`, or the login page again with the error banner); `add-to-cart` (one auto-menu row per live Add button, through `instanceOptions`); `open-detail`; `finish-order` |
+| Shell (`covers`) | `menu`: the burger menu over every page after sign-in, with its two links |
+| Check (`Page.check`) | `Inventory.check("the item in the cart", ({ items }, mem) => ...)` in a Method's `verify` and in a flow's `expect` |
+| API (`defineApiBlock`) | `api-demo.flow.ts` (a backend check resolved into a Checkpoint) and `hybrid-seeding.flow.ts` (seed, then verify, around the UI steps) |
 
-Blocks carry behaviour only (act, observe, resolve, verify). They have no narration of their own.
+A page is its own Checkpoint (`checkpoint: "InventoryPage"`), so there are no Nav Blocks and no states file. Blocks carry
+behaviour only; narration is written in the flow, where it is used.
 
 ## Flows
 

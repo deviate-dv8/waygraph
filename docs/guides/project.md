@@ -195,6 +195,5 @@ npx waygraph upgrade --codemod expect                 # Assert Blocks and .asser
 ## A freeform layout
 
 A small project can skip `src/map/`: any `*.block.ts` anywhere under `src/` is loaded, and a `_layout.block.ts` covers
-the pages in its folder the same way. The [Sauce Demo example](../saucedemo/) uses `src/blocks/saucedemo-web/<page>/`
-like that. It gives up what the Map gives (`waygraph map` can't hold folders to addresses), so it's for trying things;
+the pages in its folder the same way. Freeform gives up what the Map gives (`waygraph map` can't hold folders to addresses), so it's for trying things;
 moving to the Map later only moves files: [migrating](../reference/map#migrating-from-freeform-router-to-waygraph-map).

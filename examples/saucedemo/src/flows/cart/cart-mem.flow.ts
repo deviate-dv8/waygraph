@@ -1,6 +1,7 @@
 import { engine } from "../../../config/waygraph.config.js";
-import { Inventory } from "../../blocks/saucedemo-web/inventory/inventory.page.block.js";
+import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
 
 export const cartMemFlow = engine
-  .map()
+  .map({ title: "Remove the selected item", description: "The item named in mem is taken out of the cart.", labels: ["cart"] })
+  .gotoPage(Inventory)
   .method(Inventory.do.removeFromCart);

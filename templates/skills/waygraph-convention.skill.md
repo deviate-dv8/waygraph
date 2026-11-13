@@ -75,7 +75,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
    `fill-username` (self-loop) + `fill-password` (self-loop) + `submit-login` (transition),
    never one Method that "fills and logs in." Same split for checkout fields: no Block `.fill()`s
    two fields or `.fill()`s and `.click()`s in one `act()` (`waygraph check`: `multi-input`,
-   `combined-action`). Canonical shape: `node_modules/waygraph/examples/saucedemo/src/blocks/saucedemo-web/methods/`.
+   `combined-action`). Canonical shape: `node_modules/waygraph/examples/saucedemo/src/map/(shop)/_methods/`.
 2. **Navigation only in a page's address or a Nav.** `page.goto` / `click` navigation live in a Page Block's `url`/`click`
    (or `route: "folder"`, the address of its folder) and in `defineNavBlock` for a move that isn't a page's own address.
    A Method's `act` uses ActionPage (no goto) even when the app changes URL as a side effect of a button click.
@@ -516,6 +516,6 @@ npx waygraph --skill-pilot-blind     # cold-start: raw ops + author Blocks as yo
 npx waygraph --skill-convention      # this file
 ```
 
-Worked freeform example: `node_modules/waygraph/examples/saucedemo` (`src/blocks/saucedemo-web/`); every Block kind,
-accounts, reads and narration, against saucedemo.com. Docs: https://deviate-dv8.github.io/waygraph/guides/blocks
+Worked example: `node_modules/waygraph/examples/saucedemo` (`src/map/(shop)/`, the shape above); pages, Methods, a shell,
+accounts, reads, API Blocks and narration, against saucedemo.com. Docs: https://deviate-dv8.github.io/waygraph/guides/blocks
 Agent personas (author/planner/healer): `npx waygraph agent-dive --loop claude`.

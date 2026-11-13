@@ -1,5 +1,5 @@
 import { engine } from "../../../config/waygraph.config.js";
-import { Login } from "../../blocks/saucedemo-web/nav-login.block.js";
+import { Login } from "../../map/(shop)/_page.block.js";
 import { loginRefused } from "../../stubs/login.js";
 
 /**
@@ -8,6 +8,9 @@ import { loginRefused } from "../../stubs/login.js";
  */
 export const viewerBlockedFlow = engine
   .map({
+    title: "A locked-out user is refused",
+    description: "locked_out_user stays on the login page with the error banner.",
+    labels: ["auth"],
     sessionReset: true,
     expectedFailure:
       "locked_out_user stays on LoginPage with the error banner - this is the product working as intended.",

@@ -21,7 +21,7 @@ Every page should have one: `waygraph check` lists the pages with no `read`.
 nothing is declared twice, and the page's keys exist as soon as it does: `Inventory.read.items`, typed.
 
 ```ts
-// src/blocks/saucedemo-web/inventory/inventory.page.block.ts
+// src/map/(shop)/inventory.html/_page.block.ts
 import { definePageBlock } from "waygraph";
 
 export const Inventory = definePageBlock({

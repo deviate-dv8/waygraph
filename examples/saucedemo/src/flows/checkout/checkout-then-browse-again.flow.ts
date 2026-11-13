@@ -1,16 +1,15 @@
 import { engine } from "../../../config/waygraph.config.js";
-import { Login } from "../../blocks/saucedemo-web/nav-login.block.js";
-import { InventoryPage } from "../../states/checkout.states.js";
+import { Login } from "../../map/(shop)/_page.block.js";
 import { orderPlacedYap, placingOrder } from "../../stubs/finish-order.js";
-import { Inventory } from "../../blocks/saucedemo-web/inventory/inventory.page.block.js";
-import { Cart } from "../../blocks/saucedemo-web/cart/cart.page.block.js";
-import { CheckoutInfo } from "../../blocks/saucedemo-web/checkout-step-one/checkout-info.page.block.js";
-import { CheckoutOverview } from "../../blocks/saucedemo-web/checkout-step-two/checkout-overview.page.block.js";
-import { Confirmation } from "../../blocks/saucedemo-web/checkout-step-two/order-complete.page.block.js";
+import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
+import { Cart } from "../../map/(shop)/cart.html/_page.block.js";
+import { CheckoutInfo } from "../../map/(shop)/checkout-step-one.html/_page.block.js";
+import { CheckoutOverview } from "../../map/(shop)/checkout-step-two.html/_page.block.js";
+import { Confirmation } from "../../map/(shop)/checkout-complete.html/_page.block.js";
 
 /** Full checkout, then the "Back Home" click-based Nav Block returns to the catalogue. */
 export const checkoutThenBrowseAgainFlow = engine
-  .map({ memStub: true })
+  .map({ title: "Check out, then keep browsing", description: "After the order, Back Home returns to the catalogue.", labels: ["checkout"], memStub: true })
   .gotoPage(
     Login.stubBefore((ctx) =>
       ctx.ui.title(
@@ -20,7 +19,7 @@ export const checkoutThenBrowseAgainFlow = engine
   )
   .method(Login.do.fillUsername)
   .method(Login.do.fillPassword)
-  .method(Login.do.submitLogin, { lands: InventoryPage })
+  .method(Login.do.submitLogin, { lands: Inventory.checkpoint })
   .method(Inventory.do.addToCart)
   .gotoPage(Cart)
   .gotoPage(CheckoutInfo)
@@ -29,4 +28,4 @@ export const checkoutThenBrowseAgainFlow = engine
   .method(CheckoutInfo.do.fillPostalCode)
   .method(CheckoutInfo.do.submit)
   .method(CheckoutOverview.do.finishOrder.stubBefore(placingOrder).stub(orderPlacedYap))
-  .gotoPage(Confirmation.do.backHome);
+  .method(Confirmation.do.backHome);

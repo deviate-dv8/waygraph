@@ -169,7 +169,7 @@ export async function checkProject(
   const practiceWarnings = collectPracticeWarnings(projectDir, walkDir, {
     disabled: opts?.noPractices === true,
   });
-  const unreadPages = [...pages].filter(([tag]) => !read.has(tag)).map(([checkpoint, file]) => ({ checkpoint, file }));
+  const unreadPages = [...pages].filter(([tag]) => tag !== "*" && !read.has(tag)).map(([checkpoint, file]) => ({ checkpoint, file }));
   return { navWarnings, selWarnings, practiceWarnings, constantDataWarnings, unreadPages };
 }
 

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { MemPage } from "waygraph";
 import { engine } from "../config/waygraph.config.js";
-import { Login } from "../src/blocks/saucedemo-web/nav-login.block.js";
+import { Login } from "../src/map/(shop)/_page.block.js";
 import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
 
 test("submit-login: wrong password branches to LoginPage with error banner", async () => {

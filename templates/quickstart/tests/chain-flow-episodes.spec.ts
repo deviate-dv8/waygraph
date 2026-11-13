@@ -26,10 +26,11 @@ test("blocks() reports the flattened chain in order", () => {
   const blocks = combined.blocks();
 
   expect(blocks.map((b) => b.name)).toEqual([
-    "nav-login",
+    "page-login",
     "fill-username",
     "fill-password",
     "submit-login",
+    "page-inventory",
     "add-to-cart",
     "page-cart",
     "page-checkout-info",

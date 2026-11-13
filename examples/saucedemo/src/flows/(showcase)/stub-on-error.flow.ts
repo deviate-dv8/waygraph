@@ -1,6 +1,6 @@
 import { engine } from "../../../config/waygraph.config.js";
 import { Trait } from "waygraph";
-import { Login } from "../../blocks/saucedemo-web/nav-login.block.js";
+import { Login } from "../../map/(shop)/_page.block.js";
 import { loginFailed } from "../../stubs/login.js";
 
 /**
@@ -8,7 +8,7 @@ import { loginFailed } from "../../stubs/login.js";
  * the error banner before the failure panel. Needs locked_out_user credentials: `--data` or mem.
  */
 export const stubOnErrorFlow = engine
-  .map({
+  .map({ title: "A forced failure, narrated", description: "The flow fails on purpose, and the demo rings the error banner.", labels: ["showcase"],
     expectedFailure:
       "Intentional verify fail - stubOnError rings the error banner before the panel",
   })

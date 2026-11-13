@@ -206,7 +206,7 @@ async function runAutoExploreCore(projectDir: string, options: AutoExploreOption
                   ? ` (graph has: ${[...new Set(fromHere)].join(", ")}${missing.length ? `; not loaded: ${missing.join(", ")}` : ""})`
                   : " - nothing on this page matches the graph.") +
                 (cli ? "" : " Tip: waygraph auto --cli")
-            : "waygraph auto: location unknown - pick nav-login (Start here) if shown.",
+            : "waygraph auto: location unknown - pick a page to start from if one is shown.",
         );
         if (cli) break;
       }

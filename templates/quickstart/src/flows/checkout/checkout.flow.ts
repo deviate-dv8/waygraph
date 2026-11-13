@@ -1,12 +1,11 @@
 import { engine } from "../../../config/waygraph.config.js";
-import { Login } from "../../blocks/saucedemo-web/nav-login.block.js";
-import { InventoryPage } from "../../states/checkout.states.js";
+import { Login } from "../../map/(shop)/_page.block.js";
 import { orderPlacedYap, placingOrder } from "../../stubs/finish-order.js";
-import { LoginSel } from "../../blocks/saucedemo-web/methods/login.sel.js";
-import { Inventory } from "../../blocks/saucedemo-web/inventory/inventory.page.block.js";
-import { Cart } from "../../blocks/saucedemo-web/cart/cart.page.block.js";
-import { CheckoutInfo } from "../../blocks/saucedemo-web/checkout-step-one/checkout-info.page.block.js";
-import { CheckoutOverview } from "../../blocks/saucedemo-web/checkout-step-two/checkout-overview.page.block.js";
+import { LoginSel } from "../../map/(shop)/_sel.js";
+import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
+import { Cart } from "../../map/(shop)/cart.html/_page.block.js";
+import { CheckoutInfo } from "../../map/(shop)/checkout-step-one.html/_page.block.js";
+import { CheckoutOverview } from "../../map/(shop)/checkout-step-two.html/_page.block.js";
 
 export const checkoutFlow = engine
   .map({ title: "Check out", description: "A signed-in user buys an item and sees the order confirmed.", labels: ["checkout"], memStub: true })
@@ -48,7 +47,7 @@ export const checkoutFlow = engine
         weight: "bold",
       });
     }),
-    { lands: InventoryPage },
+    { lands: Inventory.checkpoint },
   )
   .ffEnd()
   .method(Inventory.do.addToCart.stubBefore((ctx) => ctx.ui.title("Owner: Full Checkout")))

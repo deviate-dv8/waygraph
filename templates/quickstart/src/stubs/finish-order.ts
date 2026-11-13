@@ -1,5 +1,5 @@
 import type { StubCtx } from "waygraph";
-import { CheckoutOverviewSel } from "../blocks/saucedemo-web/checkout-step-two/methods/checkout-overview.sel.js";
+import { CheckoutOverviewSel } from "../map/(shop)/checkout-step-two.html/_sel.js";
 
 /** Rings Finish while the order is placed. */
 export function placingOrder(ctx: StubCtx): void {

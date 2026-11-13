@@ -1,4 +1,5 @@
 // What auto can do from here: the project's Block library and graph, and the live menu of Blocks that can run now.
+import { MemPage } from "../../engine/mem/mem.js";
 import type { Page } from "@playwright/test";
 import { discoverGraph, type WaygraphEdge, type WaygraphGraph } from "../../analysis/graph.js";
 import type { WaygraphInstanceOption } from "../../engine/block/action-page.js";
@@ -49,8 +50,8 @@ function isUrlNav(entry: BlockEntry): boolean {
 }
 
 /** A way back, or out: a back link, or a layout's link (the same on every page it covers, so not this page's own move). */
-function isBackEdge(edge: WaygraphEdge, entry: BlockEntry): boolean {
-  return /^nav-back/.test(edge.block) || Boolean((entry.block as { __waygraphLayout?: unknown }).__waygraphLayout);
+function isBackEdge(_edge: WaygraphEdge, entry: BlockEntry): boolean {
+  return Boolean((entry.block as { __waygraphLayout?: unknown }).__waygraphLayout);
 }
 
 async function navRunnable(page: Page, entry: BlockEntry): Promise<boolean> {
@@ -65,21 +66,23 @@ async function navRunnable(page: Page, entry: BlockEntry): Promise<boolean> {
   }
 }
 
-async function wildcardActionRunnable(page: Page, entry: BlockEntry, here: string | null): Promise<boolean> {
-  if (here === null) return false;
-  const name = entry.block.name;
-  // Bulk / non-instance * actions: show when matching live buttons exist.
-  try {
-    if (name === "add-all-to-cart" || name === "add-to-cart") {
-      return await page.locator('button[data-test^="add-to-cart-"]').first().isVisible({ timeout: 150 });
-    }
-    if (name === "remove-all-from-cart" || name === "remove-from-cart") {
-      return await page.locator('button[data-test^="remove-"]').first().isVisible({ timeout: 150 });
-    }
-  } catch {
-    return false;
-  }
-  return false;
+/**
+ * Whether a Method can run on the page now: its `precondition` (what it assumes is there: `Trait.visible(RemoveBtn)`) holds.
+ * One quick look per check, the way the locate probe asks; a Method with no precondition always can.
+ */
+async function methodRunnable(page: Page, entry: BlockEntry): Promise<boolean> {
+  const given = entry.block.instruction?.precondition;
+  const traits = typeof given === "function" ? given(undefined as never) : (given ?? []);
+  if (traits.length === 0) return true;
+  const mem = new MemPage();
+  // A probe, not a wait: a check waits for its element, so each gets 300 ms to say yes (the menu scan must stay snappy).
+  const probe = async (trait: (typeof traits)[number]): Promise<boolean> => {
+    const timeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 300));
+    const answer = trait.check(page, mem).then((r) => (typeof r === "boolean" ? r : r.ok), () => false);
+    return Promise.race([answer, timeout]);
+  };
+  for (const trait of traits) if (!(await probe(trait))) return false;
+  return true;
 }
 
 /**
@@ -177,20 +180,14 @@ export async function buildExploreMenu(
       if (here !== null && edge.from === here) {
         if (entry.block.instanceOptions) {
           await pushOptions(isBackEdge(edge, entry) ? back : forward, edge, entry);
-        } else {
+        } else if (await methodRunnable(page, entry)) {
           push(isBackEdge(edge, entry) ? back : forward, edge);
         }
       } else if (here !== null && edge.from === "*") {
         if (entry.block.instanceOptions) {
           await pushOptions(anywhere, edge, entry);
-        } else if (await wildcardActionRunnable(page, entry, here)) {
-          const bulkLabel: Record<string, string> = {
-            "add-all-to-cart": "Add all to cart",
-            "remove-all-from-cart": "Remove all from cart",
-          };
-          const label =
-            bulkLabel[entry.block.name] ?? (entry.description?.trim() || undefined);
-          push(anywhere, label ? { ...edge, label } : edge);
+        } else if (await methodRunnable(page, entry)) {
+          push(anywhere, edge);
         }
       }
       continue;
