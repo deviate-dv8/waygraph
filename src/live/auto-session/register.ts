@@ -21,3 +21,10 @@ export function registerSelectorFor(projectDir: string, blocks: readonly BlockEn
   if (!addSelector(project, file, name, key, selector)) return { ok: false, error: `${name}.${key} is already there` };
   return { ok: true, file: relative(projectDir, file), name: `${name}.${key}` };
 }
+
+/** What a click on an orange outline says back: the name it was saved under, or why not. */
+export function answerPicked(session: { where: string | null; registerSelector(page: string, key: string, selector: string): RegisterResponse }, { selector, key }: { selector: string; key: string }): string {
+  if (session.where === null) return "waygraph doesn't know which page this is yet (resync)";
+  const said = session.registerSelector(session.where, key, selector);
+  return said.ok ? `saved ${said.name}` : said.error;
+}

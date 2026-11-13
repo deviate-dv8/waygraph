@@ -33,7 +33,7 @@ import { CONSOLE_LOG_MAX_ENTRIES, TRACE_MAX_STEPS, buildSessionSnapshot, describ
 import { inspectDom, inspectStorage } from "./inspect.js";
 import { openSessionBrowser } from "./open-browser.js";
 import { keepLook, setCoverageOn } from "./session-look.js";
-import { registerSelectorFor } from "./register.js";
+import { answerPicked, registerSelectorFor } from "./register.js";
 import type { CoverageResponse, RegisterResponse } from "./protocol.js";
 import { readSession, snapshotRead, type SessionRead } from "./read.js";
 
@@ -85,11 +85,9 @@ export class AutoSession {
     const engine = new Engine({ headless });
     const coverage = { entries: coverageEntries(init.projectDir, library, init.inject), paths: knownNavPathnames(library.navBlocks, baseURL ?? "http://localhost/") };
     const { closeBrowser, context, page } = await openSessionBrowser(init.projectDir, headless, baseURL, startUrl, coverage);
-    const knownInteractionSelectors = collectKnownInteractionSelectors(
-      init.projectDir,
-      library,
-      init.inject,
-    );
+    const knownInteractionSelectors = collectKnownInteractionSelectors(init.projectDir, library, init.inject);
+    let registerPicked: (arg: { selector: string; key: string }) => string = () => "no session yet"; // set once the session exists
+    if (!headless) await context.exposeBinding("__wgRegister", (_source, arg: { selector: string; key: string }) => registerPicked(arg));
     const session = new AutoSession(
       init.projectDir,
       init.inject,
@@ -107,6 +105,7 @@ export class AutoSession {
       headless,
     );
     session.memSources = new Map(seeded);
+    registerPicked = (arg) => answerPicked(session, arg);
     keepOverlayOnNavigation(page, () => session.repaintOverlayAfterNavigation());
     if (!headless) {
       await session.bootstrapOverlay().catch(ignorePageGone);

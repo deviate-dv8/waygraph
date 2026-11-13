@@ -97,7 +97,7 @@ A session also keeps what the page shows after every Block it runs and every `re
 
 ### Registering what the outline says is missing
 
-An orange outline is something nothing registers. `waygraph pilot register <id> <PageCheckpoint> <name> "<selector>"` writes it
+In a visible session, click an orange outline's tag, type a name and press Enter: the element's selector (its id, test hook, name, label or text) is written into the `_sel.ts` of the page the session is on, and the tag says `saved HomeSel.saveDraft`. The same from a terminal or an agent: `waygraph pilot register <id> <PageCheckpoint> <name> "<selector>"` writes it
 into that page's `_sel.ts` (`HomeSel.saveDraft: "#save-draft"`) and answers with the file and name, so the next Block uses it by
 name and the outline turns green. It never overwrites: a name already there is an error. An agent or Waygraph Studio does the same
 over the session protocol (`{ "op": "register", "page", "key", "selector" }`).

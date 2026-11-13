@@ -29,3 +29,22 @@ test("the coverage chip outlines registered elements and the ones nothing regist
   await root.locator("#wg-coverage-chip").click();
   await expect(root.locator(".wg-coverage-box")).toHaveCount(0);
 });
+
+test("clicking an orange tag names the element and registers it through the session", async ({ context }) => {
+  await installPersistentPilotOverlay(context, { entries: [], paths: [] });
+  const saved: { selector: string; key: string }[] = [];
+  await context.exposeBinding("__wgRegister", (_source, arg: { selector: string; key: string }) => {
+    saved.push(arg);
+    return `saved HomeSel.${arg.key}`;
+  });
+  const page = await context.newPage();
+  await page.route("http://app.test/**", (route) => route.fulfill({ contentType: "text/html", body: `<!doctype html><button id="loose">Loose</button>` }));
+  await page.goto("http://app.test/");
+  const root = page.locator("#wg-root");
+  await root.locator("#wg-coverage-chip").click();
+  await root.locator(".wg-coverage-box span").first().click();
+  await root.locator(".wg-coverage-box input").fill("looseBtn");
+  await root.locator(".wg-coverage-box input").press("Enter");
+  await expect(root.locator(".wg-coverage-box span").first()).toHaveText("saved HomeSel.looseBtn");
+  expect(saved).toEqual([{ selector: "#loose", key: "looseBtn" }]);
+});

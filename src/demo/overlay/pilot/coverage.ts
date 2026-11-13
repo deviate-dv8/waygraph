@@ -30,13 +30,48 @@ export function installCoverage(payload: CoveragePayload) {
       const s = getComputedStyle(el);
       return s.visibility !== "hidden" && s.display !== "none";
     };
+    // What a Block would select this element by: its id, a test hook, its name, its label, else its role and text.
+    const selectorOf = (el: Element): string => {
+      const attr = (n: string) => el.getAttribute(n);
+      if (el.id && !/\d{3,}/.test(el.id)) return "#" + el.id;
+      for (const hook of ["data-test", "data-testid"]) if (attr(hook)) return `[${hook}="${attr(hook)}"]`;
+      if (attr("name")) return `${el.tagName.toLowerCase()}[name="${attr("name")}"]`;
+      if (attr("aria-label")) return `[aria-label="${attr("aria-label")}"]`;
+      const text = (el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 40);
+      return text ? `${el.tagName.toLowerCase()}:has-text("${text.replace(/"/g, '\\"')}")` : el.tagName.toLowerCase();
+    };
+    let editing = false;
+    const register = (el: Element, tag: HTMLElement) => {
+      const bind = (window as unknown as { __wgRegister?: (arg: { selector: string; key: string }) => Promise<string> }).__wgRegister;
+      if (!bind) return;
+      const selector = selectorOf(el);
+      editing = true;
+      const input = __wgEl("input", { class: "field h-5 w-40 px-1 text-2xs", attrs: { placeholder: "name it, Enter registers", title: selector } }) as HTMLInputElement;
+      __wgSet(tag, input);
+      input.focus();
+      input.addEventListener("keydown", async (ev) => {
+        ev.stopPropagation();
+        if (ev.key === "Escape") {
+          editing = false;
+          paint();
+        } else if (ev.key === "Enter" && input.value.trim()) {
+          const said = await bind({ selector, key: input.value.trim() });
+          __wgSet(tag, said);
+          setTimeout(() => {
+            editing = false;
+            paint();
+          }, 1600);
+        }
+      });
+    };
     const box = (el: Element, name: string, known: boolean, title?: string) => {
       const r = el.getBoundingClientRect();
       const tag = __wgEl(
         "span",
-        { class: "pointer-events-auto absolute -top-4 left-0 max-w-[260px] truncate rounded-control px-1 text-2xs font-semibold text-on-accent " + (known ? "bg-green" : "bg-orange"), attrs: title ? { title } : {} },
+        { class: "pointer-events-auto absolute -top-4 left-0 max-w-[260px] truncate rounded-control px-1 text-2xs font-semibold text-on-accent " + (known ? "bg-green" : "bg-orange cursor-pointer"), attrs: { title: title ?? (known ? "" : "Click to register it: name the selector and it is written into this page's _sel.ts") } },
         name,
       );
+      if (!known) tag.addEventListener("click", () => register(el, tag));
       return __wgEl(
         "div",
         { class: "wg-coverage-box absolute rounded-control border-2 " + (known ? "border-green border-solid" : "border-orange border-dashed"), style: `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px` },
@@ -45,6 +80,7 @@ export function installCoverage(payload: CoveragePayload) {
     };
 
     const paint = () => {
+      if (editing) return;
       if (!on) {
         __wgSet(layer);
         label.textContent = "Coverage";
@@ -84,7 +120,7 @@ export function installCoverage(payload: CoveragePayload) {
           }
         }
         missing += 1;
-        boxes.push(box(el, "not registered", false));
+        boxes.push(box(el, "not registered · click to register", false));
       }
       __wgSet(layer, ...boxes);
       label.textContent = "Coverage " + known + " registered, " + missing + " not";
