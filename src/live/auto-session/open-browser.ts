@@ -2,6 +2,7 @@
 // overlay, and the start page.
 import type { BrowserContext, BrowserContextOptions, Page } from "@playwright/test";
 import { instrumentPilotActions } from "../../demo/overlay/pilot/actions.js";
+import type { CoveragePayload } from "../../engine/coverage.js";
 import { installPersistentPilotOverlay } from "../../demo/overlay/pilot/shell.js";
 import { ignorePageGone, ignoreTimeout } from "../../engine/page-gone.js";
 import { chromiumExecutablePath, launchContext } from "../../runtime/browser.js";
@@ -12,6 +13,7 @@ export async function openSessionBrowser(
   headless: boolean,
   baseURL: string | undefined,
   startUrl: string | undefined,
+  coverage?: CoveragePayload,
 ): Promise<{ closeBrowser: () => Promise<void>; context: BrowserContext; page: Page }> {
   const { chromium } = await import("@playwright/test");
   const executablePath = chromiumExecutablePath();
@@ -40,7 +42,7 @@ export async function openSessionBrowser(
     context: contextOpts,
     extensions: await configuredExtensions(projectDir),
   });
-  await installPersistentPilotOverlay(context);
+  await installPersistentPilotOverlay(context, headless ? undefined : coverage);
   const page = await context.newPage();
   instrumentPilotActions(page, headless ? 0 : 450);
   if (startUrl) {

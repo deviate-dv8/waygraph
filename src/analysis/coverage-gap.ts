@@ -7,6 +7,9 @@ import { exploreRoots } from "../manifest/roots.js";
 import type { BlockEntry } from "../manifest/project.js";
 import { walkDir } from "../manifest/scan.js";
 import { parseSource, stringLiterals, templateHeads } from "../manifest/source.js";
+import { selectorEntries, selectorFilesUnder } from "../manifest/selectors.js";
+import { join } from "node:path";
+import type { CoverageEntry } from "../engine/coverage.js";
 
 /** A colour like `{ color: "#fde68a" }` is not a selector. */
 const STYLE_PROPERTY = /colou?r|background|fill|stroke|border|shadow/i;
@@ -51,6 +54,14 @@ export function collectKnownInteractionSelectors(
     }
   }
   return Array.from(out);
+}
+
+/** The registered selectors by name, from the selector files, then the rest the Blocks hold. */
+export function coverageEntries(projectDir: string, library: { navBlocks: BlockEntry[] }, inject?: string[]): CoverageEntry[] {
+  const named = selectorFilesUnder(projectDir, walkDir).flatMap((file) => selectorEntries(join(projectDir, file), file)).filter((e) => e.literal);
+  const seen = new Set(named.map((e) => e.selector));
+  const rest = collectKnownInteractionSelectors(projectDir, library, inject).filter((s) => !seen.has(s));
+  return [...named.map((e) => ({ selector: e.selector, name: e.name })), ...rest.map((selector) => ({ selector, name: "" }))];
 }
 
 /** The paths the project's Nav Blocks with a fixed URL go to, resolved against the page's URL. */
@@ -99,7 +110,9 @@ export function unmappedInteractionsPageScript(payload: UnmappedInteractionPaylo
     }
     if (url.origin !== location.origin) continue;
     const path = url.pathname;
-    if (seenPaths.has(path) || payload.knownPathnames.includes(path) || w.__wgWarnedPaths!.has(path)) {
+    // A page with a param (`/items/:id`) covers every path of that shape.
+    const covered = payload.knownPathnames.some((known) => known === path || (known.includes("/:") && new RegExp("^" + known.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/:\w+/g, "[^/]+") + "$").test(path)));
+    if (seenPaths.has(path) || covered || w.__wgWarnedPaths!.has(path)) {
       continue;
     }
     seenPaths.add(path);

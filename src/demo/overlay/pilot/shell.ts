@@ -1,3 +1,5 @@
+import type { CoveragePayload } from "../../../engine/coverage.js";
+import { installCoverage } from "./coverage.js";
 import { ensureShadowRoot, installShadowRoot, shadowRootArgs } from "../ui/shadow.js";
 import type { HighlightTone } from "../../../engine/stub/ring.js";
 import { verboseLog } from "../../verbose-log.js";
@@ -74,9 +76,10 @@ function installPilotOverlayShell(): void {
  * so the badge/panel persist outside the app's own DOM — not lost when the
  * page is blank or replaced.
  */
-export async function installPersistentPilotOverlay(context: BrowserContext): Promise<void> {
+export async function installPersistentPilotOverlay(context: BrowserContext, coverage?: CoveragePayload): Promise<void> {
   await context.addInitScript(installShadowRoot, shadowRootArgs());
   await context.addInitScript(installPilotOverlayShell);
+  if (coverage) await context.addInitScript(installCoverage, coverage);
 }
 
 

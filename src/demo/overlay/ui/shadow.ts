@@ -51,6 +51,7 @@ export function installShadowRoot(args: [string?, Record<string, string>?, strin
     "wg-auto-panel": "bottom-center",
     "wg-network-log": "bottom-left",
     "wg-pilot-activity": "bottom-left",
+    "wg-coverage-chip": "bottom-left",
     "wg-lock-chip": "bottom-left",
     "wg-zoom-badge": "bottom-right",
     "wg-pilot-fx-zoom": "bottom-right",

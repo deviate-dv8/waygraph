@@ -4,7 +4,7 @@ import { messageOf } from "../../engine/errors.js";
 import type { BrowserContext, Page } from "@playwright/test";
 import type { UnmappedInteractionPayload } from "../../analysis/coverage-gap.js";
 import type { ListPick } from "./read.js";
-import { collectKnownInteractionSelectors, knownNavPathnames, unmappedInteractionsPageScript } from "../../analysis/coverage-gap.js";
+import { collectKnownInteractionSelectors, coverageEntries, knownNavPathnames, unmappedInteractionsPageScript } from "../../analysis/coverage-gap.js";
 import { findBlockPathDetailed } from "../../analysis/graph.js";
 import { runStubPhase } from "../../demo/narration/narration.js";
 import { describeOverlayFixtures, phaseToOverlayFixtures } from "../../demo/overlay/phase-fixtures.js";
@@ -80,7 +80,8 @@ export class AutoSession {
     const seeded = seedDefaultMem(library.byName, mem);
     const headless = init.headless ?? true;
     const engine = new Engine({ headless });
-    const { closeBrowser, context, page } = await openSessionBrowser(init.projectDir, headless, baseURL, startUrl);
+    const coverage = { entries: coverageEntries(init.projectDir, library, init.inject), paths: knownNavPathnames(library.navBlocks, baseURL ?? "http://localhost/") };
+    const { closeBrowser, context, page } = await openSessionBrowser(init.projectDir, headless, baseURL, startUrl, coverage);
     const knownInteractionSelectors = collectKnownInteractionSelectors(
       init.projectDir,
       library,
