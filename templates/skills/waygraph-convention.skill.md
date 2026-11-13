@@ -191,6 +191,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   Machine.status.is("Archived")] })`. A check on one value is `Key.is(value)` inline, not an Expect Block per value;
   write an Expect Block for a named check worth reusing, or one that needs selectors. `.assert()` steps are gone
   (`waygraph upgrade --codemod expect` folds them into the step before). `map({ expect: false })` for a setup flow.
+- **Several Methods of one page: `.on(Page, (p) => p.fill("x").submit())`**, each call its own step (`.with({ expect, settle })`, `.stubAfter(...)` after it); not a `.method(Page.do.…)` line each.
 - **One Method, many inputs: the value is a param, written on the step.** `self.method((text: string) => ({ async act(p) { await p.locator(Sel.search).fill(text); } }))`
   in the page, `.method(RegistryPage.do.fillSearch("MCH-0111"))` in the flow: typed, inline, and no mem key to declare
   for a value only this step uses. Never one Method per value (`fill-search-padded`, `fill-search-markup`). Mem is for

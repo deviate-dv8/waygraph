@@ -59,6 +59,26 @@ The second argument tunes one step:
 A run where the Block lands somewhere other than `lands` fails at that step:
 `"submit-login" landed on LoginPage, but this flow continues from InventoryPage`.
 
+## Several Methods of one page: `.on()`
+
+`.on(Page, (p) => …)` writes the Methods of the page the flow is on as one call. It is the same flat flow: each call is its
+own step, with its own name in the run log, and says its own options and narration right where it is written:
+
+```ts
+engine.map()
+  .gotoPage(Lines)
+  .on(Lines, (p) => p
+    .typeSearch("<b>x</b>").with({ settle: true, expect: [Lines.check("only marked", ({ rows }) => rows.every((r) => r.name.includes("<b>x</b>")))] })
+    .stubAfter((ctx) => ctx.ui.caption("The markup is shown as text"))
+    .submit())
+  .gotoPage(Detail);
+```
+
+The chain offers the page's Methods that start and end on it (autocomplete lists exactly those; a Method with params takes
+them in the call). `.with({ expect, settle, pace, when, ff })` and `.stubBefore/.stubAfter/.stubOnError` say something about the
+Method just before them. A Method that goes to another page is a `.method(...)` after the chain. `.flow(sub)` episodes,
+`.in(pane)` and every other step are unchanged.
+
 ## What the scenario expects: `expect`
 
 After a step, the flow says what the scenario expects: Expect Blocks, Traits, and what the page shows

@@ -31,6 +31,7 @@ import { signInStep } from "./account.js";
 import { inWorld, restoreWorld, type World } from "./world.js";
 import { asCleanup, settling, requiring, withoutRequire, settingInput, settingKey, stepExpect, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore, closingStep } from "./map-steps.js";
 import type { MapFlowOpts } from "./map-options.js";
+import { recordOn, type OnChain } from "./map-on.js";
 import { checkPanes, inPane, installPanes, type Pane } from "./panes.js";
 import { paneOf } from "../run/pane-page.js";
 
@@ -274,6 +275,18 @@ export class MapBuilder<
     }
     assertMapSalt(block, ["method", "api"], "method");
     return this.appendStep(skippable(stepExpect(landsOn(settling(paced(block, opts), opts?.settle), opts?.lands), opts?.expect), opts?.when), opts?.ff);
+  }
+
+  /**
+   * Several Methods of the page the flow is on, written as one call. Each is still its own step: its own name in the run
+   * log, its own `.with({ expect, settle, ... })`, `.stubAfter(...)`. The chain offers the page's Methods that stay on it.
+   * @example .on(Lines, (p) => p.typeSearch("<b>x</b>").with({ settle: true, expect: [Lines.check("only marked", ({ rows }) => ...)] }).submit())
+   */
+  on<D extends object>(page: { readonly do: D; readonly checkpoint: Out }, steps: (chain: OnChain<Out, D>) => unknown): MapBuilder<Out, Names, P, A> {
+    return recordOn(page, steps as (chain: never) => unknown).reduce<MapBuilder<Out, Names, P, A>>(
+      (builder, { block, opts }) => builder.method(block as unknown as MethodBlock<Out, Out> & { name: string }, opts as never),
+      this,
+    );
   }
 
   /**
