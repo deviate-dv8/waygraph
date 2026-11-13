@@ -80,16 +80,24 @@ They're added to what the Block itself expects, run together right after its `ve
 failing step lists every one that didn't hold ([Checks](./checks#expect-what-the-scenario-expects)).
 `{ expect: false }` drops the Block's own for one step; `map({ expect: false })` or `--no-expect` runs only `verify`.
 
-## One Block, several inputs: `.set()`
+## One Method, several inputs: params, or `.set()`
 
-A Block reads its input from mem, so the flow can say what it is right before the step. One Fill Block covers every
-search instead of one Block per value:
+A Method takes what the scenario chooses as a param, written on the step: typed, inline, and no mem key to declare:
+
+```ts
+// in the page: do: (self) => ({ fillSearch: self.method((text: string) => ({ async act(p) { await p.locator(Sel.search).fill(text); } })) })
+engine.map()
+  .gotoPage(RegistryPage)
+  .method(RegistryPage.do.fillSearch("<b>x</b>"))
+  .method(RegistryPage.do.fillSearch("MCH-0111"));
+```
+
+When the value has to be worked out from mem as the run goes (an id an earlier step made), the Block reads it from mem and
+the flow says what it is right before the step with `.set()`:
 
 ```ts
 engine.map()
   .gotoPage(RegistryPage)
-  .set(Keys.search, "MCH-0111")
-  .method(RegistryPage.do.fillSearch)
   .set(Keys.search, (mem) => mem.get(Keys.downMachine).code)                 // worked out when the step runs
   .method(RegistryPage.do.fillSearch);
 ```

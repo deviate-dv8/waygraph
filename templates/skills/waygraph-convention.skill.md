@@ -65,8 +65,8 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
    menu: `waygraph auto`, Pilot and (later) an MCP server list it to whoever drives the page, so every Method there
    should make sense to someone who has never read your scenario. Never add a Method for the sake of a test: not
    `fill-email-for-lockout-case`, not `click-save-then-check-banner`, not one used by a single flow because that flow
-   needed an odd shortcut. Write the general Method (`fill-email`, taking its value from mem), vary the scenario with
-   mem (`--data`, `.set(key, value)`) and with the step's `expect`, and keep the scenario's own wording in the flow, in
+   needed an odd shortcut. Write the general Method (`fill-email`, taking the value as a param), vary the scenario with
+   the argument written on the step (`Login.do.fillEmail("a@b.c")`) and with the step's `expect`, and keep the scenario's own wording in the flow, in
    `description`s and in `stubBefore`/`stubAfter`. A Method used by exactly one flow and no other is a smell: ask
    whether the page really offers that action, or whether the flow wants a mem value, a `lands` or an `expect`
    instead. If it really is a new action the page offers (a button nobody clicked yet), it is a Method.
@@ -191,8 +191,11 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   Machine.status.is("Archived")] })`. A check on one value is `Key.is(value)` inline, not an Expect Block per value;
   write an Expect Block for a named check worth reusing, or one that needs selectors. `.assert()` steps are gone
   (`waygraph upgrade --codemod expect` folds them into the step before). `map({ expect: false })` for a setup flow.
-- **One Block, many inputs: `.set(Key, value)` before the step.** `.set(Keys.search, (mem) => mem.get(Keys.machine).code)
-  .method(RegistryPage.do.fillSearch)`; never one Fill Block per value (`fill-search-padded`, `fill-search-down-machine`).
+- **One Method, many inputs: the value is a param, written on the step.** `self.method((text: string) => ({ async act(p) { await p.locator(Sel.search).fill(text); } }))`
+  in the page, `.method(RegistryPage.do.fillSearch("MCH-0111"))` in the flow: typed, inline, and no mem key to declare
+  for a value only this step uses. Never one Method per value (`fill-search-padded`, `fill-search-markup`). Mem is for
+  what a run *carries* between steps and accounts (`--data`, a seeded id, `mem.set` in `act`); `.set(key, fn)` only when
+  the value is worked out from mem at run time.
 - **The same steps in several flows are a part:** `export const logDisruption = steps(DisruptionLog, (m) => m.method(…).method(…))`,
   played with `.steps(logDisruption)`. A function over `MapBuilder` with a hand-written `type Start = MapBuilder<…>` is a smell.
 - **Setup is steps, cleanup is `.finally`.** Data a flow needs is made first (`.flow(seedFlow)` of API Blocks), not taken

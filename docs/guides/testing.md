@@ -102,18 +102,30 @@ A fault answers matching requests instead of the server (`status`, `body`), fail
 
 ## In a spec of your own
 
-```ts
-import { test } from "@playwright/test";
-import { MemPage } from "waygraph";
-import { checkoutFlow } from "../src/flows/checkout/checkout.flow.js";
-import { SaucedemoKeys } from "../src/states/checkout.mem-keys.js";
+A project that keeps its specs in Playwright Test can run a flow, or a few steps of one, from a test. The test's `context`
+(and its `page`, when it has one open) are the flow's: its fixtures, its `baseURL` and its saved session carry over.
 
-test("checkout", async ({ context }) => {
-  const mem = new MemPage();
-  mem.set(SaucedemoKeys.credentials, { username: "standard_user", password: "secret_sauce" });
-  await checkoutFlow.run(context, mem);
+```ts
+import { test, expect } from "@playwright/test";
+import { MemPage } from "waygraph";
+import { engine } from "../config/waygraph.config.js";
+import { LinesList } from "../src/map/(app)/lines/_page.block.js";
+
+test("a name with markup is shown as text", async ({ page, context }) => {
+  await engine
+    .map()
+    .gotoPage(LinesList)
+    .method(LinesList.do.typeLinesSearch("<b>x</b>"), {          // the value is a param, written on the step
+      settle: true,
+      expect: [LinesList.check("only lines named with the markup", ({ rows }) => rows.every((r) => r.name.includes("<b>x</b>")))],
+    })
+    .run(context, new MemPage(), { page });
+  await expect(page.locator("b")).toHaveCount(0);                // Playwright's own expect, on the page the flow drove
 });
 ```
+
+A flow written for `waygraph test --flows` runs the same way: `await checkoutFlow.run(context, mem)`. Mem is for what a run
+carries (`new MemPage().set(Keys.user, marco)`, or `--data`); a value only one step uses is a param of its Method.
 
 ## Beyond the flows you wrote
 
