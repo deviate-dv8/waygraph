@@ -233,6 +233,9 @@ export type StepCall = {
   body: string | null
 }
 
+/** A live browser session (`waygraph pilot start`, `auto`) on the project, and the page it is on. */
+export type LiveSession = { id: string; here: string | null; headless: boolean }
+
 /** A page's calls in the newest runs, and what is wrong with them. */
 export type PageNetwork = {
   calls: {

@@ -15,6 +15,8 @@ const props = defineProps<{
     image?: string
     start?: boolean
     selected?: boolean
+    /** A live session (pilot, auto) is on this page right now. */
+    here?: boolean
     actions: number
     expects: number
     reads: number
@@ -35,7 +37,7 @@ const props = defineProps<{
   <SketchBox
     :seed="props.data.label"
     :shape="props.data.start ? 'stadium' : 'rect'"
-    :stroke="props.data.selected ? 'var(--color-sketch-500)' : 'var(--ink)'"
+    :stroke="props.data.selected || props.data.here ? 'var(--color-sketch-500)' : 'var(--ink)'"
     :fill="
       props.data.selected
         ? 'var(--hatch-selected)'
@@ -43,7 +45,7 @@ const props = defineProps<{
           ? 'var(--hatch-start)'
           : 'transparent'
     "
-    :stroke-width="props.data.selected ? 2.2 : 1.4"
+    :stroke-width="props.data.selected || props.data.here ? 2.6 : 1.4"
     class="cursor-pointer bg-(--paper)"
   >
     <div
@@ -57,6 +59,11 @@ const props = defineProps<{
         class="mb-2 h-24 w-44 rounded border border-(--island-line) object-cover object-top"
         loading="lazy"
       />
+      <span
+        v-if="props.data.here"
+        class="mb-1 rounded-full bg-(--color-sketch-500) px-2 py-0.5 text-[10px] font-semibold text-white"
+        >you are here</span
+      >
       <span class="font-hand text-lg leading-tight break-all text-(--ink)">{{
         props.data.label
       }}</span>

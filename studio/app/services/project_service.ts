@@ -4,7 +4,15 @@ import { readdir, readFile, stat } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import env from '#start/env'
-import type { Json, Manifest, RunDetail, RunStep, RunSummary, SourceLines } from '#types/project'
+import type {
+  Json,
+  LiveSession,
+  Manifest,
+  RunDetail,
+  RunStep,
+  RunSummary,
+  SourceLines,
+} from '#types/project'
 
 const run = promisify(execFile)
 
@@ -98,6 +106,35 @@ export class ProjectService {
     const artifact = detail?.artifacts[index]
     if (!artifact || (artifact.kind !== 'video' && artifact.kind !== 'trace')) return null
     return existsSync(artifact.path) ? artifact : null
+  }
+
+  /** The live sessions of this project and the Checkpoint each is on, through the project's own waygraph (`browser sessions`, `pilot status`). */
+  async liveSessions(): Promise<LiveSession[]> {
+    const dir = this.requireDir()
+    try {
+      const [cmd, args] = waygraphCommand(dir, ['browser', 'sessions', '--json'])
+      const { stdout } = await run(cmd, args, { cwd: dir, timeout: 10_000 })
+      const all = JSON.parse(stdout) as {
+        sessionId: string
+        projectDir: string
+        headless: boolean
+      }[]
+      const mine = all.filter((s) => resolve(s.projectDir) === dir && /^\w+$/.test(s.sessionId))
+      return await Promise.all(
+        mine.map(async (s) => {
+          try {
+            const [c, a] = waygraphCommand(dir, ['pilot', 'status', s.sessionId])
+            const { stdout: out } = await run(c, a, { cwd: dir, timeout: 15_000 })
+            const here = (JSON.parse(out) as { snapshot?: { here?: string | null } }).snapshot?.here
+            return { id: s.sessionId, here: here ?? null, headless: s.headless }
+          } catch {
+            return { id: s.sessionId, here: null, headless: s.headless }
+          }
+        })
+      )
+    } catch {
+      return []
+    }
   }
 
   /** The newest runs first, from `.waygraph/runs/*.jsonl`. */

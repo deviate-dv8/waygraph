@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, provide, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { VueFlow, useVueFlow, type Edge, type Node, type VueFlowStore } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import WorkspaceLayout from '~/layouts/workspace.vue'
@@ -32,6 +32,7 @@ import type {
   MapAccess,
   PageFlow,
   PageNetwork,
+  LiveSession,
   SiteMap,
 } from '#types/project'
 
@@ -62,6 +63,8 @@ const props = defineProps<{
   pageFlows: Record<string, PageFlow[]>
   /** Each page's calls in the flows' newest runs, and what is wrong with them. */
   network: Record<string, PageNetwork>
+  /** Live browser sessions on this project (`waygraph pilot start`), and the page each is on. */
+  live: LiveSession[]
   /** Each page's newest screenshot (a Block's `screenshot: true`), by Checkpoint: when it was taken. */
   shots: Record<string, number>
   flows: {
@@ -74,6 +77,19 @@ const props = defineProps<{
   }[]
   skipped: { file: string; error: string }[]
 }>()
+
+/** While a live session is open the map follows it (every 3 s); with none it only looks now and then (every 20 s). */
+let following: ReturnType<typeof setTimeout> | undefined
+const follow = () => {
+  following = setTimeout(
+    () => {
+      router.reload({ only: ['live'], onFinish: follow })
+    },
+    props.live.length ? 3000 : 20_000
+  )
+}
+onMounted(follow)
+onBeforeUnmount(() => clearTimeout(following))
 
 const selected = ref<string | null>(null)
 /** A Block opened from a badge on a line (a move's Nav, Method, API call): its panel, like a page's. */
@@ -526,6 +542,7 @@ const nodes = computed<Node[]>(() => {
           shows: shows.value.get(id) ?? [],
           flows: props.pageFlows[id]?.length ?? 0,
           failing: props.pageFlows[id]?.filter((f) => f.ok === false).length ?? 0,
+          here: props.live.some((s) => s.here === id),
         },
       }
     }),
