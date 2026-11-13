@@ -103,6 +103,11 @@ export async function sessionOpCase(args: string[], command: string): Promise<vo
   if (BARE_OPS.has(sub)) return request({ op: sub } as SessionRequest);
 
   switch (sub) {
+    case "coverage": {
+      const word = args[3];
+      if (word !== "on" && word !== "off") usage(command, sub, "on|off");
+      return request({ op: "coverage", on: word === "on" });
+    }
     case "attach":
       return runAttachLoop(proj, sessionId);
     case "send": {

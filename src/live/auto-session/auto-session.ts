@@ -32,6 +32,8 @@ import type { ApplyPathResult, ApplyPickResult, AutoSessionInit, ConsoleLogEntry
 import { CONSOLE_LOG_MAX_ENTRIES, TRACE_MAX_STEPS, buildSessionSnapshot, describeHighlight, parsePick, rawTarget, stubFilePath, stubPhaseHasContent } from "./helpers.js";
 import { inspectDom, inspectStorage } from "./inspect.js";
 import { openSessionBrowser } from "./open-browser.js";
+import { keepLook, setCoverageOn } from "./session-look.js";
+import type { CoverageResponse } from "./protocol.js";
 import { readSession, snapshotRead, type SessionRead } from "./read.js";
 
 /**
@@ -41,6 +43,7 @@ import { readSession, snapshotRead, type SessionRead } from "./read.js";
 export class AutoSession {
   private here: string | null = null;
   private lastRunNote: string | null = null;
+  private trailStep = 0; // the next step number on the trail (Blocks run, and looks after a hand move)
   /** Where each mem key's value came from (the replies say it; never the values). */
   private memSources = new Map<string, MemSource>();
   private readonly trace: TraceStep[] = [];
@@ -180,6 +183,12 @@ export class AutoSession {
     await this.page.evaluate(unmappedInteractionsPageScript, payload).catch(ignorePageGone);
   }
 
+  /** The coverage outlines on or off (visible sessions). */
+  async setCoverage(on: boolean): Promise<CoverageResponse> {
+    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
+    return setCoverageOn(this.page, on, this.headless);
+  }
+
   /** The Checkpoint the session is at, if known. */
   get where(): string | null { return this.here; }
 
@@ -251,12 +260,12 @@ export class AutoSession {
       if (instanceOption) {
         this.mem.set(instanceOption.key, instanceOption.value);
       }
-      // Always the non-interactive path (cli: false) - a detached session has
-      // no TTY to prompt on; a missing mem key fails loud instead of hanging.
+      // Non-interactive (cli: false): a detached session has no TTY, so a missing mem key fails loud.
       await ensureMem(entry, this.mem, false);
       const result = await runOneBlock(this.engine, entry, this.context, this.page, this.mem, false);
       this.here = (result as Checkpoint<string>).__state ?? expectedTo;
       this.lastRunNote = `${entry.block.name} -> ${this.here}`;
+      await keepLook(this.page, this.mem, this.here, entry.block.name, this.trailStep++);
       const stubAfterResult = await runStubPhase(entry.block, "stubAfter", { out: result });
       await this.paintStubPhase("stub.after", stubAfterResult, 6000);
       this.pushTrace({
@@ -336,11 +345,8 @@ export class AutoSession {
     this.here = await detectHere(this.page, this.library.navBlocks);
     const menu = await this.currentMenu();
     this.lastRunNote = `resync -> ${this.here ?? "Unknown"}`;
-    return {
-      ok: true,
-      snapshot: await this.snapshotOf(menu),
-      quit: false,
-    };
+    await keepLook(this.page, this.mem, this.here, "resync", this.trailStep++);
+    return { ok: true, snapshot: await this.snapshotOf(menu), quit: false };
   }
 
   /**
@@ -406,11 +412,7 @@ export class AutoSession {
     this.here = null;
     const menu = await this.currentMenu();
     this.lastRunNote = `${what} -> ${this.here ?? "Unknown"}`;
-    return {
-      ok: true,
-      snapshot: await this.snapshotOf(menu),
-      quit: false,
-    };
+    return { ok: true, snapshot: await this.snapshotOf(menu), quit: false };
   }
 
   /**

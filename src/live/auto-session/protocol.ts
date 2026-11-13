@@ -23,6 +23,7 @@ export type SessionRequest =
   | { op: "reload" }
   | { op: "reach"; checkpoint: string; data?: Record<string, unknown> }
   | { op: "resync" }
+  | { op: "coverage"; on: boolean }
   | { op: "console" }
   | { op: "storage" }
   | { op: "read"; path?: string; rows?: { from: number; to?: number }; where?: Record<string, string> }
@@ -45,6 +46,9 @@ export type ReachResponse = ApplyPathResult;
 
 export type ReadResponse = ({ ok: true } & SessionRead) | { ok: false; error: string };
 
+/** What `coverage` answers: whether the outlines are on now. */
+export type CoverageResponse = { ok: true; on: boolean } | { ok: false; error: string };
+
 export type HighlightResponse =
   | { ok: true; painted: number; missing: string[]; snapshot: SessionSnapshot }
   | { ok: false; error: string };
@@ -66,10 +70,11 @@ export type SessionResponse =
   | StorageResponse
   | ReachResponse
   | ReadResponse
+  | CoverageResponse
   | HighlightResponse;
 
 /** Every op, once: the server, the CLI and `pilot` all check against this list. */
-export const SESSION_OPS = ["hello", "subscribe", "status", "send", "dom", "trace", "console", "storage", "read", "upload", "click", "type", "press", "goto", "reload", "reach", "resync", "highlight"] as const;
+export const SESSION_OPS = ["hello", "subscribe", "status", "send", "dom", "trace", "console", "storage", "read", "upload", "click", "type", "press", "goto", "reload", "reach", "resync", "coverage", "highlight"] as const;
 
 /** Compile-time check that SESSION_OPS names every request op and nothing else. */
 type MissingOp = Exclude<SessionRequest["op"], (typeof SESSION_OPS)[number]>;

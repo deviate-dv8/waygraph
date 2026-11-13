@@ -79,6 +79,22 @@ A live session watches the page for things no Block covers yet, and says so once
 
 `console <id>` returns them. `waygraph check` can't find these: there's no Block to scan.
 
+## Coverage: what waygraph knows on the page
+
+In a visible session, the **Coverage** chip (bottom-left; `waygraph pilot coverage <id> on|off` does the same) outlines what
+waygraph knows on the page you are looking at, so someone who never reads the code can see what a flow can touch and what is
+missing:
+
+- **green**, labelled with its name (`HomeSel.press`): a selector some Block or page uses;
+- **green, `page /items/:id`**: a link to a page waygraph has (a page with a param covers every id);
+- **orange, dashed, `not registered`**: a link, button, field or tab nothing registers yet.
+
+The chip counts both (`Coverage 12 registered, 3 not`) and keeps up as the page changes. It is the same list the console
+warns about (`unmapped nav link`, `unmapped button`), made visible.
+
+A session also keeps what the page shows after every Block it runs and every `resync` on its trail, the way a run does, so
+`mem.trail.latest(Page.read.x)` works for checks and stubs in a free browser too.
+
 ## On the page
 
 A visible session shows a badge in the bottom-right corner (`Waygraph Pilot - session <id> - <Checkpoint>`); clicking

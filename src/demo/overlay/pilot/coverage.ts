@@ -98,8 +98,8 @@ export function installCoverage(payload: CoveragePayload) {
         paint();
       }, 120);
     };
-    chip.addEventListener("click", () => {
-      on = !on;
+    const set = (value: boolean) => {
+      on = value;
       try {
         sessionStorage.setItem(KEY, on ? "1" : "0");
       } catch {
@@ -107,7 +107,11 @@ export function installCoverage(payload: CoveragePayload) {
       }
       chip.classList.toggle("wg-coverage-on", on);
       paint();
-    });
+      return on;
+    };
+    chip.addEventListener("click", () => set(!on));
+    // The session protocol's `coverage` op (`waygraph pilot coverage <id> on|off`) switches it the same way.
+    (window as unknown as { __wgCoverageSet?: (on: boolean) => boolean }).__wgCoverageSet = set;
     chip.classList.toggle("wg-coverage-on", on);
     window.addEventListener("scroll", later, true);
     window.addEventListener("resize", later);
