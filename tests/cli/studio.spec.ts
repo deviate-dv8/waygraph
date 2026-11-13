@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
+import { createServer } from "node:http";
 import { join } from "node:path";
 
 // `waygraph studio` from inside a project's folder: it finds the project, serves its map, and Ctrl-C stops it.
@@ -69,5 +70,32 @@ test("a stop sent to waygraph alone (kill <pid>) stops the UI's server too", asy
         // Already gone.
       }
     }
+  }
+});
+
+test("the API console sends a request from Waygraph Studio and shows the answer in words", async ({ page }) => {
+  test.setTimeout(90_000);
+  const target = createServer((_req, res) => void res.writeHead(201, { "content-type": "application/json" }).end('{"id":7}'));
+  await new Promise<void>((r) => target.listen(0, "127.0.0.1", r));
+  const ui = spawn(process.execPath, [join(root, "bin", "waygraph"), "studio", "--port", String(PORT + 2)], {
+    cwd: join(root, "examples", "saucedemo", "src"),
+    detached: true,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  try {
+    await waitForLine(ui, /waygraph studio: .*saucedemo/);
+    await expect(async () => {
+      await page.goto(`http://localhost:${PORT + 2}/api`);
+      await expect(page.getByRole("heading", { name: "API" })).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 30_000 });
+    await page.getByPlaceholder("https://…").fill(`http://127.0.0.1:${(target.address() as { port: number }).port}/posts`);
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(page.getByText("201 Created")).toBeVisible();
+    await expect(page.getByText('"id": 7')).toBeVisible();
+  } finally {
+    target.close();
+    const exited = new Promise<number | null>((res) => ui.on("exit", (code) => res(code)));
+    if (ui.pid) process.kill(-ui.pid, "SIGINT");
+    await exited;
   }
 });

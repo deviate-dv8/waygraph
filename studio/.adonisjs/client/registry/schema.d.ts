@@ -60,6 +60,32 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/blocks_controller').default['index']>>>
     }
   }
+  'api.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/api_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/api_controller').default['index']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/api_controller').default['index']>>>
+    }
+  }
+  'api.send': {
+    methods: ["POST"]
+    pattern: '/api/send'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/api_controller').default['send']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/api_controller').default['send']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/api_controller').default['send']>>>
+    }
+  }
   'runs.index': {
     methods: ["GET","HEAD"]
     pattern: '/runs'

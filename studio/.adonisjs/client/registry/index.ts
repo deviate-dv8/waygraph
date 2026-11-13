@@ -32,6 +32,18 @@ const routes = {
     tokens: [[0,"blocks"]],
     types: placeholder as Registry['blocks.index']['types'],
   },
+  'api.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api',
+    tokens: [[0,"api"]],
+    types: placeholder as Registry['api.index']['types'],
+  },
+  'api.send': {
+    methods: ["POST"],
+    pattern: '/api/send',
+    tokens: [[0,"api"],[0,"send"]],
+    types: placeholder as Registry['api.send']['types'],
+  },
   'runs.index': {
     methods: ["GET","HEAD"],
     pattern: '/runs',

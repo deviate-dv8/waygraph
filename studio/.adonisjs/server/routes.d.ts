@@ -8,6 +8,8 @@ export type ScannedRoutes = {
     'flows.index': { paramsTuple?: []; params?: {} }
     'flows.show': { paramsTuple: [ParamValue]; params: {'name': ParamValue} }
     'blocks.index': { paramsTuple?: []; params?: {} }
+    'api.index': { paramsTuple?: []; params?: {} }
+    'api.send': { paramsTuple?: []; params?: {} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'runs.call': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
@@ -30,6 +32,7 @@ export type ScannedRoutes = {
     'flows.index': { paramsTuple?: []; params?: {} }
     'flows.show': { paramsTuple: [ParamValue]; params: {'name': ParamValue} }
     'blocks.index': { paramsTuple?: []; params?: {} }
+    'api.index': { paramsTuple?: []; params?: {} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'runs.call': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
@@ -46,6 +49,7 @@ export type ScannedRoutes = {
     'flows.index': { paramsTuple?: []; params?: {} }
     'flows.show': { paramsTuple: [ParamValue]; params: {'name': ParamValue} }
     'blocks.index': { paramsTuple?: []; params?: {} }
+    'api.index': { paramsTuple?: []; params?: {} }
     'runs.index': { paramsTuple?: []; params?: {} }
     'runs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'runs.call': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'file': ParamValue} }
@@ -58,6 +62,7 @@ export type ScannedRoutes = {
     'project.show': { paramsTuple?: []; params?: {} }
   }
   POST: {
+    'api.send': { paramsTuple?: []; params?: {} }
     'plays.store': { paramsTuple?: []; params?: {} }
     'playwright.store': { paramsTuple?: []; params?: {} }
     'project.commands.store': { paramsTuple?: []; params?: {} }

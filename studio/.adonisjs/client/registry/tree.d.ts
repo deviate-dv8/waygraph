@@ -10,6 +10,10 @@ export interface ApiDefinition {
   blocks: {
     index: typeof routes['blocks.index']
   }
+  api: {
+    index: typeof routes['api.index']
+    send: typeof routes['api.send']
+  }
   runs: {
     index: typeof routes['runs.index']
     show: typeof routes['runs.show']

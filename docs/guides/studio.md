@@ -170,6 +170,15 @@ query or hash: a tab or a filter kept in the url). The tabs beside it list the p
 the selectors (every entry of the selector files, with the Blocks that read each) and the mem keys (who requires each,
 and the value the newest run used). Checks, selectors and code need waygraph 0.16.19 or later in the project.
 
+## API
+
+The calls the newest runs made (the page's and API Blocks'), listed by route with their status. Pick one and its method,
+address, headers and body fill a form (credentials were masked in the run log, so those headers are left out for you to
+add); change anything, **Send** it from Studio's server, and read the answer in words (`201 Created`, the time, the
+body, the headers). *Copy as cURL* and *Copy as API Block* take it out: the second is a `defineApiBlock` to paste into a
+Block file, so a call you tried here becomes a step of a flow. Nothing to install: it is a page of Studio, not a separate
+tool. A flow made only of API Blocks plays in `waygraph demo` like any other, each step with its calls on the card.
+
 ## Project
 
 The project's waygraph commands as buttons, run with its own waygraph from its folder, one at a time, with their

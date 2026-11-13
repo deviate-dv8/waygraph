@@ -35,6 +35,13 @@ export function appPages(): AppPage[] {
       isAt: under('/blocks'),
     },
     {
+      id: 'api',
+      label: 'API',
+      icon: 'i-lucide-send',
+      to: urlFor('api.index'),
+      isAt: under('/api'),
+    },
+    {
       id: 'runs',
       label: 'Runs',
       icon: 'i-lucide-history',
