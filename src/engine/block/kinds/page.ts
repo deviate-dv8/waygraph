@@ -22,6 +22,7 @@ import type { ExpectList } from "./expect.js";
 import { defineReadBlock, type ReadBlock } from "../../read/read-block.js";
 import type { ReadCtx } from "../../read/readers.js";
 import { namespaceOf, readKeys, type PageRead, type PageReadKeys, type PageReadValue } from "../../read/read-keys.js";
+import { declareNeeds, type StateSets } from "../../mem/state.js";
 import { checkOf, type CheckResult } from "../../read/read-check.js";
 
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */
@@ -41,9 +42,9 @@ export type PageExpectEntry = PageMethodEntry | Trait;
 
 /** A Method written inside its page's `do`: the page is its `from` and, unless `to` says otherwise, its `to`. */
 export interface InlineMethod<Out extends Checkpoint<string>, L extends Checkpoint<string>> {
-  /** Its name in run logs and the manifest; by default the page's and the key (`login-fill-email`). */
   name?: string;
   description?: string;
+  sets?: StateSets; // the states it changes when it lands: `[[Auth.signedIn, true]]`
   /** Where it lands, when it isn't the page it's on: a page's name, so no import of it is needed. Several: `lands` says which. */
   to?: LandsOn | readonly LandsOn[];
   /** Mem keys it needs set before it runs. */
@@ -195,6 +196,8 @@ export type PageBlockOptions<
    * @example covers: "children" · covers: ["Documents", "Templates"]
    */
   covers?: "children" | readonly PageName[];
+  /** States (boolean mem keys from `state()`) the app must be in to reach this page; on a shell, every page it covers: `needs: [Auth.signedIn]`. */
+  needs?: readonly MemKey<boolean>[];
   /**
    * The links every covered page has (a sidebar's): `Shell.links.documents`, each a Nav valid from any covered page, so a
    * flow writes `.gotoPage(Shell.links.documents)` once instead of a Nav per page.
@@ -277,7 +280,6 @@ export type PageMethods<M> = { readonly [K in keyof M]: M[K] extends () => infer
 
 /** Whether `entry` is a Block (it has an instruction): the entries of `do` and `expects` can also be Traits. */
 const isBlockEntry = (entry: unknown): entry is SomeDefinedBlock => typeof entry === "object" && entry !== null && "instruction" in entry;
-
 const resolveEntry = (entry: unknown) => (typeof entry === "function" ? (entry as () => unknown)() : entry);
 
 /** @see {@link PageBlockOptions} */
@@ -299,7 +301,7 @@ export function definePageBlock<
       `definePageBlock("${options.name}"): pass url XOR click (or neither for arrival-only hub)`,
     );
   }
-  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, from: opensFrom, query, route, frame, covers, links: linksOf, opens: opensBy, interrupts, ...restOptions } = options;
+  const { nav, expects, methods, do: doOf, read: readOf, readAs, for: given, needs, from: opensFrom, query, route, frame, covers, links: linksOf, opens: opensBy, interrupts, ...restOptions } = options;
   if (frame) registerFrame(options.checkpoint === undefined ? "" : typeof options.checkpoint === "string" ? options.checkpoint : options.checkpoint.__state, frame);
   if (route === "folder" && (options.url !== undefined || options.click !== undefined)) {
     throw new Error(`definePageBlock("${options.name}"): route: "folder" gives the address; drop url/click`);
@@ -309,6 +311,7 @@ export function definePageBlock<
   const pageUrl = folderUrl ?? options.url;
   const built = defineNavigating(rest) as unknown as PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
   markFor(built, given);
+  declareNeeds(built, options.checkpoint === undefined ? undefined : cp.__state, covers, needs);
   // A page's screenshot is taken whenever a step lands on it, not only when this hub runs as a step.
   if (options.screenshot) screenshotPage(cp.__state, options.screenshot === true ? {} : options.screenshot);
 
@@ -324,13 +327,11 @@ export function definePageBlock<
     });
   }
 
-  // `do` and `expects` as functions of the page are called the first time they're used: by then every file is loaded, so a
-  // page and its Methods can import each other. The page they're given has what's defined so far (its read and nav).
+  // `do` and `expects` are called on first use, when every file is loaded: a page and its Methods can import each other.
   const slug = options.name.replace(/^page-/, "");
   const inline = (spec: unknown) => ({ __inlineMethod: spec });
   const inlineExpect = (spec: unknown) => ({ __inlineExpect: spec });
   const self = { checkpoint: cp, read: readKeys(namespace), check: checkOf(namespace), nav, method: inline, expect: inlineExpect, link: (spec: unknown) => ({ __inlineLink: spec }) } as unknown as PageSelf<Out, R, Nav>;
-  /** An inline Method becomes a real one, named for its key. */
   const toBlock = (key: string, entry: unknown): unknown => {
     if (typeof entry === "object" && entry !== null && "__inlineExpect" in entry) {
       const spec = (entry as { __inlineExpect: Omit<ExpectBlockOptions<Out>, "checkpoint" | "name"> & { name?: string } }).__inlineExpect;

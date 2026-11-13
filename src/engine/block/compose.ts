@@ -2,6 +2,7 @@
 import { paneOf } from "../run/pane-page.js";
 import { mark } from "./mark.js";
 import type { BlockInfo } from "../flow/flow.js";
+import { copyStates } from "../mem/state.js";
 import { joinSteps } from "../run/connect.js";
 import type { Block } from "./block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
@@ -150,6 +151,7 @@ export function composeSteps(name: string, steps: readonly SomeBlock[]): SomeCom
   // It lands where its last step does: in that step's pane, when the flow has panes.
   const pane = paneOf(chain);
   if (pane) mark(composed, "__waygraphPane", pane);
+  copyStates(chain, composed);
   return composed;
 }
 
@@ -292,5 +294,6 @@ export function fastForwardSteps(name: string, steps: readonly SomeBlock[]): Som
   };
   const pane = paneOf(base);
   if (pane) mark(ff, "__waygraphPane", pane);
+  copyStates(base, ff);
   return ff;
 }

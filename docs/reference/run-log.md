@@ -21,6 +21,7 @@ graph LR
 | `interrupt` | a layout's interrupt showed up and was handled: `{ layout, name, index? }` ([Layouts](../guides/layouts#interrupts-what-appears-and-gets-in-the-way)) |
 | `step:read` | what the page showed after the step: `{ checkpoint, read, missing, notes, readBlocks }` ([What a page shows](../guides/reads)) |
 | `step:call` | an HTTP call the step made, by the page (`fetch`/XHR) or by an API Block: `{ index, source, method, url, route, status, ms, size, failed, external?, cacheable?, pane?, body }`. `route` has its ids folded (`/posts/:id`); `external` marks another origin than the app's; `body` is the call's artifact |
+| `step:state` | a step changed a state (`sets`): `{ index, key, value }` ([States](../guides/data#states-what-the-application-is)) |
 | `step:end` | where it landed, how long it took, the page's address (`url`) |
 | `step:error` | the failure; for a failed check, `check: { trait, block, wants, saw, url, heading }` |
 | `run:artifact` | a saved video, screenshot or call (`kind: "call"`: `<runId>/calls/<step>-<n>.json`, the request and the response, with `authorization`, cookies and fields named like a password or token masked); a Block's screenshot (`screenshot: true`) also names its step (`index`, `block`) and the page (`checkpoint`) |

@@ -1,4 +1,5 @@
 // A Method: a page action that doesn't navigate (fill, submit, toggle), from one Checkpoint to another.
+import { markStates, type StateSets } from "../../mem/state.js";
 import { mark } from "../mark.js";
 import type { Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { DefinedBlock } from "../block.js";
@@ -47,6 +48,8 @@ export type MethodBlock<
 type MethodBase<In extends Checkpoint<string>, Out extends Checkpoint<string>> = Omit<RoutedBlockBase<In, Out>, "instruction"> & {
   /** The accounts that have it (its button shows for them); without it, every account. */
   for?: readonly Account[];
+  /** The states (boolean mem keys declared with `state()`) it changes when it lands: `sets: [[Auth.signedIn, false]]`, or by where it landed. */
+  sets?: StateSets;
 };
 
 /** A Method written flat: what it does, what must be true before, what it proves after, and where it lands. */
@@ -79,7 +82,7 @@ export type MethodBlockOptions<In extends Checkpoint<string>, Out extends Checkp
 export function defineMethodBlock<In extends Checkpoint<string>, Out extends Checkpoint<string>>(
   options: MethodBlockOptions<In, Out>,
 ): MethodBlock<In, Out> {
-  const { for: given, act, precondition, verify, lands, instruction, ...base } = options as unknown as MethodBase<In, Out> & Partial<Omit<FlatMethod<In, Out>, "instruction">> & { instruction?: RoutedBlockBase<In, Out>["instruction"] };
+  const { for: given, sets, act, precondition, verify, lands, instruction, ...base } = options as unknown as MethodBase<In, Out> & Partial<Omit<FlatMethod<In, Out>, "instruction">> & { instruction?: RoutedBlockBase<In, Out>["instruction"] };
   const nested = instruction ?? {
     act: act as FlatMethod<In, Out>["act"],
     ...(precondition ? { precondition } : {}),
@@ -89,6 +92,7 @@ export function defineMethodBlock<In extends Checkpoint<string>, Out extends Che
   const built = defineBlock(routed({ ...base, instruction: nested } as RoutedBlockBase<In, Out>)) as MethodBlock<In, Out>;
   markRouteOf(built, base);
   markFor(built, given);
+  markStates(built, { sets });
   markExpect(built, base.expect);
   mark(built, "__waygraphSalt", "method");
   return built;

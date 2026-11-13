@@ -10,8 +10,9 @@ import { syncInterrupts } from "./interrupts.js";
 import { inFrameOf } from "./frame.js";
 import { screenshotStep } from "./screenshot.js";
 import { watchCalls } from "./calls.js";
+import { applyStates, markStates, type StateSets } from "../mem/state.js";
 import { readLanding } from "./landing-read.js";
-import { addressOf, isConnected, lastLeaf, stepEnded, stepStarted } from "./events.js";
+import { addressOf, recordState, isConnected, lastLeaf, stepEnded, stepStarted } from "./events.js";
 import { blockKindOf } from "../block/kind.js";
 import { expectOf, runExpect } from "./expect.js";
 import { paneName, paneOf, stepInput, stepLabel, stepLanded, stepPage } from "./pane-page.js";
@@ -68,6 +69,7 @@ export function joinSteps(a: SomeBlock, b: SomeBlock): SomeBlock {
           : undefined;
         const mid = await a.instruction.resolve(aObserved);
         stepLanded(a, page, mid);
+        applyStates(a, mid, mem, recordState);
         const aLanded = inFrameOf(aLeaf, mid.__state);
         await runVerify(a.instruction.verify, mid, aLanded, mem, stepLabel(a));
         await runExpect(a, mid, aLanded, mem, lastLeaf(a));
@@ -99,6 +101,8 @@ export function joinSteps(a: SomeBlock, b: SomeBlock): SomeBlock {
   // The joined step lands where B does: in B's pane.
   const bPane = paneOf(b);
   if (bPane) mark(connected, "__waygraphPane", bPane);
+  const bSets = (b as { __waygraphSets?: StateSets }).__waygraphSets;
+  if (bSets) markStates(connected, { sets: bSets });
   const bExpect = expectOf(b);
   if (bExpect) mark(connected, "__waygraphExpect", bExpect);
   return connected;

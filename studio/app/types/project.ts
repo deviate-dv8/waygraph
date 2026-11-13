@@ -61,6 +61,8 @@ export type ManifestPage = {
   checkpoint?: string
   description: string
   opensBy?: 'url' | 'click' | 'folder'
+  /** The states (mem keys) the app must be in to reach it: its own and its shells' (waygraph 0.18.0+). */
+  needs?: string[]
   from: string[]
   query: string[]
   frame?: string
@@ -152,6 +154,8 @@ export type Manifest = {
   /** The config file and what it resolves to (a function shows as a word); missing before waygraph 0.16.18. */
   config?: { file: string; values: Json }
   checkpoints: string[]
+  /** The states the project declares, and where each starts (waygraph 0.18.0+). */
+  states?: { key: string; initial: boolean }[]
   /** The addresses each page is known by (its Navs' urls, the urls its Blocks verify); missing before waygraph 0.16.16. */
   pageUrls?: Record<string, string[]>
   blocks: ManifestBlock[]

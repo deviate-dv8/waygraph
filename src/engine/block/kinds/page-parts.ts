@@ -1,5 +1,6 @@
 // The small types and helpers of a Page Block (its address params, query and links, what an inline Method lands on, the
 // address its folder gives it), apart from page.ts so that file stays about the page itself.
+import type { StateSets } from "../../mem/state.js";
 import type { Checkpoint } from "../../checkpoint/checkpoint.js";
 import type { DefinedBlock } from "../block.js";
 import type { Trait } from "../../trait/trait.js";
@@ -60,6 +61,8 @@ export interface InlineLink<To extends PageName | "parent" | Checkpoint<string>>
   description?: string;
   /** Checks on arrival, over the landing on `to`. */
   verify?: Trait[];
+  /** The states it changes when it lands (a logout: `[[Auth.signedIn, false]]`). */
+  sets?: StateSets;
 }
 
 

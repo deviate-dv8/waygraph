@@ -17,6 +17,7 @@ import { forgetSources, selectorEntries, selectorFilesUnder, selectorsUsed, span
 import { flowLabels, type Labels } from "./labels.js";
 import { siteTree, type SiteTree } from "./site-map.js";
 import { loadLayouts, refreshLayoutRoutes } from "./layouts.js";
+import { declaredStates, describeSets } from "../engine/mem/state.js";
 import { givenTo } from "../engine/block/access.js";
 import { allAccounts } from "../engine/flow/account.js";
 import { paneOf } from "../engine/run/pane-page.js";
@@ -27,6 +28,8 @@ import { pagesFromScan, type ManifestPage } from "./pages.js";
 export const MANIFEST_VERSION = 2;
 
 export interface ManifestBlock {
+  /** The states it changes when it lands; `on` when that depends on where it lands. */
+  sets?: { key: string; value: boolean; on?: string }[];
   /** `file#exportName`, unique across the project. */
   id: string;
   name: string;
@@ -137,6 +140,8 @@ export interface Manifest {
   /** The project's config file and what it resolves to (as JSON: a function shows as a word), when it has one. */
   config?: { file: string; values: unknown };
   checkpoints: string[];
+  /** The states the project declares (`state()` mem keys): what the application can be in, and where each starts. */
+  states: { key: string; initial: boolean }[];
   maps: string[];
   blocks: ManifestBlock[];
   /** Every Page Block, with what it holds (its moves, expectations and links by key) and what it covers. */
@@ -252,6 +257,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       checks: { precondition: checksOf(instruction?.precondition), verify: checksOf(instruction?.verify) },
       selectors: selectorsUsed(b.absFile, b.exportName, scan.projectDir),
       ...(given ? { for: [...given] } : {}),
+      ...(describeSets(b.block, b.to).length ? { sets: describeSets(b.block, b.to) } : {}),
     };
   });
   const urls = pageUrls(scan.blocks);
@@ -321,6 +327,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
     readBlocks,
     flows,
     selectors: selectorFilesUnder(scan.projectDir, walkDir).flatMap((file) => selectorEntries(join(scan.projectDir, file), file)),
+    states: declaredStates(),
     accounts: allAccounts().map((a) => a.name).sort(),
     layouts: scan.layouts.map(({ layout, exportName, file }) => ({
       name: layout.name,

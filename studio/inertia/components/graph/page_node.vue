@@ -17,6 +17,9 @@ const props = defineProps<{
     selected?: boolean
     /** A live session (pilot, auto) is on this page right now. */
     here?: boolean
+    /** The states it needs, by name; it is `locked` while one isn't assumed on. */
+    needs?: string[]
+    locked?: boolean
     actions: number
     expects: number
     reads: number
@@ -47,6 +50,7 @@ const props = defineProps<{
     "
     :stroke-width="props.data.selected || props.data.here ? 2.6 : 1.4"
     class="cursor-pointer bg-(--paper)"
+    :class="props.data.locked ? 'opacity-45' : ''"
   >
     <div
       class="flex flex-col items-center py-3 text-center"
@@ -59,6 +63,14 @@ const props = defineProps<{
         class="mb-2 h-24 w-44 rounded border border-(--island-line) object-cover object-top"
         loading="lazy"
       />
+      <span
+        v-if="props.data.needs?.length"
+        class="mb-1 flex items-center gap-1 rounded-full border border-(--ink-soft) px-2 py-0.5 text-[10px] text-(--ink-soft)"
+        :title="`Reachable only while: ${props.data.needs.join(', ')}`"
+      >
+        <UIcon :name="props.data.locked ? 'i-lucide-lock' : 'i-lucide-lock-open'" class="size-3" />
+        {{ props.data.needs.join(', ') }}
+      </span>
       <span
         v-if="props.data.here"
         class="mb-1 rounded-full bg-(--color-sketch-500) px-2 py-0.5 text-[10px] font-semibold text-white"

@@ -94,6 +94,12 @@ Click a page for everything about it, most telling first:
 5. **Selectors** its Blocks read, then **Network**: the calls the flows' newest runs made on arrival (per route: how many, how long, the status), with findings on them (the same GET twice, one route asked with many ids, slow, large, failed; the same as `waygraph check --network`), and **Flows** last: each one that lands there, may land there (a step with several
    outcomes that ends the flow) or does something there, failing first.
 
+### States
+
+A project that declares states (`state()` mem keys, [States](./data#states-what-the-application-is)) gets one switch per state in the
+map's bottom bar. A page that needs a state shows a lock and the state's name, and is dimmed while the state is off: switch
+`signedIn` on and the signed-in pages come back. It answers "which pages can this user reach" without reading code.
+
 ### A live session
 
 With a browser session open on the project (`waygraph pilot start`, `waygraph auto`), the map follows it: the page the

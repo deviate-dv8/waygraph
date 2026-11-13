@@ -1,4 +1,4 @@
-import { keys } from "waygraph";
+import { keys, state } from "waygraph";
 
 export const SaucedemoKeys = keys("saucedemo")<{
   credentials: { username: string; password: string };
@@ -10,7 +10,10 @@ export const SaucedemoKeys = keys("saucedemo")<{
    * `instanceOptions`) - a hand-written flow sets it explicitly instead.
    */
   selectedItem: { id: string; name: string };
+  /** A state: the shop is signed in. Pages after the login need it; a good login sets it, logging out clears it. */
+  signedIn: boolean;
 }>({
+  signedIn: state(false),
   credentials: () => ({
     username: "standard_user",
     password: "secret_sauce",

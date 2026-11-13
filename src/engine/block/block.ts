@@ -281,6 +281,8 @@ export function copyWaygraphRuntime(from: object, to: object): void {
     "__waygraphMethods",
     "__waygraphExpect",
     "__waygraphFor",
+    "__waygraphNeeds",
+    "__waygraphSets",
     "__waygraphLayout",
     "__waygraphPane",
     "__waygraphCloses",

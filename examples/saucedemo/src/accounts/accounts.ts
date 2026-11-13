@@ -8,13 +8,13 @@ import { SaucedemoKeys } from "../states/checkout.mem-keys.js";
  */
 export const StandardUser = account("standard-user", {
   signIn: loginFlow,
-  mem: (m) => m.set(SaucedemoKeys.credentials, { username: "standard_user", password: "secret_sauce" }),
+  mem: (m) => m.set(SaucedemoKeys.credentials, { username: "standard_user", password: "secret_sauce" }).set(SaucedemoKeys.signedIn, true),
   ttl: "9m",
 });
 
 /** A second shopper, with a cart of their own: the other side of a flow with two people. */
 export const ProblemUser = account("problem-user", {
   signIn: loginFlow,
-  mem: (m) => m.set(SaucedemoKeys.credentials, { username: "problem_user", password: "secret_sauce" }),
+  mem: (m) => m.set(SaucedemoKeys.credentials, { username: "problem_user", password: "secret_sauce" }).set(SaucedemoKeys.signedIn, true),
   ttl: "9m",
 });

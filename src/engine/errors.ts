@@ -144,6 +144,11 @@ export const WAYGRAPH_ERRORS = {
     means: "Two Read Blocks for the same page both read one key, so it has two answers.",
     fix: "Read each key in one Read Block per Checkpoint (an every-page Read Block counts for every Checkpoint).",
   },
+  WG_STATE_NEEDED: {
+    where: "engine/mem/state.ts - applyStates()",
+    means: "A step landed on a page that `needs` a state (signed in) the run is not in.",
+    fix: "Run the flow as an account that has the state (`map({ as })`), or put a step before it that sets it (`sets`).",
+  },
   WG_MEM_READ_BEFORE_SET: {
     where: "engine/mem/mem.ts - MemPage.get()",
     means: "mem.get(key) was called for a key that was never mem.set() on this MemPage.",

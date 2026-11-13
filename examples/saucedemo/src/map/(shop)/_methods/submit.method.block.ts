@@ -1,4 +1,5 @@
 import { checkpoint, Trait } from "waygraph";
+import { SaucedemoKeys } from "../../../states/checkout.mem-keys.js";
 import type { PageHandle } from "waygraph";
 import { LoginSel } from "../_sel.js";
 
@@ -8,6 +9,7 @@ export const submit = (self: PageHandle<"LoginPage">) =>
     name: "submit-login",
     description: "Submits the login form; stays on the login page when auth fails.",
     to: ["InventoryPage", "LoginPage"],
+    sets: (landed) => (landed.__state === "InventoryPage" ? [[SaucedemoKeys.signedIn, true]] : []),
     async act(page) {
       // noWaitAfter: `lands` owns the wait. The default click navigation-wait can hang under the demo's cursor patch.
       await page.locator(LoginSel.loginButton).click({ noWaitAfter: true });

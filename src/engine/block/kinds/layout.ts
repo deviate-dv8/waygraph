@@ -4,6 +4,7 @@
 import type { Page } from "@playwright/test";
 import { mark } from "../mark.js";
 import { markFor } from "../access.js";
+import { markStates, type StateSets } from "../../mem/state.js";
 import { defineBlock } from "../block.js";
 import type { DefinedBlock } from "../block.js";
 import { checkpoint, type Checkpoint } from "../../checkpoint/checkpoint.js";
@@ -27,6 +28,8 @@ export interface LayoutLink {
   description?: string;
   /** Checks on arrival, over the landing on `to`. */
   verify?: Trait[];
+  /** The states it changes when it lands (a logout: `[[Auth.signedIn, false]]`). */
+  sets?: StateSets;
 }
 
 export interface LayoutOptions<G extends Record<string, LayoutLink>, D extends Record<string, PageMethodEntry>, R extends PageRead = PageRead> {
@@ -187,6 +190,7 @@ function linkNav(layout: string, key: string, link: LayoutLink, opens: string | 
   mark(built, "__waygraphNavClick", link.click);
   mark(built, "__waygraphLayout", { layout, link: key, parent });
   markFor(built, link.for);
+  markStates(built, { sets: link.sets });
   return built;
 }
 

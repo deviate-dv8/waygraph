@@ -50,6 +50,7 @@ export default class WorkspacesController {
       journey,
       pageFlows: pageFlows(manifest, newest),
       network: pageNetwork(newest.values()),
+      states: manifest.states ?? [],
       live: await this.project.liveSessions(),
       shots: await this.project.pageShots(),
       flows: manifest.flows.map((f) => ({

@@ -1,5 +1,6 @@
 // Mem: the values a run carries between Blocks (credentials, the row just added), typed by MemKey.
 import { Trail } from "./trail.js";
+import { registerState } from "./state.js";
 import { WaygraphError, MSG_MEM_READ_BEFORE_SET } from "../errors.js";
 /**
  * A typed key into MemPage. The phantom `_phantom` field is never assigned - it
@@ -50,6 +51,7 @@ export function keys(namespace: string): <T extends object>(stubs?: KeyStubs<T>)
       const k = new MemKey<unknown>(`${namespace}.${field}`);
       cache.set(field, k);
       stubRegistry.set(k, stub);
+      registerState(k, stub);
     }
     return new Proxy({} as KeyNamespace<T>, {
       get(target, prop) {

@@ -16,6 +16,8 @@ export type RunEvent =
   | { type: "step:end"; runId: string; at: number; index: number; block: string; kind: BlockKind; to: string; ms: number; url?: string }
   | { type: "step:error"; runId: string; at: number; index: number; block: string; kind: BlockKind; error: string; ms: number; check?: TraitCheckReport }
   | ({ type: "step:read"; runId: string; at: number; index: number; block: string; kind: BlockKind; checkpoint: string } & StepRead)
+  /** A step changed a state (`sets`): the key and what it became. */
+  | { type: "step:state"; runId: string; at: number; index: number; key: string; value: boolean }
   | { type: "run:end"; runId: string; at: number; ok: boolean; result?: string; error?: string; ms: number }
   /** A layout's interrupt (a cookie banner, a session warning) showed up while a step ran, and was handled. */
   | { type: "interrupt"; runId: string; at: number; layout: string; name: string; index?: number }
@@ -233,6 +235,12 @@ export function recordArtifact(
 export function runHandle(): { runId: string; step: () => number } | undefined {
   const run = scope.getStore();
   return run ? { runId: run.runId, step: () => run.latest } : undefined;
+}
+
+/** The current step set a state. */
+export function recordState(key: string, value: boolean): void {
+  const run = scope.getStore();
+  if (run) emit({ type: "step:state", runId: run.runId, at: Date.now(), index: run.open.at(-1)?.index ?? run.latest, key, value });
 }
 
 /** A call of step `index` in run `runId`. */

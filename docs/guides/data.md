@@ -137,6 +137,32 @@ engine.map({ memStub: true })
 When a rerun can legitimately meet what the last run made, make it an outcome, not a failure: the create Block lands
 on `Created` or `AlreadyExists`, and the flow follows the one it's about.
 
+## States: what the application is
+
+A key is a **state** when its namespace declares it with `state(initial)`: a boolean the map can reason about (signed in, a
+cart with something in it). Same file, same autocomplete, same `--data` and run log as any key:
+
+```ts
+export const SaucedemoKeys = keys("saucedemo")<{ credentials: { username: string; password: string }; signedIn: boolean }>({
+  signedIn: state(false),   // false until something sets it
+});
+```
+
+A page **`needs`** states to be reachable, and a Method or a link **`sets`** them when it lands:
+
+```ts
+definePageBlock({ checkpoint: "InventoryPage", needs: [SaucedemoKeys.signedIn], … })        // a shell's `needs` covers every page it covers
+self.method({ name: "submit-login", to: ["InventoryPage", "LoginPage"],
+  sets: (landed) => (landed.__state === "InventoryPage" ? [[SaucedemoKeys.signedIn, true]] : []) })   // by where it landed
+self.link({ to: "LoginPage", click: MenuSel.logout, sets: [[SaucedemoKeys.signedIn, false]] })
+```
+
+An account sets the states it brings in its `mem` (`m.set(SaucedemoKeys.signedIn, true)`), because a flow `as` it skips the
+login steps. A run applies `sets` after the step lands, records each change as a `step:state` event, then checks the page it landed on:
+opening a page that needs `signedIn` while signed out fails the step, naming the state. The manifest lists `states`, each page's `needs`
+(its own and its shells') and each move's `sets`, and Waygraph Studio draws the lock on a page and a switch per state that dims what
+is out of reach.
+
 ## Mem is not what the page shows
 
 Mem is what a flow is **given** or carries forward. What the page **shows** (the cart count, the rows of a table) is

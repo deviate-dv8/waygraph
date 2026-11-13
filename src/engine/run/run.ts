@@ -7,8 +7,9 @@ import type { Block } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { runExpect } from "./expect.js";
 import { screenshotStep } from "./screenshot.js";
+import { applyStates } from "../mem/state.js";
 import { watchCalls } from "./calls.js";
-import { addressOf, inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepStarted } from "./events.js";
+import { addressOf, inRun, isConnected, recordState, lastLeaf, stepEnded, stepFailed, stepStarted } from "./events.js";
 import { readLanding } from "./landing-read.js";
 import { blockKindOf } from "../block/kind.js";
 import { runPrecondition, runVerify } from "../trait/verify.js";
@@ -125,6 +126,7 @@ async function playGraph(
         : undefined;
       const checkpoint = await current.instruction.resolve(observed);
       stepLanded(current, page, checkpoint);
+      applyStates(current, checkpoint, mem, recordState);
 
       const landedIn = inFrameOf(landedPage, checkpoint.__state);
       await runVerify(current.instruction.verify, checkpoint, landedIn, mem, stepLabel(current));

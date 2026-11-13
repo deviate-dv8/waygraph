@@ -2,6 +2,7 @@
 // how it opens, what it shows, its moves and expectations by key, what it covers and is covered by.
 import { layoutState } from "../engine/block/kinds/layout.js";
 import type { ProjectScan, ScannedPage } from "./project.js";
+import { describeSets, needsOf } from "../engine/mem/state.js";
 import { givenTo } from "../engine/block/access.js";
 import { spanOf, type SourceSpan } from "./selectors.js";
 
@@ -19,6 +20,8 @@ export interface ManifestPageEntry {
   selector?: string;
   /** Who is given it (`for`); missing: everyone. */
   for?: string[];
+  /** The states it changes (a logout link). */
+  sets?: { key: string; value: boolean }[];
 }
 
 export interface ManifestPage {
@@ -39,6 +42,8 @@ export interface ManifestPage {
   /** The iframe it lives in, when it does. */
   frame?: string;
   for?: string[];
+  /** The states (mem keys) the app must be in to reach it: its own `needs` and those of the shells over it. */
+  needs?: string[];
   /** The Read Block that reads it (its `read`). */
   read?: string;
   do: ManifestPageEntry[];
@@ -62,7 +67,14 @@ const paramNames = (fn: (...args: never[]) => unknown): string[] =>
 /** The pages a scan found, as the manifest lists them. */
 export function pagesFromScan(scan: ProjectScan): ManifestPage[] {
   const shells = scan.pages.filter((p) => (p.block as { __waygraphCoverLayout?: unknown }).__waygraphCoverLayout);
-  return scan.pages.map((p) => pageOf(p, shells));
+  const pages = scan.pages.map((p) => pageOf(p, shells));
+  // A page needs what the shells over it need.
+  const shellNeeds = new Map(shells.map((s) => [s.block.name, needsOf(s.block)]));
+  for (const page of pages) {
+    const all = [...new Set([...(page.needs ?? []), ...page.coveredBy.flatMap((s) => shellNeeds.get(s) ?? [])])];
+    if (all.length) page.needs = all;
+  }
+  return pages;
 }
 
 function pageOf(scanned: ScannedPage, shells: ScannedPage[]): ManifestPage {
@@ -111,6 +123,7 @@ function pageOf(scanned: ScannedPage, shells: ScannedPage[]): ManifestPage {
     query: [...(b.__waygraphQuery ?? [])],
     ...(b.__waygraphFrame ? { frame: b.__waygraphFrame } : {}),
     ...(given ? { for: [...given] } : {}),
+    ...(needsOf(scanned.block).length ? { needs: needsOf(scanned.block) } : {}),
     ...(b.__waygraphReadBlock ? { read: b.__waygraphReadBlock.name } : {}),
     do: group(b.do),
     expects: group(b.expects),
@@ -124,6 +137,7 @@ function pageOf(scanned: ScannedPage, shells: ScannedPage[]): ManifestPage {
         block: n.name,
         to: n.__waygraphLayout?.parent ? "parent" : (n.__waygraphTo?.[0] ?? ""),
         ...(typeof n.__waygraphNavClick === "string" ? { selector: n.__waygraphNavClick } : {}),
+        ...(describeSets(n, n.__waygraphTo ?? []).length ? { sets: describeSets(n, n.__waygraphTo ?? []).map(({ key, value }) => ({ key, value })) } : {}),
         ...(layout?.access[key] ? { for: [...(layout.access[key] as readonly string[])] } : {}),
       };
     }),
