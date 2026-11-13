@@ -46,7 +46,7 @@ export const ReadCounter = defineReadBlock({
     `import { map } from "waygraph";
 import { Bump, ExpectBye, ExpectHello, NavHome } from "../map/home/home.block.js";
 export const slidesFlow = map().gotoPage(NavHome, {
-  expect: [ExpectHello.stubAfter((ctx) => ctx.ui.slides([{ caption: "The page says hello" }]))],
+  expect: [ExpectHello.stub((ctx) => ctx.ui.slides([{ caption: "The page says hello" }]))],
 });
 export const bumpFlow = map().gotoPage(NavHome).method(Bump, { expect: [ExpectHello] });
 export const byeFlow = map().gotoPage(NavHome, { expect: [ExpectHello, ExpectBye] });

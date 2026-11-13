@@ -67,7 +67,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
    `fill-email-for-lockout-case`, not `click-save-then-check-banner`, not one used by a single flow because that flow
    needed an odd shortcut. Write the general Method (`fill-email`, taking the value as a param), vary the scenario with
    the argument written on the step (`Login.do.fillEmail("a@b.c")`) and with the step's `expect`, and keep the scenario's own wording in the flow, in
-   `description`s and in `stubBefore`/`stubAfter`. A Method used by exactly one flow and no other is a smell: ask
+   `description`s and in `stubBefore`/`stub`. A Method used by exactly one flow and no other is a smell: ask
    whether the page really offers that action, or whether the flow wants a mem value, a `lands` or an `expect`
    instead. If it really is a new action the page offers (a button nobody clicked yet), it is a Method.
 
@@ -191,7 +191,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   Machine.status.is("Archived")] })`. A check on one value is `Key.is(value)` inline, not an Expect Block per value;
   write an Expect Block for a named check worth reusing, or one that needs selectors. `.assert()` steps are gone
   (`waygraph upgrade --codemod expect` folds them into the step before). `map({ expect: false })` for a setup flow.
-- **Several Methods of one page: `.on(Page, (p) => p.fill("x").submit())`**, each call its own step (`.with({ expect, settle })`, `.stubAfter(...)` after it); not a `.method(Page.do.…)` line each.
+- **Several Methods of one page: `.on(Page, (p) => p.fill("x").submit())`**, each call its own step (`.with({ expect, settle })`, `.stub(...)` after it); not a `.method(Page.do.…)` line each.
 - **One Method, many inputs: the value is a param, written on the step.** `self.method((text: string) => ({ async act(p) { await p.locator(Sel.search).fill(text); } }))`
   in the page, `.method(RegistryPage.do.fillSearch("MCH-0111"))` in the flow: typed, inline, and no mem key to declare
   for a value only this step uses. Never one Method per value (`fill-search-padded`, `fill-search-markup`). Mem is for
@@ -246,9 +246,9 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   `(user-stories)/` (any `(group)`) for flows that cross pages. Export names are `<page><Outcome>Flow`. Not one file per
   Block chain, not a flat folder of unrelated flows.
 - **Blocks carry no stubs; the flow does.** Demo highlights are ctx stubs chained on the Block where the flow uses it:
-  `AddItemBlock.stubAfter((ctx) => { ctx.ui.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart" }); })`.
+  `AddItemBlock.stub((ctx) => { ctx.ui.ring("cart", { selector: DemoSel.cartCount, label: "AC · item in cart" }); })`.
   That chained function is the only form: a Block's definition (its options) takes no stub, and a stub
-  is never a slot map. A Block used twice gets one `const AddShown = AddItemBlock.stubAfter(...)`. A stub that throws
+  is never a slot map. A Block used twice gets one `const AddShown = AddItemBlock.stub(...)`. A stub that throws
   fails its step in the demo, named.
 - **The demo already says how each step went**, with no stub: its outcome card ticks each expectation (an Expect Block's
   `description`, so give every Expect Block one a QA reader understands) and lists what the page's `read` gives that
@@ -400,7 +400,7 @@ import { CartPage } from "#map/(app_base)/cart/_page.block";
 import { HeaderSel } from "#map/(app_base)/inventory/_sel";
 import { EmptyCartApiBlock } from "#map/(api)/cart/empty.api.block";
 
-const AddShown = InventoryPage.do.addToCart.stubAfter((ctx) => ctx.ui.ring("cart", { selector: HeaderSel.cart, label: "Item in cart", tag: "AC" }));
+const AddShown = InventoryPage.do.addToCart.stub((ctx) => ctx.ui.ring("cart", { selector: HeaderSel.cart, label: "Item in cart", tag: "AC" }));
 
 export const inventoryAddItemFlow = engine
   .map({ as: StandardUser, input: ShopKeys.selectedItem })

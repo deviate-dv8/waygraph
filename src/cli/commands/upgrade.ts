@@ -18,6 +18,7 @@ import { codemodMemStubs } from "./codemod-mem-stubs.js";
 import { codemodInlineMethods } from "./codemod-inline-methods.js";
 import { codemodExtractMethods } from "./codemod-extract-methods.js";
 import { codemodChecks } from "./codemod-checks.js";
+import { codemodStub } from "./codemod-stub.js";
 import { parseCommand } from "../args.js";
 import type { OptionTable } from "../args.js";
 
@@ -43,7 +44,7 @@ const OPTIONS = {
   overwrite: { type: "boolean", help: "Also replace files that differ from the scaffold" },
   diff: { type: "boolean", help: "Show what differs" },
   skills: { type: "boolean", help: "Refresh .agents/skills to this waygraph's" },
-  codemod: { type: "string", value: "flows|checkpoints|keys|lands|ff|chain|pages|expect|effect|page-object|instructions|nav|mem-stubs|inline-methods|extract-methods|checks", help: "Rewrite the project's source onto the current API" },
+  codemod: { type: "string", value: "flows|checkpoints|keys|lands|ff|chain|pages|expect|effect|page-object|instructions|nav|mem-stubs|inline-methods|extract-methods|checks|stub", help: "Rewrite the project's source onto the current API" },
 } as const satisfies OptionTable;
 
 /**
@@ -65,7 +66,7 @@ export async function upgradeCase(args: string[]): Promise<void> {
       if (problems.length) process.exitCode = 1;
       return;
     }
-    const plain = new Map([["keys", codemodKeys], ["lands", codemodLands], ["ff", codemodFf], ["chain", codemodChain], ["pages", codemodPages], ["expect", codemodExpect], ["effect", codemodEffect], ["page-object", codemodPageObject], ["instructions", codemodInstructions], ["nav", codemodNav], ["mem-stubs", codemodMemStubs], ["inline-methods", codemodInlineMethods], ["extract-methods", codemodExtractMethods], ["checks", codemodChecks]]).get(what);
+    const plain = new Map([["keys", codemodKeys], ["lands", codemodLands], ["ff", codemodFf], ["chain", codemodChain], ["pages", codemodPages], ["expect", codemodExpect], ["effect", codemodEffect], ["page-object", codemodPageObject], ["instructions", codemodInstructions], ["nav", codemodNav], ["mem-stubs", codemodMemStubs], ["inline-methods", codemodInlineMethods], ["extract-methods", codemodExtractMethods], ["checks", codemodChecks], ["stub", codemodStub]]).get(what);
     if (plain) {
       const { changed, problems } = plain(dir);
       for (const f of changed) console.log(`  rewrote     ${f}`);
@@ -75,7 +76,7 @@ export async function upgradeCase(args: string[]): Promise<void> {
       return;
     }
     if (what !== "checkpoints") {
-      console.error("waygraph upgrade --codemod: known codemods: checkpoints, flows, keys, lands, ff, chain, pages, expect, effect, page-object, instructions, nav, mem-stubs, inline-methods, extract-methods, checks");
+      console.error("waygraph upgrade --codemod: known codemods: checkpoints, flows, keys, lands, ff, chain, pages, expect, effect, page-object, instructions, nav, mem-stubs, inline-methods, extract-methods, checks, stub");
       process.exit(1);
     }
     const { changed, skipped } = codemodCheckpoints(dir);

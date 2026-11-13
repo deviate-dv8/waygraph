@@ -49,7 +49,7 @@ graph LR
 | **read** | the page's Read Blocks read what it shows (into the run log, the demo, `Key.is`) | on the landing page |
 | **screenshot** | the page's picture, when a Block asks (`screenshot: true`) | last |
 
-A step's `stubBefore` / `stubAfter` (the demo's narration) wrap it in a demo and do nothing in a run.
+A step's `stubBefore` / `stub` (the demo's narration) wrap it in a demo and do nothing in a run.
 
 ## 3. Around the steps
 

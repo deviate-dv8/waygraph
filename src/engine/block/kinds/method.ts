@@ -26,7 +26,7 @@ export type MethodBlock<
   Out extends Checkpoint<string>,
 > = Omit<
   DefinedBlock<In, Out>,
-  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
+  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stub" | "stubOnError"
 > & {
   readonly __wgFactory?: "method";
   withVerify(
@@ -38,7 +38,7 @@ export type MethodBlock<
   ): MethodBlock<In, Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): MethodBlock<In, Out>;
   stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
-  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
+  stub(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
   stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): MethodBlock<In, Out>;
 };
 

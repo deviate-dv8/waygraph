@@ -20,7 +20,7 @@ export const viewerBlockedFlow = engine
   .method(Login.do.fillUsername)
   .method(Login.do.fillPassword)
   .method(
-    Login.do.submitLogin.stubAfter((ctx) => {
+    Login.do.submitLogin.stub((ctx) => {
       if (ctx.out?.__state === "LoginPage") loginRefused(ctx);
     }),
   );

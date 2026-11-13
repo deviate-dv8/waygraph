@@ -98,7 +98,7 @@ export type StubPhaseFixtures = {
  *   ctx.ui.ring("submit", { selector: "#login-button", label: "Sign in" });
  * })
  * // Sequential plan: bump todoIndex in a later phase / a later Block's stubBefore
- * .stubAfter((ctx) => {
+ * .stub((ctx) => {
  *   ctx.ui.todoIndex(2);
  *   ctx.ui.ring("inventory", { selector: ".inventory_list", label: "Landed" });
  * });

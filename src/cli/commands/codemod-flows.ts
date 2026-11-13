@@ -22,7 +22,7 @@ const SETTINGS: Record<string, (arg: string | undefined) => string> = {
   withDemoPace: (a) => `demoPace: ${a}`,
   withHighlightStyle: (a) => `highlightStyle: ${a}`,
 };
-const STUBS: Record<string, string> = { withStubBefore: "stubBefore", withStubAfter: "stubAfter", withStubOnError: "stubOnError" };
+const STUBS: Record<string, string> = { withStubBefore: "stubBefore", withStubAfter: "stub", withStubOnError: "stubOnError" };
 const REMOVED = new Set(["start", "end", "chainFlow", "withTitle", "withBlockPace", "withHighlightFixtures", ...Object.keys(SETTINGS), ...Object.keys(STUBS)]);
 const STEP: Record<string, string> = { nav: "gotoPage", page: "gotoPage", method: "method", effect: "method", api: "method", assert: "assert" };
 
@@ -183,7 +183,7 @@ function rewrite(call: CallExpression, kindOf: KindOf, needsMap: Set<SourceFile>
     return "changed";
   }
 
-  if (name === "withHighlightFixtures") return "withHighlightFixtures: chain ctx stubs on each Block where the flow uses it (Block.stubAfter((ctx) => …))";
+  if (name === "withHighlightFixtures") return "withHighlightFixtures: chain ctx stubs on each Block where the flow uses it (Block.stub((ctx) => …))";
   if (name === "withBlockPace") return "withBlockPace outside a flow: use the step option .method(Block, { pace })";
 
   if (Node.isPropertyAccessExpression(callee) && callee.getName() === "end" && args[0] && mapCallOf(call)) {

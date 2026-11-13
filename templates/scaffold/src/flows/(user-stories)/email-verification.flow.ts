@@ -4,13 +4,13 @@ import { MailpitInboxPage } from "#map/(external)/mailpit/_page.block";
 import { MailpitSel } from "#map/(external)/mailpit/_sel";
 import { NavVerificationLinkBlock } from "#map/(app_base)/home/nav-verification-link.block";
 
-const Arrived = MailpitInboxPage.expects.emailReceived.stubAfter((ctx) => {
+const Arrived = MailpitInboxPage.expects.emailReceived.stub((ctx) => {
   ctx.ui.ring("note", { selector: MailpitSel.messageRow, label: "AC · email arrived", detail: "Confirmed before opening anything.", tag: "AC" });
 });
-const ContentMatches = MailpitInboxPage.expects.emailContent.stubAfter((ctx) => {
+const ContentMatches = MailpitInboxPage.expects.emailContent.stub((ctx) => {
   ctx.ui.ring("note", { selector: MailpitSel.previewIframe, label: "AC · email body matches expected copy", tag: "AC" });
 });
-const LinkFound = MailpitInboxPage.do.extractEmailLink.stubAfter((ctx) => {
+const LinkFound = MailpitInboxPage.do.extractEmailLink.stub((ctx) => {
   ctx.ui.ring("note", { selector: MailpitSel.previewIframe, label: "AC · link found", detail: "Read from the message preview iframe.", tag: "AC" });
 });
 

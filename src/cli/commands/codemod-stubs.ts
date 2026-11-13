@@ -4,7 +4,7 @@
 // aliases (`banner`, `bannerPos`, `clearDevice`, `clearTodos`, `landscape`, `portrait`, `todoDockFull`) become the
 // names they stood for. A stub written as a slot map (`{ email: { selector, label } }`) becomes a function of
 // `ctx.ring` calls, and a stub set in a `define*Block({ ... })` (options or instruction) moves out to a chained
-// `.stubBefore(...)` on the Block; a Block's `slides` become `ctx.slides(...)` in its chained `.stubAfter(...)`;
+// `.stubBefore(...)` on the Block; a Block's `slides` become `ctx.slides(...)` in its chained `.stub(...)`;
 // `ctx.highlights({ a: ring })` becomes one `ctx.ring("a", ring)` per ring; `narrate(locator, caption, action)` in an
 // `act` becomes the action, reported so the caption can move to a stubBefore ring. Last, everything a stub paints moves
 // under `ctx.ui` (`ctx.ring(...)` -> `ctx.ui.ring(...)`). Works on the TypeScript AST (ts-morph).
@@ -91,7 +91,9 @@ function convertStatements(statements: readonly Node[], problems: { line: number
   return changed;
 }
 
-const PHASES = new Set(["stubBefore", "stubAfter", "stubOnError"]);
+const PHASES = new Set(["stubBefore", "stubAfter", "stub", "stubOnError"]);
+/** What a phase is called on a Block now: `stubAfter` is `stub`. */
+const methodOf = (phase: string): string => (phase === "stubAfter" ? "stub" : phase);
 
 /** A slot map as a stub function: `{ a: {...} }` -> `(ctx) => { ctx.ring("a", {...}); }`. */
 function mapToStub(map: Node): string {
@@ -100,7 +102,7 @@ function mapToStub(map: Node): string {
   return `(ctx) => {\n${rings.map((r) => "  " + r).join("\n")}\n}`;
 }
 
-/** `X.stubAfter({ ... })` -> `X.stubAfter((ctx) => { ctx.ring(...) })`. */
+/** `X.stub({ ... })` -> `X.stub((ctx) => { ctx.ring(...) })`. */
 function convertSlotMaps(sf: SourceFile): boolean {
   let changed = false;
   for (const call of sf.getDescendantsOfKind(SyntaxKind.CallExpression).reverse()) {
@@ -115,7 +117,7 @@ function convertSlotMaps(sf: SourceFile): boolean {
   return changed;
 }
 
-/** `defineXBlock({ ..., stubBefore: fn, slides })` (or in its instruction) -> `defineXBlock({ ... }).stubBefore(fn).stubAfter(slides)`. */
+/** `defineXBlock({ ..., stubBefore: fn, slides })` (or in its instruction) -> `defineXBlock({ ... }).stubBefore(fn).stub(slides)`. */
 function hoistDefinitionStubs(sf: SourceFile): boolean {
   let changed = false;
   for (const call of sf.getDescendantsOfKind(SyntaxKind.CallExpression).reverse()) {
@@ -144,16 +146,16 @@ function hoistDefinitionStubs(sf: SourceFile): boolean {
           const init = (prop as import("ts-morph").PropertyAssignment).getInitializerOrThrow();
           fn = Node.isObjectLiteralExpression(init) ? mapToStub(init) : init.getText();
         }
-        chained.push(`.${name}(${fn})`);
+        chained.push(`.${methodOf(name)}(${fn})`);
         prop.remove();
       }
     }
     if (slides !== undefined) {
-      const after = chained.findIndex((c) => c.startsWith(".stubAfter("));
-      if (after < 0) chained.push(`.stubAfter((ctx) => ctx.slides(${slides}))`);
+      const after = chained.findIndex((c) => c.startsWith(".stub("));
+      if (after < 0) chained.push(`.stub((ctx) => ctx.slides(${slides}))`);
       else {
-        const fn = chained[after]!.slice(".stubAfter(".length, -1);
-        chained[after] = `.stubAfter(async (ctx) => {\n  await (${fn})(ctx);\n  ctx.slides(${slides});\n})`;
+        const fn = chained[after]!.slice(".stub(".length, -1);
+        chained[after] = `.stub(async (ctx) => {\n  await (${fn})(ctx);\n  ctx.slides(${slides});\n})`;
       }
     }
     if (chained.length) {
@@ -237,8 +239,8 @@ function isStubCtxName(node: Node, name: string): boolean {
     if (/StubCtx/.test(param.getType().getText(param))) return true;
     const parent = fn.getParent();
     const callee = Node.isCallExpression(parent) ? parent.getExpression() : undefined;
-    if (Node.isPropertyAccessExpression(callee) && /^stub(Before|After|OnError)$/.test(callee.getName())) return true;
-    if (Node.isPropertyAssignment(parent) && /^stub(Before|After|OnError)$/.test(parent.getName())) return true;
+    if (Node.isPropertyAccessExpression(callee) && /^stub(Before|After|OnError)?$/.test(callee.getName())) return true;
+    if (Node.isPropertyAssignment(parent) && /^stub(Before|After|OnError)?$/.test(parent.getName())) return true;
     // `((ctx) => ...)(ctx)`, as the slides merge writes it: called at once with an outer stub's ctx.
     const call = Node.isParenthesizedExpression(parent) ? parent.getParent() : undefined;
     const arg = Node.isCallExpression(call) ? call.getArguments()[0] : undefined;

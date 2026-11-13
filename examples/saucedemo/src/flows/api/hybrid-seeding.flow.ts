@@ -43,7 +43,7 @@ export const hybridSeedingFlow = engine
   })
   .gotoPage(Inventory)
   .method(
-    SeedShopperNote.stubAfter((ctx) => {
+    SeedShopperNote.stub((ctx) => {
       ctx.ui.caption("The note is filed: this is what was sent and what came back");
       ctx.ui.showCalls();
     }),

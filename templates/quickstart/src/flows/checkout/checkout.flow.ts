@@ -73,4 +73,4 @@ export const checkoutFlow = engine
     }),
   )
   .method(CheckoutInfo.do.submit.stubBefore((ctx) => ctx.ui.hideCaption()))
-  .method(CheckoutOverview.do.finishOrder.stubBefore(placingOrder).stubAfter(orderPlacedYap));
+  .method(CheckoutOverview.do.finishOrder.stubBefore(placingOrder).stub(orderPlacedYap));

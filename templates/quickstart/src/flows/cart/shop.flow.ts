@@ -15,4 +15,4 @@ export const shopFlow = engine
   .method(CheckoutInfo.do.fillLastName)
   .method(CheckoutInfo.do.fillPostalCode)
   .method(CheckoutInfo.do.submit)
-  .method(CheckoutOverview.do.finishOrder.stubBefore(placingOrder).stubAfter(orderPlacedYap));
+  .method(CheckoutOverview.do.finishOrder.stubBefore(placingOrder).stub(orderPlacedYap));

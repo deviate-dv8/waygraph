@@ -7,7 +7,7 @@ import { } from "#map/(app_base)/home/_reads";
 const AddShown = HomePage.do.addItem.stubBefore((ctx) => {
   ctx.ui.ring("add", { selector: DemoSel.catalog, label: "Catalog" });
 })
-  .stubAfter((ctx) => {
+  .stub((ctx) => {
     ctx.ui.ring("cart", {
       selector: DemoSel.cartCount,
       label: "AC · item in cart",
@@ -20,13 +20,13 @@ const AddShown = HomePage.do.addItem.stubBefore((ctx) => {
     ctx.ui.ring("cart", { selector: DemoSel.cartCount, label: "Cart at failure", tag: "FAIL" });
   });
 
-const RemoveShown = HomePage.do.removeItem.stubAfter((ctx) => {
+const RemoveShown = HomePage.do.removeItem.stub((ctx) => {
   ctx.ui.ring("cart", { selector: DemoSel.cartCount, label: "Cart count", duration: true });
 });
 
 const ClearShown = HomePage.do.clearCart.stubBefore((ctx) => {
   ctx.ui.ring("clear", { selector: DemoSel.clear, label: "Clear cart" });
-}).stubAfter((ctx) => {
+}).stub((ctx) => {
   ctx.ui.ring("cart", { selector: DemoSel.cartCount, label: "Empty cart", duration: true });
 });
 

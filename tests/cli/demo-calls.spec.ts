@@ -40,7 +40,7 @@ export const Seed = defineApiBlock({
     join(dir, "src", "flows", "calls.flow.ts"),
     `import { map } from "waygraph";
 import { NavHome, Seed } from "../map/home/home.block.js";
-export const callsFlow = map().gotoPage(NavHome).method(Seed.stubAfter((ctx) => ctx.ui.showCalls()));
+export const callsFlow = map().gotoPage(NavHome).method(Seed.stub((ctx) => ctx.ui.showCalls()));
 `,
   );
 });

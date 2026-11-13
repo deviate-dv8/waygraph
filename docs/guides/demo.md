@@ -15,7 +15,7 @@ npx waygraph demo checkoutFlow --auto-play-video   # unattended, recorded, headl
 graph TD
   B[panel: what's next<br/>+ stubBefore rings] --> N{Next}
   N --> A[the step plays<br/>cursor, typing]
-  A --> AF[outcome card: expected, now shows<br/>+ stubAfter rings<br/>+ panel: where it landed, The page shows]
+  A --> AF[outcome card: expected, now shows<br/>+ stub rings<br/>+ panel: where it landed, The page shows]
   AF --> N2{Next}
   A -->|it fails| E[fail panel<br/>+ stubOnError<br/>Retry / Stop]
 ```
@@ -49,7 +49,7 @@ const SubmitLogin = SubmitLoginBlock
     ctx.ui.ring("username", { selector: LoginSel.username, label: "Demo user", detail: "standard_user from mem", tag: "AC" });
     ctx.ui.ring("submit", { selector: LoginSel.loginButton, label: "Sign in", tag: "GATE" });
   })
-  .stubAfter((ctx) => ctx.ui.ring("badge", { selector: InventorySel.list, label: "Signed in", tag: "AC", duration: true }));
+  .stub((ctx) => ctx.ui.ring("badge", { selector: InventorySel.list, label: "Signed in", tag: "AC", duration: true }));
 
 export const loginFlow = engine
   .map()
@@ -62,10 +62,10 @@ export const loginFlow = engine
 | Stub | Runs | Show |
 |---|---|---|
 | `stubBefore` | before the step acts | the fields and buttons it will touch |
-| `stubAfter` | after it lands and its checks pass | the proof: AC, GATE |
+| `stub` | after it lands and its checks pass | the proof: AC, GATE |
 | `stubOnError` | when it fails | what was on screen at the failure |
 
-A stub that throws fails its step, named (`add-item: its stubAfter stub threw: …`), so a typo shows up on the fail
+A stub that throws fails its step, named (`add-item: its stub threw: …`), so a typo shows up on the fail
 panel instead of the narration quietly missing. A stub is a function of `ctx`: share one like any function
 (`src/stubs/`).
 
@@ -81,7 +81,7 @@ panel instead of the narration quietly missing. A stub is a function of `ctx`: s
 | `device("mobile")` / `hideDevice()` | the page at a phone or tablet size, with touch |
 | `zoom(1.5)` | zooms the page in |
 | `showNetworkTab()` / `hideNetworkTab()` | the network panel: requests, status, bodies, Copy as cURL |
-| `showCalls()` | in a `stubAfter`: opens the step's first HTTP call in the call modal (request and response), for a recording nobody clicks through |
+| `showCalls()` | in a `stub`: opens the step's first HTTP call in the call modal (request and response), for a recording nobody clicks through |
 
 When the steps end, the overlay clears and a card says the demo is done and how it went: **Finished** (or **Finished as
 expected**, for a flow that's meant to fail), or **Stopped** with the step and the reason; the flow's title, and how

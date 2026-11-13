@@ -279,7 +279,7 @@ export class MapBuilder<
 
   /**
    * Several Methods of the page the flow is on, written as one call. Each is still its own step: its own name in the run
-   * log, its own `.with({ expect, settle, ... })`, `.stubAfter(...)`. The chain offers the page's Methods that stay on it.
+   * log, its own `.with({ expect, settle, ... })`, `.stub(...)`. The chain offers the page's Methods that stay on it.
    * @example .on(Lines, (p) => p.typeSearch("<b>x</b>").with({ settle: true, expect: [Lines.check("only marked", ({ rows }) => ...)] }).submit())
    */
   on<D extends object>(page: { readonly do: D; readonly checkpoint: Out }, steps: (chain: OnChain<Out, D>) => unknown): MapBuilder<Out, Names, P, A> {

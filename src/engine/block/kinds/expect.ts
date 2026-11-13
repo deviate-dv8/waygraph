@@ -26,7 +26,7 @@ export interface ExpectBlockOptions<Out extends Checkpoint<string> = Checkpoint<
 /** A Block from {@link defineExpectBlock}: one expectation, used in `expect: [...]`. */
 export type ExpectBlock<Out extends Checkpoint<string>> = Omit<
   DefinedBlock<Out, Out>,
-  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
+  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stub" | "stubOnError"
 > & {
   readonly __wgFactory?: "expect";
   withVerify(verify: Trait[] | ((out: Out) => Trait[])): ExpectBlock<Out>;
@@ -34,7 +34,7 @@ export type ExpectBlock<Out extends Checkpoint<string>> = Omit<
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): ExpectBlock<Out>;
   /** Demo narration around the expectation (the demo plays them after the step it belongs to). */
   stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): ExpectBlock<Out>;
-  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): ExpectBlock<Out>;
+  stub(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): ExpectBlock<Out>;
   stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): ExpectBlock<Out>;
 };
 

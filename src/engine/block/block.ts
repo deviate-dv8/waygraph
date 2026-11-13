@@ -68,7 +68,7 @@ export interface Instruction<
    * chained there add up). Not something to set in a Block's definition: Blocks carry no narration.
    */
   stubBefore?: StubLifecycleFn<Out>;
-  /** After the step lands; written by `Block.stubAfter((ctx) => ...)`. */
+  /** After the step lands; written by `Block.stub((ctx) => ...)`. */
   stubAfter?: StubLifecycleFn<Out>;
   /** When the step fails, before the failure panel; written by `Block.stubOnError((ctx) => ...)`. */
   stubOnError?: StubLifecycleFn<Out>;
@@ -198,7 +198,7 @@ export type DefinedBlock<In extends Checkpoint<string>, Out extends Checkpoint<s
    */
   stubBefore(stub: import("../stub/stub.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
   /** Demo narration after resolve. Prefer ctx callbacks over slot-map objects. */
-  stubAfter(stub: import("../stub/stub.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
+  stub(stub: import("../stub/stub.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
   /** Demo narration when the step fails / expected-failure path. */
   stubOnError(stub: import("../stub/stub.js").StubLifecycleFn<Out>): DefinedBlock<In, Out>;
 };
@@ -356,7 +356,7 @@ export function defineBlock<In extends Checkpoint<string>, Out extends Checkpoin
     modVerify: (nameOrIndex, newCheck) => modVerify(defined, nameOrIndex, newCheck),
     modVerifyAll: (patches) => modVerifyAll(defined, patches),
     stubBefore: (stub) => withStubPhase(defined, "stubBefore", stub),
-    stubAfter: (stub) => withStubPhase(defined, "stubAfter", stub),
+    stub: (stub) => withStubPhase(defined, "stubAfter", stub),
     stubOnError: (stub) => withStubPhase(defined, "stubOnError", stub),
   };
   if (base.screenshot) mark(defined, "__waygraphScreenshot", base.screenshot === true ? {} : base.screenshot);
@@ -396,7 +396,7 @@ export function rebuild<B extends SomeBlock>(block: B, instruction: SomeInstruct
     modVerify: (nameOrIndex: string | number, newCheck: Trait["check"] | Trait) => modVerify(next, nameOrIndex, newCheck),
     modVerifyAll: (patches: Record<string, Trait["check"] | Trait>) => modVerifyAll(next, patches),
     stubBefore: (stub: StubLifecycleFn<Checkpoint<string>>) => withStubPhase(next, "stubBefore", stub),
-    stubAfter: (stub: StubLifecycleFn<Checkpoint<string>>) => withStubPhase(next, "stubAfter", stub),
+    stub: (stub: StubLifecycleFn<Checkpoint<string>>) => withStubPhase(next, "stubAfter", stub),
     stubOnError: (stub: StubLifecycleFn<Checkpoint<string>>) => withStubPhase(next, "stubOnError", stub),
   });
   copyWaygraphRuntime(block, next);

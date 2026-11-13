@@ -80,7 +80,7 @@ export const M = defineMethodBlock({
 });`);
     assert.doesNotMatch(text, /stubBefore:|stubAfter\(ctx\) \{/);
     assert.match(text, /\}\)\.stubBefore\(\(ctx\) => \{\s*ctx\.ui\.title\("Checking"\);\s*\}\);/);
-    assert.match(text, /\}\)\.stubAfter\(\(ctx\) => \{\s*ctx\.ui\.ring\("x", \{ selector: "#x" \}\);\s*\}\);/);
+    assert.match(text, /\}\)\.stub\(\(ctx\) => \{\s*ctx\.ui\.ring\("x", \{ selector: "#x" \}\);\s*\}\);/);
   });
 
   it("moves a Block's slides into ctx.slides in its stubAfter", () => {
@@ -105,9 +105,9 @@ export const R = defineMethodBlock({
   },
 });`);
     assert.doesNotMatch(text, /slides:/);
-    assert.match(text, /\}\)\.stubAfter\(\(ctx\) => ctx\.ui\.slides\(\[\{ caption: "One", tag: "YAP" \}\]\)\);/);
-    assert.match(text, /\.stubAfter\(\(ctx\) => ctx\.ui\.slides\(\(\(out\) => \[\{ caption: out\.__state \}\]\)\(ctx\.out!\)\)\);/);
-    assert.match(text, /\.stubAfter\(async \(ctx\) => \{\s*await \(\(ctx\) => ctx\.ui\.ring\("x", \{ selector: "#x" \}\)\)\(ctx\);\s*ctx\.ui\.slides\(\[\{ caption: "Two" \}\]\);\s*\}\);/);
+    assert.match(text, /\}\)\.stub\(\(ctx\) => ctx\.ui\.slides\(\[\{ caption: "One", tag: "YAP" \}\]\)\);/);
+    assert.match(text, /\.stub\(\(ctx\) => ctx\.ui\.slides\(\(\(out\) => \[\{ caption: out\.__state \}\]\)\(ctx\.out!\)\)\);/);
+    assert.match(text, /\.stub\(async \(ctx\) => \{\s*await \(\(ctx\) => ctx\.ui\.ring\("x", \{ selector: "#x" \}\)\)\(ctx\);\s*ctx\.ui\.slides\(\[\{ caption: "Two" \}\]\);\s*\}\);/);
   });
 
   it("turns ctx.highlights({...}) into one ctx.ring per ring", () => {

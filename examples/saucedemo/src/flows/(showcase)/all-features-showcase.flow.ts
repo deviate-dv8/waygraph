@@ -19,20 +19,20 @@ export const allFeaturesShowcaseFlow = engine
   .in(Main)
   .gotoPage(Login)
   .method(
-    Login.do.fillUsername.stubBefore(d.username.before).stubAfter(d.username.after),
+    Login.do.fillUsername.stubBefore(d.username.before).stub(d.username.after),
   )
   .method(
-    Login.do.fillPassword.stubBefore(d.password.before).stubAfter(d.password.after),
+    Login.do.fillPassword.stubBefore(d.password.before).stub(d.password.after),
   )
   .method(
-    Login.do.submitLogin.stubBefore(d.submit.before).stubAfter(d.submit.after),
+    Login.do.submitLogin.stubBefore(d.submit.before).stub(d.submit.after),
     { lands: InventoryPage },
   )
   .method(
-    Inventory.do.addToCart.stubBefore(d.addToCart.before).stubAfter(d.addToCart.after),
+    Inventory.do.addToCart.stubBefore(d.addToCart.before).stub(d.addToCart.after),
   )
   .gotoPage(
-    Cart.stubBefore(d.openCart.before).stubAfter(d.openCart.after),
+    Cart.stubBefore(d.openCart.before).stub(d.openCart.after),
   )
   .in(Guest)
   .gotoPage(Inventory)

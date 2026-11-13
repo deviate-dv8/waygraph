@@ -59,6 +59,6 @@ export type SomeDefinedBlock = Omit<SomeBlock, "withVerify" | "modVerify" | "mod
   modVerify(nameOrIndex: string | number, newCheck: Trait["check"] | Trait): SomeDefinedBlock;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): SomeDefinedBlock;
   stubBefore(stub: StubLifecycleFn<Checkpoint<string>>): SomeDefinedBlock;
-  stubAfter(stub: StubLifecycleFn<Checkpoint<string>>): SomeDefinedBlock;
+  stub(stub: StubLifecycleFn<Checkpoint<string>>): SomeDefinedBlock;
   stubOnError(stub: StubLifecycleFn<Checkpoint<string>>): SomeDefinedBlock;
 };

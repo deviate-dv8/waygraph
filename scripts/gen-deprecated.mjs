@@ -213,6 +213,7 @@ Not API, but the convention the tools and docs assume.
 | One import per Block a flow uses | One per page: \`HomePage.nav\`, \`HomePage.do.addItem\` (a Page Block's \`nav\` and \`methods\`; \`waygraph upgrade --codemod pages\`). |
 | \`seedMemStub(mem, flow)\` before \`flow.run()\` | \`memStub: true\` on the Engine (or the \`map()\`): the flow fills missing keys when it runs. |
 | \`const Saved = Block as MethodBlock<A, B>\` | \`.method(Block, { lands: B })\` (\`waygraph upgrade --codemod lands\`). |
+| \`Block.stubAfter(fn)\` | \`Block.stub(fn)\` (narration after the step lands; \`.stubBefore\` and \`.stubOnError\` stay; \`waygraph upgrade --codemod stub\`). |
 | \`{ ff: true }\` on three or more steps in a row | \`.ffStart()\` … \`.ffEnd()\` (\`waygraph upgrade --codemod ff\`). |
 | \`Page.read.x.passes((x, mem) => …, "why")\` | \`Page.check("why", ({ x }, mem) => …)\`: one primitive that gets everything the page shows and says true or false (\`waygraph upgrade --codemod checks\`). \`Key.is(want)\` stays. |
 

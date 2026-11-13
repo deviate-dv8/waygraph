@@ -7,7 +7,7 @@ const OpenHome = HomePage
   .stubBefore((ctx) => {
     ctx.ui.title("Scaffold: Hello Waygraph");
   })
-  .stubAfter((ctx) => {
+  .stub((ctx) => {
     ctx.ui.ring("title", { selector: DemoSel.title, label: "Home heading", duration: true });
   })
   .stubOnError((ctx) => {
@@ -15,7 +15,7 @@ const OpenHome = HomePage
   });
 
 const HelloShown = HomePage.expects.hello
-  .stubAfter((ctx) => {
+  .stub((ctx) => {
     ctx.ui.ring("title", {
       selector: DemoSel.title,
       label: "AC · Hello visible",

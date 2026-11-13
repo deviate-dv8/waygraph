@@ -69,13 +69,13 @@ engine.map()
   .gotoPage(Lines)
   .on(Lines, (p) => p
     .typeSearch("<b>x</b>").with({ settle: true, expect: [Lines.check("only marked", ({ rows }) => rows.every((r) => r.name.includes("<b>x</b>")))] })
-    .stubAfter((ctx) => ctx.ui.caption("The markup is shown as text"))
+    .stub((ctx) => ctx.ui.caption("The markup is shown as text"))
     .submit())
   .gotoPage(Detail);
 ```
 
 The chain offers the page's Methods that start and end on it (autocomplete lists exactly those; a Method with params takes
-them in the call). `.with({ expect, settle, pace, when, ff })` and `.stubBefore/.stubAfter/.stubOnError` say something about the
+them in the call). `.with({ expect, settle, pace, when, ff })` and `.stubBefore/.stub/.stubOnError` say something about the
 Method just before them. A Method that goes to another page is a `.method(...)` after the chain. `.flow(sub)` episodes,
 `.in(pane)` and every other step are unchanged.
 

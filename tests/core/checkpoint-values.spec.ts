@@ -17,7 +17,7 @@ test("Blocks built from Checkpoint values record where they run from and land on
   // a single `to` fills resolve
   expect(await add.instruction.resolve(undefined)).toEqual(ItemInCart);
   // markers survive chaining
-  expect((add.stubAfter(() => {}) as Marked).__waygraphTo).toEqual(["ItemInCart"]);
+  expect((add.stub(() => {}) as Marked).__waygraphTo).toEqual(["ItemInCart"]);
   void MemPage;
 });
 

@@ -14,10 +14,10 @@ export type OnStepOpts<Out extends Checkpoint<string>> = Omit<MapStepOpts<Out>, 
 export type OnChain<Out extends Checkpoint<string>, D> = OnMethods<Out, D> & {
   /** Step options for the Method just written: `.with({ settle: true, expect: [...] })`. */
   with(opts: OnStepOpts<Out>): OnChain<Out, D>;
-  /** Narration before the Method just written (a stub on that step, as `Block.stubBefore(...)`). */
+  /** Narration before the Method just written (a stub on that step, `Block.stubBefore(...)`). */
   stubBefore(stub: StubLifecycleFn<Out>): OnChain<Out, D>;
-  /** Narration after it. */
-  stubAfter(stub: StubLifecycleFn<Out>): OnChain<Out, D>;
+  /** Narration after it lands: what happened, a ring on the result (`Block.stub(...)`). */
+  stub(stub: StubLifecycleFn<Out>): OnChain<Out, D>;
   /** Narration when it fails. */
   stubOnError(stub: StubLifecycleFn<Out>): OnChain<Out, D>;
 };
@@ -49,7 +49,7 @@ export function recordOn(page: { readonly do: object }, steps: (chain: never) =>
     get(_target, prop) {
       if (typeof prop !== "string" || prop === "then") return undefined;
       if (prop === "with") return (opts: Record<string, unknown>) => ((last().opts = { ...last().opts, ...opts }), chain);
-      if (prop === "stubBefore" || prop === "stubAfter" || prop === "stubOnError") {
+      if (prop === "stubBefore" || prop === "stub" || prop === "stubOnError") {
         return (stub: never) => {
           const step = last();
           const decorate = (step.block as unknown as Record<string, (s: never) => SomeBlock>)[prop];

@@ -24,6 +24,6 @@ test("map() step pace sets the Block's demoPace and keeps its runtime markers, N
 });
 
 test("chaining a stub on a Nav keeps its `from`", () => {
-  const nav = defineNavBlock({ name: "nav-home", checkpoint: checkpoint("Home"), url: "/", from: [checkpoint("Login")] }).stubAfter(() => {});
+  const nav = defineNavBlock({ name: "nav-home", checkpoint: checkpoint("Home"), url: "/", from: [checkpoint("Login")] }).stub(() => {});
   expect((nav as unknown as { __waygraphNavFrom?: string[] }).__waygraphNavFrom).toEqual(["Login"]);
 });

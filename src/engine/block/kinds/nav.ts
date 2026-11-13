@@ -27,7 +27,7 @@ import { markRoute, tagsOf } from "../../checkpoint/route.js";
  */
 export type NavBlock<Out extends Checkpoint<string>> = Omit<
   DefinedBlock<Checkpoint<string>, Out>,
-  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
+  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stub" | "stubOnError"
 > & {
   readonly __wgFactory?: "nav";
   withVerify(
@@ -39,7 +39,7 @@ export type NavBlock<Out extends Checkpoint<string>> = Omit<
   ): NavBlock<Out>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): NavBlock<Out>;
   stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): NavBlock<Out>;
-  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): NavBlock<Out>;
+  stub(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): NavBlock<Out>;
   stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): NavBlock<Out>;
 };
 

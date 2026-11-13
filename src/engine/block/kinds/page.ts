@@ -239,7 +239,7 @@ export type PageBlock<
   Lk extends Record<string, unknown> = Record<never, never>,
 > = Omit<
   DefinedBlock<Checkpoint<string>, Out>,
-  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stubAfter" | "stubOnError"
+  "withVerify" | "modVerify" | "modVerifyAll" | "stubBefore" | "stub" | "stubOnError"
 > & {
   readonly __wgFactory?: "page";
   /** Resolved method Blocks registered at define time. */
@@ -268,7 +268,7 @@ export type PageBlock<
   ): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
   modVerifyAll(patches: Record<string, Trait["check"] | Trait>): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
   stubBefore(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
-  stubAfter(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
+  stub(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
   stubOnError(stub: import("../../stub/stub.js").StubLifecycleFn<Out>): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
 } & PageGo<Out, U, Q> & PageFolderGo<Out, F> & PageLinks<Lk>;
 
