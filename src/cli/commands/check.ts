@@ -94,7 +94,7 @@ async function networkReport(proj: string, which: string): Promise<void> {
   if (!id) return void console.error(`waygraph check: no run logs in ${dir}`);
   const events = readRunLog(proj, id);
   const calls = events.filter((e) => e.type === "step:call").length;
-  const findings = networkFindings(events);
+  const findings = networkFindings(events, (await loadWaygraphConfig(proj))?.network?.thresholds);
   for (const f of findings) console.warn(`waygraph check: ${f.page} (step ${f.step + 1}) ${f.kind}: ${f.what} - ${f.detail}`);
   console.log(`waygraph check: ${calls} call${calls === 1 ? "" : "s"} in ${id.replace(/\.jsonl$/, "")}, ${findings.length} finding${findings.length === 1 ? "" : "s"}`);
 }

@@ -1,5 +1,7 @@
 // The HTTP calls a demo step made, for its outcome card: collected from the run's call recorder, turned into what the card
 // and the call modal show (status in words, why, bodies as text, a cURL), and handed over once the step's calls are in.
+import { overlayHides } from "../overlay/hidden.js";
+import { envString } from "../../engine/env.js";
 import { callName, statusWhy, statusWords } from "../../engine/run/call-words.js";
 import { callsIdle, onCallDetail, type CallBodies, type CallDetail } from "../../engine/run/calls.js";
 import type { CallView } from "../overlay/inpage/call-modal.js";
@@ -33,9 +35,19 @@ function curlOf(method: string, url: string, bodies: CallBodies): string {
   return cmd;
 }
 
+/** The config's name for a call (`network.names`), else `GET /posts/:id`. */
+function nameOf(method: string, url: string): string {
+  const plain = callName(method, url);
+  try {
+    return (JSON.parse(envString("WAYGRAPH_CALL_NAMES") ?? "{}") as Record<string, string>)[plain] ?? plain;
+  } catch {
+    return plain;
+  }
+}
+
 export function viewOf({ summary: s, bodies }: CallDetail): CallView {
   return {
-    name: callName(s.method, s.url),
+    name: nameOf(s.method, s.url),
     method: s.method,
     url: s.url,
     words: statusWords(s.status),
@@ -64,6 +76,7 @@ export function startStepCalls(): void {
 
 /** The calls made since the last step's card, once the ones in flight are in. */
 export async function takeStepCalls(): Promise<StepCalls> {
+  if (overlayHides("calls")) return { shown: [], leftOut: 0 };
   await callsIdle(800);
   const calls = pending;
   pending = [];

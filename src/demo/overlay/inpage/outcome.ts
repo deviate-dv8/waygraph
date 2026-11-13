@@ -85,7 +85,7 @@ export function showOutcome(card: OutcomeCard) {
               "li",
               { class: "wg-call-row flex cursor-pointer items-baseline gap-2 rounded-control px-1 py-0.5 text-xs hover:bg-fill", attrs: { title: "Open the request and the response" } },
               __wgEl("span", { class: "w-11 flex-none font-mono text-2xs font-semibold " + (c.method === "GET" ? "text-blue" : c.method === "DELETE" ? "text-red" : c.method === "POST" ? "text-green" : "text-orange") }, c.method),
-              __wgEl("span", { class: "min-w-0 flex-1 truncate font-mono" }, c.name.slice(c.method.length + 1)),
+              __wgEl("span", { class: "min-w-0 flex-1 truncate font-mono" }, c.name.indexOf(c.method + " ") === 0 ? c.name.slice(c.method.length + 1) : c.name),
               __wgEl("span", { class: "flex-none font-semibold " + (c.failed ? "text-red" : "text-green") }, c.words),
               __wgEl("span", { class: "flex-none text-2xs tabular-nums text-label-3" }, c.ms + " ms"),
             );

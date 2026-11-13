@@ -2,7 +2,7 @@
 import { envString } from "../../engine/env.js";
 
 /** A part of the demo's overlay that can be left out. */
-export type OverlayPart = "banner" | "panel" | "checks" | "todos";
+export type OverlayPart = "banner" | "panel" | "checks" | "todos" | "calls";
 
 /** Whether the demo leaves `part` out. */
 export function overlayHides(part: OverlayPart): boolean {

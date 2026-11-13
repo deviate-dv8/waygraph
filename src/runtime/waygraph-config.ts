@@ -82,12 +82,25 @@ export interface OverlaySettings {
   checks?: boolean;
   /** The checklist docks (`ctx.ui.todos`). */
   todos?: boolean;
+  /** The HTTP calls on a step's card (and the modal each one opens). */
+  calls?: boolean;
 }
 
 /** A recorded demo's voice-over: who speaks, and whether each step's description is spoken too. */
 export interface VoiceSettings {
   speaker: Voice;
   steps?: boolean;
+}
+
+/** How a run's HTTP calls are named and judged. */
+export interface NetworkSettings {
+  /**
+   * What a call is called on the demo's card and modal, by `METHOD /route` (ids folded: `/posts/:id`).
+   * @example names: { "POST /posts": "Seed the note" }
+   */
+  names?: Record<string, string>;
+  /** When `waygraph check --network` and Waygraph Studio flag a call or a page (defaults: 1000 ms, 100000 bytes, 20 calls, 5 ids). */
+  thresholds?: { slowMs?: number; largeBytes?: number; chattyCalls?: number; nPlusOne?: number };
 }
 
 /** The project config in `config/waygraph.config.ts`: base URL, extensions, run and demo settings, web server and the Playwright block. */
@@ -110,6 +123,8 @@ export interface WaygraphConfig {
   headed?: boolean;
   /** Settings for `waygraph run` only. They override the shared ones above. */
   run?: RunSettings;
+  /** How HTTP calls are named and judged (the demo's card, `waygraph check --network`). */
+  network?: NetworkSettings;
   /** Settings for `waygraph demo` only. They override the shared ones above. */
   demo?: DemoSettings;
   /** Write each run's events to `.waygraph/runs/<runId>.jsonl` (the history Waygraph Studio shows), or to this folder. Default true. */
@@ -329,6 +344,7 @@ export function applyConfigEnv(config: WaygraphConfig | undefined, command: stri
     set("WAYGRAPH_TYPING_MS", config.demo?.typingMs === undefined ? undefined : String(config.demo.typingMs));
     set("WAYGRAPH_APPEARANCE", config.demo?.appearance);
     const hidden = Object.entries(config.demo?.overlay ?? {}).filter(([, shown]) => shown === false).map(([part]) => part);
+    set("WAYGRAPH_CALL_NAMES", config.network?.names ? JSON.stringify(config.network.names) : undefined);
     set("WAYGRAPH_OVERLAY_HIDE", hidden.length ? hidden.join(",") : undefined);
   }
 }

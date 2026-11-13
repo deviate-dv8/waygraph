@@ -53,7 +53,8 @@ Config values are defaults: a flag, a shell variable or a `.env` value beats the
 | `slowMo` | waygraph's pause after each action (in `run`, `slowMo` is Playwright's) |
 | `autoNext`, `fast` | as the `--auto-next` / `--fast` flags |
 | `appearance` | `"light"` or `"dark"` overlay, so recordings match whichever machine makes them |
-| `overlay` | which parts of the overlay show: `{ banner, panel, checks, todos }`, each `true` unless set `false` ([What the overlay shows](../guides/demo#what-the-overlay-shows)) |
+| `overlay` | which parts of the overlay show: `{ banner, panel, checks, todos, calls }`, each `true` unless set `false` ([What the overlay shows](../guides/demo#what-the-overlay-shows)) |
+| `network` (top level) | how HTTP calls are named and judged: `names: { "POST /posts": "Seed the note" }` (what the demo's card and modal call a route) and `thresholds: { slowMs, largeBytes, chattyCalls, nPlusOne }` (what `waygraph check --network` flags) |
 | `voice` | a voice-over for recorded demos: `{ speaker, steps? }` ([Voice-over](../guides/demo#voice-over)) |
 
 ## Environments and `.env`

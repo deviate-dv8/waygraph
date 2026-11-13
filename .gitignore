@@ -19,3 +19,4 @@ docs/api/
 docs/deprecated.md
 **/.waygraph/
 storybook-static/
+tests/fixtures/**/waygraph-pages.d.ts
