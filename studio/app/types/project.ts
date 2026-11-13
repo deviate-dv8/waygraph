@@ -8,7 +8,7 @@ export type Json = string | number | boolean | null | Json[] | { [key: string]: 
 /** A Block as the manifest lists it. */
 export type ManifestBlock = {
   /** The states it changes when it lands; `on` when that depends on where it lands (waygraph 0.18.0+). */
-  sets?: { key: string; value: boolean; on?: string }[]
+  sets?: { key: string; value: boolean | string; on?: string }[]
   id: string
   name: string
   exportName: string
@@ -157,7 +157,7 @@ export type Manifest = {
   config?: { file: string; values: Json }
   checkpoints: string[]
   /** The states the project declares, and where each starts (waygraph 0.18.0+). */
-  states?: { key: string; initial: boolean }[]
+  states?: { key: string; initial: boolean | string }[]
   /** The addresses each page is known by (its Navs' urls, the urls its Blocks verify); missing before waygraph 0.16.16. */
   pageUrls?: Record<string, string[]>
   blocks: ManifestBlock[]

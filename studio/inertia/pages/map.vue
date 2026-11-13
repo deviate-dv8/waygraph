@@ -64,7 +64,7 @@ const props = defineProps<{
   /** Each page's calls in the flows' newest runs, and what is wrong with them. */
   network: Record<string, PageNetwork>
   /** The states the project declares (`state()`): the map can be shown with each on or off. */
-  states: { key: string; initial: boolean }[]
+  states: { key: string; initial: boolean | string }[]
   /** Live browser sessions on this project (`waygraph pilot start`), and the page each is on. */
   live: LiveSession[]
   /** Each page's newest screenshot (a Block's `screenshot: true`), by Checkpoint: when it was taken. */
@@ -93,24 +93,50 @@ const follow = () => {
 onMounted(follow)
 onBeforeUnmount(() => clearTimeout(following))
 
-/** The states assumed on, for what the map shows reachable: they start as declared and a click turns one on or off. */
-const assumed = ref<string[]>(props.states.filter((s) => s.initial).map((s) => s.key))
-const toggleState = (key: string) => {
-  assumed.value = assumed.value.includes(key)
-    ? assumed.value.filter((k) => k !== key)
-    : [...assumed.value, key]
-}
+/** What each state is assumed to be: as declared at first; a click turns a boolean on or off, a menu picks a word. */
+const assumed = ref<Record<string, boolean | string>>(
+  Object.fromEntries(props.states.map((s) => [s.key, s.initial]))
+)
 const stateName = (key: string) => key.split('.').pop() ?? key
-/** What a move does to the states, after its name: `+signedIn`, `-signedIn`. */
+/** What a need asks of a state: `key` (on) or `key=word`. */
+const parseNeed = (need: string): [string, boolean | string] => {
+  const at = need.indexOf('=')
+  return at < 0 ? [need, true] : [need.slice(0, at), need.slice(at + 1)]
+}
+/** What a move does to the states, after its name: `+signedIn`, `-signedIn`, `role=admin`. */
 const setsText = (b: ManifestBlock) =>
   (b.sets ?? []).length
-    ? ' ' + [...new Set(b.sets!.map((s) => (s.value ? '+' : '-') + stateName(s.key)))].join(' ')
+    ? ' ' +
+      [
+        ...new Set(
+          b.sets!.map((s) =>
+            typeof s.value === 'string'
+              ? `${stateName(s.key)}=${s.value}`
+              : (s.value ? '+' : '-') + stateName(s.key)
+          )
+        ),
+      ].join(' ')
     : ''
-/** The states a page needs that aren't assumed on: while any, it is out of reach. */
+/** The states a page needs that aren't as assumed: while any, it is out of reach. */
 const lockedBy = (id: string) =>
-  (props.pages.find((p) => p.checkpoint === id)?.needs ?? []).filter(
-    (k) => !assumed.value.includes(k)
-  )
+  (props.pages.find((p) => p.checkpoint === id)?.needs ?? []).filter((need) => {
+    const [key, want] = parseNeed(need)
+    return assumed.value[key] !== want
+  })
+/** A word state's choices: where it starts and every word a page needs or a move sets. */
+const choicesOf = (key: string, initial: string) => [
+  ...new Set([
+    initial,
+    ...props.pages.flatMap((p) =>
+      (p.needs ?? [])
+        .map(parseNeed)
+        .flatMap(([k, w]) => (k === key && typeof w === 'string' ? [w] : []))
+    ),
+    ...props.blocks.flatMap((b) =>
+      (b.sets ?? []).flatMap((s) => (s.key === key && typeof s.value === 'string' ? [s.value] : []))
+    ),
+  ]),
+]
 
 const selected = ref<string | null>(null)
 /** A Block opened from a badge on a line (a move's Nav, Method, API call): its panel, like a page's. */
@@ -564,7 +590,9 @@ const nodes = computed<Node[]>(() => {
           flows: props.pageFlows[id]?.length ?? 0,
           failing: props.pageFlows[id]?.filter((f) => f.ok === false).length ?? 0,
           here: props.live.some((s) => s.here === id),
-          needs: (props.pages.find((p) => p.checkpoint === id)?.needs ?? []).map(stateName),
+          needs: (props.pages.find((p) => p.checkpoint === id)?.needs ?? []).map((n) =>
+            parseNeed(n)[1] === true ? stateName(n) : stateName(n.replace('=', ' = '))
+          ),
           locked: lockedBy(id).length > 0,
         },
       }
@@ -854,17 +882,28 @@ const page = computed(() =>
         aria-label="Show only what some flows use"
       />
       <!-- The states the app can be in: pages that need one are locked while it is off. -->
-      <UButton
-        v-for="s in props.states"
-        :key="s.key"
-        :icon="assumed.includes(s.key) ? 'i-lucide-lock-open' : 'i-lucide-lock'"
-        :label="stateName(s.key)"
-        size="xs"
-        :color="assumed.includes(s.key) ? 'primary' : 'neutral'"
-        :variant="assumed.includes(s.key) ? 'soft' : 'ghost'"
-        :title="`${s.key}: click to ${assumed.includes(s.key) ? 'assume it off' : 'assume it on'}; pages that need it are ${assumed.includes(s.key) ? 'reachable' : 'locked'}`"
-        @click="toggleState(s.key)"
-      />
+      <template v-for="s in props.states" :key="s.key">
+        <USelect
+          v-if="typeof s.initial === 'string'"
+          v-model="assumed[s.key] as string"
+          :items="choicesOf(s.key, s.initial)"
+          icon="i-lucide-lock"
+          size="xs"
+          variant="ghost"
+          class="w-32"
+          :aria-label="`Assume ${stateName(s.key)}`"
+        />
+        <UButton
+          v-else
+          :icon="assumed[s.key] ? 'i-lucide-lock-open' : 'i-lucide-lock'"
+          :label="stateName(s.key)"
+          size="xs"
+          :color="assumed[s.key] ? 'primary' : 'neutral'"
+          :variant="assumed[s.key] ? 'soft' : 'ghost'"
+          :title="`${s.key}: click to ${assumed[s.key] ? 'assume it off' : 'assume it on'}; pages that need it are ${assumed[s.key] ? 'reachable' : 'locked'}`"
+          @click="assumed[s.key] = !assumed[s.key]"
+        />
+      </template>
       <!-- The map as one account sees it: only what it's given (for). -->
       <USelect
         v-if="props.access.accounts.length"

@@ -21,7 +21,7 @@ export interface ManifestPageEntry {
   /** Who is given it (`for`); missing: everyone. */
   for?: string[];
   /** The states it changes (a logout link). */
-  sets?: { key: string; value: boolean }[];
+  sets?: { key: string; value: boolean | string }[];
 }
 
 export interface ManifestPage {

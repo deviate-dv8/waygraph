@@ -29,7 +29,7 @@ export const MANIFEST_VERSION = 2;
 
 export interface ManifestBlock {
   /** The states it changes when it lands; `on` when that depends on where it lands. */
-  sets?: { key: string; value: boolean; on?: string }[];
+  sets?: { key: string; value: boolean | string; on?: string }[];
   /** `file#exportName`, unique across the project. */
   id: string;
   name: string;
@@ -141,7 +141,7 @@ export interface Manifest {
   config?: { file: string; values: unknown };
   checkpoints: string[];
   /** The states the project declares (`state()` mem keys): what the application can be in, and where each starts. */
-  states: { key: string; initial: boolean }[];
+  states: { key: string; initial: boolean | string }[];
   maps: string[];
   blocks: ManifestBlock[];
   /** Every Page Block, with what it holds (its moves, expectations and links by key) and what it covers. */

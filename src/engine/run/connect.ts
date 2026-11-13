@@ -69,7 +69,7 @@ export function joinSteps(a: SomeBlock, b: SomeBlock): SomeBlock {
           : undefined;
         const mid = await a.instruction.resolve(aObserved);
         stepLanded(a, page, mid);
-        applyStates(a, mid, mem, recordState);
+        applyStates(a, mid, mem, recordState, paneName(a));
         const aLanded = inFrameOf(aLeaf, mid.__state);
         await runVerify(a.instruction.verify, mid, aLanded, mem, stepLabel(a));
         await runExpect(a, mid, aLanded, mem, lastLeaf(a));

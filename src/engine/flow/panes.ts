@@ -15,6 +15,7 @@ import { paneHostOf, setPaneResolver, type PaneMark, type PaneResolver } from ".
 import { stepEnded, stepStarted } from "../run/events.js";
 import { resolveDevice, type Device } from "./device.js";
 import { signInStep, type Account } from "./account.js";
+import { setStates } from "../mem/state.js";
 import { clearSessionState } from "./flow.js";
 import { ignorePageGone } from "../page-gone.js";
 
@@ -187,7 +188,10 @@ const resolver: PaneResolver = {
     if (table.active !== pane.name) {
       table.active = pane.name;
       paneHostOf(table.home)?.acting(pane.name);
-      panes[pane.name]?.as?.mem?.(mem);
+      const who = panes[pane.name]?.as;
+      who?.mem?.(mem);
+      // The person's states are theirs alone: a pane signed in is not the other pane signed in.
+      if (who?.mem) setStates(who.mem, mem, pane.name);
     }
     return target;
   },

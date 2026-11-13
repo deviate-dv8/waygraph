@@ -126,7 +126,7 @@ async function playGraph(
         : undefined;
       const checkpoint = await current.instruction.resolve(observed);
       stepLanded(current, page, checkpoint);
-      applyStates(current, checkpoint, mem, recordState);
+      applyStates(current, checkpoint, mem, recordState, paneName(current));
 
       const landedIn = inFrameOf(landedPage, checkpoint.__state);
       await runVerify(current.instruction.verify, checkpoint, landedIn, mem, stepLabel(current));
