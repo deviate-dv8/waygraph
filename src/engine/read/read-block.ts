@@ -112,18 +112,23 @@ export async function readCheckpoint(page: Page, mem: MemPage, checkpoint: strin
  * say what was there instead (an error message where a confirmation was wanted).
  */
 export async function readKeyNow<T>(page: Page, mem: MemPage, key: ReadKey<T>): Promise<{ value: T | undefined; shown: Record<string, unknown> }> {
-  const namespace = key.path.split(".")[0];
+  const { read, values } = await readNamespaceNow(page, mem, key.path.split(".")[0] ?? "");
+  if (!read) return { value: undefined, shown: {} };
+  const shown = Object.fromEntries([...values].filter(([path, v]) => path !== key.path && v !== null && v !== undefined && v !== "" && v !== false));
+  return { value: read.has(key) ? read.get(key) : undefined, shown };
+}
+
+/** Reads everything the page shows in one namespace now (what {@link readKeyNow} reads one key of); no `read` when no Read Block fills it. */
+export async function readNamespaceNow(page: Page, mem: MemPage, namespace: string): Promise<{ read: ReadPage | undefined; values: ReadonlyMap<string, unknown> }> {
   const specs: ReadSpec[] = [];
   for (const block of registry.values()) {
     if (block.requires.some((k) => !mem.has(k))) continue;
     const got = block.instruction.read(createReadCtx(mem));
     for (const spec of Array.isArray(got) ? got : [got as ReadSpec]) if (spec.namespace === namespace) specs.push(spec);
   }
-  if (specs.length === 0) return { value: undefined, shown: {} };
+  if (specs.length === 0) return { read: undefined, values: new Map() };
   const { values, notes } = await runReadSpecs(page, mem, specs);
-  const read = new ReadPage(values, notes);
-  const shown = Object.fromEntries([...values].filter(([path, v]) => path !== key.path && v !== null && v !== undefined && v !== "" && v !== false));
-  return { value: read.has(key) ? read.get(key) : undefined, shown };
+  return { read: new ReadPage(values, notes), values };
 }
 
 /**

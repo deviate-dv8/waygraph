@@ -1,3 +1,4 @@
+import { readEquals } from "../../src/engine/trait/trait.js";
 import { test, expect } from "@playwright/test";
 import { checkpoint, defineReadBlock, keys, MemPage, reads } from "../../src/index.js";
 import { runVerify, takeCheckedElements } from "../../src/engine/trait/verify.js";
@@ -13,20 +14,20 @@ test("Key.passes checks what the page shows through its Read Block, retried unti
   await page.setContent(`<ul></ul><p id="total">$0</p><script>
     setTimeout(() => { document.querySelector("ul").innerHTML = "<li>a</li><li>b</li><li>c</li>"; document.getElementById("total").textContent = "$12.50"; }, 400);
   </script>`);
-  await runVerify([Shop.items.passes((items) => items.length === 3, "3 items"), Shop.total.passes((t) => t === 12.5)], Done, page, new MemPage(), "list");
+  await runVerify([readEquals(Shop.items, (items) => items.length === 3, "3 items"), readEquals(Shop.total, (t) => t === 12.5)], Done, page, new MemPage(), "list");
 });
 
 test("a failed read check says what the page showed", async ({ page }) => {
   await page.setContent(`<ul><li>a</li></ul><p id="total">$3</p>`);
   await expect(
-    runVerify([{ ...Shop.items.passes((items) => items.length === 3, "3 items"), timeoutMs: 200 }], Done, page, new MemPage(), "list"),
+    runVerify([{ ...readEquals(Shop.items, (items) => items.length === 3, "3 items"), timeoutMs: 200 }], Done, page, new MemPage(), "list"),
   ).rejects.toThrow('list: check "read(traitReadShop.items)" didn\'t pass\n  wanted  3 items\n  saw     ["a"]');
 });
 
 test("a key no Read Block reads fails, saying so", async ({ page }) => {
   const Nothing = reads("traitReadNothing")<{ x: string }>();
   await page.setContent(`<p>x</p>`);
-  await expect(runVerify([{ ...Nothing.x.passes(() => true), timeoutMs: 0 }], Done, page, new MemPage(), "x")).rejects.toThrow(/no value for traitReadNothing\.x/);
+  await expect(runVerify([{ ...readEquals(Nothing.x, () => true), timeoutMs: 0 }], Done, page, new MemPage(), "x")).rejects.toThrow(/no value for traitReadNothing\.x/);
 });
 
 test("a key the page doesn't show fails with what the page shows instead", async ({ page }) => {
@@ -36,7 +37,7 @@ test("a key the page doesn't show fails with what the page shows instead", async
     instruction: { read: (ctx) => Form({ sent: ctx.page.text("#sent"), error: ctx.page.text("#error") }) },
   });
   await page.setContent(`<p id="error">Could not send the link</p>`);
-  await expect(runVerify([{ ...Form.sent.passes(() => true), timeoutMs: 0 }], Done, page, new MemPage(), "submit")).rejects.toThrow(
+  await expect(runVerify([{ ...readEquals(Form.sent, () => true), timeoutMs: 0 }], Done, page, new MemPage(), "submit")).rejects.toThrow(
     'no value for traitReadForm.sent; the page shows traitReadForm.error "Could not send the link"',
   );
 });
@@ -46,7 +47,7 @@ test("Key.passes' test gets mem: what the page shows against what the flow did",
   const mem = new MemPage();
   mem.set(Picked.item, "b");
   await page.setContent(`<ul><li>a</li><li>b</li></ul><p id="total">$3</p>`);
-  const has = Shop.items.passes((items, m) => items.includes(m.get(Picked.item)), "the picked item");
+  const has = readEquals(Shop.items, (items, m) => items.includes(m.get(Picked.item)), "the picked item");
   await runVerify([has], Done, page, mem, "list");
   mem.set(Picked.item, "z");
   await expect(runVerify([{ ...has, timeoutMs: 200 }], Done, page, mem, "list")).rejects.toThrow('  wanted  the picked item\n  saw     ["a","b"]');

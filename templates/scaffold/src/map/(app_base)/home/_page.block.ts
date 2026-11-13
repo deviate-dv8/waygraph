@@ -30,10 +30,7 @@ export const HomePage = definePageBlock({
       await page.locator(DemoSel.addBtn(id)).click();
     },
   verify: (): Trait[] => [
-      self.read.items.passes(
-        (items, mem) => items.some((item) => item.name === mem.get(DemoKeys.selectedItem).name && item.inCart),
-        "the item in the cart",
-      ),
+      self.check("the item in the cart", ({ items }, mem) => items.some((item) => item.name === mem.get(DemoKeys.selectedItem).name && item.inCart)),
     ],
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
       const buttons = page.locator(DemoSel.addButtons);
@@ -65,10 +62,7 @@ export const HomePage = definePageBlock({
       await page.locator(DemoSel.removeBtn(id)).click();
     },
   verify: (): Trait[] => [
-      self.read.items.passes(
-        (items, mem) => !items.some((item) => item.name === mem.get(DemoKeys.selectedItem).name && item.inCart),
-        "the item out of the cart",
-      ),
+      self.check("the item out of the cart", ({ items }, mem) => !items.some((item) => item.name === mem.get(DemoKeys.selectedItem).name && item.inCart)),
     ],
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
       const buttons = page.locator(DemoSel.removeButtons);

@@ -23,5 +23,5 @@ export const RemoveAllFromCartBlock = defineMethodBlock({
       await page.locator(InventorySel.removeBtn(item.id)).click();
     }
   },
-  verify: (): Trait[] => [Inventory.read.items.passes((items) => items.every((item) => !item.inCart), "nothing in the cart")],
+  verify: (): Trait[] => [Inventory.check("nothing in the cart", ({ items }) => items.every((item) => !item.inCart))],
 });

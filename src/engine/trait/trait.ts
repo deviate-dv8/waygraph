@@ -219,7 +219,7 @@ export function absent(selector: string): Trait {
 /**
  * Passes when what the page shows for `key` (its Read Block's value) passes `test`: a check in the page's own terms
  * instead of selectors. `test` also gets mem. Retried like every Trait until the page settles; fails when no Read Block
- * reads the key. Written as `Key.is(want)` / `Key.passes(test)` (read-key.ts); this is what they build.
+ * reads the key. `Key.is(want)` (read-key.ts) builds it.
  */
 export function readEquals<T>(key: ReadKey<T>, test: (value: T, mem: MemPage) => boolean, wants?: string): Trait {
   return {

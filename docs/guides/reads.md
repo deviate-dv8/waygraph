@@ -10,7 +10,7 @@ graph LR
   J --> L[run log<br/>step:read]
   J --> P[pilot replies]
   J --> D[demo panel]
-  J --> T[Page.read.x.is / .passes]
+  J --> T[Page.read.x.is / Page.check]
 ```
 
 Every page should have one: `waygraph check` lists the pages with no `read`.
@@ -98,7 +98,7 @@ read.missing;                 // ["header.title", ...]
 read.toJSON();                // { catalog: { items: [...], sort: "az" }, header: { ... } }
 ```
 
-## In a check: `Key.is` and `Key.passes`
+## In a check: `Key.is` and `Page.check`
 
 A check in the page's own terms instead of selectors: it reads the key now, through the read that fills its
 namespace. Retried like every Trait until the page settles; on failure it says what the page showed, and the demo rings
@@ -107,10 +107,10 @@ the element the value came from.
 ```ts
 .method(InventoryPage.do.addAllToCart, {
   expect: [
-    Inventory.read.items.passes((items) => items.length === 6, "6 products"),
+    Inventory.check("6 products", ({ items }) => items.length === 6),
     Menu.read.cartCount.is(6),                                           // equal (deep, for lists and objects)
     // the test also gets mem: what the page shows against what the flow did
-    Inventory.read.items.passes((items, mem) => items.some((i) => i.inCart && i.name === mem.get(ShopKeys.selectedItem).name), "the selected item in the cart"),
+    Inventory.check("the selected item in the cart", ({ items }, mem) => items.some((i) => i.inCart && i.name === mem.get(ShopKeys.selectedItem).name)),
   ],
 })
 ```

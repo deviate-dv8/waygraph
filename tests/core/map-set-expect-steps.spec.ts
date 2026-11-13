@@ -1,3 +1,4 @@
+import { readEquals } from "../../src/engine/trait/trait.js";
 import { test, expect } from "@playwright/test";
 import { checkpoint, defineMethodBlock, defineReadBlock, Engine, MemPage, keys, reads, registerMemStub, Start, steps } from "../../src/index.js";
 
@@ -57,7 +58,7 @@ test(".set gives the next step its key, a value or one worked out from mem; the 
 
 test("Key.is and Key.passes in a step's expect check what the page shows: a value, or a test that also gets mem", async ({ page }) => {
   const flow = engine
-    .map().method(open, { expect: [Shown.rows.is(["MCH-1", "MCH-2"]), Shown.status.is("Down"), Shown.rows.passes((rows, mem) => rows.includes(mem.get(K.machine).code), "the machine's row")] });
+    .map().method(open, { expect: [Shown.rows.is(["MCH-1", "MCH-2"]), Shown.status.is("Down"), readEquals(Shown.rows, (rows, mem) => rows.includes(mem.get(K.machine).code), "the machine's row")] });
   expect(await flow.run(page.context(), new MemPage().set(K.machine, { code: "MCH-2" }), { page })).toEqual(List);
   await expect(flow.run(page.context(), new MemPage().set(K.machine, { code: "MCH-9" }), { page })).rejects.toThrow(
     /wanted the machine's row; saw \["MCH-1","MCH-2"\]/,

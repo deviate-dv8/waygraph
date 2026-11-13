@@ -214,6 +214,7 @@ Not API, but the convention the tools and docs assume.
 | \`seedMemStub(mem, flow)\` before \`flow.run()\` | \`memStub: true\` on the Engine (or the \`map()\`): the flow fills missing keys when it runs. |
 | \`const Saved = Block as MethodBlock<A, B>\` | \`.method(Block, { lands: B })\` (\`waygraph upgrade --codemod lands\`). |
 | \`{ ff: true }\` on three or more steps in a row | \`.ffStart()\` … \`.ffEnd()\` (\`waygraph upgrade --codemod ff\`). |
+| \`Page.read.x.passes((x, mem) => …, "why")\` | \`Page.check("why", ({ x }, mem) => …)\`: one primitive that gets everything the page shows and says true or false (\`waygraph upgrade --codemod checks\`). \`Key.is(want)\` stays. |
 
 ## Releases
 

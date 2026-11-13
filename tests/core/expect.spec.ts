@@ -1,3 +1,4 @@
+import { readEquals } from "../../src/engine/trait/trait.js";
 import { test, expect } from "@playwright/test";
 import {
   checkpoint,
@@ -61,7 +62,7 @@ test("a Block's expectations run after it, for the outcome it landed on", async 
 });
 
 test("a step adds its own expectations; a failing step reports every one it didn't meet", async ({ page }) => {
-  const flow = engine.map().method(open).method(save, { lands: Saved, expect: [Shown.status.is("Draft"), Shown.rows.passes((rows) => rows.length === 3, "3 rows")] });
+  const flow = engine.map().method(open).method(save, { lands: Saved, expect: [Shown.status.is("Draft"), readEquals(Shown.rows, (rows) => rows.length === 3, "3 rows")] });
   const error = await run(flow, page, new MemPage().set(K.note, "x")).catch((e: unknown) => e);
   expect(error).toBeInstanceOf(ExpectFailure);
   const failure = error as ExpectFailure;

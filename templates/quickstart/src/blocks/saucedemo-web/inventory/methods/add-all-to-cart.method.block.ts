@@ -24,5 +24,5 @@ export const AddAllToCartBlock = defineMethodBlock({
       await page.locator(InventorySel.addBtn(item.id)).click();
     }
   },
-  verify: (): Trait[] => [Inventory.read.items.passes((items) => items.every((item) => item.inCart), "every item in the cart")],
+  verify: (): Trait[] => [Inventory.check("every item in the cart", ({ items }) => items.every((item) => item.inCart))],
 });

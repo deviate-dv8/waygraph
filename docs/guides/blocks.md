@@ -214,7 +214,7 @@ defineMethodBlock({
     await page.locator(DemoSel.addBtn(mem.get(DemoKeys.selectedItem).id)).click();
   },
   verify: (): Trait[] => [
-    HomePage.read.items.passes((items, mem) => items.some((i) => i.name === mem.get(DemoKeys.selectedItem).name && i.inCart), "the item in the cart"),
+    HomePage.check("the item in the cart", ({ items }, mem) => items.some((i) => i.name === mem.get(DemoKeys.selectedItem).name && i.inCart)),
   ],
   async instanceOptions(page) {
     // one { id, label, key: DemoKeys.selectedItem, value, highlight } per Add button on the page

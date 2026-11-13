@@ -31,7 +31,7 @@ and when you touch it, move it to the convention or say it should be.
 |---|---|
 | A sign-in script (`chromium.launch()`, fill, click, read the cookie), a "saved session" Block, tokens in env | `account(name, { signIn, mem, ttl })` in `src/accounts/`, flows `map({ as })`; `ttl` keeps the session between runs |
 | A runner of your own (`npx tsx run.ts`) that starts the app, loops over cases, runs them in parallel, retries | `waygraph test --flows` (`--workers`, `--retries`, `-g`), `webServer` in the config, `map({ input })` for cases |
-| A check written as a function over `page` (`page.locator(...).textContent()` and compare) | The page's `read` gives it; the check is `Page.read.x.is(...)` / `.passes(...)`, or an Expect Block in the page's `_expects/` |
+| A check written as a function over `page` (`page.locator(...).textContent()` and compare) | The page's `read` gives it; the check is `Page.read.x.is(...)` / `Page.check(why, ({ x }) => ...)`, or an Expect Block in the page's `_expects/` |
 | A retry or polling helper (`settles`, `waitUntil`, a loop with `sleep`) | Nothing: verify retries every Trait; `{ settle: true }` on a step whose page keeps changing |
 | A helper that drives the page outside a Block (`clickClear(page, sel)`, `pasteInto`, `setDateTime`) | A Method Block, one action, in the page's `_methods/`; a field that needs a special way of typing is that Block's `act` |
 | A selector prefix for a page in an iframe (`framed(Sel)`, `internal:control=enter-frame >> …`) | `frame: "#embed"` on the Page Block: its Blocks, checks and `read` see locators inside the frame |
@@ -99,7 +99,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
    `expect: [...]` on the Block when every use expects it (per outcome for a branching Block: `{ Saved: [...],
    Form: [...] }`), or on the step when only this scenario does. Expectations are Expect Blocks
    (`defineExpectBlock({ name, description, checkpoint, verify })`, in the page's `_expect/`, named on its Page Block's
-   `expects`), Traits, and read checks (`Machine.status.is("Archived")`, `Catalog.items.passes((items, mem) => ...)`).
+   `expects`), Traits, and read checks (`Machine.status.is("Archived")`, `Catalog.check("why", ({ items }, mem) => ...)`).
    **An expectation only reads**: no click, type, navigation or `mem.set` (it fails, naming the action) - an action a
    check needs is a Method step before it. They run together after `verify` and a failing step lists every one that
    didn't hold. A URL or "is visible" check is `verify`, not an expectation; a message or toast check is an expectation,
@@ -206,7 +206,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   without DOM queries. It lives on the page's `definePageBlock` (`read: (ctx) => ({ title: ctx.page.text(Sel.title) })`, types
   inferred, keys `Page.read.title`; what every page a shell covers shows is the shell's `read`), never with mem stubs: mem is what a flow is
   given, a read is what the page shows. `waygraph check` lists pages without one. A check on what a page shows is
-  `Catalog.items.passes((items) => items.length === 6)` or `Header.cartCount.is(1)`, not a selector count; its test
+  `Catalog.check("6 products", ({ items }) => items.length === 6)` or `Header.cartCount.is(1)`, not a selector count; its test
   also gets mem: `(items, mem) => items.some((i) => i.name === mem.get(Keys.item).name)` checks the page shows what the
   flow did.
 - **Shared things are claimed, not raced for.** When parallel runs could pick the same thing (the newest email in a
@@ -333,7 +333,7 @@ export const AddToCartBlock = defineMethodBlock({
     await page.locator(InventorySel.addBtn(mem.get(ShopKeys.selectedItem).id)).click();
   },
   verify: (): Trait[] => [
-    Inventory.read.items.passes((items, mem) => items.some((i) => i.name === mem.get(ShopKeys.selectedItem).name && i.inCart), "the item in the cart"),
+    Inventory.check("the item in the cart", ({ items }, mem) => items.some((i) => i.name === mem.get(ShopKeys.selectedItem).name && i.inCart)),
   ],
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     // { id, name } per live Add button; name as the page's `read` reads it, so verify can find the row
@@ -375,10 +375,10 @@ export const Inventory = definePageBlock({
     })),
   }),
   do: () => ({ addToCart: AddToCartBlock }),
-  expects: (page) => ({ cartHasItems: page.read.items.passes((items) => items.some((i) => i.inCart), "an item in the cart") }),
+  expects: (page) => ({ cartHasItems: page.check("an item in the cart", ({ items }) => items.some((i) => i.inCart)) }),
 });
 // A Method that checks the page it belongs to writes verify as a function, so the two files can import each other:
-//   verify: (): Trait[] => [Inventory.read.items.passes((items) => items.length > 0)]
+//   verify: (): Trait[] => [Inventory.check("items listed", ({ items }) => items.length > 0)]
 ```
 
 Readers: `text`, `texts`, `number` (`"$1,299.00"` -> 1299), `attr`, `value`, `visible`, `count`,
@@ -403,7 +403,7 @@ export const inventoryAddItemFlow = engine
   .gotoPage(InventoryPage.stubBefore((ctx) => ctx.ui.title("Add an item")))
   .method(AddShown)
   .gotoPage(CartPage, {
-    expect: [Cart.items.passes((items, mem) => items.some((i) => i.name === mem.get(ShopKeys.selectedItem).name), "the item in the cart")],
+    expect: [Cart.check("the item in the cart", ({ items }, mem) => items.some((i) => i.name === mem.get(ShopKeys.selectedItem).name))],
   })
   .finally(EmptyCartApiBlock);
 ```

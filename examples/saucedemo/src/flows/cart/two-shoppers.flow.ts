@@ -15,7 +15,7 @@ const Problem = pane("problem", { as: ProblemUser });
 export const twoShoppersFlow = engine
   .map({ memStub: true, panes: [Standard, Problem] })
   .in(Standard).gotoPage(Inventory).method(Inventory.do.addToCart)
-  .in(Problem).gotoPage(Inventory).gotoPage(Cart, { expect: [Cart.read.lines.passes((lines) => lines.length === 0, "an empty cart")] })
-  .in(Standard).gotoPage(Cart, { expect: [Cart.read.lines.passes((lines) => lines.length === 1, "one item")] })
+  .in(Problem).gotoPage(Inventory).gotoPage(Cart, { expect: [Cart.check("an empty cart", ({ lines }) => lines.length === 0)] })
+  .in(Standard).gotoPage(Cart, { expect: [Cart.check("one item", ({ lines }) => lines.length === 1)] })
   .close(Problem)
   .gotoPage(Inventory);

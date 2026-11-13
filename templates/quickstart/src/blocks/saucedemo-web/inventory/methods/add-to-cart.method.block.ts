@@ -25,10 +25,7 @@ export const AddToCartBlock = defineMethodBlock({
     await page.locator(InventorySel.addBtn(id)).click();
   },
   verify: (): Trait[] => [
-    Inventory.read.items.passes(
-      (items, mem) => items.some((item) => item.name === mem.get(SaucedemoKeys.selectedItem).name && item.inCart),
-      "the item in the cart",
-    ),
+    Inventory.check("the item in the cart", ({ items }, mem) => items.some((item) => item.name === mem.get(SaucedemoKeys.selectedItem).name && item.inCart)),
   ],
   async instanceOptions(page): Promise<readonly WaygraphInstanceOption[]> {
     const items = await collectAddableItems(page);

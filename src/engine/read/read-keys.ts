@@ -9,7 +9,7 @@ import type { Reader } from "./readers.js";
  */
 export type PageRead = { readonly [field: string]: Reader<unknown> | PageRead };
 
-/** The keys of a page's read, typed by what each field reads: `Page.read.sort.is("az")`, `Page.read.items.passes(...)`. */
+/** The keys of a page's read, typed by what each field reads: `Page.read.sort.is("az")`, `Page.check(...)` for the rest. */
 export type PageReadKeys<R> = {
   readonly [K in keyof R & string]: R[K] extends Reader<infer T> ? ReadKey<T> : R[K] extends object ? ReadKey<PageReadValue<R[K]>> & PageReadKeys<R[K]> : never;
 };

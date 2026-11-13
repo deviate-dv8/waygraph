@@ -1,6 +1,5 @@
 // Read keys: what a page shows, named by namespace and field (`post.likes`), the way Mem keys name what a run carries.
 import { isDeepStrictEqual } from "node:util";
-import type { MemPage } from "../mem/mem.js";
 import { readEquals, type Trait } from "../trait/trait.js";
 import type { Reader, ReadFields } from "./readers.js";
 
@@ -18,15 +17,6 @@ export class ReadKey<T> {
    */
   is(want: T, wants?: string): Trait {
     return readEquals(this, (value) => isDeepStrictEqual(value, want), wants ?? `${this.path} = ${JSON.stringify(want)}`);
-  }
-
-  /**
-   * An expectation that what the page shows here passes `test`, which also gets mem: what the page shows against what
-   * the flow did.
-   * @example expect: [Catalog.items.passes((items, mem) => items.some((i) => i.name === mem.get(Shop.item).name), "the item in the list")]
-   */
-  passes(test: (value: T, mem: MemPage) => boolean, wants?: string): Trait {
-    return readEquals(this, test, wants);
   }
 }
 

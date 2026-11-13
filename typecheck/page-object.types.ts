@@ -71,7 +71,7 @@ export const Shelf = definePageBlock({
   read: (ctx) => ({ rows: ctx.page.texts("li") }),
   expects: (page) => ({
     listed: page.expect({ description: "Rows are listed.", verify: [Trait.visible("li")] }),
-    some: page.read.rows.passes((r) => r.length > 0, "rows"),
+    some: page.check("rows", ({ rows: r }) => r.length > 0),
   }),
 });
 Shelf.expects.listed;

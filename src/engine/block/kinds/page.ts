@@ -21,7 +21,8 @@ import type { NavBlock } from "./nav.js";
 import type { ExpectList } from "./expect.js";
 import { defineReadBlock, type ReadBlock } from "../../read/read-block.js";
 import type { ReadCtx } from "../../read/readers.js";
-import { namespaceOf, readKeys, type PageRead, type PageReadKeys } from "../../read/read-keys.js";
+import { namespaceOf, readKeys, type PageRead, type PageReadKeys, type PageReadValue } from "../../read/read-keys.js";
+import { checkOf, type CheckResult } from "../../read/read-check.js";
 
 /** One Block (or lazy factory) registered on a {@link PageBlock}. */
 export type PageMethodEntry =
@@ -38,10 +39,6 @@ export type PageMethodEntry =
  */
 export type PageExpectEntry = PageMethodEntry | Trait;
 
-/**
- * What `do` and `expects` are given: the page itself, as far as it's defined: its read keys, to build checks from
- * (`page.read.modalOpen.is(true)`), and its nav.
- */
 /** A Method written inside its page's `do`: the page is its `from` and, unless `to` says otherwise, its `to`. */
 export interface InlineMethod<Out extends Checkpoint<string>, L extends Checkpoint<string>> {
   /** Its name in run logs and the manifest; by default the page's and the key (`login-fill-email`). */
@@ -61,16 +58,15 @@ export interface InlineMethod<Out extends Checkpoint<string>, L extends Checkpoi
   instanceOptions?: Block<Out, Out>["instanceOptions"];
 }
 
+/** What `do` and `expects` are given: the page itself, as far as it's defined (its read keys, check and nav). */
 export interface PageSelf<Out extends Checkpoint<string>, R, Nav> {
+  /** A check on everything the page shows (typed): true or false, or `{ ok, saw }`. @example page.check("only marked", ({ rows }) => rows.every(...)) */
+  check(description: string, test: (read: PageReadValue<R>, mem: MemPage) => CheckResult): Trait;
   /**
    * An expectation of this page, written right here: `expects: (page) => ({ saved: page.expect({ description, verify: [...] }) })`.
    * What a scenario expects on the page, in its words: the demo and Waygraph Studio show the description.
    */
   expect(spec: Omit<ExpectBlockOptions<Out>, "checkpoint" | "name"> & { name?: string }): ExpectBlock<Out>;
-  /**
-   * A Method of this page, written right here: `do: (page) => ({ fill: page.method({ async act(p) { ... } }) })`. Its name
-   * is the key (`login-fill`), it starts and, unless `to` names another page, ends on this page.
-   */
   /** A link of this shell, for `links`: a Nav valid from every page it covers. */
   link<const To extends PageName | "parent" | Checkpoint<string>>(spec: InlineLink<To>): NavBlock<To extends "parent" ? Checkpoint<string> : To extends string ? Checkpoint<To> : To extends Checkpoint<string> ? To : never>;
   /**
@@ -79,6 +75,7 @@ export interface PageSelf<Out extends Checkpoint<string>, R, Nav> {
    * @example drag: self.method((from: Point, to: Point) => ({ async act(p) { await p.mouse.move(from.x, from.y); … } }))
    */
   method<A extends unknown[]>(make: (...args: A) => InlineMethod<Out, Out> & { to?: undefined }): (...args: A) => MethodBlock<Out, Out>;
+  /** A Method of this page, written right here: `do: (page) => ({ fill: page.method({ async act(p) { ... } }) })`; named for its key (`login-fill`). */
   method(spec: InlineMethod<Out, Out> & { to?: undefined }): MethodBlock<Out, Out>;
   method<const To extends LandsOn>(spec: InlineMethod<Out, CpOfLands<To>> & { to: To | readonly To[] }): MethodBlock<Out, CpOfLands<To>>;
   readonly checkpoint: Out;
@@ -260,6 +257,8 @@ export type PageBlock<
   readonly expects: PageMethods<E>;
   /** What the page shows, as typed keys: `Inventory.read.sort.is("az")`. */
   readonly read: PageReadKeys<R>;
+  /** A check on what the page shows, for a step's `expect`: `Lines.check("only marked", ({ rows }) => rows.every(...))`. */
+  check(description: string, test: (read: PageReadValue<R>, mem: MemPage) => CheckResult): Trait;
   withVerify(
     verify: Trait[] | ((out: Out) => Trait[]),
   ): PageBlock<Out, M, Nav, E, R, U, Q, F, Lk>;
@@ -330,7 +329,7 @@ export function definePageBlock<
   const slug = options.name.replace(/^page-/, "");
   const inline = (spec: unknown) => ({ __inlineMethod: spec });
   const inlineExpect = (spec: unknown) => ({ __inlineExpect: spec });
-  const self = { checkpoint: cp, read: readKeys(namespace), nav, method: inline, expect: inlineExpect, link: (spec: unknown) => ({ __inlineLink: spec }) } as unknown as PageSelf<Out, R, Nav>;
+  const self = { checkpoint: cp, read: readKeys(namespace), check: checkOf(namespace), nav, method: inline, expect: inlineExpect, link: (spec: unknown) => ({ __inlineLink: spec }) } as unknown as PageSelf<Out, R, Nav>;
   /** An inline Method becomes a real one, named for its key. */
   const toBlock = (key: string, entry: unknown): unknown => {
     if (typeof entry === "object" && entry !== null && "__inlineExpect" in entry) {
@@ -420,6 +419,7 @@ export function definePageBlock<
   Object.defineProperty(built, "expects", { get: expectRecord, enumerable: false, configurable: true });
   Object.defineProperty(built, "checkpoint", { value: cp, enumerable: false, configurable: true });
   Object.defineProperty(built, "read", { value: self.read, enumerable: false, configurable: true });
+  Object.defineProperty(built, "check", { value: self.check, enumerable: false, configurable: true });
   Object.defineProperty(built, "nav", { value: nav, enumerable: false, configurable: true });
   // The markers `defineNavBlock` sets: a page with a url or click is as known and coverable as a Nav.
   if (typeof pageUrl === "string") {

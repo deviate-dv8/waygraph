@@ -32,7 +32,8 @@ The checks themselves are **Traits**: one named thing that holds or doesn't. Bot
 | `Trait.attribute(sel, "aria-pressed", "true")` | an attribute equals |
 | `Trait.disabled(sel)` / `Trait.enabled(sel)` | the control is disabled / enabled |
 | `Trait.frameVisible` / `frameText` / `frameContains` | the same, inside an iframe |
-| `Key.is(value)` / `Key.passes((value, mem) => …)` | what the page's [read](./reads) gives for that key (`Page.read.x.is(…)`) equals the value, or passes the test |
+| `Key.is(value)` | what the page's [read](./reads) gives for that key (`Page.read.x.is(…)`) equals the value |
+| `Page.check(why, (read, mem) => boolean)` | a check on everything the page shows, typed: `Lines.check("only marked", ({ rows }) => rows.every(…))`. True or false, or `{ ok, saw }` to say what the page showed. The one primitive for a check a key can't say |
 
 An expected value can come from mem: `Trait.text("#code", (mem) => mem.get(MachineKeys.code))`.
 

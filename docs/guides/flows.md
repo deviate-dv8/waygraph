@@ -62,7 +62,7 @@ A run where the Block lands somewhere other than `lands` fails at that step:
 ## What the scenario expects: `expect`
 
 After a step, the flow says what the scenario expects: Expect Blocks, Traits, and what the page shows
-(`Key.is(value)`, `Key.passes(test)`, read through the page's [`read`](./reads)):
+(`Key.is(value)`, `Page.check(why, test)`, read through the page's [`read`](./reads)):
 
 ```ts
 engine.map({ as: Planner })
@@ -71,7 +71,7 @@ engine.map({ as: Planner })
     expect: [
       ExpectArchivedToastBlock,                                                  // named, reusable
       Machine.status.is("Archived"),                                             // equal (deep, for lists and objects)
-      Machine.code.passes((code, mem) => code === mem.get(Keys.machine).code, "the machine we archived"),
+      Machine.check("the machine we archived", ({ code }, mem) => code === mem.get(Keys.machine).code),
     ],
   });
 ```
@@ -121,7 +121,7 @@ database happens to hold; what it made goes away in `.finally()`, pass or fail:
 ```ts
 engine.map({ as: Planner })
   .flow(seedDownMachineFlow)          // API Blocks: create the machine, keep its code in mem
-  .gotoPage(RegistryPage, { expect: [Registry.rows.passes((rows, mem) => rows.some((r) => r.code === mem.get(Keys.downMachine).code))] })
+  .gotoPage(RegistryPage, { expect: [Registry.check("the down machine is listed", ({ rows }, mem) => rows.some((r) => r.code === mem.get(Keys.downMachine).code))] })
   .finally(DeleteMachineApiBlock);
 ```
 

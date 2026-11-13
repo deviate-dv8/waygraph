@@ -67,7 +67,7 @@ export function defineExpectBlock<Out extends Checkpoint<string>>(options: Expec
   return built as unknown as ExpectBlock<Out>;
 }
 
-/** One thing a step expects: a check (a Trait, or `Key.is(...)` / `Key.passes(...)` on a Read key), or an Expect Block. */
+/** One thing a step expects: a check (a Trait, or `Key.is(...)` on a Read key, `Page.check(...)`), or an Expect Block. */
 export type Expectation<Out extends Checkpoint<string>> = Trait | ExpectBlock<Out>;
 
 /**

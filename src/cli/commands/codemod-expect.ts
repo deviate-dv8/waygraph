@@ -2,7 +2,7 @@
 // become Expect Blocks (`defineExpectBlock`, `ExpectBlock`); `.method(X).assert(A).assert(B)` becomes
 // `.method(X, { expect: [A, B] })`, the same for `.gotoPage` / `.gotoExternal`; the `.expect(key, want)` step becomes
 // `key.is(want)` (or `key.passes(test)`) in that list; `Trait.read(key, test)` becomes `key.passes(test)`. What it can't
-// place (an assert with no step before it, a Layout) is listed for a person. Works on the TypeScript AST.
+// place (an assert with no step before it, a Layout) is listed for a person. Works on the TypeScript AST. Its `passes` is the form before 0.18.0: `--codemod checks` turns it into `Page.check`.
 import { readFileSync, writeFileSync } from "node:fs";
 import { relative } from "node:path";
 import { Node, Project, SyntaxKind } from "ts-morph";

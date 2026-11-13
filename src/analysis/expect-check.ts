@@ -91,8 +91,8 @@ export function expectFindings(sf: SourceFile): ExpectFinding[] {
         "flow that uses it; what a scenario expects (a message, a toast) goes in expect: [...] on the step, or the Block's expect when every use expects it",
     });
   }
-  if (expectBlocks.some((call) => { const c = verifyCallees(call); return c?.length === 1 && /\.(is|passes)$/.test(c[0] ?? ""); })) {
-    found.push({ kind: "expect-one-read", detail: "an Expect Block that is one read check - say it in place: expect: [Key.is(value)] or [Key.passes((v, mem) => ...)]" });
+  if (expectBlocks.some((call) => { const c = verifyCallees(call); return c?.length === 1 && /\.(is|check)$/.test(c[0] ?? ""); })) {
+    found.push({ kind: "expect-one-read", detail: "an Expect Block that is one read check - say it in place: expect: [Key.is(value)] or [Page.check(why, (read, mem) => ...)]" });
   }
   return found;
 }
