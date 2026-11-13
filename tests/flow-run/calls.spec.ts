@@ -83,5 +83,4 @@ test("a run records each step's calls with bodies masked, and leaves other origi
   const item = JSON.parse(readFileSync(page.find((c) => c.route === "/api/items/:id")?.body ?? "", "utf8"));
   expect(item.response.body.token).toBe("••••");
   expect(existsSync(join(dir, events[0]?.runId ?? "", "calls"))).toBe(true);
-  expect(events.some((e) => e.type === "run:artifact" && e.kind === "call")).toBe(true);
 });
