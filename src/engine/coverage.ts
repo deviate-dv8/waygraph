@@ -4,6 +4,9 @@
 export interface CoverageEntry {
   selector: string;
   name: string;
+  /** The page whose folder holds the selector file, and where the selector is written (`src/map/(shop)/_sel.ts:5`). */
+  owner?: string;
+  where?: string;
 }
 
 /** What the live browser's coverage view needs: the project's registered selectors (named ones first) and the pages' paths. */

@@ -85,7 +85,7 @@ In a visible session, the **Coverage** chip (bottom-left; `waygraph pilot covera
 waygraph knows on the page you are looking at, so someone who never reads the code can see what a flow can touch and what is
 missing:
 
-- **green**, labelled with its name (`HomeSel.press`): a selector some Block or page uses;
+- **green**, labelled with its name and the page it belongs to (`HomeSel.press · page-home`): a selector some Block or page uses; hover the label for the file and line it is written at;
 - **green, `page /items/:id`**: a link to a page waygraph has (a page with a param covers every id);
 - **orange, dashed, `not registered`**: a link, button, field or tab nothing registers yet.
 
@@ -93,7 +93,7 @@ The chip counts both (`Coverage 12 registered, 3 not`) and keeps up as the page 
 warns about (`unmapped nav link`, `unmapped button`), made visible.
 
 A session also keeps what the page shows after every Block it runs and every `resync` on its trail, the way a run does, so
-`mem.trail.latest(Page.read.x)` works for checks and stubs in a free browser too.
+`mem.trail.latest(Page.read.x)` works for checks and stubs in a free browser too. A page a person opened by its address (`/items/7` on `/items/:id`) records its params on the trail (`mem.trail.paramsOf("Item")` is `{ id: "7" }`), the way `Page.go({ id })` would.
 
 ## On the page
 

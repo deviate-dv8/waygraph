@@ -30,3 +30,13 @@ test("panes are told apart", () => {
   assert.deepEqual(trail.latest(items, { pane: "standard" }), ["mine"]);
   assert.deepEqual(trail.latest(items), []);
 });
+
+test("the params a page was reached with are on the trail", async () => {
+  const { paramsFrom } = await import("../../src/live/auto-session/session-look.js");
+  assert.deepEqual(paramsFrom("http://x.test/items/7?tab=a", ["/", "/items/:id"]), { id: "7" });
+  assert.equal(paramsFrom("http://x.test/other", ["/items/:id"]), undefined);
+  const trail = new Trail();
+  trail.add({ ...look(1, "Item", [["item.title", "t"]]), params: { id: "7" } });
+  assert.deepEqual(trail.paramsOf("Item"), { id: "7" });
+  assert.equal(trail.paramsOf("Cart"), undefined);
+});

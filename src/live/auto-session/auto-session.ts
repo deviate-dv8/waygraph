@@ -183,6 +183,11 @@ export class AutoSession {
     await this.page.evaluate(unmappedInteractionsPageScript, payload).catch(ignorePageGone);
   }
 
+  /** The pages' address patterns (`/items/:id`), for the params of a page a person opened by hand. */
+  private addresses(): string[] {
+    return [...this.library.byName.values()].map((e) => (e.block as { __waygraphNavUrl?: string }).__waygraphNavUrl).filter((u): u is string => typeof u === "string");
+  }
+
   /** The coverage outlines on or off (visible sessions). */
   async setCoverage(on: boolean): Promise<CoverageResponse> {
     this.page = await ensureLivePage(this.context, this.page, this.startUrl);
@@ -265,7 +270,7 @@ export class AutoSession {
       const result = await runOneBlock(this.engine, entry, this.context, this.page, this.mem, false);
       this.here = (result as Checkpoint<string>).__state ?? expectedTo;
       this.lastRunNote = `${entry.block.name} -> ${this.here}`;
-      await keepLook(this.page, this.mem, this.here, entry.block.name, this.trailStep++);
+      await keepLook(this.page, this.mem, this.here, entry.block.name, this.trailStep++, this.addresses());
       const stubAfterResult = await runStubPhase(entry.block, "stubAfter", { out: result });
       await this.paintStubPhase("stub.after", stubAfterResult, 6000);
       this.pushTrace({
@@ -345,7 +350,7 @@ export class AutoSession {
     this.here = await detectHere(this.page, this.library.navBlocks);
     const menu = await this.currentMenu();
     this.lastRunNote = `resync -> ${this.here ?? "Unknown"}`;
-    await keepLook(this.page, this.mem, this.here, "resync", this.trailStep++);
+    await keepLook(this.page, this.mem, this.here, "resync", this.trailStep++, this.addresses());
     return { ok: true, snapshot: await this.snapshotOf(menu), quit: false };
   }
 

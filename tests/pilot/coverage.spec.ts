@@ -9,7 +9,7 @@ const html = `<!doctype html><h1>Shop</h1>
 
 test("the coverage chip outlines registered elements and the ones nothing registers", async ({ context }) => {
   await installPersistentPilotOverlay(context, {
-    entries: [{ selector: "#reg", name: "HomeSel.press" }, { selector: "#q", name: "" }],
+    entries: [{ selector: "#reg", name: "HomeSel.press", owner: "page-home", where: "src/map/_sel.ts:5" }, { selector: "#q", name: "" }],
     paths: ["/items/:id"],
   });
   const page = await context.newPage();
@@ -21,7 +21,8 @@ test("the coverage chip outlines registered elements and the ones nothing regist
   await root.locator("#wg-coverage-chip").click();
   // #reg and #q registered; the link to /items/7 is a registered page; #loose and /nowhere are not.
   await expect(root.locator("#wg-coverage-chip")).toContainText("3 registered, 2 not");
-  await expect(root.locator(".wg-coverage-box").filter({ hasText: "HomeSel.press" })).toHaveCount(1);
+  await expect(root.locator(".wg-coverage-box").filter({ hasText: "HomeSel.press · page-home" })).toHaveCount(1);
+  await expect(root.locator(".wg-coverage-box span[title]").first()).toHaveAttribute("title", /src\/map\/_sel.ts:5/);
   await expect(root.locator(".wg-coverage-box").filter({ hasText: "not registered" })).toHaveCount(2);
   await expect(root.locator(".wg-coverage-box").filter({ hasText: "page /items/7" })).toHaveCount(1);
   await page.screenshot({ path: "/tmp/coverage.png" });

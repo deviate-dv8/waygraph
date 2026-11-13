@@ -6,14 +6,32 @@ import { readBlocksFor, readCheckpoint } from "../../engine/read/read-block.js";
 import type { CoverageResponse } from "./protocol.js";
 
 /** Keeps what the page shows at `here` on the session's trail, as a run does after a step: a check or a stub can ask for it later. */
-export async function keepLook(page: Page, mem: MemPage, here: string | null, block: string, step: number): Promise<void> {
+export async function keepLook(page: Page, mem: MemPage, here: string | null, block: string, step: number, addresses: readonly string[] = []): Promise<void> {
   if (here === null || readBlocksFor(here).length === 0) return;
   try {
     const { read } = await readCheckpoint(page, mem, here);
-    mem.trail.add({ step, block, page: here, read });
+    const params = paramsFrom(page.url(), addresses);
+    mem.trail.add({ step, block, page: here, read, ...(params ? { params } : {}) });
   } catch {
     /* a page that can't be read is not a failed step */
   }
+}
+
+/** The params of `url` against the first address pattern it fits (`/items/:id`), when any has params. */
+export function paramsFrom(url: string, patterns: readonly string[]): Record<string, string> | undefined {
+  let path: string;
+  try {
+    path = new URL(url).pathname;
+  } catch {
+    return undefined;
+  }
+  for (const pattern of patterns) {
+    const names = [...pattern.matchAll(/:(\w+)/g)].map((m) => m[1] ?? "");
+    if (!names.length) continue;
+    const found = new RegExp(`^${pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/:\w+/g, "([^/]+)")}$`).exec(path);
+    if (found) return Object.fromEntries(names.map((n, i) => [n, decodeURIComponent(found[i + 1] ?? "")]));
+  }
+  return undefined;
 }
 
 /** Turns the coverage outlines on or off (the page's own Coverage chip does the same); only a visible session draws them. */

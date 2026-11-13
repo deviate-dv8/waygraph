@@ -30,11 +30,11 @@ export function installCoverage(payload: CoveragePayload) {
       const s = getComputedStyle(el);
       return s.visibility !== "hidden" && s.display !== "none";
     };
-    const box = (el: Element, name: string, known: boolean) => {
+    const box = (el: Element, name: string, known: boolean, title?: string) => {
       const r = el.getBoundingClientRect();
       const tag = __wgEl(
         "span",
-        { class: "absolute -top-4 left-0 max-w-[220px] truncate rounded-control px-1 text-2xs font-semibold text-on-accent " + (known ? "bg-green" : "bg-orange") },
+        { class: "pointer-events-auto absolute -top-4 left-0 max-w-[260px] truncate rounded-control px-1 text-2xs font-semibold text-on-accent " + (known ? "bg-green" : "bg-orange"), attrs: title ? { title } : {} },
         name,
       );
       return __wgEl(
@@ -53,7 +53,7 @@ export function installCoverage(payload: CoveragePayload) {
       const boxes: Node[] = [];
       const claimed = new Set<Element>();
       let known = 0;
-      for (const { selector, name } of payload.entries) {
+      for (const { selector, name, owner, where } of payload.entries) {
         let found: Element[] = [];
         try {
           found = Array.from(document.querySelectorAll(selector)).filter(visible);
@@ -64,7 +64,7 @@ export function installCoverage(payload: CoveragePayload) {
           if (claimed.has(el)) continue;
           claimed.add(el);
           known += 1;
-          boxes.push(box(el, name || "registered", true));
+          boxes.push(box(el, (name || "registered") + (owner ? " · " + owner : ""), true, where ? name + (owner ? " on " + owner : "") + "\n" + where : undefined));
         }
       }
       let missing = 0;

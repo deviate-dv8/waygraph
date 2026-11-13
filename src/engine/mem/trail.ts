@@ -10,6 +10,8 @@ export interface Sighting {
   page: string;
   pane?: string;
   read: ReadPage;
+  /** The page's address params when it was reached by its address (`/items/7` on `/items/:id`: `{ id: "7" }`). */
+  params?: Record<string, string>;
 }
 
 /** A key's value as one step saw it. */
@@ -64,6 +66,11 @@ export class Trail {
   /** What `key` showed right after step `step` (its index in the run log); undefined when that step didn't show it. */
   at<T>(step: number, key: ReadKey<T>): T | undefined {
     return this.all(key).find((s) => s.step === step)?.value;
+  }
+
+  /** The params the page `page` was last reached with (a person opened `/items/7` by hand): `{ id: "7" }`. */
+  paramsOf(page: string): Record<string, string> | undefined {
+    return this.sightings.filter((s) => s.page === page && s.params).at(-1)?.params;
   }
 
   /** How `key` changed between its last two sightings; undefined when it was seen fewer than twice. */

@@ -8,7 +8,7 @@ import type { BlockEntry } from "../manifest/project.js";
 import { walkDir } from "../manifest/scan.js";
 import { parseSource, stringLiterals, templateHeads } from "../manifest/source.js";
 import { selectorEntries, selectorFilesUnder } from "../manifest/selectors.js";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { CoverageEntry } from "../engine/coverage.js";
 
 /** A colour like `{ color: "#fde68a" }` is not a selector. */
@@ -57,11 +57,19 @@ export function collectKnownInteractionSelectors(
 }
 
 /** The registered selectors by name, from the selector files, then the rest the Blocks hold. */
-export function coverageEntries(projectDir: string, library: { navBlocks: BlockEntry[] }, inject?: string[]): CoverageEntry[] {
+export function coverageEntries(projectDir: string, library: { navBlocks: BlockEntry[]; byName?: ReadonlyMap<string, BlockEntry> }, inject?: string[]): CoverageEntry[] {
   const named = selectorFilesUnder(projectDir, walkDir).flatMap((file) => selectorEntries(join(projectDir, file), file)).filter((e) => e.literal);
   const seen = new Set(named.map((e) => e.selector));
   const rest = collectKnownInteractionSelectors(projectDir, library, inject).filter((s) => !seen.has(s));
-  return [...named.map((e) => ({ selector: e.selector, name: e.name })), ...rest.map((selector) => ({ selector, name: "" }))];
+  // A selector file belongs to the page in its folder: the Page Block written beside it.
+  const pageIn = new Map<string, string>();
+  for (const entry of library.byName?.values() ?? []) {
+    if ((entry.block as { __waygraphKind?: string }).__waygraphKind === "page") pageIn.set(dirname(entry.file), entry.block.name);
+  }
+  return [
+    ...named.map((e) => ({ selector: e.selector, name: e.name, where: `${e.file}:${e.line}`, ...(pageIn.get(dirname(e.file)) ? { owner: pageIn.get(dirname(e.file)) as string } : {}) })),
+    ...rest.map((selector) => ({ selector, name: "" })),
+  ];
 }
 
 /** The paths the project's Nav Blocks with a fixed URL go to, resolved against the page's URL. */
