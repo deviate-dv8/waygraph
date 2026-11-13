@@ -100,6 +100,7 @@ interface OpenStep {
   block: string;
   kind: BlockKind;
   startedAt: number;
+  pane?: string;
 }
 
 /**
@@ -144,7 +145,7 @@ export function stepStarted(block: string, kind: BlockKind, from: string, cleanu
   if (!open) return;
   const at = Date.now();
   const parent = open.open.at(-1)?.index;
-  const step = { index: open.index++, block, kind, startedAt: at };
+  const step = { index: open.index++, block, kind, startedAt: at, ...(pane ? { pane } : {}) };
   open.open.push(step);
   open.latest = step.index;
   emit({ type: "step:start", runId: open.runId, at, index: step.index, block, kind, from, ...(parent !== undefined ? { parent } : {}), ...(cleanup ? { cleanup: true as const } : {}), ...(pane ? { pane } : {}) });
@@ -240,10 +241,10 @@ export function recordCall(runId: string, index: number, call: CallSummary): voi
 }
 
 /** The run and the step open right now (the innermost one), if any. */
-export function currentStep(): { runId: string; index: number } | undefined {
+export function currentStep(): { runId: string; index: number; block: string; pane?: string } | undefined {
   const run = scope.getStore();
   const step = run?.open.at(-1);
-  return run && step ? { runId: run.runId, index: step.index } : undefined;
+  return run && step ? { runId: run.runId, index: step.index, block: step.block, ...(step.pane ? { pane: step.pane } : {}) } : undefined;
 }
 
 /** The last real Block inside a Block built by `connect` (or the Block itself). */

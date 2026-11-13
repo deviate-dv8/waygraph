@@ -10,6 +10,7 @@ import { syncInterrupts } from "./interrupts.js";
 import { inFrameOf } from "./frame.js";
 import { screenshotStep } from "./screenshot.js";
 import { watchCalls } from "./calls.js";
+import { readLanding } from "./landing-read.js";
 import { addressOf, isConnected, lastLeaf, stepEnded, stepStarted } from "./events.js";
 import { blockKindOf } from "../block/kind.js";
 import { expectOf, runExpect } from "./expect.js";
@@ -70,6 +71,7 @@ export function joinSteps(a: SomeBlock, b: SomeBlock): SomeBlock {
         const aLanded = inFrameOf(aLeaf, mid.__state);
         await runVerify(a.instruction.verify, mid, aLanded, mem, stepLabel(a));
         await runExpect(a, mid, aLanded, mem, lastLeaf(a));
+        await readLanding(aLanded, mem, mid.__state);
         await screenshotStep(aLeaf, a, mid.__state, lastLeaf(a));
         stepEnded(lastLeaf(a), mid.__state, addressOf(aLeaf));
         const bPage = isConnected(b) ? page : await stepPage(b, page, mem);

@@ -120,8 +120,8 @@ test("expectations are typed to where the Block lands", () => {
   defineMethodBlock({
     name: "expect-typed",
     from: Form,
-    // @ts-expect-error ExpectToast judges Saved, and this Block lands on Form
     to: Form,
+    // @ts-expect-error ExpectToast judges Saved, and this Block lands on Form
     expect: [ExpectToast],
     instruction: { async act() {} },
   });

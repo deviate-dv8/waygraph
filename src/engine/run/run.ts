@@ -1,15 +1,15 @@
 // runGraph: plays Blocks on a page. For each Block: precondition -> act -> observe -> resolve (which Checkpoint did we
 // reach?) -> verify (is the page really there?) -> expect (what the scenario expects), then follows `next` for a branched Block. Emits run events.
 import { MemPage } from "../mem/mem.js";
-import { WaygraphError, MSG_PREFLIGHT_MISSING_KEY, MSG_RUNGRAPH_MAX_STEPS, MSG_RUNGRAPH_NOT_TERMINAL, messageOf } from "../errors.js";
+import { WaygraphError, MSG_PREFLIGHT_MISSING_KEY, MSG_RUNGRAPH_MAX_STEPS, MSG_RUNGRAPH_NOT_TERMINAL } from "../errors.js";
 import { Start } from "../checkpoint/checkpoint.js";
 import type { Block } from "../block/block.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
 import { runExpect } from "./expect.js";
 import { screenshotStep } from "./screenshot.js";
 import { watchCalls } from "./calls.js";
-import { addressOf, inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepRead, stepStarted } from "./events.js";
-import { readBlocksFor, readCheckpoint } from "../read/read-block.js";
+import { addressOf, inRun, isConnected, lastLeaf, stepEnded, stepFailed, stepStarted } from "./events.js";
+import { readLanding } from "./landing-read.js";
 import { blockKindOf } from "../block/kind.js";
 import { runPrecondition, runVerify } from "../trait/verify.js";
 import { namingStep } from "./act-error.js";
@@ -214,14 +214,3 @@ export async function spawnTab<TOut extends Checkpoint<string>>(
   return runGraph<TOut>(entry, undefined, page.context(), mem, maxSteps);
 }
 
-/** After a step's verify: what the page shows, from the Read Blocks for where it landed (none loaded: nothing to do). */
-async function readLanding(page: Page, mem: MemPage, checkpoint: string): Promise<void> {
-  if (readBlocksFor(checkpoint).length === 0) return;
-  try {
-    const { read, blocks } = await readCheckpoint(page, mem, checkpoint);
-    stepRead(checkpoint, { read: read.toJSON(), missing: [...read.missing], notes: { ...read.notes }, readBlocks: blocks });
-  } catch (err) {
-    // A broken Read Block is reported on the step, never fails the run it observes.
-    stepRead(checkpoint, { read: {}, missing: [], notes: {}, readBlocks: [], error: messageOf(err) });
-  }
-}

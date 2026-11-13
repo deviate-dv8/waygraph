@@ -1,4 +1,5 @@
 // Mem: the values a run carries between Blocks (credentials, the row just added), typed by MemKey.
+import { Trail } from "./trail.js";
 import { WaygraphError, MSG_MEM_READ_BEFORE_SET } from "../errors.js";
 /**
  * A typed key into MemPage. The phantom `_phantom` field is never assigned - it
@@ -71,6 +72,8 @@ export function keys(namespace: string): <T extends object>(stubs?: KeyStubs<T>)
  */
 export class MemPage {
   private readonly store = new Map<MemKey<unknown>, unknown>();
+  /** What each step of the run saw, for a later step to ask: `mem.trail.latest(Cart.read.items)`. */
+  readonly trail = new Trail();
 
   /** `mem.set(SaucedemoKeys.credentials, { ... })`. Returns the page, so a test sets several in one line: `new MemPage().set(A, 1).set(B, 2)`. */
   set<T>(k: MemKey<T>, value: T): this {
