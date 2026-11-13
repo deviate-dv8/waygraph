@@ -42,7 +42,12 @@ export const hybridSeedingFlow = engine
     memStub: true,
   })
   .gotoPage(Inventory)
-  .method(SeedShopperNote)
+  .method(
+    SeedShopperNote.stubAfter((ctx) => {
+      ctx.ui.caption("The note is filed: this is what was sent and what came back");
+      ctx.ui.showCalls();
+    }),
+  )
   .method(Inventory.do.addToCart)
   .gotoPage(Cart)
   .method(CheckShopperNotes);

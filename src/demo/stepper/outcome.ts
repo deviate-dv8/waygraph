@@ -5,6 +5,7 @@ import { ignorePageGone } from "../../engine/page-gone.js";
 import type { ExpectResult } from "../../engine/run/expect.js";
 import { installCallModal } from "../overlay/inpage/call-modal.js";
 import { hideOutcome, showOutcome, tickOutcome, type OutcomeCard } from "../overlay/inpage/outcome.js";
+import { installOverlay } from "../overlay/overlay.js";
 import { overlayLayer, type StoredPiece } from "../overlay/overlay-layer.js";
 import type { WgPage } from "../types.js";
 import { demoLog } from "./demo-log.js";
@@ -37,6 +38,8 @@ export async function showOutcomeCard(ctx: StepperContext, expects: readonly Exp
     ...(calls.shown.length ? { calls: calls.shown, callsLeftOut: calls.leftOut } : {}),
   };
   for (const c of calls.shown) if (!quiet()) demoLog(`  called ${c.name} -> ${c.words} (${c.ms} ms)`);
+  // A step that navigated has wiped the overlay: it's back before the card goes on it (nothing it showed changes).
+  await installOverlay(ctx.page);
   await ctx.page.evaluate(installCallModal).catch(ignorePageGone);
   await ctx.page.evaluate(showOutcome, card).catch(ignorePageGone);
   // A page load before the next step brings it back, every row ticked.

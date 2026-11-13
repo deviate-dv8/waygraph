@@ -81,6 +81,7 @@ panel instead of the narration quietly missing. A stub is a function of `ctx`: s
 | `device("mobile")` / `hideDevice()` | the page at a phone or tablet size, with touch |
 | `zoom(1.5)` | zooms the page in |
 | `showNetworkTab()` / `hideNetworkTab()` | the network panel: requests, status, bodies, Copy as cURL |
+| `showCalls()` | in a `stubAfter`: opens the step's first HTTP call in the call modal (request and response), for a recording nobody clicks through |
 
 When the steps end, the overlay clears and a card says the demo is done and how it went: **Finished** (or **Finished as
 expected**, for a flow that's meant to fail), or **Stopped** with the step and the reason; the flow's title, and how

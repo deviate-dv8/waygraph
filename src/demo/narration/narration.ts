@@ -126,6 +126,7 @@ export async function runStubPhase(
     // Boolean, not string - "" isn't a state here, so a plain undefined-check (like zoom/title)
     // is enough; false is real ("author called hideNetworkTab()") and must still be forwarded.
     ...(bag.networkTabVisible !== undefined ? { networkTabVisible: bag.networkTabVisible } : {}),
+    ...(bag.showCalls ? { showCalls: true } : {}),
     slides: [...(bag.slides ?? [])],
     ...(bag.todoPos !== undefined ? { todoPos: bag.todoPos } : {}),
     ...(bag.todoDockUi !== undefined ? { todoDockUi: bag.todoDockUi } : {}),

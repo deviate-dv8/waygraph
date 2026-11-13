@@ -226,7 +226,7 @@ function unwrapNarrate(sf: SourceFile, problems: { line: number; reason: string 
 }
 
 /** Everything a stub paints, which 0.16.3 moved under `ctx.ui`. */
-const UI_METHODS = new Set(["ring", "todos", "todoIndex", "todoGroups", "hideTodos", "device", "viewport", "touch", "orientation", "hideDevice", "zoom", "zoomOut", "title", "titlePos", "bannerUi", "caption", "hideCaption", "slides", "hideBanner", "showNetworkTab", "hideNetworkTab", "todoDockUi"]);
+const UI_METHODS = new Set(["ring", "todos", "todoIndex", "todoGroups", "hideTodos", "device", "viewport", "touch", "orientation", "hideDevice", "zoom", "zoomOut", "title", "titlePos", "bannerUi", "caption", "hideCaption", "slides", "hideBanner", "showNetworkTab", "hideNetworkTab", "showCalls", "todoDockUi"]);
 
 /** Whether `name` at `node` is a stub's ctx: the nearest enclosing function with a parameter of that name is a stub. */
 function isStubCtxName(node: Node, name: string): boolean {

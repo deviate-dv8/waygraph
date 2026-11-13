@@ -132,6 +132,9 @@ export function createStubCtx<Out extends Checkpoint<string>>(
       showNetworkTab() {
         bag.networkTabVisible = true;
       },
+      showCalls() {
+        bag.showCalls = true;
+      },
       hideNetworkTab() {
         bag.networkTabVisible = false;
       },

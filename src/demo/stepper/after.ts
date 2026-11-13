@@ -3,6 +3,7 @@
 // now shows that changed), show the result panel, then wait at the Next gate.
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
 import { envFlag } from "../../engine/env.js";
+import { ignorePageGone } from "../../engine/page-gone.js";
 import type { ResolvedHighlight } from "../../engine/stub/ring.js";
 import type { StubPhaseResult } from "../../engine/stub/stub.js";
 import { hasAuthoredStubAfter, runStubPhase } from "../narration/narration.js";
@@ -33,7 +34,12 @@ export async function showAfter(ctx: StepperContext, view: StepView, result: Che
   const applied = after ? await stage.applyPhase(after.phase) : { appliedTodo: { sync: "keep" as const }, appliedDevice: { sync: "keep" as const } };
   // A demo that leaves the checks out (demo.overlay.checks) shows neither the card nor rings on what was checked.
   const checks = !overlayHides("checks");
-  if (checks) await showOutcomeCard(ctx, expects, changes, takeInterrupts(), await takeStepCalls());
+  if (checks) {
+    const calls = await takeStepCalls();
+    await showOutcomeCard(ctx, expects, changes, takeInterrupts(), calls);
+    // `ctx.ui.showCalls()`: the first call open, as a viewer of a recording would otherwise have to click it.
+    if (after?.phase.showCalls && calls.shown[0]) await ctx.page.evaluate((c) => window.__wgOpenCall?.(c), calls.shown[0]).catch(ignorePageGone);
+  }
 
   await renderAfterStep(ctx.page, {
     index: view.index,

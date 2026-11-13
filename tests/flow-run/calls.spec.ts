@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checkpoint, defineApiBlock, defineMethodBlock, Engine, MemPage, onRunEvent } from "../../src/index.js";
 import type { RunEvent } from "../../src/index.js";
+import { callsIdle } from "../../src/engine/run/calls.js";
 import { installRunLog } from "../../src/runtime/run-log.js";
 
 const Start = checkpoint("CallsStart");
@@ -60,7 +61,7 @@ test("a run records each step's calls with bodies masked, and leaves other origi
   const context = await browser.newContext();
   try {
     await new Engine().map().method(load as never).method(seed as never).run(context, new MemPage());
-    await new Promise((r) => setTimeout(r, 300));
+    await callsIdle(3000);
   } finally {
     off();
     await context.close();

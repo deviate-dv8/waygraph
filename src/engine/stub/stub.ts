@@ -201,6 +201,12 @@ export type StubUi = {
   /** Hides the network-tab overlay (capture keeps running - only the panel disappears). */
   hideNetworkTab(): void;
   /**
+   * Opens the step's first HTTP call in the call modal (the request and the response) once the step ran: for a recorded demo
+   * of an API step, so the viewer reads what was sent and what came back without a click.
+   * @example ctx.ui.showCalls();
+   */
+  showCalls(): void;
+  /**
    * Todo-dock UX: compact fold, collision flip, dim-behind-ring.
    * Defaults are smart-on; pass false fields to opt out for this phase.
    * @example
@@ -247,6 +253,8 @@ export type StubPhaseResult = {
   bannerUi?: BannerUiOpts;
   caption?: string;
   networkTabVisible?: boolean;
+  /** The step's first HTTP call opens in the call modal ({@link StubUi.showCalls}). */
+  showCalls?: boolean;
   /** Slides to play in this phase ({@link StubUi.slides}); empty when the stub set none. */
   slides: WaygraphSlide[];
   todoPos?: "left" | "right";
@@ -285,6 +293,7 @@ export type StubBagState = {
   bannerUi?: BannerUiOpts | undefined;
   caption?: string | undefined;
   networkTabVisible?: boolean | undefined;
+  showCalls?: boolean | undefined;
   slides?: readonly WaygraphSlide[] | undefined;
   todoPos?: "left" | "right" | undefined;
   /** Author patched todo-dock UX this phase. */
