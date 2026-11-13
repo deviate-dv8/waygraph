@@ -52,7 +52,8 @@ export function recordOn(page: { readonly do: object }, steps: (chain: never) =>
       if (prop === "stubBefore" || prop === "stubAfter" || prop === "stubOnError") {
         return (stub: never) => {
           const step = last();
-          step.block = (step.block as unknown as Record<string, (s: never) => SomeBlock>)[prop]!(stub);
+          const decorate = (step.block as unknown as Record<string, (s: never) => SomeBlock>)[prop];
+          if (decorate) step.block = decorate.call(step.block, stub);
           return chain;
         };
       }
