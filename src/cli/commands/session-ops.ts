@@ -59,6 +59,7 @@ const POSITIONAL_OPS = {
   type: { args: ["selector", "text"], usage: '"<selector>" "<text>"' },
   press: { args: ["selector", "key"], usage: '"<selector>" <key>' },
   goto: { args: ["url"], usage: "<url>" },
+  register: { args: ["page", "key", "selector"], usage: '<PageCheckpoint> <name> "<selector>"' },
 } as const satisfies Record<string, { args: readonly string[]; usage: string }>;
 
 /** Ops that take nothing but the session id. */

@@ -8,6 +8,7 @@ import type { ObjectLiteralExpression } from "ts-morph";
 import { parseCommand, type OptionTable } from "../args.js";
 import { accountFile, flowFile, keysFile, methodFile, pageFile, selFile } from "../gen/templates.js";
 import { camel, kebab, pageNames } from "../gen/names.js";
+import { addSelector, withProperty } from "../../manifest/selector-write.js";
 
 const OPTIONS = {
   read: { type: "string", value: "a,b", help: "Fields the page shows (its read)" },
@@ -64,28 +65,6 @@ function pageFileOf(dir: string, segments: string[]): string | undefined {
 
 /** How the end of an import path is written: `.js`, as the NodeNext projects waygraph makes do. */
 const EXT = ".js";
-
-/** `text` as the last property of `obj`, on its own line, indented as the properties are: returns the file's new text. */
-function withProperty(full: string, obj: ObjectLiteralExpression, text: string): string {
-  const close = obj.getEnd() - 1;
-  let i = close - 1;
-  while (/\s/.test(full[i] ?? "")) i--;
-  const lineStart = full.lastIndexOf("\n", close) + 1;
-  const closeIndent = /^\s*/.exec(full.slice(lineStart, close))?.[0] ?? "";
-  const comma = full[i] === "," || full[i] === "{" ? "" : ",";
-  return `${full.slice(0, i + 1)}${comma}\n${closeIndent}  ${text},\n${closeIndent}${full.slice(close)}`;
-}
-
-/** Adds `key: "TODO"` to the selector object `selName` of `file`, when it isn't there. */
-function addSelector(project: Project, file: string, selName: string, key: string): boolean {
-  if (!existsSync(file)) return false;
-  const sf = project.createSourceFile(file, readFileSync(file, "utf8"), { overwrite: true });
-  let init = sf.getVariableDeclaration(selName)?.getInitializer();
-  while (Node.isAsExpression(init) || Node.isSatisfiesExpression(init)) init = init.getExpression();
-  if (!Node.isObjectLiteralExpression(init) || init.getProperty(key)) return false;
-  writeFileSync(file, withProperty(sf.getFullText(), init, `${key}: "TODO"`));
-  return true;
-}
 
 /** Registers the Method `key` (its file or its inline body) in the page's `do`. */
 function addToPage(project: Project, file: string, key: string, entry: string, importFrom: string | undefined): boolean {
@@ -169,7 +148,7 @@ export async function genCase(args: string[]): Promise<void> {
         out.write(method, methodFile(key, real, ext));
         if (!addToPage(project, pageFile, key, `${key}(self)`, `./_methods/${kebab(key)}.method.block${ext}`)) console.warn(`waygraph gen: ${key} is already in the page (or its do isn't an object); left alone`);
       }
-      addSelector(project, join(folder, "_sel.ts"), real.selName, key);
+      addSelector(project, join(folder, "_sel.ts"), real.selName, key, "TODO");
     } else out.written.push(relative(dir, method));
   } else if (what === "flow") {
     const names = pageNames(target.split("/").slice(0, -1).join("/") || target);

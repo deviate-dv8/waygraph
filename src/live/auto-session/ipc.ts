@@ -84,6 +84,7 @@ export async function requestSession(
     | { op: "reload" }
     | { op: "resync" }
     | { op: "coverage"; on: boolean }
+    | { op: "register"; page: string; key: string; selector: string }
     | { op: "upload"; selector: string; stub: StubFileKind | { filePath: string } },
   timeoutMs?: number,
 ): Promise<StatusOrSendResponse>;
@@ -289,6 +290,8 @@ export async function serveSession(
           response = await session.applyPath(request.checkpoint);
         } else if (request.op === "resync") {
           response = await session.resync();
+        } else if (request.op === "register") {
+          response = session.registerSelector(request.page, request.key, request.selector);
         } else if (request.op === "coverage") {
           response = await session.setCoverage(request.on);
         } else if (request.op === "highlight") {

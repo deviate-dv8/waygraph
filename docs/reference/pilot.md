@@ -95,6 +95,13 @@ warns about (`unmapped nav link`, `unmapped button`), made visible.
 A session also keeps what the page shows after every Block it runs and every `resync` on its trail, the way a run does, so
 `mem.trail.latest(Page.read.x)` works for checks and stubs in a free browser too. A page a person opened by its address (`/items/7` on `/items/:id`) records its params on the trail (`mem.trail.paramsOf("Item")` is `{ id: "7" }`), the way `Page.go({ id })` would.
 
+### Registering what the outline says is missing
+
+An orange outline is something nothing registers. `waygraph pilot register <id> <PageCheckpoint> <name> "<selector>"` writes it
+into that page's `_sel.ts` (`HomeSel.saveDraft: "#save-draft"`) and answers with the file and name, so the next Block uses it by
+name and the outline turns green. It never overwrites: a name already there is an error. An agent or Waygraph Studio does the same
+over the session protocol (`{ "op": "register", "page", "key", "selector" }`).
+
 ## On the page
 
 A visible session shows a badge in the bottom-right corner (`Waygraph Pilot - session <id> - <Checkpoint>`); clicking

@@ -33,7 +33,8 @@ import { CONSOLE_LOG_MAX_ENTRIES, TRACE_MAX_STEPS, buildSessionSnapshot, describ
 import { inspectDom, inspectStorage } from "./inspect.js";
 import { openSessionBrowser } from "./open-browser.js";
 import { keepLook, setCoverageOn } from "./session-look.js";
-import type { CoverageResponse } from "./protocol.js";
+import { registerSelectorFor } from "./register.js";
+import type { CoverageResponse, RegisterResponse } from "./protocol.js";
 import { readSession, snapshotRead, type SessionRead } from "./read.js";
 
 /**
@@ -43,13 +44,12 @@ import { readSession, snapshotRead, type SessionRead } from "./read.js";
 export class AutoSession {
   private here: string | null = null;
   private lastRunNote: string | null = null;
-  private trailStep = 0; // the next step number on the trail (Blocks run, and looks after a hand move)
+  private trailStep = 0; // the next trail step: Blocks run, and looks after a hand move
   /** Where each mem key's value came from (the replies say it; never the values). */
   private memSources = new Map<string, MemSource>();
   private readonly trace: TraceStep[] = [];
   private readonly consoleLog: ConsoleLogEntry[] = [];
   private lastOverlayInfo: PilotOverlayInfo | null = null;
-
   private constructor(
     private readonly projectDir: string,
     private readonly inject: string[] | undefined,
@@ -183,15 +183,15 @@ export class AutoSession {
     await this.page.evaluate(unmappedInteractionsPageScript, payload).catch(ignorePageGone);
   }
 
-  /** The pages' address patterns (`/items/:id`), for the params of a page a person opened by hand. */
-  private addresses(): string[] {
-    return [...this.library.byName.values()].map((e) => (e.block as { __waygraphNavUrl?: string }).__waygraphNavUrl).filter((u): u is string => typeof u === "string");
-  }
+  /** The pages' address patterns (`/items/:id`), for the params of a page opened by hand. */
+  private addresses = (): string[] => [...this.library.byName.values()].flatMap((e) => ((e.block as { __waygraphNavUrl?: string }).__waygraphNavUrl ?? []));
+
+  /** Writes a selector a person picked into the page's `_sel.ts`, so a Block can use it. */
+  registerSelector = (page: string, key: string, selector: string): RegisterResponse => registerSelectorFor(this.projectDir, [...this.library.byName.values()], page, key, selector);
 
   /** The coverage outlines on or off (visible sessions). */
   async setCoverage(on: boolean): Promise<CoverageResponse> {
-    this.page = await ensureLivePage(this.context, this.page, this.startUrl);
-    return setCoverageOn(this.page, on, this.headless);
+    return setCoverageOn((this.page = await ensureLivePage(this.context, this.page, this.startUrl)), on, this.headless);
   }
 
   /** The Checkpoint the session is at, if known. */

@@ -12,7 +12,7 @@ against a real consumer.
 ## Next
 
 - **Flow meta, calls as data** - a flow has `title`/`description`/`labels` (done). Calls as data (run log `step:call`, demo card and modal, Studio run step, `check --network`) and the hybrid saucedemo flow are in. Studio's page panel has a Network section, `network` config names and judges calls, and Studio's API page is the offline console (send a recorded call again, copy it as cURL or an API Block).
-- **Pilot, next** - register an unregistered outline from the browser (the hook the coverage view is for), and the same coverage view in Waygraph Studio's live session.
+- **Pilot, next** - the coverage view in Waygraph Studio's live session, with a click on an orange outline to register it.
 - **Session refactor** - `mem.trail` (what each step saw, typed by the page's read keys) is in. Replacing `(page, mem)` with one Session object in every hook, and Block kinds as classes, waits for 1.0.0: it breaks every Block for a model `mem` already gives.
 - **Page object, the rest** - a page is one object (`url`/`from`, `read`, `do`, `expects`), a layout has `interrupts`, a
   Method is written flat; four codemods (`page-object`, `nav`, `instructions`, `mem-stubs`) move a project. A page is its own Checkpoint with inline Methods, `route: "folder"`, `frame`
