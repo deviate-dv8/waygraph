@@ -1,6 +1,7 @@
 import { engine } from "../../../config/waygraph.config.js";
 import { Login } from "../../map/(shop)/_page.block.js";
 import { loginRefused } from "../../stubs/login.js";
+import { SaucedemoKeys } from "../../states/checkout.mem-keys.js";
 
 /**
  * locked_out_user attempts the login a standard user just completed and is refused: the app stays on the login page and
@@ -20,6 +21,7 @@ export const viewerBlockedFlow = engine
       ctx.ui.title("Viewer: Blocked Login Attempt"),
     ),
   )
+  .set(SaucedemoKeys.credentials, { username: "locked_out_user", password: "secret_sauce" })
   .method(Login.do.fillUsername)
   .method(Login.do.fillPassword)
   .method(
