@@ -16,6 +16,7 @@ import { everything, only, toggled, visibleTree, type MapTree as Tree } from '~/
 import SketchEdge from '~/components/graph/sketch_edge.vue'
 import PagePanel from '~/components/map/page_panel.vue'
 import BlockPanel from '~/components/map/block_panel.vue'
+import EdgePanel from '~/components/map/edge_panel.vue'
 import { useStorage } from '@vueuse/core'
 import { layoutTree, treeColumns, type TreeDirection } from '~/lib/layout'
 import { planLabels } from '~/lib/edge_labels'
@@ -141,17 +142,29 @@ const choicesOf = (key: string, initial: string) => [
 const selected = ref<string | null>(null)
 /** A Block opened from a badge on a line (a move's Nav, Method, API call): its panel, like a page's. */
 const selectedBlock = ref<string | null>(null)
+/** A line picked (its move): the Blocks that make it, and what they do to the states. */
+const selectedEdge = ref<string | null>(null)
+provide('selectEdge', (id: string) => {
+  selected.value = null
+  selectedBlock.value = null
+  selectedEdge.value = id
+})
 const openBlock = (id: string) => {
   selected.value = null
+  selectedEdge.value = null
   selectedBlock.value = id
 }
 provide('selectBlock', openBlock)
 provide('selectPage', (id: string) => (selected.value = id))
 provide('selectShell', (id: string) => (selected.value = id))
+const edgePanel = computed(() =>
+  [...shownMoves.value, ...shownSiteEdges.value].find((e) => e.id === selectedEdge.value)
+)
 const blockPanel = computed(() => props.blocks.find((b) => b.id === selectedBlock.value))
 watch(selected, (id) => {
   if (!id) return
   selectedBlock.value = null
+  selectedEdge.value = null
   // A page picked (from the tree, a layout, Find) comes into view, large enough to read.
   void flow?.fitView({ nodes: [id], padding: 1.5, maxZoom: 1, duration: 300 })
 })
@@ -686,7 +699,14 @@ const edges = computed<Edge[]>(() => {
         source: e.source,
         target: e.target,
         type: 'sketch',
-        sourceHandle: lr ? 'out' : 'down',
+        sourceHandle:
+          deeper || (columns.value.get(e.target) ?? 0) === (columns.value.get(e.source) ?? 0)
+            ? lr
+              ? 'out'
+              : 'down'
+            : lr
+              ? 'out-left'
+              : 'out-up',
         targetHandle: deeper ? (lr ? 'in' : 'up') : lr ? 'back' : 'under',
         data: {
           blocks: e.blocks.map((b) => ({
@@ -698,7 +718,10 @@ const edges = computed<Edge[]>(() => {
           squared: true,
           lane: moveLanes[i],
           place: labels.value.places.get(e.id),
-          highlighted: selected.value === e.source || selected.value === e.target,
+          highlighted:
+            selected.value === e.source ||
+            selected.value === e.target ||
+            selectedEdge.value === e.id,
         },
       }
     }),
@@ -814,6 +837,7 @@ const page = computed(() =>
         :network="props.network[page.checkpoint]"
         :layouts="props.access.pageLayouts[page.checkpoint] ?? []"
         :given="props.access.pageGiven[page.checkpoint]"
+        :assumed="assumed"
         @close="selected = null"
       />
       <BlockPanel
@@ -821,6 +845,16 @@ const page = computed(() =>
         class="pointer-events-auto"
         :block="blockPanel"
         @close="selectedBlock = null"
+      />
+      <EdgePanel
+        v-else-if="edgePanel"
+        class="pointer-events-auto"
+        :edge="edgePanel"
+        :needs="
+          (props.pages.find((p) => p.checkpoint === edgePanel?.target)?.needs ?? []).map(stateName)
+        "
+        @close="selectedEdge = null"
+        @block="openBlock"
       />
       <LayoutPanel
         v-else-if="layout"

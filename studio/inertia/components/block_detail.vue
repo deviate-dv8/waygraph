@@ -56,6 +56,18 @@ const tab = ref('checks')
 
 <template>
   <div class="space-y-3 text-sm">
+    <p
+      v-for="s in props.block.sets ?? []"
+      :key="s.key + String(s.value) + (s.on ?? '')"
+      class="flex items-center gap-1.5 text-xs text-(--ink-soft)"
+    >
+      <UIcon name="i-lucide-toggle-right" class="size-3.5" />
+      {{
+        typeof s.value === 'string'
+          ? `sets ${s.key.split('.').pop()} = ${s.value}`
+          : `${s.value ? 'turns on' : 'turns off'} ${s.key.split('.').pop()}`
+      }}{{ s.on ? ` when it lands on ${s.on}` : '' }}
+    </p>
     <div class="flex flex-wrap items-center gap-1.5">
       <UBadge
         v-for="t in props.block.from"

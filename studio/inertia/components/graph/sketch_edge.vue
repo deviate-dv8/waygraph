@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import { inject } from 'vue'
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import {
   EdgeLabelRenderer,
   getBezierPath,
   getSmoothStepPath,
   Position,
+  useVueFlow,
   type EdgeProps,
 } from '@vue-flow/core'
+import { roundedPath, routeAround, type Rect } from '~/lib/route'
 import { sketchPath, seedOf } from '~/lib/sketch'
 import { kindColor, kindIcon } from '~/lib/kinds'
 
 /** A hand-drawn arrow between two pages, labelled with the Blocks that make that move. */
+/** Opens the move: its Blocks and what each does to the states. */
+const selectEdge = inject<((id: string) => void) | undefined>('selectEdge', undefined)
+const { getNodes } = useVueFlow()
 /** Opens a Block's panel: the map provides it, so a badge on a line opens its Block like a page's list does. */
 const selectBlock = inject<((id: string) => void) | undefined>('selectBlock', undefined)
 const props = defineProps<
@@ -37,8 +41,40 @@ const props = defineProps<
  * The edge's path and its label's place. A move to the next row of a pipeline runs back along the gap between the
  * rows; a move back to the left in the same row (a return) arcs below the boxes instead of cutting through them.
  */
+/** The other pages' boxes in the map: what a line must keep out of. */
+const obstacles = computed<Rect[]>(() =>
+  getNodes.value
+    .filter(
+      (n) =>
+        (n.type === 'page' || n.type === 'folder') && n.id !== props.source && n.id !== props.target
+    )
+    .map((n) => ({
+      x: n.computedPosition.x,
+      y: n.computedPosition.y,
+      w: n.dimensions.width,
+      h: n.dimensions.height,
+    }))
+)
+
 const geometry = computed<[string, number, number]>(() => {
   const { sourceX: sx, sourceY: sy, targetX: tx, targetY: ty } = props
+  if (props.data?.squared && props.sourcePosition !== props.targetPosition) {
+    // Between two columns (or rows): a path of its own around every other page.
+    const topDown =
+      props.sourcePosition === Position.Bottom || props.sourcePosition === Position.Top
+    const flip = (p: { x: number; y: number }) => (topDown ? { x: p.y, y: p.x } : p)
+    const rects = obstacles.value.map((r) => (topDown ? { x: r.y, y: r.x, w: r.h, h: r.w } : r))
+    const points = routeAround(
+      flip({ x: sx, y: sy }),
+      flip({ x: tx, y: ty }),
+      rects,
+      24,
+      props.data.lane ?? 0
+    ).map(flip)
+    const mid = points[Math.floor(points.length / 2)]!
+    const before = points[Math.floor(points.length / 2) - 1]!
+    return [roundedPath(points), (mid.x + before.x) / 2, (mid.y + before.y) / 2]
+  }
   if (props.data?.squared) {
     const spread = 24 + (props.data.lane ?? 0) * 14
     const across = props.sourcePosition === props.targetPosition
@@ -192,8 +228,16 @@ const head = computed(() => {
       :stroke-width="p.strokeWidth"
       :style="{ stroke: color }"
     />
-    <!-- A wide invisible stroke: easy to hover and click. -->
-    <path :d="geometry[0]" fill="none" stroke="transparent" stroke-width="16" />
+    <!-- A wide invisible stroke: easy to hover and click; it opens the move. -->
+    <path
+      :d="geometry[0]"
+      fill="none"
+      stroke="transparent"
+      stroke-width="18"
+      class="cursor-pointer"
+      style="pointer-events: stroke"
+      @click.stop="selectEdge?.(props.id)"
+    />
   </g>
   <EdgeLabelRenderer>
     <div

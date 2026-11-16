@@ -35,6 +35,8 @@ const props = defineProps<{
   layouts?: string[]
   /** The Page Block itself, with its moves and expectations by key (waygraph 0.18.0+). */
   object?: ManifestPage | undefined
+  /** What each state is assumed to be on the map (the switches in its bar). */
+  assumed?: Record<string, boolean | string> | undefined
   /** How each Block last went, by name. */
   results?: Record<string, LastResult>
   /** The accounts that can open it (its Page Block's `for`); missing: everyone. */
@@ -73,6 +75,27 @@ const selectors = computed(() => {
 })
 
 /** Moves that take params (a function of values): listed, but not runnable without them. */
+/** The states it needs (its own and its shells'), each with whether the map assumes it holds. */
+const needs = computed(() =>
+  (props.object?.needs ?? []).map((need) => {
+    const at = need.indexOf('=')
+    const key = at < 0 ? need : need.slice(0, at)
+    const want: boolean | string = at < 0 ? true : need.slice(at + 1)
+    return { key, name: key.split('.').pop() ?? key, want, holds: props.assumed?.[key] === want }
+  })
+)
+/** The moves that change a state, from this page and into it. */
+const setters = computed(() =>
+  [...props.page.actions, ...props.page.leadsTo, ...props.page.waysIn].flatMap((b) =>
+    (b.sets ?? []).map((s) => ({
+      block: b.name,
+      text:
+        typeof s.value === 'string'
+          ? `${s.key.split('.').pop()} = ${s.value}`
+          : `${s.value ? 'turns on' : 'turns off'} ${s.key.split('.').pop()}`,
+    }))
+  )
+)
 const paramMoves = computed(() => (props.object?.do ?? []).filter((d) => d.params))
 const result = (block: string): LastResult | undefined => props.results?.[block]
 /** How a Block last went, in words. */
@@ -116,6 +139,12 @@ const sections = computed<Section[]>(() =>
       label: 'Opens from',
       icon: 'i-lucide-log-in',
       count: props.page.waysIn.length,
+    },
+    {
+      value: 'states',
+      label: 'States',
+      icon: 'i-lucide-lock',
+      count: needs.value.length + setters.value.length,
     },
     {
       value: 'arrival',
@@ -162,7 +191,7 @@ const sections = computed<Section[]>(() =>
     { value: 'flows', label: 'Flows', icon: 'i-lucide-route', count: props.flows.length },
   ].map((s) => ({ ...s, disabled: s.count === 0 }))
 )
-const open = ref(['arrival', 'shows', 'actions'])
+const open = ref(['arrival', 'shows', 'actions', 'states'])
 /** Wide, for reading a Block's code: kept in this browser. */
 const wide = useStorage('waygraph-page-panel-wide', false)
 const blockLists = ['actions', 'waysIn', 'leadsTo'] as const
@@ -256,6 +285,15 @@ const where = (b: ManifestBlock, list: BlockList) =>
             variant="subtle"
             size="sm"
             title="Who can open it (its Page Block's for)"
+          />
+          <UBadge
+            v-for="n in needs"
+            :key="n.key + n.want"
+            :label="`needs ${n.want === true ? n.name : `${n.name} = ${n.want}`}`"
+            :icon="n.holds ? 'i-lucide-lock-open' : 'i-lucide-lock'"
+            color="neutral"
+            variant="subtle"
+            size="sm"
           />
           <UBadge
             v-if="props.object?.opensBy"
@@ -473,6 +511,33 @@ const where = (b: ManifestBlock, list: BlockList) =>
             </li>
           </ul>
 
+          <div v-else-if="item.value === 'states'" class="space-y-2 text-sm">
+            <ul v-if="needs.length" class="space-y-1">
+              <li v-for="n in needs" :key="n.key + n.want" class="flex items-center gap-1.5">
+                <UIcon
+                  :name="n.holds ? 'i-lucide-lock-open' : 'i-lucide-lock'"
+                  class="size-3.5 shrink-0"
+                />
+                <span class="font-mono text-xs" :title="n.key"
+                  >needs {{ n.want === true ? n.name : `${n.name} = ${n.want}` }}</span
+                >
+                <span class="text-xs text-(--ink-soft)">{{
+                  n.holds ? 'assumed on the map' : 'off on the map'
+                }}</span>
+              </li>
+            </ul>
+            <ul v-if="setters.length" class="space-y-1">
+              <li
+                v-for="s in setters"
+                :key="s.block + s.text"
+                class="flex items-center gap-1.5 text-xs"
+              >
+                <UIcon name="i-lucide-toggle-right" class="size-3.5 shrink-0" />
+                <span class="font-mono">{{ s.block }}</span>
+                <span class="text-(--ink-soft)">{{ s.text }}</span>
+              </li>
+            </ul>
+          </div>
           <div v-else-if="item.value === 'network' && props.network" class="space-y-2">
             <ul v-if="props.network.findings.length" class="space-y-1">
               <li

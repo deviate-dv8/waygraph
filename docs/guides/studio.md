@@ -94,10 +94,17 @@ Click a page for everything about it, most telling first:
 5. **Selectors** its Blocks read, then **Network**: the calls the flows' newest runs made on arrival (per route: how many, how long, the status), with findings on them (the same GET twice, one route asked with many ids, slow, large, failed; the same as `waygraph check --network`), and **Flows** last: each one that lands there, may land there (a step with several
    outcomes that ends the flow) or does something there, failing first.
 
+### Lines
+
+A line between two pages is routed around every other page: it leaves the side of its source that faces the target, runs along
+the gap between the columns, and comes in beside the target, so a move back to an earlier page no longer cuts through a box.
+Click a line and its panel lists the move: the Blocks that make it (click one for its checks and code), what each does to a
+state (`turns on signedIn`), and the states the page it leads to needs.
+
 ### States
 
 A project that declares states (`state()` mem keys, [States](./data#states-what-the-application-is)) gets one switch per state in the
-map's bottom bar. A page that needs a state shows a lock and the state's name, and is dimmed while the state is off: a move that changes a state says so on its line (`menu-logout -signedIn`); a word state (a role) is a menu instead of a switch; switch
+map's bottom bar. A page that needs a state shows a lock and the state's name, and is dimmed while the state is off: a move that changes a state says so on its line (`menu-logout -signedIn`); a word state (a role) is a menu instead of a switch; a page's panel has a **States** section and a badge by its name (`needs signedIn`), with what each move into or out of it sets; switch
 `signedIn` on and the signed-in pages come back. It answers "which pages can this user reach" without reading code.
 
 ### A live session

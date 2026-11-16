@@ -154,5 +154,7 @@ const props = defineProps<{
     <Handle id="back" type="target" :position="Position.Right" class="opacity-0" />
     <Handle id="under" type="target" :position="Position.Bottom" class="opacity-0" />
     <Handle id="down" type="source" :position="Position.Bottom" class="opacity-0" />
+    <Handle id="out-left" type="source" :position="Position.Left" class="opacity-0" />
+    <Handle id="out-up" type="source" :position="Position.Top" class="opacity-0" />
   </SketchBox>
 </template>
