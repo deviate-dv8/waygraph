@@ -14,6 +14,7 @@ import { recordArtifact } from "../engine/run/events.js";
 import type { MemPage } from "../engine/mem/mem.js";
 import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../runtime/browser.js";
 import { resolveVideoDir } from "../runtime/video-dir.js";
+import { placeVideo, type VideoTarget } from "../runtime/video-place.js";
 import type { WgPage } from "../demo/types.js";
 import type { PlaySession } from "./mode.js";
 import type { PlayOptions } from "./options.js";
@@ -39,7 +40,7 @@ function viewportFor(options: PlayOptions, videoSize: Size | null, device: Resol
 }
 
 
-export async function openSession(projectDir: string, options: PlayOptions, mem: MemPage, launchSlowMo: number | undefined): Promise<{ session: PlaySession; close: () => Promise<void> }> {
+export async function openSession(projectDir: string, options: PlayOptions, mem: MemPage, launchSlowMo: number | undefined, videoTarget?: VideoTarget): Promise<{ session: PlaySession; close: () => Promise<void> }> {
   const videoDir = options.video ? (options.video === "1" ? await resolveVideoDir(projectDir) : options.video) : null;
   if (videoDir) mkdirSync(videoDir, { recursive: true });
   const device = configuredDevice();
@@ -82,9 +83,10 @@ export async function openSession(projectDir: string, options: PlayOptions, mem:
     await voice?.close();
     if (videoDir && !page.isClosed()) await sleep(1800);
     await context.close();
-    const video = await page.video()?.path().catch(() => null);
-    if (video) {
-      if (voice?.lines.length) await voiceOverOnto(video, voice);
+    const recorded = await page.video()?.path().catch(() => null);
+    if (recorded) {
+      if (voice?.lines.length) await voiceOverOnto(recorded, voice);
+      const video = videoDir ? placeVideo(recorded, videoDir, videoTarget) : recorded;
       console.log("waygraph: video saved to " + video);
       recordArtifact("video", video);
     }

@@ -316,12 +316,13 @@ export interface FlowSettings {
   labels?: readonly string[];
   ticket?: string;
   owner?: string;
+  video?: import("./map-options.js").VideoMeta;
 }
 
 /** The meta a flow's settings carry, when it has any. */
 function metaOf(settings: FlowSettings): import("./map-options.js").FlowMeta | undefined {
-  const { title, description, labels, ticket, owner } = settings;
-  const meta = { ...(title ? { title } : {}), ...(description ? { description } : {}), ...(labels?.length ? { labels } : {}), ...(ticket ? { ticket } : {}), ...(owner ? { owner } : {}) };
+  const { title, description, labels, ticket, owner, video } = settings;
+  const meta = { ...(title ? { title } : {}), ...(description ? { description } : {}), ...(labels?.length ? { labels } : {}), ...(ticket ? { ticket } : {}), ...(owner ? { owner } : {}), ...(video ? { video } : {}) };
   return Object.keys(meta).length ? meta : undefined;
 }
 

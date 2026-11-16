@@ -10,11 +10,12 @@ import { windowsHost } from "../demo/split/windows.js";
 import { chromiumExecutablePath, extensionPathsFromEnv, launchContext } from "../runtime/browser.js";
 import { ignorePageGone } from "../engine/page-gone.js";
 import { resolveVideoDir } from "../runtime/video-dir.js";
+import { placeVideo, type VideoTarget } from "../runtime/video-place.js";
 import type { PlaySession, PlayStep } from "./mode.js";
 import type { PlayOptions } from "./options.js";
 
 /** How these steps' panes are shown, when they have panes and are played to be seen; `close` ends it. */
-export async function openSplit(projectDir: string, session: PlaySession, steps: readonly PlayStep[], options: PlayOptions): Promise<{ close(): Promise<void> } | undefined> {
+export async function openSplit(projectDir: string, session: PlaySession, steps: readonly PlayStep[], options: PlayOptions, videoTarget?: VideoTarget): Promise<{ close(): Promise<void> } | undefined> {
   const mark = steps.map((s) => paneOf(s.block)).find((pane) => pane !== undefined);
   if (!mark || (options.mode !== "demo" && !options.video)) return undefined;
   const names = Object.keys(mark.panes);
@@ -64,8 +65,9 @@ export async function openSplit(projectDir: string, session: PlaySession, steps:
       await browser.close();
       // A pane's video is written when its context closes, with the flow.
       for (const [pane, page] of pages) {
-        const video = await page.video()?.path().catch(() => null);
-        if (!video) continue;
+        const recorded = await page.video()?.path().catch(() => null);
+        if (!recorded) continue;
+        const video = videoDir ? placeVideo(recorded, videoDir, videoTarget, pane) : recorded;
         console.log(`waygraph: pane ${pane}'s video saved to ${video}`);
         recordArtifact("video", video);
       }

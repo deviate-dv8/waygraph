@@ -107,6 +107,8 @@ export interface ManifestFlow {
   title?: string;
   description?: string;
   ticket?: string;
+  /** Where its recording is saved (`map({ video })`). */
+  video?: { folder?: string; name?: string };
   owner?: string;
   settings: { memStub?: true; expectedFailure?: string; sessionReset?: true; demoPace?: unknown };
   /** Its panes (`map({ panes })`): who is signed in in each, its device, the pane whose context it shares. */
@@ -280,6 +282,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       ...(flow.meta?.title ? { title: flow.meta.title } : {}),
       ...(flow.meta?.description ? { description: flow.meta.description } : {}),
       ...(flow.meta?.ticket ? { ticket: flow.meta.ticket } : {}),
+      ...(flow.meta?.video ? { video: flow.meta.video } : {}),
       ...(flow.meta?.owner ? { owner: flow.meta.owner } : {}),
       useCase: useCaseOf(f.file),
       steps: flow.blocks().map((s) => s.name),

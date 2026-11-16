@@ -20,6 +20,18 @@ export interface FlowMeta {
   ticket?: string;
   /** Who looks after it. */
   owner?: string;
+  /** Where a recording of it (`--video`) is saved, instead of a random name in one folder. */
+  video?: VideoMeta;
+}
+
+/**
+ * Where a flow's recording goes, under the video folder (`--video`, `video.dir`): `folder` and `name` are paths with tokens
+ * `{flow}`, `{title}`, `{label}` (its first), `{date}`, `{time}` and `{pane}`; no `name` is `{title}-{date}-{time}`. A name taken gets `-2`.
+ * @example video: { folder: "auth/{label}", name: "{title}" }
+ */
+export interface VideoMeta {
+  folder?: string;
+  name?: string;
 }
 
 export interface MapBuilderOptions extends FlowMeta {

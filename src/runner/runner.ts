@@ -10,6 +10,7 @@ import { loadLayouts } from "../manifest/layouts.js";
 import { planSteps } from "./plan/plan.js";
 import { readOptions, slowMoFor } from "./options.js";
 import { openSession } from "./session.js";
+import { videoTargetOf } from "../runtime/video-place.js";
 import { playSteps } from "./play-steps.js";
 import { playBranches } from "./modes/branches.js";
 import { runMode } from "./modes/run.js";
@@ -32,11 +33,12 @@ export async function play(projectDir: string, spec: string): Promise<void> {
   if (options.mode === "branches") return playBranches(flows, mem, options);
 
   const slowMo = slowMoFor(options, steps);
-  const { session, close } = await openSession(projectDir, options, mem, slowMo.launch);
+  const videoTarget = videoTargetOf(flows, planned.names);
+  const { session, close } = await openSession(projectDir, options, mem, slowMo.launch, videoTarget);
   let outcome: PlayOutcome;
   try {
     // A flow with panes, played to be seen: the session's page is their stage.
-    const split = await openSplit(projectDir, session, steps, options);
+    const split = await openSplit(projectDir, session, steps, options, videoTarget);
     try {
       const picked = await pickMode(options, session, steps, slowMo.demoBeat, split !== undefined);
       const mode = options.compare ? comparing(picked, steps, options.compare) : picked;

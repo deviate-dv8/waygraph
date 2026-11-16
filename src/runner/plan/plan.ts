@@ -32,6 +32,8 @@ export interface Plan {
   steps: PlayStep[];
   /** One Flow per segment (`--all-branches` needs exactly one). */
   flows: Flow<Checkpoint<string>>[];
+  /** Each segment's name as asked for (`checkoutFlow`). */
+  names: string[];
 }
 
 export async function planSteps(projectDir: string, spec: string, mem: MemPage, options: PlayOptions): Promise<Plan> {
@@ -52,7 +54,7 @@ export async function planSteps(projectDir: string, spec: string, mem: MemPage, 
   });
   const steps = stepsOf(segments, options, { episodes: !bareFlow || segments.length > 1 });
   if (options.mode !== "report") announce(spec, steps, !!bareFlow, options);
-  return { steps, flows: segments.map((s) => s.flow) };
+  return { steps, flows: segments.map((s) => s.flow), names: segments.map((s) => s.ref) };
 }
 
 /** `--input`: JSON or `@file.json`, for one flow that takes input; an array is one value per run of the flow. */

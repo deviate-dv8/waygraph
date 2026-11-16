@@ -24,7 +24,7 @@ graph LR
 | `step:state` | a step changed a state (`sets`): `{ index, key, value }` ([States](../guides/data#states-what-the-application-is)) |
 | `step:end` | where it landed, how long it took, the page's address (`url`) |
 | `step:error` | the failure; for a failed check, `check: { trait, block, wants, saw, url, heading }` |
-| `run:artifact` | a saved video, screenshot or call (`kind: "call"`: `<runId>/calls/<step>-<n>.json`, the request and the response, with `authorization`, cookies and fields named like a password or token masked); a Block's screenshot (`screenshot: true`) also names its step (`index`, `block`) and the page (`checkpoint`) |
+| `run:artifact` | a saved video (at the place its flow's `video` says), screenshot or call (`kind: "call"`: `<runId>/calls/<step>-<n>.json`, the request and the response, with `authorization`, cookies and fields named like a password or token masked); a Block's screenshot (`screenshot: true`) also names its step (`index`, `block`) and the page (`checkpoint`) |
 | `compare:diff` | a compared run (`--compare`): after its `step`-th step (`block`), where the two `sides` differed (`diffs`: what landed, the outcome, a read field `key`, with both `values`) and the two steps in the log (`indexes`) |
 | `run:end` | ok, the result or the error |
 
