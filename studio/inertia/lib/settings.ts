@@ -6,9 +6,11 @@ export type Settings = {
   autoNext: boolean
   /** The sidebar's pages left out of it, by id (`blocks`, `playwright`...); they still open by their address. */
   hiddenPages: string[]
+  /** The pages that are off in the sidebar until asked for (`api`). */
+  extraPages: string[]
 }
 
-const DEFAULTS: Settings = { autoNext: true, hiddenPages: [] }
+const DEFAULTS: Settings = { autoNext: true, hiddenPages: [], extraPages: [] }
 
 /** The settings, saved as they change; a setting added later starts at its default. */
 export function useSettings() {

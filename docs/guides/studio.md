@@ -191,6 +191,8 @@ and the value the newest run used). Checks, selectors and code need waygraph 0.1
 
 ## API
 
+Off in the sidebar until Settings turns it on (`API` under Sidebar); it still opens at `/api`.
+
 The calls the newest runs made (the page's and API Blocks'), listed by route with their status. Pick one and its method,
 address, headers and body fill a form (credentials were masked in the run log, so those headers are left out for you to
 add); change anything, **Send** it from Studio's server, and read the answer in words (`201 Created`, the time, the

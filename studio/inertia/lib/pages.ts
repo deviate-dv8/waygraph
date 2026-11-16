@@ -7,6 +7,8 @@ export type AppPage = {
   icon: string
   to: string
   isAt: (url: string) => boolean
+  /** Off in the sidebar until Settings turns it on. */
+  optIn?: true
 }
 
 /** The sidebar's pages, in order. Settings can hide any of them; a hidden page still opens by its address. */
@@ -40,6 +42,7 @@ export function appPages(): AppPage[] {
       icon: 'i-lucide-send',
       to: urlFor('api.index'),
       isAt: under('/api'),
+      optIn: true,
     },
     {
       id: 'runs',

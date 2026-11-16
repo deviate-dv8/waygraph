@@ -10,6 +10,11 @@ const pages = appPages()
 
 /** Shows or hides a page in the sidebar. */
 const show = (id: string, shown: boolean) => {
+  if (pages.find((p) => p.id === id)?.optIn) {
+    const rest = settings.value.extraPages.filter((p) => p !== id)
+    settings.value.extraPages = shown ? [...rest, id] : rest
+    return
+  }
   const hidden = settings.value.hiddenPages.filter((p) => p !== id)
   settings.value.hiddenPages = shown ? hidden : [...hidden, id]
 }
@@ -45,7 +50,9 @@ const show = (id: string, shown: boolean) => {
         <USwitch
           v-for="p in pages"
           :key="p.id"
-          :model-value="!settings.hiddenPages.includes(p.id)"
+          :model-value="
+            p.optIn ? settings.extraPages.includes(p.id) : !settings.hiddenPages.includes(p.id)
+          "
           :label="p.label"
           :aria-label="`Show ${p.label} in the sidebar`"
           @update:model-value="show(p.id, $event)"

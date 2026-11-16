@@ -24,7 +24,12 @@ const settings = useSettings()
 /** The sidebar's pages, without the ones Settings hides; the page you're on shows anyway. */
 const sections = computed(() =>
   appPages()
-    .filter((p) => !settings.value.hiddenPages.includes(p.id) || p.isAt(page.url))
+    .filter(
+      (p) =>
+        p.isAt(page.url) ||
+        (!settings.value.hiddenPages.includes(p.id) &&
+          (!p.optIn || settings.value.extraPages.includes(p.id)))
+    )
     .map((p) => ({ label: p.label, icon: p.icon, to: p.to, active: p.isAt(page.url) }))
 )
 const fresh = computed(() => `${page.url.split('?')[0]}?fresh=1`)
