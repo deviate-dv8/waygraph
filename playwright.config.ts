@@ -1,5 +1,16 @@
+import { spawnSync } from "node:child_process";
 import { defineConfig } from "@playwright/test";
 import { chromiumExecutablePath } from "./src/runtime/browser.js";
+
+// However the suite is started (`npx playwright test`, an npm script, an agent), it runs on a hidden display (xvfb) when the
+// machine has one to offer: this re-runs the same command under it once, and the workers inherit the marker. No window ever
+// lands on the screen of whoever runs it. WAYGRAPH_NO_XVFB=1 opts out.
+if (process.platform === "linux" && !process.env["WG_XVFB"] && !process.env["WAYGRAPH_NO_XVFB"] && spawnSync("which", ["xvfb-run"]).status === 0) {
+  const env = { ...process.env, WG_XVFB: "1" };
+  delete env["WAYLAND_DISPLAY"];
+  const again = spawnSync("xvfb-run", ["-a", process.execPath, ...process.argv.slice(1)], { stdio: "inherit", env });
+  process.exit(again.status ?? 1);
+}
 
 // The suite opens no windows unless asked: a spec that starts waygraph (a demo, a session, studio) inherits this, so nothing
 // lands on the screen of whoever runs it. WAYGRAPH_HEADED=1 (under `npm run test:offscreen`, which uses xvfb) shows it.
