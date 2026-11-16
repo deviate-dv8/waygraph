@@ -1,4 +1,4 @@
-// Map groups as packages. A group is a `src/map/` folder that owns its Checkpoints (`_states.ts`); it may import only
+// Map groups as packages. A group is a `src/map/` folder that owns its keys (`_keys.ts`; its pages are its own Checkpoints); it may import only
 // `waygraph`, Playwright, `node:` modules and its own files, so it can be packed (`waygraph map pack`) and installed in
 // another project, where the scanner finds it by its `waygraph.map.json`.
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -11,12 +11,11 @@ export interface MapGroup {
   dir: string;
 }
 
-/** Every packable group: a folder under `src/map/` with its own `_states.ts`. */
+/** Every packable group: a folder under `src/map/` with its own `_keys.ts` (or the older `_states.ts`). */
 export function mapGroups(projectDir: string): MapGroup[] {
   const mapRoot = join(resolve(projectDir), "src", "map");
   if (!existsSync(mapRoot)) return [];
-  return walkDir(mapRoot, /^_states\.ts$/)
-    .map((f) => dirname(f))
+  return [...new Set(walkDir(mapRoot, /^_(keys|states)\.ts$/).map((f) => dirname(f)))]
     .map((dir) => ({ group: relative(mapRoot, dir).split(sep).join("/"), dir }))
     .sort((a, b) => a.group.localeCompare(b.group));
 }

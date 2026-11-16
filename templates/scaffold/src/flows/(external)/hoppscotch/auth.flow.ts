@@ -1,19 +1,17 @@
 import { engine } from "#config/waygraph.config";
-import { PickExtensionInterceptorBlock } from "#map/(external)/hoppscotch/_methods/pick-extension-interceptor.method.block";
-import { OpenRestBlock } from "#map/(external)/hoppscotch/_methods/open-rest.method.block";
 import { HoppscotchRestPage } from "#map/(external)/hoppscotch/_page.block";
 import { HoppscotchSettingsPage } from "#map/(external)/hoppscotch/settings/_page.block";
 
 /** GET with query params and a bearer token, check the status, that the API received them, and a response header. Needs `extensions: ["hoppscotch"]`. */
 export const hoppscotchAuthFlow = engine
-  .map()
+  .map({ title: "Hoppscotch GET with a token", description: "GET with query params and a bearer token; check the status, the body and a response header.", labels: ["api"] })
   .gotoExternal(
     HoppscotchSettingsPage.stubBefore((ctx) => {
       ctx.ui.title("Scaffold: Hoppscotch GET with query params and bearer token");
     }),
   )
-  .method(PickExtensionInterceptorBlock)
-  .method(OpenRestBlock)
+  .method(HoppscotchSettingsPage.do.pickExtensionInterceptor)
+  .method(HoppscotchSettingsPage.do.openRest)
   .method(HoppscotchRestPage.do.setUrl)
   .method(HoppscotchRestPage.do.setQueryParams)
   .method(HoppscotchRestPage.do.setBearerToken)

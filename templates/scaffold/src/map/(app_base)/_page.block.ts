@@ -1,5 +1,4 @@
 import { definePageBlock, Trait } from "waygraph";
-import { Docs, Home } from "../../states/demo.states.js";
 import { TopBarSel } from "./_sel.js";
 import { DemoSel } from "./home/_sel.js";
 import { DocsSel } from "./docs/_sel.js";
@@ -10,7 +9,7 @@ export const TopBar = definePageBlock({
   description: "The bar on every page of the app.",
   covers: "children",
   links: (self) => ({
-    home: self.link({ to: Home, click: TopBarSel.home, verify: [Trait.visible(DemoSel.catalog)] }),
-    docs: self.link({ to: Docs, click: TopBarSel.docs, verify: [Trait.visible(DocsSel.heading)] }),
+    home: self.link({ to: "Home", click: TopBarSel.home, verify: [Trait.visible(DemoSel.catalog)] }),
+    docs: self.link({ to: "Docs", click: TopBarSel.docs, verify: [Trait.visible(DocsSel.heading)] }),
   }),
 });

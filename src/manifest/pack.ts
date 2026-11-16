@@ -71,7 +71,7 @@ export async function packMapGroup(projectDir: string, groupName: string, opts: 
     const known = mapGroups(projectDir).map((g) => g.group);
     return {
       ok: false,
-      reason: `no map group "${groupName}" (a src/map/ folder with its own _states.ts)${known.length ? `; groups: ${known.join(", ")}` : ""}`,
+      reason: `no map group "${groupName}" (a src/map/ folder with its own _keys.ts)${known.length ? `; groups: ${known.join(", ")}` : ""}`,
     };
   }
   const problems = mapGroupImportProblems(group);

@@ -1,7 +1,4 @@
 import { definePageBlock, Trait } from "waygraph";
-import { MailpitInbox } from "./_states.js";
-import { ExpectEmailContentBlock } from "./_expect/email-content.expect.block.js";
-import { ExtractEmailLinkBlock } from "./_methods/extract-email-link.method.block.js";
 import { MailpitSel } from "./_sel.js";
 import { MailpitKeys } from "./_keys.js";
 import { openMessage } from "./_methods/open-message.method.block.js";
@@ -23,27 +20,21 @@ const emailReceived: Trait = {
   },
 };
 
-
-
 export const MailpitInboxPage = definePageBlock({
   name: "page-mailpit-inbox",
-  description: "Mailpit dev inbox hub - confirm arrival/content, open the expected message, read its link.",
-  checkpoint: MailpitInbox,
+  description: "Mailpit dev inbox - confirm the email arrived, open the expected message.",
+  checkpoint: "MailpitInbox",
   url: mailpitUrl,
   verify: [Trait.url({ pathname: "/" })],
   read: (ctx) => ({ messages: ctx.page.texts(MailpitSel.messageRow) }),
   readAs: "mailpit",
-  do: (self) => ({
-    openMessage: openMessage(self),
-    extractEmailLink: ExtractEmailLinkBlock,
-  }),
+  do: (self) => ({ openMessage: openMessage(self) }),
   expects: (self) => ({
-  emailContent: ExpectEmailContentBlock,
-  emailReceived: self.expect({
-  name: "expect-email-received",
-  description: "Confirms a message addressed to the expected recipient has arrived.",
-  requires: [MailpitKeys.expectedRecipient],
-  verify: [emailReceived],
+    emailReceived: self.expect({
+      name: "expect-email-received",
+      description: "Confirms a message addressed to the expected recipient has arrived.",
+      requires: [MailpitKeys.expectedRecipient],
+      verify: [emailReceived],
+    }),
   }),
-  })
 });

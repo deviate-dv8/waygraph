@@ -54,13 +54,12 @@ in `examples/routed-demo-consumer/` against `examples/routed-demo/`.
 
 ## Map packages
 
-A group under `src/map/` that owns its Checkpoints and keys is a map you can publish: `_states.ts` and `_keys.ts` live in
+A group under `src/map/` that owns its keys is a map you can publish: `_keys.ts` lives in
 the group's folder (not in `src/states/`), and its files import only `waygraph`, Playwright, `node:` modules and each
 other. `waygraph check` warns on any import that leaves the group.
 
 ```text
 src/map/(external)/hoppscotch/
-  _states.ts          HoppscotchRest, HoppscotchSettings
   _keys.ts            hoppscotch.requestUrl, hoppscotch.expectedStatus, ...
   _page.block.ts  _sel.ts  _methods/  settings/
 ```

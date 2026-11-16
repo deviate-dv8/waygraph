@@ -2,15 +2,16 @@ import { pane } from "waygraph";
 import { engine } from "#config/waygraph.config";
 import { MailpitInboxPage } from "#map/(external)/mailpit/_page.block";
 import { MailpitSel } from "#map/(external)/mailpit/_sel";
-import { NavVerificationLinkBlock } from "#map/(app_base)/home/nav-verification-link.block";
+import { MailpitMessagePage } from "#map/(external)/mailpit/message/_page.block";
+import { HomePage } from "#map/(app_base)/home/_page.block";
 
 const Arrived = MailpitInboxPage.expects.emailReceived.stub((ctx) => {
   ctx.ui.ring("note", { selector: MailpitSel.messageRow, label: "AC · email arrived", detail: "Confirmed before opening anything.", tag: "AC" });
 });
-const ContentMatches = MailpitInboxPage.expects.emailContent.stub((ctx) => {
+const ContentMatches = MailpitMessagePage.expects.emailContent.stub((ctx) => {
   ctx.ui.ring("note", { selector: MailpitSel.previewIframe, label: "AC · email body matches expected copy", tag: "AC" });
 });
-const LinkFound = MailpitInboxPage.do.extractEmailLink.stub((ctx) => {
+const LinkFound = MailpitMessagePage.do.extractEmailLink.stub((ctx) => {
   ctx.ui.ring("note", { selector: MailpitSel.previewIframe, label: "AC · link found", detail: "Read from the message preview iframe.", tag: "AC" });
 });
 
@@ -23,10 +24,10 @@ const App = pane("app", { with: Mail });
  * starts one.
  */
 export const emailVerificationFlow = engine
-  .map({ panes: [Mail, App] })
+  .map({ title: "Email verification", description: "The email arrives in the mail catcher, its link opens the app, and the app says verified.", labels: ["mail"], panes: [Mail, App] })
   .in(Mail)
   .gotoExternal(MailpitInboxPage.stubBefore((ctx) => ctx.ui.title("Scaffold: Cross-origin mail verification (QA-rich)")), { expect: [Arrived] })
   .method(MailpitInboxPage.do.openMessage, { expect: [ContentMatches] })
   .method(LinkFound)
   .in(App)
-  .gotoPage(NavVerificationLinkBlock);
+  .gotoPage(HomePage, { expect: [HomePage.expects.verified] });

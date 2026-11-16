@@ -481,7 +481,7 @@ npx waygraph validate .       # every .flow.ts loads
 npx waygraph graph .          # nodes/edges/skipped/orphans - counts should make sense
 npx waygraph manifest .       # JSON of every Block (kind, from/to, requires), Flow and Checkpoint
 npx waygraph studio               # the same in the browser (map, flows, runs), for a person to look at
-npx waygraph map pack <group> # a src/map/ group with its own _states.ts/_keys.ts -> installable package
+npx waygraph map pack <group> # a src/map/ group with its own _keys.ts -> installable package
 npm run typecheck             # when the consumer has it
 ```
 

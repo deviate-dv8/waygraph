@@ -1,7 +1,7 @@
 # __PROJECT_NAME__
 
-A waygraph project: one folder per page under `src/map/` (its folders mirror your app's URLs), one Block per action,
-one flow per use case in `src/flows/`. It runs offline: the demo pages open from `file://`.
+A waygraph project: one folder per page under `src/map/` (its folders mirror your app's URLs), each a page object (what it
+shows, what you can do there, what to expect, its selectors), one flow per use case in `src/flows/`. It runs offline: the demo pages open from `file://`.
 
 ```bash
 npm install

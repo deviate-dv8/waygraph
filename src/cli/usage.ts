@@ -225,7 +225,7 @@ Also:
                                            violation, unlike check's warnings-only stance. A
                                            no-op (exit 0, informational) if the project has no
                                            src/map/ directory at all.
-  waygraph map pack <group> [project]      Pack a src/map/ group that owns its _states.ts into
+  waygraph map pack <group> [project]      Pack a src/map/ group that owns its _keys.ts into
                  --out <dir> --name <pkg>  a package (.waygraph/packages/<group>); installed
                  --version <x.y.z>         elsewhere, its Blocks join the scan
   waygraph traverse [project]              Graph crawl (Phase B-E)

@@ -34,7 +34,7 @@ const HelloShown = HomePage.expects.hello
 
 /** Smoke: open home and expect the greeting (no mem), then the top bar to docs and back. Green offline. */
 export const homeHelloFlow = engine
-  .map()
+  .map({ title: "Hello", description: "Open home and expect the greeting, then the top bar to docs and back.", labels: ["smoke"] })
   .gotoPage(OpenHome, { expect: [HelloShown] })
   .gotoPage(TopBar.links.docs)
   .gotoPage(TopBar.links.home);

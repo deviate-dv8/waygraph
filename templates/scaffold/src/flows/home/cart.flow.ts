@@ -1,9 +1,8 @@
 import { engine } from "#config/waygraph.config";
 import { HomePage } from "#map/(app_base)/home/_page.block";
 import { DemoSel } from "#map/(app_base)/home/_sel";
-import { } from "#map/(app_base)/home/_reads";
 
-// SelectedItem (alpha) comes from src/states/demo.mem-stubs.ts; --data overrides it.
+// The selected item (alpha) is the mem key's own stub (src/states/demo.mem-keys.ts); --data overrides it.
 const AddShown = HomePage.do.addItem.stubBefore((ctx) => {
   ctx.ui.ring("add", { selector: DemoSel.catalog, label: "Catalog" });
 })
@@ -31,7 +30,7 @@ const ClearShown = HomePage.do.clearCart.stubBefore((ctx) => {
 });
 
 export const homeCartFlow = engine
-  .map()
+  .map({ title: "Shop: add, remove, clear", description: "Add an item, remove it, add it again, then clear the cart.", labels: ["shop"] })
   .gotoPage(
     HomePage.stubBefore((ctx) => {
       ctx.ui.title("Scaffold: Shop (add + clear)");
