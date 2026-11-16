@@ -46,6 +46,7 @@ defineMethodBlock({ name: "sign-out", from: Dashboard, to: Start, async act(page
 | Method | do one thing: fill, click, submit (or to one row of many: [rows](#a-method-on-one-row-of-many)) | `defineMethodBlock` | `from` → `to` |
 | Expect | what a scenario expects on a page: reads and judges, changes nothing | `defineExpectBlock` | no (an expectation, not a step) |
 | API | make an HTTP call, no page | `defineApiBlock` | `from` → `to` |
+| Given | a precondition: seed what the scenario needs with any code (factory, SQL, script), undo it after | `defineGivenBlock` | no (played before step 1) |
 
 All of them are plain Blocks when the flow runs; the kind is what `map()` and `waygraph check` hold you to.
 

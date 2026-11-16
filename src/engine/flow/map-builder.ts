@@ -104,7 +104,7 @@ export class MapBuilder<
       installPanes();
       if (settings.as) throw new WaygraphError("WG_PANES", "map({ as, panes }): each pane says who is signed in there (panes: { name: { as } }), not the flow");
     }
-    for (const block of settings.given ?? []) assertMapSalt(block, ["method", "api"], "given");
+    for (const block of settings.given ?? []) assertMapSalt(block, ["given", "method", "api"], "given");
     // A flow as an account starts signed in: its first step restores (or makes) that account's session.
     return new MapBuilder<Start>({ build, settings, chain: settings.as ? [signInStep(settings.as)] : [], homeOrigin, ff: null, provided: [] });
   }

@@ -16,6 +16,7 @@ src/map/
         _methods/                 # this Checkpoint's own action Blocks - fixed name, every
           click-widget.block.ts    # folder. Contents keep their own descriptive names -
     (api)/                          # the app's API Blocks (defineApiBlock), grouped by resource
+    (given)/                        # its preconditions (defineGivenBlock): seeds with their undo
       posts/
         seed-note.api.block.ts
   (external)/                     # other people's sites, only the folder itself is fixed.

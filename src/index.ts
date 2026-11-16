@@ -35,6 +35,8 @@ export { defineExpectBlock } from "./engine/block/kinds/expect.js";
 export { definePageBlock } from "./engine/block/kinds/page.js";
 export { defineLayout } from "./engine/block/kinds/layout.js";
 export type { Layout, LayoutLink, LayoutOptions, LinkNav } from "./engine/block/kinds/layout.js";
+export { defineGivenBlock } from "./engine/block/kinds/given.js";
+export type { GivenBlockOptions } from "./engine/block/kinds/given.js";
 export { defineApiBlock } from "./engine/block/kinds/api.js";
 export { locate } from "./engine/locate.js";
 export { composeBlock, fastForwardComposeBlock, isFastForwardBlock } from "./engine/block/compose.js";

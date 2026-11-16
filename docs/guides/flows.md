@@ -179,8 +179,8 @@ engine.map({ as: Planner })
   .finally(DeleteMachineApiBlock);
 ```
 
-A precondition is the same idea with a name: list the seeding Blocks in `given` and the flow's steps stay the scenario.
-An API Block's `undo` is its way back, played after the flow in reverse order, pass or fail; a given that can't be made
+A precondition is the same idea with a name: list the seeding Blocks (`defineGivenBlock`: a factory, SQL, a script, a request) in `given` and the flow's steps stay the scenario.
+A Given Block's `undo` is its way back, played after the flow in reverse order, pass or fail; a given that can't be made
 blocks the flow (`WG_GIVEN_FAILED`) instead of failing it. See [How a run works](./lifecycle#preconditions-given).
 
 ```ts

@@ -71,6 +71,7 @@ Around those nine, a step also has:
 | **Page** | the same as a Nav (`gotoPage(Page)`); the page itself is `Page.do`, `Page.read`, `Page.expects` | none; it resolves to its own Checkpoint | arrival check; `expects` are its expectations | `from`, `needs`, `covers`, `links`, `read` |
 | **Method** | yours: the click, the fill | `lands` (observe and resolve in one) when it can end somewhere else; otherwise its `to` | optional | `precondition`, `sets`, `for`, `expect` |
 | **API** | the HTTP call (`call`) | `observe` returns the answer; `resolve` picks from it, or `to` is one Checkpoint | optional | `method`, `requires`, `undo` |
+| **Given** | your code (`run`): no page | none; it moves nothing | none; a failure blocks the flow | `sets`, `undo`, `ready`; played by `map({ given })`, before step 1 |
 | **Expect** | nothing: it is not a step | none | its `verify` is its whole job; it runs in phase 7 of the step it belongs to | `description` |
 
 A Block that a kind leaves out of a phase simply skips it. Nothing else changes: there is no other order to learn.
@@ -79,7 +80,7 @@ A Block that a kind leaves out of a phase simply skips it. Nothing else changes:
 
 Some of what a Block declares is never run as a phase. It is data about the Block that `waygraph check`, the Map and
 Waygraph Studio read, and the engine reads at the points above: `name`, `description`, `from` / `to`, `requires`,
-`sets`, `needs`, `for`, `covers`, `expects`, `undo`. They are what makes a flow checkable without playing it.
+`sets`, `needs`, `for`, `covers`, `expects`, `undo`, `ready`. They are what makes a flow checkable without playing it.
 
 ## 3. Around the steps
 
@@ -100,19 +101,19 @@ In the order a flow runs:
 ### Preconditions (`given`)
 
 Some scenarios can only pass or fail if the world is in a certain state first: a tenant exists, a request is waiting for
-approval. Seeding that is not the scenario, so it doesn't belong in its steps; it is a precondition, in QA's words.
+approval. Seeding that is not the scenario, so it doesn't belong in its steps; it is a precondition, in QA's words. How a
+project seeds is its own business (a factory, SQL, a seed script, a CLI, a request), so a precondition is a **Given
+Block**: code with no page, no Checkpoint and no HTTP.
 
 ```ts
-// src/map/(main)/(api)/requests/seed-pending-request.api.block.ts
-export const SeedPendingRequest = defineApiBlock({
+// src/map/(main)/(given)/seed-pending-request.given.block.ts
+export const SeedPendingRequest = defineGivenBlock({
   name: "seed-pending-request",
-  to: checkpoint("RequestSeeded"),
-  call: async ({ request, mem }) => {
-    const res = await request.post("/api/requests", { data: { status: "pending" } });
-    mem.set(RequestId, (await res.json()).id);
-    return res;
-  },
-  undo: ({ request, mem }) => request.delete(`/api/requests/${mem.get(RequestId)}`),
+  description: "A request is waiting for approval",
+  sets: [RequestId],                                   // the mem keys run fills
+  run: async (mem) => mem.set(RequestId, (await factories.request({ status: "pending" })).id),
+  undo: async (mem) => db.request.delete(mem.get(RequestId)),
+  ready: async () => false,                            // optional: already there? skip run and undo
 });
 
 export const approveRequestFlow = engine
@@ -121,16 +122,17 @@ export const approveRequestFlow = engine
   .method(Requests.do.approve);
 ```
 
-- A precondition is an ordinary Method or API Block, listed in `given`. It plays before the first step, and it
-  **moves nothing**: the flow's first step starts where it would have without it. What it makes reaches the steps
-  through mem.
-- `undo` (on an API Block) is the Block's own way back. It plays after the flow, pass or fail, in reverse order, and
-  only for preconditions that started. The same Block used as a normal `.method(...)` step ignores it.
-- A precondition that fails stops the flow before any step: the run fails with `WG_GIVEN_FAILED`, naming it, and the
-  scenario is never judged. An API precondition that answers with an error status fails too, unless it has its own
-  `verify`.
-- A flow that nests another with `.flow(sub)` takes the sub-flow's preconditions as its own.
-- The name `precondition` stays what it was: a Block's check that *the page* is ready (phase 1). `given` is about *data*.
+- **Order:** it plays before the first step, in the order listed, and **moves nothing**: the flow's first step starts where
+  it would have without it. What it makes reaches the steps through mem; a key it lists in `sets` is no longer something
+  the run must supply.
+- **`undo`** plays after the flow, pass or fail, in reverse order, and only for preconditions that started (not when
+  `ready` skipped `run`). Its failure is reported and never decides the flow.
+- **Blocked, not failed:** a precondition that throws stops the flow before any step: the run fails with
+  `WG_GIVEN_FAILED`, naming it, and the scenario is never judged.
+- **Other Blocks work too.** When the seed really is an HTTP call, an API Block (with its `undo`) or a Method can be listed in
+  `given`; an API one that answers with an error status fails unless it has its own `verify`.
+- **Nesting:** a flow that nests another with `.flow(sub)` takes the sub-flow's preconditions as its own.
+- **Not `precondition`:** that name stays what it was: a Block's check that *the page* is ready (phase 1). `given` is about *data*.
 
 ```bash
 waygraph run approveRequestFlow    # seed-tenant, seed-pending-request (given), the steps, then the undos

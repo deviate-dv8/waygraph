@@ -1,7 +1,7 @@
 import { engine } from "../../../config/waygraph.config.js";
 import { StandardUser } from "../../accounts/accounts.js";
 import { Cart } from "../../map/(main)/(app_base)/cart.html/_page.block.js";
-import { SeedShopperNote } from "../../map/(main)/(api)/posts/seed-shopper-note.api.block.js";
+import { SeedShopperNote } from "../../map/(main)/(given)/seed-shopper-note.given.block.js";
 import { CheckShopperNotes } from "../../map/(main)/(api)/users/check-shopper-notes.api.block.js";
 import { Inventory } from "../../map/(main)/(app_base)/inventory.html/_page.block.js";
 

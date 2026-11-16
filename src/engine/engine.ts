@@ -5,6 +5,8 @@ import type { Start } from "./checkpoint/checkpoint.js";
 import type { EngineConfig } from "./config.js";
 import { buildFlow, withSettings } from "./flow/flow.js";
 import { MapBuilder } from "./flow/map-builder.js";
+import { withoutRequire } from "./flow/map-steps.js";
+import type { MemKey } from "./mem/mem.js";
 import { givenSteps } from "./flow/given.js";
 import type { MapBuilderOptions } from "./flow/map-options.js";
 import { panesRecord, type Pane } from "./flow/panes.js";
@@ -45,8 +47,12 @@ export class Engine {
     // The engine's memStub is every flow's default; a map() may still turn it off.
     const { homeOrigin, panes, ...rest } = { ...(this.config.memStub ? { memStub: true } : {}), ...options };
     const settings = { ...rest, ...(panes ? { panes: panesRecord(panes) } : {}) };
-    return MapBuilder.begin((steps, flowSettings) => {
+    return MapBuilder.begin((builtSteps, flowSettings) => {
+      let steps = builtSteps;
       const { given, undo } = givenSteps(flowSettings.given ?? []);
+      // What the givens set is no longer something the run must supply.
+      const provided = given.flatMap((g) => (g as { __waygraphProvides?: readonly MemKey<unknown>[] }).__waygraphProvides ?? []);
+      steps = steps.map((s) => provided.reduce((b, key) => withoutRequire(b, key), s));
       return withSettings(buildFlow(steps, this.config, [...(flowSettings.finally ?? []), ...undo], given), flowSettings);
     }, settings, homeOrigin);
   }

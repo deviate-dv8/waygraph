@@ -8,7 +8,6 @@
     "InventoryPage",
     "ItemDetailPage",
     "LoginPage",
-    "NoteFiled",
     "OrderComplete"
   ],
   "edges": [
@@ -29,7 +28,6 @@
     "action open-detail: InventoryPage -> ItemDetailPage (src/map/(main)/(app_base)/inventory.html/_page.block.ts)",
     "action remove-all-from-cart: InventoryPage -> InventoryPage (src/map/(main)/(app_base)/inventory.html/_page.block.ts)",
     "action remove-from-cart: InventoryPage -> InventoryPage (src/map/(main)/(app_base)/inventory.html/_page.block.ts)",
-    "action seed-shopper-note: * -> NoteFiled (src/map/(main)/(api)/posts/seed-shopper-note.api.block.ts)",
     "action submit-checkout-info: CheckoutInfoPage -> CheckoutOverviewPage (src/map/(main)/(app_base)/checkout-step-one.html/_page.block.ts)",
     "action submit-login: LoginPage -> InventoryPage (src/map/(main)/(app_base)/_page.block.ts)",
     "action submit-login: LoginPage -> LoginPage (src/map/(main)/(app_base)/_page.block.ts)",
@@ -50,5 +48,7 @@
     "nav page-inventory: * -> InventoryPage (src/map/(main)/(app_base)/inventory.html/_page.block.ts)",
     "nav page-login: * -> LoginPage (src/map/(main)/(app_base)/_page.block.ts)"
   ],
-  "skipped": []
+  "skipped": [
+    "seed-shopper-note (src/map/(main)/(given)/seed-shopper-note.given.block.ts)"
+  ]
 }

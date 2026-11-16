@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createServer, type Server } from "node:http";
-import { checkpoint, defineApiBlock, defineMethodBlock, Engine, MemPage, onRunEvent, type RunEvent } from "../../src/index.js";
+import { checkpoint, defineApiBlock, defineGivenBlock, MemKey, defineMethodBlock, Engine, MemPage, onRunEvent, type RunEvent } from "../../src/index.js";
 import { playSteps } from "../../src/runner/play-steps.js";
 import type { PlayStep } from "../../src/runner/mode.js";
 
@@ -87,4 +87,16 @@ test("a nested flow's givens become the outer flow's", async ({ page }) => {
   const outer = engine.map().flow(inner);
   await outer.run(page.context(), new MemPage(), { page });
   expect(hits).toEqual(["POST /tenant", "play", "DELETE /tenant"]);
+});
+
+test("a Given Block runs any code, fills mem for the steps without the run supplying it, and is skipped when ready", async ({ page }) => {
+  const Id = new MemKey<number>("given.id");
+  const read = defineMethodBlock({ name: "read-id", from: checkpoint("__start__"), to: Done, requires: [Id], instruction: { async act(_p, _i, mem) { hits.push(`id ${mem.get(Id)}`); } } });
+  const made = defineGivenBlock({ name: "make", sets: [Id], run: (mem) => void (hits.push("make"), mem.set(Id, 7)), undo: () => void hits.push("unmake") });
+  await engine.map({ given: [made] }).method(read).run(page.context(), new MemPage(), { page });
+  expect(hits).toEqual(["make", "id 7", "unmake"]);
+  hits.length = 0;
+  const there = defineGivenBlock({ name: "there", ready: () => true, run: () => void hits.push("run"), undo: () => void hits.push("undo") });
+  await engine.map({ given: [there] }).method(play).run(page.context(), new MemPage(), { page });
+  expect(hits).toEqual(["play"]);
 });
