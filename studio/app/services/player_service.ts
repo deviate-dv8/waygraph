@@ -52,6 +52,8 @@ export class PlayerService {
       autoNext?: boolean
       video?: boolean
       headed?: boolean
+      /** JSON keyed by mem key name: what the flow is played with (`--data`). */
+      data?: string
     } = {}
   ): Play {
     if (PlayerService.job && PlayerService.job.exitCode === null) {
@@ -64,13 +66,22 @@ export class PlayerService {
     if (options.noExpect) args.push('--no-expect')
     if (options.replay) args.push('--replay', options.replay)
     if (options.video) args.push('--video')
+    if (options.data) {
+      try {
+        JSON.parse(options.data)
+      } catch {
+        throw new Error('The data is not valid JSON.')
+      }
+    }
     // A demo moves on by itself, or waits for Next on every step (the Settings page).
     if (mode === 'demo' && options.autoNext !== undefined)
       args.push(options.autoNext ? '--auto-next' : '--no-auto-next')
+    // The values go by the environment, not the command line: they are credentials, and the command is shown on the run's page.
     const [cmd, cmdArgs] = waygraphCommand(dir, args)
     const env: NodeJS.ProcessEnv = { ...process.env, FORCE_COLOR: '0' }
     for (const key of APP_ENV) delete env[key]
     // The browser shows when asked (the switch next to Run and Demo); unsaid, a run is headless and a demo is watched.
+    if (options.data) env.WAYGRAPH_DATA = options.data
     env.WAYGRAPH_HEADED = (options.headed ?? mode === 'demo') ? '1' : '0'
     // Its own process group: stopping it stops the browser it started too.
     const child = spawn(cmd, cmdArgs, {

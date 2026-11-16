@@ -131,6 +131,8 @@ export type ManifestFlow = {
   owner?: string
   steps: string[]
   stepExpects: string[][]
+  /** What it needs from whoever plays it: the keys no step or account gives, with the stub's value to start from (waygraph 0.18.0+). */
+  inputs?: { key: string; example?: Json; filled: boolean }[]
   settings: Record<string, Json>
   /** Its panes, when it plays on pages side by side; missing before waygraph 0.16.21. */
   panes?: { name: string; as?: string; device?: Json; with?: string }[]

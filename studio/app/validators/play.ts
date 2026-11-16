@@ -8,6 +8,8 @@ export const playValidator = vine.create({
   autoNext: vine.boolean().optional(),
   video: vine.boolean().optional(),
   headed: vine.boolean().optional(),
+  /** The values the flow needs, as JSON keyed by name (`--data`). */
+  data: vine.string().trim().maxLength(20000).optional(),
   replay: vine
     .string()
     .regex(/^[\w.-]+$/)

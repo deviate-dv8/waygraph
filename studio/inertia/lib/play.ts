@@ -36,7 +36,11 @@ export function usePlay() {
     /** Whether this run is the one playing now. */
     isPlaying: (runId: string) => playing.value && play.value?.runId === runId,
     /** Plays a flow as the play options say; a demo auto-advances as the Settings page says. */
-    start: (flow: string, mode: PlayMode, given: { noExpect?: boolean; replay?: string } = {}) =>
+    start: (
+      flow: string,
+      mode: PlayMode,
+      given: { noExpect?: boolean; replay?: string; data?: string } = {}
+    ) =>
       router.post(urlFor('plays.store'), {
         flow,
         mode,

@@ -37,9 +37,9 @@ export function routeAround(
   lane = 0
 ): Point[] {
   const dir: 1 | -1 = to.x >= from.x ? 1 : -1
-  const spread = (lane % 4) * 5
-  const x1 = gapX(from.x, dir, rects, want) + dir * spread
-  const x2 = gapX(to.x, dir === 1 ? -1 : 1, rects, want) - dir * spread
+  const offset = (lane % 4) * 5
+  const x1 = gapX(from.x, dir, rects, want) + dir * offset
+  const x2 = gapX(to.x, dir === 1 ? -1 : 1, rects, want) - dir * offset
   if ((dir === 1 && x1 >= x2) || (dir === -1 && x1 <= x2)) {
     const mid = (from.x + to.x) / 2
     return [from, { x: mid, y: from.y }, { x: mid, y: to.y }, to]

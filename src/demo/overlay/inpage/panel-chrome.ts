@@ -66,6 +66,8 @@ export function installPanelChrome() {
                 )
               : null;
           const full = info.stepperMode === "full";
+          // The list is rebuilt for every step: where it was scrolled is carried over, so it moves only as far as the current step needs.
+          const kept = __wgById("wg-modules")?.scrollLeft ?? 0;
           const modules = __wgEl(
             "div",
             {
@@ -89,6 +91,7 @@ export function installPanelChrome() {
               );
             }),
           );
+          modules.dataset.wgScrolled = String(kept);
           return [progress, episodes, pace, modules];
         };
         // "Step 3 of 9" over the step's name; a failure is red, an expected failure orange.
@@ -141,6 +144,18 @@ export function installPanelChrome() {
             fastForward: !!info.fastForward,
             isApi: !!info.isApi,
           });
+          const list = panel.querySelector<HTMLElement>("#wg-modules.wg-modules-carousel");
+          if (list) {
+            list.scrollLeft = Number(list.dataset.wgScrolled ?? 0);
+            const current = list.querySelector<HTMLElement>(".wg-mod-current");
+            if (current) {
+              const edge = 12;
+              const box = list.getBoundingClientRect();
+              const at = current.getBoundingClientRect();
+              if (at.left - edge < box.left) list.scrollLeft -= box.left - (at.left - edge);
+              else if (at.right + edge > box.right) list.scrollLeft += at.right + edge - box.right;
+            }
+          }
           const sync = info.todoSync || (info.todos && info.todos.length ? "set" : "keep");
           // Prefer a dock-only payload (list: [] with a dock used to clear its marks a frame later); "keep" with no dock
           // leaves the floating dock alone.

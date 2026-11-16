@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
+import { useStorage } from '@vueuse/core'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import StepPipeline from '~/components/graph/step_pipeline.vue'
 import RunStatus from '~/components/run_status.vue'
@@ -17,6 +18,45 @@ const props = defineProps<{
   steps: { name: string; block: ManifestBlock | null; expects: string[] }[]
   runs: RunSummary[]
 }>()
+
+/** What the flow needs from whoever plays it, one JSON box per key, starting from its stub; kept in this browser. */
+const inputs = computed(() => props.flow.inputs ?? [])
+const typed = useStorage<Record<string, string>>(`waygraph-data:${props.flow.exportName}`, {})
+const textOf = (key: string, example: unknown) =>
+  typed.value[key] ?? (example === undefined ? '' : JSON.stringify(example, null, 2))
+const invalid = computed(() =>
+  inputs.value.filter((i) => {
+    const text = textOf(i.key, i.example).trim()
+    if (!text) return false
+    try {
+      JSON.parse(text)
+      return false
+    } catch {
+      return true
+    }
+  })
+)
+/** Missing, with nothing to fill it from: the run would stop at once asking for it. */
+const missing = computed(() =>
+  inputs.value.filter((i) => !i.filled && !textOf(i.key, i.example).trim())
+)
+/** The values to play with: every box that has something, keyed by name. */
+const data = computed(() => {
+  const given = Object.fromEntries(
+    inputs.value
+      .map((i) => [i.key, textOf(i.key, i.example).trim()] as const)
+      .filter(([, text]) => text)
+      .flatMap(([key, text]) => {
+        try {
+          return [[key, JSON.parse(text)]]
+        } catch {
+          return []
+        }
+      })
+  )
+  return Object.keys(given).length ? JSON.stringify(given) : undefined
+})
+const canPlay = computed(() => !invalid.value.length && !missing.value.length)
 
 const selected = ref<number | null>(null)
 const pipeline = computed(() =>
@@ -105,8 +145,8 @@ const noExpect = ref(false)
           label="Run"
           icon="i-lucide-play"
           size="sm"
-          :disabled="playing"
-          @click="start(props.flow.exportName, 'run', { noExpect })"
+          :disabled="playing || !canPlay"
+          @click="start(props.flow.exportName, 'run', { noExpect, data })"
         />
         <UTooltip text="Opens a browser with the step panel around each step">
           <UButton
@@ -115,8 +155,8 @@ const noExpect = ref(false)
             size="sm"
             color="neutral"
             variant="outline"
-            :disabled="playing"
-            @click="start(props.flow.exportName, 'demo', { noExpect })"
+            :disabled="playing || !canPlay"
+            @click="start(props.flow.exportName, 'demo', { noExpect, data })"
           />
         </UTooltip>
         <UTooltip text="This flow as a Playwright test: run it, watch it, step through its trace">
@@ -130,6 +170,33 @@ const noExpect = ref(false)
           />
         </UTooltip>
         <UCheckbox v-model="noExpect" label="verify only" size="sm" />
+      </div>
+      <div v-if="inputs.length" class="space-y-2 pt-2">
+        <p class="text-xs font-semibold text-(--ink-soft) uppercase">Data it is played with</p>
+        <div v-for="i in inputs" :key="i.key" class="space-y-1">
+          <label class="flex items-center gap-2 font-mono text-xs" :for="`data-${i.key}`">
+            {{ i.key }}
+            <span class="font-sans text-(--ink-soft)">{{
+              i.filled ? 'filled from its stub when left as is' : 'needed to play'
+            }}</span>
+          </label>
+          <textarea
+            :id="`data-${i.key}`"
+            :value="textOf(i.key, i.example)"
+            rows="3"
+            spellcheck="false"
+            placeholder='JSON, e.g. {"username": "...", "password": "..."}'
+            class="w-full rounded border border-(--island-line) bg-transparent p-2 font-mono text-xs"
+            :class="invalid.includes(i) ? 'border-(--fail)' : ''"
+            @input="typed[i.key] = ($event.target as HTMLTextAreaElement).value"
+          />
+        </div>
+        <p v-if="invalid.length" class="text-xs text-(--fail)">
+          {{ invalid.map((i) => i.key).join(', ') }}: not valid JSON.
+        </p>
+        <p v-else-if="missing.length" class="text-xs text-(--fail)">
+          {{ missing.map((i) => i.key).join(', ') }}: give it a value to play.
+        </p>
       </div>
       <PlayOptions class="pt-1" />
     </div>

@@ -18,6 +18,7 @@ import { flowLabels, type Labels } from "./labels.js";
 import { siteTree, type SiteTree } from "./site-map.js";
 import { loadLayouts, refreshLayoutRoutes } from "./layouts.js";
 import { declaredStates, describeSets } from "../engine/mem/state.js";
+import { flowInputs, type FlowInput } from "./flow-inputs.js";
 import { givenTo } from "../engine/block/access.js";
 import { allAccounts } from "../engine/flow/account.js";
 import { paneOf } from "../engine/run/pane-page.js";
@@ -110,6 +111,8 @@ export interface ManifestFlow {
   /** Where its recording is saved (`map({ video })`). */
   video?: string;
   owner?: string;
+  /** What it needs from whoever plays it: the keys no step or account gives. */
+  inputs: FlowInput[];
   settings: { memStub?: true; expectedFailure?: string; sessionReset?: true; demoPace?: unknown };
   /** Its panes (`map({ panes })`): who is signed in in each, its device, the pane whose context it shares. */
   panes?: { name: string; as?: string; device?: unknown; with?: string }[];
@@ -287,6 +290,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       useCase: useCaseOf(f.file),
       steps: flow.blocks().map((s) => s.name),
       stepExpects: flow.blocks().map((s) => describeExpectations(s.block)),
+      inputs: flowInputs(flow.blocks(), flow.memStub === true),
       ...panesOf(flow.blocks()),
       settings: {
         ...(flow.memStub ? { memStub: true as const } : {}),
