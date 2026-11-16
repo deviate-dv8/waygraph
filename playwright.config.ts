@@ -1,6 +1,10 @@
 import { defineConfig } from "@playwright/test";
 import { chromiumExecutablePath } from "./src/runtime/browser.js";
 
+// The suite opens no windows unless asked: a spec that starts waygraph (a demo, a session, studio) inherits this, so nothing
+// lands on the screen of whoever runs it. WAYGRAPH_HEADED=1 (under `npm run test:offscreen`, which uses xvfb) shows it.
+process.env["WAYGRAPH_HEADED"] ??= "0";
+
 // Specs that drive the live saucedemo.com or spawn session processes: a dozen of them at once overload the site and the
 // machine, and fail on timeouts that never show alone. They run in their own project, two at a time; the rest stay
 // fully parallel.

@@ -42,8 +42,8 @@ npm run examples:link   # once per checkout: examples/*/node_modules/waygraph ->
 npm ci --prefix studio      # once per checkout: the build builds Waygraph Studio
 npm run studio              # this checkout's Waygraph Studio on examples/saucedemo (npm run studio:dev: the UI's hot-reload server)
 npx tsc --noEmit && npm run build && npm run check:structure && npm run knip && npm run test:unit
-WAYGRAPH_HEADED=0 npx playwright test --grep-invert non-headless
-npm run test:offscreen   # Linux with xvfb: the whole suite, headed tests included, on a hidden display
+npx playwright test --grep-invert non-headless   # opens no windows: the config sets WAYGRAPH_HEADED=0 unless you set it
+npm run test:offscreen   # Linux with xvfb: the whole suite with WAYGRAPH_HEADED=1, headed tests included, on a hidden display
 npm run storybook:build   # overlay changes: also look at the piece in `npm run storybook`, light and dark
 npm run docs:studio-shots     # Waygraph Studio changes: the UI guide's screenshots, from examples/saucedemo
 (cd examples/saucedemo && WAYGRAPH_HEADED=0 node ../../bin/waygraph test)
