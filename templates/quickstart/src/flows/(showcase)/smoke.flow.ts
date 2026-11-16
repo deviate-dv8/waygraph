@@ -1,6 +1,6 @@
 import { engine } from "../../../config/waygraph.config.js";
-import { Login } from "../../map/(shop)/_page.block.js";
-import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
+import { Login } from "../../map/(main)/(app_base)/_page.block.js";
+import { Inventory } from "../../map/(main)/(app_base)/inventory.html/_page.block.js";
 
 /** Smoke: the happy path with the Blocks' own verify lists switched off where a later step already proves the outcome. */
 export const smokeFlow = engine

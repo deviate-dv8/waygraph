@@ -7,23 +7,32 @@ separate schema to keep in sync. The guide is [Your project](../guides/project);
 
 ```text
 src/map/
-  (app_base)/              # the landing/base group - purely organizational, never part of
-    dashboard/              # any Checkpoint tag. One folder per Checkpoint - "Dashboard"
-      _page.block.ts         # arrival hub (definePageBlock) - fixed name, every folder
-      _sel.ts                  # selectors for this Checkpoint - fixed name, every folder
-      _expect/                  # what a scenario can expect on this page (Expect Blocks) - fixed name
-      _methods/                 # this Checkpoint's own action Blocks - fixed name, every
-        click-widget.block.ts    # folder. Contents keep their own descriptive names -
-  (external)/                     # only the folder itself is fixed.
+  (main)/                   # the app under test: the groups of everything it owns
+    (app_base)/              # its pages - a group, never part of any Checkpoint tag
+      dashboard/              # One folder per Checkpoint - "Dashboard"
+        _page.block.ts         # arrival hub (definePageBlock) - fixed name, every folder
+        _sel.ts                  # selectors for this Checkpoint - fixed name, every folder
+        _expect/                  # what a scenario can expect on this page (Expect Blocks) - fixed name
+        _methods/                 # this Checkpoint's own action Blocks - fixed name, every
+          click-widget.block.ts    # folder. Contents keep their own descriptive names -
+    (api)/                          # the app's API Blocks (defineApiBlock), grouped by resource
+      posts/
+        seed-note.api.block.ts
+  (external)/                     # other people's sites, only the folder itself is fixed.
     docs/                    # a genuinely cross-origin group, same shape - "Docs"
       _page.block.ts
       _sel.ts
 ```
 
+A multi-tenant app that lives on subdomains gets one group per tenant (or per host) beside `(app_base)`, so
+`(main)/(acme)/` and `(main)/(globex)/` hold the same pages seen from each tenant. A page's `url` is then a function of
+mem (`(mem) => \`https://${mem.get(Tenant)}.app.test/dashboard\``), which `waygraph map` doesn't check against the
+folder; the literal ones still are.
+
 **Not just a naming preference - a forced convention.** Folder nesting under `map/(group)/`
 must **verbatim-match** the real site's own URL path segments, `(group)` parens excluded
 (purely organizational, same as a Next.js route group): `/app/chats` lives at
-`map/(app_base)/app/chats/`, never `map/(auth)/chats/` for a fabricated grouping that was
+`map/(main)/(app_base)/app/chats/`, never `map/(auth)/chats/` for a fabricated grouping that was
 never a real `/auth/*` URL. `waygraph map [project]` (see [CLI](./cli.md))
 enforces this mechanically and exits 1 on a mismatch - don't rely on review alone. Same Block
 helpers as today's freeform "manual mode" (`definePageBlock`/`defineNavBlock`/
@@ -97,8 +106,9 @@ filename pattern, never folder depth or naming.
    at all) or a dynamic `(mem) => string` function, note that too - neither is statically
    checkable by `waygraph map`, so they can go wherever makes sense; only a literal string
    `url` is verified.
-2. **Pick your group(s).** `(app_base)/` for the landing/base app (organizational only, never
-   part of a Checkpoint tag); `(external)/` for genuinely cross-origin Blocks (mail tools,
+2. **Pick your group(s).** `(main)/(app_base)/` for the app's pages (organizational only, never
+   part of a Checkpoint tag), `(main)/(api)/` for its API Blocks, a `(main)/(<tenant>)/` per subdomain when the
+   app is multi-tenant; `(external)/` for genuinely cross-origin Blocks (mail tools,
    third-party embeds) - verify with the real URL, not the folder's own current name, since a
    folder can already be mis-grouped (a real bug this session found: a project's own
    `(external)/docs/` was actually same-origin the whole time).

@@ -329,13 +329,12 @@ export function installPanelChrome() {
               syncMiniNext(panel.classList.contains("wg-collapsed"));
             });
           }
-          const cur = panel.querySelector("#wg-modules .wg-mod-current");
-          if (cur && typeof cur.scrollIntoView === "function") {
-            try {
-              cur.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
-            } catch {
-              cur.scrollIntoView(false);
-            }
+          // Centre the current step in its own list: scrollIntoView would also scroll the page (and fight the scroll to the element a step acts on).
+          const list = panel.querySelector<HTMLElement>("#wg-modules");
+          const cur = list?.querySelector<HTMLElement>(".wg-mod-current");
+          if (list && cur) {
+            const at = cur.offsetLeft - (list.clientWidth - cur.offsetWidth) / 2;
+            list.scrollTo({ left: Math.max(0, at), behavior: "smooth" });
           }
         };
 }

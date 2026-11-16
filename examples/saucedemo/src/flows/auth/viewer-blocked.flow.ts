@@ -1,5 +1,5 @@
 import { engine } from "../../../config/waygraph.config.js";
-import { Login } from "../../map/(shop)/_page.block.js";
+import { Login } from "../../map/(main)/(app_base)/_page.block.js";
 import { loginRefused } from "../../stubs/login.js";
 import { SaucedemoKeys } from "../../states/checkout.mem-keys.js";
 

@@ -1,6 +1,6 @@
 import { engine } from "../../../config/waygraph.config.js";
 import { Trait } from "waygraph";
-import { Login } from "../../map/(shop)/_page.block.js";
+import { Login } from "../../map/(main)/(app_base)/_page.block.js";
 import { loginFailed } from "../../stubs/login.js";
 
 /**

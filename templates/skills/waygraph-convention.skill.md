@@ -43,7 +43,7 @@ and when you touch it, move it to the convention or say it should be.
 | Selectors in a check file or a test | The page's `_sel.ts` |
 | Evidence written by hand (a `.log`, a results `.md`, screenshots copied around) | The run log (`.waygraph/runs/`), `screenshot: true` on a step, `--video`, Waygraph Studio, `--reporter` |
 | A cast or a function over `MapBuilder` to share steps (`as MethodBlock<...>`, `(m: MapBuilder) => m...`) | `{ lands: X }` for a branch; `steps(Checkpoint, (m) => m...)` played with `.steps(part)` |
-| Talking to the API with `fetch` in a test or a helper | An API Block (`defineApiBlock`) in `src/map/(api)/` |
+| Talking to the API with `fetch` in a test or a helper | An API Block (`defineApiBlock`) in `src/map/(main)/(api)/` |
 | Waiting for an email with your own polling | The Mailpit / MailHog Blocks (`(external)/`) and `claimOnce` for a shared inbox |
 
 When waygraph can't do what the task needs, stop and say so: what you needed, what waygraph lacks, and the smallest
@@ -75,7 +75,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
    `fill-username` (self-loop) + `fill-password` (self-loop) + `submit-login` (transition),
    never one Method that "fills and logs in." Same split for checkout fields: no Block `.fill()`s
    two fields or `.fill()`s and `.click()`s in one `act()` (`waygraph check`: `multi-input`,
-   `combined-action`). Canonical shape: `node_modules/waygraph/examples/saucedemo/src/map/(shop)/_methods/`.
+   `combined-action`). Canonical shape: `node_modules/waygraph/examples/saucedemo/src/map/(main)/(app_base)/_methods/`.
 2. **Navigation only in a page's address or a Nav.** `page.goto` / `click` navigation live in a Page Block's `url`/`click`
    (or `route: "folder"`, the address of its folder) and in `defineNavBlock` for a move that isn't a page's own address.
    A Method's `act` uses ActionPage (no goto) even when the app changes URL as a side effect of a button click.
@@ -166,7 +166,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   checkpoint: "Home", url: "/home", read: (ctx) => ({ ... }), do: (page) => ({ addItem: page.method({ async act(p) { ... } }) }) })`
   exported as `HomePage`; the flow writes `.gotoPage(HomePage).method(HomePage.do.addItem)`, each typed as its own
   Block. A Method long enough for a file of its own takes `(page: PageHandle<"Home">)`, importing only that type. Imports use the project's
-  `#config/`, `#map/`, `#states/` names (`import { HomePage } from "#map/(app_base)/home/_page.block"`), never a chain of
+  `#config/`, `#map/`, `#states/` names (`import { HomePage } from "#map/(main)/(app_base)/home/_page.block"`), never a chain of
   `../`. No file is imported for its side effect (`import ".../_page.block.js"`, `import ".../x.mem-keys.js"`): the
   tools load Block, Page and stub files themselves. A Page Block's `expects: { saved: () => ExpectSavedBlock }` names what
   can be checked on the page, so `HomePage.expects.saved` comes from the same import. An older project moves onto pages
@@ -351,7 +351,7 @@ export const AddToCartBlock = defineMethodBlock({
 An Expect Block, an API Block, and a page with a `read`:
 
 ```ts
-// src/map/(app_base)/cart/_expect/checkout-gated.expect.block.ts - listed on CartPage's `expects`
+// src/map/(main)/(app_base)/cart/_expect/checkout-gated.expect.block.ts - listed on CartPage's `expects`
 export const ExpectCheckoutGatedBlock = defineExpectBlock({
   name: "expect-checkout-gated",
   description: "Checkout stays disabled while the cart is empty.",
@@ -396,10 +396,10 @@ A flow, narrated where it uses the Blocks:
 import { engine } from "#config/waygraph.config";
 import { StandardUser } from "#states/accounts";
 import { ShopKeys } from "#states/shop.mem-keys";
-import { InventoryPage } from "#map/(app_base)/inventory/_page.block";
-import { CartPage } from "#map/(app_base)/cart/_page.block";
-import { HeaderSel } from "#map/(app_base)/inventory/_sel";
-import { EmptyCartApiBlock } from "#map/(api)/cart/empty.api.block";
+import { InventoryPage } from "#map/(main)/(app_base)/inventory/_page.block";
+import { CartPage } from "#map/(main)/(app_base)/cart/_page.block";
+import { HeaderSel } from "#map/(main)/(app_base)/inventory/_sel";
+import { EmptyCartApiBlock } from "#map/(main)/(api)/cart/empty.api.block";
 
 const AddShown = InventoryPage.do.addToCart.stub((ctx) => ctx.ui.ring("cart", { selector: HeaderSel.cart, label: "Item in cart", tag: "AC" }));
 
@@ -450,11 +450,14 @@ namespace root.
 
 ```text
 src/map/
-  (app_base)/                      # organizational group only - never part of a Checkpoint tag
-    dashboard/                     # must verbatim-match the real URL path (/dashboard)
-      _page.block.ts
-      _sel.ts
-      _methods/click-widget.block.ts
+  (main)/                          # the app under test; its groups are never part of a Checkpoint tag
+    (app_base)/                    # its pages
+      dashboard/                   # must verbatim-match the real URL path (/dashboard)
+        _page.block.ts
+        _sel.ts
+        _methods/click-widget.block.ts
+    (api)/                         # its API Blocks (*.api.block.ts), a folder per resource
+    (<tenant>)/                    # multi-tenant on subdomains: one group per tenant, page url a function of mem
   (external)/                      # cross-origin (mailpit, etc.) - same shape
     docs/
       _page.block.ts
@@ -517,6 +520,6 @@ npx waygraph --skill-pilot-blind     # cold-start: raw ops + author Blocks as yo
 npx waygraph --skill-convention      # this file
 ```
 
-Worked example: `node_modules/waygraph/examples/saucedemo` (`src/map/(shop)/`, the shape above); pages, Methods, a shell,
+Worked example: `node_modules/waygraph/examples/saucedemo` (`src/map/(main)/(app_base)/`, the shape above); pages, Methods, a shell,
 accounts, reads, API Blocks and narration, against saucedemo.com. Docs: https://deviate-dv8.github.io/waygraph/guides/blocks
 Agent personas (author/planner/healer): `npx waygraph agent-dive --loop claude`.

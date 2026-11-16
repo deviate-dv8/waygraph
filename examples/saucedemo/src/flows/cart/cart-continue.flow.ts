@@ -1,6 +1,6 @@
 import { engine } from "../../../config/waygraph.config.js";
 import { StandardUser } from "../../accounts/accounts.js";
-import { Cart } from "../../map/(shop)/cart.html/_page.block.js";
+import { Cart } from "../../map/(main)/(app_base)/cart.html/_page.block.js";
 
 export const cartContinueFlow = engine
   .map({ as: StandardUser, title: "Continue shopping", description: "From the cart, back to the catalogue.", labels: ["cart"] })

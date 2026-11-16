@@ -4,7 +4,7 @@ import net from "node:net";
 import { MemPage, checkpoint } from "waygraph";
 import { emailVerificationFlow } from "../src/flows/(user-stories)/email-verification.flow.js";
 import { MailpitKeys } from "../src/map/(external)/mailpit/_keys.js";
-import { HOME_URL } from "../src/map/(app_base)/home/_sel.js";
+import { HOME_URL } from "../src/map/(main)/(app_base)/home/_sel.js";
 
 // Plays "the app sent a verification email": starts a throwaway Mailpit container, sends a real SMTP message,
 // then runs emailVerificationFlow against it, including the no-email and wrong-content failure paths.

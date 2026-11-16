@@ -1,6 +1,6 @@
 import { engine } from "../../../config/waygraph.config.js";
 import { loginFlow } from "../auth/login.flow.js";
-import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
+import { Inventory } from "../../map/(main)/(app_base)/inventory.html/_page.block.js";
 
 /** Add every item, then remove them all (the bulk Methods). */
 const cartBulkEpisode = engine

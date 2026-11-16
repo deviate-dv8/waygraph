@@ -1,6 +1,6 @@
 import { engine } from "#config/waygraph.config";
-import { HomePage } from "#map/(app_base)/home/_page.block";
-import { DemoSel } from "#map/(app_base)/home/_sel";
+import { HomePage } from "#map/(main)/(app_base)/home/_page.block";
+import { DemoSel } from "#map/(main)/(app_base)/home/_sel";
 
 // The selected item (alpha) is the mem key's own stub (src/states/demo.mem-keys.ts); --data overrides it.
 const AddShown = HomePage.do.addItem.stubBefore((ctx) => {

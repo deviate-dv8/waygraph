@@ -3,7 +3,7 @@ import { engine } from "#config/waygraph.config";
 import { MailpitInboxPage } from "#map/(external)/mailpit/_page.block";
 import { MailpitSel } from "#map/(external)/mailpit/_sel";
 import { MailpitMessagePage } from "#map/(external)/mailpit/message/_page.block";
-import { HomePage } from "#map/(app_base)/home/_page.block";
+import { HomePage } from "#map/(main)/(app_base)/home/_page.block";
 
 const Arrived = MailpitInboxPage.expects.emailReceived.stub((ctx) => {
   ctx.ui.ring("note", { selector: MailpitSel.messageRow, label: "AC · email arrived", detail: "Confirmed before opening anything.", tag: "AC" });

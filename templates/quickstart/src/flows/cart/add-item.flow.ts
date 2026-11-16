@@ -1,8 +1,8 @@
 import { engine } from "../../../config/waygraph.config.js";
 import { SaucedemoKeys } from "../../states/checkout.mem-keys.js";
 import { StandardUser } from "../../accounts/accounts.js";
-import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
-import { Cart } from "../../map/(shop)/cart.html/_page.block.js";
+import { Inventory } from "../../map/(main)/(app_base)/inventory.html/_page.block.js";
+import { Cart } from "../../map/(main)/(app_base)/cart.html/_page.block.js";
 
 /**
  * One flow for every item: its input is the item. `waygraph run addItemFlow --input '{"id":"sauce-labs-bike-light","name":"Sauce Labs Bike Light"}'`,

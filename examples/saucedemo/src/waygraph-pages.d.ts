@@ -2,6 +2,8 @@
 export {};
 declare global {
   interface WaygraphPages {
+    "BackendDown": true;
+    "BackendHealthy": true;
     "CartPage": true;
     "CheckoutInfoPage": true;
     "CheckoutOverviewPage": true;

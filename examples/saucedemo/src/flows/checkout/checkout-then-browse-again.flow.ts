@@ -1,11 +1,11 @@
 import { engine } from "../../../config/waygraph.config.js";
-import { Login } from "../../map/(shop)/_page.block.js";
+import { Login } from "../../map/(main)/(app_base)/_page.block.js";
 import { orderPlacedYap, placingOrder } from "../../stubs/finish-order.js";
-import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
-import { Cart } from "../../map/(shop)/cart.html/_page.block.js";
-import { CheckoutInfo } from "../../map/(shop)/checkout-step-one.html/_page.block.js";
-import { CheckoutOverview } from "../../map/(shop)/checkout-step-two.html/_page.block.js";
-import { Confirmation } from "../../map/(shop)/checkout-complete.html/_page.block.js";
+import { Inventory } from "../../map/(main)/(app_base)/inventory.html/_page.block.js";
+import { Cart } from "../../map/(main)/(app_base)/cart.html/_page.block.js";
+import { CheckoutInfo } from "../../map/(main)/(app_base)/checkout-step-one.html/_page.block.js";
+import { CheckoutOverview } from "../../map/(main)/(app_base)/checkout-step-two.html/_page.block.js";
+import { Confirmation } from "../../map/(main)/(app_base)/checkout-complete.html/_page.block.js";
 
 /** Full checkout, then the "Back Home" click-based Nav Block returns to the catalogue. */
 export const checkoutThenBrowseAgainFlow = engine

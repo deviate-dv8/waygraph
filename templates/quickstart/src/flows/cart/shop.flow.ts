@@ -1,10 +1,10 @@
 import { engine } from "../../../config/waygraph.config.js";
 import { StandardUser } from "../../accounts/accounts.js";
 import { orderPlacedYap, placingOrder } from "../../stubs/finish-order.js";
-import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
-import { Cart } from "../../map/(shop)/cart.html/_page.block.js";
-import { CheckoutInfo } from "../../map/(shop)/checkout-step-one.html/_page.block.js";
-import { CheckoutOverview } from "../../map/(shop)/checkout-step-two.html/_page.block.js";
+import { Inventory } from "../../map/(main)/(app_base)/inventory.html/_page.block.js";
+import { Cart } from "../../map/(main)/(app_base)/cart.html/_page.block.js";
+import { CheckoutInfo } from "../../map/(main)/(app_base)/checkout-step-one.html/_page.block.js";
+import { CheckoutOverview } from "../../map/(main)/(app_base)/checkout-step-two.html/_page.block.js";
 
 /** Add the selected item, check out and place the order. Signs in as the standard shopper (the session is reused after loginFlow). */
 export const shopFlow = engine

@@ -1,10 +1,10 @@
 import { pane } from "waygraph";
 import { engine } from "../../../config/waygraph.config.js";
-import { Login } from "../../map/(shop)/_page.block.js";
+import { Login } from "../../map/(main)/(app_base)/_page.block.js";
 import { allFeaturesShowcase as d } from "../../stubs/all-features-showcase.js";
-import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
+import { Inventory } from "../../map/(main)/(app_base)/inventory.html/_page.block.js";
 import { ProblemUser } from "../../accounts/accounts.js";
-import { Cart } from "../../map/(shop)/cart.html/_page.block.js";
+import { Cart } from "../../map/(main)/(app_base)/cart.html/_page.block.js";
 
 const Main = pane("main");
 const Guest = pane("guest", { as: ProblemUser });

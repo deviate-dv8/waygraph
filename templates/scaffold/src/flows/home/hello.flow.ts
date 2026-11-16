@@ -1,7 +1,7 @@
 import { engine } from "#config/waygraph.config";
-import { HomePage } from "#map/(app_base)/home/_page.block";
-import { DemoSel } from "#map/(app_base)/home/_sel";
-import { TopBar } from "#map/(app_base)/_page.block";
+import { HomePage } from "#map/(main)/(app_base)/home/_page.block";
+import { DemoSel } from "#map/(main)/(app_base)/home/_sel";
+import { TopBar } from "#map/(main)/(app_base)/_page.block";
 
 const OpenHome = HomePage
   .stubBefore((ctx) => {

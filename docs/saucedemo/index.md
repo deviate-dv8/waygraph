@@ -31,7 +31,8 @@ One folder per screen, named for its URL (`waygraph map` checks they match), and
 examples/saucedemo/
   config/waygraph.config.ts          base URL, the engine
   src/
-    map/(shop)/
+    map/(main)/
+      (app_base)/                    the shop, as below; (api)/ holds its API Blocks
       _page.block.ts                 the login page (/): its read and its Methods (fill, submit)
       _sel.ts                        its selectors
       _methods/                      one file per Method: fill-username, fill-password, submit

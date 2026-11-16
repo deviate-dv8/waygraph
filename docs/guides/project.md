@@ -17,11 +17,13 @@ my-app/
 │   ├── accounts/                   # the people the app knows: account("planner", { signIn, mem, ttl })
 │   ├── states/                     # mem keys with their stubs (*.mem-keys.ts); a page is its own Checkpoint
 │   ├── map/                        # the app, page by page: folders are its addresses
-│   │   ├── (app_base)/             # your app (a group: not part of any address)
-│   │   │   ├── _sel.ts             # the layout's selectors
-│   │   │   ├── home/               # the page at /home
-│   │   │   └── platform/
-│   │   │       └── equipment/          # the page at /platform/equipment
+│   │   ├── (main)/                 # the app under test (groups: not part of any address)
+│   │   │   ├── (app_base)/         # its pages
+│   │   │   │   ├── _sel.ts         # the layout's selectors
+│   │   │   │   ├── home/           # the page at /home
+│   │   │   │   └── platform/
+│   │   │   │       └── equipment/      # the page at /platform/equipment
+│   │   │   └── (api)/              # its API Blocks, a folder per resource
 │   │   └── (external)/             # other sites a flow visits: a mail catcher, a REST client
 │   └── flows/                      # use cases: a folder per page, like src/map/
 │       ├── auth/login/
@@ -73,7 +75,7 @@ name is awkward (`requests/[id]` is `RequestsId`), `--dry` prints what it would 
 
 | Opinion | Why | What holds you to it |
 |---|---|---|
-| **Folders under `src/map/` are the app's addresses.** `/platform/equipment` lives in `map/(app_base)/platform/equipment/`; `(group)` folders only organise. | The tree is the site map: nothing to keep in sync, and anyone who knows the app's URLs finds the page. | `waygraph map` fails on a folder that doesn't match its page's address |
+| **Folders under `src/map/` are the app's addresses.** `/platform/equipment` lives in `map/(main)/(app_base)/platform/equipment/`; `(group)` folders only organise. | The tree is the site map: nothing to keep in sync, and anyone who knows the app's URLs finds the page. | `waygraph map` fails on a folder that doesn't match its page's address |
 | **A Checkpoint is a page**, a place with its own address. An item in the cart is what the page shows, not another Checkpoint. | Fewer, truer Checkpoints; flows check the state with `Key.is` | `waygraph check` names a Checkpoint that is a state of a page |
 | **Every page has a `read`.** | Runs, agents, tests and Waygraph Studio read the page as data, not by parsing the DOM | `waygraph check` lists the pages with no `read` |
 | **One action per Block, its selectors in `_sel.ts`.** | One Block, reused by every flow that needs it; a changed selector is changed once | `waygraph check`: a fill and a click in one Block, several inputs in one Block, an inline selector when a `_sel.ts` is there |
@@ -102,8 +104,8 @@ too):
 
 ```ts
 import { engine } from "#config/waygraph.config";
-import { HomePage } from "#map/(app_base)/home/_page.block";
-import { TopBar } from "#map/(app_base)/_page.block";
+import { HomePage } from "#map/(main)/(app_base)/home/_page.block";
+import { TopBar } from "#map/(main)/(app_base)/_page.block";
 ```
 
 ## Flows are use cases
@@ -148,7 +150,7 @@ labels: { auth: ["src/flows/auth/**"], checkout: ["src/flows/checkout/**", "chec
 
 1. Set `baseUrl` in `config/waygraph.config.ts` (or `BASE_URL` in `.env`).
 2. Change each `_page.block.ts`'s `url` to the real path.
-3. Rename `(app_base)/` and its folders to match your app's addresses.
+3. Rename `(main)/(app_base)/`'s folders to match your app's addresses.
 4. Run `waygraph map`: it lists every folder that doesn't match.
 
 ## A new machine, a new teammate

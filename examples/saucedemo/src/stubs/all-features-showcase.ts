@@ -1,8 +1,8 @@
 import type { StubCtx } from "waygraph";
 import { SaucedemoKeys } from "../states/checkout.mem-keys.js";
-import { LoginSel } from "../map/(shop)/_sel.js";
-import { CartSel } from "../map/(shop)/cart.html/_sel.js";
-import { InventorySel } from "../map/(shop)/inventory.html/_sel.js";
+import { LoginSel } from "../map/(main)/(app_base)/_sel.js";
+import { CartSel } from "../map/(main)/(app_base)/cart.html/_sel.js";
+import { InventorySel } from "../map/(main)/(app_base)/inventory.html/_sel.js";
 
 const PRODUCT_ID = "sauce-labs-backpack";
 

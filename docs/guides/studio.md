@@ -165,7 +165,7 @@ arrows read in order across them; a compared run (`--compare`) marks each step w
 
 ## Runs
 
-When a run is of one flow, its page shows **Flow code** beside the steps: the lines already played are tinted green or red by how
+When a run is of one flow, its page shows **Flow code** in a panel on the right (drag it by its header, minimize it with the minus; it stays where you left it): the lines already played are tinted green or red by how
 the step went and the playing one is marked; the box follows the run top to bottom as it plays (untick *follow the run* to stay put,
 or pick a step to see its line).
 

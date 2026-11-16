@@ -1,8 +1,8 @@
 import { engine } from "../../../config/waygraph.config.js";
 import { StandardUser } from "../../accounts/accounts.js";
-import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
-import { ItemDetail } from "../../map/(shop)/inventory-item.html/_page.block.js";
-import { Menu } from "../../map/(shop)/menu/_page.block.js";
+import { Inventory } from "../../map/(main)/(app_base)/inventory.html/_page.block.js";
+import { ItemDetail } from "../../map/(main)/(app_base)/inventory-item.html/_page.block.js";
+import { Menu } from "../../map/(main)/(app_base)/menu/_page.block.js";
 
 /** Browse a product and back, use the menu to see everything, then sign out. */
 export const catalogLogoutFlow = engine

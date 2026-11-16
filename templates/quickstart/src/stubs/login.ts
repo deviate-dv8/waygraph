@@ -1,5 +1,5 @@
 import type { StubCtx } from "waygraph";
-import { LoginSel } from "../map/(shop)/_sel.js";
+import { LoginSel } from "../map/(main)/(app_base)/_sel.js";
 
 /** What a refused login looks like on screen: the title, a finished checklist and the error banner. */
 export function loginRefused(ctx: StubCtx): void {

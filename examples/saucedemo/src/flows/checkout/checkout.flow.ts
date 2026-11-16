@@ -1,11 +1,11 @@
 import { engine } from "../../../config/waygraph.config.js";
-import { Login } from "../../map/(shop)/_page.block.js";
+import { Login } from "../../map/(main)/(app_base)/_page.block.js";
 import { orderPlacedYap, placingOrder } from "../../stubs/finish-order.js";
-import { LoginSel } from "../../map/(shop)/_sel.js";
-import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
-import { Cart } from "../../map/(shop)/cart.html/_page.block.js";
-import { CheckoutInfo } from "../../map/(shop)/checkout-step-one.html/_page.block.js";
-import { CheckoutOverview } from "../../map/(shop)/checkout-step-two.html/_page.block.js";
+import { LoginSel } from "../../map/(main)/(app_base)/_sel.js";
+import { Inventory } from "../../map/(main)/(app_base)/inventory.html/_page.block.js";
+import { Cart } from "../../map/(main)/(app_base)/cart.html/_page.block.js";
+import { CheckoutInfo } from "../../map/(main)/(app_base)/checkout-step-one.html/_page.block.js";
+import { CheckoutOverview } from "../../map/(main)/(app_base)/checkout-step-two.html/_page.block.js";
 
 export const checkoutFlow = engine
   .map({ title: "Check out", description: "A signed-in user buys an item and sees the order confirmed.", labels: ["checkout"], memStub: true })

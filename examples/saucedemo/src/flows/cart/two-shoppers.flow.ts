@@ -1,8 +1,8 @@
 import { pane } from "waygraph";
 import { engine } from "../../../config/waygraph.config.js";
 import { ProblemUser, StandardUser } from "../../accounts/accounts.js";
-import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
-import { Cart } from "../../map/(shop)/cart.html/_page.block.js";
+import { Inventory } from "../../map/(main)/(app_base)/inventory.html/_page.block.js";
+import { Cart } from "../../map/(main)/(app_base)/cart.html/_page.block.js";
 
 const Standard = pane("standard", { as: StandardUser });
 const Problem = pane("problem", { as: ProblemUser });

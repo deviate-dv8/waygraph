@@ -44,19 +44,22 @@ class Writer {
   }
 }
 
-/** The group folder pages go in: the one asked for, else the first of `src/map/` that isn't external or api, else `(app_base)`. */
+/** The group folder pages go in: the one asked for, else the first app group of `src/map/(main)/` (not `(api)`), else a top-level one that isn't external or api, else `(main)/(app_base)`. */
 function groupOf(dir: string, asked: string | undefined): string {
   if (asked) return asked;
   const map = join(dir, "src", "map");
-  const found = existsSync(map) ? readdirSync(map).filter((d) => /^\(.+\)$/.test(d) && !/^\((external|api)\)$/.test(d)) : [];
-  return found[0] ?? "(app_base)";
+  const groups = (at: string) => (existsSync(at) ? readdirSync(at).filter((d) => /^\(.+\)$/.test(d) && !/^\((external|api)\)$/.test(d)) : []);
+  const inMain = groups(join(map, "(main)")).filter((d) => d !== "(main)")[0];
+  if (inMain) return `(main)/${inMain}`;
+  return groups(map).filter((d) => d !== "(main)")[0] ?? "(main)/(app_base)";
 }
 
 /** Every page file under the map, for a page path: `src/map/<group>/<segments>/_page.block.ts`. */
 function pageFileOf(dir: string, segments: string[]): string | undefined {
   const map = join(dir, "src", "map");
-  const groups = existsSync(map) ? readdirSync(map).filter((d) => /^\(.+\)$/.test(d)) : [];
-  for (const base of [map, ...groups.map((g) => join(map, g))]) {
+  const groupsIn = (at: string) => (existsSync(at) ? readdirSync(at).filter((d) => /^\(.+\)$/.test(d)).map((d) => join(at, d)) : []);
+  const top = groupsIn(map);
+  for (const base of [map, ...top, ...top.flatMap(groupsIn)]) {
     const file = join(base, ...segments, "_page.block.ts");
     if (existsSync(file)) return file;
   }

@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import StepPipeline from '~/components/graph/step_pipeline.vue'
+import FloatingPanel from '~/components/floating_panel.vue'
 import CodeLines from '~/components/code_lines.vue'
 import RunStatus from '~/components/run_status.vue'
 import PlayOptions from '~/components/play_options.vue'
@@ -142,22 +143,24 @@ watch(activeLine, async (n) => {
       </p>
     </div>
 
-    <aside
+    <FloatingPanel
       v-if="props.code"
-      ref="codeBox"
-      class="island absolute top-16 left-20 max-h-[48vh] w-[30rem] space-y-2 overflow-y-auto p-3"
+      id="flow-code"
+      title="Flow code"
+      :start="{ top: 64, right: 12 }"
     >
-      <div class="flex items-center justify-between">
-        <p class="text-sm font-semibold">Flow code</p>
+      <template #actions>
         <UCheckbox v-model="follow" label="follow the run" size="sm" />
+      </template>
+      <div ref="codeBox">
+        <CodeLines
+          :file="props.code.file"
+          :span="props.code.span"
+          :played="played"
+          :active="activeLine"
+        />
       </div>
-      <CodeLines
-        :file="props.code.file"
-        :span="props.code.span"
-        :played="played"
-        :active="activeLine"
-      />
-    </aside>
+    </FloatingPanel>
 
     <div class="island absolute bottom-3 left-3 max-w-lg space-y-1 px-4 py-3">
       <div class="flex items-center gap-2">

@@ -23,7 +23,7 @@ test("the manifest lists each page's read with the Checkpoint it reads and the s
   expect(m.readBlocks.find((r) => r.name === "read-page-inventory" || r.name === "read-inventory")).toMatchObject({
     from: ["InventoryPage"],
     fields: { "catalog.items": [{ name: "string", price: "number", inCart: "boolean" }], "catalog.sort": "string" },
-    file: "src/map/(shop)/inventory.html/_page.block.ts",
+    file: "src/map/(main)/(app_base)/inventory.html/_page.block.ts",
   });
   // What every page of the layout shows is the layout's read.
   expect(m.readBlocks.find((r) => r.name === "read-menu")).toMatchObject({ fields: { "header.title": "string", "header.cartCount": "unknown" } });
@@ -43,7 +43,7 @@ test("each Block carries the lines that define it, its checks as data and the se
   expect(nav.source).toEqual({ line: 5, endLine: 22 });
   expect(nav.checks).toEqual({ precondition: [], verify: [{ name: 'url-matches({"pathname":"/cart.html"})' }] });
   expect(nav.selectors).toEqual([
-    { name: "CartSel.cartLink", selector: ".shopping_cart_link", literal: true, file: "src/map/(shop)/cart.html/_sel.ts", line: 3 },
+    { name: "CartSel.cartLink", selector: ".shopping_cart_link", literal: true, file: "src/map/(main)/(app_base)/cart.html/_sel.ts", line: 3 },
   ]);
   expect(m.flows.every((f) => f.source)).toBe(true);
   expect(m.readBlocks.every((r) => r.source)).toBe(true);

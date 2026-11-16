@@ -36,7 +36,8 @@ export function findStatePages(manifest: Manifest): StatePage[] {
     const mine = paths.get(checkpoint) ?? [];
     const landing = steps.filter((b) => b.to.includes(checkpoint));
     if (mine.length === 0) {
-      if (landing.length > 0 && landing.every((b) => b.kind === "method" || b.kind === "api")) {
+      // A result only an API call gives (healthy, down) is an outcome of the call, not a state of a page.
+      if (landing.some((b) => b.kind === "method") && landing.every((b) => b.kind === "method" || b.kind === "api")) {
         found.push({ checkpoint, reachedBy: landing.map((b) => b.name) });
       }
       continue;

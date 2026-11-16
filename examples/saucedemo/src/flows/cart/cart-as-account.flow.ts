@@ -1,7 +1,7 @@
 import { engine } from "../../../config/waygraph.config.js";
 import { StandardUser } from "../../accounts/accounts.js";
-import { Inventory } from "../../map/(shop)/inventory.html/_page.block.js";
-import { Cart } from "../../map/(shop)/cart.html/_page.block.js";
+import { Inventory } from "../../map/(main)/(app_base)/inventory.html/_page.block.js";
+import { Cart } from "../../map/(main)/(app_base)/cart.html/_page.block.js";
 
 /** The standard user, already signed in, puts an item in the cart: no login steps of its own. */
 export const cartAsAccountFlow = engine

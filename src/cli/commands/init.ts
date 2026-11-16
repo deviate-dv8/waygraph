@@ -59,7 +59,7 @@ function initCommand(projectName: string): void {
     rmSync(src);
   }
   // Demo pages open via file://; the absolute path is only known once copied, so it's filled in here.
-  const appBaseUrl = pathToFileURL(join(targetDir, "src", "map", "(app_base)", "index.html")).href;
+  const appBaseUrl = pathToFileURL(join(targetDir, "src", "map", "(main)", "(app_base)", "index.html")).href;
   const packageJsonPath = join(targetDir, "package.json");
   const pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8").replaceAll("__PROJECT_NAME__", pkgName));
   // Pin the project to the waygraph that created it - a stale range here installs an old engine.

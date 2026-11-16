@@ -14,8 +14,9 @@ const OWN = /[\\/](?:waygraph[\\/](?:dist|src)|node_modules[\\/]waygraph)[\\/]/;
 export function callSite(stack = new Error().stack): CallSite | undefined {
   for (const line of (stack ?? "").split("\n").slice(1)) {
     const found = /\(?((?:file:\/\/)?[^\s()]+?):(\d+):\d+\)?$/.exec(line.trim());
-    if (!found) continue;
-    const file = found[1]!.replace(/^file:\/\//, "");
+    const path = found?.[1];
+    if (!found || path === undefined) continue;
+    const file = path.replace(/^file:\/\//, "");
     if (OWN.test(file) || file.startsWith("node:")) continue;
     return { file, line: Number(found[2]) };
   }
