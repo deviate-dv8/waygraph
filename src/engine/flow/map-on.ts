@@ -1,6 +1,4 @@
 // `.on(Page, (p) => p.typeSearch("x").submit())`: several Methods of one page as one call, each still its own step of the
-// flow (own name in the run log, its own expect, stub and settle). The chain only lists the page's Methods that stay on the
-// page, so autocomplete offers what can come next here; a Method that lands elsewhere is a `.method(...)` after it.
 import type { SomeBlock } from "../block/some-block.js";
 import type { MethodBlock } from "../block/kinds/method.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";

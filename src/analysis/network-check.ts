@@ -1,6 +1,4 @@
 // What a run's HTTP calls say about a page: the same GET twice, one route asked for with many ids (N+1), a slow or large
-// answer, a call the page made that failed, too many calls to arrive. Pure over the run log's events, so the command and
-// Waygraph Studio say the same.
 import type { RunEvent } from "../engine/run/events.js";
 
 export type NetworkFindingKind = "duplicate" | "n+1" | "slow" | "large" | "uncached" | "chatty" | "failed";

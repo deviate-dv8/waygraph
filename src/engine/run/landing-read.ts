@@ -14,7 +14,6 @@ export async function readLanding(page: Page, mem: MemPage, checkpoint: string):
     const step = currentStep();
     if (step) mem.trail.add({ step: step.index, block: step.block, page: checkpoint, ...(step.pane ? { pane: step.pane } : {}), read });
   } catch (err) {
-    // A broken Read Block is reported on the step, never fails the run it observes.
     stepRead(checkpoint, { read: {}, missing: [], notes: {}, readBlocks: [], error: messageOf(err) });
   }
 }

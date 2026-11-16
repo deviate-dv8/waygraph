@@ -1,6 +1,4 @@
 // In-page installer (page.evaluate target) - must stay self-contained, no module-scope closure.
-// The call modal: one HTTP call opened from the outcome card: what was asked (method, address, headers, body), what came
-// back (status in words, why, headers, body), and a "copy as cURL". `window.__wgOpenCall(call)` opens it; the card's rows call it.
 import type { IconName } from "../ui/icons.js";
 
 /** One call as the card and the modal show it (bodies already text, long ones cut). */

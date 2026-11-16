@@ -1,6 +1,4 @@
 // States: what the application is right now (signed in, a role, a cart with something in it), kept in mem as keys (a boolean, or
-// one of a few words) the map can reason about, and per pane in a flow with panes (each person is in their own state). A key is a state when it is declared with `state(initial)` in its namespace; a page `needs` states to be
-// reachable, a Method or link `sets` them when it lands. The run applies and checks them; the map and `check` read them.
 import { mark } from "../block/mark.js";
 import { WaygraphError } from "../errors.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";

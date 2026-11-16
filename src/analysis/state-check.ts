@@ -32,7 +32,6 @@ export async function checkStates(projectDir: string): Promise<StateWarning[]> {
   const warnings: StateWarning[] = [];
   for (const { flow, exportName, absFile } of scan.flows) {
     const steps = stepsOf(flow.blocks() as StepInfo[]);
-    // One person, one state: a flow with panes keeps each pane's states apart, and a pane is signed in as its own account.
     const mem = new MemPage();
     const seen = new Set<string>();
     steps.forEach((step, i) => {
@@ -53,7 +52,6 @@ export async function checkStates(projectDir: string): Promise<StateWarning[]> {
         if (who === undefined) named.mem(mem);
       }
       const to = step.block.__waygraphTo ?? [];
-      // Where a step with several outcomes lands: the one the next step starts from, else the first.
       const next = steps[i + 1]?.block.__waygraphFrom ?? [];
       const landed = to.find((t) => next.includes(t)) ?? to[0];
       if (landed === undefined || landed === "*") return;

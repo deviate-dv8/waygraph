@@ -1,7 +1,4 @@
 // `waygraph upgrade --codemod checks`: `Page.read.items.passes((items, mem) => ..., "why")` becomes the page's one check
-// primitive, `Page.check("why", ({ items }, mem) => ...)`: the test gets everything the page shows and says true or false.
-// A test that isn't a function written in place is called with the field (`(read, mem) => test(read.items, mem)`).
-// `Key.is(want)` stays. Works on the TypeScript AST.
 import { readFileSync, writeFileSync } from "node:fs";
 import { relative } from "node:path";
 import { Node, Project, SyntaxKind } from "ts-morph";
@@ -56,7 +53,6 @@ export function convertChecks(text: string): { text: string; changed: number } {
     const p = passesOf(call);
     return p ? [{ call, ...p }] : [];
   });
-  // Innermost first: a test that holds another `passes` is rewritten before the one around it.
   for (const { call, receiver, path } of found.sort((a, b) => b.call.getStart() - a.call.getStart())) call.replaceWithText(rewritten(call, receiver, path));
   return { text: sf.getFullText(), changed: found.length };
 }

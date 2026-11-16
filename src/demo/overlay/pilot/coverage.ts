@@ -1,7 +1,4 @@
 // Page-side (an init script on every document - self-contained, no module-scope closure). The pilot's coverage view: a chip
-// that, when on, outlines what waygraph knows on the page you're looking at. Green: registered (a selector some Block
-// or page uses, labelled with its name; a link to a page waygraph has). Orange, dashed: something you can click or type
-// in that nothing registers yet. A person who never reads the code sees what a flow can touch and what is still missing.
 import type { CoveragePayload } from "../../../engine/coverage.js";
 
 export function installCoverage(payload: CoveragePayload) {
@@ -30,7 +27,6 @@ export function installCoverage(payload: CoveragePayload) {
       const s = getComputedStyle(el);
       return s.visibility !== "hidden" && s.display !== "none";
     };
-    // What a Block would select this element by: its id, a test hook, its name, its label, else its role and text.
     const selectorOf = (el: Element): string => {
       const attr = (n: string) => el.getAttribute(n);
       if (el.id && !/\d{3,}/.test(el.id)) return "#" + el.id;
@@ -146,7 +142,6 @@ export function installCoverage(payload: CoveragePayload) {
       return on;
     };
     chip.addEventListener("click", () => set(!on));
-    // The session protocol's `coverage` op (`waygraph pilot coverage <id> on|off`) switches it the same way.
     (window as unknown as { __wgCoverageSet?: (on: boolean) => boolean }).__wgCoverageSet = set;
     chip.classList.toggle("wg-coverage-on", on);
     window.addEventListener("scroll", later, true);
@@ -154,7 +149,6 @@ export function installCoverage(payload: CoveragePayload) {
     new MutationObserver(later).observe(document.documentElement, { childList: true, subtree: true, attributes: true });
     paint();
   };
-  // After the shadow root's own install (registered first), once the document has a body.
   const wait = () => (document.body ? start() : document.addEventListener("DOMContentLoaded", start, { once: true }));
   wait();
 }
