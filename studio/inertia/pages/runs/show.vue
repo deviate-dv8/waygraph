@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import WorkspaceLayout from '~/layouts/workspace.vue'
 import StepPipeline from '~/components/graph/step_pipeline.vue'
+import CodeLines from '~/components/code_lines.vue'
 import RunStatus from '~/components/run_status.vue'
 import PlayOptions from '~/components/play_options.vue'
 import { urlFor } from '~/client'
@@ -16,6 +17,8 @@ const props = defineProps<{
   run: RunDetail
   /** What the flow expects after each step, when the run is of one flow. */
   expects: string[][]
+  /** The flow's code and the line each of this run's steps was written on, when the run is of one flow. */
+  code: { file: string; span: { line: number; endLine: number }; lines: (number | null)[] } | null
 }>()
 
 /** The call opened in the step panel, with what it sent and got back (fetched from the run's call file). */
@@ -97,6 +100,28 @@ const recordings = computed(() =>
 const videos = computed(() => recordings.value.filter((a) => a.kind === 'video'))
 const traces = computed(() => recordings.value.filter((a) => a.kind === 'trace'))
 const watching = ref(false)
+/** The flow's code beside its steps: lines already played tinted by how they went, the playing (or picked) one marked. */
+const follow = ref(true)
+const played = computed(() =>
+  props.run.stepsList.flatMap((s, i) => {
+    const n = props.code?.lines[i]
+    return n && s.status !== 'running' ? [{ n, ok: s.status === 'passed' }] : []
+  })
+)
+const activeLine = computed(() => {
+  if (!props.code) return null
+  if (selected.value !== null) return props.code.lines[selected.value] ?? null
+  if (!follow.value) return null
+  const running = props.run.stepsList.findIndex((s) => s.status === 'running')
+  const at = running >= 0 ? running : props.run.stepsList.length - 1
+  return props.code.lines[at] ?? null
+})
+const codeBox = ref<HTMLElement | null>(null)
+watch(activeLine, async (n) => {
+  if (!n || !follow.value) return
+  await nextTick()
+  codeBox.value?.querySelector(`[data-line="${n}"]`)?.scrollIntoView({ block: 'nearest' })
+})
 </script>
 
 <template>
@@ -116,6 +141,23 @@ const watching = ref(false)
         }}
       </p>
     </div>
+
+    <aside
+      v-if="props.code"
+      ref="codeBox"
+      class="island absolute top-16 left-20 max-h-[48vh] w-[30rem] space-y-2 overflow-y-auto p-3"
+    >
+      <div class="flex items-center justify-between">
+        <p class="text-sm font-semibold">Flow code</p>
+        <UCheckbox v-model="follow" label="follow the run" size="sm" />
+      </div>
+      <CodeLines
+        :file="props.code.file"
+        :span="props.code.span"
+        :played="played"
+        :active="activeLine"
+      />
+    </aside>
 
     <div class="island absolute bottom-3 left-3 max-w-lg space-y-1 px-4 py-3">
       <div class="flex items-center gap-2">

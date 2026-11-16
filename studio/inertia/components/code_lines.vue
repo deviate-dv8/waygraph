@@ -8,7 +8,15 @@ import type { SourceLines, SourceSpan } from '#types/project'
  * Lines of a project file (a Block's definition, a selector entry), coloured, with their line numbers. Fetched when
  * shown; opening another before it arrives cancels the first request.
  */
-const props = defineProps<{ file: string; span: SourceSpan; mark?: number }>()
+const props = defineProps<{
+  file: string
+  span: SourceSpan
+  mark?: number
+  /** Lines already played (passed or failed), and the line playing or picked now. */
+  played?: { n: number; ok: boolean }[]
+  active?: number | null
+}>()
+const playedAt = (n: number) => props.played?.find((p) => p.n === n)
 
 type Token = { text: string; type: string | undefined }
 const lines = ref<{ n: number; tokens: Token[] }[] | null>(null)
@@ -64,7 +72,18 @@ onBeforeUnmount(() => pending?.abort())
       v-for="line in lines"
       :key="line.n"
       class="flex"
-      :class="line.n === props.mark ? 'bg-(--color-sketch-100) dark:bg-(--color-sketch-950)' : ''"
+      :data-line="line.n"
+      :class="
+        line.n === props.active
+          ? 'bg-(--color-sketch-200) dark:bg-(--color-sketch-900)'
+          : playedAt(line.n)
+            ? playedAt(line.n)?.ok
+              ? 'bg-(--pass)/15'
+              : 'bg-(--fail)/15'
+            : line.n === props.mark
+              ? 'bg-(--color-sketch-100) dark:bg-(--color-sketch-950)'
+              : ''
+      "
     ><span class="w-10 shrink-0 pr-3 text-right text-(--ink-soft) select-none opacity-60">{{ line.n }}</span><span class="pr-3"><span
       v-for="(t, i) in line.tokens"
       :key="i"

@@ -25,11 +25,21 @@ export default class RunsController {
     const flow =
       run.flows.length === 1 ? manifest.flows.find((f) => f.exportName === run.flows[0]) : undefined
     let next = 0
+    const lines: (number | null)[] = []
     const expects = run.stepsList.map((s) => {
-      if (!flow || s.cleanup || s.parent !== null || flow.steps[next] !== s.block) return []
+      if (!flow || s.cleanup || s.parent !== null || flow.steps[next] !== s.block) {
+        lines.push(null)
+        return []
+      }
+      lines.push(flow.stepLines?.[next] ?? null)
       return flow.stepExpects[next++] ?? []
     })
-    return inertia.render('runs/show', { project: manifest.project, run, expects })
+    return inertia.render('runs/show', {
+      project: manifest.project,
+      run,
+      expects,
+      code: flow?.source ? { file: flow.file, span: flow.source, lines } : null,
+    })
   }
 
   /** A run's video or trace, shown in the page or, with `download`, saved under its run's name. */

@@ -134,6 +134,12 @@ The map, and every page, follow your system's light or dark theme.
 
 ## Flows
 
+A flow's page has a side panel with two tabs: **Meta** (title, description, labels, ticket, owner, where its video goes, its
+settings, panes and the keys it needs) and **Code** (the flow's source, with the line of the step you picked in the pipeline
+marked). A flow that needs values (credentials, a record's name) has a **Data it is played with** form above the Run button: one
+JSON box per key, starting from the key's stub, kept in this browser and sent as `--data`. It is sent in the environment, not on the
+command line, so a password never shows in the run's command.
+
 Every flow by its folder, failing first, with its steps, expectations and newest run; filter by failing, passing or not
 run, or find one by a step.
 
@@ -158,6 +164,10 @@ arrows read in order across them; a compared run (`--compare`) marks each step w
   **Stop**, which ends the flow and its browser. One flow plays at a time.
 
 ## Runs
+
+When a run is of one flow, its page shows **Flow code** beside the steps: the lines already played are tinted green or red by how
+the step went and the playing one is marked; the box follows the run top to bottom as it plays (untick *follow the run* to stay put,
+or pick a step to see its line).
 
 Every run from the [run log](../reference/run-log), newest first, and each run step by step: whether it passed, how long
 it took, the address it ended on, its screenshot when one was taken, and what the flow expected after it.

@@ -40,7 +40,7 @@ test("map({ memStub: true }) alone (no --mem-stub flag) is enough - the flow's o
 
 test("a flow that does not opt into memStub, with no --data, still fails exactly as before - regression", async () => {
   await expect(
-    exec(node, [CLI, "run", "src/flows/auth/viewer-blocked.flow.ts"], { cwd: saucedemo, env: cleanEnv }),
+    exec(node, [CLI, "run", "src/flows/(showcase)/smoke.flow.ts"], { cwd: saucedemo, env: cleanEnv }),
   ).rejects.toMatchObject({
     stderr: expect.stringMatching(/--data|WAYGRAPH_DATA|requires/),
   });

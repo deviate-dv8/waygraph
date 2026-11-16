@@ -32,6 +32,10 @@ import { inWorld, restoreWorld, type World } from "./world.js";
 import { asCleanup, settling, requiring, withoutRequire, settingInput, settingKey, stepExpect, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore, closingStep } from "./map-steps.js";
 import type { MapFlowOpts } from "./map-options.js";
 import { recordOn, type OnChain } from "./map-on.js";
+import { callSite, writtenAt, type CallSite } from "./call-site.js";
+
+/** The call site of the chain step being appended, when `.on()` knows it better than the stack does. */
+let nextSite: CallSite | undefined;
 import { checkPanes, inPane, installPanes, type Pane } from "./panes.js";
 import { paneOf } from "../run/pane-page.js";
 
@@ -187,7 +191,9 @@ export class MapBuilder<
    * A key an earlier `.set()` gave is no longer one this step requires from the run.
    */
   private appendStep<NextOut extends Checkpoint<string>>(given: SomeBlock, ff?: boolean): MapBuilder<NextOut, Names, P, A> {
-    const keyed = this.inItsPane(this.at.provided.reduce((b, key) => withoutRequire(b, key), given));
+    const site = nextSite ?? callSite();
+    nextSite = undefined;
+    const keyed = writtenAt(this.inItsPane(this.at.provided.reduce((b, key) => withoutRequire(b, key), given)), site);
     // map({ expect: false }): every step's verify, none of its expectations.
     const block = this.at.settings.expect === false ? stepExpect(keyed, false) : keyed;
     const ffWin = this.at.ff;
@@ -284,7 +290,10 @@ export class MapBuilder<
    */
   on<D extends object>(page: { readonly do: D; readonly checkpoint: Out }, steps: (chain: OnChain<Out, D>) => unknown): MapBuilder<Out, Names, P, A> {
     return recordOn(page, steps as (chain: never) => unknown).reduce<MapBuilder<Out, Names, P, A>>(
-      (builder, { block, opts }) => builder.method(block as unknown as MethodBlock<Out, Out> & { name: string }, opts as never),
+      (builder, { block, opts, at }) => {
+        nextSite = at;
+        return builder.method(block as unknown as MethodBlock<Out, Out> & { name: string }, opts as never);
+      },
       this,
     );
   }

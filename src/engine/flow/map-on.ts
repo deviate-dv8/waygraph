@@ -2,6 +2,7 @@
 import type { SomeBlock } from "../block/some-block.js";
 import type { MethodBlock } from "../block/kinds/method.js";
 import type { Checkpoint } from "../checkpoint/checkpoint.js";
+import { callSite, type CallSite } from "./call-site.js";
 import type { StubLifecycleFn } from "../stub/stub.js";
 import type { MapStepOpts } from "./map-steps.js";
 
@@ -32,6 +33,8 @@ const isBlock = (entry: unknown): entry is SomeBlock => typeof entry === "object
 export interface OnStep {
   block: SomeBlock;
   opts: Record<string, unknown>;
+  /** The line of the chain where this Method was written. */
+  at?: CallSite | undefined;
 }
 
 /** Runs `steps` with a chain that records each call as a step; returns them in the order written. */
@@ -59,7 +62,7 @@ export function recordOn(page: { readonly do: object }, steps: (chain: never) =>
       if (entry === undefined) throw new Error(`waygraph: this page has no Method "${prop}" (it has ${Object.keys(doRecord).join(", ") || "none"})`);
       return (...args: unknown[]) => {
         const block = isBlock(entry) ? entry : (entry as (...a: unknown[]) => SomeBlock)(...args);
-        out.push({ block, opts: {} });
+        out.push({ block, opts: {}, at: callSite() });
         return chain;
       };
     },

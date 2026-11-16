@@ -6,6 +6,8 @@ import WorkspaceLayout from '~/layouts/workspace.vue'
 import StepPipeline from '~/components/graph/step_pipeline.vue'
 import RunStatus from '~/components/run_status.vue'
 import PlayOptions from '~/components/play_options.vue'
+import CodeLines from '~/components/code_lines.vue'
+import FlowMeta from '~/components/flow_meta.vue'
 import { urlFor } from '~/client'
 import { ago, count, duration } from '~/lib/format'
 import { usePlay } from '~/lib/play'
@@ -76,6 +78,11 @@ const step = computed(() =>
   selected.value === null ? null : (props.steps[selected.value] ?? null)
 )
 const settings = computed(() => Object.entries(props.flow.settings))
+/** The flow's own side panel: what it says about itself, or its code with the picked step's line marked. */
+const side = ref<'meta' | 'code'>('meta')
+const lineOf = computed(() =>
+  selected.value === null ? null : (props.flow.stepLines?.[selected.value] ?? null)
+)
 
 const { playing, start } = usePlay()
 /** Play it with each step's verify only: `--no-expect`. */
@@ -244,6 +251,38 @@ const noExpect = ref(false)
           :title="step.block.file"
         >
           {{ step.block.file }}
+        </p>
+      </aside>
+
+      <aside
+        class="island pointer-events-auto max-h-[45vh] w-[28rem] space-y-2 overflow-y-auto p-3"
+      >
+        <div class="flex gap-1">
+          <UButton
+            label="Meta"
+            icon="i-lucide-tags"
+            size="xs"
+            :color="side === 'meta' ? 'primary' : 'neutral'"
+            :variant="side === 'meta' ? 'soft' : 'ghost'"
+            @click="side = 'meta'"
+          />
+          <UButton
+            v-if="props.flow.source"
+            label="Code"
+            icon="i-lucide-code"
+            size="xs"
+            :color="side === 'code' ? 'primary' : 'neutral'"
+            :variant="side === 'code' ? 'soft' : 'ghost'"
+            @click="side = 'code'"
+          />
+        </div>
+        <FlowMeta v-if="side === 'meta' || !props.flow.source" :flow="props.flow" />
+        <CodeLines v-else :file="props.flow.file" :span="props.flow.source" :active="lineOf" />
+        <p
+          v-if="side === 'code' && selected !== null && lineOf === null"
+          class="text-xs text-(--ink-soft)"
+        >
+          This step comes from another file.
         </p>
       </aside>
 

@@ -102,6 +102,8 @@ export interface ManifestFlow {
   useCase: { path: string[]; outcome: string };
   /** Block names in run order, nested flows flattened. */
   steps: string[];
+  /** The line of the flow's file each entry of `steps` was written on; null for a step from another file (a nested flow's). */
+  stepLines: (number | null)[];
   /** What each step expects (the Block's and the step's own), in words: one list per entry of `steps`. */
   stepExpects: string[][];
   /** What the flow says about itself (`map({ title, description, ticket, owner })`). */
@@ -289,6 +291,10 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       ...(flow.meta?.owner ? { owner: flow.meta.owner } : {}),
       useCase: useCaseOf(f.file),
       steps: flow.blocks().map((s) => s.name),
+      stepLines: flow.blocks().map((s) => {
+        const at = (s.block as { __waygraphAt?: { file: string; line: number } }).__waygraphAt;
+        return at && (at.file === f.absFile || at.file.endsWith(f.file)) ? at.line : null;
+      }),
       stepExpects: flow.blocks().map((s) => describeExpectations(s.block)),
       inputs: flowInputs(flow.blocks(), flow.memStub === true),
       ...panesOf(flow.blocks()),
