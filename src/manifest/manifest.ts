@@ -106,6 +106,8 @@ export interface ManifestFlow {
   stepLines: (number | null)[];
   /** What each step expects (the Block's and the step's own), in words: one list per entry of `steps`. */
   stepExpects: string[][];
+  /** The flow's preconditions (`map({ given })`), by Block name. */
+  given?: string[];
   /** What the flow says about itself (`map({ title, description, ticket, owner })`). */
   title?: string;
   description?: string;
@@ -270,7 +272,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
   const urls = pageUrls(scan.blocks);
   const flows: ManifestFlow[] = scan.flows.map((f) => {
     const flow = f.flow as {
-      blocks: () => { name: string; block: SomeBlock }[];
+      blocks: () => { name: string; block: SomeBlock; given?: true }[];
       memStub?: boolean;
       expectedFailureReason?: string;
       meta?: import("../engine/flow/map-options.js").FlowMeta;
@@ -297,6 +299,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       }),
       stepExpects: flow.blocks().map((s) => describeExpectations(s.block)),
       inputs: flowInputs(flow.blocks(), flow.memStub === true),
+      ...(flow.blocks().some((s) => s.given) ? { given: flow.blocks().filter((s) => s.given).map((s) => s.name) } : {}),
       ...panesOf(flow.blocks()),
       settings: {
         ...(flow.memStub ? { memStub: true as const } : {}),

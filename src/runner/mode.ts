@@ -35,6 +35,10 @@ export interface PlayStep {
   segment: number;
   /** A cleanup step (`.finally(Block)`): played when its flow ends, pass or fail; a failure is reported, not fatal. */
   cleanup?: boolean | undefined;
+  /** A precondition (`map({ given })`): played before the flow's first step, where the run stands (it moves nothing); its failure blocks the flow. */
+  given?: boolean | undefined;
+  /** For an undo step: the precondition it puts back; it plays only if that one started. */
+  undoOf?: string | undefined;
   /** The side of a compared run (`--compare`) it plays on. */
   compareSide?: string | undefined;
   /** An inner step of an expanded fast-forward unit (`--ff-expand`). */

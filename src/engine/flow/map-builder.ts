@@ -29,6 +29,7 @@ import type { EngineConfig } from "../config.js";
 import { buildBranchedFlow } from "./map-branch.js";
 import { signInStep } from "./account.js";
 import { inWorld, restoreWorld, type World } from "./world.js";
+import { undoOf } from "./given.js";
 import { asCleanup, settling, requiring, withoutRequire, settingInput, settingKey, stepExpect, skippable, assertMapKind, assertMapOrigin, assertMapSalt, landsOn, mapKindOf, MapStepOpts, paced, resetBefore, closingStep } from "./map-steps.js";
 import type { MapFlowOpts } from "./map-options.js";
 import { recordOn, type OnChain } from "./map-on.js";
@@ -103,6 +104,7 @@ export class MapBuilder<
       installPanes();
       if (settings.as) throw new WaygraphError("WG_PANES", "map({ as, panes }): each pane says who is signed in there (panes: { name: { as } }), not the flow");
     }
+    for (const block of settings.given ?? []) assertMapSalt(block, ["method", "api"], "given");
     // A flow as an account starts signed in: its first step restores (or makes) that account's session.
     return new MapBuilder<Start>({ build, settings, chain: settings.as ? [signInStep(settings.as)] : [], homeOrigin, ff: null, provided: [] });
   }
@@ -335,7 +337,7 @@ export class MapBuilder<
       steps.push(settingInput(sub.input, opts.input, sub.blocks()[0]?.name ?? "flow"));
     }
     const infos = sub.blocks();
-    infos.filter((info) => !info.cleanup).forEach((info, i) => {
+    infos.filter((info) => !info.cleanup && !info.given).forEach((info, i) => {
       // Given here, the input is no longer something the run must supply.
       steps.push(i === 0 && sub.input && opts && "input" in opts ? withoutRequire(info.block, sub.input) : info.block);
     });
@@ -349,8 +351,11 @@ export class MapBuilder<
     let next = this.appendStep<NextOut>(first);
     for (const block of rest) next = next.appendStep<NextOut>(block);
     // The sub-flow's cleanup runs with this flow's, at the end.
-    const cleanup = infos.filter((info) => info.cleanup).map((info) => info.block);
-    return cleanup.length ? next.withCleanup(cleanup) : next;
+    const cleanup = infos.filter((info) => info.cleanup && !undoOf(info.block)).map((info) => info.block);
+    if (cleanup.length) next = next.withCleanup(cleanup);
+    // Its preconditions become this flow's (played before the first step; their undo steps are made from them again).
+    const given = infos.filter((info) => info.given).map((info) => info.block);
+    return given.length ? next.next({ settings: { ...next.at.settings, given: [...(next.at.settings.given ?? []), ...given] } }) : next;
   }
 
   /**

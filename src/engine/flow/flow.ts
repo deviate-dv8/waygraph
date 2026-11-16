@@ -15,6 +15,7 @@ import { normalizeHighlightSize, normalizeHighlightTone, normalizeHighlightWeigh
 import type { DemoPace } from "../stub/pace.js";
 import type { HighlightStyleDefaults } from "../stub/ring.js";
 import { ignorePageGone } from "../page-gone.js";
+import { runGiven, undoOf } from "./given.js";
 import { seedMemStub } from "../mem/mem-stub.js";
 import type { SomeBlock } from "../block/some-block.js";
 import { resolveDevice, type Device, type ResolvedDevice } from "./device.js";
@@ -70,6 +71,8 @@ export interface BlockInfo {
   resetSessionBefore?: boolean;
   /** A cleanup step (`.finally(Block)`): it runs after the flow's steps, whether they passed or failed. */
   cleanup?: true;
+  /** A precondition (`map({ given })`): played before the flow's first step; its failure blocks the flow. */
+  given?: true;
   /**
    * The actual Block, re-runnable on its own - e.g. step-through tooling that runs a Flow's Blocks one at a time.
    * Introspection that only wants to read the shape (a visualizer) can ignore this and use `name`/`routes` alone.
@@ -181,6 +184,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
   middle: readonly SomeBlock[],
   engineConfig: EngineConfig,
   cleanup: readonly SomeBlock[] = [],
+  given: readonly SomeBlock[] = [],
 ): Flow<Out> {
   // Settings (sessionReset, memStub, ...) are added afterwards by withSettings, which re-applies them after any
   // withBlockVerify/modBlockVerify patch so they survive.
@@ -235,7 +239,10 @@ export function buildFlow<Out extends Checkpoint<string>>(
     // always wins either way.
     const closeOnFinish = options?.closeOnFinish ?? gotOwnPage;
     let result: Out;
+    // The givens that started: only those are undone.
+    const played = new Set<string>();
     try {
+      await runGiven(buildFlow, given, played, context, mem, page, engineConfig);
       // A flow ends where its last step lands: the Out its map() chain was checked against.
       result = (await runSteps(chain, undefined, context, mem, 5000, {
         page,
@@ -246,7 +253,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
       // Cleanup runs whether the steps passed or failed; its own failures don't replace theirs. Then the panes the flow
       // opened close.
       try {
-        await runCleanup(cleanup, context, mem, page, engineConfig);
+        await runCleanup(cleanup.filter((b) => { const of = undoOf(b); return of === undefined || played.has(of); }), context, mem, page, engineConfig);
       } finally {
         if (!options?.keepPanes) await closePanes(page);
       }
@@ -270,6 +277,7 @@ export function buildFlow<Out extends Checkpoint<string>>(
     resetSession: false,
     config: engineConfig,
     blocks: () => [
+      ...given.map((b) => ({ name: b.name, block: b, given: true as const })),
       ...middle.map((b) => ({
         name: b.name,
         block: b,
@@ -280,10 +288,10 @@ export function buildFlow<Out extends Checkpoint<string>>(
     ],
     run: run as Flow<Out>["run"],
     withBlockVerify(block, verify) {
-      return buildFlow<Out>(replaceBlock(middle, block, (b) => withVerify(b, verify)), engineConfig, cleanup);
+      return buildFlow<Out>(replaceBlock(middle, block, (b) => withVerify(b, verify)), engineConfig, cleanup, given);
     },
     modBlockVerify(block, nameOrIndex, newCheck) {
-      return buildFlow<Out>(replaceBlock(middle, block, (b) => modVerify(b, nameOrIndex, newCheck)), engineConfig, cleanup);
+      return buildFlow<Out>(replaceBlock(middle, block, (b) => modVerify(b, nameOrIndex, newCheck)), engineConfig, cleanup, given);
     },
   };
 }
@@ -298,6 +306,8 @@ export interface FlowSettings {
   /** Read when a map() chain is built into its flow (the first step sets them, a cleanup step puts them back). */
   timezone?: string;
   network?: import("./world.js").World["network"];
+  /** The flow's preconditions (`map({ given })`): Blocks played before its first step. */
+  given?: readonly SomeBlock[];
   /** Cleanup steps from `.finally(Block)`, in order. */
   finally?: readonly SomeBlock[];
   /** Read by map() when it begins (the sign-in step); the Flow itself keeps nothing of it. */

@@ -2,6 +2,7 @@
 import type { DemoPace } from "../stub/pace.js";
 import type { HighlightStyleDefaults } from "../stub/ring.js";
 import type { MemKey } from "../mem/mem.js";
+import type { SomeDefinedBlock } from "../block/some-block.js";
 import type { Account } from "./account.js";
 import type { World } from "./world.js";
 import type { Device } from "./device.js";
@@ -37,6 +38,13 @@ export interface MapBuilderOptions extends FlowMeta {
    * way; only the internal/external origin distinction is opt-in).
    */
   homeOrigin?: string;
+  /**
+   * The preconditions: Blocks that make what the scenario needs (a tenant, a record in the state it must be in), played
+   * before the first step. A Block with an `undo` is put back after the flow, last given first. A given that fails blocks
+   * the flow (WG_GIVEN_FAILED): it was not played, so it neither passed nor failed.
+   * @example given: [SeedTenant, SeedPendingRequest]
+   */
+  given?: readonly SomeDefinedBlock[];
   /** Fill missing `requires` keys from `registerMemStub` when the flow runs. */
   memStub?: boolean;
   /**

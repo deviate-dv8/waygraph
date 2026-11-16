@@ -18,6 +18,7 @@ const rows = computed(() => {
     ['use case', f.useCase.path.length ? f.useCase.path.join(' / ') : undefined],
     ...Object.entries(f.settings).map(([k, v]) => [k, v === true ? 'on' : String(v)]),
     ['panes', f.panes?.map((p) => (p.as ? `${p.name} as ${p.as}` : p.name)).join(', ')],
+    ['given', f.given?.join(', ')],
     ['needs', f.inputs?.map((i) => i.key).join(', ')],
   ].filter((r): r is [string, string] => typeof r[1] === 'string' && r[1] !== '')
 })

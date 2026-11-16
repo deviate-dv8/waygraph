@@ -200,6 +200,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   the value is worked out from mem at run time.
 - **The same steps in several flows are a part:** `export const logDisruption = steps(DisruptionLog, (m) => m.method(…).method(…))`,
   played with `.steps(logDisruption)`. A function over `MapBuilder` with a hand-written `type Start = MapBuilder<…>` is a smell.
+- **Preconditions are `given`.** Data the scenario can't pass or fail without is seeded by API Blocks listed in `map({ given: [Seed…] })`, each with an `undo` that deletes it (played after the flow, reverse order, pass or fail). A given that fails blocks the run (`WG_GIVEN_FAILED`). Phase order of a Block: `docs/guides/lifecycle.md`.
 - **Setup is steps, cleanup is `.finally`.** Data a flow needs is made first (`.flow(seedFlow)` of API Blocks), not taken
   from whatever the database holds; what it made is deleted in `.finally(DeleteApiBlock)`.
 - **Flows are the tests.** `waygraph test --flows` runs every flow as a Playwright test (workers, retries, video,

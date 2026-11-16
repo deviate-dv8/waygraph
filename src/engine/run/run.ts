@@ -9,7 +9,7 @@ import { runExpect } from "./expect.js";
 import { screenshotStep } from "./screenshot.js";
 import { applyStates } from "../mem/state.js";
 import { watchCalls } from "./calls.js";
-import { addressOf, inRun, isConnected, recordState, lastLeaf, stepEnded, stepFailed, stepStarted } from "./events.js";
+import { addressOf, inRun, isConnected, recordState, lastLeaf, stepEnded, stepFailed, stepRoleOf, stepStarted } from "./events.js";
 import { readLanding } from "./landing-read.js";
 import { blockKindOf } from "../block/kind.js";
 import { runPrecondition, runVerify } from "../trait/verify.js";
@@ -108,7 +108,7 @@ async function playGraph(
       // A step in a pane plays on its pane's page, from where that pane last landed; a joined step picks for its own.
       const actPage = isConnected(current) ? page : await stepPage(current, page, mem);
       const actInput = isConnected(current) ? input : stepInput(current, page, input);
-      if (!isConnected(current)) stepStarted(current.name, blockKindOf(current), actInput.__state, (current as { __waygraphCleanup?: boolean }).__waygraphCleanup, paneName(current));
+      if (!isConnected(current)) stepStarted(current.name, blockKindOf(current), actInput.__state, stepRoleOf(current), paneName(current));
       watchCalls(actPage, paneName(current));
       await syncInterrupts(actPage, actInput.__state);
       // A page in an iframe: its Blocks see locators scoped to the frame (the page's own checks and read, below, too).

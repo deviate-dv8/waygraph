@@ -11,15 +11,10 @@ export const hybridSeedingFlow = engine
     title: "Seed by API, shop in the UI, check by API",
     description: "A note is filed through the API, the shopper adds an item in the browser, and the API confirms the shopper's notes: one story across both.",
     labels: ["hybrid", "api"],
+    given: [SeedShopperNote],
     memStub: true,
   })
   .gotoPage(Inventory)
-  .method(
-    SeedShopperNote.stub((ctx) => {
-      ctx.ui.caption("The note is filed: this is what was sent and what came back");
-      ctx.ui.showCalls();
-    }),
-  )
   .method(Inventory.do.addToCart)
   .gotoPage(Cart)
   .method(CheckShopperNotes);

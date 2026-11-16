@@ -5,7 +5,7 @@
 import { mark } from "../mark.js";
 import { recordApiCall } from "../../run/hooks.js";
 import { recordApiCallOf } from "../../run/calls.js";
-import { checkpoint } from "../../checkpoint/checkpoint.js";
+import { checkpoint, Start } from "../../checkpoint/checkpoint.js";
 import type { ExpectList } from "./expect.js";
 import { markExpect } from "../../run/expect.js";
 import { markRouteOf, tagsOf } from "../../checkpoint/route.js";
@@ -58,6 +58,13 @@ export interface ApiBlockOptions<In extends Checkpoint<string>, Out extends Chec
    */
   expect?: ExpectList<Out>;
   requires?: readonly MemKey<unknown>[];
+  /**
+   * What puts the world back after this Block made something (delete what `call` created). When the Block is a flow's `given`
+   * (a precondition), it runs after the flow, pass or fail, in the reverse order of the givens; its failure is reported and
+   * never decides the flow. Read mem for the id `call` stored.
+   * @example undo: ({ request, mem }) => request.delete(`/posts/${mem.get(SeededId)}`)
+   */
+  undo?: (ctx: { request: APIRequestContext; mem: MemPage }) => Promise<APIResponse>;
 }
 
 // Internal scratch key threading act()'s result to observe()/resolve() - Instruction has no other
@@ -65,6 +72,9 @@ export interface ApiBlockOptions<In extends Checkpoint<string>, Out extends Chec
 // never collide with a real author's own MemKey even if names happened to match; safe to share one
 // instance across every ApiBlock since runGraph runs act->observe->resolve fully serially per Block.
 const API_RESULT_SCRATCH = new MemKey<ApiCallResult>("__wgApiBlockResult");
+
+/** What the last API Block's call answered in this run (undefined before any). */
+export const lastApiResult = (mem: MemPage): ApiCallResult | undefined => mem.get(API_RESULT_SCRATCH);
 
 /**
  * A Block whose `act()` is a real HTTP request, not a page interaction - lets one Flow narrate a
@@ -148,6 +158,9 @@ export function defineApiBlock<In extends Checkpoint<string>, Out extends Checkp
   mark(built, "__waygraphKind", "api");
   // Accepted by map().method(), like a Method: one step that lands on a Checkpoint.
   mark(built, "__waygraphSalt", "api");
+  if (options.undo) {
+    mark(built, "__waygraphUndo", defineApiBlock({ name: `undo-${options.name}`, to: Start, call: options.undo }));
+  }
   // `waygraph check` tells a call that makes something (POST, PUT...) from one that only reads (GET).
   if (options.method) mark(built, "__waygraphApiMethod", options.method.toUpperCase());
   return built;

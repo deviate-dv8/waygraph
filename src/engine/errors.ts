@@ -89,6 +89,11 @@ export const WAYGRAPH_ERRORS = {
     means: ".ffEnd() was called with no matching .ffStart().",
     fix: "Remove the stray .ffEnd(), or add the .ffStart() it's meant to close.",
   },
+  WG_GIVEN_FAILED: {
+    where: "engine/flow/flow.ts - Flow.run, runner/play-steps.ts - a flow's `given` Block",
+    means: "A precondition of the flow (`map({ given })`) couldn't be set up, so the flow was not played: the run is blocked, not failed.",
+    fix: "Fix the seeding Block (its call, its verify) or the data it needs; the scenario itself was never judged.",
+  },
   WG_MAP_EMPTY: {
     where: "engine/flow/map-builder.ts - the flow, when first used",
     means: "A map() with no steps was used as a flow.",
@@ -247,6 +252,9 @@ export const MSG_MAP_BRANCH_NO_PRIOR_STEP =
 
 export const MSG_MAP_FF_NOT_CLOSED = (ffName: string) =>
   `Waygraph map: the flow's .ffStart("${ffName}") is still open - close it with .ffEnd() after its last step`;
+
+export const MSG_GIVEN_FAILED = (block: string, why: string) =>
+  `Waygraph given: the precondition "${block}" couldn't be set up (${why}) - the flow was not played, so it is blocked, not failed`;
 
 export const MSG_MAP_EMPTY =
   "Waygraph map: a flow with zero steps - add at least one .gotoPage()/.gotoExternal()/.method()";

@@ -41,6 +41,7 @@ and it throws, naming the factory to use.
 | `.steps(part)` | a part made with `steps()`: the same steps in several flows |
 | `.flow(sub, { reset, expect })` | another flow's steps, in the same page and mem; `expect` is checked once it's done |
 | `.branch({ Tag: (m) => … })` | a different continuation for each place the last step can land |
+| `map({ given: [b] })` | preconditions: seed what the scenario needs before step 1; `undo` puts it back |
 | `.finally(b)` | a cleanup step: runs after the others, pass or fail |
 
 ## Step options
@@ -176,6 +177,14 @@ engine.map({ as: Planner })
   .flow(seedDownMachineFlow)          // API Blocks: create the machine, keep its code in mem
   .gotoPage(RegistryPage, { expect: [Registry.check("the down machine is listed", ({ rows }, mem) => rows.some((r) => r.code === mem.get(Keys.downMachine).code))] })
   .finally(DeleteMachineApiBlock);
+```
+
+A precondition is the same idea with a name: list the seeding Blocks in `given` and the flow's steps stay the scenario.
+An API Block's `undo` is its way back, played after the flow in reverse order, pass or fail; a given that can't be made
+blocks the flow (`WG_GIVEN_FAILED`) instead of failing it. See [How a run works](./lifecycle#preconditions-given).
+
+```ts
+engine.map({ as: Planner, given: [SeedDownMachine] }).gotoPage(RegistryPage, { expect: [...] });
 ```
 
 ## Two outcomes: `lands` or `.branch()`

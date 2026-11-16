@@ -2,6 +2,7 @@
 // knowing its episode, its flow's settings and when to seed its segment's mem.
 import type { MemPage } from "../../engine/mem/mem.js";
 import { buildFlow } from "../../engine/flow/flow.js";
+import { undoOf } from "../../engine/flow/given.js";
 import type { BlockInfo, Flow } from "../../engine/flow/flow.js";
 import { isFastForwardBlock } from "../../engine/block/compose.js";
 import type { PlayStep } from "../mode.js";
@@ -193,6 +194,8 @@ function stepsOf(segments: readonly Segment[], options: PlayOptions, { episodes 
       segment: segmentIndex,
       ...(i === 0 && segment.flow.device ? { viewport: segment.flow.device.viewport } : {}),
       ...(info.cleanup ? { cleanup: true } : {}),
+      ...(info.given ? { given: true } : {}),
+      ...(undoOf(info.block) ? { undoOf: undoOf(info.block) } : {}),
       demoPace: segment.flow.demoPace,
       highlightStyle: segment.flow.highlightStyle,
       ...(info.wasFastForward ? { wasFastForward: true, ffSource: info.ffSource } : {}),
