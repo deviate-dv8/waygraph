@@ -32,6 +32,8 @@ const props = defineProps<
     lane?: number
     /** The Blocks that make this move, each shown whole as a badge in its kind's colour (instead of `label`). */
     blocks?: { id?: string; name: string; kind: string; description: string }[]
+    /** The line's whole path, planned by the map around every page and spread from the lines beside it. */
+    route?: { x: number; y: number }[]
     /** Where the map planned this line's badges: beside its target, before or after it, at an offset in their stack. */
     place?: { side: 'before' | 'after'; offset: number } | undefined
   }>
@@ -58,6 +60,15 @@ const obstacles = computed<Rect[]>(() =>
 
 const geometry = computed<[string, number, number]>(() => {
   const { sourceX: sx, sourceY: sy, targetX: tx, targetY: ty } = props
+  const planned = props.data?.route
+  if (planned && planned.length > 1) {
+    const mid = Math.floor(planned.length / 2)
+    return [
+      roundedPath(planned),
+      (planned[mid]!.x + planned[mid - 1]!.x) / 2,
+      (planned[mid]!.y + planned[mid - 1]!.y) / 2,
+    ]
+  }
   if (props.data?.squared && props.sourcePosition !== props.targetPosition) {
     // Between two columns (or rows): a path of its own around every other page.
     const topDown =

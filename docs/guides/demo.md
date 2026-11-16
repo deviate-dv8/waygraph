@@ -164,7 +164,7 @@ without sliding in. `WAYGRAPH_OVERLAY_TRACE=1` logs each part showing and going,
 
 ## Voice-over
 
-A recording lands in the video folder under the name its flow gives it (`map({ video: { folder, name } })`, [Flows](./flows#what-a-flow-says-about-itself)).
+A recording lands in the video folder under the name its flow gives it (`map({ video: "auth/{label}/{title}" })`, [Flows](./flows#what-a-flow-says-about-itself)).
 
 A recorded demo (`--video`) can speak its narration. Give the demo a voice in the config, and each caption and slide is
 spoken as it shows; the recording gets the speech as its audio track and its subtitles beside it (`<video>.vtt`):

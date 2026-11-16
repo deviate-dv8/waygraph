@@ -4,7 +4,7 @@ import { Login } from "../../map/(shop)/_page.block.js";
 
 /** Standard user signs in. Credentials come from the memStub in src/states/checkout.mem-stubs.ts unless --data / mem set them. */
 export const loginFlow = engine
-  .map({ title: "Sign in", description: "A standard user signs in and lands on the inventory.", labels: ["auth", "smoke"], video: { folder: "{label}", name: "{title}" }, memStub: true })
+  .map({ title: "Sign in", description: "A standard user signs in and lands on the inventory.", labels: ["auth", "smoke"], video: "{label}/{title}", memStub: true })
   .gotoPage(Login.stubBefore((ctx) => ctx.ui.title("Sign In")))
   .method(Login.do.fillUsername)
   .method(Login.do.fillPassword)

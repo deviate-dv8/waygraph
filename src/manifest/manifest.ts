@@ -108,7 +108,7 @@ export interface ManifestFlow {
   description?: string;
   ticket?: string;
   /** Where its recording is saved (`map({ video })`). */
-  video?: { folder?: string; name?: string };
+  video?: string;
   owner?: string;
   settings: { memStub?: true; expectedFailure?: string; sessionReset?: true; demoPace?: unknown };
   /** Its panes (`map({ panes })`): who is signed in in each, its device, the pane whose context it shares. */

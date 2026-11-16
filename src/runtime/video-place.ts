@@ -2,10 +2,11 @@ import { copyFileSync, existsSync, mkdirSync, renameSync, unlinkSync } from "nod
 import { dirname, extname, join } from "node:path";
 import type { Flow } from "../engine/flow/flow.js";
 import type { Checkpoint } from "../engine/checkpoint/checkpoint.js";
-import type { VideoMeta } from "../engine/flow/map-options.js";
 
 /** What a recording is named from: the flow's `video` meta, and the words its tokens stand for. */
-export interface VideoTarget extends VideoMeta {
+export interface VideoTarget {
+  /** The flow's `video` key. */
+  video: string;
   /** The flow's name as it was asked for (`checkoutFlow`). */
   flow: string;
   title?: string | undefined;
@@ -17,7 +18,7 @@ export function videoTargetOf(flows: readonly Flow<Checkpoint<string>>[], names:
   const at = flows.findIndex((f) => f.meta?.video !== undefined);
   const flow = flows[at];
   if (!flow?.meta?.video) return undefined;
-  return { ...flow.meta.video, flow: names[at] ?? "flow", title: flow.meta.title, label: flow.meta.labels?.[0] };
+  return { video: flow.meta.video, flow: names[at] ?? "flow", title: flow.meta.title, label: flow.meta.labels?.[0] };
 }
 
 const slug = (text: string): string => text.normalize("NFKD").replace(/[^\w\s.-]/g, "").trim().replace(/[\s_]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").toLowerCase();
@@ -40,12 +41,11 @@ export function expandVideoName(template: string, target: VideoTarget, pane?: st
     .join("/");
 }
 
-/** Moves a saved recording to where the flow said (`<dir>/<folder>/<name>.webm`), its subtitles with it; the new path, or the old one when there's nothing to say. */
+/** Moves a saved recording to the key its flow gave (`<dir>/<key>.webm`), its subtitles with it; the new path, or the old one when there's no key. */
 export function placeVideo(file: string, dir: string, target: VideoTarget | undefined, pane?: string): string {
   if (!target) return file;
-  const folder = target.folder ? expandVideoName(target.folder, target, pane) : "";
-  const name = expandVideoName(target.name ?? "{title}-{date}-{time}", target, pane) || slug(target.flow);
-  const base = join(dir, folder, pane && !(target.name ?? "").includes("{pane}") ? `${name}-${slug(pane)}` : name);
+  const key = expandVideoName(target.video, target, pane) || slug(target.flow);
+  const base = join(dir, pane && !target.video.includes("{pane}") ? `${key}-${slug(pane)}` : key);
   let dest = `${base}${extname(file)}`;
   for (let n = 2; existsSync(dest); n++) dest = `${base}-${n}${extname(file)}`;
   mkdirSync(dirname(dest), { recursive: true });

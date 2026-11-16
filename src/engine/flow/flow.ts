@@ -316,7 +316,7 @@ export interface FlowSettings {
   labels?: readonly string[];
   ticket?: string;
   owner?: string;
-  video?: import("./map-options.js").VideoMeta;
+  video?: string;
 }
 
 /** The meta a flow's settings carry, when it has any. */

@@ -97,7 +97,7 @@ Click a page for everything about it, most telling first:
 ### Lines
 
 A line between two pages is routed around every other page: it leaves the side of its source that faces the target, runs along
-the gap between the columns, and comes in beside the target, so a move back to an earlier page no longer cuts through a box.
+the gap between the columns, and comes in beside the target, so a move back to an earlier page no longer cuts through a box. Lines that share a gap or a row are spread apart, so two moves never draw as one.
 Click a line and its panel lists the move: the Blocks that make it (click one for its checks and code), what each does to a
 state (`turns on signedIn`), and the states the page it leads to needs.
 

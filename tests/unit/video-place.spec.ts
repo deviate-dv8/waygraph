@@ -5,13 +5,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expandVideoName, placeVideo } from "../../src/runtime/video-place.js";
 
-const target = { flow: "checkoutFlow", title: "Check out: the happy path!", label: "Checkout" };
+const target = { video: "", flow: "checkoutFlow", title: "Check out: the happy path!", label: "Checkout" };
 
 test("a video name's tokens become path pieces", () => {
   const now = new Date("2026-11-16T14:05:09Z");
-  assert.equal(expandVideoName("{label}/{title}", target, undefined, now), "checkout/check-out-the-happy-path");
-  assert.equal(expandVideoName("{flow}-{date}-{time}", target, undefined, now), "checkoutflow-2026-11-16-14-05-09");
-  assert.equal(expandVideoName("../{title}/./{pane}", target, "Mail", now), "check-out-the-happy-path/mail");
+  assert.equal(expandVideoName("{label}/{title}", { ...target, video: "" }, undefined, now), "checkout/check-out-the-happy-path");
+  assert.equal(expandVideoName("{flow}-{date}-{time}", { ...target, video: "" }, undefined, now), "checkoutflow-2026-11-16-14-05-09");
+  assert.equal(expandVideoName("../{title}/./{pane}", { ...target, video: "" }, "Mail", now), "check-out-the-happy-path/mail");
 });
 
 test("a recording moves to the folder and name the flow says, with its subtitles, and never overwrites", () => {
@@ -22,7 +22,7 @@ test("a recording moves to the folder and name the flow says, with its subtitles
     writeFileSync(file.replace(".webm", ".vtt"), "WEBVTT");
     return file;
   };
-  const meta = { ...target, folder: "auth/{label}", name: "{title}" };
+  const meta = { ...target, video: "auth/{label}/{title}" };
   const first = placeVideo(make("a1.webm"), dir, meta);
   assert.equal(first, join(dir, "auth/checkout/check-out-the-happy-path.webm"));
   assert.ok(existsSync(first.replace(".webm", ".vtt")));

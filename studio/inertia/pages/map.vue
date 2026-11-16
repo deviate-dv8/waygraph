@@ -17,6 +17,7 @@ import SketchEdge from '~/components/graph/sketch_edge.vue'
 import PagePanel from '~/components/map/page_panel.vue'
 import BlockPanel from '~/components/map/block_panel.vue'
 import EdgePanel from '~/components/map/edge_panel.vue'
+import { routeAll } from '~/lib/route'
 import { useStorage } from '@vueuse/core'
 import { layoutTree, treeColumns, type TreeDirection } from '~/lib/layout'
 import { planLabels } from '~/lib/edge_labels'
@@ -660,7 +661,7 @@ watch([direction, hiddenList, showTree, () => props.access.account], async () =>
   requestAnimationFrame(() => requestAnimationFrame(fit))
 })
 
-const edges = computed<Edge[]>(() => {
+const edgeDefs = computed<Edge[]>(() => {
   // Only what joins two shown nodes; lanes among those, so hidden lines leave no gaps.
   const siteEdges = shownSiteEdges.value
   const moves = shownMoves.value
@@ -727,6 +728,41 @@ const edges = computed<Edge[]>(() => {
     }),
   ]
 })
+
+/** Every line's path, around the pages and spread where lines share a channel (measured once the boxes are on screen). */
+const routes = computed(() => {
+  const rects = new Map(
+    getNodes.value
+      .filter((n) => n.dimensions.width > 0)
+      .map((n) => [
+        n.id,
+        {
+          x: n.computedPosition.x,
+          y: n.computedPosition.y,
+          w: n.dimensions.width,
+          h: n.dimensions.height,
+        },
+      ])
+  )
+  return routeAll(
+    edgeDefs.value.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle ?? 'out',
+      targetHandle: e.targetHandle ?? 'in',
+      lane: (e.data?.lane as number | undefined) ?? 0,
+    })),
+    rects,
+    direction.value === 'TB'
+  )
+})
+const edges = computed<Edge[]>(() =>
+  edgeDefs.value.map((e) => {
+    const route = routes.value.get(e.id)
+    return route ? { ...e, data: { ...e.data, route } } : e
+  })
+)
 
 /** A page's newest screenshot, versioned by when it was taken so a new one shows without a stale cache. */
 const shotUrl = (checkpoint: string): string | undefined =>

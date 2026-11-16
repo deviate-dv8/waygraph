@@ -209,7 +209,7 @@ export const loginFlow = engine.map({
   labels: ["auth", "smoke"],
   ticket: "QA-12", // optional
   owner: "web",    // optional
-  video: { folder: "{label}", name: "{title}" },   // where `--video` saves it
+  video: "auth/{label}/{title}",   // where `--video` saves it
 });
 ```
 
@@ -217,10 +217,10 @@ The title names the test and the demo's first slide, the description is its capt
 join the config's [labels](./testing#labels)). `waygraph list`, the manifest and Waygraph Studio show all of them;
 `waygraph check` names the flows still without a description.
 
-`video` says where a recording of the flow (`--video`) is saved under the video folder, instead of a random name beside every other
-run: `folder` and `name` are paths with the tokens `{flow}`, `{title}`, `{label}` (its first), `{date}`, `{time}` and `{pane}`. No `name`
-is `{title}-{date}-{time}`; a name already taken gets `-2`. A flow with panes (`--video-panes`) saves each pane's video with `-<pane>` after
-the name, and the subtitles of a voice-over move with the video. A run of several flows uses the first that says.
+`video` is one key, like an object key in S3: where a recording of the flow (`--video`) is saved under the video folder, instead of a
+random name beside every other run. The tokens are `{flow}`, `{title}`, `{label}` (its first), `{date}`, `{time}` and `{pane}`; the last
+part is the file's name, the extension is added, and a name already taken gets `-2`. A flow with panes (`--video-panes`) adds `-<pane>`
+to the name unless the key has `{pane}`, and a voice-over's subtitles move with the video. A run of several flows uses the first that says.
 
 ## Flow settings
 

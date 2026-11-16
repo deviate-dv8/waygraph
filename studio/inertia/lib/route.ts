@@ -78,3 +78,125 @@ export function roundedPath(points: Point[], radius = 10): string {
   out.push(`L ${last.x} ${last.y}`)
   return out.join(' ')
 }
+
+/** One line to route: its ends and the handles it leaves and enters by. */
+export type RouteIn = {
+  id: string
+  source: string
+  target: string
+  sourceHandle: string
+  targetHandle: string
+  lane: number
+}
+
+const SIDE: Record<string, 'left' | 'right' | 'top' | 'bottom'> = {
+  'in': 'left',
+  'out-left': 'left',
+  'out': 'right',
+  'back': 'right',
+  'up': 'top',
+  'out-up': 'top',
+  'down': 'bottom',
+  'under': 'bottom',
+}
+
+/** Where a handle sits on a box: the middle of its side. */
+export function portOf(rect: Rect, handle: string): Point {
+  const side = SIDE[handle] ?? 'right'
+  if (side === 'left') return { x: rect.x, y: rect.y + rect.h / 2 }
+  if (side === 'right') return { x: rect.x + rect.w, y: rect.y + rect.h / 2 }
+  if (side === 'top') return { x: rect.x + rect.w / 2, y: rect.y }
+  return { x: rect.x + rect.w / 2, y: rect.y + rect.h }
+}
+
+const STEP = 24
+
+/**
+ * Lines that run along the same channel (the same gap between columns, the same row between boxes) would draw over each
+ * other and read as one. Each group of overlapping parallel segments is spread out, STEP apart, around where they met.
+ * Works on vertices in place; a segment's two ends move together, so the lines stay square.
+ */
+function spread(routes: Point[][], axis: 'x' | 'y'): void {
+  const other = axis === 'x' ? 'y' : 'x'
+  type Seg = { route: number; at: number; lo: number; hi: number; i: number }
+  const segs: Seg[] = []
+  routes.forEach((points, route) => {
+    for (let i = 1; i < points.length - 2; i++) {
+      const a = points[i]!
+      const b = points[i + 1]!
+      if (Math.abs(a[axis] - b[axis]) < 0.5 && Math.abs(a[other] - b[other]) > 0.5)
+        segs.push({
+          route,
+          at: a[axis],
+          lo: Math.min(a[other], b[other]),
+          hi: Math.max(a[other], b[other]),
+          i,
+        })
+    }
+  })
+  const parent = segs.map((_, i) => i)
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i]!)))
+  for (let i = 0; i < segs.length; i++)
+    for (let j = i + 1; j < segs.length; j++) {
+      const a = segs[i]!
+      const b = segs[j]!
+      if (a.route !== b.route && Math.abs(a.at - b.at) < STEP * 2 && a.lo < b.hi && b.lo < a.hi)
+        parent[find(i)] = find(j)
+    }
+  const groups = new Map<number, Seg[]>()
+  segs.forEach((s, i) => groups.set(find(i), [...(groups.get(find(i)) ?? []), s]))
+  for (const group of groups.values()) {
+    if (group.length < 2) continue
+    const centre = group.reduce((sum, s) => sum + s.at, 0) / group.length
+    group.sort((a, b) => a.lo - b.lo || a.hi - b.hi || a.route - b.route)
+    group.forEach((s, k) => {
+      const to = centre + (k - (group.length - 1) / 2) * STEP
+      routes[s.route]![s.i]![axis] = to
+      routes[s.route]![s.i + 1]![axis] = to
+    })
+  }
+}
+
+/**
+ * Every line's path, around the pages and spread apart where lines share a channel. `rects` are the boxes by node id; a
+ * top-down map is routed in a left-to-right frame (axes swapped) and swapped back.
+ */
+export function routeAll(
+  edges: RouteIn[],
+  rects: Map<string, Rect>,
+  topDown: boolean
+): Map<string, Point[]> {
+  const flip = (p: Point): Point => (topDown ? { x: p.y, y: p.x } : p)
+  const framed = new Map(
+    [...rects].map(([id, r]) => [id, topDown ? { x: r.y, y: r.x, w: r.h, h: r.w } : r])
+  )
+  const routes: Point[][] = []
+  const kept: RouteIn[] = []
+  for (const e of edges) {
+    const a = rects.get(e.source)
+    const b = rects.get(e.target)
+    if (!a || !b) continue
+    const from = flip(portOf(a, e.sourceHandle))
+    const to = flip(portOf(b, e.targetHandle))
+    const others = [...framed]
+      .filter(([id]) => id !== e.source && id !== e.target)
+      .map(([, r]) => r)
+    const sameSide = SIDE[e.sourceHandle] === SIDE[e.targetHandle]
+    const room = 24 + (e.lane % 4) * 6
+    routes.push(
+      sameSide
+        ? [
+            from,
+            { x: from.x + room, y: from.y },
+            { x: from.x + room, y: to.y },
+            { x: to.x + room, y: to.y },
+            to,
+          ].filter((p, i, all) => i === 0 || p.x !== all[i - 1]!.x || p.y !== all[i - 1]!.y)
+        : routeAround(from, to, others, 24, e.lane)
+    )
+    kept.push(e)
+  }
+  spread(routes, 'x')
+  spread(routes, 'y')
+  return new Map(kept.map((e, i) => [e.id, routes[i]!.map(flip)]))
+}
