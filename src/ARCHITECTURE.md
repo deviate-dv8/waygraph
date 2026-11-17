@@ -128,7 +128,7 @@ A feature is one row here, not a refactor. Everything in a row is edited in the 
 | A live-session feature (pilot, auto) | `live/<surface>/`, its protocol in `live/auto-session/protocol.ts` | `tests/pilot/`, `tests/cli/` | `docs/reference/pilot.md`, `guides/agents.md`, the pilot skills |
 | A Studio page or panel | `studio/app/` (controller, service, types) and `studio/inertia/` (page, component) | `studio`: `node ace test`, typecheck, lint | `guides/studio.md`, `npm run docs:studio-shots`, `studio/AGENTS.md` if a rule changed |
 | A removed or renamed form | `cli/commands/upgrade` codemod when cheap | | `deprecated` source (`scripts/gen-deprecated.mjs` reads it), then `npm run docs:api` |
-| The example project | `examples/saucedemo/src/` (the showcase, one best-practice way), then `npm run sync:quickstart` | `cd examples/saucedemo && waygraph test`, the graph snapshot | its README links to the site, never explains |
+| **Every feature above** | `examples/saucedemo/`: the reference project. The feature appears once, the best-practice way, in the folder the convention says (Blocks in `src/map/(main)/…`, flows in `src/flows/<area>/`, accounts, states, config); a changed form changes here too, and nothing in it is deprecated or unused. Then `npm run sync:quickstart` | `cd examples/saucedemo && waygraph test`, `waygraph check`, `waygraph map`, the graph snapshot (`WAYGRAPH_UPDATE_SNAPSHOT=1`) | `docs/saucedemo/index.md` (the walkthrough's layout and flows); its README only links to the site |
 
 The docs site is `docs/` (VitePress, pages are Markdown; the sidebar is `docs/.vitepress/config.mts`) and deploys to GitHub
 Pages from `main` by itself. `npm run docs:build` is the pre-push check.

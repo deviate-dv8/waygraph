@@ -42,7 +42,13 @@ reshape a layer: if the code you need isn't where the table says, say so before 
      to `templates/quickstart`, and `templates/scaffold` stays pure waygraph;
    - `ROADMAP.md`: move it out of Next, or say what's left;
    - Studio's guide (`docs/guides/studio.md`) and screenshots (`npm run docs:studio-shots`) when Studio changed.
-6. **Show it in the example.** If a user would write it, saucedemo uses it once, the way a project should.
+6. **Update the example project, `examples/saucedemo/`.** It is the reference for how a project is written with waygraph, so
+   every feature a user can write or run shows up in it, once, the best-practice way, in the folder the convention says
+   (`src/map/(main)/(app_base|api|given)/…` for Blocks, `src/flows/<area>/` for flows, `src/accounts/`, `src/states/`,
+   `config/waygraph.config.ts`). A changed or removed form is changed in saucedemo too: nothing in it uses a
+   deprecated form, a stale state or a Block no flow uses (`waygraph check` and `waygraph map` are clean there). Then:
+   `npm run sync:quickstart` (its copy in `templates/quickstart`), the walkthrough `docs/saucedemo/index.md` (its layout and
+   flows), the graph snapshot (`WAYGRAPH_UPDATE_SNAPSHOT=1`), and a real run of the flow that shows the feature.
 7. **Verify** (the commands below), then commit locally. A feature is one commit (a version bump its own, patch only).
    The docs site deploys itself from `main` (`.github/workflows/pages.yml` runs when `docs/**` changes), so a docs
    change is live once it is pushed: check it first with `npm run docs:build` (a broken link or a bad page fails it).
