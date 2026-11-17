@@ -77,6 +77,13 @@ project's own `.npmrc` - `install-links=true` is required there, or npm will sym
 instead of copy and pull this package's own `node_modules` in through the symlink, causing
 a duplicate-Playwright-installation error).
 
+## Adding a feature
+
+One feature is one change: the code in the files its kind of feature lives in, a test, and the docs, skills, example and
+ROADMAP with it. `AGENTS.md` ("Development cycle") has the steps in order and `src/ARCHITECTURE.md` ("What a feature touches")
+lists, per kind of feature (a Block kind, a flow setting, a CLI command, a check, a Studio page, …), which files to edit,
+which test to write and which pages to update. Nothing is moved to make room for a feature.
+
 ## Releasing
 
 A version is bumped in `package.json` (patch bumps) at the start of its changes. When they are all on `main`:

@@ -25,11 +25,12 @@ engine/           the engine (layer: engine - imports nothing outside engine/)
   checkpoint/       checkpoint.ts (the Checkpoint value), route.ts (a Block's from/to)
   block/            block.ts (Block, Instruction, defineBlock, withVerify, stubs), some-block.ts (SomeBlock: any Block),
                     branch.ts, dialog.ts, action-page.ts,
-                    compose.ts, kinds/ (nav, page, method, effect, api)
+                    compose.ts, kinds/ (nav, page, method, api, given, expect, layout; page-parts.ts)
   flow/             flow.ts (Flow, buildFlow, settings), map-builder.ts (map()) + map-steps.ts (per-step checks) +
-                    map-branch.ts, branch-regression.ts
+                    map-options.ts (map({ ... }) settings), map-on.ts (.on), map-part.ts (steps()), map-branch.ts,
+                    given.ts (preconditions: given groups, undo), account.ts, panes.ts, world.ts, device.ts
   run/              run.ts (runGraph), connect.ts (joins Blocks), events.ts (run events), launch.ts, hooks.ts
-  mem/              mem.ts (MemPage, keys), mem-stub.ts
+  mem/              mem.ts (MemPage, keys), mem-stub.ts, state.ts (states: sets / needs), trail.ts (what each step saw)
   trait/            trait.ts (verify checks), selector.ts
   stub/             stub.ts (StubCtx: what a ctx stub can paint), ring.ts, todos.ts, viewport.ts, pace.ts
   env.ts (every WAYGRAPH_* variable), page-gone.ts, errors.ts, config.ts, locate.ts
@@ -106,6 +107,31 @@ the runtime through `engine/run/launch.ts` (`runtime/full-launch.ts`, loaded by 
 | A new piece of overlay chrome (a chip, a panel, a toast) | give it an id, add the id to `SLOT_OF` in `demo/overlay/ui/shadow.ts` (which slot) and, if it shares a slot, an `order` in `ui/css/layout.css`; add it with `__wgAdd(el)`. Never `position: fixed` (check:structure rejects it outside the anchored stage) |
 | A practice warning | `analysis/practices-check.ts` + a fixture in `tests/fixtures/practices-check/` |
 | An engine error | `engine/errors.ts`: a `WG_<AREA>_<WHAT>` code with its where / means / fix; never reuse a shipped code |
+
+## What a feature touches
+
+A feature is one row here, not a refactor. Everything in a row is edited in the same change; nothing outside it moves.
+
+| Feature | Code | Test | Docs and the rest |
+|---|---|---|---|
+| A Block kind (`define*Block`) | `engine/block/kinds/<kind>.ts`, its `BlockKind` in `engine/block/kind.ts`, its salt hint in `flow/map-steps.ts`, its markers in `copyWaygraphRuntime` (`block/block.ts`), `src/index.ts` | `tests/core/<kind>.spec.ts`, api-surface snapshot | `docs/guides/blocks.md` (kinds table), `guides/lifecycle.md` (what each kind fills in), `templates/skills/waygraph-convention.skill.md`, `ROADMAP.md` |
+| A phase of a Block's run (before `act`, after `verify`, …) | `engine/run/run.ts` and `connect.ts` (both play a step: change both), `engine/trait/verify.ts` | a spec that logs the order | `guides/lifecycle.md` (the phase table and diagram) |
+| A flow setting (`map({ … })`) | `flow/map-options.ts`, `FlowSettings` + `withSettings` in `flow/flow.ts`, `engine.ts` when it needs the engine | `tests/core/` | `guides/flows.md`, the manifest (`manifest/manifest.ts`) + `studio/app/types/project.ts` + `flow_meta.vue` when a viewer shows it |
+| A flow step method (`.method`, `.set`, `.finally`, …) | `flow/map-builder.ts` (and `map-steps.ts` for its wrapper) | `tests/core/` | `guides/flows.md` (the methods table) |
+| A run event or run-log field | `engine/run/events.ts` (+ the emitter), `manifest` when it's static | `tests/` for the event | `docs/reference/run-log.md` |
+| An error | `engine/errors.ts` (code, where/means/fix, message) | the spec that throws it | `docs/reference/` where the user meets it |
+| A CLI command or flag | `cli/commands/<name>.ts`, `cli/cli.ts`, `cli/usage.ts`, `cli/flags.ts` | `tests/cli/` | `docs/reference/cli.md` |
+| A `WAYGRAPH_*` variable | `engine/env.ts` only | | `docs/env.md` is generated (`npm run docs:api`) |
+| A check (`waygraph check`) | `analysis/<name>-check.ts`, wired in `analysis/check.ts` | `tests/unit/` or a fixture in `tests/fixtures/` | `guides/checks.md` |
+| Something the Map shows or verifies | `analysis/map-check.ts`, `manifest/` (`pages.ts`, `site-map.ts`), `cli/commands/gen.ts` / `init.ts` for what they write | `tests/manifest/` (the graph snapshot: regenerate with `WAYGRAPH_UPDATE_SNAPSHOT=1`) | `docs/reference/map.md`, `guides/project.md`, the scaffold |
+| A demo piece (card, panel, narration) | `demo/stepper/`, `demo/overlay/` (see the rows above) | `tests/core/`, a Storybook story | `guides/demo.md`, `npm run storybook:build` |
+| A live-session feature (pilot, auto) | `live/<surface>/`, its protocol in `live/auto-session/protocol.ts` | `tests/pilot/`, `tests/cli/` | `docs/reference/pilot.md`, `guides/agents.md`, the pilot skills |
+| A Studio page or panel | `studio/app/` (controller, service, types) and `studio/inertia/` (page, component) | `studio`: `node ace test`, typecheck, lint | `guides/studio.md`, `npm run docs:studio-shots`, `studio/AGENTS.md` if a rule changed |
+| A removed or renamed form | `cli/commands/upgrade` codemod when cheap | | `deprecated` source (`scripts/gen-deprecated.mjs` reads it), then `npm run docs:api` |
+| The example project | `examples/saucedemo/src/` (the showcase, one best-practice way), then `npm run sync:quickstart` | `cd examples/saucedemo && waygraph test`, the graph snapshot | its README links to the site, never explains |
+
+The docs site is `docs/` (VitePress, pages are Markdown; the sidebar is `docs/.vitepress/config.mts`) and deploys to GitHub
+Pages from `main` by itself. `npm run docs:build` is the pre-push check.
 
 ## What a viewer (Waygraph Studio) reads
 

@@ -9,9 +9,45 @@ held to `docs/doctrine.md`: does it make flows read more like the scenario, and 
 - `src/ARCHITECTURE.md`: where the code starts, one line per folder, the layers, where new code goes.
 - `docs/guides/` for how each feature works (one topic per page), `docs/reference/` for every command and setting; `docs/env.md` for every `WAYGRAPH_*` variable; `docs/deprecated.md` for what 0.16.0
   removed and what replaces it.
-- `ui/` is Waygraph Studio (`waygraph studio`), an AdonisJS app over a project's manifest and run logs: `studio/AGENTS.md`. It has
+- `studio/` is Waygraph Studio (`waygraph studio`), an AdonisJS app over a project's manifest and run logs: `studio/AGENTS.md`. It has
   its own package.json and checks (knip and check:structure skip it); `npm run build` builds it into `dist/studio`, which
   ships, and its runtime packages are waygraph's dependencies. Install it once per checkout: `npm ci --prefix studio`.
+
+## Development cycle: a feature, start to finish
+
+Add the feature where the folder it belongs to already is, and touch only the files its row names (`src/ARCHITECTURE.md`,
+"Where to put new code" and "What a feature touches"). A feature request is never a reason to move files, rename things or
+reshape a layer: if the code you need isn't where the table says, say so before moving it. Never mix a move with an edit.
+
+1. **Place it.** Find the row for what you add (a Block kind, a flow setting, a CLI command, an error, a `WAYGRAPH_*`
+   variable, a Studio page). It lists the files; add to them, in the style around them. Read `docs/doctrine.md`'s question:
+   does it make flows read more like the scenario, and Blocks more reusable?
+2. **Build it** with the types doing the work (no `any`, no `x!` in `src/engine/`), one way to write it, no alias beside an old
+   form (breaking is fine until 1.0.0; a removed form gets a row in `docs/deprecated.md`'s source and a codemod when one is
+   cheap).
+3. **Expose it.** A runtime export goes in `src/index.ts` and the snapshot, regenerated on purpose:
+   `node --import tsx/esm -e 'import * as a from "./src/index.ts"; import {writeFileSync} from "node:fs"; writeFileSync("tests/unit/api-surface.snapshot.json", JSON.stringify(Object.keys(a).sort(), null, 2)+"\n")'`.
+   Something a viewer needs goes in the manifest (`src/manifest/manifest.ts`) and `studio/app/types/project.ts`; something
+   that happened goes in the run log (`src/engine/run/events.ts`).
+4. **Test it** where its row says: a unit test in `tests/unit/` (node:test) for pure logic, a spec in `tests/<area>/` for
+   anything that runs a flow or opens a page. A new Block kind, flow setting or run event gets a spec that shows the order
+   it runs in. Studio changes get `node ace test` and a look in light and dark.
+5. **Document it, in the same change** (never "later"):
+   - the guide that teaches it (`docs/guides/<topic>.md`: one topic per page) and the reference that lists it
+     (`docs/reference/`: cli, config, map, run-log, pilot; `docs/env.md` is generated from `src/engine/env.ts`);
+   - a new page is added to the sidebar in `docs/.vitepress/config.mts`; generated pages come from `npm run docs:api`
+     (API, deprecated, env), never by hand;
+   - the agent skills in `templates/skills/` (`waygraph-convention.skill.md` for how to write it, the pilot skills for
+     live sessions) and the scaffold/quickstart: `examples/saucedemo` is the showcase, `npm run sync:quickstart` copies it
+     to `templates/quickstart`, and `templates/scaffold` stays pure waygraph;
+   - `ROADMAP.md`: move it out of Next, or say what's left;
+   - Studio's guide (`docs/guides/studio.md`) and screenshots (`npm run docs:studio-shots`) when Studio changed.
+6. **Show it in the example.** If a user would write it, saucedemo uses it once, the way a project should.
+7. **Verify** (the commands below), then commit locally. A feature is one commit (a version bump its own, patch only).
+   The docs site deploys itself from `main` (`.github/workflows/pages.yml` runs when `docs/**` changes), so a docs
+   change is live once it is pushed: check it first with `npm run docs:build` (a broken link or a bad page fails it).
+8. **Leave nothing running:** no browser, server or Studio (`pgrep -af "chrome-headless|__auto-serve|waygraph studio"`
+   empty), and browsers only ever run as `env -u WAYLAND_DISPLAY xvfb-run -a …` (the Playwright config does it for the suite).
 
 ## Rules the tooling enforces (`npm run check:structure`)
 
