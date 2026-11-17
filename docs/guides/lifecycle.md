@@ -131,6 +131,15 @@ export const approveRequestFlow = engine
   `WG_GIVEN_FAILED`, naming it, and the scenario is never judged.
 - **Other Blocks work too.** When the seed really is an HTTP call, an API Block (with its `undo`) or a Method can be listed in
   `given`; an API one that answers with an error status fails unless it has its own `verify`.
+- **Named groups:** preconditions many flows share are one named list, `engine.given(name, [...])`. A flow lists the group
+  in `given`, next to Blocks if it likes; a group may hold other groups, and a Block named twice plays once. Studio shows a
+  flow's groups by name.
+
+  ```ts
+  export const signedUpTenant = engine.given("signed-up-tenant", [SeedTenant, SeedProject]);
+
+  engine.map({ as: Approver, given: [signedUpTenant, SeedPendingRequest] })
+  ```
 - **Nesting:** a flow that nests another with `.flow(sub)` takes the sub-flow's preconditions as its own.
 - **Not `precondition`:** that name stays what it was: a Block's check that *the page* is ready (phase 1). `given` is about *data*.
 

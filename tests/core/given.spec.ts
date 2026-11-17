@@ -100,3 +100,15 @@ test("a Given Block runs any code, fills mem for the steps without the run suppl
   await engine.map({ given: [there] }).method(play).run(page.context(), new MemPage(), { page });
   expect(hits).toEqual(["play"]);
 });
+
+test("a named group plays its Blocks in order, a Block named twice plays once, groups nest, and the manifest names the group", async ({ page }) => {
+  const tenant = seed("tenant");
+  const project = seed("project");
+  const signedUp = engine.given("signed-up", [tenant, project]);
+  const withReport = engine.given("with-report", [signedUp, seed("report")]);
+  const flow = engine.map({ given: [tenant, withReport] }).method(play);
+  await flow.run(page.context(), new MemPage(), { page });
+  expect(hits).toEqual(["POST /tenant", "POST /project", "POST /report", "play", "DELETE /report", "DELETE /project", "DELETE /tenant"]);
+  const groups = flow.blocks().filter((b) => b.given).map((b) => (b.block as { __waygraphGivenGroup?: string }).__waygraphGivenGroup);
+  expect(groups).toEqual([undefined, "signed-up", "with-report"]);
+});

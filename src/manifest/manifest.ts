@@ -108,6 +108,8 @@ export interface ManifestFlow {
   stepExpects: string[][];
   /** The flow's preconditions (`map({ given })`), by Block name. */
   given?: string[];
+  /** The named groups (`engine.given(name, [...])`) those preconditions came from. */
+  givenGroups?: string[];
   /** What the flow says about itself (`map({ title, description, ticket, owner })`). */
   title?: string;
   description?: string;
@@ -299,6 +301,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       }),
       stepExpects: flow.blocks().map((s) => describeExpectations(s.block)),
       inputs: flowInputs(flow.blocks(), flow.memStub === true),
+      ...givenGroupsOf(flow.blocks()),
       ...(flow.blocks().some((s) => s.given) ? { given: flow.blocks().filter((s) => s.given).map((s) => s.name) } : {}),
       ...panesOf(flow.blocks()),
       settings: {
@@ -387,3 +390,9 @@ export async function buildManifest(
   return { ...manifest, siteTree: tree, ...(baseUrl ? { project: { ...manifest.project, baseUrl } } : {}), ...(config ? { config } : {}) };
 }
 
+
+/** The named groups a flow's preconditions came from. */
+function givenGroupsOf(infos: readonly { block: SomeBlock; given?: true }[]): { givenGroups?: string[] } {
+  const groups = [...new Set(infos.filter((i) => i.given).flatMap((i) => (i.block as { __waygraphGivenGroup?: string }).__waygraphGivenGroup ?? []))];
+  return groups.length ? { givenGroups: groups } : {};
+}

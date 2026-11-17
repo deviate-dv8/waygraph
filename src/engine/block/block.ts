@@ -278,7 +278,7 @@ export function copyWaygraphRuntime(from: object, to: object): void {
     "__waygraphTo",
     "__waygraphResetBefore",
     "__waygraphCleanup",
-    "__waygraphGiven", "__waygraphProvides", "__waygraphUndo", "__waygraphUndoOf",
+    "__waygraphGiven", "__waygraphGivenGroup", "__waygraphProvides", "__waygraphUndo", "__waygraphUndoOf",
     "__waygraphMethods",
     "__waygraphExpect",
     "__waygraphFor",

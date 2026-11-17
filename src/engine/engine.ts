@@ -7,7 +7,8 @@ import { buildFlow, withSettings } from "./flow/flow.js";
 import { MapBuilder } from "./flow/map-builder.js";
 import { withoutRequire } from "./flow/map-steps.js";
 import type { MemKey } from "./mem/mem.js";
-import { givenSteps } from "./flow/given.js";
+import type { SomeBlock, SomeDefinedBlock } from "./block/some-block.js";
+import { flattenGiven, givenGroup, givenSteps, type GivenGroup } from "./flow/given.js";
 import type { MapBuilderOptions } from "./flow/map-options.js";
 import { panesRecord, type Pane } from "./flow/panes.js";
 import { setPageApi } from "./read/page-api.js";
@@ -23,6 +24,15 @@ export class Engine {
   /** How flows from this engine launch their own browser, and the defaults its flows take (memStub). */
   constructor(readonly config: EngineConfig = {}) {
     setPageApi(config.api);
+  }
+
+  /**
+   * A named list of preconditions, reused by every flow that needs them: `given: [signedUpTenant]`. It holds Given Blocks
+   * (or API Blocks, Methods, other groups); played in order, a Block named twice plays once. Shown in Studio by its name.
+   * @example export const signedUpTenant = engine.given("signed-up-tenant", [SeedTenant, SeedProject]);
+   */
+  given(name: string, items: readonly (SomeDefinedBlock | GivenGroup)[]): GivenGroup {
+    return givenGroup(name, items as readonly (SomeBlock | GivenGroup)[]);
   }
 
   /**
@@ -45,8 +55,8 @@ export class Engine {
   map(options?: MapBuilderOptions): MapBuilder<Start>;
   map(options?: MapBuilderOptions): MapBuilder<Start> {
     // The engine's memStub is every flow's default; a map() may still turn it off.
-    const { homeOrigin, panes, ...rest } = { ...(this.config.memStub ? { memStub: true } : {}), ...options };
-    const settings = { ...rest, ...(panes ? { panes: panesRecord(panes) } : {}) };
+    const { homeOrigin, panes, given: givenList, ...rest } = { ...(this.config.memStub ? { memStub: true } : {}), ...options };
+    const settings = { ...rest, ...(panes ? { panes: panesRecord(panes) } : {}), ...(givenList ? { given: flattenGiven(givenList as readonly (SomeBlock | GivenGroup)[]) } : {}) };
     return MapBuilder.begin((builtSteps, flowSettings) => {
       let steps = builtSteps;
       const { given, undo } = givenSteps(flowSettings.given ?? []);

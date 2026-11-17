@@ -19,6 +19,7 @@ const rows = computed(() => {
     ...Object.entries(f.settings).map(([k, v]) => [k, v === true ? 'on' : String(v)]),
     ['panes', f.panes?.map((p) => (p.as ? `${p.name} as ${p.as}` : p.name)).join(', ')],
     ['given', f.given?.join(', ')],
+    ['given groups', f.givenGroups?.join(', ')],
     ['needs', f.inputs?.map((i) => i.key).join(', ')],
   ].filter((r): r is [string, string] => typeof r[1] === 'string' && r[1] !== '')
 })

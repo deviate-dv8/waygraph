@@ -181,7 +181,7 @@ engine.map({ as: Planner })
 
 A precondition is the same idea with a name: list the seeding Blocks (`defineGivenBlock`: a factory, SQL, a script, a request) in `given` and the flow's steps stay the scenario.
 A Given Block's `undo` is its way back, played after the flow in reverse order, pass or fail; a given that can't be made
-blocks the flow (`WG_GIVEN_FAILED`) instead of failing it. See [How a run works](./lifecycle#preconditions-given).
+blocks the flow (`WG_GIVEN_FAILED`) instead of failing it. Shared lists are named groups: `engine.given("signed-up-tenant", [...])`. See [How a run works](./lifecycle#preconditions-given).
 
 ```ts
 engine.map({ as: Planner, given: [SeedDownMachine] }).gotoPage(RegistryPage, { expect: [...] });

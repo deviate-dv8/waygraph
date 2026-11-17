@@ -136,6 +136,7 @@ export type ManifestFlow = {
   stepLines?: (number | null)[]
   stepExpects: string[][]
   given?: string[]
+  givenGroups?: string[]
   /** What it needs from whoever plays it: the keys no step or account gives, with the stub's value to start from (waygraph 0.18.0+). */
   inputs?: { key: string; example?: Json; filled: boolean }[]
   settings: Record<string, Json>

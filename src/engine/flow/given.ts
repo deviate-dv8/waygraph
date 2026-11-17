@@ -10,6 +10,36 @@ import { MSG_GIVEN_FAILED, WaygraphError } from "../errors.js";
 import type { EngineConfig } from "../config.js";
 import type { buildFlow as BuildFlow } from "./flow.js";
 
+/** A named, reusable list of preconditions (`engine.given(name, [...])`): flows list it in `given`, and it may hold other groups. */
+export interface GivenGroup {
+  readonly __waygraphGivenGroup: true;
+  readonly name: string;
+  readonly items: readonly (SomeBlock | GivenGroup)[];
+}
+
+export const isGivenGroup = (item: unknown): item is GivenGroup => (item as { __waygraphGivenGroup?: boolean } | null)?.__waygraphGivenGroup === true;
+
+export function givenGroup(name: string, items: readonly (SomeBlock | GivenGroup)[]): GivenGroup {
+  return { __waygraphGivenGroup: true, name, items };
+}
+
+/** The Blocks of a `given` list, groups opened, in order; a Block named twice plays once. A Block from a group remembers the group's name. */
+export function flattenGiven(list: readonly (SomeBlock | GivenGroup)[], group?: string): SomeBlock[] {
+  const seen = new Set<string>();
+  const out: SomeBlock[] = [];
+  const walk = (items: readonly (SomeBlock | GivenGroup)[], from: string | undefined): void => {
+    for (const item of items) {
+      if (isGivenGroup(item)) walk(item.items, item.name);
+      else if (!seen.has(item.name)) {
+        seen.add(item.name);
+        out.push(from ? marked(item, "__waygraphGivenGroup", from) : item);
+      }
+    }
+  };
+  walk(list, group);
+  return out;
+}
+
 /** The same Block with a marker set: its run events say what it is (`given` / `cleanup` on step:start). */
 function marked(block: SomeBlock, key: string, value: unknown): SomeBlock {
   const next: SomeBlock = { ...block };
