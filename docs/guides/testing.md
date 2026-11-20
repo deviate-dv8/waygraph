@@ -47,11 +47,12 @@ The labels are typed from the config: `new Engine(config)` makes `map({ labels }
 names, so your editor completes them and a typo (`"smok"`) is a type error. Without `labels` in the config, any string is
 accepted, as before.
 
-To put flows into a label from the config instead of from each flow, give `labels` an object: each label with a glob over
-flow files or a flow's export name. A flow still can carry the label itself; both count, once.
+A label that needs more than its name is an object in the same list: `flows` puts the label on flows from the config instead of from
+each flow (a glob over their files, or a flow's export name), and `description` says what it means (`waygraph info` shows it). A
+flow can still carry the label itself; both count, once.
 
 ```ts
-labels: { auth: ["src/flows/auth/**", "logoutFlow"], smoke: [] },   // [] = only flows that name it
+labels: ["smoke", "empty-db", { name: "auth", flows: ["src/flows/auth/**", "logoutFlow"], description: "sign in and out" }],
 ```
 
 ```sh

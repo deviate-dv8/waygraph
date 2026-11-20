@@ -123,7 +123,7 @@ the path (the page, then the outcome).
 
 ```ts
 // config/waygraph.config.ts
-labels: { auth: ["src/flows/auth/**"], checkout: ["src/flows/checkout/**", "checkoutFlow"] }
+labels: ["smoke", { name: "auth", flows: ["src/flows/auth/**"] }, { name: "checkout", flows: ["src/flows/checkout/**", "checkoutFlow"] }]
 ```
 
 `waygraph test --label auth` runs a feature; a flow's labels are its tags in Playwright's reports and in Waygraph Studio.

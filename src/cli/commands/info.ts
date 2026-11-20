@@ -2,7 +2,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createRequire } from "node:module";
-import { normalizeLabels } from "../../manifest/labels.js";
+import { labelDescriptions, normalizeLabels } from "../../manifest/labels.js";
 import { buildManifest } from "../../manifest/manifest.js";
 import { chooseSet, leftOutOf, regressionSets } from "../../manifest/regression.js";
 import { envMode } from "../../runtime/env-file.js";
@@ -107,6 +107,7 @@ export async function infoCase(args: string[]): Promise<void> {
   if (manifest.skipped.length) line("skipped", `${manifest.skipped.length} file(s) that didn't load (waygraph check names them)`);
   console.log("labels and regression");
   line("labels", labels.join(", ") || "none");
+  for (const [label, text] of Object.entries(labelDescriptions(loaded?.labels))) line("", `${label}: ${text}`);
   line("regression", Object.keys(sets).length ? Object.entries(sets).map(([n, s]) => `${n}${s.include?.length ? ` include ${s.include.join("|")}` : ""}${s.exclude?.length ? ` exclude ${s.exclude.join("|")}` : ""}`).join("; ") : "every flow runs");
   if (values.verbose) {
     console.log("flows");

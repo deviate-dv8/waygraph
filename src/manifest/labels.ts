@@ -26,13 +26,26 @@ export function flowLabels(own: readonly string[] | undefined, labels: Labels | 
   return [...new Set([...(own ?? []), ...labelsOf(labels, file, exportName)])];
 }
 
-/** The config's `labels` as written: a list of names, or an object that also picks flows (name: patterns). */
-export type LabelsConfig<Label extends string = string> = readonly Label[] | Readonly<Record<Label, readonly string[]>>;
+/** A label with more than its name: the flows it picks (globs over their files, or export names), and what it means. */
+export interface LabelSpec<Label extends string = string> {
+  name: Label;
+  /** Flows this label puts its tag on, from the config: `"src/flows/auth/**"` or a flow's export name (`"logoutFlow"`). */
+  flows?: readonly string[];
+  /** What it means, in a line (shown by `waygraph info`). */
+  description?: string;
+}
 
-/** `labels` as names with their patterns: a list gives every name no patterns (the flows carry them themselves). */
+/** The config's `labels` as written: names, and where a name needs more, a `{ name, … }` object. */
+export type LabelsConfig<Label extends string = string> = readonly (Label | LabelSpec<Label>)[];
+
+/** `labels` as names with the flows they pick (none for a plain name: the flows carry it themselves). */
 export function normalizeLabels(labels: LabelsConfig | undefined): Labels {
-  if (!labels) return {};
-  return Array.isArray(labels) ? Object.fromEntries((labels as readonly string[]).map((name) => [name, []])) : (labels as Labels);
+  return Object.fromEntries((labels ?? []).map((label) => (typeof label === "string" ? [label, []] : [label.name, label.flows ?? []])));
+}
+
+/** Each label's description, where it has one. */
+export function labelDescriptions(labels: LabelsConfig | undefined): Record<string, string> {
+  return Object.fromEntries((labels ?? []).flatMap((label) => (typeof label !== "string" && label.description ? [[label.name, label.description]] : [])));
 }
 
 /** The declared labels that no flow carries (its own `map({ labels })`, or a config pattern covering it): a typo, or flows that moved. */

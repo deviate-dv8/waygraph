@@ -6,7 +6,7 @@ const config = defineConfig({
   demo: { voice: { speaker: kokoroVoice(), steps: true } },
   // Every label a flow may carry (map({ labels })): a typo in a flow or in regression is a type error.
   // waygraph test --label auth runs a group on its own.
-  labels: ["auth", "checkout", "cart", "smoke", "showcase", "api", "hybrid", "panes", "seeded"],
+  labels: ["auth", "cart", "smoke", "showcase", "api", "hybrid", "panes", "seeded", { name: "checkout", flows: ["src/flows/checkout/**"], description: "placing an order" }],
   // The full run plays every flow, labelled or not, except the flows labelled with `exclude` (waygraph test --label seeded runs them, --all everything).
   regression: {
     default: { exclude: ["seeded"] },

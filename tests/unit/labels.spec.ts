@@ -25,9 +25,9 @@ describe("flow labels", () => {
     assert.deepEqual(emptyLabels(labels, flows), ["typo"]);
   });
 
-  it("takes a list of names as labels no pattern picks flows into", () => {
+  it("takes names, and { name, flows } objects, as labels", () => {
     assert.deepEqual(normalizeLabels(["auth", "smoke"]), { auth: [], smoke: [] });
-    assert.deepEqual(normalizeLabels({ auth: ["src/flows/auth/**"] }), { auth: ["src/flows/auth/**"] });
+    assert.deepEqual(normalizeLabels(["smoke", { name: "auth", flows: ["src/flows/auth/**"] }, { name: "cart" }]), { smoke: [], auth: ["src/flows/auth/**"], cart: [] });
     assert.deepEqual(normalizeLabels(undefined), {});
   });
 });

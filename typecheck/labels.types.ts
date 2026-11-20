@@ -21,8 +21,8 @@ export const badInclude = defineConfig({ labels: ["smoke"], regression: { nightl
 // Without labels in the config, any string works as before.
 export const free = new Engine().map({ labels: ["anything"] });
 
-// The object form also picks flows into a label by glob, and types the same way.
-const picked = new Engine(defineConfig({ labels: { auth: ["src/flows/auth/**"], smoke: [] } }));
+// A label that needs more is an object; its name types the same way.
+const picked = new Engine(defineConfig({ labels: ["smoke", { name: "auth", flows: ["src/flows/auth/**"], description: "sign in" }] }));
 export const pickedOk = picked.map({ labels: ["auth", "smoke"] });
-// @ts-expect-error: not a label of the object form either
+// @ts-expect-error: not a label of the config
 export const pickedTypo = picked.map({ labels: ["autth"] });

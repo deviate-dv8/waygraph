@@ -22,7 +22,7 @@ import { setPageApi } from "./read/page-api.js";
  */
 export class Engine<Label extends string = string> {
   /** How flows from this engine launch their own browser, and the defaults its flows take (memStub). */
-  constructor(readonly config: EngineConfig & { labels?: readonly Label[] | Readonly<Record<Label, unknown>> } = {}) {
+  constructor(readonly config: EngineConfig & { labels?: readonly (Label | { name: Label })[] } = {}) {
     setPageApi(config.api);
   }
 

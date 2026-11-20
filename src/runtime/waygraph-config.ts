@@ -132,10 +132,10 @@ export interface WaygraphConfig<Label extends string = string> {
   /** Write each run's events to `.waygraph/runs/<runId>.jsonl` (the history Waygraph Studio shows), or to this folder. Default true. */
   runLog?: boolean | string;
   /**
-   * Every label a flow may carry, typed into `map({ labels })` and `regression` (a typo is a type error). A list of names is the
-   * usual form; an object also picks flows into a label, by a glob over their files (`"src/flows/auth/**"`) or by a flow's
-   * export name. `waygraph test --label auth` runs a group of flows.
-   * @example labels: ["auth", "smoke", "empty-db"] · labels: { auth: ["src/flows/auth/**", "logoutFlow"], smoke: [] }
+   * Every label a flow may carry, typed into `map({ labels })` and `regression` (a typo is a type error). A name is a string; a
+   * label that needs more is an object, `{ name, flows, description }`: `flows` puts the label on flows from here, by a glob
+   * over their files (`"src/flows/auth/**"`) or a flow's export name. `waygraph test --label auth` runs a group of flows.
+   * @example labels: ["smoke", "empty-db", { name: "auth", flows: ["src/flows/auth/**", "logoutFlow"], description: "sign in and out" }]
    */
   labels?: LabelsConfig<Label>;
   /**
