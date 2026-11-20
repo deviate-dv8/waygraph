@@ -10,7 +10,8 @@ import { parseRunFlags } from "../flags.js";
 import { walkDir } from "../../manifest/scan.js";
 import { collectPracticeWarnings, practiceKindLabel } from "../../analysis/practices-check.js";
 import type { PracticeWarning } from "../../analysis/practices-check.js";
-import { emptyLabels, unknownExcluded } from "../../manifest/labels.js";
+import { emptyLabels, normalizeLabels } from "../../manifest/labels.js";
+import { unknownInSets } from "../../manifest/regression.js";
 import { loadWaygraphConfig } from "../../runtime/waygraph-config.js";
 
 function printOrphanReport(projectDir: string, orphans: Awaited<ReturnType<typeof findOrphanBlocks>>): void {
@@ -165,13 +166,13 @@ export async function checkCase(args: string[]): Promise<void> {
       if (undescribed.length && undescribed.length < manifest.flows.length) {
         console.log(`waygraph check: ${undescribed.length} flow${undescribed.length === 1 ? "" : "s"} without a description (map({ title, description, labels })): ${undescribed.slice(0, 5).map((f) => f.exportName).join(", ")}${undescribed.length > 5 ? ", …" : ""}`);
       }
-      const labels = (await loadWaygraphConfig(proj))?.labels;
+      const labels = normalizeLabels((await loadWaygraphConfig(proj))?.labels);
       for (const label of emptyLabels(labels, manifest.flows)) {
-        console.warn(`waygraph check: label ${label} covers no flow (${(labels?.[label] ?? []).join(", ") || "no patterns"}) - a glob over flow files (src/flows/auth/**) or a flow's export name`);
+        console.warn(`waygraph check: label ${label} is declared but no flow carries it (${(labels[label] ?? []).join(", ") || "no patterns"}) - a typo, or the flows moved`);
       }
       const config = await loadWaygraphConfig(proj);
-      for (const label of unknownExcluded(config?.regression?.exclude, labels, manifest.flows)) {
-        console.warn(`waygraph check: regression.exclude names ${label}, which no label of the config or flow defines - a typo, or the flows moved`);
+      for (const { set, label } of unknownInSets(config?.regression, labels, manifest.flows)) {
+        console.warn(`waygraph check: regression (${set}) names ${label}, which no label of the config or flow carries - a typo, or the flows moved`);
       }
       const access = await checkAccess(proj);
       for (const a of access) {

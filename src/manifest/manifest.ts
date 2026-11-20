@@ -14,7 +14,8 @@ import type { SomeBlock } from "../engine/block/some-block.js";
 import type { Trait } from "../engine/trait/trait.js";
 import { walkDir } from "./scan.js";
 import { forgetSources, selectorEntries, selectorFilesUnder, selectorsUsed, spanOf, type SelectorEntry, type SourceSpan } from "./selectors.js";
-import { flowLabels, leftOutBy, type Labels } from "./labels.js";
+import { flowLabels, type Labels } from "./labels.js";
+import { leftOutOf, type RegressionSet } from "./regression.js";
 import { siteTree, type SiteTree } from "./site-map.js";
 import { loadLayouts, refreshLayoutRoutes } from "./layouts.js";
 import { declaredStates, describeSets } from "../engine/mem/state.js";
@@ -98,8 +99,8 @@ export interface ManifestFlow {
   source?: SourceSpan;
   /** Its labels, from the config's `labels` (`waygraph test --flows --label auth`). */
   labels: string[];
-  /** The labels the config leaves out of the full run (`regression.exclude`) that this flow carries: it runs only when picked. */
-  leftOut?: string[];
+  /** Why the default regression set leaves this flow out of the full run (the label that excludes it, or `not in …`): it runs only when picked. */
+  leftOut?: string;
   /** The folders under `src/flows/` (the page or `(user-story)` it belongs to) and the file's name (the outcome). */
   useCase: { path: string[]; outcome: string };
   /** Block names in run order, nested flows flattened. */
@@ -238,7 +239,7 @@ function heldBy(exportName: string, file: string): Pick<ManifestBlock, "group" |
 }
 
 /** Builds the manifest from a scan. */
-export function manifestFromScan(scan: ProjectScan, labels?: Labels, exclude?: readonly string[]): Manifest {
+export function manifestFromScan(scan: ProjectScan, labels?: Labels, regression?: RegressionSet): Manifest {
   const checkpoints = new Set<string>();
   const maps = new Set<string>();
   forgetSources();
@@ -290,7 +291,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels, exclude?: r
       file: f.file,
       ...(source ? { source } : {}),
       labels: flowLabels(flow.meta?.labels, labels, f.file, f.exportName),
-      ...leftOutField(exclude, flowLabels(flow.meta?.labels, labels, f.file, f.exportName)),
+      ...leftOutField(regression, flowLabels(flow.meta?.labels, labels, f.file, f.exportName)),
       ...(flow.meta?.title ? { title: flow.meta.title } : {}),
       ...(flow.meta?.description ? { description: flow.meta.description } : {}),
       ...(flow.meta?.ticket ? { ticket: flow.meta.ticket } : {}),
@@ -378,16 +379,16 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels, exclude?: r
 /** Scans the project and returns its manifest. */
 export async function buildManifest(
   projectDir: string,
-  opts: ScanOptions & { baseUrl?: string | undefined; config?: Manifest["config"]; labels?: Labels | undefined; exclude?: readonly string[] | undefined } = {},
+  opts: ScanOptions & { baseUrl?: string | undefined; config?: Manifest["config"]; labels?: Labels | undefined; regression?: RegressionSet | undefined } = {},
 ): Promise<Manifest> {
-  const { baseUrl, config, labels, exclude, ...scanOpts } = opts;
+  const { baseUrl, config, labels, regression, ...scanOpts } = opts;
   const scan = await scanProject(projectDir, scanOpts);
   // Layouts cover the pages under their folders: loaded with the site map the scan gives, before the manifest reads them.
   const urls = pageUrls(scan.blocks);
   await loadLayouts(projectDir, siteTree(Object.keys(urls), urls, baseUrl));
   refreshLayoutRoutes(scan);
   await loadAccounts(projectDir);
-  const manifest = manifestFromScan(scan, labels, exclude);
+  const manifest = manifestFromScan(scan, labels, regression);
   // The base url says which site a page's path is on.
   const tree = baseUrl ? siteTree(manifest.checkpoints, manifest.pageUrls, baseUrl) : manifest.siteTree;
   return { ...manifest, siteTree: tree, ...(baseUrl ? { project: { ...manifest.project, baseUrl } } : {}), ...(config ? { config } : {}) };
@@ -400,8 +401,8 @@ function givenGroupsOf(infos: readonly { block: SomeBlock; given?: true }[]): { 
   return groups.length ? { givenGroups: groups } : {};
 }
 
-/** `leftOut` for a flow, when the config leaves out one of its labels. */
-function leftOutField(exclude: readonly string[] | undefined, own: readonly string[]): { leftOut?: string[] } {
-  const out = leftOutBy(exclude, own);
-  return out.length ? { leftOut: out } : {};
+/** `leftOut` for a flow, when the default regression set leaves it out. */
+function leftOutField(set: RegressionSet | undefined, own: readonly string[]): { leftOut?: string } {
+  const out = leftOutOf(set, own);
+  return out ? { leftOut: out } : {};
 }

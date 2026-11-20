@@ -2,6 +2,8 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { buildManifest } from "../../manifest/manifest.js";
 import { configAsJson, configFileOf, loadWaygraphConfig, resolveBaseUrl } from "../../runtime/waygraph-config.js";
+import { normalizeLabels } from "../../manifest/labels.js";
+import { chooseSet } from "../../manifest/regression.js";
 import { parseCommand } from "../args.js";
 
 /** `waygraph manifest [project] [--out <file>]`: every Block, Flow and Checkpoint of the project, as JSON. */
@@ -12,7 +14,7 @@ export async function manifestCase(args: string[]): Promise<void> {
   const file = configFileOf(proj);
   const loaded = await loadWaygraphConfig(proj);
   const config = file ? { file, values: configAsJson(loaded) } : undefined;
-  const manifest = await buildManifest(proj, { baseUrl: await resolveBaseUrl(proj), config, labels: loaded?.labels, exclude: loaded?.regression?.exclude });
+  const manifest = await buildManifest(proj, { baseUrl: await resolveBaseUrl(proj), config, labels: normalizeLabels(loaded?.labels), regression: chooseSet(loaded?.regression) });
   const json = JSON.stringify(manifest, null, 2) + "\n";
   if (!out) {
     process.stdout.write(json);

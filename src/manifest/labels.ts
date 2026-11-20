@@ -26,17 +26,16 @@ export function flowLabels(own: readonly string[] | undefined, labels: Labels | 
   return [...new Set([...(own ?? []), ...labelsOf(labels, file, exportName)])];
 }
 
-/** The labels whose patterns cover none of `flows`: a typo, or flows that moved. */
-export function emptyLabels(labels: Labels | undefined, flows: readonly { file: string; exportName: string }[]): string[] {
-  return Object.keys(labels ?? {}).filter((label) => !flows.some((f) => labelsOf({ [label]: labels?.[label] ?? [] }, f.file, f.exportName).length));
+/** The config's `labels` as written: a list of names, or an object that also picks flows (name: patterns). */
+export type LabelsConfig<Label extends string = string> = readonly Label[] | Readonly<Record<Label, readonly string[]>>;
+
+/** `labels` as names with their patterns: a list gives every name no patterns (the flows carry them themselves). */
+export function normalizeLabels(labels: LabelsConfig | undefined): Labels {
+  if (!labels) return {};
+  return Array.isArray(labels) ? Object.fromEntries((labels as readonly string[]).map((name) => [name, []])) : (labels as Labels);
 }
 
-/** Which of a flow's labels the config leaves out of the full run (`regression: { exclude }`). */
-export function leftOutBy(exclude: readonly string[] | undefined, flowLabelList: readonly string[]): string[] {
-  return flowLabelList.filter((label) => exclude?.includes(label));
-}
-
-/** The excluded labels that no label of the config's defines or no flow carries: a typo, or flows that moved. */
-export function unknownExcluded(exclude: readonly string[] | undefined, labels: Labels | undefined, flows: readonly { labels: readonly string[] }[]): string[] {
-  return (exclude ?? []).filter((label) => !(label in (labels ?? {})) && !flows.some((f) => f.labels.includes(label)));
+/** The declared labels that no flow carries (its own `map({ labels })`, or a config pattern covering it): a typo, or flows that moved. */
+export function emptyLabels(labels: Labels | undefined, flows: readonly { labels: readonly string[] }[]): string[] {
+  return Object.keys(labels ?? {}).filter((label) => !flows.some((f) => f.labels.includes(label)));
 }

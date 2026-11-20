@@ -2,6 +2,8 @@
 // keeps working untouched; this is a second, richer place to put the same kind of project-level
 // setting, for consumers who'd rather have a real typed file than a JSON field. Real ask: "I
 // think its time to add waygraph config now."
+import type { LabelsConfig } from "../manifest/labels.js";
+import type { RegressionConfig } from "../manifest/regression.js";
 import { messageOf } from "../engine/errors.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
@@ -130,19 +132,20 @@ export interface WaygraphConfig<Label extends string = string> {
   /** Write each run's events to `.waygraph/runs/<runId>.jsonl` (the history Waygraph Studio shows), or to this folder. Default true. */
   runLog?: boolean | string;
   /**
-   * Every label a flow may carry, typed into `map({ labels })` and `regression.exclude` (a typo is a type error); `[]` for a label only
-   * flows name themselves. Labels also run a group of flows (`waygraph test --flows --label auth`): each label names its flows, by a
-   * glob over their files (`"src/flows/auth/**"`) or by a flow's export name (`"loginFlow"`). A flow can have several.
-   * @example labels: { auth: ["src/flows/auth/**", "logoutFlow"], smoke: ["loginFlow", "checkoutFlow"] }
+   * Every label a flow may carry, typed into `map({ labels })` and `regression` (a typo is a type error). A list of names is the
+   * usual form; an object also picks flows into a label, by a glob over their files (`"src/flows/auth/**"`) or by a flow's
+   * export name. `waygraph test --label auth` runs a group of flows.
+   * @example labels: ["auth", "smoke", "empty-db"] · labels: { auth: ["src/flows/auth/**", "logoutFlow"], smoke: [] }
    */
-  labels?: Record<Label, string[]>;
+  labels?: LabelsConfig<Label>;
   /**
-   * What the full run (`waygraph test --flows`) leaves out. By default every flow runs, labelled or not. `exclude` names
-   * labels (a flow's own, `map({ labels })`, or the config's) whose flows don't run in it: edge cases that need a precondition the shared environment can't promise (an empty
-   * database, rows seeded by hand). They are listed as skipped, and run when picked: `--label empty-db`, or `--all` for everything.
-   * @example regression: { exclude: ["empty-db", "db-seed"] }
+   * Which flows the full run (`waygraph test`) plays. By default every flow, labelled or not. A set narrows it by label:
+   * `include` keeps only flows with one of its labels, then `exclude` drops flows with one of its (it wins). Edge cases that
+   * need a precondition a shared environment can't promise (an empty database, rows seeded by hand) are left out, listed as
+   * skipped, and run when picked (`--label empty-db`) or with `--all`. Name several sets and choose one with `--regression`.
+   * @example regression: { exclude: ["empty-db"] } · regression: { default: { exclude: ["empty-db"] }, nightly: { include: ["auth"] } }
    */
-  regression?: { exclude?: NoInfer<Label>[] };
+  regression?: RegressionConfig<Label>;
   /** Folder of test files, relative to the project. Default `"tests"`. */
   testDir?: string;
   /** App to start around `waygraph test`, `run`, `demo` and `auto` (same fields as Playwright's `webServer`). */

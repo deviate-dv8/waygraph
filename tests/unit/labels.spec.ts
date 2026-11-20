@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { emptyLabels, labelsOf } from "../../src/manifest/labels.js";
+import { emptyLabels, normalizeLabels, labelsOf } from "../../src/manifest/labels.js";
 
 const labels = {
   auth: ["src/flows/auth/**", "logoutFlow"],
@@ -19,9 +19,15 @@ describe("flow labels", () => {
 
   it("names the labels that cover no flow", () => {
     const flows = [
-      { file: "src/flows/auth/login.flow.ts", exportName: "loginFlow" },
-      { file: "src/flows/checkout/checkout.flow.ts", exportName: "checkoutFlow" },
+      { labels: ["auth"] },
+      { labels: ["smoke"] },
     ];
     assert.deepEqual(emptyLabels(labels, flows), ["typo"]);
+  });
+
+  it("takes a list of names as labels no pattern picks flows into", () => {
+    assert.deepEqual(normalizeLabels(["auth", "smoke"]), { auth: [], smoke: [] });
+    assert.deepEqual(normalizeLabels({ auth: ["src/flows/auth/**"] }), { auth: ["src/flows/auth/**"] });
+    assert.deepEqual(normalizeLabels(undefined), {});
   });
 });

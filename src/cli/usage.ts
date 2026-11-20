@@ -163,8 +163,10 @@ ${optionHelp("run")}
                                            Scaffolds ship trace: "retain-on-failure" + the
                                            --flows --label auth[,smoke]: only the flows with a
                                            label (the config's labels; tagged @auth).
-                                           --flows --all: also the labels the config's
-                                           regression.exclude leaves out of the full run.
+                                           (flows are the default tests; --specs runs spec files.)
+                                           --all: every flow, what the config's regression
+                                           leaves out too; --regression <set>, --include a,b,
+                                           --exclude c: pick the regression set for one run.
                                            html reporter, so a failed waygraph test already
                                            has a trace - test report opens it.
 
@@ -219,6 +221,11 @@ Also:
                                            and what those read, listed in .env.example and .env.
                                            Names what it can't install (ffmpeg). Run it again any
                                            time: it does only what's missing.
+  waygraph info  [project] [--verbose] [--json]
+                                           What waygraph sees: version, the config and base URL it
+                                           used, .env files, counts (flows, Blocks by kind, pages,
+                                           accounts), labels and the regression sets. --verbose
+                                           lists the flows, Blocks, config values and WAYGRAPH_*.
   waygraph list | nav | validate | check | typecheck | graph | init <name>
                  check/typecheck --no-practices  Skip bad-practice warnings
   waygraph map   [project]                 Waygraph Map convention enforcement: every static

@@ -200,7 +200,7 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
   the value is worked out from mem at run time.
 - **The same steps in several flows are a part:** `export const logDisruption = steps(DisruptionLog, (m) => m.method(…).method(…))`,
   played with `.steps(logDisruption)`. A function over `MapBuilder` with a hand-written `type Start = MapBuilder<…>` is a smell.
-- **A flow that can't be green on a shared environment gets a label on the flow (`map({ labels: ["empty-db"] })`; labels are declared in the config's `labels`, which types them), and the config leaves that label out of the full run** (`regression: { exclude: ["empty-db"] }`). Every flow runs by default; `--label empty-db` plays the excluded ones, `--all` everything.
+- **A flow that can't be green on a shared environment gets a label on the flow (`map({ labels: ["empty-db"] })`; labels are declared in the config's `labels` list, which types them), and the config's `regression` leaves it out of the full run** (`regression: { exclude: ["empty-db"] }`, or `include`, or named sets for staging and nightly runs; `waygraph test --regression nightly`). Every flow runs by default; `--label empty-db` plays the excluded ones, `--all` everything. `waygraph test` plays the flows (`--specs` for Playwright spec files).
 - **Preconditions are `given`.** Data the scenario can't pass or fail without is seeded by Given Blocks (`defineGivenBlock`: any code, no page: factory, SQL, script, request) listed in `map({ given: [Seed…] })`, each with an `undo` that removes it (played after the flow, reverse order, pass or fail). Preconditions several flows share are one named group, `export const signedUpTenant = engine.given("signed-up-tenant", [SeedTenant, SeedProject])`, listed as `given: [signedUpTenant]`. A given that fails blocks the run (`WG_GIVEN_FAILED`). Phase order of a Block: `docs/guides/lifecycle.md`.
 - **Setup is steps, cleanup is `.finally`.** Data a flow needs is made first (`.flow(seedFlow)` of API Blocks), not taken
   from whatever the database holds; what it made is deleted in `.finally(DeleteApiBlock)`.
@@ -474,6 +474,8 @@ src/map/
 
 Mail / external tools: under `*-external/<tool>/` or `map/(external)/<tool>/`, never under
 the site's `*-web/` tree. Browser-driven (DOM / iframe Traits), not the catcher's REST API.
+
+`waygraph info` shows what waygraph detects (the config it loaded, base URL, counts, labels, regression sets): run it first when something isn't picked up.
 
 ## Verify before you call it done
 

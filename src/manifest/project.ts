@@ -148,7 +148,7 @@ export async function scanProject(projectDir: string, opts: ScanOptions = {}): P
       const from = marked.__waygraphFrom ?? [];
       const to = marked.__waygraphTo ?? [];
       // Every factory records a route; only a bare defineBlock has none (a layout's link up gets its route when layouts load).
-      if (to.length === 0 && !(exported as { __waygraphLayout?: unknown }).__waygraphLayout) skipped.push({ block: exported.name, file, reason: "no route: build it with a define*Block factory and Checkpoint values" });
+      if (to.length === 0 && !(exported as { __waygraphLayout?: unknown }).__waygraphLayout && (exported as { __waygraphKind?: string }).__waygraphKind !== "given") skipped.push({ block: exported.name, file, reason: "no route: build it with a define*Block factory and Checkpoint values" });
       blocks.push({
         block: exported,
         name: exported.name,

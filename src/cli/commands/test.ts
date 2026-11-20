@@ -1,8 +1,10 @@
-import { configuredExtensions } from "../../runtime/waygraph-config.js";
+import { configuredExtensions, loadWaygraphConfig } from "../../runtime/waygraph-config.js";
 import { defaultRunLogDir, defaultSessionsDir } from "../../runtime/run-log.js";
 import { runInherited } from "../util.js";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
+import { regressionSets } from "../../manifest/regression.js";
+import { walkDir } from "../../manifest/scan.js";
 import { packageRoot } from "../util.js";
 import { envString, setEnv } from "../../engine/env.js";
 
@@ -30,13 +32,29 @@ export async function testCase(args: string[]): Promise<void> {
         return;
       }
 
-      // --flows: the tests are the project's flows (runtime/playwright-config.ts), not its spec files.
+      // The tests are the project's flows (runtime/playwright-config.ts) unless it has none, `--specs` asks for its Playwright
+      // spec files, or a spec file is named. `--flows` still says it outright.
       const flowsAt = rest.indexOf("--flows");
-      if (flowsAt >= 0) {
-        rest.splice(flowsAt, 1);
-        setEnv("WAYGRAPH_FLOW_TESTS", "1");
+      if (flowsAt >= 0) rest.splice(flowsAt, 1);
+      const specsAt = rest.indexOf("--specs");
+      if (specsAt >= 0) rest.splice(specsAt, 1);
+      const namesSpec = rest.some((a) => /\.(spec|test)\.[cm]?[jt]sx?$/.test(a));
+      const playFlows = specsAt < 0 && !namesSpec && (flowsAt >= 0 || walkDir(proj, /\.flow\.ts$/).length > 0);
+      if (playFlows) setEnv("WAYGRAPH_FLOW_TESTS", "1");
+      // --regression <set>, --include a,b, --exclude c: which of the flows the full run plays (the config's `regression`).
+      for (const [flag, name] of [["--regression", "WAYGRAPH_REGRESSION"], ["--include", "WAYGRAPH_INCLUDE"], ["--exclude", "WAYGRAPH_EXCLUDE"]] as const) {
+        const value = takeOption(rest, [flag]);
+        if (value !== undefined) setEnv(name, value);
       }
-      // --all: the full run includes the labels the config leaves out (`regression: { exclude }`).
+      const chosen = envString("WAYGRAPH_REGRESSION");
+      if (chosen !== undefined) {
+        const sets = Object.keys(regressionSets((await loadWaygraphConfig(proj))?.regression));
+        if (!sets.includes(chosen)) {
+          console.error(`waygraph test: --regression ${chosen} isn't a set of the config's regression (${sets.join(", ") || "none: regression in config/waygraph.config.ts"})`);
+          process.exit(1);
+        }
+      }
+      // --all: the full run plays every flow, whatever the regression set leaves out.
       const allAt = rest.indexOf("--all");
       if (allAt >= 0) {
         rest.splice(allAt, 1);
@@ -60,7 +78,7 @@ export async function testCase(args: string[]): Promise<void> {
       }
       // Playing flows, the filters go on the flows projects (runtime/playwright-config.ts), not the command line: the
       // exclusive flows' project depends on the rest, and Playwright runs a dependency unfiltered.
-      if (flowsAt >= 0) {
+      if (playFlows) {
         const grep = takeOption(rest, ["--grep", "-g"]);
         const grepInvert = takeOption(rest, ["--grep-invert"]);
         if (grep !== undefined) setEnv("WAYGRAPH_TEST_GREP", grep);

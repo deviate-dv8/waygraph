@@ -4,7 +4,8 @@ import { exportedNames, parseSource } from "../../manifest/source.js";
 import { relative, resolve } from "node:path";
 import { projectDirOf } from "../util.js";
 import { parseCommand } from "../args.js";
-import { flowLabels, leftOutBy } from "../../manifest/labels.js";
+import { flowLabels, normalizeLabels } from "../../manifest/labels.js";
+import { chooseSet, leftOutOf } from "../../manifest/regression.js";
 import { importFresh, isFlowLike } from "../../manifest/scan.js";
 import { loadWaygraphConfig } from "../../runtime/waygraph-config.js";
 
@@ -20,8 +21,8 @@ async function listCommand(projectDir: string, label: string | undefined): Promi
     return;
   }
   const config = await loadWaygraphConfig(projectDir);
-  const labels = config?.labels;
-  const exclude = config?.regression?.exclude;
+  const labels = normalizeLabels(config?.labels);
+  const set = chooseSet(config?.regression);
   const rows: { rel: string; name: string; its: string[]; title?: string }[] = [];
   for (const file of files) {
     const rel = relative(projectDir, file);
@@ -47,8 +48,8 @@ async function listCommand(projectDir: string, label: string | undefined): Promi
   }
   for (const r of rows) {
     if (label && !r.its.includes(label)) continue;
-    const out = leftOutBy(exclude, r.its);
-    console.log(`${r.rel}  ${r.name}${r.its.length ? `  [${r.its.join(", ")}]` : ""}${out.length ? `  (left out of the full run: ${out.join(", ")})` : ""}${r.title ? `  ${r.title}` : ""}`);
+    const out = leftOutOf(set, r.its);
+    console.log(`${r.rel}  ${r.name}${r.its.length ? `  [${r.its.join(", ")}]` : ""}${out ? `  (left out of the full run: ${out})` : ""}${r.title ? `  ${r.title}` : ""}`);
   }
 }
 

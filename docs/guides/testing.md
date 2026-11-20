@@ -1,7 +1,8 @@
 # Testing
 
-Every flow is already a test. `waygraph test --flows` plays them all through Playwright's runner, with no spec files
-to write.
+Every flow is already a test. `waygraph test` plays them all through Playwright's runner, with no spec files
+to write. (A project with no flows, or one that names a spec file or passes `--specs`, runs its Playwright specs instead;
+`--flows` still says "the flows" outright.)
 
 ```mermaid
 graph LR
@@ -16,11 +17,11 @@ graph LR
 
 | Want | Command |
 |---|---|
-| every flow as a test | `npx waygraph test --flows` |
+| every flow as a test | `npx waygraph test` |
 | some of them | `npx waygraph test --flows -g checkout` (matches file or export name) |
 | a group of them | `npx waygraph test --flows --label auth` (the config's [labels](#labels); `--label auth,smoke` for either) |
 | in parallel, with retries | `npx waygraph test --flows --workers 4 --retries 2` |
-| your own specs too | `npx waygraph test` (anything after it goes to `playwright test`) |
+| your own Playwright specs | `npx waygraph test --specs` (or name one: `waygraph test tests/a.spec.ts`; the rest goes to `playwright test`) |
 | Playwright's UI mode | `npx waygraph test ui` |
 | the last report | `npx waygraph test report` |
 | one trace | `npx waygraph test show-trace <trace.zip>` |
@@ -31,24 +32,26 @@ Traces are kept for failures and the HTML report is on by default. Settings come
 
 ## Labels
 
-A label groups flows, so a group runs on its own. The config declares every label there is, and a flow carries its own on
-`map({ labels })`; a flow can have several. A label can also pick flows from the config, by a glob over their files or by a
-flow's export name; `[]` is a label only flows name themselves.
+A label groups flows, so a group runs on its own. The config declares every label there is, as a list, and a flow carries its own on
+`map({ labels })`; a flow can have several:
 
 ```ts
 // config/waygraph.config.ts
-labels: {
-  auth: ["src/flows/auth/**", "logoutFlow"],   // these flows, and any flow that names it
-  smoke: [],                                    // only the flows that name it
-},
+labels: ["auth", "smoke", "empty-db"],
+
+// a flow
+engine.map({ title: "Sign in", labels: ["auth", "smoke"] })   // completes auth | smoke | empty-db
 ```
 
-The labels are typed from the config: `new Engine(config)` makes `map({ labels })` and `regression.exclude` accept only the
-declared names, so your editor completes them and a typo (`"smok"`) is a type error. Without `labels` in the config, any
-string is accepted, as before.
+The labels are typed from the config: `new Engine(config)` makes `map({ labels })` and `regression` accept only the declared
+names, so your editor completes them and a typo (`"smok"`) is a type error. Without `labels` in the config, any string is
+accepted, as before.
+
+To put flows into a label from the config instead of from each flow, give `labels` an object: each label with a glob over
+flow files or a flow's export name. A flow still can carry the label itself; both count, once.
 
 ```ts
-engine.map({ title: "Sign in", labels: ["auth", "smoke"] })   // completes auth | smoke
+labels: { auth: ["src/flows/auth/**", "logoutFlow"], smoke: [] },   // [] = only flows that name it
 ```
 
 ```sh
@@ -61,33 +64,49 @@ the manifest and Waygraph Studio's Flows page show them. `waygraph check` warns 
 
 A flow can also name its own labels, next to its title and description: `engine.map({ title, description, labels: ["smoke"] })`. They join the config's, once each, so `--label` finds a flow by either.
 
-## Regression: what the full run leaves out
+## Regression: which flows the full run plays
 
-`waygraph test --flows` plays every flow, labelled or not. Some flows can't be green on a shared environment such as staging:
+`waygraph test` plays every flow, labelled or not. Some flows can't be green on a shared environment such as staging:
 they need an empty database, rows seeded by hand, or any other precondition the environment doesn't promise. Declare the
-labels in the config, label the flows, and exclude the labels from the full run:
+labels in the config, label the flows, and tell the regression what to leave out, or what to keep:
 
 ```ts
 // config/waygraph.config.ts
-labels: { "empty-db": [], "db-seed": [] },
-regression: { exclude: ["empty-db", "db-seed"] },     // completes the declared labels
+labels: ["empty-db", "db-seed", "smoke", "auth"],
+regression: { exclude: ["empty-db", "db-seed"] },       // completes the declared labels
 
 // src/flows/onboarding/signup.flow.ts
 export const signupFlow = engine.map({ title: "Sign up a new tenant", labels: ["empty-db"] }).gotoPage(…)
 ```
 
+A set has two lists, both optional: **`include`** keeps only flows carrying one of its labels, then **`exclude`** drops flows
+carrying one of its (exclude wins). A flow with no label is in a set with no `include`. Name several sets to have a run per
+environment; `default` is the one a bare run uses:
+
+```ts
+regression: {
+  default: { exclude: ["empty-db", "db-seed"] },
+  staging: { exclude: ["empty-db", "db-seed", "destructive"] },
+  nightly: { include: ["auth", "checkout"], exclude: ["flaky"] },
+},
+```
+
 ```sh
-npx waygraph test --flows                    # the regression: everything except those labels, expected green
-npx waygraph test --flows --label empty-db   # run that label's flows (picking a label always plays them)
-npx waygraph test --flows --all              # everything, excluded labels included
+npx waygraph test                              # the default set: the regression, expected green
+npx waygraph test --regression nightly         # another set (WAYGRAPH_REGRESSION=nightly for CI)
+npx waygraph test --include smoke              # for this run only: replace the set's include
+npx waygraph test --exclude flaky,slow         # for this run only: replace the set's exclude
+npx waygraph test --label empty-db             # run a label's flows (picking a label always plays them)
+npx waygraph test --all                        # everything, whatever the set leaves out
 ```
 
 - **Nothing set, nothing changes:** with no `regression` key every flow runs, as before.
-- **Skipped, not hidden:** an excluded flow is listed as skipped in the run, with the label and how to run it; `waygraph list`,
-  the manifest and Waygraph Studio's Flows page mark it ("left out of the full run").
-- **Any pick plays them:** `--label`, `--grep` (and `--all`) run the flow even if its label is excluded; `--grep-invert` alone
-  doesn't, since nothing was picked.
-- **Typos are caught:** `waygraph check` warns when `exclude` names a label no flow carries.
+- **Skipped, not hidden:** a flow the set leaves out is listed as skipped, with why and how to run it; `waygraph list`, the manifest
+  and Waygraph Studio's Flows page mark it ("left out of the full run").
+- **Any pick plays them:** `--label`, `--grep` and `--all` run the flow whatever the set says; `--grep-invert` alone doesn't,
+  since nothing was picked.
+- **Typed and checked:** the label names are completed in the editor and a typo is a type error; `--regression` names a set
+  that exists or the run stops, listing them; `waygraph check` warns about a label a set names that no flow carries.
 
 This is what makes a label more than a tag: it says what a flow needs, and the full run only claims what the environment can deliver.
 
@@ -101,7 +120,7 @@ This is what makes a label more than a tag: it says what a flow needs, and the f
 | starts on a page it doesn't open (an episode meant to follow another) | skipped, with the reason |
 | has `map({ exclusive: true })` | runs alone, after all the others (it changes data the rest read); `--label`, `--grep` and `--grep-invert` pick among them too, without running the others first |
 | has `map({ expectedFailure })` | passes when it fails |
-| has a label the config's `regression.exclude` leaves out | skipped in the full run, with how to run it ([Regression](#regression-what-the-full-run-leaves-out)) |
+| is left out by the regression set (`regression`) | skipped in the full run, with why and how to run it ([Regression](#regression-which-flows-the-full-run-plays)) |
 
 ## Access tests
 

@@ -87,8 +87,11 @@ More: [Testing](../guides/testing).
 | update scaffold files | `waygraph upgrade [paths] [--apply] [--overwrite] [--diff]` |
 | refresh agent skills | `waygraph upgrade --skills` |
 | rewrite removed code | `waygraph upgrade --codemod keys` (also `flows`, `checkpoints`, `lands`, `ff`, `chain`, `pages`, `expect`) |
-| run a group of flows | `waygraph test --flows --label auth` |
-| run everything, the labels `regression.exclude` leaves out of the full run too | `waygraph test --flows --all` |
+| see what waygraph detects: config, base URL, counts, labels, regression sets | `waygraph info` (`--verbose` lists the flows, Blocks and variables; `--json`) |
+| run every flow as a test (the regression set) | `waygraph test` (`--specs` for Playwright spec files) |
+| run a group of flows | `waygraph test --label auth` |
+| another regression set, or one run's include / exclude | `waygraph test --regression nightly`, `--include smoke`, `--exclude flaky` |
+| run everything, what the regression set leaves out too | `waygraph test --all` |
 | set up what the config requires on this machine (browsers, extensions, the demo's voice, `.env` entries) | `waygraph install [--update] [--with-deps]` |
 | coding-agent files | `waygraph agent-dive --loop claude` (also `opencode`, `cursor`, `vscode`) |
 | print a skill | `waygraph --skill` · `--skill-pilot` · `--skill-pilot-blind` · `--skill-convention` |

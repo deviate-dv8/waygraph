@@ -88,6 +88,7 @@ async function main(): Promise<void> {
 
     case "gen": case "generate": await (await import("./commands/gen.js")).genCase(args); break;
     case "types": await (await import("./commands/types.js")).typesCase(args); break;
+    case "info": await (await import("./commands/info.js")).infoCase(args); break;
     case "manifest": await (await import("./commands/manifest.js")).manifestCase(args); break;
     // Waygraph Studio on the project: map, flows, runs, playing a flow.
     case "studio": await (await import("./commands/studio.js")).studioCase(args); break;
