@@ -55,15 +55,14 @@ A flow can also name its own labels, next to its title and description: `engine.
 ## Regression: what the full run leaves out
 
 `waygraph test --flows` plays every flow, labelled or not. Some flows can't be green on a shared environment such as staging:
-they need an empty database, rows seeded by hand, or any other precondition the environment doesn't promise. Label them, and
-exclude the label from the full run:
+they need an empty database, rows seeded by hand, or any other precondition the environment doesn't promise. Label them on the
+flow, as for any [label](#labels), and exclude the labels from the full run in the config:
 
 ```ts
+// src/flows/onboarding/signup.flow.ts
+export const signupFlow = engine.map({ title: "Sign up a new tenant", labels: ["empty-db"] }).gotoPage(…)
+
 // config/waygraph.config.ts
-labels: {
-  "empty-db": ["src/flows/onboarding/**"],
-  "db-seed": ["bulkImportFlow", "reportFlow"],
-},
 regression: { exclude: ["empty-db", "db-seed"] },
 ```
 
@@ -78,7 +77,7 @@ npx waygraph test --flows --all              # everything, excluded labels inclu
   the manifest and Waygraph Studio's Flows page mark it ("left out of the full run").
 - **Any pick plays them:** `--label`, `--grep` (and `--all`) run the flow even if its label is excluded; `--grep-invert` alone
   doesn't, since nothing was picked.
-- **Typos are caught:** `waygraph check` warns when `exclude` names a label no config label or flow defines.
+- **Typos are caught:** `waygraph check` warns when `exclude` names a label no flow carries.
 
 This is what makes a label more than a tag: it says what a flow needs, and the full run only claims what the environment can deliver.
 

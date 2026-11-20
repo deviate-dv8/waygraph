@@ -1,4 +1,4 @@
-import { configuredExtensions, loadWaygraphConfig } from "../../runtime/waygraph-config.js";
+import { configuredExtensions } from "../../runtime/waygraph-config.js";
 import { defaultRunLogDir, defaultSessionsDir } from "../../runtime/run-log.js";
 import { runInherited } from "../util.js";
 import { join } from "node:path";
@@ -42,16 +42,14 @@ export async function testCase(args: string[]): Promise<void> {
         rest.splice(allAt, 1);
         setEnv("WAYGRAPH_ALL_FLOWS", "1");
       }
-      // --label auth[,smoke]: only the flows with one of these labels (the config's labels, as the tests' tags).
+      // --label auth[,smoke]: only the flows with one of these labels (a flow's own `map({ labels })` or the config's; they are the tests' tags).
       const labelAt = rest.findIndex((a) => a === "--label" || a.startsWith("--label="));
       if (labelAt >= 0) {
         const given = rest[labelAt]!.includes("=") ? rest[labelAt]!.slice("--label=".length) : rest[labelAt + 1];
         rest.splice(labelAt, rest[labelAt]!.includes("=") ? 1 : 2);
-        const known = Object.keys((await loadWaygraphConfig(proj))?.labels ?? {});
         const wanted = (given ?? "").split(",").map((l) => l.trim()).filter(Boolean);
-        const unknown = wanted.filter((l) => !known.includes(l));
-        if (!wanted.length || unknown.length) {
-          console.error(`waygraph test: --label ${unknown.length ? `${unknown.join(", ")} isn't a label` : "needs a label"}; the config's labels: ${known.join(", ") || "none (labels in config/waygraph.config.ts)"}`);
+        if (!wanted.length) {
+          console.error("waygraph test: --label needs a label (a flow's own, map({ labels }), or the config's); waygraph list shows each flow's");
           process.exit(1);
         }
         if (rest.includes("--grep") || rest.includes("-g")) {

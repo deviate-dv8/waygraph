@@ -34,6 +34,6 @@ test("picking the label, or --all, plays them", async () => {
 
 test("waygraph list marks the flows the full run leaves out", async () => {
   const { stdout } = await exec(process.execPath, [CLI, "list"], { cwd: project, env });
-  expect(stdout).toContain("dbFlow  [empty-db, smoke]  (left out of the full run: empty-db)");
+  expect(stdout).toContain("dbFlow  [smoke, empty-db]  (left out of the full run: empty-db)");
   expect(stdout).not.toContain("okFlow  [smoke]  (left out");
 });

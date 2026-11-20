@@ -10,7 +10,7 @@ export const hybridSeedingFlow = engine
     as: StandardUser,
     title: "Seed by API, shop in the UI, check by API",
     description: "A note is filed through the API, the shopper adds an item in the browser, and the API confirms the shopper's notes: one story across both.",
-    labels: ["hybrid", "api"],
+    labels: ["hybrid", "api", "seeded"],
     given: [SeedShopperNote],
     memStub: true,
   })

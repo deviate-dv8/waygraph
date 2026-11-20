@@ -137,7 +137,7 @@ export interface WaygraphConfig {
   labels?: Record<string, string[]>;
   /**
    * What the full run (`waygraph test --flows`) leaves out. By default every flow runs, labelled or not. `exclude` names
-   * labels whose flows don't run in it: edge cases that need a precondition the shared environment can't promise (an empty
+   * labels (a flow's own, `map({ labels })`, or the config's) whose flows don't run in it: edge cases that need a precondition the shared environment can't promise (an empty
    * database, rows seeded by hand). They are listed as skipped, and run when picked: `--label empty-db`, or `--all` for everything.
    * @example regression: { exclude: ["empty-db", "db-seed"] }
    */

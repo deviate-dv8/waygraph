@@ -8,10 +8,8 @@ const config = defineConfig({
   labels: {
     auth: ["src/flows/auth/**"],
     checkout: ["src/flows/checkout/**"],
-    // Flows that need data in the backend: they are not part of the shared environment's full run.
-    seeded: ["hybridSeedingFlow"],
   },
-  // The full run plays every flow, labelled or not, except these labels (waygraph test --flows --label seeded runs them, --all everything).
+  // The full run plays every flow, labelled or not, except the flows labelled with these (waygraph test --flows --label seeded runs them, --all everything).
   regression: { exclude: ["seeded"] },
   playwright: {
     workers: 1,
