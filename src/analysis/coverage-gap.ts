@@ -7,7 +7,8 @@ import { exploreRoots } from "../manifest/roots.js";
 import type { BlockEntry } from "../manifest/project.js";
 import { walkDir } from "../manifest/scan.js";
 import { parseSource, stringLiterals, templateHeads } from "../manifest/source.js";
-import { selectorEntries, selectorFilesUnder } from "../manifest/selectors.js";
+import { isSelectorFile, selectorEntries, selectorFilesUnder } from "../manifest/selectors.js";
+import { isEngineSelector } from "../engine/trait/selector.js";
 import { dirname, join } from "node:path";
 import type { CoverageEntry } from "../engine/coverage.js";
 
@@ -47,6 +48,8 @@ export function collectKnownInteractionSelectors(
     for (const file of walkDir(root, /(\.block\.ts|[\\/._]sel\.ts)$/)) {
       const source = parseSource(file);
       for (const { value, property } of stringLiterals(source)) if (isSelectorLiteral(value, property)) out.add(value);
+      // A `_sel.ts` entry built with `sel.*` (fixed arguments) is its selector string, not the literals inside the call.
+      if (isSelectorFile(file)) for (const entry of selectorEntries(file, file)) if (entry.literal && isEngineSelector(entry.selector)) out.add(entry.selector);
       for (const head of templateHeads(source)) {
         const selector = rowSelector(head);
         if (selector) out.add(selector);
@@ -97,6 +100,7 @@ export function unmappedInteractionsPageScript(payload: UnmappedInteractionPaylo
   w.__wgWarnedButtons ??= new Set<string>();
 
   const matchesKnown = (el: Element, selectors: string[]): boolean => {
+    if (w.__wgKnownEls?.has(el)) return true;
     for (const sel of selectors) {
       try {
         if (el.matches(sel)) return true;

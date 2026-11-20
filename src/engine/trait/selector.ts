@@ -1,77 +1,97 @@
 /**
- * Thin selector helpers - the obvious, discoverable shape for the plain-CSS-first rule
- * (`waygraph-convention.skill.md` #3, `practices-check.ts`'s `overcomplex-selector` warning).
- * Every `selector: string` in the engine (Trait factories, Block `click`/`url`, `.sel.ts` exports)
- * already accepts a plain string - these don't add a new selector TYPE, they add three obvious
- * *functions* to reach for instead of hand-writing a regex/XPath/text-match locator from scratch.
+ * Typed selector builders, the strings Playwright's own `getBy…` methods make, typed from Playwright's types. A selector
+ * stays a plain string (it goes to `page.locator(…)`, a Trait, `click`, a ring), so a `_sel.ts` can mix plain strings and
+ * these: plain strings are always fine; these make a wrong role, option or argument a compile error instead of a run-time
+ * "element not found". Each builds the same selector the matching `page.getBy…` would, with the same `exact` meaning.
  *
- * `css()` also validates: it throws immediately (not just a lint warning later) if you hand it a
- * regex-looking or XPath string, so the mistake this file exists to steer away from fails loud at
- * the call site instead of quietly working via a needlessly complex selector.
- *
- * A full generated registry of a project's own `*Sel` selectors (Adonis/Prisma-style - typed
- * autocomplete over selectors that already exist, not just these three shapes) is real, larger,
- * future work - backlogged until waygraph's own bigger step (a Dagster/Airflow-style run UI), not
- * part of this pass.
+ * @example
+ * export const LoginSel = {
+ *   username: sel.testId("username"),
+ *   submit: sel.role("button", { name: "Login" }),
+ *   error: sel.css("[data-test=error]"),
+ *   field: (name: string) => sel.label(name),
+ * };
  */
+import type { Page } from "@playwright/test";
+
+type RoleArgs = Parameters<Page["getByRole"]>;
+type TextOptions = NonNullable<Parameters<Page["getByText"]>[1]>;
 
 const LOOKS_LIKE_REGEX_TEXT_MATCH = /:text-matches\(|:has-text\(\s*\//;
 const LOOKS_LIKE_XPATH = /^\s*(?:xpath=)?\/\//;
 
-/**
- * A plain CSS selector - id, class, tag, attribute, or any combination Playwright's own CSS engine
- * accepts. Throws if `raw` looks like a regex text-match pseudo-class or an XPath instead of CSS -
- * use {@link byText} for a genuine text match, or a raw string (still perfectly valid) when the DOM
- * truly has no stable selector and a regex/XPath is the only option.
- * @example css("#login-button")
- * @example css(".inventory_item .btn_primary")
- */
-export function css(raw: string): string {
-  if (LOOKS_LIKE_XPATH.test(raw)) {
-    throw new Error(
-      `css("${raw}"): looks like an XPath, not a plain CSS selector - use the raw string directly ` +
-        "if the DOM genuinely has no stable id/class/attribute (css() is for the common case only).",
-    );
-  }
-  if (LOOKS_LIKE_REGEX_TEXT_MATCH.test(raw)) {
-    throw new Error(
-      `css("${raw}"): looks like a regex text-match pseudo-class - use byText() for a plain text ` +
-        "match, or the raw string directly if you genuinely need a regex.",
-    );
-  }
-  return raw;
+/** A string or a regex as Playwright writes it in a selector: `"text"i` / `"text"s` (exact), or `/source/flags`. */
+function matcher(value: string | RegExp, exact: boolean | undefined): string {
+  if (value instanceof RegExp) return `/${value.source}/${value.flags}`;
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"${exact ? "s" : "i"}`;
 }
 
-/**
- * A text-match selector, scoped to `within` (a plain CSS selector) when given. Exact match by
- * default - pass `{ contains: true }` for a substring match (Playwright's own `:has-text()`).
- * Prefer this over hand-writing `:has-text(/regex/)` when a plain string is all you need.
- * @example byText("Login")                         // any element with exactly this text
- * @example byText("Submit", { within: "form" })     // scoped to a plain CSS selector
- * @example byText("out of stock", { contains: true }) // substring match
- */
-export function byText(text: string, opts?: { within?: string; contains?: boolean }): string {
-  // A JSON string is a quoted Playwright selector string: quotes and backslashes escaped.
-  const quoted = JSON.stringify(text);
-  const clause = opts?.contains ? `:has-text(${quoted})` : `:text-is(${quoted})`;
-  return opts?.within ? `${css(opts.within)} ${clause}` : `*${clause}`;
-}
+const text = (engine: string) => (value: string | RegExp, options?: TextOptions): string => `internal:${engine}=${matcher(value, options?.exact)}`;
+const attribute = (name: string) => (value: string | RegExp, options?: TextOptions): string => `internal:attr=[${name}=${matcher(value, options?.exact)}]`;
 
-/**
- * An ARIA role selector (Playwright's own `role=` engine) - the accessible-name-first way to
- * target a control, ahead of a brittle DOM-structure guess. `name` matches the element's
- * accessible name exactly (whitespace-normalized), same as Playwright's own role engine default.
- * @example byRole("button", { name: "Login" })
- * @example byRole("checkbox", { name: "Remember me", checked: true })
- */
-export function byRole(
-  role: string,
-  opts?: { name?: string; checked?: boolean; disabled?: boolean; pressed?: boolean },
-): string {
-  const attrs: string[] = [];
-  if (opts?.name !== undefined) attrs.push(`name=${JSON.stringify(opts.name)}`);
-  if (opts?.checked !== undefined) attrs.push(`checked=${opts.checked}`);
-  if (opts?.disabled !== undefined) attrs.push(`disabled=${opts.disabled}`);
-  if (opts?.pressed !== undefined) attrs.push(`pressed=${opts.pressed}`);
-  return attrs.length ? `role=${role}[${attrs.join("][")}]` : `role=${role}`;
-}
+/** Whether a selector is one only Playwright reads (a `sel.role(...)`, `internal:`, `>>`, `text=`): `document.querySelector` can't. */
+export const isEngineSelector = (selector: string): boolean => /^internal:|>>|^(role|text|xpath|id|data-testid|data-test-id|data-test)=/.test(selector);
+
+export const sel = {
+  /**
+   * A plain CSS selector: an id, a class, a tag, an attribute, or any mix of them. Throws at once on an XPath or a regex
+   * text match, the things plain CSS is meant to steer away from (a raw string is still fine when the DOM has nothing stable).
+   * @example sel.css("#login-button")
+   */
+  css(raw: string): string {
+    if (LOOKS_LIKE_XPATH.test(raw)) {
+      throw new Error(`sel.css("${raw}"): looks like an XPath, not CSS - use the raw string directly if the DOM has no stable id, class or attribute`);
+    }
+    if (LOOKS_LIKE_REGEX_TEXT_MATCH.test(raw)) {
+      throw new Error(`sel.css("${raw}"): looks like a regex text match - use sel.text(/regex/), or the raw string directly`);
+    }
+    return raw;
+  },
+
+  /**
+   * By ARIA role and accessible name, with `getByRole`'s own options (`name`, `exact`, `checked`, `disabled`, `selected`,
+   * `expanded`, `pressed`, `level`, `includeHidden`): the role is the union of roles, so a typo is a compile error.
+   * @example sel.role("button", { name: "Login" }) · sel.role("checkbox", { name: "Remember me", checked: true })
+   */
+  role(role: RoleArgs[0], options: RoleArgs[1] = {}): string {
+    const props: string[] = [];
+    const { name, exact, checked, disabled, selected, expanded, includeHidden, level, pressed } = options;
+    if (checked !== undefined) props.push(`checked=${checked}`);
+    if (disabled !== undefined) props.push(`disabled=${disabled}`);
+    if (selected !== undefined) props.push(`selected=${selected}`);
+    if (expanded !== undefined) props.push(`expanded=${expanded}`);
+    if (includeHidden !== undefined) props.push(`include-hidden=${includeHidden}`);
+    if (level !== undefined) props.push(`level=${level}`);
+    if (name !== undefined) props.push(`name=${matcher(name, exact)}`);
+    if (pressed !== undefined) props.push(`pressed=${pressed}`);
+    return `internal:role=${role}${props.map((p) => `[${p}]`).join("")}`;
+  },
+
+  /**
+   * By test id. The attribute is `data-testid`; pass `{ attribute }` for the one the app uses (`data-test`, `data-qa`).
+   * @example sel.testId("username") · sel.testId("username", { attribute: "data-test" })
+   */
+  testId(id: string | RegExp, options: { attribute?: string } = {}): string {
+    const attr = options.attribute ?? "data-testid";
+    return `internal:testid=[${attr}=${id instanceof RegExp ? `/${id.source}/${id.flags}` : `"${id.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"s`}]`;
+  },
+
+  /** By visible text (`getByText`): a substring, ignoring case, unless `{ exact: true }`. @example sel.text("Sign in") */
+  text: text("text"),
+  /** By the text of the label a form control has (`getByLabel`). @example sel.label("Email") */
+  label: text("label"),
+  /** By a field's placeholder (`getByPlaceholder`). @example sel.placeholder("Search") */
+  placeholder: attribute("placeholder"),
+  /** By an image's alternative text (`getByAltText`). @example sel.altText("Company logo") */
+  altText: attribute("alt"),
+  /** By the `title` attribute (`getByTitle`). @example sel.title("Close") */
+  title: attribute("title"),
+
+  /**
+   * One selector inside another: `child` among the descendants of `parent`.
+   * @example sel.within(sel.css("form#login"), sel.role("button", { name: "Login" }))
+   */
+  within(parent: string, child: string): string {
+    return `${parent} >> ${child}`;
+  },
+};

@@ -1,8 +1,10 @@
-// Two things a live session does with the page it is on: keep what it shows on the session's trail, and switch the coverage view.
+// What a live session does with the page it is on: keep what it shows on the session's trail, switch the coverage view, and hand the
+// scan the elements of the selectors only Playwright reads.
 import type { Page } from "@playwright/test";
 import { ignorePageGone } from "../../engine/page-gone.js";
 import type { MemPage } from "../../engine/mem/mem.js";
 import { readBlocksFor, readCheckpoint } from "../../engine/read/read-block.js";
+import { isEngineSelector } from "../../engine/trait/selector.js";
 import type { CoverageResponse } from "./protocol.js";
 
 /** Keeps what the page shows at `here` on the session's trail, as a run does after a step: a check or a stub can ask for it later. */
@@ -39,4 +41,12 @@ export async function setCoverageOn(page: Page, on: boolean, headless: boolean):
   if (headless) return { ok: false, error: "coverage is drawn in a visible session (not --headless)" };
   const shown = await page.evaluate((v) => (window as unknown as { __wgCoverageSet?: (on: boolean) => boolean }).__wgCoverageSet?.(v), on).catch(ignorePageGone);
   return shown === undefined ? { ok: false, error: "the coverage view is not on this page yet" } : { ok: true, on: shown };
+}
+
+/** A selector only Playwright reads (a `sel.role(...)`): its elements are found here and put where the page's scan looks (`__wgKnownEls`). */
+export async function handKnownElements(page: Page, selectors: readonly string[]): Promise<void> {
+  await page.evaluate(() => void (window.__wgKnownEls = new WeakSet())).catch(ignorePageGone);
+  for (const selector of selectors.filter(isEngineSelector)) {
+    await page.locator(selector).evaluateAll((els) => els.forEach((el) => window.__wgKnownEls?.add(el))).catch(ignorePageGone);
+  }
 }

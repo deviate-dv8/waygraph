@@ -32,7 +32,7 @@ import type { ApplyPathResult, ApplyPickResult, AutoSessionInit, ConsoleLogEntry
 import { CONSOLE_LOG_MAX_ENTRIES, TRACE_MAX_STEPS, buildSessionSnapshot, describeHighlight, parsePick, rawTarget, stubFilePath, stubPhaseHasContent } from "./helpers.js";
 import { inspectDom, inspectStorage } from "./inspect.js";
 import { openSessionBrowser } from "./open-browser.js";
-import { keepLook, setCoverageOn } from "./session-look.js";
+import { handKnownElements, keepLook, setCoverageOn } from "./session-look.js";
 import { answerPicked, registerSelectorFor } from "./register.js";
 import type { CoverageResponse, RegisterResponse } from "./protocol.js";
 import { readSession, snapshotRead, type SessionRead } from "./read.js";
@@ -179,6 +179,7 @@ export class AutoSession {
       knownPathnames: knownNavPathnames(this.library.navBlocks, this.page.url()),
       knownSelectors: this.knownInteractionSelectors,
     };
+    await handKnownElements(this.page, this.knownInteractionSelectors);
     await this.page.evaluate(unmappedInteractionsPageScript, payload).catch(ignorePageGone);
   }
 

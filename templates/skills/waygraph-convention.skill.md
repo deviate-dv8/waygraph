@@ -92,7 +92,9 @@ reported is fixed once in waygraph, a gap worked around is copied into every pro
    regex/XPath match (`:has-text(/…/)`, `:text-matches(…)`, an XPath locator) for something a
    one-line class or id selector already targets uniquely; `waygraph check` flags this too.
    A regex/text match is for a genuinely unstable DOM with no stable attribute at all, not
-   the default first move.
+   the default first move. A `*Sel` entry is a plain string, or a typed builder from `sel` (`sel.role("button", { name: "Login" })`,
+   `sel.testId`, `sel.label`, `sel.placeholder`, `sel.css`, `sel.within`) whose arguments are Playwright's own types: prefer the
+   builders where a wrong selector is expensive (a large app); both are strings at run time.
 4. **Two questions, two homes.** A Block's `verify` answers "did this step do what it says?" (it arrived where `resolve`
    said; its action took effect) - true in every flow that uses the Block, and what a live session uses to tell where it
    is. What a *scenario expects* (a toast's text, a row reading Down, an error message) is an **expectation**:

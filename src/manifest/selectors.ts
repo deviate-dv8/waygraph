@@ -5,6 +5,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { Node, SyntaxKind } from "ts-morph";
 import type { SourceFile } from "ts-morph";
 import { parseSource } from "./source.js";
+import { staticSelector } from "./static-sel.js";
 
 /** The lines an export's definition spans (1-based, inclusive). */
 export interface SourceSpan {
@@ -12,7 +13,7 @@ export interface SourceSpan {
   endLine: number;
 }
 
-/** One entry of a selector object (`LoginSel.submit`): the string, or the code that builds one (a function). */
+/** One entry of a selector object (`LoginSel.submit`): the string (written out, or built by `sel.*` with fixed arguments), or the code that builds one (a function). */
 export interface SelectorEntry {
   /** `LoginSel.submit` */
   name: string;
@@ -96,10 +97,12 @@ export function selectorEntries(absFile: string, relFile: string): SelectorEntry
       for (const property of init.getProperties()) {
         if (!Node.isPropertyAssignment(property) && !Node.isMethodDeclaration(property)) continue;
         const value = Node.isPropertyAssignment(property) ? property.getInitializer() : property;
-        const literal = Node.isStringLiteral(value) || Node.isNoSubstitutionTemplateLiteral(value);
+        // A string, or a `sel.*` call with fixed arguments (its string is worked out from the source).
+        const fixed = Node.isStringLiteral(value) || Node.isNoSubstitutionTemplateLiteral(value) ? value.getLiteralValue() : staticSelector(value);
+        const literal = fixed !== undefined;
         out.push({
           name: `${declaration.getName()}.${property.getName()}`,
-          selector: literal ? value.getLiteralValue() : (value?.getText() ?? ""),
+          selector: fixed ?? value?.getText() ?? "",
           literal,
           file: relFile,
           line: property.getStartLineNumber(),

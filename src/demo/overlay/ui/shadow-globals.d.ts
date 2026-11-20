@@ -126,6 +126,8 @@ interface Window {
   /** Links and buttons a coverage-gap warning was already printed for (analysis/coverage-gap.ts). */
   __wgWarnedPaths?: Set<string>;
   __wgWarnedButtons?: Set<string>;
+  /** Elements Playwright found for the selectors only it reads, put there by the session before it scans (`warnUnmappedInteractions`). */
+  __wgKnownEls?: WeakSet<Element>;
   /** The session panel's graph: Mermaid, loaded into the page on first use (live/pilot/panel.ts). */
   mermaid?: {
     initialize: (opts: Record<string, unknown>) => void;

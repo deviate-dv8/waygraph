@@ -161,6 +161,12 @@ run; \`waygraph upgrade --codemod page-object\` moves a project (it was tried on
 | \`registerMemStub(key, fake)\` in a \`*.mem-stubs.ts\` file | the fake on the key: \`keys("ns")<{…}>({ field: () => value })\` (\`waygraph upgrade --codemod mem-stubs\`) |
 | \`defineLayout\` in a \`_layout.block.ts\` | a page that covers pages: \`definePageBlock({ covers: "children", links: (self) => ({ … self.link({ to, click }) }), read, interrupts })\`; \`Layout.go.x\` is \`Page.links.x\` |
 
+## Removed in 0.18.3: loose selector helpers
+
+| Removed | Use instead |
+| --- | --- |
+| \`css(raw)\`, \`byText(text, { within, contains })\`, \`byRole(role, opts)\` (strings, any role) | \`sel.css\`, \`sel.text(text, { exact })\`, \`sel.role(role, options)\` and \`sel.within(parent, child)\`: typed from Playwright's \`getBy…\`, so a wrong role or option is a compile error. \`sel.text\` ignores case and matches a substring unless \`exact: true\`, as \`getByText\` does |
+
 ## Removed in 0.18.3: generated page names
 
 | Removed | Use instead |

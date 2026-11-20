@@ -16,7 +16,7 @@ export { MemKey, MemPage, keys } from "./engine/mem/mem.js";
 export type { KeyNamespace } from "./engine/mem/mem.js";
 export { registerMemStub, seedMemStub, getMemStub } from "./engine/mem/mem-stub.js";
 export type { MemStubContext } from "./engine/mem/mem-stub.js";
-export { css, byText, byRole } from "./engine/trait/selector.js";
+export { sel } from "./engine/trait/selector.js";
 export { WaygraphError, WAYGRAPH_ERRORS } from "./engine/errors.js";
 export type { WaygraphErrorCode } from "./engine/errors.js";
 export { Trait, urlMatches, textEquals, visible, disabled, enabled, frameVisible, frameTextEquals, frameContainsText } from "./engine/trait/trait.js";

@@ -45,7 +45,7 @@ Every page folder uses the same file names. Start one with `waygraph gen page <p
 | File | Holds | Made with |
 |---|---|---|
 | `_page.block.ts` | the page: how it opens (`url`, `from`), what it shows (`read`), what you can do (`do`), what you can expect (`expects`), who can open it (`for`) | `definePageBlock` |
-| `_sel.ts` | every selector this page uses | a plain object |
+| `_sel.ts` | every selector this page uses | a plain object of strings, or typed [`sel.*` builders](./blocks#plain-strings-or-typed-builders) |
 | `_methods/` | one action per file: fill, click, submit: a function of its page, `(self: PageHandle<"Home">) => self.method({ … })`, listed in the page's `do` | `page.method` |
 | `_expect/` | what a scenario can expect on this page, one per file | `defineExpectBlock` |
 

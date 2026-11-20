@@ -259,6 +259,28 @@ export const DemoSel = {
 A selector written inline in a Block, or a regex / XPath selector, is a `waygraph check` warning. Mem holds values
 (which item); `_sel.ts` holds where things are on the page.
 
+### Plain strings, or typed builders
+
+A plain string is always fine: a selector is a string everywhere (`page.locator(…)`, a Trait, `click`, a ring). For an
+application where a wrong selector costs a failed run, `sel` builds the same strings Playwright's `getBy…` methods make, typed
+from Playwright's own types, so a wrong role, option or argument is a compile error instead of "element not found":
+
+```ts
+import { sel } from "waygraph";
+
+export const LoginSel = {
+  username: sel.placeholder("Username"),
+  submit: sel.role("button", { name: "Login" }),            // the role is Playwright's union; the options are getByRole's
+  error: sel.testId("error", { attribute: "data-test" }),   // the app's own test-id attribute
+  field: (name: string) => sel.label(name),                  // a factory, as with plain strings
+  inForm: sel.within(sel.css("form#login"), sel.role("button", { name: "Login" })),
+};
+```
+
+`sel.css` · `sel.role` · `sel.testId` · `sel.text` · `sel.label` · `sel.placeholder` · `sel.altText` · `sel.title` · `sel.within`.
+Each picks what its `page.getBy…` picks (`exact` means the same), and the manifest, Pilot's coverage and Studio read an entry
+written with fixed arguments as its string, as they read a plain one. Mix the two freely in one `_sel.ts`.
+
 ## Several Blocks as one
 
 | Helper | Gives |
