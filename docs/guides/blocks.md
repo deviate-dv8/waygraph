@@ -17,7 +17,7 @@ A Checkpoint is a page: a place the app can be, with its own address. A Page Blo
 export const HomePage = definePageBlock({ name: "page-home", checkpoint: "Home", url: "/home", ... });
 
 HomePage.checkpoint;                       // the value, for what must name it: { lands: HomePage.checkpoint }
-page.method({ to: "Docs", async act() {} }) // another page, by its name: no import, no cycle
+page.method({ to: "Docs", async act() {} }) // another page, by its name: no import, no cycle (`waygraph check` catches a typo)
 ```
 
 There is no states file and no `checkpoint()` plus `export type` pair per page. (Older projects declare them in

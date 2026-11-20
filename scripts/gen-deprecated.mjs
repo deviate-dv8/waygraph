@@ -161,6 +161,12 @@ run; \`waygraph upgrade --codemod page-object\` moves a project (it was tried on
 | \`registerMemStub(key, fake)\` in a \`*.mem-stubs.ts\` file | the fake on the key: \`keys("ns")<{…}>({ field: () => value })\` (\`waygraph upgrade --codemod mem-stubs\`) |
 | \`defineLayout\` in a \`_layout.block.ts\` | a page that covers pages: \`definePageBlock({ covers: "children", links: (self) => ({ … self.link({ to, click }) }), read, interrupts })\`; \`Layout.go.x\` is \`Page.links.x\` |
 
+## Removed in 0.18.3: generated page names
+
+| Removed | Use instead |
+| --- | --- |
+| \`waygraph types\` and \`src/waygraph-pages.d.ts\` (the global \`WaygraphPages\`, \`PageName\` as a union of the project's pages) | nothing to run or commit: \`to\`, \`covers\` and \`from\` take any string, and \`waygraph check\` / \`typecheck\` name a page that no Page Block makes, with the one it probably meant. Delete the file (\`check\` says so) |
+
 ## Removed in 0.17.0
 
 | Removed | Use instead |

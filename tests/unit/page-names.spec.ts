@@ -1,47 +1,44 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { pageTypesFile } from "../../src/cli/commands/types.js";
+import { findUnknownPages } from "../../src/analysis/page-names.js";
+import type { Manifest } from "../../src/manifest/manifest.js";
 
-const root = join(import.meta.dirname, "..", "..");
-
-/** `tsc` over a project that has the page names, with `body` as its one source file: its diagnostics. */
-function check(body: string): string {
-  const dir = mkdtempSync(join(tmpdir(), "wg-names-"));
-  try {
-    writeFileSync(join(dir, "waygraph-pages.d.ts"), pageTypesFile(["Documents", "Templates", "__start__", "*"]));
-    writeFileSync(join(dir, "project-pages.ts"), `import { definePageBlock } from "waygraph";\n${body}\n`);
-    writeFileSync(
-      join(dir, "tsconfig.json"),
-      JSON.stringify({
-        compilerOptions: { strict: true, module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022", noEmit: true, skipLibCheck: true, exactOptionalPropertyTypes: true, baseUrl: ".", paths: { waygraph: [join(root, "src/index.ts")] }, typeRoots: [join(root, "node_modules/@types")] },
-        include: ["*.ts"],
-      }),
-    );
-    const run = spawnSync(join(root, "node_modules/.bin/tsc"), ["-p", dir], { encoding: "utf8" });
-    // Only what is said about the project's own file (the waygraph source compiles under its own config).
-    return (run.stdout + run.stderr).split("\n").filter((line) => /(^|\/)project-pages\.ts\(/.test(line)).join("\n");
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+/** A manifest with these pages and the Methods they hold (`to` per Method). */
+function manifestOf(pages: { name: string; checkpoint?: string; from?: string[]; covers?: "children" | string[]; links?: string[]; moves?: string[] }[]): Manifest {
+  return {
+    pages: pages.map((p) => ({ id: `f#${p.name}`, name: p.name, ...(p.checkpoint ? { checkpoint: p.checkpoint } : {}), from: p.from ?? [], ...(p.covers ? { covers: p.covers } : {}), links: (p.links ?? []).map((to, i) => ({ key: `l${i}`, to })) })),
+    blocks: pages.flatMap((p) => (p.moves ?? []).map((to, i) => ({ name: `${p.name}-m${i}`, group: "do", owner: `f#${p.name}`, to: [to], from: [] }))),
+  } as unknown as Manifest;
 }
 
 describe("page names", () => {
-  it("lists the project's pages as keys, without the start or a wildcard", () => {
-    const text = pageTypesFile(["Templates", "Documents", "__start__", "*", "Documents"]);
-    assert.match(text, /"Documents": true;\n {4}"Templates": true;/);
-    assert.doesNotMatch(text, /__start__|\*/);
+  it("is quiet when every name written is a page, a 'parent' link or Start", () => {
+    const manifest = manifestOf([
+      { name: "page-a", checkpoint: "Documents", links: ["Templates", "parent"], moves: ["Templates"], from: ["__start__"] },
+      { name: "page-b", checkpoint: "Templates", covers: ["Documents"] },
+    ]);
+    assert.deepEqual(findUnknownPages(manifest), []);
   });
 
-  it("accepts a page's name in to and covers, and rejects a typo", () => {
-    const good = `export const S = definePageBlock({ name: "s", covers: ["Documents"], links: (self) => ({ docs: self.link({ to: "Documents", click: "#d" }) }) });`;
-    assert.equal(check(good).trim(), "");
-    const typo = `export const S = definePageBlock({ name: "s", covers: "children", links: (self) => ({ docs: self.link({ to: "Documnts", click: "#d" }) }) });`;
-    assert.match(check(typo), /Documnts/);
-    const typoCovers = `export const S = definePageBlock({ name: "s", covers: ["Templatez"] });`;
-    assert.match(check(typoCovers), /Templatez/);
+  it("names a typo in a move, a link, covers and from, with the page it probably meant", () => {
+    const manifest = manifestOf([
+      { name: "page-a", checkpoint: "Documents", links: ["Documnts"], moves: ["Templatez"], from: ["Tempates"] },
+      { name: "shell", covers: ["Docments"] },
+      { name: "page-b", checkpoint: "Templates" },
+    ]);
+    assert.deepEqual(
+      findUnknownPages(manifest).map((u) => [u.page, u.where, u.name, u.suggestion]),
+      [
+        ["page-a", "from", "Tempates", "Templates"],
+        ["page-a", "link", "Documnts", "Documents"],
+        ["page-a", "move", "Templatez", "Templates"],
+        ["shell", "covers", "Docments", "Documents"],
+      ],
+    );
+  });
+
+  it("offers no page when the name is nothing like one", () => {
+    const [unknown] = findUnknownPages(manifestOf([{ name: "page-a", checkpoint: "Documents", links: ["Zzzzzzzzzz"] }]));
+    assert.equal(unknown?.suggestion, undefined);
   });
 });

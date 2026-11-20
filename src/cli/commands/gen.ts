@@ -1,6 +1,5 @@
 // `waygraph gen <what> <name> [options]`: files from the convention, so each page, Method, flow and key starts the same
-// shape whoever writes it (a person or an agent). It never overwrites a file, prints what it wrote, and ends by writing the
-// page names (`waygraph types`) so what it made already completes.
+// shape whoever writes it (a person or an agent). It never overwrites a file and prints what it wrote.
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { Node, Project, SyntaxKind } from "ts-morph";
@@ -182,11 +181,4 @@ export async function genCase(args: string[]): Promise<void> {
 
   for (const f of out.written) console.log(`  ${values.dry === true ? "would write" : "created   "} ${f}`);
   for (const f of out.skipped) console.log(`  exists     ${f}  (left alone)`);
-  if (values.dry !== true && (what === "page" || what === "method") && existsSync(join(dir, "node_modules", "waygraph"))) {
-    try {
-      await (await import("./types.js")).writePageTypes(dir);
-    } catch (err) {
-      console.warn(`waygraph types: ${String(err)}`);
-    }
-  }
 }

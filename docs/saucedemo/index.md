@@ -50,8 +50,7 @@ examples/saucedemo/
   tests/                             Playwright specs running the flows
 ```
 
-`waygraph graph` prints what can be reached from each screen; `waygraph types` writes the page names
-(`src/waygraph-pages.d.ts`) that `to` and `covers` complete from.
+`waygraph graph` prints what can be reached from each screen; `waygraph check` names a page that `to` or `covers` writes and no page has.
 
 ## Blocks
 

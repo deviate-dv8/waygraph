@@ -179,9 +179,6 @@ Also:
                                            Files from the convention: a page (its _page.block.ts, _sel.ts and a
                                            _methods/ file per Method), a Method of a page, a flow, mem keys, an
                                            account. Never overwrites; waygraph gen page requests/[id] --do fillName,save
-  waygraph types [project]                 Write the names of the project's pages (src/waygraph-pages.d.ts), so
-                                           to: and covers: complete and a typo is an error; typecheck and
-                                           check rewrite it.
   waygraph manifest [project] [--out <file>]
                                            Every Block (kind, route from -> to, requires, map
                                            group), Flow (use case, steps, settings) and

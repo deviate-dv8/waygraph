@@ -1,7 +1,8 @@
 import { findStatePages } from "../../analysis/state-pages.js";
+import { findUnknownPages, type UnknownPage } from "../../analysis/page-names.js";
 import { buildManifest } from "../../manifest/manifest.js";
-import { readFileSync } from "node:fs";
-import { relative, resolve } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 import { findOrphanBlocks } from "../../analysis/graph.js";
 import { checkMapGroups, checkProject, validateFlows } from "../../analysis/check.js";
 import { checkStates } from "../../analysis/state-check.js";
@@ -45,9 +46,14 @@ function printPracticeReport(
 }
 
 
+/** Each page name that names no page, with the page it probably meant. */
+function printUnknownPages(unknown: readonly UnknownPage[]): void {
+  for (const u of unknown) {
+    console.warn(`waygraph check: ${u.page} names the page "${u.name}" in its ${u.where}, and no page has that name${u.suggestion ? ` - did you mean "${u.suggestion}"?` : ""}`);
+  }
+}
+
 async function runTypecheckCommand(projectDir: string, noPractices: boolean): Promise<void> {
-  // The page names `to:` and `covers:` complete from, before tsc reads them.
-  await (await import("./types.js")).writePageTypes(projectDir).catch((err: unknown) => console.warn(`waygraph types: ${String(err)}`));
   const { spawnSync } = await import("node:child_process");
   const tsc = spawnSync("npx", ["tsc", "--noEmit"], {
     cwd: projectDir,
@@ -57,6 +63,10 @@ async function runTypecheckCommand(projectDir: string, noPractices: boolean): Pr
   if (tsc.status !== 0) {
     process.exit(tsc.status === null ? 1 : tsc.status);
   }
+  // A page named by a string that no Page Block makes: the scan checks what the types can't see.
+  const unknown = findUnknownPages(await buildManifest(projectDir));
+  printUnknownPages(unknown);
+  if (unknown.length > 0) process.exit(1);
   if (noPractices) return;
   const practiceWarnings = collectPracticeWarnings(projectDir, walkDir);
   printPracticeReport(projectDir, practiceWarnings);
@@ -105,7 +115,6 @@ export async function checkCase(args: string[]): Promise<void> {
       const flags = parseRunFlags(args.slice(1), args[0] ?? "check");
       const proj = resolve(flags.positionals[0] ?? process.cwd());
       if (flags.network !== undefined) return networkReport(proj, flags.network);
-      await (await import("./types.js")).writePageTypes(proj).catch((err: unknown) => console.warn(`waygraph types: ${String(err)}`));
       const { navWarnings, selWarnings, practiceWarnings, constantDataWarnings, unreadPages } = await checkProject(
         proj,
         flags.noPractices ? { noPractices: true } : undefined,
@@ -153,6 +162,10 @@ export async function checkCase(args: string[]): Promise<void> {
       }
       if (groupProblems.length > 0) console.log(`waygraph check: ${groupProblems.length} map group import warning${groupProblems.length === 1 ? "" : "s"}`);
       const manifest = await buildManifest(proj);
+      printUnknownPages(findUnknownPages(manifest));
+      if (existsSync(join(proj, "src", "waygraph-pages.d.ts"))) {
+        console.warn("waygraph check: src/waygraph-pages.d.ts is no longer used (page names are checked here, not by types): delete it");
+      }
       const statePages = findStatePages(manifest);
       for (const s of statePages) {
         const why = s.sharesWith

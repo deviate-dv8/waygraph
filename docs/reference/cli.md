@@ -74,7 +74,7 @@ More: [Testing](../guides/testing).
 | pack a map group | `waygraph map pack <group> [--out dir] [--name pkg] [--version x.y.z]` |
 | the graph | `waygraph graph [--mermaid]` |
 | generate a page, Method, flow, keys, account | `waygraph gen <page|method|flow|keys|account> <name> [--read a,b] [--do a,b] [--shell] [--inline] [--dry]` ([Generate](../guides/project#generate)) |
-| the page names, for `to:` and `covers:` to complete | `waygraph types` (written to `src/waygraph-pages.d.ts`; `typecheck` and `check` rewrite it first; commit it) |
+| a typo in a page name (`to`, `covers`, `from`) | `waygraph check` / `waygraph typecheck` name the page that doesn't exist and the one you probably meant |
 | everything as JSON | `waygraph manifest [--out file]` ([Run log and manifest](./run-log)) |
 | the project in the browser: map, flows, runs, play a flow | `waygraph studio [project] [--port N]` ([Waygraph Studio](../guides/studio)) |
 
