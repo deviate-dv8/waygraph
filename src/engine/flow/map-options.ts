@@ -11,13 +11,13 @@ import type { Pane } from "./panes.js";
 
 /** Flow-level settings for `engine.map({ … })`: `memStub`, `sessionReset`, `expectedFailure`, `demoPace`, `highlightStyle`, `homeOrigin`. */
 /** What a flow says about itself: shown in the flow list, the demo's opening, the run log and Studio, and what `--label` picks by. */
-export interface FlowMeta {
+export interface FlowMeta<Label extends string = string> {
   /** The scenario in a line, in the QA's words: "Sign in with a valid account". */
   title?: string;
   /** What it proves and why it matters, a sentence or two: the demo's opening slide reads it. */
   description?: string;
   /** Groups it belongs to (`auth`, `smoke`); the config's `labels` globs add more. `waygraph test --label auth` runs them. */
-  labels?: readonly string[];
+  labels?: readonly Label[];
   /** The ticket or requirement it covers (`QA-142`). */
   ticket?: string;
   /** Who looks after it. */
@@ -31,7 +31,7 @@ export interface FlowMeta {
   video?: string;
 }
 
-export interface MapBuilderOptions extends FlowMeta {
+export interface MapBuilderOptions<Label extends string = string> extends FlowMeta<Label> {
   /**
    * This project's own origin (e.g. `"https://app.example.com"`) - enables
    * `.gotoPage()`/`.gotoExternal()`'s origin check against a Block's static

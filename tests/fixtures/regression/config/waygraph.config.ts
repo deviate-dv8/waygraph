@@ -1,3 +1,3 @@
 import { defineConfig } from "waygraph";
 
-export default defineConfig({ regression: { exclude: ["empty-db"] } });
+export default defineConfig({ labels: { smoke: [], "empty-db": [] }, regression: { exclude: ["empty-db"] } });

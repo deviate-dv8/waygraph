@@ -104,7 +104,7 @@ export interface NetworkSettings {
 }
 
 /** The project config in `config/waygraph.config.ts`: base URL, extensions, run and demo settings, web server and the Playwright block. */
-export interface WaygraphConfig {
+export interface WaygraphConfig<Label extends string = string> {
   /** Same value `resolveBaseUrl` would otherwise read from package.json's `waygraph.baseUrl`. */
   baseUrl?: string;
   /** Chromium extensions to load in every run: `"hoppscotch"`, a Chrome Web Store id, or `{ path }` to an unpacked one. */
@@ -130,18 +130,19 @@ export interface WaygraphConfig {
   /** Write each run's events to `.waygraph/runs/<runId>.jsonl` (the history Waygraph Studio shows), or to this folder. Default true. */
   runLog?: boolean | string;
   /**
-   * Labels for flows, to run a group of them (`waygraph test --flows --label auth`): each label names its flows, by a
+   * Every label a flow may carry, typed into `map({ labels })` and `regression.exclude` (a typo is a type error); `[]` for a label only
+   * flows name themselves. Labels also run a group of flows (`waygraph test --flows --label auth`): each label names its flows, by a
    * glob over their files (`"src/flows/auth/**"`) or by a flow's export name (`"loginFlow"`). A flow can have several.
    * @example labels: { auth: ["src/flows/auth/**", "logoutFlow"], smoke: ["loginFlow", "checkoutFlow"] }
    */
-  labels?: Record<string, string[]>;
+  labels?: Record<Label, string[]>;
   /**
    * What the full run (`waygraph test --flows`) leaves out. By default every flow runs, labelled or not. `exclude` names
    * labels (a flow's own, `map({ labels })`, or the config's) whose flows don't run in it: edge cases that need a precondition the shared environment can't promise (an empty
    * database, rows seeded by hand). They are listed as skipped, and run when picked: `--label empty-db`, or `--all` for everything.
    * @example regression: { exclude: ["empty-db", "db-seed"] }
    */
-  regression?: { exclude?: string[] };
+  regression?: { exclude?: NoInfer<Label>[] };
   /** Folder of test files, relative to the project. Default `"tests"`. */
   testDir?: string;
   /** App to start around `waygraph test`, `run`, `demo` and `auto` (same fields as Playwright's `webServer`). */
@@ -161,7 +162,7 @@ export interface ConfigContext {
  * from `.env` files (`.env`, `.env.local`, `.env.<mode>`; pick the mode with `--env <mode>`):
  * @example export default defineConfig(({ env }) => ({ baseUrl: env.BASE_URL }))
  */
-export function defineConfig(config: WaygraphConfig | ((context: ConfigContext) => WaygraphConfig)): WaygraphConfig {
+export function defineConfig<const Label extends string = string>(config: WaygraphConfig<Label> | ((context: ConfigContext) => WaygraphConfig<Label>)): WaygraphConfig<Label> {
   if (typeof config !== "function") return config;
   loadEnvFiles(process.cwd());
   return config({ mode: envMode(), env: process.env });

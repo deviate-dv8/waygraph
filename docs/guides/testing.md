@@ -31,15 +31,24 @@ Traces are kept for failures and the HTML report is on by default. Settings come
 
 ## Labels
 
-A label groups flows, so a group runs on its own. The config names each label and the flows it covers, by a glob over
-their files or by a flow's export name; a flow can have several:
+A label groups flows, so a group runs on its own. The config declares every label there is, and a flow carries its own on
+`map({ labels })`; a flow can have several. A label can also pick flows from the config, by a glob over their files or by a
+flow's export name; `[]` is a label only flows name themselves.
 
 ```ts
 // config/waygraph.config.ts
 labels: {
-  auth: ["src/flows/auth/**", "logoutFlow"],
-  smoke: ["loginFlow", "checkoutFlow"],
+  auth: ["src/flows/auth/**", "logoutFlow"],   // these flows, and any flow that names it
+  smoke: [],                                    // only the flows that name it
 },
+```
+
+The labels are typed from the config: `new Engine(config)` makes `map({ labels })` and `regression.exclude` accept only the
+declared names, so your editor completes them and a typo (`"smok"`) is a type error. Without `labels` in the config, any
+string is accepted, as before.
+
+```ts
+engine.map({ title: "Sign in", labels: ["auth", "smoke"] })   // completes auth | smoke
 ```
 
 ```sh
@@ -55,15 +64,16 @@ A flow can also name its own labels, next to its title and description: `engine.
 ## Regression: what the full run leaves out
 
 `waygraph test --flows` plays every flow, labelled or not. Some flows can't be green on a shared environment such as staging:
-they need an empty database, rows seeded by hand, or any other precondition the environment doesn't promise. Label them on the
-flow, as for any [label](#labels), and exclude the labels from the full run in the config:
+they need an empty database, rows seeded by hand, or any other precondition the environment doesn't promise. Declare the
+labels in the config, label the flows, and exclude the labels from the full run:
 
 ```ts
+// config/waygraph.config.ts
+labels: { "empty-db": [], "db-seed": [] },
+regression: { exclude: ["empty-db", "db-seed"] },     // completes the declared labels
+
 // src/flows/onboarding/signup.flow.ts
 export const signupFlow = engine.map({ title: "Sign up a new tenant", labels: ["empty-db"] }).gotoPage(…)
-
-// config/waygraph.config.ts
-regression: { exclude: ["empty-db", "db-seed"] },
 ```
 
 ```sh

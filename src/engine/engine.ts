@@ -20,9 +20,9 @@ import { setPageApi } from "./read/page-api.js";
  * in a later change.
  * @example const engine = new Engine({ headless: false, slowMo: 250 });
  */
-export class Engine {
+export class Engine<Label extends string = string> {
   /** How flows from this engine launch their own browser, and the defaults its flows take (memStub). */
-  constructor(readonly config: EngineConfig = {}) {
+  constructor(readonly config: EngineConfig & { labels?: Readonly<Record<Label, unknown>> } = {}) {
     setPageApi(config.api);
   }
 
@@ -51,9 +51,9 @@ export class Engine {
    *   .gotoPage(NavHomeBlock)
    *   .gotoExternal(NavMailpitBlock)
    */
-  map<P extends Pane>(options: MapBuilderOptions & { panes: readonly P[] }): MapBuilder<Start, P["name"]>;
-  map(options?: MapBuilderOptions): MapBuilder<Start>;
-  map(options?: MapBuilderOptions): MapBuilder<Start> {
+  map<P extends Pane>(options: MapBuilderOptions<Label> & { panes: readonly P[] }): MapBuilder<Start, P["name"]>;
+  map(options?: MapBuilderOptions<Label>): MapBuilder<Start>;
+  map(options?: MapBuilderOptions<Label>): MapBuilder<Start> {
     // The engine's memStub is every flow's default; a map() may still turn it off.
     const { homeOrigin, panes, given: givenList, ...rest } = { ...(this.config.memStub ? { memStub: true } : {}), ...options };
     const settings = { ...rest, ...(panes ? { panes: panesRecord(panes) } : {}), ...(givenList ? { given: flattenGiven(givenList as readonly (SomeBlock | GivenGroup)[]) } : {}) };
@@ -77,5 +77,6 @@ export class Engine {
 export function map<P extends Pane>(options: MapBuilderOptions & EngineConfig & { panes: readonly P[] }): MapBuilder<Start, P["name"]>;
 export function map(options?: MapBuilderOptions & EngineConfig): MapBuilder<Start>;
 export function map(options?: MapBuilderOptions & EngineConfig): MapBuilder<Start> {
-  return new Engine(options).map(options);
+  const { labels: _flowLabels, ...config } = options ?? {};
+  return new Engine(config).map(options);
 }
