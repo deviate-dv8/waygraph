@@ -1,9 +1,10 @@
 // What a live session does with the page it is on: keep what it shows on the session's trail, switch the coverage view, and hand the
-// scan the elements of the selectors only Playwright reads.
-import type { Page } from "@playwright/test";
+// page the elements of the selectors only Playwright reads.
+import type { Frame, Page } from "@playwright/test";
 import { ignorePageGone } from "../../engine/page-gone.js";
 import type { MemPage } from "../../engine/mem/mem.js";
 import { readBlocksFor, readCheckpoint } from "../../engine/read/read-block.js";
+import { unmappedInteractionsPageScript } from "../../analysis/coverage-gap.js";
 import { isEngineSelector } from "../../engine/trait/selector.js";
 import type { CoverageResponse } from "./protocol.js";
 
@@ -43,10 +44,22 @@ export async function setCoverageOn(page: Page, on: boolean, headless: boolean):
   return shown === undefined ? { ok: false, error: "the coverage view is not on this page yet" } : { ok: true, on: shown };
 }
 
-/** A selector only Playwright reads (a `sel.role(...)`): its elements are found here and put where the page's scan looks (`__wgKnownEls`). */
-export async function handKnownElements(page: Page, selectors: readonly string[]): Promise<void> {
-  await page.evaluate(() => void (window.__wgKnownEls = new WeakSet())).catch(ignorePageGone);
-  for (const selector of selectors.filter(isEngineSelector)) {
-    await page.locator(selector).evaluateAll((els) => els.forEach((el) => window.__wgKnownEls?.add(el))).catch(ignorePageGone);
+/**
+ * The elements Playwright finds for the selectors only it reads (a `sel.role(...)`), put in the page's `__wgEngineEls`, where the
+ * coverage chip and the unmapped-interaction scan look: the page can't run Playwright's engines, so Node does and hands the result over.
+ * An invalid selector is skipped, never an error.
+ */
+export async function resolveEngineSelectors(frame: Frame, selectors: readonly string[]): Promise<void> {
+  for (const selector of new Set(selectors.filter(isEngineSelector))) {
+    await frame
+      .locator(selector)
+      .evaluateAll((els, key) => void (window.__wgEngineEls ??= new Map()).set(key, els), selector)
+      .catch(ignorePageGone);
   }
+}
+
+/** Flags the page's same-origin links and visible buttons nothing maps (read from the console): after the Playwright-only selectors are resolved for it. */
+export async function scanUnmapped(page: Page, knownPathnames: string[], knownSelectors: string[]): Promise<void> {
+  await resolveEngineSelectors(page.mainFrame(), knownSelectors);
+  await page.evaluate(unmappedInteractionsPageScript, { knownPathnames, knownSelectors }).catch(ignorePageGone);
 }

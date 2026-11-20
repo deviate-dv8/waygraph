@@ -59,6 +59,9 @@ export function collectKnownInteractionSelectors(
   return Array.from(out);
 }
 
+/** `engine: true` for a selector only Playwright reads, so the page script doesn't have to tell. */
+const engineFlag = (selector: string): { engine?: true } => (isEngineSelector(selector) ? { engine: true } : {});
+
 /** The registered selectors by name, from the selector files, then the rest the Blocks hold. */
 export function coverageEntries(projectDir: string, library: { navBlocks: BlockEntry[]; byName?: ReadonlyMap<string, BlockEntry> }, inject?: string[]): CoverageEntry[] {
   const named = selectorFilesUnder(projectDir, walkDir).flatMap((file) => selectorEntries(join(projectDir, file), file)).filter((e) => e.literal);
@@ -70,8 +73,8 @@ export function coverageEntries(projectDir: string, library: { navBlocks: BlockE
     if ((entry.block as { __waygraphKind?: string }).__waygraphKind === "page") pageIn.set(dirname(entry.file), entry.block.name);
   }
   return [
-    ...named.map((e) => ({ selector: e.selector, name: e.name, where: `${e.file}:${e.line}`, ...(pageIn.get(dirname(e.file)) ? { owner: pageIn.get(dirname(e.file)) as string } : {}) })),
-    ...rest.map((selector) => ({ selector, name: "" })),
+    ...named.map((e) => ({ selector: e.selector, name: e.name, where: `${e.file}:${e.line}`, ...(pageIn.get(dirname(e.file)) ? { owner: pageIn.get(dirname(e.file)) as string } : {}), ...engineFlag(e.selector) })),
+    ...rest.map((selector) => ({ selector, name: "", ...engineFlag(selector) })),
   ];
 }
 
@@ -100,7 +103,7 @@ export function unmappedInteractionsPageScript(payload: UnmappedInteractionPaylo
   w.__wgWarnedButtons ??= new Set<string>();
 
   const matchesKnown = (el: Element, selectors: string[]): boolean => {
-    if (w.__wgKnownEls?.has(el)) return true;
+    for (const found of w.__wgEngineEls?.values() ?? []) if (found.includes(el)) return true;
     for (const sel of selectors) {
       try {
         if (el.matches(sel)) return true;

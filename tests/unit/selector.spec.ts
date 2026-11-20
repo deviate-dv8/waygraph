@@ -66,3 +66,23 @@ export const LoginSel = {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("coverage entries mark a selector only Playwright reads, and not a plain one", async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { coverageEntries } = await import("../../src/analysis/coverage-gap.js");
+  const dir = mkdtempSync(join(tmpdir(), "wg-cov-"));
+  try {
+    mkdirSync(join(dir, "src", "map", "login"), { recursive: true });
+    writeFileSync(join(dir, "src", "map", "login", "_sel.ts"), `import { sel } from "waygraph";
+export const LoginSel = { plain: "#user-name", submit: sel.role("button", { name: "Login" }) };
+`);
+    const by = Object.fromEntries(coverageEntries(dir, { navBlocks: [] }).filter((e) => e.name).map((e) => [e.name, e]));
+    assert.equal(by["LoginSel.plain"]?.engine, undefined);
+    assert.equal(by["LoginSel.submit"]?.engine, true);
+    assert.equal(by["LoginSel.submit"]?.selector, 'internal:role=button[name="Login"i]');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

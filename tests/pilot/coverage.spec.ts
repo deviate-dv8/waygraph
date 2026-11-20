@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { installPersistentPilotOverlay } from "../../dist/demo/overlay/pilot/shell.js";
+import { resolveEngineSelectors } from "../../dist/live/auto-session/session-look.js";
+import { sel } from "../../dist/index.js";
 
 // The pilot's coverage chip: on a page you browse by hand, what waygraph knows is outlined green (labelled with its name, or
 // the page a link goes to) and what a person can click or type in that nothing registers is outlined orange.
@@ -47,4 +49,26 @@ test("clicking an orange tag names the element and registers it through the sess
   await root.locator(".wg-coverage-box input").press("Enter");
   await expect(root.locator(".wg-coverage-box span").first()).toHaveText("saved HomeSel.looseBtn");
   expect(saved).toEqual([{ selector: "#loose", key: "looseBtn" }]);
+});
+
+test("the chip outlines what a sel.* selector picks: the session finds the elements Playwright's engines find, and keeps up as the page changes", async ({ context }) => {
+  await installPersistentPilotOverlay(context, {
+    entries: [{ selector: sel.role("button", { name: "Login" }), name: "LoginSel.submit", owner: "page-login", engine: true }],
+    paths: [],
+  });
+  await context.exposeBinding("__wgResolve", (source, selectors: string[]) => resolveEngineSelectors(source.frame, selectors));
+  const page = await context.newPage();
+  await page.route("http://app.test/**", (route) => route.fulfill({ contentType: "text/html", body: `<!doctype html><div id="host"><button>Login</button></div><button id="loose">Loose</button>` }));
+  await page.goto("http://app.test/");
+  const root = page.locator("#wg-root");
+  await root.locator("#wg-coverage-chip").click();
+  await expect(root.locator("#wg-coverage-chip")).toContainText("1 registered, 1 not");
+  await expect(root.locator(".wg-coverage-box").filter({ hasText: "LoginSel.submit · page-login" })).toHaveCount(1);
+  // The page renders the button again (a new node): the next paint finds that one.
+  await page.evaluate(() => {
+    const host = document.querySelector("#host");
+    if (host) host.innerHTML = '<button style="margin-left:40px">Login</button>';
+  });
+  await expect(root.locator("#wg-coverage-chip")).toContainText("1 registered, 1 not");
+  await expect(root.locator(".wg-coverage-box").filter({ hasText: "LoginSel.submit · page-login" })).toHaveCount(1);
 });

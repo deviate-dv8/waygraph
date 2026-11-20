@@ -2,9 +2,8 @@
 import { setStepData, type MemSource } from "./session-mem.js";
 import { messageOf } from "../../engine/errors.js";
 import type { BrowserContext, Page } from "@playwright/test";
-import type { UnmappedInteractionPayload } from "../../analysis/coverage-gap.js";
 import type { ListPick } from "./read.js";
-import { collectKnownInteractionSelectors, coverageEntries, knownNavPathnames, unmappedInteractionsPageScript } from "../../analysis/coverage-gap.js";
+import { collectKnownInteractionSelectors, coverageEntries, knownNavPathnames } from "../../analysis/coverage-gap.js";
 import { findBlockPathDetailed } from "../../analysis/graph.js";
 import { runStubPhase } from "../../demo/narration/narration.js";
 import { describeOverlayFixtures, phaseToOverlayFixtures } from "../../demo/overlay/phase-fixtures.js";
@@ -32,7 +31,7 @@ import type { ApplyPathResult, ApplyPickResult, AutoSessionInit, ConsoleLogEntry
 import { CONSOLE_LOG_MAX_ENTRIES, TRACE_MAX_STEPS, buildSessionSnapshot, describeHighlight, parsePick, rawTarget, stubFilePath, stubPhaseHasContent } from "./helpers.js";
 import { inspectDom, inspectStorage } from "./inspect.js";
 import { openSessionBrowser } from "./open-browser.js";
-import { handKnownElements, keepLook, setCoverageOn } from "./session-look.js";
+import { keepLook, resolveEngineSelectors, scanUnmapped, setCoverageOn } from "./session-look.js";
 import { answerPicked, registerSelectorFor } from "./register.js";
 import type { CoverageResponse, RegisterResponse } from "./protocol.js";
 import { readSession, snapshotRead, type SessionRead } from "./read.js";
@@ -88,6 +87,7 @@ export class AutoSession {
     const knownInteractionSelectors = collectKnownInteractionSelectors(init.projectDir, library, init.inject);
     let registerPicked: (arg: { selector: string; key: string }) => string = () => "no session yet"; // set once the session exists
     if (!headless) await context.exposeBinding("__wgRegister", (_source, arg: { selector: string; key: string }) => registerPicked(arg));
+    if (!headless) await context.exposeBinding("__wgResolve", (source, selectors: string[]) => resolveEngineSelectors(source.frame, selectors));
     const session = new AutoSession(
       init.projectDir,
       init.inject,
@@ -175,12 +175,7 @@ export class AutoSession {
    * Deduped per page load so repeated status/send calls stay quiet.
    */
   private async warnUnmappedInteractions(): Promise<void> {
-    const payload: UnmappedInteractionPayload = {
-      knownPathnames: knownNavPathnames(this.library.navBlocks, this.page.url()),
-      knownSelectors: this.knownInteractionSelectors,
-    };
-    await handKnownElements(this.page, this.knownInteractionSelectors);
-    await this.page.evaluate(unmappedInteractionsPageScript, payload).catch(ignorePageGone);
+    await scanUnmapped(this.page, knownNavPathnames(this.library.navBlocks, this.page.url()), this.knownInteractionSelectors);
   }
 
   /** The pages' address patterns (`/items/:id`), for the params of a page opened by hand. */

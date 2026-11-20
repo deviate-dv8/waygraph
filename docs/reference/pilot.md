@@ -85,7 +85,7 @@ In a visible session, the **Coverage** chip (bottom-left; `waygraph pilot covera
 waygraph knows on the page you are looking at, so someone who never reads the code can see what a flow can touch and what is
 missing:
 
-- **green**, labelled with its name and the page it belongs to (`HomeSel.press · page-home`): a selector some Block or page uses; hover the label for the file and line it is written at;
+- **green**, labelled with its name and the page it belongs to (`HomeSel.press · page-home`): a selector some Block or page uses, a typed [`sel.*` builder](../guides/blocks#plain-strings-or-typed-builders) included (the session finds its elements through Playwright, since the page can't run Playwright's selector engines); hover the label for the file and line it is written at;
 - **green, `page /items/:id`**: a link to a page waygraph has (a page with a param covers every id);
 - **orange, dashed, `not registered`**: a link, button, field or tab nothing registers yet.
 

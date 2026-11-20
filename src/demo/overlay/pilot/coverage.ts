@@ -75,20 +75,48 @@ export function installCoverage(payload: CoveragePayload) {
       );
     };
 
-    const paint = () => {
+    // A selector only Playwright reads (a `sel.role(...)`): the session finds its elements (`__wgResolve`) and keeps them in `__wgEngineEls`.
+    let painting = false;
+    let again = false;
+    const paint = async (): Promise<void> => {
       if (editing) return;
       if (!on) {
         __wgSet(layer);
         label.textContent = "Coverage";
         return;
       }
+      if (painting) {
+        again = true;
+        return;
+      }
+      painting = true;
+      try {
+        const engine = [...new Set(payload.entries.filter((e) => e.engine).map((e) => e.selector))];
+        if (engine.length) {
+          try {
+            await window.__wgResolve?.(engine);
+          } catch {
+            /* the session went away: draw what the page can match */
+          }
+        }
+        draw();
+      } finally {
+        painting = false;
+        if (again) {
+          again = false;
+          void paint();
+        }
+      }
+    };
+    const draw = () => {
+      if (editing || !on) return;
       const boxes: Node[] = [];
       const claimed = new Set<Element>();
       let known = 0;
-      for (const { selector, name, owner, where } of payload.entries) {
+      for (const { selector, name, owner, where, engine } of payload.entries) {
         let found: Element[] = [];
         try {
-          found = Array.from(document.querySelectorAll(selector)).filter(visible);
+          found = (engine ? (window.__wgEngineEls?.get(selector) ?? []).filter((el) => el.isConnected) : Array.from(document.querySelectorAll(selector))).filter(visible);
         } catch {
           continue;
         }
