@@ -12,7 +12,7 @@ export async function manifestCase(args: string[]): Promise<void> {
   const file = configFileOf(proj);
   const loaded = await loadWaygraphConfig(proj);
   const config = file ? { file, values: configAsJson(loaded) } : undefined;
-  const manifest = await buildManifest(proj, { baseUrl: await resolveBaseUrl(proj), config, labels: loaded?.labels });
+  const manifest = await buildManifest(proj, { baseUrl: await resolveBaseUrl(proj), config, labels: loaded?.labels, exclude: loaded?.regression?.exclude });
   const json = JSON.stringify(manifest, null, 2) + "\n";
   if (!out) {
     process.stdout.write(json);

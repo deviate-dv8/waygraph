@@ -14,7 +14,7 @@ import type { SomeBlock } from "../engine/block/some-block.js";
 import type { Trait } from "../engine/trait/trait.js";
 import { walkDir } from "./scan.js";
 import { forgetSources, selectorEntries, selectorFilesUnder, selectorsUsed, spanOf, type SelectorEntry, type SourceSpan } from "./selectors.js";
-import { flowLabels, type Labels } from "./labels.js";
+import { flowLabels, leftOutBy, type Labels } from "./labels.js";
 import { siteTree, type SiteTree } from "./site-map.js";
 import { loadLayouts, refreshLayoutRoutes } from "./layouts.js";
 import { declaredStates, describeSets } from "../engine/mem/state.js";
@@ -98,6 +98,8 @@ export interface ManifestFlow {
   source?: SourceSpan;
   /** Its labels, from the config's `labels` (`waygraph test --flows --label auth`). */
   labels: string[];
+  /** The labels the config leaves out of the full run (`regression.exclude`) that this flow carries: it runs only when picked. */
+  leftOut?: string[];
   /** The folders under `src/flows/` (the page or `(user-story)` it belongs to) and the file's name (the outcome). */
   useCase: { path: string[]; outcome: string };
   /** Block names in run order, nested flows flattened. */
@@ -236,7 +238,7 @@ function heldBy(exportName: string, file: string): Pick<ManifestBlock, "group" |
 }
 
 /** Builds the manifest from a scan. */
-export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
+export function manifestFromScan(scan: ProjectScan, labels?: Labels, exclude?: readonly string[]): Manifest {
   const checkpoints = new Set<string>();
   const maps = new Set<string>();
   forgetSources();
@@ -288,6 +290,7 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
       file: f.file,
       ...(source ? { source } : {}),
       labels: flowLabels(flow.meta?.labels, labels, f.file, f.exportName),
+      ...leftOutField(exclude, flowLabels(flow.meta?.labels, labels, f.file, f.exportName)),
       ...(flow.meta?.title ? { title: flow.meta.title } : {}),
       ...(flow.meta?.description ? { description: flow.meta.description } : {}),
       ...(flow.meta?.ticket ? { ticket: flow.meta.ticket } : {}),
@@ -375,16 +378,16 @@ export function manifestFromScan(scan: ProjectScan, labels?: Labels): Manifest {
 /** Scans the project and returns its manifest. */
 export async function buildManifest(
   projectDir: string,
-  opts: ScanOptions & { baseUrl?: string | undefined; config?: Manifest["config"]; labels?: Labels | undefined } = {},
+  opts: ScanOptions & { baseUrl?: string | undefined; config?: Manifest["config"]; labels?: Labels | undefined; exclude?: readonly string[] | undefined } = {},
 ): Promise<Manifest> {
-  const { baseUrl, config, labels, ...scanOpts } = opts;
+  const { baseUrl, config, labels, exclude, ...scanOpts } = opts;
   const scan = await scanProject(projectDir, scanOpts);
   // Layouts cover the pages under their folders: loaded with the site map the scan gives, before the manifest reads them.
   const urls = pageUrls(scan.blocks);
   await loadLayouts(projectDir, siteTree(Object.keys(urls), urls, baseUrl));
   refreshLayoutRoutes(scan);
   await loadAccounts(projectDir);
-  const manifest = manifestFromScan(scan, labels);
+  const manifest = manifestFromScan(scan, labels, exclude);
   // The base url says which site a page's path is on.
   const tree = baseUrl ? siteTree(manifest.checkpoints, manifest.pageUrls, baseUrl) : manifest.siteTree;
   return { ...manifest, siteTree: tree, ...(baseUrl ? { project: { ...manifest.project, baseUrl } } : {}), ...(config ? { config } : {}) };
@@ -395,4 +398,10 @@ export async function buildManifest(
 function givenGroupsOf(infos: readonly { block: SomeBlock; given?: true }[]): { givenGroups?: string[] } {
   const groups = [...new Set(infos.filter((i) => i.given).flatMap((i) => (i.block as { __waygraphGivenGroup?: string }).__waygraphGivenGroup ?? []))];
   return groups.length ? { givenGroups: groups } : {};
+}
+
+/** `leftOut` for a flow, when the config leaves out one of its labels. */
+function leftOutField(exclude: readonly string[] | undefined, own: readonly string[]): { leftOut?: string[] } {
+  const out = leftOutBy(exclude, own);
+  return out.length ? { leftOut: out } : {};
 }

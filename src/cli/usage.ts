@@ -163,6 +163,8 @@ ${optionHelp("run")}
                                            Scaffolds ship trace: "retain-on-failure" + the
                                            --flows --label auth[,smoke]: only the flows with a
                                            label (the config's labels; tagged @auth).
+                                           --flows --all: also the labels the config's
+                                           regression.exclude leaves out of the full run.
                                            html reporter, so a failed waygraph test already
                                            has a trace - test report opens it.
 

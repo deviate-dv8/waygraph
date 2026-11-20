@@ -36,6 +36,12 @@ export async function testCase(args: string[]): Promise<void> {
         rest.splice(flowsAt, 1);
         setEnv("WAYGRAPH_FLOW_TESTS", "1");
       }
+      // --all: the full run includes the labels the config leaves out (`regression: { exclude }`).
+      const allAt = rest.indexOf("--all");
+      if (allAt >= 0) {
+        rest.splice(allAt, 1);
+        setEnv("WAYGRAPH_ALL_FLOWS", "1");
+      }
       // --label auth[,smoke]: only the flows with one of these labels (the config's labels, as the tests' tags).
       const labelAt = rest.findIndex((a) => a === "--label" || a.startsWith("--label="));
       if (labelAt >= 0) {

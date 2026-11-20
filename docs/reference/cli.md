@@ -88,6 +88,7 @@ More: [Testing](../guides/testing).
 | refresh agent skills | `waygraph upgrade --skills` |
 | rewrite removed code | `waygraph upgrade --codemod keys` (also `flows`, `checkpoints`, `lands`, `ff`, `chain`, `pages`, `expect`) |
 | run a group of flows | `waygraph test --flows --label auth` |
+| run everything, the labels `regression.exclude` leaves out of the full run too | `waygraph test --flows --all` |
 | set up what the config requires on this machine (browsers, extensions, the demo's voice, `.env` entries) | `waygraph install [--update] [--with-deps]` |
 | coding-agent files | `waygraph agent-dive --loop claude` (also `opencode`, `cursor`, `vscode`) |
 | print a skill | `waygraph --skill` · `--skill-pilot` · `--skill-pilot-blind` · `--skill-convention` |

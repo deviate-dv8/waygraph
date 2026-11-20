@@ -30,3 +30,13 @@ export function flowLabels(own: readonly string[] | undefined, labels: Labels | 
 export function emptyLabels(labels: Labels | undefined, flows: readonly { file: string; exportName: string }[]): string[] {
   return Object.keys(labels ?? {}).filter((label) => !flows.some((f) => labelsOf({ [label]: labels?.[label] ?? [] }, f.file, f.exportName).length));
 }
+
+/** Which of a flow's labels the config leaves out of the full run (`regression: { exclude }`). */
+export function leftOutBy(exclude: readonly string[] | undefined, flowLabelList: readonly string[]): string[] {
+  return flowLabelList.filter((label) => exclude?.includes(label));
+}
+
+/** The excluded labels that no label of the config's defines or no flow carries: a typo, or flows that moved. */
+export function unknownExcluded(exclude: readonly string[] | undefined, labels: Labels | undefined, flows: readonly { labels: readonly string[] }[]): string[] {
+  return (exclude ?? []).filter((label) => !(label in (labels ?? {})) && !flows.some((f) => f.labels.includes(label)));
+}

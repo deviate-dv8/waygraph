@@ -135,7 +135,7 @@ The map, and every page, follow your system's light or dark theme.
 ## Flows
 
 A flow's page has a side panel with two tabs: **Meta** (title, description, labels, ticket, owner, where its video goes, its
-settings, panes and the keys it needs) and **Code** (the flow's source, with the line of the step you picked in the pipeline
+settings, panes, the preconditions it is given, the keys it needs, and the labels the config's [`regression.exclude`](./testing#regression-what-the-full-run-leaves-out) leaves out of the full run) and **Code** (the flow's source, with the line of the step you picked in the pipeline
 marked). A flow that needs values (credentials, a record's name) has a **Data it is played with** form above the Run button: one
 JSON box per key, starting from the key's stub, kept in this browser and sent as `--data`. It is sent in the environment, not on the
 command line, so a password never shows in the run's command.

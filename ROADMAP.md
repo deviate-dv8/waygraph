@@ -12,6 +12,7 @@ against a real consumer.
 ## Next
 
 - **Flow meta, calls as data** - a flow has `title`/`description`/`labels` (done). Calls as data (run log `step:call`, demo card and modal, Studio run step, `check --network`) and the hybrid saucedemo flow are in. Studio's page panel has a Network section, `network` config names and judges calls, and Studio's API page is the offline console (send a recorded call again, copy it as cURL or an API Block).
+- **Regression config** - `regression: { exclude: [labels] }` keeps flows that need a special environment out of the full run (skipped, marked in `list`, the manifest and Studio); `--label` and `--all` play them.
 - **Preconditions** - `map({ given })` with `defineGivenBlock` (run, undo, ready, sets) is in, with the Block phase order documented. Named groups (`engine.given(name, [...])`) are in, shown by name in Studio.
 - **Pilot, next** - the coverage view in Waygraph Studio's live session.
 - **Session refactor** - `mem.trail` (what each step saw, typed by the page's read keys) is in. Replacing `(page, mem)` with one Session object in every hook, and Block kinds as classes, waits for 1.0.0: it breaks every Block for a model `mem` already gives.

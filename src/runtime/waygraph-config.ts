@@ -135,6 +135,13 @@ export interface WaygraphConfig {
    * @example labels: { auth: ["src/flows/auth/**", "logoutFlow"], smoke: ["loginFlow", "checkoutFlow"] }
    */
   labels?: Record<string, string[]>;
+  /**
+   * What the full run (`waygraph test --flows`) leaves out. By default every flow runs, labelled or not. `exclude` names
+   * labels whose flows don't run in it: edge cases that need a precondition the shared environment can't promise (an empty
+   * database, rows seeded by hand). They are listed as skipped, and run when picked: `--label empty-db`, or `--all` for everything.
+   * @example regression: { exclude: ["empty-db", "db-seed"] }
+   */
+  regression?: { exclude?: string[] };
   /** Folder of test files, relative to the project. Default `"tests"`. */
   testDir?: string;
   /** App to start around `waygraph test`, `run`, `demo` and `auto` (same fields as Playwright's `webServer`). */

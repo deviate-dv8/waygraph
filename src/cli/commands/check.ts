@@ -10,7 +10,7 @@ import { parseRunFlags } from "../flags.js";
 import { walkDir } from "../../manifest/scan.js";
 import { collectPracticeWarnings, practiceKindLabel } from "../../analysis/practices-check.js";
 import type { PracticeWarning } from "../../analysis/practices-check.js";
-import { emptyLabels } from "../../manifest/labels.js";
+import { emptyLabels, unknownExcluded } from "../../manifest/labels.js";
 import { loadWaygraphConfig } from "../../runtime/waygraph-config.js";
 
 function printOrphanReport(projectDir: string, orphans: Awaited<ReturnType<typeof findOrphanBlocks>>): void {
@@ -168,6 +168,10 @@ export async function checkCase(args: string[]): Promise<void> {
       const labels = (await loadWaygraphConfig(proj))?.labels;
       for (const label of emptyLabels(labels, manifest.flows)) {
         console.warn(`waygraph check: label ${label} covers no flow (${(labels?.[label] ?? []).join(", ") || "no patterns"}) - a glob over flow files (src/flows/auth/**) or a flow's export name`);
+      }
+      const config = await loadWaygraphConfig(proj);
+      for (const label of unknownExcluded(config?.regression?.exclude, labels, manifest.flows)) {
+        console.warn(`waygraph check: regression.exclude names ${label}, which no label of the config or flow defines - a typo, or the flows moved`);
       }
       const access = await checkAccess(proj);
       for (const a of access) {

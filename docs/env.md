@@ -26,6 +26,7 @@ This page is generated from `src/engine/env.ts` (`npm run docs:api`).
 | `WAYGRAPH_REPLAY` | A run id: seed mem with what that run recorded (--replay) |
 | `WAYGRAPH_TEST_GREP` | waygraph test --flows: the tests to run (--grep, --label), set on each flows project so a dependency is filtered too |
 | `WAYGRAPH_TEST_GREP_INVERT` | waygraph test --flows: the tests to leave out (--grep-invert), set on each flows project |
+| `WAYGRAPH_ALL_FLOWS` | 1 plays every flow in the full run, including the labels the config's regression.exclude leaves out (--all) |
 | `WAYGRAPH_FLOW_TESTS` | 1 makes waygraph test run every flow as a test (--flows) |
 | `WAYGRAPH_INPUT` | A flow's input: JSON or @file; an array plays the flow once per item (--input) |
 | `WAYGRAPH_AUTOPLAY` | 1 advances demo steps on their own (--auto-next) |

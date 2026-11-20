@@ -52,6 +52,36 @@ the manifest and Waygraph Studio's Flows page show them. `waygraph check` warns 
 
 A flow can also name its own labels, next to its title and description: `engine.map({ title, description, labels: ["smoke"] })`. They join the config's, once each, so `--label` finds a flow by either.
 
+## Regression: what the full run leaves out
+
+`waygraph test --flows` plays every flow, labelled or not. Some flows can't be green on a shared environment such as staging:
+they need an empty database, rows seeded by hand, or any other precondition the environment doesn't promise. Label them, and
+exclude the label from the full run:
+
+```ts
+// config/waygraph.config.ts
+labels: {
+  "empty-db": ["src/flows/onboarding/**"],
+  "db-seed": ["bulkImportFlow", "reportFlow"],
+},
+regression: { exclude: ["empty-db", "db-seed"] },
+```
+
+```sh
+npx waygraph test --flows                    # the regression: everything except those labels, expected green
+npx waygraph test --flows --label empty-db   # run that label's flows (picking a label always plays them)
+npx waygraph test --flows --all              # everything, excluded labels included
+```
+
+- **Nothing set, nothing changes:** with no `regression` key every flow runs, as before.
+- **Skipped, not hidden:** an excluded flow is listed as skipped in the run, with the label and how to run it; `waygraph list`,
+  the manifest and Waygraph Studio's Flows page mark it ("left out of the full run").
+- **Any pick plays them:** `--label`, `--grep` (and `--all`) run the flow even if its label is excluded; `--grep-invert` alone
+  doesn't, since nothing was picked.
+- **Typos are caught:** `waygraph check` warns when `exclude` names a label no config label or flow defines.
+
+This is what makes a label more than a tag: it says what a flow needs, and the full run only claims what the environment can deliver.
+
 ## Which flows run, and how
 
 | A flow that... | Gets |
@@ -62,6 +92,7 @@ A flow can also name its own labels, next to its title and description: `engine.
 | starts on a page it doesn't open (an episode meant to follow another) | skipped, with the reason |
 | has `map({ exclusive: true })` | runs alone, after all the others (it changes data the rest read); `--label`, `--grep` and `--grep-invert` pick among them too, without running the others first |
 | has `map({ expectedFailure })` | passes when it fails |
+| has a label the config's `regression.exclude` leaves out | skipped in the full run, with how to run it ([Regression](#regression-what-the-full-run-leaves-out)) |
 
 ## Access tests
 

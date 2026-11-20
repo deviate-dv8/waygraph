@@ -4,7 +4,7 @@ import { exportedNames, parseSource } from "../../manifest/source.js";
 import { relative, resolve } from "node:path";
 import { projectDirOf } from "../util.js";
 import { parseCommand } from "../args.js";
-import { flowLabels } from "../../manifest/labels.js";
+import { flowLabels, leftOutBy } from "../../manifest/labels.js";
 import { importFresh, isFlowLike } from "../../manifest/scan.js";
 import { loadWaygraphConfig } from "../../runtime/waygraph-config.js";
 
@@ -19,7 +19,9 @@ async function listCommand(projectDir: string, label: string | undefined): Promi
     console.log(`waygraph: no flows found under ${projectDir}`);
     return;
   }
-  const labels = (await loadWaygraphConfig(projectDir))?.labels;
+  const config = await loadWaygraphConfig(projectDir);
+  const labels = config?.labels;
+  const exclude = config?.regression?.exclude;
   const rows: { rel: string; name: string; its: string[]; title?: string }[] = [];
   for (const file of files) {
     const rel = relative(projectDir, file);
@@ -45,7 +47,8 @@ async function listCommand(projectDir: string, label: string | undefined): Promi
   }
   for (const r of rows) {
     if (label && !r.its.includes(label)) continue;
-    console.log(`${r.rel}  ${r.name}${r.its.length ? `  [${r.its.join(", ")}]` : ""}${r.title ? `  ${r.title}` : ""}`);
+    const out = leftOutBy(exclude, r.its);
+    console.log(`${r.rel}  ${r.name}${r.its.length ? `  [${r.its.join(", ")}]` : ""}${out.length ? `  (left out of the full run: ${out.join(", ")})` : ""}${r.title ? `  ${r.title}` : ""}`);
   }
 }
 

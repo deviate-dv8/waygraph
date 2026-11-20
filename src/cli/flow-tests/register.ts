@@ -5,7 +5,7 @@
 import { test } from "@playwright/test";
 import { relative } from "node:path";
 import type { Checkpoint } from "../../engine/checkpoint/checkpoint.js";
-import { envString } from "../../engine/env.js";
+import { envFlag, envString } from "../../engine/env.js";
 import type { Flow } from "../../engine/flow/flow.js";
 import { MemPage, type MemKey } from "../../engine/mem/mem.js";
 import { seedMemStub } from "../../engine/mem/mem-stub.js";
@@ -13,7 +13,7 @@ import { importFresh, isFlowLike, walkDir } from "../../manifest/scan.js";
 import { installRunLog } from "../../runtime/run-log.js";
 import { accountSigningIn } from "../../engine/flow/account.js";
 import { inRun, recordMem } from "../../engine/run/events.js";
-import { flowLabels } from "../../manifest/labels.js";
+import { flowLabels, leftOutBy } from "../../manifest/labels.js";
 import { loadWaygraphConfig } from "../../runtime/waygraph-config.js";
 
 /** Every key a flow's Blocks require, each once. */
@@ -57,7 +57,10 @@ function isFlow(value: unknown): value is Flow<Checkpoint<string>> {
 export async function registerFlowTests(exclusive: boolean): Promise<void> {
   installRunLog();
   const projectDir = envString("WAYGRAPH_PROJECT_DIR") ?? process.cwd();
-  const labels = (await loadWaygraphConfig(projectDir))?.labels;
+  const config = await loadWaygraphConfig(projectDir);
+  const labels = config?.labels;
+  // The full run (nothing picked, no --all) leaves out the labels the config excludes: they show as skipped, with how to run them.
+  const fullRun = envString("WAYGRAPH_TEST_GREP") === undefined && !envFlag("WAYGRAPH_ALL_FLOWS");
   for (const file of walkDir(projectDir, /\.flow\.ts$/)) {
     const mod = await importFresh(file);
     for (const [exportName, value] of Object.entries(mod)) {
@@ -65,8 +68,11 @@ export async function registerFlowTests(exclusive: boolean): Promise<void> {
       const flow = value;
       if ((flow.exclusive === true) !== exclusive) continue;
       // Its labels are its tags (@auth): --label picks them, and Playwright's UI and reports filter by them.
-      const tag = flowLabels(flow.meta?.labels, labels, relative(projectDir, file), exportName).map((label) => `@${label}`);
+      const own = flowLabels(flow.meta?.labels, labels, relative(projectDir, file), exportName);
+      const tag = own.map((label) => `@${label}`);
+      const leftOut = fullRun ? leftOutBy(config?.regression?.exclude, own) : [];
       test(`${relative(projectDir, file)} › ${exportName}`, { tag }, async ({ page, context }) => {
+        test.skip(leftOut.length > 0, `left out of the full run (${leftOut.join(", ")}): run it with --label ${leftOut[0]}, or everything with --all`);
         const first = flow.blocks()[0];
         test.skip(!!first && !opensItsPage(first.block), `starts on a page it doesn't open (${first?.name}): it runs after another flow - chain it, or start it with a gotoPage`);
         const mem = new MemPage();
