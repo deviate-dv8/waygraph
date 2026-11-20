@@ -48,7 +48,5 @@
     "nav page-inventory: * -> InventoryPage (src/map/(main)/(app_base)/inventory.html/_page.block.ts)",
     "nav page-login: * -> LoginPage (src/map/(main)/(app_base)/_page.block.ts)"
   ],
-  "skipped": [
-    "seed-shopper-note (src/map/(main)/(given)/seed-shopper-note.given.block.ts)"
-  ]
+  "skipped": []
 }
